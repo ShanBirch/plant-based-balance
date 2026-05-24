@@ -134,8 +134,9 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
         return 'who are you barracking for?';
     }
 
-    // The native story opener is for rapport. The challenge belongs later, once
-    // they reply and the normal IG draft/qualifier flow has context.
+    // The native story opener is for rapport. The challenge belongs later in
+    // the lead-only DM qualifier, once they directly ask or there are 3+
+    // meaningful lead replies with real context.
     if (/\b(challenge|app|sign ?up|link|program|meal plan|coaching|client)\b/i.test(text)) {
         return '';
     }
@@ -498,7 +499,7 @@ Return JSON only:
 }
 
 Rules:
-- The final comment must start a light conversation, not pitch Balance/coaching/challenge/app.
+- The final comment must start a light conversation, not pitch Balance/coaching/challenge/app. Product/challenge talk belongs later in the lead-only DM qualifier after a direct help/start signal or 3-6 meaningful lead replies with real context.
 - If the story is a shared reel/post, tagged story, reshared story, or content from another account, plan a sharer-framed reaction only. Treat @${username} as the person sharing it, not the person in the content.
 - For shared content, avoid "you/your" and avoid commenting on the person in the reel/post. Good angles are the shared idea, text, place, joke, news, or mood.
 - Prefer one tiny natural question when the story gives a clear handle: pet name, location, food/drink, class, hobby, travel, weather, event, or an interesting object.
@@ -567,7 +568,7 @@ Rules:
 - For a clear portrait/selfie, prefer a simple broad vibe like "looking good" over asking who took the photo.
 - For plain selfie/pose videos, do not invent an occasion. If the only real handle is the visible song or audio, a tiny music comment is okay.
 - No name, profile name, username, @handle, or direct address.
-- No Balance/coaching/challenge/app/program/link/meal-plan pitch.
+- No Balance/coaching/challenge/app/program/link/meal-plan pitch. Product/challenge talk belongs later in the lead-only DM qualifier after a direct help/start signal or 3-6 meaningful lead replies with real context.
 - No unsupported claims. Use only the story context.
 - Normal selfies and nights out can be simple. "looking good" or "looks like a fun night" is fine when it fits.
 - Keep appearance comments broad and harmless. Do not be flirty, sexual, body-specific, weight/physique-focused, or weirdly intense.
@@ -661,7 +662,7 @@ Critique rules:
 - Block if the story is heavy/sensitive: war, politics, weapons, violence, death, grief, disasters, medical emergencies, race/slur/discrimination topics, self-harm, sexual/nude content, hate/harassment, drugs, legal trouble, or vulnerable minors.
 - For shared reels/posts, tagged stories, reshared stories, or content from another account, allow only sharer-framed reactions. Block if the comment treats the reel/post subject as the story owner.
 - Block if the comment includes the story owner's name, profile name, username, @handle, or direct address.
-- Block if the comment pitches Balance/coaching/challenge/app/program/link/meal plan.
+- Block if the comment pitches Balance/coaching/challenge/app/program/link/meal plan. Story comments are first-touch rapport, not the offer step.
 - Block if the comment is flirty, sexual, body-specific, weight/physique-focused, or weirdly intense. Mild broad selfie comments like "looking good" can pass.
 - Block if the comment asks how a body part feels or implies injury/pain.
 - Block if the comment guesses product/brand/collab/sponsor from a selfie or unclear context.
@@ -730,7 +731,7 @@ Rules:
 - 3-12 words.
 - Prefer one tiny specific question if the critique says the original is a dead end and the story has a safe handle.
 - No name, profile name, username, @handle, or direct address.
-- No Balance/coaching/challenge/app/program/link/meal-plan pitch.
+- No Balance/coaching/challenge/app/program/link/meal-plan pitch. Story comments are first-touch rapport, not the offer step.
 - Mild broad selfie comments like "looking good" can pass. Do not be flirty, sexual, body-specific, weight/physique-focused, or weirdly intense.
 - Do not ask how a body part feels or imply injury/pain.
 - Do not guess product/brand/collab/sponsor unless packaging/signage makes that explicit.
@@ -1529,7 +1530,7 @@ Rules:
 - For gym stories, do not ask how a body part feels or imply injury/pain. Comment on the exercise setup, class, object, or effort instead.
 - Do not guess that something is a product, brand deal, collab, or sponsor unless packaging/signage makes that explicit.
 - Do not make teasing or critical jokes about grooming, weight, size, or appearance. Pet comments should feel warm and easy.
-- Do not pitch Balance, the app, coaching, a program, a meal plan, a link, or the challenge.
+- Do not pitch Balance, the app, coaching, a program, a meal plan, a link, or the challenge. The challenge bridge belongs later in DMs, only for unlinked leads after direct start/help intent or roughly 3-6 meaningful lead replies with real relationship and goal/blocker context.
 - Do not mention anything you cannot see.
 - Set safe_to_comment=false and comment="" for shared content if the only possible reply would treat the reel/post subject as the story owner, or for anything heavy, sensitive, or inappropriate: war, politics, weapons, violence, death, grief, sadness, low mood, mental health, race/slur/discrimination topics, unclear/blurry content, disasters, medical emergencies, self-harm, sexual/nude content, hate/harassment, vulnerable minors, drugs, legal trouble, or anything where a casual opener could look insensitive.
 - Ignore Instagram UI, other side stories, usernames in the tray, and browser chrome.

@@ -89,6 +89,7 @@ const {
     cleanFactValue,
     isUnsafeStockDiscoveryQuestion,
     hasChallengeInviteReadinessSignal,
+    countMeaningfulLeadReplies,
     hasEarnedChallengeInviteMoment,
     isPrematureChallengeInvite,
     isChallengeOfferWarningText,
@@ -344,11 +345,11 @@ function reviewLooksLikePureContextGap(review) {
     return /\b(context[-_ ]?loss|missing[-_ ]?source[-_ ]?context|missing[-_ ]?context|open (?:the )?(?:source )?dm|source dm|tracked dm context may be incomplete)\b/.test(haystack);
 }
 
-function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId }) {
+function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount }) {
     const issues = [];
     const draftText = draftTextFromDraft(draft);
     const challengeOfferAllowed = hasChallengeInviteReadinessSignal(currentMessage)
-        || hasEarnedChallengeInviteMoment({ qualifier, currentMessage })
+        || hasEarnedChallengeInviteMoment({ qualifier, currentMessage, leadReplyCount: meaningfulLeadReplyCount })
         || ['pitched', 'won'].includes(qualifier?.stage)
         || linkedUserId
         || ['in_app', 'paying', 'invited'].includes(leadStage);
@@ -364,8 +365,8 @@ function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarnin
     if (isUnsafeStockDiscoveryQuestion(draftText)) {
         issues.push('Draft uses a stock discovery question. Replace it with a specific reply to the latest detail, or no question if a reaction is enough.');
     }
-    if (isPrematureChallengeInvite({ draftText, currentMessage, qualifier, leadStage, linkedUserId })) {
-        issues.push('Draft invites the challenge before the person has shown enough readiness. Keep rapport moving instead.');
+    if (isPrematureChallengeInvite({ draftText, currentMessage, qualifier, leadStage, linkedUserId, leadReplyCount: meaningfulLeadReplyCount })) {
+        issues.push('Draft invites the challenge before the person has shown enough readiness or 3 meaningful lead replies. Keep rapport moving instead.');
     }
     return [...new Set(issues.map(issue => truncate(String(issue || '').replace(/\s+/g, ' ').trim(), 220)).filter(Boolean))];
 }
@@ -482,7 +483,7 @@ function getCocosAutoContextBypass({ cocosAutoSendLane, contextReview, draft, dr
     };
 }
 
-function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, cocosContextBypass }) {
+function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, cocosContextBypass }) {
     if (mediaReview?.required) {
         return {
             code: 'media_review',
@@ -519,7 +520,7 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
             label: 'stock discovery question needs Shannon review',
         };
     }
-    if (isPrematureChallengeInvite({ draftText: draft.joined, currentMessage, qualifier, leadStage, linkedUserId })) {
+    if (isPrematureChallengeInvite({ draftText: draft.joined, currentMessage, qualifier, leadStage, linkedUserId, leadReplyCount: meaningfulLeadReplyCount })) {
         return {
             code: 'premature_challenge_invite',
             label: 'challenge invite needs human readiness first',
@@ -880,7 +881,7 @@ The free 30-day challenge has already been offered. If they sound keen or ask ho
         return `
 
 EARNED CHALLENGE BRIDGE:
-This lead has enough relationship and goal/blocker context for a soft invite if it fits the newest message. Do not send the link yet. Do not make it a brochure. The move is one casual bridge, for example: "honestly this is pretty much what the free 30 day challenge is for, want me to send you the details?" If the newest message is a clear no/not-yet signal, hold off and just reply to that.`;
+This unlinked lead has enough relationship and goal/blocker context, plus at least 3 meaningful lead replies, for a soft invite if it fits the newest message. Do not send the link yet. Do not make it a brochure. The move is one casual bridge, for example: "honestly this is pretty much what the free 30 day challenge is for, want me to send you the details?" If the newest message is a clear no/not-yet signal, hold off and just reply to that.`;
     }
     return '';
 }
@@ -915,7 +916,12 @@ function isCocosBotAccount(value) {
     return normalizeBotAccount(value) === 'cocos_pt_studio';
 }
 
+function isShanSunnyBotAccount(value) {
+    return normalizeBotAccount(value) === 'shan_n_sunny';
+}
+
 function algorithmForkForBotAccount(botAccount) {
+    if (isShanSunnyBotAccount(botAccount)) return 'shan_n_sunny_acquisition_v1';
     return isCocosBotAccount(botAccount) ? 'cocos_acquisition_v1' : 'balance_default_v1';
 }
 
@@ -944,6 +950,17 @@ ${rules.map(rule => `- ${rule}`).join('\n')}`;
 }
 
 function buildAccountExperimentBlock(botAccount) {
+    if (isShanSunnyBotAccount(botAccount)) {
+        return `
+
+SHAN_N_SUNNY LEAD LANE:
+This thread belongs to Shannon's personal acquisition account.
+- Use the same Shannon voice, same relationship-first logic, and same lead safety gates as Balance.
+- Lead-only invite timing: do not pitch clients or linked app users. For unlinked leads, the soft challenge bridge usually belongs after 3-6 meaningful lead replies, a normal-life anchor, and at least two useful health/fitness facts.
+- Before 3 meaningful lead replies, only move to the challenge if they directly ask for help, ask how to start, ask what is included, or ask for the link.
+- When the earned window opens, stop drifting into pen-pal mode. Ask one casual permission bridge, do not send the link unless they accept.
+- Keep everything sounding like Shannon personally texting. Never mention tests, auto-send, algorithms, learning, or system rules.`;
+    }
     if (!isCocosBotAccount(botAccount)) return '';
     return `
 
@@ -952,6 +969,8 @@ This thread belongs to Coco's PT Studio, Shannon's contained acquisition test ac
 - Use the same Shannon voice, same relationship-first logic, and same safety review rules as Balance.
 - Do not become more cautious just because this lane may run on auto. Trust the conversation algorithm and keep the next message moving.
 - Shannon's hesitation/fear of rejection is not part of this lane. If the person gives a real help/start/fitness-frustration/challenge-detail signal, bridge confidently toward the free 30-day challenge instead of delaying forever.
+- Lead-only invite timing: do not pitch clients or linked app users. For unlinked leads, the soft challenge bridge usually belongs after 3-6 meaningful lead replies, a normal-life anchor, and at least two useful health/fitness facts.
+- Before 3 meaningful lead replies, only move to the challenge if they directly ask for help, ask how to start, ask what is included, or ask for the link. Once the earned window opens, stop drifting into pen-pal mode and ask the simple permission bridge.
 - Still do not pitch from empty friendliness alone. Banter can stay banter. The point is natural momentum, not pressure.
 - Keep everything sounding like Shannon personally texting. Never mention tests, auto-send, algorithms, learning, or Coco's as a system.`;
 }
@@ -1798,7 +1817,7 @@ ACQUISITION STYLE:
 - Do not bundle questions. Never ask name + age + goal + blocker together.
 - If the discovery question is about relationship context, ask one light version and stop. Do not tack on a fitness goal in the same reply.
 - If they are already asking how to join, accepted the challenge, or clearly want the link, move them forward instead of slowing them down with more questions.
-- Do not drop a 30-day challenge invite just because they are friendly, vaguely interested, or mention fitness/food. Wait for either a human signal ("I need help", "I dunno what I'm doing", "where do I start?", "what's included?", "send the link", or an obvious join/start request) or enough earned context for a soft bridge. Earned context means Shannon already has a normal-life anchor plus useful goal/blocker context. In that case ask if they want details, do not send the link unless they accept.
+- Do not drop a 30-day challenge invite just because they are friendly, vaguely interested, or mention fitness/food. This timing rule is for unlinked leads only, not clients/app users. Wait for either a human signal ("I need help", "I dunno what I'm doing", "where do I start?", "what's included?", "send the link", or an obvious join/start request) or enough earned context for a soft bridge. Earned context means Shannon already has a normal-life anchor, useful goal/blocker context, and usually 3-6 meaningful lead replies. In that case ask if they want details, do not send the link unless they accept.
 
 NEVER reveal AI, automation, "trained on Shannon's voice", "24/7", or anything that breaks the personal-coach illusion. Shannon is replying personally.
 
@@ -2460,6 +2479,11 @@ exports.handler = async (event) => {
     // the next funnel question into the AI prompt. The model weaves it
     // naturally into its reply as one smooth message instead of bolting
     // it on as a separate bubble.
+    const qualifierCurrentMessage = replaceIgMediaMarkers(
+        sanitizeIgStoryReplyContextText(messageText),
+        { photo: '[photo]', audio: '[voice note]', video: '[video]' }
+    );
+    const meaningfulLeadReplyCount = countMeaningfulLeadReplies(history, qualifierCurrentMessage);
     const qualifierEligible = isQualifierEligible({
         leadStage: effectiveLeadStage,
         linkedUserId: thread.linked_user_id,
@@ -2476,7 +2500,7 @@ exports.handler = async (event) => {
             const result = await evaluateQualifier({
                 thread,
                 history,
-                currentMessage: replaceIgMediaMarkers(sanitizeIgStoryReplyContextText(messageText), { photo: '[photo]', audio: '[voice note]', video: '[video]' }),
+                currentMessage: qualifierCurrentMessage,
                 draftText: '',
                 leadName,
                 channel,
@@ -3029,6 +3053,7 @@ exports.handler = async (event) => {
             qualifier,
             leadStage: effectiveLeadStage,
             linkedUserId: thread.linked_user_id,
+            meaningfulLeadReplyCount,
         });
         if (shouldAttemptCocosDraftRepair({
             cocosAutoSendLane,
@@ -3216,6 +3241,7 @@ exports.handler = async (event) => {
             qualifier,
             leadStage: effectiveLeadStage,
             linkedUserId: thread.linked_user_id,
+            meaningfulLeadReplyCount,
             cocosContextBypass,
         })
         : null;

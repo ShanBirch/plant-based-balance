@@ -27,6 +27,8 @@ const {
     isUnsafeStockDiscoveryQuestion,
     isChallengeOfferWarningText,
     hasChallengeInviteReadinessSignal,
+    hasEarnedChallengeInviteMoment,
+    countMeaningfulLeadReplies,
     isPrematureChallengeInvite,
 } = require('./qualifier-engine');
 
@@ -254,7 +256,15 @@ function detectCoachTurnIssues({ coachText, leadText, qualifier, leadStage = 'qu
         issues.push('empty_coach_reply');
         return issues;
     }
-    if (isChallengeOfferWarningText(text) && !hasChallengeInviteReadinessSignal(leadText)) {
+    const leadReplyCount = Math.max(0, Math.round(Number(
+        qualifier?.meaningful_lead_reply_count ?? countMeaningfulLeadReplies([], leadText)
+    ) || 0));
+    const earnedInviteAllowed = hasEarnedChallengeInviteMoment({
+        qualifier,
+        currentMessage: leadText,
+        leadReplyCount,
+    });
+    if (isChallengeOfferWarningText(text) && !hasChallengeInviteReadinessSignal(leadText) && !earnedInviteAllowed) {
         issues.push('possible_premature_challenge_invite');
     }
     if (isPrematureChallengeInvite({
@@ -263,6 +273,7 @@ function detectCoachTurnIssues({ coachText, leadText, qualifier, leadStage = 'qu
         qualifier,
         leadStage,
         linkedUserId: null,
+        leadReplyCount,
     })) {
         issues.push('premature_challenge_invite');
     }
@@ -828,9 +839,10 @@ ${softBridgeNudge}
 
 ACQUISITION RULES:
 - Human first, coach second.
-- Keep the challenge invite invisible until the lead gives a real start/help signal.
+- Keep the challenge invite invisible until the lead gives a real start/help signal, or until an unlinked lead has earned the soft bridge after roughly 3-6 meaningful lead replies.
 - Real invite signals: "i need help", "i dunno what i'm doing", "where do i start", "what's included", "send the link", "i'm in", or a clear join/start request.
-- Friendly replies, "keen", "haha", "sounds good", food banter, or vague interest are not enough by themselves.
+- Friendly replies, "keen", "haha", "sounds good", food banter, or vague interest are not enough by themselves. The earned bridge also needs a normal-life anchor and useful goal/blocker context.
+- This invite timing rule is lead-only. Do not use it for linked app users, paying clients, check-ins, or support threads.
 - Ask at most one question. If no question is needed, do not ask one.
 - Avoid stock lines like "what does a normal day look like", "are you much of a cook", "what are your goals", or "you training at the moment".
 - If you do invite them, make it feel like the obvious next step for their words, not a pitch.
@@ -1020,7 +1032,7 @@ function heuristicScore({ history, turnIssues }) {
         best_moment: '',
         weakest_moment: allIssues[0] || '',
         prompt_rule_suggestion: allIssues.includes('premature_challenge_invite')
-            ? 'Hold the challenge invite until the lead gives a clear help/start signal.'
+            ? 'Hold the challenge invite until the lead gives a clear help/start signal or earns the 3-6 reply soft bridge.'
             : 'Use the strongest detail from the lead before asking the next question.',
     });
 }

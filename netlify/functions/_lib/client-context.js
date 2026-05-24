@@ -4707,7 +4707,9 @@ IG/FB LEAD QUALITY CHECK:
 - Block if it uses a stock intake line such as "what does a normal day look like", a bare "what are your goals", or any name + age + goal + blocker bundle.
 - Block if it asks several discovery questions at once. One natural question max, and it should be tied to the strongest latest detail unless they clearly asked to start.
 - Block if the lead asks how to join, asks for the link, asks price/what is included, says they are keen, or accepts the challenge, but the draft slows them down with more rapport instead of moving them forward.
-- Warn if it pitches the challenge before reciprocal rapport or explicit start/info intent.
+- Warn if it pitches the challenge before reciprocal rapport, explicit start/info intent, or the earned lead-only window of roughly 3-6 meaningful lead replies plus relationship and goal/blocker context.
+- Warn if an unlinked lead has reached that 3-6 meaningful reply window with a clear blocker/motivation and the draft keeps asking generic discovery instead of using a soft permission bridge.
+- This invite timing rule is only for IG/FB leads. Do not apply it to linked app users, paying clients, check-ins, or support replies.
 - Warn if it is bland or generic while the context has a stronger personal hook Shannon could use.
 - Warn if it comments on emoji usage itself, such as "love the heart emoji", instead of using the emoji as tone and replying to the thing the person sent.
 - Use notification_reason "lead_quality" for these lead-conversion problems.` : '';

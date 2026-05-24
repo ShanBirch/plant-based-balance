@@ -7,6 +7,8 @@ const {
     hasEarnedChallengeInviteMoment,
     isUnsafeStockDiscoveryQuestion,
     isChallengeOfferWarningText,
+    isMeaningfulLeadReply,
+    countMeaningfulLeadReplies,
     isPrematureChallengeInvite,
 } = require('../netlify/functions/_lib/qualifier-engine');
 
@@ -77,6 +79,18 @@ assert.strictEqual(
     true
 );
 
+assert.strictEqual(isMeaningfulLeadReply('haha yeah sounds good'), false);
+assert.strictEqual(isMeaningfulLeadReply('work makes food hard after long shifts'), true);
+assert.strictEqual(
+    countMeaningfulLeadReplies([
+        { direction: 'in', text: 'haha yeah sounds good' },
+        { direction: 'out', text: 'yeah fair, work weeks can get messy' },
+        { direction: 'in', text: 'work makes food hard after long shifts' },
+        { direction: 'in', text: 'i want more energy but keep falling off' },
+    ], 'training is the other thing i struggle with'),
+    3
+);
+
 assert.strictEqual(
     isPrematureChallengeInvite({
         draftText: 'yeah I can get you into the free 30 day challenge if you want',
@@ -132,6 +146,16 @@ assert.strictEqual(
     hasEarnedChallengeInviteMoment({
         qualifier: earnedInvite,
         currentMessage: 'yeah exactly, it is mainly after work that i fall off',
+        leadReplyCount: 2,
+    }),
+    false
+);
+
+assert.strictEqual(
+    hasEarnedChallengeInviteMoment({
+        qualifier: earnedInvite,
+        currentMessage: 'yeah exactly, it is mainly after work that i fall off',
+        leadReplyCount: 3,
     }),
     true
 );
@@ -142,6 +166,7 @@ assert.strictEqual(
         currentMessage: 'yeah exactly, it is mainly after work that i fall off',
         qualifier: earnedInvite,
         leadStage: 'qualifying',
+        leadReplyCount: 3,
     }),
     false
 );
@@ -150,6 +175,7 @@ assert.strictEqual(
     hasEarnedChallengeInviteMoment({
         qualifier: earnedInvite,
         currentMessage: 'maybe later, not ready yet',
+        leadReplyCount: 3,
     }),
     false
 );
@@ -160,6 +186,7 @@ assert.strictEqual(
         currentMessage: 'maybe later, not ready yet',
         qualifier: earnedInvite,
         leadStage: 'qualifying',
+        leadReplyCount: 3,
     }),
     true
 );
