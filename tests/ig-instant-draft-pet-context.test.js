@@ -19,6 +19,10 @@ assert.match(
     buildAcquisitionStyleBlock({ leadStage: 'qualifying', linkedUserId: null }),
     /Avoid validation loops/
 );
+assert.match(
+    buildAcquisitionStyleBlock({ leadStage: 'qualifying', linkedUserId: null }),
+    /Avoid weak generic discovery stems/
+);
 assert.strictEqual(
     buildAcquisitionStyleBlock({ leadStage: 'paying', linkedUserId: 'client-123' }),
     ''
@@ -26,6 +30,10 @@ assert.strictEqual(
 assert.match(
     buildAcquisitionMomentumBlock({ botAccount: 'shan_n_sunny', leadStage: 'qualifying', linkedUserId: null }),
     /No-progression fix/
+);
+assert.match(
+    buildAcquisitionMomentumBlock({ botAccount: 'shan_n_sunny', leadStage: 'qualifying', linkedUserId: null }),
+    /Too-generic fix/
 );
 assert.match(
     buildAcquisitionMomentumBlock({ botAccount: 'shan_n_sunny', leadStage: 'qualifying', linkedUserId: null }),
