@@ -1172,6 +1172,39 @@
     window.submitMoodCheckin = submitMoodCheckin;
     window.dismissMoodCheckinDoneCard = dismissMoodCheckinDoneCard;
 
+    function refreshDailyCardsAfterDeferredLoad() {
+        var attempts = 0;
+        function run() {
+            attempts++;
+            if (!window.currentUser) {
+                if (attempts < 20) setTimeout(run, 500);
+                return;
+            }
+            if (typeof checkAndShowWeighInCard === 'function') {
+                Promise.resolve(checkAndShowWeighInCard()).catch(function(e) {
+                    console.warn('Deferred daily card refresh failed: weigh-in', e);
+                });
+            }
+            setTimeout(function() {
+                if (typeof checkAndShowMoodCheckinCard === 'function') {
+                    Promise.resolve(checkAndShowMoodCheckinCard()).catch(function(e) {
+                        console.warn('Deferred daily card refresh failed: mood', e);
+                    });
+                }
+            }, 150);
+            setTimeout(function() {
+                if (typeof checkAndShowFitnessDiaryCard === 'function') {
+                    Promise.resolve(checkAndShowFitnessDiaryCard()).catch(function(e) {
+                        console.warn('Deferred daily card refresh failed: diary', e);
+                    });
+                }
+            }, 300);
+        }
+        setTimeout(run, 50);
+    }
+
+    refreshDailyCardsAfterDeferredLoad();
+
     // PWA resume: re-check weigh-in when app comes back to foreground
     // (e.g., user opens PWA the next day without a hard refresh)
     let _lastWeighInCheckDate = new Date().toDateString();

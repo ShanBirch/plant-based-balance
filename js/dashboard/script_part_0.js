@@ -101,7 +101,25 @@
     var isIOS = /iP(ad|hone|od)/.test(ua) &&
                 /WebKit/.test(ua);
     var isNativeAndroid = /Android/i.test(ua) && ua.indexOf('FitGotchi-Native') !== -1;
+    var isNativeIOS = isIOS && ua.indexOf('FitGotchi-Native') !== -1;
+    var iosMajorMatch = ua.match(/OS (\d+)[_.]/);
+    var iosMajor = iosMajorMatch ? parseInt(iosMajorMatch[1], 10) : 0;
+    var screenW = 0;
+    var screenH = 0;
+    try {
+        screenW = Math.min(screen.width || 0, screen.height || 0);
+        screenH = Math.max(screen.width || 0, screen.height || 0);
+    } catch(e) {}
+    var lowMemoryIOS = isNativeIOS && (
+        (iosMajor > 0 && iosMajor <= 15) ||
+        ((screenW > 0 && screenW <= 390) && (screenH > 0 && screenH <= 700) && (navigator.hardwareConcurrency || 0) <= 4)
+    );
     window._pbbIsNativeAndroid = window._pbbIsNativeAndroid || isNativeAndroid;
+    window._pbbIsNativeIOS = window._pbbIsNativeIOS || isNativeIOS;
+    window._pbbLowMemoryIOSMode = window._pbbLowMemoryIOSMode || lowMemoryIOS;
+    if (lowMemoryIOS) {
+        window._pbbDisableCharacterModel = true;
+    }
 
     window._pbbCrashCount = count;
 
@@ -253,6 +271,9 @@
     window._crumb('page_load (crash_count=' + count + (isIOS ? ', iOS' : '') + (isNativeAndroid ? ', android_native' : '') + ')');
     if (window._pbbSafeBootMode) {
         window._crumb('safe_boot_enabled: ' + (safeBootReason || 'until_' + safeBootUntil));
+    }
+    if (window._pbbLowMemoryIOSMode) {
+        window._crumb('low_memory_ios_model_disabled: ios_' + (iosMajor || 'unknown') + '_' + screenW + 'x' + screenH);
     }
 
     window.addEventListener('pbbInitComplete', function() {
