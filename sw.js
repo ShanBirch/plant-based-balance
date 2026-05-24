@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v160'; // v160: feature manual cohort challenge cards above Start Challenge; v159: feature active cohort challenge card above Start Challenge
+const CACHE_NAME = 'pbb-app-v161'; // v161: Activity Insights light/dark contrast repair; v160: feature manual cohort challenge cards above Start Challenge
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',
