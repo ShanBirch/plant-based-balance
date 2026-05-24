@@ -179,6 +179,15 @@ assert.strictEqual(
     'incomplete barracking question should be repaired before sending'
 );
 
+assert.strictEqual(
+    normalizeDraftComment('French ros, yum! What kind?', {
+        storyOwner: 'glutenfree_girlmelbourne',
+        sharedContent: false,
+    }),
+    'French rose, yum! What kind?',
+    'accent-stripped rose should not be sent as ros'
+);
+
 const ambiguousSubstanceSafety = assessStoryCommentSafety({
     storyOwner: 'madisondangen',
     description: 'A close-up photo of two cocktails on a dark table, one with a pineapple garnish and the other with a small bag of white powder clipped to its side.',

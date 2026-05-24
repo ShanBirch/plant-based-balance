@@ -112,6 +112,7 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     text = text
         .replace(/["*#_`]/g, '')
         .replace(/(^|\s)@[a-zA-Z0-9._]{3,30}\b/g, ' ')
+        .replace(/\bros\b/gi, 'rose')
         .replace(/\s+/g, ' ')
         .trim();
     if (!text) return '';
