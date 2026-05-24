@@ -6,6 +6,7 @@ const {
     mergeDraftReviewContextReview,
     normalizeImplicitMediaMarkers,
     softenMediaOnlyDraftReview,
+    softenRecentInboundBurstDraftReview,
 } = require('../netlify/functions/_lib/client-context');
 
 const originalFetch = global.fetch;
@@ -166,6 +167,23 @@ global.fetch = async (url) => {
         tracked_outbound_context: true,
     });
     assert.strictEqual(textContextReview.required, true);
+
+    const softenedBurstReview = softenRecentInboundBurstDraftReview({
+        verdict: 'block',
+        confidence: 0.9,
+        summary: 'The draft responds to points from a prior message instead of focusing on the latest inbound message.',
+        issues: [
+            "The draft directly addresses Mon's prior unanswered message about fruit consumption and nutrient tracking, which was not the latest message.",
+            'While some parts acknowledge the latest message, the inclusion of responses to the prior message means the draft does not naturally follow the latest inbound message as its primary focus.',
+        ],
+        suggested_fix: 'Rewrite the draft to focus exclusively on the latest message.',
+        context_loss_suspected: false,
+        notification_required: true,
+        notification_reason: 'ignored_latest_message',
+    }, 'LATEST just-arrived Instagram message from Mon: "raw food note"\nPrior unanswered messages from Mon:\n- "fruit note"');
+    assert.strictEqual(softenedBurstReview.verdict, 'pass');
+    assert.strictEqual(softenedBurstReview.notification_required, false);
+    assert.strictEqual(softenedBurstReview.notification_reason, 'none');
 
     global.fetch = originalFetch;
     console.log('media-batch-parts tests passed');

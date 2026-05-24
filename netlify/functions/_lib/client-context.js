@@ -4615,6 +4615,46 @@ function softenMediaOnlyDraftReview(review, existingContextReview = null) {
     };
 }
 
+function shouldSoftenRecentInboundBurstDraftReview(review) {
+    if (!review) return false;
+    if (String(review.verdict || '').toLowerCase() !== 'block') return false;
+    if (review.context_loss_suspected) return false;
+    if (String(review.notification_reason || '').toLowerCase() !== 'ignored_latest_message') return false;
+
+    const issueText = [
+        review.summary,
+        ...(Array.isArray(review.issues) ? review.issues : []),
+    ].filter(Boolean).join(' ').toLowerCase();
+    const reviewText = [
+        review.summary,
+        review.suggested_fix,
+        ...(Array.isArray(review.issues) ? review.issues : []),
+    ].filter(Boolean).join(' ').toLowerCase();
+    const complainsAboutPriorMessage = /\b(?:prior|previous|older|earlier)\b[^.]{0,80}\bmessage\b/.test(reviewText)
+        || /\bmessage\b[^.]{0,80}\b(?:prior|previous|older|earlier)\b/.test(reviewText);
+    const saysLatestWasAcknowledged = /\bsome parts\b[^.]{0,120}\backnowledg\w*\b[^.]{0,120}\blatest\b/.test(issueText)
+        || /\bwhile\b[^.]{0,120}\backnowledg\w*\b[^.]{0,120}\blatest\b/.test(issueText)
+        || /\bdoes acknowledge\b[^.]{0,120}\blatest\b/.test(issueText)
+        || /\bdraft\b[^.]{0,120}\backnowledg\w*\b[^.]{0,120}\blatest\b[^.]{0,80}\bbut\b/.test(issueText);
+    return complainsAboutPriorMessage && saysLatestWasAcknowledged;
+}
+
+function softenRecentInboundBurstDraftReview(review, contextBlocks = '') {
+    if (!shouldSoftenRecentInboundBurstDraftReview(review)) return review;
+    const contextText = String(contextBlocks || '');
+    if (contextText && !/prior unanswered messages/i.test(contextText)) return review;
+    return {
+        ...review,
+        verdict: 'pass',
+        summary: 'Draft answers the latest message plus nearby unanswered context.',
+        issues: [],
+        suggested_fix: '',
+        context_loss_suspected: false,
+        notification_required: false,
+        notification_reason: 'none',
+    };
+}
+
 function mergeDraftReviewContextReview(review, existingContextReview = null) {
     const existing = existingContextReview && typeof existingContextReview === 'object'
         ? existingContextReview
@@ -4692,6 +4732,7 @@ Block and set notification_required=true when:
 - the draft invents an action, fact, promise, or source evidence that is not in the context.
 
 Do not block just because the older timeline contains a different unresolved topic if the clearly labelled latest inbound message is answered naturally. Treat details as grounded when they appear anywhere in the labelled latest message, including near the ending of a long message.
+Do not block just because the draft also answers prior unanswered messages from the same recent inbound burst. If Shannon has not replied between those inbound messages and the draft naturally answers the newest message, treat the burst as one conversational turn.
 
 Warn when the draft is usable but should be checked or softened.
 Warn when the draft adds a Shannon day/app/Sunshine update that was not directly asked for, especially if the lead asked about a specific topic like dating, where Shannon lives, or what something is like near him.
@@ -4775,7 +4816,10 @@ async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contex
         channelLabel,
         existingContextReview,
     });
-    const review = softenMediaOnlyDraftReview(rawReview, existingContextReview);
+    const review = softenRecentInboundBurstDraftReview(
+        softenMediaOnlyDraftReview(rawReview, existingContextReview),
+        contextBlocks
+    );
     const contextReview = mergeDraftReviewContextReview(review, existingContextReview);
     if (alertId && review) {
         await updateAlertDraftReview(alertId, review, contextReview);
@@ -5729,6 +5773,7 @@ module.exports = {
     generateDraftReview,
     reviewDraftAndUpdateAlert,
     softenMediaOnlyDraftReview,
+    softenRecentInboundBurstDraftReview,
     mergeDraftReviewContextReview,
     mergeLateDraftReviewData,
     isDraftReviewAutoSendSafe,
