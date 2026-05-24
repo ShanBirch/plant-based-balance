@@ -306,6 +306,7 @@ const COCOS_SOFT_CONTEXT_REASONS = new Set([
 ]);
 const COCOS_SIMPLE_OPENER_RE = /^(yo+|yoo+|hey+|heya+|hi+|hello+|hiya+|morning+|afternoon+|evening+|haha+|hahaha+|lol+|sup|what'?s up|whats up|thanks?|thank you|cheers|nice|sick|love it|haha yeah|yeah|yea|yep|yess?|yes|nah|no worries)[!?.\s]*$/i;
 const COCOS_RISKY_REPLY_RE = /\b(challenge|join|joined|sign\s*up|signup|link|price|cost|program|plan|meal|workout|coach|coaching|injur|injury|pain|hurt|sore|hospital|doctor|medical|sorry|grief|death|died|anxiety|depress|sad|trauma|pregnan|calorie|macro|eating disorder)\b/i;
+const COCOS_DRAFT_REVIEW_TIMEOUT_MS = 12000;
 const COCOS_DRAFT_REPAIR_TIMEOUT_MS = 9000;
 
 function draftTextFromDraft(draft) {
@@ -2963,6 +2964,7 @@ exports.handler = async (event) => {
             }).join('\n'), 1200)}`
             : '';
         const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}`;
+        const reviewTimeoutMs = cocosAutoSendLane ? COCOS_DRAFT_REVIEW_TIMEOUT_MS : IG_DRAFT_REVIEW_TIMEOUT_MS;
         try {
             const reviewResult = await withTimeout(reviewDraftAndUpdateAlert({
                 alertId,
@@ -2972,7 +2974,7 @@ exports.handler = async (event) => {
                 clientName: leadName,
                 channelLabel,
                 existingContextReview: contextReview,
-            }), IG_DRAFT_REVIEW_TIMEOUT_MS, 'draft review');
+            }), reviewTimeoutMs, 'draft review');
             draftReview = reviewResult?.review || null;
             effectiveContextReview = reviewResult?.contextReview || contextReview;
         } catch (err) {

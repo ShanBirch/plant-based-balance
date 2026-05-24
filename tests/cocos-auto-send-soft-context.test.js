@@ -1,6 +1,7 @@
 const assert = require('assert');
 
 const instantDraft = require('../netlify/functions/ig-instant-draft')._test;
+const clientContext = require('../netlify/functions/_lib/client-context');
 const scheduledWorker = require('../netlify/functions/scheduled-coach-reply-worker')._test;
 
 const softContextReview = {
@@ -118,6 +119,56 @@ assert.deepStrictEqual(
     }),
     null,
     'scheduled worker should honor tracked small-talk review-timeout bypass'
+);
+
+const latePassingReview = {
+    verdict: 'pass',
+    confidence: 1,
+    notification_required: false,
+    notification_reason: 'none',
+    context_loss_suspected: false,
+};
+const lateReviewClearedData = clientContext.mergeLateDraftReviewData({
+    auto_send_review_hold: {
+        code: 'context_review',
+        label: 'tracked DM context may be incomplete',
+    },
+    context_review: {
+        required: true,
+        reasons: ['draft_review_timeout'],
+    },
+    media_review: null,
+}, latePassingReview, {
+    required: false,
+    reasons: [],
+    label: '',
+});
+assert.strictEqual(
+    lateReviewClearedData.auto_send_review_hold,
+    null,
+    'late passing draft review should clear stale context auto-send holds'
+);
+assert.strictEqual(lateReviewClearedData.context_review, null);
+assert.strictEqual(lateReviewClearedData.auto_send_review_hold_cleared_reason, 'late_draft_review_passed');
+
+const lateReviewStillHeldData = clientContext.mergeLateDraftReviewData({
+    auto_send_review_hold: {
+        code: 'context_review',
+        label: 'tracked DM context may be incomplete',
+    },
+    media_review: {
+        required: true,
+        label: 'video',
+    },
+}, latePassingReview, {
+    required: false,
+    reasons: [],
+    label: '',
+});
+assert.strictEqual(
+    lateReviewStillHeldData.auto_send_review_hold?.code,
+    'context_review',
+    'late review must not clear context holds when media still needs Shannon'
 );
 
 const blockedHold = scheduledWorker.buildAutoSendReviewHold({

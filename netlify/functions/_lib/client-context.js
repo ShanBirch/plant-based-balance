@@ -4702,18 +4702,34 @@ ${draft}`;
     }
 }
 
+function mergeLateDraftReviewData(current = {}, review, contextReview = null) {
+    const merged = { ...(current || {}), draft_review: review };
+    if (contextReview?.required) {
+        merged.context_review = contextReview;
+    } else if (contextReview) {
+        merged.context_review = null;
+        merged.contextReview = null;
+    }
+
+    const staleContextHold = current?.auto_send_review_hold?.code === 'context_review';
+    const mediaReviewRequired = current?.media_review?.required === true;
+    if (staleContextHold && contextReview && !contextReview.required && !mediaReviewRequired && isDraftReviewAutoSendSafe(review)) {
+        merged.auto_send_review_hold = null;
+        merged.auto_send_review_hold_cleared_at = new Date().toISOString();
+        merged.auto_send_review_hold_cleared_reason = 'late_draft_review_passed';
+        merged.auto_send_context_hold_cleared_at = merged.auto_send_review_hold_cleared_at;
+        merged.auto_send_context_hold_cleared_reason = 'late_draft_review_passed';
+    }
+
+    return merged;
+}
+
 async function updateAlertDraftReview(alertId, review, contextReview = null) {
     if (!alertId || !review) return;
     try {
         const rows = await supabaseQuery(`coach_alerts?select=data&id=eq.${encodeURIComponent(alertId)}&limit=1`);
         const current = rows[0]?.data || {};
-        const merged = { ...current, draft_review: review };
-        if (contextReview?.required) {
-            merged.context_review = contextReview;
-        } else if (contextReview) {
-            merged.context_review = null;
-            merged.contextReview = null;
-        }
+        const merged = mergeLateDraftReviewData(current, review, contextReview);
         await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
             method: 'PATCH',
             body: { data: merged },
@@ -5685,6 +5701,7 @@ module.exports = {
     fireCoachDraftShadow,
     generateDraftReview,
     reviewDraftAndUpdateAlert,
+    mergeLateDraftReviewData,
     isDraftReviewAutoSendSafe,
     calculateCoachEditMetrics,
     analyzeCoachEditAndUpdatePrompt,
