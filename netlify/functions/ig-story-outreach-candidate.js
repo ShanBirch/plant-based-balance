@@ -129,6 +129,9 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (/^(?:are|is)\s+(?:the\s+)?(?:boys|girls)\s+playing\??$/i.test(text)) {
         return "how's the game going?";
     }
+    if (/^(?:who\s+)?are\s+you\s+barracking\s+for\??$/i.test(text)) {
+        return 'who are you barracking for?';
+    }
 
     // The native story opener is for rapport. The challenge belongs later, once
     // they reply and the normal IG draft/qualifier flow has context.

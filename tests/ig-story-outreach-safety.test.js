@@ -170,6 +170,15 @@ assert.strictEqual(
     'sports-team wording should become a normal game question'
 );
 
+assert.strictEqual(
+    normalizeDraftComment('are you barracking for?', {
+        storyOwner: 'jackmwheeler',
+        sharedContent: false,
+    }),
+    'who are you barracking for?',
+    'incomplete barracking question should be repaired before sending'
+);
+
 const ambiguousSubstanceSafety = assessStoryCommentSafety({
     storyOwner: 'madisondangen',
     description: 'A close-up photo of two cocktails on a dark table, one with a pineapple garnish and the other with a small bag of white powder clipped to its side.',
