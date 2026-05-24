@@ -91,7 +91,8 @@ const qualifierSource = fs.readFileSync(path.join(__dirname, '../netlify/functio
 assert.match(igDraftSource, /Anchor the offer to their actual situation/);
 assert.match(qualifierSource, /if you haven't locked in \[support\/trainer\/structure\] yet/);
 assert.match(igDraftSource, /https:\/\/future-balance\.netlify\.app\/coaching\.html/);
-assert.match(igDraftSource, /answer as 1:1 coaching, not as the free 30-day challenge/);
+assert.match(igDraftSource, /The DM offer right now is free 30 days of 1:1 coaching with Shannon/);
+assert.match(igDraftSource, /The app\/challenge is the structure underneath, not the headline/);
 assert.ok(!/Example shape:\s*"honestly this is pretty much what the free 30 day challenge is for/i.test(igDraftSource));
 assert.ok(!/pretty much what the free 30 day challenge is for/i.test(igDraftSource));
 assert.ok(!/pretty much what the free 30 day challenge is for/i.test(qualifierSource));
@@ -229,6 +230,17 @@ assert.strictEqual(
     }),
     false,
     '1:1 coaching link should not be treated as a premature free-challenge invite'
+);
+
+assert.strictEqual(
+    isPrematureChallengeInvite({
+        draftText: "yeah the free 30 days of 1:1 coaching would be perfect. here's the link: https://future-balance.netlify.app/coaching.html",
+        currentMessage: 'haha yeah sounds good',
+        qualifier: vagueWarmth,
+        leadStage: 'qualifying',
+    }),
+    true,
+    '1:1 coaching link still needs readiness, it should not fire from vague warmth'
 );
 
 assert.strictEqual(
