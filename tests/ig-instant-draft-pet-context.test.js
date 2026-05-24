@@ -15,9 +15,21 @@ assert.match(
     buildAcquisitionStyleBlock({ leadStage: 'qualifying', linkedUserId: null }),
     /Earn the next response/
 );
+assert.match(
+    buildAcquisitionStyleBlock({ leadStage: 'qualifying', linkedUserId: null }),
+    /Avoid validation loops/
+);
 assert.strictEqual(
     buildAcquisitionStyleBlock({ leadStage: 'paying', linkedUserId: 'client-123' }),
     ''
+);
+assert.match(
+    buildAcquisitionMomentumBlock({ botAccount: 'shan_n_sunny', leadStage: 'qualifying', linkedUserId: null }),
+    /No-progression fix/
+);
+assert.match(
+    buildAcquisitionMomentumBlock({ botAccount: 'shan_n_sunny', leadStage: 'qualifying', linkedUserId: null }),
+    /soft re-entry handle/
 );
 assert.strictEqual(
     buildAcquisitionMomentumBlock({ botAccount: 'cocos_pt_studio', leadStage: 'in_app', linkedUserId: 'client-123' }),
