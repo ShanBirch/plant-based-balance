@@ -388,6 +388,16 @@ const babiesSafety = assessStoryCommentSafety({
 assert.strictEqual(babiesSafety.safeToComment, false);
 assert.strictEqual(babiesSafety.reason, 'minor_or_toilet_context');
 
+const groupOfBoysSafety = assessStoryCommentSafety({
+    storyOwner: 'linzsiefken',
+    description: "A group of boys are sitting in front of a 'Welcome to Worlds of Fun Oceans of Fun' sign.",
+    visibleText: 'Welcome to Worlds of Fun Oceans of Fun',
+    comment: 'Worlds of Fun, how was it?',
+});
+assert.strictEqual(groupOfBoysSafety.safeToComment, false);
+assert.strictEqual(groupOfBoysSafety.reason, 'minor_or_toilet_context');
+assert.strictEqual(babiesSafety.reason, 'minor_or_toilet_context');
+
 const recentStoryThread = {
     id: 'thread-recent-story',
     custom_data: {
