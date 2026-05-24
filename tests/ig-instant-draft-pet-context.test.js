@@ -2,8 +2,27 @@ const assert = require('assert');
 
 const {
     buildNativeStoryOutreachContextBlock,
+    isSalesAcquisitionThread,
+    buildAcquisitionStyleBlock,
+    buildAcquisitionMomentumBlock,
     suppressPetSpeciesGuessingInDraftChunks,
 } = require('../netlify/functions/ig-instant-draft')._test;
+
+assert.strictEqual(isSalesAcquisitionThread({ leadStage: 'qualifying', linkedUserId: null }), true);
+assert.strictEqual(isSalesAcquisitionThread({ leadStage: 'in_app', linkedUserId: null }), false);
+assert.strictEqual(isSalesAcquisitionThread({ leadStage: 'qualifying', linkedUserId: 'client-123' }), false);
+assert.match(
+    buildAcquisitionStyleBlock({ leadStage: 'qualifying', linkedUserId: null }),
+    /Earn the next response/
+);
+assert.strictEqual(
+    buildAcquisitionStyleBlock({ leadStage: 'paying', linkedUserId: 'client-123' }),
+    ''
+);
+assert.strictEqual(
+    buildAcquisitionMomentumBlock({ botAccount: 'cocos_pt_studio', leadStage: 'in_app', linkedUserId: 'client-123' }),
+    ''
+);
 
 const nativeContext = buildNativeStoryOutreachContextBlock({
     ig_username: 'pole_bexi',

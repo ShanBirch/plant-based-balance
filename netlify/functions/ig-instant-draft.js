@@ -999,8 +999,12 @@ This thread belongs to Coco's PT Studio, Shannon's contained acquisition test ac
 - Keep everything sounding like Shannon personally texting. Never mention tests, auto-send, algorithms, learning, or Coco's as a system.`;
 }
 
-function buildAcquisitionMomentumBlock({ botAccount, leadStage } = {}) {
-    if (['in_app', 'paying', 'churned'].includes(leadStage)) return '';
+function isSalesAcquisitionThread({ leadStage, linkedUserId } = {}) {
+    return !linkedUserId && !['in_app', 'paying', 'churned'].includes(leadStage);
+}
+
+function buildAcquisitionMomentumBlock({ botAccount, leadStage, linkedUserId } = {}) {
+    if (!isSalesAcquisitionThread({ leadStage, linkedUserId })) return '';
     const laneName = isCocosBotAccount(botAccount) ? "Coco's" : 'shan_n_sunny / Balance';
     return `
 
@@ -1014,6 +1018,27 @@ ACQUISITION MOMENTUM (${laneName}):
 - If they ask for practical advice, give the practical answer first. Then bridge only if it still feels natural.
 - If they ask for local/in-person support or mention a PT/trainer they already use, that is the next issue to handle. Answer or explore that preference before talking about details or links.
 - If there is no real blocker yet, stay human and light, but make the next handle sharper. Let the convo breathe only when they are clearly closing or low-bandwidth. Do not become a pen pal for its own sake.`;
+}
+
+function buildAcquisitionStyleBlock({ leadStage, linkedUserId } = {}) {
+    if (!isSalesAcquisitionThread({ leadStage, linkedUserId })) return '';
+    return `
+
+ACQUISITION STYLE:
+- Human first, coach second, but not pen-pal forever. Learn a normal-life anchor when there is no clear help signal yet: where they're based, kids/family, work/life rhythm, cooking situation, training background, why they replied, what they really love, or what genuinely ticks them off/stresses them.
+- When a clear food, training, energy, body, confidence, consistency, or time blocker is already visible, stop collecting unrelated human context and move that exact blocker forward.
+- When you ask a question, it should help Shannon understand the person or help them self-identify the support they need, not just keep the chat alive. Normal back-and-forth is allowed, but it should create momentum.
+- Earn the next response. Every lead reply from Shannon should contain at least one reason for them to answer: a direct answer, their sharpest hook reflected back, a tiny useful lens, or one precise question about their blocker/preference/objection.
+- Avoid statement-only dead ends unless they are clearly closing. If the current topic is food, group classes, a project, or skepticism about wellness fads, move that exact topic one notch deeper before switching to unrelated work/day chat.
+- If they reveal something they love or something that annoys/stresses them, stay with that thread for a beat. Relate only if it is honest and light, then bring the spotlight back to them.
+- A relationship question does not have to be the last bubble. If it is sparked by a specific thing they said, ask it while talking about that thing, then continue the reply.
+- Do not bundle questions. Never ask name + age + goal + blocker together.
+- If the discovery question is about relationship context, ask one light version and stop. Do not tack on a fitness goal in the same reply.
+- If they are already asking how to join, accepted the challenge, or clearly want the link, move them forward instead of slowing them down with more questions.
+- If they say they want local/in-person coaching, ask if Shannon's online 1:1 check-ins would still be useful before any invite or link. If they already have a PT/trainer/coach, answer how support could fit around that before pitching.
+- Do not drop a free 30 days of 1:1 coaching invite just because they are friendly, vaguely interested, or mention fitness/food. This timing rule is for unlinked leads only, not clients/app users. Wait for either a human signal ("I need help", "I dunno what I'm doing", "where do I start?", "what's included?", "send the link", or an obvious join/start request) or enough earned context for a soft bridge. Earned context means Shannon already has a normal-life anchor, useful goal/blocker context, and usually 3-6 meaningful lead replies. In that case ask if they want details, do not send the link unless they accept.
+- When the soft bridge is right, make it fluid and specific. Avoid generic lines that say the offer is made for this exact situation. Use their words as the entry point: "if you haven't locked in [support] yet...", "since you're already [making this change]...", or "if a bit of [structure/check-ins] would help...". It should feel like Shannon noticed the opening, not like the funnel fired.
+- Once they have shared enough real context plus a clear blocker/goal, do not keep asking getting-to-know-you questions. Use a specific, optional bridge or useful next lens.`;
 }
 
 function replaceIgMediaMarkers(text, { photo = '📷 photo', audio = '🎙️ voice note', video = '🎥 video' } = {}) {
@@ -1509,9 +1534,11 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
     const heardFirstConversation = buildHeardFirstConversationBlock();
     const shannonDmTuning = buildShannonDmTuningBlock();
-    const accountExperimentBlock = buildAccountExperimentBlock(botAccount);
-    const acquisitionMomentumBlock = buildAcquisitionMomentumBlock({ botAccount, leadStage });
-    const cocosRewardLearningBlock = await loadCocosRewardLearningBlock(botAccount);
+    const isSalesLeadThread = isSalesAcquisitionThread({ leadStage, linkedUserId });
+    const accountExperimentBlock = isSalesLeadThread ? buildAccountExperimentBlock(botAccount) : '';
+    const acquisitionMomentumBlock = buildAcquisitionMomentumBlock({ botAccount, leadStage, linkedUserId });
+    const acquisitionStyleBlock = buildAcquisitionStyleBlock({ leadStage, linkedUserId });
+    const cocosRewardLearningBlock = isSalesLeadThread ? await loadCocosRewardLearningBlock(botAccount) : '';
 
     const priorInboundMessages = Array.isArray(recentInboundMessages) ? recentInboundMessages : [];
     const promptCurrentMessage = sanitizeIgStoryReplyContextText(currentMessage);
@@ -1664,8 +1691,7 @@ Use this batch as context, not a checklist. First decide what is still live: dir
     // a fully-onboarded client being asked to onboard from scratch.
     // Linked-user threads are also gated even if lead_stage is somehow
     // still 'new' — linked_user_id is the truth, the column lags.
-    const isOnboardedOrPostFunnel = ['in_app', 'paying', 'churned'].includes(leadStage)
-        || !!linkedUserId;
+    const isOnboardedOrPostFunnel = !isSalesLeadThread;
     const funnelContext = isOnboardedOrPostFunnel ? '' : META_AD_FUNNEL_CONTEXT;
     const challengeNextStepBlock = buildChallengeNextStepBlock(qualifier);
     const oneOnOneCoachingBlock = isOnboardedOrPostFunnel ? '' : buildOneOnOneCoachingBlock();
@@ -1852,22 +1878,7 @@ ACTION CLAIMS:
 - If the client asks Shannon to change something, either tell them where they can do it in the app, or say Shannon can sort it / will have a look. Do not claim completion.
 - If they report a weird food/meal name from the app, correct obvious voice-to-text or typo errors using the conversation and app context instead of repeating the nonsense phrase as a real meal. Example: if the likely plan meal is "Berry Almond Baked Oats", do not call it "very almond mixed oats".
 - If they report a calorie/logging discrepancy, acknowledge it as something Shannon should check. Do not promise to manually adjust or log anything unless the app data below proves it has already been done.
-
-ACQUISITION STYLE:
-- Human first, coach second, but not pen-pal forever. Learn a normal-life anchor when there is no clear help signal yet: where they're based, kids/family, work/life rhythm, cooking situation, training background, why they replied, what they really love, or what genuinely ticks them off/stresses them.
-- When a clear food, training, energy, body, confidence, consistency, or time blocker is already visible, stop collecting unrelated human context and move that exact blocker forward.
-- When you ask a question, it should help Shannon understand the person or help them self-identify the support they need, not just keep the chat alive. Normal back-and-forth is allowed, but it should create momentum.
-- Earn the next response. Every lead reply from Shannon should contain at least one reason for them to answer: a direct answer, their sharpest hook reflected back, a tiny useful lens, or one precise question about their blocker/preference/objection.
-- Avoid statement-only dead ends unless they are clearly closing. If the current topic is food, group classes, a project, or skepticism about wellness fads, move that exact topic one notch deeper before switching to unrelated work/day chat.
-- If they reveal something they love or something that annoys/stresses them, stay with that thread for a beat. Relate only if it is honest and light, then bring the spotlight back to them.
-- A relationship question does not have to be the last bubble. If it is sparked by a specific thing they said, ask it while talking about that thing, then continue the reply.
-- Do not bundle questions. Never ask name + age + goal + blocker together.
-- If the discovery question is about relationship context, ask one light version and stop. Do not tack on a fitness goal in the same reply.
-- If they are already asking how to join, accepted the challenge, or clearly want the link, move them forward instead of slowing them down with more questions.
-- If they say they want local/in-person coaching, ask if Shannon's online 1:1 check-ins would still be useful before any invite or link. If they already have a PT/trainer/coach, answer how support could fit around that before pitching.
-- Do not drop a free 30 days of 1:1 coaching invite just because they are friendly, vaguely interested, or mention fitness/food. This timing rule is for unlinked leads only, not clients/app users. Wait for either a human signal ("I need help", "I dunno what I'm doing", "where do I start?", "what's included?", "send the link", or an obvious join/start request) or enough earned context for a soft bridge. Earned context means Shannon already has a normal-life anchor, useful goal/blocker context, and usually 3-6 meaningful lead replies. In that case ask if they want details, do not send the link unless they accept.
-- When the soft bridge is right, make it fluid and specific. Avoid generic lines that say the offer is made for this exact situation. Use their words as the entry point: "if you haven't locked in [support] yet...", "since you're already [making this change]...", or "if a bit of [structure/check-ins] would help...". It should feel like Shannon noticed the opening, not like the funnel fired.
-- Once they have shared enough real context plus a clear blocker/goal, do not keep asking getting-to-know-you questions. Use a specific, optional bridge or useful next lens.
+${acquisitionStyleBlock}
 
 NEVER reveal AI, automation, "trained on Shannon's voice", "24/7", or anything that breaks the personal-coach illusion. Shannon is replying personally.
 
@@ -3501,6 +3512,9 @@ exports.handler = async (event) => {
 
 exports._test = {
     buildNativeStoryOutreachContextBlock,
+    isSalesAcquisitionThread,
+    buildAcquisitionStyleBlock,
+    buildAcquisitionMomentumBlock,
     suppressPetSpeciesGuessingInDraftChunks,
     getCocosAutoContextBypass,
     getAutoDmHoldReason,
