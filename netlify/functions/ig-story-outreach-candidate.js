@@ -369,7 +369,7 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
         ['body_part_or_injury_joke', /\b(?:lower|upper)?\s*(?:back|knee|knees|shoulder|hip|neck|ankle|wrist|elbow|hamstring|quad|calf)\b/i],
         ['self_harm_or_body_risk', /\b(suicide|self[-\s]?harm|eating disorder|body shaming|body[-\s]?shame|ed recovery)\b/i],
         ['animal_shelter_context', /\b(animal shelter|dog kennels?|nycacc|euthan(?:asia|ise|ize)|adoption plea|rescue shelter)\b/i],
-        ['minor_or_toilet_context', /\b(child|children|kid|kids|toddler|baby|infant|minor|young boy|young girl|schoolboy|schoolgirl|poop|toilet|bathroom|female toilets|male toilets)\b/i],
+        ['minor_or_toilet_context', /\b(child|children|kid|kids|toddler|toddlers|baby|babies|infant|infants|minor|young boy|young girl|schoolboy|schoolgirl|poop|toilet|bathroom|female toilets|male toilets)\b/i],
         ['body_or_weight_metric', /\b(physique|body transformation|before and after|before\/after|weight loss|weigh(?:s|ed|ing)?|body fat|scale weight|display (?:her|his|their)?\s*physique|posing to display|shapes|back looks great|glossy lips|pout|selfie.{0,80}(?:body check|physique|weight loss))\b|\b\d+\s*(?:kg|kgs|lb|lbs|cm|inch|inches|%)\b/i],
         ['politics_or_legal', /\b(election|vote|politic(?:s|al)?|campaign|trump|biden|court|lawsuit|arrested|charged)\b/i],
         ['ambiguous_substance_context', /\b(?:(?:bag|baggie|packet|sachet|ziplock).{0,50}(?:white\s+)?powder|(?:white\s+)?powder.{0,50}(?:bag|baggie|packet|sachet|ziplock)|powder\s+clipped|pills?|tablets?|capsules?|unknown substance)\b/i],

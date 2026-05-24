@@ -170,6 +170,15 @@ const ambiguousSubstanceSafety = assessStoryCommentSafety({
 assert.strictEqual(ambiguousSubstanceSafety.safeToComment, false);
 assert.strictEqual(ambiguousSubstanceSafety.reason, 'ambiguous_substance_context');
 
+const babiesSafety = assessStoryCommentSafety({
+    storyOwner: 'chelsea_heald18',
+    description: 'Two babies are sitting in a blue net swing at a playground.',
+    visibleText: 'I cant with these two what a privilege getting to watch these two grow together',
+    comment: 'Look at these little legends!',
+});
+assert.strictEqual(babiesSafety.safeToComment, false);
+assert.strictEqual(babiesSafety.reason, 'minor_or_toilet_context');
+
 const recentStoryThread = {
     id: 'thread-recent-story',
     custom_data: {
