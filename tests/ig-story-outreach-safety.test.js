@@ -161,6 +161,15 @@ assert.strictEqual(
     'ambiguous bag questions should be blocked before live sending'
 );
 
+assert.strictEqual(
+    normalizeDraftComment('are the boys playing?', {
+        storyOwner: 'jessica_maree85',
+        sharedContent: false,
+    }),
+    "how's the game going?",
+    'sports-team wording should become a normal game question'
+);
+
 const ambiguousSubstanceSafety = assessStoryCommentSafety({
     storyOwner: 'madisondangen',
     description: 'A close-up photo of two cocktails on a dark table, one with a pineapple garnish and the other with a small bag of white powder clipped to its side.',
