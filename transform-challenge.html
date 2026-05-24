@@ -312,6 +312,90 @@
             font-size: 0.94rem;
         }
 
+        /* PRICING */
+        .pricing-panel {
+            max-width: 760px;
+            margin: 0 auto;
+            background: var(--card);
+            border: 1px solid rgba(0, 212, 170, 0.22);
+            border-radius: 22px;
+            padding: 34px;
+            display: grid;
+            grid-template-columns: minmax(0, 1.3fr) minmax(220px, 0.7fr);
+            gap: 28px;
+            align-items: center;
+        }
+        .pricing-kicker {
+            color: var(--green);
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        .pricing-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 2.35rem;
+            line-height: 1.08;
+            margin-bottom: 16px;
+            letter-spacing: 0;
+        }
+        .pricing-copy {
+            color: var(--muted);
+            line-height: 1.65;
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+        .price-stack {
+            border-left: 1px solid var(--border);
+            padding-left: 28px;
+        }
+        .price-value {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 3.45rem;
+            font-weight: 900;
+            line-height: 0.95;
+            color: var(--text);
+            letter-spacing: 0;
+        }
+        .price-value span {
+            color: var(--muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0;
+        }
+        .price-includes {
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.55;
+            margin-top: 16px;
+        }
+        .app-fallback {
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+        .app-fallback strong { color: var(--text); }
+        @media (max-width: 720px) {
+            .pricing-panel {
+                grid-template-columns: 1fr;
+                padding: 28px 22px;
+            }
+            .price-stack {
+                border-left: 0;
+                border-top: 1px solid var(--border);
+                padding-left: 0;
+                padding-top: 24px;
+            }
+            .pricing-title { font-size: 1.95rem; }
+            .price-value { font-size: 3rem; }
+        }
+
         /* ABOUT */
         .about {
             display: grid;
@@ -670,6 +754,22 @@
                     <div class="step-num">03</div>
                     <h3 class="step-title">Shannon welcomes you</h3>
                     <p class="step-desc">You'll hear from Shannon directly inside the app. Your 30 days starts the moment you're ready.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- PRICING -->
+        <section class="reveal">
+            <div class="pricing-panel">
+                <div>
+                    <div class="pricing-kicker">After The 30 Days</div>
+                    <h2 class="pricing-title">Your first 30 days are free.</h2>
+                    <p class="pricing-copy">If you want me to keep coaching you after that, ongoing coaching is $28.99/week. No surprise payment, no pressure. You will know exactly what the next step is before you decide.</p>
+                </div>
+                <div class="price-stack">
+                    <div class="price-value">$28.99<span>/week</span></div>
+                    <p class="price-includes">Includes weekly check-ins with Shannon, program adjustments, accountability, and continued support inside Balance.</p>
+                    <p class="app-fallback"><strong>Just want the app and group?</strong><br>Balance app + group access is $19.99/month.</p>
                 </div>
             </div>
         </section>
