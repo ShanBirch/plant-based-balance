@@ -8,6 +8,7 @@ const {
     storyRecentOutreachCooldown,
     isDryRunQualityJudge,
     validateEvidenceVideo,
+    shouldRecommendLikeFallback,
 } = require('../netlify/functions/ig-story-outreach-candidate')._test;
 
 assert.strictEqual(
@@ -197,6 +198,17 @@ assert.strictEqual(
     isDryRunQualityJudge({ ignore_relationship_blocks: true }, false),
     false,
     'relationship blocks must not be bypassed for real sends'
+);
+
+assert.strictEqual(
+    shouldRecommendLikeFallback({ safetyReason: 'analysis_failed' }, ''),
+    true,
+    'analysis failures should recommend a like-only fallback'
+);
+assert.strictEqual(
+    shouldRecommendLikeFallback({ safetyReason: 'minor_or_toilet_context' }, ''),
+    false,
+    'sensitive story blocks should not recommend a like fallback'
 );
 
 const tinyVideo = validateEvidenceVideo({

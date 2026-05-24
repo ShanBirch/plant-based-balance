@@ -1063,6 +1063,17 @@ function isDryRunQualityJudge(body = {}, dryRun = false) {
         || body.ignoreRelationshipBlocks === true;
 }
 
+function shouldRecommendLikeFallback(analysis = {}, relationshipStoryBlockReason = '') {
+    const reason = cleanText(
+        analysis.relationshipStoryBlockReason
+        || relationshipStoryBlockReason
+        || analysis.safetyReason
+        || '',
+        120
+    ).toLowerCase();
+    return reason === 'story_no_reply_cooldown' || reason === 'analysis_failed';
+}
+
 function storyOutreachMemoryTime(item = {}) {
     return validDate(item.sent_at || item.updated_at || item.captured_at || item.created_at);
 }
@@ -1927,7 +1938,7 @@ exports.handler = async (event = {}) => {
             relationship_context: relationshipContext,
             relationship_story_block_reason: analysis.relationshipStoryBlockReason || relationshipStoryBlockReason || null,
             story_outreach_cooldown: relationshipStoryCooldown,
-            like_fallback_recommended: (analysis.relationshipStoryBlockReason || relationshipStoryBlockReason) === 'story_no_reply_cooldown',
+            like_fallback_recommended: shouldRecommendLikeFallback(analysis, relationshipStoryBlockReason),
             analysis_model: analysis.model,
             draft_pipeline: analysis.draftPipeline || null,
             draft_plan: analysis.draftPlan || null,
@@ -1959,7 +1970,7 @@ exports.handler = async (event = {}) => {
             relationship_story_block_reason: analysis.relationshipStoryBlockReason || relationshipStoryBlockReason || null,
             quality_judge_relationship_block_ignored: dryRunQualityJudge && !!relationshipStoryBlockReason,
             story_outreach_cooldown: relationshipStoryCooldown,
-            like_fallback_recommended: (analysis.relationshipStoryBlockReason || relationshipStoryBlockReason) === 'story_no_reply_cooldown',
+            like_fallback_recommended: shouldRecommendLikeFallback(analysis, relationshipStoryBlockReason),
             draft_pipeline: analysis.draftPipeline || null,
             draft_plan: analysis.draftPlan || null,
             draft_review: analysis.draftReview || null,
@@ -2089,7 +2100,7 @@ exports.handler = async (event = {}) => {
         relationship_context: relationshipContext,
         relationship_story_block_reason: analysis.relationshipStoryBlockReason || relationshipStoryBlockReason || null,
         story_outreach_cooldown: relationshipStoryCooldown,
-        like_fallback_recommended: (analysis.relationshipStoryBlockReason || relationshipStoryBlockReason) === 'story_no_reply_cooldown',
+        like_fallback_recommended: shouldRecommendLikeFallback(analysis, relationshipStoryBlockReason),
         draft_pipeline: analysis.draftPipeline || null,
         draft_plan: analysis.draftPlan || null,
         draft_review: analysis.draftReview || null,
@@ -2121,6 +2132,7 @@ exports._test = {
     storyRecentOutreachCooldown,
     storyOutreachMemoryWasSent,
     isDryRunQualityJudge,
+    shouldRecommendLikeFallback,
     normalizeStoryCommentPlanPayload,
     normalizeStoryCommentReviewPayload,
 };
