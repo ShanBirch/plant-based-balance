@@ -4,6 +4,7 @@ const {
     normalizeDraftComment,
     parseStoryUrl,
     assessStoryCommentSafety,
+    assessAudioVisualCommentConsistency,
     relationshipStoryBlockReason,
     storyRecentOutreachCooldown,
     isDryRunQualityJudge,
@@ -232,8 +233,17 @@ assert.strictEqual(
         storyOwner: 'haroldwuldnvrbeatuphislandlord',
         sharedContent: false,
     }),
-    'oh so cute, whats their name?',
+    "Oh so cute, what's their name?",
     'pet name questions should not repeat toilet/fart captions'
+);
+
+assert.strictEqual(
+    normalizeDraftComment('oh so cute, whats their name?', {
+        storyOwner: 'qwerth314',
+        sharedContent: false,
+    }),
+    "Oh so cute, what's their name?",
+    'pet name comments should be polished before sending'
 );
 
 assert.strictEqual(
@@ -267,8 +277,8 @@ const transcriptNote = storyAnalysisTranscriptNote({
     audioTranscript: 'You need to watch this show immediately on Netflix.',
 });
 assert.ok(
-    transcriptNote.includes('Netflix') && transcriptNote.includes('do not contradict'),
-    'story analysis prompt should include captured audio transcript as evidence'
+    transcriptNote.includes('Netflix') && transcriptNote.includes('supplemental evidence') && transcriptNote.includes('audio_visual_mismatch'),
+    'story analysis prompt should treat captured audio as supplemental evidence'
 );
 
 const musicSurfaceContext = normalizeStorySurfaceContext({
@@ -331,6 +341,34 @@ const transcriptAnimalAdvocacySafety = assessStoryCommentSafety({
 });
 assert.strictEqual(transcriptAnimalAdvocacySafety.safeToComment, true);
 assert.strictEqual(transcriptAnimalAdvocacySafety.reason, 'animal_welfare_support');
+
+const audioVisualMismatchSafety = assessStoryCommentSafety({
+    storyOwner: 'andres_93',
+    description: 'A concert scene is shown while audio discusses a cat with a funny collar.',
+    visibleText: '',
+    surfaceContext: {
+        audioTranscript: 'cat funny collar meow',
+    },
+    comment: "Funny collar! What's their name?",
+});
+assert.strictEqual(audioVisualMismatchSafety.safeToComment, false);
+assert.strictEqual(audioVisualMismatchSafety.reason, 'audio_visual_mismatch');
+
+const directAudioVisualMismatchSafety = assessAudioVisualCommentConsistency({
+    description: 'A stage with lights is visible while audio talks about a kitten.',
+    comment: "Oh so cute, what's their name?",
+    surfaceContext: { audioTranscript: 'kitten collar' },
+});
+assert.strictEqual(directAudioVisualMismatchSafety.safeToComment, false);
+assert.strictEqual(directAudioVisualMismatchSafety.reason, 'audio_visual_mismatch');
+
+const visiblePetQuestionSafety = assessStoryCommentSafety({
+    storyOwner: 'qwerth314',
+    description: 'A cat is playing on a cat tree.',
+    visibleText: '',
+    comment: "Oh so cute, what's their name?",
+});
+assert.strictEqual(visiblePetQuestionSafety.safeToComment, true);
 
 const ambiguousSubstanceSafety = assessStoryCommentSafety({
     storyOwner: 'madisondangen',
@@ -416,7 +454,7 @@ assert.strictEqual(unclearVideoSalvage.reason, 'analysis_failed');
 const singlePhotoNotSalvage = assessStillsOnlyVideoSalvageContext({
     description: 'A clear photo of a dog on a couch.',
     visibleText: '',
-    comment: 'oh so cute, whats their name?',
+    comment: "Oh so cute, what's their name?",
     surfaceContext: { videoDetected: false },
 });
 assert.strictEqual(singlePhotoNotSalvage.safeToComment, true);

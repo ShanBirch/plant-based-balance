@@ -29,6 +29,7 @@ const STORY_NO_REPLY_COOLDOWN_DAYS = 30;
 const STORY_NO_REPLY_COOLDOWN_MS = STORY_NO_REPLY_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
 const STORY_RECENT_OUTREACH_COOLDOWN_HOURS = 20;
 const STORY_RECENT_OUTREACH_COOLDOWN_MS = STORY_RECENT_OUTREACH_COOLDOWN_HOURS * 60 * 60 * 1000;
+const PET_NAME_COMMENT = "Oh so cute, what's their name?";
 
 function envFlag(name, fallback = false) {
     const value = process.env[name];
@@ -169,9 +170,12 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     }
     if (/\b(?:stinky\s+)?farts?\b/i.test(text)) {
         if (/\bname\b/i.test(text)) {
-            return 'oh so cute, whats their name?';
+            return PET_NAME_COMMENT;
         }
         return '';
+    }
+    if (/^oh\s+so\s+cute,?\s+what(?:'s|s| is)\s+their\s+name\??$/i.test(text)) {
+        return PET_NAME_COMMENT;
     }
     if (/^are\s+\w+(?:,\s*)?good\s+work!?\??$/i.test(text)) {
         return 'good song choice';
@@ -346,7 +350,7 @@ function repairDraftCommentWithContext({ comment = '', description = '', visible
         if (/\bfestival\b/i.test(text)) return clean('whats that festival about?');
         if (/\barchive\b/i.test(text)) return clean('whats that archive about?');
         if (/\b(crepe|sandwich|sanga|toastie|food|meal|lunch|dinner|cake|coffee|drink)\b/i.test(text)) return clean('how was that?');
-        if (/\b(dog|puppy|cat|kitten|pet|animal|rabbit|bunny|horse)\b/i.test(text) && !/\bnamed|called\b/i.test(text)) return clean('oh so cute, whats their name?');
+        if (/\b(dog|puppy|cat|kitten|pet|animal|rabbit|bunny|horse)\b/i.test(text) && !/\bnamed|called\b/i.test(text)) return clean(PET_NAME_COMMENT);
         if (/\bsong|music|track|audio\b/i.test(text)) return clean('good song choice');
     }
 
@@ -392,6 +396,42 @@ function isSharedStoryContext({ storyContentType = '', sharedFromUsername = '', 
     return Boolean(shared && shared !== owner);
 }
 
+function splitVisualAudioEvidence(description = '') {
+    const text = cleanText(description, 1600);
+    const match = text.match(/^(.*?)(?:\s+(?:while|but|whereas|although)\s+(?:the\s+)?(?:audio|voiceover|speaker|transcript|song|lyrics)\s+(?:discusses|mentions|says|talks?\s+about|describes|includes|captures|is\s+about)\b\s*(.*))$/i);
+    if (!match) return { visualText: text, audioText: '' };
+    return {
+        visualText: cleanText(match[1], 1000),
+        audioText: cleanText(match[2], 1000),
+    };
+}
+
+function assessAudioVisualCommentConsistency({ description = '', visibleText = '', comment = '', raw = {}, surfaceContext = {} } = {}) {
+    const normalizedComment = cleanText(comment, 260).toLowerCase();
+    if (!normalizedComment) return { safeToComment: true, reason: '' };
+
+    const split = splitVisualAudioEvidence(description || raw?.story_description || '');
+    const visualEvidence = cleanText([split.visualText, visibleText, raw?.story_visible_text, raw?.visible_text].filter(Boolean).join(' '), 2200).toLowerCase();
+    const transcript = cleanText(surfaceContext?.audioTranscript || raw?.audio_transcript || raw?.audioTranscript || '', 1800).toLowerCase();
+    const audioEvidence = cleanText([split.audioText, transcript].filter(Boolean).join(' '), 2200).toLowerCase();
+    const hasAudioVisualSplit = Boolean(split.audioText);
+
+    const animalCommentPattern = /\b(?:pet|dog|cat|puppy|kitten|rabbit|bunny|horse|collar|their name|what(?:'s|s| is) their name)\b/i;
+    const animalVisiblePattern = /\b(?:pet|dog|cat|puppy|kitten|rabbit|bunny|horse|animal|paws?|tail|fur|fluffy|collar)\b/i;
+    const animalAudioPattern = /\b(?:pet|dog|cat|puppy|kitten|rabbit|bunny|horse|animal|collar|meow|bark)\b/i;
+
+    if (
+        animalCommentPattern.test(normalizedComment)
+        && hasAudioVisualSplit
+        && animalAudioPattern.test(audioEvidence)
+        && !animalVisiblePattern.test(visualEvidence)
+    ) {
+        return { safeToComment: false, reason: 'audio_visual_mismatch' };
+    }
+
+    return { safeToComment: true, reason: '' };
+}
+
 function assessStoryCommentSafety({ description = '', visibleText = '', comment = '', raw = {}, storyOwner = '', sharedFromUsername = '', surfaceContext = {} } = {}) {
     const text = cleanText([
         description,
@@ -410,6 +450,16 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
     const animalWelfareSupport = isAnimalWelfareAdvocacyContext(transcriptAwareText);
     if (animalWelfareSupport && !hasGraphicAnimalWelfareContext(transcriptAwareText)) {
         return { safeToComment: true, reason: 'animal_welfare_support' };
+    }
+    const audioVisualConsistency = assessAudioVisualCommentConsistency({
+        description,
+        visibleText,
+        comment,
+        raw,
+        surfaceContext,
+    });
+    if (!audioVisualConsistency.safeToComment) {
+        return audioVisualConsistency;
     }
     const foreignSourceHandle = detectForeignSourceHandle({
         description,
@@ -610,7 +660,7 @@ function storyAnalysisTranscriptNote(surfaceContext = {}) {
     const songGuard = songLabel
         ? ` Attached song/audio: ${songLabel}. If the transcript is only song lyrics or attached music, treat it as music metadata rather than spoken story context.`
         : '';
-    return `Audio transcript captured from the story: ${transcript}. Use this as story evidence for spoken context; do not contradict it or replace it with a visual guess.${songGuard}`;
+    return `Audio transcript captured from the story: ${transcript}. Treat this as supplemental evidence only when it matches the visible screenshot/video frames. If the transcript points to a different subject than the visuals, do not use transcript-only details in the comment; either comment only on a clear visible handle or set safe_to_comment=false with safety_reason="audio_visual_mismatch".${songGuard}`;
 }
 
 async function generateStoryCommentPlan({ username, description, visibleText, storyContentType, sharedFromUsername, surfaceContext, initialComment, relationshipContext }) {
@@ -643,8 +693,9 @@ Rules:
 - The final comment must start a light conversation, not pitch Balance/coaching/challenge/app. Product/challenge talk belongs later in the lead-only DM qualifier after a direct help/start signal or 3-6 meaningful lead replies with real context.
 - If the story is a shared reel/post, tagged story, reshared story, or content from another account, plan a sharer-framed reaction only. Treat @${username} as the person sharing it, not the person in the content.
 - For shared content, avoid "you/your" and avoid commenting on the person in the reel/post. Good angles are the shared idea, text, place, joke, news, or mood.
+- Treat audio transcript as supplemental. If audio/transcript and visible frames point to different subjects, avoid transcript-only details and plan to skip unless a visible-only opener is clearly safe.
 - Prefer one tiny natural question when the story gives a clear handle: pet name, location, food/drink, class, hobby, travel, weather, event, or an interesting object.
-- For animal stories with no visible pet name, prefer: oh so cute, whats their name?
+- For animal stories with no visible pet name, prefer: Oh so cute, what's their name?
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
 - If the answer is already visible in the story context, do not ask it. React to the known detail instead.
 - If the story shows an unfamiliar event, venue, class, food, hobby, or object, prefer the obvious small context question using the visible noun over "never seen that thing" or another dead-end observation.
@@ -697,8 +748,9 @@ Rules:
 - Casual Australian, natural, human.
 - Ask one tiny specific question when it clearly keeps the conversation going.
 - Do not ask a question if the story already gives the answer.
-- For pets with no visible name, "whats their name?" is often better than a dead-end compliment.
-- For animal stories with no visible pet name, prefer: oh so cute, whats their name?
+- For pets with no visible name, "what's their name?" is often better than a dead-end compliment.
+- For animal stories with no visible pet name, prefer: Oh so cute, what's their name?
+- Treat audio transcript as supplemental. If audio/transcript and visible frames point to different subjects, do not use transcript-only details in the comment.
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
 - For visible locations, food, classes, hobbies, or odd objects, ask the obvious small context question if it feels natural.
 - Avoid flat dead-end comments like "never seen that thing", "thats random", "thats cool", "interesting", "crazy", "big vibe", or "vibes".
@@ -808,6 +860,7 @@ Critique rules:
 - Block if the comment pitches Balance/coaching/challenge/app/program/link/meal plan. Story comments are first-touch rapport, not the offer step.
 - Block if the comment is flirty, sexual, body-specific, weight/physique-focused, or weirdly intense. Mild broad selfie comments like "looking good" can pass.
 - Block if the comment asks how a body part feels or implies injury/pain.
+- Block if the comment is based on transcript-only details that conflict with the visible frames.
 - Block if the comment guesses product/brand/collab/sponsor from a selfie or unclear context.
 - Block if it is vague curiosity like "what's the story here?" or if it asks what unclear OCR/slang text means.
 - Block if it jokes critically about grooming, weight, size, or appearance.
@@ -1705,8 +1758,9 @@ Rules:
 - If the main story clearly shows another creator's @handle, credit, watermark, repost source, or tag, avoid commenting even if the content is funny or relevant.
 - Comment must be 3-12 words, natural, casual Australian, and specific to the visible story when possible.
 - Prefer one tiny natural question when the story has an obvious harmless handle: pet name, location, food/drink, training class, hobby, event, weather, travel, or a clear object.
-- Do not ask a question if the story already answers it. If a pet name is visible, react to that pet/name; if no pet name is visible, asking "whats their name?" is good.
-- For animal stories with no visible pet name, prefer: oh so cute, whats their name?
+- Do not ask a question if the story already answers it. If a pet name is visible, react to that pet/name; if no pet name is visible, asking "what's their name?" is good.
+- For animal stories with no visible pet name, prefer: Oh so cute, what's their name?
+- Audio transcript is supplemental. If transcript/audio and the visible frames point to different subjects, never base the comment on transcript-only details; set safe_to_comment=false with safety_reason="audio_visual_mismatch" unless a clear visible-only comment exists.
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
 - If the story shows an unfamiliar event, venue, class, food, hobby, or object, ask the obvious small context question using the visible noun rather than making a flat observation.
 - Do not ask about unlabeled bags, powder, pills, tablets, capsules, medication, or unknown substances. If the story includes those, set safe_to_comment=false.
@@ -1867,7 +1921,7 @@ Rules:
         parsedComment = 'Enjoying the read?';
     }
     if (/\bdoggo\b/i.test(parsedComment) && /\b(dog|puppy)\b/i.test(storyTextForRewrite) && !/\b(named|called)\b/i.test(storyTextForRewrite)) {
-        parsedComment = 'oh so cute, whats their name?';
+        parsedComment = PET_NAME_COMMENT;
     }
     const initialDraftComment = safeToComment
         ? normalizeDraftComment(parsedComment, {
@@ -2365,6 +2419,7 @@ exports._test = {
     normalizeDraftComment,
     mentionsHandleToken,
     assessStoryCommentSafety,
+    assessAudioVisualCommentConsistency,
     assessStillsOnlyVideoSalvageContext,
     parseJsonMaybe,
     validateEvidenceImages,
