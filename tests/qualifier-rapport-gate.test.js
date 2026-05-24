@@ -4,6 +4,7 @@ const {
     freshQualifier,
     applyRapportGate,
     hasChallengeInviteReadinessSignal,
+    hasEarnedChallengeInviteMoment,
     isUnsafeStockDiscoveryQuestion,
     isChallengeOfferWarningText,
     isPrematureChallengeInvite,
@@ -104,6 +105,63 @@ assert.strictEqual(
         leadStage: 'qualifying',
     }),
     false
+);
+
+const earnedInvite = {
+    ...base,
+    stage: 'commitment',
+    stage_label: 'Commitment',
+    stage_index: 4,
+    warmth_score: 72,
+    warmth_label: 'warm',
+    facts: {
+        ...base.facts,
+        relationship_context: 'works long shifts and trains around a busy week',
+        relationship_checklist: {
+            ...base.facts.relationship_checklist,
+            work_study: 'long shifts',
+            training_background: 'trying to get back into training',
+        },
+        current_state: 'inconsistent with food and training after work',
+        motivation: 'wants more energy and confidence',
+        history_blockers: 'falls off when work gets busy',
+    },
+};
+
+assert.strictEqual(
+    hasEarnedChallengeInviteMoment({
+        qualifier: earnedInvite,
+        currentMessage: 'yeah exactly, it is mainly after work that i fall off',
+    }),
+    true
+);
+
+assert.strictEqual(
+    isPrematureChallengeInvite({
+        draftText: 'honestly this is pretty much what the free 30 day challenge is for, want me to send you the details?',
+        currentMessage: 'yeah exactly, it is mainly after work that i fall off',
+        qualifier: earnedInvite,
+        leadStage: 'qualifying',
+    }),
+    false
+);
+
+assert.strictEqual(
+    hasEarnedChallengeInviteMoment({
+        qualifier: earnedInvite,
+        currentMessage: 'maybe later, not ready yet',
+    }),
+    false
+);
+
+assert.strictEqual(
+    isPrematureChallengeInvite({
+        draftText: 'honestly this is pretty much what the free 30 day challenge is for, want me to send you the details?',
+        currentMessage: 'maybe later, not ready yet',
+        qualifier: earnedInvite,
+        leadStage: 'qualifying',
+    }),
+    true
 );
 
 assert.strictEqual(

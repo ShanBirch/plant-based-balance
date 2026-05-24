@@ -88,6 +88,8 @@ const {
     buildQualifierRelationshipBlock,
     cleanFactValue,
     isUnsafeStockDiscoveryQuestion,
+    hasChallengeInviteReadinessSignal,
+    hasEarnedChallengeInviteMoment,
     isPrematureChallengeInvite,
     isChallengeOfferWarningText,
 } = require('./_lib/qualifier-engine');
@@ -345,13 +347,18 @@ function reviewLooksLikePureContextGap(review) {
 function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId }) {
     const issues = [];
     const draftText = draftTextFromDraft(draft);
+    const challengeOfferAllowed = hasChallengeInviteReadinessSignal(currentMessage)
+        || hasEarnedChallengeInviteMoment({ qualifier, currentMessage })
+        || ['pitched', 'won'].includes(qualifier?.stage)
+        || linkedUserId
+        || ['in_app', 'paying', 'invited'].includes(leadStage);
     if (draftReview && !isDraftReviewAutoSendSafe(draftReview) && !isReviewTimeoutOnly(draftReview) && !reviewLooksLikePureContextGap(draftReview)) {
         if (draftReview.summary) issues.push(`Reviewer summary: ${draftReview.summary}`);
         const reviewIssues = Array.isArray(draftReview.issues) ? draftReview.issues.filter(Boolean) : [];
         reviewIssues.slice(0, 4).forEach(issue => issues.push(`Reviewer issue: ${issue}`));
         if (draftReview.suggested_fix) issues.push(`Reviewer suggested fix: ${draftReview.suggested_fix}`);
     }
-    if (challengeOfferWarning?.required) {
+    if (challengeOfferWarning?.required && !challengeOfferAllowed) {
         issues.push('Draft appears to offer or link the 30-day challenge. Remove the pitch unless the latest message clearly asks how to join or asks for the link.');
     }
     if (isUnsafeStockDiscoveryQuestion(draftText)) {
@@ -634,6 +641,7 @@ RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
 - "Do I need to already be Plant Based?" -> warm reassurance ("not at all, lots of my crew start curious"), then ask their current eating situation, ever cooked plant-based before.
 - "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, send the relevant challenge link and explain the next step. Do NOT ask a Name + Age + Main goal intake bundle.
 - "I need help" / "I don't know what I'm doing" / "where do I start?" -> human first: validate the stuck feeling, ask one grounded context question if needed, then softly explain that the free challenge is the easiest starting point. Do not sound like a canned invite.
+- Warm lead with enough context already shared -> use a soft bridge instead of endless discovery. Example shape: "honestly this is pretty much what the free 30 day challenge is for, want me to send you the details?" Do not send the link until they say yes.
 
 When the conversation has clearly moved past intake (qualifier answers received, or they're chatting about something else), drop this context and just chat naturally.`;
 
@@ -826,7 +834,7 @@ function pitchHintForStage(stage) {
     }
     switch (stage) {
         case 'qualifying':
-            return "Conversation is warming up. Stay in the topic and keep rapport natural before coaching discovery. Ask one useful follow-up only when it feels like normal texting. If the current message is simple banter, just banter. Only mention the free challenge when they ask how to start, ask for the link/details, or clearly ask Shannon for help because they feel stuck. A vague warm reply is not a challenge opening. Do not offer to write a standalone meal plan or workout program in DMs. The app tailors those after they join the challenge.";
+            return "Conversation is warming up. Stay in the topic and keep rapport natural before coaching discovery. Ask one useful follow-up only when it feels like normal texting. If the current message is simple banter, just banter. Mention the free challenge when they ask how to start, ask for the link/details, clearly ask Shannon for help because they feel stuck, or the qualifier context shows Shannon already has a relationship anchor plus enough goal/blocker context for a soft bridge. A vague warm reply is not a challenge opening by itself. Do not offer to write a standalone meal plan or workout program in DMs. The app tailors those after they join the challenge.";
         case 'invited':
             return "You've already mentioned the challenge or app. DON'T re-pitch. Answer their questions plainly. If they're close to signing up, help them across the line. If they are not ready yet, ask one useful question only if it helps the next step.";
         case 'in_app':
@@ -867,6 +875,12 @@ Do not offer to manually write a meal plan or workout program in DMs before sign
 
 CHALLENGE PITCHED:
 The free 30-day challenge has already been offered. If they sound keen or ask how to start, send this link: ${url}. If they are still unsure, answer the concern and keep it easy.`;
+    }
+    if (hasEarnedChallengeInviteMoment({ qualifier })) {
+        return `
+
+EARNED CHALLENGE BRIDGE:
+This lead has enough relationship and goal/blocker context for a soft invite if it fits the newest message. Do not send the link yet. Do not make it a brochure. The move is one casual bridge, for example: "honestly this is pretty much what the free 30 day challenge is for, want me to send you the details?" If the newest message is a clear no/not-yet signal, hold off and just reply to that.`;
     }
     return '';
 }
@@ -1784,7 +1798,7 @@ ACQUISITION STYLE:
 - Do not bundle questions. Never ask name + age + goal + blocker together.
 - If the discovery question is about relationship context, ask one light version and stop. Do not tack on a fitness goal in the same reply.
 - If they are already asking how to join, accepted the challenge, or clearly want the link, move them forward instead of slowing them down with more questions.
-- Do not drop a 30-day challenge invite just because they are friendly, vaguely interested, or mention fitness/food. Wait for the human signal first: "I need help", "I dunno what I'm doing", "where do I start?", "what's included?", "send the link", or an obvious join/start request.
+- Do not drop a 30-day challenge invite just because they are friendly, vaguely interested, or mention fitness/food. Wait for either a human signal ("I need help", "I dunno what I'm doing", "where do I start?", "what's included?", "send the link", or an obvious join/start request) or enough earned context for a soft bridge. Earned context means Shannon already has a normal-life anchor plus useful goal/blocker context. In that case ask if they want details, do not send the link unless they accept.
 
 NEVER reveal AI, automation, "trained on Shannon's voice", "24/7", or anything that breaks the personal-coach illusion. Shannon is replying personally.
 

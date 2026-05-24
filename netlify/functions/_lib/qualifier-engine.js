@@ -213,6 +213,37 @@ function hasStartIntent(text) {
     return hasChallengeInviteReadinessSignal(text);
 }
 
+function hasChallengeDeferralSignal(text) {
+    const s = String(text || '').toLowerCase();
+    return /\b(not\s+ready|not\s+yet|maybe\s+later|later\s+on|too\s+busy|just\s+looking|just\s+sussing|still\s+sussing|i'?ll\s+think|let\s+me\s+think|hold\s+off|wait\s+(?:a\s+)?bit|no\s+thanks|don'?t\s+want)\b/i.test(s);
+}
+
+function earnedChallengeFactCount(facts = {}) {
+    return ['current_state', 'motivation', 'history_blockers', 'commitment']
+        .filter(key => hasUsefulFact(facts?.[key]))
+        .length;
+}
+
+function hasEarnedChallengeInviteMoment({ qualifier, currentMessage } = {}) {
+    if (!qualifier || typeof qualifier !== 'object') return false;
+    if (TERMINAL_STAGES.has(qualifier.stage)) return false;
+    if (hasChallengeDeferralSignal(currentMessage)) return false;
+
+    const facts = qualifier.facts || {};
+    const coreFacts = earnedChallengeFactCount(facts);
+    const hasRelationship = hasAnyRelationshipAnchor(facts);
+    const stageIndex = Number(qualifier.stage_index || 0);
+    const lateEnoughStage = ['history_blockers', 'commitment'].includes(qualifier.stage) || stageIndex >= 3;
+    const warmthScore = Number(qualifier.warmth_score || 0);
+    const warmthLabel = String(qualifier.warmth_label || '').toLowerCase();
+    const warmEnough = warmthScore >= 58 || warmthLabel === 'warm' || warmthLabel === 'hot';
+
+    return hasRelationship
+        && warmEnough
+        && lateEnoughStage
+        && coreFacts >= 2;
+}
+
 function isChallengeInviteText(text) {
     const s = String(text || '').toLowerCase();
     if (!s) return false;
@@ -234,7 +265,8 @@ function isPrematureChallengeInvite({ draftText, currentMessage, qualifier, lead
     if (!isChallengeInviteText(draftText)) return false;
     if (linkedUserId || ['in_app', 'paying', 'invited'].includes(leadStage)) return false;
     if (['pitched', 'won'].includes(qualifier?.stage)) return false;
-    return !hasChallengeInviteReadinessSignal(currentMessage);
+    return !hasChallengeInviteReadinessSignal(currentMessage)
+        && !hasEarnedChallengeInviteMoment({ qualifier, currentMessage });
 }
 
 function isDeepFunnelQuestion(question) {
@@ -528,7 +560,7 @@ CRITICAL TONE RULE: Shannon is chatting like a mate, NOT interviewing like a coa
 
 RAPPORT COMES FIRST: do not collect facts just to tick boxes. Build normal human back-and-forth, then use their own words to connect the chat toward health, fitness, energy, confidence, food, training, or consistency when it genuinely fits. If relationship_context is blank and they have not clearly asked to join/start or asked Shannon for help because they feel stuck ("I need help", "I dunno what I'm doing"), usually set is_question_moment=false and let Shannon keep chatting. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
 
-CHALLENGE INVITE GATE: a 30-day challenge invite is not the default reward for a warm reply. Hold the invite until the lead makes the human move first: asking what is included, asking for the link, saying they want to join/start, or admitting they need help / feel lost / do not know what they are doing. Words like "keen", "interested", "haha", or "yeah sounds good" are not enough by themselves when the tracked context is thin.
+CHALLENGE INVITE GATE: a 30-day challenge invite is not the default reward for a warm reply. There are two good moments to move it forward: (1) they make the human move first by asking what is included, asking for the link, saying they want to join/start, or admitting they need help / feel lost / do not know what they are doing; or (2) the conversation has earned a soft bridge because Shannon already has a normal-life anchor plus enough health/fitness context, such as current state plus motivation or blocker. In an earned bridge, do not send a link or brochure. The move is casual: "honestly this is pretty much what the free 30 day challenge is for, want me to send you the details?" Words like "keen", "interested", "haha", or "yeah sounds good" are not enough by themselves when the tracked context is thin.
 
 STOCK QUESTION BAN: do not output generic routine questions like "what does a normal day look like for you at the moment?", "what does a normal day of eating look like for you?", "are you much of a cook or more of a takeaway person?", "you training at the moment?", "what's for lunch?", or "what are your goals?". They sound pasted from a script and are unsafe for auto-send. If there is no specific health, fitness, or help bridge in the lead's latest words, set is_question_moment=false.
 
@@ -571,7 +603,7 @@ NOW DECIDE:
 
 1. **facts**: extract facts the lead has revealed in the newest message and any missing facts that are obvious from the recent history. Keep existing facts unchanged unless the new message contradicts or refines them. hook_context records how Shannon started this conversation (he initiates by replying to their stories or cold-DMing them, not the other way around). relationship_context is a compact summary of their normal-life anchors. relationship_checklist stores the specific tick-off facts above: location, work_study, household_family, pets, daily_rhythm, food_setup, training_background, loves, stressors_frustrations. Include names of family members, partners, kids, dogs, or pets only when the lead says them. Capture what they love and what gets under their skin only when they say it or clearly confirm it. Leave fields as-is unless there's a clear update.
 
-2. **stage**: which stage they're at NOW. The stage advances when its corresponding fact gets a meaningful answer, but do not rush beyond current_state while relationship_context is blank unless they clearly asked to start or already volunteered strong goal context. If the lead jumped ahead and answered a later stage's question, capture that fact and move stage to the next still-unanswered one. If all 4 facts are filled, the next move is usually to offer the free challenge, not to write a standalone meal plan or workout program in DMs. Missing loves or stressors_frustrations should not block the next step if the person is otherwise warm or asking to move forward. Use "pitched" once Shannon has offered the free 30-day challenge. If they explicitly accept that offer ("im in", "save me a spot", "lets do it", "keen"), advance to "won". If they explicitly decline or have been silent 30+ days, "lost".
+2. **stage**: which stage they're at NOW. The stage advances when its corresponding fact gets a meaningful answer, but do not rush beyond current_state while relationship_context is blank unless they clearly asked to start or already volunteered strong goal context. If the lead jumped ahead and answered a later stage's question, capture that fact and move stage to the next still-unanswered one. If Shannon has a relationship anchor and at least two useful core facts (current_state, motivation, history_blockers, commitment), the next move can be a soft invite bridge instead of another getting-to-know-you question. If all 4 facts are filled, the next move is usually to offer the free challenge, not to write a standalone meal plan or workout program in DMs. Missing loves or stressors_frustrations should not block the next step if the person is otherwise warm or asking to move forward. Use "pitched" once Shannon has offered the free 30-day challenge. If they explicitly accept that offer ("im in", "save me a spot", "lets do it", "keen"), advance to "won". If they explicitly decline or have been silent 30+ days, "lost".
 
 3. **warmth_score** (0-100):
    - 0-25 cold: short replies, slow, dodging
@@ -582,7 +614,7 @@ NOW DECIDE:
 
 4. **challenge_route**: 'vegan' if they mention plant-based / vegan / vegetarian / dietary curiosity. 'generic' if they want fitness / weight / energy with no diet preference. 'undecided' if not enough signal.
 
-5. **next_question**: only provide a question when this turn naturally supports one. One sentence max, Australian casual, lowercase friendly, no greetings, no em-dashes. The question should either keep a real thread-specific hook alive, bridge their own words toward health/fitness, or help them self-identify what they need help with. Do not ask routine survey questions. Do not ask a question just because the checklist is thin. If the latest message is banter, a story/post reply with missing context, a direct answer to Shannon's last question, or there is no clear health/fitness/help bridge, set is_question_moment=false and next_question="". If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question. Do not mark "pitched" just because they are friendly or vaguely interested; wait for a real help/start/challenge signal.
+5. **next_question**: only provide a question when this turn naturally supports one. One sentence max, Australian casual, lowercase friendly, no greetings, no em-dashes. The question should either keep a real thread-specific hook alive, bridge their own words toward health/fitness, help them self-identify what they need help with, or softly invite them into the free challenge once enough context has been earned. Do not ask routine survey questions. Do not ask a question just because the checklist is thin. If the latest message is banter, a story/post reply with missing context, a direct answer to Shannon's last question, or there is no clear health/fitness/help bridge, set is_question_moment=false and next_question="". If enough context has been earned, prefer a soft bridge such as "honestly this is pretty much what the free 30 day challenge is for, want me to send you the details?" over asking another personal-history question. If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question. Do not mark "pitched" just because they are friendly or vaguely interested; wait for a real help/start/challenge signal or an earned soft bridge.
 
 6. **why_now**: 1-2 sentences explaining the timing, citing a specific phrase from THE LEAD'S WORDS. Format: "She wrote 'X', which signals Y. Now's the moment because Z." Be concrete. If is_question_moment is false, why_now explains why we're holding off ("she just vented about her boss, validate first").
 
@@ -883,6 +915,7 @@ module.exports = {
     isUnsafeStockDiscoveryQuestion,
     hasHumanHelpIntent,
     hasChallengeInviteReadinessSignal,
+    hasEarnedChallengeInviteMoment,
     isChallengeInviteText,
     isChallengeOfferWarningText,
     isPrematureChallengeInvite,
