@@ -214,7 +214,7 @@ export default async (request) => {
             fileId: uploaded.fileId,
             contentType,
             mediaType,
-            size: fileBuffer.byteLength,
+            size: sizeBytes || null,
         });
     } catch (error) {
         console.error('Error in upload-ig-operator-media:', error);

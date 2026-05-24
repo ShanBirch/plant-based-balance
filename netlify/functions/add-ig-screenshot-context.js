@@ -23,6 +23,8 @@ const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm'];
 const MAX_IMAGE_BYTES = 4.5 * 1024 * 1024;
 const MAX_MESSAGES = 24;
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
+const CONTEXT_DISPATCH_TIMEOUT_MS = 7000;
+const DRAFT_DISPATCH_TIMEOUT_MS = 2500;
 
 function json(statusCode, body) {
     return {
@@ -131,6 +133,50 @@ function isManyChatDmAlert(alert) {
     return MANYCHAT_DM_ALERT_TYPES.includes(alert?.alert_type)
         || data.channel === 'instagram'
         || data.channel === 'messenger';
+}
+
+function shortDelay(ms) {
+    return new Promise(resolve => setTimeout(() => resolve(null), ms));
+}
+
+function authHeaderFromEvent(event) {
+    return event?.headers?.authorization || event?.headers?.Authorization || '';
+}
+
+async function dispatchScreenshotContextBackground({ event, body }) {
+    const authHeader = authHeaderFromEvent(event);
+    const headers = { 'Content-Type': 'application/json' };
+    if (authHeader) headers.Authorization = authHeader;
+
+    const response = await Promise.race([
+        fetch(`${SITE_URL}/.netlify/functions/add-ig-screenshot-context-background`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                ...body,
+                backgroundRun: true,
+                queuedAt: body.queuedAt || new Date().toISOString(),
+            }),
+        }),
+        shortDelay(CONTEXT_DISPATCH_TIMEOUT_MS),
+    ]);
+
+    if (!response) {
+        return { ok: true, status: 'dispatch_timeout', reason: 'background_dispatch_started_no_ack' };
+    }
+    const text = await response.text().catch(() => '');
+    if (!response.ok) {
+        return {
+            ok: false,
+            status: response.status,
+            details: text.slice(0, 400),
+        };
+    }
+    return {
+        ok: true,
+        status: response.status,
+        details: text.slice(0, 400),
+    };
 }
 
 async function extractScreenshotMessages({ imageBase64, mimeType, leadName, channelLabel }) {
@@ -327,23 +373,35 @@ async function refreshDraft({ threadId, alert, extraction, startedAt }) {
     if (!cleanedSeed) return { ok: false, reason: 'missing_seed_text' };
 
     const messageId = `manual_screenshot_context:${alert.id}:${Date.now()}:${hash(`${cleanedSeed}:${extraction.summary}`)}`;
-    const response = await fetch(`${SITE_URL}/.netlify/functions/ig-instant-draft`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            threadId,
-            messageText: cleanedSeed,
-            manychatMessageId: messageId,
-            customData: {
-                manual_screenshot_context: true,
-                manual_context_for_alert_id: alert.id,
-                manual_context_started_at: startedAt || new Date().toISOString(),
-            },
+    const dispatchStartedAt = startedAt || new Date().toISOString();
+    const response = await Promise.race([
+        fetch(`${SITE_URL}/.netlify/functions/ig-instant-draft-background`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                threadId,
+                messageText: cleanedSeed,
+                manychatMessageId: messageId,
+                customData: {
+                    manual_screenshot_context: true,
+                    manual_context_for_alert_id: alert.id,
+                    manual_context_started_at: dispatchStartedAt,
+                },
+            }),
         }),
-    });
-    const text = await response.text();
+        shortDelay(DRAFT_DISPATCH_TIMEOUT_MS),
+    ]);
+    if (!response) {
+        return {
+            ok: true,
+            queued: true,
+            reason: 'draft_background_dispatched_no_ack',
+            started_at: dispatchStartedAt,
+        };
+    }
+    const text = await response.text().catch(() => '');
     if (!response.ok) {
-        return { ok: false, reason: `draft_refresh_failed_${response.status}`, details: text.slice(0, 300) };
+        return { ok: false, queued: false, reason: `draft_dispatch_failed_${response.status}`, details: text.slice(0, 300) };
     }
     let body = {};
     try {
@@ -351,19 +409,14 @@ async function refreshDraft({ threadId, alert, extraction, startedAt }) {
     } catch {
         body = { raw: text.slice(0, 300) };
     }
-    const refreshed = await loadAlert(alert.id);
-    const draftedAt = refreshed?.data?.drafted_at || null;
-    const generatedAt = Date.parse(draftedAt || '') || 0;
-    const started = Date.parse(startedAt || '') || 0;
-    const verified = !!(refreshed?.suggested_message && generatedAt >= started - 1000);
     return {
-        ok: verified,
-        verified,
-        reason: verified ? 'draft_saved' : 'draft_not_verified',
+        ok: true,
+        queued: true,
+        reason: 'draft_background_dispatched',
+        status: response.status,
+        started_at: dispatchStartedAt,
         body,
-        alert_id: body.alert_id || refreshed?.id || alert.id,
-        drafted_at: draftedAt,
-        suggested_message: refreshed?.suggested_message || '',
+        alert_id: body.alert_id || alert.id,
     };
 }
 
@@ -417,6 +470,32 @@ exports.handler = async (event = {}) => {
     const data = alert.data || {};
     const threadId = data.ig_thread_id || null;
     if (!threadId) return json(400, { error: 'Alert missing ig_thread_id, cannot write IG conversation history' });
+
+    if (!body.backgroundRun) {
+        const dispatch = await dispatchScreenshotContextBackground({ event, body });
+        if (!dispatch.ok) {
+            console.warn('[add-ig-context] background dispatch failed:', dispatch.status, dispatch.details);
+            return json(502, {
+                error: 'Could not start screenshot context processor',
+                details: dispatch.details || dispatch.status,
+            });
+        }
+        return json(202, {
+            ok: true,
+            queued: true,
+            alertId,
+            thread_id: threadId,
+            context_processing: {
+                queued: true,
+                reason: dispatch.reason || 'background_dispatch_started',
+                status: dispatch.status,
+            },
+            draft_refresh: {
+                queued: true,
+                reason: 'runs_after_context_is_saved',
+            },
+        });
+    }
 
     const channelLabel = data.channel === 'messenger' || alert.alert_type === 'fb_incoming_dm'
         ? 'Messenger'

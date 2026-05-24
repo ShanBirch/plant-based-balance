@@ -13490,6 +13490,50 @@
             return { mimeType: fallbackMimeType, imageBase64: String(dataUrl || '') };
         }
 
+        function adminDateMs(value) {
+            const ms = Date.parse(value || '');
+            return Number.isFinite(ms) ? ms : 0;
+        }
+
+        function getDmContextProcessingState(alertData, baselineContextMs, baselineDraftMs) {
+            const data = alertData?.data || {};
+            const contextAtMs = adminDateMs(data.manual_context_last_added_at);
+            const draftAtMs = adminDateMs(data.drafted_at);
+            const contextAdded = contextAtMs > baselineContextMs;
+            const draftRefreshed = contextAdded && draftAtMs > Math.max(baselineDraftMs, contextAtMs - 1500);
+            const backfills = Array.isArray(data.manual_context_backfills) ? data.manual_context_backfills : [];
+            const latestBackfill = [...backfills].reverse()
+                .find(item => adminDateMs(item?.added_at) >= contextAtMs - 1500) || null;
+            return {
+                contextAdded,
+                draftRefreshed,
+                contextAtMs,
+                draftAtMs,
+                inserted: Number(latestBackfill?.inserted_count || 0),
+                skipped: Number(latestBackfill?.skipped_duplicate_count || 0),
+            };
+        }
+
+        async function waitForDmScreenshotContextProcessing(alertId, baselineContextMs, baselineDraftMs, btn) {
+            let lastState = { contextAdded: false, draftRefreshed: false, inserted: 0, skipped: 0 };
+            for (let attempt = 0; attempt < 12; attempt++) {
+                await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 1400 : 2500));
+                if (btn && attempt === 0) {
+                    btn.innerHTML = '<i data-lucide="loader" style="width:12px;height:12px; animation:spin 1s linear infinite;"></i>Saving context...';
+                    lucide.createIcons();
+                } else if (btn && attempt === 4) {
+                    btn.innerHTML = '<i data-lucide="loader" style="width:12px;height:12px; animation:spin 1s linear infinite;"></i>Waiting for draft...';
+                    lucide.createIcons();
+                }
+                await loadAlerts();
+                const refreshed = alertsCache.find(a => a.id === alertId);
+                if (!refreshed) return lastState;
+                lastState = getDmContextProcessingState(refreshed, baselineContextMs, baselineDraftMs);
+                if (lastState.contextAdded && lastState.draftRefreshed) return lastState;
+            }
+            return lastState;
+        }
+
         async function addDmScreenshotContext(alertId, evt) {
             const alertData = alertsCache.find(a => a.id === alertId);
             if (!alertData) return;
@@ -13512,6 +13556,8 @@
                     lucide.createIcons();
                 }
                 try {
+                    const baselineContextMs = adminDateMs(alertData.data?.manual_context_last_added_at);
+                    const baselineDraftMs = adminDateMs(alertData.data?.drafted_at);
                     const compressed = await compressDmContextImage(file);
                     const payload = splitDataUrlPayload(compressed.dataUrl, compressed.mimeType);
                     if (!payload.imageBase64) throw new Error('Image could not be encoded');
@@ -13529,13 +13575,25 @@
                     });
                     const json = await res.json().catch(() => ({}));
                     if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
-                    await loadAlerts();
-                    const inserted = Number(json.inserted_count || 0);
-                    const skipped = Number(json.skipped_duplicate_count || 0);
-                    const refreshed = json.draft_refreshed
-                        ? ' New response generated from that context.'
-                        : ' Context is visible now, but the draft did not regenerate - hit Redraft.';
-                    alert(`Context added: ${inserted} message${inserted === 1 ? '' : 's'} saved${skipped ? `, ${skipped} duplicate${skipped === 1 ? '' : 's'} skipped` : ''}.${refreshed}`);
+                    if (json.queued) {
+                        const state = await waitForDmScreenshotContextProcessing(alertId, baselineContextMs, baselineDraftMs, btn);
+                        if (state.contextAdded) {
+                            const refreshed = state.draftRefreshed
+                                ? ' New response generated from that context.'
+                                : ' Context is visible now. The redraft is still finishing - refresh in a few seconds if it has not changed.';
+                            alert(`Context added: ${state.inserted} message${state.inserted === 1 ? '' : 's'} saved${state.skipped ? `, ${state.skipped} duplicate${state.skipped === 1 ? '' : 's'} skipped` : ''}.${refreshed}`);
+                        } else {
+                            alert('Screenshot context is processing in the background. Give it a few seconds, then refresh the DMs card.');
+                        }
+                    } else {
+                        await loadAlerts();
+                        const inserted = Number(json.inserted_count || 0);
+                        const skipped = Number(json.skipped_duplicate_count || 0);
+                        const refreshed = json.draft_refreshed
+                            ? ' New response generated from that context.'
+                            : ' Context is visible now, but the draft did not regenerate - hit Redraft.';
+                        alert(`Context added: ${inserted} message${inserted === 1 ? '' : 's'} saved${skipped ? `, ${skipped} duplicate${skipped === 1 ? '' : 's'} skipped` : ''}.${refreshed}`);
+                    }
                 } catch (e) {
                     console.error('addDmScreenshotContext failed:', e);
                     alert('Could not add screenshot context: ' + (e.message || e));
