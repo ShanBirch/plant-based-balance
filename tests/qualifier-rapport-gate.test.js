@@ -1,6 +1,9 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 
 const {
+    STAGES,
     freshQualifier,
     applyRapportGate,
     hasChallengeInviteReadinessSignal,
@@ -78,6 +81,18 @@ assert.strictEqual(
     hasChallengeInviteReadinessSignal("i need help, i dunno what i'm doing"),
     true
 );
+
+const commitmentStage = STAGES.find(stage => stage.key === 'commitment');
+assert.ok(commitmentStage);
+assert.match(commitmentStage.strategy, /exact context|stock invite line/i);
+
+const igDraftSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/ig-instant-draft.js'), 'utf8');
+const qualifierSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/qualifier-engine.js'), 'utf8');
+assert.match(igDraftSource, /Anchor the offer to their actual situation/);
+assert.match(qualifierSource, /if you haven't locked in \[support\/trainer\/structure\] yet/);
+assert.ok(!/Example shape:\s*"honestly this is pretty much what the free 30 day challenge is for/i.test(igDraftSource));
+assert.ok(!/pretty much what the free 30 day challenge is for/i.test(igDraftSource));
+assert.ok(!/pretty much what the free 30 day challenge is for/i.test(qualifierSource));
 
 assert.strictEqual(isMeaningfulLeadReply('haha yeah sounds good'), false);
 assert.strictEqual(isMeaningfulLeadReply('work makes food hard after long shifts'), true);
