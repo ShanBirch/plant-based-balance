@@ -35,9 +35,9 @@ const SYNC_SECRET = process.env.META_IG_SYNC_SECRET
     || process.env.META_WEBHOOK_VERIFY_TOKEN
     || '';
 const LOOKBACK_HOURS = readInt(process.env.META_IG_RECONCILE_LOOKBACK_HOURS, 48, 1, 168);
-const CONVERSATION_LIMIT = readInt(process.env.META_IG_RECONCILE_CONVERSATION_LIMIT, 4, 1, 50);
-const MESSAGE_LIMIT = readInt(process.env.META_IG_RECONCILE_MESSAGE_LIMIT, 3, 1, 25);
-const MAX_MESSAGES_PER_RUN = readInt(process.env.META_IG_RECONCILE_MAX_MESSAGES, 12, 1, 200);
+const CONVERSATION_LIMIT = readInt(process.env.META_IG_RECONCILE_CONVERSATION_LIMIT, 2, 1, 50);
+const MESSAGE_LIMIT = readInt(process.env.META_IG_RECONCILE_MESSAGE_LIMIT, 2, 1, 25);
+const MAX_MESSAGES_PER_RUN = readInt(process.env.META_IG_RECONCILE_MAX_MESSAGES, 8, 1, 200);
 const MAX_PAGES = readInt(process.env.META_IG_RECONCILE_MAX_PAGES, 1, 1, 6);
 const MAX_RUNTIME_MS = readInt(process.env.META_IG_RECONCILE_MAX_RUNTIME_MS, 24000, 5000, 55000);
 
@@ -375,10 +375,22 @@ async function reconcile(body = {}) {
     const startedAt = Date.now();
     const accounts = configuredAccounts();
     const summaries = [];
+    const requestedMaxMessages = readInt(body.max_messages ?? body.maxMessages, MAX_MESSAGES_PER_RUN, 1, 200);
+    let remainingMessages = readInt(body.global_max_messages ?? body.globalMaxMessages, requestedMaxMessages, 1, 200);
     for (const account of accounts) {
         if (Date.now() - startedAt > MAX_RUNTIME_MS) break;
+        if (remainingMessages <= 0) break;
         try {
-            summaries.push(await reconcileAccount({ account, body, startedAt }));
+            const summary = await reconcileAccount({
+                account,
+                body: {
+                    ...body,
+                    max_messages: Math.min(requestedMaxMessages, remainingMessages),
+                },
+                startedAt,
+            });
+            summaries.push(summary);
+            remainingMessages -= summary.messages_replayed || 0;
         } catch (err) {
             summaries.push({
                 account_id: account.ownerId || null,
