@@ -192,17 +192,75 @@ function hasChallengeContext(text) {
     return /\b(challenge|30\s*day|30-day|program|app|plan|coaching|coach|signup|sign up|link|spot|start monday)\b/i.test(String(text || ''));
 }
 
+function isAccountSupportLinkContext(text) {
+    const s = String(text || '').toLowerCase();
+    if (!s) return false;
+    if (/\b(30\s*day|30-day|free challenge|plant.?based challenge|transform challenge|challenge link|sign ?up|signup|join)\b/i.test(s)) {
+        return false;
+    }
+    return /\b(reset link|password reset|password|login|log in|locked out|face id|face recognition|old email|spam|manual(?:ly)? reset|reset it|reset this|uninstall|reinstall|app glitch|tech tangle|tech hassle)\b/i.test(s);
+}
+
 function hasHumanHelpIntent(text) {
     const s = String(text || '').toLowerCase();
     return /\b(i\s+need\s+help|need\s+(some\s+)?help|can\s+you\s+help|could\s+you\s+help|help\s+me|i\s+don'?t\s+know\s+what\s+i'?m\s+doing|i\s+dunno\s+what\s+i'?m\s+doing|dunno\s+what\s+i'?m\s+doing|no\s+idea\s+what\s+i'?m\s+doing|i'?m\s+lost|feel\s+lost|where\s+do\s+i\s+start|what\s+do\s+i\s+do|what\s+should\s+i\s+do)\b/i.test(s);
 }
 
+function hasSolutionSeekingOverwhelm(text) {
+    return /\b(constantly trying to piece|piecing .* together|tired of piecing|exhausting trying to optimi[sz]e|cut through the noise|i just want .*effort .*paying off|want .*effort .*pay off|hard to tell what'?s actually working|overwhelming to figure out alone|figure it out alone|how do you actually help|how do you help people|help people with that|don'?t have to guess)\b/i.test(String(text || ''));
+}
+
+function hasSpecificHelpOrBlockerSignal(text) {
+    const s = String(text || '').toLowerCase();
+    if (!s) return false;
+    if (hasHumanHelpIntent(s) || hasSolutionSeekingOverwhelm(s)) return true;
+    const domainSignal = /\b(training|train|workout|gym|fitness|exercise|movement|walking|steps|food|meal|diet|vegan|plant.?based|vegetarian|protein|energy|weight|body|confidence|strength|consistent|consistency|motivation|health|routine)\b/i.test(s);
+    const blockerSignal = /\b(struggl\w*|hard|stuck|lost|no idea|fall(?:ing)? off|fell off|tired|drained|low energy|sluggish|not my best|overwhelm\w*|no time|too busy|capacity|frustrat\w*|not working|can'?t stick|cannot stick|need help|want to get back|where do i start|plateau|nothing'?s? changing)\b/i.test(s);
+    return domainSignal && blockerSignal;
+}
+
+function hasChallengeLogisticsQuestion(text) {
+    return /\b(start dates?|commitment level|miss (a )?few days|miss days|start(s|ing)? (a bit )?later|self.?paced|how much time|what does it involve|what'?s involved|details|send.*details)\b/i.test(String(text || ''));
+}
+
+function isDirectPracticalHelpRequest(text) {
+    const s = String(text || '');
+    if (/\bthanks?\s+for\s+(?:the\s+)?tips?\b/i.test(s) && !/\?/.test(s)) return false;
+    return /\b(any|quick|general|specific|got|have|give me|need|looking for|some)\s+(tips?|advice|suggestions?|recommendations?|pointers?|tricks?|cues?|drills?)\b/i.test(s)
+        || /\b(tips?|advice|suggestions?|recommendations?|pointers?|tricks?|cues?|drills?)\s+(for|on|with)\b/i.test(s)
+        || /\b(?:i'?d|i would|would)\s+love\s+to\s+hear\b.{0,90}\b(?:go-?tos?|easy|quick|minimal(?:\s+effort)?|meals?|recipes?|ideas?|options?|favou?rites?)\b/i.test(s)
+        || /\b(?:what(?:\s+are|'?s)|got|have|share|send|tell me|give me)\b.{0,90}\b(?:go-?tos?|favou?rites?|easy|quick|minimal(?:\s+effort)?|meal ideas?|meals?|recipes?|options?)\b/i.test(s)
+        || /\b(?:a couple|some|one or two)\s+of\s+(?:your\s+)?(?:favou?rites?|go-?tos?)\b/i.test(s)
+        || /\bwhat\s+(?:would|do)\s+you\s+recommend\b/i.test(s);
+}
+
+function hasDirectPracticalAnswer(text) {
+    const withoutChallengeOffers = String(text || '')
+        .replace(/[^.!?\n]*(?:30\s*day|30-day|free challenge|challenge|send.*link|link)[^.!?\n]*/gi, ' ');
+    const adviceVerb = /\b(try|aim|start|keep|use|swap|reduce|scale|back off|leave|stop|stopping|rest|pause|next time|one thing|easiest|simple rule|rule of thumb|good sign|quick tip|tip would be|i'd|i would|i usually|i'll|think about|focus on|cue|key is|sweet spot)\b/i.test(withoutChallengeOffers);
+    const practicalFoodSpecific = /\b(one-?pot|pasta|ramen|beans?|cannellini|lentils?|tofu|edamame|frozen (?:veg|veggies|vegetables)|wraps?|burrito|curry|stir.?fry|smoothie|overnight oats|microwave|pantry|meal idea|recipe)\b/i.test(withoutChallengeOffers)
+        && /\b(go-?tos?|option|meal|recipe|add|throw|keep|use|do|make|works?|barely any work|minimal effort|quick|easy ones?|ones are)\b/i.test(withoutChallengeOffers);
+    return adviceVerb || practicalFoodSpecific;
+}
+
+function isAppOrWorkoutPlanSupportRequest(text) {
+    return /\b(app|glitch|glitched|bug|display|log my workout|logging|workout plan|workout plans|full.?body plan|full.?body plans|m\/w\/f|mon\/wed\/fri|movement on off days|same exercises|rep schemes?|new challenges|fresh plans?|fresh workouts?|routine|plans? delivered|another app|tech hassle|face recognition|face id|password reset|reset link|login|log in|locked out|old email|spam|manual(?:ly)? reset)\b/i.test(String(text || ''));
+}
+
 function hasChallengeInviteReadinessSignal(text) {
     const s = String(text || '').toLowerCase();
+    if (isAppOrWorkoutPlanSupportRequest(s) && !/\b(30\s*day|30-day|free challenge|sign ?up|send.*link|join)\b/i.test(s)) {
+        return false;
+    }
+    if (isDirectPracticalHelpRequest(s) && !hasChallengeLogisticsQuestion(s) && !/\b(30\s*day|30-day|free challenge|sign ?up|send.*link|join|challenge|program)\b/i.test(s)) {
+        return false;
+    }
     if (/\b(i'?m in|im in|save me( a)? spot|sign me up|send.*link|how do i start|how to start|start monday|let'?s do it|lets do it)\b/i.test(s)) {
         return true;
     }
     if (hasHumanHelpIntent(s)) return true;
+    if (hasSolutionSeekingOverwhelm(s)) return true;
+    if (hasChallengeLogisticsQuestion(s)) return true;
     if (/\b(wanna join|want to join|can i join|how do i join|join the|join your|join this|interested in|keen for|keen to)\b/i.test(s) && hasChallengeContext(s)) {
         return true;
     }
@@ -281,6 +339,7 @@ function hasEarnedChallengeInviteMoment({ qualifier, currentMessage, leadReplyCo
     const hasRelationship = hasAnyRelationshipAnchor(facts);
     const stageIndex = Number(qualifier.stage_index || 0);
     const lateEnoughStage = ['history_blockers', 'commitment'].includes(qualifier.stage) || stageIndex >= 3;
+    const specificNeedNow = hasSpecificHelpOrBlockerSignal(currentMessage);
     const warmthScore = Number(qualifier.warmth_score || 0);
     const warmthLabel = String(qualifier.warmth_label || '').toLowerCase();
     const warmEnough = warmthScore >= 58 || warmthLabel === 'warm' || warmthLabel === 'hot';
@@ -290,16 +349,26 @@ function hasEarnedChallengeInviteMoment({ qualifier, currentMessage, leadReplyCo
 
     return hasRelationship
         && warmEnough
-        && lateEnoughStage
+        && (lateEnoughStage || (stageIndex >= 2 && specificNeedNow))
         && coreFacts >= 2
         && meaningfulReplies >= 3;
+}
+
+function isOneOnOneCoachingLinkContext(text) {
+    const s = String(text || '').toLowerCase();
+    if (!s) return false;
+    if (/future-balance\.netlify\.app\/coaching\.html|plantbased-balance\.org\/coaching\.html/i.test(s)) return true;
+    return /\b(1\s*[:v]\s*1|1\s*on\s*1|one\s*on\s*one|one-to-one|one to one|personal coaching|online coaching|coach me|coaching spot|coaching spots|coaching link|coaching details|coaching page)\b/i.test(s)
+        && /\b(coach|coaching|link|details|spot|spots|join|start|work with you)\b/i.test(s);
 }
 
 function isChallengeInviteText(text) {
     const s = String(text || '').toLowerCase();
     if (!s) return false;
+    if (isAccountSupportLinkContext(s)) return false;
+    if (isOneOnOneCoachingLinkContext(s)) return false;
     const mentionsChallenge = /\b(30\s*day|30-day|challenge|app|program|signup|sign up|link)\b/i.test(s);
-    const inviteLanguage = /\b(join|jump in|jump on|get you in|get started|start monday|send.*link|link|save.*spot|free|i can set|get you set|get you started|want me to send)\b/i.test(s);
+    const inviteLanguage = /\b(join|jump in|jump on\s+(?:the\s+)?(?:challenge|program|call)|get you in|get started|start monday|send.*link|link|save.*spot|i can set|get you set|get you started|want me to send|keen.*challenge|try\s+(?:the|this|my|our|a\s+free|the\s+free)?\s*(?:30\s*day|30-day|challenge|program)|hear more.*challenge|free\s+(30\s*day|30-day|challenge|program))\b/i.test(s);
     return mentionsChallenge && inviteLanguage;
 }
 
@@ -308,7 +377,7 @@ function isChallengeOfferWarningText(text) {
     if (!s) return false;
     if (/plantbased-balance\.org\/(vegan-challenge|transform-challenge)\.html/i.test(s)) return true;
     const mentionsChallenge = /\b(30\s*day|30-day|challenge|free challenge|plant.?based challenge|transformation challenge)\b/i.test(s);
-    const offerLanguage = /\b(join|jump in|jump on|get you in|get started|start monday|send.*link|link|save.*spot|sign ?up|free|i can set|get you set|get you started|want me to send|easiest starting point)\b/i.test(s);
+    const offerLanguage = /\b(join|jump in|jump on|get you in|get started|start monday|send.*link|link|save.*spot|sign ?up|i can set|get you set|get you started|want me to send|easiest starting point|keen.*challenge|try\s+(?:the|this|my|our|a\s+free|the\s+free)?\s*(?:30\s*day|30-day|challenge|program)|hear more.*challenge|free\s+(30\s*day|30-day|challenge|program))\b/i.test(s);
     return mentionsChallenge && offerLanguage;
 }
 
@@ -316,6 +385,7 @@ function isPrematureChallengeInvite({ draftText, currentMessage, qualifier, lead
     if (!isChallengeInviteText(draftText)) return false;
     if (linkedUserId || ['in_app', 'paying', 'invited'].includes(leadStage)) return false;
     if (['pitched', 'won'].includes(qualifier?.stage)) return false;
+    if (isDirectPracticalHelpRequest(currentMessage) && !hasDirectPracticalAnswer(draftText)) return true;
     return !hasChallengeInviteReadinessSignal(currentMessage)
         && !hasEarnedChallengeInviteMoment({ qualifier, currentMessage, leadReplyCount });
 }
@@ -617,15 +687,21 @@ function buildEvaluationPrompt({ leadName, channel, currentQualifier, history, c
 
 IMPORTANT CONTEXT: Shannon initiates these conversations. He finds people by browsing stories, reels, and posts on Instagram/Facebook, then DMs them first (replying to their story, commenting on a post, or cold-messaging). The leads are NOT coming to him. Shannon is the one reaching out and starting the chat. The hook_context field records what Shannon said to open the conversation.
 
-FIRST CAPTURED REPLY CONTEXT: if the conversation history is empty, do NOT assume the lead initiated or that this is the true first DM. Usually Shannon's native story/post opener was not captured by ManyChat. The lead may send a tiny or ambiguous reply because they are answering that unseen opener. Score the turn gently and prefer rapport-building over qualifier progress unless they clearly ask about the challenge, what is included, plant-based stuff, a signup link, or they plainly ask Shannon for help because they feel stuck.
+FIRST CAPTURED REPLY CONTEXT: if the conversation history is empty, do NOT assume the lead initiated or that this is the true first DM. Usually Shannon's native story/post opener was not captured by ManyChat. The lead may send a tiny or ambiguous reply because they are answering that unseen opener. Score the turn gently and prefer rapport-building over qualifier progress unless they clearly ask about the challenge, what is included, plant-based stuff, a signup link, or they plainly ask Shannon for help because they feel stuck. Joking "send help", "starting from scratch", or "need a kickstart" language is a bridge signal, not an invite signal.
 
 YOUR JOB: read the conversation, update the qualifier state, and decide whether THIS turn should keep chatting, gently bridge toward health/fitness, or move to the free challenge because they have admitted they need help.
 
 CRITICAL TONE RULE: Shannon is chatting like a mate, NOT interviewing like a coach. A question is not required. If you do ask one, it must come from the lead's exact words and help them name what feels hard, what they want to change, or where they need support. The lead should never feel like they're being funnelled or assessed.
 
-RAPPORT COMES FIRST: do not collect facts just to tick boxes. Build normal human back-and-forth, then use their own words to connect the chat toward health, fitness, energy, confidence, food, training, or consistency when it genuinely fits. If relationship_context is blank and they have not clearly asked to join/start or asked Shannon for help because they feel stuck ("I need help", "I dunno what I'm doing"), usually set is_question_moment=false and let Shannon keep chatting. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
+RAPPORT HAS A JOB: do not collect facts just to tick boxes. Build normal human back-and-forth, then use their own words to connect the chat toward health, fitness, energy, confidence, food, training, or consistency when it genuinely fits. If relationship_context is blank and their latest message has no health/fitness/food/energy/help signal, usually set is_question_moment=false and let Shannon keep chatting. But once they name a clear blocker, goal, low-energy pattern, consistency issue, or practical help need, stop pen-palling and move one step toward help: a tiny useful lens, a precise fit question, or an earned soft challenge bridge. Do not treat playful "send help" as a challenge request by itself. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
 
-CHALLENGE INVITE GATE: a 30-day challenge invite is not the default reward for a warm reply. This gate is for qualifier-eligible leads only, never linked app users, in-app clients, paying clients, or support/check-in threads. There are two good moments to move it forward: (1) they make the human move first by asking what is included, asking for the link, saying they want to join/start, or admitting they need help / feel lost / do not know what they are doing; or (2) the conversation has earned a soft bridge because Shannon already has a normal-life anchor plus enough health/fitness context, such as current state plus motivation or blocker, and there have usually been 3-6 meaningful lead replies. In an earned bridge, do not send a link or brochure. Avoid generic wording that says the challenge is made for this situation. Make the offer feel discovered from their own words: "if you haven't locked in [support/trainer/structure] yet...", "since you're already trying [specific change]...", or "if a bit of [food/training/check-in] structure would help...". End with a soft permission question, such as "want me to send you the details?" Words like "keen", "interested", "haha", or "yeah sounds good" are not enough by themselves when the tracked context is thin. Current tracked meaningful lead replies from this person: ${leadReplyCount}.
+PLATEAU / TRIED-EVERYTHING GATE: when a lead says they are stuck, plateaued, not progressing, or have already tried lots of fixes and nothing changed, this is a diagnostic coaching moment, not a challenge-invite moment. Prefer a specific question about the sticking point, technique, recovery, load/intensity, food, or what changed when they tried those fixes. Do not move to a 30-day challenge purely because they are frustrated.
+
+APP / WORKOUT SUPPORT GATE: if they mention the app glitching, logging problems, needing a specific workout plan, full-body M/W/F plans, stale exercises, rep schemes, or simplifying tech, treat it as a support/programming request first. Do not convert that into a 30-day challenge invite unless they explicitly ask for the challenge or link.
+
+CHALLENGE INVITE GATE: a 30-day challenge invite is not the default reward for a warm reply. This gate is for qualifier-eligible leads only, never linked app users, in-app clients, paying clients, or support/check-in threads. There are two good moments to move it forward: (1) they make the human move first by asking what is included, asking for the link, saying they want to join/start, or admitting they need help / feel lost / do not know what they are doing; or (2) the conversation has earned a soft bridge because Shannon already has a normal-life anchor plus enough health/fitness context, such as current state plus motivation or blocker, and there have usually been 3-6 meaningful lead replies. In an earned bridge, do not send a link or brochure. Avoid generic wording that says the challenge is made for this situation. Make the offer feel discovered from their own words: "if you haven't locked in [support/trainer/structure] yet...", "since you're already trying [specific change]...", or "if a bit of [food/training/check-in] structure would help...". End with a soft permission question, such as "want me to send you the details?" Words like "keen", "interested", "haha", "yeah sounds good", "send help", "starting from scratch", or "need a kickstart" are not enough by themselves when the tracked context is thin. If they have already shared enough context and the latest message repeats the blocker, prefer a specific optional bridge over another getting-to-know-you question. Current tracked meaningful lead replies from this person: ${leadReplyCount}.
+
+EARNED BRIDGE SHAPE: once the lead has shared enough real context, the invite should be anchored to their actual situation, for example "if you haven't locked in [support/trainer/structure] yet, the free 30 day challenge could be a good fit for [their exact blocker]. want me to send the details?" Never use a stock invite line.
 
 STOCK QUESTION BAN: do not output generic routine questions like "what does a normal day look like for you at the moment?", "what does a normal day of eating look like for you?", "are you much of a cook or more of a takeaway person?", "you training at the moment?", "what's for lunch?", or "what are your goals?". They sound pasted from a script and are unsafe for auto-send. If there is no specific health, fitness, or help bridge in the lead's latest words, set is_question_moment=false.
 
@@ -645,6 +721,7 @@ CURRENT STATE FOR THIS LEAD (${leadName}, channel: ${channelLabel}):
   stage: ${currentQualifier.stage} (${currentQualifier.stage_label}, ${currentQualifier.stage_index}/4)
   warmth: ${currentQualifier.warmth_score}/100 (${currentQualifier.warmth_label})
   challenge_route: ${currentQualifier.challenge_route}
+  meaningful lead replies: ${leadReplyCount}
   facts so far:
 ${factsSummary}
 
@@ -686,6 +763,8 @@ NOW DECIDE:
 7. **quote_evidence**: the exact phrase from the lead's words your reasoning hinges on. Null if there isn't one (e.g. on a first reply with no signal yet).
 
 8. **is_question_moment**: true if this turn is the right moment to push the next stage's question. false if Shannon should just chat / validate / acknowledge without pushing the funnel forward this turn.
+
+Keep the whole JSON compact. Use null for unknown facts. Each fact string should be under 12 words. next_question should be one short sentence. why_now should be under 18 words. Do not repeat the schema or explain anything outside JSON.
 
 OUTPUT JSON ONLY — no commentary, no code fences:
 {

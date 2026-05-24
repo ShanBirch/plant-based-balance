@@ -209,6 +209,37 @@ const repairIssues = instantDraft.collectCocosAutoRepairIssues({
 
 assert.ok(repairIssues.some(issue => /Reviewer summary/.test(issue)), 'review issues should feed the Coco repair prompt');
 assert.ok(repairIssues.some(issue => /stock discovery/i.test(issue)), 'stock questions should feed the Coco repair prompt');
+
+const earnedChallengeBridgeIssues = instantDraft.collectCocosAutoRepairIssues({
+    draft: {
+        joined: 'honestly this is the kind of thing the free 30 day challenge can help with: simple structure after work without having to think it all through. want me to send the details?',
+    },
+    draftReview: null,
+    challengeOfferWarning: { required: true },
+    currentMessage: 'yeah food and training are the struggle after work, i keep falling off',
+    qualifier: {
+        stage: 'motivation',
+        stage_index: 2,
+        warmth_score: 72,
+        warmth_label: 'warm',
+        meaningful_lead_reply_count: 3,
+        facts: {
+            relationship_context: 'works long shifts and has low energy after work',
+            relationship_checklist: { work_study: 'long shifts', daily_rhythm: 'tired after work' },
+            current_state: 'food and training fall apart after shifts',
+            motivation: 'wants energy back',
+        },
+    },
+    leadStage: 'qualifying',
+    linkedUserId: null,
+});
+
+assert.strictEqual(
+    earnedChallengeBridgeIssues.some(issue => /Remove the pitch|premature/i.test(issue)),
+    false,
+    'earned Coco challenge bridge should survive repair and be held for Shannon review instead'
+);
+
 assert.strictEqual(
     instantDraft.shouldAttemptCocosDraftRepair({
         cocosAutoSendLane: true,

@@ -353,6 +353,14 @@ function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarnin
         || ['pitched', 'won'].includes(qualifier?.stage)
         || linkedUserId
         || ['in_app', 'paying', 'invited'].includes(leadStage);
+    const prematureChallengeInvite = isPrematureChallengeInvite({
+        draftText,
+        currentMessage,
+        qualifier,
+        leadStage,
+        linkedUserId,
+        leadReplyCount: meaningfulLeadReplyCount,
+    });
     if (draftReview && !isDraftReviewAutoSendSafe(draftReview) && !isReviewTimeoutOnly(draftReview) && !reviewLooksLikePureContextGap(draftReview)) {
         if (draftReview.summary) issues.push(`Reviewer summary: ${draftReview.summary}`);
         const reviewIssues = Array.isArray(draftReview.issues) ? draftReview.issues.filter(Boolean) : [];
@@ -365,7 +373,7 @@ function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarnin
     if (isUnsafeStockDiscoveryQuestion(draftText)) {
         issues.push('Draft uses a stock discovery question. Replace it with a specific reply to the latest detail, or no question if a reaction is enough.');
     }
-    if (isPrematureChallengeInvite({ draftText, currentMessage, qualifier, leadStage, linkedUserId, leadReplyCount: meaningfulLeadReplyCount })) {
+    if (prematureChallengeInvite) {
         issues.push('Draft invites the challenge before the person has shown enough readiness or 3 meaningful lead replies. Keep rapport moving instead.');
     }
     return [...new Set(issues.map(issue => truncate(String(issue || '').replace(/\s+/g, ' ').trim(), 220)).filter(Boolean))];
@@ -831,11 +839,11 @@ function pitchHintForStage(stage) {
         return "They're already in the app or challenge. Coach them like a normal client. The IG thread is just a parallel channel, same voice, same memory. Default to a short, human reply. Do not ask a new getting-to-know-you question unless it clearly fits. If they ask for program, plan, workout, meal, schedule, or app updates, answer quickly and directly.";
     }
     if (!stage || stage === 'new') {
-        return "EARLY in this DM thread. If there are no visible prior messages, assume Shannon's native story/post opener is missing from ManyChat and this is the lead's first captured reply. Just chat. A short reaction is fine. Ask one light follow-up only if their words give you a clear opening. Prefer light human context before fitness goals, but do not force it. DO NOT pitch the app, the challenge, or anything else yet.";
+        return "EARLY in this DM thread. If there are no visible prior messages, assume Shannon's native story/post opener is missing from ManyChat and this is the lead's first captured reply. Just chat. A short reaction is fine. Ask one light follow-up only if their words give you a clear opening. If their first captured reply already names a food, training, energy, body, confidence, or consistency problem, stay with that problem instead of asking unrelated normal-life questions. DO NOT pitch the app or challenge from empty friendliness.";
     }
     switch (stage) {
         case 'qualifying':
-            return "Conversation is warming up. Stay in the topic and keep rapport natural before coaching discovery. Ask one useful follow-up only when it feels like normal texting. If the current message is simple banter, just banter. Mention the free challenge when they ask how to start, ask for the link/details, clearly ask Shannon for help because they feel stuck, or the qualifier context shows Shannon already has a relationship anchor plus enough goal/blocker context for a soft bridge. When bridging, anchor it to their exact situation and ask if they want details instead of using a stock invite line. A vague warm reply is not a challenge opening by itself. Do not offer to write a standalone meal plan or workout program in DMs. The app tailors those after they join the challenge.";
+            return "Conversation is warming up. Keep rapport natural, but make it create momentum. Ask one useful follow-up only when it moves the exact blocker forward. If the current message is simple banter, just banter. If they have already shared a clear food/training/energy/consistency blocker, do not ask another unrelated human-context question. Mention the free challenge when they ask how to start, ask for the link/details, clearly ask Shannon for help because they feel stuck, or the qualifier context shows Shannon already has a relationship anchor plus enough goal/blocker context for a soft bridge. When bridging, anchor it to their exact situation and ask if they want details instead of using a stock invite line. A vague warm reply is not a challenge opening by itself. Do not offer to write a standalone meal plan or workout program in DMs. The app tailors those after they join the challenge.";
         case 'invited':
             return "You've already mentioned the challenge or app. DON'T re-pitch. Answer their questions plainly. If they're close to signing up, help them across the line. If they are not ready yet, ask one useful question only if it helps the next step.";
         case 'in_app':
@@ -852,6 +860,18 @@ function challengeUrlForRoute(route) {
     return route === 'vegan'
         ? 'https://plantbased-balance.org/vegan-challenge.html'
         : 'https://plantbased-balance.org/transform-challenge.html';
+}
+
+const ONE_ON_ONE_COACHING_URL = 'https://future-balance.netlify.app/coaching.html';
+
+function buildOneOnOneCoachingBlock() {
+    return `
+
+ONE-ON-ONE COACHING LINK:
+- If an unlinked lead clearly asks about paid coaching, 1:1 coaching, one-on-one coaching, online coaching with Shannon, coaching spots, or the coaching details/link, answer as 1:1 coaching, not as the free 30-day challenge.
+- Use this exact link when the latest message asks for the coaching link/details or clearly wants to start 1:1 coaching: ${ONE_ON_ONE_COACHING_URL}
+- Tailor the sentence before the link to their own blocker or goal. Frame it as 1:1 coaching with Shannon, with weekly check-ins and ongoing support, not just the app or challenge.
+- If they only ask a general help question and have not asked for coaching details/link, do not send the coaching link yet. Reply to the question and ask a low-pressure permission question if coaching might fit.`;
 }
 
 function buildChallengeNextStepBlock(qualifier) {
@@ -973,6 +993,20 @@ This thread belongs to Coco's PT Studio, Shannon's contained acquisition test ac
 - Before 3 meaningful lead replies, only move to the challenge if they directly ask for help, ask how to start, ask what is included, or ask for the link. Once the earned window opens, stop drifting into pen-pal mode and ask the simple permission bridge.
 - Still do not pitch from empty friendliness alone. Banter can stay banter. The point is natural momentum, not pressure.
 - Keep everything sounding like Shannon personally texting. Never mention tests, auto-send, algorithms, learning, or Coco's as a system.`;
+}
+
+function buildAcquisitionMomentumBlock({ botAccount, leadStage } = {}) {
+    if (['in_app', 'paying', 'churned'].includes(leadStage)) return '';
+    const laneName = isCocosBotAccount(botAccount) ? "Coco's" : 'shan_n_sunny / Balance';
+    return `
+
+ACQUISITION MOMENTUM (${laneName}):
+- Rapport is the on-ramp, not the destination. Do not keep the thread alive with more pet/work/weekend/hobby questions once the lead has named a food, training, energy, body, confidence, consistency, or time problem.
+- Use this decision order: answer their latest message, notice the strongest blocker or desire, then choose one next move: a tiny useful lens, one precise fit question, a direct challenge explanation, or a soft optional challenge bridge.
+- One or two normal-life beats is usually enough. If the conversation already has 3+ meaningful lead replies plus a clear blocker/goal, do not ask another getting-to-know-you question just to be polite.
+- Good soft bridge shape: "honestly this is the kind of thing the free 30 day challenge can help with: [their exact blocker] without [their exact pain]. want me to send the details?"
+- If they ask for practical advice, give the practical answer first. Then bridge only if it still feels natural.
+- If there is no real blocker yet, stay human and light, but make the next handle sharper or let the convo breathe. Do not become a pen pal for its own sake.`;
 }
 
 function replaceIgMediaMarkers(text, { photo = '📷 photo', audio = '🎙️ voice note', video = '🎥 video' } = {}) {
@@ -1469,6 +1503,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const heardFirstConversation = buildHeardFirstConversationBlock();
     const shannonDmTuning = buildShannonDmTuningBlock();
     const accountExperimentBlock = buildAccountExperimentBlock(botAccount);
+    const acquisitionMomentumBlock = buildAcquisitionMomentumBlock({ botAccount, leadStage });
     const cocosRewardLearningBlock = await loadCocosRewardLearningBlock(botAccount);
 
     const priorInboundMessages = Array.isArray(recentInboundMessages) ? recentInboundMessages : [];
@@ -1626,6 +1661,7 @@ Use this batch as context, not a checklist. First decide what is still live: dir
         || !!linkedUserId;
     const funnelContext = isOnboardedOrPostFunnel ? '' : META_AD_FUNNEL_CONTEXT;
     const challengeNextStepBlock = buildChallengeNextStepBlock(qualifier);
+    const oneOnOneCoachingBlock = isOnboardedOrPostFunnel ? '' : buildOneOnOneCoachingBlock();
     const qualifierRelationshipBlock = buildQualifierRelationshipBlock(qualifier);
 
     // Cross-channel: when this lead is linked to an app user, fold in
@@ -1771,6 +1807,7 @@ ${relationshipDiscovery}
 ${heardFirstConversation}
 ${shannonDmTuning}
 ${accountExperimentBlock}
+${acquisitionMomentumBlock}
 ${cocosRewardLearningBlock}
 ${firstCapturedLeadReplyBlock}
 ${replyMode.extraBlock}
@@ -1810,8 +1847,9 @@ ACTION CLAIMS:
 - If they report a calorie/logging discrepancy, acknowledge it as something Shannon should check. Do not promise to manually adjust or log anything unless the app data below proves it has already been done.
 
 ACQUISITION STYLE:
-- Human first, coach second. Before goals/blockers, learn one normal-life anchor when it fits: where they're based, kids/family, work/life rhythm, cooking situation, training background, why they replied, what they really love, or what genuinely ticks them off/stresses them.
-- When you ask a question, it should help Shannon understand the person, not just move the funnel. But do not turn every reply into discovery. Normal back-and-forth is allowed.
+- Human first, coach second, but not pen-pal forever. Learn a normal-life anchor when there is no clear help signal yet: where they're based, kids/family, work/life rhythm, cooking situation, training background, why they replied, what they really love, or what genuinely ticks them off/stresses them.
+- When a clear food, training, energy, body, confidence, consistency, or time blocker is already visible, stop collecting unrelated human context and move that exact blocker forward.
+- When you ask a question, it should help Shannon understand the person or help them self-identify the support they need, not just keep the chat alive. Normal back-and-forth is allowed, but it should create momentum.
 - If they reveal something they love or something that annoys/stresses them, stay with that thread for a beat. Relate only if it is honest and light, then bring the spotlight back to them.
 - A relationship question does not have to be the last bubble. If it is sparked by a specific thing they said, ask it while talking about that thing, then continue the reply.
 - Do not bundle questions. Never ask name + age + goal + blocker together.
@@ -1819,6 +1857,7 @@ ACQUISITION STYLE:
 - If they are already asking how to join, accepted the challenge, or clearly want the link, move them forward instead of slowing them down with more questions.
 - Do not drop a 30-day challenge invite just because they are friendly, vaguely interested, or mention fitness/food. This timing rule is for unlinked leads only, not clients/app users. Wait for either a human signal ("I need help", "I dunno what I'm doing", "where do I start?", "what's included?", "send the link", or an obvious join/start request) or enough earned context for a soft bridge. Earned context means Shannon already has a normal-life anchor, useful goal/blocker context, and usually 3-6 meaningful lead replies. In that case ask if they want details, do not send the link unless they accept.
 - When the soft bridge is right, make it fluid and specific. Avoid generic lines that say the challenge is made for this exact situation. Use their words as the entry point: "if you haven't locked in [support] yet...", "since you're already [making this change]...", or "if a bit of [structure/check-ins] would help...". It should feel like Shannon noticed the opening, not like the funnel fired.
+- Once they have shared enough real context plus a clear blocker/goal, do not keep asking getting-to-know-you questions. Use a specific, optional bridge or useful next lens.
 
 NEVER reveal AI, automation, "trained on Shannon's voice", "24/7", or anything that breaks the personal-coach illusion. Shannon is replying personally.
 
@@ -1831,6 +1870,7 @@ ${appNavigationGuide}
 ${appXpGuide}
 ${funnelContext}
 ${challengeNextStepBlock}
+${oneOnOneCoachingBlock}
 ${unansweredBatchBlock}
 ${storyReplyPromptContextBlock}
 ${mediaContextPromptBlock}
