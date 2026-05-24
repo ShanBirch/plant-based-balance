@@ -429,7 +429,7 @@ const songOnlyVideoSalvage = assessStillsOnlyVideoSalvageContext({
         videoDetected: true,
         videoEvidenceStatus: 'omitted_after_video_bridge_failure',
         videoRetryReason: 'transient_bridge_failure',
-        storyMusicLabel: 'Olivia Dean • Ladies Room',
+        storyMusicLabel: 'Olivia Dean - Ladies Room',
     },
 });
 assert.strictEqual(songOnlyVideoSalvage.safeToComment, true);
