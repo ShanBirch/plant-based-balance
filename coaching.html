@@ -7,12 +7,12 @@
     <meta name="description" content="1:1 online coaching with Shannon inside Balance. Personal workouts, weekly goals, three check-ins a week, XP, accountability, and ongoing support.">
     <meta property="og:title" content="Balance: 1:1 Online Coaching With Shannon">
     <meta property="og:description" content="Personal coaching, weekly goals, three check-ins a week, and the Balance app keeping your habits visible.">
-    <meta property="og:image" content="https://plantbased-balance.org/balance_logo.png">
-    <meta property="og:url" content="https://plantbased-balance.org/coaching.html">
+    <meta property="og:image" content="https://future-balance.netlify.app/balance_logo.png">
+    <meta property="og:url" content="https://future-balance.netlify.app/coaching.html">
     <meta property="og:type" content="website">
     <meta name="theme-color" content="#0f1923">
-    <link rel="icon" type="image/png" href="https://plantbased-balance.org/balance_logo.png">
-    <link rel="apple-touch-icon" href="https://plantbased-balance.org/balance_logo.png">
+    <link rel="icon" type="image/png" href="https://future-balance.netlify.app/balance_logo.png">
+    <link rel="apple-touch-icon" href="https://future-balance.netlify.app/balance_logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -374,6 +374,30 @@
             font-size: 0.94rem;
             line-height: 1.62;
         }
+        .diet-note {
+            max-width: 880px;
+            margin: -14px auto 34px;
+            display: grid;
+            grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr);
+            gap: 22px;
+            align-items: center;
+            background: rgba(0, 212, 170, 0.055);
+            border: 1px solid var(--green-border);
+            border-radius: 8px;
+            padding: 22px 24px;
+        }
+        .diet-note h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.35rem;
+            line-height: 1.18;
+            letter-spacing: 0;
+        }
+        .diet-note p {
+            color: var(--muted);
+            font-size: 0.95rem;
+            line-height: 1.62;
+        }
+        .diet-note strong { color: var(--text); }
 
         .rhythm {
             display: grid;
@@ -753,6 +777,11 @@
             .about {
                 grid-template-columns: 1fr;
             }
+            .diet-note {
+                grid-template-columns: 1fr;
+                margin-top: -10px;
+                padding: 20px;
+            }
             .feature-card { min-height: 0; }
             .rhythm-panel { padding: 26px 22px; }
             .rhythm-panel h2 { font-size: 1.9rem; }
@@ -846,6 +875,10 @@
         <section class="reveal">
             <div class="section-label">What You Get</div>
             <h2 class="section-title">Not a template. A coaching rhythm around your real week.</h2>
+            <div class="diet-note">
+                <h3>Plant-based friendly, not plant-based only.</h3>
+                <p>Shannon is vegetarian and can help if you want to eat more plant-based, but you don't need to be vegan or vegetarian. Coaching is built around <strong>how you actually eat</strong>, meat, fish, dairy, eggs, plants, or a mix of all of it.</p>
+            </div>
             <div class="feature-grid">
                 <div class="feature-card">
                     <span class="feature-num">01</span>
@@ -854,8 +887,8 @@
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">02</span>
-                    <h3>Food support that fits you</h3>
-                    <p>Meal targets, simple options, and practical swaps based on how you actually eat. Plant-based, vegetarian, mixed diet, or somewhere in between.</p>
+                    <h3>Food support that fits your actual diet</h3>
+                    <p>Meal targets, simple options, and practical swaps based on your normal food, with plant-based help there if you want it.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">03</span>
@@ -1045,7 +1078,7 @@
         <div class="footer-links">
             <a href="/">Home</a>
             <a href="/transform-challenge.html">Free challenge</a>
-            <a href="mailto:shannon@plantbased-balance.org">shannon@plantbased-balance.org</a>
+            <a href="mailto:shannon@plantbased-balance.org">Email Shannon</a>
         </div>
     </footer>
 
@@ -1108,7 +1141,7 @@
             } catch (err) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Start with 30 days free';
-                alert('Sorry, something went wrong. Please try again or email shannon@plantbased-balance.org directly.');
+                alert('Sorry, something went wrong. Please try again or email Shannon directly.');
             }
         });
 
