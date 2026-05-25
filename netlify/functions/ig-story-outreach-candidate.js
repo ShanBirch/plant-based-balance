@@ -113,15 +113,36 @@ function isLowContextStoryQuestion(text) {
 }
 
 const ANIMAL_WELFARE_SUPPORT_COMMENT = "i can't believe this happens, so sad. you okay?";
+const ANIMAL_WELFARE_ADVOCACY_COMMENT = "so true, it just normalises it hey";
+
+function isAnimalWelfareDistressSupportComment(text) {
+    return /^i can'?t believe this happens,?\s+so sad\.?\s+(?:you okay|are you okay)\??$/i.test(cleanText(text, 140));
+}
+
+function isAnimalWelfareAdvocacyComment(text) {
+    return /^so true,?\s+it just normalises it hey\.?$/i.test(cleanText(text, 140));
+}
 
 function isAnimalWelfareSupportComment(text) {
-    return /^i can'?t believe this happens,?\s+so sad\.?\s+(?:you okay|are you okay)\??$/i.test(cleanText(text, 140));
+    return isAnimalWelfareDistressSupportComment(text) || isAnimalWelfareAdvocacyComment(text);
 }
 
 function isAnimalWelfareAdvocacyContext(text) {
     const value = cleanText(text, 4000);
     if (!value) return false;
     return /\b(animal cruelty|animal abuse|animal welfare|animal rights|animal liberation|factory farm(?:ing)?|animal agriculture|animal ag|animal exploitation|speciesism|farmed animals?|slaughterhouse|slaughter(?:ed|ing)?|ventilation shutdown|animal slaughter|humane slaughter|kill(?:ing)? (?:a |the |this )?(?:pig|cow|chicken|sheep|lamb|calf|animal)s?|(?:pig|cow|chicken|sheep|lamb|calf|animal)s? (?:being )?kill(?:ed|ing)|mass animal cull(?:ing)?|animal cull(?:ing)?|euthan(?:asia|ised|ized|ise|ize)|live export|battery hens?|caged hens?|gestation crates?|dairy industry|meat industry|vegan activism|vegan advocacy|plant[-\s]?based activism|save animals?|end animal suffering|stop animal cruelty)\b/i.test(value);
+}
+
+function isAnimalWelfareDiscussionContext(text) {
+    const value = cleanText(text, 4000);
+    if (!value) return false;
+    return /\b(welfarists?|nutrition quacks?|theor(?:y|ies)|strateg(?:y|ies)|pressure campaigns?|common sense|objectification|normalis(?:e|es|ed|ing|ation)|normaliz(?:e|es|ed|ing|ation)|impressionable minions)\b/i.test(value);
+}
+
+function animalWelfareSupportCommentForContext(text) {
+    return isAnimalWelfareDiscussionContext(text)
+        ? ANIMAL_WELFARE_ADVOCACY_COMMENT
+        : ANIMAL_WELFARE_SUPPORT_COMMENT;
 }
 
 function hasGraphicAnimalWelfareContext(text) {
@@ -143,8 +164,11 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
         .replace(/\s+/g, ' ')
         .trim();
     if (!text) return '';
-    if (isAnimalWelfareSupportComment(text)) {
+    if (isAnimalWelfareDistressSupportComment(text)) {
         return ANIMAL_WELFARE_SUPPORT_COMMENT;
+    }
+    if (isAnimalWelfareAdvocacyComment(text)) {
+        return ANIMAL_WELFARE_ADVOCACY_COMMENT;
     }
     if (/\b(?:the|this|that|these|those|some)\s+[bcdefghjklmnopqrstuvwxyz]\s+(?:sights?|views?|scenery|spots?|places?|vibes?)\b/i.test(text)) {
         return '';
@@ -741,7 +765,7 @@ Rules:
 - For a clear portrait/selfie, prefer a simple broad vibe like "looking good" over asking who took the photo.
 - For a clear portrait/selfie, prefer a simple broad vibe like "looking good" over asking who took the photo.
 - For plain selfie/pose videos, do not invent an occasion. If the only real handle is the visible song or audio, a tiny music comment is okay.
-- For animal-cruelty, factory-farming, animal-welfare, or vegan-advocacy stories, do not make a normal light joke. If it is not graphic gore and the story owner appears to be sharing concern, plan a soft supportive check-in such as "i can't believe this happens, so sad. you okay?"
+- For animal-cruelty, factory-farming, animal-welfare, or vegan-advocacy stories, do not make a normal light joke. If it is actual distress/cruelty and not graphic gore, plan a soft supportive check-in such as "i can't believe this happens, so sad. you okay?" If it is an advocacy, theory, or opinion text post, prefer "so true, it just normalises it hey".
 - If the story is heavy, political, sexual, violent, medical, grief-related, race/slur/discrimination-related, disaster-related, or otherwise sensitive, say to avoid commenting.
 - If the story is sad, low-mood, mental-health related, blurry, unclear, or hard to understand, say to avoid commenting.
 - Never mention planning, AI, automation, models, or prompts.
@@ -885,7 +909,7 @@ Return JSON only:
 
 Critique rules:
 - Block if the story is heavy/sensitive: war, politics, weapons, violence, death, grief, disasters, medical emergencies, race/slur/discrimination topics, self-harm, sexual/nude content, hate/harassment, drugs, legal trouble, or vulnerable minors.
-- Exception: animal-cruelty, factory-farming, animal-welfare, or vegan-advocacy stories may pass with a soft supportive check-in to the story owner, for example "i can't believe this happens, so sad. you okay?", unless the evidence is graphic gore or unclear.
+- Exception: animal-cruelty, factory-farming, animal-welfare, or vegan-advocacy stories may pass with a soft supportive reply to the story owner unless the evidence is graphic gore or unclear. Use "i can't believe this happens, so sad. you okay?" for actual distress/cruelty, and "so true, it just normalises it hey" for advocacy, theory, or opinion text.
 - For shared reels/posts, tagged stories, reshared stories, or content from another account, allow only sharer-framed reactions. Block if the comment treats the reel/post subject as the story owner.
 - Block if the comment includes the story owner's name, profile name, username, @handle, or direct address.
 - Block if the comment pitches Balance/coaching/challenge/app/program/link/meal plan. Story comments are first-touch rapport, not the offer step.
@@ -1810,7 +1834,7 @@ Rules:
 - Do not guess that something is a product, brand deal, collab, or sponsor unless packaging/signage makes that explicit.
 - Do not make teasing or critical jokes about grooming, weight, size, or appearance. Pet comments should feel warm and easy.
 - Do not pitch Balance, the app, coaching, a program, a meal plan, a link, or the challenge. The challenge bridge belongs later in DMs, only for unlinked leads after direct start/help intent or roughly 3-6 meaningful lead replies with real relationship and goal/blocker context.
-- For animal-cruelty, factory-farming, animal-welfare, or vegan-advocacy stories, a supportive check-in to the story owner is allowed when it is not graphic gore and the concern is clear. Prefer exactly: "i can't believe this happens, so sad. you okay?"
+- For animal-cruelty, factory-farming, animal-welfare, or vegan-advocacy stories, a supportive reply to the story owner is allowed when it is not graphic gore and the concern is clear. Prefer exactly "i can't believe this happens, so sad. you okay?" for actual distress/cruelty. For advocacy, theory, or opinion text posts, prefer exactly "so true, it just normalises it hey".
 - Do not mention anything you cannot see.
 - Set safe_to_comment=false and comment="" for shared content if the only possible reply would treat the reel/post subject as the story owner, or for anything heavy, sensitive, or inappropriate: war, politics, weapons, violence, death, grief, sadness, low mood, mental health, race/slur/discrimination topics, unclear/blurry content, disasters, medical emergencies, self-harm, sexual/nude content, hate/harassment, vulnerable minors, drugs, legal trouble, or anything where a casual opener could look insensitive. The animal-welfare support exception above is the only exception.
 - Ignore Instagram UI, other side stories, usernames in the tray, and browser chrome.
@@ -1925,7 +1949,7 @@ Rules:
     if (animalWelfareSupport) {
         safeToComment = true;
         safetyReason = '';
-        parsedComment = ANIMAL_WELFARE_SUPPORT_COMMENT;
+        parsedComment = animalWelfareSupportCommentForContext(animalWelfareText);
     }
     const videoSalvageSafety = assessStillsOnlyVideoSalvageContext({
         description,
@@ -2452,6 +2476,7 @@ exports._test = {
     assessStoryCommentSafety,
     assessAudioVisualCommentConsistency,
     assessStillsOnlyVideoSalvageContext,
+    animalWelfareSupportCommentForContext,
     parseJsonMaybe,
     validateEvidenceImages,
     validateEvidenceVideo,

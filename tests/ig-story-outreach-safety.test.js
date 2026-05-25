@@ -13,6 +13,7 @@ const {
     storyAnalysisTranscriptNote,
     normalizeStorySurfaceContext,
     assessStillsOnlyVideoSalvageContext,
+    animalWelfareSupportCommentForContext,
 } = require('../netlify/functions/ig-story-outreach-candidate')._test;
 
 assert.strictEqual(
@@ -372,6 +373,26 @@ assert.strictEqual(
     'animal welfare support comments should be allowed despite sad wording'
 );
 
+assert.strictEqual(
+    animalWelfareSupportCommentForContext('Welfarists keep normalizing animal exploitation with nice-sounding theories.'),
+    'so true, it just normalises it hey',
+    'vegan theory or advocacy text should not get the distress check-in wording'
+);
+
+assert.strictEqual(
+    animalWelfareSupportCommentForContext('Ventilation shutdown and mass animal culling on factory farms.'),
+    "i can't believe this happens, so sad. you okay?",
+    'actual animal cruelty/distress posts should keep the supportive check-in'
+);
+
+assert.strictEqual(
+    normalizeDraftComment('so true, it just normalises it hey', {
+        storyOwner: 'lilith_is_a_punk',
+    }),
+    'so true, it just normalises it hey',
+    'animal advocacy agreement comments should survive normalization'
+);
+
 const animalWelfareSafety = assessStoryCommentSafety({
     storyOwner: '8_degrees_of_donna',
     sharedFromUsername: 'animaljustice',
@@ -391,6 +412,15 @@ const animalAgricultureSafety = assessStoryCommentSafety({
 });
 assert.strictEqual(animalAgricultureSafety.safeToComment, true);
 assert.strictEqual(animalAgricultureSafety.reason, 'animal_welfare_support');
+
+const animalAdvocacyDiscussionSafety = assessStoryCommentSafety({
+    storyOwner: 'lilith_is_a_punk',
+    description: 'A vegan argument about welfarists, theories, and animal exploitation.',
+    visibleText: 'Would it change the reality that it perpetuates and normalizes animal exploitation?',
+    comment: 'so true, it just normalises it hey',
+});
+assert.strictEqual(animalAdvocacyDiscussionSafety.safeToComment, true);
+assert.strictEqual(animalAdvocacyDiscussionSafety.reason, 'animal_welfare_support');
 
 const transcriptAnimalAdvocacySafety = assessStoryCommentSafety({
     storyOwner: 'partyorgrhp',
