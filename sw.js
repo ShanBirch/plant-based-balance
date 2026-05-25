@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v165'; // v165: guard skipped onboarding slides; v164: tightened first-run onboarding and quick app tour
+const CACHE_NAME = 'pbb-app-v166'; // v166: stop gender double-advance; v165: guard skipped onboarding slides
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',

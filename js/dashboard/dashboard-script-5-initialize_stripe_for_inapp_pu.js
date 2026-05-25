@@ -7554,11 +7554,8 @@ function selectGender(gender) {
         femaleBtn.style.background = 'white';
     }
 
-    // Auto-advance to next slide after selection
-    setTimeout(() => {
-        currentWizardStep++;
-        updateWizardUI();
-    }, 300);
+    // Keep the user in control: the visible Next button handles validation and
+    // movement to the profile screen, avoiding accidental double-advance.
 }
 
 // Helper function to check if user is male
