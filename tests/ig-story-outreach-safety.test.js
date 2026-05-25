@@ -265,6 +265,15 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    normalizeDraftComment("Oh so cute, what's their name?", {
+        storyOwner: 'veganrebelalliance',
+        sharedContent: true,
+    }),
+    'So cute, do you know their name?',
+    'shared animal stories should not ask pet-name questions as if the animal belongs to the sharer'
+);
+
+assert.strictEqual(
     normalizeDraftComment('Love the colourful wigs! Looks like a great hens.', {
         storyOwner: 'wheres_kimmy_t',
         sharedContent: false,
