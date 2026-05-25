@@ -10134,6 +10134,57 @@
             loadAlerts();
         }
 
+        function routeActionedAlertToStatusTab(alert, status, delayMs = 0) {
+            const targetIsScheduled = status === 'scheduled';
+            const statusView = targetIsScheduled ? 'later' : 'sent_today';
+            const sourceFeed = currentFeed;
+            const sourceCocosSectionView = currentCocosSectionView;
+            const run = () => {
+                if (currentFeed !== sourceFeed) return false;
+
+                if (sourceFeed === 'dms' && DM_ALERT_TYPES.includes(alert?.alert_type)) {
+                    activateDmView(statusView);
+                    loadDms();
+                    return true;
+                }
+
+                if (sourceFeed === 'cocos'
+                    && sourceCocosSectionView === 'dms'
+                    && currentCocosSectionView === sourceCocosSectionView
+                    && isCocosDmAlert(alert)) {
+                    activateCocosDmView(statusView);
+                    loadCocosDms();
+                    return true;
+                }
+
+                if (sourceFeed === 'follow-ups' && FOLLOW_UP_ALERT_TYPES.includes(alert?.alert_type)) {
+                    activateFollowUpView(statusView);
+                    loadFollowUps();
+                    return true;
+                }
+
+                if (sourceFeed === 'checkins' && isChallengeCheckinAlert(alert)) {
+                    activateChallengeCheckinView(statusView);
+                    loadChallengeCheckins(true);
+                    return true;
+                }
+
+                if (sourceFeed === 'alerts') {
+                    activateAlertView(targetIsScheduled ? 'sent_later' : 'sent_today');
+                    loadAlerts();
+                    return true;
+                }
+
+                return false;
+            };
+
+            if (delayMs > 0) {
+                window.setTimeout(run, delayMs);
+                return true;
+            }
+            return run();
+        }
+
         function setAlertView(view) {
             if (!ALERT_TABS.includes(view)) return;
             if (currentAlertView === view) return;
@@ -16370,9 +16421,10 @@
                 if (wasEdited && editReason) {
                     mergedData.edit_reason = editReason;
                 }
-                await window.supabaseClient.from('coach_alerts')
+                const { error: markSentError } = await window.supabaseClient.from('coach_alerts')
                     .update({ status: 'sent', actioned_at: sentAt, data: mergedData })
                     .eq('id', alertId);
+                if (markSentError) throw markSentError;
                 triggerCoachEditAnalysis(alertId, originalDraft, message, 'admin_dashboard');
                 clearAlertEditBuffer(alertId);
 
@@ -16393,8 +16445,11 @@
                     }, 1200);
                 }
                 alertData.status = 'sent';
+                alertData.actioned_at = sentAt;
+                alertData.data = mergedData;
                 updateAlertBadge();
                 if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
+                routeActionedAlertToStatusTab(alertData, 'sent', 1400);
                 // Refresh edit rate so the pill reflects this send (per-client + overall)
                 updateVoiceMatchRate();
             } catch (e) {
@@ -16426,8 +16481,10 @@
             clearAlertEditBuffer(alertId);
             showAlertSentOverlay(alertId);
             alertData.status = 'sent';
+            alertData.actioned_at = alertData.actioned_at || alertData.data?.sent_at || new Date().toISOString();
             updateAlertBadge();
             if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
+            routeActionedAlertToStatusTab(alertData, 'sent', 1400);
             updateVoiceMatchRate();
         }
 
@@ -16724,10 +16781,19 @@
                     const text = await res.text();
                     throw new Error(`HTTP ${res.status}: ${text.slice(0, 240)}`);
                 }
+                let json = {};
+                try { json = await res.json(); } catch (_) { json = {}; }
                 // Optimistic UI: stamp local state so the badge / counts
                 // reflect the move out of pending. Then slide the card.
+                const scheduledFor = json.scheduledFor || json.scheduled_for || new Date(Date.now() + sendInMs).toISOString();
                 alertData.status = 'scheduled';
-                alertData.scheduled_for = new Date(Date.now() + sendInMs).toISOString();
+                alertData.scheduled_for = scheduledFor;
+                alertData.scheduled_reply_text = message;
+                alertData.data = Object.assign({}, alertData.data || {}, {
+                    scheduled_reply_text: message,
+                    scheduled_for: scheduledFor,
+                    schedule_reason: scheduleReason,
+                });
                 alertsCache = alertsCache.filter(a => a.id !== alertId);
                 clearAlertEditBuffer(alertId);
                 const card = document.getElementById(`alert-${alertId}`);
@@ -16737,6 +16803,7 @@
                 }
                 if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
                 updateAlertBadge();
+                routeActionedAlertToStatusTab(alertData, 'scheduled', 550);
                 return true;
             } catch (e) {
                 console.error('Schedule failed:', e);
