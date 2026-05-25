@@ -94,6 +94,15 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    normalizeDraftComment('is this amazing club?', {
+        storyOwner: 'aquabluemermaid',
+        sharedContent: false,
+    }),
+    '',
+    'malformed missing-article club questions should be skipped instead of sent'
+);
+
+assert.strictEqual(
     normalizeDraftComment("Go Pies! What's SP433?", {
         storyOwner: 'runjorun_79',
         sharedContent: false,

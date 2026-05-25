@@ -234,6 +234,9 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
         /^is\s+(?:this|that)\s+(peaceful|calm|quiet|nice|sweet|beautiful|stunning|pretty)\s+(?:spot|place|view|beach|park)\??$/i,
         'that looks $1'
     );
+    if (/^is\s+(?:this|that)\s+(?:amazing|great|good|nice|cool|fun|beautiful|stunning|pretty|peaceful|calm|quiet|sweet)\s+(?:club|clubbing|bar|venue|party)\??$/i.test(text)) {
+        return '';
+    }
     if (isLowContextStoryQuestion(text)) {
         return '';
     }
