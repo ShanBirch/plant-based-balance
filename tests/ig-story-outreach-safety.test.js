@@ -424,6 +424,15 @@ const groupOfBoysSafety = assessStoryCommentSafety({
 assert.strictEqual(groupOfBoysSafety.safeToComment, false);
 assert.strictEqual(groupOfBoysSafety.reason, 'minor_or_toilet_context');
 
+const youngDanceGroupSafety = assessStoryCommentSafety({
+    storyOwner: 'amyleemee',
+    description: 'A group of young girls in dance attire posing in a room with trophies.',
+    visibleText: 'amyleemee 18h Reply to amyleemee...',
+    comment: 'So cute! What kind of dance?',
+});
+assert.strictEqual(youngDanceGroupSafety.safeToComment, false);
+assert.strictEqual(youngDanceGroupSafety.reason, 'minor_or_toilet_context');
+
 const prisonCaptionSafety = assessStoryCommentSafety({
     storyOwner: 'kirsty.mccall64',
     description: 'A smiling man holding a beagle dog with text about facing prison time.',
