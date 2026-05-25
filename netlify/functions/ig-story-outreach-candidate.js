@@ -33,6 +33,7 @@ const PET_NAME_COMMENT = "Oh so cute, what's their name?";
 const PET_NAMES_COMMENT = 'Oh so cute, what are their names?';
 const SHARED_PET_NAME_COMMENT = 'So cute, do you know their name?';
 const SHARED_PET_NAMES_COMMENT = 'So cute, do you know their names?';
+const SHARED_PET_BREED_COMMENT = 'Do you know what breed?';
 
 function envFlag(name, fallback = false) {
     const value = process.env[name];
@@ -197,6 +198,9 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     }
     if (sharedContent && /^so\s+cute,?\s+do\s+you\s+know\s+their\s+names\??$/i.test(text)) {
         return SHARED_PET_NAMES_COMMENT;
+    }
+    if (sharedContent && /\bwhat\s+(?:breed|kind(?:\s+of\s+(?:dog|cat|pet|animal))?)\??/i.test(text)) {
+        return SHARED_PET_BREED_COMMENT;
     }
     if (/^are\s+\w+(?:,\s*)?good\s+work!?\??$/i.test(text)) {
         return 'good song choice';

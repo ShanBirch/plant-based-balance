@@ -301,6 +301,15 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    normalizeDraftComment('This is so good! What breed?', {
+        storyOwner: 'darnz',
+        sharedContent: true,
+    }),
+    'Do you know what breed?',
+    'shared pet breed questions should be framed to the sharer'
+);
+
+assert.strictEqual(
     normalizeDraftComment('Love the colourful wigs! Looks like a great hens.', {
         storyOwner: 'wheres_kimmy_t',
         sharedContent: false,
