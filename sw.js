@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v164'; // v164: tightened first-run onboarding and quick app tour; v163: Today's Meals card contrast refresh
+const CACHE_NAME = 'pbb-app-v165'; // v165: guard skipped onboarding slides; v164: tightened first-run onboarding and quick app tour
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',

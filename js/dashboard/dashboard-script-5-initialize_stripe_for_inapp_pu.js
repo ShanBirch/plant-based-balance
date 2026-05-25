@@ -5870,6 +5870,15 @@ const totalWizardSteps = 19;
 const skippedWizardSlides = [8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19];
 const finalWizardStep = 17;
 
+function normalizeWizardStep() {
+    while (skippedWizardSlides.includes(currentWizardStep) && currentWizardStep < finalWizardStep) {
+        currentWizardStep++;
+    }
+    if (skippedWizardSlides.includes(currentWizardStep)) {
+        currentWizardStep = finalWizardStep;
+    }
+}
+
 // Wizard-specific validation/info message (renders above the z-index:12000 wizard overlay)
 function wizardAlert(message, type = 'error') {
     const existing = document.getElementById('wizard-validation-toast');
@@ -7314,6 +7323,8 @@ function startFitgotchiStory(onComplete) {
 }
 
 function updateWizardUI() {
+    normalizeWizardStep();
+
     // 1. Slides — use class-based transitions for smooth animation
     for(let i=1; i<=totalWizardSteps; i++) {
         const slide = document.getElementById('slide-' + i);
