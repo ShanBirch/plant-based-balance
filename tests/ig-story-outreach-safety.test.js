@@ -2,6 +2,7 @@ const assert = require('assert');
 
 const {
     normalizeDraftComment,
+    repairDraftCommentWithContext,
     parseStoryUrl,
     assessStoryCommentSafety,
     assessAudioVisualCommentConsistency,
@@ -14,6 +15,7 @@ const {
     normalizeStorySurfaceContext,
     assessStillsOnlyVideoSalvageContext,
     animalWelfareSupportCommentForContext,
+    buildStoryEvidenceAnalysisFallback,
 } = require('../netlify/functions/ig-story-outreach-candidate')._test;
 
 assert.strictEqual(
@@ -49,6 +51,25 @@ const bodyPartSafety = assessStoryCommentSafety({
     comment: 'lower back option is wild',
 });
 assert.strictEqual(bodyPartSafety.safeToComment, false);
+
+assert.strictEqual(
+    normalizeDraftComment('Looking strong mate', {
+        storyOwner: 'levi_cox',
+        sharedContent: false,
+    }),
+    '',
+    'body/physique-coded compliments should not be sent as story openers'
+);
+
+const shirtlessStrongSafety = assessStoryCommentSafety({
+    storyOwner: 'levi_cox',
+    description: 'A shirtless mirror selfie after training.',
+    visibleText: '',
+    comment: 'Looking strong mate',
+});
+assert.strictEqual(shirtlessStrongSafety.safeToComment, false);
+assert.strictEqual(shirtlessStrongSafety.reason, 'body_or_weight_metric');
+
 assert.strictEqual(
     normalizeDraftComment('Love this!', {
         storyOwner: 'someone',
@@ -101,6 +122,28 @@ assert.strictEqual(
     }),
     '',
     'malformed missing-article club questions should be skipped instead of sent'
+);
+
+assert.strictEqual(
+    repairDraftCommentWithContext({
+        comment: 'is this amazing club?',
+        description: "A scenic coastal view with rocks, blue water, a beach towel, bag, and book, with text 'this is my clubbing!'",
+        visibleText: 'this is my clubbing!',
+        storyOwner: 'aquabluemermaid',
+    }),
+    'beach over clubbing, always',
+    'beach clubbing contrast should not be treated as a literal venue'
+);
+
+assert.strictEqual(
+    repairDraftCommentWithContext({
+        comment: 'Happy birthday! Looks like a fun night.',
+        description: 'A man is DJing at a party with green balloons and one balloon says Happy Birthday.',
+        visibleText: 'Happy Birthday',
+        storyOwner: 'kirillar87',
+    }),
+    'looks like a fun night',
+    'birthday props should not trigger a direct birthday wish to the story owner'
 );
 
 assert.strictEqual(
@@ -509,6 +552,15 @@ assert.strictEqual(prisonCaptionSafety.safeToComment, false);
 assert.strictEqual(prisonCaptionSafety.reason, 'politics_or_legal');
 assert.strictEqual(babiesSafety.reason, 'minor_or_toilet_context');
 
+const comedyPosterSafety = assessStoryCommentSafety({
+    storyOwner: 'bnhntr',
+    description: 'A poster advertising a stand up comedy show at a venue.',
+    visibleText: 'Tix include a drink. Book tickets now.',
+    comment: 'Sounds like a ripper night!',
+});
+assert.strictEqual(comedyPosterSafety.safeToComment, false);
+assert.strictEqual(comedyPosterSafety.reason, 'promotional_or_ad');
+
 const recentStoryThread = {
     id: 'thread-recent-story',
     custom_data: {
@@ -549,6 +601,26 @@ assert.strictEqual(
     false,
     'sensitive story blocks should not recommend a like fallback'
 );
+
+const noEvidenceFallback = buildStoryEvidenceAnalysisFallback({
+    normalizedSupplied: 'looks like a fun night',
+    surfaceContext: { storyContentType: 'own_story' },
+    safetyReason: 'no_story_evidence_supplied',
+    error: 'no_story_evidence_supplied',
+});
+assert.strictEqual(noEvidenceFallback.safeToComment, false);
+assert.strictEqual(noEvidenceFallback.draftComment, '');
+assert.strictEqual(noEvidenceFallback.safetyReason, 'no_story_evidence_supplied');
+
+const sentButFailedFallback = buildStoryEvidenceAnalysisFallback({
+    normalizedSupplied: 'looks like a fun night',
+    safetyReason: 'analysis_failed',
+    error: 'model unavailable',
+    preserveSuppliedDraft: true,
+});
+assert.strictEqual(sentButFailedFallback.safeToComment, false);
+assert.strictEqual(sentButFailedFallback.draftComment, 'looks like a fun night');
+assert.strictEqual(sentButFailedFallback.safetyReason, 'analysis_failed');
 
 const tinyVideo = validateEvidenceVideo({
     video_base64: Buffer.from('tiny mp4 placeholder').toString('base64'),

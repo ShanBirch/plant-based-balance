@@ -279,6 +279,9 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (/^is\s+(?:this|that)\s+(?:amazing|great|good|nice|cool|fun|beautiful|stunning|pretty|peaceful|calm|quiet|sweet)\s+(?:club|clubbing|bar|venue|party)\??$/i.test(text)) {
         return '';
     }
+    if (/\b(?:looking|look|looks)\s+(?:so\s+)?(?:strong|fit|ripped|jacked|lean|shredded)\b/i.test(text)) {
+        return '';
+    }
     if (isLowContextStoryQuestion(text)) {
         return '';
     }
@@ -370,6 +373,16 @@ function repairDraftCommentWithContext({ comment = '', description = '', visible
     const normalizedLower = normalized.toLowerCase();
     const clean = value => normalizeDraftComment(value, { storyOwner, sharedFromUsername, sharedContent });
 
+    const beachClubbingContext = /\b(?:this is my clubbing|vamos a la playa)\b/i.test(text)
+        && /\b(?:beach|coast|water|rocks|towel|book|sand|sea|ocean|playa)\b/i.test(text);
+    if (beachClubbingContext && /\b(?:club|clubbing|beach club|party club|venue)\b/i.test(rawLower)) {
+        return clean('beach over clubbing, always');
+    }
+    const birthdayWithoutOwnerCue = /\bbirthday\b/i.test(text)
+        && !/\b(?:my birthday|its my birthday|it's my birthday|my bday|my b-day|birthday girl|birthday boy|turned\s+\d+|i'?m\s+\d+|im\s+\d+)\b/i.test(text);
+    if (birthdayWithoutOwnerCue && /\bhappy birthday\b/i.test(rawLower)) {
+        return clean('looks like a fun night');
+    }
     if (isLowContextStoryQuestion(raw) || isLowContextStoryQuestion(normalized)) {
         return '';
     }
@@ -537,7 +550,7 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
         ['self_harm_or_body_risk', /\b(suicide|self[-\s]?harm|eating disorder|body shaming|body[-\s]?shame|ed recovery)\b/i],
         ['animal_shelter_context', /\b(animal shelter|dog kennels?|nycacc|euthan(?:asia|ise|ize)|adoption plea|rescue shelter)\b/i],
         ['minor_or_toilet_context', /\b(child|children|kid|kids|toddler|toddlers|baby|babies|infant|infants|minor|young boys?|young girls?|schoolboys?|schoolgirls?|group of (?:young )?boys|group of (?:young )?girls|boys (?:are )?(?:sitting|standing|playing|posing)|girls (?:are )?(?:sitting|standing|playing|posing)|girls? in dance attire|boys? in dance attire|youth dance|kids? dance|children'?s dance|poop|toilet|bathroom|female toilets|male toilets)\b/i],
-        ['body_or_weight_metric', /\b(physique|body transformation|before and after|before\/after|weight loss|weigh(?:s|ed|ing)?|body fat|scale weight|display (?:her|his|their)?\s*physique|posing to display|shapes|back looks great|glossy lips|pout|selfie.{0,80}(?:body check|physique|weight loss))\b|\b\d+\s*(?:kg|kgs|lb|lbs|cm|inch|inches|%)\b/i],
+        ['body_or_weight_metric', /\b(physique|body transformation|before and after|before\/after|weight loss|weigh(?:s|ed|ing)?|body fat|scale weight|display (?:her|his|their)?\s*physique|posing to display|shapes|back looks great|glossy lips|pout|selfie.{0,80}(?:body check|physique|weight loss)|shirtless.{0,120}(?:looking|looks?|strong|fit|ripped|jacked|lean|shredded)|(?:looking|look|looks)\s+(?:so\s+)?(?:strong|fit|ripped|jacked|lean|shredded))\b|\b\d+\s*(?:kg|kgs|lb|lbs|cm|inch|inches|%)\b/i],
         ['politics_or_legal', /\b(election|vote|politic(?:s|al)?|campaign|trump|biden|court|lawsuit|arrest(?:ed)?|charged|prison|jail|sentenc(?:ed|ing)|convict(?:ed|ion))\b/i],
         ['ambiguous_substance_context', /\b(?:(?:bag|baggie|packet|sachet|ziplock).{0,50}(?:white\s+)?powder|(?:white\s+)?powder.{0,50}(?:bag|baggie|packet|sachet|ziplock)|powder\s+clipped|pills?|tablets?|capsules?|unknown substance)\b/i],
         ['adult_or_drug_content', /\b(nude|naked|sex|porn|onlyfans|nsfw|cocaine|meth|drugs?|overdose)\b/i],
@@ -1716,6 +1729,37 @@ async function ensureOutreachThread({ username, coachId, storyUrl, storyId, draf
     return inserted[0] || null;
 }
 
+function buildStoryEvidenceAnalysisFallback({
+    normalizedSupplied = '',
+    surfaceContext = {},
+    relationshipContext = '',
+    relationshipStoryBlockReason = '',
+    safetyReason = 'analysis_failed',
+    error = safetyReason,
+    preserveSuppliedDraft = false,
+} = {}) {
+    const suppliedDraft = preserveSuppliedDraft ? normalizedSupplied : '';
+    return {
+        description: '',
+        visibleText: '',
+        storyContentType: normalizeStoryContentType(surfaceContext?.storyContentType || 'unknown'),
+        sharedFromUsername: surfaceContext?.sharedFromUsername || '',
+        draftComment: suppliedDraft,
+        draftPipeline: null,
+        draftPlan: null,
+        draftReview: null,
+        draftRepair: null,
+        initialDraftComment: suppliedDraft,
+        draftCommentBeforeReview: suppliedDraft,
+        safeToComment: false,
+        safetyReason,
+        model: 'none',
+        error,
+        relationshipContext,
+        relationshipStoryBlockReason,
+    };
+}
+
 async function analyzeStoryEvidence({ username, evidenceImages, evidenceVideo = null, suppliedComment, surfaceContext, relationshipContext = '', relationshipStoryBlockReason = '', forceSuppliedComment = false }) {
     const normalizedSupplied = normalizeDraftComment(suppliedComment, {
         storyOwner: username,
@@ -1749,25 +1793,15 @@ async function analyzeStoryEvidence({ username, evidenceImages, evidenceVideo = 
         };
     }
     if (!evidenceImages?.length && !evidenceVideo?.clean) {
-        return {
-            description: '',
-            visibleText: '',
-            storyContentType: normalizeStoryContentType(surfaceContext?.storyContentType || 'unknown'),
-            sharedFromUsername: surfaceContext?.sharedFromUsername || '',
-            draftComment: normalizedSupplied,
-            draftPipeline: null,
-            draftPlan: null,
-            draftReview: null,
-            draftRepair: null,
-            initialDraftComment: normalizedSupplied,
-            draftCommentBeforeReview: normalizedSupplied,
-            safeToComment: Boolean(normalizedSupplied),
-            safetyReason: normalizedSupplied ? '' : 'no_story_evidence_supplied',
-            model: 'none',
-            error: 'no_story_evidence_supplied',
+        return buildStoryEvidenceAnalysisFallback({
+            normalizedSupplied,
+            surfaceContext,
             relationshipContext,
             relationshipStoryBlockReason,
-        };
+            safetyReason: 'no_story_evidence_supplied',
+            error: 'no_story_evidence_supplied',
+            preserveSuppliedDraft: forceSuppliedComment && Boolean(normalizedSupplied),
+        });
     }
 
     const stillsOnlyVideoSalvage = isStillsOnlyVideoSalvage(surfaceContext, evidenceVideo);
@@ -1816,6 +1850,7 @@ Rules:
 - Do not ask a question if the story already answers it. If a pet name is visible, react to that pet/name; if no pet name is visible, asking "what's their name?" is good.
 - For animal stories with no visible pet name, prefer: Oh so cute, what's their name?
 - Audio transcript is supplemental. If transcript/audio and the visible frames point to different subjects, never base the comment on transcript-only details; set safe_to_comment=false with safety_reason="audio_visual_mismatch" unless a clear visible-only comment exists.
+- If a beach/coastal story says "this is my clubbing" or "vamos a la playa", do not ask if it is a club or venue. Treat it as beach-over-clubbing contrast.
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
 - If the story shows an unfamiliar event, venue, class, food, hobby, or object, ask the obvious small context question using the visible noun rather than making a flat observation.
 - Do not ask about unlabeled bags, powder, pills, tablets, capsules, medication, or unknown substances. If the story includes those, set safe_to_comment=false.
@@ -1823,6 +1858,7 @@ Rules:
 - Avoid dead-end filler like "never seen that thing", "thats random", "thats cool", "interesting", "crazy", "big vibe", or "vibes".
 - Do not guess personal location or home. Avoid "is that at home?" unless the story explicitly says home.
 - For brand birthday or anniversary celebration graphics, a simple milestone reaction is okay. For sales, spin-to-win, competitions, giveaways, or ads, set safe_to_comment=false.
+- Do not wish someone happy birthday unless the story explicitly says it is @${username}'s birthday. A generic birthday sign, cake, balloon, or party prop is not enough.
 - Normal selfies and nights out can be simple. "looking good" or "looks like a fun night" is fine when it fits.
 - Keep appearance comments broad and harmless. Do not be flirty, sexual, body-specific, weight/physique-focused, or weirdly intense.
 - For plain selfie/pose videos, do not invent an occasion. If the only real handle is the visible song or audio, a tiny music comment is okay.
@@ -1871,25 +1907,15 @@ Rules:
             raw = await callGeminiFallback(contents, generationConfig);
             model = 'gemini';
         } catch (err2) {
-            return {
-                description: '',
-                visibleText: '',
-                storyContentType: normalizeStoryContentType(surfaceContext?.storyContentType || 'unknown'),
-                sharedFromUsername: surfaceContext?.sharedFromUsername || '',
-                draftComment: normalizedSupplied,
-                draftPipeline: null,
-                draftPlan: null,
-                draftReview: null,
-                draftRepair: null,
-                initialDraftComment: normalizedSupplied,
-                draftCommentBeforeReview: normalizedSupplied,
-                safeToComment: Boolean(normalizedSupplied),
-                safetyReason: normalizedSupplied ? '' : 'analysis_failed',
-                model: 'none',
-                error: `${err.message || err} | ${err2.message || err2}`.slice(0, 500),
+            return buildStoryEvidenceAnalysisFallback({
+                normalizedSupplied,
+                surfaceContext,
                 relationshipContext,
                 relationshipStoryBlockReason,
-            };
+                safetyReason: 'analysis_failed',
+                error: `${err.message || err} | ${err2.message || err2}`.slice(0, 500),
+                preserveSuppliedDraft: forceSuppliedComment && Boolean(normalizedSupplied),
+            });
         }
     }
 
@@ -1905,11 +1931,26 @@ Rules:
         surfaceContext,
     });
     const sharedFromUsername = cleanIgUsername(parsed.shared_from_username || surfaceContext?.sharedFromUsername || inferredSourceHandle || '');
+    const modelSafety = parsed.safe_to_comment === false
+        ? { safeToComment: false, reason: cleanText(parsed.safety_reason || 'model_marked_unsafe', 120) || 'model_marked_unsafe' }
+        : { safeToComment: true, reason: '' };
+    const storyContentType = normalizeStoryContentType(parsed.story_content_type || surfaceContext?.storyContentType || 'unknown');
+    const sharedContent = isSharedStoryContext({ storyContentType, sharedFromUsername, storyOwner: username, surfaceContext });
     if (forceSuppliedComment && normalizedSupplied) {
+        const suppliedSafety = assessStoryCommentSafety({
+            description,
+            visibleText,
+            comment: normalizedSupplied,
+            raw: parsed,
+            storyOwner: username,
+            sharedFromUsername,
+            surfaceContext,
+        });
+        const suppliedSafe = modelSafety.safeToComment && suppliedSafety.safeToComment;
         return {
             description,
             visibleText,
-            storyContentType: normalizeStoryContentType(parsed.story_content_type || surfaceContext?.storyContentType || 'unknown'),
+            storyContentType,
             sharedFromUsername,
             draftComment: normalizedSupplied,
             draftPipeline: null,
@@ -1918,17 +1959,14 @@ Rules:
             draftRepair: null,
             initialDraftComment: normalizedSupplied,
             draftCommentBeforeReview: normalizedSupplied,
-            safeToComment: true,
-            safetyReason: '',
+            safeToComment: suppliedSafe,
+            safetyReason: suppliedSafe ? '' : (modelSafety.safeToComment ? suppliedSafety.reason : modelSafety.reason) || 'supplied_comment_unsafe',
             model: `${model}+supplied-comment`,
             error: null,
             relationshipContext,
             relationshipStoryBlockReason,
         };
     }
-    const modelSafety = parsed.safe_to_comment === false
-        ? { safeToComment: false, reason: cleanText(parsed.safety_reason || 'model_marked_unsafe', 120) || 'model_marked_unsafe' }
-        : { safeToComment: true, reason: '' };
     const deterministicSafety = assessStoryCommentSafety({
         description,
         visibleText,
@@ -1940,8 +1978,6 @@ Rules:
     });
     let safeToComment = modelSafety.safeToComment && deterministicSafety.safeToComment;
     let safetyReason = modelSafety.safeToComment ? deterministicSafety.reason : modelSafety.reason;
-    const storyContentType = normalizeStoryContentType(parsed.story_content_type || surfaceContext?.storyContentType || 'unknown');
-    const sharedContent = isSharedStoryContext({ storyContentType, sharedFromUsername, storyOwner: username, surfaceContext });
     const storyTextForRewrite = `${description} ${visibleText}`;
     let parsedComment = parsed.comment || normalizedSupplied || '';
     const animalWelfareText = `${description} ${visibleText} ${surfaceContext?.audioTranscript || ''} ${parsed.safety_reason || ''} ${parsed.comment || ''}`;
@@ -1978,6 +2014,14 @@ Rules:
     if (/\bdoggo\b/i.test(parsedComment) && /\b(dog|puppy)\b/i.test(storyTextForRewrite) && !/\b(named|called)\b/i.test(storyTextForRewrite)) {
         parsedComment = PET_NAME_COMMENT;
     }
+    parsedComment = repairDraftCommentWithContext({
+        comment: parsedComment,
+        description,
+        visibleText,
+        storyOwner: username,
+        sharedFromUsername,
+        sharedContent,
+    });
     const initialDraftComment = safeToComment
         ? normalizeDraftComment(parsedComment, {
             storyOwner: username,
@@ -2472,6 +2516,7 @@ exports._test = {
     cleanIgUsername,
     parseStoryUrl,
     normalizeDraftComment,
+    repairDraftCommentWithContext,
     mentionsHandleToken,
     assessStoryCommentSafety,
     assessAudioVisualCommentConsistency,
@@ -2490,6 +2535,7 @@ exports._test = {
     isDryRunQualityJudge,
     shouldRecommendLikeFallback,
     storyAnalysisTranscriptNote,
+    buildStoryEvidenceAnalysisFallback,
     normalizeStoryCommentPlanPayload,
     normalizeStoryCommentReviewPayload,
 };

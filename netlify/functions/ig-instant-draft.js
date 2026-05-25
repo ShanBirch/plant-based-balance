@@ -3522,6 +3522,9 @@ exports.handler = async (event) => {
 };
 
 exports._test = {
+    isIgStoryReplyContextText,
+    sanitizeIgStoryReplyContextText,
+    stripObviousMediaReceiptPreamble,
     buildNativeStoryOutreachContextBlock,
     isSalesAcquisitionThread,
     buildAcquisitionStyleBlock,
