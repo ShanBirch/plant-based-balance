@@ -168,10 +168,15 @@
                 // Save to database if user is logged in
                 if (window.currentUser && window.dbHelpers) {
                     const userId = window.currentUser.id || window.currentUser.user_id;
+                    let currentAdditional = {};
                     try {
-                        const existingFacts = await window.dbHelpers.userFacts.get(userId) || {};
-                        const currentAdditional = existingFacts.additional_data || {};
+                        const existingFacts = await window.dbHelpers.userFacts.get(userId);
+                        currentAdditional = existingFacts?.additional_data || {};
+                    } catch (getErr) {
+                        console.warn('Could not load existing facts before saving character colors; upserting fresh row.', getErr);
+                    }
 
+                    try {
                         await window.dbHelpers.userFacts.upsert(userId, {
                             additional_data: {
                                 ...currentAdditional,

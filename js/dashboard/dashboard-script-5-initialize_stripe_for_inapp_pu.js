@@ -8389,9 +8389,9 @@ function hexToRgbWizard(hex) {
     } : null;
 }
 
-function saveWizardCharacterColors() {
+async function saveWizardCharacterColors() {
     if (wizardCharacterColors && window.saveCharacterColors) {
-        window.saveCharacterColors(wizardCharacterColors);
+        await window.saveCharacterColors(wizardCharacterColors);
         console.log('Character colors saved from wizard:', wizardCharacterColors);
     }
 }
@@ -8443,9 +8443,9 @@ window.openCharacterCustomizationShortcut = function() {
     }
 };
 
-window.closeCharacterCustomizationShortcut = function() {
+window.closeCharacterCustomizationShortcut = async function() {
     if (typeof saveWizardCharacterColors === 'function') {
-        saveWizardCharacterColors();
+        await saveWizardCharacterColors();
     }
 
     // Re-apply colors to any visible character models so the change is instant.
@@ -9475,7 +9475,7 @@ async function finishOnboarding() {
     // Save character customization colors FIRST so the canonical updateFitGotchi
     // call below picks them up via getCharacterColors() → localStorage.
     if (typeof saveWizardCharacterColors === 'function') {
-        saveWizardCharacterColors();
+        await saveWizardCharacterColors();
     }
 
     // Force one canonical render of the main tamagotchi via updateFitGotchi().
