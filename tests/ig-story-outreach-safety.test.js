@@ -283,6 +283,15 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    normalizeDraftComment('So cute, do you know their name?', {
+        storyOwner: 'catarinaaaaaaaaa',
+        sharedContent: true,
+    }),
+    'So cute, do you know their name?',
+    'shared pet name comments should survive the shared-content you/your guard'
+);
+
+assert.strictEqual(
     normalizeDraftComment('Love the colourful wigs! Looks like a great hens.', {
         storyOwner: 'wheres_kimmy_t',
         sharedContent: false,

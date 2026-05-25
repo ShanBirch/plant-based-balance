@@ -184,6 +184,9 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (sharedContent && /\bwhat(?:'s|s| is)\s+their\s+name\??/i.test(text)) {
         return SHARED_PET_NAME_COMMENT;
     }
+    if (sharedContent && /^so\s+cute,?\s+do\s+you\s+know\s+their\s+name\??$/i.test(text)) {
+        return SHARED_PET_NAME_COMMENT;
+    }
     if (/^are\s+\w+(?:,\s*)?good\s+work!?\??$/i.test(text)) {
         return 'good song choice';
     }
