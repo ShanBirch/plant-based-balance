@@ -149,7 +149,7 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
 <script src="js/dashboard/script_part_0.js?v=68"></script>
 <script src="js/dashboard/native-character-viewer-bridge.js?v=55"></script>
 <script>
-// Deploy verification — if you see this crumb, dashboard.html is current (v3)
+// Deploy verification — if you see this crumb, dashboard.html is current (v4)
 if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAvailable);
 </script>
 
@@ -11686,7 +11686,7 @@ if (window._pbbIsIOSSafari) {
         setTimeout(function() {
             if(window._crumb)window._crumb('script5_loading');
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=81';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=82';
             s.onload = function() {
                 if(window._crumb)window._crumb('script5_deferred_loaded');
                 // Replay deferred init functions
@@ -11704,7 +11704,7 @@ if (window._pbbIsIOSSafari) {
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=81"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=82"><\/script>');
 }
 </script>
 
@@ -12204,13 +12204,13 @@ if(!window._pbbIsIOSSafari) {
   const steps = [
     { tab:'dashboard', sel:'#view-dashboard', title:'Ask Balance by long hold', body:"Ask is off the tab bar now. Press and hold any open space for 3 seconds to bring it up. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in." },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Feature Drops', body:"When Balance adds something new, you will get a Feature Drop on your next app open. Tap Show me and Balance points you to the feature and explains what changed." },
-    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do." },
+    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do.", quick: true },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Level character rewards', body:"Level 55 unlocks Character 1 first. Every 5 levels after that unlocks the next numbered 3D character skin in story order, with the same celebration and Equip Now flow." },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
-    { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP." },
+    { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP.", quick: true },
     { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. Tap yes to review the share card first, then post it to the 30 Day Challenge chat for +2 XP." },
     { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
-    { tab:'dashboard', sel:'#weekly-goals-card', title:'Weekly goals', body:"Choose up to 3 goals for the week. Balance tracks the exact signals you picked and carries the results into Weekly Wrapped.", condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
+    { tab:'dashboard', sel:'#weekly-goals-card', title:'Weekly goals', body:"Choose up to 3 goals for the week. Balance tracks the exact signals you picked and carries the results into Weekly Wrapped.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#fitbit-performance-card', title:'Activity Insights', body:"Your weekly dashboard: weight trend, real calories burnt, sleep, total volume lifted. Tap to open full insights." },
@@ -12219,9 +12219,9 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#monthly-raffle-section', title:'Monthly Raffle', body:"Each month you have the first 3 days to enter the raffle. Every entrant pays coins into a shared pool — one winner takes the whole pool plus a rare skin.", condition: function(){ var s = document.getElementById('monthly-raffle-section'); return s && s.style.display !== 'none'; } },
 
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Challenge point breakdowns', body:"Open a challenge leaderboard and select any participant to see where their XP is coming from: nutrition, workouts, weigh-ins, learning, posts, and bonuses." },
-    { tab:'dashboard', sel:'#calorie-tracker-widget', title:'Calorie tracker widget', body:"Home shows calories and macros, with one-tap logging for photos, barcodes, typed meals, manual macros, Build-a-Meal, and recent meals." },
+    { tab:'dashboard', sel:'#calorie-tracker-widget', title:'Calorie tracker widget', body:"Home shows calories and macros, with one-tap logging for photos, barcodes, typed meals, manual macros, Build-a-Meal, and recent meals.", quick: true },
     { tab:'dashboard', sel:'#calorie-tracker-widget .nutrition-range-toggle', title:'Day, week, month nutrition', body:"Switch calories and macros between today, this week, and this month so you can see what is left in the full period." },
-    { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically." },
+    { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically.", quick: true },
     { tab:'meals', sel:'[onclick*="openMealFromGallery"]', title:'Upload from your photos', body:"Took a photo of your meal earlier? Tap the gallery icon to pick it from your photo library and log it later." },
     { tab:'meals', sel:'[title="Scan barcode"]', title:'Barcode scanner', body:"Scan any food packaging barcode to instantly pull up its nutrition info and log it." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealTextInput"],[title="Type your meal"]', title:'Type your meal', body:"Prefer to type? Describe your meal in words and the AI will log the calories and macros for you." },
@@ -12243,7 +12243,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Change Password', body:"Open Profile > Settings > Password to change your login password any time." },
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
-    { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it." },
+    { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Share to group chat', body:"After finishing a workout you can share it straight to your group chat (tap the messages icon top-right) for XP and hype." },
@@ -12265,7 +12265,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'dashboard', sel:'#weekly-wrapped-card,.profile-icon[onclick*="profile"]', title:'Weekly Wrapped', body:"Every Sunday afternoon a Wrapped card lands on your home screen — tap it for a slideshow recap of your week (workouts, PBs, mood, streak + a forecast for next week). Dismiss with × if you'd rather not watch. Replay it any time from Profile → Health Tools → Replay Weekly Wrapped." },
 
-    { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Replay this tour anytime', body:"You can replay this tour any time from your Profile → Health Tools → Replay App Tour. Tap your profile icon (top right) to open your profile." },
+    { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Replay the full tour anytime', body:"Need a refresher? Open Profile and tap Replay App Tour to go through the full feature walkthrough.", quick: true },
 
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Customize your character', body:"Want to change your FitGotchi's hair, skin, or shorts? Jump straight there any time from Profile → Health Tools → Customize Character — no need to redo onboarding." },
 
@@ -12421,9 +12421,17 @@ if(!window._pbbIsIOSSafari) {
     }
   };
 
-  window.startFeatureTour = function(force){
+  function wantsFullTour(force, options){
+    return force === 'full' || (force && typeof force === 'object' && force.full === true) || (options && options.full === true);
+  }
+
+  window.startFeatureTour = function(force, options){
     try { if (!force && localStorage.getItem('featureTourComplete') === '1') return; } catch(e){}
     activeSteps = steps.filter(function(s){ return !s.condition || s.condition(); });
+    if (!wantsFullTour(force, options)) {
+      var quickSteps = activeSteps.filter(function(s){ return s.quick; });
+      if (quickSteps.length) activeSteps = quickSteps;
+    }
     if (!activeSteps.length) return;
     idx = 0;
     const overlay = document.getElementById('guided-tour-overlay');
@@ -12444,7 +12452,7 @@ if(!window._pbbIsIOSSafari) {
 
   window.replayFeatureTour = function(){
     try { localStorage.removeItem('featureTourComplete'); } catch(e){}
-    startFeatureTour(true);
+    startFeatureTour('full');
   };
 })();
 </script>

@@ -5867,6 +5867,8 @@ function updatePushNotifSettingsUI() {
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
 const totalWizardSteps = 19;
+const skippedWizardSlides = [8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19];
+const finalWizardStep = 17;
 
 // Wizard-specific validation/info message (renders above the z-index:12000 wizard overlay)
 function wizardAlert(message, type = 'error') {
@@ -7329,8 +7331,8 @@ function updateWizardUI() {
         }
     }
 
-    // 2. Dots - hide dots for slides 11-16 (removed from onboarding; setup prefs occupy 6-10)
-    const skippedSlides = [11, 12, 13, 14, 15, 16];
+    // 2. Dots - hide optional/deferred slides so first-run onboarding stays tight.
+    const skippedSlides = skippedWizardSlides;
     const dots = document.querySelectorAll('.wizard-progress .dot');
     let dotIndex = 0;
     for (let i = 1; i <= totalWizardSteps; i++) {
@@ -7395,7 +7397,7 @@ function updateWizardUI() {
     if(prevBtn) prevBtn.style.visibility = (currentWizardStep > 1) ? 'visible' : 'hidden';
 
     if(nextBtn) {
-        if(currentWizardStep === totalWizardSteps) {
+        if(currentWizardStep === finalWizardStep) {
             nextBtn.innerHTML = "Let's Go! 🚀";
             nextBtn.onclick = finishOnboarding;
         } else {
@@ -8083,11 +8085,11 @@ async function wizardNext() {
         console.log("Step 10 food preferences saved:", prefs);
     }
 
-    if(currentWizardStep < totalWizardSteps) {
+    if(currentWizardStep < finalWizardStep) {
         currentWizardStep++;
 
-        // Skip slides 11-16 (removed from onboarding; covered by app tour)
-        while ([11, 12, 13, 14, 15, 16].includes(currentWizardStep) && currentWizardStep < totalWizardSteps) {
+        // Skip optional/deferred setup slides. The essentials end at character design.
+        while (skippedWizardSlides.includes(currentWizardStep) && currentWizardStep < finalWizardStep) {
             currentWizardStep++;
         }
 
@@ -8119,8 +8121,8 @@ function wizardPrev() {
             currentWizardStep--;
         }
 
-        // Skip slides 11-16 (removed from onboarding; covered by app tour)
-        while ([11, 12, 13, 14, 15, 16].includes(currentWizardStep) && currentWizardStep > 1) {
+        // Skip optional/deferred setup slides when navigating backward too.
+        while (skippedWizardSlides.includes(currentWizardStep) && currentWizardStep > 1) {
             currentWizardStep--;
         }
 
