@@ -292,6 +292,15 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    normalizeDraftComment('Oh, so cute! What are their names?', {
+        storyOwner: 'sarinagitodotcom',
+        sharedContent: true,
+    }),
+    'So cute, do you know their names?',
+    'shared multi-animal name questions should be framed to the sharer'
+);
+
+assert.strictEqual(
     normalizeDraftComment('Love the colourful wigs! Looks like a great hens.', {
         storyOwner: 'wheres_kimmy_t',
         sharedContent: false,

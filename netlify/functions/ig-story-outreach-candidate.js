@@ -30,7 +30,9 @@ const STORY_NO_REPLY_COOLDOWN_MS = STORY_NO_REPLY_COOLDOWN_DAYS * 24 * 60 * 60 *
 const STORY_RECENT_OUTREACH_COOLDOWN_HOURS = 20;
 const STORY_RECENT_OUTREACH_COOLDOWN_MS = STORY_RECENT_OUTREACH_COOLDOWN_HOURS * 60 * 60 * 1000;
 const PET_NAME_COMMENT = "Oh so cute, what's their name?";
+const PET_NAMES_COMMENT = 'Oh so cute, what are their names?';
 const SHARED_PET_NAME_COMMENT = 'So cute, do you know their name?';
+const SHARED_PET_NAMES_COMMENT = 'So cute, do you know their names?';
 
 function envFlag(name, fallback = false) {
     const value = process.env[name];
@@ -181,11 +183,20 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (/^oh\s+so\s+cute,?\s+what(?:'s|s| is)\s+their\s+name\??$/i.test(text)) {
         return sharedContent ? SHARED_PET_NAME_COMMENT : PET_NAME_COMMENT;
     }
+    if (/^oh,?\s+so\s+cute!?,?\s+what\s+are\s+their\s+names\??$/i.test(text)) {
+        return sharedContent ? SHARED_PET_NAMES_COMMENT : PET_NAMES_COMMENT;
+    }
     if (sharedContent && /\bwhat(?:'s|s| is)\s+their\s+name\??/i.test(text)) {
         return SHARED_PET_NAME_COMMENT;
     }
+    if (sharedContent && /\bwhat\s+are\s+their\s+names\??/i.test(text)) {
+        return SHARED_PET_NAMES_COMMENT;
+    }
     if (sharedContent && /^so\s+cute,?\s+do\s+you\s+know\s+their\s+name\??$/i.test(text)) {
         return SHARED_PET_NAME_COMMENT;
+    }
+    if (sharedContent && /^so\s+cute,?\s+do\s+you\s+know\s+their\s+names\??$/i.test(text)) {
+        return SHARED_PET_NAMES_COMMENT;
     }
     if (/^are\s+\w+(?:,\s*)?good\s+work!?\??$/i.test(text)) {
         return 'good song choice';
