@@ -948,9 +948,15 @@ exports.handler = async (event) => {
         .map(s => String(s || '').trim())
         .filter(Boolean);
     const draftJoined = normalizeCoachDraftText(alertData.draft_text || draftText || draftMessages.join('\n')).trim();
+    const draftMessagesJoined = normalizeCoachDraftText(draftMessages.join('\n')).trim();
+    const draftMessagesMatchDraft = !!draftJoined && draftMessagesJoined === draftJoined;
+    const useDraftMessageChunks = draftMessages.length > 0
+        && draftJoined
+        && replyText.trim() === draftJoined
+        && draftMessagesMatchDraft;
     let messagesToSend;
     let wasEdited;
-    if (draftMessages.length > 0 && draftJoined && replyText.trim() === draftJoined) {
+    if (useDraftMessageChunks) {
         messagesToSend = draftMessages;
         wasEdited = false;
     } else {
@@ -965,7 +971,7 @@ exports.handler = async (event) => {
             last_send_error_code: 'draft_review_blocked',
             last_send_error_at: new Date().toISOString(),
             chunks_sent: 0,
-            chunks_total: draftMessages.length || 1,
+            chunks_total: useDraftMessageChunks ? draftMessages.length : 1,
         };
         try {
             await supabase(`coach_alerts?id=eq.${alertId}`, {
@@ -1100,7 +1106,16 @@ exports.handler = async (event) => {
         sent_graph_message_ids: shouldUseGraph
             ? sentChunks.map(r => r.response?.message_id || r.response?.id || null).filter(Boolean)
             : (alertData.sent_graph_message_ids || undefined),
-        draft_messages: draftMessages.length ? draftMessages : alertData.draft_messages,
+        draft_messages: useDraftMessageChunks
+            ? draftMessages
+            : [replyText],
+        draft_messages_stale_ignored: draftMessages.length > 0 && !draftMessagesMatchDraft
+            ? {
+                ignored_at: sentAtIso,
+                draft_messages_joined: draftMessagesJoined.slice(0, 1000),
+                draft_text: draftJoined.slice(0, 1000),
+            }
+            : alertData.draft_messages_stale_ignored,
         draft_text: draftJoined || alertData.draft_text,
     };
     if (wasEdited && editReason) mergedData.edit_reason = editReason;
