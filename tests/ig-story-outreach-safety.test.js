@@ -121,6 +121,15 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    normalizeDraftComment('Enjoying the r sights?', {
+        storyOwner: 'shivvquinn',
+        sharedContent: false,
+    }),
+    '',
+    'single-letter OCR/location artifacts should be blocked'
+);
+
+assert.strictEqual(
     normalizeDraftComment('love the caption!', {
         storyOwner: 'bnhntr',
         sharedContent: false,

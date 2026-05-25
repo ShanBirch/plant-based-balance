@@ -142,6 +142,9 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (isAnimalWelfareSupportComment(text)) {
         return ANIMAL_WELFARE_SUPPORT_COMMENT;
     }
+    if (/\b(?:the|this|that|these|those|some)\s+[bcdefghjklmnopqrstuvwxyz]\s+(?:sights?|views?|scenery|spots?|places?|vibes?)\b/i.test(text)) {
+        return '';
+    }
 
     const overlyLiteralClassReply =
         !sharedContent
