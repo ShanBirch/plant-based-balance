@@ -1,4 +1,5 @@
 import type { Context } from "@netlify/edge-functions";
+import { parseModelJsonObject } from "./lib/model-json.mjs";
 
 type MealPlanMeal = {
   id: string;
@@ -497,8 +498,7 @@ IMPORTANT:
 
     if (!aiText) throw new Error("Empty AI response");
 
-    const cleanedText = aiText.replace(/\`\`\`json\n?/g, '').replace(/\`\`\`\n?/g, '').trim();
-    const nutritionData = JSON.parse(cleanedText);
+    const nutritionData = parseModelJsonObject(aiText, "analyze-meal-text nutrition JSON");
 
     // Correct calories from macros (protein×4 + carbs×4 + fat×9) since Gemini sometimes miscalculates
     if (Array.isArray(nutritionData.foodItems)) {

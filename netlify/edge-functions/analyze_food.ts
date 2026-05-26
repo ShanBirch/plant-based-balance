@@ -1,4 +1,5 @@
 import { Context } from "@netlify/edge-functions";
+import { parseModelJsonObject } from "./lib/model-json.mjs";
 
 export default async function (request: Request, context: Context) {
   // Only accept POST
@@ -227,8 +228,7 @@ IMPORTANT:
       throw new Error(`Empty AI response (finishReason: ${finishReason ?? "unknown"})`);
     }
 
-    const cleanedText = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const nutritionData = JSON.parse(cleanedText);
+    const nutritionData = parseModelJsonObject(aiText, "analyze_food nutrition JSON");
 
     // Correct calories from macros (protein×4 + carbs×4 + fat×9) since Gemini sometimes miscalculates
     if (Array.isArray(nutritionData.foodItems)) {
