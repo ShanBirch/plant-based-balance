@@ -4073,6 +4073,261 @@ html[data-pbb-theme="light"] #calendar-workout-action-modal button:not(#action-m
     stroke: #6f6a61 !important;
 }
 
+/* Activity Insights hub and child insight pages. */
+#view-insights.activity-insights-view,
+#view-progress,
+.weekly-trends-page {
+    background:
+        radial-gradient(circle at 12% 4%, rgba(216, 178, 94, 0.13), transparent 28%),
+        radial-gradient(circle at 92% 2%, rgba(255, 255, 255, 0.055), transparent 30%),
+        linear-gradient(180deg, #101010 0%, #050505 48%, #000000 100%) !important;
+    color: #f8f7f2 !important;
+}
+
+#view-insights > div[style*="position: sticky"],
+#view-progress > div[style*="position: sticky"],
+.weekly-trends-page-header {
+    background: rgba(7, 7, 7, 0.92) !important;
+    border-bottom: 1px solid rgba(245, 217, 138, 0.16) !important;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.44) !important;
+    color: #f8f7f2 !important;
+    backdrop-filter: blur(18px) saturate(126%);
+    -webkit-backdrop-filter: blur(18px) saturate(126%);
+}
+
+#view-insights > div[style*="position: sticky"] > div,
+#view-progress > div[style*="position: sticky"] > div,
+.weekly-trends-page-title {
+    color: #f8f7f2 !important;
+    -webkit-text-fill-color: #f8f7f2 !important;
+}
+
+#view-insights .activity-insights-hub-card {
+    --activity-insight-accent: #d8b25e;
+    --activity-insight-accent-rgb: 216, 178, 94;
+    min-height: 144px;
+    background:
+        radial-gradient(circle at 88% 0%, rgba(var(--activity-insight-accent-rgb), 0.17), transparent 34%),
+        linear-gradient(135deg, #171717 0%, #0a0a0a 58%, #000000 100%) !important;
+    border: 1px solid rgba(var(--activity-insight-accent-rgb), 0.28) !important;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42) !important;
+    color: #f8f7f2 !important;
+    transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+#view-insights .activity-insights-hub-card:active {
+    transform: scale(0.985);
+}
+
+#view-insights .activity-insights-hub-card--nutrition {
+    --activity-insight-accent: #46c98b;
+    --activity-insight-accent-rgb: 70, 201, 139;
+}
+
+#view-insights .activity-insights-hub-card--movement {
+    --activity-insight-accent: #69a7ff;
+    --activity-insight-accent-rgb: 105, 167, 255;
+}
+
+#view-insights .activity-insights-hub-card--transformation {
+    --activity-insight-accent: #f472b6;
+    --activity-insight-accent-rgb: 244, 114, 182;
+}
+
+#view-insights .activity-insights-hub-card--recovery {
+    --activity-insight-accent: #c4a2ff;
+    --activity-insight-accent-rgb: 196, 162, 255;
+}
+
+#view-insights .activity-insights-hub-card > div[style*="width: 40px"] {
+    background: rgba(var(--activity-insight-accent-rgb), 0.18) !important;
+    border: 1px solid rgba(var(--activity-insight-accent-rgb), 0.28) !important;
+}
+
+#view-insights .activity-insights-hub-card > div[style*="opacity: 0.05"] {
+    opacity: 0.1 !important;
+}
+
+#view-insights .activity-insights-hub-card > div[style*="font-weight: 700"][style*="0.95rem"] {
+    color: #f8f7f2 !important;
+    -webkit-text-fill-color: #f8f7f2 !important;
+    font-size: 0.9rem !important;
+    line-height: 1.18 !important;
+    letter-spacing: 0 !important;
+}
+
+#view-insights .activity-insights-hub-card > div[style*="0.72rem"] {
+    color: rgba(248, 247, 242, 0.68) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.68) !important;
+    font-size: 0.72rem !important;
+    line-height: 1.35 !important;
+}
+
+#view-insights .activity-insights-hub-card > div[style*="margin-top: 10px"] {
+    color: var(--activity-insight-accent) !important;
+    -webkit-text-fill-color: var(--activity-insight-accent) !important;
+}
+
+#view-insights [style*="background: white"][style*="border-radius: 20px"]:not(.activity-insights-hub-card),
+#view-insights [style*="background:white"][style*="border-radius:20px"]:not(.activity-insights-hub-card),
+#view-progress [style*="background: white"],
+#view-progress [style*="background:white"],
+.weekly-trends-page [style*="background: white"],
+.weekly-trends-page [style*="background:white"] {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+    color: #f8f7f2 !important;
+}
+
+#view-insights [style*="color: var(--text-main)"],
+#view-progress [style*="color: var(--text-main)"],
+.weekly-trends-page [style*="color: var(--text-main)"] {
+    color: #f8f7f2 !important;
+    -webkit-text-fill-color: #f8f7f2 !important;
+}
+
+#view-insights [style*="color: var(--text-muted)"],
+#view-progress [style*="color: var(--text-muted)"],
+.weekly-trends-page [style*="color: var(--text-muted)"] {
+    color: rgba(248, 247, 242, 0.68) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.68) !important;
+}
+
+#view-insights .multi-week-nav,
+.weekly-trends-page .multi-week-nav,
+#view-progress .multi-week-nav {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(245, 217, 138, 0.12) !important;
+}
+
+#view-insights .multi-week-nav button,
+.weekly-trends-page .multi-week-nav button,
+#view-progress .multi-week-nav button {
+    color: rgba(248, 247, 242, 0.66) !important;
+}
+
+#view-insights .multi-week-nav button.active,
+.weekly-trends-page .multi-week-nav button.active,
+#view-progress .multi-week-nav button.active {
+    background: rgba(248, 247, 242, 0.94) !important;
+    color: #0c0c0c !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28) !important;
+}
+
+html[data-pbb-theme="light"] #view-insights.activity-insights-view,
+html[data-pbb-theme="light"] #view-progress,
+html[data-pbb-theme="light"] .weekly-trends-page {
+    background:
+        radial-gradient(circle at 12% 4%, rgba(184, 137, 43, 0.12), transparent 28%),
+        linear-gradient(180deg, #f8f5ee 0%, #f1eadf 100%) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-insights > div[style*="position: sticky"],
+html[data-pbb-theme="light"] #view-progress > div[style*="position: sticky"],
+html[data-pbb-theme="light"] .weekly-trends-page-header {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-bottom-color: rgba(184, 137, 43, 0.16) !important;
+    box-shadow: 0 12px 28px rgba(57, 47, 31, 0.1) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-insights > div[style*="position: sticky"] > div,
+html[data-pbb-theme="light"] #view-progress > div[style*="position: sticky"] > div,
+html[data-pbb-theme="light"] .weekly-trends-page-title {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-insights .activity-insights-hub-card {
+    background:
+        radial-gradient(circle at 88% 0%, rgba(var(--activity-insight-accent-rgb), 0.13), transparent 34%),
+        linear-gradient(135deg, #ffffff 0%, #f7f3e9 58%, #ece4d3 100%) !important;
+    border-color: rgba(var(--activity-insight-accent-rgb), 0.28) !important;
+    box-shadow: 0 18px 42px rgba(57, 47, 31, 0.14) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-insights .activity-insights-hub-card > div[style*="font-weight: 700"][style*="0.95rem"] {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-insights .activity-insights-hub-card > div[style*="0.72rem"] {
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #view-insights .activity-insights-hub-card > div[style*="width: 40px"] {
+    background: rgba(var(--activity-insight-accent-rgb), 0.13) !important;
+    border-color: rgba(var(--activity-insight-accent-rgb), 0.24) !important;
+}
+
+html[data-pbb-theme="light"] #view-insights .activity-insights-hub-card--nutrition > div[style*="margin-top: 10px"] {
+    color: #0f7a49 !important;
+    -webkit-text-fill-color: #0f7a49 !important;
+}
+
+html[data-pbb-theme="light"] #view-insights .activity-insights-hub-card--movement > div[style*="margin-top: 10px"] {
+    color: #2458a6 !important;
+    -webkit-text-fill-color: #2458a6 !important;
+}
+
+html[data-pbb-theme="light"] #view-insights .activity-insights-hub-card--transformation > div[style*="margin-top: 10px"] {
+    color: #b91c72 !important;
+    -webkit-text-fill-color: #b91c72 !important;
+}
+
+html[data-pbb-theme="light"] #view-insights .activity-insights-hub-card--recovery > div[style*="margin-top: 10px"] {
+    color: #6d28d9 !important;
+    -webkit-text-fill-color: #6d28d9 !important;
+}
+
+html[data-pbb-theme="light"] #view-insights [style*="background: white"][style*="border-radius: 20px"]:not(.activity-insights-hub-card),
+html[data-pbb-theme="light"] #view-insights [style*="background:white"][style*="border-radius:20px"]:not(.activity-insights-hub-card),
+html[data-pbb-theme="light"] #view-progress [style*="background: white"],
+html[data-pbb-theme="light"] #view-progress [style*="background:white"],
+html[data-pbb-theme="light"] .weekly-trends-page [style*="background: white"],
+html[data-pbb-theme="light"] .weekly-trends-page [style*="background:white"] {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-insights [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] #view-progress [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] .weekly-trends-page [style*="color: var(--text-main)"] {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-insights [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] #view-progress [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] .weekly-trends-page [style*="color: var(--text-muted)"] {
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #view-insights .multi-week-nav,
+html[data-pbb-theme="light"] .weekly-trends-page .multi-week-nav,
+html[data-pbb-theme="light"] #view-progress .multi-week-nav {
+    background: rgba(255, 255, 255, 0.78) !important;
+    border-color: rgba(184, 137, 43, 0.16) !important;
+}
+
+html[data-pbb-theme="light"] #view-insights .multi-week-nav button,
+html[data-pbb-theme="light"] .weekly-trends-page .multi-week-nav button,
+html[data-pbb-theme="light"] #view-progress .multi-week-nav button {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #view-insights .multi-week-nav button.active,
+html[data-pbb-theme="light"] .weekly-trends-page .multi-week-nav button.active,
+html[data-pbb-theme="light"] #view-progress .multi-week-nav button.active {
+    background: #151515 !important;
+    color: #ffffff !important;
+}
+
 html[data-pbb-theme="light"] #view-log-activity h1,
 html[data-pbb-theme="light"] #view-log-activity h2,
 html[data-pbb-theme="light"] #view-log-activity h3,
