@@ -638,11 +638,85 @@ function closeProgressPhotoModal() {
 window.openProgressPhotoModal = openProgressPhotoModal;
 window.closeProgressPhotoModal = closeProgressPhotoModal;
 
+const PROGRESS_PHOTO_CAPTURE_SCRIPT_URL = 'js/dashboard/pbb-deferred-progressphoto.js?v=4';
+
+function ensureProgressPhotoCaptureReady() {
+    if (typeof window.openProgressPhotoCapture === 'function') {
+        return Promise.resolve(true);
+    }
+
+    if (window._pbbProgressPhotoCaptureScriptPromise) {
+        return window._pbbProgressPhotoCaptureScriptPromise.then(function() {
+            return typeof window.openProgressPhotoCapture === 'function';
+        });
+    }
+
+    window._pbbProgressPhotoCaptureScriptPromise = new Promise(function(resolve) {
+        var settled = false;
+        var appended = false;
+        function finish(value) {
+            if (settled) return;
+            settled = true;
+            resolve(value);
+        }
+        function appendCaptureScript() {
+            if (appended) return;
+            appended = true;
+            var script = document.createElement('script');
+            script.src = PROGRESS_PHOTO_CAPTURE_SCRIPT_URL;
+            script.async = true;
+            script.onload = function() {
+                finish(typeof window.openProgressPhotoCapture === 'function');
+            };
+            script.onerror = function() {
+                console.warn('Progress photo capture helper failed to load');
+                finish(false);
+            };
+            document.head.appendChild(script);
+        }
+        var existing = Array.from(document.scripts || []).find(function(script) {
+            return script.src && script.src.indexOf('js/dashboard/pbb-deferred-progressphoto.js') !== -1;
+        });
+
+        if (existing) {
+            var waitStartedAt = Date.now();
+            function waitForExistingScript() {
+                if (typeof window.openProgressPhotoCapture === 'function') {
+                    finish(true);
+                    return;
+                }
+                if (appended) return;
+                if (Date.now() - waitStartedAt > 4000) {
+                    finish(false);
+                    return;
+                }
+                setTimeout(waitForExistingScript, 100);
+            }
+            existing.addEventListener('load', function() {
+                finish(typeof window.openProgressPhotoCapture === 'function');
+            }, { once: true });
+            existing.addEventListener('error', function() {
+                appendCaptureScript();
+            }, { once: true });
+            waitForExistingScript();
+            return;
+        }
+
+        appendCaptureScript();
+    });
+
+    return window._pbbProgressPhotoCaptureScriptPromise;
+}
+
 // Camera button handler — adds a progress photo from within the Transformation view
 async function addProgressPhotoFromInsightsView() {
+    const captureReady = await ensureProgressPhotoCaptureReady();
     if (typeof window.openProgressPhotoCapture === 'function') {
-        window.openProgressPhotoCapture();
+        window.openProgressPhotoCapture({ source: 'insights' });
         return;
+    }
+    if (!captureReady) {
+        console.warn('Progress photo capture helper unavailable, using legacy camera fallback');
     }
 
     if (typeof openWorkoutCamera !== 'function') {

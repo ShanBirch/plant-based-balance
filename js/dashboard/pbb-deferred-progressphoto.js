@@ -307,9 +307,11 @@ let progressPhotoCaptureState = null;
         overlay.style.display = 'flex';
     }
 
-    function openProgressPhotoCapture() {
+    function openProgressPhotoCapture(options) {
+        const source = options && options.source === 'insights' ? 'insights' : 'home';
         progressPhotoCaptureState = {
-            shots: new Array(PROGRESS_PHOTO_SHOTS.length)
+            shots: new Array(PROGRESS_PHOTO_SHOTS.length),
+            source
         };
         renderProgressPhotoShotGuide(0);
     }
@@ -329,8 +331,9 @@ let progressPhotoCaptureState = null;
                 return { meta: PROGRESS_PHOTO_SHOTS[shotIndex], file: shotFile };
             })
             .filter(function(item) { return item.file; });
+        const source = progressPhotoCaptureState.source || 'home';
         closeProgressPhotoShotGuide();
-        saveProgressPhotoSet(shots);
+        saveProgressPhotoSet(shots, { source });
     }
 
     function captureProgressPhotoShot(index) {
@@ -391,13 +394,33 @@ let progressPhotoCaptureState = null;
         }
     }
 
-    async function saveProgressPhotoSet(shots) {
+    function setProgressPhotoInsightsState(kind, message) {
+        const container = document.getElementById('progress-photos-container');
+        if (!container) return;
+
+        const isError = kind === 'error';
+        const color = isError ? '#ef4444' : 'var(--text-muted)';
+        const title = isError ? 'Upload failed. Please try again.' : (message || 'Uploading your progress photos...');
+        const retry = isError
+            ? '<button onclick="window.addProgressPhotoFromInsightsView && window.addProgressPhotoFromInsightsView()" style="margin-top:14px; background:linear-gradient(135deg,#ec4899,#f43f5e); color:white; border:none; padding:10px 20px; border-radius:20px; cursor:pointer; font-size:0.85rem; font-weight:600;">Try Again</button>'
+            : '';
+
+        container.innerHTML = '<div style="text-align:center; padding:40px 20px; color:' + color + ';">'
+            + '<div style="font-size:2rem; margin-bottom:12px; animation:' + (isError ? 'none' : 'pulse 1s infinite') + ';">' + (isError ? '!' : '...') + '</div>'
+            + '<div style="font-weight:600; font-size:0.95rem;">' + title + '</div>'
+            + retry
+            + '</div>';
+    }
+
+    async function saveProgressPhotoSet(shots, options) {
         if (!shots || !shots.length) return;
 
         const card = document.getElementById('weekly-progress-photo-card');
         const uploadingCard = document.getElementById('weekly-progress-photo-uploading');
         const doneCard = document.getElementById('weekly-progress-photo-done-card');
         const userId = window.currentUser?.id;
+        const source = options && options.source === 'insights' ? 'insights' : 'home';
+        const isInsightsCapture = source === 'insights';
 
         try {
             if (!userId) throw new Error('User not authenticated');
@@ -405,12 +428,18 @@ let progressPhotoCaptureState = null;
 
             if (card) card.style.display = 'none';
             if (doneCard) doneCard.style.display = 'none';
-            if (uploadingCard) uploadingCard.style.display = 'block';
+            if (uploadingCard) uploadingCard.style.display = isInsightsCapture ? 'none' : 'block';
             setProgressPhotoUploadingCopy('Uploading 1 of ' + shots.length + ' progress photos...');
+            if (isInsightsCapture) {
+                setProgressPhotoInsightsState('uploading', 'Uploading 1 of ' + shots.length + ' progress photos...');
+            }
 
             const uploads = [];
             for (let i = 0; i < shots.length; i++) {
                 setProgressPhotoUploadingCopy('Uploading ' + (i + 1) + ' of ' + shots.length + ' progress photos...');
+                if (isInsightsCapture) {
+                    setProgressPhotoInsightsState('uploading', 'Uploading ' + (i + 1) + ' of ' + shots.length + ' progress photos...');
+                }
                 const uploadData = await uploadProgressPhotoFile(userId, shots[i].file);
                 uploads.push({
                     angle: shots[i].meta.key,
@@ -439,7 +468,11 @@ let progressPhotoCaptureState = null;
             await awardProgressPhotoXP(userId, savedPhoto, shots[0].file);
 
             if (uploadingCard) uploadingCard.style.display = 'none';
-            showProgressPhotoCompletedState(card, doneCard, uploadingCard);
+            if (isInsightsCapture) {
+                hideProgressPhotoCards(card, doneCard, uploadingCard);
+            } else {
+                showProgressPhotoCompletedState(card, doneCard, uploadingCard);
+            }
 
             if (typeof refreshPointsDisplay === 'function') {
                 refreshPointsDisplay();
@@ -451,8 +484,12 @@ let progressPhotoCaptureState = null;
         } catch (error) {
             console.error('Error uploading progress photo:', error);
             if (uploadingCard) uploadingCard.style.display = 'none';
-            if (card) card.style.display = 'block';
-            alert('Failed to upload progress photos. Please try again.');
+            if (isInsightsCapture) {
+                setProgressPhotoInsightsState('error');
+            } else {
+                if (card) card.style.display = 'block';
+                alert('Failed to upload progress photos. Please try again.');
+            }
         }
     }
 
