@@ -4077,20 +4077,42 @@ html[data-pbb-theme="light"] #calendar-workout-action-modal button:not(#action-m
 #view-insights.activity-insights-view,
 #view-progress,
 .weekly-trends-page {
+    --pbb-insight-page-bg: #050505;
+    --pbb-insight-header-bg: rgba(7, 7, 7, 0.92);
+    --pbb-insight-card-bg: rgba(255, 255, 255, 0.07);
+    --pbb-insight-soft-bg: rgba(255, 255, 255, 0.06);
+    --pbb-insight-softer-bg: rgba(255, 255, 255, 0.04);
+    --pbb-insight-border: rgba(245, 217, 138, 0.16);
+    --pbb-insight-border-soft: rgba(245, 217, 138, 0.1);
+    --pbb-insight-text: #f8f7f2;
+    --pbb-insight-muted: rgba(248, 247, 242, 0.68);
+    --pbb-insight-axis: rgba(248, 247, 242, 0.7);
+    --pbb-insight-grid: rgba(248, 247, 242, 0.12);
+    --text-main: var(--pbb-insight-text);
+    --text-muted: var(--pbb-insight-muted);
     background:
         radial-gradient(circle at 12% 4%, rgba(216, 178, 94, 0.13), transparent 28%),
         radial-gradient(circle at 92% 2%, rgba(255, 255, 255, 0.055), transparent 30%),
         linear-gradient(180deg, #101010 0%, #050505 48%, #000000 100%) !important;
-    color: #f8f7f2 !important;
+    color: var(--pbb-insight-text) !important;
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: 0 !important;
+    -webkit-font-smoothing: antialiased;
+}
+
+#view-insights.activity-insights-view *,
+#view-progress *,
+.weekly-trends-page * {
+    font-family: inherit !important;
 }
 
 #view-insights > div[style*="position: sticky"],
 #view-progress > div[style*="position: sticky"],
 .weekly-trends-page-header {
-    background: rgba(7, 7, 7, 0.92) !important;
-    border-bottom: 1px solid rgba(245, 217, 138, 0.16) !important;
+    background: var(--pbb-insight-header-bg) !important;
+    border-bottom: 1px solid var(--pbb-insight-border) !important;
     box-shadow: 0 12px 34px rgba(0, 0, 0, 0.44) !important;
-    color: #f8f7f2 !important;
+    color: var(--pbb-insight-text) !important;
     backdrop-filter: blur(18px) saturate(126%);
     -webkit-backdrop-filter: blur(18px) saturate(126%);
 }
@@ -4098,8 +4120,13 @@ html[data-pbb-theme="light"] #calendar-workout-action-modal button:not(#action-m
 #view-insights > div[style*="position: sticky"] > div,
 #view-progress > div[style*="position: sticky"] > div,
 .weekly-trends-page-title {
-    color: #f8f7f2 !important;
-    -webkit-text-fill-color: #f8f7f2 !important;
+    color: var(--pbb-insight-text) !important;
+    -webkit-text-fill-color: var(--pbb-insight-text) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 1.05rem !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    letter-spacing: 0 !important;
 }
 
 #view-insights .activity-insights-hub-card {
@@ -4174,23 +4201,152 @@ html[data-pbb-theme="light"] #calendar-workout-action-modal button:not(#action-m
 #view-progress [style*="background:white"],
 .weekly-trends-page [style*="background: white"],
 .weekly-trends-page [style*="background:white"] {
-    background: rgba(255, 255, 255, 0.07) !important;
-    border-color: rgba(245, 217, 138, 0.16) !important;
-    color: #f8f7f2 !important;
+    background: var(--pbb-insight-card-bg) !important;
+    border-color: var(--pbb-insight-border) !important;
+    color: var(--pbb-insight-text) !important;
+}
+
+#view-progress [style*="background: #f8fafc"],
+#view-progress [style*="background:#f8fafc"],
+#view-progress [style*="background: #f1f5f9"],
+#view-progress [style*="background:#f1f5f9"],
+#view-progress [style*="background: #fafafa"],
+#view-progress [style*="background:#fafafa"],
+#view-progress [style*="background: #eef2ff"],
+#view-progress [style*="background:#eef2ff"],
+#view-progress [style*="background: #ede9fe"],
+#view-progress [style*="background:#ede9fe"],
+#view-progress [style*="background: #e0f7fa"],
+#view-progress [style*="background:#e0f7fa"],
+#view-progress [style*="background: #eff6ff"],
+#view-progress [style*="background:#eff6ff"],
+#view-progress [style*="background: #f0fdf4"],
+#view-progress [style*="background:#f0fdf4"],
+#view-progress [style*="background: #fff7ed"],
+#view-progress [style*="background:#fff7ed"],
+#view-progress [style*="background: #fffbeb"],
+#view-progress [style*="background:#fffbeb"],
+#view-progress [style*="background: #fef2f2"],
+#view-progress [style*="background:#fef2f2"],
+#view-progress [style*="background: #f5f3ff"],
+#view-progress [style*="background:#f5f3ff"],
+#view-progress [style*="background: #f0f9ff"],
+#view-progress [style*="background:#f0f9ff"],
+.weekly-trends-page [style*="background: #f8fafc"],
+.weekly-trends-page [style*="background:#f8fafc"],
+.weekly-trends-page [style*="background: #f1f5f9"],
+.weekly-trends-page [style*="background:#f1f5f9"],
+.weekly-trends-page [style*="background: #fafafa"],
+.weekly-trends-page [style*="background:#fafafa"],
+.weekly-trends-page [style*="background: #eef2ff"],
+.weekly-trends-page [style*="background:#eef2ff"],
+.weekly-trends-page [style*="background: #ede9fe"],
+.weekly-trends-page [style*="background:#ede9fe"],
+.weekly-trends-page [style*="background: #e0f7fa"],
+.weekly-trends-page [style*="background:#e0f7fa"],
+.weekly-trends-page [style*="background: #eff6ff"],
+.weekly-trends-page [style*="background:#eff6ff"],
+.weekly-trends-page [style*="background: #f0fdf4"],
+.weekly-trends-page [style*="background:#f0fdf4"],
+.weekly-trends-page [style*="background: #fff7ed"],
+.weekly-trends-page [style*="background:#fff7ed"],
+.weekly-trends-page [style*="background: #fffbeb"],
+.weekly-trends-page [style*="background:#fffbeb"],
+.weekly-trends-page [style*="background: #fef2f2"],
+.weekly-trends-page [style*="background:#fef2f2"],
+.weekly-trends-page [style*="background: #f5f3ff"],
+.weekly-trends-page [style*="background:#f5f3ff"],
+.weekly-trends-page [style*="background: #f0f9ff"],
+.weekly-trends-page [style*="background:#f0f9ff"],
+.weekly-trends-page .week-compare-stat,
+.weekly-trends-page .pattern-insight,
+#view-progress .week-compare-stat,
+#view-progress .pattern-insight {
+    background: var(--pbb-insight-soft-bg) !important;
+    border-color: var(--pbb-insight-border-soft) !important;
+    color: var(--pbb-insight-text) !important;
 }
 
 #view-insights [style*="color: var(--text-main)"],
 #view-progress [style*="color: var(--text-main)"],
 .weekly-trends-page [style*="color: var(--text-main)"] {
-    color: #f8f7f2 !important;
-    -webkit-text-fill-color: #f8f7f2 !important;
+    color: var(--pbb-insight-text) !important;
+    -webkit-text-fill-color: var(--pbb-insight-text) !important;
 }
 
 #view-insights [style*="color: var(--text-muted)"],
 #view-progress [style*="color: var(--text-muted)"],
 .weekly-trends-page [style*="color: var(--text-muted)"] {
-    color: rgba(248, 247, 242, 0.68) !important;
-    -webkit-text-fill-color: rgba(248, 247, 242, 0.68) !important;
+    color: var(--pbb-insight-muted) !important;
+    -webkit-text-fill-color: var(--pbb-insight-muted) !important;
+}
+
+#view-progress [style*="color:#0f172a"],
+#view-progress [style*="color: #0f172a"],
+#view-progress [style*="color:#1f2937"],
+#view-progress [style*="color: #1f2937"],
+#view-progress [style*="color:#334155"],
+#view-progress [style*="color: #334155"],
+.weekly-trends-page [style*="color:#0f172a"],
+.weekly-trends-page [style*="color: #0f172a"],
+.weekly-trends-page [style*="color:#1f2937"],
+.weekly-trends-page [style*="color: #1f2937"],
+.weekly-trends-page [style*="color:#334155"],
+.weekly-trends-page [style*="color: #334155"] {
+    color: var(--pbb-insight-text) !important;
+    -webkit-text-fill-color: var(--pbb-insight-text) !important;
+}
+
+#view-progress [style*="color:#475569"],
+#view-progress [style*="color: #475569"],
+#view-progress [style*="color:#64748b"],
+#view-progress [style*="color: #64748b"],
+#view-progress [style*="color:#94a3b8"],
+#view-progress [style*="color: #94a3b8"],
+.weekly-trends-page [style*="color:#475569"],
+.weekly-trends-page [style*="color: #475569"],
+.weekly-trends-page [style*="color:#64748b"],
+.weekly-trends-page [style*="color: #64748b"],
+.weekly-trends-page [style*="color:#94a3b8"],
+.weekly-trends-page [style*="color: #94a3b8"] {
+    color: var(--pbb-insight-muted) !important;
+    -webkit-text-fill-color: var(--pbb-insight-muted) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-progress [style*="color:#312e81"],
+html:not([data-pbb-theme="light"]) #view-progress [style*="color: #312e81"],
+html:not([data-pbb-theme="light"]) .weekly-trends-page [style*="color:#312e81"],
+html:not([data-pbb-theme="light"]) .weekly-trends-page [style*="color: #312e81"] {
+    color: #a78bfa !important;
+    -webkit-text-fill-color: #a78bfa !important;
+}
+
+#view-progress [style*="border-bottom: 1px solid #f1f5f9"],
+#view-progress [style*="border-bottom:1px solid #f1f5f9"],
+#view-progress [style*="border: 1px solid #e2e8f0"],
+#view-progress [style*="border:1px solid #e2e8f0"],
+.weekly-trends-page [style*="border-bottom: 1px solid #f1f5f9"],
+.weekly-trends-page [style*="border-bottom:1px solid #f1f5f9"],
+.weekly-trends-page [style*="border: 1px solid #e2e8f0"],
+.weekly-trends-page [style*="border:1px solid #e2e8f0"],
+.weekly-trends-page .sparkline-row,
+#view-progress .sparkline-row {
+    border-color: var(--pbb-insight-border-soft) !important;
+}
+
+#view-progress svg line[stroke="#f1f5f9"],
+.weekly-trends-page svg line[stroke="#f1f5f9"] {
+    stroke: var(--pbb-insight-grid) !important;
+}
+
+#view-progress svg text[fill="#94a3b8"],
+.weekly-trends-page svg text[fill="#94a3b8"] {
+    fill: var(--pbb-insight-axis) !important;
+}
+
+#view-progress svg circle[fill="white"],
+.weekly-trends-page svg circle[fill="white"] {
+    fill: var(--pbb-insight-card-bg) !important;
 }
 
 #view-insights .multi-week-nav,
@@ -4203,6 +4359,8 @@ html[data-pbb-theme="light"] #calendar-workout-action-modal button:not(#action-m
 #view-insights .multi-week-nav button,
 .weekly-trends-page .multi-week-nav button,
 #view-progress .multi-week-nav button {
+    background: var(--pbb-insight-soft-bg) !important;
+    border-color: var(--pbb-insight-border-soft) !important;
     color: rgba(248, 247, 242, 0.66) !important;
 }
 
@@ -4217,10 +4375,21 @@ html[data-pbb-theme="light"] #calendar-workout-action-modal button:not(#action-m
 html[data-pbb-theme="light"] #view-insights.activity-insights-view,
 html[data-pbb-theme="light"] #view-progress,
 html[data-pbb-theme="light"] .weekly-trends-page {
+    --pbb-insight-page-bg: #f8f5ee;
+    --pbb-insight-header-bg: rgba(255, 255, 255, 0.92);
+    --pbb-insight-card-bg: rgba(255, 255, 255, 0.9);
+    --pbb-insight-soft-bg: rgba(255, 255, 255, 0.74);
+    --pbb-insight-softer-bg: rgba(244, 240, 231, 0.82);
+    --pbb-insight-border: rgba(184, 137, 43, 0.16);
+    --pbb-insight-border-soft: rgba(184, 137, 43, 0.1);
+    --pbb-insight-text: #151515;
+    --pbb-insight-muted: #6f6a61;
+    --pbb-insight-axis: #6f6a61;
+    --pbb-insight-grid: rgba(17, 17, 17, 0.08);
     background:
         radial-gradient(circle at 12% 4%, rgba(184, 137, 43, 0.12), transparent 28%),
         linear-gradient(180deg, #f8f5ee 0%, #f1eadf 100%) !important;
-    color: #151515 !important;
+    color: var(--pbb-insight-text) !important;
 }
 
 html[data-pbb-theme="light"] #view-insights > div[style*="position: sticky"],
@@ -4326,6 +4495,12 @@ html[data-pbb-theme="light"] .weekly-trends-page .multi-week-nav button.active,
 html[data-pbb-theme="light"] #view-progress .multi-week-nav button.active {
     background: #151515 !important;
     color: #ffffff !important;
+}
+
+html[data-pbb-theme="light"] .weekly-trends-page .week-compare-stat .stat-value,
+html[data-pbb-theme="light"] #view-progress .week-compare-stat .stat-value {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
 }
 
 html[data-pbb-theme="light"] #view-log-activity h1,
