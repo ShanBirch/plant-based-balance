@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v168'; // v168: transformation progress photos use guided capture; v167: persist fresh-account character colors
+const CACHE_NAME = 'pbb-app-v169'; // v169: show progress photo guide above current screen; v168: transformation progress photos use guided capture
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',

@@ -638,7 +638,7 @@ function closeProgressPhotoModal() {
 window.openProgressPhotoModal = openProgressPhotoModal;
 window.closeProgressPhotoModal = closeProgressPhotoModal;
 
-const PROGRESS_PHOTO_CAPTURE_SCRIPT_URL = 'js/dashboard/pbb-deferred-progressphoto.js?v=4';
+const PROGRESS_PHOTO_CAPTURE_SCRIPT_URL = 'js/dashboard/pbb-deferred-progressphoto.js?v=5';
 
 function ensureProgressPhotoCaptureReady() {
     if (typeof window.openProgressPhotoCapture === 'function') {

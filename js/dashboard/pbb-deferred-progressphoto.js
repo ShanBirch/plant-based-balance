@@ -253,7 +253,7 @@ let progressPhotoCaptureState = null;
 
         overlay = document.createElement('div');
         overlay.id = 'progress-photo-shot-guide';
-        overlay.style.cssText = 'display:none; position:fixed; inset:0; z-index:10012; background:rgba(10,10,18,0.94); padding:calc(20px + env(safe-area-inset-top, 0px)) 18px calc(20px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; align-items:center; justify-content:center;';
+        overlay.style.cssText = 'display:none; position:fixed; inset:0; z-index:100200; background:rgba(10,10,18,0.94); padding:calc(20px + env(safe-area-inset-top, 0px)) 18px calc(20px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; align-items:center; justify-content:center;';
         document.body.appendChild(overlay);
         return overlay;
     }
