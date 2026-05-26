@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balance: 1:1 Online Coaching With Shannon</title>
-    <meta name="description" content="1:1 online coaching with Shannon inside Balance. Personal workouts, weekly goals, three check-ins a week, XP, accountability, and ongoing support.">
-    <meta property="og:title" content="Balance: 1:1 Online Coaching With Shannon">
-    <meta property="og:description" content="Personal coaching, weekly goals, three check-ins a week, and the Balance app keeping your habits visible.">
+    <title>Balance: Free 30-Day Challenge With Shannon</title>
+    <meta name="description" content="Join the free 30-day Balance Challenge with Shannon. Starts Monday, 1 June. Free entry for new starters, a $1,000 first-place cash prize, workouts, food support, check-ins, XP, and accountability.">
+    <meta property="og:title" content="Balance: Free 30-Day Challenge With Shannon">
+    <meta property="og:description" content="Free 30-day challenge with Shannon, starting Monday, 1 June. Enter free, build momentum, and compete for a $1,000 first-place cash prize.">
     <meta property="og:image" content="https://future-balance.netlify.app/balance_logo.png">
     <meta property="og:url" content="https://future-balance.netlify.app/coaching.html">
     <meta property="og:type" content="website">
@@ -36,6 +36,9 @@
             --green: #00d4aa;
             --green-soft: rgba(0, 212, 170, 0.14);
             --green-border: rgba(0, 212, 170, 0.28);
+            --gold: #ffcf5a;
+            --gold-soft: rgba(255, 207, 90, 0.13);
+            --gold-border: rgba(255, 207, 90, 0.34);
             --dark: #0f1923;
             --dark-2: #0a1219;
             --card: #172435;
@@ -61,7 +64,7 @@
             pointer-events: none;
             background:
                 linear-gradient(180deg, rgba(10, 18, 25, 0) 0%, rgba(10, 18, 25, 0.72) 52%, #0f1923 100%),
-                linear-gradient(90deg, rgba(0, 212, 170, 0.09), rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, 0.28));
+                linear-gradient(90deg, rgba(0, 212, 170, 0.09), rgba(255, 207, 90, 0.05) 38%, rgba(0, 0, 0, 0.28));
             z-index: 0;
         }
         nav, main, footer { position: relative; z-index: 1; }
@@ -112,10 +115,10 @@
         }
 
         .hero {
-            min-height: 82vh;
+            min-height: 74vh;
             display: flex;
             align-items: center;
-            padding: 72px 24px 58px;
+            padding: 36px 24px 28px;
             background:
                 linear-gradient(90deg, rgba(10, 18, 25, 0.9) 0%, rgba(10, 18, 25, 0.74) 42%, rgba(10, 18, 25, 0.22) 100%),
                 linear-gradient(180deg, rgba(15, 25, 35, 0.12) 0%, #0f1923 100%),
@@ -185,7 +188,7 @@
             box-shadow: 0 18px 40px rgba(0, 212, 170, 0.32);
         }
         .price-inline {
-            color: #dce5eb;
+            color: var(--gold);
             font-weight: 800;
             font-size: 1rem;
         }
@@ -208,6 +211,11 @@
             max-width: 1080px;
             margin: 0 auto;
             padding: 72px 24px;
+        }
+        .hero + .reveal {
+            padding-top: 28px;
+            opacity: 1;
+            transform: none;
         }
         .section-label {
             color: var(--green);
@@ -254,14 +262,14 @@
             min-height: 430px;
         }
         .plan-card.recommended {
-            border-color: var(--green-border);
-            background: linear-gradient(180deg, rgba(0, 212, 170, 0.08) 0%, var(--card) 42%);
+            border-color: var(--gold-border);
+            background: linear-gradient(180deg, rgba(255, 207, 90, 0.1) 0%, var(--card) 42%);
         }
         .plan-badge {
             position: absolute;
             top: 16px;
             right: 16px;
-            background: var(--green);
+            background: var(--gold);
             color: #071014;
             border-radius: 999px;
             padding: 6px 10px;
@@ -382,7 +390,7 @@
         }
         .rhythm-panel {
             background: var(--card);
-            border: 1px solid var(--green-border);
+            border: 1px solid var(--gold-border);
             border-radius: 8px;
             padding: 32px;
         }
@@ -409,6 +417,7 @@
             font-family: 'Montserrat', sans-serif;
             font-size: 3.25rem;
             line-height: 1;
+            color: var(--gold);
         }
         .rhythm-price span {
             color: var(--muted);
@@ -472,7 +481,7 @@
             font-weight: 900;
         }
         .xp-points {
-            color: var(--green);
+            color: var(--gold);
             font-weight: 900;
             white-space: nowrap;
         }
@@ -642,8 +651,8 @@
             .nav-logo img { width: 38px; height: 38px; }
             .nav-cta { padding: 9px 18px; }
             .hero {
-                min-height: 78vh;
-                padding: 42px 24px 38px;
+                min-height: 70vh;
+                padding: 38px 24px 30px;
                 align-items: flex-end;
                 background:
                     linear-gradient(180deg, rgba(10, 18, 25, 0.22) 0%, rgba(10, 18, 25, 0.86) 56%, #0f1923 100%),
@@ -666,6 +675,7 @@
                 font-size: 0.78rem;
             }
             section { padding: 56px 24px; }
+            .hero + .reveal { padding-top: 26px; }
             .section-title { font-size: 2rem; margin-bottom: 32px; }
             .section-copy { margin-top: -16px; }
             .feature-grid,
@@ -697,105 +707,105 @@
             <img src="balance_logo.png" alt="Balance logo">
             Balance
         </a>
-        <a href="#get-started" class="nav-cta">Get Started</a>
+        <a href="#get-started" class="nav-cta">Enter Free</a>
     </nav>
 
     <main>
         <section class="hero">
             <div class="hero-inner">
-                <div class="hero-pill">1:1 Online Coaching</div>
-                <h1>Work with Shannon inside Balance.</h1>
-                <p class="hero-sub">Personal coaching for your training, food, habits, and week to week consistency. Start with 30 days free so you can feel the support, build momentum, and choose the plan that fits you.</p>
+                <div class="hero-pill">Free 30-Day Challenge</div>
+                <h1>Join the Balance Challenge, free.</h1>
+                <p class="hero-sub">Starts Monday, 1 June. Enter free as a new starter, use Balance for workouts, food, habits, and XP, and compete for the $1,000 first-place cash prize while Shannon checks in through the 30 days.</p>
                 <div class="hero-actions">
-                    <a href="#get-started" class="cta-primary">Get started now</a>
-                    <div class="price-inline">First 30 days free, then from $19.99/month</div>
+                    <a href="#get-started" class="cta-primary">Enter the challenge</a>
+                    <div class="price-inline">Free entry, $1,000 first place</div>
                 </div>
                 <div class="hero-note">
-                    <span>30 days free</span>
-                    <span>Personal plan</span>
-                    <span>3 check-ins/wk</span>
+                    <span>Starts Monday, 1 June</span>
+                    <span>$1,000 cash prize</span>
+                    <span>30 days with Shannon</span>
                 </div>
             </div>
         </section>
 
         <section class="reveal">
-            <div class="section-label">Packages</div>
-            <h2 class="section-title">Start free, then choose the level of support you want.</h2>
-            <p class="section-copy">The first 30 days are free. After that, you can stay self-directed, keep Shannon in your week, or add weekly calls for deeper support.</p>
+            <div class="section-label">The Challenge</div>
+            <h2 class="section-title">A better first step than buying coaching cold.</h2>
+            <p class="section-copy">The challenge gives you 30 days of structure, support, and visible momentum first. If coaching makes sense after that, you will know from experience, not a sales pitch.</p>
             <div class="plan-grid">
                 <div class="plan-card">
-                    <div class="plan-name">App Access</div>
-                    <div class="plan-price">$19.99<span>/month</span></div>
-                    <p class="plan-desc">For people who want the structure without full coaching.</p>
+                    <div class="plan-name">Free Entry</div>
+                    <div class="plan-price">$0<span>/new starter</span></div>
+                    <p class="plan-desc">For new people who want a real reason to start now.</p>
                     <ul class="plan-list">
-                        <li>Balance app access</li>
-                        <li>Tailored workout program refreshed every 6 weeks</li>
-                        <li>Weekly goal setting</li>
-                        <li>XP, streaks, character levels, and progress tracking</li>
+                        <li>Free account setup inside Balance</li>
+                        <li>Entry into the 30-day challenge cohort</li>
+                        <li>Workout and food structure to start from</li>
+                        <li>No paid coaching commitment up front</li>
                     </ul>
-                    <a href="#get-started" class="plan-link">Start with app access</a>
+                    <a href="#get-started" class="plan-link">Enter free</a>
                 </div>
                 <div class="plan-card recommended">
-                    <div class="plan-badge">Most Popular</div>
-                    <div class="plan-name">1:1 Coaching</div>
-                    <div class="plan-price">$28.99<span>/week</span></div>
-                    <p class="plan-desc">The main coaching offer. Enough support to stay on track without needing calls.</p>
+                    <div class="plan-badge">Cash Prize</div>
+                    <div class="plan-name">First Place</div>
+                    <div class="plan-price">$1,000<span>cash</span></div>
+                    <p class="plan-desc">The final leaderboard gives the challenge a real target.</p>
                     <ul class="plan-list">
-                        <li>Everything in App Access</li>
-                        <li>Three check-ins a week with Shannon</li>
-                        <li>Workout and food adjustments as your week changes</li>
-                        <li>Accountability, support, and course correction inside Balance</li>
+                        <li>Earn XP from workouts, meals, check-ins, and progress</li>
+                        <li>Climb the live challenge leaderboard</li>
+                        <li>First place wins the cash prize after review</li>
+                        <li>Fair-play checks apply before the winner is confirmed</li>
                     </ul>
-                    <a href="#get-started" class="plan-link primary">Start coaching free</a>
+                    <a href="#get-started" class="plan-link primary">Claim a spot</a>
                 </div>
                 <div class="plan-card">
-                    <div class="plan-name">Coaching + Calls</div>
-                    <div class="plan-price">$99.99<span>/week</span></div>
-                    <p class="plan-desc">For people who want deeper support and a weekly call.</p>
+                    <div class="plan-name">After 30 Days</div>
+                    <div class="plan-price">$28.99<span>/week</span></div>
+                    <p class="plan-desc">If the support helps, you can keep Shannon in your week.</p>
                     <ul class="plan-list">
-                        <li>Everything in 1:1 Coaching</li>
-                        <li>Weekly call with Shannon</li>
-                        <li>More detailed review of training, food, and obstacles</li>
-                        <li>Best for extra accountability or a more complex goal</li>
+                        <li>Weekly goal setting</li>
+                        <li>Three check-ins a week with Shannon</li>
+                        <li>Workout and food adjustments as your week changes</li>
+                        <li>Stay self-directed if that is enough for you</li>
                     </ul>
-                    <a href="#get-started" class="plan-link">Start with calls</a>
+                    <a href="#get-started" class="plan-link">Start the 30 days first</a>
                 </div>
             </div>
         </section>
 
         <section class="reveal">
             <div class="section-label">What You Get</div>
-            <h2 class="section-title">Not a template. A coaching rhythm around your real week.</h2>
+            <h2 class="section-title">Not a cold pitch. A 30-day reason to start.</h2>
             <div class="feature-grid">
                 <div class="feature-card">
                     <span class="feature-num">01</span>
-                    <h3>Personal workout program</h3>
-                    <p>Your training is built around your equipment, schedule, injuries, preferences, and goal. Shannon adjusts it as your body and week change.</p>
+                    <h3>Your starting plan</h3>
+                    <p>Balance gives you training structure around your equipment, schedule, preferences, and goal so you are not starting from a blank page.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">02</span>
-                    <h3>Food support that fits your actual diet</h3>
-                    <p>Meal targets, simple options, and practical swaps based on your normal food, with plant-based help there if you want it.</p>
+                    <h3>Food support without diet policing</h3>
+                    <p>Simple targets, meal ideas, and practical swaps based on how you actually eat, with plant-based help there if you want it.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">03</span>
-                    <h3>Three check-ins a week</h3>
-                    <p>Short guided check-ins so you are not disappearing for seven days at a time. We catch problems early and keep momentum from drifting.</p>
+                    <h3>Check-ins that find the blocker</h3>
+                    <p>Short check-ins help Shannon see what is getting in the way: energy, hunger, soreness, stress, time, or confidence.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">04</span>
                     <h3>Weekly goal setting</h3>
-                    <p>Pick up to three goals each week. Balance tracks the signals, Shannon sees what is actually happening, and next week is adjusted from evidence.</p>
+                    <p>Pick up to three goals each week so the challenge has focus, not a giant list of things you were never going to do.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">05</span>
-                    <h3>XP for showing up</h3>
-                    <p>Workouts, meals, weigh-ins, check-ins, lessons, photos, and shares can all earn XP. Your character levels up as your habits stack up.</p>
+                    <h3>XP and leaderboard</h3>
+                    <p>Workouts, meals, weigh-ins, check-ins, lessons, photos, and posts can all build XP toward the final challenge ranking.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">06</span>
-                    <h3>Shannon in your corner</h3>
-                    <p>You are coached by Shannon, not left alone with a plan. Questions, adjustments, accountability, and support all live inside Balance.</p>
+                    <h3>The next step is earned</h3>
+                    <p>If the support helps, keep going with coaching after the 30 days. If the app is enough, you can stay self-directed.</p>
                 </div>
             </div>
         </section>
@@ -803,34 +813,34 @@
         <section class="reveal">
             <div class="rhythm">
                 <div class="rhythm-panel">
-                    <div class="section-label" style="text-align:left;">The Weekly Rhythm</div>
-                    <h2>Three check-ins keeps coaching alive.</h2>
-                    <p>A weekly check-in is useful, but a lot can go sideways between Monday and Sunday. This gives us more signal without making coaching feel heavy.</p>
+                    <div class="section-label" style="text-align:left;">30-Day Flow</div>
+                    <h2>Start Monday, build proof for 30 days.</h2>
+                    <p>The challenge turns the first month into action, not overthinking. You get the app structure, Shannon gets enough context to help, and you get a real shot at the leaderboard.</p>
                     <div class="rhythm-price">
-                        <strong>$28.99</strong>
-                        <span>/week</span>
+                        <strong>$0</strong>
+                        <span>entry for new starters</span>
                     </div>
                 </div>
                 <div class="timeline">
                     <div class="timeline-item">
-                        <div class="timeline-day">Start</div>
+                        <div class="timeline-day">Monday</div>
                         <div>
-                            <h3>Set the week</h3>
-                            <p>Choose your main goals, confirm your training days, and lock in the simple behaviours that matter most this week.</p>
+                            <h3>Set your baseline</h3>
+                            <p>Join the cohort, pick your first goals, and start logging the habits that will count toward your challenge score.</p>
                         </div>
                     </div>
                     <div class="timeline-item">
-                        <div class="timeline-day">Midweek</div>
+                        <div class="timeline-day">Weeks 1-3</div>
                         <div>
-                            <h3>Catch the friction</h3>
-                            <p>Energy low, sore, hungry, busy, missed a workout, meals off track. We adjust before the week runs away from you.</p>
+                            <h3>Stack visible wins</h3>
+                            <p>Log workouts, food, check-ins, weigh-ins, progress photos, and posts. Small repeatable actions matter more than perfect days.</p>
                         </div>
                     </div>
                     <div class="timeline-item">
-                        <div class="timeline-day">Review</div>
+                        <div class="timeline-day">Final Week</div>
                         <div>
-                            <h3>Review and reset</h3>
-                            <p>Look at what happened, what improved, what got in the way, then carry the lesson into next week's goals.</p>
+                            <h3>Review the scoreboard</h3>
+                            <p>The winner is confirmed after the final leaderboard review. From there, choose whether you want coaching, app access, or a clean finish.</p>
                         </div>
                     </div>
                 </div>
@@ -839,37 +849,37 @@
 
         <section class="reveal">
             <div class="section-label">How XP Works</div>
-            <h2 class="section-title">XP is how Balance makes consistency visible.</h2>
-            <p class="section-copy">It is not about being perfect. It is a score for the habits that move your goal forward, so you can see the effort building before the results fully show.</p>
+            <h2 class="section-title">XP decides the leaderboard.</h2>
+            <p class="section-copy">It is not about being perfect. XP rewards the habits that move your goal forward, so effort is visible before the results fully show.</p>
             <div class="xp-board">
                 <div class="xp-row">
                     <div class="xp-cell xp-action">Log workouts</div>
                     <div class="xp-cell">Complete sessions, share workout wins, and build training consistency.</div>
-                    <div class="xp-cell xp-points">Earn XP</div>
+                    <div class="xp-cell xp-points">Score points</div>
                 </div>
                 <div class="xp-row">
                     <div class="xp-cell xp-action">Track food</div>
                     <div class="xp-cell">Log meals, hit nutrition targets, and make the boring basics easier to repeat.</div>
-                    <div class="xp-cell xp-points">Earn XP</div>
+                    <div class="xp-cell xp-points">Score points</div>
                 </div>
                 <div class="xp-row">
                     <div class="xp-cell xp-action">Check in</div>
                     <div class="xp-cell">Record mood, energy, stress, soreness, hunger, and obstacles so coaching has context.</div>
-                    <div class="xp-cell xp-points">Earn XP</div>
+                    <div class="xp-cell xp-points">Score points</div>
                 </div>
                 <div class="xp-row">
                     <div class="xp-cell xp-action">Post progress</div>
                     <div class="xp-cell">Weigh-ins, progress photos, lessons, and community posts all help keep the loop alive.</div>
-                    <div class="xp-cell xp-points">Earn XP</div>
+                    <div class="xp-cell xp-points">Score points</div>
                 </div>
             </div>
-            <p class="xp-note">XP levels up your Balance character, keeps streaks visible, and gives Shannon a clearer picture of where you are consistent and where you need help.</p>
+            <p class="xp-note">XP levels up your Balance character, keeps streaks visible, and feeds the challenge leaderboard. The $1,000 first-place prize is confirmed after final review and fair-play checks.</p>
         </section>
 
         <section class="reveal">
             <div class="section-label">Weekly Goals</div>
             <h2 class="section-title">Each week has a focus, not a giant to-do list.</h2>
-            <p class="section-copy">You choose up to three goals. Balance tracks the proof, then your weekly review turns it into the next adjustment.</p>
+            <p class="section-copy">Choose up to three goals. Balance tracks the proof, then your check-ins turn the week into useful feedback instead of guesswork.</p>
             <div class="goal-grid">
                 <div class="goal-chip">
                     <strong>Training</strong>
@@ -897,7 +907,7 @@
                 <div class="about-content">
                     <h2>I'm Shannon.</h2>
                     <p>I grew up on Tamborine Mountain in the Gold Coast hinterland, spent years in freestyle BMX, broke both knees, then rebuilt my own relationship with training from the ground up.</p>
-                    <p>I studied <strong>Exercise Science</strong>, worked as a personal trainer in Melbourne, and owned a weight-training studio in Hampton for eight years. Balance is the coaching system I wish more people had: practical, personal, and built around what actually happens each week.</p>
+                    <p>I studied <strong>Exercise Science</strong>, worked as a personal trainer in Melbourne, and owned a weight-training studio in Hampton for eight years. Balance is the system I wish more people had: practical, personal, and built around what actually happens each week.</p>
                     <p>I personally eat vegetarian, but coaching is built around <strong>how you actually eat</strong>. Meat, fish, dairy, eggs, plants, all of it can fit if the plan is honest and repeatable.</p>
                     <div class="credentials">
                         <span class="credential">Bachelor Exercise Science</span>
@@ -910,15 +920,15 @@
 
         <section id="get-started" class="reveal">
             <div class="section-label">Get Started</div>
-            <h2 class="section-title">Click here to get started now.</h2>
-            <p class="apply-sub">Download Balance, create your free account, and start your first 30 days. Shannon can help you choose the right package once you are inside.</p>
+            <h2 class="section-title">Enter the free challenge.</h2>
+            <p class="apply-sub">Download Balance, create your free account, then reply to Shannon once your account is made so he can confirm your challenge spot. The next cohort starts Monday, 1 June.</p>
 
             <div class="apply-card">
                 <div class="download-buttons">
-                    <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="app-badge" target="_blank" rel="noopener" data-store="ios">Get started on iPhone</a>
-                    <a href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" class="app-badge secondary" target="_blank" rel="noopener" data-store="android">Get started on Android</a>
+                    <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="app-badge" target="_blank" rel="noopener" data-store="ios">Enter free on iPhone</a>
+                    <a href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" class="app-badge secondary" target="_blank" rel="noopener" data-store="android">Enter free on Android</a>
                 </div>
-                <p class="start-note">Your first 30 days are free. Choose app access, 1:1 coaching, or coaching with calls after you have felt the support.</p>
+                <p class="start-note">Free entry is for new starters. Existing Balance clients can join a challenge from inside the app or through Shannon.</p>
             </div>
         </section>
     </main>
@@ -927,7 +937,7 @@
         <div>&copy; 2026 Balance</div>
         <div class="footer-links">
             <a href="/">Home</a>
-            <a href="/transform-challenge.html">Free challenge</a>
+            <a href="/transform-challenge.html">Challenge details</a>
             <a href="mailto:shannon@plantbased-balance.org">Email Shannon</a>
         </div>
     </footer>

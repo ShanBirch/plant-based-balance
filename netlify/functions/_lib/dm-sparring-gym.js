@@ -2165,7 +2165,7 @@ Their first message is just a tiny greeting after a real-world or contextual int
 - Do not reply with only "good to meet you" or "hope you chilled after that". That dead-ends the thread.
 - Do not invent a specific place, event, or detail unless it is in the known context.
 - Keep it casual, anchor to the shared context, and add one concrete low-pressure thread for them to answer.
-- No free-coaching invite unless they explicitly ask for help, the link, or coaching.`
+- No free-challenge invite unless they explicitly ask for help, the link, or coaching.`
         : '';
     const accidentalExitNudge = accidentalExitSignal
         ? `
@@ -2212,7 +2212,7 @@ They are talking about plant-based food being surprisingly good, usually bland, 
 - Do not end with only a personal "haha i need a recipe" statement.
 - Move the taste hook forward: ask what made it work, flavour vs texture, proper comfort-food good vs just "good for plant-based", or what made it less bland.
 - A tiny food lens is useful here, like "plant-based swaps usually win or lose on flavour/texture, not the protein source."
-- No free-coaching invite unless they ask for help with plant-based eating.`
+- No free-challenge invite unless they ask for help with plant-based eating.`
         : '';
     const groupClassSufficientNudge = groupClassThreadSignal
         ? `
@@ -2226,7 +2226,7 @@ They say their LesMills/group classes already give them the push or cover what t
         ? `
 TRACKING / GRAPH ACCURACY REQUEST:
 They are asking how to know whether app tracking, numbers, or graphs reflect their effort.
-- Treat this as support first, not qualification or a free-coaching invite.
+- Treat this as support first, not qualification or a free-challenge invite.
 - Give one practical check before any question: compare week-to-week trends, check logging consistency, look at sets/reps/load/performance, and do not judge one noisy day.
 - Do not ask "what would you expect the graphs to show" until after you have answered how to verify the data.`
         : '';
@@ -2326,7 +2326,7 @@ They mentioned AI, algorithms, bots, generated content, or models. Do not repeat
         ? `
 APP / WORKOUT SUPPORT REQUEST:
 They are asking for help with the app, logging, stale workouts, a specific plan, or simplifying training.
-- Do not invite to the free 30 days of 1:1 coaching in this reply unless they explicitly ask for coaching or a link.
+- Do not invite to the free challenge in this reply unless they explicitly ask for coaching or a link.
 - Treat it as a support/programming moment: acknowledge the app friction and ask one practical plan question, or answer the specific plan request.
 - If they say they want machines, full-body, in-and-out, no crazy setups, or something easy to stick to, do not just validate. Move the plan forward with one simple structure, template, or practical question about days/equipment.
 - Do not invent delivery mechanics like PDFs or emails.`
@@ -2348,7 +2348,7 @@ LOW-DETAIL BUSY OPENER:
 They gave a short "busy day / doing okay" first reply.
 - Do not answer with only "hope you can chill later"; that closes the thread.
 - Ask one easy, specific hook: work/study/life busy, whether they get to switch off later, or what made the day hectic.
-- Keep it light and answerable in one sentence. No free-coaching invite.`
+- Keep it light and answerable in one sentence. No free-challenge invite.`
         : '';
     const lowEnergyLeadNudge = lowEnergyLeadSignal
         ? `
@@ -2400,7 +2400,7 @@ They asked about Shannon's workouts, day, pets, location, or personal life to fi
 - Do not ask the same return question twice in different forms. For example, answer the podcast question, then ask one clean thing about what they heard or what stuck with them.
 - If they ask "what about you?" in a music/running thread, do not ask only for more artists or "what gets in the way". Answer with one Shannon detail, then bridge to what the music/run does for them: focus, switch-off, reset, consistency, energy, or motivation.
 - If they ask about Sunshine or pet chaos, answer one detail, then bridge back to whether their pet helps them reset/switch off or adds to the work/day chaos. Do not ask a second pet-inventory question.
-- If they ask what challenges Shannon does, answer with Shannon's own training or personal challenge style. Do not interpret that as asking about free coaching.
+- If they ask what challenges Shannon does, answer with Shannon's own training or personal challenge style. Do not interpret that as asking about the free challenge.
 - If they ask "you?" after saying they are wiped from work, answer briefly then bridge back to how they recover or switch off.
 - Do not end with only "hope you crush it" or a closed good-wish.`
         : '';
@@ -2410,7 +2410,7 @@ CASUAL TRAINING BANTER:
 They are chatting about gym, chest day, pump, gaming, or recovery.
 - Do not let it become a pure "sounds good, enjoy" dead-end.
 - Add one light training hook, recovery thought, or question about what they are chasing next.
-- Keep it casual; no free-coaching invite unless they clearly ask for help/link/start.`
+- Keep it casual; no free-challenge invite unless they clearly ask for help/link/start.`
         : '';
     const creativeTasteSubstanceNudge = creativeTasteSubstanceSignal
         ? `
@@ -2419,7 +2419,7 @@ They are critiquing music/art/content as manufactured, recycled, trend-chasing, 
 - Do not ask a generic "any bands lately?" question.
 - Ask a more specific taste question: what makes something feel like it has substance, which artist is actually putting in effort, or what makes the new thing feel manufactured.
 - If they repeat "I trust my own ears / decide for myself" for several turns, stop asking how they find more music. Bridge lightly to self-trust or standards in Shannon's world, such as training cues, progress, or knowing what works for your own body.
-- Keep it rapport only; no free-coaching invite here.`
+- Keep it rapport only; no free-challenge invite here.`
         : '';
     const recoveryRoutineRhythmNudge = recoveryRoutineRhythmSignal
         ? `
@@ -2435,7 +2435,7 @@ BUSY GYM / FALLBACK PLAN SIGNAL:
 They are trying to keep strength/progress while schedules, equipment, or a partner's training make sessions inconsistent.
 - Do not ask a generic day-to-day question.
 - Move toward a flexible plan: ask which machines/weights are usually taken, whether a backup template would help, or what movement pattern needs the easiest swap.
-- No free-coaching invite unless they clearly ask to start or join.`
+- No free-challenge invite unless they clearly ask to start or join.`
         : '';
     const homeGymTransitionNudge = homeGymTransitionSignal
         ? `
@@ -2461,7 +2461,7 @@ HYPERMOBILITY / SELF-MANAGED ROUTINE:
 They already have a routine for hypermobility, mobility, pain-free strength, or daily-life strength.
 - Do not ask an origin-story question like whether they figured it out alone.
 - Respect the autonomy, then ask a current-use question: what keeps them stable, what is non-negotiable, what helps them stay pain-free, or what they are trying to maintain now.
-- No free-coaching invite here unless they ask for help.`
+- No free-challenge invite here unless they ask for help.`
         : '';
     const animalPassionNudge = animalPassionSignal
         ? `
@@ -2478,7 +2478,7 @@ They are warmly engaging around a pet/calm/focus hook, but the original context 
 - Do not stay in endless pet chaos banter.
 - Bridge lightly from the pet detail to calm/focus/stress relief.
 - Good questions: whether that pet is their main reset after work, what helps them switch off besides that, or whether gentle movement has ever helped their focus.
-- No free-coaching invite here.`
+- No free-challenge invite here.`
         : '';
     const chaoticQuietMomentNudge = chaoticQuietMomentSignal
         ? `
@@ -2494,7 +2494,7 @@ PET DEFLECTION AFTER BALANCE QUESTION:
 They answered a Balance/health bridge with pet-chaos banter.
 - Laugh once, then gently re-open the real-life thread. Do not stay only on the pet joke.
 - Ask one smaller bridge, for example what actual balance would mean this week, what they want outside the pet chaos, or whether energy/food/movement is the thing they want calmer.
-- No free-coaching invite here.`
+- No free-challenge invite here.`
         : '';
     const extendedPetRapportNudge = extendedPetRapportSignal
         ? `
@@ -2503,7 +2503,7 @@ The thread has had enough warm pet chaos banter.
 - Do not ask another pet damage/chaos question.
 - If they ask what Sunshine does, answer in one short phrase, then bridge to the person's day, reset, work chaos, or energy.
 - Keep one light callback, then bridge to the person: home/work feeling calm or chaotic, whether pets are their reset, what helps them switch off, or what routine/energy looks like around that chaos.
-- No free-coaching invite here.`
+- No free-challenge invite here.`
         : '';
     const temporaryDistractionNudge = temporaryDistractionSignal
         ? `
@@ -2511,7 +2511,7 @@ TEMPORARY DISTRACTION / LONG-TERM RESET SIGNAL:
 They said podcasts, getting up, or another distraction rarely helps long-term.
 - Do not ask what kind of podcast/distraction they use next.
 - Reflect that they want something that actually sticks, then ask one question about what helps beyond distraction, what would make the quiet feel easier, or the smallest reset that survives the puppy/life chaos.
-- No free-coaching invite here.`
+- No free-challenge invite here.`
         : '';
     const painRecoveryNudge = painRecoverySignal
         ? `
@@ -2520,7 +2520,7 @@ They mentioned a knee, pain, injury, soreness, ice, or being careful not to over
 - Do not pivot to a broad "what was the focus?" question before touching the pain point.
 - Do not ask vague "what's going on with it?" after a named shoulder/knee issue. Ask which lifts/movements flare it, how long it has been there, or what they avoid.
 - Ask one specific recovery or safety question: whether it usually flares after sessions, what movements set it off, what they are avoiding, or how they are keeping training safe.
-- Keep it casual; no diagnosis and no free-coaching invite here.`
+- Keep it casual; no diagnosis and no free-challenge invite here.`
         : '';
     const procedureRecoverySafetyNudge = procedureRecoverySafetySignal
         ? `
@@ -2536,7 +2536,7 @@ MENTAL NOISE / SWITCH-OFF SIGNAL:
 They are saying their brain will not settle, focus is hard, or short breaks are not cutting through.
 - Do not only validate with "so real" or compare it to app work.
 - Offer one tiny reset lens or ask one specific question about what helps the noise drop: walk, brain dump, quiet time, sleep, screen break, or the smallest reset that actually works.
-- No free-coaching invite here.`
+- No free-challenge invite here.`
         : '';
     const illnessRecoveryNudge = illnessRecoverySignal
         ? `
@@ -2544,7 +2544,7 @@ ILLNESS / LOW-ENERGY RECOVERY SIGNAL:
 They are under the weather, recovering from flu/cold, drained, or struggling to rest around work/family.
 - Do not only say "hope you rest up".
 - Ask one concrete low-energy question: what blocks rest, what gets pushed aside first, what would make recovery 5% easier, or what the lowest-pressure day looks like.
-- Do not turn sickness into a free-coaching invite.`
+- Do not turn sickness into a free-challenge invite.`
         : '';
     const selfSufficientProgressNudge = selfSufficientProgressSignal
         ? `
@@ -2552,7 +2552,7 @@ SELF-SUFFICIENT / ENJOYS TRAINING SIGNAL:
 They already like training, feel motivated by progress, or have a decent routine.
 - Do not ask basic inventory questions like "what kind of training do you do?" once they have shown they are self-sufficient.
 - Respect their autonomy and ask a next-edge question: what they are chasing next, what would make it exciting again, what progress target matters, or where the routine feels stale.
-- No free-coaching invite unless they clearly ask for help or a next step.`
+- No free-challenge invite unless they clearly ask for help or a next step.`
         : '';
     const lostPastFitnessNudge = lostPastFitnessSignal
         ? `
@@ -2560,7 +2560,7 @@ LOST PAST-FITNESS FEELING:
 They are remembering how good being active felt, but it now feels far away.
 - Do not ask another broad "what gets in the way?" question.
 - Reflect the exact feeling they miss, then ask which small piece they would want back first: energy, clear head, feeling strong, spontaneity, or the tiniest low-pressure version that could fit now.
-- No free-coaching invite unless they ask for help starting.`
+- No free-challenge invite unless they ask for help starting.`
         : '';
     const challengePositiveFeedbackNudge = challengePositiveFeedbackSignal
         ? `
@@ -2575,8 +2575,8 @@ They are already doing the sessions and saying it helped.
 EARNED CHALLENGE BRIDGE:
 They have now given enough real context to earn a soft next step: at least 3 meaningful lead replies, a warm relationship thread, and a clear goal/blocker.
 - Do not keep asking discovery questions just to be polite.
-- You may connect the free 30 days of 1:1 coaching to their exact situation, but keep it optional and specific.
-- Good shape: "honestly this is the kind of thing the free 30 days of 1:1 coaching is good for: [their exact blocker/need] without [their exact pain]. want me to send the details?"
+- You may connect the free challenge to their exact situation, but keep it optional and specific.
+- Good shape: "honestly this is the kind of thing the free challenge is good for: [their exact blocker/need] without [their exact pain]. want me to send the details?"
 - If they asked a direct advice/support question, answer that first, then bridge only if it still feels natural.`
         : '';
     const timeCapacityBarrierNudge = timeCapacityBarrierSignal
@@ -2619,7 +2619,7 @@ TEDIOUS PROJECT / RENOVATION SIGNAL:
 They are talking about a dusty, slow, or tedious project.
 - Do not ask only about project logistics or "getting through the phase".
 - Use the project as a bridge to energy, focus, stress, momentum, switching off, or what keeps them sane through messy weeks.
-- Keep it human and light. No free-coaching invite unless they clearly ask for help starting.`
+- Keep it human and light. No free-challenge invite unless they clearly ask for help starting.`
         : '';
     const travelViewLoopNudge = travelViewLoopSignal
         ? `
@@ -2627,7 +2627,7 @@ TRAVEL / SCENERY RAPPORT LOOP:
 They are warmly trading travel, view, mountain, cafe, skyline, or scenery stories.
 - Answer any direct "what about you?" briefly, but do not ask another generic favourite-view/place question.
 - After 2-3 scenery turns, bridge lightly to the person: whether those places help them switch off, reset, recharge, get outside, hike/walk, or clear their head.
-- Keep it curious and human. No free-coaching invite here.`
+- Keep it curious and human. No free-challenge invite here.`
         : '';
     const nostalgiaMemoryLoopNudge = nostalgiaMemoryLoopSignal
         ? `
@@ -2635,7 +2635,7 @@ NOSTALGIA / OLD PLACES LOOP:
 They are trading memories about old shops, arcades, Blockbuster, menus, murals, or how everything feels more digital now.
 - Do not ask for another old memory, favourite old spot, game skill, takeout rotation, or "remember when" detail.
 - Bridge from nostalgia to the person now: what they miss about the slower pace, whether they still get offline reset time, what kind of real-world routine gives them that feeling, or whether life feels too fast.
-- Keep it warm. No free-coaching invite unless they clearly ask for help.`
+- Keep it warm. No free-challenge invite unless they clearly ask for help.`
         : '';
     const vagueCreativeChaosNudge = vagueCreativeChaosSignal
         ? `
@@ -2735,23 +2735,23 @@ ${politeClosingNudge}
 
 ACQUISITION RULES:
 - Human first, coach second.
-- The DM offer is free 30 days of 1:1 coaching with Shannon. The app/challenge is the structure underneath, not the headline.
+- The DM offer is the free 30-day Balance Challenge. It starts Monday, 1 June, is free for new starters, and has a $1,000 first-place cash prize. Paid coaching is the follow-up after trust is built, not the headline.
 - Earn the next response. Each reply needs one handle worth answering: answer their direct ask, reflect the sharpest specific hook, add one tiny useful lens, or ask one precise question about the real blocker/preference/objection.
 - Avoid statement-only dead ends. Unless the lead is clearly closing or opting out, do not finish with only agreement, a personal aside, or "hope it goes well". End with either one specific question or a vivid hook that makes the next reply obvious.
-- Keep the free-coaching invite invisible until the lead gives a real start/help signal or earns a soft bridge through enough specific context.
+- Keep the free-challenge invite invisible until the lead gives a real start/help signal or earns a soft bridge through enough specific context.
 - Real invite signals: "i need help", "i dunno what i'm doing", "where do i start", "send the link", "i'm in", a clear join/start request, or an earned bridge after 3+ meaningful replies with relationship context plus a real blocker/goal.
-- "What's included?" or "what does it involve?" is a coaching-info request. Answer it concretely first; do not ask to send the link in the same reply unless they ask for the link or to join.
-- If they want someone local, in-person, face-to-face, a PT, or they already have a trainer/coach, treat it as a preference or compatibility objection. Do not invite or send the link yet. Answer that Shannon's offer is online 1:1 coaching and ask whether online check-ins/accountability would still be useful, or ask how it should fit around their current trainer.
-- A request for tips/advice is not by itself a free-coaching invite signal. Give a useful answer first.
+- "What's included?" or "what does it involve?" is a challenge-info request. Answer it concretely first; do not ask to send the link in the same reply unless they ask for the link or to join.
+- If they want someone local, in-person, face-to-face, a PT, or they already have a trainer/coach, treat it as a preference or compatibility objection. Do not invite or send the link yet. Answer that the challenge support is online through Balance and ask whether online check-ins/accountability would still be useful, or ask how it should fit around their current trainer.
+- A request for tips/advice is not by itself a free-challenge invite signal. Give a useful answer first.
 - If they ask for a trick/cue/drill, give one concrete cue or micro-drill before asking another question.
 - If they ask what makes the challenge/program different or how it works, answer with concrete specifics before any link or invite.
-- If they ask what challenges Shannon personally does, answer as a personal training/life question. Do not pitch free coaching from that wording.
+- If they ask what challenges Shannon personally does, answer as a personal training/life question. Do not pitch the free challenge from that wording.
 - Joking phrases like "send help", "starting from scratch", "need a kickstart", or "out of practice" are bridge signals, not invite signals. Ask one grounded follow-up first.
 - A plateau plus "I've tried everything / nothing is changing" is a diagnostic moment, not an invite moment. Offer one useful next lens or ask one precise next question first.
 - If the lead is a strong plant-based/vegan operator, respect their expertise. Answer briefly, then ask about their process rather than making Shannon sound stuck.
 - If they frame veganism as a non-negotiable ethical foundation, do not ask how they make it easy or stay on track. Ask what people misunderstand or how it shapes daily choices.
 - If the lead mentions AI, algorithms, bots, generated content, or models, do not repeat those words. Translate the point into normal human language.
-- If they mention app glitches, logging, stale workouts, full-body plans, or simplifying tech, treat that as support/programming first. Do not pitch free coaching from that frustration.
+- If they mention app glitches, logging, stale workouts, full-body plans, or simplifying tech, treat that as support/programming first. Do not pitch the free challenge from that frustration.
 - If they give multiple clipped replies, stop asking bland small-talk questions. Add a sharper contextual hook or leave the door open.
 - If they are naturally closing the topic with thanks/you too/enjoy, do not force a generic routine question.
 - If food, hobbies, classes, projects, or wellness skepticism are the current thread, progress means moving the exact hook one notch deeper, not switching to unrelated work/day questions.
@@ -2759,10 +2759,10 @@ ACQUISITION RULES:
 - Ask at most one question and use one question mark max. If no question is needed, do not ask one.
 - Do not stack a rhetorical setup question with the real question, for example "what if...? what would...?" Make the setup a statement instead.
 - This invite timing rule is lead-only. Do not use it for linked app users, paying clients, check-ins, or support threads.
-- If the lead clearly asks about paid coaching, 1:1 coaching, one-on-one coaching, online coaching with Shannon, or coaching details/link, frame it as free 30 days of 1:1 coaching with Shannon and use https://future-balance.netlify.app/coaching.html. Do not convert that ask into a generic challenge.
+- If the lead clearly asks about paid coaching, 1:1 coaching, one-on-one coaching, online coaching with Shannon, or coaching details/link, answer that the free challenge is the easiest starting point with Shannon support, then use https://future-balance.netlify.app/coaching.html if they want the link.
 - Avoid stock lines like "what does a normal day look like", "are you much of a cook", "what are your goals", or "you training at the moment".
 - If you do invite them, make it feel like the obvious next step for their words, not a pitch.
-- If they have earned the bridge, do not add another generic discovery question first. Give the exact reason free 1:1 support fits and ask if they want the details.
+- If they have earned the bridge, do not add another generic discovery question first. Give the exact reason the free challenge fits and ask if they want the details.
 - Warmth is not enough by itself. After 2-3 rapport turns, look for one specific next handle that creates momentum: a blocker, a next target, a tiny doable step, a frustration, or a reason they care.
 - When someone says they lack mental space, capacity, time, or energy, do not only mirror it back. Gently explore whether a smaller/no-thinking version would help.
 - When someone is proud and self-sufficient, do not undermine them. Ask a performance-curiosity question that respects their autonomy.
@@ -2849,7 +2849,7 @@ async function generateCoachTurn({ leadName, history, currentLeadText, qualifier
     if (offline) {
         const helpSignal = hasChallengeInviteReadinessSignal(currentLeadText);
         const message = helpSignal
-            ? "yeah that makes sense. easiest thing would be the free 30 days of 1:1 coaching, it gives you a bit of structure without turning food into a full time job. want me to send you the link?"
+            ? "yeah that makes sense. easiest thing would be the free challenge, it gives you a bit of structure without turning food into a full time job. want me to send you the link?"
             : "yeah that makes sense, and honestly that is where most people get stuck. is it more the food side that throws you off, or the training routine?";
         return {
             messages: [message],
@@ -2879,7 +2879,7 @@ async function generateCoachTurn({ leadName, history, currentLeadText, qualifier
 function buildJudgePrompt({ persona, history, turnIssues }) {
     return `You are judging an internal Balance Instagram DM sparring conversation.
 
-The coach is Shannon. The goal is not to hard sell. The goal is to create a human conversation that can naturally lead to free 30 days of 1:1 coaching with Shannon when the lead shows a real help/start signal.
+The coach is Shannon. The goal is not to hard sell. The goal is to create a human conversation that can naturally lead to the free 30-day Balance Challenge when the lead shows a real help/start signal.
 
 Persona hidden truth:
 - ${persona.hiddenProfile}
@@ -2899,7 +2899,7 @@ Score 0-10:
 - not_salesy: did it avoid funnel breath?
 - question_quality: were questions specific and not generic?
 - invite_timing: did Shannon invite only when it was actually time? Score high when he correctly holds off during pure rapport or unclear interest. Score low for pitching too early, failing to invite after an obvious "send the link / I need help" signal, or turning every warm chat into a pitch.
-- A soft free-coaching bridge can be earned without exact "send the link" wording when the lead has given 3+ meaningful replies, real relationship context, and a clear blocker/goal. In that case, score invite_timing high if the invite is anchored to their exact situation and optional.
+- A soft free-challenge bridge can be earned without exact "send the link" wording when the lead has given 3+ meaningful replies, real relationship context, and a clear blocker/goal. In that case, score invite_timing high if the invite is anchored to their exact situation and optional.
 - Each Shannon turn should earn the next response: answer the direct question, mirror the sharpest hook, add one useful micro-lens, or ask one precise question about the blocker/preference/objection. Score low when he only validates and asks a broad question.
 - Score low for statement-only dead ends unless the lead is clearly closing. Agreement, a personal aside, or "hope it goes well" without a next handle should usually use no_progression or ghosted.
 - Score lower for conversion if Shannon keeps asking generic discovery questions after an earned bridge moment. The goal is not endless rapport.
@@ -2911,7 +2911,7 @@ Score 0-10:
 - If the lead is clearly advanced in plant-based nutrition or ethics, Shannon should avoid turning the conversation into a confession of his own gaps. Score low if he misses their expertise instead of asking a respectful process question.
 - If the lead frames veganism as an ethical foundation, score low for trivializing it into convenience, discipline, "stay on track", or training consistency.
 - Any public-facing mention of AI, automation, algorithms, models, Gemini, ChatGPT, or training data is a risk even if the lead said it first. Shannon should paraphrase the human meaning without repeating those words.
-- If the lead is asking for app support or a specific workout plan, score low for converting that support request into a free-coaching pitch. Shannon should solve/clarify the request first.
+- If the lead is asking for app support or a specific workout plan, score low for converting that support request into a free-challenge pitch. Shannon should solve/clarify the request first.
 - If the lead gives multiple clipped low-effort replies, score low for generic small talk that earns a ghost. Better replies either create a specific playful hook or gracefully stop asking for effort.
 - If the lead is politely closing a topic, score low for dragging them into a generic routine/habit question.
 - likely_reply: would this person reply?
@@ -2966,7 +2966,7 @@ function heuristicScore({ history, turnIssues }) {
         best_moment: '',
         weakest_moment: allIssues[0] || '',
         prompt_rule_suggestion: allIssues.includes('premature_challenge_invite')
-            ? 'Hold the free-coaching invite until the lead gives a clear help/start signal or earns the 3-6 reply soft bridge.'
+            ? 'Hold the free-challenge invite until the lead gives a clear help/start signal or earns the 3-6 reply soft bridge.'
             : 'Use the strongest detail from the lead before asking the next question.',
     });
 }
