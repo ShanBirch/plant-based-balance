@@ -20,7 +20,14 @@ export default async (request, context) => {
         const history = body.history || [];
 
         // 1. Get API Key
-        const API_KEY = Deno.env.get("GEMINI_API_KEY") || "AIzaSyCu5U2fhK5gptQ-A959MdSaIUxz9XKQM-Q"; 
+        const API_KEY = Deno.env.get("GEMINI_API_KEY");
+        if (!API_KEY) {
+            console.error("Missing GEMINI_API_KEY");
+            return new Response(JSON.stringify({ error: "Server configuration error" }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
         
         // 2. Sales Context (The "Brain")
         const systemInstruction = `

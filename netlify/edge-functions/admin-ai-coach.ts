@@ -4,25 +4,37 @@ import type { Context } from "https://edge.netlify.com";
 // ============================================================
 // Admin AI Coach — Shannon's behind-the-scenes assistant.
 //
-// Runs Gemini 3 Pro with function calling so the model can:
+// Runs Gemini with function calling so the model can:
 //   - Read source files from the GitHub repo (public, no auth needed)
 //   - List directories / search the repo tree
 //   - Run read-only SQL against Supabase
 //   - Describe table schemas
 //
-// Falls back to gemini-2.5-pro if 3 Pro is unavailable.
+// Defaults to Flash-class models for cost control. Set
+// ADMIN_AI_COACH_ALLOW_PRO=true or ADMIN_AI_COACH_MODEL_CHAIN to opt into Pro.
 // ============================================================
 
 const REPO_OWNER = "ShanBirch";
 const REPO_NAME = "plant-based-balance";
 const REPO_BRANCH = "main";
 
-// Try models in order — first one that responds is sticky for the rest of this request.
-const MODEL_CHAIN = [
+// Default lean chain. The Pro chain is opt-in only.
+const LEAN_MODEL_CHAIN = [
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+];
+const PRO_MODEL_CHAIN = [
   "gemini-3-pro-preview",
   "gemini-3-pro",
   "gemini-2.5-pro",
 ];
+const CONFIGURED_MODEL_CHAIN = parseConfiguredModelChain(getEnv("ADMIN_AI_COACH_MODEL_CHAIN"));
+// Try models in order: first one that responds is sticky for the rest of this request.
+const MODEL_CHAIN = CONFIGURED_MODEL_CHAIN.length
+  ? CONFIGURED_MODEL_CHAIN
+  : getEnv("ADMIN_AI_COACH_ALLOW_PRO") === "true"
+    ? PRO_MODEL_CHAIN
+    : LEAN_MODEL_CHAIN;
 const MAX_TOOL_ITERATIONS = 10;
 const MAX_FILE_BYTES = 80_000;
 const MAX_SQL_RESULT_BYTES = 60_000;
@@ -37,6 +49,13 @@ function getEnv(name: string): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+function parseConfiguredModelChain(value: string | undefined): string[] {
+  return (value || "")
+    .split(",")
+    .map((model) => model.trim())
+    .filter(Boolean);
 }
 
 function getAppDateKey(date = new Date()): string {

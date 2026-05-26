@@ -23,8 +23,8 @@ export default async function (request: Request, context: Context) {
       });
     }
 
-    // Model fallback chain: primary → gemini-2.5-flash → gemini-2.5-pro
-    const modelFallbacks = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.5-pro"];
+    // Keep quick food ID on Flash-class models; do not escalate routine logging to Pro.
+    const modelFallbacks = ["gemini-flash-latest", "gemini-2.5-flash-lite"];
 
     const systemPrompt = `You are a quick food identification AI. Look at this image and identify what food or drink is shown.
 

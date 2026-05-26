@@ -361,8 +361,8 @@ export default async function (request: Request, context: Context) {
     }
 
     // Prepare the Gemini API request (text-only, no image)
-    // Model fallback chain: primary → gemini-2.5-flash → gemini-2.5-pro
-    const modelFallbacks = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.5-pro"];
+    // Keep nutrition text analysis on Flash-class models; do not escalate routine logging to Pro.
+    const modelFallbacks = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
 
     const systemPrompt = `You are a precise nutrition analysis AI. Analyze the following meal description and provide accurate nutritional information.
 MEAL DESCRIPTION: "${cleanDescription}"

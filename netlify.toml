@@ -267,9 +267,9 @@
 # Runs every 10 minutes to check if any users need meal reminders
 
 # Onboarding sequence scheduled scan - days 3/7/14/30 check-ins
-# Runs hourly at :17 to stagger from the pulse scans and sync jobs.
+# Runs every 4 hours at :17 to stagger from the pulse scans and sync jobs.
 [functions."onboarding-scheduled-scan"]
-  schedule = "17 * * * *"
+  schedule = "17 */4 * * *"
 
 # ============================================================
 # Daily pulses. Kept quiet so Shannon only gets phone pushes for overdue DMs
@@ -342,7 +342,7 @@
 [functions."expire-cohort-acceptances"]
   schedule = "43 * * * *"
 
-# IG/FB lead memory extractor — every 4 hours at :29, summarises new
+# IG/FB lead memory extractor — daily at :29, summarises new
 # conversation context for any ig_thread with inbound activity since its
 # last extraction. Builds the same `goals / communication_style /
 # running_notes / injuries_limits / personal_context` shape as
@@ -350,7 +350,7 @@
 # Extracted memory is injected into the IG-draft prompt for cold leads
 # who haven't yet signed up to the app.
 [functions."extract-ig-thread-memory"]
-  schedule = "29 */4 * * *"
+  schedule = "29 18 * * *"
 
 # Instagram content memory - keeps active story/post context fresh for IG drafts.
 [functions."meta-ig-sync-content"]
@@ -366,9 +366,9 @@
   schedule = "45 19 * * *"
 
 # Coco's reward learner - scores the scoped acquisition lane and updates only
-# Coco's active learned rules. Runs every four hours, staggered from IG memory.
+# Coco's active learned rules. Runs daily in lean-cost mode.
 [functions."cocos-learning-run"]
-  schedule = "55 */4 * * *"
+  schedule = "55 18 * * *"
 
 # ManyChat reconcile is intentionally unscheduled for IG Graph cutover. Keep the
 # function file for manual legacy rescue until the external ManyChat account is
