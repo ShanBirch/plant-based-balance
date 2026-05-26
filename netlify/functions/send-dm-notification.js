@@ -90,6 +90,13 @@ const ADMIN_WARNING_NOTIFICATION_TYPES = new Set([
     'media_warning',
 ]);
 
+const ADMIN_CLIENT_LIFECYCLE_STAGES = new Set([
+    'trial',
+    'trial_expiring',
+    'in_app',
+    'paying',
+]);
+
 async function supabaseGet(path) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
         headers: {
@@ -121,7 +128,7 @@ async function loadAdminPushContext({ recipientId, alertId }) {
 
     try {
         const rows = await supabaseGet(
-            `coach_alerts?select=id,alert_type,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
+            `coach_alerts?select=id,client_id,alert_type,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
         );
         context.alert = rows[0] || null;
     } catch (err) {
@@ -131,18 +138,63 @@ async function loadAdminPushContext({ recipientId, alertId }) {
     return context;
 }
 
-function hasMessagePayload(payload = {}) {
-    if ((payload.clientMessage || '').trim()) return true;
-    return Array.isArray(payload.recentInboundMessages) && payload.recentInboundMessages.length > 0;
+function normalizeStage(value) {
+    return String(value || '').trim().toLowerCase();
+}
+
+function getAdminPushStage({ alert, payload = {} }) {
+    const data = alert?.data || {};
+    return normalizeStage(
+        data.lifecycle?.stage
+        || data.lifecycle_stage
+        || data.lead_stage
+        || payload.lifecycleStage
+        || payload.lifecycle_stage
+        || payload.leadStage
+        || payload.lead_stage
+    );
+}
+
+function getAlertExternalChannel(alert) {
+    const data = alert?.data || {};
+    if (alert?.alert_type === 'ig_incoming_dm') return 'instagram';
+    if (alert?.alert_type === 'fb_incoming_dm') return 'messenger';
+    if (data.ig_thread_id || data.subscriber_id || data.ig_username) {
+        return data.channel === 'messenger' ? 'messenger' : 'instagram';
+    }
+    return getExternalMessageChannel(data);
+}
+
+function isClientScopedAdminPush({ alert, payload = {} }) {
+    if (alert?.client_id) return true;
+
+    const data = alert?.data || {};
+    if (data.linked_user_id || data.linked_client_id) return true;
+
+    const stage = getAdminPushStage({ alert, payload });
+    if (ADMIN_CLIENT_LIFECYCLE_STAGES.has(stage)) return true;
+
+    const externalChannel = getExternalMessageChannel(payload) || getAlertExternalChannel(alert);
+    if (externalChannel) return false;
+
+    return !!(payload.clientId || payload.senderId || payload.senderName)
+        && !!String(payload.messageText || payload.clientMessage || '').trim();
 }
 
 function isAllowedAdminPhonePush({ type, alert, payload }) {
-    if (ADMIN_WARNING_NOTIFICATION_TYPES.has(type)) return true;
-    if (type === 'coach_draft_ready') {
-        if (alert) return ADMIN_MESSAGE_ALERT_TYPES.has(alert.alert_type);
-        return !!getExternalMessageChannel(payload) || hasMessagePayload(payload);
+    if (ADMIN_WARNING_NOTIFICATION_TYPES.has(type)) {
+        return isClientScopedAdminPush({ alert, payload });
     }
-    if (ADMIN_DIRECT_MESSAGE_TYPES.has(type)) return true;
+    if (type === 'coach_draft_ready') {
+        if (alert) {
+            return ADMIN_MESSAGE_ALERT_TYPES.has(alert.alert_type)
+                && isClientScopedAdminPush({ alert, payload });
+        }
+        return isClientScopedAdminPush({ alert, payload });
+    }
+    if (ADMIN_DIRECT_MESSAGE_TYPES.has(type)) {
+        return isClientScopedAdminPush({ alert, payload });
+    }
     return false;
 }
 
@@ -714,4 +766,12 @@ exports.handler = async (event) => {
             body: JSON.stringify({ error: 'Failed to send notification', details: error.message })
         };
     }
+};
+
+module.exports.__test = {
+    getExternalMessageChannel,
+    getAlertExternalChannel,
+    isClientScopedAdminPush,
+    isAllowedAdminPhonePush,
+    shouldSuppressExternalMessagePush,
 };
