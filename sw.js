@@ -216,7 +216,7 @@ self.addEventListener('notificationclick', (e) => {
           }
         }
         if (clients.openWindow) {
-          return clients.openWindow('./admin-dashboard.html');
+          return clients.openWindow('./admin-dashboard.html?tab=needs-you');
         }
       }
       // Handle DM message notifications

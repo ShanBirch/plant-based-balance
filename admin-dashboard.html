@@ -483,6 +483,7 @@
             .auto-dms-grid { display: flex; flex-direction: column; gap: 10px; }
             .auto-dms-list { flex: 0 0 clamp(220px, 38%, 320px); }
             .auto-dms-detail { flex: 1; }
+            #needs-you > div,
             #alerts > div,
             #dms > div,
             #cocos > div {
@@ -491,6 +492,7 @@
                 min-height: 0;
                 overflow: hidden;
             }
+            #needs-you .content-card,
             #alerts .content-card,
             #dms .content-card,
             #cocos .content-card {
@@ -1849,6 +1851,7 @@
             <div class="nav-item active" onclick="showSection('ai-coach', this)"><i data-lucide="bot"></i><span>Coach</span></div>
             <div class="nav-item" onclick="showSection('your-day', this); loadYourDay();"><i data-lucide="calendar-heart"></i><span>Your Day</span></div>
             <div class="nav-item" onclick="showSection('users', this); renderUserDirectory();"><i data-lucide="user-search"></i><span>Users</span></div>
+            <div class="nav-item" onclick="showSection('needs-you', this); loadNeedsYou();"><i data-lucide="inbox"></i><span>Needs You</span><span id="needs-you-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-group dm-nav-group" id="dm-nav-group">
                 <div class="nav-item nav-parent" onclick="toggleDmNav()">
                     <span class="nav-parent-main"><i data-lucide="message-circle"></i><span>DMs</span></span>
@@ -1986,6 +1989,48 @@
                     </div>
                 </div>
             </div>
+            <!-- NEEDS YOU (approval hub for human-pass automation work) -->
+            <div id="needs-you" class="section">
+                <div style="display:flex; flex-direction:column; gap:16px; height:calc(100vh - 48px);">
+                    <div class="content-card" style="flex-shrink:0;">
+                        <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                            <div>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Needs You</h2>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Client messages, check-ins and follow-ups waiting for approval.</p>
+                            </div>
+                            <div role="tablist" id="needs-you-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
+                                <button type="button" id="needs-you-view-all" class="alert-view-chip alert-view-chip-on" onclick="setNeedsYouView('all')" title="Everything waiting for a human pass">
+                                    All <span id="needs-you-view-all-count" class="alert-view-count">0</span>
+                                </button>
+                                <button type="button" id="needs-you-view-messages" class="alert-view-chip" onclick="setNeedsYouView('messages')" title="Client and lead messages waiting for a reply">
+                                    Messages <span id="needs-you-view-messages-count" class="alert-view-count">0</span>
+                                </button>
+                                <button type="button" id="needs-you-view-checkins" class="alert-view-chip" onclick="setNeedsYouView('checkins')" title="Check-in drafts and manual IG check-ins">
+                                    Check-ins <span id="needs-you-view-checkins-count" class="alert-view-count">0</span>
+                                </button>
+                                <button type="button" id="needs-you-view-follow_ups" class="alert-view-chip" onclick="setNeedsYouView('follow_ups')" title="Follow-up review drafts">
+                                    Follow-ups <span id="needs-you-view-follow_ups-count" class="alert-view-count">0</span>
+                                </button>
+                                <button type="button" id="needs-you-view-review" class="alert-view-chip" onclick="setNeedsYouView('review')" title="Auto-send, media, context, and draft-review holds">
+                                    Review flags <span id="needs-you-view-review-count" class="alert-view-count">0</span>
+                                </button>
+                                <button type="button" id="needs-you-view-later" class="alert-view-chip" onclick="setNeedsYouView('later')" title="Approved replies scheduled for later">
+                                    Later <span id="needs-you-view-later-count" class="alert-view-count">0</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="content-card" style="flex:1; overflow-y:auto;" id="needs-you-feed-container">
+                        <div id="needs-you-feed" style="padding:12px;">
+                            <div style="text-align:center; padding:40px; color:#94a3b8;">
+                                <i data-lucide="inbox" style="width:40px; height:40px; margin-bottom:12px;"></i>
+                                <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Loading Needs You...</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- COACHING ACTIONS (direct-linked hub for non-DM coach alerts) -->
             <div id="alerts" class="section">
                 <div style="display:flex; flex-direction:column; gap:16px; height:calc(100vh - 48px);">
@@ -8728,8 +8773,20 @@
         let messageStreakSort = 'risk';
         let messageStreaksCache = { rows: [], summary: null, loadedAt: 0 };
         // Tracks which feed is currently visible so the periodic refresh
-        // and post-action reloads target the right one. 'alerts' | 'dms' | 'cocos' | 'auto-dms' | 'checkins'.
+        // and post-action reloads target the right one. 'alerts' | 'needs-you' | 'dms' | 'cocos' | 'auto-dms' | 'checkins'.
         let currentFeed = 'alerts';
+        let currentNeedsYouView = 'all';
+        let needsYouCounts = { all: 0, messages: 0, checkins: 0, follow_ups: 0, review: 0, later: 0 };
+        const NEEDS_YOU_TABS = ['all', 'messages', 'checkins', 'follow_ups', 'review', 'later'];
+        const NEEDS_YOU_EXTRA_ALERT_TYPES = ['coach_draft_ready'];
+        const NEEDS_YOU_EMPTY_STATES = {
+            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'Approvals and edits from client-facing automation will collect here.' },
+            messages: { icon: 'message-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'No messages waiting', body: 'Client and lead replies are clear.' },
+            checkins: { icon: 'clipboard-check', iconColor: '#48864B', headerColor: '#48864B', header: 'No check-ins waiting', body: 'Manual and cohort check-in drafts are clear.' },
+            follow_ups: { icon: 'messages-square', iconColor: '#48864B', headerColor: '#48864B', header: 'No follow-ups waiting', body: 'Follow-up review drafts are clear.' },
+            review: { icon: 'shield-check', iconColor: '#48864B', headerColor: '#48864B', header: 'No review flags', body: 'No auto-send, media, context, or draft-review holds right now.' },
+            later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Approved replies scheduled for later will appear here.' },
+        };
         let currentChallengeCheckinView = 'pending';
         const CHALLENGE_CHECKIN_TABS = ['pending', 'manual', 'later', 'sent_today', 'all'];
         let challengeCheckinCounts = { pending: 0, manual: 0, later: 0, sent_today: 0, all: 0, ig_ready: 0 };
@@ -10032,6 +10089,8 @@
         }
 
         function getNavItemForSection(sectionName) {
+            if (sectionName === 'needs-you') return Array.from(document.querySelectorAll('.nav-item'))
+                .find(item => (item.getAttribute('onclick') || '').includes("showSection('needs-you'"));
             if (sectionName === 'dms') return document.getElementById(`dm-nav-${normalizeDmAudience(currentDmAudience)}`);
             if (sectionName === 'follow-ups') return document.getElementById(`needs-attention-nav-${normalizeNeedsAttentionAudience(currentNeedsAttentionAudience)}`);
             return Array.from(document.querySelectorAll('.nav-item'))
@@ -10079,10 +10138,183 @@
             return true;
         }
 
+        function activateNeedsYouView(view) {
+            if (!NEEDS_YOU_TABS.includes(view)) return false;
+            currentNeedsYouView = view;
+            NEEDS_YOU_TABS.forEach(tab => {
+                const chip = document.getElementById(`needs-you-view-${tab}`);
+                if (chip) chip.classList.toggle('alert-view-chip-on', tab === view);
+            });
+            return true;
+        }
+
+        function setNeedsYouView(view) {
+            if (!activateNeedsYouView(view)) return;
+            loadNeedsYou();
+        }
+
+        function setNeedsYouBadge(count) {
+            const badge = document.getElementById('needs-you-badge');
+            if (!badge) return;
+            const n = Number(count || 0);
+            if (n > 0) {
+                badge.textContent = String(n);
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function needsYouHasSuggestedDraft(alert) {
+            const data = alert?.data || {};
+            return !!(
+                alert?.suggested_message
+                || data.suggested_message
+                || data.draft_text
+                || data.draftText
+                || data.scheduled_reply_text
+                || data.reply_text
+                || data.message
+            );
+        }
+
+        function needsYouHasProposedAction(alert) {
+            const data = alert?.data || {};
+            const actions = data.proposed_actions || data.proposedActions || data.actions;
+            return Array.isArray(actions) ? actions.length > 0 : !!actions;
+        }
+
+        function needsYouReviewFlag(alert) {
+            const data = alert?.data || {};
+            const draftReview = data.draft_review || data.draftReview || null;
+            const verdict = String(draftReview?.verdict || '').toLowerCase();
+            if (draftReview && (verdict && verdict !== 'pass')) return true;
+            if (draftReview?.notification_required || draftReview?.context_loss_suspected) return true;
+            if (data.schedule_blocked_reason || data.schedule_blocked_at) return true;
+            if (getAutoSendReviewHoldInfo(alert)) return true;
+            if (getAlertMediaReviewInfo(alert)?.required) return true;
+            if (getAlertContextReviewInfo(alert)?.required) return true;
+            const humanAgentState = getAlertHumanAgentState(alert);
+            return !!(humanAgentState.required && !humanAgentState.approved);
+        }
+
+        function needsYouHasOperatorWork(alert) {
+            if (!alert || !['pending', 'scheduled'].includes(alert.status)) return false;
+            if (isCocosDmAlert(alert)) return false;
+            if (DM_ALERT_TYPES.includes(alert.alert_type)) return true;
+            if (FOLLOW_UP_ALERT_TYPES.includes(alert.alert_type)) return true;
+            if (isChallengeCheckinAlert(alert) || isCheckinAlert(alert)) return true;
+            if (NEEDS_YOU_EXTRA_ALERT_TYPES.includes(alert.alert_type)) return true;
+            return needsYouReviewFlag(alert) || needsYouHasSuggestedDraft(alert) || needsYouHasProposedAction(alert);
+        }
+
+        function needsYouMatchesView(alert, view = currentNeedsYouView) {
+            if (!needsYouHasOperatorWork(alert)) return false;
+            const isLater = alert.status === 'scheduled';
+            if (view === 'later') return isLater;
+            if (isLater) return false;
+            if (view === 'messages') return DM_ALERT_TYPES.includes(alert.alert_type);
+            if (view === 'checkins') return isChallengeCheckinAlert(alert) || isCheckinAlert(alert);
+            if (view === 'follow_ups') return FOLLOW_UP_ALERT_TYPES.includes(alert.alert_type);
+            if (view === 'review') return needsYouReviewFlag(alert);
+            return true;
+        }
+
+        function summarizeNeedsYouCounts(rows = []) {
+            const pendingRows = rows.filter(a => needsYouHasOperatorWork(a) && a.status === 'pending');
+            const scheduledRows = rows.filter(a => needsYouHasOperatorWork(a) && a.status === 'scheduled');
+            return {
+                all: pendingRows.length,
+                messages: pendingRows.filter(a => needsYouMatchesView(a, 'messages')).length,
+                checkins: pendingRows.filter(a => needsYouMatchesView(a, 'checkins')).length,
+                follow_ups: pendingRows.filter(a => needsYouMatchesView(a, 'follow_ups')).length,
+                review: pendingRows.filter(a => needsYouMatchesView(a, 'review')).length,
+                later: scheduledRows.length,
+            };
+        }
+
+        function collapseNeedsYouRows(rows = []) {
+            const dmRows = rows.filter(a => a.status === 'pending' && DM_ALERT_TYPES.includes(a.alert_type));
+            const otherRows = rows.filter(a => !(a.status === 'pending' && DM_ALERT_TYPES.includes(a.alert_type)));
+            return [...collapsePendingByUser(dmRows), ...otherRows];
+        }
+
+        function renderNeedsYouCounts(counts = needsYouCounts) {
+            needsYouCounts = counts;
+            NEEDS_YOU_TABS.forEach(tab => setBadgeText(`needs-you-view-${tab}-count`, counts[tab] || 0));
+            setNeedsYouBadge(counts.all || 0);
+        }
+
+        async function refreshNeedsYouCounts() {
+            try {
+                const countFields = 'id,client_id,alert_type,status,created_at,scheduled_for,suggested_message,data';
+                const { data, error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .select(countFields)
+                    .in('status', ['pending', 'scheduled'])
+                    .order('created_at', { ascending: false })
+                    .limit(500);
+                if (error) throw error;
+                renderNeedsYouCounts(summarizeNeedsYouCounts(collapseNeedsYouRows(uniqueAlertRows(data || []))));
+            } catch (e) {
+                console.warn('refreshNeedsYouCounts failed:', e?.message || e);
+            }
+        }
+
+        async function loadNeedsYou(force = false) {
+            const container = document.getElementById('needs-you-feed');
+            try {
+                currentFeed = 'needs-you';
+                activateNeedsYouView(currentNeedsYouView);
+                if (currentNeedsYouView === 'messages' || currentNeedsYouView === 'all') {
+                    await repairUnreadDmAlerts();
+                }
+                const { data, error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .select('*')
+                    .in('status', ['pending', 'scheduled'])
+                    .order(currentNeedsYouView === 'later' ? 'scheduled_for' : 'created_at', { ascending: currentNeedsYouView === 'later' })
+                    .limit(300);
+                if (error) throw error;
+                const rows = uniqueAlertRows(data || []);
+                const withFollowUpLinks = await attachActiveDmLinksToFollowUps(rows);
+                const baseRows = collapseNeedsYouRows(dedupePendingAlerts(withFollowUpLinks));
+                alertsCache = baseRows.filter(a => needsYouMatchesView(a, currentNeedsYouView));
+                renderNeedsYouCounts(summarizeNeedsYouCounts(baseRows));
+                renderAlertFeed(alertsCache, {
+                    containerId: 'needs-you-feed',
+                    viewKey: currentNeedsYouView,
+                    emptyStates: NEEDS_YOU_EMPTY_STATES,
+                });
+                updateAlertBadge();
+                if (typeof updateAllVoiceMatchMinis === 'function') updateAllVoiceMatchMinis();
+            } catch (e) {
+                console.error('Failed to load Needs You:', e);
+                if (container) container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Needs You: ${escapeHtml(e.message || e)}</div>`;
+            }
+        }
+
         function pendingClientViewForAlert(alert) {
             if (isCheckinAlert(alert)) return 'checkins';
             if (isPersonalBestAlert(alert)) return 'personal_bests';
             return 'needs_attention';
+        }
+
+        function needsYouViewForAlert(alert) {
+            if (alert?.status === 'scheduled') return 'later';
+            if (DM_ALERT_TYPES.includes(alert?.alert_type)) return 'messages';
+            if (isChallengeCheckinAlert(alert) || isCheckinAlert(alert)) return 'checkins';
+            if (FOLLOW_UP_ALERT_TYPES.includes(alert?.alert_type)) return 'follow_ups';
+            if (needsYouReviewFlag(alert)) return 'review';
+            return 'all';
+        }
+
+        function openNeedsYouForAlert(alert, view = null) {
+            activateNeedsYouView(view || needsYouViewForAlert(alert));
+            if (typeof showSection === 'function') {
+                showSection('needs-you', getNavItemForSection('needs-you'));
+            }
+            loadNeedsYou(true);
         }
 
         function routePendingAlertToInbox(alert) {
@@ -10096,13 +10328,7 @@
                     loadCocosDms();
                     return;
                 }
-                currentDmAudience = getAlertClientIdentity(alert) ? 'clients' : 'leads';
-                updateDmAudienceUi();
-                activateDmView('unread');
-                if (typeof showSection === 'function') {
-                    showSection('dms', getNavItemForSection('dms'));
-                }
-                loadDms();
+                openNeedsYouForAlert(alert, 'messages');
                 return;
             }
 
@@ -10111,19 +10337,18 @@
                 currentNeedsAttentionAudience = alertBelongsToDmClients(alert, activeClientIds) ? 'clients' : 'leads';
                 updateNeedsAttentionAudienceUi();
                 activateFollowUpView('pending');
-                if (typeof showSection === 'function') {
-                    showSection('follow-ups', getNavItemForSection('follow-ups'));
-                }
-                loadFollowUps();
+                openNeedsYouForAlert(alert, 'follow_ups');
                 return;
             }
 
             if (isChallengeCheckinAlert(alert)) {
                 activateChallengeCheckinView(isManualIgBlockedAlert(alert) ? 'manual' : 'pending');
-                if (typeof showSection === 'function') {
-                    showSection('checkins', getNavItemForSection('checkins'));
-                }
-                loadChallengeCheckins(true);
+                openNeedsYouForAlert(alert, 'checkins');
+                return;
+            }
+
+            if (needsYouHasOperatorWork(alert)) {
+                openNeedsYouForAlert(alert);
                 return;
             }
 
@@ -10141,6 +10366,12 @@
             const sourceCocosSectionView = currentCocosSectionView;
             const run = () => {
                 if (currentFeed !== sourceFeed) return false;
+
+                if (sourceFeed === 'needs-you') {
+                    activateNeedsYouView(targetIsScheduled ? 'later' : 'all');
+                    loadNeedsYou(true);
+                    return true;
+                }
 
                 if (sourceFeed === 'dms' && DM_ALERT_TYPES.includes(alert?.alert_type)) {
                     activateDmView(statusView);
@@ -12176,6 +12407,7 @@
         // refreshes the DM badge since it lives in the sidebar and is visible
         // from any tab; refreshes Alerts counts when Shannon is on Alerts.
         function refreshFeedCounts() {
+            refreshNeedsYouCounts();
             refreshDmViewCounts();
             refreshCocosDmViewCounts();
             refreshFollowUpCounts();
@@ -12616,6 +12848,10 @@
             // alertsCache holds whichever feed is currently visible. When on
             // DMs, route the count to the DM badge instead so the wrong
             // sidebar badge doesn't flash with DM numbers.
+            if (currentFeed === 'needs-you') {
+                setNeedsYouBadge(needsYouCounts.all || 0);
+                return;
+            }
             if (currentFeed === 'dms') {
                 updateDmBadge();
                 return;
@@ -12662,6 +12898,7 @@
         // can reuse the ordered list of rendered alerts.
         const ALERT_TYPE_LABELS = {
             inactive_client: 'Inactive', unread_message: 'Unread', incoming_dm: 'New DM',
+            ig_incoming_dm: 'IG DM', fb_incoming_dm: 'FB DM', coach_draft_ready: 'Draft',
             challenge_dropout: 'Challenge', streak_broken: 'Streak', milestone_near: 'Milestone',
             nutrition_gap: 'Nutrition', coaching_idea: 'Idea', win_to_celebrate: 'Win',
             general_idea: 'Idea', new_user_onboarding: 'New User', not_in_challenge: 'Invite',
@@ -12937,10 +13174,11 @@
             // When opts is empty, infer the target from currentFeed so callers
             // like filterAlerts() / cancelDismissReason() / action handlers
             // route to whichever feed is visible.
+            const isNeedsYou = currentFeed === 'needs-you';
             const isDms = currentFeed === 'dms';
             const isFollowUps = currentFeed === 'follow-ups';
-            const containerId = opts.containerId || (isDms ? 'dm-feed' : (isFollowUps ? 'follow-up-feed' : 'alert-feed'));
-            const viewKey = opts.viewKey || (isDms ? currentDmView : (isFollowUps ? currentFollowUpView : currentAlertView));
+            const containerId = opts.containerId || (isNeedsYou ? 'needs-you-feed' : (isDms ? 'dm-feed' : (isFollowUps ? 'follow-up-feed' : 'alert-feed')));
+            const viewKey = opts.viewKey || (isNeedsYou ? currentNeedsYouView : (isDms ? currentDmView : (isFollowUps ? currentFollowUpView : currentAlertView)));
             const container = document.getElementById(containerId);
             if (!container) return;
             const editFocusHint = captureActiveAlertEdits();
@@ -12956,7 +13194,7 @@
                     sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing sent today yet', body: 'Replies you fire today will land here for review.' },
                     unsent: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No discarded drafts', body: `Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.` },
                 };
-                const emptyByTab = opts.emptyStates || (isDms ? DM_EMPTY_STATES : (isFollowUps ? FOLLOW_UP_EMPTY_STATES : ALERT_EMPTY));
+                const emptyByTab = opts.emptyStates || (isNeedsYou ? NEEDS_YOU_EMPTY_STATES : (isDms ? DM_EMPTY_STATES : (isFollowUps ? FOLLOW_UP_EMPTY_STATES : ALERT_EMPTY)));
                 const e = emptyByTab[viewKey] || Object.values(emptyByTab)[0];
                 container.innerHTML = `
                     <div style="text-align:center; padding:40px; color:#94a3b8;">
@@ -12981,13 +13219,19 @@
             // Defensive re-sort below in case any caller passes an
             // unsorted slice (e.g. a future filter pipeline).
             const sorted = [...alerts].sort((a, b) => {
+                const useScheduledAt = viewKey === 'later' || viewKey === 'sent_later';
                 const useActionedAt = viewKey === 'unsent' || viewKey === 'discarded' || viewKey === 'sent_today';
-                const ta = (a.actioned_at && useActionedAt)
+                const ta = useScheduledAt
+                    ? Date.parse(a.scheduled_for || a.created_at || '')
+                    : (a.actioned_at && useActionedAt)
                     ? Date.parse(a.actioned_at)
                     : Date.parse(a.created_at || '');
-                const tb = (b.actioned_at && useActionedAt)
+                const tb = useScheduledAt
+                    ? Date.parse(b.scheduled_for || b.created_at || '')
+                    : (b.actioned_at && useActionedAt)
                     ? Date.parse(b.actioned_at)
                     : Date.parse(b.created_at || '');
+                if (useScheduledAt) return (ta || 0) - (tb || 0);
                 return (tb || 0) - (ta || 0);
             });
             renderedAlertOrder = sorted;
@@ -13920,10 +14164,11 @@
             currentDmAudience = alertBelongsToDmClients(dm, dmClientIdsCache.ids) ? 'clients' : 'leads';
             updateDmAudienceUi();
             activateDmView(dm.status === 'scheduled' ? 'later' : 'unread');
+            activateNeedsYouView(dm.status === 'scheduled' ? 'later' : 'messages');
             if (typeof showSection === 'function') {
-                showSection('dms', getNavItemForSection('dms'));
+                showSection('needs-you', getNavItemForSection('needs-you'));
             }
-            loadDms();
+            loadNeedsYou(true);
             setTimeout(() => {
                 const card = document.getElementById(`alert-${dm.id}`);
                 if (!card) return;
@@ -14181,11 +14426,11 @@
             const isDmAlert = DM_ALERT_TYPES.includes(alert.alert_type);
             const humanAgentDmStripHtml = renderHumanAgentDmStrip(alert, isDmAlert);
             const cancelScheduledTitle = isDmAlert
-                ? 'Cancel this scheduled send and move it back to Unread'
-                : (isFollowUp ? 'Cancel this scheduled send and move it back to Needs Attention' : 'Cancel this scheduled send and move it back to the active feed');
+                ? 'Cancel this scheduled send and move it back to Needs You'
+                : (isFollowUp ? 'Cancel this scheduled send and move it back to Needs You' : 'Cancel this scheduled send and move it back to the approval feed');
             const restoreTitle = isDmAlert
-                ? 'Move back to Unread without sending'
-                : (isFollowUp ? 'Move back to Needs Attention without sending' : 'Move back to the active feed without sending');
+                ? 'Move back to Needs You without sending'
+                : (isFollowUp ? 'Move back to Needs You without sending' : 'Move back to the approval feed without sending');
             const activeEdit = canEdit ? activeAlertEdits.get(String(alert.id)) : null;
             const renderedMessageText = activeEdit && typeof activeEdit.message === 'string'
                 ? activeEdit.message
@@ -14838,7 +15083,7 @@
         async function cancelScheduledAlert(alertId) {
             const alertData = alertsCache.find(a => a.id === alertId);
             if (!alertData) return;
-            const destination = DM_ALERT_TYPES.includes(alertData.alert_type) ? 'Unread' : 'the active feed';
+            const destination = needsYouHasOperatorWork(alertData) ? 'Needs You' : 'the active feed';
             if (!confirm(`Cancel scheduled send to ${alertData.client_name || 'this client'}? It will move back to ${destination} and will not fire automatically.`)) return;
 
             const btn = event?.target?.closest?.('.alert-btn-dismiss');
@@ -16993,9 +17238,12 @@
         }
 
         function handleAlertsKeydown(e) {
-            // Only act while the Alerts section is visible
+            // Only act while an approval/feed section is visible.
             const alertsSection = document.getElementById('alerts');
-            if (!alertsSection || !alertsSection.classList.contains('active')) return;
+            const needsYouSection = document.getElementById('needs-you');
+            const feedActive = (alertsSection && alertsSection.classList.contains('active'))
+                || (needsYouSection && needsYouSection.classList.contains('active'));
+            if (!feedActive) return;
             if (!renderedAlertOrder || renderedAlertOrder.length === 0) return;
 
             // If a modal/textarea/input is focused, only handle Esc (and let Enter save edit)
@@ -17341,6 +17589,7 @@
         // it's at the top.
         async function refreshCurrentView() {
             switch (currentView) {
+                case 'needs-you': return loadNeedsYou(true);
                 case 'alerts': return loadAlerts();
                 case 'dms': return loadDms();
                 case 'cocos': return currentCocosSectionView === 'learning' ? refreshCocosLearningPanel(false) : loadCocosDms();
@@ -17487,8 +17736,13 @@
             });
         })();
 
-        // Load alerts when the page loads (after dashboard data)
-        setTimeout(loadAlerts, 2000);
+        // Warm approval counts when the page loads (after dashboard data).
+        setTimeout(() => {
+            if (currentView === 'needs-you') loadNeedsYou(true);
+            else if (currentView === 'alerts') loadAlerts();
+            else refreshFeedCounts();
+        }, 2000);
+        setTimeout(refreshNeedsYouCounts, 2200);
         setTimeout(refreshChallengeCheckinCounts, 2400);
 
         // Auto-refresh whichever feed Shannon is currently on, every 5 minutes.
@@ -17499,7 +17753,8 @@
                 refreshFeedCounts();
                 return;
             }
-            if (currentFeed === 'dms') loadDms();
+            if (currentFeed === 'needs-you') loadNeedsYou(true);
+            else if (currentFeed === 'dms') loadDms();
             else if (currentFeed === 'cocos') {
                 if (currentCocosSectionView === 'learning') refreshCocosLearningPanel(false);
                 else loadCocosDms();
@@ -17514,8 +17769,8 @@
         if (navigator.serviceWorker) {
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data && event.data.type === 'coach_alert_click') {
-                    showSection('alerts', getNavItemForSection('alerts'));
-                    loadAlerts();
+                    showSection('needs-you', getNavItemForSection('needs-you'));
+                    loadNeedsYou(true);
                 } else if (event.data && event.data.type === 'coach_checkins_click') {
                     activateChallengeCheckinView('pending');
                     showSection('checkins', getNavItemForSection('checkins'));
@@ -17524,7 +17779,12 @@
             });
         }
         // Also check URL param for direct linking
-        if (window.location.search.includes('tab=alerts')) {
+        if (window.location.search.includes('tab=needs-you') || window.location.search.includes('tab=dms')) {
+            setTimeout(() => {
+                showSection('needs-you', getNavItemForSection('needs-you'));
+                loadNeedsYou(true);
+            }, 500);
+        } else if (window.location.search.includes('tab=alerts')) {
             setTimeout(() => showSection('alerts', getNavItemForSection('alerts')), 500);
         } else if (window.location.search.includes('tab=checkins')) {
             setTimeout(() => {

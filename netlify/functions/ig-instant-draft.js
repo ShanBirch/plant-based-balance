@@ -2260,7 +2260,7 @@ async function sendContextCheckNotification({ adminId, alertId, leadName, client
                 clientName: leadName || '',
                 channelLabel,
                 openUrl,
-                url: './admin-dashboard.html?tab=alerts',
+                url: './admin-dashboard.html?tab=needs-you',
             }),
         }).catch(e => console.warn('[ig-draft] context-check push failed:', e.message));
     } catch (err) {
