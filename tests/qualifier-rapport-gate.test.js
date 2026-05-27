@@ -90,9 +90,14 @@ assert.match(commitmentStage.strategy, /exact context|stock invite line/i);
 
 const igDraftSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/ig-instant-draft.js'), 'utf8');
 const qualifierSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/qualifier-engine.js'), 'utf8');
+const clientContextSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/client-context.js'), 'utf8');
+const codexBriefSource = fs.readFileSync(path.join(__dirname, '../CODEX.md'), 'utf8');
 assert.match(igDraftSource, /If they only ask "what's Balance\?"/);
 assert.match(igDraftSource, /make any challenge mention a casual throwaway/);
 assert.match(qualifierSource, /one casual throwaway line discovered from their own words/);
+assert.match(clientContextSource, /the app is finished, live, and published/);
+assert.match(clientContextSource, /Never imply Balance is unfinished or still being built/);
+assert.match(codexBriefSource, /Balance is already built, live, and published/);
 assert.match(igDraftSource, /https:\/\/future-balance\.netlify\.app\/coaching\.html/);
 assert.match(igDraftSource, /The DM offer right now is the free 30-day Balance Challenge/);
 assert.match(igDraftSource, /Paid coaching is the natural follow-up after the 30 days, not the headline/);

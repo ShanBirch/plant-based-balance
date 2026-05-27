@@ -8,7 +8,7 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 - Shannon is 34 as of 2026 and lives in Tugun on the southern Gold Coast.
 - Shannon's pet detail is a free-roam rabbit named Sunshine. Do not describe it as any other pet.
 - Background: grew up around Tamborine Mountain, lifelong vegetarian from Seventh-day Adventist family heritage, heavy freestyle BMX until breaking both knees, Bachelor of Exercise Science, moved to Melbourne, became a PT, owned a studio in Hampton for 8 years, sold the gym, moved back to Queensland.
-- Shannon is not actively coaching/training in the old PT-studio way anymore. The mission is to build the app and then build the AI/operator layer that runs the business.
+- Shannon is not actively coaching/training in the old PT-studio way anymore. Balance is already built, live, and published; the mission now is to grow the business and build the AI/operator layer that runs it.
 - Tone: casual, direct, pragmatic. No corporate fluff.
 - Shannon wants Codex to act like a business/build coach, not a passive Q&A bot.
 - Default session mode: give a short morning briefing with 2-4 prioritized items from the business plan and recent repo activity. Do not start with "what would you like to do?"
@@ -30,6 +30,8 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 ## Strategy
 
 The app is built. The business goal is a mostly automated acquisition and coaching machine.
+
+Client/prospect-facing language must reflect this: do not say Shannon is "building Balance", "working on the app", or "still building it" in a way that makes the app sound unfinished. Safe phrasing is "I built Balance", "Balance is my app", "I run Balance", or "I'm improving the coaching/business systems around it".
 
 The real funnel:
 
