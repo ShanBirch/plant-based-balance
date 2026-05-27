@@ -1848,10 +1848,10 @@
     <div class="admin-container">
         <div class="sidebar" id="sidebar">
             <div class="sidebar-logo">Balance Admin</div>
-            <div class="nav-item active" onclick="showSection('ai-coach', this)"><i data-lucide="bot"></i><span>Coach</span></div>
+            <div class="nav-item active" onclick="showSection('needs-you', this); loadNeedsYou();"><i data-lucide="inbox"></i><span>Needs You</span><span id="needs-you-badge" class="alert-badge" style="display:none;">0</span></div>
+            <div class="nav-item" onclick="showSection('ai-coach', this)"><i data-lucide="bot"></i><span>Coach</span></div>
             <div class="nav-item" onclick="showSection('your-day', this); loadYourDay();"><i data-lucide="calendar-heart"></i><span>Your Day</span></div>
             <div class="nav-item" onclick="showSection('users', this); renderUserDirectory();"><i data-lucide="user-search"></i><span>Users</span></div>
-            <div class="nav-item" onclick="showSection('needs-you', this); loadNeedsYou();"><i data-lucide="inbox"></i><span>Needs You</span><span id="needs-you-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-group dm-nav-group" id="dm-nav-group">
                 <div class="nav-item nav-parent" onclick="toggleDmNav()">
                     <span class="nav-parent-main"><i data-lucide="message-circle"></i><span>DMs</span></span>
@@ -1885,7 +1885,7 @@
         </div>
         <div class="main-content">
             <!-- AI COACH (DEFAULT) -->
-            <div id="ai-coach" class="section active">
+            <div id="ai-coach" class="section">
                 <div class="ai-coach-container">
                     <div class="ai-coach-user-bar">
                         <select id="ai-client-select" class="ai-client-select" onchange="aiClientSelected(this.value)"><option value="">All clients (general questions)</option></select>
@@ -1990,33 +1990,17 @@
                 </div>
             </div>
             <!-- NEEDS YOU (approval hub for human-pass automation work) -->
-            <div id="needs-you" class="section">
+            <div id="needs-you" class="section active">
                 <div style="display:flex; flex-direction:column; gap:16px; height:calc(100vh - 48px);">
                     <div class="content-card" style="flex-shrink:0;">
                         <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                             <div>
                                 <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Needs You</h2>
-                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Client messages, check-ins and follow-ups waiting for approval.</p>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Client DM drafts Codex approved and left for Shannon to send.</p>
                             </div>
-                            <div role="tablist" id="needs-you-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
-                                <button type="button" id="needs-you-view-all" class="alert-view-chip alert-view-chip-on" onclick="setNeedsYouView('all')" title="Everything waiting for a human pass">
-                                    All <span id="needs-you-view-all-count" class="alert-view-count">0</span>
-                                </button>
-                                <button type="button" id="needs-you-view-messages" class="alert-view-chip" onclick="setNeedsYouView('messages')" title="Client and lead messages waiting for a reply">
-                                    Messages <span id="needs-you-view-messages-count" class="alert-view-count">0</span>
-                                </button>
-                                <button type="button" id="needs-you-view-checkins" class="alert-view-chip" onclick="setNeedsYouView('checkins')" title="Check-in drafts and manual IG check-ins">
-                                    Check-ins <span id="needs-you-view-checkins-count" class="alert-view-count">0</span>
-                                </button>
-                                <button type="button" id="needs-you-view-follow_ups" class="alert-view-chip" onclick="setNeedsYouView('follow_ups')" title="Follow-up review drafts">
-                                    Follow-ups <span id="needs-you-view-follow_ups-count" class="alert-view-count">0</span>
-                                </button>
-                                <button type="button" id="needs-you-view-review" class="alert-view-chip" onclick="setNeedsYouView('review')" title="Auto-send, media, context, and draft-review holds">
-                                    Review flags <span id="needs-you-view-review-count" class="alert-view-count">0</span>
-                                </button>
-                                <button type="button" id="needs-you-view-later" class="alert-view-chip" onclick="setNeedsYouView('later')" title="Approved replies scheduled for later">
-                                    Later <span id="needs-you-view-later-count" class="alert-view-count">0</span>
-                                </button>
+                            <div style="display:inline-flex; align-items:center; gap:8px; font-size:0.78rem; color:#64748b; font-weight:800;">
+                                <span id="needs-you-view-all-count" class="alert-view-count">0</span>
+                                <span>approved client DM drafts</span>
                             </div>
                         </div>
                     </div>
@@ -3075,7 +3059,7 @@
 
     <script src="/lib/supabase.js?v=4"></script>
     <script>
-        let allUsers = [], currentView = 'ai-coach', analyticsData = null, currentConvoUserId = null, currentConvoTarget = null, convoTargetsCache = [], selectedDirectoryUserId = null;
+        let allUsers = [], currentView = 'needs-you', analyticsData = null, currentConvoUserId = null, currentConvoTarget = null, convoTargetsCache = [], selectedDirectoryUserId = null;
         const IG_GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
         async function requireAdminDashboardAccess() {
             const session = await authHelpers.getSession();
@@ -8774,18 +8758,12 @@
         let messageStreaksCache = { rows: [], summary: null, loadedAt: 0 };
         // Tracks which feed is currently visible so the periodic refresh
         // and post-action reloads target the right one. 'alerts' | 'needs-you' | 'dms' | 'cocos' | 'auto-dms' | 'checkins'.
-        let currentFeed = 'alerts';
+        let currentFeed = 'needs-you';
         let currentNeedsYouView = 'all';
-        let needsYouCounts = { all: 0, messages: 0, checkins: 0, follow_ups: 0, review: 0, later: 0 };
-        const NEEDS_YOU_TABS = ['all', 'messages', 'checkins', 'follow_ups', 'review', 'later'];
-        const NEEDS_YOU_EXTRA_ALERT_TYPES = ['coach_draft_ready'];
+        let needsYouCounts = { all: 0 };
+        const NEEDS_YOU_TABS = ['all'];
         const NEEDS_YOU_EMPTY_STATES = {
-            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'Approvals and edits from client-facing automation will collect here.' },
-            messages: { icon: 'message-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'No messages waiting', body: 'Client and lead replies are clear.' },
-            checkins: { icon: 'clipboard-check', iconColor: '#48864B', headerColor: '#48864B', header: 'No check-ins waiting', body: 'Manual and cohort check-in drafts are clear.' },
-            follow_ups: { icon: 'messages-square', iconColor: '#48864B', headerColor: '#48864B', header: 'No follow-ups waiting', body: 'Follow-up review drafts are clear.' },
-            review: { icon: 'shield-check', iconColor: '#48864B', headerColor: '#48864B', header: 'No review flags', body: 'No auto-send, media, context, or draft-review holds right now.' },
-            later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Approved replies scheduled for later will appear here.' },
+            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'No Codex-approved client DM drafts are waiting right now.' },
         };
         let currentChallengeCheckinView = 'pending';
         const CHALLENGE_CHECKIN_TABS = ['pending', 'manual', 'later', 'sent_today', 'all'];
@@ -10178,65 +10156,53 @@
             );
         }
 
-        function needsYouHasProposedAction(alert) {
+        function needsYouCodexApprovedInfo(alert) {
             const data = alert?.data || {};
-            const actions = data.proposed_actions || data.proposedActions || data.actions;
-            return Array.isArray(actions) ? actions.length > 0 : !!actions;
-        }
-
-        function needsYouReviewFlag(alert) {
-            const data = alert?.data || {};
-            const draftReview = data.draft_review || data.draftReview || null;
-            const verdict = String(draftReview?.verdict || '').toLowerCase();
-            if (draftReview && (verdict && verdict !== 'pass')) return true;
-            if (draftReview?.notification_required || draftReview?.context_loss_suspected) return true;
-            if (data.schedule_blocked_reason || data.schedule_blocked_at) return true;
-            if (getAutoSendReviewHoldInfo(alert)) return true;
-            if (getAlertMediaReviewInfo(alert)?.required) return true;
-            if (getAlertContextReviewInfo(alert)?.required) return true;
-            const humanAgentState = getAlertHumanAgentState(alert);
-            return !!(humanAgentState.required && !humanAgentState.approved);
-        }
-
-        function needsYouHasOperatorWork(alert) {
-            if (!alert || !['pending', 'scheduled'].includes(alert.status)) return false;
-            if (isCocosDmAlert(alert)) return false;
-            if (DM_ALERT_TYPES.includes(alert.alert_type)) return true;
-            if (FOLLOW_UP_ALERT_TYPES.includes(alert.alert_type)) return true;
-            if (isChallengeCheckinAlert(alert) || isCheckinAlert(alert)) return true;
-            if (NEEDS_YOU_EXTRA_ALERT_TYPES.includes(alert.alert_type)) return true;
-            return needsYouReviewFlag(alert) || needsYouHasSuggestedDraft(alert) || needsYouHasProposedAction(alert);
-        }
-
-        function needsYouMatchesView(alert, view = currentNeedsYouView) {
-            if (!needsYouHasOperatorWork(alert)) return false;
-            const isLater = alert.status === 'scheduled';
-            if (view === 'later') return isLater;
-            if (isLater) return false;
-            if (view === 'messages') return DM_ALERT_TYPES.includes(alert.alert_type);
-            if (view === 'checkins') return isChallengeCheckinAlert(alert) || isCheckinAlert(alert);
-            if (view === 'follow_ups') return FOLLOW_UP_ALERT_TYPES.includes(alert.alert_type);
-            if (view === 'review') return needsYouReviewFlag(alert);
-            return true;
-        }
-
-        function summarizeNeedsYouCounts(rows = []) {
-            const pendingRows = rows.filter(a => needsYouHasOperatorWork(a) && a.status === 'pending');
-            const scheduledRows = rows.filter(a => needsYouHasOperatorWork(a) && a.status === 'scheduled');
+            const codexReview = data.codex_review && typeof data.codex_review === 'object' ? data.codex_review : {};
+            const draftReview = (data.draft_review || data.draftReview) && typeof (data.draft_review || data.draftReview) === 'object'
+                ? (data.draft_review || data.draftReview)
+                : {};
+            const markerText = [
+                codexReview.reviewed_by,
+                codexReview.reviewer_model,
+                codexReview.source,
+                codexReview.automation_id,
+                draftReview.reviewed_by,
+                draftReview.reviewer_model,
+                data.codex_client_dm_manager ? 'codex_client_dm_manager' : '',
+                data.codex_review ? 'codex_review' : '',
+                data.codex_repaired_at ? 'codex_repaired_at' : '',
+                data.draft_updated_by_codex_at ? 'draft_updated_by_codex_at' : '',
+            ].map(v => String(v || '').toLowerCase()).join(' ');
+            const hasCodexMarker = markerText.includes('codex') || markerText.includes('balance-client-dm-manager');
+            const verdict = String(draftReview.verdict || '').toLowerCase();
+            const passed = verdict === 'pass' || draftReview.safe_to_send === true || String(codexReview.decision || '').toLowerCase().includes('approved');
             return {
-                all: pendingRows.length,
-                messages: pendingRows.filter(a => needsYouMatchesView(a, 'messages')).length,
-                checkins: pendingRows.filter(a => needsYouMatchesView(a, 'checkins')).length,
-                follow_ups: pendingRows.filter(a => needsYouMatchesView(a, 'follow_ups')).length,
-                review: pendingRows.filter(a => needsYouMatchesView(a, 'review')).length,
-                later: scheduledRows.length,
+                approved: hasCodexMarker && passed,
+                reviewedBy: draftReview.reviewed_by || codexReview.reviewed_by || codexReview.automation_id || '',
             };
         }
 
+        function needsYouHasOperatorWork(alert, activeClientIds = dmClientIdsCache.ids) {
+            if (!alert || alert.status !== 'pending') return false;
+            if (!DM_ALERT_TYPES.includes(alert.alert_type)) return false;
+            if (isCocosDmAlert(alert)) return false;
+            if (!getAlertClientIdentity(alert)) return false;
+            if (!alertBelongsToDmClients(alert, activeClientIds)) return false;
+            if (!needsYouHasSuggestedDraft(alert)) return false;
+            return needsYouCodexApprovedInfo(alert).approved;
+        }
+
+        function needsYouMatchesView(alert, view = currentNeedsYouView, activeClientIds = dmClientIdsCache.ids) {
+            return view === 'all' && needsYouHasOperatorWork(alert, activeClientIds);
+        }
+
+        function summarizeNeedsYouCounts(rows = [], activeClientIds = dmClientIdsCache.ids) {
+            return { all: rows.filter(a => needsYouHasOperatorWork(a, activeClientIds)).length };
+        }
+
         function collapseNeedsYouRows(rows = []) {
-            const dmRows = rows.filter(a => a.status === 'pending' && DM_ALERT_TYPES.includes(a.alert_type));
-            const otherRows = rows.filter(a => !(a.status === 'pending' && DM_ALERT_TYPES.includes(a.alert_type)));
-            return [...collapsePendingByUser(dmRows), ...otherRows];
+            return collapsePendingByUser(rows.filter(a => a.status === 'pending' && DM_ALERT_TYPES.includes(a.alert_type)));
         }
 
         function renderNeedsYouCounts(counts = needsYouCounts) {
@@ -10248,14 +10214,16 @@
         async function refreshNeedsYouCounts() {
             try {
                 const countFields = 'id,client_id,alert_type,status,created_at,scheduled_for,suggested_message,data';
+                const activeClientIds = await getActiveDmClientIds();
                 const { data, error } = await window.supabaseClient
                     .from('coach_alerts')
                     .select(countFields)
-                    .in('status', ['pending', 'scheduled'])
+                    .eq('status', 'pending')
+                    .in('alert_type', DM_ALERT_TYPES)
                     .order('created_at', { ascending: false })
                     .limit(500);
                 if (error) throw error;
-                renderNeedsYouCounts(summarizeNeedsYouCounts(collapseNeedsYouRows(uniqueAlertRows(data || []))));
+                renderNeedsYouCounts(summarizeNeedsYouCounts(collapseNeedsYouRows(uniqueAlertRows(data || [])), activeClientIds));
             } catch (e) {
                 console.warn('refreshNeedsYouCounts failed:', e?.message || e);
             }
@@ -10266,21 +10234,20 @@
             try {
                 currentFeed = 'needs-you';
                 activateNeedsYouView(currentNeedsYouView);
-                if (currentNeedsYouView === 'messages' || currentNeedsYouView === 'all') {
-                    await repairUnreadDmAlerts();
-                }
+                await repairUnreadDmAlerts();
+                const activeClientIds = await getActiveDmClientIds();
                 const { data, error } = await window.supabaseClient
                     .from('coach_alerts')
                     .select('*')
-                    .in('status', ['pending', 'scheduled'])
-                    .order(currentNeedsYouView === 'later' ? 'scheduled_for' : 'created_at', { ascending: currentNeedsYouView === 'later' })
+                    .eq('status', 'pending')
+                    .in('alert_type', DM_ALERT_TYPES)
+                    .order('created_at', { ascending: false })
                     .limit(300);
                 if (error) throw error;
                 const rows = uniqueAlertRows(data || []);
-                const withFollowUpLinks = await attachActiveDmLinksToFollowUps(rows);
-                const baseRows = collapseNeedsYouRows(dedupePendingAlerts(withFollowUpLinks));
-                alertsCache = baseRows.filter(a => needsYouMatchesView(a, currentNeedsYouView));
-                renderNeedsYouCounts(summarizeNeedsYouCounts(baseRows));
+                const baseRows = collapseNeedsYouRows(dedupePendingAlerts(rows));
+                alertsCache = baseRows.filter(a => needsYouMatchesView(a, currentNeedsYouView, activeClientIds));
+                renderNeedsYouCounts(summarizeNeedsYouCounts(baseRows, activeClientIds));
                 renderAlertFeed(alertsCache, {
                     containerId: 'needs-you-feed',
                     viewKey: currentNeedsYouView,
@@ -10301,11 +10268,6 @@
         }
 
         function needsYouViewForAlert(alert) {
-            if (alert?.status === 'scheduled') return 'later';
-            if (DM_ALERT_TYPES.includes(alert?.alert_type)) return 'messages';
-            if (isChallengeCheckinAlert(alert) || isCheckinAlert(alert)) return 'checkins';
-            if (FOLLOW_UP_ALERT_TYPES.includes(alert?.alert_type)) return 'follow_ups';
-            if (needsYouReviewFlag(alert)) return 'review';
             return 'all';
         }
 
@@ -10328,7 +10290,17 @@
                     loadCocosDms();
                     return;
                 }
-                openNeedsYouForAlert(alert, 'messages');
+                if (needsYouHasOperatorWork(alert)) {
+                    openNeedsYouForAlert(alert, 'all');
+                    return;
+                }
+                currentDmAudience = getAlertClientIdentity(alert) ? 'clients' : 'leads';
+                updateDmAudienceUi();
+                activateDmView('unread');
+                if (typeof showSection === 'function') {
+                    showSection('dms', getNavItemForSection('dms'));
+                }
+                loadDms();
                 return;
             }
 
@@ -10337,18 +10309,19 @@
                 currentNeedsAttentionAudience = alertBelongsToDmClients(alert, activeClientIds) ? 'clients' : 'leads';
                 updateNeedsAttentionAudienceUi();
                 activateFollowUpView('pending');
-                openNeedsYouForAlert(alert, 'follow_ups');
+                if (typeof showSection === 'function') {
+                    showSection('follow-ups', getNavItemForSection('follow-ups'));
+                }
+                loadFollowUps();
                 return;
             }
 
             if (isChallengeCheckinAlert(alert)) {
                 activateChallengeCheckinView(isManualIgBlockedAlert(alert) ? 'manual' : 'pending');
-                openNeedsYouForAlert(alert, 'checkins');
-                return;
-            }
-
-            if (needsYouHasOperatorWork(alert)) {
-                openNeedsYouForAlert(alert);
+                if (typeof showSection === 'function') {
+                    showSection('checkins', getNavItemForSection('checkins'));
+                }
+                loadChallengeCheckins(true);
                 return;
             }
 
@@ -10368,7 +10341,7 @@
                 if (currentFeed !== sourceFeed) return false;
 
                 if (sourceFeed === 'needs-you') {
-                    activateNeedsYouView(targetIsScheduled ? 'later' : 'all');
+                    activateNeedsYouView('all');
                     loadNeedsYou(true);
                     return true;
                 }
@@ -14426,15 +14399,19 @@
             const isDmAlert = DM_ALERT_TYPES.includes(alert.alert_type);
             const humanAgentDmStripHtml = renderHumanAgentDmStrip(alert, isDmAlert);
             const cancelScheduledTitle = isDmAlert
-                ? 'Cancel this scheduled send and move it back to Needs You'
-                : (isFollowUp ? 'Cancel this scheduled send and move it back to Needs You' : 'Cancel this scheduled send and move it back to the approval feed');
+                ? 'Cancel this scheduled send and move it back to Unread'
+                : (isFollowUp ? 'Cancel this scheduled send and move it back to Needs Attention' : 'Cancel this scheduled send and move it back to the active feed');
             const restoreTitle = isDmAlert
-                ? 'Move back to Needs You without sending'
-                : (isFollowUp ? 'Move back to Needs You without sending' : 'Move back to the approval feed without sending');
+                ? 'Move back to Unread without sending'
+                : (isFollowUp ? 'Move back to Needs Attention without sending' : 'Move back to the active feed without sending');
             const activeEdit = canEdit ? activeAlertEdits.get(String(alert.id)) : null;
             const renderedMessageText = activeEdit && typeof activeEdit.message === 'string'
                 ? activeEdit.message
                 : displayMessage;
+            const needsYouApprovalInfo = currentFeed === 'needs-you' ? needsYouCodexApprovedInfo(alert) : null;
+            const needsYouApprovalHtml = needsYouApprovalInfo?.approved
+                ? `<div style="margin:8px 0; padding:8px 10px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; border-radius:8px; font-size:0.76rem; font-weight:800; line-height:1.35;">Codex approved this client DM draft${needsYouApprovalInfo.reviewedBy ? ` (${escapeHtml(needsYouApprovalInfo.reviewedBy)})` : ''}. Shannon can edit or send it from here.</div>`
+                : '';
             const suggestedMessageHtml = hasMessage
                 ? (activeEdit
                     ? `<div class="alert-suggested-msg" id="alert-msg-${alert.id}">${renderAlertEditFields(alert.id, renderedMessageText, activeEdit.reason || '')}</div>`
@@ -14474,6 +14451,7 @@
                 ${timingSuggestionHtml}
                 ${checkinDeliveryHtml}
                 ${autoSendHoldNoticeHtml}
+                ${needsYouApprovalHtml}
                 ${conversationPanelHtml || ''}
                 ${suggestedMessageHtml}
                 ${proposedActionsHtml}
@@ -17779,11 +17757,13 @@
             });
         }
         // Also check URL param for direct linking
-        if (window.location.search.includes('tab=needs-you') || window.location.search.includes('tab=dms')) {
+        if (window.location.search.includes('tab=needs-you')) {
             setTimeout(() => {
                 showSection('needs-you', getNavItemForSection('needs-you'));
                 loadNeedsYou(true);
             }, 500);
+        } else if (window.location.search.includes('tab=dms')) {
+            setTimeout(() => openDmAudience('clients', getNavItemForSection('dms')), 500);
         } else if (window.location.search.includes('tab=alerts')) {
             setTimeout(() => showSection('alerts', getNavItemForSection('alerts')), 500);
         } else if (window.location.search.includes('tab=checkins')) {
