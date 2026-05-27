@@ -90,11 +90,16 @@ assert.match(commitmentStage.strategy, /exact context|stock invite line/i);
 
 const igDraftSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/ig-instant-draft.js'), 'utf8');
 const qualifierSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/qualifier-engine.js'), 'utf8');
-assert.match(igDraftSource, /Anchor the offer to their actual situation/);
-assert.match(qualifierSource, /if you haven't locked in \[support\/trainer\/structure\] yet/);
+assert.match(igDraftSource, /Anchor the app rundown to their actual situation/);
+assert.match(qualifierSource, /Explain the app setup before asking for another yes/);
 assert.match(igDraftSource, /https:\/\/future-balance\.netlify\.app\/coaching\.html/);
 assert.match(igDraftSource, /The DM offer right now is the free 30-day Balance Challenge/);
 assert.match(igDraftSource, /Paid coaching is the natural follow-up after the 30 days, not the headline/);
+assert.match(igDraftSource, /Shannon built Balance this year/);
+assert.match(igDraftSource, /little character levels up/);
+assert.match(igDraftSource, /logs earn XP/);
+assert.match(igDraftSource, /Do not call the character FitGotchi in DMs/);
+assert.match(qualifierSource, /app-explainer bridge/);
 assert.match(igDraftSource, /Earn the next response/);
 assert.match(igDraftSource, /local\/in-person trainer/);
 assert.match(qualifierSource, /LOCAL \/ IN-PERSON \/ EXISTING TRAINER GATE/);
