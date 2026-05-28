@@ -49,6 +49,90 @@ async function supabase(path, options = {}) {
     try { return JSON.parse(text); } catch { return []; }
 }
 
+function createSendClaim(source) {
+    const suffix = Math.random().toString(36).slice(2, 10);
+    return {
+        id: `${Date.now()}-${suffix}`,
+        at: new Date().toISOString(),
+        source: source || 'unknown',
+    };
+}
+
+function withSendClaim(data = {}, claim) {
+    return {
+        ...(data || {}),
+        send_claim_id: claim.id,
+        send_claimed_at: claim.at,
+        send_claimed_via: claim.source,
+    };
+}
+
+function withoutSendClaim(data = {}) {
+    const clean = { ...(data || {}) };
+    delete clean.send_claim_id;
+    delete clean.send_claimed_at;
+    delete clean.send_claimed_via;
+    return clean;
+}
+
+async function claimPendingAlertForSend(alert, source) {
+    const claim = createSendClaim(source);
+    const claimedRows = await supabase(
+        `coach_alerts?id=eq.${encodeURIComponent(alert.id)}&status=eq.pending&data->>send_claim_id=is.null`,
+        {
+            method: 'PATCH',
+            body: { data: withSendClaim(alert.data || {}, claim) },
+            prefer: 'return=representation',
+        }
+    );
+    const claimed = claimedRows[0] || null;
+    return claimed ? { ...claimed, sendClaim: claim } : null;
+}
+
+async function loadAlertSendState(alertId) {
+    try {
+        const rows = await supabase(
+            `coach_alerts?select=id,status,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
+        );
+        return rows[0] || null;
+    } catch (err) {
+        console.warn('[send-coach-reply] send-state lookup failed:', err.message);
+        return null;
+    }
+}
+
+async function duplicateSendResponse(alertId) {
+    const current = await loadAlertSendState(alertId);
+    const status = current?.status || null;
+    const inProgress = status === 'pending' && current?.data?.send_claim_id;
+    return {
+        statusCode: 409,
+        body: JSON.stringify({
+            error: inProgress ? 'Alert is already sending' : 'Alert already actioned',
+            status,
+            code: inProgress ? 'alert_send_in_progress' : 'alert_send_already_actioned',
+        }),
+    };
+}
+
+async function releaseSendClaim(alertId, claimId, alertData, errorMessage, errorCode) {
+    const data = withoutSendClaim(alertData || {});
+    const now = new Date().toISOString();
+    data.last_send_error = String(errorMessage || 'Send failed').slice(0, 500);
+    data.last_send_error_code = errorCode || 'send_failed';
+    data.last_send_error_at = now;
+
+    try {
+        await supabase(`coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending&data->>send_claim_id=eq.${encodeURIComponent(claimId || '')}`, {
+            method: 'PATCH',
+            body: { data },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[send-coach-reply] send-claim release failed:', err.message);
+    }
+}
+
 function normalizeTimingSuggestion(value) {
     if (!value || typeof value !== 'object') return null;
     const delay = Number(value.delay_ms);
@@ -203,6 +287,23 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: 'Alert missing coach/client ids' }) };
     }
 
+    let claimedAlert;
+    let sendClaimId = '';
+    try {
+        claimedAlert = await claimPendingAlertForSend(alert, source);
+    } catch (err) {
+        console.error('[send-coach-reply] alert send claim failed:', err.message);
+        return { statusCode: 500, body: JSON.stringify({ error: 'Could not claim alert for sending' }) };
+    }
+    if (!claimedAlert) {
+        return duplicateSendResponse(alertId);
+    }
+    alert = {
+        ...alert,
+        data: claimedAlert.data || alert.data || {},
+    };
+    sendClaimId = claimedAlert.sendClaim?.id || '';
+
     // 2. Insert the reply as a nudge (client-to-client DM row in the nudges table).
     //    The DB trigger `notify_nudge_recipient` fires here — since the receiver
     //    is the client (not admin), it routes a normal DM push to the client.
@@ -218,6 +319,7 @@ exports.handler = async (event) => {
         });
     } catch (e) {
         console.error('[send-coach-reply] nudge insert failed:', e.message);
+        await releaseSendClaim(alertId, sendClaimId, alert.data, e.message, 'nudge_insert_failed');
         return { statusCode: 500, body: JSON.stringify({ error: 'Failed to send message' }) };
     }
 
@@ -227,7 +329,7 @@ exports.handler = async (event) => {
     const wasEdited = !!draftText && replyText !== draftText;
     const sentAt = new Date().toISOString();
     const mergedData = {
-        ...(alert.data || {}),
+        ...withoutSendClaim(alert.data || {}),
         sent_message: replyText,
         was_edited: wasEdited,
         sent_at: sentAt,
@@ -247,16 +349,19 @@ exports.handler = async (event) => {
     }
     let alertMarkedSent = false;
     try {
-        await supabase(`coach_alerts?id=eq.${alertId}`, {
+        const markedRows = await supabase(`coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending&data->>send_claim_id=eq.${encodeURIComponent(sendClaimId)}`, {
             method: 'PATCH',
             body: {
                 status: 'sent',
                 actioned_at: sentAt,
                 data: mergedData,
             },
-            prefer: 'return=minimal',
+            prefer: 'return=representation',
         });
-        alertMarkedSent = true;
+        alertMarkedSent = markedRows.length > 0;
+        if (!alertMarkedSent) {
+            console.warn(`[send-coach-reply] alert ${alertId} was delivered but its send claim was lost before mark-sent`);
+        }
     } catch (e) {
         console.warn('[send-coach-reply] alert update failed (non-fatal):', e.message);
         // Reply is already delivered — don't 500 just because bookkeeping failed.

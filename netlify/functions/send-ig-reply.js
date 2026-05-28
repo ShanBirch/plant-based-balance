@@ -521,6 +521,72 @@ async function supabase(path, options = {}) {
     try { return JSON.parse(text); } catch { return []; }
 }
 
+function createSendClaim(source) {
+    const suffix = Math.random().toString(36).slice(2, 10);
+    return {
+        id: `${Date.now()}-${suffix}`,
+        at: new Date().toISOString(),
+        source: source || 'unknown',
+    };
+}
+
+function withSendClaim(data = {}, claim) {
+    return {
+        ...(data || {}),
+        send_claim_id: claim.id,
+        send_claimed_at: claim.at,
+        send_claimed_via: claim.source,
+    };
+}
+
+function withoutSendClaim(data = {}) {
+    const clean = { ...(data || {}) };
+    delete clean.send_claim_id;
+    delete clean.send_claimed_at;
+    delete clean.send_claimed_via;
+    return clean;
+}
+
+async function claimPendingAlertForSend(alert, source) {
+    const claim = createSendClaim(source);
+    const claimedRows = await supabase(
+        `coach_alerts?id=eq.${encodeURIComponent(alert.id)}&status=eq.pending&data->>send_claim_id=is.null`,
+        {
+            method: 'PATCH',
+            body: { data: withSendClaim(alert.data || {}, claim) },
+            prefer: 'return=representation',
+        }
+    );
+    const claimed = claimedRows[0] || null;
+    return claimed ? { ...claimed, sendClaim: claim } : null;
+}
+
+async function loadAlertSendState(alertId) {
+    try {
+        const rows = await supabase(
+            `coach_alerts?select=id,status,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
+        );
+        return rows[0] || null;
+    } catch (err) {
+        console.warn('[send-ig-reply] send-state lookup failed:', err.message);
+        return null;
+    }
+}
+
+async function duplicateSendResponse(alertId) {
+    const current = await loadAlertSendState(alertId);
+    const status = current?.status || null;
+    const inProgress = status === 'pending' && current?.data?.send_claim_id;
+    return {
+        statusCode: 409,
+        body: JSON.stringify({
+            error: inProgress ? 'Alert is already sending' : 'Alert already actioned',
+            status,
+            code: inProgress ? 'alert_send_in_progress' : 'alert_send_already_actioned',
+        }),
+    };
+}
+
 async function getInstagramGraphAccessToken(accountId = '') {
     const resolved = await resolveMetaIgAccessToken(accountId, supabase);
     if (resolved.token) return resolved.token;
@@ -1000,6 +1066,19 @@ exports.handler = async (event) => {
     const chunkPacing = resolveChunkPacing(messagesToSend.length, deliveryPacing);
     const plannedChunkGapsMs = resolveChunkGaps(messagesToSend, chunkPacing);
 
+    let claimedAlert;
+    let sendClaimId = '';
+    try {
+        claimedAlert = await claimPendingAlertForSend({ ...alert, data: alertData }, source);
+    } catch (err) {
+        console.error('[send-ig-reply] alert send claim failed:', err.message);
+        return { statusCode: 500, body: JSON.stringify({ error: 'Could not claim alert for sending' }) };
+    }
+    if (!claimedAlert) {
+        return duplicateSendResponse(alertId);
+    }
+    sendClaimId = claimedAlert.sendClaim?.id || '';
+
     // 3. Send each chunk via the selected transport with delays. Stop on first failure so
     //    we don't keep dispatching after a bad chunk.
     const sendResults = [];
@@ -1079,7 +1158,7 @@ exports.handler = async (event) => {
     //    pending so Shannon can retry from the admin dashboard, stamp the
     //    error into data, and fire a notification so he knows.
     const mergedData = {
-        ...alertData,
+        ...withoutSendClaim(alertData),
         sent_message: replyText,
         was_edited: wasEdited,
         sent_at: sentAtIso,
@@ -1159,14 +1238,17 @@ exports.handler = async (event) => {
 
     let alertMarkedSent = false;
     try {
-        await supabase(`coach_alerts?id=eq.${alertId}`, {
+        const markedRows = await supabase(`coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending&data->>send_claim_id=eq.${encodeURIComponent(sendClaimId)}`, {
             method: 'PATCH',
             body: allOk
                 ? { status: 'sent', actioned_at: sentAtIso, data: mergedData }
                 : { data: mergedData },
-            prefer: 'return=minimal',
+            prefer: 'return=representation',
         });
-        alertMarkedSent = allOk;
+        alertMarkedSent = allOk && markedRows.length > 0;
+        if (allOk && !alertMarkedSent) {
+            console.warn(`[send-ig-reply] alert ${alertId} was delivered but its send claim was lost before mark-sent`);
+        }
     } catch (err) {
         console.warn('[send-ig-reply] alert status update failed (non-fatal):', err.message);
     }

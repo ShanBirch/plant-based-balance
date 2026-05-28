@@ -5332,6 +5332,76 @@
             };
         }
 
+        function createAdminSendClaim(source) {
+            return {
+                id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+                at: new Date().toISOString(),
+                source: source || 'admin_dashboard',
+            };
+        }
+
+        function withAdminSendClaim(data, claim) {
+            return Object.assign({}, data || {}, {
+                send_claim_id: claim.id,
+                send_claimed_at: claim.at,
+                send_claimed_via: claim.source,
+            });
+        }
+
+        function withoutAdminSendClaim(data) {
+            const clean = Object.assign({}, data || {});
+            delete clean.send_claim_id;
+            delete clean.send_claimed_at;
+            delete clean.send_claimed_via;
+            return clean;
+        }
+
+        async function claimPendingAlertForAdminSend(alertData, source) {
+            const claim = createAdminSendClaim(source);
+            const claimedData = withAdminSendClaim(alertData?.data || {}, claim);
+            const { data, error } = await window.supabaseClient
+                .from('coach_alerts')
+                .update({ data: claimedData })
+                .eq('id', alertData.id)
+                .eq('status', 'pending')
+                .is('data->>send_claim_id', null)
+                .select('id,status,data')
+                .maybeSingle();
+            if (error) throw error;
+            if (data) return { row: data, claim };
+
+            const { data: current, error: currentError } = await window.supabaseClient
+                .from('coach_alerts')
+                .select('id,status,data')
+                .eq('id', alertData.id)
+                .maybeSingle();
+            if (currentError) throw currentError;
+            const inProgress = current?.status === 'pending' && current?.data?.send_claim_id;
+            const alreadySent = current?.status === 'sent';
+            const err = new Error(inProgress
+                ? 'This reply is already sending.'
+                : alreadySent
+                    ? 'This reply was already sent.'
+                    : `This alert is ${current?.status || 'not pending'}, so it cannot be sent again.`);
+            err.code = inProgress ? 'alert_send_in_progress' : 'alert_send_already_actioned';
+            throw err;
+        }
+
+        async function releaseAdminSendClaim(alertId, claimId, alertData, errorMessage, errorCode) {
+            if (!claimId) return;
+            const data = withoutAdminSendClaim(alertData || {});
+            data.last_send_error = String(errorMessage || 'Send failed').slice(0, 500);
+            data.last_send_error_code = errorCode || 'admin_dashboard_send_failed';
+            data.last_send_error_at = new Date().toISOString();
+            const { error } = await window.supabaseClient
+                .from('coach_alerts')
+                .update({ data })
+                .eq('id', alertId)
+                .eq('status', 'pending')
+                .eq('data->>send_claim_id', claimId);
+            if (error) console.warn('[admin-send] send-claim release failed:', error.message || error);
+        }
+
         function appendAdminConversationMessage(message) {
             const ch = document.getElementById('conversation-messages');
             if (!ch) return;
@@ -16644,6 +16714,8 @@
                 return sendManyChatAlertMessage(alertId, alertData, message, btn);
             }
 
+            let sendClaimId = '';
+            let sentChunkCount = 0;
             try {
                 // Get coach ID — same pattern as the working AI Coach send function
                 const coachUser = await window.supabaseClient.auth.getUser();
@@ -16674,6 +16746,9 @@
                 const sendSource = !wasEdited && Array.isArray(alertData.data?.draft_messages) && alertData.data.draft_messages.length
                     ? alertData.data.draft_messages
                     : message;
+                const claimResult = await claimPendingAlertForAdminSend(alertData, 'admin_dashboard');
+                sendClaimId = claimResult.claim.id;
+                alertData.data = Object.assign({}, alertData.data || {}, claimResult.row?.data || {});
                 const sendResult = await sendDashboardDmChunks({
                     receiverId: alertData.client_id,
                     senderId,
@@ -16681,9 +16756,10 @@
                     source: 'admin_dashboard_alert_send',
                     primaryAlertId: alertId,
                     cleanupCoachId: alertData.coach_id || senderId,
+                    onChunkSent: () => { sentChunkCount++; },
                 });
                 const sentAt = new Date().toISOString();
-                const mergedData = Object.assign({}, alertData.data || {}, {
+                const mergedData = Object.assign({}, withoutAdminSendClaim(alertData.data || {}), {
                     sent_message: message,
                     was_edited: wasEdited,
                     sent_at: sentAt,
@@ -16705,10 +16781,15 @@
                 if (wasEdited && editReason) {
                     mergedData.edit_reason = editReason;
                 }
-                const { error: markSentError } = await window.supabaseClient.from('coach_alerts')
+                const { data: markedSent, error: markSentError } = await window.supabaseClient.from('coach_alerts')
                     .update({ status: 'sent', actioned_at: sentAt, data: mergedData })
-                    .eq('id', alertId);
+                    .eq('id', alertId)
+                    .eq('status', 'pending')
+                    .eq('data->>send_claim_id', sendClaimId)
+                    .select('id')
+                    .maybeSingle();
                 if (markSentError) throw markSentError;
+                if (!markedSent) throw new Error('This alert was claimed by another send before it could be marked sent.');
                 triggerCoachEditAnalysis(alertId, originalDraft, message, 'admin_dashboard');
                 clearAlertEditBuffer(alertId);
 
@@ -16739,6 +16820,13 @@
                 updateVoiceMatchRate();
             } catch (e) {
                 console.error('Failed to send alert message:', e);
+                if (sendClaimId && sentChunkCount === 0) {
+                    await releaseAdminSendClaim(alertId, sendClaimId, alertData.data || {}, e.message || e, e.code || 'admin_dashboard_send_failed');
+                } else if (sendClaimId && sentChunkCount > 0) {
+                    window.alert('At least one message was already sent. I blocked retry on this card so it cannot send the same reply again. Check the DM before doing anything else.');
+                    if (btn) { btn.disabled = true; btn.textContent = 'Check DM'; }
+                    return;
+                }
                 window.alert('Failed to send: ' + e.message);
                 if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
             }
