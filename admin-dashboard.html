@@ -17850,6 +17850,7 @@
                 case 'cohorts': return loadCohorts(true);
                 case 'ig-leads': return typeof loadIgLeads === 'function' ? loadIgLeads() : null;
                 case 'ig-operator': return typeof focusIgOperatorInput === 'function' ? focusIgOperatorInput() : null;
+                case 'conversion-operator': return null;
                 case 'content-radar': return typeof loadContentRadar === 'function' ? loadContentRadar(true) : null;
                 case 'your-day': return loadYourDay(true);
                 case 'ai-coach':
@@ -18054,6 +18055,10 @@
             setTimeout(() => {
                 showSection('ig-operator', getNavItemForSection('ig-operator'));
                 focusIgOperatorInput();
+            }, 500);
+        } else if (window.location.search.includes('tab=conversion-operator')) {
+            setTimeout(() => {
+                showSection('conversion-operator', getNavItemForSection('conversion-operator'));
             }, 500);
         } else if (window.location.search.includes('tab=cocos')) {
             setTimeout(() => {
