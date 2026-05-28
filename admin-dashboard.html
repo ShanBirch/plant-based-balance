@@ -55,6 +55,7 @@
         .sidebar { width: 220px; background: #1e293b; color: white; padding: 24px 16px; position: fixed; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
         .sidebar-logo { font-family: 'Montserrat', sans-serif; font-size: 1.2rem; font-weight: 800; color: #48864B; margin-bottom: 32px; text-align: center; }
         .nav-item { padding: 12px 14px; margin-bottom: 6px; border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
+        .nav-item[hidden], .dashboard-btn[hidden], .ig-operator-action[hidden] { display: none !important; }
         .nav-item:hover { background: #334155; }
         .nav-item.active { background: #48864B; }
         .nav-item i { width: 18px; height: 18px; }
@@ -1867,21 +1868,21 @@
                 </div>
             </div>
             <div class="nav-item" onclick="showSection('conversations', this); renderConvoUsersList();"><i data-lucide="send"></i><span>Quick Message</span></div>
-            <div class="nav-item" onclick="showSection('cocos', this); loadCocosDms();"><i data-lucide="instagram"></i><span>Coco's</span><span id="cocos-badge" class="alert-badge" style="display:none;">0</span></div>
-            <div class="nav-item" onclick="showSection('auto-dms', this); loadAutoDms();"><i data-lucide="bot"></i><span>Auto DMs</span><span id="auto-dms-badge" class="alert-badge" style="display:none;">0</span></div>
+            <div class="nav-item" hidden data-admin-hidden-entry="cocos" onclick="showSection('cocos', this); loadCocosDms();"><i data-lucide="instagram"></i><span>Coco's</span><span id="cocos-badge" class="alert-badge" style="display:none;">0</span></div>
+            <div class="nav-item" hidden data-admin-hidden-entry="auto-dms" onclick="showSection('auto-dms', this); loadAutoDms();"><i data-lucide="bot"></i><span>Auto DMs</span><span id="auto-dms-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('checkins', this); loadChallengeCheckins();"><i data-lucide="clipboard-check"></i><span>Check-ins</span><span id="checkin-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('conversion-operator', this);"><i data-lucide="route"></i><span>Conversion</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
-            <div class="nav-item" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
-            <div class="nav-item" onclick="showSection('ig-operator', this); focusIgOperatorInput();"><i data-lucide="wand-sparkles"></i><span>IG Operator</span></div>
-            <div class="nav-item" onclick="showSection('content-radar', this); loadContentRadar();"><i data-lucide="radar"></i><span>Content Radar</span></div>
-            <div class="nav-item" onclick="showSection('metrics', this); loadMetrics();"><i data-lucide="target"></i><span>Metrics</span></div>
+            <div class="nav-item" hidden data-admin-hidden-entry="ig-leads" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
+            <div class="nav-item" hidden data-admin-hidden-entry="ig-operator" onclick="showSection('ig-operator', this); focusIgOperatorInput();"><i data-lucide="wand-sparkles"></i><span>IG Operator</span></div>
+            <div class="nav-item" hidden data-admin-hidden-entry="content-radar" onclick="showSection('content-radar', this); loadContentRadar();"><i data-lucide="radar"></i><span>Content Radar</span></div>
+            <div class="nav-item" hidden data-admin-hidden-entry="metrics" onclick="showSection('metrics', this); loadMetrics();"><i data-lucide="target"></i><span>Metrics</span></div>
             <div class="sidebar-footer">
                 <button type="button" class="dashboard-btn theme-toggle-btn" id="admin-theme-toggle" onclick="toggleAdminTheme()" aria-label="Switch admin theme"><i data-lucide="moon"></i><span>Dark mode</span></button>
                 <button class="dashboard-btn" onclick="openReelPicker()" style="background:linear-gradient(135deg,#ef4444 0%,#f59e0b 100%); color:white;"><i data-lucide="film"></i> Marketing Reels</button>
                 <button class="dashboard-btn" onclick="openPersonalityModal()" style="background:#9333ea;"><i data-lucide="sparkles"></i> AI Personality</button>
-                <button class="dashboard-btn" onclick="openAiLearningOutputModal()" style="background:#047857;"><i data-lucide="brain"></i> AI Learning</button>
-                <button class="dashboard-btn" onclick="openAiTrendModal()" style="background:#0f766e;"><i data-lucide="line-chart"></i> AI Progress</button>
+                <button class="dashboard-btn" hidden data-admin-hidden-entry="ai-learning" onclick="openAiLearningOutputModal()" style="background:#047857;"><i data-lucide="brain"></i> AI Learning</button>
+                <button class="dashboard-btn" hidden data-admin-hidden-entry="ai-progress" onclick="openAiTrendModal()" style="background:#0f766e;"><i data-lucide="line-chart"></i> AI Progress</button>
                 <button class="dashboard-btn" onclick="openImportModal()" style="background:#2563eb;"><i data-lucide="upload"></i> Import Clients</button>
                 <button type="button" class="dashboard-btn" onclick="switchToDashboard()"><i data-lucide="home"></i> Dashboard</button>
                 <button class="logout-btn" onclick="handleLogout()"><i data-lucide="log-out"></i> Logout</button>
@@ -3326,7 +3327,7 @@
                         const text = [first.hook ? `Hook: ${first.hook}` : '', first.angle ? `Angle: ${first.angle}` : '', first.script ? `Script: ${first.script}` : '', first.caption ? `Caption: ${first.caption}` : '', first.cta ? `CTA: ${first.cta}` : ''].filter(Boolean).join('\n\n');
                         if (text) actions.push(`<button class="ig-operator-action" type="button" onclick="igOperatorCopy('${adminEsc(igOperatorEncode({ text }))}', this)"><i data-lucide="copy"></i> Copy first idea</button>`);
                     }
-                    actions.push('<button class="ig-operator-action" type="button" onclick="igOperatorOpenContentRadar()"><i data-lucide="radar"></i> Content Radar</button>');
+                    actions.push('<button class="ig-operator-action" hidden data-admin-hidden-entry="content-radar-shortcut" type="button" onclick="igOperatorOpenContentRadar()"><i data-lucide="radar"></i> Content Radar</button>');
                 } else if (card.type === 'action_preview' && card.canRun) {
                     actions.push(`<button class="ig-operator-action primary" type="button" onclick="igOperatorRunGraphAction('${adminEsc(igOperatorEncode(card.payload))}', this)"><i data-lucide="${card.action === 'mark_seen' ? 'eye' : 'heart'}"></i> ${adminEsc(card.title || 'Run action')}</button>`);
                 }
@@ -3486,8 +3487,8 @@
                         }).join('')}
                     </div>
                     <div class="ig-operator-card-actions">
-                        <button class="ig-operator-action" type="button" onclick="igOperatorOpenContentRadar()"><i data-lucide="radar"></i> Open Content Radar</button>
-                        <button class="ig-operator-action" type="button" onclick="igOperatorGenerateRadar(this)"><i data-lucide="refresh-cw"></i> Generate radar</button>
+                        <button class="ig-operator-action" hidden data-admin-hidden-entry="content-radar-shortcut" type="button" onclick="igOperatorOpenContentRadar()"><i data-lucide="radar"></i> Open Content Radar</button>
+                        <button class="ig-operator-action" hidden data-admin-hidden-entry="content-radar-shortcut" type="button" onclick="igOperatorGenerateRadar(this)"><i data-lucide="refresh-cw"></i> Generate radar</button>
                     </div>
                 </div>`;
             }
