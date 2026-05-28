@@ -1996,11 +1996,11 @@
                         <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                             <div>
                                 <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Needs You</h2>
-                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Codex-checked client DM drafts waiting for Shannon to approve, edit, or send.</p>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Client-manager reviewed DMs and onboarding-link handoffs waiting for Shannon.</p>
                             </div>
                             <div style="display:inline-flex; align-items:center; gap:8px; font-size:0.78rem; color:#64748b; font-weight:800;">
                                 <span id="needs-you-view-all-count" class="alert-view-count">0</span>
-                                <span>Codex-checked client DM drafts</span>
+                                <span>reviewed DMs + onboarding handoffs</span>
                             </div>
                         </div>
                     </div>
@@ -2028,7 +2028,7 @@
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                                 <!-- Client hub tabs split the pending queue by action type, then keep scheduling, stale contact, recovery and roster close by. -->
                                 <div role="tablist" id="alert-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
-                                    <button type="button" id="alert-view-needs_attention" class="alert-view-chip alert-view-chip-on" onclick="setAlertView('needs_attention')" title="Dropoffs, plateaus and other client issues to handle">
+                                    <button type="button" id="alert-view-needs_attention" class="alert-view-chip alert-view-chip-on" onclick="setAlertView('needs_attention')" title="Client-manager reviewed DMs and leads ready for the onboarding link">
                                         Needs Attention <span id="alert-view-needs_attention-count" class="alert-view-count">0</span>
                                     </button>
                                     <button type="button" id="alert-view-checkins" class="alert-view-chip" onclick="setAlertView('checkins')" title="Legacy onboarding, weekly and proactive check-in drafts">
@@ -8861,8 +8861,14 @@
         let needsYouCounts = { all: 0 };
         const NEEDS_YOU_TABS = ['all'];
         const NEEDS_YOU_ALERT_TYPES = [...new Set([...DM_ALERT_TYPES, ...FOLLOW_UP_ALERT_TYPES])];
+        const CLIENT_MANAGER_REVIEW_MARKERS = [
+            'balance-combined-dm-manager',
+            'balance-client-dm-manager',
+            'client-dm-manager',
+            'codex-client-dm-manager',
+        ];
         const NEEDS_YOU_EMPTY_STATES = {
-            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'No Codex-checked client DM drafts or onboarding handoffs are waiting for approval right now.' },
+            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'No client-manager reviewed DMs or onboarding-link handoffs are waiting right now.' },
         };
         let currentChallengeCheckinView = 'pending';
         const CHALLENGE_CHECKIN_TABS = ['pending', 'manual', 'later', 'sent_today', 'all'];
@@ -10135,7 +10141,7 @@
             if (isChallengeCheckinAlert(alert)) return false;
             if (view === 'checkins') return isCheckinAlert(alert);
             if (view === 'personal_bests') return isPersonalBestAlert(alert);
-            if (view === 'needs_attention') return !isCheckinAlert(alert) && !isPersonalBestAlert(alert);
+            if (view === 'needs_attention') return isNeedsAttentionQueueItem(alert);
             return true;
         }
 
@@ -10271,13 +10277,9 @@
                 codexReview.reviewer_model,
                 codexReview.automation_id,
             ].map(v => String(v || '').toLowerCase()).join(' ');
-            const hasCodexReviewTag = !!rawCodexReview && (
-                markerText.includes('balance-client-dm-manager')
-                || markerText.includes('codex-client-dm-manager')
-                || markerText.includes('needs_shannon_approval')
-                || markerText.includes('approved_for_shannon_review')
-                || markerText.includes('codex')
-            );
+            const hasClientManagerReviewTag = CLIENT_MANAGER_REVIEW_MARKERS.some(marker => markerText.includes(marker));
+            const explicitlyQuiet = /dismiss|duplicate|no[_ -]?response|no[_ -]?action|leave[_ -]?untouched|stale|handled/.test(markerText);
+            const hasCodexReviewTag = !!rawCodexReview && hasClientManagerReviewTag && !explicitlyQuiet;
             const reviewer = codexReview.reviewed_by || codexReview.reviewer_model || codexReview.source || draftReview.reviewed_by || draftReview.reviewer_model || '';
             const needsReview = verdict === 'warn' || draftReview.notification_required === true || draftReview.safe_to_send === false;
             const onboardingHandoff = isLeadOnboardingHandoff(alert);
@@ -10308,14 +10310,25 @@
             return !!(
                 data.lead_onboarding_handoff === true
                 || String(data.lead_onboarding_handoff || '').toLowerCase() === 'true'
-                || data.needs_you_required === true
-                || String(data.needs_you_required || '').toLowerCase() === 'true'
                 || decisionText.includes('onboarding_handoff')
                 || decisionText.includes('onboarding_link_request_handoff')
                 || decisionText.includes('accepted_app_bridge')
                 || decisionText.includes('manual_onboarding')
                 || challengeLinkNeedsApproval
             );
+        }
+
+        function isClientManagerReviewedClientMessage(alert) {
+            if (!alert || !DM_ALERT_TYPES.includes(alert.alert_type)) return false;
+            if (!getAlertClientIdentity(alert)) return false;
+            if (!needsYouHasSuggestedDraft(alert)) return false;
+            return needsYouClientDraftInfo(alert).ready;
+        }
+
+        function isNeedsAttentionQueueItem(alert) {
+            if (!alert) return false;
+            if (isLeadOnboardingHandoff(alert)) return true;
+            return isClientManagerReviewedClientMessage(alert);
         }
 
         function needsYouHasOperatorWork(alert, activeClientIds = dmClientIdsCache.ids) {
@@ -10615,8 +10628,10 @@
                     // filters this result into needs, check-ins or wins.
                     query = query
                         .eq('status', 'pending')
-                        .not('alert_type', 'in', ALERT_EXCLUDED_TYPES_PG)
                         .order('created_at', { ascending: false });
+                    if (currentAlertView !== 'needs_attention') {
+                        query = query.not('alert_type', 'in', ALERT_EXCLUDED_TYPES_PG);
+                    }
                 }
                 const { data, error } = await query.limit(100);
                 if (error) throw error;
@@ -10995,9 +11010,8 @@
                 const [pendingRes, sentLaterRes, sentTodayRes, unsentRes, rosterRes] = await Promise.all([
                     window.supabaseClient
                         .from('coach_alerts')
-                        .select('id,alert_type,data')
+                        .select('id,alert_type,status,client_id,suggested_message,scheduled_reply_text,data')
                         .eq('status', 'pending')
-                        .not('alert_type', 'in', ALERT_EXCLUDED_TYPES_PG)
                         .limit(1000),
                     window.supabaseClient
                         .from('coach_alerts')
@@ -11027,10 +11041,17 @@
                     if (el) el.textContent = String(n ?? 0);
                 };
                 const pendingRows = pendingRes?.data || [];
-                clientPendingTotal = pendingRows.filter(a => !isChallengeCheckinAlert(a)).length;
-                setCount('alert-view-needs_attention-count', pendingRows.filter(a => alertMatchesClientView(a, 'needs_attention')).length);
-                setCount('alert-view-checkins-count', pendingRows.filter(a => alertMatchesClientView(a, 'checkins')).length);
-                setCount('alert-view-personal_bests-count', pendingRows.filter(a => alertMatchesClientView(a, 'personal_bests')).length);
+                const needsAttentionCount = pendingRows.filter(a => alertMatchesClientView(a, 'needs_attention')).length;
+                const checkinCount = pendingRows
+                    .filter(a => !DM_ALERT_TYPES.includes(a.alert_type) && !FOLLOW_UP_ALERT_TYPES.includes(a.alert_type))
+                    .filter(a => alertMatchesClientView(a, 'checkins')).length;
+                const personalBestCount = pendingRows
+                    .filter(a => !DM_ALERT_TYPES.includes(a.alert_type) && !FOLLOW_UP_ALERT_TYPES.includes(a.alert_type))
+                    .filter(a => alertMatchesClientView(a, 'personal_bests')).length;
+                clientPendingTotal = needsAttentionCount + checkinCount + personalBestCount;
+                setCount('alert-view-needs_attention-count', needsAttentionCount);
+                setCount('alert-view-checkins-count', checkinCount);
+                setCount('alert-view-personal_bests-count', personalBestCount);
                 setCount('alert-view-sent_later-count', sentLaterRes?.count);
                 setCount('alert-view-sent_today-count', sentTodayRes?.count);
                 setCount('alert-view-unsent-count', unsentRes?.count);
