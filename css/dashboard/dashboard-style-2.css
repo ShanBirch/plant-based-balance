@@ -96,8 +96,11 @@
     scrollbar-width: thin;
     scrollbar-color: rgba(245, 217, 138, 0.42) transparent;
     -ms-overflow-style: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    scroll-padding-top: 18px;
 }
-.wizard-chat-messages::before {
+.wizard-chat-messages.wizard-chat-messages--bottom::before {
     content: '';
     flex: 1 1 auto;
     min-height: 0;

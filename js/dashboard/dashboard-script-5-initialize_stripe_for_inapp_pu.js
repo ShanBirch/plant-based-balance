@@ -6485,16 +6485,36 @@ function renderWizardChatMessages() {
         }
         return `<div class="wizard-chat-bubble ${message.role === 'user' ? 'user' : 'coach'}">${escapeWizardHtml(message.text)}</div>`;
     }).join('');
-    scrollWizardChatToBottom();
+    scrollWizardChatToPromptStart();
+}
+
+function syncWizardChatMessageScroll(preferTopOnOverflow = false) {
+    const messagesEl = document.getElementById('wizard-chat-messages');
+    if (!messagesEl) return;
+
+    messagesEl.classList.remove('wizard-chat-messages--bottom');
+    const isOverflowing = messagesEl.scrollHeight > messagesEl.clientHeight + 1;
+    if (!isOverflowing) {
+        messagesEl.classList.add('wizard-chat-messages--bottom');
+        messagesEl.scrollTop = 0;
+        return;
+    }
+
+    messagesEl.scrollTop = preferTopOnOverflow ? 0 : messagesEl.scrollHeight;
+}
+
+function runWizardChatMessageScroll(preferTopOnOverflow = false) {
+    const run = () => syncWizardChatMessageScroll(preferTopOnOverflow);
+    run();
+    requestAnimationFrame(run);
+}
+
+function scrollWizardChatToPromptStart() {
+    runWizardChatMessageScroll(true);
 }
 
 function scrollWizardChatToBottom() {
-    const run = () => {
-        const messagesEl = document.getElementById('wizard-chat-messages');
-        if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
-    };
-    run();
-    requestAnimationFrame(run);
+    runWizardChatMessageScroll(false);
 }
 
 function blurWizardChatInput() {
@@ -6531,7 +6551,7 @@ function setWizardChatKeyboardMode(active) {
     const wizard = document.getElementById('onboarding-wizard');
     if (!wizard) return;
     wizard.classList.toggle('wizard-chat-keyboard', !!active);
-    if (active) scrollWizardChatToBottom();
+    if (active) scrollWizardChatToPromptStart();
 }
 
 function bindWizardChatViewportEvents() {
@@ -6639,7 +6659,7 @@ function renderWizardChatControls() {
         } else {
             helper.textContent = '';
         }
-        scrollWizardChatToBottom();
+        scrollWizardChatToPromptStart();
         return;
     }
 
@@ -6656,7 +6676,7 @@ function renderWizardChatControls() {
         }
     };
     helper.textContent = '';
-    scrollWizardChatToBottom();
+    scrollWizardChatToPromptStart();
 }
 
 function resolveWizardChatPrelude(step) {
@@ -6700,7 +6720,7 @@ function initializeWizardChatIntake() {
         renderWizardChatMessages();
         renderWizardChatProgress();
         renderWizardChatControls();
-        scrollWizardChatToBottom();
+        scrollWizardChatToPromptStart();
         return;
     }
     wizardChatStarted = true;
