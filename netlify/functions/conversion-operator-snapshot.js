@@ -176,6 +176,20 @@ ig_with_scores as (
     from public.ig_threads t
     where t.coach_id = (select coach_id from params)
 ),
+operator_state as (
+    select *
+    from (
+        select
+            e.*,
+            row_number() over (
+                partition by e.entity_kind, coalesce(e.client_id::text, e.thread_id::text)
+                order by e.created_at desc
+            ) as rn
+        from public.conversion_operator_events e
+        where e.coach_id = (select coach_id from params)
+    ) ranked
+    where rn = 1
+),
 latest_ig as (
     select distinct on (linked_user_id)
         linked_user_id,
@@ -216,6 +230,9 @@ challenge_cards as (
     select
         'client'::text as entity_kind,
         case
+            when os.action = 'mark_paid' then 'paid'
+            when os.action in ('mark_pitch_ready', 'pitch_coaching') then 'pitch_ready'
+            when os.action = 'move_fallback' then 'fallback_app_group'
             when lower(coalesce(u.subscription_status, '')) in ('active', 'paid', 'paying') or li.lead_stage = 'paying' then 'paid'
             when cm.challenge_day >= 30 and ((coalesce(a.workout_days_30, 0) * 2) + coalesce(a.meal_days_30, 0)) >= 8 then 'pitch_ready'
             when cm.challenge_day >= 30 then 'fallback_app_group'
@@ -249,11 +266,20 @@ challenge_cards as (
         pca.pending_alert_type,
         pca.pending_alert_created_at,
         pca.pending_preview,
+        os.action as operator_action,
+        os.created_at as operator_action_at,
+        os.snoozed_until as operator_snoozed_until,
+        os.note as operator_note,
+        os.metadata as operator_metadata,
         coalesce(a.workout_days_30, 0) as workout_days_30,
         coalesce(a.meal_days_30, 0) as meal_days_30,
         greatest(a.last_workout_at, a.last_meal_at, li.last_inbound_at, li.last_outbound_at, cm.accepted_at) as updated_at,
         ((coalesce(a.workout_days_30, 0) * 2) + coalesce(a.meal_days_30, 0)) as engagement_score,
         case
+            when os.action = 'mark_paid' then 'Converted. Keep retention and proof opportunities visible.'
+            when os.action = 'pitch_coaching' then 'Coaching was pitched. Wait for reply, then follow up if needed.'
+            when os.action = 'mark_pitch_ready' then 'Open the DM and pitch coaching from their strongest current win.'
+            when os.action = 'move_fallback' then 'Use the lower-pressure app/group path and keep the relationship warm.'
             when lower(coalesce(u.subscription_status, '')) in ('active', 'paid', 'paying') or li.lead_stage = 'paying' then 'Keep relationship warm and watch retention.'
             when cm.challenge_day >= 30 and ((coalesce(a.workout_days_30, 0) * 2) + coalesce(a.meal_days_30, 0)) >= 8 then 'Review month-one win and pitch $29/week coaching.'
             when cm.challenge_day >= 30 then 'Use day-30 milestone, then offer $20/month app/group if coaching is too much.'
@@ -275,13 +301,17 @@ challenge_cards as (
     left join latest_ig li on li.linked_user_id = cm.user_id
     left join pending_client_alert pca on pca.client_id = cm.user_id
     left join activity a on a.user_id = cm.user_id
+    left join operator_state os on os.entity_kind = 'client' and os.client_id = cm.user_id
     where coalesce(u.is_test_account, false) = false
       and cm.user_id <> (select coach_id from params)
+      and not (os.snoozed_until is not null and os.snoozed_until > now())
 ),
 ready_leads as (
     select
         'lead'::text as entity_kind,
         case
+            when os.action = 'mark_paid' then 'paid'
+            when os.action = 'move_fallback' then 'fallback_app_group'
             when t.lead_stage = 'invited' or t.qualifier->>'stage' = 'won' then 'ready_for_link'
             else 'lead_pitch_ready'
         end as lane,
@@ -309,11 +339,19 @@ ready_leads as (
         a.alert_type as pending_alert_type,
         a.created_at as pending_alert_created_at,
         left(coalesce(a.suggested_message, a.scheduled_reply_text, a.data->>'draft_text', ''), 220) as pending_preview,
+        os.action as operator_action,
+        os.created_at as operator_action_at,
+        os.snoozed_until as operator_snoozed_until,
+        os.note as operator_note,
+        os.metadata as operator_metadata,
         null::bigint as workout_days_30,
         null::bigint as meal_days_30,
         greatest(t.last_inbound_at, t.last_outbound_at, a.created_at) as updated_at,
         coalesce(t.warmth_score, 0) as engagement_score,
         case
+            when os.action = 'mark_paid' then 'Converted. Keep retention and proof opportunities visible.'
+            when os.action = 'move_fallback' then 'Use the lower-pressure app/group path and keep the relationship warm.'
+            when os.action = 'mark_link_sent' then 'Link sent. Watch for signup, then move them into the challenge check-in rhythm.'
             when t.lead_stage = 'invited' or t.qualifier->>'stage' = 'won' then 'Send or confirm the onboarding link, then watch for signup.'
             else 'Earn the next response and ask the low-pressure challenge invite.'
         end as recommended_action,
@@ -330,9 +368,11 @@ ready_leads as (
         order by ca.created_at desc
         limit 1
     ) a on true
+    left join operator_state os on os.entity_kind = 'lead' and os.thread_id = t.id
     where t.coach_id = (select coach_id from params)
       and t.linked_user_id is null
       and coalesce(t.lead_stage, 'new') <> 'churned'
+      and not (os.snoozed_until is not null and os.snoozed_until > now())
       and (
           t.lead_stage = 'invited'
           or t.qualifier->>'stage' in ('won', 'commitment', 'pitched')
@@ -367,6 +407,11 @@ paid_threads as (
         null::text as pending_alert_type,
         null::timestamptz as pending_alert_created_at,
         null::text as pending_preview,
+        os.action as operator_action,
+        os.created_at as operator_action_at,
+        os.snoozed_until as operator_snoozed_until,
+        os.note as operator_note,
+        os.metadata as operator_metadata,
         null::bigint as workout_days_30,
         null::bigint as meal_days_30,
         greatest(t.last_inbound_at, t.last_outbound_at) as updated_at,
@@ -374,8 +419,13 @@ paid_threads as (
         'Converted. Keep retention and proof opportunities visible.'::text as recommended_action,
         30 as urgency_score
     from ig_with_scores t
+    left join operator_state os on (
+        (os.entity_kind = 'client' and os.client_id = t.linked_user_id)
+        or (os.entity_kind = 'lead' and os.thread_id = t.id)
+    )
     where t.coach_id = (select coach_id from params)
       and t.lead_stage = 'paying'
+      and not (os.snoozed_until is not null and os.snoozed_until > now())
       and not exists (
           select 1
           from challenge_members cm
