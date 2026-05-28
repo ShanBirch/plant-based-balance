@@ -4226,6 +4226,7 @@ async function resolveLifecycleStage({ userId, leadStage } = {}) {
     }
 
     if (leadStage === 'invited') return LIFECYCLE_STAGES.invited;
+    if (leadStage === 'in_app') return LIFECYCLE_STAGES.trial;
     if (leadStage === 'churned') return LIFECYCLE_STAGES.churned;
     if (leadStage === 'paying') return LIFECYCLE_STAGES.paying;
     if (leadStage === 'new' || leadStage === 'qualifying') return LIFECYCLE_STAGES.lead;
