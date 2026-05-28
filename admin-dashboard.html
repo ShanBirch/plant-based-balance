@@ -8732,6 +8732,7 @@
         // DMs tab state — mirrors Alerts but scoped to message-type alerts
         let currentDmView = 'unread';
         let currentDmAudience = 'clients';
+        let dmLoadSeq = 0;
         const DM_AUDIENCES = ['clients', 'leads'];
         const DM_TABS = ['unread', 'later', 'waiting', 'streaks', 'sent_today', 'discarded'];
         const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
@@ -10352,6 +10353,10 @@
                 }
 
                 if (sourceFeed === 'dms' && DM_ALERT_TYPES.includes(alert?.alert_type)) {
+                    if (!targetIsScheduled) {
+                        refreshDmViewCounts();
+                        return true;
+                    }
                     activateDmView(statusView);
                     loadDms();
                     return true;
@@ -10361,6 +10366,10 @@
                     && sourceCocosSectionView === 'dms'
                     && currentCocosSectionView === sourceCocosSectionView
                     && isCocosDmAlert(alert)) {
+                    if (!targetIsScheduled) {
+                        refreshCocosDmViewCounts();
+                        return true;
+                    }
                     activateCocosDmView(statusView);
                     loadCocosDms();
                     return true;
@@ -10965,41 +10974,56 @@
             loadDms();
         }
 
+        function isCurrentDmLoad(loadSeq, view, audience) {
+            return loadSeq === dmLoadSeq
+                && currentFeed === 'dms'
+                && currentView === 'dms'
+                && currentDmView === view
+                && normalizeDmAudience(currentDmAudience) === audience;
+        }
+
         async function loadDms() {
+            const loadSeq = ++dmLoadSeq;
+            const viewAtStart = currentDmView;
+            const audienceAtStart = normalizeDmAudience(currentDmAudience);
             try {
                 currentFeed = 'dms';
-                currentDmAudience = normalizeDmAudience(currentDmAudience);
+                currentDmAudience = audienceAtStart;
                 updateDmAudienceUi();
                 const activeClientIds = await getActiveDmClientIds();
-                if (currentDmView === 'unread') {
+                if (!isCurrentDmLoad(loadSeq, viewAtStart, audienceAtStart)) return;
+                if (viewAtStart === 'unread') {
                     await repairUnreadDmAlerts();
+                    if (!isCurrentDmLoad(loadSeq, viewAtStart, audienceAtStart)) return;
                 }
                 refreshDmViewCounts();
                 let query = window.supabaseClient
                     .from('coach_alerts')
                     .select('*')
                     .in('alert_type', DM_ALERT_TYPES);
-                if (currentDmView === 'later') {
+                if (viewAtStart === 'later') {
                     query = query
                         .eq('status', 'scheduled')
                         .order('scheduled_for', { ascending: true });
-                } else if (currentDmView === 'waiting') {
-                    const rows = filterDmRowsByAudience(await loadWaitingForReplyRows(), currentDmAudience, activeClientIds);
+                } else if (viewAtStart === 'waiting') {
+                    const rows = filterDmRowsByAudience(await loadWaitingForReplyRows(), audienceAtStart, activeClientIds);
+                    if (!isCurrentDmLoad(loadSeq, viewAtStart, audienceAtStart)) return;
                     renderWaitingForReplyFeed(rows);
                     updateDmBadge();
                     return;
-                } else if (currentDmView === 'streaks') {
+                } else if (viewAtStart === 'streaks') {
                     await loadMessageStreaks(activeClientIds);
+                    if (!isCurrentDmLoad(loadSeq, viewAtStart, audienceAtStart)) return;
                     updateDmBadge();
                     return;
-                } else if (currentDmView === 'sent_today') {
+                } else if (viewAtStart === 'sent_today') {
                     const startOfToday = new Date();
                     startOfToday.setHours(0, 0, 0, 0);
                     query = query
                         .eq('status', 'sent')
                         .gte('actioned_at', startOfToday.toISOString())
                         .order('actioned_at', { ascending: false });
-                } else if (currentDmView === 'discarded') {
+                } else if (viewAtStart === 'discarded') {
                     const since = new Date(Date.now() - UNSENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
                     query = query
                         .in('status', ['dismissed', 'canceled'])
@@ -11014,13 +11038,14 @@
                 }
                 const { data, error } = await query.limit(100);
                 if (error) throw error;
-                alertsCache = (currentDmView === 'unread')
+                if (!isCurrentDmLoad(loadSeq, viewAtStart, audienceAtStart)) return;
+                alertsCache = (viewAtStart === 'unread')
                     ? collapsePendingByUser(dedupePendingAlerts(data || []))
                     : (data || []);
-                alertsCache = filterDmAlertsByAudience(alertsCache, currentDmAudience, activeClientIds);
+                alertsCache = filterDmAlertsByAudience(alertsCache, audienceAtStart, activeClientIds);
                 renderAlertFeed(alertsCache, {
                     containerId: 'dm-feed',
-                    viewKey: currentDmView,
+                    viewKey: viewAtStart,
                     emptyStates: DM_EMPTY_STATES,
                 });
                 updateDmBadge();
@@ -13017,6 +13042,11 @@
 
         function clearAlertEditBuffer(alertId) {
             activeAlertEdits.delete(String(alertId));
+        }
+
+        function removeAlertFromVisibleCache(alertId) {
+            alertsCache = alertsCache.filter(a => a.id !== alertId);
+            renderedAlertOrder = renderedAlertOrder.filter(a => a.id !== alertId);
         }
 
         function hasLiveAlertEdit() {
@@ -16675,6 +16705,7 @@
                 alertData.status = 'sent';
                 alertData.actioned_at = sentAt;
                 alertData.data = mergedData;
+                removeAlertFromVisibleCache(alertId);
                 updateAlertBadge();
                 if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
                 routeActionedAlertToStatusTab(alertData, 'sent', 1400);
@@ -16710,6 +16741,7 @@
             showAlertSentOverlay(alertId);
             alertData.status = 'sent';
             alertData.actioned_at = alertData.actioned_at || alertData.data?.sent_at || new Date().toISOString();
+            removeAlertFromVisibleCache(alertId);
             updateAlertBadge();
             if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
             routeActionedAlertToStatusTab(alertData, 'sent', 1400);
