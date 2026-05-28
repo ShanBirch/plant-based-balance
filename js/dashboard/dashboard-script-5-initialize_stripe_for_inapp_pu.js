@@ -6095,6 +6095,7 @@ let wizardChatMessages = [];
 let wizardChatMultiSelection = new Set();
 let wizardChatFreeformAnswers = {};
 let wizardChatAskToken = 0;
+let wizardChatViewportBound = false;
 
 function getWizardChatStep() {
     return WIZARD_CHAT_STEPS[wizardChatStepIndex] || null;
@@ -6318,7 +6319,48 @@ function renderWizardChatMessages() {
         }
         return `<div class="wizard-chat-bubble ${message.role === 'user' ? 'user' : 'coach'}">${escapeWizardHtml(message.text)}</div>`;
     }).join('');
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+    scrollWizardChatToBottom();
+}
+
+function scrollWizardChatToBottom() {
+    const run = () => {
+        const messagesEl = document.getElementById('wizard-chat-messages');
+        const contentEl = document.querySelector('#onboarding-wizard .wizard-content');
+        if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
+        if (contentEl) contentEl.scrollTop = contentEl.scrollHeight;
+    };
+    run();
+    requestAnimationFrame(run);
+    [80, 220, 420].forEach(delay => setTimeout(run, delay));
+}
+
+function setWizardChatKeyboardMode(active) {
+    const wizard = document.getElementById('onboarding-wizard');
+    if (!wizard) return;
+    wizard.classList.toggle('wizard-chat-keyboard', !!active);
+    if (active) scrollWizardChatToBottom();
+}
+
+function bindWizardChatViewportEvents() {
+    if (wizardChatViewportBound) return;
+    wizardChatViewportBound = true;
+    const syncFromViewport = () => {
+        const activeInput = document.activeElement && document.activeElement.id === 'wizard-chat-input';
+        const compactViewport = window.visualViewport && window.visualViewport.height < (window.innerHeight * 0.78);
+        setWizardChatKeyboardMode(activeInput || compactViewport);
+    };
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', syncFromViewport);
+        window.visualViewport.addEventListener('scroll', syncFromViewport);
+    }
+    document.addEventListener('focusin', event => {
+        if (event.target && event.target.id === 'wizard-chat-input') setWizardChatKeyboardMode(true);
+    });
+    document.addEventListener('focusout', event => {
+        if (event.target && event.target.id === 'wizard-chat-input') {
+            setTimeout(syncFromViewport, 120);
+        }
+    });
 }
 
 function syncWizardChatBackControls() {
@@ -6396,7 +6438,10 @@ function renderWizardChatControls() {
         } else {
             helper.textContent = '';
         }
-        setTimeout(() => input.focus(), 60);
+        setTimeout(() => {
+            input.focus();
+            scrollWizardChatToBottom();
+        }, 60);
         return;
     }
 
@@ -6413,7 +6458,10 @@ function renderWizardChatControls() {
         }
     };
     helper.textContent = '';
-    setTimeout(() => input.focus(), 60);
+    setTimeout(() => {
+        input.focus();
+        scrollWizardChatToBottom();
+    }, 60);
 }
 
 function resolveWizardChatPrelude(step) {
@@ -6472,10 +6520,13 @@ function askWizardChatQuestion(options = {}) {
 }
 
 function initializeWizardChatIntake() {
+    bindWizardChatViewportEvents();
+    setWizardChatKeyboardMode(document.activeElement && document.activeElement.id === 'wizard-chat-input');
     if (wizardChatStarted) {
         renderWizardChatMessages();
         renderWizardChatProgress();
         renderWizardChatControls();
+        scrollWizardChatToBottom();
         return;
     }
     wizardChatStarted = true;
@@ -6490,7 +6541,10 @@ function initializeWizardChatIntake() {
 function advanceWizardChat(step, value, displayText = null) {
     wizardChatAnswers[step.key] = value;
     wizardChatMessages.push({ role: 'user', text: displayText || wizardChatAnswerLabel(step, value) });
+    const input = document.getElementById('wizard-chat-input');
+    if (input) input.value = '';
     wizardChatStepIndex += 1;
+    scrollWizardChatToBottom();
     askWizardChatQuestion();
 }
 
@@ -8096,6 +8150,11 @@ function startFitgotchiStory(onComplete) {
 
 function updateWizardUI() {
     normalizeWizardStep();
+    const wizardOverlay = document.getElementById('onboarding-wizard');
+    if (wizardOverlay) {
+        wizardOverlay.classList.toggle('wizard-chat-mode', currentWizardStep === 1);
+        if (currentWizardStep !== 1) wizardOverlay.classList.remove('wizard-chat-keyboard');
+    }
 
     // 1. Slides — use class-based transitions for smooth animation
     for(let i=1; i<=totalWizardSteps; i++) {
