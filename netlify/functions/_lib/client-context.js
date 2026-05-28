@@ -4626,6 +4626,94 @@ function normalizeDraftReviewPayload(value) {
     };
 }
 
+const LEAD_STORY_REPLY_CONTEXT_RE = /\b(?:replied to their story|story media attached|native story opener|story\/content context|story opener already used)\b/i;
+const LEAD_NEXT_QUESTION_RE = /\?|\b(?:what|how|where|when|why|who|are you|do you|did you|have you|would you|tell me|curious|reckon|ever tried|ever used)\b/i;
+const LEAD_NEXT_INVITE_RE = /\b(?:challenge|30\s*day|30-day|free coaching|send (?:you )?(?:the )?(?:details|link)|want me to send|jump in|join|start|sign up|coaching\.html|future-balance)\b/i;
+const LEAD_INTENTIONAL_CLOSE_RE = /\b(?:bye|byeee+|goodnight|sleep well|have a nice day|have a good day|enjoy(?: your)?(?: day| night| trip| weekend)?|no worries|all good|you're welcome|you are welcome|thanks|thank you|appreciate it|talk soon|catch you)\b/i;
+const LEAD_LOW_SIGNAL_INBOUND_RE = /^\s*(?:yep|yup|yes|yeah|yea|nah|no|ok|okay|haha+|lol|lmao|thanks|thank you|ta|cheers|cool|nice|sweet|true|fair|[^\w]+)\s*$/i;
+const LEAD_SENSITIVE_CONTEXT_RE = /\b(?:grief|passed away|died|death|funeral|trauma|panic|depression|self harm|suicide|injur|pain|pregnan|eating disorder|binge|abuse|animal cruelty|cruelty)\b/i;
+
+function compactReviewWords(text) {
+    return String(text || '').toLowerCase().match(/[a-z0-9]+(?:'[a-z0-9]+)?/g) || [];
+}
+
+function extractJustArrivedReviewMessage(contextBlocks) {
+    const text = String(contextBlocks || '');
+    const match = text.match(/Just-arrived[^\n:]* message from [^:]+:\s*"([\s\S]*?)"(?:\n[A-Z][A-Za-z ]+:|\nPrior unanswered messages:|\nRecent timestamped|\nExact recent|\nMemory\/context|\nStory\/content|\nShannon self-story|$)/i);
+    return match ? String(match[1] || '').trim() : '';
+}
+
+function isClosingOrLowSignalLeadReviewTurn(currentMessage, draftText) {
+    const current = normalizeCoachDraftText(currentMessage || '').replace(/\s+/g, ' ').trim();
+    const draft = normalizeCoachDraftText(draftText || '').replace(/\s+/g, ' ').trim();
+    if (!current) return true;
+    if (LEAD_LOW_SIGNAL_INBOUND_RE.test(current) && compactReviewWords(current).length <= 3) return true;
+    if (LEAD_INTENTIONAL_CLOSE_RE.test(current) || LEAD_INTENTIONAL_CLOSE_RE.test(draft)) return true;
+    if (LEAD_SENSITIVE_CONTEXT_RE.test(current)) return true;
+    if (/^\[[^\]]*(?:sticker|media|photo|video|audio)[^\]]*\]/i.test(current) && compactReviewWords(current).length < 8) return true;
+    return false;
+}
+
+function lineMatchesReviewMessage(line, message) {
+    const needle = normalizeContextText(message).toLowerCase();
+    if (!needle) return false;
+    const haystack = normalizeContextText(line).toLowerCase();
+    return haystack.includes(needle.slice(0, Math.min(needle.length, 90)));
+}
+
+function latestOutboundWasStoryOpener(contextBlocks, currentMessage) {
+    const context = String(contextBlocks || '');
+    const lines = context.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    let currentIndex = lines.length;
+    for (let i = lines.length - 1; i >= 0; i -= 1) {
+        if (lineMatchesReviewMessage(lines[i], currentMessage)) {
+            currentIndex = i;
+            break;
+        }
+    }
+    for (let i = currentIndex - 1; i >= 0; i -= 1) {
+        const line = lines[i];
+        if (/^Shannon\b/i.test(line)) {
+            return LEAD_STORY_REPLY_CONTEXT_RE.test(line);
+        }
+    }
+    return /Story\/content context/i.test(context) && LEAD_STORY_REPLY_CONTEXT_RE.test(context);
+}
+
+function applyLeadStoryReplyQuestionGuard(review, { draftText, contextBlocks, alertType } = {}) {
+    const base = review || normalizeDraftReviewPayload({
+        verdict: 'pass',
+        confidence: 0,
+        summary: 'Draft matches the available context.',
+    });
+    if (!['ig_incoming_dm', 'fb_incoming_dm'].includes(alertType)) return base;
+    if (base.verdict === 'block') return base;
+    const draft = normalizeCoachDraftText(draftText || '').replace(/\s+/g, ' ').trim();
+    if (!draft) return base;
+    if (LEAD_NEXT_QUESTION_RE.test(draft) || LEAD_NEXT_INVITE_RE.test(draft)) return base;
+    if (LEAD_INTENTIONAL_CLOSE_RE.test(draft)) return base;
+
+    const currentMessage = extractJustArrivedReviewMessage(contextBlocks);
+    if (!latestOutboundWasStoryOpener(contextBlocks, currentMessage)) return base;
+    if (isClosingOrLowSignalLeadReviewTurn(currentMessage, draft)) return base;
+    if (compactReviewWords(currentMessage).length < 5 && !/[?!]/.test(currentMessage)) return base;
+
+    const issue = 'Early story-reply lead draft needs one topic-specific follow-up question.';
+    return {
+        ...base,
+        verdict: base.verdict === 'pass' ? 'warn' : base.verdict,
+        confidence: Math.max(Number(base.confidence) || 0, 0.9),
+        summary: 'Lead replied to a story opener, but the draft leaves the hook hanging.',
+        issues: normalizeDraftReviewIssues([...(Array.isArray(base.issues) ? base.issues : []), issue]),
+        suggested_fix: 'Keep the casual reaction, but add one tiny relevant question tied to their exact story-reply topic. Do not pivot to goals, blockers, coaching, or the challenge.',
+        context_loss_suspected: false,
+        notification_required: base.notification_required || false,
+        notification_reason: base.notification_required ? base.notification_reason : 'lead_story_reply_missing_question',
+        reviewer_model: `${base.reviewer_model || DRAFT_REVIEW_MODEL}+story-reply-guard`,
+        deterministic_guard: 'lead_story_reply_missing_question',
+    };
+}
+
 function shouldDraftReviewTriggerContextReview(review) {
     if (!review) return false;
     if (review.context_loss_suspected) return true;
@@ -4873,11 +4961,16 @@ async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contex
         softenMediaOnlyDraftReview(rawReview, existingContextReview),
         contextBlocks
     );
-    const contextReview = mergeDraftReviewContextReview(review, existingContextReview);
-    if (alertId && review) {
-        await updateAlertDraftReview(alertId, review, contextReview);
+    const guardedReview = applyLeadStoryReplyQuestionGuard(review, {
+        draftText,
+        contextBlocks,
+        alertType,
+    });
+    const contextReview = mergeDraftReviewContextReview(guardedReview, existingContextReview);
+    if (alertId && guardedReview) {
+        await updateAlertDraftReview(alertId, guardedReview, contextReview);
     }
-    return { review, contextReview };
+    return { review: guardedReview, contextReview };
 }
 
 function isDraftReviewAutoSendSafe(review) {
@@ -5827,6 +5920,7 @@ module.exports = {
     reviewDraftAndUpdateAlert,
     softenMediaOnlyDraftReview,
     softenRecentInboundBurstDraftReview,
+    applyLeadStoryReplyQuestionGuard,
     mergeDraftReviewContextReview,
     mergeLateDraftReviewData,
     isDraftReviewAutoSendSafe,
