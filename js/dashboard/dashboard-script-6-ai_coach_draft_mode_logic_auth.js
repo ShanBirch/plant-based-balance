@@ -5954,8 +5954,12 @@ function updateCoinBalanceDisplay(balance) {
 function openCoinShop() {
     const modal = document.getElementById('coin-shop-modal');
     if (modal) {
+        const wasHidden = modal.style.display === 'none' || !modal.style.display;
         modal.style.display = 'flex';
         loadCoinBalance();
+        if (wasHidden && typeof pushNavigationState === 'function') {
+            try { pushNavigationState('coin-shop-modal', closeCoinShop); } catch (e) {}
+        }
         // Show "Restore Purchases" button on native platforms (required by Apple)
         const restoreRow = document.getElementById('restore-purchases-row');
         if (restoreRow && window.Platform && window.Platform.isNative()) {
