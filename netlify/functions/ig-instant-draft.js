@@ -629,7 +629,7 @@ async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason =
  */
 const META_AD_FUNNEL_CONTEXT = `
 LEAD ACQUISITION CONTEXT:
-Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, then DMs them first. He initiates the conversation. Some leads also come from Shannon's Meta ads or challenge angles. The DM offer right now is the free 30-day Balance Challenge, starting Monday, 1 June, with free entry for new starters, Shannon check-ins, app structure, and a $1,000 first-place cash prize. Paid coaching is the natural follow-up after the 30 days, not the headline. The words below trigger offer-inquiry mode:
+Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, then DMs them first. He initiates the conversation. Some leads also come from Shannon's Meta ads or challenge angles. The DM offer right now is the free 30-day Balance Challenge, starting Monday, 8 June, with free entry for new starters, Shannon check-ins, app structure, and a $1,000 first-place cash prize. Interested leads should be encouraged to get into Balance and start with coaching immediately so they are set up before the challenge starts. Paid coaching is the natural follow-up after the 30 days, not the headline. The words below trigger offer-inquiry mode:
   1. "What's actually included?"
   2. "Do I need to already be Plant Based?"
   3. "I'm In - save me a spot!"
@@ -872,7 +872,8 @@ function buildOneOnOneCoachingBlock() {
     return `
 
 BALANCE CHALLENGE LINK:
-- The DM offer right now is the free 30-day Balance Challenge, starting Monday, 1 June.
+- The DM offer right now is the free 30-day Balance Challenge, starting Monday, 8 June.
+- Interested leads can get into Balance and start with coaching immediately so they are ready before the challenge cohort starts.
 - Use this exact link when the latest message asks for the challenge link/details, asks how to start, or clearly accepts the offer: ${ONE_ON_ONE_COACHING_URL}
 - Tailor the sentence before the link to their own blocker or goal. Give a compact app explainer first only when they asked for details/the link or clearly accepted: Shannon built Balance this year, the app sets up workouts/meals, their little character levels up, logs earn XP, and the 30 days is about stacking points with Shannon check-ins.
 - Frame it as a free challenge with Shannon check-ins and app structure. Mention XP, leaderboard, or the $1,000 first-place cash prize only when they ask what is included or need the fuller rundown. Paid coaching comes later if the 30 days help.
