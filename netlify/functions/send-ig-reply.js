@@ -631,7 +631,7 @@ function normalizeTimingSuggestion(value) {
     };
 }
 
-const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm'];
+const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm', 'follow_up_review'];
 
 async function clearManyChatHomeNotifications({ alertId, igThreadId, sentAt, source }) {
     if (!igThreadId) return { siblingAlertsCleared: 0 };

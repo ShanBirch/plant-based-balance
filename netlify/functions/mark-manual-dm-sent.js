@@ -16,7 +16,7 @@ const {
 } = require('./_lib/client-context');
 const { sendInstagramSeenReceiptForThread } = require('./_lib/instagram-graph-seen');
 
-const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm'];
+const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm', 'follow_up_review'];
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 
 function json(statusCode, body) {

@@ -8824,6 +8824,7 @@
         const DM_ALERT_TYPES_PG = `(${DM_ALERT_TYPES.join(',')})`;
         const FOLLOW_UP_ALERT_TYPES = ['follow_up_review'];
         const FOLLOW_UP_ALERT_TYPES_PG = `(${FOLLOW_UP_ALERT_TYPES.join(',')})`;
+        const IG_THREAD_ACTION_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm', ...FOLLOW_UP_ALERT_TYPES];
         const ALERT_EXCLUDED_TYPES_PG = `(${DM_ALERT_TYPES.concat(FOLLOW_UP_ALERT_TYPES).join(',')})`;
         // DMs tab state — mirrors Alerts but scoped to message-type alerts
         let currentDmView = 'unread';
@@ -17345,6 +17346,7 @@
                 await window.supabaseClient.from('coach_alerts')
                     .update(update)
                     .eq('id', alertId);
+                await clearAnsweredIgThreadSiblingAlerts(alertItem, actionedAt, 'cleared_by_dashboard_dismiss');
                 clearAlertEditBuffer(alertId);
 
                 const card = document.getElementById(`alert-${alertId}`);
@@ -17363,6 +17365,51 @@
                 updateVoiceMatchRate();
             } catch (e) {
                 console.error('Failed to dismiss alert:', e);
+            }
+        }
+
+        async function clearAnsweredIgThreadSiblingAlerts(alertItem, actionedAt, source) {
+            const threadId = String(alertItem?.data?.ig_thread_id || alertItem?.data?.thread_id || '').trim();
+            if (!threadId || !IG_THREAD_ACTION_ALERT_TYPES.includes(alertItem?.alert_type)) return 0;
+            try {
+                const { data: thread, error: threadError } = await window.supabaseClient
+                    .from('ig_threads')
+                    .select('last_inbound_at,last_outbound_at')
+                    .eq('id', threadId)
+                    .maybeSingle();
+                if (threadError) throw threadError;
+                const inboundAt = thread?.last_inbound_at ? Date.parse(thread.last_inbound_at) : 0;
+                const outboundAt = thread?.last_outbound_at ? Date.parse(thread.last_outbound_at) : 0;
+                if (!outboundAt || (inboundAt && inboundAt > outboundAt)) return 0;
+
+                const { data: siblings, error: siblingError } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .select('id,data')
+                    .in('status', ['pending', 'scheduled'])
+                    .in('alert_type', IG_THREAD_ACTION_ALERT_TYPES)
+                    .in('data->>ig_thread_id', [threadId])
+                    .neq('id', alertItem.id)
+                    .limit(25);
+                if (siblingError) throw siblingError;
+                if (!siblings?.length) return 0;
+
+                await Promise.all(siblings.map(sibling => {
+                    const mergedData = Object.assign({}, sibling.data || {}, {
+                        cancel_reason: source,
+                        cleared_by_answered_thread_at: actionedAt,
+                        cleared_by_primary_alert_id: alertItem.id,
+                    });
+                    return window.supabaseClient
+                        .from('coach_alerts')
+                        .update({ status: 'canceled', actioned_at: actionedAt, data: mergedData })
+                        .eq('id', sibling.id);
+                }));
+                alertsCache = alertsCache.filter(a => !siblings.some(s => s.id === a.id));
+                refreshFeedCounts();
+                return siblings.length;
+            } catch (e) {
+                console.warn('[alerts] answered IG thread sibling cleanup failed:', e?.message || e);
+                return 0;
             }
         }
 

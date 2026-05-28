@@ -32,7 +32,7 @@ const { normalizeCoachDraftText } = require('./_lib/client-context');
 const MIN_DELAY_MS = 30 * 1000;          // 30 seconds
 const MAX_DELAY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const IN_APP_DM_ALERT_TYPES = ['incoming_dm', 'unread_message'];
-const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm'];
+const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm', 'follow_up_review'];
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const HUMAN_AGENT_MANUAL_ONLY_MESSAGE = 'Meta Human Agent 7-day replies must be sent by a human agent, so Send Later is disabled for this draft.';
 
