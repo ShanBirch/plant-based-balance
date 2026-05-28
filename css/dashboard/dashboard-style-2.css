@@ -24,7 +24,7 @@
 
 .wizard-chat-intake {
     display: grid;
-    grid-template-rows: auto minmax(128px, 0.75fr) minmax(190px, 1.25fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
     gap: 12px;
     height: 100%;
     min-height: 0;
@@ -85,10 +85,13 @@
     transition: width 0.25s ease;
 }
 .wizard-chat-messages {
+    grid-row: 3;
+    align-self: end;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    height: 100%;
+    height: auto;
+    max-height: clamp(76px, 26dvh, 190px);
     min-height: 0;
     overflow-y: auto;
     padding: 18px 2px 8px;
@@ -152,6 +155,7 @@
     40% { opacity: 1; transform: translateY(-3px); }
 }
 .wizard-chat-choices {
+    grid-row: 2;
     display: flex;
     flex-wrap: wrap;
     align-content: flex-start;
@@ -191,6 +195,7 @@
     border-color: transparent;
 }
 .wizard-chat-input-row {
+    grid-row: 4;
     display: flex;
     gap: 8px;
     align-items: center;
@@ -226,6 +231,23 @@
     color: rgba(255,255,255,0.62);
     font-size: 0.75rem;
     line-height: 1.35;
+}
+
+#onboarding-wizard.wizard-chat-no-textbox .wizard-chat-messages {
+    grid-row: 2;
+    align-self: end;
+}
+
+#onboarding-wizard.wizard-chat-no-textbox .wizard-chat-choices {
+    grid-row: 3;
+    height: auto;
+    overflow: visible;
+    padding-bottom: 0;
+    box-shadow: none;
+}
+
+#onboarding-wizard.wizard-chat-no-textbox .wizard-chat-input-row {
+    display: none !important;
 }
 
 html.pbb-onboarding-locked,
@@ -291,9 +313,13 @@ body:has(#onboarding-wizard.active) {
 }
 
 #onboarding-wizard.wizard-chat-keyboard .wizard-chat-intake {
-    grid-template-rows: auto minmax(92px, 0.65fr) minmax(132px, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
     gap: 8px;
     padding: 10px;
+}
+
+#onboarding-wizard.wizard-chat-keyboard .wizard-chat-messages {
+    max-height: clamp(64px, 20dvh, 132px);
 }
 
 #onboarding-wizard.wizard-chat-keyboard .wizard-chat-bubble {

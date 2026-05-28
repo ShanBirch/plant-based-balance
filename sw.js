@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v184'; // v184: remove onboarding 30-day win free-text slide; v183: top-readable onboarding chat prompt row
+const CACHE_NAME = 'pbb-app-v185'; // v185: onboarding chat intro and lower prompt layout; v184: remove onboarding 30-day win free-text slide
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',

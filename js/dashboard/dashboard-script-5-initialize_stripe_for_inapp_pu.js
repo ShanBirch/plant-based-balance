@@ -6114,6 +6114,14 @@ function parseWizardMeasurementInput(step, raw) {
 
 const WIZARD_CHAT_STEPS = [
     {
+        key: 'goal_setup_ready',
+        type: 'start',
+        question: 'Let\'s set up your goals. Ready to go?',
+        options: [
+            { value: 'lets_go', label: 'Let\'s go' }
+        ]
+    },
+    {
         key: 'gender',
         type: 'choice',
         question: 'First up, should I tune this setup for her or him?',
@@ -6521,6 +6529,13 @@ function blurWizardChatInput() {
     if (input && document.activeElement === input) input.blur();
 }
 
+function setWizardChatLayoutMode({ noTextbox = false, intro = false } = {}) {
+    const wizard = document.getElementById('onboarding-wizard');
+    if (!wizard) return;
+    wizard.classList.toggle('wizard-chat-no-textbox', !!noTextbox);
+    wizard.classList.toggle('wizard-chat-intro', !!intro);
+}
+
 function bindWizardChatControlEvents() {
     if (wizardChatControlsBound) return;
     const choicesEl = document.getElementById('wizard-chat-choices');
@@ -6539,7 +6554,8 @@ function bindWizardChatControlEvents() {
 
         const action = button.dataset.wizardChatAction;
         const value = button.dataset.value || '';
-        if (action === 'choice') selectWizardChatChoice(value);
+        if (action === 'start') selectWizardChatStart(value);
+        else if (action === 'choice') selectWizardChatChoice(value);
         else if (action === 'multi') toggleWizardChatMulti(value, button);
         else if (action === 'multi-submit') submitWizardChatMultiAnswer();
         else if (action === 'continue') wizardNext();
@@ -6590,12 +6606,36 @@ function syncWizardChatBackControls() {
     }
 }
 
+function isWizardChatProgressStep(step) {
+    return step && step.type !== 'start';
+}
+
+function getWizardChatProgressTotal() {
+    return WIZARD_CHAT_STEPS.filter(isWizardChatProgressStep).length;
+}
+
+function getWizardChatProgressCurrent() {
+    let current = 0;
+    for (let i = 0; i <= wizardChatStepIndex && i < WIZARD_CHAT_STEPS.length; i += 1) {
+        if (isWizardChatProgressStep(WIZARD_CHAT_STEPS[i])) current += 1;
+    }
+    return Math.max(1, current);
+}
+
 function renderWizardChatProgress() {
     const label = document.getElementById('wizard-chat-progress-label');
     const fill = document.getElementById('wizard-chat-progress-fill');
-    const current = Math.min(WIZARD_CHAT_STEPS.length, wizardChatStepIndex + (wizardChatComplete ? 0 : 1));
-    const pct = wizardChatComplete ? 100 : Math.max(4, Math.round((wizardChatStepIndex / WIZARD_CHAT_STEPS.length) * 100));
-    if (label) label.textContent = wizardChatComplete ? 'Ready for training setup' : `Question ${current} of ${WIZARD_CHAT_STEPS.length}`;
+    const step = getWizardChatStep();
+    const total = getWizardChatProgressTotal();
+    const current = getWizardChatProgressCurrent();
+    const pct = wizardChatComplete
+        ? 100
+        : (step?.type === 'start' ? 4 : Math.max(4, Math.round(((current - 1) / total) * 100)));
+    if (label) {
+        if (wizardChatComplete) label.textContent = 'Ready for training setup';
+        else if (step?.type === 'start') label.textContent = 'Goal setup';
+        else label.textContent = `Question ${current} of ${total}`;
+    }
     if (fill) fill.style.width = `${pct}%`;
     syncWizardChatBackControls();
 }
@@ -6621,17 +6661,32 @@ function renderWizardChatControls() {
     };
 
     if (!wizardChatComplete && wizardChatMessages.some(message => message.typing)) {
+        setWizardChatLayoutMode({ noTextbox: true, intro: false });
         inputRow.style.display = 'none';
         return;
     }
 
     if (wizardChatComplete) {
+        setWizardChatLayoutMode({ noTextbox: true, intro: false });
         inputRow.style.display = 'none';
         choicesEl.innerHTML = '<button type="button" class="wizard-chat-choice selected" data-wizard-chat-action="continue">Continue to training setup</button>';
         return;
     }
 
     if (!step) return;
+
+    if (step.type === 'start') {
+        setWizardChatLayoutMode({ noTextbox: true, intro: true });
+        inputRow.style.display = 'none';
+        input.value = '';
+        choicesEl.innerHTML = (step.options || []).map(option => (
+            `<button type="button" class="wizard-chat-choice selected" data-wizard-chat-action="start" data-value="${escapeWizardHtml(option.value)}">${escapeWizardHtml(option.label)}</button>`
+        )).join('');
+        scrollWizardChatToPromptStart();
+        return;
+    }
+
+    setWizardChatLayoutMode({ noTextbox: false, intro: false });
 
     if (step.type === 'choice' || step.type === 'multi') {
         inputRow.style.display = 'flex';
@@ -6761,6 +6816,12 @@ function selectWizardChatChoice(value) {
     const step = getWizardChatStep();
     if (!step || step.type !== 'choice') return;
     advanceWizardChat(step, value);
+}
+
+function selectWizardChatStart(value) {
+    const step = getWizardChatStep();
+    if (!step || step.type !== 'start') return;
+    advanceWizardChat(step, value || 'lets_go');
 }
 
 function toggleWizardChatMulti(value, button = null) {
