@@ -9938,6 +9938,7 @@
             const view = normalizeDmAudience(audience);
             return (rows || []).filter(alert => {
                 if (isCocosDmAlert(alert)) return false;
+                if (needsYouHasOperatorWork(alert, clientIds)) return false;
                 const isClient = alertBelongsToDmClients(alert, clientIds);
                 return view === 'clients' ? isClient : !isClient;
             });
