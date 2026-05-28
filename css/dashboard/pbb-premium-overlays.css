@@ -949,22 +949,32 @@ select:focus,
 }
 
 #guided-tour-bubble {
-    background: linear-gradient(180deg, #ffffff, var(--pbb-luxe-cream)) !important;
-    border: 1px solid rgba(49, 31, 74, 0.14) !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    border: 2px solid rgba(17, 24, 39, 0.12) !important;
     border-radius: 22px !important;
     box-shadow: var(--pbb-luxe-shadow) !important;
 }
 
 #guided-tour-bubble .tour-counter {
-    color: var(--pbb-luxe-gold) !important;
+    color: #4b5563 !important;
+    font-weight: 800 !important;
 }
 
 #guided-tour-bubble .tour-title {
-    color: var(--pbb-luxe-plum) !important;
+    color: #111827 !important;
+    font-weight: 800 !important;
 }
 
 #guided-tour-bubble .tour-body {
-    color: var(--pbb-luxe-muted) !important;
+    color: #111827 !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+}
+
+#guided-tour-bubble .tour-skip {
+    color: #374151 !important;
+    font-weight: 800 !important;
 }
 
 #guided-tour-bubble .tour-back {

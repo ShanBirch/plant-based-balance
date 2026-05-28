@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v187'; // v187: quiz goal target and onboarding training chip readability; v186: keep onboarding select bubbles below chat
+const CACHE_NAME = 'pbb-app-v188'; // v188: harden app tour contrast; v187: quiz goal target and onboarding training chip readability
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',
