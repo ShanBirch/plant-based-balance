@@ -8859,8 +8859,9 @@
         let currentNeedsYouView = 'all';
         let needsYouCounts = { all: 0 };
         const NEEDS_YOU_TABS = ['all'];
+        const NEEDS_YOU_ALERT_TYPES = [...new Set([...DM_ALERT_TYPES, ...FOLLOW_UP_ALERT_TYPES])];
         const NEEDS_YOU_EMPTY_STATES = {
-            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'No Codex-checked client DM drafts are waiting for approval right now.' },
+            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'No Codex-checked client DM drafts or onboarding handoffs are waiting for approval right now.' },
         };
         let currentChallengeCheckinView = 'pending';
         const CHALLENGE_CHECKIN_TABS = ['pending', 'manual', 'later', 'sent_today', 'all'];
@@ -10278,17 +10279,50 @@
             );
             const reviewer = codexReview.reviewed_by || codexReview.reviewer_model || codexReview.source || draftReview.reviewed_by || draftReview.reviewer_model || '';
             const needsReview = verdict === 'warn' || draftReview.notification_required === true || draftReview.safe_to_send === false;
+            const onboardingHandoff = isLeadOnboardingHandoff(alert);
             return {
-                ready: hasCodexReviewTag && needsYouHasSuggestedDraft(alert),
-                needsReview,
+                ready: onboardingHandoff || (hasCodexReviewTag && needsYouHasSuggestedDraft(alert)),
+                needsReview: onboardingHandoff || needsReview,
                 reviewer,
             };
         }
 
+        function isLeadOnboardingHandoff(alert) {
+            const data = alert?.data || {};
+            const review = data.codex_review || data.codexReview || {};
+            const reviewDecision = review && typeof review === 'object' ? review.decision : '';
+            const decisionText = [
+                data.decision,
+                reviewDecision,
+                data.onboarding_phase,
+            ].map(v => String(v || '').toLowerCase()).join(' ');
+            const qualifierStage = String(data.qualifier?.stage || '').toLowerCase();
+            const warning = data.challenge_offer_warning || data.challengeOfferWarning || {};
+            const challengeLinkNeedsApproval = !!(
+                warning?.required
+                && ['pitched', 'won'].includes(qualifierStage)
+                && (DM_ALERT_TYPES.includes(alert?.alert_type) || FOLLOW_UP_ALERT_TYPES.includes(alert?.alert_type))
+                && !!(data.ig_thread_id || data.subscriber_id || data.ig_username)
+            );
+            return !!(
+                data.lead_onboarding_handoff === true
+                || String(data.lead_onboarding_handoff || '').toLowerCase() === 'true'
+                || data.needs_you_required === true
+                || String(data.needs_you_required || '').toLowerCase() === 'true'
+                || decisionText.includes('onboarding_handoff')
+                || decisionText.includes('onboarding_link_request_handoff')
+                || decisionText.includes('accepted_app_bridge')
+                || decisionText.includes('manual_onboarding')
+                || challengeLinkNeedsApproval
+            );
+        }
+
         function needsYouHasOperatorWork(alert, activeClientIds = dmClientIdsCache.ids) {
             if (!alert || alert.status !== 'pending') return false;
-            if (!DM_ALERT_TYPES.includes(alert.alert_type)) return false;
+            if (!NEEDS_YOU_ALERT_TYPES.includes(alert.alert_type)) return false;
             if (isCocosDmAlert(alert)) return false;
+            if (isLeadOnboardingHandoff(alert)) return true;
+            if (!DM_ALERT_TYPES.includes(alert.alert_type)) return false;
             if (!getAlertClientIdentity(alert)) return false;
             if (!alertBelongsToDmClients(alert, activeClientIds)) return false;
             if (!needsYouHasSuggestedDraft(alert)) return false;
@@ -10304,7 +10338,14 @@
         }
 
         function collapseNeedsYouRows(rows = []) {
-            return collapsePendingByUser(rows.filter(a => a.status === 'pending' && DM_ALERT_TYPES.includes(a.alert_type)));
+            const dmRows = [];
+            const otherRows = [];
+            rows.filter(a => a.status === 'pending').forEach(row => {
+                if (DM_ALERT_TYPES.includes(row.alert_type)) dmRows.push(row);
+                else otherRows.push(row);
+            });
+            return [...collapsePendingByUser(dmRows), ...collapsePendingByUser(otherRows)]
+                .sort((a, b) => Date.parse(b.created_at || '') - Date.parse(a.created_at || ''));
         }
 
         function renderNeedsYouCounts(counts = needsYouCounts) {
@@ -10321,7 +10362,7 @@
                     .from('coach_alerts')
                     .select(countFields)
                     .eq('status', 'pending')
-                    .in('alert_type', DM_ALERT_TYPES)
+                    .in('alert_type', NEEDS_YOU_ALERT_TYPES)
                     .order('created_at', { ascending: false })
                     .limit(500);
                 if (error) throw error;
@@ -10342,12 +10383,12 @@
                     .from('coach_alerts')
                     .select('*')
                     .eq('status', 'pending')
-                    .in('alert_type', DM_ALERT_TYPES)
+                    .in('alert_type', NEEDS_YOU_ALERT_TYPES)
                     .order('created_at', { ascending: false })
                     .limit(300);
                 if (error) throw error;
                 const rows = uniqueAlertRows(data || []);
-                const baseRows = collapseNeedsYouRows(dedupePendingAlerts(rows));
+                const baseRows = collapseNeedsYouRows(rows);
                 alertsCache = baseRows.filter(a => needsYouMatchesView(a, currentNeedsYouView, activeClientIds));
                 renderNeedsYouCounts(summarizeNeedsYouCounts(baseRows, activeClientIds));
                 renderAlertFeed(alertsCache, {
@@ -10383,6 +10424,10 @@
 
         function routePendingAlertToInbox(alert) {
             const isDmAlert = DM_ALERT_TYPES.includes(alert?.alert_type);
+            if (isLeadOnboardingHandoff(alert)) {
+                openNeedsYouForAlert(alert, 'all');
+                return;
+            }
             if (isDmAlert) {
                 if (isCocosDmAlert(alert)) {
                     activateCocosDmView('unread');
