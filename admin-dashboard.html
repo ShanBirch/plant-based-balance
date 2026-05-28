@@ -8625,6 +8625,32 @@
 
             // Onboarding facts (from the quiz) — only if we have anything useful
             const factsRows = [];
+            const goalIntentLabels = Array.isArray(pd.goal_intent_labels)
+                ? pd.goal_intent_labels
+                : Array.isArray(pd.onboarding_goal_intents)
+                    ? pd.onboarding_goal_intents.map(item => item?.label || item).filter(Boolean)
+                    : [];
+            const weeklyGoalFocusLabels = Array.isArray(pd.weekly_goal_focus_labels)
+                ? pd.weekly_goal_focus_labels
+                : Array.isArray(pd.onboarding_weekly_goal_focus)
+                    ? pd.onboarding_weekly_goal_focus.map(item => item?.label || item).filter(Boolean)
+                    : [];
+            const goalCatcher = (pd.goal_catcher && typeof pd.goal_catcher === 'object') ? pd.goal_catcher : {};
+            const addGoalFact = (label, value) => {
+                const clean = String(value || '').trim();
+                if (clean) factsRows.push([label, clean]);
+            };
+            if (goalIntentLabels.length) factsRows.push(['Goal themes', goalIntentLabels.slice(0, 6).join(', ')]);
+            if (weeklyGoalFocusLabels.length) factsRows.push(['Weekly goal targets', weeklyGoalFocusLabels.slice(0, 6).join(', ')]);
+            const onboardingFreeform = (pd.onboarding_chat_freeform && typeof pd.onboarding_chat_freeform === 'object') ? pd.onboarding_chat_freeform : {};
+            Object.entries(onboardingFreeform).slice(0, 6).forEach(([key, value]) => {
+                addGoalFact(key.replace(/_/g, ' '), value);
+            });
+            addGoalFact('30-day win', goalCatcher.thirty_day_win || pd.thirty_day_win);
+            addGoalFact('Main blocker', goalCatcher.main_blocker || pd.main_blocker);
+            addGoalFact('Why now', goalCatcher.why_now || pd.why_now);
+            addGoalFact('6-month goal', goalCatcher.long_term_goal || pd.long_term_goal);
+            addGoalFact('Independence goal', goalCatcher.independence_goal || pd.independence_goal);
             if (pd.training_frequency) factsRows.push(['Training frequency', `${pd.training_frequency}x/week`]);
             if (pd.equipment_access) factsRows.push(['Equipment', pd.equipment_access]);
             if (pd.dietary_preference) factsRows.push(['Diet', pd.dietary_preference]);
@@ -8635,9 +8661,9 @@
             if (pd.cycle_sync_preference === 'yes') factsRows.push(['Cycle sync', 'Yes' + (pd.last_period_start ? ` · last ${pd.last_period_start}` : '')]);
             if (factsRows.length) {
                 const list = factsRows.map(([k, v]) => `
-                    <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #f1f5f9; font-size:0.8rem;">
-                        <span style="color:#64748b;">${k}</span>
-                        <span style="color:#334155; font-weight:500;">${escapeHtml(String(v))}</span>
+                    <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; padding:4px 0; border-bottom:1px solid #f1f5f9; font-size:0.8rem;">
+                        <span style="color:#64748b; flex:0 0 116px;">${k}</span>
+                        <span style="color:#334155; font-weight:500; text-align:right; min-width:0;">${escapeHtml(String(v))}</span>
                     </div>`).join('');
                 sections.push(`
                     <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:12px;">

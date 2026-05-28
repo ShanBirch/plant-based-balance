@@ -104,6 +104,33 @@
     });
   });
 
+  const ONBOARDING_INTENT_TO_WEEKLY_GOALS = {
+    lose_weight: ['calorie_range_days', 'protein_days', 'weigh_in_days'],
+    consistent_workouts: ['complete_workouts', 'message_coach', 'meal_log_days'],
+    build_strength: ['complete_workouts', 'protein_days', 'calorie_range_days'],
+    improve_nutrition: ['meal_log_days', 'calorie_range_days', 'protein_days'],
+    hit_protein: ['protein_days', 'meal_log_days', 'complete_workouts'],
+    learn_fitness: ['daily_quiz_days', 'questions_answered', 'perfect_lessons'],
+    more_energy: ['steps_10k_days', 'sleep_7h_nights', 'water_goal_days'],
+    build_community: ['message_coach', 'share_workout_feed', 'complete_workouts']
+  };
+
+  const ONBOARDING_WEEKLY_FOCUS_TO_WEEKLY_GOALS = {
+    complete_workouts: ['complete_workouts'],
+    protein_days: ['protein_days'],
+    calorie_range_days: ['calorie_range_days'],
+    meal_log_days: ['meal_log_days'],
+    weigh_in_days: ['weigh_in_days'],
+    steps_10k_days: ['steps_10k_days'],
+    sleep_7h_nights: ['sleep_7h_nights'],
+    water_goal_days: ['water_goal_days'],
+    daily_quiz_days: ['daily_quiz_days'],
+    questions_answered: ['questions_answered'],
+    perfect_lessons: ['perfect_lessons'],
+    message_coach: ['message_coach'],
+    share_workout_feed: ['share_workout_feed']
+  };
+
   let state = {
     week: null,
     row: null,
@@ -258,6 +285,73 @@
       result.push(goal);
     });
     return result;
+  }
+
+  function readJsonStorage(storage, key) {
+    try {
+      if (!storage || !key) return null;
+      const raw = storage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function extractStoredIds(value) {
+    if (!Array.isArray(value)) return [];
+    return value.map(item => {
+      if (typeof item === 'string') return item;
+      if (item && typeof item === 'object') return item.id || item.value || null;
+      return null;
+    }).filter(Boolean);
+  }
+
+  function readStoredProfile() {
+    try {
+      const raw = sessionStorage.getItem('userProfile');
+      return raw ? JSON.parse(raw) : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function getOnboardingSuggestedGoalIds() {
+    const profile = readStoredProfile();
+    const ids = [];
+    const seen = new Set();
+    const add = goalId => {
+      if (!GOAL_BY_ID[goalId] || seen.has(goalId) || ids.length >= MAX_GOALS) return;
+      seen.add(goalId);
+      ids.push(goalId);
+    };
+    const addMapped = (sourceId, map) => {
+      (map[sourceId] || []).forEach(add);
+    };
+
+    [
+      readJsonStorage(localStorage, 'onboardingWeeklyGoalFocusIds'),
+      readJsonStorage(localStorage, 'onboardingWeeklyGoalFocus'),
+      profile.weekly_goal_focus,
+      profile.onboarding_weekly_goal_focus
+    ].flatMap(extractStoredIds).forEach(goalId => {
+      if (GOAL_BY_ID[goalId]) add(goalId);
+      else addMapped(goalId, ONBOARDING_WEEKLY_FOCUS_TO_WEEKLY_GOALS);
+    });
+
+    [
+      readJsonStorage(localStorage, 'onboardingGoalIntentIds'),
+      readJsonStorage(localStorage, 'onboardingGoalIntents'),
+      profile.goal_intents,
+      profile.onboarding_goal_intents
+    ].flatMap(extractStoredIds).forEach(intentId => {
+      addMapped(intentId, ONBOARDING_INTENT_TO_WEEKLY_GOALS);
+    });
+
+    return ids;
+  }
+
+  function getOnboardingSuggestedGoals() {
+    return normalizeSelected(getOnboardingSuggestedGoalIds().map(id => GOAL_BY_ID[id]));
   }
 
   async function fetchWeeklyRow(userId, weekStart) {
@@ -920,6 +1014,7 @@
     const modal = document.getElementById('weekly-goals-modal');
     if (!modal) return;
     const selectedIds = new Set(state.draftSelected.map(goal => goal.id));
+    const suggestedFromSetup = !state.selected.length && state.draftSelected.length > 0;
     const groupHtml = GOAL_CATALOG.map(group => {
       const metaStyle = styleVarsForMeta(group);
       const goals = group.goals.map(goal => {
@@ -980,7 +1075,7 @@
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;">
               <div>
                 <div style="font-weight:900;color:#0f172a;font-size:.88rem;">Selected</div>
-                <div style="font-size:.68rem;color:#64748b;font-weight:800;margin-top:2px;">Set the amount that feels right for your week.</div>
+                <div style="font-size:.68rem;color:#64748b;font-weight:800;margin-top:2px;">${suggestedFromSetup ? 'Suggested from setup. Adjust before saving.' : 'Set the amount that feels right for your week.'}</div>
               </div>
               <div style="font-size:.75rem;font-weight:900;color:${state.draftSelected.length === MAX_GOALS ? '#047857' : '#64748b'};">${state.draftSelected.length} / ${MAX_GOALS}</div>
             </div>
@@ -997,7 +1092,8 @@
   }
 
   window.openWeeklyGoalsModal = function() {
-    state.draftSelected = state.selected.map(goal => Object.assign({}, goal));
+    const setupSuggestions = !state.selected.length ? getOnboardingSuggestedGoals() : [];
+    state.draftSelected = (state.selected.length ? state.selected : setupSuggestions).map(goal => Object.assign({}, goal));
     renderModal();
     const modal = document.getElementById('weekly-goals-modal');
     if (modal) modal.style.display = 'flex';

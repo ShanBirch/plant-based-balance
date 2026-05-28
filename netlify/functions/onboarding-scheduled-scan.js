@@ -174,6 +174,32 @@ async function loadOnboardingFactsCompact(clientId) {
         const uf = await supabaseQuery(`user_facts?select=personal_details&user_id=eq.${clientId}&limit=1`);
         const pd = uf[0]?.personal_details || {};
         const out = [];
+        const goalIntentLabels = Array.isArray(pd.goal_intent_labels)
+            ? pd.goal_intent_labels
+            : Array.isArray(pd.onboarding_goal_intents)
+                ? pd.onboarding_goal_intents.map(item => item?.label || item).filter(Boolean)
+                : [];
+        if (goalIntentLabels.length) out.push(`goal themes: ${goalIntentLabels.slice(0, 6).join(', ')}`);
+        const weeklyGoalFocusLabels = Array.isArray(pd.weekly_goal_focus_labels)
+            ? pd.weekly_goal_focus_labels
+            : Array.isArray(pd.onboarding_weekly_goal_focus)
+                ? pd.onboarding_weekly_goal_focus.map(item => item?.label || item).filter(Boolean)
+                : [];
+        if (weeklyGoalFocusLabels.length) out.push(`weekly goal targets: ${weeklyGoalFocusLabels.slice(0, 6).join(', ')}`);
+        const onboardingFreeform = (pd.onboarding_chat_freeform && typeof pd.onboarding_chat_freeform === 'object')
+            ? pd.onboarding_chat_freeform
+            : {};
+        const onboardingNotes = Object.entries(onboardingFreeform)
+            .filter(([, value]) => String(value || '').trim())
+            .slice(0, 4)
+            .map(([key, value]) => `${key.replace(/_/g, ' ')}: ${value}`);
+        if (onboardingNotes.length) out.push(`onboarding notes: ${onboardingNotes.join('; ')}`);
+        const goalCatcher = (pd.goal_catcher && typeof pd.goal_catcher === 'object') ? pd.goal_catcher : {};
+        if (goalCatcher.thirty_day_win || pd.thirty_day_win) out.push(`30-day win: ${goalCatcher.thirty_day_win || pd.thirty_day_win}`);
+        if (goalCatcher.main_blocker || pd.main_blocker) out.push(`blocker: ${goalCatcher.main_blocker || pd.main_blocker}`);
+        if (goalCatcher.why_now || pd.why_now) out.push(`why now: ${goalCatcher.why_now || pd.why_now}`);
+        if (goalCatcher.long_term_goal || pd.long_term_goal) out.push(`6-month goal: ${goalCatcher.long_term_goal || pd.long_term_goal}`);
+        if (goalCatcher.independence_goal || pd.independence_goal) out.push(`independence goal: ${goalCatcher.independence_goal || pd.independence_goal}`);
         if (pd.weight && pd.goal_weight) out.push(`${pd.weight}kg → goal ${pd.goal_weight}kg`);
         if (pd.training_frequency) out.push(`${pd.training_frequency}x/wk training`);
         if (pd.equipment_access) out.push(`equipment: ${pd.equipment_access}`);

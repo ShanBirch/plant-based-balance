@@ -5867,8 +5867,15 @@ function updatePushNotifSettingsUI() {
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
 const totalWizardSteps = 19;
-const skippedWizardSlides = [8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19];
+const skippedWizardSlides = [2, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19];
 const finalWizardStep = 17;
+
+function setOnboardingScrollLock(locked) {
+    try {
+        document.documentElement.classList.toggle('pbb-onboarding-locked', !!locked);
+        document.body.classList.toggle('pbb-onboarding-locked', !!locked);
+    } catch (e) {}
+}
 
 function normalizeWizardStep() {
     while (skippedWizardSlides.includes(currentWizardStep) && currentWizardStep < finalWizardStep) {
@@ -5913,6 +5920,769 @@ let wizardCuisinePreferences = new Set();
 let wizardFavoriteFoods = new Set();
 let wizardFoodAllergies = new Set();
 let wizardDietaryRequirements = new Set();
+
+const WIZARD_GOAL_INTENT_LABELS = {
+    lose_weight: 'Lose fat',
+    learn_fitness: 'Learn everything health and fitness',
+    improve_nutrition: 'Fix food and tracking',
+    consistent_workouts: 'Build consistency',
+    build_strength: 'Build muscle and shape',
+    hit_protein: 'Hit protein consistently',
+    more_energy: 'Energy and longevity',
+    build_community: 'Build a community'
+};
+
+const WIZARD_WEEKLY_GOAL_FOCUS_LABELS = {
+    complete_workouts: 'Train 3x/week',
+    protein_days: 'Hit protein 5 days/week',
+    calorie_range_days: 'Hit calorie target 5 days/week',
+    meal_log_days: 'Log meals 5 days/week',
+    weigh_in_days: 'Weigh in 3-5 days/week',
+    steps_10k_days: 'Reach 10k steps 4 days/week',
+    sleep_7h_nights: 'Sleep 7h 4 nights/week',
+    water_goal_days: 'Hit water goal 5 days/week',
+    daily_quiz_days: 'Complete 3 Health IQ quizzes/week',
+    questions_answered: 'Answer 20 Health IQ questions/week',
+    perfect_lessons: 'Score 100% on 1 lesson/week',
+    message_coach: 'Message Shannon 1x/week',
+    share_workout_feed: 'Share to Feed 1x/week'
+};
+
+const WIZARD_INTENT_WEEKLY_TARGETS = {
+    lose_weight: ['calorie_range_days', 'protein_days', 'complete_workouts'],
+    build_strength: ['complete_workouts', 'protein_days', 'calorie_range_days'],
+    consistent_workouts: ['complete_workouts', 'message_coach', 'meal_log_days'],
+    improve_nutrition: ['meal_log_days', 'calorie_range_days', 'protein_days'],
+    hit_protein: ['protein_days', 'meal_log_days', 'complete_workouts'],
+    learn_fitness: ['daily_quiz_days', 'questions_answered', 'perfect_lessons'],
+    more_energy: ['steps_10k_days', 'sleep_7h_nights', 'water_goal_days'],
+    build_community: ['message_coach', 'share_workout_feed', 'complete_workouts']
+};
+
+const WIZARD_CHAT_STEPS = [
+    {
+        key: 'gender',
+        type: 'choice',
+        question: 'First up, should I tune this setup for her or him?',
+        options: [
+            { value: 'female', label: 'For her' },
+            { value: 'male', label: 'For him' }
+        ]
+    },
+    { key: 'name', type: 'text', question: 'What should Shannon call you?', placeholder: 'Your first name', minLength: 2 },
+    { key: 'age', type: 'number', question: 'How old are you?', placeholder: 'e.g. 34', min: 18, max: 100, suffix: 'years' },
+    { key: 'height', type: 'number', question: 'What is your height in cm?', placeholder: 'e.g. 170', min: 100, max: 250, suffix: 'cm' },
+    { key: 'weight', type: 'number', question: 'What is your current weight in kg?', placeholder: 'e.g. 72', min: 30, max: 300, suffix: 'kg' },
+    {
+        key: 'goal_intents',
+        type: 'multi',
+        question: 'For the first 30 days, what are we mainly working toward?',
+        prelude: 'Pick one if you want the sharpest plan. You can pick a few, but the more you choose, the less specific the first plan becomes.',
+        required: true,
+        maxSelect: 3,
+        submitLabel: 'Lock direction',
+        textPlaceholder: 'Or type the main direction...',
+        options: [
+            { value: 'lose_weight', label: WIZARD_GOAL_INTENT_LABELS.lose_weight },
+            { value: 'build_strength', label: WIZARD_GOAL_INTENT_LABELS.build_strength },
+            { value: 'consistent_workouts', label: WIZARD_GOAL_INTENT_LABELS.consistent_workouts },
+            { value: 'improve_nutrition', label: WIZARD_GOAL_INTENT_LABELS.improve_nutrition },
+            { value: 'learn_fitness', label: WIZARD_GOAL_INTENT_LABELS.learn_fitness },
+            { value: 'more_energy', label: WIZARD_GOAL_INTENT_LABELS.more_energy },
+            { value: 'build_community', label: WIZARD_GOAL_INTENT_LABELS.build_community }
+        ]
+    },
+    {
+        key: 'weekly_goal_focus',
+        type: 'multi',
+        prelude: getWizardGoalRecipeText,
+        question: 'I have pre-picked the usual weekly anchors for that direction. Keep or change the 3 targets you are willing to hit for 30 days.',
+        required: true,
+        requiresStructured: true,
+        maxSelect: 3,
+        submitLabel: 'Lock my 3 targets',
+        textPlaceholder: 'Or type the weekly anchor...',
+        options: [
+            { value: 'complete_workouts', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.complete_workouts },
+            { value: 'protein_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.protein_days },
+            { value: 'calorie_range_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.calorie_range_days },
+            { value: 'meal_log_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.meal_log_days },
+            { value: 'weigh_in_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.weigh_in_days },
+            { value: 'steps_10k_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.steps_10k_days },
+            { value: 'sleep_7h_nights', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.sleep_7h_nights },
+            { value: 'water_goal_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.water_goal_days },
+            { value: 'daily_quiz_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.daily_quiz_days },
+            { value: 'questions_answered', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.questions_answered },
+            { value: 'perfect_lessons', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.perfect_lessons },
+            { value: 'message_coach', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.message_coach },
+            { value: 'share_workout_feed', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.share_workout_feed }
+        ]
+    },
+    {
+        key: 'goalBodyType',
+        type: 'choice',
+        question: 'What is the main direction for this first plan?',
+        options: [
+            { value: 'Flat', label: 'Lose fat / get lean' },
+            { value: 'Athletic', label: 'Build healthy habits' },
+            { value: 'Body Builder', label: 'Build muscle / strength' }
+        ]
+    },
+    { key: 'goal_weight', type: 'number', question: 'If weight is part of the plan, what number should Shannon keep in mind? If not, use your current weight.', placeholder: 'e.g. 67', min: 30, max: 300, suffix: 'kg' },
+    { key: 'thirty_day_win', type: 'text', question: 'Put that 30-day win in your own words.', placeholder: 'e.g. train 3x/week for 30 days and log meals most days', minLength: 3 },
+    { key: 'main_blocker', type: 'text', question: 'What usually gets in the way when you try to lock this in?', placeholder: 'time, soreness, food, motivation, stress...', minLength: 3 },
+    { key: 'why_now', type: 'text', question: 'What made you want to sort this out now?', placeholder: 'Type what kicked this off', minLength: 3 },
+    { key: 'long_term_goal', type: 'text', question: 'If this actually worked, where would you want to be in 6 months?', placeholder: 'The bigger outcome you want', minLength: 3 },
+    { key: 'independence_goal', type: 'text', question: 'Eventually, what do you want to be able to do without needing Shannon?', placeholder: 'e.g. build workouts, eat for my goal, stay consistent', minLength: 3 },
+    {
+        key: 'equipment_access',
+        type: 'choice',
+        question: 'Where will you usually train?',
+        options: [
+            { value: 'gym', label: 'Full gym' },
+            { value: 'dumbbells', label: 'Dumbbells / bands' },
+            { value: 'bands', label: 'Bands only' },
+            { value: 'none', label: 'Mat / no equipment' },
+            { value: 'yoga_only', label: 'Yoga / stretching only' }
+        ]
+    },
+    {
+        key: 'activity_level',
+        type: 'choice',
+        question: 'What is your current activity level?',
+        options: [
+            { value: 'sedentary', label: 'Mostly sedentary' },
+            { value: 'light', label: 'Lightly active' },
+            { value: 'moderate', label: 'Moderately active' },
+            { value: 'very', label: 'Very active' }
+        ]
+    },
+    {
+        key: 'energy_level',
+        type: 'choice',
+        question: 'How is your energy most days?',
+        options: [
+            { value: 'low', label: 'Often tired' },
+            { value: 'normal', label: 'Normal' },
+            { value: 'high', label: 'High' }
+        ]
+    },
+    {
+        key: 'dietary_requirements',
+        type: 'multi',
+        question: 'Any food style or restrictions we should respect?',
+        options: [
+            { value: 'vegan', label: 'Vegan' },
+            { value: 'vegetarian', label: 'Vegetarian' },
+            { value: 'omnivore', label: 'Omnivore' },
+            { value: 'gluten_free', label: 'Gluten-free' },
+            { value: 'dairy_free', label: 'Dairy-free' },
+            { value: 'nut_free', label: 'Nut-free' },
+            { value: 'soy_free', label: 'Soy-free' },
+            { value: 'low_fodmap', label: 'Low FODMAP' }
+        ],
+        emptyLabel: 'No restrictions',
+        submitLabel: 'Done'
+    },
+    { key: 'ig_handle', type: 'text', question: 'Last one, what is your Instagram handle? You can skip this.', placeholder: '@yourhandle', optional: true }
+];
+
+let wizardChatStarted = false;
+let wizardChatComplete = false;
+let wizardChatStepIndex = 0;
+let wizardChatAnswers = {};
+let wizardChatMessages = [];
+let wizardChatMultiSelection = new Set();
+let wizardChatFreeformAnswers = {};
+let wizardChatAskToken = 0;
+
+function getWizardChatStep() {
+    return WIZARD_CHAT_STEPS[wizardChatStepIndex] || null;
+}
+
+function getWizardIntentIds() {
+    const raw = wizardChatAnswers.goal_intents;
+    if (Array.isArray(raw)) return raw.filter(Boolean);
+    return raw ? [raw] : [];
+}
+
+function getWizardGoalRecipeText() {
+    const selected = getWizardIntentIds();
+    const recipes = {
+        lose_weight: 'Fat loss is not just a scale target. The plan is calorie target, protein, and training so the weight comes down without guessing.',
+        build_strength: 'Muscle gets built by repeating the basics: train 3x/week, hit protein, and eat enough calories to recover.',
+        consistent_workouts: 'Consistency comes from a small weekly standard: show up for training, check in with Shannon, and keep food simple enough to repeat.',
+        improve_nutrition: 'Food gets better when we make it visible: log meals, hit your calorie target, and hit protein most days.',
+        hit_protein: 'Protein works best when it becomes a weekly standard, paired with training and simple food logging.',
+        learn_fitness: 'Learning needs reps too: complete Health IQ quizzes, answer questions, and score 100% on lessons so the knowledge actually sticks.',
+        more_energy: 'Energy and longevity come from recovery basics first: steps, sleep, water, then training on top.',
+        build_community: 'Community gets built by showing up: message Shannon, share a win to the Feed, and stay connected to training.'
+    };
+    if (!selected.length) {
+        return 'The result comes from weekly actions we can actually see. Pick the anchors that make the goal real.';
+    }
+    if (selected.length === 1) {
+        return recipes[selected[0]] || 'The result comes from weekly actions we can actually see. Pick the anchors that make the goal real.';
+    }
+    const labels = selected.map(id => WIZARD_GOAL_INTENT_LABELS[id]).filter(Boolean).join(', ');
+    return `You picked ${labels}. We can chase more than one thing, but the first plan needs 3 anchors we can actually repeat and track.`;
+}
+
+function getWizardChatDefaultMultiSelection(step) {
+    if (!step || step.key !== 'weekly_goal_focus') return [];
+    const picked = [];
+    const seen = new Set();
+    getWizardIntentIds().forEach(intentId => {
+        (WIZARD_INTENT_WEEKLY_TARGETS[intentId] || []).forEach(goalId => {
+            if (seen.has(goalId) || picked.length >= (step.maxSelect || 3)) return;
+            seen.add(goalId);
+            picked.push(goalId);
+        });
+    });
+    return picked;
+}
+
+function getWizardChatInitialMultiSelection(step) {
+    if (!step) return [];
+    const saved = wizardChatAnswers[step.key];
+    if (Array.isArray(saved) && saved.length) return saved;
+    return getWizardChatDefaultMultiSelection(step);
+}
+
+function wizardChatOptionLabel(step, value) {
+    const option = (step?.options || []).find(o => o.value === value);
+    return option ? option.label : String(value || '');
+}
+
+function wizardChatAnswerLabel(step, value) {
+    if (!step) return '';
+    if (step.type === 'choice') return wizardChatOptionLabel(step, value);
+    if (step.type === 'multi') {
+        const list = Array.isArray(value) ? value : [];
+        if (!list.length) return step.emptyLabel || step.optionalLabel || 'None';
+        return list.map(item => wizardChatOptionLabel(step, item)).join(', ');
+    }
+    if (step.suffix && value) return `${value} ${step.suffix}`;
+    return String(value || '');
+}
+
+function getWizardChatOrderedOptions(step) {
+    const options = step?.options || [];
+    if (step?.key !== 'weekly_goal_focus' || !wizardChatMultiSelection.size) return options;
+    const selectedOrder = Array.from(wizardChatMultiSelection);
+    const selectedRank = new Map(selectedOrder.map((value, index) => [value, index]));
+    return options.slice().sort((a, b) => {
+        const aRank = selectedRank.has(a.value) ? selectedRank.get(a.value) : Number.MAX_SAFE_INTEGER;
+        const bRank = selectedRank.has(b.value) ? selectedRank.get(b.value) : Number.MAX_SAFE_INTEGER;
+        if (aRank !== bRank) return aRank - bRank;
+        return options.indexOf(a) - options.indexOf(b);
+    });
+}
+
+function normalizeWizardChatText(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/[@]/g, '')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+function wizardChatTextHasAny(normalizedText, words) {
+    return words.some(word => {
+        const clean = normalizeWizardChatText(word);
+        return clean && (` ${normalizedText} `).includes(` ${clean} `);
+    });
+}
+
+function wizardChatOptionFromText(step, raw) {
+    const text = normalizeWizardChatText(raw);
+    if (!step || !text) return null;
+
+    const direct = (step.options || []).find(option => {
+        const label = normalizeWizardChatText(option.label);
+        const value = normalizeWizardChatText(option.value);
+        return text === label || text === value || text.includes(label) || text.includes(value);
+    });
+    if (direct) return direct.value;
+
+    const synonyms = {
+        gender: [
+            ['female', ['female', 'woman', 'women', 'girl', 'her', 'she', 'for her']],
+            ['male', ['male', 'man', 'men', 'guy', 'him', 'he', 'for him']]
+        ],
+        goal_intents: [
+            ['lose_weight', ['lose', 'loss', 'fat', 'lean', 'weight', 'cut']],
+            ['build_strength', ['muscle', 'shape', 'strength', 'strong', 'build', 'grow', 'tone', 'toned']],
+            ['consistent_workouts', ['consistent', 'consistency', 'routine', 'habit', 'habits', 'workout', 'train', 'training', 'stick']],
+            ['improve_nutrition', ['food', 'nutrition', 'diet', 'meals', 'eating', 'calorie', 'calories', 'tracking']],
+            ['learn_fitness', ['learn', 'education', 'health', 'fitness', 'know what to do', 'understand']],
+            ['more_energy', ['energy', 'longevity', 'sleep', 'tired', 'fatigue', 'recovery']],
+            ['build_community', ['community', 'friends', 'feed', 'share', 'coach', 'message']]
+        ],
+        goalBodyType: [
+            ['Flat', ['lose', 'loss', 'fat', 'lean', 'slim', 'cut', 'weight loss']],
+            ['Athletic', ['maintain', 'habit', 'habits', 'tone', 'toned', 'fit', 'fitness', 'athletic', 'health']],
+            ['Body Builder', ['muscle', 'strength', 'strong', 'build', 'bulk', 'grow']]
+        ],
+        equipment_access: [
+            ['gym', ['gym', 'full gym', 'weights room']],
+            ['dumbbells', ['dumbbell', 'dumbbells', 'db', 'home weights', 'free weights']],
+            ['bands', ['band', 'bands', 'resistance band']],
+            ['yoga_only', ['yoga', 'stretch', 'mobility']],
+            ['none', ['none', 'no equipment', 'bodyweight', 'mat', 'home only']]
+        ],
+        activity_level: [
+            ['sedentary', ['sedentary', 'desk', 'not active', 'inactive']],
+            ['light', ['light', 'little', 'walk']],
+            ['moderate', ['moderate', 'average', 'some']],
+            ['very', ['very', 'active', 'high', 'athlete', 'lots']]
+        ],
+        energy_level: [
+            ['low', ['low', 'tired', 'dead', 'exhausted', 'flat', 'fatigued']],
+            ['normal', ['normal', 'okay', 'ok', 'fine', 'average']],
+            ['high', ['high', 'good', 'energetic', 'wired']]
+        ]
+    };
+
+    for (const [value, words] of (synonyms[step.key] || [])) {
+        if (wizardChatTextHasAny(text, words)) return value;
+    }
+
+    return null;
+}
+
+function wizardChatMultiFromText(step, raw) {
+    const text = normalizeWizardChatText(raw);
+    if (!step || !text) return [];
+
+    const matches = new Set();
+    (step.options || []).forEach(option => {
+        const label = normalizeWizardChatText(option.label);
+        const value = normalizeWizardChatText(option.value);
+        if ((label && text.includes(label)) || (value && text.includes(value))) {
+            matches.add(option.value);
+        }
+    });
+
+    const synonyms = {
+        goal_intents: [
+            ['lose_weight', ['lose', 'loss', 'fat', 'lean', 'weight']],
+            ['consistent_workouts', ['consistent', 'routine', 'habit', 'falling off', 'stick', 'workout', 'train', 'training', '3x', 'three times']],
+            ['build_strength', ['strength', 'strong', 'muscle', 'build']],
+            ['improve_nutrition', ['food', 'diet', 'nutrition', 'meals', 'eating', 'calorie', 'calories', 'track', 'tracking']],
+            ['hit_protein', ['protein', 'macros', 'macro']],
+            ['learn_fitness', ['learn', 'health', 'fitness', 'know what to do', 'understand']],
+            ['build_community', ['community', 'friends', 'feed', 'share', 'coach', 'message']],
+            ['more_energy', ['energy', 'tired', 'fatigue', 'sleep', 'steps', 'water']]
+        ],
+        weekly_goal_focus: [
+            ['complete_workouts', ['workout', 'workouts', 'train', 'training', 'lift', 'gym', '3x', 'three times']],
+            ['protein_days', ['protein', 'macros', 'macro']],
+            ['calorie_range_days', ['calorie', 'calories', 'deficit', 'range']],
+            ['meal_log_days', ['log meals', 'meal log', 'track meals', 'food log', 'tracking food']],
+            ['weigh_in_days', ['weigh', 'scale', 'weight']],
+            ['steps_10k_days', ['steps', 'walk', 'walking', '10k']],
+            ['sleep_7h_nights', ['sleep', 'rest']],
+            ['water_goal_days', ['water', 'hydration', 'hydrate']],
+            ['daily_quiz_days', ['quiz', 'learn', 'lesson', 'health iq']],
+            ['questions_answered', ['questions', 'health questions']],
+            ['perfect_lessons', ['perfect lessons', '100', 'score 100', 'lesson']],
+            ['message_coach', ['coach', 'message', 'check in', 'checkin']],
+            ['share_workout_feed', ['community', 'feed', 'share', 'post']]
+        ],
+        dietary_requirements: [
+            ['vegan', ['vegan', 'plant based', 'plantbased']],
+            ['vegetarian', ['vegetarian', 'veggie']],
+            ['omnivore', ['omnivore', 'eat everything', 'no restrictions', 'none']],
+            ['gluten_free', ['gluten', 'coeliac', 'celiac']],
+            ['dairy_free', ['dairy', 'lactose']],
+            ['nut_free', ['nut', 'nuts', 'peanut']],
+            ['soy_free', ['soy', 'soya']],
+            ['low_fodmap', ['fodmap']]
+        ]
+    };
+
+    for (const [value, words] of (synonyms[step.key] || [])) {
+        if (wizardChatTextHasAny(text, words)) matches.add(value);
+    }
+
+    return Array.from(matches);
+}
+
+function renderWizardChatMessages() {
+    const messagesEl = document.getElementById('wizard-chat-messages');
+    if (!messagesEl) return;
+    messagesEl.innerHTML = wizardChatMessages.map(message => {
+        if (message.typing) {
+            return `<div class="wizard-chat-bubble coach"><span class="wizard-chat-typing"><span></span><span></span><span></span></span></div>`;
+        }
+        return `<div class="wizard-chat-bubble ${message.role === 'user' ? 'user' : 'coach'}">${escapeWizardHtml(message.text)}</div>`;
+    }).join('');
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function syncWizardChatBackControls() {
+    const canGoBack = wizardChatStarted && (wizardChatStepIndex > 0 || wizardChatComplete);
+    const chatBack = document.getElementById('wizard-chat-back');
+    const footerBack = document.getElementById('wizard-back');
+    if (chatBack) {
+        chatBack.classList.toggle('visible', canGoBack);
+        chatBack.disabled = !canGoBack;
+    }
+    if (footerBack && currentWizardStep === 1 && wizardChatStarted) {
+        footerBack.style.visibility = canGoBack ? 'visible' : 'hidden';
+        footerBack.textContent = 'Back';
+        footerBack.onclick = goBackWizardChatQuestion;
+    }
+}
+
+function renderWizardChatProgress() {
+    const label = document.getElementById('wizard-chat-progress-label');
+    const fill = document.getElementById('wizard-chat-progress-fill');
+    const current = Math.min(WIZARD_CHAT_STEPS.length, wizardChatStepIndex + (wizardChatComplete ? 0 : 1));
+    const pct = wizardChatComplete ? 100 : Math.max(4, Math.round((wizardChatStepIndex / WIZARD_CHAT_STEPS.length) * 100));
+    if (label) label.textContent = wizardChatComplete ? 'Ready for training setup' : `Question ${current} of ${WIZARD_CHAT_STEPS.length}`;
+    if (fill) fill.style.width = `${pct}%`;
+    syncWizardChatBackControls();
+}
+
+function renderWizardChatControls() {
+    const step = getWizardChatStep();
+    const choicesEl = document.getElementById('wizard-chat-choices');
+    const inputRow = document.getElementById('wizard-chat-input-row');
+    const input = document.getElementById('wizard-chat-input');
+    const sendBtn = document.getElementById('wizard-chat-send');
+    const helper = document.getElementById('wizard-chat-helper');
+    if (!choicesEl || !inputRow || !input || !sendBtn || !helper) return;
+
+    choicesEl.innerHTML = '';
+    helper.textContent = '';
+
+    if (!wizardChatComplete && wizardChatMessages.some(message => message.typing)) {
+        inputRow.style.display = 'none';
+        return;
+    }
+
+    if (wizardChatComplete) {
+        inputRow.style.display = 'none';
+        choicesEl.innerHTML = '<button type="button" class="wizard-chat-choice selected" onclick="wizardNext()">Continue to training setup</button>';
+        return;
+    }
+
+    if (!step) return;
+
+    if (step.type === 'choice' || step.type === 'multi') {
+        inputRow.style.display = 'flex';
+        input.type = 'text';
+        input.inputMode = 'text';
+        input.placeholder = step.textPlaceholder || 'Or type your answer...';
+        input.value = '';
+        sendBtn.textContent = 'Send';
+        input.onkeydown = event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                submitWizardChatAnswer();
+            }
+        };
+        choicesEl.innerHTML = getWizardChatOrderedOptions(step).map(option => {
+            const selected = step.type === 'multi' && wizardChatMultiSelection.has(option.value);
+            const handler = step.type === 'multi'
+                ? `toggleWizardChatMulti('${option.value}')`
+                : `selectWizardChatChoice('${option.value}')`;
+            return `<button type="button" class="wizard-chat-choice${selected ? ' selected' : ''}" onclick="${handler}">${escapeWizardHtml(option.label)}</button>`;
+        }).join('');
+        if (step.type === 'multi') {
+            choicesEl.innerHTML += `<button type="button" class="wizard-chat-choice selected" onclick="submitWizardChatMultiAnswer()">${escapeWizardHtml(step.submitLabel || step.optionalLabel || 'Done')}</button>`;
+        } else {
+            helper.textContent = '';
+        }
+        setTimeout(() => input.focus(), 60);
+        return;
+    }
+
+    inputRow.style.display = 'flex';
+    input.type = step.type === 'number' ? 'number' : 'text';
+    input.inputMode = step.type === 'number' ? 'decimal' : 'text';
+    input.placeholder = step.placeholder || 'Type your answer...';
+    input.value = '';
+    sendBtn.textContent = 'Send';
+    input.onkeydown = event => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            submitWizardChatAnswer();
+        }
+    };
+    helper.textContent = '';
+    setTimeout(() => input.focus(), 60);
+}
+
+function resolveWizardChatPrelude(step) {
+    return typeof step?.prelude === 'function' ? step.prelude() : step?.prelude;
+}
+
+function appendWizardChatQuestion(step) {
+    const prelude = resolveWizardChatPrelude(step);
+    if (prelude) wizardChatMessages.push({ role: 'coach', text: prelude });
+    wizardChatMessages.push({ role: 'coach', text: step.question });
+}
+
+function rebuildWizardChatMessagesUntil(stepIndex) {
+    wizardChatMessages = [];
+    for (let i = 0; i < stepIndex; i += 1) {
+        const step = WIZARD_CHAT_STEPS[i];
+        if (!step || !Object.prototype.hasOwnProperty.call(wizardChatAnswers, step.key)) continue;
+        appendWizardChatQuestion(step);
+        wizardChatMessages.push({ role: 'user', text: wizardChatAnswerLabel(step, wizardChatAnswers[step.key]) });
+    }
+}
+
+function askWizardChatQuestion(options = {}) {
+    wizardChatAskToken += 1;
+    const askToken = wizardChatAskToken;
+    const step = getWizardChatStep();
+    if (!step) {
+        wizardChatComplete = true;
+        wizardChatMessages.push({ role: 'coach', text: 'Perfect. I have enough to set your first plan up properly. Next we will lock in your training week.' });
+        renderWizardChatMessages();
+        renderWizardChatProgress();
+        renderWizardChatControls();
+        return;
+    }
+
+    wizardChatMultiSelection = new Set(getWizardChatInitialMultiSelection(step));
+    if (options.instant) {
+        appendWizardChatQuestion(step);
+        renderWizardChatMessages();
+        renderWizardChatProgress();
+        renderWizardChatControls();
+        return;
+    }
+
+    wizardChatMessages.push({ role: 'coach', typing: true });
+    renderWizardChatMessages();
+    renderWizardChatProgress();
+    renderWizardChatControls();
+    setTimeout(() => {
+        if (askToken !== wizardChatAskToken) return;
+        wizardChatMessages = wizardChatMessages.filter(message => !message.typing);
+        appendWizardChatQuestion(step);
+        renderWizardChatMessages();
+        renderWizardChatControls();
+    }, 420);
+}
+
+function initializeWizardChatIntake() {
+    if (wizardChatStarted) {
+        renderWizardChatMessages();
+        renderWizardChatProgress();
+        renderWizardChatControls();
+        return;
+    }
+    wizardChatStarted = true;
+    wizardChatComplete = false;
+    wizardChatStepIndex = 0;
+    wizardChatAnswers = {};
+    wizardChatMessages = [];
+    wizardChatFreeformAnswers = {};
+    askWizardChatQuestion();
+}
+
+function advanceWizardChat(step, value, displayText = null) {
+    wizardChatAnswers[step.key] = value;
+    wizardChatMessages.push({ role: 'user', text: displayText || wizardChatAnswerLabel(step, value) });
+    wizardChatStepIndex += 1;
+    askWizardChatQuestion();
+}
+
+function goBackWizardChatQuestion() {
+    if (!wizardChatStarted) return;
+    const targetIndex = wizardChatComplete ? WIZARD_CHAT_STEPS.length - 1 : wizardChatStepIndex - 1;
+    if (targetIndex < 0) return;
+
+    wizardChatAskToken += 1;
+    for (let i = targetIndex + 1; i < WIZARD_CHAT_STEPS.length; i += 1) {
+        const step = WIZARD_CHAT_STEPS[i];
+        if (!step) continue;
+        delete wizardChatAnswers[step.key];
+        delete wizardChatFreeformAnswers[step.key];
+    }
+    wizardChatStepIndex = targetIndex;
+    wizardChatComplete = false;
+    rebuildWizardChatMessagesUntil(targetIndex);
+    askWizardChatQuestion({ instant: true });
+}
+
+function selectWizardChatChoice(value) {
+    const step = getWizardChatStep();
+    if (!step || step.type !== 'choice') return;
+    advanceWizardChat(step, value);
+}
+
+function toggleWizardChatMulti(value) {
+    if (wizardChatMultiSelection.has(value)) wizardChatMultiSelection.delete(value);
+    else {
+        const step = getWizardChatStep();
+        if (step?.maxSelect && wizardChatMultiSelection.size >= step.maxSelect) {
+            wizardAlert(`Pick up to ${step.maxSelect} options.`);
+            return;
+        }
+        wizardChatMultiSelection.add(value);
+    }
+    renderWizardChatControls();
+}
+
+function submitWizardChatMultiAnswer() {
+    const step = getWizardChatStep();
+    if (!step || step.type !== 'multi') return;
+    if (step.required && wizardChatMultiSelection.size === 0) {
+        wizardAlert('Pick at least one option first.');
+        return;
+    }
+    advanceWizardChat(step, Array.from(wizardChatMultiSelection).slice(0, step.maxSelect || wizardChatMultiSelection.size));
+}
+
+function parseWizardChatNumber(raw) {
+    const cleaned = String(raw || '').replace(/,/g, '.').match(/\d+(\.\d+)?/);
+    return cleaned ? Number(cleaned[0]) : NaN;
+}
+
+function submitWizardChatAnswer() {
+    const step = getWizardChatStep();
+    const input = document.getElementById('wizard-chat-input');
+    if (!step || !input) return;
+    const raw = String(input.value || '').trim();
+
+    if (step.type === 'choice') {
+        const value = wizardChatOptionFromText(step, raw);
+        if (!raw) {
+            wizardAlert('Choose or type an answer.');
+            return;
+        }
+        if (!value) {
+            wizardAlert('I could not match that yet. Try one of the bubbles above.');
+            return;
+        }
+        if (normalizeWizardChatText(raw) !== normalizeWizardChatText(wizardChatOptionLabel(step, value))) {
+            wizardChatFreeformAnswers[step.key] = raw;
+        }
+        advanceWizardChat(step, value, raw);
+        return;
+    }
+
+    if (step.type === 'multi') {
+        const selected = new Set(wizardChatMultiSelection);
+        wizardChatMultiFromText(step, raw).forEach(value => selected.add(value));
+        if (raw) wizardChatFreeformAnswers[step.key] = raw;
+        if ((step.required && selected.size === 0 && !raw) || (step.requiresStructured && selected.size === 0)) {
+            wizardAlert('Choose at least one option.');
+            return;
+        }
+        const selectedValues = Array.from(selected);
+        if (step.maxSelect && selectedValues.length > step.maxSelect) {
+            wizardAlert(`Pick up to ${step.maxSelect} options.`);
+            return;
+        }
+        advanceWizardChat(step, selectedValues, raw || null);
+        return;
+    }
+
+    if (step.type === 'number') {
+        const value = parseWizardChatNumber(raw);
+        if (!Number.isFinite(value) || value < step.min || value > step.max) {
+            wizardAlert(`Enter a number between ${step.min} and ${step.max}.`);
+            return;
+        }
+        advanceWizardChat(step, value);
+        return;
+    }
+
+    if (step.optional && !raw) {
+        advanceWizardChat(step, '');
+        return;
+    }
+    if (!raw || raw.length < (step.minLength || 1)) {
+        wizardAlert('Add a little more detail here.');
+        return;
+    }
+    const value = step.key === 'ig_handle' ? raw.replace(/^@+/, '').trim() : raw;
+    advanceWizardChat(step, value);
+}
+
+function setWizardFieldValue(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.value = value == null ? '' : String(value);
+}
+
+function saveWizardChatIntakeToInputs() {
+    if (!wizardChatComplete) {
+        wizardAlert('Finish the setup chat first.');
+        return false;
+    }
+
+    const answers = wizardChatAnswers || {};
+    selectedGender = answers.gender || selectedGender;
+    setWizardFieldValue('wizard-gender', selectedGender);
+    localStorage.setItem('userGender', selectedGender);
+    if (selectedGender === 'male') {
+        document.body.classList.add('male-theme');
+        document.body.classList.remove('female-theme');
+    } else {
+        document.body.classList.add('female-theme');
+        document.body.classList.remove('male-theme');
+    }
+
+    setWizardFieldValue('wizard-name', answers.name);
+    setWizardFieldValue('wizard-age', answers.age);
+    setWizardFieldValue('wizard-height', answers.height);
+    setWizardFieldValue('wizard-weight', answers.weight);
+    setWizardFieldValue('wizard-goal-weight', answers.goal_weight);
+    setWizardFieldValue('wizard-goal-type', answers.goalBodyType);
+    setWizardFieldValue('wizard-equipment', answers.equipment_access);
+    setWizardFieldValue('wizard-activity-level', answers.activity_level);
+    setWizardFieldValue('wizard-energy-level', answers.energy_level);
+    setWizardFieldValue('wizard-ig-handle', answers.ig_handle ? `@${answers.ig_handle}` : '');
+
+    const goalIntentIds = Array.isArray(answers.goal_intents)
+        ? answers.goal_intents
+        : (answers.goal_intents ? [answers.goal_intents] : []);
+    const goalIntentLabels = goalIntentIds.map(id => WIZARD_GOAL_INTENT_LABELS[id]).filter(Boolean);
+    const weeklyGoalFocusIds = Array.isArray(answers.weekly_goal_focus) ? answers.weekly_goal_focus : [];
+    const weeklyGoalFocusLabels = weeklyGoalFocusIds.map(id => WIZARD_WEEKLY_GOAL_FOCUS_LABELS[id]).filter(Boolean);
+    setWizardFieldValue('wizard-goal-intents', JSON.stringify(goalIntentIds));
+    setWizardFieldValue('wizard-goal-intent-labels', JSON.stringify(goalIntentLabels));
+    setWizardFieldValue('wizard-weekly-goal-focus', JSON.stringify(weeklyGoalFocusIds));
+    setWizardFieldValue('wizard-weekly-goal-focus-labels', JSON.stringify(weeklyGoalFocusLabels));
+    setWizardFieldValue('wizard-chat-freeform', JSON.stringify(wizardChatFreeformAnswers || {}));
+    setWizardFieldValue('wizard-thirty-day-win', answers.thirty_day_win);
+    setWizardFieldValue('wizard-main-blocker', answers.main_blocker);
+    setWizardFieldValue('wizard-why-now', answers.why_now);
+    setWizardFieldValue('wizard-long-term-goal', answers.long_term_goal);
+    setWizardFieldValue('wizard-independence-goal', answers.independence_goal);
+
+    wizardDietaryRequirements = new Set(Array.isArray(answers.dietary_requirements) ? answers.dietary_requirements : []);
+    try {
+        localStorage.setItem('onboardingGoalIntentIds', JSON.stringify(goalIntentIds));
+        localStorage.setItem('onboardingGoalIntents', JSON.stringify(goalIntentIds.map(id => ({ id, label: WIZARD_GOAL_INTENT_LABELS[id] })).filter(item => item.label)));
+        localStorage.setItem('onboardingWeeklyGoalFocusIds', JSON.stringify(weeklyGoalFocusIds));
+        localStorage.setItem('onboardingWeeklyGoalFocus', JSON.stringify(weeklyGoalFocusIds.map(id => ({ id, label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS[id] })).filter(item => item.label)));
+    } catch (e) {}
+    return true;
+}
+
+function readWizardJsonField(id, fallback) {
+    try {
+        const raw = document.getElementById(id)?.value;
+        return raw ? JSON.parse(raw) : fallback;
+    } catch (e) {
+        return fallback;
+    }
+}
+
+window.submitWizardChatAnswer = submitWizardChatAnswer;
+window.selectWizardChatChoice = selectWizardChatChoice;
+window.toggleWizardChatMulti = toggleWizardChatMulti;
+window.submitWizardChatMultiAnswer = submitWizardChatMultiAnswer;
+window.goBackWizardChatQuestion = goBackWizardChatQuestion;
 let wizardLikedExercises = new Set();
 let wizardAvoidedExercises = new Set();
 
@@ -6480,6 +7250,7 @@ function initOnboardingWizard() {
         }
         // Skip story, go straight to wizard
         currentWizardStep = 1;
+        setOnboardingScrollLock(true);
         modal.classList.add('active');
         modal.style.display = 'flex';
         modal.style.opacity = '1';
@@ -6490,6 +7261,7 @@ function initOnboardingWizard() {
     // Show Fitgotchi story first, then wizard
     startFitgotchiStory(() => {
         currentWizardStep = 1;
+        setOnboardingScrollLock(true);
         modal.classList.add('active');
         modal.style.display = 'flex';
         modal.style.opacity = '1';
@@ -7401,20 +8173,38 @@ function updateWizardUI() {
         renderWizardExercisePreferenceChips();
     }
 
+    if(currentWizardStep === 1) {
+        initializeWizardChatIntake();
+    }
+
     // 4. Buttons
     const prevBtn = document.getElementById('wizard-back');
     const nextBtn = document.getElementById('wizard-next');
+    const titleEl = document.getElementById('wizard-title');
 
-    if(prevBtn) prevBtn.style.visibility = (currentWizardStep > 1) ? 'visible' : 'hidden';
+    if(titleEl) {
+        titleEl.textContent = currentWizardStep === 1 ? 'Setup Chat' : 'Build Your Plan';
+    }
+
+    if(prevBtn) {
+        prevBtn.onclick = wizardPrev;
+        prevBtn.style.visibility = (currentWizardStep > 1) ? 'visible' : 'hidden';
+    }
 
     if(nextBtn) {
         if(currentWizardStep === finalWizardStep) {
             nextBtn.innerHTML = "Let's Go! 🚀";
             nextBtn.onclick = finishOnboarding;
+        } else if(currentWizardStep === 1) {
+            nextBtn.innerHTML = wizardChatComplete ? "Continue &rarr;" : "Finish chat";
+            nextBtn.onclick = wizardNext;
         } else {
             nextBtn.innerHTML = "Next &rarr;";
             nextBtn.onclick = wizardNext;
         }
+    }
+    if(currentWizardStep === 1) {
+        syncWizardChatBackControls();
     }
 }
 
@@ -7542,16 +8332,18 @@ function selectGender(gender) {
     const femaleBtn = document.getElementById('gender-btn-female');
     const maleBtn = document.getElementById('gender-btn-male');
 
-    if (gender === 'female') {
-        femaleBtn.style.border = '2px solid var(--primary)';
-        femaleBtn.style.background = '#f0fdf4';
-        maleBtn.style.border = '2px solid #e2e8f0';
-        maleBtn.style.background = 'white';
-    } else {
-        maleBtn.style.border = '2px solid #3b82f6';
-        maleBtn.style.background = '#eff6ff';
-        femaleBtn.style.border = '2px solid #e2e8f0';
-        femaleBtn.style.background = 'white';
+    if (femaleBtn && maleBtn) {
+        if (gender === 'female') {
+            femaleBtn.style.border = '2px solid var(--primary)';
+            femaleBtn.style.background = '#f0fdf4';
+            maleBtn.style.border = '2px solid #e2e8f0';
+            maleBtn.style.background = 'white';
+        } else {
+            maleBtn.style.border = '2px solid #3b82f6';
+            maleBtn.style.background = '#eff6ff';
+            femaleBtn.style.border = '2px solid #e2e8f0';
+            femaleBtn.style.background = 'white';
+        }
     }
 
     // Keep the user in control: the visible Next button handles validation and
@@ -7777,14 +8569,12 @@ function applyGenderSpecificUI() {
 }
 
 async function wizardNext() {
-    // Validation for Step 1: Gender Selection
+    // Step 1: Conversational setup fills the legacy profile inputs, then reuses
+    // the existing Step 2 save path so downstream onboarding stays compatible.
     if(currentWizardStep === 1) {
-        if (!selectedGender) {
-            wizardAlert("Please select your program (For Her or For Him).");
-            return;
-        }
-        // Gender already saved in selectGender function
-        console.log("Step 1 gender selected:", selectedGender);
+        if (!saveWizardChatIntakeToInputs()) return;
+        currentWizardStep = 2;
+        return wizardNext();
     }
 
     // Validation for Step 2: Essential Data Collection
@@ -7852,6 +8642,25 @@ async function wizardNext() {
         // dashboard auto-links the IG thread to this app user.
         const igHandleRaw = (document.getElementById('wizard-ig-handle')?.value || '').trim();
         const igHandle = igHandleRaw ? igHandleRaw.replace(/^@+/, '').trim() : '';
+        const goalIntentIds = readWizardJsonField('wizard-goal-intents', []);
+        const goalIntentLabels = readWizardJsonField('wizard-goal-intent-labels', []);
+        const weeklyGoalFocusIds = readWizardJsonField('wizard-weekly-goal-focus', []);
+        const weeklyGoalFocusLabels = readWizardJsonField('wizard-weekly-goal-focus-labels', []);
+        const onboardingChatFreeform = readWizardJsonField('wizard-chat-freeform', {});
+        const onboardingGoalIntents = goalIntentIds
+            .map(id => ({ id, label: WIZARD_GOAL_INTENT_LABELS[id] }))
+            .filter(item => item.label);
+        const onboardingWeeklyGoalFocus = weeklyGoalFocusIds
+            .map(id => ({ id, label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS[id] }))
+            .filter(item => item.label);
+        const goalCatcher = {
+            thirty_day_win: document.getElementById('wizard-thirty-day-win')?.value.trim() || '',
+            main_blocker: document.getElementById('wizard-main-blocker')?.value.trim() || '',
+            why_now: document.getElementById('wizard-why-now')?.value.trim() || '',
+            long_term_goal: document.getElementById('wizard-long-term-goal')?.value.trim() || '',
+            independence_goal: document.getElementById('wizard-independence-goal')?.value.trim() || '',
+            weekly_goal_focus: weeklyGoalFocusLabels
+        };
 
         // Save to sessionStorage for later processing
         const quizData = {
@@ -7868,7 +8677,20 @@ async function wizardNext() {
             activity_level: activityLevel,
             energy_level: energyLevel,
             user_gender: selectedGender, // Also store gender preference
-            ig_handle: igHandle || null
+            ig_handle: igHandle || null,
+            goal_intents: goalIntentIds,
+            goal_intent_labels: goalIntentLabels,
+            onboarding_goal_intents: onboardingGoalIntents,
+            weekly_goal_focus: weeklyGoalFocusIds,
+            weekly_goal_focus_labels: weeklyGoalFocusLabels,
+            onboarding_weekly_goal_focus: onboardingWeeklyGoalFocus,
+            onboarding_chat_freeform: onboardingChatFreeform,
+            goal_catcher: goalCatcher,
+            thirty_day_win: goalCatcher.thirty_day_win,
+            main_blocker: goalCatcher.main_blocker,
+            why_now: goalCatcher.why_now,
+            long_term_goal: goalCatcher.long_term_goal,
+            independence_goal: goalCatcher.independence_goal
         };
 
         // Calculate BMR, TDEE, and Macros
@@ -8427,6 +9249,7 @@ window.openCharacterCustomizationShortcut = function() {
     _charCustomRetries = 0;
 
     currentWizardStep = 17;
+    setOnboardingScrollLock(true);
     modal.classList.add('active');
     modal.style.display = 'flex';
     modal.style.opacity = '1';
@@ -8464,6 +9287,7 @@ window.closeCharacterCustomizationShortcut = async function() {
         modal.style.display = 'none';
         modal.style.opacity = '';
     }
+    setOnboardingScrollLock(false);
 
     window._wizardCustomizeOnlyMode = false;
     wizardCharacterInitialized = false;
@@ -9388,6 +10212,7 @@ async function finishOnboarding() {
         wizardEl.style.opacity = '';
         wizardEl.classList.remove('active');
     }
+    setOnboardingScrollLock(false);
 
     // Start the feature tour 5s after the wizard closes.
     // Registered here (before any awaits) so the timer is anchored to when the
@@ -9677,6 +10502,7 @@ async function closeWizardManually() {
          wizardEl.style.opacity = '';
          wizardEl.classList.remove('active');
      }
+     setOnboardingScrollLock(false);
 
      // Restore tamagotchi model on iOS Safari (was paused when the wizard opened).
      // finishOnboarding() handles this for normal completion; we must do it here too

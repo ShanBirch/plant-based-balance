@@ -730,6 +730,50 @@ function buildClientProfileBlock({ clientName = 'Client', profile = {}, customDa
     const age = pd.age || custom.age;
     if (age) lines.push(`Age: ${age}`);
 
+    const goalIntentLabels = Array.isArray(pd.goal_intent_labels)
+        ? pd.goal_intent_labels
+        : Array.isArray(pd.onboarding_goal_intents)
+            ? pd.onboarding_goal_intents.map(item => item?.label || item).filter(Boolean)
+            : Array.isArray(custom.goal_intent_labels)
+                ? custom.goal_intent_labels
+                : [];
+    if (goalIntentLabels.length) {
+        lines.push(`Goal themes: ${goalIntentLabels.slice(0, 6).join(', ')}`);
+    }
+
+    const weeklyGoalFocusLabels = Array.isArray(pd.weekly_goal_focus_labels)
+        ? pd.weekly_goal_focus_labels
+        : Array.isArray(pd.onboarding_weekly_goal_focus)
+            ? pd.onboarding_weekly_goal_focus.map(item => item?.label || item).filter(Boolean)
+            : Array.isArray(custom.weekly_goal_focus_labels)
+                ? custom.weekly_goal_focus_labels
+                : [];
+    if (weeklyGoalFocusLabels.length) {
+        lines.push(`Weekly goal targets: ${weeklyGoalFocusLabels.slice(0, 6).join(', ')}`);
+    }
+
+    const onboardingFreeform = (pd.onboarding_chat_freeform && typeof pd.onboarding_chat_freeform === 'object')
+        ? pd.onboarding_chat_freeform
+        : {};
+    const onboardingNotes = Object.entries(onboardingFreeform)
+        .filter(([, value]) => String(value || '').trim())
+        .slice(0, 6)
+        .map(([key, value]) => `${key.replace(/_/g, ' ')}: ${value}`);
+    if (onboardingNotes.length) {
+        lines.push(`Onboarding notes: ${onboardingNotes.join('; ')}`);
+    }
+
+    const goalCatcher = (pd.goal_catcher && typeof pd.goal_catcher === 'object') ? pd.goal_catcher : {};
+    const addGoalLine = (key, label) => {
+        const value = goalCatcher[key] || pd[key] || custom[key];
+        if (value) lines.push(`${label}: ${value}`);
+    };
+    addGoalLine('thirty_day_win', '30-day win');
+    addGoalLine('main_blocker', 'Main blocker');
+    addGoalLine('why_now', 'Why now');
+    addGoalLine('long_term_goal', 'Long-term goal');
+    addGoalLine('independence_goal', 'Independence goal');
+
     const menopauseStatus = pd.menopause_status || custom.menopause_status;
     if (menopauseStatus) lines.push(`Menopause status: ${menopauseStatus}`);
 

@@ -1561,11 +1561,11 @@ if(!window._pbbIsIOSSafari) {
     <script>
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=5"><\/script>');
-    document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=11"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=14"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=5');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=11');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=14');
 }
 </script>
     
@@ -11686,7 +11686,7 @@ if (window._pbbIsIOSSafari) {
         setTimeout(function() {
             if(window._crumb)window._crumb('script5_loading');
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=85';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=92';
             s.onload = function() {
                 if(window._crumb)window._crumb('script5_deferred_loaded');
                 // Replay deferred init functions
@@ -11704,7 +11704,7 @@ if (window._pbbIsIOSSafari) {
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=85"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=92"><\/script>');
 }
 </script>
 
@@ -13478,14 +13478,32 @@ if(!window._pbbIsIOSSafari) {
             <div class="wizard-progress" style="display:flex; justify-content:center; gap:6px; margin-bottom:15px;">
                 <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
             </div>
-            <h2 id="wizard-title" style="margin:0; color:var(--primary);">Let's Align Your Body</h2>
+            <h2 id="wizard-title" style="margin:0; color:var(--primary);">Setup Chat</h2>
         </div>
 
         <!-- CONTENT SLIDES -->
         <div class="wizard-content" style="flex: 1; padding: 25px; overflow-y: auto; min-height: 0;">
 
-            <!-- SLIDE 1: GENDER SELECTION -->
+            <!-- SLIDE 1: CONVERSATIONAL SETUP -->
             <div class="wizard-slide slide-active" id="slide-1">
+                <div class="wizard-chat-intake">
+                    <div class="wizard-chat-progress-row">
+                        <button type="button" id="wizard-chat-back" class="wizard-chat-back" onclick="goBackWizardChatQuestion()" aria-label="Back">Back</button>
+                        <span id="wizard-chat-progress-label">Question 1</span>
+                        <div class="wizard-chat-progress-track"><div id="wizard-chat-progress-fill"></div></div>
+                    </div>
+
+                    <div id="wizard-chat-messages" class="wizard-chat-messages" aria-live="polite"></div>
+                    <div id="wizard-chat-choices" class="wizard-chat-choices"></div>
+
+                    <div id="wizard-chat-input-row" class="wizard-chat-input-row">
+                        <input type="text" id="wizard-chat-input" autocomplete="off" spellcheck="true" placeholder="Type your answer...">
+                        <button type="button" id="wizard-chat-send" onclick="submitWizardChatAnswer()">Send</button>
+                    </div>
+                    <div id="wizard-chat-helper" class="wizard-chat-helper"></div>
+                </div>
+
+                <div id="wizard-legacy-gender-setup" style="display:none;">
                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🌟</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Welcome to Your Journey</h3>
                 <p style="text-align:center; color:#666; margin-bottom:30px;">Select your program to get started:</p>
@@ -13512,7 +13530,19 @@ if(!window._pbbIsIOSSafari) {
                     </button>
                 </div>
 
+                </div>
+
                 <input type="hidden" id="wizard-gender" value="">
+                <input type="hidden" id="wizard-goal-intents" value="">
+                <input type="hidden" id="wizard-goal-intent-labels" value="">
+                <input type="hidden" id="wizard-weekly-goal-focus" value="">
+                <input type="hidden" id="wizard-weekly-goal-focus-labels" value="">
+                <input type="hidden" id="wizard-chat-freeform" value="">
+                <input type="hidden" id="wizard-thirty-day-win" value="">
+                <input type="hidden" id="wizard-main-blocker" value="">
+                <input type="hidden" id="wizard-why-now" value="">
+                <input type="hidden" id="wizard-long-term-goal" value="">
+                <input type="hidden" id="wizard-independence-goal" value="">
             </div>
 
             <!-- SLIDE 2: ESSENTIAL DATA COLLECTION -->
@@ -13806,11 +13836,6 @@ if(!window._pbbIsIOSSafari) {
 
                 <div id="wizard-exercise-pref-summary" style="display:none; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-top:12px; color:#334155; font-size:0.82rem; line-height:1.5;"></div>
 
-                <div style="background:rgba(72,134,75,0.1); border-radius:10px; padding:12px; margin-top:15px; text-align:center;">
-                    <p style="margin:0; font-size:13px; color:#1a4d2e;">
-                        <strong>📈 48-Week Program:</strong> Each workout evolves over time - you'll never do the same workout twice in a row!
-                    </p>
-                </div>
             </div>
 
             <!-- SLIDE 8: CUISINE PREFERENCES (food prefs to tailor meal plan) -->
@@ -14021,7 +14046,7 @@ if(!window._pbbIsIOSSafari) {
 </div>
 </script><!-- end tmpl-onboarding -->
 
-<link rel="stylesheet" href="css/dashboard/dashboard-style-2.css" id="pbb-style2">
+<link rel="stylesheet" href="css/dashboard/dashboard-style-2.css?v=5" id="pbb-style2">
 <script>
 // On iOS Safari, defer dashboard-style-2.css to reduce parser memory pressure.
 if (window._pbbIsIOSSafari) {
