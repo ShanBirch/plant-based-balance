@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Balance Conversion Operator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="lib/supabase.js?v=conversion-operator-v1"></script>
+    <style>
+        :root {
+            --bg: #f5f7f4;
+            --panel: #ffffff;
+            --panel-2: #f8fafc;
+            --ink: #142018;
+            --muted: #647067;
+            --line: #dfe7dd;
+            --green: #2f7d46;
+            --blue: #2563eb;
+            --amber: #b7791f;
+            --red: #b42318;
+            --slate: #26343d;
+            --shadow: 0 12px 30px rgba(20, 32, 24, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+        html, body { min-height: 100%; }
+        body {
+            margin: 0;
+            min-height: 100dvh;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .shell {
+            min-height: 100dvh;
+            display: grid;
+            grid-template-rows: auto 1fr;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: calc(14px + env(safe-area-inset-top, 0px)) 22px 14px;
+            background: rgba(245, 247, 244, 0.94);
+            border-bottom: 1px solid var(--line);
+            backdrop-filter: blur(12px);
+        }
+
+        .brand {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font: 800 1.12rem/1.2 'Montserrat', sans-serif;
+            letter-spacing: 0;
+        }
+
+        .brand p {
+            margin: 3px 0 0;
+            color: var(--muted);
+            font-size: 0.78rem;
+            line-height: 1.35;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .search {
+            position: relative;
+            min-width: min(300px, 42vw);
+        }
+
+        .search svg {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            width: 16px;
+            height: 16px;
+            transform: translateY(-50%);
+            color: #7b877d;
+        }
+
+        .search input {
+            width: 100%;
+            min-height: 38px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 9px 10px 9px 32px;
+            background: #ffffff;
+            color: var(--ink);
+            font: 600 0.82rem 'Inter', sans-serif;
+        }
+
+        .search input:focus {
+            outline: none;
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(47, 125, 70, 0.12);
+        }
+
+        .icon-btn,
+        .text-btn {
+            min-height: 38px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #ffffff;
+            color: var(--ink);
+            font: 800 0.78rem 'Inter', sans-serif;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 9px 12px;
+            text-decoration: none;
+        }
+
+        .icon-btn {
+            width: 38px;
+            padding: 0;
+        }
+
+        .icon-btn svg,
+        .text-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .icon-btn:hover,
+        .text-btn:hover {
+            border-color: #bdc9bc;
+            background: #fbfdfb;
+        }
+
+        .content {
+            width: min(1640px, 100%);
+            margin: 0 auto;
+            padding: 18px 22px calc(24px + env(safe-area-inset-bottom, 0px));
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .metric {
+            min-height: 82px;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: 0 5px 14px rgba(20, 32, 24, 0.04);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .metric span {
+            color: var(--muted);
+            font-size: 0.68rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            line-height: 1.2;
+        }
+
+        .metric strong {
+            font: 800 1.7rem/1 'Montserrat', sans-serif;
+            color: var(--ink);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(280px, 1fr));
+            gap: 12px;
+            align-items: start;
+        }
+
+        .lane {
+            min-height: 220px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .lane-head {
+            min-height: 76px;
+            padding: 13px 13px 11px;
+            border-bottom: 1px solid var(--line);
+            background: linear-gradient(180deg, #ffffff 0%, #f8faf8 100%);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 9px;
+            align-items: start;
+        }
+
+        .lane-title {
+            min-width: 0;
+        }
+
+        .lane-title h2 {
+            margin: 0;
+            font: 800 0.9rem/1.2 'Montserrat', sans-serif;
+        }
+
+        .lane-title p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 0.72rem;
+            line-height: 1.28;
+        }
+
+        .count {
+            min-width: 30px;
+            height: 28px;
+            border-radius: 999px;
+            background: var(--slate);
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font: 800 0.78rem 'Inter', sans-serif;
+            padding: 0 9px;
+        }
+
+        .lane-items {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+            padding: 10px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid #e4ece3;
+            border-radius: 8px;
+            padding: 11px;
+            box-shadow: 0 4px 14px rgba(20, 32, 24, 0.05);
+        }
+
+        .card.hidden {
+            display: none;
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .person {
+            min-width: 0;
+        }
+
+        .person strong {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font: 800 0.88rem/1.25 'Montserrat', sans-serif;
+        }
+
+        .person span {
+            display: block;
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 0.72rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .pill {
+            flex: 0 0 auto;
+            border-radius: 999px;
+            padding: 4px 8px;
+            font: 900 0.64rem 'Inter', sans-serif;
+            text-transform: uppercase;
+            color: #ffffff;
+            background: var(--green);
+        }
+
+        .pill.lead { background: var(--blue); }
+        .pill.client { background: var(--green); }
+        .pill.paid { background: var(--slate); }
+
+        .facts {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 7px;
+            margin-top: 10px;
+        }
+
+        .fact {
+            background: var(--panel-2);
+            border: 1px solid #edf1ec;
+            border-radius: 7px;
+            padding: 7px;
+            min-width: 0;
+        }
+
+        .fact span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.62rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            line-height: 1.2;
+        }
+
+        .fact strong {
+            display: block;
+            color: var(--ink);
+            font-size: 0.8rem;
+            margin-top: 3px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .action {
+            margin-top: 10px;
+            padding: 9px 10px;
+            background: #f7fbf7;
+            border-left: 3px solid var(--green);
+            border-radius: 7px;
+            color: #1f3d29;
+            font-size: 0.76rem;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .preview {
+            margin-top: 8px;
+            color: #516056;
+            font-size: 0.74rem;
+            line-height: 1.35;
+        }
+
+        .card-links {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .card-links a {
+            color: var(--blue);
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .card-links a:hover {
+            text-decoration: underline;
+        }
+
+        .empty,
+        .state {
+            color: var(--muted);
+            font-size: 0.8rem;
+            line-height: 1.4;
+            padding: 18px;
+            text-align: center;
+        }
+
+        .state {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .error {
+            color: var(--red);
+        }
+
+        @media (max-width: 1280px) {
+            .board { grid-template-columns: repeat(3, minmax(260px, 1fr)); }
+            .summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 900px) {
+            .topbar {
+                align-items: stretch;
+                flex-direction: column;
+            }
+            .toolbar {
+                justify-content: stretch;
+            }
+            .search {
+                flex: 1 1 100%;
+                min-width: 0;
+            }
+            .text-btn {
+                flex: 1;
+            }
+            .content {
+                padding: 14px 12px calc(18px + env(safe-area-inset-bottom, 0px));
+            }
+            .board {
+                grid-template-columns: 1fr;
+            }
+            .summary {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <header class="topbar">
+            <div class="brand">
+                <h1>Conversion Operator</h1>
+                <p id="generated-at">Loading Balance funnel state</p>
+            </div>
+            <div class="toolbar">
+                <label class="search" aria-label="Search conversion board">
+                    <i data-lucide="search"></i>
+                    <input id="search-input" type="search" placeholder="Search people, handles, lanes">
+                </label>
+                <a class="text-btn" href="admin-dashboard.html?tab=needs-you" title="Open Needs You">
+                    <i data-lucide="inbox"></i>
+                    Needs You
+                </a>
+                <a class="text-btn" href="admin-dashboard.html?tab=dms" title="Open DMs">
+                    <i data-lucide="messages-square"></i>
+                    DMs
+                </a>
+                <button class="icon-btn" id="refresh-btn" type="button" title="Refresh">
+                    <i data-lucide="refresh-cw"></i>
+                </button>
+            </div>
+        </header>
+
+        <main class="content">
+            <section class="summary" id="summary"></section>
+            <section class="board" id="board">
+                <div class="state">Loading...</div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const laneLabels = {
+            ready_for_link: 'Ready for link',
+            lead_pitch_ready: 'Pitch ready leads',
+            active_challenge: 'Active challenge',
+            day_7: 'Day 7',
+            day_14: 'Day 14',
+            day_30: 'Day 30',
+            pitch_ready: 'Coaching pitch ready',
+            fallback_app_group: 'Fallback app/group',
+            paid: 'Paid',
+        };
+
+        let latestSnapshot = null;
+
+        function esc(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatDate(value) {
+            if (!value) return 'n/a';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return 'n/a';
+            return date.toLocaleString('en-AU', {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+            });
+        }
+
+        function relative(value) {
+            if (!value) return 'n/a';
+            const ts = Date.parse(value);
+            if (Number.isNaN(ts)) return 'n/a';
+            const diff = Date.now() - ts;
+            const min = Math.max(1, Math.round(diff / 60000));
+            if (min < 60) return `${min}m ago`;
+            const hr = Math.round(min / 60);
+            if (hr < 48) return `${hr}h ago`;
+            return `${Math.round(hr / 24)}d ago`;
+        }
+
+        function metric(label, value) {
+            return `<div class="metric"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
+        }
+
+        function laneSummary(snapshot) {
+            const s = snapshot.summary || {};
+            return [
+                metric('Ready for link', s.ready_for_link || 0),
+                metric('Pitch ready', (s.lead_pitch_ready || 0) + (s.pitch_ready || 0)),
+                metric('Active challenge', s.active_challenge || 0),
+                metric('Day 7 / 14 / 30', (s.day_7 || 0) + (s.day_14 || 0) + (s.day_30 || 0)),
+                metric('Fallback', s.fallback_app_group || 0),
+                metric('Paid', s.paid || 0),
+            ].join('');
+        }
+
+        function cardSearchText(item, lane) {
+            return [
+                lane.label,
+                item.display_name,
+                item.handle,
+                item.email,
+                item.lead_stage,
+                item.qualifier_stage,
+                item.recommended_action,
+                item.pending_alert_type,
+                item.challenge_name,
+            ].filter(Boolean).join(' ').toLowerCase();
+        }
+
+        function itemCard(item, lane) {
+            const display = item.display_name || item.handle || 'Person';
+            const handle = item.handle ? `@${item.handle}` : (item.email || '');
+            const entity = item.entity_kind || 'client';
+            const entityClass = item.lane === 'paid' ? 'paid' : entity;
+            const search = esc(cardSearchText(item, lane));
+            const day = item.challenge_day ? `Day ${item.challenge_day}` : (item.lead_stage || 'Lead');
+            const engagement = item.engagement_score ?? 0;
+            const activity = item.workout_days_30 != null
+                ? `${item.workout_days_30} workout days, ${item.meal_days_30 || 0} food days`
+                : (item.warmth_score != null ? `${item.warmth_score} warmth` : 'n/a');
+            const lastTouch = item.last_inbound_at || item.last_outbound_at || item.pending_alert_created_at || item.updated_at;
+            const pending = item.pending_alert_type
+                ? `${item.pending_alert_type} (${relative(item.pending_alert_created_at)})`
+                : 'none';
+            const preview = item.pending_preview ? `<div class="preview">${esc(item.pending_preview)}</div>` : '';
+            const challenge = item.challenge_name || item.qualifier_stage_label || item.qualifier_stage || item.lead_stage || 'n/a';
+            const threadLink = item.thread_id
+                ? `<a href="admin-dashboard.html?tab=dms&thread=${encodeURIComponent(item.thread_id)}">DM thread</a>`
+                : '';
+            const leadLink = item.thread_id
+                ? `<a href="admin-dashboard.html?tab=ig-leads&thread=${encodeURIComponent(item.thread_id)}">IG lead</a>`
+                : '';
+            const needsLink = item.pending_alert_id
+                ? `<a href="admin-dashboard.html?tab=needs-you&alert=${encodeURIComponent(item.pending_alert_id)}">Pending alert</a>`
+                : '';
+
+            return `
+                <article class="card" data-search="${search}">
+                    <div class="card-top">
+                        <div class="person">
+                            <strong>${esc(display)}</strong>
+                            <span>${esc(handle || challenge)}</span>
+                        </div>
+                        <span class="pill ${esc(entityClass)}">${esc(entity)}</span>
+                    </div>
+                    <div class="facts">
+                        <div class="fact"><span>Status</span><strong>${esc(day)}</strong></div>
+                        <div class="fact"><span>Activity</span><strong>${esc(activity)}</strong></div>
+                        <div class="fact"><span>Last touch</span><strong title="${esc(formatDate(lastTouch))}">${esc(relative(lastTouch))}</strong></div>
+                        <div class="fact"><span>Pending</span><strong>${esc(pending)}</strong></div>
+                    </div>
+                    <div class="action">${esc(item.recommended_action || '')}</div>
+                    ${preview}
+                    <div class="card-links">
+                        ${threadLink}
+                        ${leadLink}
+                        ${needsLink}
+                    </div>
+                </article>
+            `;
+        }
+
+        function render(snapshot) {
+            const summary = document.getElementById('summary');
+            const board = document.getElementById('board');
+            const generated = document.getElementById('generated-at');
+
+            summary.innerHTML = laneSummary(snapshot);
+            generated.textContent = `Updated ${formatDate(snapshot.generatedAt)}`;
+
+            board.innerHTML = (snapshot.lanes || []).map(lane => {
+                const items = lane.items || [];
+                return `
+                    <section class="lane" data-lane="${esc(lane.key)}">
+                        <div class="lane-head">
+                            <div class="lane-title">
+                                <h2>${esc(lane.label || laneLabels[lane.key] || lane.key)}</h2>
+                                <p>${esc(lane.description || '')}</p>
+                            </div>
+                            <span class="count">${lane.count ?? items.length}</span>
+                        </div>
+                        <div class="lane-items">
+                            ${items.length ? items.map(item => itemCard(item, lane)).join('') : '<div class="empty">Clear</div>'}
+                        </div>
+                    </section>
+                `;
+            }).join('');
+
+            if (window.lucide) window.lucide.createIcons();
+            applySearch();
+        }
+
+        function applySearch() {
+            const q = String(document.getElementById('search-input').value || '').trim().toLowerCase();
+            document.querySelectorAll('.card').forEach(card => {
+                card.classList.toggle('hidden', !!q && !card.dataset.search.includes(q));
+            });
+        }
+
+        async function loadSnapshot() {
+            const board = document.getElementById('board');
+            const refresh = document.getElementById('refresh-btn');
+            refresh.disabled = true;
+            board.innerHTML = '<div class="state">Loading...</div>';
+            try {
+                const session = await window.authHelpers.getSession();
+                if (!session?.user?.id || !session?.access_token) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                const res = await fetch('/.netlify/functions/conversion-operator-snapshot', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({ coachId: session.user.id }),
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                latestSnapshot = json;
+                render(json);
+            } catch (error) {
+                board.innerHTML = `<div class="state error">${esc(error.message || error)}</div>`;
+            } finally {
+                refresh.disabled = false;
+            }
+        }
+
+        document.getElementById('refresh-btn').addEventListener('click', loadSnapshot);
+        document.getElementById('search-input').addEventListener('input', applySearch);
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) window.lucide.createIcons();
+            loadSnapshot();
+        });
+    </script>
+</body>
+</html>
