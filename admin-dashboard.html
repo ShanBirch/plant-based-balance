@@ -348,8 +348,77 @@
         .content-radar-theme-title { font-weight:900; color:#0f172a; font-size:0.86rem; }
         .content-radar-empty { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:34px 20px; text-align:center; color:#64748b; }
         #ig-operator.section.active { height: calc(100dvh - 48px); overflow:hidden; }
-        #conversion-operator.section.active { height: calc(100dvh - 48px); overflow:hidden; }
-        .conversion-operator-frame { width:100%; height:100%; border:0; display:block; background:#f5f7f4; }
+        #conversion-operator {
+            --conversion-green:#2f7d46;
+            --conversion-blue:#2563eb;
+            --conversion-amber:#b7791f;
+            --conversion-red:#b42318;
+            --conversion-slate:#26343d;
+        }
+        #conversion-operator.section.active { height: calc(100dvh - 48px); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; background:var(--admin-page-bg,#f8fafc); }
+        .conversion-operator-shell { min-height:100%; padding:14px 20px calc(22px + env(safe-area-inset-bottom,0px)); color:var(--admin-text,#1e293b); }
+        .conversion-operator-header { position:sticky; top:0; z-index:12; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:-14px -20px 14px; padding:calc(14px + env(safe-area-inset-top,0px)) 20px 14px; background:var(--admin-page-bg,#f8fafc); border-bottom:1px solid var(--admin-border,#e2e8f0); backdrop-filter:blur(12px); }
+        .conversion-operator-title { min-width:220px; flex:1; }
+        .conversion-operator-title h2 { margin:0; font-family:'Montserrat',sans-serif; font-size:1.12rem; font-weight:900; color:var(--admin-text-strong,#0f172a); letter-spacing:0; }
+        .conversion-operator-title p { margin:3px 0 0; color:var(--admin-muted,#64748b); font-size:0.8rem; line-height:1.35; }
+        .conversion-operator-toolbar { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
+        .conversion-operator-search { position:relative; min-width:min(310px,42vw); }
+        .conversion-operator-search i { position:absolute; left:10px; top:50%; width:16px; height:16px; transform:translateY(-50%); color:var(--admin-muted,#64748b); }
+        .conversion-operator-search input { width:100%; min-height:38px; border:1px solid var(--admin-border,#dbe4ef); border-radius:8px; padding:9px 10px 9px 32px; background:var(--admin-input-bg,var(--admin-surface,#fff)); color:var(--admin-text,#1e293b); font:700 0.82rem 'Inter',sans-serif; }
+        .conversion-operator-search input:focus { outline:none; border-color:var(--admin-primary-strong,#48864B); box-shadow:0 0 0 3px var(--admin-focus,rgba(72,134,75,0.14)); }
+        .conversion-operator-text-btn, .conversion-operator-icon-btn { min-height:38px; border:1px solid var(--admin-border,#dbe4ef); border-radius:8px; background:var(--admin-surface,#fff); color:var(--admin-text,#1e293b); font:900 0.78rem 'Inter',sans-serif; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:9px 12px; text-decoration:none; }
+        .conversion-operator-icon-btn { width:38px; padding:0; }
+        .conversion-operator-text-btn i, .conversion-operator-icon-btn i { width:16px; height:16px; }
+        .conversion-operator-text-btn:hover, .conversion-operator-icon-btn:hover { border-color:var(--admin-border-strong,#cbd5e1); background:var(--admin-surface-2,#f8fafc); }
+        .conversion-operator-status { display:none; min-height:34px; max-width:360px; border:1px solid #bbf7d0; border-radius:8px; background:#ecfdf5; color:#166534; padding:8px 10px; font-size:0.75rem; font-weight:900; line-height:1.25; }
+        .conversion-operator-status.show { display:block; }
+        .conversion-operator-status.error { border-color:#fecaca; background:#fef2f2; color:var(--conversion-red); }
+        .conversion-operator-summary { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+        .conversion-operator-metric { min-height:82px; background:var(--admin-surface,#fff); border:1px solid var(--admin-border,#e2e8f0); border-radius:8px; box-shadow:var(--admin-shadow-soft,0 5px 14px rgba(20,32,24,0.04)); padding:12px; display:flex; flex-direction:column; justify-content:space-between; }
+        .conversion-operator-metric span { color:var(--admin-muted,#64748b); font-size:0.68rem; font-weight:900; text-transform:uppercase; line-height:1.2; }
+        .conversion-operator-metric strong { font:900 1.7rem/1 'Montserrat',sans-serif; color:var(--admin-text-strong,#0f172a); }
+        .conversion-operator-board { display:grid; grid-template-columns:repeat(4,minmax(280px,1fr)); gap:12px; align-items:start; }
+        .conversion-operator-lane { min-height:220px; background:var(--admin-surface,#fff); border:1px solid var(--admin-border,#e2e8f0); border-radius:8px; box-shadow:var(--admin-shadow-soft,0 12px 30px rgba(20,32,24,0.08)); overflow:hidden; }
+        .conversion-operator-lane-head { min-height:76px; padding:13px; border-bottom:1px solid var(--admin-border,#e2e8f0); background:var(--admin-surface,#fff); display:grid; grid-template-columns:1fr auto; gap:9px; align-items:start; }
+        .conversion-operator-lane-title { min-width:0; }
+        .conversion-operator-lane-title h3 { margin:0; color:var(--admin-text-strong,#0f172a); font:900 0.9rem/1.2 'Montserrat',sans-serif; }
+        .conversion-operator-lane-title p { margin:4px 0 0; color:var(--admin-muted,#64748b); font-size:0.72rem; line-height:1.28; }
+        .conversion-operator-count { min-width:30px; height:28px; border-radius:999px; background:var(--conversion-slate); color:#fff; display:inline-flex; align-items:center; justify-content:center; font:900 0.78rem 'Inter',sans-serif; padding:0 9px; }
+        .conversion-operator-lane-items { display:flex; flex-direction:column; gap:9px; padding:10px; }
+        .conversion-operator-card { background:var(--admin-surface,#fff); border:1px solid var(--admin-border,#e2e8f0); border-radius:8px; padding:11px; box-shadow:var(--admin-shadow-soft,0 4px 14px rgba(20,32,24,0.05)); }
+        .conversion-operator-card.hidden { display:none; }
+        .conversion-operator-card-top { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; }
+        .conversion-operator-person { min-width:0; }
+        .conversion-operator-person strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--admin-text-strong,#0f172a); font:900 0.88rem/1.25 'Montserrat',sans-serif; }
+        .conversion-operator-person span { display:block; margin-top:2px; color:var(--admin-muted,#64748b); font-size:0.72rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .conversion-operator-pill { flex:0 0 auto; border-radius:999px; padding:4px 8px; font:900 0.64rem 'Inter',sans-serif; text-transform:uppercase; color:#fff; background:var(--conversion-green); }
+        .conversion-operator-pill.lead { background:var(--conversion-blue); }
+        .conversion-operator-pill.client { background:var(--conversion-green); }
+        .conversion-operator-pill.paid { background:var(--conversion-slate); }
+        .conversion-operator-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin-top:10px; }
+        .conversion-operator-fact { background:var(--admin-surface-2,#f8fafc); border:1px solid var(--admin-border,#edf1ec); border-radius:7px; padding:7px; min-width:0; }
+        .conversion-operator-fact span { display:block; color:var(--admin-muted,#64748b); font-size:0.62rem; font-weight:900; text-transform:uppercase; line-height:1.2; }
+        .conversion-operator-fact strong { display:block; color:var(--admin-text-strong,#0f172a); font-size:0.8rem; margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .conversion-operator-action { margin-top:10px; padding:9px 10px; background:var(--admin-success-bg,#f7fbf7); border-left:3px solid var(--conversion-green); border-radius:7px; color:var(--admin-text,#1f3d29); font-size:0.76rem; font-weight:800; line-height:1.35; }
+        .conversion-operator-preview { margin-top:8px; color:var(--admin-muted,#64748b); font-size:0.74rem; line-height:1.35; }
+        .conversion-operator-card-links { display:flex; gap:7px; flex-wrap:wrap; margin-top:10px; }
+        .conversion-operator-card-link { border:0; background:transparent; color:var(--conversion-blue); padding:0; font-size:0.72rem; font-weight:900; cursor:pointer; text-decoration:none; }
+        .conversion-operator-card-link:hover { text-decoration:underline; }
+        .conversion-operator-actions { display:flex; gap:7px; flex-wrap:wrap; margin-top:10px; padding-top:9px; border-top:1px solid var(--admin-border,#edf1ec); }
+        .conversion-operator-action-btn { min-height:31px; border:1px solid var(--admin-border,#d5e2d3); border-radius:8px; background:var(--admin-surface,#fff); color:var(--admin-text,#24412d); cursor:pointer; display:inline-flex; align-items:center; gap:6px; padding:7px 8px; font:900 0.68rem 'Inter',sans-serif; }
+        .conversion-operator-action-btn i { width:13px; height:13px; }
+        .conversion-operator-action-btn.primary { background:var(--conversion-green); border-color:var(--conversion-green); color:#fff; }
+        .conversion-operator-action-btn.warn { background:#fffbeb; border-color:#fde68a; color:#854d0e; }
+        .conversion-operator-action-btn.paid { background:var(--conversion-slate); border-color:var(--conversion-slate); color:#fff; }
+        .conversion-operator-action-btn:disabled { cursor:wait; opacity:0.56; }
+        .conversion-operator-note { margin-top:8px; color:var(--admin-muted,#64748b); font-size:0.7rem; font-weight:900; line-height:1.3; }
+        .conversion-operator-empty, .conversion-operator-state { color:var(--admin-muted,#64748b); font-size:0.8rem; line-height:1.4; padding:18px; text-align:center; }
+        .conversion-operator-state { background:var(--admin-surface,#fff); border:1px solid var(--admin-border,#e2e8f0); border-radius:8px; box-shadow:var(--admin-shadow-soft,0 12px 30px rgba(20,32,24,0.08)); }
+        .conversion-operator-state.error { color:var(--conversion-red); }
+        @media (max-width:1280px) {
+            .conversion-operator-board { grid-template-columns:repeat(3,minmax(260px,1fr)); }
+            .conversion-operator-summary { grid-template-columns:repeat(3,minmax(0,1fr)); }
+        }
         .ig-operator-shell { height:100%; display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:10px; padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px)); }
         .ig-operator-header { padding:12px 20px 0; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
         .ig-operator-title h2 { font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:800; margin:0 0 3px; color:#0f172a; }
@@ -541,6 +610,13 @@
             .content-radar-idea-head { flex-direction:column; align-items:stretch; }
             #ig-operator.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
             #conversion-operator.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
+            .conversion-operator-shell { padding:14px 12px calc(18px + env(safe-area-inset-bottom,0px)); }
+            .conversion-operator-header { align-items:stretch; flex-direction:column; margin:-14px -12px 12px; padding:calc(14px + env(safe-area-inset-top,0px)) 12px 12px; }
+            .conversion-operator-toolbar { justify-content:stretch; }
+            .conversion-operator-search { flex:1 1 100%; min-width:0; }
+            .conversion-operator-text-btn { flex:1; }
+            .conversion-operator-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .conversion-operator-board { grid-template-columns:1fr; }
             .ig-operator-header { padding:14px; }
             .ig-operator-shell { padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px)); }
             .ig-operator-status-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -1871,7 +1947,7 @@
             <div class="nav-item" hidden data-admin-hidden-entry="cocos" onclick="showSection('cocos', this); loadCocosDms();"><i data-lucide="instagram"></i><span>Coco's</span><span id="cocos-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" hidden data-admin-hidden-entry="auto-dms" onclick="showSection('auto-dms', this); loadAutoDms();"><i data-lucide="bot"></i><span>Auto DMs</span><span id="auto-dms-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('checkins', this); loadChallengeCheckins();"><i data-lucide="clipboard-check"></i><span>Check-ins</span><span id="checkin-badge" class="alert-badge" style="display:none;">0</span></div>
-            <div class="nav-item" onclick="showSection('conversion-operator', this);"><i data-lucide="route"></i><span>Conversion</span></div>
+            <div class="nav-item" onclick="showSection('conversion-operator', this); loadConversionOperator();"><i data-lucide="route"></i><span>Conversion</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" hidden data-admin-hidden-entry="ig-leads" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
             <div class="nav-item" hidden data-admin-hidden-entry="ig-operator" onclick="showSection('ig-operator', this); focusIgOperatorInput();"><i data-lucide="wand-sparkles"></i><span>IG Operator</span></div>
@@ -2577,7 +2653,37 @@
 
             <!-- CONVERSION OPERATOR -->
             <div id="conversion-operator" class="section">
-                <iframe class="conversion-operator-frame" src="/conversion-operator.html" title="Conversion Operator"></iframe>
+                <div class="conversion-operator-shell">
+                    <header class="conversion-operator-header">
+                        <div class="conversion-operator-title">
+                            <h2>Conversion Operator</h2>
+                            <p id="conversion-operator-generated-at">Loading Balance funnel state</p>
+                        </div>
+                        <div class="conversion-operator-toolbar">
+                            <label class="conversion-operator-search" aria-label="Search conversion board">
+                                <i data-lucide="search"></i>
+                                <input id="conversion-operator-search-input" type="search" placeholder="Search people, handles, lanes" oninput="filterConversionOperator()">
+                            </label>
+                            <button class="conversion-operator-text-btn" type="button" onclick="showSection('needs-you', getNavItemForSection('needs-you')); loadNeedsYou(true);" title="Open Needs You">
+                                <i data-lucide="inbox"></i>
+                                Needs You
+                            </button>
+                            <button class="conversion-operator-text-btn" type="button" onclick="openDmAudience('clients', getNavItemForSection('dms'));" title="Open DMs">
+                                <i data-lucide="messages-square"></i>
+                                DMs
+                            </button>
+                            <button class="conversion-operator-icon-btn" id="conversion-operator-refresh-btn" type="button" onclick="loadConversionOperator(true)" title="Refresh">
+                                <i data-lucide="refresh-cw"></i>
+                            </button>
+                            <div class="conversion-operator-status" id="conversion-operator-status" role="status"></div>
+                        </div>
+                    </header>
+
+                    <section class="conversion-operator-summary" id="conversion-operator-summary"></section>
+                    <section class="conversion-operator-board" id="conversion-operator-board" onclick="handleConversionOperatorBoardClick(event)">
+                        <div class="conversion-operator-state">Loading...</div>
+                    </section>
+                </div>
             </div>
 
             <!-- CONTENT RADAR -->
@@ -3140,6 +3246,385 @@
         function adminEsc(value) {
             return escapeHtml(String(value ?? ''));
         }
+
+        const conversionOperatorLaneLabels = {
+            ready_for_link: 'Ready for link',
+            lead_pitch_ready: 'Pitch ready leads',
+            active_challenge: 'Active challenge',
+            needs_check_in: 'Needs check-in',
+            day_7: 'Day 7',
+            day_14: 'Day 14',
+            day_30: 'Day 30',
+            pitch_ready: 'Coaching pitch ready',
+            fallback_app_group: 'Fallback app/group',
+            paid: 'Paid',
+        };
+        const conversionOperatorActionLabels = {
+            mark_link_sent: 'Link sent',
+            mark_pitch_ready: 'Pitch ready',
+            pitch_coaching: 'Coaching pitched',
+            move_fallback: 'Fallback app/group',
+            mark_paid: 'Paid',
+            snooze: 'Snoozed',
+            check_in_done: 'Checked in',
+        };
+        let conversionOperatorSnapshot = null;
+        let conversionOperatorLoadedAt = 0;
+        let conversionOperatorLoading = false;
+
+        function formatConversionOperatorDate(value) {
+            if (!value) return 'n/a';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return 'n/a';
+            return date.toLocaleString('en-AU', {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+            });
+        }
+
+        function conversionOperatorRelative(value) {
+            if (!value) return 'n/a';
+            const ts = Date.parse(value);
+            if (Number.isNaN(ts)) return 'n/a';
+            const diff = Date.now() - ts;
+            const min = Math.max(1, Math.round(diff / 60000));
+            if (min < 60) return `${min}m ago`;
+            const hr = Math.round(min / 60);
+            if (hr < 48) return `${hr}h ago`;
+            return `${Math.round(hr / 24)}d ago`;
+        }
+
+        function conversionOperatorMetric(label, value) {
+            return `<div class="conversion-operator-metric"><span>${adminEsc(label)}</span><strong>${adminEsc(value)}</strong></div>`;
+        }
+
+        function renderConversionOperatorSummary(snapshot) {
+            const s = snapshot.summary || {};
+            return [
+                conversionOperatorMetric('Ready for link', s.ready_for_link || 0),
+                conversionOperatorMetric('Needs check-in', s.needs_check_in || 0),
+                conversionOperatorMetric('Pitch ready', (s.lead_pitch_ready || 0) + (s.pitch_ready || 0)),
+                conversionOperatorMetric('Active challenge', s.active_challenge || 0),
+                conversionOperatorMetric('Day 7 / 14 / 30', (s.day_7 || 0) + (s.day_14 || 0) + (s.day_30 || 0)),
+                conversionOperatorMetric('Fallback', s.fallback_app_group || 0),
+                conversionOperatorMetric('Paid', s.paid || 0),
+            ].join('');
+        }
+
+        function conversionOperatorCardSearchText(item, lane) {
+            return [
+                lane.label,
+                item.display_name,
+                item.handle,
+                item.email,
+                item.lead_stage,
+                item.qualifier_stage,
+                item.recommended_action,
+                item.pending_alert_type,
+                item.challenge_name,
+            ].filter(Boolean).join(' ').toLowerCase();
+        }
+
+        function getConversionOperatorActions(item, lane) {
+            const laneKey = item.lane || lane.key;
+            const isLead = item.entity_kind === 'lead';
+            const actions = [];
+
+            if (isLead && laneKey !== 'paid') {
+                actions.push({ id: 'mark_link_sent', label: 'Link sent', icon: 'link', className: 'primary' });
+                actions.push({ id: 'move_fallback', label: 'Fallback', icon: 'users', className: 'warn' });
+                actions.push({ id: 'mark_paid', label: 'Paid', icon: 'circle-dollar-sign', className: 'paid', confirm: true });
+            }
+
+            if (!isLead && laneKey !== 'paid') {
+                if (laneKey === 'needs_check_in') {
+                    actions.push({ id: 'check_in_done', label: 'Checked in', icon: 'check-circle', className: 'primary' });
+                }
+                if (laneKey !== 'pitch_ready') {
+                    actions.push({ id: 'mark_pitch_ready', label: 'Pitch ready', icon: 'check-circle', className: 'primary' });
+                }
+                actions.push({ id: 'pitch_coaching', label: 'Pitched', icon: 'send', className: 'primary', confirm: true });
+                actions.push({ id: 'move_fallback', label: 'Fallback', icon: 'users', className: 'warn' });
+                actions.push({ id: 'mark_paid', label: 'Paid', icon: 'circle-dollar-sign', className: 'paid', confirm: true });
+            }
+
+            actions.push({ id: 'snooze', label: 'Snooze', icon: 'clock', className: '' });
+            return actions;
+        }
+
+        function renderConversionOperatorActionButtons(item, lane) {
+            const actions = getConversionOperatorActions(item, lane);
+            if (!actions.length) return '';
+            const attrs = {
+                entityKind: item.entity_kind || 'client',
+                threadId: item.thread_id || '',
+                clientId: item.client_id || '',
+                pendingAlertId: item.pending_alert_id || '',
+                lane: item.lane || lane.key || '',
+                displayName: item.display_name || item.handle || item.email || 'Person',
+            };
+            return `
+                <div class="conversion-operator-actions">
+                    ${actions.map(action => `
+                        <button
+                            class="conversion-operator-action-btn ${adminEsc(action.className || '')}"
+                            type="button"
+                            data-action="${adminEsc(action.id)}"
+                            data-confirm="${action.confirm ? 'true' : 'false'}"
+                            data-entity-kind="${adminEsc(attrs.entityKind)}"
+                            data-thread-id="${adminEsc(attrs.threadId)}"
+                            data-client-id="${adminEsc(attrs.clientId)}"
+                            data-pending-alert-id="${adminEsc(attrs.pendingAlertId)}"
+                            data-lane="${adminEsc(attrs.lane)}"
+                            data-display-name="${adminEsc(attrs.displayName)}"
+                            title="${adminEsc(action.label)}"
+                        >
+                            <i data-lucide="${adminEsc(action.icon)}"></i>
+                            ${adminEsc(action.label)}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderConversionOperatorCard(item, lane) {
+            const display = item.display_name || item.handle || 'Person';
+            const handle = item.handle ? `@${item.handle}` : (item.email || '');
+            const entity = item.entity_kind || 'client';
+            const entityClass = item.lane === 'paid' ? 'paid' : entity;
+            const search = adminEsc(conversionOperatorCardSearchText(item, lane));
+            const day = item.challenge_day ? `Day ${item.challenge_day}` : (item.lead_stage || 'Lead');
+            const activity = item.workout_days_30 != null
+                ? `${item.workout_days_30} workout days, ${item.meal_days_30 || 0} food days`
+                : (item.warmth_score != null ? `${item.warmth_score} warmth` : 'n/a');
+            const lastTouch = item.last_inbound_at || item.last_outbound_at || item.pending_alert_created_at || item.updated_at;
+            const pending = item.pending_alert_type
+                ? `${item.pending_alert_type} (${conversionOperatorRelative(item.pending_alert_created_at)})`
+                : 'none';
+            const preview = item.pending_preview ? `<div class="conversion-operator-preview">${adminEsc(item.pending_preview)}</div>` : '';
+            const challenge = item.challenge_name || item.qualifier_stage_label || item.qualifier_stage || item.lead_stage || 'n/a';
+            const threadLink = item.thread_id
+                ? `<button class="conversion-operator-card-link" type="button" data-target="dms" data-audience="${entity === 'lead' ? 'leads' : 'clients'}" data-thread-id="${adminEsc(item.thread_id)}">DM thread</button>`
+                : '';
+            const leadLink = item.thread_id
+                ? `<button class="conversion-operator-card-link" type="button" data-target="ig-leads" data-thread-id="${adminEsc(item.thread_id)}">IG lead</button>`
+                : '';
+            const needsLink = item.pending_alert_id
+                ? `<button class="conversion-operator-card-link" type="button" data-target="needs-you" data-alert-id="${adminEsc(item.pending_alert_id)}">Pending alert</button>`
+                : '';
+            const operatorNote = item.operator_action
+                ? `<div class="conversion-operator-note">Last operator: ${adminEsc(conversionOperatorActionLabels[item.operator_action] || item.operator_action)} (${adminEsc(conversionOperatorRelative(item.operator_action_at))})</div>`
+                : '';
+
+            return `
+                <article class="conversion-operator-card" data-search="${search}">
+                    <div class="conversion-operator-card-top">
+                        <div class="conversion-operator-person">
+                            <strong>${adminEsc(display)}</strong>
+                            <span>${adminEsc(handle || challenge)}</span>
+                        </div>
+                        <span class="conversion-operator-pill ${adminEsc(entityClass)}">${adminEsc(entity)}</span>
+                    </div>
+                    <div class="conversion-operator-facts">
+                        <div class="conversion-operator-fact"><span>Status</span><strong>${adminEsc(day)}</strong></div>
+                        <div class="conversion-operator-fact"><span>Activity</span><strong>${adminEsc(activity)}</strong></div>
+                        <div class="conversion-operator-fact"><span>Last touch</span><strong title="${adminEsc(formatConversionOperatorDate(lastTouch))}">${adminEsc(conversionOperatorRelative(lastTouch))}</strong></div>
+                        <div class="conversion-operator-fact"><span>Pending</span><strong>${adminEsc(pending)}</strong></div>
+                    </div>
+                    <div class="conversion-operator-action">${adminEsc(item.recommended_action || '')}</div>
+                    ${preview}
+                    <div class="conversion-operator-card-links">
+                        ${threadLink}
+                        ${leadLink}
+                        ${needsLink}
+                    </div>
+                    ${operatorNote}
+                    ${renderConversionOperatorActionButtons(item, lane)}
+                </article>
+            `;
+        }
+
+        function renderConversionOperator(snapshot) {
+            const summary = document.getElementById('conversion-operator-summary');
+            const board = document.getElementById('conversion-operator-board');
+            const generated = document.getElementById('conversion-operator-generated-at');
+            if (!summary || !board) return;
+
+            summary.innerHTML = renderConversionOperatorSummary(snapshot);
+            if (generated) generated.textContent = `Updated ${formatConversionOperatorDate(snapshot.generatedAt)}`;
+
+            board.innerHTML = (snapshot.lanes || []).map(lane => {
+                const items = lane.items || [];
+                return `
+                    <section class="conversion-operator-lane" data-lane="${adminEsc(lane.key)}">
+                        <div class="conversion-operator-lane-head">
+                            <div class="conversion-operator-lane-title">
+                                <h3>${adminEsc(lane.label || conversionOperatorLaneLabels[lane.key] || lane.key)}</h3>
+                                <p>${adminEsc(lane.description || '')}</p>
+                            </div>
+                            <span class="conversion-operator-count">${adminEsc(lane.count ?? items.length)}</span>
+                        </div>
+                        <div class="conversion-operator-lane-items">
+                            ${items.length ? items.map(item => renderConversionOperatorCard(item, lane)).join('') : '<div class="conversion-operator-empty">Clear</div>'}
+                        </div>
+                    </section>
+                `;
+            }).join('');
+
+            if (window.lucide) window.lucide.createIcons();
+            filterConversionOperator();
+        }
+
+        function filterConversionOperator() {
+            const input = document.getElementById('conversion-operator-search-input');
+            const q = String(input?.value || '').trim().toLowerCase();
+            document.querySelectorAll('#conversion-operator .conversion-operator-card').forEach(card => {
+                card.classList.toggle('hidden', !!q && !String(card.dataset.search || '').includes(q));
+            });
+        }
+
+        function setConversionOperatorStatus(message, type = 'success') {
+            const el = document.getElementById('conversion-operator-status');
+            if (!el) return;
+            window.clearTimeout(setConversionOperatorStatus._timer);
+            el.textContent = message || '';
+            el.classList.toggle('show', !!message);
+            el.classList.toggle('error', type === 'error');
+            if (message && type !== 'error') {
+                setConversionOperatorStatus._timer = window.setTimeout(() => {
+                    el.classList.remove('show');
+                    el.textContent = '';
+                }, 4200);
+            }
+        }
+
+        async function getConversionOperatorSession() {
+            const session = await authHelpers.getSession();
+            if (!session?.user?.id || !session?.access_token) {
+                window.location.href = '/login.html?redirect=' + encodeURIComponent('/admin-dashboard.html?tab=conversion-operator');
+                return null;
+            }
+            return session;
+        }
+
+        function openConversionOperatorTarget(button) {
+            const target = button?.dataset?.target || '';
+            if (target === 'needs-you') {
+                showSection('needs-you', getNavItemForSection('needs-you'));
+                loadNeedsYou(true);
+                return;
+            }
+            if (target === 'dms') {
+                openDmAudience(button.dataset.audience || 'clients', getNavItemForSection('dms'));
+                return;
+            }
+            if (target === 'ig-leads') {
+                showSection('ig-leads', getNavItemForSection('ig-leads'));
+                if (typeof loadIgLeads === 'function') loadIgLeads();
+            }
+        }
+
+        async function runConversionOperatorAction(button) {
+            const action = button.dataset.action;
+            const displayName = button.dataset.displayName || 'this person';
+            const label = conversionOperatorActionLabels[action] || action;
+            if (button.dataset.confirm === 'true') {
+                const ok = window.confirm(`Mark ${displayName} as "${label}"?`);
+                if (!ok) return;
+            }
+
+            const card = button.closest('.conversion-operator-card');
+            const buttons = card ? Array.from(card.querySelectorAll('.conversion-operator-action-btn')) : [button];
+            buttons.forEach(btn => { btn.disabled = true; });
+            setConversionOperatorStatus(`${label}...`);
+
+            try {
+                const session = await getConversionOperatorSession();
+                if (!session) return;
+                const res = await fetch('/.netlify/functions/conversion-operator-action', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({
+                        coachId: session.user.id,
+                        action,
+                        entityKind: button.dataset.entityKind,
+                        threadId: button.dataset.threadId || null,
+                        clientId: button.dataset.clientId || null,
+                        pendingAlertId: button.dataset.pendingAlertId || null,
+                        lane: button.dataset.lane || null,
+                        displayName,
+                    }),
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                setConversionOperatorStatus(`${label} saved`);
+                await loadConversionOperator({ force: true, quiet: true });
+            } catch (error) {
+                setConversionOperatorStatus(error.message || String(error), 'error');
+                buttons.forEach(btn => { btn.disabled = false; });
+            }
+        }
+
+        function handleConversionOperatorBoardClick(event) {
+            const link = event.target.closest('.conversion-operator-card-link');
+            if (link) {
+                openConversionOperatorTarget(link);
+                return;
+            }
+            const button = event.target.closest('.conversion-operator-action-btn');
+            if (button) runConversionOperatorAction(button);
+        }
+
+        async function loadConversionOperator(forceOrOptions = false) {
+            const options = typeof forceOrOptions === 'object' ? forceOrOptions : { force: !!forceOrOptions };
+            const force = !!options.force;
+            const quiet = !!options.quiet;
+            const board = document.getElementById('conversion-operator-board');
+            const refresh = document.getElementById('conversion-operator-refresh-btn');
+            if (!board) return null;
+
+            const isFresh = conversionOperatorSnapshot && (Date.now() - conversionOperatorLoadedAt < 60000);
+            if (isFresh && !force) {
+                renderConversionOperator(conversionOperatorSnapshot);
+                return conversionOperatorSnapshot;
+            }
+            if (conversionOperatorLoading) return conversionOperatorSnapshot;
+
+            conversionOperatorLoading = true;
+            if (refresh) refresh.disabled = true;
+            if (!quiet) board.innerHTML = '<div class="conversion-operator-state">Loading...</div>';
+
+            try {
+                const session = await getConversionOperatorSession();
+                if (!session) return null;
+                const res = await fetch('/.netlify/functions/conversion-operator-snapshot', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({ coachId: session.user.id }),
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                conversionOperatorSnapshot = json;
+                conversionOperatorLoadedAt = Date.now();
+                renderConversionOperator(json);
+                return json;
+            } catch (error) {
+                board.innerHTML = `<div class="conversion-operator-state error">${adminEsc(error.message || error)}</div>`;
+                return null;
+            } finally {
+                conversionOperatorLoading = false;
+                if (refresh) refresh.disabled = false;
+            }
+        }
+
         let igOperatorIsLoading = false;
         let igOperatorIsUploading = false;
         let igOperatorHistory = [];
@@ -17851,7 +18336,7 @@
                 case 'cohorts': return loadCohorts(true);
                 case 'ig-leads': return typeof loadIgLeads === 'function' ? loadIgLeads() : null;
                 case 'ig-operator': return typeof focusIgOperatorInput === 'function' ? focusIgOperatorInput() : null;
-                case 'conversion-operator': return null;
+                case 'conversion-operator': return loadConversionOperator(true);
                 case 'content-radar': return typeof loadContentRadar === 'function' ? loadContentRadar(true) : null;
                 case 'your-day': return loadYourDay(true);
                 case 'ai-coach':
@@ -18060,6 +18545,7 @@
         } else if (window.location.search.includes('tab=conversion-operator')) {
             setTimeout(() => {
                 showSection('conversion-operator', getNavItemForSection('conversion-operator'));
+                loadConversionOperator(true);
             }, 500);
         } else if (window.location.search.includes('tab=cocos')) {
             setTimeout(() => {
