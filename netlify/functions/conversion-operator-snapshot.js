@@ -14,6 +14,7 @@ const LANE_ORDER = [
     'ready_for_link',
     'lead_pitch_ready',
     'active_challenge',
+    'needs_check_in',
     'day_7',
     'day_14',
     'day_30',
@@ -88,6 +89,7 @@ function laneMeta(key) {
         ready_for_link: ['Ready for link', 'Accepted or clearly ready. Human handoff to get them into Balance.'],
         lead_pitch_ready: ['Pitch ready leads', 'Warm enough for a low-pressure challenge invite.'],
         active_challenge: ['Active challenge', 'In the 30-day challenge before the first checkpoint.'],
+        needs_check_in: ['Needs check-in', 'Challenge people who are quiet or have a real check-in/win waiting.'],
         day_7: ['Day 7', 'First week review window. Check friction and setup.'],
         day_14: ['Day 14', 'Midpoint review. Find blockers and reinforce wins.'],
         day_30: ['Day 30', 'One-month milestone. Big relationship moment.'],
@@ -237,6 +239,9 @@ challenge_cards as (
             when cm.challenge_day >= 30 and ((coalesce(a.workout_days_30, 0) * 2) + coalesce(a.meal_days_30, 0)) >= 8 then 'pitch_ready'
             when cm.challenge_day >= 30 then 'fallback_app_group'
             when cm.challenge_day >= 21 and ((coalesce(a.workout_days_30, 0) * 2) + coalesce(a.meal_days_30, 0)) >= 12 then 'pitch_ready'
+            when pca.pending_alert_type in ('weekly_checkin', 'win_to_celebrate', 'badge_earned', 'first_workout', 'onboarding_day_30') then 'needs_check_in'
+            when cm.challenge_day >= 3 and coalesce(greatest(li.last_inbound_at, li.last_outbound_at), cm.accepted_at) < now() - interval '3 days' then 'needs_check_in'
+            when cm.challenge_day >= 5 and coalesce(greatest(a.last_workout_at, a.last_meal_at), cm.accepted_at) < now() - interval '4 days' then 'needs_check_in'
             when cm.challenge_day >= 21 then 'day_30'
             when cm.challenge_day >= 14 then 'day_14'
             when cm.challenge_day >= 7 then 'day_7'
@@ -284,6 +289,9 @@ challenge_cards as (
             when cm.challenge_day >= 30 and ((coalesce(a.workout_days_30, 0) * 2) + coalesce(a.meal_days_30, 0)) >= 8 then 'Review month-one win and pitch $29/week coaching.'
             when cm.challenge_day >= 30 then 'Use day-30 milestone, then offer $20/month app/group if coaching is too much.'
             when cm.challenge_day >= 21 and ((coalesce(a.workout_days_30, 0) * 2) + coalesce(a.meal_days_30, 0)) >= 12 then 'Start soft coaching-path conversation before day 30.'
+            when pca.pending_alert_type in ('weekly_checkin', 'win_to_celebrate', 'badge_earned', 'first_workout', 'onboarding_day_30') then 'Open the pending check-in or win and send a short human note.'
+            when cm.challenge_day >= 3 and coalesce(greatest(li.last_inbound_at, li.last_outbound_at), cm.accepted_at) < now() - interval '3 days' then 'Check in on how the challenge is feeling before they drift.'
+            when cm.challenge_day >= 5 and coalesce(greatest(a.last_workout_at, a.last_meal_at), cm.accepted_at) < now() - interval '4 days' then 'Check in on routine friction and give one easy next step.'
             when cm.challenge_day >= 14 then 'Midpoint check: identify blockers and keep the next week specific.'
             when cm.challenge_day >= 7 then 'Week-one check: setup, routine, food friction, and one next step.'
             else 'Keep them active and learning inside the challenge.'
@@ -292,6 +300,9 @@ challenge_cards as (
             when pca.pending_alert_type is not null then 90
             when cm.challenge_day >= 30 then 80
             when cm.challenge_day >= 21 then 70
+            when pca.pending_alert_type in ('weekly_checkin', 'win_to_celebrate', 'badge_earned', 'first_workout', 'onboarding_day_30') then 68
+            when cm.challenge_day >= 3 and coalesce(greatest(li.last_inbound_at, li.last_outbound_at), cm.accepted_at) < now() - interval '3 days' then 62
+            when cm.challenge_day >= 5 and coalesce(greatest(a.last_workout_at, a.last_meal_at), cm.accepted_at) < now() - interval '4 days' then 58
             when cm.challenge_day >= 14 then 55
             when cm.challenge_day >= 7 then 45
             else 25

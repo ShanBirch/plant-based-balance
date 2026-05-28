@@ -50,6 +50,12 @@ const ACTIONS = {
         defaultSnoozeDays: 3,
         note: 'Snoozed from the conversion operator board.',
     },
+    check_in_done: {
+        label: 'Checked in',
+        status: 'checked_in',
+        defaultSnoozeDays: 3,
+        note: 'Checked in from the conversion operator board.',
+    },
 };
 
 function json(statusCode, body) {

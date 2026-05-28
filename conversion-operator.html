@@ -153,7 +153,7 @@
 
         .summary {
             display: grid;
-            grid-template-columns: repeat(6, minmax(0, 1fr));
+            grid-template-columns: repeat(7, minmax(0, 1fr));
             gap: 10px;
             margin-bottom: 14px;
         }
@@ -547,6 +547,7 @@
             ready_for_link: 'Ready for link',
             lead_pitch_ready: 'Pitch ready leads',
             active_challenge: 'Active challenge',
+            needs_check_in: 'Needs check-in',
             day_7: 'Day 7',
             day_14: 'Day 14',
             day_30: 'Day 30',
@@ -598,6 +599,7 @@
             const s = snapshot.summary || {};
             return [
                 metric('Ready for link', s.ready_for_link || 0),
+                metric('Needs check-in', s.needs_check_in || 0),
                 metric('Pitch ready', (s.lead_pitch_ready || 0) + (s.pitch_ready || 0)),
                 metric('Active challenge', s.active_challenge || 0),
                 metric('Day 7 / 14 / 30', (s.day_7 || 0) + (s.day_14 || 0) + (s.day_30 || 0)),
@@ -627,6 +629,7 @@
             move_fallback: 'Fallback app/group',
             mark_paid: 'Paid',
             snooze: 'Snoozed',
+            check_in_done: 'Checked in',
         };
 
         function operatorActionsFor(item, lane) {
@@ -641,6 +644,9 @@
             }
 
             if (!isLead && laneKey !== 'paid') {
+                if (laneKey === 'needs_check_in') {
+                    actions.push({ id: 'check_in_done', label: 'Checked in', icon: 'check-circle', className: 'primary' });
+                }
                 if (laneKey !== 'pitch_ready') {
                     actions.push({ id: 'mark_pitch_ready', label: 'Pitch ready', icon: 'check-circle', className: 'primary' });
                 }
