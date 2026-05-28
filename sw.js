@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v177'; // v177: compact black onboarding chat; v176: onboarding Health IQ goal anchors
+const CACHE_NAME = 'pbb-app-v178'; // v178: onboarding chat metric/imperial measures; v177: compact black onboarding chat
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',

@@ -5959,6 +5959,144 @@ const WIZARD_INTENT_WEEKLY_TARGETS = {
     build_community: ['message_coach', 'share_workout_feed', 'complete_workouts']
 };
 
+function wizardPrefersImperialUnits() {
+    try {
+        return localStorage.getItem('weightUnitPreference') === 'lbs';
+    } catch (e) {
+        return false;
+    }
+}
+
+function roundWizardMetric(value, decimals = 1) {
+    const factor = Math.pow(10, decimals);
+    return Math.round(Number(value) * factor) / factor;
+}
+
+function formatWizardNumber(value, decimals = 1) {
+    const rounded = roundWizardMetric(value, decimals);
+    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(decimals);
+}
+
+function getWizardHeightQuestion() {
+    return wizardPrefersImperialUnits()
+        ? 'What is your height? You can use ft/in or cm.'
+        : 'What is your height? You can use cm or ft/in.';
+}
+
+function getWizardHeightPlaceholder() {
+    return wizardPrefersImperialUnits() ? 'e.g. 5 ft 8 or 173 cm' : 'e.g. 170 cm or 5 ft 7';
+}
+
+function getWizardWeightQuestion() {
+    return wizardPrefersImperialUnits()
+        ? 'What is your current weight? You can use lbs or kg.'
+        : 'What is your current weight? You can use kg or lbs.';
+}
+
+function getWizardWeightPlaceholder() {
+    return wizardPrefersImperialUnits() ? 'e.g. 150 lbs or 68 kg' : 'e.g. 72 kg or 159 lbs';
+}
+
+function getWizardGoalWeightQuestion() {
+    return wizardPrefersImperialUnits()
+        ? 'If weight is part of the plan, what number should Shannon keep in mind? You can use lbs or kg. If not, use your current weight.'
+        : 'If weight is part of the plan, what number should Shannon keep in mind? You can use kg or lbs. If not, use your current weight.';
+}
+
+function getWizardGoalWeightPlaceholder() {
+    return wizardPrefersImperialUnits() ? 'e.g. 140 lbs or 64 kg' : 'e.g. 67 kg or 148 lbs';
+}
+
+function parseWizardFeetInches(raw) {
+    const text = String(raw || '').toLowerCase().replace(/[’′]/g, "'");
+    const feetInches = text.match(/(\d+(?:\.\d+)?)\s*(?:'|ft|feet|foot)\s*(\d+(?:\.\d+)?)?\s*(?:"|in|inch|inches)?/);
+    if (!feetInches) return null;
+    const feet = Number(feetInches[1]);
+    const inches = feetInches[2] == null ? 0 : Number(feetInches[2]);
+    if (!Number.isFinite(feet) || !Number.isFinite(inches)) return null;
+    return (feet * 12) + inches;
+}
+
+function parseWizardBareFeet(value, raw) {
+    const number = Number(value);
+    if (!Number.isFinite(number) || number <= 0 || number >= 9) return null;
+    const text = String(raw || '').trim();
+    if (text.includes('.')) {
+        const parts = text.split('.');
+        const feet = Number(parts[0]);
+        const inches = Number(parts[1]);
+        if (Number.isFinite(feet) && Number.isFinite(inches) && inches < 12) {
+            return (feet * 12) + inches;
+        }
+    }
+    return number * 12;
+}
+
+function parseWizardHeightInput(raw) {
+    const text = String(raw || '').trim().toLowerCase();
+    if (!text) return null;
+    const explicitFeetInches = parseWizardFeetInches(text);
+    if (explicitFeetInches != null) {
+        const cm = explicitFeetInches * 2.54;
+        return { value: roundWizardMetric(cm, 1), display: `${Math.floor(explicitFeetInches / 12)}' ${formatWizardNumber(explicitFeetInches % 12, 0)}"` };
+    }
+
+    const match = text.replace(/,/g, '.').match(/\d+(\.\d+)?/);
+    if (!match) return null;
+    const number = Number(match[0]);
+    if (!Number.isFinite(number)) return null;
+
+    const hasCm = /\bcm|centimet/.test(text);
+    const hasInches = /\bin|inch|inches|"/.test(text);
+    let cm;
+    let display;
+
+    if (hasCm || (!hasInches && !wizardPrefersImperialUnits() && number >= 100)) {
+        cm = number;
+        display = `${formatWizardNumber(number, 1)} cm`;
+    } else if (hasInches || (number >= 48 && number <= 96)) {
+        cm = number * 2.54;
+        display = `${formatWizardNumber(number, 0)} in`;
+    } else {
+        const bareFeetInches = parseWizardBareFeet(number, text);
+        if (bareFeetInches != null) {
+            cm = bareFeetInches * 2.54;
+            display = `${Math.floor(bareFeetInches / 12)}' ${formatWizardNumber(bareFeetInches % 12, 0)}"`;
+        } else {
+            cm = number;
+            display = `${formatWizardNumber(number, 1)} cm`;
+        }
+    }
+
+    if (!Number.isFinite(cm) || cm < 100 || cm > 250) return null;
+    return { value: roundWizardMetric(cm, 1), display };
+}
+
+function parseWizardWeightInput(raw) {
+    const text = String(raw || '').trim().toLowerCase();
+    if (!text) return null;
+    const match = text.replace(/,/g, '.').match(/\d+(\.\d+)?/);
+    if (!match) return null;
+    const number = Number(match[0]);
+    if (!Number.isFinite(number)) return null;
+
+    const hasKg = /\bkg|kilo|kilogram/.test(text);
+    const hasLbs = /\blb|lbs|pound/.test(text);
+    const useLbs = hasLbs || (!hasKg && wizardPrefersImperialUnits());
+    const kg = useLbs ? number * 0.453592 : number;
+    if (!Number.isFinite(kg) || kg < 30 || kg > 300) return null;
+    return {
+        value: roundWizardMetric(kg, 1),
+        display: useLbs ? `${formatWizardNumber(number, 1)} lbs` : `${formatWizardNumber(kg, 1)} kg`
+    };
+}
+
+function parseWizardMeasurementInput(step, raw) {
+    if (step?.measurement === 'height') return parseWizardHeightInput(raw);
+    if (step?.measurement === 'weight') return parseWizardWeightInput(raw);
+    return null;
+}
+
 const WIZARD_CHAT_STEPS = [
     {
         key: 'gender',
@@ -5971,8 +6109,8 @@ const WIZARD_CHAT_STEPS = [
     },
     { key: 'name', type: 'text', question: 'What should Shannon call you?', placeholder: 'Your first name', minLength: 2 },
     { key: 'age', type: 'number', question: 'How old are you?', placeholder: 'e.g. 34', min: 18, max: 100, suffix: 'years' },
-    { key: 'height', type: 'number', question: 'What is your height in cm?', placeholder: 'e.g. 170', min: 100, max: 250, suffix: 'cm' },
-    { key: 'weight', type: 'number', question: 'What is your current weight in kg?', placeholder: 'e.g. 72', min: 30, max: 300, suffix: 'kg' },
+    { key: 'height', type: 'measurement', measurement: 'height', question: getWizardHeightQuestion, placeholder: getWizardHeightPlaceholder },
+    { key: 'weight', type: 'measurement', measurement: 'weight', question: getWizardWeightQuestion, placeholder: getWizardWeightPlaceholder },
     {
         key: 'goal_intents',
         type: 'multi',
@@ -6028,7 +6166,7 @@ const WIZARD_CHAT_STEPS = [
             { value: 'Body Builder', label: 'Build muscle / strength' }
         ]
     },
-    { key: 'goal_weight', type: 'number', question: 'If weight is part of the plan, what number should Shannon keep in mind? If not, use your current weight.', placeholder: 'e.g. 67', min: 30, max: 300, suffix: 'kg' },
+    { key: 'goal_weight', type: 'measurement', measurement: 'weight', question: getWizardGoalWeightQuestion, placeholder: getWizardGoalWeightPlaceholder },
     { key: 'thirty_day_win', type: 'text', question: 'Put that 30-day win in your own words.', placeholder: 'e.g. train 3x/week for 30 days and log meals most days', minLength: 3 },
     { key: 'main_blocker', type: 'text', question: 'What usually gets in the way when you try to lock this in?', placeholder: 'time, soreness, food, motivation, stress...', minLength: 3 },
     { key: 'why_now', type: 'text', question: 'What made you want to sort this out now?', placeholder: 'Type what kicked this off', minLength: 3 },
@@ -6163,8 +6301,20 @@ function wizardChatAnswerLabel(step, value) {
         if (!list.length) return step.emptyLabel || step.optionalLabel || 'None';
         return list.map(item => wizardChatOptionLabel(step, item)).join(', ');
     }
+    if (step.type === 'measurement') {
+        if (step.measurement === 'height') return `${formatWizardNumber(value, 1)} cm`;
+        if (step.measurement === 'weight') return `${formatWizardNumber(value, 1)} kg`;
+    }
     if (step.suffix && value) return `${value} ${step.suffix}`;
     return String(value || '');
+}
+
+function resolveWizardChatQuestion(step) {
+    return typeof step?.question === 'function' ? step.question() : step?.question;
+}
+
+function resolveWizardChatPlaceholder(step) {
+    return typeof step?.placeholder === 'function' ? step.placeholder() : step?.placeholder;
 }
 
 function getWizardChatOrderedOptions(step) {
@@ -6178,6 +6328,20 @@ function getWizardChatOrderedOptions(step) {
         if (aRank !== bRank) return aRank - bRank;
         return options.indexOf(a) - options.indexOf(b);
     });
+}
+
+function getWizardChatInputValue(step) {
+    if (!step || !Object.prototype.hasOwnProperty.call(wizardChatAnswers, step.key)) return '';
+    if (step.type === 'measurement') {
+        return wizardChatFreeformAnswers[`${step.key}_input`] || wizardChatFreeformAnswers[`${step.key}_display`] || wizardChatAnswerLabel(step, wizardChatAnswers[step.key]);
+    }
+    if (step.type === 'choice') {
+        return wizardChatFreeformAnswers[step.key] || '';
+    }
+    if (step.type === 'multi') {
+        return wizardChatFreeformAnswers[step.key] || '';
+    }
+    return String(wizardChatAnswers[step.key] ?? '');
 }
 
 function normalizeWizardChatText(value) {
@@ -6418,7 +6582,7 @@ function renderWizardChatControls() {
         input.type = 'text';
         input.inputMode = 'text';
         input.placeholder = step.textPlaceholder || 'Or type your answer...';
-        input.value = '';
+        input.value = getWizardChatInputValue(step);
         sendBtn.textContent = 'Send';
         input.onkeydown = event => {
             if (event.key === 'Enter') {
@@ -6427,7 +6591,9 @@ function renderWizardChatControls() {
             }
         };
         choicesEl.innerHTML = getWizardChatOrderedOptions(step).map(option => {
-            const selected = step.type === 'multi' && wizardChatMultiSelection.has(option.value);
+            const selected = step.type === 'multi'
+                ? wizardChatMultiSelection.has(option.value)
+                : wizardChatAnswers[step.key] === option.value;
             const handler = step.type === 'multi'
                 ? `toggleWizardChatMulti('${option.value}')`
                 : `selectWizardChatChoice('${option.value}')`;
@@ -6448,8 +6614,8 @@ function renderWizardChatControls() {
     inputRow.style.display = 'flex';
     input.type = step.type === 'number' ? 'number' : 'text';
     input.inputMode = step.type === 'number' ? 'decimal' : 'text';
-    input.placeholder = step.placeholder || 'Type your answer...';
-    input.value = '';
+    input.placeholder = resolveWizardChatPlaceholder(step) || 'Type your answer...';
+    input.value = getWizardChatInputValue(step);
     sendBtn.textContent = 'Send';
     input.onkeydown = event => {
         if (event.key === 'Enter') {
@@ -6471,17 +6637,11 @@ function resolveWizardChatPrelude(step) {
 function appendWizardChatQuestion(step) {
     const prelude = resolveWizardChatPrelude(step);
     if (prelude) wizardChatMessages.push({ role: 'coach', text: prelude });
-    wizardChatMessages.push({ role: 'coach', text: step.question });
+    wizardChatMessages.push({ role: 'coach', text: resolveWizardChatQuestion(step) });
 }
 
 function rebuildWizardChatMessagesUntil(stepIndex) {
     wizardChatMessages = [];
-    for (let i = 0; i < stepIndex; i += 1) {
-        const step = WIZARD_CHAT_STEPS[i];
-        if (!step || !Object.prototype.hasOwnProperty.call(wizardChatAnswers, step.key)) continue;
-        appendWizardChatQuestion(step);
-        wizardChatMessages.push({ role: 'user', text: wizardChatAnswerLabel(step, wizardChatAnswers[step.key]) });
-    }
 }
 
 function askWizardChatQuestion(options = {}) {
@@ -6490,7 +6650,7 @@ function askWizardChatQuestion(options = {}) {
     const step = getWizardChatStep();
     if (!step) {
         wizardChatComplete = true;
-        wizardChatMessages.push({ role: 'coach', text: 'Perfect. I have enough to set your first plan up properly. Next we will lock in your training week.' });
+        wizardChatMessages = [{ role: 'coach', text: 'Perfect. I have enough to set your first plan up properly. Next we will lock in your training week.' }];
         renderWizardChatMessages();
         renderWizardChatProgress();
         renderWizardChatControls();
@@ -6499,6 +6659,7 @@ function askWizardChatQuestion(options = {}) {
 
     wizardChatMultiSelection = new Set(getWizardChatInitialMultiSelection(step));
     if (options.instant) {
+        wizardChatMessages = [];
         appendWizardChatQuestion(step);
         renderWizardChatMessages();
         renderWizardChatProgress();
@@ -6506,13 +6667,13 @@ function askWizardChatQuestion(options = {}) {
         return;
     }
 
-    wizardChatMessages.push({ role: 'coach', typing: true });
+    wizardChatMessages = [{ role: 'coach', typing: true }];
     renderWizardChatMessages();
     renderWizardChatProgress();
     renderWizardChatControls();
     setTimeout(() => {
         if (askToken !== wizardChatAskToken) return;
-        wizardChatMessages = wizardChatMessages.filter(message => !message.typing);
+        wizardChatMessages = [];
         appendWizardChatQuestion(step);
         renderWizardChatMessages();
         renderWizardChatControls();
@@ -6540,10 +6701,10 @@ function initializeWizardChatIntake() {
 
 function advanceWizardChat(step, value, displayText = null) {
     wizardChatAnswers[step.key] = value;
-    wizardChatMessages.push({ role: 'user', text: displayText || wizardChatAnswerLabel(step, value) });
     const input = document.getElementById('wizard-chat-input');
     if (input) input.value = '';
     wizardChatStepIndex += 1;
+    wizardChatMessages = [];
     scrollWizardChatToBottom();
     askWizardChatQuestion();
 }
@@ -6637,6 +6798,20 @@ function submitWizardChatAnswer() {
             return;
         }
         advanceWizardChat(step, selectedValues, raw || null);
+        return;
+    }
+
+    if (step.type === 'measurement') {
+        const parsed = parseWizardMeasurementInput(step, raw);
+        if (!parsed) {
+            wizardAlert(step.measurement === 'height'
+                ? 'Enter a valid height, like 170 cm or 5 ft 8.'
+                : 'Enter a valid weight, like 70 kg or 154 lbs.');
+            return;
+        }
+        wizardChatFreeformAnswers[`${step.key}_input`] = raw;
+        wizardChatFreeformAnswers[`${step.key}_display`] = parsed.display;
+        advanceWizardChat(step, parsed.value, parsed.display);
         return;
     }
 
@@ -8658,15 +8833,15 @@ async function wizardNext() {
             return;
         }
         if (!height || height < 100 || height > 250) {
-            wizardAlert("Please enter a valid height in cm (100-250).");
+            wizardAlert("Please enter a valid height.");
             return;
         }
         if (!weight || weight < 30 || weight > 300) {
-            wizardAlert("Please enter a valid weight in kg (30-300).");
+            wizardAlert("Please enter a valid weight.");
             return;
         }
         if (!goalWeight || goalWeight < 30 || goalWeight > 300) {
-            wizardAlert("Please enter a valid goal weight in kg (30-300).");
+            wizardAlert("Please enter a valid goal weight.");
             return;
         }
         if (!goalType) {
