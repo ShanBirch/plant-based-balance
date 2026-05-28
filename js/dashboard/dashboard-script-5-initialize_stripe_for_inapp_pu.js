@@ -6172,7 +6172,6 @@ const WIZARD_CHAT_STEPS = [
         ]
     },
     { key: 'goal_weight', type: 'measurement', measurement: 'weight', question: getWizardGoalWeightQuestion, placeholder: getWizardGoalWeightPlaceholder, optional: true },
-    { key: 'thirty_day_win', type: 'text', question: 'Put that 30-day win in your own words.', placeholder: 'e.g. train 3x/week for 30 days and log meals most days', minLength: 3 },
     {
         key: 'equipment_access',
         type: 'choice',
@@ -6922,7 +6921,6 @@ function saveWizardChatIntakeToInputs() {
     setWizardFieldValue('wizard-weekly-goal-focus', JSON.stringify(weeklyGoalFocusIds));
     setWizardFieldValue('wizard-weekly-goal-focus-labels', JSON.stringify(weeklyGoalFocusLabels));
     setWizardFieldValue('wizard-chat-freeform', JSON.stringify(wizardChatFreeformAnswers || {}));
-    setWizardFieldValue('wizard-thirty-day-win', answers.thirty_day_win);
     setWizardFieldValue('wizard-main-blocker', answers.main_blocker);
     setWizardFieldValue('wizard-why-now', answers.why_now);
     setWizardFieldValue('wizard-long-term-goal', answers.long_term_goal);
@@ -8928,7 +8926,6 @@ async function wizardNext() {
             .map(id => ({ id, label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS[id] }))
             .filter(item => item.label);
         const goalCatcher = {
-            thirty_day_win: document.getElementById('wizard-thirty-day-win')?.value.trim() || '',
             main_blocker: document.getElementById('wizard-main-blocker')?.value.trim() || '',
             why_now: document.getElementById('wizard-why-now')?.value.trim() || '',
             long_term_goal: document.getElementById('wizard-long-term-goal')?.value.trim() || '',
@@ -8960,7 +8957,6 @@ async function wizardNext() {
             onboarding_weekly_goal_focus: onboardingWeeklyGoalFocus,
             onboarding_chat_freeform: onboardingChatFreeform,
             goal_catcher: goalCatcher,
-            thirty_day_win: goalCatcher.thirty_day_win,
             main_blocker: goalCatcher.main_blocker,
             why_now: goalCatcher.why_now,
             long_term_goal: goalCatcher.long_term_goal,
