@@ -90,7 +90,7 @@
       goals: [
         { id: 'share_workout_feed', label: 'Share workout to Feed', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
         { id: 'share_meal_feed', label: 'Share meal to Feed', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
-        { id: 'message_coach', label: 'Message your coach', target: 1, unit: 'messages', min: 1, max: 3, step: 1 },
+        { id: 'message_coach', label: 'Message Shannon', target: 10, unit: 'messages', min: 1, max: 30, step: 1 },
         { id: 'invite_friend', label: 'Invite a friend', target: 1, unit: 'friends', min: 1, max: 3, step: 1 },
         { id: 'complete_game', label: 'Complete a game', target: 1, unit: 'games', min: 1, max: 5, step: 1 }
       ]
@@ -445,6 +445,34 @@
     }
   }
 
+  async function getSupabaseAccessToken(supabase) {
+    try {
+      if (supabase?.auth?.getSession) {
+        const result = await supabase.auth.getSession();
+        return result?.data?.session?.access_token || '';
+      }
+      if (supabase?.auth?.session) {
+        return supabase.auth.session()?.access_token || '';
+      }
+    } catch (_) {}
+    return '';
+  }
+
+  async function loadIgCoachMessages(supabase, startIso, endIso) {
+    if (typeof fetch !== 'function') return [];
+    const token = await getSupabaseAccessToken(supabase);
+    if (!token) return [];
+
+    const params = new URLSearchParams({ start: startIso, end: endIso });
+    const response = await fetch('/.netlify/functions/weekly-goal-ig-messages?' + params.toString(), {
+      method: 'GET',
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    if (!response.ok) throw new Error('weekly-goal-ig-messages failed: ' + response.status);
+    const payload = await response.json().catch(() => ({}));
+    return Array.isArray(payload.messages) ? payload.messages : [];
+  }
+
   async function loadProgressData(userId, week) {
     const supabase = window.supabaseClient;
     if (!supabase) return {};
@@ -557,6 +585,9 @@
           .gte('created_at', startIso)
           .lt('created_at', endIso))
         : Promise.resolve([]),
+      safeQuery('ig coach messages', async () => ({
+        data: await loadIgCoachMessages(supabase, startIso, endIso)
+      })),
       safeQuery('referrals', () => supabase.from('referrals')
         .select('id,created_at,status')
         .eq('referrer_user_id', userId)
@@ -568,7 +599,7 @@
       nutrition, mealLogs, workouts, customWorkouts, weighIns,
       stories, lessons, milestones, checkins, moodLogs,
       ouraActivity, fitbitActivity, whoopSleep, ouraSleep,
-      fitbitSleep, gameMatches, quizBattles, coachMessages, referrals
+      fitbitSleep, gameMatches, quizBattles, coachMessages, igCoachMessages, referrals
     ] = await Promise.all(queries);
 
     return {
@@ -589,7 +620,7 @@
       fitbitSleep,
       gameMatches,
       quizBattles,
-      coachMessages,
+      coachMessages: [].concat(coachMessages || [], igCoachMessages || []),
       referrals
     };
   }

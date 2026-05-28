@@ -23,8 +23,8 @@
 }
 
 .wizard-chat-intake {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: auto minmax(128px, 0.75fr) minmax(190px, 1.25fr) auto;
     gap: 12px;
     height: 100%;
     min-height: 0;
@@ -87,11 +87,12 @@
 .wizard-chat-messages {
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
     gap: 10px;
-    flex: 1 1 auto;
-    min-height: 76px;
+    height: 100%;
+    min-height: 0;
     overflow-y: auto;
-    padding: 8px 2px;
+    padding: 18px 2px 8px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -139,16 +140,27 @@
 .wizard-chat-choices {
     display: flex;
     flex-wrap: wrap;
+    align-content: flex-start;
     gap: 8px;
-    flex: 0 1 auto;
-    max-height: clamp(116px, 24dvh, 196px);
+    height: 100%;
+    min-height: 0;
     overflow-y: auto;
-    padding-right: 2px;
+    padding: 0 7px 8px 0;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(245, 217, 138, 0.62) rgba(255,255,255,0.1);
+    box-shadow: inset 0 -18px 18px -22px rgba(245, 217, 138, 0.9);
+    overscroll-behavior: contain;
 }
-.wizard-chat-choices::-webkit-scrollbar { width: 0; height: 0; }
+.wizard-chat-choices::-webkit-scrollbar { width: 5px; height: 5px; }
+.wizard-chat-choices::-webkit-scrollbar-track {
+    border-radius: 999px;
+    background: rgba(255,255,255,0.1);
+}
+.wizard-chat-choices::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(245, 217, 138, 0.62);
+}
 .wizard-chat-choice {
     border: 1px solid rgba(245, 217, 138, 0.35);
     background: rgba(255,255,255,0.08);
@@ -265,6 +277,7 @@ body:has(#onboarding-wizard.active) {
 }
 
 #onboarding-wizard.wizard-chat-keyboard .wizard-chat-intake {
+    grid-template-rows: auto minmax(92px, 0.65fr) minmax(132px, 1fr) auto;
     gap: 8px;
     padding: 10px;
 }
@@ -272,10 +285,6 @@ body:has(#onboarding-wizard.active) {
 #onboarding-wizard.wizard-chat-keyboard .wizard-chat-bubble {
     padding: 9px 11px;
     font-size: 0.84rem;
-}
-
-#onboarding-wizard.wizard-chat-keyboard .wizard-chat-choices {
-    max-height: clamp(72px, 15dvh, 126px);
 }
 
 #onboarding-wizard.wizard-chat-keyboard .wizard-chat-input-row input,

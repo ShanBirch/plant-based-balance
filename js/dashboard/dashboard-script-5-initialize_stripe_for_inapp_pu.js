@@ -5944,7 +5944,7 @@ const WIZARD_WEEKLY_GOAL_FOCUS_LABELS = {
     daily_quiz_days: 'Complete 3 Health IQ quizzes/week',
     questions_answered: 'Answer 20 Health IQ questions/week',
     perfect_lessons: 'Score 100% on 1 lesson/week',
-    message_coach: 'Message Shannon 1x/week',
+    message_coach: 'Message Shannon 10x/week',
     share_workout_feed: 'Share to Feed 1x/week'
 };
 
@@ -5958,6 +5958,16 @@ const WIZARD_INTENT_WEEKLY_TARGETS = {
     more_energy: ['steps_10k_days', 'sleep_7h_nights', 'water_goal_days'],
     build_community: ['message_coach', 'share_workout_feed', 'complete_workouts']
 };
+
+function deriveWizardGoalBodyType(goalIntentIds) {
+    const ids = Array.isArray(goalIntentIds) ? goalIntentIds : [];
+    const primary = ids[0] || '';
+    if (primary === 'lose_weight') return 'Flat';
+    if (primary === 'build_strength' || primary === 'hit_protein') return 'Body Builder';
+    if (ids.includes('lose_weight')) return 'Flat';
+    if (ids.includes('build_strength') || ids.includes('hit_protein')) return 'Body Builder';
+    return 'Athletic';
+}
 
 function wizardPrefersImperialUnits() {
     try {
@@ -5998,13 +6008,18 @@ function getWizardWeightPlaceholder() {
 }
 
 function getWizardGoalWeightQuestion() {
+    const goalIntents = Array.isArray(wizardChatAnswers?.goal_intents) ? wizardChatAnswers.goal_intents : [];
+    const wantsWeightLoss = goalIntents.includes('lose_weight');
+    const base = wantsWeightLoss
+        ? 'What target weight would feel like a realistic first marker?'
+        : 'If weight loss is part of the goal, what target weight should Shannon keep in mind?';
     return wizardPrefersImperialUnits()
-        ? 'If weight is part of the plan, what number should Shannon keep in mind? You can use lbs or kg. If not, use your current weight.'
-        : 'If weight is part of the plan, what number should Shannon keep in mind? You can use kg or lbs. If not, use your current weight.';
+        ? `${base} You can use lbs or kg, or leave it blank.`
+        : `${base} You can use kg or lbs, or leave it blank.`;
 }
 
 function getWizardGoalWeightPlaceholder() {
-    return wizardPrefersImperialUnits() ? 'e.g. 140 lbs or 64 kg' : 'e.g. 67 kg or 148 lbs';
+    return wizardPrefersImperialUnits() ? 'Optional: e.g. 140 lbs or 64 kg' : 'Optional: e.g. 67 kg or 148 lbs';
 }
 
 function parseWizardFeetInches(raw) {
@@ -6156,22 +6171,8 @@ const WIZARD_CHAT_STEPS = [
             { value: 'share_workout_feed', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.share_workout_feed }
         ]
     },
-    {
-        key: 'goalBodyType',
-        type: 'choice',
-        question: 'What is the main direction for this first plan?',
-        options: [
-            { value: 'Flat', label: 'Lose fat / get lean' },
-            { value: 'Athletic', label: 'Build healthy habits' },
-            { value: 'Body Builder', label: 'Build muscle / strength' }
-        ]
-    },
-    { key: 'goal_weight', type: 'measurement', measurement: 'weight', question: getWizardGoalWeightQuestion, placeholder: getWizardGoalWeightPlaceholder },
+    { key: 'goal_weight', type: 'measurement', measurement: 'weight', question: getWizardGoalWeightQuestion, placeholder: getWizardGoalWeightPlaceholder, optional: true },
     { key: 'thirty_day_win', type: 'text', question: 'Put that 30-day win in your own words.', placeholder: 'e.g. train 3x/week for 30 days and log meals most days', minLength: 3 },
-    { key: 'main_blocker', type: 'text', question: 'What usually gets in the way when you try to lock this in?', placeholder: 'time, soreness, food, motivation, stress...', minLength: 3 },
-    { key: 'why_now', type: 'text', question: 'What made you want to sort this out now?', placeholder: 'Type what kicked this off', minLength: 3 },
-    { key: 'long_term_goal', type: 'text', question: 'If this actually worked, where would you want to be in 6 months?', placeholder: 'The bigger outcome you want', minLength: 3 },
-    { key: 'independence_goal', type: 'text', question: 'Eventually, what do you want to be able to do without needing Shannon?', placeholder: 'e.g. build workouts, eat for my goal, stay consistent', minLength: 3 },
     {
         key: 'equipment_access',
         type: 'choice',
@@ -6234,6 +6235,7 @@ let wizardChatMultiSelection = new Set();
 let wizardChatFreeformAnswers = {};
 let wizardChatAskToken = 0;
 let wizardChatViewportBound = false;
+let wizardChatControlsBound = false;
 
 function getWizardChatStep() {
     return WIZARD_CHAT_STEPS[wizardChatStepIndex] || null;
@@ -6489,13 +6491,40 @@ function renderWizardChatMessages() {
 function scrollWizardChatToBottom() {
     const run = () => {
         const messagesEl = document.getElementById('wizard-chat-messages');
-        const contentEl = document.querySelector('#onboarding-wizard .wizard-content');
         if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
-        if (contentEl) contentEl.scrollTop = contentEl.scrollHeight;
     };
     run();
     requestAnimationFrame(run);
-    [80, 220, 420].forEach(delay => setTimeout(run, delay));
+}
+
+function blurWizardChatInput() {
+    const input = document.getElementById('wizard-chat-input');
+    if (input && document.activeElement === input) input.blur();
+}
+
+function bindWizardChatControlEvents() {
+    if (wizardChatControlsBound) return;
+    const choicesEl = document.getElementById('wizard-chat-choices');
+    if (!choicesEl) return;
+    wizardChatControlsBound = true;
+
+    choicesEl.addEventListener('click', event => {
+        const button = event.target && event.target.closest
+            ? event.target.closest('button[data-wizard-chat-action]')
+            : null;
+        if (!button || !choicesEl.contains(button)) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        blurWizardChatInput();
+
+        const action = button.dataset.wizardChatAction;
+        const value = button.dataset.value || '';
+        if (action === 'choice') selectWizardChatChoice(value);
+        else if (action === 'multi') toggleWizardChatMulti(value, button);
+        else if (action === 'multi-submit') submitWizardChatMultiAnswer();
+        else if (action === 'continue') wizardNext();
+    });
 }
 
 function setWizardChatKeyboardMode(active) {
@@ -6560,9 +6589,17 @@ function renderWizardChatControls() {
     const sendBtn = document.getElementById('wizard-chat-send');
     const helper = document.getElementById('wizard-chat-helper');
     if (!choicesEl || !inputRow || !input || !sendBtn || !helper) return;
+    bindWizardChatControlEvents();
 
     choicesEl.innerHTML = '';
     helper.textContent = '';
+    sendBtn.onclick = event => {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        submitWizardChatAnswer();
+    };
 
     if (!wizardChatComplete && wizardChatMessages.some(message => message.typing)) {
         inputRow.style.display = 'none';
@@ -6571,7 +6608,7 @@ function renderWizardChatControls() {
 
     if (wizardChatComplete) {
         inputRow.style.display = 'none';
-        choicesEl.innerHTML = '<button type="button" class="wizard-chat-choice selected" onclick="wizardNext()">Continue to training setup</button>';
+        choicesEl.innerHTML = '<button type="button" class="wizard-chat-choice selected" data-wizard-chat-action="continue">Continue to training setup</button>';
         return;
     }
 
@@ -6594,20 +6631,15 @@ function renderWizardChatControls() {
             const selected = step.type === 'multi'
                 ? wizardChatMultiSelection.has(option.value)
                 : wizardChatAnswers[step.key] === option.value;
-            const handler = step.type === 'multi'
-                ? `toggleWizardChatMulti('${option.value}')`
-                : `selectWizardChatChoice('${option.value}')`;
-            return `<button type="button" class="wizard-chat-choice${selected ? ' selected' : ''}" onclick="${handler}">${escapeWizardHtml(option.label)}</button>`;
+            const action = step.type === 'multi' ? 'multi' : 'choice';
+            return `<button type="button" class="wizard-chat-choice${selected ? ' selected' : ''}" data-wizard-chat-action="${action}" data-value="${escapeWizardHtml(option.value)}">${escapeWizardHtml(option.label)}</button>`;
         }).join('');
         if (step.type === 'multi') {
-            choicesEl.innerHTML += `<button type="button" class="wizard-chat-choice selected" onclick="submitWizardChatMultiAnswer()">${escapeWizardHtml(step.submitLabel || step.optionalLabel || 'Done')}</button>`;
+            choicesEl.innerHTML += `<button type="button" class="wizard-chat-choice selected" data-wizard-chat-action="multi-submit">${escapeWizardHtml(step.submitLabel || step.optionalLabel || 'Done')}</button>`;
         } else {
             helper.textContent = '';
         }
-        setTimeout(() => {
-            input.focus();
-            scrollWizardChatToBottom();
-        }, 60);
+        scrollWizardChatToBottom();
         return;
     }
 
@@ -6624,10 +6656,7 @@ function renderWizardChatControls() {
         }
     };
     helper.textContent = '';
-    setTimeout(() => {
-        input.focus();
-        scrollWizardChatToBottom();
-    }, 60);
+    scrollWizardChatToBottom();
 }
 
 function resolveWizardChatPrelude(step) {
@@ -6646,7 +6675,6 @@ function rebuildWizardChatMessagesUntil(stepIndex) {
 
 function askWizardChatQuestion(options = {}) {
     wizardChatAskToken += 1;
-    const askToken = wizardChatAskToken;
     const step = getWizardChatStep();
     if (!step) {
         wizardChatComplete = true;
@@ -6658,26 +6686,11 @@ function askWizardChatQuestion(options = {}) {
     }
 
     wizardChatMultiSelection = new Set(getWizardChatInitialMultiSelection(step));
-    if (options.instant) {
-        wizardChatMessages = [];
-        appendWizardChatQuestion(step);
-        renderWizardChatMessages();
-        renderWizardChatProgress();
-        renderWizardChatControls();
-        return;
-    }
-
-    wizardChatMessages = [{ role: 'coach', typing: true }];
+    wizardChatMessages = [];
+    appendWizardChatQuestion(step);
     renderWizardChatMessages();
     renderWizardChatProgress();
     renderWizardChatControls();
-    setTimeout(() => {
-        if (askToken !== wizardChatAskToken) return;
-        wizardChatMessages = [];
-        appendWizardChatQuestion(step);
-        renderWizardChatMessages();
-        renderWizardChatControls();
-    }, 420);
 }
 
 function initializeWizardChatIntake() {
@@ -6704,8 +6717,6 @@ function advanceWizardChat(step, value, displayText = null) {
     const input = document.getElementById('wizard-chat-input');
     if (input) input.value = '';
     wizardChatStepIndex += 1;
-    wizardChatMessages = [];
-    scrollWizardChatToBottom();
     askWizardChatQuestion();
 }
 
@@ -6733,17 +6744,21 @@ function selectWizardChatChoice(value) {
     advanceWizardChat(step, value);
 }
 
-function toggleWizardChatMulti(value) {
-    if (wizardChatMultiSelection.has(value)) wizardChatMultiSelection.delete(value);
-    else {
-        const step = getWizardChatStep();
-        if (step?.maxSelect && wizardChatMultiSelection.size >= step.maxSelect) {
+function toggleWizardChatMulti(value, button = null) {
+    const step = getWizardChatStep();
+    if (!step || step.type !== 'multi') return;
+    if (wizardChatMultiSelection.has(value)) {
+        wizardChatMultiSelection.delete(value);
+        if (button) button.classList.remove('selected');
+    } else {
+        if (step.maxSelect && wizardChatMultiSelection.size >= step.maxSelect) {
             wizardAlert(`Pick up to ${step.maxSelect} options.`);
             return;
         }
         wizardChatMultiSelection.add(value);
+        if (button) button.classList.add('selected');
     }
-    renderWizardChatControls();
+    if (!button) renderWizardChatControls();
 }
 
 function submitWizardChatMultiAnswer() {
@@ -6802,6 +6817,10 @@ function submitWizardChatAnswer() {
     }
 
     if (step.type === 'measurement') {
+        if (step.optional && !raw) {
+            advanceWizardChat(step, '');
+            return;
+        }
         const parsed = parseWizardMeasurementInput(step, raw);
         if (!parsed) {
             wizardAlert(step.measurement === 'height'
@@ -6864,8 +6883,7 @@ function saveWizardChatIntakeToInputs() {
     setWizardFieldValue('wizard-age', answers.age);
     setWizardFieldValue('wizard-height', answers.height);
     setWizardFieldValue('wizard-weight', answers.weight);
-    setWizardFieldValue('wizard-goal-weight', answers.goal_weight);
-    setWizardFieldValue('wizard-goal-type', answers.goalBodyType);
+    setWizardFieldValue('wizard-goal-weight', answers.goal_weight || answers.weight);
     setWizardFieldValue('wizard-equipment', answers.equipment_access);
     setWizardFieldValue('wizard-activity-level', answers.activity_level);
     setWizardFieldValue('wizard-energy-level', answers.energy_level);
@@ -6877,6 +6895,8 @@ function saveWizardChatIntakeToInputs() {
     const goalIntentLabels = goalIntentIds.map(id => WIZARD_GOAL_INTENT_LABELS[id]).filter(Boolean);
     const weeklyGoalFocusIds = Array.isArray(answers.weekly_goal_focus) ? answers.weekly_goal_focus : [];
     const weeklyGoalFocusLabels = weeklyGoalFocusIds.map(id => WIZARD_WEEKLY_GOAL_FOCUS_LABELS[id]).filter(Boolean);
+    const inferredGoalBodyType = answers.goalBodyType || deriveWizardGoalBodyType(goalIntentIds);
+    setWizardFieldValue('wizard-goal-type', inferredGoalBodyType);
     setWizardFieldValue('wizard-goal-intents', JSON.stringify(goalIntentIds));
     setWizardFieldValue('wizard-goal-intent-labels', JSON.stringify(goalIntentLabels));
     setWizardFieldValue('wizard-weekly-goal-focus', JSON.stringify(weeklyGoalFocusIds));
