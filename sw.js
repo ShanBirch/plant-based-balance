@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v181'; // v181: stable onboarding chat tap transitions; v180: shorter onboarding goal flow layout
+const CACHE_NAME = 'pbb-app-v182'; // v182: scrollable onboarding chat prompt row; v181: stable onboarding chat tap transitions
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',
