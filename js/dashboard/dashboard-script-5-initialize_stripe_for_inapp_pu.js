@@ -5942,8 +5942,7 @@ const WIZARD_WEEKLY_GOAL_FOCUS_LABELS = {
     sleep_7h_nights: 'Sleep 7h 4 nights/week',
     water_goal_days: 'Hit water goal 5 days/week',
     daily_quiz_days: 'Complete 3 Health IQ quizzes/week',
-    questions_answered: 'Answer 20 Health IQ questions/week',
-    perfect_lessons: 'Score 100% on 1 lesson/week',
+    perfect_lessons: 'Score 100% on 5 Health IQ quizzes/week',
     message_coach: 'Message Shannon 10x/week',
     share_workout_feed: 'Share to Feed 1x/week'
 };
@@ -5954,7 +5953,7 @@ const WIZARD_INTENT_WEEKLY_TARGETS = {
     consistent_workouts: ['complete_workouts', 'message_coach', 'meal_log_days'],
     improve_nutrition: ['meal_log_days', 'calorie_range_days', 'protein_days'],
     hit_protein: ['protein_days', 'meal_log_days', 'complete_workouts'],
-    learn_fitness: ['daily_quiz_days', 'questions_answered', 'perfect_lessons'],
+    learn_fitness: ['daily_quiz_days', 'perfect_lessons', 'message_coach'],
     more_energy: ['steps_10k_days', 'sleep_7h_nights', 'water_goal_days'],
     build_community: ['message_coach', 'share_workout_feed', 'complete_workouts']
 };
@@ -6173,7 +6172,6 @@ const WIZARD_CHAT_STEPS = [
             { value: 'sleep_7h_nights', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.sleep_7h_nights },
             { value: 'water_goal_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.water_goal_days },
             { value: 'daily_quiz_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.daily_quiz_days },
-            { value: 'questions_answered', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.questions_answered },
             { value: 'perfect_lessons', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.perfect_lessons },
             { value: 'message_coach', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.message_coach },
             { value: 'share_workout_feed', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.share_workout_feed }
@@ -6262,7 +6260,7 @@ function getWizardGoalRecipeText() {
         consistent_workouts: 'Consistency comes from a small weekly standard: show up for training, check in with Shannon, and keep food simple enough to repeat.',
         improve_nutrition: 'Food gets better when we make it visible: log meals, hit your calorie target, and hit protein most days.',
         hit_protein: 'Protein works best when it becomes a weekly standard, paired with training and simple food logging.',
-        learn_fitness: 'Learning needs reps too: complete Health IQ quizzes, answer questions, and score 100% on lessons so the knowledge actually sticks.',
+        learn_fitness: 'Learning needs reps too: complete Health IQ quizzes, score 100%, and check in with Shannon so the knowledge actually sticks.',
         more_energy: 'Energy and longevity come from recovery basics first: steps, sleep, water, then training on top.',
         build_community: 'Community gets built by showing up: message Shannon, share a win to the Feed, and stay connected to training.'
     };
@@ -6459,8 +6457,7 @@ function wizardChatMultiFromText(step, raw) {
             ['sleep_7h_nights', ['sleep', 'rest']],
             ['water_goal_days', ['water', 'hydration', 'hydrate']],
             ['daily_quiz_days', ['quiz', 'learn', 'lesson', 'health iq']],
-            ['questions_answered', ['questions', 'health questions']],
-            ['perfect_lessons', ['perfect lessons', '100', 'score 100', 'lesson']],
+            ['perfect_lessons', ['perfect quizzes', '100', 'score 100', 'lesson']],
             ['message_coach', ['coach', 'message', 'check in', 'checkin']],
             ['share_workout_feed', ['community', 'feed', 'share', 'post']]
         ],
@@ -7081,7 +7078,7 @@ function renderWizardExerciseChipGroup(containerId, mode, exercises) {
             data-mode="${mode}"
             data-exercise="${name.replace(/"/g, '&quot;')}"
             onclick="toggleWizardExercisePreference('${name.replace(/'/g, "\\'")}', '${mode}')"
-            style="padding:8px 11px; border-radius:999px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-size:0.8rem; font-weight:600; cursor:pointer;">
+            style="padding:8px 11px; border-radius:999px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.9); font-size:0.8rem; font-weight:600; cursor:pointer;">
             ${name}
         </button>
     `).join('');
@@ -7092,9 +7089,9 @@ function syncWizardExercisePreferenceChipState() {
         const mode = chip.dataset.mode;
         const name = chip.dataset.exercise || '';
         const selected = mode === 'liked' ? hasWizardExercise(wizardLikedExercises, name) : hasWizardExercise(wizardAvoidedExercises, name);
-        chip.style.background = selected ? (mode === 'liked' ? '#dcfce7' : '#fee2e2') : '#f8fafc';
-        chip.style.borderColor = selected ? (mode === 'liked' ? '#22c55e' : '#ef4444') : '#cbd5e1';
-        chip.style.color = selected ? (mode === 'liked' ? '#166534' : '#991b1b') : '#334155';
+        chip.style.background = selected ? (mode === 'liked' ? 'rgba(34, 197, 94, 0.18)' : 'rgba(239, 68, 68, 0.16)') : 'rgba(255,255,255,0.08)';
+        chip.style.borderColor = selected ? (mode === 'liked' ? '#22c55e' : '#ef4444') : 'rgba(255,255,255,0.16)';
+        chip.style.color = selected ? (mode === 'liked' ? '#bbf7d0' : '#fecaca') : 'rgba(255,255,255,0.9)';
     });
 }
 
@@ -9840,12 +9837,12 @@ function selectTrainingFrequency(num) {
     // Update button styles
     document.querySelectorAll('.freq-btn').forEach(btn => {
         if (parseInt(btn.dataset.freq) === num) {
-            btn.style.background = '#48864B';
+            btn.style.background = '#2f6f38';
             btn.style.color = '#fff';
             btn.style.transform = 'scale(1.1)';
         } else {
-            btn.style.background = '#fff';
-            btn.style.color = '#1a4d2e';
+            btn.style.background = 'rgba(255,255,255,0.08)';
+            btn.style.color = 'rgba(255,255,255,0.92)';
             btn.style.transform = 'scale(1)';
         }
     });
@@ -9865,8 +9862,8 @@ function selectTrainingFrequency(num) {
     if (wizardSelectedDays.size > num) {
         wizardSelectedDays.clear();
         document.querySelectorAll('.day-btn').forEach(btn => {
-            btn.style.background = '#fff';
-            btn.style.color = '#1a4d2e';
+            btn.style.background = 'rgba(255,255,255,0.08)';
+            btn.style.color = 'rgba(255,255,255,0.92)';
         });
     }
     updateDaysCounter();
@@ -9882,15 +9879,15 @@ function toggleTrainingDay(day) {
 
     if (wizardSelectedDays.has(day)) {
         wizardSelectedDays.delete(day);
-        btn.style.background = '#fff';
-        btn.style.color = '#1a4d2e';
+        btn.style.background = 'rgba(255,255,255,0.08)';
+        btn.style.color = 'rgba(255,255,255,0.92)';
     } else {
         if (wizardSelectedDays.size >= wizardTrainingFrequency) {
             wizardAlert(`You can only select ${wizardTrainingFrequency} days. Deselect one first.`);
             return;
         }
         wizardSelectedDays.add(day);
-        btn.style.background = '#48864B';
+        btn.style.background = '#2f6f38';
         btn.style.color = '#fff';
     }
 
@@ -9935,10 +9932,10 @@ function selectSplitPreference(split) {
     document.querySelectorAll('.split-btn').forEach(btn => {
         if (btn.dataset.split === split) {
             btn.style.borderColor = '#48864B';
-            btn.style.background = 'rgba(72, 134, 75, 0.05)';
+            btn.style.background = 'rgba(72, 134, 75, 0.22)';
         } else {
-            btn.style.borderColor = '#e2e8f0';
-            btn.style.background = '#fff';
+            btn.style.borderColor = 'rgba(255,255,255,0.18)';
+            btn.style.background = 'rgba(255,255,255,0.08)';
         }
     });
 

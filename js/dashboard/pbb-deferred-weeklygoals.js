@@ -75,8 +75,7 @@
       gradient: 'linear-gradient(135deg,#f59e0b,#ef4444)',
       goals: [
         { id: 'daily_quiz_days', label: 'Complete Daily Quiz', target: 3, unit: 'days', min: 1, max: 7, step: 1 },
-        { id: 'questions_answered', label: 'Answer Health IQ questions', target: 20, unit: 'questions', min: 5, max: 80, step: 5 },
-        { id: 'perfect_lessons', label: 'Score 100% on lessons', target: 1, unit: 'lessons', min: 1, max: 5, step: 1 }
+        { id: 'perfect_lessons', label: 'Score 100% on Health IQ quizzes', target: 5, unit: 'quizzes', min: 1, max: 10, step: 1 }
       ]
     },
     {
@@ -110,7 +109,7 @@
     build_strength: ['complete_workouts', 'protein_days', 'calorie_range_days'],
     improve_nutrition: ['meal_log_days', 'calorie_range_days', 'protein_days'],
     hit_protein: ['protein_days', 'meal_log_days', 'complete_workouts'],
-    learn_fitness: ['daily_quiz_days', 'questions_answered', 'perfect_lessons'],
+    learn_fitness: ['daily_quiz_days', 'perfect_lessons', 'message_coach'],
     more_energy: ['steps_10k_days', 'sleep_7h_nights', 'water_goal_days'],
     build_community: ['message_coach', 'share_workout_feed', 'complete_workouts']
   };
@@ -125,7 +124,6 @@
     sleep_7h_nights: ['sleep_7h_nights'],
     water_goal_days: ['water_goal_days'],
     daily_quiz_days: ['daily_quiz_days'],
-    questions_answered: ['questions_answered'],
     perfect_lessons: ['perfect_lessons'],
     message_coach: ['message_coach'],
     share_workout_feed: ['share_workout_feed']
@@ -765,10 +763,6 @@
         current = weekRows(data.milestones, week, row => row.achieved_at ? getDateKey(new Date(row.achieved_at)) : null)
           .filter(row => row.milestone_type === 'daily_quiz').length;
         break;
-      case 'questions_answered':
-        current = weekRows(data.lessons, week, row => row.completed_at ? getDateKey(new Date(row.completed_at)) : null)
-          .reduce((sum, row) => sum + Number(row.games_played || 0), 0);
-        break;
       case 'perfect_lessons':
         current = weekRows(data.lessons, week, row => row.completed_at ? getDateKey(new Date(row.completed_at)) : null)
           .filter(row => Number(row.score_percentage || 0) >= 100).length;
@@ -829,7 +823,7 @@
     } else if (proteinDays > 0) {
       headline = '4-week protein rhythm: ' + proteinDays + ' day' + (proteinDays === 1 ? '' : 's');
     } else if (questions > 0) {
-      headline = '4-week Health IQ: ' + questions + ' question' + (questions === 1 ? '' : 's');
+      headline = '4-week Health IQ reps: ' + questions;
     }
 
     return {

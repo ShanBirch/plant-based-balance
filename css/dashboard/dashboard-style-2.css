@@ -1240,6 +1240,23 @@ body:has(#onboarding-wizard.active) {
     color: #7dd3fc !important;
 }
 
+/* Training setup controls: keep nested inline labels readable on the dark wizard. */
+#onboarding-wizard #slide-5 .split-btn > div {
+    color: rgba(255,255,255,0.72) !important;
+}
+#onboarding-wizard #slide-5 .split-btn > div:first-child {
+    color: white !important;
+}
+#onboarding-wizard #slide-5 .split-btn > div:last-child {
+    color: #bbf7d0 !important;
+}
+#onboarding-wizard #slide-6 .wizard-input-group label {
+    color: rgba(255,255,255,0.92) !important;
+}
+#onboarding-wizard #slide-6 .wizard-input-group p {
+    color: rgba(255,255,255,0.64) !important;
+}
+
 /* Glass size button active state (background:#e0f2fe) → dark blue */
 #onboarding-wizard .wizard-slide button[style*="background:#e0f2fe"],
 #onboarding-wizard .wizard-slide button[style*="background: #e0f2fe"] {
