@@ -1996,11 +1996,11 @@
                         <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                             <div>
                                 <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Needs You</h2>
-                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Client DM drafts Codex approved and left for Shannon to send.</p>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Client DM drafts waiting for Shannon to approve, edit, or send.</p>
                             </div>
                             <div style="display:inline-flex; align-items:center; gap:8px; font-size:0.78rem; color:#64748b; font-weight:800;">
                                 <span id="needs-you-view-all-count" class="alert-view-count">0</span>
-                                <span>approved client DM drafts</span>
+                                <span>client DM drafts</span>
                             </div>
                         </div>
                     </div>
@@ -8763,7 +8763,7 @@
         let needsYouCounts = { all: 0 };
         const NEEDS_YOU_TABS = ['all'];
         const NEEDS_YOU_EMPTY_STATES = {
-            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'No Codex-approved client DM drafts are waiting right now.' },
+            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'No client DM drafts are waiting for approval right now.' },
         };
         let currentChallengeCheckinView = 'pending';
         const CHALLENGE_CHECKIN_TABS = ['pending', 'manual', 'later', 'sent_today', 'all'];
@@ -10156,30 +10156,19 @@
             );
         }
 
-        function needsYouCodexApprovedInfo(alert) {
+        function needsYouClientDraftInfo(alert) {
             const data = alert?.data || {};
             const codexReview = data.codex_review && typeof data.codex_review === 'object' ? data.codex_review : {};
             const draftReview = (data.draft_review || data.draftReview) && typeof (data.draft_review || data.draftReview) === 'object'
                 ? (data.draft_review || data.draftReview)
                 : {};
-            const markerText = [
-                codexReview.reviewed_by,
-                codexReview.reviewer_model,
-                codexReview.source,
-                codexReview.automation_id,
-                draftReview.reviewed_by,
-                draftReview.reviewer_model,
-                data.codex_client_dm_manager ? 'codex_client_dm_manager' : '',
-                data.codex_review ? 'codex_review' : '',
-                data.codex_repaired_at ? 'codex_repaired_at' : '',
-                data.draft_updated_by_codex_at ? 'draft_updated_by_codex_at' : '',
-            ].map(v => String(v || '').toLowerCase()).join(' ');
-            const hasCodexMarker = markerText.includes('codex') || markerText.includes('balance-client-dm-manager');
             const verdict = String(draftReview.verdict || '').toLowerCase();
-            const passed = verdict === 'pass' || draftReview.safe_to_send === true || String(codexReview.decision || '').toLowerCase().includes('approved');
+            const reviewer = draftReview.reviewed_by || draftReview.reviewer_model || codexReview.reviewed_by || codexReview.reviewer_model || codexReview.automation_id || '';
+            const needsReview = verdict === 'warn' || draftReview.notification_required === true || draftReview.safe_to_send === false;
             return {
-                approved: hasCodexMarker && passed,
-                reviewedBy: draftReview.reviewed_by || codexReview.reviewed_by || codexReview.automation_id || '',
+                ready: needsYouHasSuggestedDraft(alert),
+                needsReview,
+                reviewer,
             };
         }
 
@@ -10190,7 +10179,7 @@
             if (!getAlertClientIdentity(alert)) return false;
             if (!alertBelongsToDmClients(alert, activeClientIds)) return false;
             if (!needsYouHasSuggestedDraft(alert)) return false;
-            return needsYouCodexApprovedInfo(alert).approved;
+            return needsYouClientDraftInfo(alert).ready;
         }
 
         function needsYouMatchesView(alert, view = currentNeedsYouView, activeClientIds = dmClientIdsCache.ids) {
@@ -14408,9 +14397,9 @@
             const renderedMessageText = activeEdit && typeof activeEdit.message === 'string'
                 ? activeEdit.message
                 : displayMessage;
-            const needsYouApprovalInfo = currentFeed === 'needs-you' ? needsYouCodexApprovedInfo(alert) : null;
-            const needsYouApprovalHtml = needsYouApprovalInfo?.approved
-                ? `<div style="margin:8px 0; padding:8px 10px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; border-radius:8px; font-size:0.76rem; font-weight:800; line-height:1.35;">Codex approved this client DM draft${needsYouApprovalInfo.reviewedBy ? ` (${escapeHtml(needsYouApprovalInfo.reviewedBy)})` : ''}. Shannon can edit or send it from here.</div>`
+            const needsYouApprovalInfo = currentFeed === 'needs-you' ? needsYouClientDraftInfo(alert) : null;
+            const needsYouApprovalHtml = needsYouApprovalInfo?.ready
+                ? `<div style="margin:8px 0; padding:8px 10px; background:${needsYouApprovalInfo.needsReview ? '#fff7ed' : '#f0fdf4'}; border:1px solid ${needsYouApprovalInfo.needsReview ? '#fed7aa' : '#bbf7d0'}; color:${needsYouApprovalInfo.needsReview ? '#9a3412' : '#166534'}; border-radius:8px; font-size:0.76rem; font-weight:800; line-height:1.35;">Client DM draft waiting for Shannon's approval${needsYouApprovalInfo.reviewer ? ` (${escapeHtml(needsYouApprovalInfo.reviewer)})` : ''}. Edit or send it from here.</div>`
                 : '';
             const suggestedMessageHtml = hasMessage
                 ? (activeEdit
