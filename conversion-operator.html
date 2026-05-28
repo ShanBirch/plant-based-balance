@@ -519,11 +519,11 @@
                     <i data-lucide="search"></i>
                     <input id="search-input" type="search" placeholder="Search people, handles, lanes">
                 </label>
-                <a class="text-btn" href="admin-dashboard.html?tab=needs-you" title="Open Needs You">
+                <a class="text-btn" href="admin-dashboard.html?tab=needs-you" target="_top" title="Open Needs You">
                     <i data-lucide="inbox"></i>
                     Needs You
                 </a>
-                <a class="text-btn" href="admin-dashboard.html?tab=dms" title="Open DMs">
+                <a class="text-btn" href="admin-dashboard.html?tab=dms" target="_top" title="Open DMs">
                     <i data-lucide="messages-square"></i>
                     DMs
                 </a>
@@ -712,13 +712,13 @@
             const preview = item.pending_preview ? `<div class="preview">${esc(item.pending_preview)}</div>` : '';
             const challenge = item.challenge_name || item.qualifier_stage_label || item.qualifier_stage || item.lead_stage || 'n/a';
             const threadLink = item.thread_id
-                ? `<a href="admin-dashboard.html?tab=dms&thread=${encodeURIComponent(item.thread_id)}">DM thread</a>`
+                ? `<a href="admin-dashboard.html?tab=dms&thread=${encodeURIComponent(item.thread_id)}" target="_top">DM thread</a>`
                 : '';
             const leadLink = item.thread_id
-                ? `<a href="admin-dashboard.html?tab=ig-leads&thread=${encodeURIComponent(item.thread_id)}">IG lead</a>`
+                ? `<a href="admin-dashboard.html?tab=ig-leads&thread=${encodeURIComponent(item.thread_id)}" target="_top">IG lead</a>`
                 : '';
             const needsLink = item.pending_alert_id
-                ? `<a href="admin-dashboard.html?tab=needs-you&alert=${encodeURIComponent(item.pending_alert_id)}">Pending alert</a>`
+                ? `<a href="admin-dashboard.html?tab=needs-you&alert=${encodeURIComponent(item.pending_alert_id)}" target="_top">Pending alert</a>`
                 : '';
             const operatorNote = item.operator_action
                 ? `<div class="operator-note">Last operator: ${esc(operatorActionLabels[item.operator_action] || item.operator_action)} (${esc(relative(item.operator_action_at))})</div>`

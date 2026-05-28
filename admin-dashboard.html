@@ -347,6 +347,8 @@
         .content-radar-theme-title { font-weight:900; color:#0f172a; font-size:0.86rem; }
         .content-radar-empty { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:34px 20px; text-align:center; color:#64748b; }
         #ig-operator.section.active { height: calc(100dvh - 48px); overflow:hidden; }
+        #conversion-operator.section.active { height: calc(100dvh - 48px); overflow:hidden; }
+        .conversion-operator-frame { width:100%; height:100%; border:0; display:block; background:#f5f7f4; }
         .ig-operator-shell { height:100%; display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:10px; padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px)); }
         .ig-operator-header { padding:12px 20px 0; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
         .ig-operator-title h2 { font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:800; margin:0 0 3px; color:#0f172a; }
@@ -537,6 +539,7 @@
             .content-radar-stats, .content-radar-layout, .content-radar-ops-grid { grid-template-columns:1fr; }
             .content-radar-idea-head { flex-direction:column; align-items:stretch; }
             #ig-operator.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
+            #conversion-operator.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
             .ig-operator-header { padding:14px; }
             .ig-operator-shell { padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px)); }
             .ig-operator-status-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -1867,6 +1870,7 @@
             <div class="nav-item" onclick="showSection('cocos', this); loadCocosDms();"><i data-lucide="instagram"></i><span>Coco's</span><span id="cocos-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('auto-dms', this); loadAutoDms();"><i data-lucide="bot"></i><span>Auto DMs</span><span id="auto-dms-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('checkins', this); loadChallengeCheckins();"><i data-lucide="clipboard-check"></i><span>Check-ins</span><span id="checkin-badge" class="alert-badge" style="display:none;">0</span></div>
+            <div class="nav-item" onclick="showSection('conversion-operator', this);"><i data-lucide="route"></i><span>Conversion</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
             <div class="nav-item" onclick="showSection('ig-operator', this); focusIgOperatorInput();"><i data-lucide="wand-sparkles"></i><span>IG Operator</span></div>
@@ -2568,6 +2572,11 @@
                         <button class="ig-operator-send" id="ig-operator-send" type="button" onclick="submitIgOperatorCommand()" aria-label="Send IG Operator command"><i data-lucide="send"></i></button>
                     </div>
                 </div>
+            </div>
+
+            <!-- CONVERSION OPERATOR -->
+            <div id="conversion-operator" class="section">
+                <iframe class="conversion-operator-frame" src="/conversion-operator.html" title="Conversion Operator"></iframe>
             </div>
 
             <!-- CONTENT RADAR -->
