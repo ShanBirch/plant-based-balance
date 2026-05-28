@@ -44,6 +44,15 @@ const withQuestion = applyLeadStoryReplyQuestionGuard(passReview, {
 
 assert.strictEqual(withQuestion.verdict, 'pass');
 
+const shortButNotDeadEnd = applyLeadStoryReplyQuestionGuard(passReview, {
+    draftText: 'haha yeah, they are good for the head',
+    contextBlocks: storyContextFor('so true'),
+    alertType: 'ig_incoming_dm',
+});
+
+assert.strictEqual(shortButNotDeadEnd.verdict, 'warn');
+assert.strictEqual(shortButNotDeadEnd.deterministic_guard, 'lead_story_reply_missing_question');
+
 const lowSignalThanks = applyLeadStoryReplyQuestionGuard(passReview, {
     draftText: 'no worries at all',
     contextBlocks: storyContextFor('thanks'),

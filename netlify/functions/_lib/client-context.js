@@ -4632,6 +4632,11 @@ const LEAD_NEXT_INVITE_RE = /\b(?:challenge|30\s*day|30-day|free coaching|send (
 const LEAD_INTENTIONAL_CLOSE_RE = /\b(?:bye|byeee+|goodnight|sleep well|have a nice day|have a good day|enjoy(?: your)?(?: day| night| trip| weekend)?|no worries|all good|you're welcome|you are welcome|thanks|thank you|appreciate it|talk soon|catch you)\b/i;
 const LEAD_LOW_SIGNAL_INBOUND_RE = /^\s*(?:yep|yup|yes|yeah|yea|nah|no|ok|okay|haha+|lol|lmao|thanks|thank you|ta|cheers|cool|nice|sweet|true|fair|[^\w]+)\s*$/i;
 const LEAD_SENSITIVE_CONTEXT_RE = /\b(?:grief|passed away|died|death|funeral|trauma|panic|depression|self harm|suicide|injur|pain|pregnan|eating disorder|binge|abuse|animal cruelty|cruelty)\b/i;
+const LEAD_NO_RESPONSE_WORDS = new Set([
+    'yep', 'yup', 'yes', 'yeah', 'yea', 'nah', 'no',
+    'ok', 'okay', 'haha', 'lol', 'lmao', 'thanks', 'thank',
+    'you', 'ta', 'cheers', 'cool', 'nice', 'sweet', 'fair',
+]);
 
 function compactReviewWords(text) {
     return String(text || '').toLowerCase().match(/[a-z0-9]+(?:'[a-z0-9]+)?/g) || [];
@@ -4646,11 +4651,13 @@ function extractJustArrivedReviewMessage(contextBlocks) {
 function isClosingOrLowSignalLeadReviewTurn(currentMessage, draftText) {
     const current = normalizeCoachDraftText(currentMessage || '').replace(/\s+/g, ' ').trim();
     const draft = normalizeCoachDraftText(draftText || '').replace(/\s+/g, ' ').trim();
+    const currentWords = compactReviewWords(current);
     if (!current) return true;
-    if (LEAD_LOW_SIGNAL_INBOUND_RE.test(current) && compactReviewWords(current).length <= 3) return true;
+    if (LEAD_LOW_SIGNAL_INBOUND_RE.test(current) && currentWords.length <= 3) return true;
+    if (currentWords.length <= 3 && currentWords.every(word => LEAD_NO_RESPONSE_WORDS.has(word))) return true;
     if (LEAD_INTENTIONAL_CLOSE_RE.test(current) || LEAD_INTENTIONAL_CLOSE_RE.test(draft)) return true;
     if (LEAD_SENSITIVE_CONTEXT_RE.test(current)) return true;
-    if (/^\[[^\]]*(?:sticker|media|photo|video|audio)[^\]]*\]/i.test(current) && compactReviewWords(current).length < 8) return true;
+    if (/^\[[^\]]*(?:sticker|media|photo|video|audio)[^\]]*\]/i.test(current) && currentWords.length < 8) return true;
     return false;
 }
 
@@ -4696,7 +4703,6 @@ function applyLeadStoryReplyQuestionGuard(review, { draftText, contextBlocks, al
     const currentMessage = extractJustArrivedReviewMessage(contextBlocks);
     if (!latestOutboundWasStoryOpener(contextBlocks, currentMessage)) return base;
     if (isClosingOrLowSignalLeadReviewTurn(currentMessage, draft)) return base;
-    if (compactReviewWords(currentMessage).length < 5 && !/[?!]/.test(currentMessage)) return base;
 
     const issue = 'Early story-reply lead draft needs one topic-specific follow-up question.';
     return {
