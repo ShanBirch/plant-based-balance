@@ -4113,8 +4113,7 @@ html[data-pbb-theme="light"] #calendar-workout-action-modal button:not(#action-m
 }
 
 #learning-content .story-key-insight-text,
-#learning-content .learning-game-question,
-#learning-content .learning-game-scenario {
+#learning-content .learning-game-question-card .learning-game-question {
     color: #151515 !important;
     -webkit-text-fill-color: #151515 !important;
 }
@@ -4141,10 +4140,86 @@ html:not([data-pbb-theme="light"]) #learning-content .learning-game-count-pill {
 }
 
 html:not([data-pbb-theme="light"]) #learning-content .learning-game-count-pill,
-html:not([data-pbb-theme="light"]) #learning-content .learning-game-question,
-html:not([data-pbb-theme="light"]) #learning-content .learning-game-scenario {
+html:not([data-pbb-theme="light"]) #learning-content .learning-game-question-card .learning-game-question,
+html:not([data-pbb-theme="light"]) #learning-content .learning-game-stage > div > .learning-game-question {
     color: #151515 !important;
     -webkit-text-fill-color: #151515 !important;
+}
+
+html:not([data-pbb-theme="light"]) #learning-content .learning-game-scenario-card {
+    background:
+        radial-gradient(circle at 88% 0%, rgba(245, 217, 138, 0.1), transparent 30%),
+        linear-gradient(180deg, rgba(31, 20, 45, 0.94), rgba(18, 11, 31, 0.96)) !important;
+    border-color: rgba(245, 217, 138, 0.12) !important;
+    color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #learning-content .learning-game-scenario-card .learning-game-scenario,
+html:not([data-pbb-theme="light"]) #learning-content .learning-game-scenario-card .learning-game-question {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #learning-content .learning-game-scenario-question-block {
+    border-top-color: rgba(255, 255, 255, 0.42) !important;
+}
+
+html:not([data-pbb-theme="light"]) #learning-content .fill-blank-option[style*="background: white"],
+html:not([data-pbb-theme="light"]) #learning-content .fill-blank-option[style*="background:white"],
+html:not([data-pbb-theme="light"]) #learning-content .tap-all-option[style*="background: white"],
+html:not([data-pbb-theme="light"]) #learning-content .tap-all-option[style*="background:white"],
+html:not([data-pbb-theme="light"]) #learning-content .match-item[style*="background: white"],
+html:not([data-pbb-theme="light"]) #learning-content .match-item[style*="background:white"],
+html:not([data-pbb-theme="light"]) #learning-content .order-item[style*="background: white"],
+html:not([data-pbb-theme="light"]) #learning-content .order-item[style*="background:white"],
+html:not([data-pbb-theme="light"]) #learning-content .scenario-option[style*="background: white"],
+html:not([data-pbb-theme="light"]) #learning-content .scenario-option[style*="background:white"] {
+    background:
+        radial-gradient(circle at 88% 0%, rgba(245, 217, 138, 0.1), transparent 30%),
+        linear-gradient(180deg, rgba(31, 20, 45, 0.94), rgba(18, 11, 31, 0.96)) !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #learning-content .learning-complete-summary-card {
+    background:
+        radial-gradient(circle at 88% 0%, rgba(245, 217, 138, 0.1), transparent 30%),
+        linear-gradient(180deg, rgba(31, 20, 45, 0.94), rgba(18, 11, 31, 0.96)) !important;
+    border: 1px solid rgba(245, 217, 138, 0.12) !important;
+    color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #learning-content .learning-complete-score-value {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #learning-content .learning-complete-xp-value {
+    color: rgba(248, 243, 255, 0.82) !important;
+    -webkit-text-fill-color: rgba(248, 243, 255, 0.82) !important;
+}
+
+html:not([data-pbb-theme="light"]) #learning-content .learning-complete-xp-value.learning-complete-xp-positive {
+    color: #8fe7b4 !important;
+    -webkit-text-fill-color: #8fe7b4 !important;
+}
+
+html:not([data-pbb-theme="light"]) #learning-content .learning-complete-metric-label,
+html:not([data-pbb-theme="light"]) #learning-content .learning-complete-health-iq-label,
+html:not([data-pbb-theme="light"]) #learning-content .learning-complete-health-iq-next {
+    color: rgba(248, 243, 255, 0.7) !important;
+    -webkit-text-fill-color: rgba(248, 243, 255, 0.7) !important;
+}
+
+html:not([data-pbb-theme="light"]) #learning-content .learning-complete-metric-divider,
+html:not([data-pbb-theme="light"]) #learning-content .learning-complete-health-iq-mini {
+    border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+html:not([data-pbb-theme="light"]) #learning-content .learning-complete-metric-divider,
+html:not([data-pbb-theme="light"]) #learning-content .learning-complete-health-iq-track {
+    background: rgba(255, 255, 255, 0.14) !important;
 }
 
 html[data-pbb-theme="light"] #learning-content p.learning-game-question,
