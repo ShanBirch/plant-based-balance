@@ -119,6 +119,7 @@ const EDIT_ANALYSIS_RESPONSE_BUDGET_MS = 1600;
 const EDIT_ANALYSIS_ADMIN_BUDGET_MS = 4500;
 const EDIT_ANALYSIS_BACKGROUND_BUDGET_MS = 7000;
 const INSTAGRAM_GRAPH_TYPING_ACTION_TIMEOUT_MS = 1200;
+const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function safeObject(value) {
@@ -548,9 +549,20 @@ function withoutSendClaim(data = {}) {
     return clean;
 }
 
+function getSendClaimId(data = {}) {
+    return String(data?.send_claim_id || '').trim();
+}
+
+function isSendClaimStale(data = {}, nowMs = Date.now()) {
+    const claimId = getSendClaimId(data);
+    if (!claimId) return false;
+    const claimedAtMs = Date.parse(data?.send_claimed_at || '');
+    return !Number.isFinite(claimedAtMs) || (nowMs - claimedAtMs) > SEND_CLAIM_STALE_MS;
+}
+
 async function claimPendingAlertForSend(alert, source) {
     const claim = createSendClaim(source);
-    const claimedRows = await supabase(
+    let claimedRows = await supabase(
         `coach_alerts?id=eq.${encodeURIComponent(alert.id)}&status=eq.pending&data->>send_claim_id=is.null`,
         {
             method: 'PATCH',
@@ -559,7 +571,24 @@ async function claimPendingAlertForSend(alert, source) {
         }
     );
     const claimed = claimedRows[0] || null;
-    return claimed ? { ...claimed, sendClaim: claim } : null;
+    if (claimed) return { ...claimed, sendClaim: claim };
+
+    const current = await loadAlertSendState(alert.id);
+    const staleClaimId = current?.status === 'pending' && isSendClaimStale(current?.data)
+        ? getSendClaimId(current.data)
+        : '';
+    if (!staleClaimId) return null;
+
+    claimedRows = await supabase(
+        `coach_alerts?id=eq.${encodeURIComponent(alert.id)}&status=eq.pending&data->>send_claim_id=eq.${encodeURIComponent(staleClaimId)}`,
+        {
+            method: 'PATCH',
+            body: { data: withSendClaim(current.data || alert.data || {}, claim) },
+            prefer: 'return=representation',
+        }
+    );
+    const reclaimed = claimedRows[0] || null;
+    return reclaimed ? { ...reclaimed, sendClaim: claim } : null;
 }
 
 async function loadAlertSendState(alertId) {
@@ -1427,4 +1456,5 @@ exports._test = {
     resolveChunkGaps,
     isCocosAlertData,
     isChallengeOfferSend,
+    isSendClaimStale,
 };

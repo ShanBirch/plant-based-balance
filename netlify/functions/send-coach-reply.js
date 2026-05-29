@@ -23,6 +23,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
+const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
 const {
     normalizeCoachDraftText,
     fireCoachEditAnalysis,
@@ -75,9 +76,20 @@ function withoutSendClaim(data = {}) {
     return clean;
 }
 
+function getSendClaimId(data = {}) {
+    return String(data?.send_claim_id || '').trim();
+}
+
+function isSendClaimStale(data = {}, nowMs = Date.now()) {
+    const claimId = getSendClaimId(data);
+    if (!claimId) return false;
+    const claimedAtMs = Date.parse(data?.send_claimed_at || '');
+    return !Number.isFinite(claimedAtMs) || (nowMs - claimedAtMs) > SEND_CLAIM_STALE_MS;
+}
+
 async function claimPendingAlertForSend(alert, source) {
     const claim = createSendClaim(source);
-    const claimedRows = await supabase(
+    let claimedRows = await supabase(
         `coach_alerts?id=eq.${encodeURIComponent(alert.id)}&status=eq.pending&data->>send_claim_id=is.null`,
         {
             method: 'PATCH',
@@ -86,7 +98,24 @@ async function claimPendingAlertForSend(alert, source) {
         }
     );
     const claimed = claimedRows[0] || null;
-    return claimed ? { ...claimed, sendClaim: claim } : null;
+    if (claimed) return { ...claimed, sendClaim: claim };
+
+    const current = await loadAlertSendState(alert.id);
+    const staleClaimId = current?.status === 'pending' && isSendClaimStale(current?.data)
+        ? getSendClaimId(current.data)
+        : '';
+    if (!staleClaimId) return null;
+
+    claimedRows = await supabase(
+        `coach_alerts?id=eq.${encodeURIComponent(alert.id)}&status=eq.pending&data->>send_claim_id=eq.${encodeURIComponent(staleClaimId)}`,
+        {
+            method: 'PATCH',
+            body: { data: withSendClaim(current.data || alert.data || {}, claim) },
+            prefer: 'return=representation',
+        }
+    );
+    const reclaimed = claimedRows[0] || null;
+    return reclaimed ? { ...reclaimed, sendClaim: claim } : null;
 }
 
 async function loadAlertSendState(alertId) {

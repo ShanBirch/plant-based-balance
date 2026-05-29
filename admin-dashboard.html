@@ -5722,6 +5722,29 @@
             return !!review && typeof review === 'object' && String(review.verdict || '').toLowerCase() === 'block';
         }
 
+        function resolveAlertActionButton(source, selector) {
+            const target = source?.target || source;
+            if (!target) return null;
+            if (target.matches?.(selector)) return target;
+            return target.closest?.(selector) || null;
+        }
+
+        function captureAlertActionButtonState(btn) {
+            if (!btn) return null;
+            return {
+                disabled: !!btn.disabled,
+                html: btn.innerHTML,
+            };
+        }
+
+        function restoreAlertActionButton(btn, state, fallbackText = 'Send') {
+            if (!btn) return;
+            btn.disabled = state ? state.disabled : false;
+            if (state?.html) btn.innerHTML = state.html;
+            else btn.textContent = fallbackText;
+            if (window.lucide) lucide.createIcons();
+        }
+
         function showBlockedDraftSendAnywayModal(alertData) {
             const review = alertData?.data?.draft_review || alertData?.draft_review || {};
             const summary = String(review.summary || '').trim();
@@ -5874,6 +5897,19 @@
             };
         }
 
+        const ADMIN_SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
+
+        function getAdminSendClaimId(data) {
+            return String(data?.send_claim_id || '').trim();
+        }
+
+        function isAdminSendClaimStale(data, nowMs = Date.now()) {
+            const claimId = getAdminSendClaimId(data);
+            if (!claimId) return false;
+            const claimedAtMs = Date.parse(data?.send_claimed_at || '');
+            return !Number.isFinite(claimedAtMs) || (nowMs - claimedAtMs) > ADMIN_SEND_CLAIM_STALE_MS;
+        }
+
         function withAdminSendClaim(data, claim) {
             return Object.assign({}, data || {}, {
                 send_claim_id: claim.id,
@@ -5910,6 +5946,22 @@
                 .eq('id', alertData.id)
                 .maybeSingle();
             if (currentError) throw currentError;
+            const staleClaimId = current?.status === 'pending' && isAdminSendClaimStale(current?.data)
+                ? getAdminSendClaimId(current.data)
+                : '';
+            if (staleClaimId) {
+                const retryData = withAdminSendClaim(current.data || alertData?.data || {}, claim);
+                const { data: reclaimed, error: reclaimError } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .update({ data: retryData })
+                    .eq('id', alertData.id)
+                    .eq('status', 'pending')
+                    .eq('data->>send_claim_id', staleClaimId)
+                    .select('id,status,data')
+                    .maybeSingle();
+                if (reclaimError) throw reclaimError;
+                if (reclaimed) return { row: reclaimed, claim };
+            }
             const inProgress = current?.status === 'pending' && current?.data?.send_claim_id;
             const alreadySent = current?.status === 'sent';
             const err = new Error(inProgress
@@ -15207,7 +15259,7 @@
                             ${alert.status === 'canceled' ? '✕ Canceled' : '✕ Dismissed'} ${timeAgo(alert.actioned_at || alert.created_at)}
                         </span>
                         ${canSendFromHere ? `
-                            <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}')" title="Send this draft now">
+                            <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}', this)" title="Send this draft now">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                                 Send now
                             </button>
@@ -15228,12 +15280,12 @@
                     ` : `
                         ${manualCheckinActionsHtml}
                         ${canSendFromHere ? `
-                            <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}')">
+                            <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}', this)">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                                 Send
                             </button>
                             ${alert.status === 'pending' && (isDmAlert || isFollowUp) && timingSuggestion ? `
-                                <button class="alert-btn alert-btn-recommended" onclick="useRecommendedReplyTiming('${alert.id}')" title="Use the AI recommended timing: ${escapeHtml(timingSuggestion.reason)}">
+                                <button class="alert-btn alert-btn-recommended" onclick="useRecommendedReplyTiming('${alert.id}', this)" title="Use the AI recommended timing: ${escapeHtml(timingSuggestion.reason)}">
                                     <i data-lucide="${timingSuggestion.delay_ms ? 'timer' : 'send'}" style="width:12px;height:12px;"></i>
                                     ${timingSuggestion.delay_ms ? `Send in ${escapeHtml(timingSuggestion.label)}` : 'Send now'}
                                 </button>
@@ -17291,7 +17343,7 @@
                 </div>`;
         }
 
-        async function sendAlertMessage(alertId) {
+        async function sendAlertMessage(alertId, sourceEl = null, providedBtnState = null) {
             const alertData = alertsCache.find(a => a.id === alertId);
             if (!alertData) return;
 
@@ -17308,11 +17360,12 @@
             const message = normalizeCoachDraftTextForAdmin(rawMessage).trim();
             if (!message) return;
 
-            const btn = event?.target?.closest?.('.alert-btn-send, .alert-btn-recommended');
+            const btn = resolveAlertActionButton(sourceEl, '.alert-btn-send, .alert-btn-recommended');
+            const btnState = providedBtnState || captureAlertActionButtonState(btn);
             if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
 
             if (isManyChatLead) {
-                return sendManyChatAlertMessage(alertId, alertData, message, btn);
+                return sendManyChatAlertMessage(alertId, alertData, message, btn, btnState);
             }
 
             let sendClaimId = '';
@@ -17429,7 +17482,7 @@
                     return;
                 }
                 window.alert('Failed to send: ' + e.message);
-                if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
+                restoreAlertActionButton(btn, btnState);
             }
         }
 
@@ -17488,7 +17541,7 @@
         // which is the same endpoint the phone push approve-gate hits, so
         // ManyChat send + ig_messages logging + status='sent' flip + edit
         // signal all happen there. We only handle the optimistic UI here.
-        async function sendManyChatAlertMessage(alertId, alertData, message, btn) {
+        async function sendManyChatAlertMessage(alertId, alertData, message, btn, btnState = null) {
             let draftText = '';
             let editReason = '';
             let draftReviewOverride = false;
@@ -17503,7 +17556,7 @@
                 if (message === draftText && isBlockedAlertDraftReview(draftReview)) {
                     draftReviewOverride = await showBlockedDraftSendAnywayModal(alertData);
                     if (!draftReviewOverride) {
-                        if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
+                        restoreAlertActionButton(btn, btnState);
                         return;
                     }
                 }
@@ -17540,7 +17593,7 @@
                             : alertData;
                         draftReviewOverride = await showBlockedDraftSendAnywayModal(retryAlertData);
                         if (!draftReviewOverride) {
-                            if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
+                            restoreAlertActionButton(btn, btnState);
                             return;
                         }
                         sendPayload.draftReviewOverride = true;
@@ -17583,7 +17636,7 @@
                 }
                 console.error('Failed to send IG/FB alert:', e);
                 window.alert('Failed to send: ' + e.message);
-                if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
+                restoreAlertActionButton(btn, btnState);
             }
         }
 
@@ -17609,7 +17662,7 @@
             { value: 'tomorrow_5pm',    label: 'Tomorrow 5pm' },
         ];
 
-        async function useRecommendedReplyTiming(alertId) {
+        async function useRecommendedReplyTiming(alertId, sourceEl = null) {
             const alertData = alertsCache.find(a => a.id === alertId);
             if (!alertData) return false;
             if (getAlertHumanAgentState(alertData).required) {
@@ -17627,7 +17680,7 @@
                 window.alert('No AI timing recommendation is available for this draft.');
                 return false;
             }
-            const btn = event?.target?.closest?.('.alert-btn-recommended');
+            const btn = resolveAlertActionButton(sourceEl, '.alert-btn-recommended');
             const originalHtml = btn ? btn.innerHTML : '';
             if (btn) {
                 btn.disabled = true;
@@ -17635,7 +17688,7 @@
                 if (window.lucide) lucide.createIcons();
             }
             if (!suggestion.delay_ms) {
-                await sendAlertMessage(alertId);
+                await sendAlertMessage(alertId, btn, { disabled: false, html: originalHtml });
                 return true;
             }
             const ok = await confirmScheduleSend(alertId, String(suggestion.delay_ms), {
