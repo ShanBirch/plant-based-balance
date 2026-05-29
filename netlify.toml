@@ -298,6 +298,11 @@
 [functions."weekly-wrapped-push"]
   schedule = "0 7 * * 0"
 
+# Auto feed comments - hourly scanner, code gates to 07:30-21:45 Brisbane.
+# Adds one simple Shannon comment to fresh feed posts after a human-ish delay.
+[functions."auto-feed-comment"]
+  schedule = "37 * * * *"
+
 # Weekly coach digest - Sunday evening 20:37 UTC (≈ Mon 06:37 AEST / 07:37 AEDT).
 # Per-client planning report for Shannon. Not sent to clients.
 [functions."weekly-coach-digest"]
