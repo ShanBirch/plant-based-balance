@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v190'; // v190: custom-program rest day Movement card; v189: Friday weigh-in feed share contrast
+const CACHE_NAME = 'pbb-app-v191'; // v191: light-mode Learn/recovery text contrast; v190: custom-program rest day Movement card
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',

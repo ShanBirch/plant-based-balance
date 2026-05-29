@@ -4083,6 +4083,80 @@ html[data-pbb-theme="light"] #calendar-workout-action-modal button:not(#action-m
     stroke: #6f6a61 !important;
 }
 
+/* Final Learn/recovered-workout readability pass: these surfaces mix inline
+   colors with theme variables, so keep the actual text contrast explicit. */
+#workout-recovery-dialog > div,
+#workout-saving-dialog > div {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-color: rgba(184, 137, 43, 0.22) !important;
+    color: #151515 !important;
+}
+
+#workout-recovery-dialog h3,
+#workout-recovery-dialog p,
+#workout-recovery-dialog strong,
+#workout-saving-dialog p {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+#workout-recovery-dialog button[onclick*="dismissWorkoutRecovery"] {
+    background: rgba(17, 17, 17, 0.055) !important;
+    border-color: rgba(184, 137, 43, 0.2) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+#learning-content .story-key-insight {
+    background: rgba(255, 255, 255, 0.96) !important;
+    color: #151515 !important;
+}
+
+#learning-content .story-key-insight-text,
+#learning-content .learning-game-question,
+#learning-content .learning-game-scenario {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+#learning-content .learning-game-helper {
+    color: #4f473b !important;
+    -webkit-text-fill-color: #4f473b !important;
+}
+
+html[data-pbb-theme="light"] #learning-content p.learning-game-question,
+html[data-pbb-theme="light"] #learning-content p.learning-game-scenario {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #learning-content p.learning-game-helper {
+    color: #4f473b !important;
+    -webkit-text-fill-color: #4f473b !important;
+}
+
+#learning-content .learning-game-question-card {
+    background: rgba(255, 255, 255, 0.94) !important;
+    border: 1px solid rgba(184, 137, 43, 0.14) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #daily-quiz-card #hlq-card-root .hlq-question-label,
+html[data-pbb-theme="light"] #daily-quiz-card #hlq-card-root .hlq-question-label-dot {
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #daily-quiz-card #hlq-card-root .hlq-question-card {
+    background: rgba(255, 255, 255, 0.86) !important;
+    border-color: rgba(184, 137, 43, 0.2) !important;
+}
+
+html[data-pbb-theme="light"] #daily-quiz-card #hlq-card-root .hlq-question-text {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
 /* Activity Insights hub and child insight pages. */
 #view-insights.activity-insights-view,
 #view-progress,

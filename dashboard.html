@@ -1549,11 +1549,11 @@ if(!window._pbbIsIOSSafari) {
     <script>
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-dailyquiz.js"><\/script>');
-    document.write('<script src="js/dashboard/pbb-home-card-quiz.js?v=2"><\/script>');
+    document.write('<script src="js/dashboard/pbb-home-card-quiz.js?v=3"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-dailyquiz.js');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-home-card-quiz.js?v=2');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-home-card-quiz.js?v=3');
 }
 </script>
     
@@ -14058,7 +14058,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=63">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=64">
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>
@@ -16255,11 +16255,11 @@ if (window._pbbIsIOSSafari) {
     if (window._pbbIsIOSSafari) {
         window.addEventListener('appCriticalContentReady', function() {
             var s = document.createElement('script');
-            s.src = 'lib/learning-inline.js';
+            s.src = 'lib/learning-inline.js?v=2';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-        document.write('<script src="lib/learning-inline.js"><\/script>');
+        document.write('<script src="lib/learning-inline.js?v=2"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->

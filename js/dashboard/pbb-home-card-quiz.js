@@ -369,10 +369,10 @@
         var game = HLQ.games[index];
         if (!game) return '<div style="color:#fff;text-align:center;padding:30px;">No question found.</div>';
         var labelHtml = ''
-            + '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;">'
-            + '  <span style="font-size:0.65rem;color:rgba(255,255,255,0.78);text-transform:uppercase;letter-spacing:1.6px;font-weight:800;">' + labelForType(game.type) + '</span>'
-            + '  <span style="font-size:0.65rem;color:rgba(255,255,255,0.55);font-weight:700;">·</span>'
-            + '  <span style="font-size:0.65rem;color:rgba(255,255,255,0.78);font-weight:800;">' + (index + 1) + ' of ' + HLQ.games.length + '</span>'
+            + '<div class="hlq-question-label-row" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;">'
+            + '  <span class="hlq-question-label" style="font-size:0.65rem;color:rgba(255,255,255,0.78);text-transform:uppercase;letter-spacing:1.6px;font-weight:800;">' + labelForType(game.type) + '</span>'
+            + '  <span class="hlq-question-label-dot" style="font-size:0.65rem;color:rgba(255,255,255,0.55);font-weight:700;">·</span>'
+            + '  <span class="hlq-question-label" style="font-size:0.65rem;color:rgba(255,255,255,0.78);font-weight:800;">' + (index + 1) + ' of ' + HLQ.games.length + '</span>'
             + '</div>';
         var body;
         switch (game.type) {
@@ -400,8 +400,8 @@
 
     function questionBox(text) {
         return ''
-            + '<div style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.30);border-radius:14px;padding:16px 16px;margin-bottom:14px;">'
-            + '  <p style="font-size:0.98rem;color:#ffffff;line-height:1.5;margin:0;font-weight:600;">' + escapeHtml(text || '') + '</p>'
+            + '<div class="hlq-question-card" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.30);border-radius:14px;padding:16px 16px;margin-bottom:14px;">'
+            + '  <p class="hlq-question-text" style="font-size:0.98rem;color:#ffffff;line-height:1.5;margin:0;font-weight:600;">' + escapeHtml(text || '') + '</p>'
             + '</div>';
     }
 
