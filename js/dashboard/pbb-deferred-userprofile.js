@@ -396,6 +396,7 @@
             const storyId = story.id;
             const isImage = story.media_type === 'image' || story.media_type === 'video';
             const isCardType = ['workout_card', 'nutrition_card', 'meal_card', 'level_up_card'].includes(story.media_type);
+            const isTextPost = story.media_type === 'text' || (!isCardType && !story.media_url && !story.thumbnail_url);
 
             if (isImage && story.media_url) {
                 const thumb = story.thumbnail_url || story.media_url;
@@ -415,10 +416,16 @@
                         <span>${typeEmoji}</span>
                     </div>
                 `;
+            } else if (isTextPost) {
+                return `
+                    <div class="up-post-card-thumb" onclick="openFeedPostViewer('${storyId}')">
+                        <span style="font-size:1rem; font-weight:800;">Aa</span>
+                    </div>
+                `;
             }
 
             return `
-                <div class="up-post-thumb" style="background: linear-gradient(135deg, #e2e8f0, #f1f5f9);">
+                <div class="up-post-thumb" onclick="openFeedPostViewer('${storyId}')" style="background: linear-gradient(135deg, #e2e8f0, #f1f5f9);">
                     <div style="display:flex; align-items:center; justify-content:center; height:100%; font-size:1.5rem;">📷</div>
                 </div>
             `;
