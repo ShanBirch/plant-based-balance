@@ -1834,8 +1834,9 @@ function splitPlainDraftTextIntoChunks(text) {
     return [trimmed];
 }
 
-const DEFAULT_DM_BUBBLE_TARGET_CHARS = 420;
-const DEFAULT_DM_BUBBLE_HARD_MAX_CHARS = 850;
+const DEFAULT_DM_BUBBLE_TARGET_CHARS = 520;
+const DEFAULT_DM_BUBBLE_HARD_MAX_CHARS = 900;
+const DEFAULT_DM_BUBBLE_PREFERRED_MAX = 4;
 
 function cleanOutboundDmBubbleText(text) {
     return String(text || '')
@@ -1876,22 +1877,16 @@ function findOutboundDmBreak(text, maxChars, minChars, options = {}) {
 function splitOutboundDmParagraph(paragraph, options = {}) {
     const targetChars = Number(options.targetChars) || DEFAULT_DM_BUBBLE_TARGET_CHARS;
     const hardMaxChars = Number(options.hardMaxChars) || DEFAULT_DM_BUBBLE_HARD_MAX_CHARS;
-    const minTargetBreak = Math.max(140, Math.floor(targetChars * 0.45));
     const minHardBreak = Math.max(180, Math.floor(hardMaxChars * 0.45));
     const chunks = [];
     let rest = cleanOutboundDmBubbleText(paragraph);
 
-    while (rest.length > hardMaxChars || rest.length > targetChars) {
+    while (rest.length > hardMaxChars) {
         let breakAt = -1;
-        if (rest.length > targetChars) {
-            breakAt = findOutboundDmBreak(rest, targetChars, minTargetBreak);
-        }
-        if (breakAt === -1 && rest.length > hardMaxChars) {
-            breakAt = findOutboundDmBreak(rest, hardMaxChars, minHardBreak, {
-                allowClauses: true,
-                allowWords: true,
-            });
-        }
+        breakAt = findOutboundDmBreak(rest, hardMaxChars, minHardBreak, {
+            allowClauses: true,
+            allowWords: true,
+        });
         if (breakAt === -1) break;
 
         const head = cleanOutboundDmBubbleText(rest.slice(0, breakAt));
@@ -1902,6 +1897,49 @@ function splitOutboundDmParagraph(paragraph, options = {}) {
 
     if (rest) chunks.push(rest);
     return chunks;
+}
+
+function joinOutboundDmBubbleParts(parts) {
+    return cleanOutboundDmBubbleText(parts.filter(Boolean).join('\n\n'));
+}
+
+function coalesceOutboundDmBubbles(bubbles, options = {}) {
+    const cleanBubbles = bubbles.map(s => cleanOutboundDmBubbleText(s)).filter(Boolean);
+    const preferredMax = Math.max(1, Number(options.preferredMaxBubbles) || DEFAULT_DM_BUBBLE_PREFERRED_MAX);
+    const targetChars = Number(options.targetChars) || DEFAULT_DM_BUBBLE_TARGET_CHARS;
+    const hardMaxChars = Number(options.hardMaxChars) || DEFAULT_DM_BUBBLE_HARD_MAX_CHARS;
+    if (cleanBubbles.length <= preferredMax) return cleanBubbles;
+
+    const totalChars = cleanBubbles.reduce((sum, bubble) => sum + bubble.length, 0)
+        + Math.max(0, cleanBubbles.length - 1) * 2;
+    const coalescedTarget = Math.min(hardMaxChars, Math.max(targetChars, Math.ceil(totalChars / preferredMax)));
+    const merged = [];
+    let current = [];
+
+    for (const bubble of cleanBubbles) {
+        const candidate = joinOutboundDmBubbleParts([...current, bubble]);
+        if (current.length && candidate.length > coalescedTarget) {
+            if (candidate.length <= hardMaxChars && merged.length + 1 >= preferredMax) {
+                current.push(bubble);
+                continue;
+            }
+            merged.push(joinOutboundDmBubbleParts(current));
+            current = [bubble];
+        } else {
+            current.push(bubble);
+        }
+    }
+    if (current.length) merged.push(joinOutboundDmBubbleParts(current));
+
+    while (merged.length > preferredMax) {
+        const last = merged[merged.length - 1];
+        const prev = merged[merged.length - 2];
+        const combined = joinOutboundDmBubbleParts([prev, last]);
+        if (last.length >= Math.floor(targetChars * 0.35) || combined.length > hardMaxChars) break;
+        merged.splice(merged.length - 2, 2, combined);
+    }
+
+    return merged;
 }
 
 function repairLikelySplitWords(chunks) {
@@ -1930,15 +1968,10 @@ function splitCoachDraftIntoDmBubbles(input, options = {}) {
     for (const source of repairedChunks) {
         const text = cleanOutboundDmBubbleText(source);
         if (!text) continue;
-        const paragraphs = text.split(/\n+/).map(s => cleanOutboundDmBubbleText(s)).filter(Boolean);
-        for (const paragraph of paragraphs.length ? paragraphs : [text]) {
-            bubbles.push(...splitOutboundDmParagraph(paragraph, options));
-        }
+        bubbles.push(...splitOutboundDmParagraph(text, options));
     }
 
-    return bubbles
-        .map(s => cleanOutboundDmBubbleText(s))
-        .filter(Boolean);
+    return coalesceOutboundDmBubbles(bubbles, options);
 }
 
 function normalizeCoachDraftChunks(text) {

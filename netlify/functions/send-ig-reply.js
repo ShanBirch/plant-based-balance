@@ -118,6 +118,7 @@ const SYNC_SEND_GAP_BUDGET_MS = 46000;
 const EDIT_ANALYSIS_RESPONSE_BUDGET_MS = 1600;
 const EDIT_ANALYSIS_ADMIN_BUDGET_MS = 4500;
 const EDIT_ANALYSIS_BACKGROUND_BUDGET_MS = 7000;
+const INSTAGRAM_GRAPH_TYPING_ACTION_TIMEOUT_MS = 1200;
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function safeObject(value) {
@@ -741,7 +742,11 @@ async function postToInstagramGraph({ recipientId, accountId, text, tag }) {
     return parsed;
 }
 
-async function postInstagramGraphSeenReceipt({ recipientId, accountId }) {
+async function postInstagramGraphSenderAction({ recipientId, accountId, senderAction, timeoutMs = 0 }) {
+    const allowedActions = new Set(['mark_seen', 'typing_on', 'typing_off']);
+    if (!allowedActions.has(senderAction)) {
+        throw new Error(`Unsupported Instagram Graph sender action: ${senderAction}`);
+    }
     const accessToken = await getInstagramGraphAccessToken(accountId);
     if (!accessToken) {
         throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
@@ -751,25 +756,50 @@ async function postInstagramGraphSeenReceipt({ recipientId, accountId }) {
     }
     const targetAccount = accountId || 'me';
     const url = `https://graph.instagram.com/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(targetAccount)}/messages`;
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            recipient: { id: recipientId },
-            sender_action: 'mark_seen',
-        }),
-    });
+    const controller = timeoutMs > 0 && typeof AbortController !== 'undefined'
+        ? new AbortController()
+        : null;
+    const timeout = controller
+        ? setTimeout(() => controller.abort(), timeoutMs)
+        : null;
+    let res;
+    try {
+        res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            signal: controller?.signal,
+            body: JSON.stringify({
+                recipient: { id: recipientId },
+                sender_action: senderAction,
+            }),
+        });
+    } catch (err) {
+        if (err?.name === 'AbortError') {
+            throw new Error(`Instagram Graph ${senderAction} timed out`);
+        }
+        throw err;
+    } finally {
+        if (timeout) clearTimeout(timeout);
+    }
     const responseText = await res.text();
     let parsed;
     try { parsed = JSON.parse(responseText); } catch { parsed = { raw: responseText }; }
     if (!res.ok) {
         const detail = parsed?.error?.message || responseText;
-        throw new Error(`Instagram Graph seen receipt ${res.status}: ${String(detail || '').slice(0, 400)}`);
+        throw new Error(`Instagram Graph ${senderAction} ${res.status}: ${String(detail || '').slice(0, 400)}`);
     }
     return parsed;
+}
+
+async function postInstagramGraphSeenReceipt({ recipientId, accountId }) {
+    return postInstagramGraphSenderAction({
+        recipientId,
+        accountId,
+        senderAction: 'mark_seen',
+    });
 }
 
 async function sendInstagramSeenReceiptAfterReply({ channel, recipientId, accountId, sentAtIso }) {
@@ -785,6 +815,40 @@ async function sendInstagramSeenReceiptAfterReply({ channel, recipientId, accoun
     } catch (err) {
         console.warn('[send-ig-reply] Instagram seen receipt failed:', err.message);
         return { attempted: true, ok: false, error: err.message };
+    }
+}
+
+async function sendInstagramGraphTypingAction({ channel, recipientId, accountId, action, beforeChunkIndex, gapMs = null }) {
+    if (channel !== 'instagram') {
+        return { attempted: false, ok: false, reason: 'not_instagram' };
+    }
+    if (!recipientId) {
+        return { attempted: false, ok: false, reason: 'graph_recipient_missing' };
+    }
+    try {
+        await postInstagramGraphSenderAction({
+            recipientId,
+            accountId,
+            senderAction: action,
+            timeoutMs: INSTAGRAM_GRAPH_TYPING_ACTION_TIMEOUT_MS,
+        });
+        return {
+            attempted: true,
+            ok: true,
+            action,
+            before_chunk: beforeChunkIndex,
+            gap_ms: gapMs,
+        };
+    } catch (err) {
+        console.warn(`[send-ig-reply] Instagram ${action} failed:`, err.message);
+        return {
+            attempted: true,
+            ok: false,
+            action,
+            before_chunk: beforeChunkIndex,
+            gap_ms: gapMs,
+            error: err.message,
+        };
     }
 }
 
@@ -1083,12 +1147,26 @@ exports.handler = async (event) => {
     //    we don't keep dispatching after a bad chunk.
     const sendResults = [];
     const sentChunkGapsMs = [];
+    const instagramTypingActions = [];
     let firstError = null;
     const deliveryTransport = shouldUseGraph ? 'instagram_graph' : 'manychat';
     for (let i = 0; i < messagesToSend.length; i++) {
+        let typingStartedForChunk = false;
         if (i > 0) {
             const gapMs = plannedChunkGapsMs[i - 1] || chunkPacing.minMs || CHUNK_GAP_MIN_MS;
             sentChunkGapsMs.push(gapMs);
+            if (shouldUseGraph) {
+                const typingAction = await sendInstagramGraphTypingAction({
+                    channel,
+                    recipientId: graphRecipientId,
+                    accountId: graphAccountId,
+                    action: 'typing_on',
+                    beforeChunkIndex: i + 1,
+                    gapMs,
+                });
+                if (typingAction.attempted) instagramTypingActions.push(typingAction);
+                typingStartedForChunk = !!typingAction.ok;
+            }
             await sleep(gapMs);
         }
         const chunkText = messagesToSend[i];
@@ -1099,6 +1177,16 @@ exports.handler = async (event) => {
             sendResults.push({ ok: true, response: r, text: chunkText, transport: deliveryTransport });
         } catch (err) {
             console.error(`[send-ig-reply] chunk ${i + 1}/${messagesToSend.length} failed:`, err.message);
+            if (shouldUseGraph && typingStartedForChunk) {
+                const typingOffAction = await sendInstagramGraphTypingAction({
+                    channel,
+                    recipientId: graphRecipientId,
+                    accountId: graphAccountId,
+                    action: 'typing_off',
+                    beforeChunkIndex: i + 1,
+                });
+                if (typingOffAction.attempted) instagramTypingActions.push(typingOffAction);
+            }
             firstError = err.message;
             sendResults.push({ ok: false, error: err.message, text: chunkText, transport: deliveryTransport });
             break;
@@ -1166,7 +1254,7 @@ exports.handler = async (event) => {
         chunks_sent: sentChunks.length,
         chunks_total: messagesToSend.length,
         sent_chunks: sentChunks.map(r => r.text),
-        sent_split_strategy: 'paragraph_safe_v1',
+        sent_split_strategy: 'paragraph_coalesced_v2',
         sent_delivery_pacing: chunkPacing.strategy,
         delivery_channel: shouldUseGraph ? 'instagram_graph' : (alertData.delivery_channel || channel),
         delivery_transport: deliveryTransport,
@@ -1197,6 +1285,10 @@ exports.handler = async (event) => {
             : alertData.draft_messages_stale_ignored,
         draft_text: draftJoined || alertData.draft_text,
     };
+    if (instagramTypingActions.length > 0) {
+        mergedData.instagram_typing_strategy = 'typing_on_between_chunks_v1';
+        mergedData.instagram_typing_actions = instagramTypingActions;
+    }
     if (wasEdited && editReason) mergedData.edit_reason = editReason;
     if (!wasEdited && draftReviewOverride && isBlockedDraftReview(alertData.draft_review)) {
         mergedData.draft_review_override = {

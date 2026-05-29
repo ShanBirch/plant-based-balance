@@ -5561,8 +5561,9 @@
 
         const ADMIN_DM_CHUNK_GAP_MIN_MS = 14000;
         const ADMIN_DM_CHUNK_GAP_JITTER_MS = 2500;
-        const ADMIN_DM_BUBBLE_TARGET_CHARS = 420;
-        const ADMIN_DM_BUBBLE_HARD_MAX_CHARS = 850;
+        const ADMIN_DM_BUBBLE_TARGET_CHARS = 520;
+        const ADMIN_DM_BUBBLE_HARD_MAX_CHARS = 900;
+        const ADMIN_DM_BUBBLE_PREFERRED_MAX = 4;
 
         function sleepAdminDmChunk(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
@@ -5610,21 +5611,15 @@
 
         function splitAdminDmParagraph(paragraph) {
             const chunks = [];
-            const minTargetBreak = Math.max(140, Math.floor(ADMIN_DM_BUBBLE_TARGET_CHARS * 0.45));
             const minHardBreak = Math.max(180, Math.floor(ADMIN_DM_BUBBLE_HARD_MAX_CHARS * 0.45));
             let rest = cleanAdminDmChunkText(paragraph);
 
-            while (rest.length > ADMIN_DM_BUBBLE_HARD_MAX_CHARS || rest.length > ADMIN_DM_BUBBLE_TARGET_CHARS) {
+            while (rest.length > ADMIN_DM_BUBBLE_HARD_MAX_CHARS) {
                 let breakAt = -1;
-                if (rest.length > ADMIN_DM_BUBBLE_TARGET_CHARS) {
-                    breakAt = findAdminDmChunkBreak(rest, ADMIN_DM_BUBBLE_TARGET_CHARS, minTargetBreak);
-                }
-                if (breakAt === -1 && rest.length > ADMIN_DM_BUBBLE_HARD_MAX_CHARS) {
-                    breakAt = findAdminDmChunkBreak(rest, ADMIN_DM_BUBBLE_HARD_MAX_CHARS, minHardBreak, {
-                        allowClauses: true,
-                        allowWords: true,
-                    });
-                }
+                breakAt = findAdminDmChunkBreak(rest, ADMIN_DM_BUBBLE_HARD_MAX_CHARS, minHardBreak, {
+                    allowClauses: true,
+                    allowWords: true,
+                });
                 if (breakAt === -1) break;
 
                 const head = cleanAdminDmChunkText(rest.slice(0, breakAt));
@@ -5635,6 +5630,49 @@
 
             if (rest) chunks.push(rest);
             return chunks;
+        }
+
+        function joinAdminDmChunkParts(parts) {
+            return cleanAdminDmChunkText(parts.filter(Boolean).join('\n\n'));
+        }
+
+        function coalesceAdminDmChunks(chunks) {
+            const cleanChunks = chunks.map(s => cleanAdminDmChunkText(s)).filter(Boolean);
+            if (cleanChunks.length <= ADMIN_DM_BUBBLE_PREFERRED_MAX) return cleanChunks;
+
+            const totalChars = cleanChunks.reduce((sum, chunk) => sum + chunk.length, 0)
+                + Math.max(0, cleanChunks.length - 1) * 2;
+            const coalescedTarget = Math.min(
+                ADMIN_DM_BUBBLE_HARD_MAX_CHARS,
+                Math.max(ADMIN_DM_BUBBLE_TARGET_CHARS, Math.ceil(totalChars / ADMIN_DM_BUBBLE_PREFERRED_MAX))
+            );
+            const merged = [];
+            let current = [];
+
+            for (const chunk of cleanChunks) {
+                const candidate = joinAdminDmChunkParts([...current, chunk]);
+                if (current.length && candidate.length > coalescedTarget) {
+                    if (candidate.length <= ADMIN_DM_BUBBLE_HARD_MAX_CHARS && merged.length + 1 >= ADMIN_DM_BUBBLE_PREFERRED_MAX) {
+                        current.push(chunk);
+                        continue;
+                    }
+                    merged.push(joinAdminDmChunkParts(current));
+                    current = [chunk];
+                } else {
+                    current.push(chunk);
+                }
+            }
+            if (current.length) merged.push(joinAdminDmChunkParts(current));
+
+            while (merged.length > ADMIN_DM_BUBBLE_PREFERRED_MAX) {
+                const last = merged[merged.length - 1];
+                const prev = merged[merged.length - 2];
+                const combined = joinAdminDmChunkParts([prev, last]);
+                if (last.length >= Math.floor(ADMIN_DM_BUBBLE_TARGET_CHARS * 0.35) || combined.length > ADMIN_DM_BUBBLE_HARD_MAX_CHARS) break;
+                merged.splice(merged.length - 2, 2, combined);
+            }
+
+            return merged;
         }
 
         function splitAdminDraftIntoDmChunks(input) {
@@ -5661,10 +5699,11 @@
             }
             if (!baseChunks.length) baseChunks = [normalized];
 
-            return baseChunks
+            const chunks = baseChunks
                 .flatMap(chunk => splitAdminDmParagraph(chunk))
                 .map(s => cleanAdminDmChunkText(s))
                 .filter(Boolean);
+            return coalesceAdminDmChunks(chunks);
         }
 
         function estimateManyChatDashboardChunks(alertData, message, draftText) {
@@ -5823,7 +5862,7 @@
                 senderId: resolvedSenderId,
                 chunks,
                 joined: chunks.join('\n'),
-                splitStrategy: chunks.length > 1 ? 'admin_dashboard_paced_v1' : 'single',
+                splitStrategy: chunks.length > 1 ? 'admin_dashboard_coalesced_paced_v2' : 'single',
             };
         }
 

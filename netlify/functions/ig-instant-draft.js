@@ -102,7 +102,7 @@ const {
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const HISTORY_LIMIT = 40;
 const MAX_CHUNKS = 3;
-const DEEP_REPLY_MAX_CHUNKS = 10;
+const DEEP_REPLY_MAX_CHUNKS = 4;
 const DEEP_REPLY_MAX_OUTPUT_TOKENS = 8192;
 const LONG_DRAFT_PUSH_COMPACT_AT = 2400;
 // When a lead fires multiple messages before Shannon replies, coalesce them
@@ -1439,11 +1439,11 @@ function resolveReplyMode({ currentMessageText, recentInboundMessages = [], hist
             maxChunks: DEEP_REPLY_MAX_CHUNKS,
             maxOutputTokens: DEEP_REPLY_MAX_OUTPUT_TOKENS,
             intro: 'Draft a detailed',
-            chunkRange: '4-10',
-            chunkExample: '{"messages": ["chunk 1", "chunk 2", "chunk 3", "chunk 4", "chunk 5 (if needed)", "chunk 6 (if needed)", "chunk 7 (if needed)", "chunk 8 (if needed)", "chunk 9 (if needed)", "chunk 10 (if needed)"]}',
-            chunkRule: '4 to 10 chunks. Use enough separate bubbles to cover every important point in order without becoming one wall of text.',
+            chunkRange: '3-4',
+            chunkExample: '{"messages": ["chunk 1", "chunk 2", "chunk 3", "chunk 4 (only if needed)"]}',
+            chunkRule: '3 to 4 chunks for long support replies. Prefer fewer fuller bubbles with paragraph gaps inside each bubble instead of a pile of tiny separate bubbles.',
             lengthRule: 'Aim for 1800-3600 characters total for long multi-message batches. Go longer if that is what it takes to answer every meaningful question or share.',
-            styleRule: 'Detailed support chunks: each message 1-3 sentences max, lowercase-friendly, Australian casual.',
+            styleRule: 'Detailed support chunks: each message can include 1-3 short paragraphs separated by a blank line, lowercase-friendly, Australian casual.',
             extraBlock: `
 
 DEEP CLIENT SUPPORT MODE:
@@ -1519,11 +1519,11 @@ They are past signup/onboarding. Treat this as Shannon getting to know an active
         maxChunks: DEEP_REPLY_MAX_CHUNKS,
         maxOutputTokens: DEEP_REPLY_MAX_OUTPUT_TOKENS,
         intro: 'Draft a thoughtful',
-        chunkRange: '4-10',
-        chunkExample: '{"messages": ["chunk 1", "chunk 2", "chunk 3", "chunk 4", "chunk 5 (if needed)", "chunk 6 (if needed)", "chunk 7 (if needed)", "chunk 8 (if needed)", "chunk 9 (if needed)", "chunk 10 (if needed)"]}',
-        chunkRule: '4 to 10 chunks. Use enough separate bubbles to answer the whole message without becoming one wall of text.',
+        chunkRange: '3-4',
+        chunkExample: '{"messages": ["chunk 1", "chunk 2", "chunk 3", "chunk 4 (only if needed)"]}',
+        chunkRule: '3 to 4 chunks for long replies. Prefer fewer fuller bubbles with paragraph gaps inside each bubble instead of a pile of tiny separate bubbles.',
         lengthRule: 'Aim for 1400-2800 characters total when the inbound is long, emotional, or multi-topic. Go longer if several long messages need separate answers.',
-        styleRule: 'Thoughtful chunks: each message 1-3 sentences max, lowercase-friendly, Australian casual.',
+        styleRule: 'Thoughtful chunks: each message can include 1-3 short paragraphs separated by a blank line, lowercase-friendly, Australian casual.',
         extraBlock: `
 
 DEEP REPLY MODE:
