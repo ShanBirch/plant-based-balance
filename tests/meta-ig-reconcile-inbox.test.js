@@ -1,8 +1,9 @@
 const assert = require('assert');
 
-const { _test } = require('../netlify/functions/meta-ig-reconcile-inbox');
+const { _test: reconcileTest } = require('../netlify/functions/meta-ig-reconcile-inbox');
+const { _test: webhookTest } = require('../netlify/functions/instagram-webhook');
 
-const payload = _test.buildWebhookPayloadFromMessages({
+const payload = reconcileTest.buildWebhookPayloadFromMessages({
     accountId: '17841499999999999',
     messages: [{
         id: 'inbound_mid',
@@ -45,12 +46,29 @@ assert.strictEqual(outbound.recipient.username, 'plant_lead');
 assert.strictEqual(outbound.message.is_echo, true);
 
 assert.strictEqual(
-    _test.messageIsRecent({ created_time: '2026-05-25T01:00:00+0000' }, Date.parse('2026-05-25T00:00:00+0000')),
+    reconcileTest.messageIsRecent({ created_time: '2026-05-25T01:00:00+0000' }, Date.parse('2026-05-25T00:00:00+0000')),
     true
 );
 assert.strictEqual(
-    _test.messageIsRecent({ created_time: '2026-05-24T23:59:59+0000' }, Date.parse('2026-05-25T00:00:00+0000')),
+    reconcileTest.messageIsRecent({ created_time: '2026-05-24T23:59:59+0000' }, Date.parse('2026-05-25T00:00:00+0000')),
     false
+);
+
+assert.strictEqual(
+    reconcileTest.isScheduledInvocation({ headers: { 'x-nf-event': 'schedule' } }, {}),
+    true
+);
+assert.strictEqual(
+    reconcileTest.isScheduledInvocation({}, { next_run: '2026-05-29T03:50:00.000Z' }),
+    true
+);
+assert.strictEqual(
+    webhookTest.timestampIsoFromMessaging({ item: { timestamp: Date.parse('2026-05-25T01:02:03.000Z'), message: { mid: 'one', text: 'hi' } }, value: {} }),
+    '2026-05-25T01:02:03.000Z'
+);
+assert.strictEqual(
+    webhookTest.timestampIsoFromMessaging({ item: { message: { created_time: '2026-05-25T01:02:03+0000' } }, value: {} }),
+    '2026-05-25T01:02:03.000Z'
 );
 
 console.log('meta ig reconcile inbox tests passed');

@@ -328,6 +328,33 @@ function messageIdFromMessaging(event) {
     return normalizeId(message.mid || message.id || event?.value?.message_id || extractMessageId(event?.item));
 }
 
+function timestampMsFromMessaging(event) {
+    const message = messageFromMessaging(event);
+    const candidates = [
+        event?.item?.timestamp,
+        event?.value?.timestamp,
+        event?.value?.created_time,
+        message.created_time,
+        message.timestamp,
+    ];
+    for (const candidate of candidates) {
+        if (candidate == null || candidate === '') continue;
+        if (typeof candidate === 'number' || /^\d+$/.test(String(candidate))) {
+            const raw = Number(candidate);
+            if (!Number.isFinite(raw)) continue;
+            return raw > 100000000000 ? raw : raw * 1000;
+        }
+        const parsed = Date.parse(candidate);
+        if (Number.isFinite(parsed)) return parsed;
+    }
+    return null;
+}
+
+function timestampIsoFromMessaging(event) {
+    const ms = timestampMsFromMessaging(event);
+    return Number.isFinite(ms) ? new Date(ms).toISOString() : null;
+}
+
 function directionForMessaging(event) {
     const message = messageFromMessaging(event);
     const senderId = normalizeId(senderFromMessaging(event).id);
@@ -343,6 +370,12 @@ function participantIdForMessaging(event, direction) {
     const senderId = normalizeId(senderFromMessaging(event).id);
     const recipientId = normalizeId(recipientFromMessaging(event).id);
     return direction === 'out' ? recipientId : senderId;
+}
+
+function isAtOrAfterTimestamp(value, reference) {
+    const left = Date.parse(value || '');
+    const right = Date.parse(reference || '');
+    return Number.isFinite(left) && Number.isFinite(right) && left >= right;
 }
 
 function markerForAttachment(type, url) {
@@ -851,7 +884,7 @@ async function upsertGraphThread({ participantId, participantUsername, igAccount
         subscriberId,
         ...legacyGraphSubscriberIds(participantId),
     ].filter(Boolean);
-    const selectColumns = 'id,subscriber_id,coach_id,channel,profile_name,ig_username,lead_stage,linked_user_id,custom_data,auto_send_enabled';
+    const selectColumns = 'id,subscriber_id,coach_id,channel,profile_name,ig_username,lead_stage,linked_user_id,last_inbound_at,last_outbound_at,custom_data,auto_send_enabled';
     const existing = await supabase(
         `ig_threads?select=${selectColumns}&subscriber_id=in.(${subscriberCandidates.map(encodeURIComponent).join(',')})&channel=eq.instagram&limit=5`
     );
@@ -884,8 +917,13 @@ async function upsertGraphThread({ participantId, participantUsername, igAccount
             custom_data: customData,
             updated_at: nowIso,
         };
-        if (direction === 'out') patch.last_outbound_at = nowIso;
-        else patch.last_inbound_at = nowIso;
+        if (direction === 'out') {
+            if (!current.last_outbound_at || isAtOrAfterTimestamp(nowIso, current.last_outbound_at)) {
+                patch.last_outbound_at = nowIso;
+            }
+        } else if (!current.last_inbound_at || isAtOrAfterTimestamp(nowIso, current.last_inbound_at)) {
+            patch.last_inbound_at = nowIso;
+        }
         if (current.subscriber_id !== subscriberId && isGraphSubscriberId(current.subscriber_id)) {
             patch.subscriber_id = subscriberId;
         }
@@ -1016,6 +1054,7 @@ async function insertGraphMessage({ threadId, direction, text, graphMessageId, n
                 text,
                 manychat_message_id: dedupeId,
                 source: 'instagram_graph',
+                created_at: nowIso,
             }],
             prefer: 'return=representation',
         });
@@ -1080,6 +1119,32 @@ async function dispatchDraft({ thread, messageText, dedupeId }) {
         return false;
     } finally {
         clearTimeout(timeout);
+    }
+}
+
+async function shouldRecoverMissingDraftForDedupedInbound({ thread, dedupeId, messageCreatedAt }) {
+    if (!thread?.id || !dedupeId) return false;
+    if (isAtOrAfterTimestamp(thread.last_outbound_at, messageCreatedAt)) return false;
+
+    const idempotencyKey = `ig_incoming_dm:${dedupeId}`;
+    try {
+        const exactRows = await supabase(
+            `coach_alerts?select=id,status&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
+        );
+        if (exactRows.length) return false;
+    } catch (err) {
+        console.warn('[instagram-webhook] reconcile exact alert lookup failed:', err.message);
+        return false;
+    }
+
+    try {
+        const activeRows = await supabase(
+            `coach_alerts?select=id,status&data->>ig_thread_id=eq.${encodeURIComponent(thread.id)}&status=in.(pending,scheduled)&alert_type=in.(ig_incoming_dm,fb_incoming_dm)&limit=1`
+        );
+        return activeRows.length === 0;
+    } catch (err) {
+        console.warn('[instagram-webhook] reconcile active alert lookup failed:', err.message);
+        return false;
     }
 }
 
@@ -1237,12 +1302,12 @@ async function markPendingGraphAlertsSent({ thread, threadId, messageText, nowIs
     return cleared;
 }
 
-async function processGraphMessages(payload, contentContextByMessageId = new Map()) {
+async function processGraphMessages(payload, contentContextByMessageId = new Map(), options = {}) {
     const events = messagingEventsFromPayload(payload);
-    if (!events.length) return { processed: 0, inserted: 0, drafted: 0, skipped: 0 };
+    if (!events.length) return { processed: 0, inserted: 0, drafted: 0, skipped: 0, recoveredDrafts: 0 };
 
     const defaultCoachId = await findDefaultCoachId();
-    const summary = { processed: 0, inserted: 0, drafted: 0, skipped: 0, outboundCleared: 0 };
+    const summary = { processed: 0, inserted: 0, drafted: 0, skipped: 0, recoveredDrafts: 0, outboundCleared: 0 };
 
     for (const item of events) {
         if (!['messages', 'message_echoes'].includes(item.field) && !messageFromMessaging(item).mid) {
@@ -1268,7 +1333,7 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
             continue;
         }
 
-        const nowIso = new Date().toISOString();
+        const nowIso = timestampIsoFromMessaging(item) || new Date().toISOString();
         try {
             const payloadUsername = participantUsernameFromMessaging(item, participantId, direction);
             const details = payloadUsername ? null : await fetchGraphMessageDetails(graphMessageId, item.igAccountId);
@@ -1313,6 +1378,19 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
                         nowIso,
                         graphMessageId,
                     });
+                } else if (
+                    direction === 'in'
+                    && options.recoverMissingDrafts
+                    && await shouldRecoverMissingDraftForDedupedInbound({
+                        thread,
+                        dedupeId: inserted.dedupeId,
+                        messageCreatedAt: nowIso,
+                    })
+                ) {
+                    if (await dispatchDraft({ thread, messageText, dedupeId: inserted.dedupeId })) {
+                        summary.drafted++;
+                        summary.recoveredDrafts++;
+                    }
                 }
                 continue;
             }
@@ -1417,6 +1495,7 @@ async function auditPayload(payload, options) {
 
 exports._test = {
     messageTextForDraft,
+    timestampIsoFromMessaging,
     shouldProcessContentContextEvent,
     participantUsernameFromMessaging,
 };

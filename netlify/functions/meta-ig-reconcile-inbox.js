@@ -35,10 +35,10 @@ const SYNC_SECRET = process.env.META_IG_SYNC_SECRET
     || process.env.META_WEBHOOK_VERIFY_TOKEN
     || '';
 const LOOKBACK_HOURS = readInt(process.env.META_IG_RECONCILE_LOOKBACK_HOURS, 48, 1, 168);
-const CONVERSATION_LIMIT = readInt(process.env.META_IG_RECONCILE_CONVERSATION_LIMIT, 2, 1, 50);
-const MESSAGE_LIMIT = readInt(process.env.META_IG_RECONCILE_MESSAGE_LIMIT, 2, 1, 25);
-const MAX_MESSAGES_PER_RUN = readInt(process.env.META_IG_RECONCILE_MAX_MESSAGES, 8, 1, 200);
-const MAX_PAGES = readInt(process.env.META_IG_RECONCILE_MAX_PAGES, 1, 1, 6);
+const CONVERSATION_LIMIT = readInt(process.env.META_IG_RECONCILE_CONVERSATION_LIMIT, 10, 1, 50);
+const MESSAGE_LIMIT = readInt(process.env.META_IG_RECONCILE_MESSAGE_LIMIT, 12, 1, 25);
+const MAX_MESSAGES_PER_RUN = readInt(process.env.META_IG_RECONCILE_MAX_MESSAGES, 40, 1, 200);
+const MAX_PAGES = readInt(process.env.META_IG_RECONCILE_MAX_PAGES, 2, 1, 6);
 const MAX_RUNTIME_MS = readInt(process.env.META_IG_RECONCILE_MAX_RUNTIME_MS, 24000, 5000, 55000);
 
 function json(statusCode, body) {
@@ -85,8 +85,13 @@ function getHeader(headers = {}, name) {
     return key ? headers[key] : '';
 }
 
+function isScheduledInvocation(event = {}, body = {}) {
+    const scheduleHeader = String(getHeader(event.headers, 'x-nf-event') || '').trim().toLowerCase();
+    return !!body.next_run || scheduleHeader === 'schedule';
+}
+
 function isAuthorized(event = {}, body = {}) {
-    if (body.next_run) return true;
+    if (isScheduledInvocation(event, body)) return true;
     if (!SYNC_SECRET) return process.env.CONTEXT === 'dev';
     const provided = String(
         getHeader(event.headers, 'x-meta-ig-sync-secret')
@@ -98,7 +103,48 @@ function isAuthorized(event = {}, body = {}) {
     return provided && provided === SYNC_SECRET;
 }
 
-function configuredAccounts() {
+function addAccount(accounts, ownerId, hints = {}) {
+    const cleanOwnerId = cleanId(ownerId);
+    if (!cleanOwnerId) return;
+    const existing = accounts.get(cleanOwnerId) || {};
+    const resolved = resolveMetaIgAccountConfig(cleanOwnerId);
+    accounts.set(cleanOwnerId, {
+        ...resolved,
+        ...existing,
+        ownerId: cleanOwnerId,
+        accountId: cleanOwnerId,
+        botAccount: existing.botAccount || resolved.botAccount || hints.botAccount || null,
+    });
+}
+
+async function discoverRecentGraphAccounts(accounts) {
+    const sinceIso = new Date(Date.now() - LOOKBACK_HOURS * 60 * 60 * 1000).toISOString();
+    try {
+        const rows = await supabaseQuery(
+            `ig_graph_webhook_events?select=ig_account_id&ig_account_id=not.is.null&created_at=gte.${encodeURIComponent(sinceIso)}&order=created_at.desc&limit=200`
+        );
+        rows.forEach(row => addAccount(accounts, row.ig_account_id));
+    } catch (err) {
+        console.warn('[meta-ig-reconcile-inbox] recent webhook account discovery failed:', err.message);
+    }
+
+    try {
+        const rows = await supabaseQuery(
+            `ig_threads?select=custom_data&channel=eq.instagram&updated_at=gte.${encodeURIComponent(sinceIso)}&order=updated_at.desc&limit=200`
+        );
+        rows.forEach(row => {
+            const data = row?.custom_data && typeof row.custom_data === 'object' ? row.custom_data : {};
+            const graph = data.instagram_graph && typeof data.instagram_graph === 'object' ? data.instagram_graph : {};
+            addAccount(accounts, data.owner_ig_user_id || data.ig_graph_account_id || graph.account_id || graph.owner_id || graph.ig_account_id, {
+                botAccount: data.bot_account || graph.bot_account || null,
+            });
+        });
+    } catch (err) {
+        console.warn('[meta-ig-reconcile-inbox] recent thread account discovery failed:', err.message);
+    }
+}
+
+async function configuredAccounts() {
     const accounts = new Map();
     Object.values(getMetaIgAccountMap() || {}).forEach(account => {
         if (account?.ownerId) accounts.set(account.ownerId, account);
@@ -114,6 +160,7 @@ function configuredAccounts() {
             accounts.set(clean, resolveMetaIgAccountConfig(clean));
         }
     });
+    await discoverRecentGraphAccounts(accounts);
     return [...accounts.values()].filter(account => cleanId(account.ownerId));
 }
 
@@ -354,12 +401,16 @@ async function reconcileAccount({ account, body, startedAt }) {
     summary.messages_replayed = payload.entry[0]?.messaging?.length || 0;
     if (!summary.messages_replayed || dryRun) return summary;
 
-    const graph = await instagramWebhookInternal.processGraphMessages(payload, new Map());
+    const graph = await instagramWebhookInternal.processGraphMessages(payload, new Map(), {
+        recoverMissingDrafts: true,
+        source: 'meta_ig_reconcile_inbox',
+    });
     summary.graph = {
         processed: graph.processed || 0,
         inserted: graph.inserted || 0,
         drafted: graph.drafted || 0,
         skipped: graph.skipped || 0,
+        recoveredDrafts: graph.recoveredDrafts || 0,
         outboundCleared: graph.outboundCleared || 0,
     };
     return summary;
@@ -373,10 +424,11 @@ async function reconcile(body = {}) {
         return { ok: false, error: 'instagram_webhook_processor_missing', accounts: [] };
     }
     const startedAt = Date.now();
-    const accounts = configuredAccounts();
+    const accounts = await configuredAccounts();
     const summaries = [];
     const requestedMaxMessages = readInt(body.max_messages ?? body.maxMessages, MAX_MESSAGES_PER_RUN, 1, 200);
-    let remainingMessages = readInt(body.global_max_messages ?? body.globalMaxMessages, requestedMaxMessages, 1, 200);
+    const defaultGlobalMaxMessages = Math.min(200, requestedMaxMessages * Math.max(1, accounts.length));
+    let remainingMessages = readInt(body.global_max_messages ?? body.globalMaxMessages, defaultGlobalMaxMessages, 1, 200);
     for (const account of accounts) {
         if (Date.now() - startedAt > MAX_RUNTIME_MS) break;
         if (remainingMessages <= 0) break;
@@ -408,6 +460,7 @@ async function reconcile(body = {}) {
             acc.messages_replayed += row.messages_replayed || 0;
             acc.inserted += row.graph?.inserted || 0;
             acc.drafted += row.graph?.drafted || 0;
+            acc.recoveredDrafts += row.graph?.recoveredDrafts || 0;
             acc.skipped += row.graph?.skipped || 0;
             acc.outboundCleared += row.graph?.outboundCleared || 0;
             return acc;
@@ -417,6 +470,7 @@ async function reconcile(body = {}) {
             messages_replayed: 0,
             inserted: 0,
             drafted: 0,
+            recoveredDrafts: 0,
             skipped: 0,
             outboundCleared: 0,
         }),
@@ -439,4 +493,6 @@ exports._test = {
     buildWebhookPayloadFromMessages,
     normalizeAttachment,
     messageIsRecent,
+    isScheduledInvocation,
+    isAuthorized,
 };
