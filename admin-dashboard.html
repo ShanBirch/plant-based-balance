@@ -13798,6 +13798,13 @@
             renderedAlertOrder = renderedAlertOrder.filter(a => a.id !== alertId);
         }
 
+        function getVisibleAlertById(alertId) {
+            const key = String(alertId);
+            return alertsCache.find(a => String(a.id) === key)
+                || renderedAlertOrder.find(a => String(a.id) === key)
+                || null;
+        }
+
         function hasLiveAlertEdit() {
             return !!document.querySelector('.alert-edit-area');
         }
@@ -14324,7 +14331,7 @@
                     </button>
                 ` : ''}
                 ${manualRequired && canEdit ? `
-                    <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')">
+                    <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}', this)">
                         <i data-lucide="pencil" style="width:12px;height:12px;"></i>Edit
                     </button>
                 ` : ''}
@@ -15199,7 +15206,7 @@
             const suggestedMessageHtml = hasMessage
                 ? (activeEdit
                     ? `<div class="alert-suggested-msg" id="alert-msg-${alert.id}">${renderAlertEditFields(alert.id, renderedMessageText, activeEdit.reason || '')}</div>`
-                    : `<div class="alert-suggested-msg${canEdit ? ' alert-suggested-msg-editable' : ''}" id="alert-msg-${alert.id}"${canEdit ? ` onclick="editAlertMessage('${alert.id}')" title="Click to edit"` : ''}>${escapeHtml(displayMessage)}</div>`)
+                    : `<div class="alert-suggested-msg${canEdit ? ' alert-suggested-msg-editable' : ''}" id="alert-msg-${alert.id}"${canEdit ? ` onclick="editAlertMessage('${alert.id}', this)" title="Click to edit"` : ''}>${escapeHtml(displayMessage)}</div>`)
                 : '';
             const proposedActionsHtml = renderProposedCoachActions(alert);
             const checkinDeliveryHtml = renderChallengeCheckinDeliveryStrip(alert);
@@ -15263,7 +15270,7 @@
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                                 Send now
                             </button>
-                            <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')" title="Edit then send">
+                            <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}', this)" title="Edit then send">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 Edit
                             </button>
@@ -15290,7 +15297,7 @@
                                     ${timingSuggestion.delay_ms ? `Send in ${escapeHtml(timingSuggestion.label)}` : 'Send now'}
                                 </button>
                             ` : ''}
-                            <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')">
+                            <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}', this)">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 Edit
                             </button>
@@ -15302,7 +15309,7 @@
                             ` : ''}
                         ` : ''}
                         ${(manualIgRequired || humanAgentNeedsManualCopy) && canEdit ? `
-                            <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')" title="Edit this draft before copying it">
+                            <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}', this)" title="Edit this draft before copying it">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 Edit
                             </button>
@@ -17841,10 +17848,10 @@
             }
         }
 
-        function editAlertMessage(alertId) {
+        function editAlertMessage(alertId, sourceEl = null) {
             const msgDiv = document.getElementById(`alert-msg-${alertId}`);
             if (!msgDiv) return;
-            const triggerTarget = (typeof event !== 'undefined' && event?.target) ? event.target : null;
+            const triggerTarget = sourceEl?.target || sourceEl || null;
             // Already in edit mode? Let clicks inside the textarea/reason
             // input keep their own focus instead of bouncing back to the
             // draft textarea.
@@ -17855,8 +17862,7 @@
                 existing.focus();
                 return;
             }
-            const alert = alertsCache.find(a => a.id === alertId);
-            if (!alert) return;
+            const alert = getVisibleAlertById(alertId);
 
             // Replace message display with editable textarea + an optional
             // reason input. The reason is captured into data.edit_reason
@@ -17864,7 +17870,10 @@
             // signal beyond just "edited yes/no" — over time this becomes
             // a corpus the producers can read to learn what Shannon
             // actually wants the AI to fix.
-            const currentText = getResolvedAlertMessage(alert);
+            const currentText = alert
+                ? getResolvedAlertMessage(alert)
+                : normalizeCoachDraftTextForAdmin(msgDiv.textContent || '');
+            if (!currentText.trim()) return;
             const bufferedReason = activeAlertEdits.get(String(alertId))?.reason || '';
             rememberAlertEdit(alertId, currentText, bufferedReason, 'message');
             msgDiv.onclick = null;
