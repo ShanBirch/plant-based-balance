@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v193'; // v193: dark-mode Learn result/scenario contrast; v192: dark-mode Learn quiz contrast
+const CACHE_NAME = 'pbb-app-v194'; // v194: true/false Learn labels contrast; v193: dark-mode Learn result/scenario contrast
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',

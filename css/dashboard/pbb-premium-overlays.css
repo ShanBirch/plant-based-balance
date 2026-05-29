@@ -4146,6 +4146,25 @@ html:not([data-pbb-theme="light"]) #learning-content .learning-game-stage > div 
     -webkit-text-fill-color: #151515 !important;
 }
 
+#learning-content .learning-game-swipe-label-row {
+    color: #151515 !important;
+}
+
+#learning-content .learning-game-swipe-label {
+    font-weight: 800 !important;
+    letter-spacing: 0 !important;
+}
+
+#learning-content .learning-game-swipe-label-false {
+    color: #b91c1c !important;
+    -webkit-text-fill-color: #b91c1c !important;
+}
+
+#learning-content .learning-game-swipe-label-true {
+    color: #047857 !important;
+    -webkit-text-fill-color: #047857 !important;
+}
+
 html:not([data-pbb-theme="light"]) #learning-content .learning-game-scenario-card {
     background:
         radial-gradient(circle at 88% 0%, rgba(245, 217, 138, 0.1), transparent 30%),
