@@ -764,6 +764,14 @@ window.openCalendarActionModal = async function(dayIndex, workoutName, targetDat
     const noticeIcon = document.getElementById('replacement-notice-icon');
     const noticeTitle = document.getElementById('replacement-notice-title');
     const startLabel = document.getElementById('action-modal-start-label');
+    let scheduledWorkoutType = null;
+    try {
+        const activeProgram = window.activeCustomProgramCache;
+        if (activeProgram && Array.isArray(activeProgram.weekly_schedule) && typeof getWorkoutSourceDayIndex === 'function') {
+            const sourceDayIndex = getWorkoutSourceDayIndex(dayIndex);
+            scheduledWorkoutType = activeProgram.weekly_schedule[sourceDayIndex]?.workout?.type || null;
+        }
+    } catch (e) {}
 
     if (existingReplacement) {
         const replacementWorkout = existingReplacement.replacement_workout || {};
@@ -787,7 +795,9 @@ window.openCalendarActionModal = async function(dayIndex, workoutName, targetDat
     } else {
         if (noticeIcon) noticeIcon.textContent = 'Swap';
         if (noticeTitle) noticeTitle.textContent = 'Replacement Active';
-        if (startLabel) startLabel.textContent = 'Start Workout';
+        if (startLabel) startLabel.textContent = scheduledWorkoutType === 'activity'
+            ? 'Log Activity'
+            : (scheduledWorkoutType === 'rest' ? 'Rest Day' : 'Start Workout');
         noticeEl.style.display = 'none';
         removeBtn.style.display = 'none';
     }

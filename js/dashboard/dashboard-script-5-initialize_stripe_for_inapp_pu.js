@@ -12443,9 +12443,18 @@ async function renderMovementView() {
     let heroLibraryInfo = null; // Track library workout info for onclick handler
     let heroInlineWorkout = null; // Track inline workout for onclick handler (custom programs)
     let heroActivityWorkout = null; // Track activity workout for logging flow (custom programs)
+    let heroRestDay = false;
     const wasOverriddenToYoga = suggestedProgram === 'yoga' && scheduleItem.program !== 'yoga';
 
-    if (usingCustomProgram && scheduleItem.customWorkout && scheduleItem.customWorkout.type === 'activity' && !wasOverriddenToYoga) {
+    if (usingCustomProgram && (scheduleItem.isRest || suggestedProgram === 'rest') && !wasOverriddenToYoga) {
+        const restWorkout = scheduleItem.customWorkout || {};
+        heroProg = { name: customProgramInfo?.name || 'Recovery', estimatedTime: 0 };
+        heroMeta = assets['recovery'] || assets['yoga'];
+        heroSched = { title: restWorkout.name || 'Rest Day', exercises: [] };
+        heroRestDay = true;
+    }
+
+    if (!heroSched && usingCustomProgram && scheduleItem.customWorkout && scheduleItem.customWorkout.type === 'activity' && !wasOverriddenToYoga) {
         const activity = scheduleItem.customWorkout;
         const duration = parseInt(activity.durationMinutes || activity.duration, 10);
         const durationMinutes = Number.isFinite(duration) ? duration : 30;
@@ -12617,14 +12626,33 @@ async function renderMovementView() {
             notes: 'Planned from Movement'
         };
         heroOnclick = `if (typeof openLogActivityForm === 'function') { openLogActivityForm(window._pbbTodayActivityPrefill); } else if (typeof showToast === 'function') { showToast('Activity logger is still loading. Try again in a moment.'); }`;
+    } else if (heroRestDay) {
+        heroOnclick = `if (typeof showToast === 'function') { showToast('Today is a rest day. Enjoy your recovery!'); }`;
     } else {
         heroOnclick = `startActiveWorkout('${suggestedProgram}', ${workoutDayIndex})`;
     }
     const heroExerciseCount = Array.isArray(heroSched?.exercises) ? heroSched.exercises.length : 0;
-    const todayCardLabel = heroActivityWorkout ? "Today's Activity" : "Today's Workout";
-    const todayCardMeta = heroActivityWorkout
+    const todayCardLabel = heroRestDay ? "Today's Plan" : (heroActivityWorkout ? "Today's Activity" : "Today's Workout");
+    const todayCardMeta = heroRestDay
+        ? 'Recovery day'
+        : heroActivityWorkout
         ? `${heroProg.estimatedTime} mins &middot; Activity`
         : `${heroProg.estimatedTime} mins &middot; ${heroExerciseCount} exercises`;
+
+    let flexibleInlineWorkout = null;
+    let flexibleInlineDay = '';
+    if (usingCustomProgram && !heroInlineWorkout && !heroLibraryInfo && Array.isArray(WEEKLY_SCHEDULE)) {
+        for (let offset = 1; offset <= 7; offset++) {
+            const candidateIndex = (calDayIndex + offset) % 7;
+            const candidate = WEEKLY_SCHEDULE[candidateIndex];
+            const workout = candidate?.inlineWorkout;
+            if (workout && Array.isArray(workout.exercises) && workout.exercises.length > 0) {
+                flexibleInlineWorkout = workout;
+                flexibleInlineDay = candidate.displayDay || candidate.day || '';
+                break;
+            }
+        }
+    }
 
     // Hero card removed - Today's Workout will be added to the grid instead
     
@@ -12713,6 +12741,29 @@ async function renderMovementView() {
         <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">🏋️</div>
     `;
     gridContainer.appendChild(todayDiv);
+
+    if (flexibleInlineWorkout) {
+        window._pbbFlexibleInlineWorkout = flexibleInlineWorkout;
+        const flexibleExerciseCount = Array.isArray(flexibleInlineWorkout.exercises) ? flexibleInlineWorkout.exercises.length : 0;
+        const flexibleTitle = typeof escapeCalendarHtml === 'function'
+            ? escapeCalendarHtml(flexibleInlineWorkout.name || 'Gym Session')
+            : (flexibleInlineWorkout.name || 'Gym Session');
+        const flexibleMeta = `${flexibleExerciseCount} exercises${flexibleInlineDay ? ` &middot; ${flexibleInlineDay}` : ''}`;
+        const flexibleDiv = document.createElement('div');
+        flexibleDiv.id = 'program-gym-session-card';
+        flexibleDiv.onclick = () => startInlineWorkout(window._pbbFlexibleInlineWorkout);
+        flexibleDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: linear-gradient(135deg, #0f766e 0%, #16a34a 100%);";
+        flexibleDiv.innerHTML = `
+            <div style="position: absolute; inset:0; background: linear-gradient(to bottom right, rgba(0,0,0,0.12), transparent);"></div>
+            <div style="position: absolute; bottom: 15px; left: 15px; right: 15px; color: white; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">Gym Session</div>
+                <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">${flexibleTitle}</div>
+                <div style="font-size: 0.75rem; opacity: 0.9;">${flexibleMeta}</div>
+            </div>
+            <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">🏋️</div>
+        `;
+        gridContainer.appendChild(flexibleDiv);
+    }
 
     // Add 'Log Activity' Card (cardio, classes, sports)
     const logActivityDiv = document.createElement('div');
