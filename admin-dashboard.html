@@ -18044,7 +18044,7 @@
         // KEYBOARD SHORTCUTS (alerts section only)
         //   j / ArrowDown  — next alert
         //   k / ArrowUp    — previous alert
-        //   Enter          — send focused alert (or save edit if in edit mode)
+        //   Enter          — send focused alert only when no draft editor is open
         //   e              — edit focused alert's draft
         //   Escape         — exit edit mode, keep focus
         //   x              — open dismiss-reason input on focused alert
@@ -18084,26 +18084,24 @@
             if (!feedActive) return;
             if (!renderedAlertOrder || renderedAlertOrder.length === 0) return;
 
-            // If a modal/textarea/input is focused, only handle Esc (and let Enter save edit)
+            // Text fields own their editing keys. In the draft textarea,
+            // Enter must insert a newline, not send the DM.
             const active = document.activeElement;
             const inTextInput = active && (active.tagName === 'INPUT' || active.tagName === 'SELECT' || active.tagName === 'TEXTAREA');
             const inEditArea = active && active.classList && active.classList.contains('alert-edit-area');
 
-            // Esc in edit mode — blur the textarea so the buffered edit stays (user can still press Enter-like Send button)
+            // Esc in edit mode — blur the textarea so the buffered edit stays.
             if (e.key === 'Escape' && inEditArea) {
                 active.blur();
                 e.preventDefault();
                 return;
             }
 
-            // Enter while editing the draft — fire Send on the same alert
-            if (e.key === 'Enter' && inEditArea && !e.shiftKey) {
-                const alertId = active.id.replace(/^alert-edit-/, '');
-                if (alertId) {
-                    e.preventDefault();
-                    sendAlertMessage(alertId);
-                }
-                return;
+            // If any draft editor is open, disable approval-feed shortcuts.
+            // This also catches focus-loss cases while Shannon is mid-edit.
+            if (hasLiveAlertEdit()) {
+                if (e.key === 'Enter') return;
+                if (!inTextInput) return;
             }
 
             // Don't hijack typing in other inputs (filter dropdowns, search, etc.)
