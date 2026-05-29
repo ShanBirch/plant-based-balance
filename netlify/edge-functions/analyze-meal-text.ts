@@ -418,7 +418,7 @@ RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
   },
   "confidence": "high/medium/low",
   "notes": "Any additional observations or caveats about the analysis",
-  "meal_insight": "2-3 educational sentences about the nutritional highlights of this meal. Mention specific standout nutrients, interesting food-science facts about the ingredients, or how the components work together nutritionally."
+  "meal_insight": "1 short educational sentence about the nutritional highlight of this meal."
 }
 
 IMPORTANT:
@@ -438,13 +438,13 @@ IMPORTANT:
         temperature: 0.1, // More deterministic
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 4096,
+        responseMimeType: "application/json",
       }
     };
 
-    let geminiData: any = null;
+    let nutritionData: any = null;
     let lastError = "";
-    let usedModel = "";
 
     for (const model of modelFallbacks) {
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -470,9 +470,29 @@ IMPORTANT:
       clearTimeout(timeout);
 
       if (geminiResponse.ok) {
-        geminiData = await geminiResponse.json();
-        usedModel = model;
-        break;
+        const geminiData = await geminiResponse.json();
+        const candidate = geminiData?.candidates?.[0];
+        const parts = candidate?.content?.parts || [];
+        const aiText = parts.map((p: { text?: string }) => p?.text || '').join('');
+        if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+          console.warn(`[analyze-meal-text] ${model} finishReason=${candidate.finishReason} partCount=${parts.length} textLen=${aiText.length}`);
+        }
+
+        if (!aiText) {
+          lastError = `${model} returned empty AI response`;
+          console.warn(`[analyze-meal-text] ${lastError}, trying next fallback...`);
+          continue;
+        }
+
+        try {
+          nutritionData = parseModelJsonObject(aiText, "analyze-meal-text nutrition JSON");
+          console.log(`[analyze-meal-text] parsed nutrition JSON with ${model}`);
+          break;
+        } catch (parseErr: any) {
+          lastError = parseErr?.message || `${model} returned invalid nutrition JSON`;
+          console.warn(`[analyze-meal-text] ${model} JSON parse failed: ${lastError}, trying next fallback...`);
+          continue;
+        }
       }
 
       const errorText = await geminiResponse.text();
@@ -485,20 +505,9 @@ IMPORTANT:
       }
     }
 
-    if (!geminiData) {
+    if (!nutritionData) {
       return new Response(JSON.stringify({ error: "All Gemini models failed", details: lastError }), { status: 503 });
     }
-
-    const candidate = geminiData?.candidates?.[0];
-    const parts = candidate?.content?.parts || [];
-    const aiText = parts.map((p: { text?: string }) => p?.text || '').join('');
-    if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
-      console.warn(`[analyze-meal-text] finishReason=${candidate.finishReason} partCount=${parts.length} textLen=${aiText.length}`);
-    }
-
-    if (!aiText) throw new Error("Empty AI response");
-
-    const nutritionData = parseModelJsonObject(aiText, "analyze-meal-text nutrition JSON");
 
     // Correct calories from macros (protein×4 + carbs×4 + fat×9) since Gemini sometimes miscalculates
     if (Array.isArray(nutritionData.foodItems)) {
