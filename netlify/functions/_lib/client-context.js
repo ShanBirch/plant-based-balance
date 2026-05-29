@@ -356,6 +356,37 @@ async function isTestAccount(clientId) {
     }
 }
 
+function asPlainObject(value) {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function hasAiOptOutFlag(value) {
+    if (value === true) return true;
+    if (typeof value === 'string') {
+        return ['true', '1', 'yes', 'friend_manual_only', 'ai_automation_opt_out']
+            .includes(value.trim().toLowerCase());
+    }
+    const obj = asPlainObject(value);
+    return obj.enabled === true
+        || obj.ai_automation_opt_out === true
+        || obj.friend_manual_only === true
+        || obj.reason === 'friend_manual_only'
+        || obj.decision === 'friend_manual_only';
+}
+
+function isAiAutomationOptedOut(record = {}) {
+    const source = asPlainObject(record);
+    const customData = asPlainObject(source.custom_data || source);
+    const leadOverride = asPlainObject(customData.codex_lead_flow_override);
+    return hasAiOptOutFlag(source.codex_ai_opt_out)
+        || hasAiOptOutFlag(customData.codex_ai_opt_out)
+        || hasAiOptOutFlag(source.ai_automation_opt_out)
+        || hasAiOptOutFlag(customData.ai_automation_opt_out)
+        || customData.friend_manual_only === true
+        || leadOverride.decision === 'friend_manual_only'
+        || leadOverride.friend_manual_only === true;
+}
+
 async function loadClientMemory(coachId, clientId) {
     try {
         const rows = await supabaseQuery(
@@ -5968,6 +5999,7 @@ module.exports = {
     fireCoachEditAnalysis,
     recentlyMessaged,
     isTestAccount,
+    isAiAutomationOptedOut,
     buildMemoryBlock,
     normalizeSex,
     loadClientProfileFacts,

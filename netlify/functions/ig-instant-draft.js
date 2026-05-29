@@ -76,6 +76,8 @@ const {
     buildContextReviewInfo,
     reviewDraftAndUpdateAlert,
     isDraftReviewAutoSendSafe,
+    isTestAccount,
+    isAiAutomationOptedOut,
 } = require('./_lib/client-context');
 
 const {
@@ -2342,6 +2344,25 @@ exports.handler = async (event) => {
     const thread = await loadThread(threadId);
     if (!thread) {
         return { statusCode: 404, body: JSON.stringify({ error: 'Thread not found' }) };
+    }
+    const threadOptedOut = isAiAutomationOptedOut(thread);
+    const linkedUserExcluded = thread.linked_user_id ? await isTestAccount(thread.linked_user_id) : false;
+    if (threadOptedOut || linkedUserExcluded) {
+        try {
+            await cancelPriorScheduledForIgThread({ igThreadId: thread.id });
+        } catch (e) {
+            console.warn('[ig-draft] opt-out scheduled cancel failed:', e.message);
+        }
+        console.log(`[ig-draft] skipping thread ${thread.id}: ${threadOptedOut ? 'codex_ai_opt_out' : 'linked_user_excluded'}`);
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                skipped: 'ai_automation_opt_out',
+                thread_id: thread.id,
+                linked_user_id: thread.linked_user_id || null,
+                reason: threadOptedOut ? 'thread_codex_ai_opt_out' : 'linked_user_excluded',
+            }),
+        };
     }
     const botAccount = thread.custom_data?.bot_account || thread.custom_data?.instagram_graph?.bot_account || '';
     const algorithmFork = algorithmForkForBotAccount(botAccount);

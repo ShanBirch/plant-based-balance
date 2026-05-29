@@ -16,6 +16,8 @@ const {
     callGeminiFallback,
     callVertexGeminiMultimodal,
     truncate,
+    isTestAccount,
+    isAiAutomationOptedOut,
 } = require('./_lib/client-context');
 
 const SHARED_SECRET = process.env.IG_STORY_BOT_BRIDGE_SECRET || process.env.STORY_COMMENT_BRIDGE_SECRET || '';
@@ -2290,6 +2292,24 @@ exports.handler = async (event = {}) => {
     const relationshipContext = relationship.context;
     const relationshipStoryBlockReason = relationship.storyBlockReason || '';
     const relationshipStoryCooldown = relationship.storyCooldown || null;
+    const sentRequest = body.send_status === 'sent' || body.sent === true;
+    const threadOptedOut = isAiAutomationOptedOut(existingThread);
+    const linkedUserExcluded = existingThread?.linked_user_id ? await isTestAccount(existingThread.linked_user_id) : false;
+    if (threadOptedOut || linkedUserExcluded) {
+        return json(409, {
+            error: 'ai_automation_opt_out',
+            safety_reason: 'friend_manual_only',
+            idempotency_key: idempotencyKey,
+            ig_username: username,
+            story_id: storyId,
+            story_url: parsedUrl.cleanUrl,
+            ig_thread_id: existingThread?.id || null,
+            linked_user_id: existingThread?.linked_user_id || null,
+            sent_request: sentRequest,
+            relationship_context: relationshipContext,
+            relationship_story_block_reason: 'friend_manual_only',
+        });
+    }
     const analysisRelationshipContext = dryRunQualityJudge ? '' : relationshipContext;
     const analysisRelationshipStoryBlockReason = dryRunQualityJudge ? '' : relationshipStoryBlockReason;
 
@@ -2303,7 +2323,6 @@ exports.handler = async (event = {}) => {
         relationshipStoryBlockReason: analysisRelationshipStoryBlockReason,
         forceSuppliedComment: body.lock_supplied_comment === true || body.lockSuppliedComment === true || body.send_status === 'sent' || body.sent === true,
     });
-    const sentRequest = body.send_status === 'sent' || body.sent === true;
     if (!sentRequest && relationshipStoryBlockReason && !dryRunQualityJudge) {
         analysis.safeToComment = false;
         analysis.safetyReason = relationshipStoryBlockReason;

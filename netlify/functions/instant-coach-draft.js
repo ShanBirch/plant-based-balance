@@ -63,6 +63,7 @@ const {
     buildMessageImageParts,
     extractPhotoUrls,
     buildMediaReviewInfo,
+    isTestAccount,
 } = require('./_lib/client-context');
 const { buildQualifierRelationshipBlock } = require('./_lib/qualifier-engine');
 const { detectProposedCoachActions } = require('./_lib/coach-actions');
@@ -680,6 +681,11 @@ exports.handler = async (event) => {
             return { statusCode: 200, body: JSON.stringify({ skipped: 'duplicate' }) };
         }
     } catch (e) { /* continue */ }
+
+    if (await isTestAccount(senderId)) {
+        console.log(`[instant-draft] skipping test/excluded account ${senderId}`);
+        return { statusCode: 200, body: JSON.stringify({ skipped: 'test_account' }) };
+    }
 
     // 3. Resolve client name
     const clientSnapshot = await loadClientSnapshot(senderId);
