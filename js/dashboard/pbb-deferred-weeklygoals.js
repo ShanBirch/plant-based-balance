@@ -516,7 +516,7 @@
         .lt('weigh_in_date', week.endExclusive)
         .order('weigh_in_date', { ascending: true })),
       safeQuery('stories', () => supabase.from('stories')
-        .select('id,media_type,created_at')
+        .select('id,media_type,caption,created_at')
         .eq('user_id', userId)
         .gte('created_at', startIso)
         .lt('created_at', endIso)),
@@ -629,6 +629,20 @@
 
   function createdDateKey(row) {
     return row && row.created_at ? getDateKey(new Date(row.created_at)) : null;
+  }
+
+  function getStoryCardType(row) {
+    if (!row || !row.caption || typeof row.caption !== 'string') return '';
+    try {
+      const payload = JSON.parse(row.caption);
+      return String(payload && payload.card_type || '');
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function isWorkoutFeedGoalStory(row) {
+    return row && row.media_type === 'workout_card' && getStoryCardType(row) !== 'friday_weigh_in';
   }
 
   function countDistinctDates(rows, getKey) {
@@ -769,7 +783,7 @@
         break;
       case 'share_workout_feed':
         current = weekRows(data.stories, week, createdDateKey)
-          .filter(row => row.media_type === 'workout_card').length;
+          .filter(isWorkoutFeedGoalStory).length;
         break;
       case 'share_meal_feed':
         current = weekRows(data.stories, week, createdDateKey)

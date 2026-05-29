@@ -327,7 +327,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=37',
             'lib/native-iap.js',
-            'lib/stories.js?v=3',
+            'lib/stories.js?v=4',
             'lib/ai-opponents.js',
             'lib/games.js?v=2',
             'lib/nutrition-calculator.js',
@@ -346,7 +346,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=3"><\/script>');
+    document.write('<script src="lib/stories.js?v=4"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=2"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -1430,12 +1430,12 @@ window.addEventListener('load', function() {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=62';
+                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=63';
                 document.head.appendChild(s);
             }, 3000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=62"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=63"><\/script>');
     }
     </script>
 
@@ -1561,11 +1561,11 @@ if(!window._pbbIsIOSSafari) {
     <script>
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=5"><\/script>');
-    document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=16"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=17"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=5');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=16');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=17');
 }
 </script>
     
@@ -12209,7 +12209,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Level character rewards', body:"Level 55 unlocks Character 1 first. Every 5 levels after that unlocks the next numbered 3D character skin in story order, with the same celebration and Equip Now flow." },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
     { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP.", quick: true },
-    { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. Tap yes to review the share card first, then post it to the 30 Day Challenge chat for +2 XP." },
+    { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. Tap yes to review the share card first, then post it to the feed for +2 XP." },
     { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#weekly-goals-card', title:'Weekly goals', body:"Choose up to 3 goals for the week. Balance tracks the exact signals you picked and carries the results into Weekly Wrapped.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
@@ -12883,11 +12883,11 @@ if(!window._pbbIsIOSSafari) {
       body: "Challenge leaderboards now show where each person's XP is coming from. Open a leaderboard, select a participant, and see their nutrition, workout, weigh-in, learning, post, and bonus XP."
     },
     {
-      id: 'friday-weigh-in-share-review-v1',
+      id: 'friday-weigh-in-feed-share-v1',
       tab: 'dashboard',
       sel: '#daily-weigh-in-card,#daily-weigh-in-done-card',
       title: 'Friday weigh-ins',
-      body: "Friday now opens a review card before posting your weigh-in to the 30 Day Challenge chat. Tap yes, check the card, then post it for +2 XP."
+      body: "Friday now opens a review card before posting your weigh-in to the feed. Tap yes, check the card, then post it for +2 XP."
     },
     {
       id: 'group-chat-options-menu-v1',
