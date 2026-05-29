@@ -4124,6 +4124,29 @@ html[data-pbb-theme="light"] #calendar-workout-action-modal button:not(#action-m
     -webkit-text-fill-color: #4f473b !important;
 }
 
+html:not([data-pbb-theme="light"]) #learning-content .learning-game-shell,
+html:not([data-pbb-theme="light"]) #learning-content .learning-game-stage {
+    color: #151515 !important;
+}
+
+html:not([data-pbb-theme="light"]) #learning-content .learning-game-progress-header {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-color: rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+}
+
+html:not([data-pbb-theme="light"]) #learning-content .learning-game-progress-track,
+html:not([data-pbb-theme="light"]) #learning-content .learning-game-count-pill {
+    background: rgba(17, 17, 17, 0.08) !important;
+}
+
+html:not([data-pbb-theme="light"]) #learning-content .learning-game-count-pill,
+html:not([data-pbb-theme="light"]) #learning-content .learning-game-question,
+html:not([data-pbb-theme="light"]) #learning-content .learning-game-scenario {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
 html[data-pbb-theme="light"] #learning-content p.learning-game-question,
 html[data-pbb-theme="light"] #learning-content p.learning-game-scenario {
     color: #151515 !important;
