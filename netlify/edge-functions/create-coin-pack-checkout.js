@@ -37,7 +37,7 @@ export default async (request, context) => {
 
         const stripe = new Stripe(STRIPE_SECRET_KEY, {
             httpClient: Stripe.createFetchHttpClient(),
-            apiVersion: "2023-10-16",
+            apiVersion: "2026-02-25.clover",
         });
 
         const session = await stripe.checkout.sessions.create({

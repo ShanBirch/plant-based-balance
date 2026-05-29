@@ -30,7 +30,7 @@ export default async (request, context) => {
 
         const stripe = new Stripe(STRIPE_SECRET_KEY, {
             httpClient: Stripe.createFetchHttpClient(),
-            apiVersion: "2023-10-16",
+            apiVersion: "2026-02-25.clover",
         });
 
         // Balance Redesign: Flat $30 AUD Pricing
@@ -65,7 +65,14 @@ export default async (request, context) => {
             name,
             payment_method: paymentMethodId,
             invoice_settings: { default_payment_method: paymentMethodId },
-            metadata: { fbc, fbp, ...stripeComplianceMetadata }
+            metadata: {
+                fbc,
+                fbp,
+                checkout_email: email || "",
+                balance_product: "balance_membership",
+                balance_plan: "app_monthly",
+                ...stripeComplianceMetadata
+            }
         });
 
         // 4. Create Subscription
@@ -74,7 +81,12 @@ export default async (request, context) => {
             items: [{ price: priceId }],
             payment_behavior: 'default_incomplete',
             payment_settings: { save_default_payment_method: 'on_subscription' },
-            metadata: stripeComplianceMetadata,
+            metadata: {
+                checkout_email: email || "",
+                balance_product: "balance_membership",
+                balance_plan: "app_monthly",
+                ...stripeComplianceMetadata,
+            },
             expand: ['latest_invoice.payment_intent'],
         };
 

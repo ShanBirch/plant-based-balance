@@ -21,7 +21,7 @@ export default async (request, context) => {
 
         const stripe = new Stripe(STRIPE_SECRET_KEY, {
             httpClient: Stripe.createFetchHttpClient(),
-            apiVersion: "2023-10-16",
+            apiVersion: "2026-02-25.clover",
         });
 
         // Challenge Pass - one-time payment of $9.99 AUD

@@ -24,7 +24,7 @@ export default async (request, context) => {
 
         const stripe = new Stripe(STRIPE_SECRET_KEY, {
             httpClient: Stripe.createFetchHttpClient(),
-            apiVersion: "2023-10-16",
+            apiVersion: "2026-02-25.clover",
         });
 
         // Use custom price data to control branding and ensure exact $30 price
@@ -51,7 +51,12 @@ export default async (request, context) => {
         }
 
         const subscriptionData = {
-            metadata: stripeComplianceMetadata,
+            metadata: {
+                checkout_email: email || "",
+                balance_product: "balance_membership",
+                balance_plan: "app_monthly",
+                ...stripeComplianceMetadata,
+            },
         };
         if (isTrial) {
             // Default to 14 days as requested
@@ -69,6 +74,9 @@ export default async (request, context) => {
             success_url: request.headers.get("origin") + `/success.html?session_id={CHECKOUT_SESSION_ID}&bump=${bump ? "true" : "false"}`,
             cancel_url: request.headers.get("origin") + '/plantbasedswitch.html',
             metadata: {
+                checkout_email: email || "",
+                balance_product: "balance_membership",
+                balance_plan: "app_monthly",
                 fbc: fbc || "",
                 fbp: fbp || "",
                 ...utm_data,
