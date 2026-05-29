@@ -5867,8 +5867,8 @@ function updatePushNotifSettingsUI() {
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
 const totalWizardSteps = 19;
-const skippedWizardSlides = [2, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19];
-const finalWizardStep = 17;
+const skippedWizardSlides = [2, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18];
+const finalWizardStep = 19;
 
 function setOnboardingScrollLock(locked) {
     try {
@@ -5908,6 +5908,86 @@ function wizardAlert(message, type = 'error') {
     }, 3000);
 }
 
+function wizardValidationError(message, fieldId) {
+    wizardAlert(message);
+    if (fieldId) focusWizardField(document.getElementById(fieldId));
+}
+
+function isFocusableWizardField(field) {
+    if (!field || field.disabled) return false;
+    if (field.type === 'hidden' || field.type === 'file') return false;
+    if (field.offsetParent === null) return false;
+    return true;
+}
+
+function focusWizardField(field) {
+    if (!isFocusableWizardField(field) || typeof field.focus !== 'function') return false;
+
+    const focusNow = () => {
+        try {
+            field.focus({ preventScroll: true });
+        } catch (e) {
+            try { field.focus(); } catch (_) {}
+        }
+        if (typeof field.setSelectionRange === 'function') {
+            const end = String(field.value || '').length;
+            try { field.setSelectionRange(end, end); } catch (e) {}
+        }
+    };
+
+    focusNow();
+    requestAnimationFrame(focusNow);
+    setTimeout(focusNow, 80);
+    return true;
+}
+
+function getCurrentWizardSlide() {
+    return document.querySelector('#onboarding-wizard .wizard-slide.slide-active');
+}
+
+function getVisibleWizardFields(slide) {
+    return Array.from((slide || getCurrentWizardSlide())?.querySelectorAll('input.wizard-input, textarea.wizard-input, select.wizard-input') || [])
+        .filter(field => isFocusableWizardField(field) && field.type !== 'date');
+}
+
+function getVisibleWizardTextFields(slide) {
+    return getVisibleWizardFields(slide).filter(field => field.matches('input.wizard-input, textarea.wizard-input'));
+}
+
+function focusNextWizardField(currentField) {
+    const fields = getVisibleWizardFields();
+    const index = fields.indexOf(currentField);
+    const nextField = index >= 0 ? fields[index + 1] : fields[0];
+    return focusWizardField(nextField);
+}
+
+function initWizardKeyboardFlow() {
+    const wizard = document.getElementById('onboarding-wizard');
+    if (!wizard || wizard.dataset.keyboardFlowReady === 'true') return;
+    wizard.dataset.keyboardFlowReady = 'true';
+
+    wizard.querySelectorAll('input.wizard-input, textarea.wizard-input').forEach(field => {
+        if (field.type !== 'date') field.setAttribute('enterkeyhint', 'next');
+    });
+
+    wizard.addEventListener('keydown', event => {
+        const field = event.target;
+        if (event.key !== 'Enter' || !field || !field.matches('input.wizard-input, textarea.wizard-input')) return;
+        if (field.tagName === 'TEXTAREA' && event.shiftKey) return;
+        if (field.type === 'date') return;
+
+        event.preventDefault();
+        if (focusNextWizardField(field)) return;
+        const stepBefore = currentWizardStep;
+        wizardNext();
+        setTimeout(() => {
+            if (currentWizardStep !== stepBefore) {
+                focusWizardField(getVisibleWizardTextFields()[0]);
+            }
+        }, 90);
+    });
+}
+
 // Workout Calendar State
 let wizardTrainingFrequency = 0;
 let wizardSelectedDays = new Set();
@@ -5930,6 +6010,12 @@ const WIZARD_GOAL_INTENT_LABELS = {
     hit_protein: 'Hit protein consistently',
     more_energy: 'Energy and longevity',
     build_community: 'Build a community'
+};
+
+const WIZARD_PRIMARY_GOAL_LABELS = {
+    Flat: 'Lose weight / get lean',
+    Athletic: 'Get toned / maintain fitness',
+    'Body Builder': 'Build muscle / gain strength'
 };
 
 const WIZARD_WEEKLY_GOAL_FOCUS_LABELS = {
@@ -6241,6 +6327,7 @@ let wizardChatFreeformAnswers = {};
 let wizardChatAskToken = 0;
 let wizardChatViewportBound = false;
 let wizardChatControlsBound = false;
+let wizardChatKeepKeyboardAfterSubmit = false;
 
 function getWizardChatStep() {
     return WIZARD_CHAT_STEPS[wizardChatStepIndex] || null;
@@ -6526,6 +6613,38 @@ function blurWizardChatInput() {
     if (input && document.activeElement === input) input.blur();
 }
 
+function focusWizardChatInput() {
+    const input = document.getElementById('wizard-chat-input');
+    const inputRow = document.getElementById('wizard-chat-input-row');
+    if (!input || !inputRow || inputRow.style.display === 'none' || input.disabled) return false;
+
+    const focusNow = () => {
+        try {
+            input.focus({ preventScroll: true });
+        } catch (e) {
+            try { input.focus(); } catch (_) {}
+        }
+        if (typeof input.setSelectionRange === 'function') {
+            const end = String(input.value || '').length;
+            try { input.setSelectionRange(end, end); } catch (e) {}
+        }
+        setWizardChatKeyboardMode(true);
+    };
+
+    focusNow();
+    requestAnimationFrame(focusNow);
+    setTimeout(focusNow, 80);
+    return true;
+}
+
+function refocusWizardChatInputAfterSubmit() {
+    if (!wizardChatKeepKeyboardAfterSubmit) return;
+    wizardChatKeepKeyboardAfterSubmit = false;
+    const step = getWizardChatStep();
+    if (wizardChatComplete || !step || step.type === 'start') return;
+    setTimeout(focusWizardChatInput, 40);
+}
+
 function setWizardChatLayoutMode({ noTextbox = false, intro = false } = {}) {
     const wizard = document.getElementById('onboarding-wizard');
     if (!wizard) return;
@@ -6646,9 +6765,11 @@ function renderWizardChatControls() {
     const helper = document.getElementById('wizard-chat-helper');
     if (!choicesEl || !inputRow || !input || !sendBtn || !helper) return;
     bindWizardChatControlEvents();
+    input.setAttribute('enterkeyhint', 'send');
 
     choicesEl.innerHTML = '';
     helper.textContent = '';
+    sendBtn.onmousedown = event => event.preventDefault();
     sendBtn.onclick = event => {
         if (event) {
             event.preventDefault();
@@ -6789,6 +6910,7 @@ function advanceWizardChat(step, value, displayText = null) {
     if (input) input.value = '';
     wizardChatStepIndex += 1;
     askWizardChatQuestion();
+    refocusWizardChatInputAfterSubmit();
 }
 
 function goBackWizardChatQuestion() {
@@ -6857,16 +6979,21 @@ function submitWizardChatAnswer() {
     const step = getWizardChatStep();
     const input = document.getElementById('wizard-chat-input');
     if (!step || !input) return;
+    wizardChatKeepKeyboardAfterSubmit = true;
+    const showInputError = message => {
+        wizardAlert(message);
+        focusWizardChatInput();
+    };
     const raw = String(input.value || '').trim();
 
     if (step.type === 'choice') {
         const value = wizardChatOptionFromText(step, raw);
         if (!raw) {
-            wizardAlert('Choose or type an answer.');
+            showInputError('Choose or type an answer.');
             return;
         }
         if (!value) {
-            wizardAlert('I could not match that yet. Try one of the bubbles above.');
+            showInputError('I could not match that yet. Try one of the bubbles above.');
             return;
         }
         if (normalizeWizardChatText(raw) !== normalizeWizardChatText(wizardChatOptionLabel(step, value))) {
@@ -6881,12 +7008,12 @@ function submitWizardChatAnswer() {
         wizardChatMultiFromText(step, raw).forEach(value => selected.add(value));
         if (raw) wizardChatFreeformAnswers[step.key] = raw;
         if ((step.required && selected.size === 0 && !raw) || (step.requiresStructured && selected.size === 0)) {
-            wizardAlert('Choose at least one option.');
+            showInputError('Choose at least one option.');
             return;
         }
         const selectedValues = Array.from(selected);
         if (step.maxSelect && selectedValues.length > step.maxSelect) {
-            wizardAlert(`Pick up to ${step.maxSelect} options.`);
+            showInputError(`Pick up to ${step.maxSelect} options.`);
             return;
         }
         advanceWizardChat(step, selectedValues, raw || null);
@@ -6900,7 +7027,7 @@ function submitWizardChatAnswer() {
         }
         const parsed = parseWizardMeasurementInput(step, raw);
         if (!parsed) {
-            wizardAlert(step.measurement === 'height'
+            showInputError(step.measurement === 'height'
                 ? 'Enter a valid height, like 170 cm or 5 ft 8.'
                 : 'Enter a valid weight, like 70 kg or 154 lbs.');
             return;
@@ -6914,7 +7041,7 @@ function submitWizardChatAnswer() {
     if (step.type === 'number') {
         const value = parseWizardChatNumber(raw);
         if (!Number.isFinite(value) || value < step.min || value > step.max) {
-            wizardAlert(`Enter a number between ${step.min} and ${step.max}.`);
+            showInputError(`Enter a number between ${step.min} and ${step.max}.`);
             return;
         }
         advanceWizardChat(step, value);
@@ -6926,7 +7053,7 @@ function submitWizardChatAnswer() {
         return;
     }
     if (!raw || raw.length < (step.minLength || 1)) {
-        wizardAlert('Add a little more detail here.');
+        showInputError('Add a little more detail here.');
         return;
     }
     const value = step.key === 'ig_handle' ? raw.replace(/^@+/, '').trim() : raw;
@@ -7001,6 +7128,53 @@ function readWizardJsonField(id, fallback) {
     } catch (e) {
         return fallback;
     }
+}
+
+function readWizardProfileData() {
+    return {
+        goalType: document.getElementById('wizard-goal-type')?.value || '',
+        weight: document.getElementById('wizard-weight')?.value || '',
+        goalWeight: document.getElementById('wizard-goal-weight')?.value || '',
+        goalIntentLabels: readWizardJsonField('wizard-goal-intent-labels', []),
+        weeklyGoalFocusLabels: readWizardJsonField('wizard-weekly-goal-focus-labels', [])
+    };
+}
+
+function formatWizardGoalWeight(value) {
+    const kg = Number(value);
+    if (!Number.isFinite(kg) || kg <= 0) return '';
+    if (wizardPrefersImperialUnits()) {
+        return `${formatWizardNumber(kg * 2.20462, 1)} lbs`;
+    }
+    return `${formatWizardNumber(kg, 1)} kg`;
+}
+
+function getWizardPrimaryGoalSummary() {
+    const data = readWizardProfileData();
+    const goalIntentLabels = Array.isArray(data.goalIntentLabels) ? data.goalIntentLabels.filter(Boolean) : [];
+    const weeklyGoalFocusLabels = Array.isArray(data.weeklyGoalFocusLabels) ? data.weeklyGoalFocusLabels.filter(Boolean) : [];
+    const primaryGoal = WIZARD_PRIMARY_GOAL_LABELS[data.goalType] || goalIntentLabels[0] || weeklyGoalFocusLabels[0] || 'the goal you just chose';
+    const detail = [];
+    const goalWeight = Number(data.goalWeight);
+    const currentWeight = Number(data.weight);
+
+    if (Number.isFinite(goalWeight) && goalWeight > 0 && Number.isFinite(currentWeight) && Math.abs(goalWeight - currentWeight) > 0.2) {
+        detail.push(`target ${formatWizardGoalWeight(goalWeight)}`);
+    }
+    const extraGoalLabels = goalIntentLabels.filter(label => label !== primaryGoal).slice(0, 2);
+    if (extraGoalLabels.length) {
+        detail.push(extraGoalLabels.join(', '));
+    } else if (weeklyGoalFocusLabels.length) {
+        detail.push(weeklyGoalFocusLabels.slice(0, 2).join(', '));
+    }
+
+    return [primaryGoal].concat(detail).filter(Boolean).join(' - ');
+}
+
+function renderWizardWeeklyGoalRoutine() {
+    const targetEl = document.getElementById('wizard-weekly-goal-target');
+    if (!targetEl) return;
+    targetEl.textContent = getWizardPrimaryGoalSummary();
 }
 
 window.submitWizardChatAnswer = submitWizardChatAnswer;
@@ -7439,6 +7613,7 @@ function initOnboardingWizard() {
     const modal = document.getElementById('onboarding-wizard');
     if (!modal) return;
     if (modal.style.display === 'flex') return; // Already showing
+    initWizardKeyboardFlow();
 
     // Optional pre-onboarding welcome hook. It currently returns false because
     // challenge entry should be explicit, not inferred from a fresh signup.
@@ -8494,9 +8669,9 @@ function updateWizardUI() {
         initializeCharacterCustomization();
     }
 
-    // 3b. Load referral code on slide 19
+    // 3b. Render weekly goal handoff on slide 19
     if(currentWizardStep === 19) {
-        loadWizardReferralCode();
+        renderWizardWeeklyGoalRoutine();
     }
 
     if(currentWizardStep === 6) {
@@ -8921,39 +9096,39 @@ async function wizardNext() {
 
         // Validate all required fields
         if (!name) {
-            wizardAlert("Please enter your name.");
+            wizardValidationError("Please enter your name.", 'wizard-name');
             return;
         }
         if (!age || age < 18 || age > 100) {
-            wizardAlert("Please enter a valid age (18-100).");
+            wizardValidationError("Please enter a valid age (18-100).", 'wizard-age');
             return;
         }
         if (!height || height < 100 || height > 250) {
-            wizardAlert("Please enter a valid height.");
+            wizardValidationError("Please enter a valid height.", 'wizard-height');
             return;
         }
         if (!weight || weight < 30 || weight > 300) {
-            wizardAlert("Please enter a valid weight.");
+            wizardValidationError("Please enter a valid weight.", 'wizard-weight');
             return;
         }
         if (!goalWeight || goalWeight < 30 || goalWeight > 300) {
-            wizardAlert("Please enter a valid goal weight.");
+            wizardValidationError("Please enter a valid goal weight.", 'wizard-goal-weight');
             return;
         }
         if (!goalType) {
-            wizardAlert("Please select your primary goal.");
+            wizardValidationError("Please select your primary goal.", 'wizard-goal-type');
             return;
         }
         if (!equipment) {
-            wizardAlert("Please select your equipment access.");
+            wizardValidationError("Please select your equipment access.", 'wizard-equipment');
             return;
         }
         if (!activityLevel) {
-            wizardAlert("Please select your activity level.");
+            wizardValidationError("Please select your activity level.", 'wizard-activity-level');
             return;
         }
         if (!energyLevel) {
-            wizardAlert("Please select your energy status.");
+            wizardValidationError("Please select your energy status.", 'wizard-energy-level');
             return;
         }
 
@@ -9246,7 +9421,7 @@ async function wizardNext() {
     if(currentWizardStep < finalWizardStep) {
         currentWizardStep++;
 
-        // Skip optional/deferred setup slides. The essentials end at character design.
+        // Skip optional/deferred setup slides and keep the weekly-goal handoff as the final step.
         while (skippedWizardSlides.includes(currentWizardStep) && currentWizardStep < finalWizardStep) {
             currentWizardStep++;
         }

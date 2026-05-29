@@ -11708,7 +11708,7 @@ if (window._pbbIsIOSSafari) {
         setTimeout(function() {
             if(window._crumb)window._crumb('script5_loading');
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=103';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=104';
             s.onload = function() {
                 if(window._crumb)window._crumb('script5_deferred_loaded');
                 // Replay deferred init functions
@@ -11726,7 +11726,7 @@ if (window._pbbIsIOSSafari) {
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=103"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=104"><\/script>');
 }
 </script>
 
@@ -14034,34 +14034,28 @@ if(!window._pbbIsIOSSafari) {
                 <p style="text-align:center; color:#94a3b8; font-size:0.8rem;">You can skip this and add one later from your profile</p>
             </div>
 
-            <!-- SLIDE 19: INVITE YOUR FRIENDS -->
+            <!-- SLIDE 19: WEEKLY GOAL ROUTINE -->
             <div class="wizard-slide" id="slide-19" style="display:none;">
-                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🤝</div>
-                <h3 style="text-align:center; margin-bottom:10px;">Invite Your Friends</h3>
-                <p style="text-align:center; color:#666; margin-bottom:20px;">Everything's better with friends! You BOTH get <strong style="color:var(--primary);">1 week double XP</strong></p>
+                <div style="text-align:center; margin-bottom:15px;">
+                    <div style="width:56px; height:56px; border-radius:18px; background:linear-gradient(135deg, #48864B, #84cc16); color:white; display:inline-flex; align-items:center; justify-content:center; font-size:1.8rem; font-weight:900; box-shadow:0 10px 24px rgba(72,134,75,0.22);">3</div>
+                </div>
+                <h3 style="text-align:center; margin-bottom:10px;">Your Weekly Goal Routine</h3>
+                <p style="text-align:center; color:#334155; margin-bottom:18px; line-height:1.45;">
+                    Your target: <strong id="wizard-weekly-goal-target" style="color:var(--primary);">the goal you just chose</strong>
+                </p>
 
-                <!-- Referral Code Display -->
-                <div style="background:linear-gradient(135deg, #f0fdf4, #dcfce7); padding:20px; border-radius:16px; border:1px solid #bbf7d0; text-align:center; margin-bottom:15px;">
-                    <p style="margin:0 0 8px; font-size:0.85rem; color:#166534; font-weight:600;">Your Referral Code</p>
-                    <div id="wizard-referral-code" style="font-size:1.8rem; font-weight:800; letter-spacing:4px; color:#1a4d2e; font-family:monospace; padding:8px; background:white; border-radius:10px; border:2px dashed #48864B;">
-                        Loading...
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px; color:#334155; font-size:0.9rem; line-height:1.5;">
+                        Each week, choose 3 Weekly Goals that help you work toward that target. We'll suggest a few from your setup, then you can adjust them to fit your week.
+                    </div>
+                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:14px; color:#166534; font-size:0.9rem; line-height:1.5;">
+                        If you signed up for coaching, Shannon will check in on you during the week to help you stay on track, make tweaks if life gets busy, and keep you moving toward your goal.
+                    </div>
+                    <div style="background:#fff7ed; border:1px solid #fed7aa; border-radius:12px; padding:14px; color:#9a3412; font-size:0.88rem; line-height:1.5; font-weight:700;">
+                        After setup, head to Weekly Goals on Home and set your first 3.
                     </div>
                 </div>
 
-                <!-- Share Buttons -->
-                <div style="display:flex; gap:10px; margin-bottom:15px;">
-                    <button type="button" onclick="wizardShareWhatsApp()" style="flex:1; padding:12px; border-radius:12px; border:none; background:#25D366; color:white; font-weight:700; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
-                        <span>WhatsApp</span>
-                    </button>
-                    <button type="button" onclick="wizardShareSMS()" style="flex:1; padding:12px; border-radius:12px; border:none; background:#3b82f6; color:white; font-weight:700; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
-                        <span>SMS</span>
-                    </button>
-                    <button type="button" onclick="wizardCopyLink()" style="flex:1; padding:12px; border-radius:12px; border:none; background:#64748b; color:white; font-weight:700; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
-                        <span>Copy Link</span>
-                    </button>
-                </div>
-
-                <p style="text-align:center; color:#64748b; font-size:0.8rem;">You can always share your code later from the Friends tab</p>
             </div>
 
 
