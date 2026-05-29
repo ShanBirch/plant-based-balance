@@ -442,6 +442,16 @@ exports.handler = async (event = {}) => {
     const chunks = splitCoachDraftIntoDmBubbles([message]);
     if (!chunks.length) return json(400, { error: 'Message is empty' });
 
+    const seenReceipt = delivery.transport === 'instagram_graph'
+        ? await sendInstagramSeenReceiptForThread({
+            thread,
+            actorId: admin.userId,
+            source: `${source}_before_send`,
+            sentAtIso: new Date().toISOString(),
+            loggerPrefix: 'send-direct-ig-message',
+        })
+        : { attempted: false, ok: false, reason: 'not_instagram_graph' };
+
     const sentResults = [];
     const sentChunkGapsMs = [];
     let firstError = null;
@@ -536,16 +546,9 @@ exports.handler = async (event = {}) => {
             chunks_sent: sentChunks.length,
             chunks_total: chunks.length,
             history_logged: messageIds.length > 0,
+            seen_receipt: seenReceipt,
         });
     }
-
-    const seenReceipt = await sendInstagramSeenReceiptForThread({
-        thread,
-        actorId: admin.userId,
-        source,
-        sentAtIso: sentAt,
-        loggerPrefix: 'send-direct-ig-message',
-    });
 
     const cleanup = await clearPendingThreadAlerts({
         pendingAlerts,

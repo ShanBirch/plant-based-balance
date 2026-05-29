@@ -3,6 +3,9 @@ const {
     SUPABASE_SERVICE_KEY,
     supabaseQuery,
 } = require('./client-context');
+const {
+    resolveMetaIgAccessToken,
+} = require('./meta-ig-accounts');
 
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV = process.env.INSTAGRAM_GRAPH_ACCESS_TOKEN
@@ -62,7 +65,9 @@ function resolveThreadGraphAccountId(thread = {}) {
     ]);
 }
 
-async function getInstagramGraphAccessToken({ loggerPrefix = 'instagram-graph-seen' } = {}) {
+async function getInstagramGraphAccessToken({ accountId = '', loggerPrefix = 'instagram-graph-seen' } = {}) {
+    const resolved = await resolveMetaIgAccessToken(accountId, supabaseQuery);
+    if (resolved.token) return resolved.token;
     if (cachedInstagramGraphAccessToken) return cachedInstagramGraphAccessToken;
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return '';
     try {
@@ -86,7 +91,7 @@ async function loadThread(threadId) {
 }
 
 async function postInstagramGraphSeenReceipt({ recipientId, accountId, loggerPrefix }) {
-    const accessToken = await getInstagramGraphAccessToken({ loggerPrefix });
+    const accessToken = await getInstagramGraphAccessToken({ accountId, loggerPrefix });
     if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
     if (!recipientId) throw new Error('Instagram Graph recipient id missing');
 

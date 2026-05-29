@@ -831,7 +831,40 @@ async function postInstagramGraphSeenReceipt({ recipientId, accountId }) {
     });
 }
 
-async function sendInstagramSeenReceiptAfterReply({ channel, recipientId, accountId, sentAtIso }) {
+async function patchInstagramSeenReceiptState({ thread, actorId, source, seenAtIso }) {
+    if (!thread?.id) return { state_persisted: false, state_reason: 'thread_missing' };
+    const customData = safeObject(thread.custom_data);
+    const graph = safeObject(customData.instagram_graph);
+    const actionData = safeObject(customData.instagram_graph_actions);
+    const nextCustomData = {
+        ...customData,
+        instagram_graph: {
+            ...graph,
+            last_action_at: seenAtIso,
+            last_mark_seen_at: seenAtIso,
+        },
+        instagram_graph_actions: {
+            ...actionData,
+            last_mark_seen_at: seenAtIso,
+            last_mark_seen_by: actorId || actionData.last_mark_seen_by || 'system',
+            last_mark_seen_source: source || actionData.last_mark_seen_source || 'outbound_reply_before_send',
+        },
+    };
+
+    try {
+        await supabase(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
+            method: 'PATCH',
+            body: { custom_data: nextCustomData },
+            prefer: 'return=minimal',
+        });
+        return { state_persisted: true };
+    } catch (err) {
+        console.warn('[send-ig-reply] Instagram seen receipt state patch failed:', err.message);
+        return { state_persisted: false, state_error: err.message || String(err) };
+    }
+}
+
+async function sendInstagramSeenReceiptBeforeReply({ channel, recipientId, accountId, thread, actorId, source, seenAtIso }) {
     if (channel !== 'instagram') {
         return { attempted: false, ok: false, reason: 'not_instagram' };
     }
@@ -840,10 +873,16 @@ async function sendInstagramSeenReceiptAfterReply({ channel, recipientId, accoun
     }
     try {
         await postInstagramGraphSeenReceipt({ recipientId, accountId });
-        return { attempted: true, ok: true, sent_at: sentAtIso };
+        return {
+            attempted: true,
+            ok: true,
+            sent_at: seenAtIso,
+            timing: 'before_reply',
+            ...(await patchInstagramSeenReceiptState({ thread, actorId, source, seenAtIso })),
+        };
     } catch (err) {
         console.warn('[send-ig-reply] Instagram seen receipt failed:', err.message);
-        return { attempted: true, ok: false, error: err.message };
+        return { attempted: true, ok: false, error: err.message, timing: 'before_reply' };
     }
 }
 
@@ -1172,6 +1211,18 @@ exports.handler = async (event) => {
     }
     sendClaimId = claimedAlert.sendClaim?.id || '';
 
+    const seenReceipt = shouldUseGraph
+        ? await sendInstagramSeenReceiptBeforeReply({
+            channel,
+            recipientId: graphRecipientId,
+            accountId: graphAccountId,
+            thread: threadForSend,
+            actorId: alert.coach_id,
+            source: `${source}_before_send`,
+            seenAtIso: new Date().toISOString(),
+        })
+        : { attempted: false, ok: false, reason: 'not_instagram_graph' };
+
     // 3. Send each chunk via the selected transport with delays. Stop on first failure so
     //    we don't keep dispatching after a bad chunk.
     const sendResults = [];
@@ -1225,14 +1276,6 @@ exports.handler = async (event) => {
     const sentChunks = sendResults.filter(r => r.ok);
     const allOk = firstError === null && sentChunks.length === messagesToSend.length;
     const sentAtIso = new Date().toISOString();
-    const seenReceipt = allOk
-        ? await sendInstagramSeenReceiptAfterReply({
-            channel,
-            recipientId: graphRecipientId,
-            accountId: graphAccountId,
-            sentAtIso,
-        })
-        : { attempted: false, ok: false, reason: 'send_failed' };
 
     // 4. Log every successfully-delivered chunk to ig_messages (so the next
     //    AI draft has the conversation history including our outbound).

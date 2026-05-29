@@ -5406,6 +5406,29 @@
             }
         }
 
+        const igMediaSeenReceiptKeys = new Set();
+        async function markInstagramMediaOpenedSeen(threadId, mediaType = 'media') {
+            const resolvedThreadId = String(threadId || currentConvoTarget?.id || '').trim();
+            if (!resolvedThreadId) return;
+            const key = `${resolvedThreadId}:${String(mediaType || 'media').toLowerCase()}`;
+            if (igMediaSeenReceiptKeys.has(key)) return;
+            igMediaSeenReceiptKeys.add(key);
+            try {
+                const result = await sendInstagramGraphAction({
+                    action: 'mark_seen',
+                    threadId: resolvedThreadId,
+                    source: 'admin_media_opened',
+                });
+                if (currentConvoTarget?.id === resolvedThreadId) {
+                    mergeCurrentIgThreadCustomData(result.custom_data);
+                    updateCurrentIgSeenButton();
+                }
+            } catch (e) {
+                igMediaSeenReceiptKeys.delete(key);
+                console.warn('[ig-graph-action] media opened seen receipt failed:', e?.message || e);
+            }
+        }
+
         async function viewIgConversations(threadId, userName, target=null) {
             currentConvoUserId = null;
             currentConvoTarget = target || { type: 'ig', id: threadId, name: userName, channelLabel: 'Instagram' };
@@ -5431,7 +5454,10 @@
                     const speaker = isOut ? 'Coach Shannon' : (channelLabel === 'Messenger' ? 'Messenger lead' : 'Instagram lead');
                     const actions = renderIgMessageActions(m, currentConvoTarget.thread);
                     const cleanText = _igClean(m.text || '');
-                    const mediaHtml = renderIgConversationMediaHtml(m.text || '');
+                    const mediaHtml = renderIgConversationMediaHtml(m.text || '', 'alert-message-photo', {
+                        seenThreadId: threadId,
+                        seenEnabled: !isOut,
+                    });
                     return `<div class="chat-message ${isOut?'bot':'user'}${actions ? ' has-message-actions' : ''}"><div><strong>${adminEsc(speaker)}</strong></div><div>${adminEsc(cleanText).replace(/\n/g,'<br>')}</div>${mediaHtml}<div class="timestamp">${new Date(m.created_at).toLocaleString()}${m.source ? ' - ' + adminEsc(m.source) : ''}</div>${actions}</div>`;
                 }).join('');
                 c.scrollTop = c.scrollHeight;
@@ -6533,9 +6559,9 @@
                 .trim();
         }
 
-        function renderIgConversationMediaHtml(text, className = 'alert-message-photo') {
+        function renderIgConversationMediaHtml(text, className = 'alert-message-photo', options = {}) {
             const media = extractMessageMediaMarkers(text);
-            return media.length ? renderMessageMedia(media, className) : '';
+            return media.length ? renderMessageMedia(media, className, options) : '';
         }
 
         async function loadIgLeads() {
@@ -15565,7 +15591,10 @@
                     return `<div class="alert-control-bubble ${m.sender === 'coach' ? 'from-coach' : ''}">
                         <span class="alert-control-bubble-prefix">${escapeHtml(sender)}${channelTag}:</span>
                         ${escapeHtml(String(m.text || '').trim())}
-                        ${renderMessageMedia(m.media, 'alert-control-photo')}
+                        ${renderMessageMedia(m.media, 'alert-control-photo', {
+                            seenThreadId: alert?.data?.ig_thread_id || '',
+                            seenEnabled: m.sender !== 'coach' && m.channel === 'instagram',
+                        })}
                     </div>`;
                 }).join('');
 
@@ -16334,7 +16363,7 @@
             };
         }
 
-        function renderMessageMedia(media, className) {
+        function renderMessageMedia(media, className, options = {}) {
             const photos = Array.isArray(media)
                 ? media.filter(m => m && m.type === 'photo' && m.url)
                 : [];
@@ -16347,13 +16376,21 @@
             if (photos.length === 0 && audios.length === 0 && videos.length === 0) return '';
             const audioClass = className === 'alert-control-photo' ? 'alert-control-audio' : 'alert-message-audio';
             const videoClass = className === 'alert-control-photo' ? 'alert-control-video' : 'alert-message-video';
+            const seenThreadId = String(options.seenThreadId || '').trim();
+            const canMarkSeen = !!(options.seenEnabled && seenThreadId);
+            const mediaSeenAttr = (type) => canMarkSeen
+                ? ` onload="markInstagramMediaOpenedSeen('${escapeHtml(seenThreadId)}','${escapeHtml(type)}')" onclick="markInstagramMediaOpenedSeen('${escapeHtml(seenThreadId)}','${escapeHtml(type)}')"`
+                : '';
+            const videoSeenAttr = (type) => canMarkSeen
+                ? ` onloadedmetadata="markInstagramMediaOpenedSeen('${escapeHtml(seenThreadId)}','${escapeHtml(type)}')" onplay="markInstagramMediaOpenedSeen('${escapeHtml(seenThreadId)}','${escapeHtml(type)}')" onclick="markInstagramMediaOpenedSeen('${escapeHtml(seenThreadId)}','${escapeHtml(type)}')"`
+                : '';
             return `<div class="alert-message-media">${photos.map((m, i) => `
-                <img class="${className}" src="${escapeHtml(m.url)}" alt="Photo ${i + 1}" loading="eager" decoding="async" referrerpolicy="no-referrer" onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';">
-                <a class="alert-media-fallback" href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer">Open photo</a>
+                <img class="${className}" src="${escapeHtml(m.url)}" alt="Photo ${i + 1}" loading="eager" decoding="async" referrerpolicy="no-referrer"${mediaSeenAttr('photo')} onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';">
+                <a class="alert-media-fallback" href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer"${canMarkSeen ? ` onclick="markInstagramMediaOpenedSeen('${escapeHtml(seenThreadId)}','photo')"` : ''}>Open photo</a>
             `).join('')}${audios.map((m, i) => `
                 <audio class="${audioClass}" controls preload="none" src="${escapeHtml(m.url)}" title="Voice note ${i + 1}"></audio>
             `).join('')}${videos.map((m, i) => `
-                <video class="${videoClass}" controls preload="metadata" src="${escapeHtml(m.url)}" title="Video ${i + 1}"></video>
+                <video class="${videoClass}" controls preload="metadata" src="${escapeHtml(m.url)}" title="Video ${i + 1}"${videoSeenAttr('video')}></video>
             `).join('')}</div>`;
         }
 
@@ -16419,14 +16456,17 @@
                 : d.toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
         }
 
-        function renderConversationBubble(item, { label, fromCoach = false, isLatest = false, showLatestTag = false } = {}) {
+        function renderConversationBubble(item, { label, fromCoach = false, isLatest = false, showLatestTag = false, mediaSeenThreadId = '' } = {}) {
             const cls = `alert-thread-bubble${fromCoach ? ' from-coach' : ''}${isLatest && showLatestTag ? ' latest' : ''}`;
             const timeLabel = formatConversationBubbleTime(item);
             return `<div class="${cls}">
                 ${label ? `<span class="alert-thread-bubble-label">${escapeHtml(label)}${timeLabel ? `<span class="alert-thread-bubble-time">${escapeHtml(timeLabel)}</span>` : ''}</span>` : ''}
                 ${item?.storyReply ? '<span class="alert-thread-bubble-chip">Story reply - context</span>' : ''}
                 <div>${escapeHtml(item.text)}</div>
-                ${renderMessageMedia(item.media, 'alert-message-photo')}
+                ${renderMessageMedia(item.media, 'alert-message-photo', {
+                    seenThreadId: mediaSeenThreadId,
+                    seenEnabled: !fromCoach,
+                })}
             </div>`;
         }
 
@@ -16665,7 +16705,7 @@
             return baseLabel;
         }
 
-        function renderConversationPanelThread(items, clientLabel) {
+        function renderConversationPanelThread(items, clientLabel, options = {}) {
             const allItems = Array.isArray(items) ? items.filter(item => item && item.text) : [];
             const totalCount = allItems.length;
             const visibleItems = allItems.slice(-ALERT_THREAD_CONTEXT_LIMIT);
@@ -16689,6 +16729,7 @@
                     fromCoach,
                     isLatest: absoluteIndex === latestInboundIndex,
                     showLatestTag,
+                    mediaSeenThreadId: options.mediaSeenThreadId || '',
                 });
             }).join('');
             const countLabel = totalCount > visibleItems.length
@@ -16944,7 +16985,9 @@
                 inboundMessages: timelineInputs,
             });
             if (!timeline.length) return null;
-            const renderedThread = renderConversationPanelThread(timeline, threadClientLabel);
+            const renderedThread = renderConversationPanelThread(timeline, threadClientLabel, {
+                mediaSeenThreadId: alert?.data?.ig_thread_id || '',
+            });
             return `
                 <div class="alert-thread-panel">
                     <div class="alert-thread-header">
@@ -16996,6 +17039,7 @@
                 ? renderConversationBubble(lastOutbound, {
                     label: formatOutboundContextLabel(lastOutbound),
                     fromCoach: true,
+                    mediaSeenThreadId: alert?.data?.ig_thread_id || '',
                 })
                 : '';
             const clientLabel = clientName || 'Client';
@@ -17005,6 +17049,7 @@
                     label: clientLabel,
                     isLatest,
                     showLatestTag,
+                    mediaSeenThreadId: alert?.data?.ig_thread_id || '',
                 });
             }).join('');
 

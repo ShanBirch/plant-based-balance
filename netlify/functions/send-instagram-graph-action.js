@@ -203,7 +203,7 @@ async function postInstagramSenderAction({ accountId, recipientId, action, graph
     return parsed;
 }
 
-async function patchThreadActionState({ thread, graphMessageId, localMessageId, action, reaction, adminUserId, nowIso }) {
+async function patchThreadActionState({ thread, graphMessageId, localMessageId, action, reaction, adminUserId, source, nowIso }) {
     const customData = safeObject(thread.custom_data);
     const actionData = safeObject(customData.instagram_graph_actions);
     const messages = safeObject(actionData.messages);
@@ -215,6 +215,7 @@ async function patchThreadActionState({ thread, graphMessageId, localMessageId, 
     if (action === 'mark_seen') {
         nextActionData.last_mark_seen_at = nowIso;
         nextActionData.last_mark_seen_by = adminUserId;
+        nextActionData.last_mark_seen_source = source || actionData.last_mark_seen_source || 'admin_dashboard';
     } else if (graphMessageId) {
         const current = safeObject(messages[graphMessageId]);
         nextActionData.messages[graphMessageId] = {
@@ -320,6 +321,7 @@ exports.handler = async (event = {}) => {
     }
 
     const reaction = String(body.reaction || 'love').trim() || 'love';
+    const source = String(body.source || '').trim().slice(0, 80);
     let graphResponse;
     try {
         graphResponse = await postInstagramSenderAction({
@@ -347,6 +349,7 @@ exports.handler = async (event = {}) => {
             action,
             reaction,
             adminUserId: admin.userId,
+            source,
             nowIso: new Date().toISOString(),
         });
     } catch (err) {
