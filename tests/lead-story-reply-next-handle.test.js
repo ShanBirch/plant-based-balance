@@ -61,6 +61,23 @@ const lowSignalThanks = applyLeadStoryReplyQuestionGuard(passReview, {
 
 assert.strictEqual(lowSignalThanks.verdict, 'pass');
 
+const oldInjuryHistory = applyLeadStoryReplyQuestionGuard(passReview, {
+    draftText: "ahh wow, that's a massive thing to go through",
+    contextBlocks: storyContextFor('i had acl surgery years ago, it is actually why nursing clicked for me'),
+    alertType: 'ig_incoming_dm',
+});
+
+assert.strictEqual(oldInjuryHistory.verdict, 'warn');
+assert.strictEqual(oldInjuryHistory.deterministic_guard, 'lead_story_reply_missing_question');
+
+const currentInjuryAdvice = applyLeadStoryReplyQuestionGuard(passReview, {
+    draftText: 'ahh that sounds rough, hope it settles soon',
+    contextBlocks: storyContextFor('my knee is killing me at the moment, any advice?'),
+    alertType: 'ig_incoming_dm',
+});
+
+assert.strictEqual(currentInjuryAdvice.verdict, 'pass');
+
 const oldStoryContext = applyLeadStoryReplyQuestionGuard(passReview, {
     draftText: 'that sounds full on but makes sense',
     contextBlocks: `Just-arrived Instagram message from lead: "Emergency has been intense lately"

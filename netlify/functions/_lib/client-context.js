@@ -4695,7 +4695,10 @@ const LEAD_NEXT_QUESTION_RE = /\?|\b(?:what|how|where|when|why|who|are you|do yo
 const LEAD_NEXT_INVITE_RE = /\b(?:challenge|30\s*day|30-day|free coaching|send (?:you )?(?:the )?(?:details|link)|want me to send|jump in|join|start|sign up|coaching\.html|future-balance)\b/i;
 const LEAD_INTENTIONAL_CLOSE_RE = /\b(?:bye|byeee+|goodnight|sleep well|have a nice day|have a good day|enjoy(?: your)?(?: day| night| trip| weekend)?|no worries|all good|you're welcome|you are welcome|thanks|thank you|appreciate it|talk soon|catch you)\b/i;
 const LEAD_LOW_SIGNAL_INBOUND_RE = /^\s*(?:yep|yup|yes|yeah|yea|nah|no|ok|okay|haha+|lol|lmao|thanks|thank you|ta|cheers|cool|nice|sweet|true|fair|[^\w]+)\s*$/i;
-const LEAD_SENSITIVE_CONTEXT_RE = /\b(?:grief|passed away|died|death|funeral|trauma|panic|depression|self harm|suicide|injur|pain|pregnan|eating disorder|binge|abuse|animal cruelty|cruelty)\b/i;
+const LEAD_HIGH_RISK_CONTEXT_RE = /\b(?:grief|passed away|died|death|funeral|trauma|panic|depression|self harm|suicide|pregnan|eating disorder|binge|abuse|animal cruelty|cruelty)\b/i;
+const LEAD_HEALTH_HISTORY_TOPIC_RE = /\b(?:injur|pain|hurt|hurts|hurting|sore|rehab|recover|surgery|operation|hospital|acl|knee|back|shoulder|ankle|symptom|treatment|physio|doctor)\b/i;
+const LEAD_CURRENT_HEALTH_RE = /\b(?:currently|right now|atm|at the moment|today|tonight|this week|still|ongoing|flar(?:e|ed|ing)|new|fresh|acute|can't|cant|unable|struggling with|dealing with|killing me|hurts|hurting|sore|in pain|injured|recovering|in rehab)\b/i;
+const LEAD_HEALTH_ADVICE_RE = /\b(?:what should i do|what do i do|any advice|should i|can i|could i|help with|fix|train around|work around|safe to|okay to|ok to|exercises?|stretches?|rehab)\b/i;
 const LEAD_NO_RESPONSE_WORDS = new Set([
     'yep', 'yup', 'yes', 'yeah', 'yea', 'nah', 'no',
     'ok', 'okay', 'haha', 'lol', 'lmao', 'thanks', 'thank',
@@ -4712,6 +4715,12 @@ function extractJustArrivedReviewMessage(contextBlocks) {
     return match ? String(match[1] || '').trim() : '';
 }
 
+function isCurrentHealthAdviceLeadTurn(text) {
+    const current = normalizeCoachDraftText(text || '').replace(/\s+/g, ' ').trim();
+    if (!LEAD_HEALTH_HISTORY_TOPIC_RE.test(current)) return false;
+    return LEAD_HEALTH_ADVICE_RE.test(current) || LEAD_CURRENT_HEALTH_RE.test(current);
+}
+
 function isClosingOrLowSignalLeadReviewTurn(currentMessage, draftText) {
     const current = normalizeCoachDraftText(currentMessage || '').replace(/\s+/g, ' ').trim();
     const draft = normalizeCoachDraftText(draftText || '').replace(/\s+/g, ' ').trim();
@@ -4720,7 +4729,8 @@ function isClosingOrLowSignalLeadReviewTurn(currentMessage, draftText) {
     if (LEAD_LOW_SIGNAL_INBOUND_RE.test(current) && currentWords.length <= 3) return true;
     if (currentWords.length <= 3 && currentWords.every(word => LEAD_NO_RESPONSE_WORDS.has(word))) return true;
     if (LEAD_INTENTIONAL_CLOSE_RE.test(current) || LEAD_INTENTIONAL_CLOSE_RE.test(draft)) return true;
-    if (LEAD_SENSITIVE_CONTEXT_RE.test(current)) return true;
+    if (LEAD_HIGH_RISK_CONTEXT_RE.test(current)) return true;
+    if (isCurrentHealthAdviceLeadTurn(current)) return true;
     if (/^\[[^\]]*(?:sticker|media|photo|video|audio)[^\]]*\]/i.test(current) && currentWords.length < 8) return true;
     return false;
 }
@@ -4942,6 +4952,7 @@ Block and set notification_required=true when:
 - the tracked ManyChat/IG context looks incomplete enough that Shannon should open the native DM before sending;
 - the draft invents an action, fact, promise, or source evidence that is not in the context.
 
+For unlinked acquisition leads, do not block, notify, or mark manual-only just because they mention old injury, surgery, rehab, hospital, or pain history. That is normal rapport if the draft stays light, non-medical, and does not pitch the challenge off their vulnerability. Block or warn only when the latest turn asks for current pain, symptoms, rehab/training/treatment advice, diagnosis, pregnancy, eating/body-image risk, crisis/safety support, or when the draft gives medical/rehab advice.
 Do not block just because the older timeline contains a different unresolved topic if the clearly labelled latest inbound message is answered naturally. Treat details as grounded when they appear anywhere in the labelled latest message, including near the ending of a long message.
 Do not block just because the draft also answers prior unanswered messages from the same recent inbound burst. If Shannon has not replied between those inbound messages and the draft naturally answers the newest message, treat the burst as one conversational turn.
 
