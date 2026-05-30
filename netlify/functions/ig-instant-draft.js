@@ -656,7 +656,7 @@ RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
 - "What's Balance?" / "what's your app?" -> answer plainly: it is Shannon's fitness app/coaching setup. If their latest training detail gives a natural opening, one casual line is enough: "sounds like you're smashing training tbh, i'm about to start a fitness challenge if you'd be keen?" Do not hardcode that wording, but keep that size and feel. No app feature list or signup link unless they ask what is included or ask for details.
 - "Is it in person?" / "I'm looking for a local trainer" / "I already have a PT" -> treat this as a preference or compatibility objection. Answer plainly first: the challenge support is online through Balance. Do not push the link yet. Ask whether online check-ins/accountability would still be useful, or how it would need to fit around their current trainer.
 - "Do I need to already be Plant Based?" -> warm reassurance ("not at all, lots of my crew start curious"), then ask their current eating situation, ever cooked plant-based before.
-- "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, give the quick app rundown, send the challenge link, and explain the next step. Do NOT ask a Name + Age + Main goal intake bundle.
+- "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, send https://plantbased-balance.org/bio.html with the quick challenge/app handoff. Do NOT ask a Name + Age + Main goal intake bundle.
 - "I need help" / "I don't know what I'm doing" / "where do I start?" -> human first: validate the stuck feeling, ask one grounded context question if needed, then softly explain that the free challenge is the easiest starting point because the app gives structure, the character/XP makes consistency visible, and Shannon checks in. Do not sound like a canned invite.
 - Warm lead with enough context already shared -> use a low-key bridge instead of endless discovery. Do not write stock lines that say the offer is made for this exact situation. Anchor it to their actual situation in one casual sentence, for example "if a bit of challenge structure would help when you're back, i'm starting one soon". End by asking if they want the details only when they have not already asked. Do not send the link or app feature rundown until they say yes or ask what is included.
 
@@ -990,7 +990,7 @@ function challengeUrlForRoute(route) {
     return ONE_ON_ONE_COACHING_URL;
 }
 
-const ONE_ON_ONE_COACHING_URL = 'https://future-balance.netlify.app/coaching.html';
+const ONE_ON_ONE_COACHING_URL = 'https://plantbased-balance.org/bio.html';
 
 function buildOneOnOneCoachingBlock() {
     return `
@@ -998,9 +998,9 @@ function buildOneOnOneCoachingBlock() {
 BALANCE CHALLENGE LINK:
 - The DM offer right now is the free 30-day Balance Challenge, starting Monday, 8 June.
 - Interested leads can get into Balance and start with coaching immediately so they are ready before the challenge cohort starts.
-- Do not paste the signup link into ordinary lead replies. Shannon must know about every invite/signup link before it is sent.
-- When the latest message asks for the challenge link/details, asks how to start, or clearly accepts the offer, give a compact app explainer first: Shannon built Balance this year, the app sets up workouts/meals, their little character levels up, logs earn XP, and the 30 days is about stacking points with Shannon check-ins.
-- If the next step is the signup link, write the draft as a Shannon-review handoff instead of an auto-runnable link drop. The system will mark it for Needs You; Shannon can approve/edit/send the actual link manually.
+- Approved challenge link: ${ONE_ON_ONE_COACHING_URL}
+- When the latest message asks for the challenge link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct challenge/details invite, send the approved bio link in the draft.
+- Keep the link handoff light, not a brochure: stoked they are keen, here's the link, it has the quick info on the challenge and how the app works, check it out and download the app, then come back to Shannon here to chat through it.
 - Frame it as a free challenge with Shannon check-ins and app structure. Mention XP, leaderboard, or the $1,000 first-place cash prize only when they ask what is included or need the fuller rundown. Paid coaching comes later if the 30 days help.
 - If they only ask a general help question and have not asked for challenge details/link, do not send the link yet. Reply to the question and ask a low-pressure permission question if the challenge might fit.
 - If they ask whether it is local/in-person or mention they already have a PT/trainer, do not send the link yet. Answer that the challenge support is online through Balance and check whether that would still suit them.`;
@@ -1015,21 +1015,18 @@ function buildChallengeNextStepBlock(qualifier) {
 FREE CHALLENGE ACCEPTED NEXT STEP:
 They have accepted the free 30-day Balance Challenge. Do NOT ask more qualifier/intake questions in this reply.
 Your reply should:
-- Give the quick app rundown before any link handoff: Shannon built Balance this year, the app helps set up workouts/meals, their little character levels up, and logging workouts, meals, weigh-ins, lessons, check-ins, and progress actions earns XP.
-- Explain simply that the 30 days is about stacking consistent actions, building XP, and climbing the leaderboard.
-- Explain simply that entry is free for new starters.
-- Mention Shannon can edit/tweak the plan if needed after they sign up.
-- Mention Shannon checks in Mon/Wed/Fri, and Friday is the weekly review/check-in.
-- Mention the $1,000 first-place prize only if it feels natural or they asked what is included.
-- Do not include the signup URL in this draft. This is a Shannon-review onboarding handoff, not an auto-sendable link drop.
-- Keep it casual and direct, ending with a clear handoff like "I'll send the link through for you now" without the URL.
+- Send this link: ${url}
+- Keep the explanation tiny: the link has quick info on the challenge and how the Balance app works.
+- Say the app is a little different, so they should check it out, download it, then come back to Shannon here and chat through it.
+- Use the vibe: "yeah sounds so good, stoked you're keen for the challenge" rather than a brochure.
+- Do it in 2-3 short bubbles, not one paragraph.
 Do not offer to manually write a meal plan or workout program in DMs before signup.`;
     }
     if (qualifier.stage === 'pitched') {
         return `
 
 FREE CHALLENGE OFFER PITCHED:
-The free 30-day Balance Challenge has already been offered. If they sound keen or ask how to start, give a compact app explainer before the link handoff. Keep the explainer tight: Balance gives them the plan, their little character levels up from logged actions, and Shannon checks in. Only mention leaderboard/prize if they ask what is included. Do not include the signup URL; route that next step for Shannon review. If they are still unsure, answer the concern and keep it easy.`;
+The free 30-day Balance Challenge has already been offered. If they sound keen, ask for details/link, ask how to start, or reply positively with "yes / sounds good / keen", send this link: ${url}. Keep the handoff tight in 2-3 bubbles: stoked they are keen, here's the link, it has the quick challenge/app info, check it out and download the app, then come back here to chat through it. If they are still unsure, answer the concern and keep it easy.`;
     }
     if (hasEarnedChallengeInviteMoment({ qualifier })) {
         return `
@@ -1040,8 +1037,18 @@ This unlinked lead has enough relationship and goal/blocker context, plus at lea
     return '';
 }
 
-function buildChallengeOfferWarning({ draftText, qualifier }) {
+function buildChallengeOfferWarning({ draftText, qualifier, currentMessage } = {}) {
     if (!isChallengeOfferWarningText(draftText)) return null;
+    if (isApprovedChallengeBioHandoffAllowed({ draftText, qualifier, currentMessage })) {
+        return {
+            required: false,
+            code: 'approved_challenge_bio_link',
+            dot: '🟢',
+            label: 'approved challenge bio link',
+            reason: 'Draft uses the approved bio link after the lead accepted or asked for the challenge next step.',
+            detected_at: new Date().toISOString(),
+        };
+    }
     const route = ['vegan', 'generic'].includes(qualifier?.challenge_route)
         ? qualifier.challenge_route
         : 'undecided';
@@ -1065,7 +1072,22 @@ function buildChallengeOfferWarning({ draftText, qualifier }) {
 function isSignupLinkHandoffText(text) {
     const s = String(text || '').toLowerCase();
     if (!s) return false;
-    return /https?:\/\/|future-balance\.netlify\.app|coaching\.html|plantbased-balance\.org\/transform-challenge|apps\.apple\.com\/app\/balance-fitness-gamified|here'?s the link|here is the link|jump in here|get signed up|sign up here|signup here|you can jump in here/i.test(s);
+    return /https?:\/\/|future-balance\.netlify\.app|coaching\.html|plantbased-balance\.org\/bio\.html|plantbased-balance\.org\/transform-challenge|apps\.apple\.com\/app\/balance-fitness-gamified|here'?s the link|here is the link|jump in here|get signed up|sign up here|signup here|you can jump in here/i.test(s);
+}
+
+function isApprovedChallengeBioLinkText(text) {
+    return /https?:\/\/(?:www\.)?plantbased-balance\.org\/bio\.html\b/i.test(String(text || ''));
+}
+
+function isPositiveChallengeLinkConfirmationText(text) {
+    return /\b(?:yes|yeah|yea|yep|sure|please|pls|sounds good|sounds so good|keen|okay|ok|sweet|let'?s do it|lets do it|do it)\b/i.test(String(text || ''));
+}
+
+function isApprovedChallengeBioHandoffAllowed({ draftText, qualifier, currentMessage } = {}) {
+    if (!isApprovedChallengeBioLinkText(draftText)) return false;
+    if (qualifier?.stage === 'won') return true;
+    if (hasChallengeInviteReadinessSignal(currentMessage)) return true;
+    return qualifier?.stage === 'pitched' && isPositiveChallengeLinkConfirmationText(currentMessage);
 }
 
 function isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId } = {}) {
@@ -1074,11 +1096,32 @@ function isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId } = {}) 
     return !['in_app', 'paying', 'churned'].includes(stage);
 }
 
-function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linkedUserId, threadId, manychatMessageId }) {
+function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linkedUserId, threadId, manychatMessageId, currentMessage }) {
     if (!isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId })) return null;
     const draftHasLinkDrop = isSignupLinkHandoffText(draftText);
     const acceptedChallenge = qualifier?.stage === 'won';
     if (!draftHasLinkDrop && !acceptedChallenge) return null;
+
+    if (isApprovedChallengeBioHandoffAllowed({ draftText, qualifier, currentMessage })) {
+        return {
+            lead_onboarding_handoff: false,
+            needs_you_required: false,
+            operator_queue: null,
+            style_note: 'Approved bio link handoff can send once the lead has accepted or asked for the challenge next step.',
+            signup_link_manual_only: false,
+            signup_link_handoff_url: ONE_ON_ONE_COACHING_URL,
+            approved_link_auto_sendable: true,
+            codex_review: {
+                source: 'ig-instant-draft',
+                decision: 'approved_challenge_bio_link_handoff',
+                queue: null,
+                needs_shannon_approval: false,
+                reason: 'Approved bio link handoff is allowed for this accepted/ready lead.',
+                evidence_ids: [threadId ? `ig_threads:${threadId}` : '', manychatMessageId ? `manychat_message_id:${manychatMessageId}` : ''].filter(Boolean),
+                reviewed_at: new Date().toISOString(),
+            },
+        };
+    }
 
     const reason = draftHasLinkDrop
         ? 'Draft contains a signup/invite link handoff; Shannon must approve or send it manually.'
@@ -1089,7 +1132,7 @@ function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linke
         lead_onboarding_handoff: true,
         needs_you_required: true,
         operator_queue: 'needs_you',
-        style_note: 'Lead is ready for the Balance/app link step. Give the short app rundown first and let Shannon approve/send the actual link manually.',
+        style_note: 'Lead is ready for a non-approved Balance/app link step. Give the short app rundown first and let Shannon approve/send the actual link manually.',
         signup_link_manual_only: true,
         signup_link_handoff_url: ONE_ON_ONE_COACHING_URL,
         codex_review: {
@@ -2991,7 +3034,7 @@ exports.handler = async (event) => {
         userId: thread.linked_user_id,
         leadStage: effectiveLeadStage,
     });
-    let challengeOfferWarning = buildChallengeOfferWarning({ draftText: draft.joined, qualifier });
+    let challengeOfferWarning = buildChallengeOfferWarning({ draftText: draft.joined, qualifier, currentMessage: displayMessage });
     const leadOnboardingHandoffData = buildLeadOnboardingHandoffData({
         draftText: draft.joined,
         qualifier,
@@ -2999,8 +3042,9 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id,
         threadId: thread.id,
         manychatMessageId,
+        currentMessage: displayMessage,
     });
-    if (leadOnboardingHandoffData) {
+    if (leadOnboardingHandoffData?.needs_you_required) {
         challengeOfferWarning = {
             ...(challengeOfferWarning || {}),
             required: true,
@@ -3450,7 +3494,7 @@ exports.handler = async (event) => {
                         };
                         draftReview = repairedReview;
                         effectiveContextReview = repairedReviewResult?.contextReview || contextReview;
-                        challengeOfferWarning = buildChallengeOfferWarning({ draftText: draft.joined, qualifier });
+                        challengeOfferWarning = buildChallengeOfferWarning({ draftText: draft.joined, qualifier, currentMessage: displayMessage });
                         const repairMeta = {
                             status: 'accepted',
                             repaired_at: new Date().toISOString(),

@@ -4692,7 +4692,7 @@ function normalizeDraftReviewPayload(value) {
 
 const LEAD_STORY_REPLY_CONTEXT_RE = /\b(?:replied to their story|story media attached|native story opener|story\/content context|story opener already used)\b/i;
 const LEAD_NEXT_QUESTION_RE = /\?|\b(?:what|how|where|when|why|who|are you|do you|did you|have you|would you|tell me|curious|reckon|ever tried|ever used)\b/i;
-const LEAD_NEXT_INVITE_RE = /\b(?:challenge|30\s*day|30-day|free coaching|send (?:you )?(?:the )?(?:details|link)|want me to send|jump in|join|start|sign up|coaching\.html|future-balance)\b/i;
+const LEAD_NEXT_INVITE_RE = /\b(?:challenge|30\s*day|30-day|free coaching|send (?:you )?(?:the )?(?:details|link)|want me to send|jump in|join|start|sign up|bio\.html|plantbased-balance|coaching\.html|future-balance)\b/i;
 const LEAD_INTENTIONAL_CLOSE_RE = /\b(?:bye|byeee+|goodnight|sleep well|have a nice day|have a good day|enjoy(?: your)?(?: day| night| trip| weekend)?|no worries|all good|you're welcome|you are welcome|thanks|thank you|appreciate it|talk soon|catch you)\b/i;
 const LEAD_LOW_SIGNAL_INBOUND_RE = /^\s*(?:yep|yup|yes|yeah|yea|nah|no|ok|okay|haha+|lol|lmao|thanks|thank you|ta|cheers|cool|nice|sweet|true|fair|[^\w]+)\s*$/i;
 const LEAD_HIGH_RISK_CONTEXT_RE = /\b(?:grief|passed away|died|death|funeral|trauma|panic|depression|self harm|suicide|pregnan|eating disorder|binge|abuse|animal cruelty|cruelty)\b/i;
@@ -4952,7 +4952,7 @@ Block and set notification_required=true when:
 - the tracked ManyChat/IG context looks incomplete enough that Shannon should open the native DM before sending;
 - the draft invents an action, fact, promise, or source evidence that is not in the context.
 
-For unlinked acquisition leads, do not block, notify, or mark manual-only just because they mention old injury, surgery, rehab, hospital, or pain history. That is normal rapport if the draft stays light, non-medical, and does not pitch the challenge off their vulnerability. Block or warn only when the latest turn asks for current pain, symptoms, rehab/training/treatment advice, diagnosis, pregnancy, eating/body-image risk, crisis/safety support, or when the draft gives medical/rehab advice.
+For unlinked acquisition leads, do not block, notify, or mark manual-only just because they mention old injury, surgery, rehab, hospital, or pain history. That is normal rapport if the draft stays light, non-medical, and does not pitch the challenge off their vulnerability. Also do not mark the approved bio-link handoff manual-only when a lead has accepted the challenge or asked for the link/details/how to start; the approved link is https://plantbased-balance.org/bio.html. Block or warn only when the latest turn asks for current pain, symptoms, rehab/training/treatment advice, diagnosis, pregnancy, eating/body-image risk, crisis/safety support, or when the draft gives medical/rehab advice.
 Do not block just because the older timeline contains a different unresolved topic if the clearly labelled latest inbound message is answered naturally. Treat details as grounded when they appear anywhere in the labelled latest message, including near the ending of a long message.
 Do not block just because the draft also answers prior unanswered messages from the same recent inbound burst. If Shannon has not replied between those inbound messages and the draft naturally answers the newest message, treat the burst as one conversational turn.
 
