@@ -734,6 +734,128 @@ function splitPlainDraftIntoChunks(text, maxChunks = MAX_CHUNKS) {
     return [trimmed];
 }
 
+function finalizeDraftChunksFromRawText(rawText, {
+    maxChunks = MAX_CHUNKS,
+    leadName = '',
+    currentMessageText = '',
+    qualifier = null,
+    nativeStoryContextSummary = null,
+    hasDecodedMedia = false,
+    allowDailyGreeting = false,
+} = {}) {
+    const parsed = parseDraftChunks(rawText, maxChunks);
+    const baseChunks = Array.isArray(parsed.chunks) ? parsed.chunks : [];
+    const cleaned = splitCoachDraftIntoDmBubbles(
+        suppressPetSpeciesGuessingInDraftChunks(baseChunks, {
+            currentMessageText,
+            qualifier,
+            nativeStoryContextSummary,
+        })
+            .map(c => stripObviousMediaReceiptPreamble(c, { hasDecodedMedia }))
+            .map((c, i) => i === 0
+                ? stripLeadingGreeting(c, leadName, { allowGreeting: allowDailyGreeting })
+                : stripLeadingGreeting(c, leadName))
+            .filter(Boolean)
+    );
+    if (cleaned.length) return cleaned.slice(0, maxChunks);
+
+    // Never let a non-empty model response become a blank Needs You card.
+    // If a conservative cleaner stripped the whole thing, keep the model's
+    // draft and let Shannon's approval/review gate catch the nuance.
+    const unfiltered = splitCoachDraftIntoDmBubbles(
+        baseChunks
+            .map(c => stripObviousMediaReceiptPreamble(c, { hasDecodedMedia }))
+            .map((c, i) => i === 0
+                ? stripLeadingGreeting(c, leadName, { allowGreeting: allowDailyGreeting })
+                : stripLeadingGreeting(c, leadName))
+            .filter(Boolean)
+    );
+    return unfiltered.slice(0, maxChunks);
+}
+
+function buildEmptyMediaDraftFallbackChunks({ mediaDecode = {}, currentMessageText = '' } = {}) {
+    const current = replaceIgMediaMarkers(String(currentMessageText || ''), { photo: 'photo', audio: 'voice note', video: 'video' }).toLowerCase();
+    const audioCount = Number(mediaDecode.audio_url_count || mediaDecode.audioUrlCount || 0);
+    const photoCount = Number(mediaDecode.photo_url_count || mediaDecode.image_url_count || mediaDecode.photoUrlCount || 0);
+    const videoCount = Number(mediaDecode.video_url_count || mediaDecode.videoUrlCount || 0);
+    if (audioCount > 0 || /\bvoice note|audio\b/.test(current)) {
+        return ['i got your voice note but it didn\'t come through clearly on my end. can you send me the gist quickly?'];
+    }
+    if (photoCount > 0 || /\bphoto|image|pic|picture\b/.test(current)) {
+        return ['that photo didn\'t come through clearly on my end. can you send it again?'];
+    }
+    if (videoCount > 0 || /\bvideo|reel|clip\b/.test(current)) {
+        return ['that video didn\'t come through clearly on my end. can you send it again or type the gist?'];
+    }
+    return [];
+}
+
+async function generateMediaRecoveryDraft({
+    mediaParts,
+    mediaDecode,
+    leadName,
+    channelLabel,
+    currentMessageText,
+    totalConversationText,
+    lastShannonText = '',
+    replyMode,
+    allowDailyGreeting,
+    qualifier,
+    nativeStoryContextSummary,
+} = {}) {
+    if (!Array.isArray(mediaParts) || mediaParts.length === 0) return { chunks: [], rawText: '', model: null, error: null };
+    const prompt = `The full drafting prompt returned an empty reply. Draft the actual next ${channelLabel || 'IG'} DM now.
+
+Lead: ${leadName || 'Lead'}
+Latest message marker: ${replaceIgMediaMarkers(currentMessageText || '', { photo: 'photo', audio: 'voice note', video: 'video' })}
+${lastShannonText ? `Shannon's previous message: ${truncate(lastShannonText, 260)}\n` : ''}
+Conversation context, oldest to newest:
+${truncateTail(totalConversationText || '(no prior tracked context)', 2600)}
+
+Attached media below is from the latest unanswered inbound batch. If a voice note is attached, listen to it and reply to what they said. Do not transcribe it. Do not say you listened to, heard, opened, checked, saw, or watched the media. If the media is genuinely not understandable, write one casual message asking them to resend it or type the gist.
+
+Write in Shannon's casual lowercase texting voice. Keep it short unless the audio asks for detailed help. No AI/automation wording. No em-dashes.
+
+JSON only:
+{"messages":["exact DM text"]}`;
+    const contents = [{ role: 'user', parts: [{ text: prompt }, ...mediaParts] }];
+    const generationConfig = {
+        maxOutputTokens: Math.max(1024, Math.min(Number(replyMode?.maxOutputTokens) || 1536, 2048)),
+        temperature: 0.65,
+    };
+    let lastError = null;
+    for (const attempt of [
+        { label: 'gemini-media-retry', call: () => callGeminiFallback(contents, generationConfig) },
+        { label: 'vertex-gemini-media-retry', call: () => callVertexGeminiMultimodal(contents, generationConfig) },
+    ]) {
+        try {
+            const rawText = requireNonEmptyDraftText(await attempt.call(), attempt.label);
+            const chunks = finalizeDraftChunksFromRawText(rawText, {
+                maxChunks: replyMode?.maxChunks || MAX_CHUNKS,
+                leadName,
+                currentMessageText,
+                qualifier,
+                nativeStoryContextSummary,
+                hasDecodedMedia: true,
+                allowDailyGreeting,
+            });
+            if (chunks.length) return { chunks, rawText, model: attempt.label, error: lastError };
+            lastError = `${attempt.label}: empty parsed draft`;
+        } catch (err) {
+            lastError = `${attempt.label}: ${String(err.message || err).slice(0, 200)}`;
+            console.warn('[ig-draft] media recovery draft failed:', lastError);
+        }
+    }
+    const fallbackChunks = buildEmptyMediaDraftFallbackChunks({ mediaDecode, currentMessageText });
+    return {
+        chunks: fallbackChunks,
+        rawText: '',
+        model: fallbackChunks.length ? 'safe-media-fallback' : null,
+        error: lastError,
+        usedFallback: fallbackChunks.length > 0,
+    };
+}
+
 async function loadThread(threadId) {
     const rows = await supabaseQuery(
         `ig_threads?select=id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,custom_data,goals,communication_style,running_notes,injuries_limits,personal_context,coach_instructions,qualifier,auto_send_enabled&id=eq.${threadId}&limit=1`
@@ -2083,19 +2205,72 @@ Rules:
         }
     }
 
-    const parsed = parseDraftChunks(rawText, replyMode.maxChunks);
     const hasDecodedMedia = mediaParts.length > 0;
-    // Allow the one daily opener only on the first chunk; keep later chunks clean.
-    const cleanedChunks = splitCoachDraftIntoDmBubbles(
-        suppressPetSpeciesGuessingInDraftChunks(parsed.chunks, {
+    let emptyDraftRecovery = null;
+    let cleanedChunks = finalizeDraftChunksFromRawText(rawText, {
+        maxChunks: replyMode.maxChunks,
+        leadName,
+        currentMessageText,
+        qualifier,
+        nativeStoryContextSummary: nativeStoryOutreachContext?.summary || null,
+        hasDecodedMedia,
+        allowDailyGreeting,
+    });
+    if (!cleanedChunks.length && hasInlineMedia) {
+        const lastShannonConversationEvent = [...mergedConversationEvents].reverse()
+            .find(event => event.speaker === 'Shannon');
+        const recovery = await generateMediaRecoveryDraft({
+            mediaParts,
+            mediaDecode,
+            leadName,
+            channelLabel,
             currentMessageText,
+            totalConversationText,
+            lastShannonText: lastShannonConversationEvent?.text || '',
+            replyMode,
+            allowDailyGreeting,
             qualifier,
             nativeStoryContextSummary: nativeStoryOutreachContext?.summary || null,
-        })
-            .map(c => stripObviousMediaReceiptPreamble(c, { hasDecodedMedia }))
-            .map((c, i) => i === 0 ? stripLeadingGreeting(c, leadName, { allowGreeting: allowDailyGreeting }) : stripLeadingGreeting(c, leadName))
-            .filter(Boolean)
-    );
+        });
+        if (recovery.chunks.length) {
+            cleanedChunks = recovery.chunks;
+            const baseModel = String(model || 'none');
+            model = recovery.usedFallback
+                ? `${baseModel}+safe-media-fallback`
+                : `${baseModel}+${recovery.model || 'media-retry'}`;
+            emptyDraftRecovery = {
+                recovered: true,
+                via: recovery.usedFallback ? 'safe_media_fallback' : 'media_retry',
+                model: recovery.model || null,
+                error: recovery.error || null,
+                recovered_at: new Date().toISOString(),
+            };
+            if (recovery.error) {
+                lastError = `${lastError ? lastError + ' | ' : ''}${recovery.error}`;
+            }
+        } else {
+            emptyDraftRecovery = {
+                recovered: false,
+                via: 'media_retry',
+                error: recovery.error || 'empty_media_recovery',
+                recovered_at: new Date().toISOString(),
+            };
+        }
+    }
+    if (!cleanedChunks.length) {
+        const fallbackChunks = buildEmptyMediaDraftFallbackChunks({ mediaDecode, currentMessageText });
+        if (fallbackChunks.length) {
+            cleanedChunks = fallbackChunks;
+            model = `${String(model || 'none')}+safe-media-fallback`;
+            emptyDraftRecovery = {
+                recovered: true,
+                via: 'safe_media_fallback',
+                model: null,
+                error: lastError || 'empty_draft_after_generation',
+                recovered_at: new Date().toISOString(),
+            };
+        }
+    }
     const shadowDraftInput = (model === 'vertex-v7' && !hasInlineMedia) ? {
         contents: textContents,
         generationConfig,
@@ -2125,6 +2300,7 @@ Rules:
         storyReplyPromptContextBlock,
         nativeStoryOutreachContextBlock: nativeStoryOutreachContext?.block || '',
         mediaContextPromptBlock,
+        emptyDraftRecovery,
     };
 }
 
@@ -2909,6 +3085,7 @@ exports.handler = async (event) => {
             // Diagnostics so we can see from the DB why a draft failed
             // without needing Netlify function logs.
             draft_error: draft.error || null,
+            empty_draft_recovery: draft.emptyDraftRecovery || null,
             image_url_count: draft.urlCount || 0,
             image_inline_count: draft.imageCount || 0,
             audio_url_count: draft.audioUrlCount || 0,
@@ -3032,6 +3209,7 @@ exports.handler = async (event) => {
             drafted_at: new Date().toISOString(),
             coalesced_count: newCount,
             draft_error: draft.error || null,
+            empty_draft_recovery: draft.emptyDraftRecovery || null,
             image_url_count: draft.urlCount || 0,
             image_inline_count: draft.imageCount || 0,
             audio_url_count: draft.audioUrlCount || 0,
@@ -3636,4 +3814,6 @@ exports._test = {
     reviewLooksLikePureContextGap,
     isSignupLinkHandoffText,
     buildLeadOnboardingHandoffData,
+    finalizeDraftChunksFromRawText,
+    buildEmptyMediaDraftFallbackChunks,
 };

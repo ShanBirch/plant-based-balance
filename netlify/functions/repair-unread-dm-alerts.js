@@ -10,6 +10,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
+const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 
 function isUuid(value) {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || ''));
@@ -86,6 +87,47 @@ async function execSqlJson(sql) {
 
 function mergeData(existing, patch) {
     return { ...((existing && typeof existing === 'object') ? existing : {}), ...patch };
+}
+
+async function requestBlankDraftRepair(row) {
+    const nowIso = new Date().toISOString();
+    const data = mergeData(row.alert_data, {
+        blank_draft_repair_requested_at: nowIso,
+        blank_draft_repair_via: 'repair-unread-dm-alerts',
+        blank_draft_repair_message_id: row.manychat_message_id || row.message_id || null,
+    });
+
+    await supabase(`coach_alerts?id=eq.${row.alert_id}&status=eq.pending`, {
+        method: 'PATCH',
+        body: { data },
+        prefer: 'return=minimal',
+    });
+
+    const repairMessageId = row.manychat_message_id || `repair:${row.message_id || row.alert_id}`;
+    const dispatch = fetch(`${SITE_URL}/.netlify/functions/ig-instant-draft-background`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            threadId: row.thread_id,
+            messageText: row.message_text || row.message_preview || '',
+            manychatMessageId: repairMessageId,
+        }),
+    });
+    const result = await Promise.race([
+        dispatch,
+        new Promise(resolve => setTimeout(() => resolve(null), 1200)),
+    ]);
+    if (result && !result.ok) {
+        const text = await result.text().catch(() => '');
+        throw new Error(`draft repair handoff ${result.status}: ${text.slice(0, 220)}`);
+    }
+    return {
+        id: row.alert_id,
+        thread_id: row.thread_id,
+        message_id: row.message_id || null,
+        manychat_message_id: row.manychat_message_id || null,
+        dispatched: true,
+    };
 }
 
 exports.handler = async (event) => {
@@ -254,6 +296,54 @@ SELECT *
 FROM candidates
 ORDER BY last_inbound_at DESC`;
 
+    const blankDraftCandidateSql = `${threadStateCtes},
+latest_inbound AS (
+    SELECT DISTINCT ON (thread_id)
+        id AS message_id,
+        thread_id,
+        text AS message_text,
+        manychat_message_id,
+        created_at AS message_created_at
+    FROM public.ig_messages
+    WHERE direction = 'in'
+    ORDER BY thread_id, created_at DESC
+),
+blank_pending AS (
+    SELECT
+        ca.id AS alert_id,
+        ca.data AS alert_data,
+        ca.created_at AS alert_created_at,
+        ca.data->>'ig_thread_id' AS thread_id,
+        ca.data->>'message_preview' AS message_preview,
+        li.message_id,
+        li.message_text,
+        li.manychat_message_id,
+        li.message_created_at,
+        ts.last_inbound_at,
+        ts.effective_last_outbound_at
+    FROM public.coach_alerts ca
+    JOIN thread_state ts ON ca.data->>'ig_thread_id' = ts.thread_id::text
+    JOIN latest_inbound li ON li.thread_id = ts.thread_id
+    WHERE ca.alert_type IN ('ig_incoming_dm', 'fb_incoming_dm')
+      AND ca.status = 'pending'
+      AND ca.data ? 'ig_thread_id'
+      AND ts.last_inbound_at IS NOT NULL
+      AND (ts.effective_last_outbound_at IS NULL OR ts.last_inbound_at > ts.effective_last_outbound_at)
+      AND COALESCE(NULLIF(BTRIM(ca.suggested_message), ''), NULLIF(BTRIM(ca.data->>'draft_text'), '')) IS NULL
+      AND BTRIM(COALESCE(li.message_text, ca.data->>'message_preview', '')) <> ''
+      AND (
+        ca.data->>'blank_draft_repair_requested_at' IS NULL
+        OR (ca.data->>'blank_draft_repair_requested_at')::timestamptz < NOW() - INTERVAL '5 minutes'
+      )
+      AND COALESCE(ts.profile_name, '') <> 'Shannon Birch'
+      AND COALESCE(ts.ig_username, '') <> 'cocos_pt_studio'
+    ORDER BY li.message_created_at DESC
+    LIMIT 20
+)
+SELECT *
+FROM blank_pending
+ORDER BY message_created_at DESC`;
+
     try {
         const staleThreads = await execSqlJson(staleThreadSql);
         const syncedThreads = [];
@@ -345,6 +435,16 @@ ORDER BY last_inbound_at DESC`;
             }
         }
 
+        const blankDraftCandidates = await execSqlJson(blankDraftCandidateSql);
+        const blankDraftRepairs = [];
+        for (const row of blankDraftCandidates) {
+            try {
+                blankDraftRepairs.push(await requestBlankDraftRepair(row));
+            } catch (e) {
+                console.warn('[repair-unread-dm-alerts] blank draft repair dispatch failed:', row.alert_id, e.message);
+            }
+        }
+
         return {
             statusCode: 200,
             body: JSON.stringify({
@@ -352,9 +452,11 @@ ORDER BY last_inbound_at DESC`;
                 syncedThreadCount: syncedThreads.length,
                 resolvedCount: resolved.length,
                 restoredCount: restored.length,
+                blankDraftRepairCount: blankDraftRepairs.length,
                 syncedThreads: syncedThreads.map(t => ({ id: t.id, last_outbound_at: t.last_outbound_at })),
                 resolved,
                 restored,
+                blankDraftRepairs,
             }),
         };
     } catch (e) {

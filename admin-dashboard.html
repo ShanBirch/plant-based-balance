@@ -11737,6 +11737,9 @@
                 if (json.restoredCount > 0) {
                     console.log('[unread-repair] restored ' + json.restoredCount + ' unanswered DM alert(s)');
                 }
+                if (json.blankDraftRepairCount > 0) {
+                    console.log('[unread-repair] requested draft repair for ' + json.blankDraftRepairCount + ' blank DM alert(s)');
+                }
             } catch (e) {
                 console.warn('[unread-repair] failed:', e.message || e);
             }
