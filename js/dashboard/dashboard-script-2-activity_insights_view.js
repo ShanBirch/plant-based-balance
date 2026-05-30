@@ -82,6 +82,9 @@
 
             const strengthGains = _computeStrengthGains(exerciseHistory);
 
+            window._insightsStrengthGains = strengthGains;
+            window._insightsQuizData = quizData;
+
             renderStrengthProgress(strengthGains);
             renderInsightsCorrelations(strengthGains, weighIns, sleepData);
             renderEnergyBalance(nutritionDays, wearableCalories, weighIns, quizData);
@@ -106,6 +109,7 @@
 
             // Overview charts (in display order)
             renderBodyWeightGraph(weighIns, 'insights-bodyweight-container');
+            renderWeighInManager(weighIns);
             renderInsightsCaloriesBurned(document.getElementById('insights-calories-burned-container'), nutritionDays, weighIns, wearableCalories, 14);
             renderTotalIntakeGraph(nutritionDays, 'insights-daily-calories-container');
             renderInsightsSleep(sleepData, 14);
@@ -179,8 +183,9 @@
         const sortedWeighIns = [...weighIns].sort((a, b) => (a.weigh_in_date || '').localeCompare(b.weigh_in_date || ''));
 
         // Need minimum data
-        if (trackedDays.length < 7 || sortedWeighIns.length < 2) {
-            container.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Keep tracking meals and weigh-ins — need 7+ nutrition days & 2+ weigh-ins to calculate your real energy balance.</div>';
+        if (trackedDays.length < 3 || sortedWeighIns.length < 2) {
+            const trackedLabel = trackedDays.length > 0 ? trackedDays.length + '/7 days tracked' : '0/7 days tracked';
+            container.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Keep tracking meals and weigh-ins — need at least 3 nutrition days & 2+ weigh-ins to estimate your energy balance. Right now you have ' + trackedLabel + '.</div>';
             return;
         }
 
@@ -223,7 +228,7 @@
         html += '<div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 14px; padding: 14px; color: white; text-align: center;">';
         html += '<div style="font-size: 0.68rem; opacity: 0.8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Avg Calories In</div>';
         html += '<div style="font-size: 1.5rem; font-weight: 800;">' + avgCaloriesIn.toLocaleString() + '</div>';
-        html += '<div style="font-size: 0.7rem; opacity: 0.75;">per day (' + trackedDays.length + ' days)</div>';
+        html += '<div style="font-size: 0.7rem; opacity: 0.75;">tracked ' + trackedDays.length + '/7 days</div>';
         html += '</div>';
 
         // Real TDEE card
@@ -733,6 +738,209 @@
         return Math.round(val) + ' ' + unit;
     }
 
+    const INSIGHTS_VOLUME_AREAS = [
+        { key: 'all', label: 'All', color: '#3b82f6', soft: '#eff6ff' },
+        { key: 'chest', label: 'Chest', color: '#ef4444', soft: '#fef2f2' },
+        { key: 'back', label: 'Back', color: '#0ea5e9', soft: '#f0f9ff' },
+        { key: 'legs', label: 'Legs', color: '#10b981', soft: '#f0fdf4' },
+        { key: 'shoulders', label: 'Shoulders', color: '#f59e0b', soft: '#fffbeb' },
+        { key: 'core', label: 'Core', color: '#8b5cf6', soft: '#f5f3ff' }
+    ];
+
+    function _getInsightsVolumeArea(key) {
+        return INSIGHTS_VOLUME_AREAS.find(a => a.key === key) || INSIGHTS_VOLUME_AREAS[0];
+    }
+
+    function _normaliseExerciseLookupName(name) {
+        return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    function _normaliseVolumeArea(rawGroup) {
+        const group = _normaliseExerciseLookupName(rawGroup).replace(/[_-]/g, ' ');
+        if (!group) return null;
+        if (group.includes('chest') || group.includes('pec')) return 'chest';
+        if (group.includes('back') || group.includes('lat') || group.includes('pull')) return 'back';
+        if (group.includes('shoulder') || group.includes('delt')) return 'shoulders';
+        if (group.includes('core') || group.includes('ab') || group.includes('oblique')) return 'core';
+        if (group.includes('leg') || group.includes('glute') || group.includes('quad') || group.includes('hamstring') || group.includes('calf') || group.includes('lower')) return 'legs';
+        return 'other';
+    }
+
+    function _classifyExerciseVolumeArea(exerciseName, customMuscleMap) {
+        const name = _normaliseExerciseLookupName(exerciseName);
+        const customArea = _normaliseVolumeArea(customMuscleMap && customMuscleMap[name]);
+        if (customArea && customArea !== 'other') return customArea;
+        if (!name) return customArea || 'other';
+
+        if (/\b(chest|pec|push[- ]?up|press[- ]?up)\b/.test(name)) return 'chest';
+        if (/\b(bench press|floor press|incline press|decline press|chest press|chest fly|cable fly|dumbbell fly|db fly)\b/.test(name) && !/\b(reverse|rear)\b/.test(name)) return 'chest';
+        if (/\b(back|lat|row|pulldown|pull[- ]?down|pull[- ]?up|pullup|chin[- ]?up|chinup|renegade row)\b/.test(name)) return 'back';
+        if (/\b(shoulder|delt|lateral raise|front raise|rear delt|overhead press|arnold press|military press|upright row|face pull|reverse fly)\b/.test(name)) return 'shoulders';
+        if (/\b(ab|abs|core|crunch|plank|oblique|sit[- ]?up|russian twist|dead bug|hollow hold|bird dog|mountain climber|leg raise|knee raise|pallof)\b/.test(name)) return 'core';
+        if (/\b(squat|lunge|leg|quad|hamstring|calf|deadlift|rdl|romanian deadlift|hip thrust|glute|kickback|step[- ]?up|split squat|leg press)\b/.test(name)) return 'legs';
+        return customArea || 'other';
+    }
+
+    function _addDaysToDateStr(dateStr, days) {
+        const d = new Date(dateStr + 'T12:00:00');
+        d.setDate(d.getDate() + days);
+        return d.toISOString().split('T')[0];
+    }
+
+    function _buildContinuousWeekRange(firstWeek, lastWeek) {
+        const weeks = [];
+        const d = new Date(firstWeek + 'T12:00:00');
+        const end = new Date(lastWeek + 'T12:00:00');
+        while (d <= end) {
+            weeks.push(d.toISOString().split('T')[0]);
+            d.setDate(d.getDate() + 7);
+        }
+        return weeks;
+    }
+
+    function _getSetVolumeKg(row) {
+        if (!row || !row.weight_kg || parseFloat(row.weight_kg) <= 0) return 0;
+        const reps = Math.max(_parseRepsVal(row.reps), 1);
+        return parseFloat(row.weight_kg) * reps;
+    }
+
+    function _sumVolumeRows(rows, selectedArea, customMuscleMap, startDate, endDate) {
+        let total = 0;
+        for (const row of rows || []) {
+            if (!row.workout_date || row.workout_date < startDate || row.workout_date > endDate) continue;
+            const area = _classifyExerciseVolumeArea(row.exercise_name, customMuscleMap);
+            if (selectedArea !== 'all' && area !== selectedArea) continue;
+            total += _getSetVolumeKg(row);
+        }
+        return total;
+    }
+
+    function _buildVolumeAggregation(rows, customMuscleMap) {
+        const byAreaWeek = { all: {}, chest: {}, back: {}, legs: {}, shoulders: {}, core: {}, other: {} };
+        for (const row of rows || []) {
+            const vol = _getSetVolumeKg(row);
+            if (!vol || !row.workout_date) continue;
+            const weekStart = _getWeekStart(row.workout_date);
+            const area = _classifyExerciseVolumeArea(row.exercise_name, customMuscleMap);
+            byAreaWeek.all[weekStart] = (byAreaWeek.all[weekStart] || 0) + vol;
+            byAreaWeek[area] = byAreaWeek[area] || {};
+            byAreaWeek[area][weekStart] = (byAreaWeek[area][weekStart] || 0) + vol;
+        }
+        return byAreaWeek;
+    }
+
+    function _renderVolumeAreaChips(selectedArea) {
+        return '<div style="display:flex;gap:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 12px;margin-bottom:4px;">'
+            + INSIGHTS_VOLUME_AREAS.map(area => {
+                const active = area.key === selectedArea;
+                return '<button type="button" onclick="setInsightsVolumeArea(\'' + area.key + '\')"'
+                    + ' style="border:1px solid ' + (active ? area.color : '#e2e8f0') + ';background:' + (active ? area.color : 'white') + ';color:' + (active ? 'white' : '#64748b') + ';border-radius:999px;padding:7px 12px;font-size:0.72rem;font-weight:800;white-space:nowrap;box-shadow:' + (active ? '0 6px 14px rgba(15,23,42,0.12)' : 'none') + ';">'
+                    + area.label + '</button>';
+            }).join('')
+            + '</div>';
+    }
+
+    function _renderVolumeProgressVerdict(selectedArea, byAreaWeek, displayWeeks, rows, customMuscleMap, preferLbs) {
+        const area = _getInsightsVolumeArea(selectedArea);
+        const currentWeekStart = _getWeekStart(new Date().toISOString().split('T')[0]);
+        const completedWeeks = displayWeeks.filter(w => w < currentWeekStart);
+        const selectedByWeek = byAreaWeek[selectedArea] || {};
+        const lastCompleted = completedWeeks[completedWeeks.length - 1];
+        const priorWeeks = completedWeeks.slice(Math.max(0, completedWeeks.length - 5), Math.max(0, completedWeeks.length - 1));
+        const priorVals = priorWeeks.map(w => selectedByWeek[w] || 0);
+        const priorNonZero = priorVals.filter(v => v > 0);
+        const lastVol = lastCompleted ? (selectedByWeek[lastCompleted] || 0) : 0;
+        const todayStr = new Date().toISOString().split('T')[0];
+        const currentWeekSoFar = _sumVolumeRows(rows, selectedArea, customMuscleMap, currentWeekStart, todayStr);
+
+        let title = 'Keep logging';
+        let body = selectedArea === 'all'
+            ? 'A few more completed weeks will make your strength trend clearer.'
+            : area.label + ' needs a few more logged weeks before Balance calls a trend.';
+        let color = '#64748b';
+        let soft = '#f8fafc';
+
+        if (lastCompleted && priorWeeks.length >= 2) {
+            const priorAvg = priorVals.reduce((s, v) => s + v, 0) / priorVals.length;
+            if (priorAvg <= 0 && lastVol > 0) {
+                title = 'Back in the mix';
+                body = area.label + ' logged ' + _fmtVolume(lastVol, preferLbs) + ' last completed week after a quiet run.';
+                color = '#10b981';
+                soft = '#f0fdf4';
+            } else if (priorAvg <= 0 && lastVol <= 0 && priorNonZero.length === 0) {
+                title = 'No recent signal yet';
+                body = selectedArea === 'all'
+                    ? 'No completed-week lifting volume in this window yet.'
+                    : 'No recent completed-week ' + area.label.toLowerCase() + ' volume yet.';
+            } else {
+                const pct = priorAvg > 0 ? ((lastVol - priorAvg) / priorAvg) * 100 : 0;
+                const pctText = Math.abs(Math.round(pct)) + '%';
+                if (pct >= 60) {
+                    title = 'Big jump';
+                    body = area.label + ' was ' + pctText + ' above your 4-week average. Good work, just watch recovery.';
+                    color = '#f97316';
+                    soft = '#fff7ed';
+                } else if (pct >= 10) {
+                    title = 'Progressing';
+                    body = area.label + ' was ' + pctText + ' above your 4-week average last completed week.';
+                    color = '#10b981';
+                    soft = '#f0fdf4';
+                } else if (pct <= -20) {
+                    title = 'Dropping';
+                    body = area.label + ' was ' + pctText + ' below your 4-week average last completed week.';
+                    color = '#f59e0b';
+                    soft = '#fffbeb';
+                } else {
+                    title = 'Steady';
+                    body = area.label + ' is sitting close to your recent average.';
+                    color = '#3b82f6';
+                    soft = '#eff6ff';
+                }
+            }
+        }
+
+        if (currentWeekSoFar > 0) {
+            body += ' This week so far: ' + _fmtVolume(currentWeekSoFar, preferLbs) + '.';
+        }
+
+        return '<div style="display:flex;gap:10px;align-items:flex-start;background:' + soft + ';border:1px solid rgba(15,23,42,0.06);border-radius:14px;padding:11px 12px;margin-bottom:12px;">'
+            + '<div style="width:9px;height:9px;border-radius:50%;background:' + color + ';margin-top:5px;flex-shrink:0;"></div>'
+            + '<div><div style="font-size:0.78rem;font-weight:900;color:' + color + ';margin-bottom:2px;">' + title + '</div>'
+            + '<div style="font-size:0.74rem;color:#475569;line-height:1.35;">' + body + '</div></div>'
+            + '</div>';
+    }
+
+    function _renderVolumeSplit(byAreaWeek, splitWeek, preferLbs) {
+        const areas = INSIGHTS_VOLUME_AREAS.filter(a => a.key !== 'all')
+            .concat([{ key: 'other', label: 'Other', color: '#64748b', soft: '#f8fafc' }]);
+        const total = byAreaWeek.all[splitWeek] || 0;
+        if (total <= 0) return '';
+
+        const items = areas
+            .map(area => Object.assign({}, area, { volume: (byAreaWeek[area.key] && byAreaWeek[area.key][splitWeek]) || 0 }))
+            .filter(area => area.volume > 0 || area.key !== 'other');
+        const maxVol = Math.max(...items.map(area => area.volume), 1);
+        const labelDate = new Date(splitWeek + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+        return '<div style="margin-top:14px;padding:12px;border-radius:14px;background:#f8fafc;border:1px solid #eef2f7;">'
+            + '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;">'
+            + '<div style="font-size:0.72rem;font-weight:900;color:#334155;text-transform:uppercase;letter-spacing:0.6px;">Body-part split</div>'
+            + '<div style="font-size:0.68rem;color:#64748b;font-weight:700;">Week of ' + labelDate + '</div>'
+            + '</div>'
+            + items.map(area => {
+                const width = area.volume > 0 ? Math.max(4, Math.round((area.volume / maxVol) * 100)) : 0;
+                const share = Math.round((area.volume / total) * 100);
+                return '<div style="display:grid;grid-template-columns:76px 1fr 64px;gap:8px;align-items:center;margin:7px 0;">'
+                    + '<div style="font-size:0.72rem;color:#475569;font-weight:800;white-space:nowrap;">' + area.label + '</div>'
+                    + '<div style="height:8px;background:#e2e8f0;border-radius:999px;overflow:hidden;">'
+                    + '<div style="height:100%;width:' + width + '%;background:' + area.color + ';border-radius:999px;"></div>'
+                    + '</div>'
+                    + '<div style="font-size:0.68rem;color:#64748b;font-weight:800;text-align:right;">' + (area.volume > 0 ? share + '%' : '-') + '</div>'
+                    + '</div>';
+            }).join('')
+            + '</div>';
+    }
+
     async function renderVolumeGraph(userId) {
         const container = document.getElementById('insights-volume-container');
         const headlineEl = document.getElementById('insights-volume-headline');
@@ -907,8 +1115,235 @@
             + svg + statsHtml;
     }
 
+    function _renderVolumeGraphFromRows(rows, customMuscleMap) {
+        const container = document.getElementById('insights-volume-container');
+        const headlineEl = document.getElementById('insights-volume-headline');
+        const sublineEl  = document.getElementById('insights-volume-subline');
+        if (!container) return;
+
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+        const selectedArea = _getInsightsVolumeArea(window._insightsVolumeSelectedArea || 'all').key;
+        window._insightsVolumeSelectedArea = selectedArea;
+
+        const byAreaWeek = _buildVolumeAggregation(rows, customMuscleMap);
+        const allWeeks = Object.keys(byAreaWeek.all).sort();
+        if (allWeeks.length === 0) {
+            if (headlineEl) headlineEl.textContent = '';
+            if (sublineEl) sublineEl.textContent = '';
+            container.innerHTML = _renderVolumeAreaChips(selectedArea)
+                + '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Log workouts with weights to see your weekly volume trend here.</div>';
+            return;
+        }
+
+        const currentWeekStart = _getWeekStart(new Date().toISOString().split('T')[0]);
+        const firstWeek = allWeeks[0] < currentWeekStart ? allWeeks[0] : currentWeekStart;
+        const displayWeeks = _buildContinuousWeekRange(firstWeek, currentWeekStart).slice(-12);
+        const selectedByWeek = byAreaWeek[selectedArea] || {};
+        const volumeKg = displayWeeks.map(w => selectedByWeek[w] || 0);
+        const n = displayWeeks.length;
+        const hasSelectedVolume = volumeKg.some(v => v > 0);
+        const areaMeta = _getInsightsVolumeArea(selectedArea);
+
+        if (!hasSelectedVolume) {
+            if (headlineEl) headlineEl.textContent = _fmtVolume(0, preferLbs);
+            if (sublineEl) sublineEl.textContent = selectedArea === 'all' ? 'No lifting volume in this window' : 'No ' + areaMeta.label.toLowerCase() + ' volume in this window';
+            container.innerHTML = _renderVolumeAreaChips(selectedArea)
+                + _renderVolumeProgressVerdict(selectedArea, byAreaWeek, displayWeeks, rows, customMuscleMap, preferLbs)
+                + '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">No ' + areaMeta.label.toLowerCase() + ' volume found in the last 12 weeks.</div>'
+                + _renderVolumeSplit(byAreaWeek, currentWeekStart, preferLbs);
+            return;
+        }
+
+        const latestVol = volumeKg[n - 1];
+        const prevVol = n >= 2 ? volumeKg[n - 2] : null;
+        const todayStr = new Date().toISOString().split('T')[0];
+        const dayOffset = Math.round((new Date(todayStr + 'T12:00:00') - new Date(currentWeekStart + 'T12:00:00')) / 86400000);
+        const prevWeekStart = _addDaysToDateStr(currentWeekStart, -7);
+        const prevSameDay = _addDaysToDateStr(prevWeekStart, dayOffset);
+        const currentWeekSoFar = _sumVolumeRows(rows, selectedArea, customMuscleMap, currentWeekStart, todayStr);
+        const prevWeekSamePoint = _sumVolumeRows(rows, selectedArea, customMuscleMap, prevWeekStart, prevSameDay);
+
+        if (headlineEl) headlineEl.textContent = _fmtVolume(latestVol, preferLbs);
+        if (sublineEl) {
+            if (prevWeekSamePoint > 0) {
+                const diff = currentWeekSoFar - prevWeekSamePoint;
+                const diffFmt = (diff >= 0 ? '+' : '-') + _fmtVolume(Math.abs(diff), preferLbs);
+                const diffColor = diff >= 0 ? '#3b82f6' : '#f59e0b';
+                sublineEl.innerHTML = (selectedArea === 'all' ? 'This week so far' : areaMeta.label + ' this week') + ' &nbsp;<span style="font-weight:700;color:' + diffColor + ';">' + diffFmt + ' vs same point last week</span>';
+            } else if (prevVol !== null && displayWeeks[n - 1] !== currentWeekStart) {
+                const diff = latestVol - prevVol;
+                const diffFmt = (diff >= 0 ? '+' : '-') + _fmtVolume(Math.abs(diff), preferLbs);
+                const diffColor = diff >= 0 ? '#3b82f6' : '#f59e0b';
+                sublineEl.innerHTML = 'This week &nbsp;<span style="font-weight:700;color:' + diffColor + ';">' + diffFmt + ' vs last week</span>';
+            } else {
+                sublineEl.textContent = selectedArea === 'all' ? 'This week so far' : areaMeta.label + ' this week so far';
+            }
+        }
+
+        const labels = displayWeeks.map(w => {
+            const d = new Date(w + 'T12:00:00');
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+
+        const svgW = 400, svgH = 210;
+        const pad = { top: 26, right: 16, bottom: 36, left: 46 };
+        const cW = svgW - pad.left - pad.right;
+        const cH = svgH - pad.top - pad.bottom;
+        const xStep = n > 1 ? cW / (n - 1) : 0;
+        const maxVol = Math.max(...volumeKg);
+        const yMax = Math.ceil(maxVol / 1000) * 1000 || 1000;
+        const toX = i => pad.left + xStep * i;
+        const toY = v => pad.top + cH - (v / yMax) * cH;
+
+        const linePath = volumeKg.map((v, i) => (i === 0 ? 'M' : 'L') + ' ' + toX(i).toFixed(1) + ',' + toY(v).toFixed(1)).join(' ');
+        const areaPath = (() => {
+            const bot = pad.top + cH;
+            let d = 'M ' + toX(0).toFixed(1) + ',' + bot + ' L ' + toX(0).toFixed(1) + ',' + toY(volumeKg[0]).toFixed(1);
+            for (let i = 1; i < n; i++) d += ' L ' + toX(i).toFixed(1) + ',' + toY(volumeKg[i]).toFixed(1);
+            return d + ' L ' + toX(n - 1).toFixed(1) + ',' + bot + ' Z';
+        })();
+
+        const gradientId = 'insVolGrad' + selectedArea;
+        let svg = '<svg viewBox="0 0 ' + svgW + ' ' + svgH + '" style="width:100%;display:block;overflow:visible;">';
+        svg += '<defs><linearGradient id="' + gradientId + '" x1="0" y1="0" x2="0" y2="1">'
+            + '<stop offset="0%" stop-color="' + areaMeta.color + '" stop-opacity="0.18"/>'
+            + '<stop offset="100%" stop-color="' + areaMeta.color + '" stop-opacity="0.02"/>'
+            + '</linearGradient></defs>';
+
+        for (let i = 0; i <= 4; i++) {
+            const v = (yMax / 4) * i;
+            const y = toY(v);
+            svg += '<line x1="' + pad.left + '" y1="' + y.toFixed(1) + '" x2="' + (svgW - pad.right) + '" y2="' + y.toFixed(1) + '" stroke="#f1f5f9" stroke-width="1"/>';
+            const label = v >= 1000 ? (v / 1000).toFixed(v % 1000 === 0 ? 0 : 1) + 'k' : Math.round(v).toString();
+            svg += '<text x="' + (pad.left - 5) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end" font-size="9.5" fill="#94a3b8">' + label + '</text>';
+        }
+
+        svg += '<path d="' + areaPath + '" fill="url(#' + gradientId + ')"/>';
+        svg += '<path d="' + linePath + '" fill="none" stroke="' + areaMeta.color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+
+        const volTargetTicks = n <= 6 ? n : 6;
+        const volTickIndices = new Set(
+            volTargetTicks <= 1
+                ? [0]
+                : Array.from({length: volTargetTicks}, (_, k) => Math.round(k * (n - 1) / (volTargetTicks - 1)))
+        );
+
+        volumeKg.forEach((v, i) => {
+            const x = toX(i), y = toY(v);
+            const isLast = i === n - 1;
+            svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (isLast ? 5 : 3.5) + '" fill="' + (isLast ? areaMeta.color : 'white') + '" stroke="' + areaMeta.color + '" stroke-width="2"/>';
+            if (volTickIndices.has(i)) {
+                const displayVal = preferLbs ? (v * 2.20462) : v;
+                const valLabel = displayVal >= 1000 ? (displayVal / 1000).toFixed(1) + 'k' : Math.round(displayVal).toString();
+                svg += '<text x="' + x.toFixed(1) + '" y="' + (y - 9).toFixed(1) + '" text-anchor="middle" font-size="9" font-weight="700" fill="' + areaMeta.color + '">' + valLabel + '</text>';
+            }
+        });
+
+        labels.forEach((lbl, i) => {
+            if (!volTickIndices.has(i)) return;
+            const anchor = i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle';
+            svg += '<text x="' + toX(i).toFixed(1) + '" y="' + (svgH - 5) + '" text-anchor="' + anchor + '" font-size="9.5" fill="#94a3b8">' + lbl + '</text>';
+        });
+        svg += '</svg>';
+
+        const totalAllVol = volumeKg.reduce((s, v) => s + v, 0);
+        const avgWeekVol  = totalAllVol / n;
+        const statsHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;">'
+            + '<div style="background:' + areaMeta.soft + ';padding:10px 6px;border-radius:10px;text-align:center;">'
+            +   '<div style="font-size:0.95rem;font-weight:800;color:' + areaMeta.color + ';">' + _fmtVolume(latestVol, preferLbs) + '</div>'
+            +   '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">This Week</div>'
+            + '</div>'
+            + '<div style="background:#f0fdf4;padding:10px 6px;border-radius:10px;text-align:center;">'
+            +   '<div style="font-size:0.95rem;font-weight:800;color:#10b981;">' + _fmtVolume(avgWeekVol, preferLbs) + '</div>'
+            +   '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">12W Avg</div>'
+            + '</div>'
+            + '<div style="background:#fafafa;padding:10px 6px;border-radius:10px;text-align:center;">'
+            +   '<div style="font-size:0.95rem;font-weight:800;color:var(--text-main);">' + _fmtVolume(Math.max(...volumeKg), preferLbs) + '</div>'
+            +   '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">Best Week</div>'
+            + '</div>'
+            + '</div>';
+
+        const splitWeek = byAreaWeek.all[currentWeekStart] ? currentWeekStart : displayWeeks.slice().reverse().find(w => byAreaWeek.all[w] > 0) || currentWeekStart;
+        container.innerHTML = _renderVolumeAreaChips(selectedArea)
+            + _renderVolumeProgressVerdict(selectedArea, byAreaWeek, displayWeeks, rows, customMuscleMap, preferLbs)
+            + '<div style="font-size:0.7rem;color:var(--text-muted);font-weight:600;margin-bottom:10px;">Last ' + n + ' weeks &middot; ' + (selectedArea === 'all' ? 'all exercises' : areaMeta.label.toLowerCase() + ' volume') + ' &middot; weight x reps per set</div>'
+            + svg + statsHtml + _renderVolumeSplit(byAreaWeek, splitWeek, preferLbs);
+    }
+
+    async function renderVolumeGraphWithBodyPartSplit(userId) {
+        const container = document.getElementById('insights-volume-container');
+        const headlineEl = document.getElementById('insights-volume-headline');
+        const sublineEl  = document.getElementById('insights-volume-subline');
+        if (!container) return;
+
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        const sinceDate = sixMonthsAgo.toISOString().split('T')[0];
+
+        const { data: rows, error } = await supabaseClient
+            .from('workouts')
+            .select('workout_date, exercise_name, set_number, weight_kg, reps')
+            .eq('user_id', userId)
+            .eq('workout_type', 'history')
+            .gte('workout_date', sinceDate)
+            .order('workout_date', { ascending: false })
+            .limit(5000);
+
+        if (error) console.warn('Volume insight load failed:', error);
+
+        if (!rows || rows.length === 0) {
+            if (headlineEl) headlineEl.textContent = '';
+            if (sublineEl) sublineEl.textContent = '';
+            container.innerHTML = _renderVolumeAreaChips(window._insightsVolumeSelectedArea || 'all')
+                + '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Log workouts with weights to see your weekly volume trend here.</div>';
+            return;
+        }
+
+        const seen = new Set();
+        const deduped = [];
+        for (const row of rows) {
+            const key = `${row.workout_date}|${row.exercise_name}|${row.set_number}`;
+            if (!seen.has(key)) { seen.add(key); deduped.push(row); }
+        }
+
+        let customMuscleMap = {};
+        try {
+            const { data: customExercises, error: customError } = await supabaseClient
+                .from('custom_exercises')
+                .select('exercise_name, muscle_group')
+                .eq('user_id', userId);
+            if (customError) {
+                console.warn('Custom exercise muscle groups unavailable:', customError);
+            } else {
+                customMuscleMap = (customExercises || []).reduce((map, exercise) => {
+                    map[_normaliseExerciseLookupName(exercise.exercise_name)] = exercise.muscle_group;
+                    return map;
+                }, {});
+            }
+        } catch (e) {
+            console.warn('Custom exercise muscle group lookup failed:', e);
+        }
+
+        window._insightsVolumeRows = deduped;
+        window._insightsVolumeCustomMuscles = customMuscleMap;
+        _renderVolumeGraphFromRows(deduped, customMuscleMap);
+    }
+
+    function setInsightsVolumeArea(areaKey) {
+        window._insightsVolumeSelectedArea = _getInsightsVolumeArea(areaKey).key;
+        if (window._insightsVolumeRows) {
+            _renderVolumeGraphFromRows(window._insightsVolumeRows, window._insightsVolumeCustomMuscles || {});
+        } else if (window.currentUser && window.currentUser.id) {
+            renderVolumeGraphWithBodyPartSplit(window.currentUser.id);
+        }
+    }
+
+    renderVolumeGraph = renderVolumeGraphWithBodyPartSplit;
+
     window.openInsightsView   = openInsightsView;
     window.closeInsightsView  = closeInsightsView;
+    window.renderVolumeGraph = renderVolumeGraph;
+    window.setInsightsVolumeArea = setInsightsVolumeArea;
 
 // ===== 7-DAY VITALITY SCORE =====
 //
@@ -1080,7 +1515,328 @@
 
     window.renderVitalityScore = renderVitalityScore;
 
-// ===== CALORIES BURNED COMPARISON GRAPH =====
+    function _formatInsightsWeight(weightKg) {
+        const kg = parseFloat(weightKg);
+        if (!isFinite(kg)) return '--';
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+        return preferLbs ? (kg * 2.20462).toFixed(1) + ' lbs' : kg.toFixed(1) + ' kg';
+    }
+
+    function _formatInsightsDate(dateStr) {
+        if (!dateStr) return '--';
+        const date = new Date(dateStr + 'T12:00:00');
+        if (isNaN(date.getTime())) return String(dateStr);
+        return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+
+    function _getInsightsDateKey(date = new Date()) {
+        if (typeof getLocalDateString === 'function') return getLocalDateString(date);
+        const local = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        return local.toISOString().slice(0, 10);
+    }
+
+    function _getActiveDaysFromNav(navId, fallbackDays) {
+        const nav = document.getElementById(navId);
+        if (!nav) return fallbackDays;
+        const activeBtn = nav.querySelector('button.active');
+        if (!activeBtn) return fallbackDays;
+        const explicitDays = parseInt(activeBtn.getAttribute('data-days'), 10);
+        if (Number.isFinite(explicitDays)) return explicitDays;
+        const textDays = parseInt(activeBtn.innerText, 10);
+        return Number.isFinite(textDays) ? textDays : fallbackDays;
+    }
+
+    function _findWeighInRecord(recordOrId) {
+        if (!recordOrId) return null;
+        if (typeof recordOrId === 'object') return recordOrId;
+        const id = String(recordOrId);
+        const source = [].concat(window._insightsWeighIns || [], window._cachedWeighIns || []);
+        return source.find(function(row) { return String(row && row.id) === id; }) || null;
+    }
+
+    function _ensureWeighInEditorModal() {
+        let modal = document.getElementById('weigh-in-editor-modal');
+        if (modal) return modal;
+
+        document.body.insertAdjacentHTML('beforeend', `
+            <div id="weigh-in-editor-modal" style="display:none; position:fixed; inset:0; z-index:200050; background:rgba(15,23,42,0.72); align-items:center; justify-content:center; padding:calc(18px + env(safe-area-inset-top, 0px)) 18px calc(18px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box;">
+                <div style="width:100%; max-width:420px; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; background:white; border-radius:20px; box-shadow:0 24px 70px rgba(0,0,0,0.35); padding:20px; box-sizing:border-box;">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px;">
+                        <div>
+                            <div style="font-size:0.72rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#7BA883; margin-bottom:4px;">Weigh-ins</div>
+                            <h3 id="weigh-in-editor-title" style="margin:0; color:var(--text-main); font-size:1.25rem; line-height:1.2; font-weight:850;">Add weigh-in</h3>
+                        </div>
+                        <button onclick="closeWeighInEditorModal()" title="Close" style="width:34px; height:34px; border:none; border-radius:50%; background:#f1f5f9; color:#334155; font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
+                    </div>
+                    <div style="display:grid; gap:12px;">
+                        <label style="display:block; font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">
+                            Date
+                            <input id="weigh-in-editor-date" type="date" style="width:100%; margin-top:6px; padding:14px 14px; border:1.5px solid #e2e8f0; border-radius:12px; font-size:1rem; color:var(--text-main); box-sizing:border-box; background:white;">
+                        </label>
+                        <label style="display:block; font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">
+                            Weight
+                            <div style="position:relative; margin-top:6px;">
+                                <input id="weigh-in-editor-weight" type="number" step="0.1" min="20" max="500" style="width:100%; padding:14px 54px 14px 14px; border:1.5px solid #e2e8f0; border-radius:12px; font-size:1rem; color:var(--text-main); box-sizing:border-box; background:white;">
+                                <span id="weigh-in-editor-unit-label" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.9rem; font-weight:700;">kg</span>
+                            </div>
+                        </label>
+                        <div id="weigh-in-editor-helper" style="font-size:0.78rem; color:var(--text-muted); line-height:1.45; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px;">Saving on an existing day replaces that entry.</div>
+                    </div>
+                    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:16px;">
+                        <button id="weigh-in-editor-save-btn" onclick="saveWeighInEditorModal()" style="flex:1 1 150px; border:none; border-radius:12px; background:linear-gradient(135deg, #7BA883 0%, #5b8c62 100%); color:white; padding:13px 14px; font-weight:850; font-size:0.95rem; cursor:pointer;">Save weigh-in</button>
+                        <button id="weigh-in-editor-delete-btn" onclick="deleteWeighInRecord()" style="display:none; flex:1 1 120px; border:1px solid #fecaca; border-radius:12px; background:#fff1f2; color:#be123c; padding:13px 14px; font-weight:800; font-size:0.95rem; cursor:pointer;">Delete</button>
+                        <button onclick="closeWeighInEditorModal()" style="flex:1 1 110px; border:1px solid #e2e8f0; border-radius:12px; background:white; color:#475569; padding:13px 14px; font-weight:750; font-size:0.95rem; cursor:pointer;">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        return document.getElementById('weigh-in-editor-modal');
+    }
+
+    function renderWeighInManager(weighIns, containerId = 'weigh-in-management-container') {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const sorted = (weighIns || []).slice().sort(function(a, b) {
+            return (b.weigh_in_date || '').localeCompare(a.weigh_in_date || '');
+        });
+
+        if (!sorted.length) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:18px 10px; color:var(--text-muted);">
+                    <div style="font-size:2rem; margin-bottom:8px; opacity:0.35;">⚖️</div>
+                    <div style="font-size:0.92rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">No weigh-ins yet</div>
+                    <div style="font-size:0.8rem; line-height:1.45; margin-bottom:12px;">Add your first entry here, or use this panel to fix an older one.</div>
+                    <button onclick="openWeighInEditorModal()" style="background:linear-gradient(135deg, #7BA883 0%, #5b8c62 100%); border:none; color:white; padding:11px 14px; border-radius:12px; font-size:0.9rem; font-weight:800; cursor:pointer;">Add weigh-in</button>
+                </div>
+            `;
+            return;
+        }
+
+        const total = sorted.length;
+        const latest = sorted[0];
+        const latestWeight = _formatInsightsWeight(latest.weight_kg);
+        const latestDate = _formatInsightsDate(latest.weigh_in_date);
+
+        let html = `
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; padding:12px; border-radius:16px; background:#f8fafc; border:1px solid #e2e8f0;">
+                <div>
+                    <div style="font-size:0.72rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;">Latest entry</div>
+                    <div style="font-size:1.05rem; font-weight:850; color:var(--text-main); line-height:1.2;">${latestDate}</div>
+                    <div style="font-size:1.55rem; font-weight:900; color:#7BA883; margin-top:4px;">${latestWeight}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.72rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;">Entries</div>
+                    <div style="font-size:1.55rem; font-weight:900; color:var(--text-main); line-height:1;">${total}</div>
+                </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+        `;
+
+        sorted.forEach(function(record) {
+            const weightLabel = _formatInsightsWeight(record.weight_kg);
+            const dateLabel = _formatInsightsDate(record.weigh_in_date);
+            const bfLabel = record.body_fat_pct != null && record.body_fat_pct !== ''
+                ? `<div style="font-size:0.78rem; color:var(--text-muted); margin-top:4px;">Body fat ${Number(record.body_fat_pct).toFixed(1)}%</div>`
+                : '';
+
+            html += `
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid #f1f5f9;">
+                    <div style="min-width:0; flex:1;">
+                        <div style="font-size:0.86rem; font-weight:800; color:var(--text-main); line-height:1.2;">${dateLabel}</div>
+                        <div style="font-size:1.05rem; font-weight:900; color:#7BA883; margin-top:3px;">${weightLabel}</div>
+                        ${bfLabel}
+                    </div>
+                    <div style="display:flex; gap:8px; flex-shrink:0;">
+                        <button onclick="openWeighInEditorModal('${record.id}')" style="background:white; border:1px solid #cbd5e1; color:#334155; padding:8px 10px; border-radius:10px; font-size:0.78rem; font-weight:800; cursor:pointer;">Edit</button>
+                        <button onclick="deleteWeighInRecord('${record.id}')" style="background:#fff1f2; border:1px solid #fecaca; color:#be123c; padding:8px 10px; border-radius:10px; font-size:0.78rem; font-weight:800; cursor:pointer;">Delete</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    async function refreshWeighInDisplays() {
+        if (!window.currentUser) return;
+
+        try {
+            const weighIns = await db.weighIns.getRecent(window.currentUser.id, 365);
+            window._insightsWeighIns = weighIns;
+            window._cachedWeighIns = weighIns;
+
+            const bodyDays = _getActiveDaysFromNav('insights-bw-timeframe-nav', 30);
+            const bodyCutoff = _getInsightsDateKey(new Date(Date.now() - (bodyDays * 24 * 60 * 60 * 1000)));
+            const filteredBodyWeighIns = weighIns.filter(function(row) {
+                return (row.weigh_in_date || '') >= bodyCutoff;
+            });
+
+            renderBodyWeightGraph(filteredBodyWeighIns, 'insights-bodyweight-container');
+            renderWeighInManager(weighIns);
+
+            const burnDays = _getActiveDaysFromNav('insights-burned-timeframe-nav', 14);
+            if (document.getElementById('insights-calories-burned-container')) {
+                renderInsightsCaloriesBurned(
+                    document.getElementById('insights-calories-burned-container'),
+                    window._insightsNutrition || [],
+                    weighIns,
+                    window._insightsWearable || [],
+                    burnDays
+                );
+            }
+
+            const energyContainer = document.getElementById('insights-energy-balance-container');
+            if (energyContainer) {
+                renderEnergyBalance(
+                    window._insightsNutrition || [],
+                    window._insightsWearable || [],
+                    weighIns,
+                    window._insightsQuizData || {}
+                );
+            }
+
+            renderVitalityScore({
+                weighIns: weighIns,
+                nutritionDays: window._insightsNutrition || [],
+                sleepData: window._insightsSleep || null,
+                stepsData: window._insightsSteps || [],
+                exerciseHistory: window._insightsExerciseHistory || []
+            });
+
+            if (typeof renderInsightsCorrelations === 'function') {
+                renderInsightsCorrelations(window._insightsStrengthGains || [], weighIns, window._insightsSleep || null);
+            }
+        } catch (error) {
+            console.warn('Failed to refresh weigh-in displays:', error);
+        }
+    }
+
+    async function openWeighInEditorModal(recordOrId = null) {
+        const modal = _ensureWeighInEditorModal();
+        if (!modal) return;
+
+        const record = _findWeighInRecord(recordOrId);
+        window._weighInEditorRecord = record || null;
+
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+        const unitLabel = document.getElementById('weigh-in-editor-unit-label');
+        const title = document.getElementById('weigh-in-editor-title');
+        const helper = document.getElementById('weigh-in-editor-helper');
+        const dateInput = document.getElementById('weigh-in-editor-date');
+        const weightInput = document.getElementById('weigh-in-editor-weight');
+        const deleteBtn = document.getElementById('weigh-in-editor-delete-btn');
+
+        if (unitLabel) unitLabel.textContent = preferLbs ? 'lbs' : 'kg';
+        if (title) title.textContent = record ? 'Edit weigh-in' : 'Add weigh-in';
+        if (helper) {
+            helper.textContent = record
+                ? 'Saving on this date replaces the entry for that day.'
+                : 'Pick any date. Saving on an existing day replaces that entry.';
+        }
+        if (dateInput) {
+            dateInput.value = record && record.weigh_in_date
+                ? record.weigh_in_date
+                : _getInsightsDateKey();
+        }
+        if (weightInput) {
+            weightInput.step = preferLbs ? '1' : '0.1';
+            weightInput.value = record && record.weight_kg != null
+                ? (preferLbs ? (Number(record.weight_kg) * 2.20462).toFixed(1) : Number(record.weight_kg).toFixed(1))
+                : '';
+            setTimeout(function() { weightInput.focus(); }, 0);
+        }
+        if (deleteBtn) deleteBtn.style.display = record ? 'block' : 'none';
+
+        modal.style.display = 'flex';
+    }
+
+    function closeWeighInEditorModal() {
+        const modal = document.getElementById('weigh-in-editor-modal');
+        if (modal) modal.style.display = 'none';
+        window._weighInEditorRecord = null;
+    }
+
+    async function saveWeighInEditorModal() {
+        if (!window.currentUser) return;
+
+        const dateInput = document.getElementById('weigh-in-editor-date');
+        const weightInput = document.getElementById('weigh-in-editor-weight');
+        const saveBtn = document.getElementById('weigh-in-editor-save-btn');
+
+        const weighInDate = dateInput ? dateInput.value : '';
+        let weightValue = parseFloat(weightInput && weightInput.value);
+
+        if (!weighInDate) {
+            alert('Pick a date first.');
+            return;
+        }
+        if (!weightValue || weightValue < 20 || weightValue > 500) {
+            alert('Please enter a valid weight.');
+            return;
+        }
+
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+        if (preferLbs) weightValue *= 0.453592;
+
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.style.opacity = '0.75';
+            saveBtn.textContent = 'Saving...';
+        }
+
+        try {
+            await db.weighIns.save(window.currentUser.id, weighInDate, weightValue);
+            closeWeighInEditorModal();
+            await refreshWeighInDisplays();
+            if (typeof showToast === 'function') showToast('Weigh-in saved', 'success');
+            else if (typeof showWearableToast === 'function') showWearableToast('Weigh-in saved');
+        } catch (error) {
+            console.error('Error saving weigh-in from manager:', error);
+            alert('Failed to save weigh-in. Please try again.');
+        } finally {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.style.opacity = '1';
+                saveBtn.textContent = 'Save weigh-in';
+            }
+        }
+    }
+
+    async function deleteWeighInRecord(recordOrId) {
+        const record = _findWeighInRecord(recordOrId) || window._weighInEditorRecord;
+        if (!record || !record.id) return;
+
+        const dateLabel = _formatInsightsDate(record.weigh_in_date);
+        const weightLabel = _formatInsightsWeight(record.weight_kg);
+        const ok = confirm(`Delete ${weightLabel} from ${dateLabel}? This removes it from the graph.`);
+        if (!ok) return;
+
+        try {
+            await db.weighIns.delete(record.id, record.user_id || window.currentUser?.id);
+            closeWeighInEditorModal();
+            await refreshWeighInDisplays();
+            if (typeof checkAndShowWeighInCard === 'function') {
+                await checkAndShowWeighInCard();
+            }
+            if (typeof showToast === 'function') showToast('Weigh-in deleted', 'success');
+            else if (typeof showWearableToast === 'function') showWearableToast('Weigh-in deleted');
+        } catch (error) {
+            console.error('Error deleting weigh-in:', error);
+            alert('Failed to delete weigh-in. Please try again.');
+        }
+    }
+
+    window.renderWeighInManager = renderWeighInManager;
+    window.refreshWeighInDisplays = refreshWeighInDisplays;
+    window.openWeighInEditorModal = openWeighInEditorModal;
+    window.closeWeighInEditorModal = closeWeighInEditorModal;
+    window.saveWeighInEditorModal = saveWeighInEditorModal;
+    window.deleteWeighInRecord = deleteWeighInRecord;
+
+    // ===== CALORIES BURNED COMPARISON GRAPH =====
 
     function updateInsightsBodyWeightTimeframe(days) {
         const nav = document.getElementById('insights-bw-timeframe-nav');
