@@ -183,8 +183,9 @@
         const sortedWeighIns = [...weighIns].sort((a, b) => (a.weigh_in_date || '').localeCompare(b.weigh_in_date || ''));
 
         // Need minimum data
-        if (trackedDays.length < 7 || sortedWeighIns.length < 2) {
-            container.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Keep tracking meals and weigh-ins — need 7+ nutrition days & 2+ weigh-ins to calculate your real energy balance.</div>';
+        if (trackedDays.length < 3 || sortedWeighIns.length < 2) {
+            const trackedLabel = trackedDays.length > 0 ? trackedDays.length + '/7 days tracked' : '0/7 days tracked';
+            container.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Keep tracking meals and weigh-ins — need at least 3 nutrition days & 2+ weigh-ins to estimate your energy balance. Right now you have ' + trackedLabel + '.</div>';
             return;
         }
 
@@ -227,7 +228,7 @@
         html += '<div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 14px; padding: 14px; color: white; text-align: center;">';
         html += '<div style="font-size: 0.68rem; opacity: 0.8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Avg Calories In</div>';
         html += '<div style="font-size: 1.5rem; font-weight: 800;">' + avgCaloriesIn.toLocaleString() + '</div>';
-        html += '<div style="font-size: 0.7rem; opacity: 0.75;">per day (' + trackedDays.length + ' days)</div>';
+        html += '<div style="font-size: 0.7rem; opacity: 0.75;">tracked ' + trackedDays.length + '/7 days</div>';
         html += '</div>';
 
         // Real TDEE card
