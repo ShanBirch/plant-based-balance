@@ -1670,15 +1670,11 @@
         const latestWeight = latest ? _formatInsightsWeight(latest.weight_kg) : null;
         const latestDate = latest ? _formatInsightsDate(latest.weigh_in_date) : null;
         const summaryEl = document.getElementById('weigh-in-management-summary');
-        const countChipEl = document.getElementById('weigh-in-management-count-chip');
 
         if (summaryEl) {
             summaryEl.textContent = total
-                ? `Latest ${latestWeight} on ${latestDate}. Tap to expand, edit, or delete older entries.`
-                : 'Tap to add your first weigh-in, then come back here to edit or delete older entries.';
-        }
-        if (countChipEl) {
-            countChipEl.textContent = total === 1 ? '1 weigh-in' : `${total} weigh-ins`;
+                ? `Latest weigh-in: ${latestWeight} \u2022 ${latestDate}`
+                : 'No weigh-ins yet';
         }
 
         if (!sorted.length) {
@@ -1687,7 +1683,6 @@
                     <div style="font-size:2rem; margin-bottom:8px; opacity:0.35;">&#9878;</div>
                     <div style="font-size:0.92rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">No weigh-ins yet</div>
                     <div style="font-size:0.8rem; line-height:1.45; margin-bottom:12px;">Add your first entry here, or use this panel to fix an older one.</div>
-                    <button onclick="openWeighInEditorModal()" style="background:linear-gradient(135deg, #7BA883 0%, #5b8c62 100%); border:none; color:white; padding:11px 14px; border-radius:12px; font-size:0.9rem; font-weight:800; cursor:pointer;">Add weigh-in</button>
                 </div>
             `;
             _syncWeighInManagerCardState();
@@ -1695,9 +1690,6 @@
         }
 
         let html = `
-            <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
-                <button onclick="openWeighInEditorModal()" style="background:linear-gradient(135deg, #7BA883 0%, #5b8c62 100%); border:none; color:white; padding:11px 14px; border-radius:12px; font-size:0.9rem; font-weight:800; cursor:pointer;">Add weigh-in</button>
-            </div>
             <div style="display:flex; flex-direction:column; gap:10px;">
         `;
 
