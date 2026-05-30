@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v204'; // v204: weekly review Sunday dogfood and light mode; v203: timed hold wording and renderer fix
+const CACHE_NAME = 'pbb-app-v205'; // v205: weekly review selected-goal sync; v204: weekly review Sunday dogfood and light mode
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',

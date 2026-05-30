@@ -188,6 +188,15 @@
     return date.toLocaleDateString('en-AU', { weekday: 'short' });
   }
 
+  function localDateKey(date){
+    if (typeof window.getLocalDateString === 'function') {
+      try { return window.getLocalDateString(date || new Date()); } catch (_) {}
+    }
+    var d = date instanceof Date ? new Date(date) : new Date(date || Date.now());
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 10);
+  }
+
   function getWeekWindow(){
     var now = new Date();
     var dayOfWeek = now.getDay();
@@ -201,9 +210,72 @@
     return {
       start: start,
       end: end,
-      startKey: start.toISOString().slice(0, 10),
-      endKey: end.toISOString().slice(0, 10),
+      startKey: localDateKey(start),
+      endKey: localDateKey(end),
       label: start.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' }) + ' to ' + new Date(end.getTime() - 24 * 60 * 60 * 1000).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })
+    };
+  }
+
+  function readWeeklyGoalsSnapshot(userId, weekStartKey){
+    if (!userId || !weekStartKey) return null;
+    try {
+      var raw = localStorage.getItem('pbb_weekly_goals_' + userId + '_' + weekStartKey);
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function formatGoalAmount(value){
+    var num = Number(value);
+    if (!Number.isFinite(num)) return '0';
+    return num % 1 === 0 ? String(num) : num.toFixed(1);
+  }
+
+  function buildWeeklyGoalsSummary(row, userId, weekStartKey){
+    var liveState = window.weeklyGoals && typeof window.weeklyGoals.getState === 'function'
+      ? window.weeklyGoals.getState()
+      : null;
+    var liveWeekStart = liveState && liveState.week && liveState.week.start ? liveState.week.start : null;
+    var liveMatchesWeek = !!(weekStartKey && liveWeekStart && liveWeekStart === weekStartKey);
+    var localRow = readWeeklyGoalsSnapshot(userId, weekStartKey);
+    var liveRow = liveMatchesWeek && liveState && liveState.row && typeof liveState.row === 'object'
+      ? liveState.row
+      : null;
+    var sourceRow = liveRow || localRow || row || null;
+    var selected = liveMatchesWeek && Array.isArray(liveState.selected) && liveState.selected.length
+      ? liveState.selected
+      : (sourceRow && Array.isArray(sourceRow.selected_goals) ? sourceRow.selected_goals : []);
+    var snapshot = liveMatchesWeek && liveState && liveState.progress && Array.isArray(liveState.progress.goals)
+      ? liveState.progress
+      : (sourceRow && sourceRow.progress_snapshot && typeof sourceRow.progress_snapshot === 'object' ? sourceRow.progress_snapshot : {});
+    var progressItems = Array.isArray(snapshot.goals) ? snapshot.goals : [];
+    var rows = selected.map(function(goal){
+      var progress = progressItems.find(function(item){ return item && item.id === goal.id; }) || {};
+      var current = progress.current != null ? Number(progress.current) : 0;
+      var target = progress.target != null ? Number(progress.target) : Number(goal.target || 0);
+      var unit = progress.unit || goal.unit || '';
+      return {
+        id: goal.id,
+        label: goal.label || progress.label || 'Goal',
+        category: goal.category || progress.category || '',
+        value: formatGoalAmount(current) + ' / ' + formatGoalAmount(target) + (unit ? ' ' + unit : ''),
+        current: Number.isFinite(current) ? current : 0,
+        target: Number.isFinite(target) && target > 0 ? target : 1,
+        tone: progress.complete ? 'green' : 'amber',
+        complete: !!progress.complete
+      };
+    });
+    var sourceCompleted = sourceRow && Number.isFinite(Number(sourceRow.completed_count)) ? Number(sourceRow.completed_count || 0) : 0;
+    var sourceTotal = sourceRow && Number.isFinite(Number(sourceRow.total_count)) ? Number(sourceRow.total_count || 0) : 0;
+    var total = rows.length || sourceTotal;
+    var completed = rows.length
+      ? rows.filter(function(item){ return item.complete; }).length
+      : Math.min(total, sourceCompleted);
+    return {
+      completed: Math.max(0, completed),
+      total: Math.max(0, total),
+      rows: rows
     };
   }
 
@@ -568,18 +640,17 @@
     var sleepRows = Array.isArray(payload.sleepRows) ? payload.sleepRows : [];
     var moodRows = Array.isArray(payload.moodRows) ? payload.moodRows : [];
     var weeklyGoalsRow = payload.weeklyGoalsRow || null;
+    var weeklyGoals = payload.weeklyGoalsSummary || buildWeeklyGoalsSummary(weeklyGoalsRow, payload.userId, payload.weekStartKey);
 
-    var nutritionCount = dailyNutrition.length || 1;
+    var trackedNutritionDays = countDistinct(dailyNutrition.filter(function(row){
+      return Number(row.total_calories || 0) > 0;
+    }), function(row){ return row.nutrition_date; });
+    var nutritionCount = trackedNutritionDays || dailyNutrition.length || 0;
     var calorieGoal = average(dailyNutrition.map(function(row){ return row.calorie_goal; })) || Number(details.calorie_goal || 0);
     var averageCalories = average(dailyNutrition.map(function(row){ return row.total_calories; }));
     var averageProtein = average(dailyNutrition.map(function(row){ return row.total_protein_g; }));
     var proteinGoal = average(dailyNutrition.map(function(row){ return row.protein_goal_g; })) || Number(details.protein_goal_g || 0);
     var caloriesDelta = averageCalories - calorieGoal;
-    var caloriesInRangeDays = dailyNutrition.filter(function(row){
-      var goal = Number(row.calorie_goal || 0);
-      var actual = Number(row.total_calories || 0);
-      return goal > 0 && actual > 0 && Math.abs(actual - goal) <= goal * 0.2;
-    }).length;
     var proteinDays = dailyNutrition.filter(function(row){
       var goal = Number(row.protein_goal_g || 0);
       var actual = Number(row.total_protein_g || 0);
@@ -589,19 +660,35 @@
     var objective = deriveObjective(details, dailyNutrition);
     var waterAverage = average((checkins || []).map(function(row){ return row.water_intake; }));
     var waterDays = (checkins || []).length;
-    var goalsCompleted = weeklyGoalsRow && Number.isFinite(Number(weeklyGoalsRow.completed_count)) ? Number(weeklyGoalsRow.completed_count || 0) : 3;
-    var goalsTotal = weeklyGoalsRow && Number.isFinite(Number(weeklyGoalsRow.total_count)) ? Number(weeklyGoalsRow.total_count || 3) : 3;
+    var goalsCompleted = Number(weeklyGoals.completed || 0);
+    var goalsTotal = Number(weeklyGoals.total || 0);
     var goalsHit = goalsTotal > 0 && goalsCompleted >= goalsTotal;
+    var objectiveLabel = String(objective && objective.label || '').toLowerCase();
+    var isWeightLossGoal = objectiveLabel.indexOf('lose') !== -1 || objectiveLabel.indexOf('lean') !== -1 || objectiveLabel.indexOf('fat') !== -1;
     var caloriesVerdict;
+    var note;
+    var averageLabel = nutritionCount > 0 ? 'Average logged (' + nutritionCount + '/7)' : 'Average logged';
 
     if (!Number.isFinite(calorieGoal) || !Number.isFinite(averageCalories) || calorieGoal <= 0 || averageCalories <= 0) {
       caloriesVerdict = 'We do not have enough calorie data to make an adjustment yet, so we will keep collecting the week.';
     } else if (caloriesDelta <= -100) {
-      caloriesVerdict = 'Average intake landed about ' + formatNumber(Math.abs(caloriesDelta), 0) + ' calories under target, so we will add a little more food next week to keep the bulk moving.';
+      caloriesVerdict = 'Average logged intake landed about ' + formatNumber(Math.abs(caloriesDelta), 0) + ' calories under target on tracked days, so next week we will bring food closer to the plan instead of treating this as a full-week calorie read.';
     } else if (caloriesDelta >= 100) {
-      caloriesVerdict = 'Average intake landed about ' + formatNumber(Math.abs(caloriesDelta), 0) + ' calories over target, so we will trim a little back next week.';
+      caloriesVerdict = 'Average logged intake landed about ' + formatNumber(Math.abs(caloriesDelta), 0) + ' calories over target on tracked days, so we will trim a little back next week.';
     } else {
-      caloriesVerdict = 'Average intake landed close to target, so we can keep the food setup about the same next week.';
+      caloriesVerdict = 'Average logged intake landed close to target on tracked days, so we can keep the food setup about the same next week.';
+    }
+
+    if (!Number.isFinite(averageCalories) || averageCalories <= 0) {
+      note = 'Training and recovery give us some signal, but food logging is too thin for a clean calorie call. Next week we will keep the review anchored to the goals you picked.';
+    } else if (caloriesDelta <= -100) {
+      note = isWeightLossGoal
+        ? 'Weight moved, but logged food was well under target. We will keep the deficit controlled, keep training consistent, and tighten the goals you actually selected.'
+        : 'The gym was consistent, but logged food was well under target. We will bring food closer to target and keep the training rhythm steady.';
+    } else if (caloriesDelta >= 100) {
+      note = 'The gym was consistent, but logged food sat above target on tracked days. We will tighten food slightly and keep the review tied to the goals you selected.';
+    } else {
+      note = 'Good week. Training was consistent and logged food sat close to target on tracked days. We will keep the same rhythm and review the goals you selected.';
     }
 
     return {
@@ -615,6 +702,7 @@
       calories: {
         target: formatNumber(calorieGoal, 0),
         average: formatNumber(averageCalories, 0),
+        averageLabel: averageLabel,
         verdict: caloriesVerdict
       },
       training: {
@@ -624,42 +712,22 @@
       goals: {
         completed: goalsCompleted,
         total: goalsTotal,
-        rows: [
-          {
-            label: 'Calories in range',
-            value: caloriesInRangeDays + '/' + nutritionCount + ' days',
-            current: caloriesInRangeDays,
-            target: nutritionCount,
-            tone: caloriesInRangeDays >= nutritionCount ? 'green' : 'amber'
-          },
-          {
-            label: 'Protein days',
-            value: proteinDays + '/' + nutritionCount + ' days',
-            current: proteinDays,
-            target: Math.min(4, nutritionCount),
-            tone: proteinDays >= Math.min(4, nutritionCount) ? 'green' : 'amber'
-          },
-          {
-            label: 'Gym sessions',
-            value: trainingDays + '/' + Math.max(3, trainingDays) + '',
-            current: trainingDays,
-            target: Math.max(3, trainingDays),
-            tone: trainingDays >= 3 ? 'green' : 'amber'
-          }
-        ]
+        rows: weeklyGoals.rows
       },
       wins: [
         trainingDays ? 'You got ' + trainingDays + ' gym sessions done and the week still had a good rhythm.' : 'No workouts logged yet, so the gym read is still blank.',
         proteinDays ? 'Protein landed on target on ' + proteinDays + ' of ' + nutritionCount + ' tracked days, which gives us a solid base.' : 'Protein logging is still thin, so that will be one of the first things we tighten up.',
-        goalsHit ? 'Weekly goals were all hit, so the overall plan is moving the right way.' : 'Weekly goals were not fully hit, so we will tighten the plan next week and keep the focus simple.'
+        goalsTotal > 0
+          ? (goalsHit ? 'Weekly goals were all hit, so the overall plan is moving the right way.' : 'Weekly goals landed at ' + goalsCompleted + ' of ' + goalsTotal + ', so we will tighten the plan next week and keep the focus simple.')
+          : 'No weekly goals were saved for this week, so next week we will pick the three that matter.'
       ],
       adjustments: [
         caloriesDelta < -100 ? 'We will make a small calorie bump next week so the average sits closer to target.' : 'We will keep calories steady next week and only nudge them if the numbers ask for it.',
         'We will keep protein high and keep the current split exactly where it is.',
-        'We will keep the calorie tracker widget handy if logging becomes the bottleneck.'
+        goalsTotal > 0 ? 'We will use the selected weekly goals as the scorecard, not a generic calories/protein/gym template.' : 'We will set weekly goals first so next week has a clear scorecard.'
       ],
       tip: 'If calorie tracking is the bit that slips, add the calorie tracker widget to the home screen. One button, tap it, speak what you ate, and it logs it automatically.',
-      note: caloriesDelta < -100 ? 'Good week. The gym was consistent, protein was strong, and calories were close enough to give us a clean read. We will nudge food up next week and keep the same training rhythm.' : 'Good week. The gym was consistent and the recovery signals give us a clear read on what to do next.',
+      note: note,
       gym: [
         { label: 'Sessions', value: String(trainingDays || 0), meta: 'clean week' },
         buildBestLift(workouts),
@@ -730,7 +798,7 @@
       safeQuery(function(){ return supabase.from('fitbit_sleep').select('date,duration_minutes').eq('user_id', userId).gte('date', week.startKey).lt('date', week.endKey).order('date', { ascending: true }); }, []),
       safeQuery(function(){ return supabase.from('oura_sleep').select('date,total_sleep_minutes').eq('user_id', userId).gte('date', week.startKey).lt('date', week.endKey).order('date', { ascending: true }); }, []),
       safeQuery(function(){ return supabase.from('whoop_sleep').select('date,duration_minutes').eq('user_id', userId).gte('date', week.startKey).lt('date', week.endKey).order('date', { ascending: true }); }, []),
-      safeQuery(function(){ return supabase.from('weekly_goals').select('completed_count,total_count,completion_rate,progress_snapshot,arc_snapshot').eq('user_id', userId).eq('week_start', week.startKey).maybeSingle(); }, null),
+      safeQuery(function(){ return supabase.from('weekly_goals').select('selected_goals,completed_count,total_count,completion_rate,progress_snapshot,arc_snapshot').eq('user_id', userId).eq('week_start', week.startKey).maybeSingle(); }, null),
       safeQuery(function(){ return supabase.from('mood_logs').select('mood_score,energy_score,stress_score,created_at').eq('user_id', userId).gte('created_at', week.startKey).lt('created_at', week.endKey).order('created_at', { ascending: true }); }, [])
     ]);
 
@@ -745,6 +813,7 @@
     var whoopSleep = payload[8] || [];
     var weeklyGoalsRow = payload[9];
     var moodRows = payload[10] || [];
+    var weeklyGoalsSummary = buildWeeklyGoalsSummary(weeklyGoalsRow, userId, week.startKey);
 
     if ((!profile && !facts) || (!dailyNutrition.length && !workouts.length && !checkins.length && !stepsRows.length && !fitbitSleep.length && !ouraSleep.length && !whoopSleep.length && !moodRows.length)) {
       return null;
@@ -759,13 +828,11 @@
       stepsRows: stepsRows,
       sleepRows: fitbitSleep.concat(ouraSleep, whoopSleep),
       moodRows: moodRows,
-      weeklyGoalsRow: weeklyGoalsRow
+      weeklyGoalsRow: weeklyGoalsRow,
+      weeklyGoalsSummary: weeklyGoalsSummary,
+      userId: userId,
+      weekStartKey: week.startKey
     });
-
-    if (weeklyGoalsRow && Number.isFinite(Number(weeklyGoalsRow.completed_count))) {
-      liveData.goals.completed = Number(weeklyGoalsRow.completed_count || 0);
-      liveData.goals.total = Number(weeklyGoalsRow.total_count || liveData.goals.total || 3);
-    }
 
     return liveData;
   }
@@ -871,7 +938,11 @@
   }
 
   function renderGoals(data){
-    return (data.goals && data.goals.rows ? data.goals.rows : []).map(function(goal){
+    var rows = data.goals && Array.isArray(data.goals.rows) ? data.goals.rows : [];
+    if (!rows.length) {
+      return '<p>No weekly goals were saved for this week yet.</p>';
+    }
+    return rows.map(function(goal){
       var current = Number(goal.current || 0);
       var target = Math.max(1, Number(goal.target || 1));
       var pct = Math.max(0, Math.min(100, Math.round((current / target) * 100)));
@@ -986,7 +1057,7 @@
       '  <div class="pbb-wci-card-goal"><span>Goal</span><b>' + escapeHtml(data.objective.label) + '</b></div>',
       '  <div class="pbb-wci-card-stats">',
       '    <div class="pbb-wci-card-stat"><b>' + escapeHtml(data.calories.target) + '</b><span>cal target</span></div>',
-      '    <div class="pbb-wci-card-stat"><b>' + escapeHtml(data.calories.average) + '</b><span>avg logged</span></div>',
+      '    <div class="pbb-wci-card-stat"><b>' + escapeHtml(data.calories.average) + '</b><span>' + escapeHtml(data.calories.averageLabel || 'avg logged') + '</span></div>',
       '    <div class="pbb-wci-card-stat"><b>' + escapeHtml(data.goals.completed) + '/' + escapeHtml(data.goals.total) + '</b><span>goals hit</span></div>',
       '  </div>',
       '  <div class="pbb-wci-card-footer"><span>Tap to open the review</span><span class="pbb-wci-card-arrow" aria-hidden="true">&#8250;</span></div>',
@@ -1038,7 +1109,7 @@
       '      <p>' + escapeHtml(data.note) + '</p>',
       '      <div class="pbb-wci-metrics">',
       '        <div class="pbb-wci-metric"><span>Calories you are on</span><b>' + escapeHtml(data.calories.target) + '/day</b></div>',
-      '        <div class="pbb-wci-metric"><span>Average logged</span><b>' + escapeHtml(data.calories.average) + '/day</b></div>',
+      '        <div class="pbb-wci-metric"><span>' + escapeHtml(data.calories.averageLabel || 'Average logged') + '</span><b>' + escapeHtml(data.calories.average) + '/day</b></div>',
       '        <div class="pbb-wci-metric"><span>Weekly goals</span><b>' + escapeHtml(data.goals.completed) + '/' + escapeHtml(data.goals.total) + ' hit</b></div>',
       '      </div>',
       '      <div class="pbb-wci-goal-banner">',
