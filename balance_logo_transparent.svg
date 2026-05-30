@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Balance logo</title>
+  <desc id="desc">Japanese harmony character inside a circular badge.</desc>
+  <circle cx="512" cy="512" r="466" fill="none" stroke="#111111" stroke-width="40"/>
+  <text
+    x="512"
+    y="560"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    fill="#111111"
+    font-family="Noto Serif JP, Hiragino Mincho ProN, Yu Mincho, MS Mincho, serif"
+    font-size="590"
+    font-weight="700"
+  >和</text>
+</svg>

@@ -264,6 +264,54 @@ h3 {
     letter-spacing: -0.03em;
 }
 
+.hero-title {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.16em;
+    position: relative;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.hero-title-text {
+    background: linear-gradient(135deg, var(--text-main) 0%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-title-mark {
+    width: clamp(54px, 7.5vw, 88px);
+    height: auto;
+    flex: 0 0 auto;
+    background: transparent;
+    transform-origin: 50% 72%;
+    filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.16));
+    animation: heroLogoBounce 1.35s cubic-bezier(0.2, 1.3, 0.28, 1) 0.42s both;
+}
+
+@keyframes heroLogoBounce {
+    0% {
+        opacity: 0;
+        transform: translate3d(-0.95em, -1.55em, 0) scale(0.58) rotate(-18deg);
+    }
+    42% {
+        opacity: 1;
+        transform: translate3d(-0.12em, 0.26em, 0) scale(1.08) rotate(7deg);
+    }
+    63% {
+        transform: translate3d(-0.03em, -0.08em, 0) scale(0.98) rotate(-3deg);
+    }
+    82% {
+        transform: translate3d(0.02em, 0.04em, 0) scale(1.01) rotate(1deg);
+    }
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1) rotate(0);
+    }
+}
+
 .eyebrow,
 .section-kicker {
     display: inline-flex;
