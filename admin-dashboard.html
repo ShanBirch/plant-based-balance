@@ -6552,10 +6552,10 @@
             if (!s) return '';
             return String(extractIgStoryReplyDisplayText(s))
                 .replace(/\{\{[^}]+\}\}/g, '')
-                .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
-                .replace(/\[attachment:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
-                .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
-                .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '🎥 video')
+                .replace(/\[photo:\s*https?:\/\/[^\s\]]+\]/gi, '📷 photo')
+                .replace(/\[attachment:\s*https?:\/\/[^\s\]]+\]/gi, '📷 photo')
+                .replace(/\[audio:\s*https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
+                .replace(/\[video:\s*https?:\/\/[^\s\]]+\]/gi, '🎥 video')
                 .trim();
         }
 
@@ -16121,10 +16121,10 @@
         //   data.message_preview — the just-arrived message itself.
         function stripMessageMediaMarkers(text) {
             return String(extractIgStoryReplyDisplayText(text))
-                .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
-                .replace(/\[attachment:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
-                .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
-                .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '🎥 video')
+                .replace(/\[photo:\s*https?:\/\/[^\s\]]+\]/gi, '📷 photo')
+                .replace(/\[attachment:\s*https?:\/\/[^\s\]]+\]/gi, '📷 photo')
+                .replace(/\[audio:\s*https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
+                .replace(/\[video:\s*https?:\/\/[^\s\]]+\]/gi, '🎥 video')
                 .replace(/\[\s*(?:voice note|audio clip|audio)\s+attached\s+but\s+not\s+decoded\s*\]/gi, 'voice note')
                 .replace(/\[\s*(?:photo|image|picture|pic)\s+attached\s+but\s+not\s+decoded\s*\]/gi, 'photo')
                 .replace(/\[\s*(?:video|clip)\s+attached\s+but\s+not\s+decoded\s*\]/gi, 'video')
@@ -16142,10 +16142,10 @@
 
         function extractMessageMediaMarkers(text) {
             const media = [];
-            const photoRe = /\[PHOTO:(https?:\/\/[^\s\]]+)\]/gi;
-            const attachmentRe = /\[attachment:(https?:\/\/[^\s\]]+)\]/gi;
-            const audioRe = /\[AUDIO:(https?:\/\/[^\s\]]+)\]/gi;
-            const videoRe = /\[(?:VIDEO|video):\s*(https?:\/\/[^\s\]"']+)\]/gi;
+            const photoRe = /\[photo:\s*(https?:\/\/[^\s\]]+)\]/gi;
+            const attachmentRe = /\[attachment:\s*(https?:\/\/[^\s\]]+)\]/gi;
+            const audioRe = /\[audio:\s*(https?:\/\/[^\s\]]+)\]/gi;
+            const videoRe = /\[video:\s*(https?:\/\/[^\s\]"']+)\]/gi;
             let match;
             while ((match = photoRe.exec(String(text || ''))) !== null) {
                 media.push({ type: 'photo', url: match[1] });
@@ -16187,9 +16187,10 @@
         function markMediaReviewText(state, text) {
             const value = String(text || '');
             if (!value) return;
-            if (/\[PHOTO:https?:\/\//i.test(value)) markMediaReviewKind(state, 'photo');
-            if (/\[AUDIO:https?:\/\//i.test(value)) markMediaReviewKind(state, 'audio');
-            if (/\[(?:VIDEO|video):\s*https?:\/\//i.test(value)) markMediaReviewKind(state, 'video');
+            if (/\[photo:\s*https?:\/\//i.test(value)) markMediaReviewKind(state, 'photo');
+            if (/\[attachment:\s*https?:\/\//i.test(value)) markMediaReviewKind(state, 'photo');
+            if (/\[audio:\s*https?:\/\//i.test(value)) markMediaReviewKind(state, 'audio');
+            if (/\[video:\s*https?:\/\//i.test(value)) markMediaReviewKind(state, 'video');
         }
 
         function markMediaReviewMessage(state, item) {
