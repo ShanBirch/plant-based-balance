@@ -102,7 +102,7 @@ assert.match(qualifierSource, /one casual throwaway line discovered from their o
 assert.match(clientContextSource, /the app is finished, live, and published/);
 assert.match(clientContextSource, /Never imply Balance is unfinished or still being built/);
 assert.match(codexBriefSource, /Balance is already built, live, and published/);
-assert.match(igDraftSource, /https:\/\/plantbased-balance\.org\/bio\.html/);
+assert.match(igDraftSource, /https:\/\/future-balance\.netlify\.app\/bio\.html/);
 assert.match(igDraftSource, /The DM offer right now is the free 30-day Balance Challenge/);
 assert.match(igDraftSource, /Paid coaching is the natural follow-up after the 30 days, not the headline/);
 assert.match(igDraftSource, /Shannon built Balance this year/);
@@ -271,7 +271,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: "yeah the free 30 day challenge would be perfect. here's the link: https://plantbased-balance.org/bio.html",
+        draftText: "yeah the free 30 day challenge would be perfect. here's the link: https://future-balance.netlify.app/bio.html",
         currentMessage: 'haha yeah sounds good',
         qualifier: vagueWarmth,
         leadStage: 'qualifying',
@@ -281,12 +281,12 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
-    isSignupLinkHandoffText("here's the link: https://plantbased-balance.org/bio.html"),
+    isSignupLinkHandoffText("here's the link: https://future-balance.netlify.app/bio.html"),
     true
 );
 
 const approvedBioHandoff = buildLeadOnboardingHandoffData({
-    draftText: "yeah sounds so good, stoked you're keen for the challenge\nhere's the link: https://plantbased-balance.org/bio.html",
+    draftText: "yeah sounds so good, stoked you're keen for the challenge\nhere's the link: https://future-balance.netlify.app/bio.html",
     currentMessage: 'yeah sounds good',
     qualifier: { ...vagueWarmth, stage: 'won' },
     leadStage: 'qualifying',
@@ -301,7 +301,7 @@ assert.strictEqual(approvedBioHandoff.signup_link_manual_only, false);
 assert.strictEqual(approvedBioHandoff.approved_link_auto_sendable, true);
 
 const unreadyBioHandoff = buildLeadOnboardingHandoffData({
-    draftText: "yeah the free 30 day challenge would be perfect. here's the link: https://plantbased-balance.org/bio.html",
+    draftText: "yeah the free 30 day challenge would be perfect. here's the link: https://future-balance.netlify.app/bio.html",
     currentMessage: 'haha yeah sounds good',
     qualifier: vagueWarmth,
     leadStage: 'qualifying',
