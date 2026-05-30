@@ -376,6 +376,49 @@ body {
     box-shadow: 0 22px 46px rgba(5, 2, 10, 0.42) !important;
 }
 
+html[data-pbb-theme="dark"] #ai-plan-header {
+    border-bottom-color: rgba(245, 217, 138, 0.12) !important;
+}
+
+html[data-pbb-theme="dark"] #ai-plan-meals-list .card-header {
+    background: rgba(255, 255, 255, 0.055) !important;
+    border-bottom: 1px solid rgba(245, 217, 138, 0.08) !important;
+    color: var(--text-main) !important;
+}
+
+html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body {
+    background: rgba(255, 255, 255, 0.035) !important;
+    border-top: 1px solid rgba(245, 217, 138, 0.08) !important;
+    color: var(--text-main) !important;
+}
+
+html[data-pbb-theme="dark"] #ai-plan-meals-list .meal-title,
+html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body h4,
+html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body [style*="color: var(--text-main)"],
+html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body [style*="color:var(--text-main)"] {
+    color: #fffaf2 !important;
+}
+
+html[data-pbb-theme="dark"] #ai-plan-meals-list .meta,
+html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body p,
+html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body ul,
+html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body li,
+html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body [style*="color: var(--text-muted)"],
+html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body [style*="color:var(--text-muted)"] {
+    color: rgba(248, 243, 255, 0.74) !important;
+}
+
+html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body h4 {
+    border-bottom-color: rgba(245, 217, 138, 0.22) !important;
+}
+
+html[data-pbb-theme="dark"] #ai-plan-day-nutrition .ai-plan-macro-pill,
+html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body [style*="background: #f1f5f9"],
+html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body [style*="background:#f1f5f9"] {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border: 1px solid rgba(245, 217, 138, 0.1) !important;
+}
+
 .calorie-tracker-summary h2,
 .calorie-tracker-summary h3,
 .calorie-circle-current,
@@ -3081,6 +3124,65 @@ html[data-pbb-theme="light"] #view-meals .pill-btn.active {
     background: linear-gradient(135deg, #151515 0%, #34302a 58%, #b8892b 100%) !important;
     border-color: rgba(184, 137, 43, 0.34) !important;
     color: #ffffff !important;
+}
+
+html[data-pbb-theme="light"] #ai-plan-header {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(244, 240, 231, 0.9)) !important;
+    border-bottom-color: rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #ai-plan-name {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #ai-plan-desc {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #ai-plan-meals-list .card-header {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-bottom: 1px solid rgba(184, 137, 43, 0.12) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #ai-plan-meals-list .card-body {
+    background: rgba(255, 255, 255, 0.78) !important;
+    border-top: 1px solid rgba(184, 137, 43, 0.12) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #ai-plan-meals-list .meal-title,
+html[data-pbb-theme="light"] #ai-plan-meals-list .card-body h4,
+html[data-pbb-theme="light"] #ai-plan-meals-list .card-body [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] #ai-plan-meals-list .card-body [style*="color:var(--text-main)"] {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #ai-plan-meals-list .meta,
+html[data-pbb-theme="light"] #ai-plan-meals-list .card-body p,
+html[data-pbb-theme="light"] #ai-plan-meals-list .card-body ul,
+html[data-pbb-theme="light"] #ai-plan-meals-list .card-body li,
+html[data-pbb-theme="light"] #ai-plan-meals-list .card-body [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] #ai-plan-meals-list .card-body [style*="color:var(--text-muted)"] {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #ai-plan-meals-list .card-body h4 {
+    border-bottom-color: rgba(184, 137, 43, 0.22) !important;
+}
+
+html[data-pbb-theme="light"] #ai-plan-day-nutrition .ai-plan-macro-pill,
+html[data-pbb-theme="light"] #ai-plan-meals-list .card-body [style*="background: #f1f5f9"],
+html[data-pbb-theme="light"] #ai-plan-meals-list .card-body [style*="background:#f1f5f9"] {
+    background: rgba(17, 17, 17, 0.045) !important;
+    border: 1px solid rgba(184, 137, 43, 0.12) !important;
+}
+
+html[data-pbb-theme="light"] #ai-plan-day-nutrition .ai-plan-macro-pill,
+html[data-pbb-theme="light"] #ai-plan-day-nutrition .ai-plan-macro-pill * {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
 }
 
 html[data-pbb-theme="light"] .nutrition-range-toggle {
