@@ -1122,6 +1122,20 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
     align-items: center;
 }
 
+body.bio-page .hub-layout + .footer {
+    width: min(100%, 680px);
+    margin: 14px auto 0;
+    padding-top: 0;
+    gap: 6px 12px;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    opacity: 0.8;
+}
+
+body.bio-page .hub-layout + .footer .footer-links {
+    gap: 8px;
+}
+
 @media (max-width: 980px) {
     .hero,
     .story-grid,
@@ -1278,6 +1292,12 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
 
     .footer {
         flex-direction: column;
+    }
+
+    body.bio-page .hub-layout + .footer {
+        margin-top: 12px;
+        gap: 4px;
+        font-size: 0.76rem;
     }
 
     .coming-soon {
