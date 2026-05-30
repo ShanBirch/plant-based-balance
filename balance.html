@@ -23,24 +23,54 @@
     </script>
     <link rel="stylesheet" href="bio.css">
     <script src="bio-animations.js" defer></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+        import { DRACOLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
+
+        window.THREE = THREE;
+        window.GLTFLoader = GLTFLoader;
+        window.DRACOLoader = DRACOLoader;
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/meshoptimizer@0.21.0/meshopt_decoder.min.js" defer></script>
+    <script src="lib/avatar3d.js" defer></script>
+    <script src="balance-character-live.js" defer></script>
 </head>
-<body class="bio-page">
+<body class="bio-page landing-page">
     <div class="page-shell">
         <header class="site-header">
             <a class="brand" href="bio.html">
                 <img src="balance_logo_transparent.png" alt="Balance logo">
                 <span>Balance</span>
             </a>
-            <span class="header-note">App overview</span>
+            <div class="nav-actions">
+                <a class="nav-button primary" href="transform-challenge.html">Free challenge</a>
+            </div>
         </header>
 
         <main>
-            <section class="hero">
+            <section class="hero hero-solo">
                 <div class="surface hero-copy reveal">
-                    <span class="section-kicker">the app and home base</span>
-                    <h1>Balance.</h1>
+                    <h1 class="hero-title">
+                        <span class="hero-title-text">Balance</span>
+                        <img
+                            class="hero-title-mark"
+                            src="balance_logo_transparent.png"
+                            alt=""
+                            aria-hidden="true"
+                            decoding="async"
+                            fetchpriority="high"
+                        >
+                    </h1>
                     <p class="lead">
-                        The app is the home base. It keeps the plan, the training, the nutrition, the learning, the feed, and the character loop in one place so the next move is easy to find when life gets busy.
+                        Built as a personal tool and a simple game to make fitness feel more motivating, more fun, and easier to stick with.
                     </p>
                     <div class="tag-row" aria-label="Core app areas">
                         <span class="tag">Ask Balance</span>
@@ -56,22 +86,6 @@
                         <a class="btn secondary" href="bio.html">Back to links</a>
                     </div>
                 </div>
-
-                <aside class="surface hero-media reveal">
-                    <div class="app-shot hero-shot">
-                        <img src="photos/balance-character-shot.jpg" alt="The Balance character screen showing level, XP, and the home base view">
-                    </div>
-                    <div class="mini-grid">
-                        <div class="mini-card">
-                            <strong>Character first</strong>
-                            <p>Level, XP, and streaks stay visible so momentum does not disappear into the background.</p>
-                        </div>
-                        <div class="mini-card">
-                            <strong>One tap, the next tab</strong>
-                            <p>Nutrition, Movement, Learn, and Feed all sit in one clean loop behind the home screen.</p>
-                        </div>
-                    </div>
-                </aside>
             </section>
 
             <section class="section">
@@ -85,12 +99,52 @@
                     </p>
                 </div>
 
-                <div class="surface offer-card trial-card reveal">
-                    <span class="label">how it fits together</span>
-                    <h3>It is not just a tracker. It is the home base that makes the good choice easier.</h3>
+                <div class="surface offer-card trial-card featured reveal">
+                    <span class="label">nutrition tab</span>
+                    <h3>The nutrition tab keeps meals, micronutrients, and daily totals easy to check at a glance.</h3>
                     <p class="offer-copy">
-                        The app is built so the important pieces all sit together. You can log, learn, train, post, and level up without bouncing between a dozen different places.
+                        Quick log tools for meals, snacks, and check-ins keep the day clear without extra tapping.
                     </p>
+                    <ul class="offer-list">
+                        <li>Micronutrients, calories, and meal totals.</li>
+                        <li>Quick log tools for meals, snacks, and check-ins.</li>
+                        <li>A clear snapshot of what the day still needs.</li>
+                    </ul>
+                </div>
+
+                <div class="surface nutrition-video-card reveal">
+                    <div class="nutrition-video-copy">
+                        <span class="label">nutrition widget</span>
+                        <h3>Watch the nutrition widget in action.</h3>
+                        <p class="offer-copy">
+                            This is the kind of quick check-in that makes the nutrition side feel simple, fast, and actually usable on a busy day.
+                        </p>
+                    </div>
+                    <div class="nutrition-video-frame">
+                        <video
+                            class="nutrition-video"
+                            src="videos/nutrition.mp4"
+                            autoplay
+                            muted
+                            loop
+                            playsinline
+                            controls
+                            preload="metadata"
+                        ></video>
+                    </div>
+                </div>
+
+                <div class="surface offer-card trial-card reveal">
+                    <span class="label">nutrition tracker</span>
+                    <h3>See the tracker without hunting for it.</h3>
+                    <p class="offer-copy">
+                        Calories, macros, and micronutrients stay in one quick snapshot so you can check what is left before the next meal.
+                    </p>
+                    <ul class="offer-list">
+                        <li>A fast daily snapshot before the next meal.</li>
+                        <li>Calories, macros, and micronutrients in one place.</li>
+                        <li>Simple enough to glance at and keep moving.</li>
+                    </ul>
                 </div>
 
                 <div class="offer-grid">
@@ -102,17 +156,6 @@
                             <li>Log food or open the camera straight away.</li>
                             <li>Start a workout or open a quiz in seconds.</li>
                             <li>Jump to the right screen without hunting for it.</li>
-                        </ul>
-                    </article>
-
-                    <article class="surface offer-card reveal">
-                        <span class="label">nutrition</span>
-                        <h3>Nutrition</h3>
-                        <p class="offer-copy">The nutrition tab keeps meals, micronutrients, and daily totals easy to check at a glance.</p>
-                        <ul class="offer-list">
-                            <li>Micronutrients, calories, and meal totals.</li>
-                            <li>Quick log tools for meals, snacks, and check-ins.</li>
-                            <li>A clear snapshot of what the day still needs.</li>
                         </ul>
                     </article>
 
@@ -162,72 +205,25 @@
                 </div>
             </section>
 
-            <section class="section">
-                <div class="section-header">
-                    <div>
-                        <span class="section-kicker">inside the app</span>
-                        <h2 class="section-title">Real screens from the tabs, so the whole thing feels concrete before you even open it.</h2>
+            <section class="section character-showcase reveal">
+                <div class="surface character-live-panel">
+                    <div class="fitgotchi-live-frame">
+                        <div id="balance-character-stage" class="fitgotchi-stage" role="img" aria-label="Live Balance character animation"></div>
+                        <div class="fitgotchi-loading">Loading character</div>
                     </div>
-                    <p class="section-text">
-                        These are the actual screens the app is built around, from the quiz and nutrition view through to Movement, Feed, and the character that keeps progress visible.
-                    </p>
-                </div>
-
-                <div class="app-gallery">
-                    <article class="surface app-shot-card app-shot-card-featured reveal">
-                        <div class="app-shot">
-                            <img src="photos/balance-character-shot.jpg" alt="Balance character screen with level, XP, and the home base dashboard" loading="lazy" decoding="async">
+                    <div class="character-live-copy">
+                        <span class="label">live character</span>
+                        <h2 class="section-title">Your character makes progress feel visible.</h2>
+                        <p class="section-text">
+                            Level ups, XP, streaks, unlocks, battles, and rewards all feed into the same loop. It gives the work a little face, so consistency feels like something is actually growing.
+                        </p>
+                        <div class="tag-row" aria-label="Character progress loop">
+                            <span class="tag">XP</span>
+                            <span class="tag">Streaks</span>
+                            <span class="tag">Unlocks</span>
+                            <span class="tag">Rewards</span>
                         </div>
-                        <div class="shot-copy">
-                            <span class="label">character</span>
-                            <h3>Home base with the level and XP front and centre.</h3>
-                            <p>The character makes the progress loop visible. You can see the streak, the level, and the next bit of momentum without digging for it.</p>
-                        </div>
-                    </article>
-
-                    <article class="surface app-shot-card reveal">
-                        <div class="app-shot">
-                            <img src="photos/balance-quiz-shot.jpg" alt="Balance quiz screen asking for the target body type" loading="lazy" decoding="async">
-                        </div>
-                        <div class="shot-copy">
-                            <span class="label">quiz</span>
-                            <h3>A quick quiz that feels like a guided choice.</h3>
-                            <p>The setup stays simple and direct, so the user gets moving instead of getting stuck in a long intake flow.</p>
-                        </div>
-                    </article>
-
-                    <article class="surface app-shot-card reveal">
-                        <div class="app-shot">
-                            <img src="photos/balance-nutrition-shot.jpg" alt="Balance nutrition screen showing the micronutrients section" loading="lazy" decoding="async">
-                        </div>
-                        <div class="shot-copy">
-                            <span class="label">nutrition</span>
-                            <h3>Micronutrients and meal totals, right up front.</h3>
-                            <p>Iron, Vitamin C, Calcium, B12, Omega-3, and Magnesium all sit in one clean view so the day stays easy to read.</p>
-                        </div>
-                    </article>
-
-                    <article class="surface app-shot-card reveal">
-                        <div class="app-shot">
-                            <img src="photos/balance-movement-shot.jpg" alt="Balance Movement tab showing coach workouts this week" loading="lazy" decoding="async">
-                        </div>
-                        <div class="shot-copy">
-                            <span class="label">movement</span>
-                            <h3>Coach Shan's workouts this week.</h3>
-                            <p>The workout tab keeps the training side alive with the coach's weekly workouts, form checks, and the stuff that makes each session feel guided.</p>
-                        </div>
-                    </article>
-
-                    <article class="surface app-shot-card reveal">
-                        <div class="app-shot">
-                            <img src="photos/balance-feed-shot.jpg" alt="Balance feed showing a community post and challenge card" loading="lazy" decoding="async">
-                        </div>
-                        <div class="shot-copy">
-                            <span class="label">feed</span>
-                            <h3>Community energy, challenges, and posts.</h3>
-                            <p>The feed keeps the wins visible, gives the challenge some social proof, and makes the app feel alive between check-ins.</p>
-                        </div>
-                    </article>
+                    </div>
                 </div>
             </section>
 

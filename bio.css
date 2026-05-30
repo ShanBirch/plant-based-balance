@@ -34,9 +34,9 @@ body.bio-page[data-bio-theme="light"] {
     --text-muted: #718096;
     --primary: #b8892b;
     --primary-light: #d8b25e;
-    --secondary: #e8d68e;
-    --secondary-light: #f5d98a;
-    --accent-soft: rgba(216, 178, 94, 0.12);
+    --secondary: #9b6f19;
+    --secondary-light: #d8b25e;
+    --accent-soft: rgba(184, 137, 43, 0.14);
     --glow-a: rgba(216, 178, 94, 0.10);
     --glow-b: rgba(245, 217, 138, 0.08);
     --shadow: 0 24px 70px rgba(0, 0, 0, 0.08);
@@ -280,6 +280,23 @@ h3 {
     text-transform: uppercase;
 }
 
+html[data-bio-theme="light"] body.bio-page .eyebrow,
+html[data-bio-theme="light"] body.bio-page .section-kicker,
+html[data-bio-theme="light"] body.bio-page .label,
+html[data-bio-theme="light"] body.bio-page .tag,
+html[data-bio-theme="light"] body.bio-page .header-note,
+body.bio-page[data-bio-theme="light"] .eyebrow,
+body.bio-page[data-bio-theme="light"] .section-kicker,
+body.bio-page[data-bio-theme="light"] .label,
+body.bio-page[data-bio-theme="light"] .tag,
+body.bio-page[data-bio-theme="light"] .header-note {
+    color: #8b6418;
+    background: rgba(255, 255, 255, 0.66);
+    border-color: rgba(184, 137, 43, 0.20);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
 .hub-layout {
     display: grid;
     place-items: center;
@@ -475,6 +492,10 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
     align-items: start;
 }
 
+.hero-solo {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .hero-copy {
     padding: 28px;
 }
@@ -593,6 +614,97 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
 
 .hero-shot {
     width: 100%;
+}
+
+.fitgotchi-shot {
+    position: relative;
+    isolation: isolate;
+}
+
+.character-showcase {
+    padding-top: 24px;
+}
+
+.character-live-panel {
+    display: grid;
+    grid-template-columns: minmax(240px, 0.82fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: center;
+    padding: 24px;
+}
+
+.fitgotchi-live-frame {
+    position: relative;
+    isolation: isolate;
+    min-height: 420px;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: 26px;
+    border: 1px solid var(--line);
+    background:
+        radial-gradient(circle at 50% 18%, rgba(245, 217, 138, 0.16), transparent 34%),
+        linear-gradient(180deg, #091321 0%, #05070c 100%);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+}
+
+.fitgotchi-fallback,
+.fitgotchi-stage {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.fitgotchi-fallback {
+    z-index: 0;
+    object-fit: cover;
+    object-position: center top;
+    transition: opacity 0.35s ease;
+}
+
+.fitgotchi-stage {
+    z-index: 1;
+}
+
+.fitgotchi-shot.is-live .fitgotchi-fallback {
+    opacity: 0;
+}
+
+.fitgotchi-live-frame.is-live .fitgotchi-loading {
+    opacity: 0;
+}
+
+.fitgotchi-stage canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+}
+
+.fitgotchi-stage .avatar3d-overlay {
+    display: none !important;
+}
+
+.fitgotchi-loading {
+    position: absolute;
+    inset: auto 18px 18px;
+    z-index: 2;
+    min-height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(245, 217, 138, 0.18);
+    color: #f8f5ee;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: opacity 0.25s ease;
+}
+
+.character-live-copy {
+    display: grid;
+    gap: 14px;
 }
 
 .app-shot img {
@@ -834,6 +946,45 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
     margin-bottom: 14px;
 }
 
+.nutrition-video-card {
+    display: grid;
+    grid-template-columns: minmax(0, 0.95fr) minmax(280px, 1.05fr);
+    gap: 18px;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.nutrition-video-copy {
+    display: grid;
+    gap: 14px;
+}
+
+.nutrition-video-copy h3 {
+    margin: 0;
+    font-family: "Outfit", sans-serif;
+    font-size: clamp(1.2rem, 2.4vw, 1.7rem);
+    line-height: 1.08;
+    letter-spacing: -0.04em;
+}
+
+.nutrition-video-frame {
+    overflow: hidden;
+    border-radius: 22px;
+    border: 1px solid var(--line);
+    background: rgba(0, 0, 0, 0.04);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.12);
+    aspect-ratio: 9 / 16;
+    min-height: 340px;
+}
+
+.nutrition-video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    background: #000;
+}
+
 .offer-card.featured {
     border-color: rgba(216, 178, 94, 0.30);
     box-shadow: 0 26px 80px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(216, 178, 94, 0.10) inset;
@@ -919,7 +1070,8 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
     .hero,
     .story-grid,
     .offer-grid,
-    .link-grid {
+    .link-grid,
+    .character-live-panel {
         grid-template-columns: 1fr 1fr;
     }
 
@@ -952,7 +1104,8 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
     .hero,
     .story-grid,
     .offer-grid,
-    .link-grid {
+    .link-grid,
+    .character-live-panel {
         grid-template-columns: 1fr;
     }
 
@@ -967,6 +1120,7 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
     .hub-card,
     .hero-copy,
     .hero-media,
+    .character-live-panel,
     .quote-card,
     .info-card,
     .offer-card,
@@ -1037,6 +1191,15 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
         padding: 18px;
     }
 
+    .character-live-panel {
+        gap: 16px;
+        padding: 18px;
+    }
+
+    .fitgotchi-live-frame {
+        min-height: 340px;
+    }
+
     .app-shot-card-featured {
         grid-column: auto;
     }
@@ -1072,5 +1235,652 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
 
     .mini-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Landing pages use the same spacious rhythm as the 30-day challenge page. */
+.landing-page .page-shell {
+    width: 100%;
+    padding: 0 0 calc(56px + env(safe-area-inset-bottom, 0px));
+}
+
+.landing-page .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 24px 16px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(15, 15, 15, 0.78);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+html[data-bio-theme="light"] body.bio-page.landing-page .site-header,
+body.bio-page.landing-page[data-bio-theme="light"] .site-header {
+    background: rgba(249, 246, 238, 0.82);
+}
+
+.landing-page .brand img {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+}
+
+.landing-page .brand span {
+    font-size: 1.08rem;
+}
+
+.landing-page .nav-button.primary {
+    min-height: 48px;
+    padding: 0 24px;
+    font-size: 0.96rem;
+    border-radius: 999px;
+}
+
+.landing-page main {
+    width: 100%;
+}
+
+.landing-page .hero {
+    width: min(1080px, 100%);
+    margin: 0 auto;
+    padding: clamp(58px, 8vw, 90px) 24px 72px;
+    gap: clamp(28px, 5vw, 54px);
+    align-items: center;
+}
+
+.landing-page .hero-solo {
+    width: min(860px, 100%);
+}
+
+.landing-page .hero-copy.surface {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.landing-page .hero-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.landing-page .hero-solo .hero-copy {
+    align-items: center;
+    text-align: center;
+}
+
+.landing-page .eyebrow,
+.landing-page .section-kicker {
+    min-height: 36px;
+    padding: 0 16px;
+    margin-bottom: 24px;
+    letter-spacing: 2px;
+}
+
+.landing-page .hero-title {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.16em;
+    margin: 0;
+    white-space: nowrap;
+    font-size: clamp(2.7rem, 8vw, 5.2rem);
+    line-height: 0.98;
+    letter-spacing: -0.07em;
+}
+
+.landing-page .hero-title-text {
+    background: linear-gradient(135deg, var(--text-main) 0%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.landing-page .hero-title-mark {
+    width: clamp(58px, 8.8vw, 92px);
+    height: auto;
+    flex: 0 0 auto;
+    background: transparent;
+    transform-origin: 50% 72%;
+    filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.16));
+    animation: heroLogoBounce 1.35s cubic-bezier(0.2, 1.3, 0.28, 1) 0.42s both;
+}
+
+@keyframes heroLogoBounce {
+    0% {
+        opacity: 0;
+        transform: translate3d(-0.85em, -1.45em, 0) scale(0.58) rotate(-18deg);
+    }
+    42% {
+        opacity: 1;
+        transform: translate3d(-0.14em, 0.24em, 0) scale(1.09) rotate(6deg);
+    }
+    63% {
+        transform: translate3d(-0.05em, -0.1em, 0) scale(0.98) rotate(-3deg);
+    }
+    82% {
+        transform: translate3d(0.02em, 0.04em, 0) scale(1.01) rotate(1deg);
+    }
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1) rotate(0);
+    }
+}
+
+.landing-page .lead {
+    max-width: 680px;
+    margin-top: 22px;
+    font-size: clamp(1.02rem, 2.2vw, 1.24rem);
+    line-height: 1.68;
+}
+
+.landing-page .hero-solo .lead {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.landing-page .button-row {
+    margin-top: 34px;
+    gap: 14px;
+}
+
+.landing-page .btn {
+    min-height: 56px;
+    padding: 0 26px;
+    border-radius: 999px;
+    font-size: 1rem;
+}
+
+.landing-page .hero-media {
+    padding: 18px;
+    border-radius: 28px;
+}
+
+.landing-page .portrait {
+    border-radius: 24px;
+}
+
+.landing-page .mini-card,
+.landing-page .tag,
+.landing-page .info-list li {
+    background: rgba(255, 255, 255, 0.045);
+}
+
+html[data-bio-theme="light"] body.bio-page.landing-page .mini-card,
+html[data-bio-theme="light"] body.bio-page.landing-page .tag,
+html[data-bio-theme="light"] body.bio-page.landing-page .info-list li,
+html[data-bio-theme="light"] body.bio-page.landing-page .label,
+body.bio-page.landing-page[data-bio-theme="light"] .mini-card,
+body.bio-page.landing-page[data-bio-theme="light"] .tag,
+body.bio-page.landing-page[data-bio-theme="light"] .info-list li,
+body.bio-page.landing-page[data-bio-theme="light"] .label {
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.landing-page .section {
+    width: min(1080px, 100%);
+    margin: 0 auto;
+    padding: 72px 24px;
+}
+
+.landing-page .section-header {
+    display: block;
+    max-width: 760px;
+    margin: 0 auto 44px;
+    text-align: center;
+}
+
+.landing-page .section-header .section-text,
+.landing-page .section-header > .section-text {
+    margin: 18px auto 0;
+    max-width: 660px;
+}
+
+.landing-page .section-title {
+    margin-top: 12px;
+    font-size: clamp(2rem, 5vw, 3rem);
+    line-height: 1.08;
+}
+
+.landing-page .section-text {
+    font-size: 1.03rem;
+}
+
+.landing-page .offer-grid {
+    gap: 18px;
+}
+
+.landing-page .offer-card,
+.landing-page .timeline-item,
+.landing-page .quote-card,
+.landing-page .info-card,
+.landing-page .app-shot-card,
+.landing-page .nutrition-video-card {
+    border-radius: 22px;
+    padding: 28px 24px;
+}
+
+.landing-page .offer-card {
+    transition: transform 0.28s ease, border-color 0.28s ease, background 0.28s ease;
+}
+
+.landing-page .offer-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(245, 217, 138, 0.28);
+}
+
+.landing-page .trial-card {
+    margin-bottom: 18px;
+}
+
+.landing-page .nutrition-video-card {
+    margin-bottom: 18px;
+}
+
+.landing-page .timeline {
+    gap: 20px;
+}
+
+.landing-page .timeline-item {
+    grid-template-columns: 130px minmax(0, 1fr);
+}
+
+.landing-page .story-grid {
+    width: min(1080px, 100%);
+    margin: 0 auto;
+    padding: 44px 24px 0;
+}
+
+.landing-page .character-showcase {
+    padding-top: 72px;
+}
+
+.landing-page .character-live-panel {
+    border-radius: 28px;
+    padding: 26px;
+}
+
+.landing-page .footer {
+    width: min(1080px, calc(100% - 48px));
+    margin: 34px auto 0;
+}
+
+.client-hero-media {
+    gap: 16px;
+}
+
+.client-photo-stack {
+    display: grid;
+    gap: 10px;
+}
+
+.client-photo-main,
+.client-photo-row img,
+.client-story-image img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.client-photo-main {
+    aspect-ratio: 4 / 3;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    object-position: center;
+}
+
+.client-photo-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.client-photo-row img {
+    aspect-ratio: 1 / 1;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+}
+
+.client-photo-row img:first-child {
+    object-position: center top;
+}
+
+.client-story-list {
+    width: min(1080px, 100%);
+    margin: 0 auto;
+    display: grid;
+    gap: 22px;
+}
+
+.client-story-card {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.92fr) minmax(0, 1.08fr);
+    gap: 0;
+    overflow: hidden;
+    padding: 0;
+}
+
+.client-story-card:nth-child(even) {
+    grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr);
+}
+
+.client-story-card:nth-child(even) .client-story-image {
+    order: 2;
+}
+
+.client-story-image {
+    min-height: 410px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.client-story-image img {
+    object-fit: contain;
+    object-position: center;
+}
+
+.client-story-card:nth-child(3) .client-story-image img {
+    object-position: center top;
+}
+
+.client-story-content {
+    padding: clamp(24px, 4vw, 42px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.client-story-content h2 {
+    margin-top: 18px;
+    font-size: clamp(1.75rem, 4vw, 2.65rem);
+}
+
+.client-story-content p {
+    margin: 16px 0 0;
+    color: var(--text-muted);
+    line-height: 1.72;
+    font-size: 1.02rem;
+}
+
+.journey-points {
+    display: grid;
+    gap: 0;
+    margin-top: 24px;
+    border-top: 1px solid var(--line);
+}
+
+.journey-points div {
+    display: grid;
+    grid-template-columns: 122px minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.journey-points strong {
+    color: var(--secondary);
+    font-size: 0.82rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.journey-points span {
+    color: var(--text-main);
+    line-height: 1.58;
+}
+
+.client-bottom-cta {
+    padding-top: 22px;
+}
+
+.client-result-strip {
+    width: min(1080px, 100%);
+    margin: 0 auto 22px;
+    display: grid;
+    grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1fr);
+    gap: 18px;
+    align-items: stretch;
+}
+
+.client-result-card,
+.client-result-note,
+.review-shot {
+    margin: 0;
+}
+
+.client-result-card {
+    overflow: hidden;
+    padding: 0;
+}
+
+.client-result-card img {
+    width: 100%;
+    display: block;
+}
+
+.client-result-card figcaption {
+    padding: 14px 18px 18px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.client-result-note {
+    padding: clamp(24px, 4vw, 36px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.client-result-note h2 {
+    margin-top: 18px;
+    font-size: clamp(1.7rem, 4vw, 2.6rem);
+}
+
+.client-result-note p {
+    margin: 14px 0 0;
+    color: var(--text-muted);
+    line-height: 1.72;
+    max-width: 650px;
+}
+
+.review-collage {
+    width: min(1080px, 100%);
+    margin: 0 auto;
+    columns: 3 260px;
+    column-gap: 16px;
+}
+
+.review-shot {
+    display: inline-block;
+    width: 100%;
+    overflow: hidden;
+    padding: 10px;
+    margin-bottom: 16px;
+    break-inside: avoid;
+    vertical-align: top;
+}
+
+.review-shot img {
+    width: 100%;
+    display: block;
+    border-radius: 14px;
+    background: #ffffff;
+}
+
+@media (max-width: 980px) {
+    .landing-page .hero,
+    .landing-page .story-grid,
+    .landing-page .offer-grid,
+    .landing-page .character-live-panel,
+    .client-story-card,
+    .client-story-card:nth-child(even),
+    .client-result-strip {
+        grid-template-columns: 1fr;
+    }
+
+    .client-story-card:nth-child(even) .client-story-image {
+        order: 0;
+    }
+
+    .landing-page .hero-copy {
+        align-items: center;
+        text-align: center;
+    }
+
+    .landing-page .lead {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .landing-page .button-row {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 760px) {
+    .landing-page .site-header {
+        position: sticky;
+        padding: calc(12px + env(safe-area-inset-top, 0px)) 18px 12px;
+        flex-wrap: nowrap;
+    }
+
+    .landing-page .brand {
+        gap: 8px;
+    }
+
+    .landing-page .brand img {
+        width: 40px;
+        height: 40px;
+    }
+
+    .landing-page .nav-button.primary {
+        min-height: 42px;
+        padding: 0 16px;
+        font-size: 0.86rem;
+    }
+
+    .landing-page .hero {
+        padding: 52px 20px 54px;
+    }
+
+    .landing-page .hero-title {
+        font-size: clamp(2.45rem, 13vw, 3.7rem);
+    }
+
+    .landing-page .hero-title-mark {
+        width: clamp(50px, 12vw, 74px);
+    }
+
+    .landing-page .lead {
+        margin-top: 18px;
+        font-size: 1rem;
+        line-height: 1.62;
+    }
+
+    .landing-page .button-row {
+        width: 100%;
+        margin-top: 26px;
+    }
+
+    .landing-page .btn {
+        width: 100%;
+        max-width: 340px;
+        min-height: 54px;
+    }
+
+    .landing-page .hero-media {
+        width: 100%;
+        padding: 14px;
+    }
+
+    .landing-page .section {
+        padding: 54px 20px;
+    }
+
+    .landing-page .section-header {
+        margin-bottom: 30px;
+    }
+
+    .landing-page .section-kicker {
+        margin-bottom: 14px;
+    }
+
+    .landing-page .section-title {
+        margin-top: 8px;
+        font-size: clamp(1.9rem, 10vw, 2.7rem);
+    }
+
+    .landing-page .offer-card,
+    .landing-page .timeline-item,
+    .landing-page .quote-card,
+    .landing-page .info-card,
+    .landing-page .app-shot-card,
+    .landing-page .nutrition-video-card {
+        padding: 22px;
+    }
+
+    .landing-page .timeline-item {
+        grid-template-columns: 1fr;
+    }
+
+    .landing-page .story-grid {
+        padding: 20px 20px 0;
+    }
+
+    .landing-page .character-showcase {
+        padding-top: 54px;
+    }
+
+    .landing-page .character-live-panel {
+        padding: 18px;
+    }
+
+    .landing-page .nutrition-video-card {
+        grid-template-columns: 1fr;
+    }
+
+    .landing-page .nutrition-video-frame {
+        min-height: 280px;
+    }
+
+    .landing-page .footer {
+        width: min(100% - 40px, 1080px);
+        margin-top: 24px;
+    }
+
+    .client-story-list {
+        gap: 16px;
+    }
+
+    .client-story-image {
+        min-height: auto;
+        aspect-ratio: 1 / 1;
+    }
+
+    .client-story-content {
+        padding: 22px;
+    }
+
+    .client-result-note {
+        padding: 22px;
+    }
+
+    .review-collage {
+        columns: 1;
+    }
+
+    .review-shot {
+        padding: 8px;
+        margin-bottom: 14px;
+    }
+
+    .journey-points div {
+        grid-template-columns: 1fr;
+        gap: 6px;
     }
 }
