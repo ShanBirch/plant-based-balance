@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v197'; // v197: onboarding weekly goal routine; v196: Learn protein visual
+const CACHE_NAME = 'pbb-app-v198'; // v198: inline workout coach cue bubble; v197: onboarding weekly goal routine
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',
