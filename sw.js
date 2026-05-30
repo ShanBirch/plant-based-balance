@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v201'; // v201: week-by-week workout targets; v200: form science contrast
+const CACHE_NAME = 'pbb-app-v202'; // v202: workout volume and yoga card contrast; v201: week-by-week workout targets
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',

@@ -5601,6 +5601,71 @@ html:not([data-pbb-theme="light"]) #view-active-workout-stub .exercise-logger-ca
     -webkit-text-fill-color: #f8f7f2 !important;
 }
 
+html:not([data-pbb-theme="light"]) #view-active-workout .volume-display,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display {
+    background: linear-gradient(135deg, #fff8e8 0%, #f7e4a7 100%) !important;
+    border-bottom: 1px solid rgba(184, 137, 43, 0.22) !important;
+    color: #4a2e0a !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .volume-display svg,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display svg {
+    fill: #ca8a04 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .volume-display .volume-value,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display .volume-value {
+    color: #4a2e0a !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .volume-display .volume-comparison,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display .volume-comparison,
+html:not([data-pbb-theme="light"]) #view-active-workout .volume-display .volume-comparison span,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display .volume-comparison span {
+    color: #6f6a61 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .volume-display .volume-target-label,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display .volume-target-label,
+html:not([data-pbb-theme="light"]) #view-active-workout .volume-display .volume-percentage,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display .volume-percentage {
+    color: #8c5500 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .volume-display .volume-progress-container > div,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display .volume-progress-container > div {
+    background: rgba(184, 137, 43, 0.18) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .volume-display .volume-progress-bar,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display .volume-progress-bar {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 60%, #b8892b 100%) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .yoga-exercise-card > div:first-child,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .yoga-exercise-card > div:first-child {
+    background: linear-gradient(135deg, #ffffff 0%, #f7f3e9 100%) !important;
+    border-bottom: 1px solid rgba(184, 137, 43, 0.18) !important;
+    color: #151515 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .yoga-exercise-card > div:first-child h3,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .yoga-exercise-card > div:first-child h3,
+html:not([data-pbb-theme="light"]) #view-active-workout .yoga-exercise-card > div:first-child [style*="font-weight: 700"],
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .yoga-exercise-card > div:first-child [style*="font-weight: 700"] {
+    color: #151515 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .yoga-exercise-card > div:first-child [style*="color: var(--text-muted)"],
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .yoga-exercise-card > div:first-child [style*="color: var(--text-muted)"] {
+    color: #6f6a61 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .yoga-exercise-card > div:first-child [style*="color: var(--primary)"],
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .yoga-exercise-card > div:first-child [style*="color: var(--primary)"] {
+    color: #9f7628 !important;
+}
+
 /* Light-mode workout tracker readability: set/reps/kg inputs and logger rows. */
 html[data-pbb-theme="light"] #view-active-workout,
 html[data-pbb-theme="light"] #view-active-workout-stub {
