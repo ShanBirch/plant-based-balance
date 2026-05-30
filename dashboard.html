@@ -8766,11 +8766,15 @@ if(!window._pbbIsIOSSafari) {
     border-bottom: 1px solid #f1f5f9;
 }
 .exercise-technique-panel {
+    --exercise-technique-accent: var(--pbb-luxe-gold, var(--primary));
+    --exercise-technique-border: var(--chat-border-coach, rgba(245, 217, 138, 0.18));
     margin: 10px 0 8px;
-    border: 1px solid #d8eadc;
-    border-left: 3px solid var(--primary);
+    border: 1px solid var(--exercise-technique-border);
+    border-left: 3px solid var(--exercise-technique-accent);
     border-radius: 8px;
-    background: #f7fbf8;
+    background: var(--surface);
+    background: color-mix(in srgb, var(--surface) 94%, var(--exercise-technique-accent) 6%);
+    color: var(--text-main);
     overflow: hidden;
 }
 .exercise-technique-panel summary {
@@ -8793,7 +8797,7 @@ if(!window._pbbIsIOSSafari) {
     gap: 2px;
 }
 .exercise-technique-kicker {
-    color: var(--primary);
+    color: var(--exercise-technique-accent);
     font-size: 0.62rem;
     font-weight: 900;
     letter-spacing: 0.5px;
@@ -8807,10 +8811,11 @@ if(!window._pbbIsIOSSafari) {
     line-height: 1.15;
 }
 .exercise-technique-family {
-    background: #eef7f0;
-    border: 1px solid #d8eadc;
+    background: var(--surface);
+    background: color-mix(in srgb, var(--surface) 88%, var(--exercise-technique-accent) 12%);
+    border: 1px solid var(--exercise-technique-border);
     border-radius: 999px;
-    color: #315d3b;
+    color: var(--text-main);
     font-size: 0.66rem;
     font-weight: 800;
     line-height: 1;
@@ -8822,10 +8827,11 @@ if(!window._pbbIsIOSSafari) {
 }
 .exercise-technique-chev {
     align-items: center;
-    background: white;
-    border: 1px solid #d8eadc;
+    background: var(--surface);
+    background: color-mix(in srgb, var(--surface) 90%, var(--exercise-technique-accent) 10%);
+    border: 1px solid var(--exercise-technique-border);
     border-radius: 999px;
-    color: var(--primary);
+    color: var(--exercise-technique-accent);
     display: flex;
     font-size: 0.95rem;
     font-weight: 900;
@@ -8839,12 +8845,12 @@ if(!window._pbbIsIOSSafari) {
     transform: rotate(45deg);
 }
 .exercise-technique-body {
-    border-top: 1px solid #e4f0e7;
-    color: #425547;
+    border-top: 1px solid var(--exercise-technique-border);
+    color: var(--text-muted);
     padding: 0 12px 12px;
 }
 .exercise-technique-force {
-    color: #2f4936;
+    color: var(--text-main);
     font-size: 0.78rem;
     font-weight: 650;
     line-height: 1.45;
@@ -8868,16 +8874,17 @@ if(!window._pbbIsIOSSafari) {
     padding-left: 16px;
 }
 .exercise-technique-panel li {
-    color: #52645a;
+    color: var(--text-muted);
     font-size: 0.75rem;
     line-height: 1.42;
     margin: 0 0 5px;
 }
 .exercise-technique-reset {
-    background: #ffffff;
-    border: 1px solid #e4f0e7;
+    background: var(--surface);
+    background: color-mix(in srgb, var(--surface) 90%, var(--exercise-technique-accent) 10%);
+    border: 1px solid var(--exercise-technique-border);
     border-radius: 8px;
-    color: #52645a;
+    color: var(--text-main);
     font-size: 0.73rem;
     font-weight: 700;
     line-height: 1.4;
