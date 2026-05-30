@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weekly Check-In Preview</title>
+  <script>
+    (function(){
+      var params = new URLSearchParams(window.location.search || '');
+      var theme = params.get('theme') || params.get('mode') || 'dark';
+      if (theme === 'light') {
+        document.documentElement.setAttribute('data-pbb-theme', 'light');
+        document.documentElement.classList.add('pbb-theme-light');
+        document.documentElement.classList.remove('pbb-theme-dark');
+        localStorage.setItem('userThemePreference', 'light');
+      } else {
+        document.documentElement.setAttribute('data-pbb-theme', 'dark');
+        document.documentElement.classList.add('pbb-theme-dark');
+        document.documentElement.classList.remove('pbb-theme-light');
+        localStorage.setItem('userThemePreference', 'default');
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      --primary: #7ba883;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    html.pbb-theme-light {
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+    }
+    html.pbb-theme-light body {
+      background:
+        radial-gradient(circle at 18% 0, rgba(123, 168, 131, 0.14), transparent 30%),
+        linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+      color: var(--text-main);
+    }
+    html.pbb-theme-light .phone-shell {
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: 0 0 42px rgba(15, 23, 42, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 20% 0, rgba(123, 168, 131, 0.16), transparent 28%),
+        linear-gradient(180deg, #151515 0%, #050505 100%);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text-main);
+    }
+    .phone-shell {
+      width: min(430px, 100%);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: calc(18px + env(safe-area-inset-top, 0px)) 0 28px;
+      background: rgba(8, 8, 8, 0.82);
+      box-shadow: 0 0 60px rgba(0, 0, 0, 0.42);
+    }
+    .preview-head {
+      padding: 0 25px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .preview-head h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      line-height: 1.15;
+      font-weight: 950;
+    }
+    .preview-head span {
+      display: block;
+      margin-top: 4px;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-weight: 760;
+    }
+    .fake-card {
+      margin: 0 25px 14px;
+      border-radius: 18px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 0.86rem;
+      font-weight: 760;
+    }
+    html.pbb-theme-light .fake-card {
+      background: #ffffff;
+      border-color: rgba(15, 23, 42, 0.08);
+      color: #475569;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+    .preview-fitgotchi {
+      height: 210px;
+      margin: 0 0 12px;
+      background:
+        radial-gradient(circle at 50% 30%, rgba(123, 168, 131, 0.34), transparent 24%),
+        linear-gradient(180deg, #1a1a2e, #101827);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 950;
+      letter-spacing: 0;
+      box-shadow: inset 0 -30px 70px rgba(0, 0, 0, 0.28);
+    }
+    .preview-fitgotchi:before {
+      content: "";
+      position: absolute;
+      left: 12%;
+      right: 12%;
+      bottom: 22px;
+      height: 54px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      filter: blur(2px);
+    }
+    .preview-fitgotchi span {
+      position: relative;
+      z-index: 1;
+      width: 94px;
+      height: 94px;
+      border-radius: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #7ba883, #10b981);
+      box-shadow: 0 18px 42px rgba(16, 185, 129, 0.25);
+      transform: rotate(-4deg);
+    }
+    html.pbb-theme-light .preview-fitgotchi {
+      background:
+        radial-gradient(circle at 50% 30%, rgba(123, 168, 131, 0.22), transparent 26%),
+        linear-gradient(180deg, #e8f3ec, #ffffff);
+      color: #0f172a;
+      box-shadow: inset 0 -30px 70px rgba(123, 168, 131, 0.10);
+    }
+    .preview-friends-pill {
+      margin: 0 25px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      background: white;
+      border-radius: 40px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      border: 1px solid #f1f5f9;
+      color: #0f172a;
+      font-weight: 800;
+      font-size: 0.9rem;
+    }
+    html.pbb-theme-dark .preview-friends-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.09);
+      color: rgba(255, 255, 255, 0.88);
+    }
+    #weekly-wrapped-card { display: none; }
+  </style>
+</head>
+<body>
+  <main class="phone-shell">
+    <div class="preview-head">
+      <div>
+        <h1>Home</h1>
+        <span>Preview mode</span>
+      </div>
+      <div aria-hidden="true" style="width:38px;height:38px;border-radius:999px;background:linear-gradient(135deg,#7ba883,#10b981);"></div>
+    </div>
+    <div id="tamagotchi-widget-container" class="preview-fitgotchi"><span>FitGotchi</span></div>
+    <div id="home-friends-pill" class="preview-friends-pill">
+      <span style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#10b981);display:inline-flex;align-items:center;justify-content:center;color:white;">+</span>
+      <span style="flex:1;">Friends</span>
+      <span style="color:var(--text-muted);font-size:.8rem;">0</span>
+    </div>
+    <div id="weekly-wrapped-card"></div>
+    <div id="weekly-goals-card" style="display:none; margin: 0 25px 14px; background: white; border-radius: 18px; overflow: hidden; box-shadow: 0 4px 18px rgba(15,23,42,0.08); border: 1px solid #e2e8f0;"></div>
+    <div class="fake-card">Nutrition, workouts, challenges, and other home cards continue below.</div>
+  </main>
+  <script>
+    localStorage.setItem('pbb_weekly_checkin_preview', '1');
+    localStorage.setItem('onboardingGoalIntentIds', JSON.stringify(['lose_weight', 'improve_nutrition']));
+    localStorage.setItem('onboardingWeeklyGoalFocusIds', JSON.stringify(['meal_log_days', 'steps_10k_days', 'complete_workouts']));
+    window.currentUser = { id: 'weekly-review-preview-user' };
+    window.PBB_WEEKLY_CHECKIN_PREVIEW_DATA = {
+      profile: {
+        name: 'Coach Shannon',
+        accountLabel: ''
+      },
+      weekLabel: 'Weekly Review',
+      dateRange: 'Mon 25 May to Sun 31 May',
+      objective: {
+        label: 'Lose weight / get lean',
+        detail: 'Keep the deficit controlled, protein high, and training consistent.',
+        source: 'From onboarding'
+      },
+      calories: {
+        target: '2,878',
+        average: '781',
+        verdict: 'Only 2 days had meals logged, so we will not change calories yet. First we will tighten tracking so the next adjustment is based on a clean read.'
+      },
+      training: {
+        sessions: 4,
+        highlight: 'Four sessions landed this week, with a strong row day and a solid Friday bench session.'
+      },
+      goals: {
+        completed: 1,
+        total: 3,
+        rows: [
+          { label: 'Lose weight', value: '1.8/0.5 kg', current: 1.8, target: 0.5, tone: 'green' },
+          { label: 'Log meals', value: '2/7 days', current: 2, target: 7, tone: 'amber' },
+          { label: 'Reach 10k steps', value: '1/7 days', current: 1, target: 7, tone: 'amber' }
+        ]
+      },
+      wins: [
+        'The body trend moved down 4.7 kg over the last 4 weeks, so the fat-loss direction is clearly moving.',
+        'You got 4 training days in and logged 91 sets, which is a strong training week.',
+        'Mood checks were strong too: 5 logs averaged 10/10 mood, 8/10 energy, and 2/10 stress.'
+      ],
+      adjustments: [
+        'We will keep the calorie target where it is for now because the food logs are too incomplete to adjust fairly.',
+        'We will make meal logging the main focus next week so the calorie review is more accurate.',
+        'We will keep the calorie tracker widget handy if logging becomes the bottleneck.'
+      ],
+      tip: 'If calorie tracking is the bit that slips, add the calorie tracker widget to the home screen. One button, tap it, speak what you ate, and it logs it automatically.',
+      note: 'Good week for training and body trend. Mood was high and stress was low, but the check-ins are telling us food is the bottleneck, so that is the thing we clean up first.',
+      gym: [
+        { label: 'Sessions', value: '4', meta: '91 sets logged' },
+        { label: 'Best lift', value: 'Seated row 160kg x 7', meta: 'Wednesday' },
+        { label: 'Top press', value: 'Bench 100kg x 4', meta: 'Friday' }
+      ],
+      recoveryRows: [
+        { label: 'Sleep', value: '6h 05m', meta: '6 nights avg' },
+        { label: 'Steps', value: '5,688', meta: 'avg/day' },
+        { label: 'Best steps', value: '12,259', meta: 'top day' }
+      ],
+      checkinMood: {
+        rows: [
+          { label: 'Daily check-ins', value: '2', meta: 'days logged' },
+          { label: 'Mood', value: '10.0/10', meta: '5 logs' },
+          { label: 'Energy', value: '8.0/10', meta: 'stress 2.0/10' }
+        ],
+        note: 'Latest highlight: Went for a swim and rested. Sticky bit: Man I am not eating. Note: Maybe eat more.'
+      }
+    };
+    window.showToast = function(message){ console.log(message); };
+  </script>
+  <script src="../js/dashboard/pbb-deferred-weeklygoals.js?v=18"></script>
+  <script src="../js/dashboard/pbb-weekly-checkin-preview.js?v=11"></script>
+</body>
+</html>

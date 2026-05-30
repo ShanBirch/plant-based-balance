@@ -237,12 +237,28 @@
     if (now.getDay() === 0 && now.getHours() >= 12) {
       start = addDaysKey(start, 7);
     }
+    return getWeekFromStart(start);
+  }
+
+  function getWeekFromStart(start) {
     return {
       start,
       end: addDaysKey(start, 6),
       endExclusive: addDaysKey(start, 7),
       arcStart: addDaysKey(start, -21)
     };
+  }
+
+  function getNextPlanningWeek() {
+    return getWeekFromStart(addDaysKey(getMondayKey(new Date()), 7));
+  }
+
+  function resolveRequestedWeek(options) {
+    if (options && typeof options === 'object') {
+      if (options.week === 'next' || options.nextWeek === true) return getNextPlanningWeek();
+      if (options.weekStart) return getWeekFromStart(options.weekStart);
+    }
+    return getPlanningWeek(new Date());
   }
 
   function localStorageKey(userId, weekStart) {
@@ -1130,7 +1146,11 @@
     `;
   }
 
-  window.openWeeklyGoalsModal = function() {
+  window.openWeeklyGoalsModal = async function(options) {
+    const requestedWeek = resolveRequestedWeek(options);
+    if (window.currentUser && requestedWeek && (!state.week || state.week.start !== requestedWeek.start)) {
+      await loadWeekAndRender(requestedWeek);
+    }
     const setupSuggestions = !state.selected.length ? getOnboardingSuggestedGoals() : [];
     state.draftSelected = (state.selected.length ? state.selected : setupSuggestions).map(goal => Object.assign({}, goal));
     renderModal();
@@ -1207,13 +1227,13 @@
     showToastSafe('Weekly goals saved.', 'success');
   };
 
-  async function loadAndRender() {
+  async function loadWeekAndRender(week) {
     const card = document.getElementById('weekly-goals-card');
     if (!card || !window.currentUser || !window.currentUser.id) return;
     if (state.loading) return;
 
     state.loading = true;
-    state.week = getPlanningWeek(new Date());
+    state.week = week || getPlanningWeek(new Date());
     renderCard();
 
     state.row = await fetchWeeklyRow(window.currentUser.id, state.week.start);
@@ -1231,6 +1251,10 @@
 
     state.loading = false;
     renderCard();
+  }
+
+  async function loadAndRender() {
+    await loadWeekAndRender(getPlanningWeek(new Date()));
   }
 
   function init() {

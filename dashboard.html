@@ -1561,11 +1561,13 @@ if(!window._pbbIsIOSSafari) {
     <script>
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=5"><\/script>');
-    document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=17"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=18"><\/script>');
+    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=11"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=5');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=17');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=18');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=11');
 }
 </script>
     
@@ -12266,6 +12268,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#transformation-hub-card', title:'Weigh-in manager', body:"Tap Transformation to review your weigh-in history, add a missed weigh-in, or delete a bad entry before it bends the graph." },
     { tab:'dashboard', sel:'#weekly-goals-card', title:'Weekly goals', body:"Choose up to 3 goals for the week. Balance tracks the exact signals you picked and carries the results into Weekly Wrapped.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
+    { tab:'dashboard', sel:'#weekly-checkin-card', title:'Weekly Review', body:"A shimmering gold review card shows the person's onboarding goal, weekly progress, check-ins, mood signals, and one clear action to set next week goals.", quick: true, condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#fitbit-performance-card', title:'Activity Insights', body:"Your weekly dashboard: weight trend, real calories burnt, sleep, total volume lifted. Tap to open full insights." },
@@ -12716,6 +12719,14 @@ if(!window._pbbIsIOSSafari) {
       title: 'Weekly Goals',
       body: "Pick up to 3 goals for the week. Choose body, training, food, recovery, Health IQ, or community, then watch progress build into your Wrapped.",
       condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; }
+    },
+    {
+      id: 'weekly-checkin-preview-v9',
+      tab: 'dashboard',
+      sel: '#weekly-checkin-card',
+      title: 'Weekly Review',
+      body: "A shimmering gold review card shows the person's onboarding goal, weekly progress, check-ins, mood signals, and one clear action to set next week goals.",
+      condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; }
     },
     {
       id: 'level-character-rewards-v2',
