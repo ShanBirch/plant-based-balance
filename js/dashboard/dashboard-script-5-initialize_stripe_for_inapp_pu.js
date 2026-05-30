@@ -591,9 +591,17 @@ async function _loadProfileDataRealImpl() {
 
     [profile, quizResult] = await Promise.all([profilePromise, quizPromise]);
 
-    // Merge quiz results into profile for easy access
+    // Merge quiz results into profile for easy access. The users table is the
+    // authoritative gender source; older quiz rows can have sex=null.
     if (quizResult) {
+        const profileSex = profile?.sex || profile?.user_gender || null;
+        const quizSex = quizResult?.sex || quizResult?.user_gender || null;
         profile = { ...profile, ...quizResult };
+        const resolvedSex = profileSex || quizSex || profile?.sex || profile?.user_gender;
+        if (resolvedSex) {
+            profile.sex = resolvedSex;
+            if (!profile.user_gender) profile.user_gender = resolvedSex;
+        }
 
         // Sync important quiz fields from database to localStorage
         try {
@@ -788,8 +796,8 @@ async function _loadProfileDataRealImpl() {
     // CRITICAL: Always sync gender from database to localStorage
     // Database is the source of truth - always overwrite localStorage
     // This fixes the bug where localStorage has wrong gender value
-    // Check both user_gender (from users table) and sex (from quiz_results table)
-    const genderFromDb = profile?.user_gender || profile?.sex;
+    // Check both fields, preferring users.sex after the null-safe profile merge.
+    const genderFromDb = profile?.sex || profile?.user_gender;
     if (genderFromDb) {
         const currentLocalGender = localStorage.getItem('userGender');
         if (currentLocalGender !== genderFromDb) {
@@ -8855,14 +8863,42 @@ function selectGender(gender) {
     // movement to the profile screen, avoiding accidental double-advance.
 }
 
+function normalizeGenderValue(value) {
+    const gender = String(value || '').trim().toLowerCase();
+    return (gender === 'male' || gender === 'female') ? gender : '';
+}
+
+function getActiveUserGender() {
+    const directSources = [
+        window.userProfile?.sex,
+        window.userProfile?.user_gender,
+        window.currentUser?.sex,
+        window.currentUser?.user_gender,
+        window.currentUserGender
+    ];
+
+    for (const source of directSources) {
+        const gender = normalizeGenderValue(source);
+        if (gender) return gender;
+    }
+
+    try {
+        const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        const sessionGender = normalizeGenderValue(sessionProfile.sex || sessionProfile.user_gender);
+        if (sessionGender) return sessionGender;
+    } catch(e) {}
+
+    return normalizeGenderValue(localStorage.getItem('userGender'));
+}
+
 // Helper function to check if user is male
 function isMaleUser() {
-    return localStorage.getItem('userGender') === 'male';
+    return getActiveUserGender() === 'male';
 }
 
 // Apply gender theme on page load if already set
 function applyGenderTheme() {
-    const savedGender = localStorage.getItem('userGender');
+    const savedGender = getActiveUserGender();
     if (savedGender === 'male') {
         document.body.classList.add('male-theme');
         document.body.classList.remove('female-theme');
