@@ -82,6 +82,9 @@
 
             const strengthGains = _computeStrengthGains(exerciseHistory);
 
+            window._insightsStrengthGains = strengthGains;
+            window._insightsQuizData = quizData;
+
             renderStrengthProgress(strengthGains);
             renderInsightsCorrelations(strengthGains, weighIns, sleepData);
             renderEnergyBalance(nutritionDays, wearableCalories, weighIns, quizData);
@@ -106,6 +109,7 @@
 
             // Overview charts (in display order)
             renderBodyWeightGraph(weighIns, 'insights-bodyweight-container');
+            renderWeighInManager(weighIns);
             renderInsightsCaloriesBurned(document.getElementById('insights-calories-burned-container'), nutritionDays, weighIns, wearableCalories, 14);
             renderTotalIntakeGraph(nutritionDays, 'insights-daily-calories-container');
             renderInsightsSleep(sleepData, 14);
@@ -1546,6 +1550,325 @@
     }
 
     window.renderVitalityScore = renderVitalityScore;
+
+    function _formatInsightsWeight(weightKg) {
+        const kg = parseFloat(weightKg);
+        if (!isFinite(kg)) return '--';
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+        return preferLbs ? (kg * 2.20462).toFixed(1) + ' lbs' : kg.toFixed(1) + ' kg';
+    }
+
+    function _formatInsightsDate(dateStr) {
+        if (!dateStr) return '--';
+        const date = new Date(dateStr + 'T12:00:00');
+        if (isNaN(date.getTime())) return String(dateStr);
+        return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+
+    function _getInsightsDateKey(date = new Date()) {
+        if (typeof getLocalDateString === 'function') return getLocalDateString(date);
+        const local = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        return local.toISOString().slice(0, 10);
+    }
+
+    function _getActiveDaysFromNav(navId, fallbackDays) {
+        const nav = document.getElementById(navId);
+        if (!nav) return fallbackDays;
+        const activeBtn = nav.querySelector('button.active');
+        if (!activeBtn) return fallbackDays;
+        const explicitDays = parseInt(activeBtn.getAttribute('data-days'), 10);
+        if (Number.isFinite(explicitDays)) return explicitDays;
+        const textDays = parseInt(activeBtn.innerText, 10);
+        return Number.isFinite(textDays) ? textDays : fallbackDays;
+    }
+
+    function _findWeighInRecord(recordOrId) {
+        if (!recordOrId) return null;
+        if (typeof recordOrId === 'object') return recordOrId;
+        const id = String(recordOrId);
+        const source = [].concat(window._insightsWeighIns || [], window._cachedWeighIns || []);
+        return source.find(function(row) { return String(row && row.id) === id; }) || null;
+    }
+
+    function _ensureWeighInEditorModal() {
+        let modal = document.getElementById('weigh-in-editor-modal');
+        if (modal) return modal;
+
+        document.body.insertAdjacentHTML('beforeend', `
+            <div id="weigh-in-editor-modal" style="display:none; position:fixed; inset:0; z-index:200050; background:rgba(15,23,42,0.72); align-items:center; justify-content:center; padding:calc(18px + env(safe-area-inset-top, 0px)) 18px calc(18px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box;">
+                <div style="width:100%; max-width:420px; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; background:white; border-radius:20px; box-shadow:0 24px 70px rgba(0,0,0,0.35); padding:20px; box-sizing:border-box;">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px;">
+                        <div>
+                            <div style="font-size:0.72rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#7BA883; margin-bottom:4px;">Weigh-ins</div>
+                            <h3 id="weigh-in-editor-title" style="margin:0; color:var(--text-main); font-size:1.25rem; line-height:1.2; font-weight:850;">Add weigh-in</h3>
+                        </div>
+                        <button onclick="closeWeighInEditorModal()" title="Close" style="width:34px; height:34px; border:none; border-radius:50%; background:#f1f5f9; color:#334155; font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
+                    </div>
+                    <div style="display:grid; gap:12px;">
+                        <label style="display:block; font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">
+                            Date
+                            <input id="weigh-in-editor-date" type="date" style="width:100%; margin-top:6px; padding:14px 14px; border:1.5px solid #e2e8f0; border-radius:12px; font-size:1rem; color:var(--text-main); box-sizing:border-box; background:white;">
+                        </label>
+                        <label style="display:block; font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">
+                            Weight
+                            <div style="position:relative; margin-top:6px;">
+                                <input id="weigh-in-editor-weight" type="number" step="0.1" min="20" max="500" style="width:100%; padding:14px 54px 14px 14px; border:1.5px solid #e2e8f0; border-radius:12px; font-size:1rem; color:var(--text-main); box-sizing:border-box; background:white;">
+                                <span id="weigh-in-editor-unit-label" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.9rem; font-weight:700;">kg</span>
+                            </div>
+                        </label>
+                        <div id="weigh-in-editor-helper" style="font-size:0.78rem; color:var(--text-muted); line-height:1.45; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px;">Saving on an existing day replaces that entry.</div>
+                    </div>
+                    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:16px;">
+                        <button id="weigh-in-editor-save-btn" onclick="saveWeighInEditorModal()" style="flex:1 1 150px; border:none; border-radius:12px; background:linear-gradient(135deg, #7BA883 0%, #5b8c62 100%); color:white; padding:13px 14px; font-weight:850; font-size:0.95rem; cursor:pointer;">Save weigh-in</button>
+                        <button id="weigh-in-editor-delete-btn" onclick="deleteWeighInRecord()" style="display:none; flex:1 1 120px; border:1px solid #fecaca; border-radius:12px; background:#fff1f2; color:#be123c; padding:13px 14px; font-weight:800; font-size:0.95rem; cursor:pointer;">Delete</button>
+                        <button onclick="closeWeighInEditorModal()" style="flex:1 1 110px; border:1px solid #e2e8f0; border-radius:12px; background:white; color:#475569; padding:13px 14px; font-weight:750; font-size:0.95rem; cursor:pointer;">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        return document.getElementById('weigh-in-editor-modal');
+    }
+
+    function renderWeighInManager(weighIns, containerId = 'weigh-in-management-container') {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const sorted = (weighIns || []).slice().sort(function(a, b) {
+            return (b.weigh_in_date || '').localeCompare(a.weigh_in_date || '');
+        });
+
+        if (!sorted.length) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:18px 10px; color:var(--text-muted);">
+                    <div style="font-size:2rem; margin-bottom:8px; opacity:0.35;">⚖️</div>
+                    <div style="font-size:0.92rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">No weigh-ins yet</div>
+                    <div style="font-size:0.8rem; line-height:1.45; margin-bottom:12px;">Add your first entry here, or use this panel to fix an older one.</div>
+                    <button onclick="openWeighInEditorModal()" style="background:linear-gradient(135deg, #7BA883 0%, #5b8c62 100%); border:none; color:white; padding:11px 14px; border-radius:12px; font-size:0.9rem; font-weight:800; cursor:pointer;">Add weigh-in</button>
+                </div>
+            `;
+            return;
+        }
+
+        const total = sorted.length;
+        const latest = sorted[0];
+        const latestWeight = _formatInsightsWeight(latest.weight_kg);
+        const latestDate = _formatInsightsDate(latest.weigh_in_date);
+
+        let html = `
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; padding:12px; border-radius:16px; background:#f8fafc; border:1px solid #e2e8f0;">
+                <div>
+                    <div style="font-size:0.72rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;">Latest entry</div>
+                    <div style="font-size:1.05rem; font-weight:850; color:var(--text-main); line-height:1.2;">${latestDate}</div>
+                    <div style="font-size:1.55rem; font-weight:900; color:#7BA883; margin-top:4px;">${latestWeight}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.72rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;">Entries</div>
+                    <div style="font-size:1.55rem; font-weight:900; color:var(--text-main); line-height:1;">${total}</div>
+                </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+        `;
+
+        sorted.forEach(function(record) {
+            const weightLabel = _formatInsightsWeight(record.weight_kg);
+            const dateLabel = _formatInsightsDate(record.weigh_in_date);
+            const bfLabel = record.body_fat_pct != null && record.body_fat_pct !== ''
+                ? `<div style="font-size:0.78rem; color:var(--text-muted); margin-top:4px;">Body fat ${Number(record.body_fat_pct).toFixed(1)}%</div>`
+                : '';
+
+            html += `
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid #f1f5f9;">
+                    <div style="min-width:0; flex:1;">
+                        <div style="font-size:0.86rem; font-weight:800; color:var(--text-main); line-height:1.2;">${dateLabel}</div>
+                        <div style="font-size:1.05rem; font-weight:900; color:#7BA883; margin-top:3px;">${weightLabel}</div>
+                        ${bfLabel}
+                    </div>
+                    <div style="display:flex; gap:8px; flex-shrink:0;">
+                        <button onclick="openWeighInEditorModal('${record.id}')" style="background:white; border:1px solid #cbd5e1; color:#334155; padding:8px 10px; border-radius:10px; font-size:0.78rem; font-weight:800; cursor:pointer;">Edit</button>
+                        <button onclick="deleteWeighInRecord('${record.id}')" style="background:#fff1f2; border:1px solid #fecaca; color:#be123c; padding:8px 10px; border-radius:10px; font-size:0.78rem; font-weight:800; cursor:pointer;">Delete</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    async function refreshWeighInDisplays() {
+        if (!window.currentUser) return;
+
+        try {
+            const weighIns = await db.weighIns.getRecent(window.currentUser.id, 365);
+            window._insightsWeighIns = weighIns;
+            window._cachedWeighIns = weighIns;
+
+            const bodyDays = _getActiveDaysFromNav('insights-bw-timeframe-nav', 30);
+            const bodyCutoffDate = new Date();
+            bodyCutoffDate.setDate(bodyCutoffDate.getDate() - bodyDays);
+            const bodyCutoff = _getInsightsDateKey(bodyCutoffDate);
+            const filteredBodyWeighIns = weighIns.filter(function(row) {
+                return (row.weigh_in_date || '') >= bodyCutoff;
+            });
+
+            renderBodyWeightGraph(filteredBodyWeighIns, 'insights-bodyweight-container');
+            renderWeighInManager(weighIns);
+
+            const burnDays = _getActiveDaysFromNav('insights-burned-timeframe-nav', 14);
+            const burnContainer = document.getElementById('insights-calories-burned-container');
+            if (burnContainer) {
+                renderInsightsCaloriesBurned(
+                    burnContainer,
+                    window._insightsNutrition || [],
+                    weighIns,
+                    window._insightsWearable || [],
+                    burnDays
+                );
+            }
+
+            const nutritionDays = window._insightsNutrition || [];
+            const quizData = window._insightsQuizData || {};
+            const sleepData = window._insightsSleep || null;
+            const stepsData = window._insightsSteps || [];
+            const exerciseHistory = window._insightsExerciseHistory || [];
+
+            renderVitalityScore({
+                weighIns: weighIns,
+                nutritionDays: nutritionDays,
+                sleepData: sleepData,
+                stepsData: stepsData,
+                exerciseHistory: exerciseHistory
+            });
+            renderInsightsCorrelations(window._insightsStrengthGains || [], weighIns, sleepData);
+            renderEnergyBalance(nutritionDays, window._insightsWearable || [], weighIns, quizData);
+        } catch (error) {
+            console.warn('Failed to refresh weigh-in displays:', error);
+        }
+    }
+
+    async function openWeighInEditorModal(recordOrId = null) {
+        const modal = _ensureWeighInEditorModal();
+        if (!modal) return;
+
+        const record = _findWeighInRecord(recordOrId);
+        window._weighInEditorRecord = record || null;
+
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+        const unitLabel = document.getElementById('weigh-in-editor-unit-label');
+        const title = document.getElementById('weigh-in-editor-title');
+        const helper = document.getElementById('weigh-in-editor-helper');
+        const dateInput = document.getElementById('weigh-in-editor-date');
+        const weightInput = document.getElementById('weigh-in-editor-weight');
+        const deleteBtn = document.getElementById('weigh-in-editor-delete-btn');
+
+        if (unitLabel) unitLabel.textContent = preferLbs ? 'lbs' : 'kg';
+        if (title) title.textContent = record ? 'Edit weigh-in' : 'Add weigh-in';
+        if (helper) {
+            helper.textContent = record
+                ? 'Saving on this date replaces the entry for that day.'
+                : 'Pick any date. Saving on an existing day replaces that entry.';
+        }
+        if (dateInput) {
+            dateInput.value = record && record.weigh_in_date ? record.weigh_in_date : _getInsightsDateKey();
+        }
+        if (weightInput) {
+            weightInput.step = preferLbs ? '1' : '0.1';
+            weightInput.value = record && record.weight_kg != null
+                ? (preferLbs ? (Number(record.weight_kg) * 2.20462).toFixed(1) : Number(record.weight_kg).toFixed(1))
+                : '';
+            setTimeout(function() { weightInput.focus(); }, 0);
+        }
+        if (deleteBtn) deleteBtn.style.display = record ? 'block' : 'none';
+
+        modal.style.display = 'flex';
+    }
+
+    function closeWeighInEditorModal() {
+        const modal = document.getElementById('weigh-in-editor-modal');
+        if (modal) modal.style.display = 'none';
+        window._weighInEditorRecord = null;
+    }
+
+    async function saveWeighInEditorModal() {
+        if (!window.currentUser) return;
+
+        const dateInput = document.getElementById('weigh-in-editor-date');
+        const weightInput = document.getElementById('weigh-in-editor-weight');
+        const saveBtn = document.getElementById('weigh-in-editor-save-btn');
+
+        const weighInDate = dateInput ? dateInput.value : '';
+        let weightValue = parseFloat(weightInput && weightInput.value);
+
+        if (!weighInDate) {
+            alert('Pick a date first.');
+            return;
+        }
+        if (!weightValue || weightValue < 20 || weightValue > 500) {
+            alert('Please enter a valid weight.');
+            return;
+        }
+
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+        if (preferLbs) weightValue *= 0.453592;
+
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.style.opacity = '0.75';
+            saveBtn.textContent = 'Saving...';
+        }
+
+        try {
+            await db.weighIns.save(window.currentUser.id, weighInDate, weightValue);
+            closeWeighInEditorModal();
+            await refreshWeighInDisplays();
+            if (typeof checkAndShowWeighInCard === 'function') {
+                await checkAndShowWeighInCard();
+            }
+            if (typeof showToast === 'function') showToast('Weigh-in saved', 'success');
+            else if (typeof showWearableToast === 'function') showWearableToast('Weigh-in saved');
+        } catch (error) {
+            console.error('Error saving weigh-in from manager:', error);
+            alert('Failed to save weigh-in. Please try again.');
+        } finally {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.style.opacity = '1';
+                saveBtn.textContent = 'Save weigh-in';
+            }
+        }
+    }
+
+    async function deleteWeighInRecord(recordOrId) {
+        const record = _findWeighInRecord(recordOrId) || window._weighInEditorRecord;
+        if (!record || !record.id) return;
+
+        const dateLabel = _formatInsightsDate(record.weigh_in_date);
+        const weightLabel = _formatInsightsWeight(record.weight_kg);
+        const ok = confirm(`Delete ${weightLabel} from ${dateLabel}? This removes it from the graph.`);
+        if (!ok) return;
+
+        try {
+            await db.weighIns.delete(record.id, record.user_id || window.currentUser?.id);
+            closeWeighInEditorModal();
+            await refreshWeighInDisplays();
+            if (typeof checkAndShowWeighInCard === 'function') {
+                await checkAndShowWeighInCard();
+            }
+            if (typeof showToast === 'function') showToast('Weigh-in deleted', 'success');
+            else if (typeof showWearableToast === 'function') showWearableToast('Weigh-in deleted');
+        } catch (error) {
+            console.error('Error deleting weigh-in:', error);
+            alert('Failed to delete weigh-in. Please try again.');
+        }
+    }
+
+    window.renderWeighInManager = renderWeighInManager;
+    window.refreshWeighInDisplays = refreshWeighInDisplays;
+    window.openWeighInEditorModal = openWeighInEditorModal;
+    window.closeWeighInEditorModal = closeWeighInEditorModal;
+    window.saveWeighInEditorModal = saveWeighInEditorModal;
+    window.deleteWeighInRecord = deleteWeighInRecord;
 
 // ===== CALORIES BURNED COMPARISON GRAPH =====
 

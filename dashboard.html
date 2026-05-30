@@ -10590,7 +10590,7 @@ if(!window._pbbIsIOSSafari) {
                 </div>
 
                 <!-- Body Transformation Hub Card -->
-                <div class="activity-insights-hub-card activity-insights-hub-card--transformation" onclick="openProgressFromHome()" style="background: white; border-radius: 20px; padding: 18px; box-shadow: var(--card-shadow); cursor: pointer; position: relative; overflow: hidden; border: 1px solid rgba(236, 72, 153, 0.1);">
+                <div id="transformation-hub-card" class="activity-insights-hub-card activity-insights-hub-card--transformation" onclick="openProgressFromHome()" style="background: white; border-radius: 20px; padding: 18px; box-shadow: var(--card-shadow); cursor: pointer; position: relative; overflow: hidden; border: 1px solid rgba(236, 72, 153, 0.1);">
                     <div style="position: absolute; top: -10px; right: -10px; font-size: 3rem; opacity: 0.05;">📸</div>
                     <div style="width: 40px; height: 40px; background: rgba(236, 72, 153, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 12px;">📸</div>
                     <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main); margin-bottom: 3px;">Transformation</div>
@@ -10631,6 +10631,25 @@ if(!window._pbbIsIOSSafari) {
                 </div>
                 <div id="insights-bodyweight-container">
                     <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem; opacity: 0.6;">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Weigh-In Manager -->
+            <div id="weigh-in-management-section" style="padding: 0 20px 14px 20px;">
+                <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); border: 1px solid rgba(123, 168, 131, 0.08);">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px;">
+                        <div style="min-width: 0;">
+                            <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 4px;">Weigh-In History</div>
+                            <div style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 3px;">Review, add, or remove entries</div>
+                            <div style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.35;">Fix a bad entry before it bends the trend line.</div>
+                        </div>
+                        <button onclick="openWeighInEditorModal()" style="background: linear-gradient(135deg, #7BA883 0%, #5b8c62 100%); border: none; color: white; height: 38px; padding: 0 14px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; flex-shrink: 0; box-shadow: 0 2px 10px rgba(123,168,131,0.28);">
+                            <span style="font-size: 1rem; line-height: 1;">+</span> Add
+                        </button>
+                    </div>
+                    <div id="weigh-in-management-container">
+                        <div style="text-align: center; padding: 18px; color: var(--text-muted); font-size: 0.85rem; opacity: 0.6;">Loading weigh-ins...</div>
+                    </div>
                 </div>
             </div>
 
@@ -12240,6 +12259,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP.", quick: true },
     { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. Tap yes to review the share card first, then post it to the feed for +2 XP." },
     { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
+    { tab:'dashboard', sel:'#transformation-hub-card', title:'Weigh-in manager', body:"Tap Transformation to review your weigh-in history, add a missed weigh-in, or delete a bad entry before it bends the graph." },
     { tab:'dashboard', sel:'#weekly-goals-card', title:'Weekly goals', body:"Choose up to 3 goals for the week. Balance tracks the exact signals you picked and carries the results into Weekly Wrapped.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
@@ -12664,6 +12684,13 @@ if(!window._pbbIsIOSSafari) {
       title: 'Weekly progress photos',
       body: "Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP. The card stays up until Tuesday morning or until your set is saved.",
       condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; }
+    },
+    {
+      id: 'transformation-weigh-in-manager-v1',
+      tab: 'dashboard',
+      sel: '#transformation-hub-card',
+      title: 'Weigh-in manager',
+      body: "Tap Transformation to review your weigh-in history, add a missed weigh-in, or delete a bad entry before it bends the graph."
     },
     {
       id: 'weekly-wrapped-v1',
