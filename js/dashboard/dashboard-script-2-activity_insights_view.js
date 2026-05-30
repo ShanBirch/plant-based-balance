@@ -1590,38 +1590,61 @@
         return source.find(function(row) { return String(row && row.id) === id; }) || null;
     }
 
+    function _syncWeighInManagerCardState() {
+        const expanded = !!window._weighInManagerExpanded;
+        const body = document.getElementById('weigh-in-management-body');
+        const toggle = document.getElementById('weigh-in-management-toggle');
+        const chevron = document.getElementById('weigh-in-management-chevron');
+
+        if (body) body.style.display = expanded ? 'block' : 'none';
+        if (toggle) toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        if (chevron) chevron.style.transform = expanded ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+
+    function toggleWeighInManagerCard(forceExpanded) {
+        if (typeof window._weighInManagerExpanded !== 'boolean') {
+            window._weighInManagerExpanded = false;
+        }
+
+        window._weighInManagerExpanded = typeof forceExpanded === 'boolean'
+            ? forceExpanded
+            : !window._weighInManagerExpanded;
+
+        _syncWeighInManagerCardState();
+    }
+
     function _ensureWeighInEditorModal() {
         let modal = document.getElementById('weigh-in-editor-modal');
         if (modal) return modal;
 
         document.body.insertAdjacentHTML('beforeend', `
             <div id="weigh-in-editor-modal" style="display:none; position:fixed; inset:0; z-index:200050; background:rgba(15,23,42,0.72); align-items:center; justify-content:center; padding:calc(18px + env(safe-area-inset-top, 0px)) 18px calc(18px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box;">
-                <div style="width:100%; max-width:420px; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; background:white; border-radius:20px; box-shadow:0 24px 70px rgba(0,0,0,0.35); padding:20px; box-sizing:border-box;">
+                <div style="width:100%; max-width:420px; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; background:var(--surface); border-radius:20px; box-shadow:0 24px 70px rgba(0,0,0,0.35); padding:20px; box-sizing:border-box; border:1px solid rgba(148,163,184,0.18);">
                     <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px;">
                         <div>
                             <div style="font-size:0.72rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#7BA883; margin-bottom:4px;">Weigh-ins</div>
                             <h3 id="weigh-in-editor-title" style="margin:0; color:var(--text-main); font-size:1.25rem; line-height:1.2; font-weight:850;">Add weigh-in</h3>
                         </div>
-                        <button onclick="closeWeighInEditorModal()" title="Close" style="width:34px; height:34px; border:none; border-radius:50%; background:#f1f5f9; color:#334155; font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
+                        <button onclick="closeWeighInEditorModal()" title="Close" style="width:34px; height:34px; border:none; border-radius:50%; background:rgba(148,163,184,0.12); color:var(--text-main); font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
                     </div>
                     <div style="display:grid; gap:12px;">
                         <label style="display:block; font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">
                             Date
-                            <input id="weigh-in-editor-date" type="date" style="width:100%; margin-top:6px; padding:14px 14px; border:1.5px solid #e2e8f0; border-radius:12px; font-size:1rem; color:var(--text-main); box-sizing:border-box; background:white;">
+                            <input id="weigh-in-editor-date" type="date" style="width:100%; margin-top:6px; padding:14px 14px; border:1.5px solid rgba(148,163,184,0.35); border-radius:12px; font-size:1rem; color:var(--text-main); box-sizing:border-box; background:var(--bg); font-family:inherit; caret-color:var(--text-main);">
                         </label>
                         <label style="display:block; font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">
                             Weight
                             <div style="position:relative; margin-top:6px;">
-                                <input id="weigh-in-editor-weight" type="number" step="0.1" min="20" max="500" style="width:100%; padding:14px 54px 14px 14px; border:1.5px solid #e2e8f0; border-radius:12px; font-size:1rem; color:var(--text-main); box-sizing:border-box; background:white;">
+                                <input id="weigh-in-editor-weight" type="number" step="0.1" min="20" max="500" style="width:100%; padding:14px 54px 14px 14px; border:1.5px solid rgba(148,163,184,0.35); border-radius:12px; font-size:1rem; color:var(--text-main); box-sizing:border-box; background:var(--bg); font-family:inherit; caret-color:var(--text-main);">
                                 <span id="weigh-in-editor-unit-label" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.9rem; font-weight:700;">kg</span>
                             </div>
                         </label>
-                        <div id="weigh-in-editor-helper" style="font-size:0.78rem; color:var(--text-muted); line-height:1.45; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px;">Saving on an existing day replaces that entry.</div>
+                        <div id="weigh-in-editor-helper" style="font-size:0.78rem; color:var(--text-muted); line-height:1.45; background:rgba(123,168,131,0.08); border:1px solid rgba(123,168,131,0.18); border-radius:12px; padding:12px;">Saving on an existing day replaces that entry.</div>
                     </div>
                     <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:16px;">
                         <button id="weigh-in-editor-save-btn" onclick="saveWeighInEditorModal()" style="flex:1 1 150px; border:none; border-radius:12px; background:linear-gradient(135deg, #7BA883 0%, #5b8c62 100%); color:white; padding:13px 14px; font-weight:850; font-size:0.95rem; cursor:pointer;">Save weigh-in</button>
                         <button id="weigh-in-editor-delete-btn" onclick="deleteWeighInRecord()" style="display:none; flex:1 1 120px; border:1px solid #fecaca; border-radius:12px; background:#fff1f2; color:#be123c; padding:13px 14px; font-weight:800; font-size:0.95rem; cursor:pointer;">Delete</button>
-                        <button onclick="closeWeighInEditorModal()" style="flex:1 1 110px; border:1px solid #e2e8f0; border-radius:12px; background:white; color:#475569; padding:13px 14px; font-weight:750; font-size:0.95rem; cursor:pointer;">Cancel</button>
+                        <button onclick="closeWeighInEditorModal()" style="flex:1 1 110px; border:1px solid rgba(148,163,184,0.28); border-radius:12px; background:var(--surface); color:var(--text-main); padding:13px 14px; font-weight:750; font-size:0.95rem; cursor:pointer;">Cancel</button>
                     </div>
                 </div>
             </div>
@@ -1634,38 +1657,46 @@
         const container = document.getElementById(containerId);
         if (!container) return;
 
+        if (typeof window._weighInManagerExpanded !== 'boolean') {
+            window._weighInManagerExpanded = false;
+        }
+
         const sorted = (weighIns || []).slice().sort(function(a, b) {
             return (b.weigh_in_date || '').localeCompare(a.weigh_in_date || '');
         });
 
+        const total = sorted.length;
+        const latest = total ? sorted[0] : null;
+        const latestWeight = latest ? _formatInsightsWeight(latest.weight_kg) : null;
+        const latestDate = latest ? _formatInsightsDate(latest.weigh_in_date) : null;
+        const summaryEl = document.getElementById('weigh-in-management-summary');
+        const countChipEl = document.getElementById('weigh-in-management-count-chip');
+
+        if (summaryEl) {
+            summaryEl.textContent = total
+                ? `Latest ${latestWeight} on ${latestDate}. Tap to expand, edit, or delete older entries.`
+                : 'Tap to add your first weigh-in, then come back here to edit or delete older entries.';
+        }
+        if (countChipEl) {
+            countChipEl.textContent = total === 1 ? '1 weigh-in' : `${total} weigh-ins`;
+        }
+
         if (!sorted.length) {
             container.innerHTML = `
                 <div style="text-align:center; padding:18px 10px; color:var(--text-muted);">
-                    <div style="font-size:2rem; margin-bottom:8px; opacity:0.35;">⚖️</div>
+                    <div style="font-size:2rem; margin-bottom:8px; opacity:0.35;">&#9878;</div>
                     <div style="font-size:0.92rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">No weigh-ins yet</div>
                     <div style="font-size:0.8rem; line-height:1.45; margin-bottom:12px;">Add your first entry here, or use this panel to fix an older one.</div>
                     <button onclick="openWeighInEditorModal()" style="background:linear-gradient(135deg, #7BA883 0%, #5b8c62 100%); border:none; color:white; padding:11px 14px; border-radius:12px; font-size:0.9rem; font-weight:800; cursor:pointer;">Add weigh-in</button>
                 </div>
             `;
+            _syncWeighInManagerCardState();
             return;
         }
 
-        const total = sorted.length;
-        const latest = sorted[0];
-        const latestWeight = _formatInsightsWeight(latest.weight_kg);
-        const latestDate = _formatInsightsDate(latest.weigh_in_date);
-
         let html = `
-            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; padding:12px; border-radius:16px; background:#f8fafc; border:1px solid #e2e8f0;">
-                <div>
-                    <div style="font-size:0.72rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;">Latest entry</div>
-                    <div style="font-size:1.05rem; font-weight:850; color:var(--text-main); line-height:1.2;">${latestDate}</div>
-                    <div style="font-size:1.55rem; font-weight:900; color:#7BA883; margin-top:4px;">${latestWeight}</div>
-                </div>
-                <div style="text-align:right;">
-                    <div style="font-size:0.72rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;">Entries</div>
-                    <div style="font-size:1.55rem; font-weight:900; color:var(--text-main); line-height:1;">${total}</div>
-                </div>
+            <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+                <button onclick="openWeighInEditorModal()" style="background:linear-gradient(135deg, #7BA883 0%, #5b8c62 100%); border:none; color:white; padding:11px 14px; border-radius:12px; font-size:0.9rem; font-weight:800; cursor:pointer;">Add weigh-in</button>
             </div>
             <div style="display:flex; flex-direction:column; gap:10px;">
         `;
@@ -1678,14 +1709,14 @@
                 : '';
 
             html += `
-                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid #f1f5f9;">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid rgba(148,163,184,0.16);">
                     <div style="min-width:0; flex:1;">
                         <div style="font-size:0.86rem; font-weight:800; color:var(--text-main); line-height:1.2;">${dateLabel}</div>
                         <div style="font-size:1.05rem; font-weight:900; color:#7BA883; margin-top:3px;">${weightLabel}</div>
                         ${bfLabel}
                     </div>
                     <div style="display:flex; gap:8px; flex-shrink:0;">
-                        <button onclick="openWeighInEditorModal('${record.id}')" style="background:white; border:1px solid #cbd5e1; color:#334155; padding:8px 10px; border-radius:10px; font-size:0.78rem; font-weight:800; cursor:pointer;">Edit</button>
+                        <button onclick="openWeighInEditorModal('${record.id}')" style="background:var(--surface); border:1px solid rgba(148,163,184,0.28); color:var(--text-main); padding:8px 10px; border-radius:10px; font-size:0.78rem; font-weight:800; cursor:pointer;">Edit</button>
                         <button onclick="deleteWeighInRecord('${record.id}')" style="background:#fff1f2; border:1px solid #fecaca; color:#be123c; padding:8px 10px; border-radius:10px; font-size:0.78rem; font-weight:800; cursor:pointer;">Delete</button>
                     </div>
                 </div>
@@ -1694,6 +1725,7 @@
 
         html += '</div>';
         container.innerHTML = html;
+        _syncWeighInManagerCardState();
     }
 
     async function refreshWeighInDisplays() {
@@ -1865,6 +1897,7 @@
 
     window.renderWeighInManager = renderWeighInManager;
     window.refreshWeighInDisplays = refreshWeighInDisplays;
+    window.toggleWeighInManagerCard = toggleWeighInManagerCard;
     window.openWeighInEditorModal = openWeighInEditorModal;
     window.closeWeighInEditorModal = closeWeighInEditorModal;
     window.saveWeighInEditorModal = saveWeighInEditorModal;
