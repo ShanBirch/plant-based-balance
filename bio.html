@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Work With Me | Shannon Birch</title>
+    <meta name="description" content="A simple link-in-bio hub for Shannon Birch: my journey, Balance, the free challenge, and what I offer.">
+    <meta property="og:title" content="How to Work With Me | Shannon Birch">
+    <meta property="og:description" content="My journey, Balance, the free challenge, and what I offer.">
+    <meta property="og:image" content="https://plantbased-balance.org/balance_logo_transparent.png">
+    <meta property="og:url" content="https://plantbased-balance.org/bio.html">
+    <meta property="og:type" content="website">
+    <meta name="color-scheme" content="dark light">
+    <link rel="icon" type="image/png" href="balance_logo_transparent.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        (function () {
+            try {
+                var savedTheme = localStorage.getItem('userThemePreference');
+                var theme = (savedTheme === 'light' || savedTheme === 'antigravity-light')
+                    ? 'light'
+                    : 'dark';
+                document.documentElement.setAttribute('data-bio-theme', theme);
+            } catch (error) {
+                document.documentElement.setAttribute('data-bio-theme', 'dark');
+            }
+            document.documentElement.classList.add('reveal-ready');
+        })();
+    </script>
+    <link rel="stylesheet" href="bio.css">
+    <script src="bio-animations.js" defer></script>
+</head>
+<body class="bio-page">
+    <div class="page-shell">
+        <header class="site-header">
+            <a class="brand" href="bio.html">
+                <img src="balance_logo_transparent.png" alt="Balance logo">
+                <span>Balance</span>
+            </a>
+        </header>
+
+        <main class="hub-layout">
+            <section class="surface hub-card reveal">
+                <div class="hub-logo-wrap" aria-hidden="true">
+                    <svg class="hub-logo-ring" viewBox="0 0 140 140" aria-hidden="true">
+                        <circle class="hub-logo-ring-track" cx="70" cy="70" r="66" fill="none" stroke-width="4"></circle>
+                        <circle class="hub-logo-ring-chaser" cx="70" cy="70" r="66" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" pathLength="100" stroke-dasharray="22 78" transform="rotate(-90 70 70)"></circle>
+                    </svg>
+                    <img class="hub-logo" src="balance_logo_transparent.png" alt="">
+                </div>
+                <div class="hub-links">
+                    <a class="hub-button primary" href="journey.html">
+                        <span>My Journey</span>
+                        <small>Where Balance started</small>
+                    </a>
+
+                    <a class="hub-button" href="balance.html">
+                        <span>Balance</span>
+                        <small>The app and home base</small>
+                    </a>
+
+                    <a class="hub-button" href="transform-challenge.html">
+                        <span>30 Day Free Challenge</span>
+                        <small>The easiest way in</small>
+                    </a>
+
+                    <a class="hub-button" href="coaching.html">
+                        <span>What I Offer</span>
+                        <small>The current coaching options</small>
+                    </a>
+
+                    <a class="hub-button" href="clients.html">
+                        <span>Client Success Stories</span>
+                        <small>Real people, real progress</small>
+                    </a>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <div>Balance is operated by Shannon Birch.</div>
+            <div class="footer-links">
+                <a href="mailto:shannon@plantbased-balance.org">shannon@plantbased-balance.org</a>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

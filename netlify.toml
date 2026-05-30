@@ -434,7 +434,27 @@
   from = "/plantbasedswitch"
   to = "/plantbasedswitch.html"
   status = 200
-  
+
+[[redirects]]
+  from = "/bio"
+  to = "/bio.html"
+  status = 200
+
+[[redirects]]
+  from = "/hub"
+  to = "/bio.html"
+  status = 200
+
+[[redirects]]
+  from = "/journey"
+  to = "/journey.html"
+  status = 200
+
+[[redirects]]
+  from = "/clients"
+  to = "/clients.html"
+  status = 200
+
 [[redirects]]
   from = "/*"
   to = "/login.html"
