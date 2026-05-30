@@ -13241,7 +13241,7 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
         card.setAttribute('data-is-user-added', ex.isUserAdded || false);
         card.style.cssText = "background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;";
 
-        const isTimeBased = ex.reps && (ex.reps.toLowerCase().includes('min') || ex.reps.toLowerCase().includes('s'));
+        const isTimeBased = isTimeBasedExercise(ex);
         const previousSummary = getPreviousWorkoutSummary(ex.name);
         // Use previous session's set count if available, otherwise use prescribed sets
         const prescribedSets = ex.sets || 3;
@@ -14324,7 +14324,7 @@ function getSetRowHtml(exName, setNum, isTimeBased, prefillData) {
             <div class="workout-set-row" style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; align-items:center; padding:10px 15px; border-top:1px solid #f8fafc;">
                 <div class="set-number" style="font-weight:800; color:#94a3b8; font-size:0.85rem; text-align:center;">${setNum}</div>
                 <div style="position:relative;">
-                    <input type="text" class="input-time" placeholder="-" value="${prefillTime}" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
+                    <input type="text" class="input-time" placeholder="${isTimeBased ? 'sec' : '-'}" value="${prefillTime}" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
                     ${isTimeBased ? '<svg viewBox="0 0 24 24" style="position:absolute; left:4px; top:50%; transform:translateY(-50%); width:12px; height:12px; fill:#94a3b8;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>' : ''}
                 </div>
                 <input type="text" class="input-reps" placeholder="Reps" value="${prefillReps}" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
@@ -16808,6 +16808,14 @@ function getCoachCueHtml(exercise) {
     `;
 }
 
+function isTimeBasedExercise(exercise) {
+    if (!exercise) return false;
+    if (exercise.timeBased === true || exercise.isTimeBased === true) return true;
+
+    const repsText = String(exercise.reps || '').toLowerCase();
+    return /\b(?:sec|secs|second|seconds|min|mins|minute|minutes)\b/.test(repsText);
+}
+
 function getActiveCustomProgramWeekNumber(options = {}) {
     if (!options.ignoreInlineWorkout) {
         const explicitWeek = Number(window.currentInlineWorkoutWeek);
@@ -18161,9 +18169,10 @@ function renderWorkoutExercises(exercises) {
         const prescribedSets = getExercisePrescribedSets(ex);
         const hasWeekSpecificPlan = !!getCurrentWeeklyPlanItem(ex);
         const numSets = hasWeekSpecificPlan ? prescribedSets : (previousSummary && previousSummary.setCount > 0 ? previousSummary.setCount : prescribedSets);
+        const isTimeBased = isTimeBasedExercise(ex);
         const setsHtml = Array.from({length: numSets}, (_, setIdx) => {
             const prevSet = previousSummary && previousSummary.sets[setIdx] ? previousSummary.sets[setIdx] : null;
-            return getSetRowHtml(ex.name, setIdx + 1, false, prevSet);
+            return getSetRowHtml(ex.name, setIdx + 1, isTimeBased, prevSet);
         }).join('');
 
         card.innerHTML = `
