@@ -268,7 +268,7 @@ h3 {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.16em;
+    gap: clamp(10px, 1.2vw, 18px);
     position: relative;
     margin: 0;
     white-space: nowrap;
@@ -284,7 +284,9 @@ h3 {
 .hero-title-mark {
     width: clamp(54px, 7.5vw, 88px);
     height: auto;
+    display: block;
     flex: 0 0 auto;
+    margin-left: 2px;
     background: transparent;
     transform-origin: 50% 72%;
     filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.16));
@@ -1373,12 +1375,12 @@ body.bio-page.landing-page[data-bio-theme="light"] .site-header {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.16em;
+    gap: clamp(10px, 1.2vw, 18px);
     margin: 0;
     white-space: nowrap;
     font-size: clamp(2.7rem, 8vw, 5.2rem);
     line-height: 0.98;
-    letter-spacing: -0.07em;
+    letter-spacing: 0;
 }
 
 .landing-page .hero-title-text {
@@ -1391,7 +1393,9 @@ body.bio-page.landing-page[data-bio-theme="light"] .site-header {
 .landing-page .hero-title-mark {
     width: clamp(58px, 8.8vw, 92px);
     height: auto;
+    display: block;
     flex: 0 0 auto;
+    margin-left: 2px;
     background: transparent;
     transform-origin: 50% 72%;
     filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.16));
