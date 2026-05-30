@@ -2654,8 +2654,18 @@ function renderWeeklyCalendar() {
                         dayIndex: idx,
                         subcategory: '',
                         muscleGroup: '',
-                        inlineWorkout: item.workout,
-                        customWorkout: item.workout
+                        inlineWorkout: {
+                            ...item.workout,
+                            currentWeek: currentWeek,
+                            totalWeeks: activeCustomProgram.duration_weeks,
+                            programName: activeCustomProgram.program_name
+                        },
+                        customWorkout: {
+                            ...item.workout,
+                            currentWeek: currentWeek,
+                            totalWeeks: activeCustomProgram.duration_weeks,
+                            programName: activeCustomProgram.program_name
+                        }
                     };
                 }
                 return {
@@ -3451,7 +3461,12 @@ window.openCalendarWorkout = async function(dayIndexFromMonday, replacementDate)
                     return;
                 }
                 if (dayWorkout.type === 'inline' && typeof startInlineWorkout === 'function') {
-                    startInlineWorkout(dayWorkout);
+                    startInlineWorkout({
+                        ...dayWorkout,
+                        currentWeek: currentWeek,
+                        totalWeeks: activeCustomProgram.duration_weeks,
+                        programName: activeCustomProgram.program_name
+                    });
                     return;
                 }
                 const categoryKey = dayWorkout.category || dayWorkout.type;
@@ -12258,8 +12273,18 @@ async function renderMovementView() {
                         dayIndex: idx,
                         subcategory: '',
                         muscleGroup: '',
-                        inlineWorkout: item.workout,
-                        customWorkout: item.workout,
+                        inlineWorkout: {
+                            ...item.workout,
+                            currentWeek: currentWeek,
+                            totalWeeks: activeCustomProgram.duration_weeks,
+                            programName: activeCustomProgram.program_name
+                        },
+                        customWorkout: {
+                            ...item.workout,
+                            currentWeek: currentWeek,
+                            totalWeeks: activeCustomProgram.duration_weeks,
+                            programName: activeCustomProgram.program_name
+                        },
                         fallback: 'yoga',
                         fallbackIdx: idx
                     };
@@ -16783,6 +16808,88 @@ function getCoachCueHtml(exercise) {
     `;
 }
 
+function getActiveCustomProgramWeekNumber(options = {}) {
+    if (!options.ignoreInlineWorkout) {
+        const explicitWeek = Number(window.currentInlineWorkoutWeek);
+        if (Number.isFinite(explicitWeek) && explicitWeek > 0) return explicitWeek;
+    }
+
+    const program = window.activeCustomProgramCache;
+    if (!program || !program.start_date) return null;
+
+    const startDate = new Date(program.start_date);
+    if (Number.isNaN(startDate.getTime())) return null;
+
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const weeksElapsed = Math.floor((new Date() - startDate) / msPerWeek);
+    return Math.max(1, weeksElapsed + 1);
+}
+
+function getExerciseWeeklyPlan(exercise) {
+    const plan = exercise?.weeklyPlan || exercise?.weekly_plan;
+    if (Array.isArray(plan)) return plan;
+    return [];
+}
+
+function getCurrentWeeklyPlanItem(exercise) {
+    const plan = getExerciseWeeklyPlan(exercise);
+    if (!plan.length) return null;
+
+    const currentWeek = getActiveCustomProgramWeekNumber();
+    if (!currentWeek) return null;
+
+    return plan.find((item, idx) => Number(item.week || idx + 1) === currentWeek) || null;
+}
+
+function getExercisePrescribedSets(exercise) {
+    const weekItem = getCurrentWeeklyPlanItem(exercise);
+    const weekSets = Number(weekItem?.totalSets || weekItem?.sets);
+    if (Number.isFinite(weekSets) && weekSets > 0) return weekSets;
+
+    const exerciseSets = Number(exercise?.sets);
+    if (Number.isFinite(exerciseSets) && exerciseSets > 0) return exerciseSets;
+
+    return 3;
+}
+
+function getExerciseWeeklyPlanHtml(exercise) {
+    const plan = getExerciseWeeklyPlan(exercise);
+    if (!plan.length) return '';
+
+    const currentWeek = getActiveCustomProgramWeekNumber();
+    const totalWeeks = Number(window.currentInlineWorkoutTotalWeeks || window.activeCustomProgramCache?.duration_weeks || plan.length);
+    const currentLabel = currentWeek
+        ? `This is Week ${currentWeek}${Number.isFinite(totalWeeks) && totalWeeks > 0 ? ` of ${totalWeeks}` : ''}`
+        : 'Week-by-week plan';
+
+    const rows = plan.map((item, idx) => {
+        const week = Number(item.week || idx + 1);
+        const isCurrent = currentWeek && week === currentWeek;
+        const target = item.target || item.title || '';
+        const detail = item.detail || item.details || item.note || item.desc || '';
+        const setsLabel = item.setsLabel || (item.totalSets ? `${item.totalSets} working sets` : '');
+
+        return `
+            <div style="padding:8px 0; border-top:1px solid ${isCurrent ? 'rgba(245,158,11,0.32)' : 'rgba(148,163,184,0.18)'};">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span style="font-size:0.76rem; font-weight:900; color:${isCurrent ? '#92400e' : 'var(--text-main)'};">Week ${week}</span>
+                    ${isCurrent ? '<span style="font-size:0.66rem; font-weight:900; color:#92400e; background:#fef3c7; border:1px solid #fcd34d; border-radius:999px; padding:2px 7px;">Current week</span>' : ''}
+                    ${setsLabel ? `<span style="font-size:0.68rem; color:var(--text-muted); font-weight:700;">${escapeHtml(setsLabel)}</span>` : ''}
+                </div>
+                ${target ? `<div style="font-size:0.82rem; line-height:1.35; color:var(--text-main); font-weight:700; margin-top:3px;">${escapeHtml(target)}</div>` : ''}
+                ${detail ? `<div style="font-size:0.78rem; line-height:1.35; color:var(--text-muted); margin-top:2px;">${escapeHtml(detail)}</div>` : ''}
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="exercise-weekly-plan" style="margin-top:10px; padding:10px 12px; border-radius:12px; background:#fff7ed; border:1px solid rgba(245,158,11,0.28);">
+            <div style="font-size:0.7rem; font-weight:900; letter-spacing:0.4px; text-transform:uppercase; color:#92400e; margin-bottom:4px;">${currentLabel}</div>
+            ${rows}
+        </div>
+    `;
+}
+
 // Build share message for external sharing (uses selected lift if any)
 function buildWinShareMessage() {
     const shareData = getShareData();
@@ -17979,6 +18086,8 @@ async function startInlineWorkout(workout) {
     window.currentWorkoutKey = `inline/${workout.name || 'workout'}`;
     window.currentWorkoutName = workout.name || 'Workout';
     window.currentWorkoutCustomizations = null;
+    window.currentInlineWorkoutWeek = Number(workout.currentWeek || workout.week || '') || getActiveCustomProgramWeekNumber({ ignoreInlineWorkout: true });
+    window.currentInlineWorkoutTotalWeeks = Number(workout.totalWeeks || workout.durationWeeks || window.activeCustomProgramCache?.duration_weeks || '') || null;
 
     const exercises = [...workout.exercises];
 
@@ -18049,8 +18158,9 @@ function renderWorkoutExercises(exercises) {
         const isUserAdded = ex.isUserAdded || false;
         const escapedName = ex.name.replace(/'/g, "\\'");
 
-        const prescribedSets = ex.sets || 3;
-        const numSets = previousSummary && previousSummary.setCount > 0 ? previousSummary.setCount : prescribedSets;
+        const prescribedSets = getExercisePrescribedSets(ex);
+        const hasWeekSpecificPlan = !!getCurrentWeeklyPlanItem(ex);
+        const numSets = hasWeekSpecificPlan ? prescribedSets : (previousSummary && previousSummary.setCount > 0 ? previousSummary.setCount : prescribedSets);
         const setsHtml = Array.from({length: numSets}, (_, setIdx) => {
             const prevSet = previousSummary && previousSummary.sets[setIdx] ? previousSummary.sets[setIdx] : null;
             return getSetRowHtml(ex.name, setIdx + 1, false, prevSet);
@@ -18065,6 +18175,7 @@ function renderWorkoutExercises(exercises) {
                             ${isUserAdded ? '<span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ADDED</span>' : ''}
                         </div>
                         <div style="color: var(--text-muted); font-size: 0.85rem;">${ex.desc || ''}</div>
+                        ${getExerciseWeeklyPlanHtml(ex)}
                         ${getCoachCueHtml(ex)}
                         ${previousSummaryHtml}
                     </div>

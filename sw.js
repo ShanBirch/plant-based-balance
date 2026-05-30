@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v200'; // v200: form science contrast; v199: profile-first gender for calendar tab
+const CACHE_NAME = 'pbb-app-v201'; // v201: week-by-week workout targets; v200: form science contrast
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',
