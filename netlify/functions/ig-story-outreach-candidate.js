@@ -31,11 +31,45 @@ const STORY_NO_REPLY_COOLDOWN_DAYS = 30;
 const STORY_NO_REPLY_COOLDOWN_MS = STORY_NO_REPLY_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
 const STORY_RECENT_OUTREACH_COOLDOWN_HOURS = 20;
 const STORY_RECENT_OUTREACH_COOLDOWN_MS = STORY_RECENT_OUTREACH_COOLDOWN_HOURS * 60 * 60 * 1000;
-const PET_NAME_COMMENT = "Oh so cute, what's their name?";
-const PET_NAMES_COMMENT = 'Oh so cute, what are their names?';
-const SHARED_PET_NAME_COMMENT = 'So cute, do you know their name?';
-const SHARED_PET_NAMES_COMMENT = 'So cute, do you know their names?';
-const SHARED_PET_BREED_COMMENT = 'Do you know what breed?';
+const PET_NAME_COMMENT = 'oh so cute, whats their name?';
+const PET_NAMES_COMMENT = 'oh so cute, what are their names?';
+const SHARED_PET_NAME_COMMENT = 'so cute, do you know their name?';
+const SHARED_PET_NAMES_COMMENT = 'so cute, do you know their names?';
+const SHARED_PET_BREED_COMMENT = 'do you know what breed?';
+
+function shannonStoryVoiceGuideBlock() {
+    return `Shannon voice target:
+- Mostly lowercase and text-like. Short, casual, direct, a bit Gold Coast/Aussie without forcing slang.
+- Prefer "yeah", "haha", "hey", "aye", "hows", "thats", and "whats" only when they fit naturally. Do not sprinkle them everywhere.
+- Sound like a quick real story reply, not polished creator copy, influencer hype, or a sales script.
+- Good shapes: "looking good", "looks like a fun night", "where was that taken?", "what was the spot?", "how was the session?", "coffee and wine? hows that combo go?", "thats a good line", "good song choice", "what a view".
+- Mirror selfies can stay simple with "looking good".
+- Clear gym action clips can use short hype like "lets go!", "so good!", or "how was the sesh?".
+- Bland gym floor, rack, or equipment-only shots with no clear action should usually be like-only instead of fake lift praise.
+- Gym-floor clutter, equipment-only shots, or etiquette rants should not get fake lift praise. Use the caption hook or skip/like-only.
+- Avoid overdone mate/legend/beauty/yew, emoji, perfect corporate punctuation, and big praise.`;
+}
+
+function applyShannonStoryVoice(value) {
+    let text = cleanText(value, MAX_COMMENT_CHARS);
+    if (!text) return '';
+    if (isAnimalWelfareDistressSupportComment(text)) return ANIMAL_WELFARE_SUPPORT_COMMENT;
+    if (isAnimalWelfareAdvocacyComment(text)) return ANIMAL_WELFARE_ADVOCACY_COMMENT;
+    text = text
+        .replace(/\bwhat['â€™]s\b/gi, 'whats')
+        .replace(/\bhow['â€™]s\b/gi, 'hows')
+        .replace(/\bthat['â€™]s\b/gi, 'thats')
+        .replace(/\blet['’]s\b/gi, 'lets')
+        .replace(/\bit['â€™]s\b/gi, 'its')
+        .replace(/\byou['â€™]re\b/gi, 'youre')
+        .replace(/\bdo\s+not\b/gi, 'dont')
+        .replace(/\s+/g, ' ')
+        .trim();
+    text = text.replace(/[.]+$/g, '');
+    text = text.replace(/^(Oh|So|Love|Loved|Looks|Look|That|This|Good|Great|Nice|Enjoying|Hope|What|Where|How|Who|Is|Are|Was|Were)\b/, match => match.toLowerCase());
+    text = text.replace(/([!?]\s+)(What|Where|How|Who|Is|Are|Was|Were|That|This|Looks|Love|Good|Nice)\b/g, (_, prefix, word) => `${prefix}${word.toLowerCase()}`);
+    return text.trim();
+}
 
 function envFlag(name, fallback = false) {
     const value = process.env[name];
@@ -258,7 +292,7 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (possibleDirectAddress && !safeDirectAddressOpeners.has(possibleDirectAddress[1])) {
         text = text.replace(/^([A-Z][a-z]{2,24})\s+/, '').trim();
     }
-    if (/^(?:love it|love this|love the caption|lets goo|let'?s go+|get it|mad views|looks unreal|nice as|beauty|fuck yeah|yew|doggo|cutie puppy)\b/i.test(text)) {
+    if (/^(?:love it|love this|love the caption|lets goo|get it|mad views|looks unreal|nice as|beauty|fuck yeah|yew|doggo|cutie puppy)\b/i.test(text)) {
         return '';
     }
     if (/^(?:oh\s+hey|hey|hi)\s+[a-z][a-z]{2,24}\b/i.test(text)) {
@@ -359,7 +393,7 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
         }
     }
     if (text.length > MAX_COMMENT_CHARS) text = `${text.slice(0, MAX_COMMENT_CHARS - 3).trim()}...`;
-    return text;
+    return applyShannonStoryVoice(text);
 }
 
 function repairDraftCommentWithContext({ comment = '', description = '', visibleText = '', storyOwner = '', sharedFromUsername = '', sharedContent = false } = {}) {
@@ -517,6 +551,13 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
     const fillerWords = new Set(['wow', 'yeah', 'yep', 'yes', 'nah', 'no', 'um', 'uh', 'oh', 'okay', 'ok', 'lol', 'haha', 'hahaha']);
     const meaningfulTranscriptWords = transcriptWords.filter(word => !fillerWords.has(word));
     const transcriptAwareText = cleanText([text, transcript].filter(Boolean).join(' '), 5000);
+    const storyContextText = cleanText([
+        description,
+        visibleText,
+        raw?.story_description,
+        raw?.story_visible_text,
+        raw?.visible_text,
+    ].filter(Boolean).join(' '), 4000);
     const animalWelfareSupport = isAnimalWelfareAdvocacyContext(transcriptAwareText);
     if (animalWelfareSupport && !hasGraphicAnimalWelfareContext(transcriptAwareText)) {
         return { safeToComment: true, reason: 'animal_welfare_support' };
@@ -570,9 +611,23 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
         storyOwner,
         surfaceContext,
     }) || /\b(shared|reshared|reposted|reel|from\s+@|via\s+@)\b/i.test(text);
+    const storyGymContext = /\b(gym|workout|training|class|session|lift|lifting|squat|squats|deadlift|bench|press|row|curl|weights?|reps?|sets?|cardio|run|jog|pilates|yoga|spin|bootcamp|football|game|team|practice|exercise)\b/i.test(storyContextText);
+    const clearGymAction = /\b(?:performing|doing|working on|training|squatting|deadlifting|benching|pressing|rowing|curling|hip abduction|plank|session|workout)\b/i.test(storyContextText);
+    const gymSelfieContext = /\b(selfie|mirror selfie|portrait|wearing|outfit|look)\b/i.test(storyContextText);
+    const gymActionComment = /\b(?:lets?\s+go+!?|so\s+good!?|how\s+was\s+the\s+sesh\??|how\s+was\s+the\s+session\??|good\s+sesh!?|good\s+session!?|get\s+it!?)/i.test(comment);
+    const genericGymPraise = /\b(?:nice lift|looking good|lets?\s+go+!?|so\s+good!?|good\s+sesh!?|good\s+session!?|get\s+it!?|how\s+was\s+the\s+sesh\??|how\s+was\s+the\s+session\??)\b/i.test(comment);
     const hasTranscript = Boolean(transcript);
     if (sharedContext && !hasTranscript && /\b(?:person|man|woman|creator|someone|guy|girl|he|she|they|speaker|host|podcast(?:er)?|interview(?:er|ee)?)\b.{0,90}\b(?:talk(?:ing|s)?|speak(?:ing|s)?|say(?:ing|s)?|tell(?:ing|s)?|explain(?:ing|s)?|discuss(?:ing|es)?|interview(?:ing|s)?|voice[-\s]?over|lip[-\s]?sync(?:ing)?)\b/i.test(text)) {
         return { safeToComment: false, reason: 'shared_talking_reel_uncertain' };
+    }
+    if (storyGymContext && !clearGymAction && genericGymPraise && !gymSelfieContext) {
+        return { safeToComment: false, reason: 'gym_context_mismatch' };
+    }
+    if (storyGymContext && !clearGymAction && /\b(etiquette|clown|floor|bag|water bottle|equipment|rack|rules?|rant|dont be|don't be)\b/i.test(storyContextText) && /\b(?:nice lift|looking good|lets?\s+go+!?|so\s+good!?|good\s+sesh!?|good\s+session!?|get\s+it!?|how\s+was\s+the\s+sesh\??|how\s+was\s+the\s+session\??)\b/i.test(comment)) {
+        return { safeToComment: false, reason: 'gym_context_mismatch' };
+    }
+    if (storyGymContext && clearGymAction && gymActionComment) {
+        return { safeToComment: true, reason: 'activity_handle' };
     }
     if (/\b(talking|speaking|talks|speaks)\s+(?:to|at)\s+(?:the\s+)?camera\b/i.test(text) && meaningfulTranscriptWords.length < 4) {
         return { safeToComment: false, reason: 'talking_video_low_context_transcript' };
@@ -609,6 +664,11 @@ function assessStillsOnlyVideoSalvageContext({
         sharedFromUsername,
         surfaceContext,
     });
+    const storyGymContext = /\b(gym|workout|training|class|session|lift|lifting|squat|squats|deadlift|bench|press|row|curl|weights?|reps?|sets?|cardio|run|jog|pilates|yoga|spin|bootcamp|football|game|team|practice|exercise)\b/i.test(text);
+    const clearGymAction = /\b(?:performing|doing|working on|training|squatting|deadlifting|benching|pressing|rowing|curling|hip abduction|plank|session|workout)\b/i.test(text);
+    const gymSelfieContext = /\b(selfie|mirror selfie|portrait|wearing|outfit|look)\b/i.test(text);
+    const gymActionComment = /\b(?:lets?\s+go+!?|so\s+good!?|how\s+was\s+the\s+sesh\??|how\s+was\s+the\s+session\??|good\s+sesh!?|good\s+session!?|get\s+it!?)/i.test(draft);
+    const genericGymPraise = /\b(?:nice lift|looking good|lets?\s+go+!?|so\s+good!?|good\s+sesh!?|good\s+session!?|get\s+it!?|how\s+was\s+the\s+sesh\??|how\s+was\s+the\s+session\??)\b/i.test(draft);
 
     if (!text && !surfaceContext?.storyMusicLabel) {
         return { safeToComment: false, reason: 'analysis_failed' };
@@ -627,6 +687,15 @@ function assessStillsOnlyVideoSalvageContext({
     }
     if (/\b(food|meal|feed|breakfast|lunch|dinner|cake|coffee|wine|drink|ramen|pasta|pizza|burger|sandwich|sanga|toastie|eggs?|benny|chicken)\b/i.test(lower) && /\b(food|feed|coffee|wine|combo|how was|what'?s|whats|eggs?|benny|chicken)\b/i.test(draft)) {
         return { safeToComment: true, reason: 'food_handle' };
+    }
+    if (storyGymContext && !clearGymAction && /\b(etiquette|clown|floor|bag|water bottle|equipment|rack|rules?|rant|dont be|don't be)\b/i.test(text) && /\b(?:nice lift|looking good|lets?\s+go+!?|so\s+good!?|good\s+sesh!?|good\s+session!?|get\s+it!?|how\s+was\s+the\s+sesh\??|how\s+was\s+the\s+session\??)\b/i.test(draft)) {
+        return { safeToComment: false, reason: 'gym_context_mismatch' };
+    }
+    if (storyGymContext && !clearGymAction && genericGymPraise && !gymSelfieContext) {
+        return { safeToComment: false, reason: 'gym_context_mismatch' };
+    }
+    if (storyGymContext && clearGymAction && gymActionComment) {
+        return { safeToComment: true, reason: 'activity_handle' };
     }
     if (/\b(view|sunset|beach|mountain|river|lake|city|cityscape|rooftop|bar|valley|travel|trip|holiday|place|spot|where)\b/i.test(lower) && /\b(view|city|place|spot|where|looks|what a|rooftop|valley)\b/i.test(draft)) {
         return { safeToComment: true, reason: 'place_handle' };
@@ -748,6 +817,8 @@ async function generateStoryCommentPlan({ username, description, visibleText, st
     try {
         const prompt = `You are Shannon's private Instagram story opener planner. You do not write the final comment. Pick the safest, most natural opener strategy.
 
+${shannonStoryVoiceGuideBlock()}
+
 Return JSON only:
 {
   "story_read": "what the story appears to be about, using only the provided evidence",
@@ -765,7 +836,7 @@ Rules:
 - For shared content, avoid "you/your" and avoid commenting on the person in the reel/post. Good angles are the shared idea, text, place, joke, news, or mood.
 - Treat audio transcript as supplemental. If audio/transcript and visible frames point to different subjects, avoid transcript-only details and plan to skip unless a visible-only opener is clearly safe.
 - Prefer one tiny natural question when the story gives a clear handle: pet name, location, food/drink, class, hobby, travel, weather, event, or an interesting object.
-- For animal stories with no visible pet name, prefer: Oh so cute, what's their name?
+- For animal stories with no visible pet name, prefer: oh so cute, whats their name?
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
 - If the answer is already visible in the story context, do not ask it. React to the known detail instead.
 - If the story shows an unfamiliar event, venue, class, food, hobby, or object, prefer the obvious small context question using the visible noun over "never seen that thing" or another dead-end observation.
@@ -776,6 +847,7 @@ Rules:
 - Do not guess personal location or home. Avoid "is that at home?" unless the story explicitly says home.
 - For brand birthday or anniversary celebration graphics, a simple milestone reaction is okay. For sales, spin-to-win, competitions, giveaways, or ads, avoid commenting.
 - Normal selfies and nights out can be simple. "looking good" or "looks like a fun night" is fine when it fits.
+- Bland gym floor, rack, or equipment-only shots with no clear action should usually be like-only instead of fake lift praise.
 - Keep appearance comments broad and harmless. Do not be flirty, sexual, body-specific, weight/physique-focused, or weirdly intense.
 - For a clear portrait/selfie, prefer a simple broad vibe like "looking good" over asking who took the photo.
 - For a clear portrait/selfie, prefer a simple broad vibe like "looking good" over asking who took the photo.
@@ -810,16 +882,20 @@ async function generateStoryCommentFromPlan({ username, description, visibleText
         });
         const prompt = `Write the final Instagram story reply comment for Shannon from this private plan.
 
+${shannonStoryVoiceGuideBlock()}
+
 Return JSON only:
 { "comment": "one short comment" }
 
 Rules:
 - 3-12 words.
-- Casual Australian, natural, human.
+- Casual Australian, natural, human, and closer to Shannon's texting than polished brand copy.
+- Mostly lowercase unless a proper noun really needs it.
+- Prefer "whats", "hows", and "thats" over polished apostrophe-heavy wording when it still reads clearly.
 - Ask one tiny specific question when it clearly keeps the conversation going.
 - Do not ask a question if the story already gives the answer.
-- For pets with no visible name, "what's their name?" is often better than a dead-end compliment.
-- For animal stories with no visible pet name, prefer: Oh so cute, what's their name?
+- For pets with no visible name, "whats their name?" is often better than a dead-end compliment.
+- For animal stories with no visible pet name, prefer: oh so cute, whats their name?
 - Treat audio transcript as supplemental. If audio/transcript and visible frames point to different subjects, do not use transcript-only details in the comment.
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
 - For visible locations, food, classes, hobbies, or odd objects, ask the obvious small context question if it feels natural.
@@ -828,6 +904,7 @@ Rules:
 - Do not guess personal location or home. Avoid "is that at home?" unless the story explicitly says home.
 - For brand birthday or anniversary celebration graphics, a simple milestone reaction is okay. For sales, spin-to-win, competitions, giveaways, or ads, return an empty comment.
 - Normal selfies and nights out can be simple. "looking good" or "looks like a fun night" is fine when it fits.
+- Bland gym floor, rack, or equipment-only shots with no clear action should usually be like-only instead of fake lift praise.
 - Keep appearance comments broad and harmless. Do not be flirty, sexual, body-specific, weight/physique-focused, or weirdly intense.
 - For a clear portrait/selfie, prefer a simple broad vibe like "looking good" over asking who took the photo.
 - For plain selfie/pose videos, do not invent an occasion. If the only real handle is the visible song or audio, a tiny music comment is okay.
@@ -835,6 +912,7 @@ Rules:
 - No Balance/coaching/challenge/app/program/link/meal-plan pitch. Product/challenge talk belongs later in the lead-only DM qualifier after a direct help/start signal or 3-6 meaningful lead replies with real context.
 - No unsupported claims. Use only the story context.
 - Normal selfies and nights out can be simple. "looking good" or "looks like a fun night" is fine when it fits.
+- Bland gym floor, rack, or equipment-only shots with no clear action should usually be like-only instead of fake lift praise.
 - Keep appearance comments broad and harmless. Do not be flirty, sexual, body-specific, weight/physique-focused, or weirdly intense.
 - For a clear portrait/selfie, prefer a simple broad vibe like "looking good" over asking who took the photo.
 - For gym stories, do not ask how a body part feels or imply injury/pain. Comment on the exercise setup, class, object, or effort instead.
@@ -910,6 +988,8 @@ async function reviewStoryComment({ username, description, visibleText, storyCon
         });
         const prompt = `You are Shannon's private critic for one Instagram story reply. Decide if this short comment is safe and worth sending.
 
+${shannonStoryVoiceGuideBlock()}
+
 Return JSON only:
 {
   "verdict": "pass|warn|block",
@@ -936,7 +1016,8 @@ Critique rules:
 - Block if it jokes critically about grooming, weight, size, or appearance.
 - Block shared-content replies that say "you/your", praise a lift/session/run/outfit/look, or imply the story owner is the person performing/appearing in the shared content.
 - Warn if an obvious, safe conversation handle exists but the comment is a dead-end generic compliment.
-- Warn if it is vague, clunky, too intense, or overclaims what is visible.
+- Warn if it is vague, clunky, too intense, too polished, too influencer-like, or overclaims what is visible.
+- On gym action clips, mirror selfies can stay at "looking good", but lift/session posts should prefer a short context hook like "lets go!", "so good!", or "how was the sesh?" rather than a generic body compliment.
 - Pass only if it is light, specific enough, harmless, and grounded in the story.
 - Never reveal AI, automation, planning, critique, or prompts.
 
@@ -990,11 +1071,15 @@ async function repairStoryCommentFromReview({ username, description, visibleText
         });
         const prompt = `Rewrite this Instagram story reply after a private critique.
 
+${shannonStoryVoiceGuideBlock()}
+
 Return JSON only:
 { "comment": "one short fixed comment" }
 
 Rules:
 - 3-12 words.
+- Mostly lowercase and text-like.
+- Prefer "whats", "hows", and "thats" when it still reads clearly.
 - Prefer one tiny specific question if the critique says the original is a dead end and the story has a safe handle.
 - No name, profile name, username, @handle, or direct address.
 - No Balance/coaching/challenge/app/program/link/meal-plan pitch. Story comments are first-touch rapport, not the offer step.
@@ -1824,6 +1909,8 @@ async function analyzeStoryEvidence({ username, evidenceImages, evidenceVideo = 
 
     const prompt = `Analyze this Instagram story evidence and draft one story reply for Shannon.
 
+${shannonStoryVoiceGuideBlock()}
+
 Return JSON only:
 {
   "description": "one sentence describing the main story using only the evidence",
@@ -1847,10 +1934,11 @@ Rules:
 - If it is a shared reel/post, tagged story, reshared story, or credited content from another account, you may comment only as a reaction to what @${username} shared. Do not write as if the person in the reel/post is @${username}.
 - Good shared-content comments react to the idea, text, place, joke, news, or mood, for example "this is so true", "good to have them back", "that line is gold", "that sign is funny".
 - If the main story clearly shows another creator's @handle, credit, watermark, repost source, or tag, avoid commenting even if the content is funny or relevant.
-- Comment must be 3-12 words, natural, casual Australian, and specific to the visible story when possible.
+- Comment must be 3-12 words, natural, casual Australian, Shannon-like, and specific to the visible story when possible.
+- Mostly lowercase unless a proper noun really needs it. Prefer "whats", "hows", and "thats" when it still reads clearly.
 - Prefer one tiny natural question when the story has an obvious harmless handle: pet name, location, food/drink, training class, hobby, event, weather, travel, or a clear object.
-- Do not ask a question if the story already answers it. If a pet name is visible, react to that pet/name; if no pet name is visible, asking "what's their name?" is good.
-- For animal stories with no visible pet name, prefer: Oh so cute, what's their name?
+- Do not ask a question if the story already answers it. If a pet name is visible, react to that pet/name; if no pet name is visible, asking "whats their name?" is good.
+- For animal stories with no visible pet name, prefer: oh so cute, whats their name?
 - Audio transcript is supplemental. If transcript/audio and the visible frames point to different subjects, never base the comment on transcript-only details; set safe_to_comment=false with safety_reason="audio_visual_mismatch" unless a clear visible-only comment exists.
 - If a beach/coastal story says "this is my clubbing" or "vamos a la playa", do not ask if it is a club or venue. Treat it as beach-over-clubbing contrast.
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?

@@ -80,6 +80,50 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    normalizeDraftComment("Let's go!", {
+        storyOwner: 'someone',
+        sharedContent: false,
+    }),
+    'lets go!',
+    'gym hype should survive normalization'
+);
+
+const mirrorSelfieSafety = assessStoryCommentSafety({
+    storyOwner: 'mirror.selfie',
+    description: 'A mirror selfie in a gym.',
+    visibleText: '',
+    comment: 'looking good',
+});
+assert.strictEqual(mirrorSelfieSafety.safeToComment, true);
+
+const gymActionSafety = assessStoryCommentSafety({
+    storyOwner: 'gym.action',
+    description: 'A person is performing squats at a squat rack in a gym.',
+    visibleText: 'Good good morning',
+    comment: 'lets go!',
+});
+assert.strictEqual(gymActionSafety.safeToComment, true);
+assert.strictEqual(gymActionSafety.reason, 'activity_handle');
+
+const gymEtiquetteSafety = assessStoryCommentSafety({
+    storyOwner: 'gym.etiquette',
+    description: 'The story shows a gym floor with a black box, a gym bag, and a red water bottle, accompanied by text about gym etiquette.',
+    visibleText: "Don't be this fucking clown in the gym.",
+    comment: 'nice lift!',
+});
+assert.strictEqual(gymEtiquetteSafety.safeToComment, false);
+assert.strictEqual(gymEtiquetteSafety.reason, 'gym_context_mismatch');
+
+const gymEquipmentSafety = assessStoryCommentSafety({
+    storyOwner: 'gym.equipment',
+    description: 'A gym floor with a rack, a barbell, and a water bottle. No one is clearly lifting. ',
+    visibleText: '',
+    comment: 'looking good',
+});
+assert.strictEqual(gymEquipmentSafety.safeToComment, false);
+assert.strictEqual(gymEquipmentSafety.reason, 'gym_context_mismatch');
+
+assert.strictEqual(
     normalizeDraftComment("What's the story here?", {
         storyOwner: 'nickwhite49',
         sharedContent: false,
@@ -259,7 +303,7 @@ assert.strictEqual(
         storyOwner: 'glutenfree_girlmelbourne',
         sharedContent: false,
     }),
-    'French rose, yum! What kind?',
+    'French rose, yum! what kind?',
     'accent-stripped rose should not be sent as ros'
 );
 
@@ -304,7 +348,7 @@ assert.strictEqual(
         storyOwner: 'haroldwuldnvrbeatuphislandlord',
         sharedContent: false,
     }),
-    "Oh so cute, what's their name?",
+    'oh so cute, whats their name?',
     'pet name questions should not repeat toilet/fart captions'
 );
 
@@ -313,7 +357,7 @@ assert.strictEqual(
         storyOwner: 'qwerth314',
         sharedContent: false,
     }),
-    "Oh so cute, what's their name?",
+    'oh so cute, whats their name?',
     'pet name comments should be polished before sending'
 );
 
@@ -322,7 +366,7 @@ assert.strictEqual(
         storyOwner: 'veganrebelalliance',
         sharedContent: true,
     }),
-    'So cute, do you know their name?',
+    'so cute, do you know their name?',
     'shared animal stories should not ask pet-name questions as if the animal belongs to the sharer'
 );
 
@@ -331,7 +375,7 @@ assert.strictEqual(
         storyOwner: 'catarinaaaaaaaaa',
         sharedContent: true,
     }),
-    'So cute, do you know their name?',
+    'so cute, do you know their name?',
     'shared pet name comments should survive the shared-content you/your guard'
 );
 
@@ -340,7 +384,7 @@ assert.strictEqual(
         storyOwner: 'sarinagitodotcom',
         sharedContent: true,
     }),
-    'So cute, do you know their names?',
+    'so cute, do you know their names?',
     'shared multi-animal name questions should be framed to the sharer'
 );
 
@@ -349,7 +393,7 @@ assert.strictEqual(
         storyOwner: 'darnz',
         sharedContent: true,
     }),
-    'Do you know what breed?',
+    'do you know what breed?',
     'shared pet breed questions should be framed to the sharer'
 );
 
@@ -358,7 +402,7 @@ assert.strictEqual(
         storyOwner: 'wheres_kimmy_t',
         sharedContent: false,
     }),
-    'Love the colourful wigs! looks like a great hens night',
+    'love the colourful wigs! looks like a great hens night',
     'multi-clause clipped hens wording should be repaired'
 );
 
