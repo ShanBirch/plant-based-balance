@@ -909,6 +909,24 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
     line-height: 1.72;
 }
 
+.timeline-photo {
+    width: min(100%, 380px);
+    margin: 14px 0 0;
+    overflow: hidden;
+    border-radius: 22px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16);
+}
+
+.timeline-photo img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    object-position: center;
+}
+
 .tag-row {
     display: flex;
     flex-wrap: wrap;
