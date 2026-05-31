@@ -456,6 +456,33 @@
   status = 200
 
 [[redirects]]
+  from = "/balance"
+  to = "/balance.html"
+  status = 200
+
+[[redirects]]
+  from = "/what-i-offer"
+  to = "/coaching.html"
+  status = 200
+
+[[redirects]]
+  from = "/free-challenge"
+  to = "/transform-challenge.html"
+  status = 200
+
+[[redirects]]
+  from = "/vegan-challenge"
+  to = "/transform-challenge.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/vegan-challenge.html"
+  to = "/transform-challenge.html"
+  status = 301
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/login.html"
   status = 200
