@@ -54,10 +54,10 @@
       category: 'Recovery',
       blurb: 'Sleep, steps, water, check-ins',
       short: 'R',
-      accent: '#d8b25e',
-      soft: 'rgba(216,178,94,0.14)',
-      border: 'rgba(245,217,138,0.28)',
-      gradient: 'linear-gradient(135deg,#f5d98a,#d8b25e,#9f7628)',
+      accent: '#7c3aed',
+      soft: '#f5f3ff',
+      border: '#ddd6fe',
+      gradient: 'linear-gradient(135deg,#7c3aed,#ec4899)',
       goals: [
         { id: 'sleep_7h_nights', label: 'Sleep 7+ hours', target: 4, unit: 'nights', min: 1, max: 7, step: 1 },
         { id: 'steps_10k_days', label: 'Reach 10k steps', target: 4, unit: 'days', min: 1, max: 7, step: 1 },
@@ -75,7 +75,8 @@
       gradient: 'linear-gradient(135deg,#f59e0b,#ef4444)',
       goals: [
         { id: 'daily_quiz_days', label: 'Complete Daily Quiz', target: 3, unit: 'days', min: 1, max: 7, step: 1 },
-        { id: 'perfect_lessons', label: 'Score 100% on Health IQ quizzes', target: 5, unit: 'quizzes', min: 1, max: 10, step: 1 }
+        { id: 'questions_answered', label: 'Answer Health IQ questions', target: 20, unit: 'questions', min: 5, max: 80, step: 5 },
+        { id: 'perfect_lessons', label: 'Score 100% on lessons', target: 1, unit: 'lessons', min: 1, max: 5, step: 1 }
       ]
     },
     {
@@ -89,7 +90,7 @@
       goals: [
         { id: 'share_workout_feed', label: 'Share workout to Feed', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
         { id: 'share_meal_feed', label: 'Share meal to Feed', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
-        { id: 'message_coach', label: 'Message Shannon', target: 10, unit: 'messages', min: 1, max: 30, step: 1 },
+        { id: 'message_coach', label: 'Message your coach', target: 1, unit: 'messages', min: 1, max: 3, step: 1 },
         { id: 'invite_friend', label: 'Invite a friend', target: 1, unit: 'friends', min: 1, max: 3, step: 1 },
         { id: 'complete_game', label: 'Complete a game', target: 1, unit: 'games', min: 1, max: 5, step: 1 }
       ]
@@ -104,29 +105,12 @@
   });
 
   const ONBOARDING_INTENT_TO_WEEKLY_GOALS = {
-    lose_weight: ['calorie_range_days', 'protein_days', 'weigh_in_days'],
-    consistent_workouts: ['complete_workouts', 'message_coach', 'meal_log_days'],
-    build_strength: ['complete_workouts', 'protein_days', 'calorie_range_days'],
-    improve_nutrition: ['meal_log_days', 'calorie_range_days', 'protein_days'],
-    hit_protein: ['protein_days', 'meal_log_days', 'complete_workouts'],
-    learn_fitness: ['daily_quiz_days', 'perfect_lessons', 'message_coach'],
-    more_energy: ['steps_10k_days', 'sleep_7h_nights', 'water_goal_days'],
-    build_community: ['message_coach', 'share_workout_feed', 'complete_workouts']
-  };
-
-  const ONBOARDING_WEEKLY_FOCUS_TO_WEEKLY_GOALS = {
-    complete_workouts: ['complete_workouts'],
-    protein_days: ['protein_days'],
-    calorie_range_days: ['calorie_range_days'],
-    meal_log_days: ['meal_log_days'],
-    weigh_in_days: ['weigh_in_days'],
-    steps_10k_days: ['steps_10k_days'],
-    sleep_7h_nights: ['sleep_7h_nights'],
-    water_goal_days: ['water_goal_days'],
-    daily_quiz_days: ['daily_quiz_days'],
-    perfect_lessons: ['perfect_lessons'],
-    message_coach: ['message_coach'],
-    share_workout_feed: ['share_workout_feed']
+    lose_weight: ['weight_loss', 'weigh_in_days', 'calorie_range_days'],
+    learn_fitness: ['daily_quiz_days', 'questions_answered', 'complete_workouts'],
+    improve_nutrition: ['protein_days', 'meal_log_days', 'calorie_range_days'],
+    consistent_workouts: ['complete_workouts', 'build_workouts', 'mood_checkin_days'],
+    build_strength: ['complete_workouts', 'protein_days', 'build_workouts'],
+    more_energy: ['sleep_7h_nights', 'water_goal_days', 'complete_workouts']
   };
 
   let state = {
@@ -156,23 +140,27 @@
   }
 
   function clampCount(value) {
-    const number = Math.floor(Number(value || 0));
-    if (!Number.isFinite(number)) return 0;
+    const number = Math.floor(Number(value) || 0);
     return Math.max(0, Math.min(MAX_GOALS, number));
   }
 
   function calculateWeeklyGoalReward(completed, total) {
-    const safeCompleted = clampCount(completed);
-    const safeTotal = clampCount(total);
-    const max = Math.min(
+    const completedCount = clampCount(completed);
+    const totalCount = clampCount(total);
+    const maxPoints = Math.min(
       XP_WEEKLY_GOAL_CAP,
-      (safeTotal * XP_PER_COMPLETED_GOAL) + (safeTotal >= MAX_GOALS ? XP_ALL_GOALS_BONUS : 0)
+      (totalCount * XP_PER_COMPLETED_GOAL) + (totalCount >= MAX_GOALS ? XP_ALL_GOALS_BONUS : 0)
     );
-    const earned = Math.min(
+    const earnedPoints = Math.min(
       XP_WEEKLY_GOAL_CAP,
-      (safeCompleted * XP_PER_COMPLETED_GOAL) + (safeCompleted >= MAX_GOALS && safeTotal >= MAX_GOALS ? XP_ALL_GOALS_BONUS : 0)
+      (completedCount * XP_PER_COMPLETED_GOAL) + (completedCount >= MAX_GOALS && totalCount >= MAX_GOALS ? XP_ALL_GOALS_BONUS : 0)
     );
-    return { earned, max };
+    return {
+      earned: Math.min(earnedPoints, maxPoints),
+      max: maxPoints,
+      completed: completedCount,
+      total: totalCount
+    };
   }
 
   function getCategoryMeta(category) {
@@ -237,28 +225,12 @@
     if (now.getDay() === 0 && now.getHours() >= 12) {
       start = addDaysKey(start, 7);
     }
-    return getWeekFromStart(start);
-  }
-
-  function getWeekFromStart(start) {
     return {
       start,
       end: addDaysKey(start, 6),
       endExclusive: addDaysKey(start, 7),
       arcStart: addDaysKey(start, -21)
     };
-  }
-
-  function getNextPlanningWeek() {
-    return getWeekFromStart(addDaysKey(getMondayKey(new Date()), 7));
-  }
-
-  function resolveRequestedWeek(options) {
-    if (options && typeof options === 'object') {
-      if (options.week === 'next' || options.nextWeek === true) return getNextPlanningWeek();
-      if (options.weekStart) return getWeekFromStart(options.weekStart);
-    }
-    return getPlanningWeek(new Date());
   }
 
   function localStorageKey(userId, weekStart) {
@@ -308,71 +280,70 @@
     return result;
   }
 
-  function readJsonStorage(storage, key) {
+  function parseJsonSafe(raw, fallback) {
     try {
-      if (!storage || !key) return null;
-      const raw = storage.getItem(key);
-      return raw ? JSON.parse(raw) : null;
+      return raw ? JSON.parse(raw) : fallback;
     } catch (_) {
-      return null;
+      return fallback;
     }
   }
 
-  function extractStoredIds(value) {
-    if (!Array.isArray(value)) return [];
-    return value.map(item => {
-      if (typeof item === 'string') return item;
-      if (item && typeof item === 'object') return item.id || item.value || null;
-      return null;
-    }).filter(Boolean);
+  function readProfileSources() {
+    const sources = [];
+    if (window.userProfile && typeof window.userProfile === 'object') sources.push(window.userProfile);
+    sources.push(parseJsonSafe(localStorage.getItem('userProfile'), {}));
+    sources.push(parseJsonSafe(sessionStorage.getItem('userProfile'), {}));
+    return sources.filter(source => source && typeof source === 'object');
   }
 
-  function readStoredProfile() {
-    try {
-      const raw = sessionStorage.getItem('userProfile');
-      return raw ? JSON.parse(raw) : {};
-    } catch (_) {
-      return {};
-    }
-  }
-
-  function getOnboardingSuggestedGoalIds() {
-    const profile = readStoredProfile();
+  function readOnboardingGoalIntentIds() {
     const ids = [];
-    const seen = new Set();
-    const add = goalId => {
-      if (!GOAL_BY_ID[goalId] || seen.has(goalId) || ids.length >= MAX_GOALS) return;
-      seen.add(goalId);
-      ids.push(goalId);
-    };
-    const addMapped = (sourceId, map) => {
-      (map[sourceId] || []).forEach(add);
-    };
-
-    [
-      readJsonStorage(localStorage, 'onboardingWeeklyGoalFocusIds'),
-      readJsonStorage(localStorage, 'onboardingWeeklyGoalFocus'),
-      profile.weekly_goal_focus,
-      profile.onboarding_weekly_goal_focus
-    ].flatMap(extractStoredIds).forEach(goalId => {
-      if (GOAL_BY_ID[goalId]) add(goalId);
-      else addMapped(goalId, ONBOARDING_WEEKLY_FOCUS_TO_WEEKLY_GOALS);
+    readProfileSources().forEach(profile => {
+      const lists = [profile.goal_intents, profile.onboarding_goal_intents];
+      lists.forEach(list => {
+        if (!Array.isArray(list)) return;
+        list.forEach(item => {
+          const id = typeof item === 'string' ? item : item && item.id;
+          if (id && !ids.includes(id)) ids.push(id);
+        });
+      });
     });
 
     [
-      readJsonStorage(localStorage, 'onboardingGoalIntentIds'),
-      readJsonStorage(localStorage, 'onboardingGoalIntents'),
-      profile.goal_intents,
-      profile.onboarding_goal_intents
-    ].flatMap(extractStoredIds).forEach(intentId => {
-      addMapped(intentId, ONBOARDING_INTENT_TO_WEEKLY_GOALS);
+      parseJsonSafe(localStorage.getItem('onboardingGoalIntentIds'), []),
+      parseJsonSafe(localStorage.getItem('onboardingGoalIntents'), [])
+    ].forEach(list => {
+      if (!Array.isArray(list)) return;
+      list.forEach(item => {
+        const id = typeof item === 'string' ? item : item && item.id;
+        if (id && !ids.includes(id)) ids.push(id);
+      });
     });
 
     return ids;
   }
 
-  function getOnboardingSuggestedGoals() {
-    return normalizeSelected(getOnboardingSuggestedGoalIds().map(id => GOAL_BY_ID[id]));
+  function suggestWeeklyGoalsFromOnboarding() {
+    const suggested = [];
+    const addGoal = goalId => {
+      if (suggested.length >= MAX_GOALS || suggested.some(goal => goal.id === goalId)) return;
+      const goal = normalizeGoal(GOAL_BY_ID[goalId]);
+      if (goal) suggested.push(goal);
+    };
+
+    readOnboardingGoalIntentIds().forEach(intentId => {
+      (ONBOARDING_INTENT_TO_WEEKLY_GOALS[intentId] || []).forEach(addGoal);
+    });
+
+    if (suggested.length < MAX_GOALS) {
+      readProfileSources().forEach(profile => {
+        if (suggested.length >= MAX_GOALS) return;
+        if (profile.goalBodyType === 'Flat' || profile.goal_body_type === 'Flat') addGoal('weight_loss');
+        if (profile.goalBodyType === 'Body Builder' || profile.goal_body_type === 'Body Builder') addGoal('complete_workouts');
+      });
+    }
+
+    return suggested.slice(0, MAX_GOALS);
   }
 
   async function fetchWeeklyRow(userId, weekStart) {
@@ -466,34 +437,6 @@
     }
   }
 
-  async function getSupabaseAccessToken(supabase) {
-    try {
-      if (supabase?.auth?.getSession) {
-        const result = await supabase.auth.getSession();
-        return result?.data?.session?.access_token || '';
-      }
-      if (supabase?.auth?.session) {
-        return supabase.auth.session()?.access_token || '';
-      }
-    } catch (_) {}
-    return '';
-  }
-
-  async function loadIgCoachMessages(supabase, startIso, endIso) {
-    if (typeof fetch !== 'function') return [];
-    const token = await getSupabaseAccessToken(supabase);
-    if (!token) return [];
-
-    const params = new URLSearchParams({ start: startIso, end: endIso });
-    const response = await fetch('/.netlify/functions/weekly-goal-ig-messages?' + params.toString(), {
-      method: 'GET',
-      headers: { Authorization: 'Bearer ' + token }
-    });
-    if (!response.ok) throw new Error('weekly-goal-ig-messages failed: ' + response.status);
-    const payload = await response.json().catch(() => ({}));
-    return Array.isArray(payload.messages) ? payload.messages : [];
-  }
-
   async function loadProgressData(userId, week) {
     const supabase = window.supabaseClient;
     if (!supabase) return {};
@@ -515,9 +458,9 @@
       safeQuery('meal_logs', () => supabase.from('meal_logs')
         .select('meal_date,meal_type,created_at')
         .eq('user_id', userId)
+        .neq('meal_type', 'water')
         .gte('meal_date', week.arcStart)
         .lt('meal_date', week.endExclusive)
-        .neq('meal_type', 'water')
         .order('meal_date', { ascending: true })),
       safeQuery('workouts history', () => supabase.from('workouts')
         .select('workout_date,workout_type,exercise_name,created_at')
@@ -539,7 +482,7 @@
         .lt('weigh_in_date', week.endExclusive)
         .order('weigh_in_date', { ascending: true })),
       safeQuery('stories', () => supabase.from('stories')
-        .select('id,media_type,caption,created_at')
+        .select('id,media_type,created_at')
         .eq('user_id', userId)
         .gte('created_at', startIso)
         .lt('created_at', endIso)),
@@ -606,9 +549,6 @@
           .gte('created_at', startIso)
           .lt('created_at', endIso))
         : Promise.resolve([]),
-      safeQuery('ig coach messages', async () => ({
-        data: await loadIgCoachMessages(supabase, startIso, endIso)
-      })),
       safeQuery('referrals', () => supabase.from('referrals')
         .select('id,created_at,status')
         .eq('referrer_user_id', userId)
@@ -617,10 +557,10 @@
     ];
 
     const [
-      nutrition, mealLogs, workouts, customWorkouts, weighIns,
-      stories, lessons, milestones, checkins, moodLogs,
-      ouraActivity, fitbitActivity, whoopSleep, ouraSleep,
-      fitbitSleep, gameMatches, quizBattles, coachMessages, igCoachMessages, referrals
+      nutrition, mealLogs, workouts, customWorkouts, weighIns, stories,
+      lessons, milestones, checkins, moodLogs, ouraActivity,
+      fitbitActivity, whoopSleep, ouraSleep, fitbitSleep,
+      gameMatches, quizBattles, coachMessages, referrals
     ] = await Promise.all(queries);
 
     return {
@@ -641,7 +581,7 @@
       fitbitSleep,
       gameMatches,
       quizBattles,
-      coachMessages: [].concat(coachMessages || [], igCoachMessages || []),
+      coachMessages,
       referrals
     };
   }
@@ -652,20 +592,6 @@
 
   function createdDateKey(row) {
     return row && row.created_at ? getDateKey(new Date(row.created_at)) : null;
-  }
-
-  function getStoryCardType(row) {
-    if (!row || !row.caption || typeof row.caption !== 'string') return '';
-    try {
-      const payload = JSON.parse(row.caption);
-      return String(payload && payload.card_type || '');
-    } catch (_) {
-      return '';
-    }
-  }
-
-  function isWorkoutFeedGoalStory(row) {
-    return row && row.media_type === 'workout_card' && getStoryCardType(row) !== 'friday_weigh_in';
   }
 
   function countDistinctDates(rows, getKey) {
@@ -800,13 +726,17 @@
         current = weekRows(data.milestones, week, row => row.achieved_at ? getDateKey(new Date(row.achieved_at)) : null)
           .filter(row => row.milestone_type === 'daily_quiz').length;
         break;
+      case 'questions_answered':
+        current = weekRows(data.lessons, week, row => row.completed_at ? getDateKey(new Date(row.completed_at)) : null)
+          .reduce((sum, row) => sum + Number(row.games_played || 0), 0);
+        break;
       case 'perfect_lessons':
         current = weekRows(data.lessons, week, row => row.completed_at ? getDateKey(new Date(row.completed_at)) : null)
           .filter(row => Number(row.score_percentage || 0) >= 100).length;
         break;
       case 'share_workout_feed':
         current = weekRows(data.stories, week, createdDateKey)
-          .filter(isWorkoutFeedGoalStory).length;
+          .filter(row => row.media_type === 'workout_card').length;
         break;
       case 'share_meal_feed':
         current = weekRows(data.stories, week, createdDateKey)
@@ -860,7 +790,7 @@
     } else if (proteinDays > 0) {
       headline = '4-week protein rhythm: ' + proteinDays + ' day' + (proteinDays === 1 ? '' : 's');
     } else if (questions > 0) {
-      headline = '4-week Health IQ reps: ' + questions;
+      headline = '4-week Health IQ: ' + questions + ' question' + (questions === 1 ? '' : 's');
     }
 
     return {
@@ -925,11 +855,11 @@
     if (!card) return;
 
     card.style.display = 'block';
-    card.style.background = 'linear-gradient(135deg,#171717 0%,#0a0a0a 58%,#000000 100%)';
-    card.style.border = '1px solid rgba(245,217,138,0.18)';
-    card.style.boxShadow = '0 18px 42px rgba(0,0,0,0.42)';
+    card.style.background = 'radial-gradient(circle at 88% 14%, rgba(251,191,36,0.24) 0 38px, transparent 39px), radial-gradient(circle at 17% 92%, rgba(226,232,240,0.18) 0 44px, transparent 45px), linear-gradient(135deg,#24113f 0%,#3b1b66 48%,#160f2d 100%)';
+    card.style.border = '1px solid rgba(255,255,255,0.16)';
+    card.style.boxShadow = '0 16px 36px rgba(32,12,62,0.28)';
     if (state.loading) {
-      card.innerHTML = '<div style="padding:18px 20px;font-weight:800;color:#f8f7f2;">Loading weekly goals...</div>';
+      card.innerHTML = '<div style="padding:18px 20px;font-weight:800;color:#0f172a;">Loading weekly goals...</div>';
       return;
     }
 
@@ -937,15 +867,15 @@
       card.innerHTML = `
         <div style="padding:18px 20px;display:flex;gap:14px;align-items:center;position:relative;overflow:hidden;">
           <div style="position:absolute;right:14px;top:14px;width:62px;height:62px;border-radius:999px;background:#f8c55a;box-shadow:0 0 28px rgba(248,197,90,0.36);opacity:.9;"></div>
-          <div style="position:absolute;right:32px;top:5px;width:54px;height:54px;border-radius:999px;background:#111111;"></div>
+          <div style="position:absolute;right:32px;top:5px;width:54px;height:54px;border-radius:999px;background:#3b1b66;"></div>
           <div style="position:absolute;left:16px;bottom:-46px;width:96px;height:96px;border-radius:999px;border:1px solid rgba(255,255,255,0.14);"></div>
           <div style="width:52px;height:52px;border-radius:16px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;color:#fde68a;font-weight:950;font-size:1.18rem;flex-shrink:0;box-shadow:0 10px 24px rgba(15,23,42,0.22);position:relative;">3</div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:0.68rem;color:#fde68a;text-transform:uppercase;letter-spacing:0.08em;font-weight:900;margin-bottom:3px;">Weekly goals</div>
             <div style="font-size:1.08rem;color:white;font-weight:900;line-height:1.18;">Choose your 3 for the week</div>
-            <div style="font-size:0.8rem;color:rgba(255,255,255,0.74);margin-top:4px;">Body, training, food, recovery, Health IQ, or community.</div>
+            <div style="font-size:0.8rem;color:rgba(255,255,255,0.74);margin-top:4px;">We'll suggest a few from your onboarding answers, then you choose.</div>
           </div>
-          <button type="button" onclick="openWeeklyGoalsModal()" style="border:1px solid rgba(245,217,138,0.34);background:linear-gradient(135deg,#f5d98a,#d8b25e);color:#090909;font-size:0.78rem;font-weight:900;padding:10px 14px;border-radius:12px;cursor:pointer;box-shadow:0 10px 22px rgba(0,0,0,0.28);position:relative;">Set</button>
+          <button type="button" onclick="openWeeklyGoalsModal()" style="border:1px solid rgba(255,255,255,0.22);background:white;color:#24113f;font-size:0.78rem;font-weight:900;padding:10px 14px;border-radius:12px;cursor:pointer;box-shadow:0 10px 22px rgba(15,23,42,0.22);position:relative;">Set</button>
         </div>
       `;
       return;
@@ -965,9 +895,9 @@
     }).join('');
 
     card.innerHTML = `
-        <div style="padding:17px 20px 15px;position:relative;overflow:hidden;">
-          <div style="position:absolute;right:18px;top:16px;width:64px;height:64px;border-radius:999px;background:#f8c55a;box-shadow:0 0 30px rgba(248,197,90,0.34);opacity:.88;"></div>
-        <div style="position:absolute;right:36px;top:7px;width:56px;height:56px;border-radius:999px;background:#111111;"></div>
+      <div style="padding:17px 20px 15px;position:relative;overflow:hidden;">
+        <div style="position:absolute;right:18px;top:16px;width:64px;height:64px;border-radius:999px;background:#f8c55a;box-shadow:0 0 30px rgba(248,197,90,0.34);opacity:.88;"></div>
+        <div style="position:absolute;right:36px;top:7px;width:56px;height:56px;border-radius:999px;background:#3b1b66;"></div>
         <div style="position:absolute;left:-36px;bottom:-54px;width:128px;height:128px;border-radius:999px;border:1px solid rgba(255,255,255,0.13);"></div>
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:8px;">
           <div style="min-width:0;position:relative;">
@@ -975,16 +905,16 @@
             <div style="font-size:1.08rem;color:white;font-weight:900;">${escapeHtml(title)}</div>
             <div style="font-size:0.78rem;color:rgba(255,255,255,0.72);margin-top:3px;">${escapeHtml(state.week.start)} to ${escapeHtml(state.week.end)}</div>
           </div>
-          <button type="button" onclick="openWeeklyGoalsModal()" style="border:1px solid rgba(245,217,138,0.34);background:linear-gradient(135deg,#f5d98a,#d8b25e);color:#090909;font-size:0.75rem;font-weight:900;padding:8px 10px;border-radius:10px;cursor:pointer;position:relative;">Edit</button>
+          <button type="button" onclick="openWeeklyGoalsModal()" style="border:1px solid rgba(255,255,255,0.2);background:white;color:#24113f;font-size:0.75rem;font-weight:900;padding:8px 10px;border-radius:10px;cursor:pointer;position:relative;">Edit</button>
         </div>
         <div style="display:flex;align-items:baseline;gap:7px;margin:10px 0 6px;position:relative;">
           <div style="font-size:2.15rem;line-height:1;font-weight:950;color:white;">${completed}</div>
           <div style="font-size:0.95rem;font-weight:800;color:rgba(255,255,255,0.72);">of ${total} hit</div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin:0 0 5px;position:relative;">${selectedChips}</div>
-        <div style="margin:8px 0 4px;padding:9px 11px;border-radius:999px;background:rgba(253,230,138,0.16);border:1px solid rgba(253,230,138,0.3);display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative;">
-          <span style="font-size:0.68rem;color:#fde68a;font-weight:950;text-transform:uppercase;letter-spacing:0.06em;">Wrapped reward</span>
-          <span style="font-size:0.78rem;color:white;font-weight:950;white-space:nowrap;">${escapeHtml(rewardText)}</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 2px;padding:8px 10px;border-radius:999px;background:rgba(253,230,138,0.13);border:1px solid rgba(253,230,138,0.24);color:#fef3c7;font-size:0.73rem;font-weight:900;position:relative;">
+          <span>Wrapped reward</span>
+          <span>${escapeHtml(rewardText)}</span>
         </div>
         ${renderProgressRows(progress.goals)}
         <div style="margin-top:12px;padding:11px 12px;border-radius:12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.16);font-size:0.78rem;color:rgba(255,255,255,0.82);font-weight:800;position:relative;">
@@ -1030,7 +960,7 @@
     if (document.getElementById('weekly-goals-modal')) return;
     const modal = document.createElement('div');
     modal.id = 'weekly-goals-modal';
-    modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:10020;background:rgba(0,0,0,0.82);align-items:flex-end;justify-content:center;backdrop-filter:blur(6px);';
+    modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:10020;background:rgba(20,12,38,0.74);align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);';
     modal.onclick = function(event) {
       if (event.target === modal) closeWeeklyGoalsModal();
     };
@@ -1038,10 +968,10 @@
 
     const style = document.createElement('style');
     style.textContent = `
-      .weekly-goal-sheet{background:linear-gradient(180deg,#111 0%,#050505 100%);width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:24px 24px 0 0;box-shadow:0 -24px 66px rgba(0,0,0,0.58);font-family:inherit;border:1px solid rgba(245,217,138,.16);}
-      .weekly-goal-hero{position:sticky;top:0;z-index:2;padding:18px 20px 15px;border-bottom:1px solid rgba(245,217,138,.16);background:linear-gradient(135deg,#191919 0%,#090909 58%,#000 100%);overflow:hidden;}
+      .weekly-goal-sheet{background:linear-gradient(180deg,#2a1648 0%,#19102d 100%);width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:24px 24px 0 0;box-shadow:0 -22px 56px rgba(18,8,34,0.42);font-family:inherit;}
+      .weekly-goal-hero{position:sticky;top:0;z-index:2;padding:18px 20px 15px;border-bottom:1px solid rgba(255,255,255,.12);background:linear-gradient(135deg,#321a55 0%,#211039 56%,#120b24 100%);overflow:hidden;}
       .weekly-goal-hero:before{content:"";position:absolute;right:58px;top:15px;width:72px;height:72px;border-radius:999px;background:#f8c55a;box-shadow:0 0 34px rgba(248,197,90,.35);opacity:.95;}
-      .weekly-goal-hero:after{content:"";position:absolute;right:77px;top:6px;width:62px;height:62px;border-radius:999px;background:#111;}
+      .weekly-goal-hero:after{content:"";position:absolute;right:77px;top:6px;width:62px;height:62px;border-radius:999px;background:#321a55;}
       .weekly-goal-choice{border:1px solid rgba(15,23,42,.08);background:rgba(255,255,255,.96);color:#0f172a;border-radius:14px;padding:11px 12px;text-align:left;font-family:inherit;cursor:pointer;min-height:70px;display:flex;flex-direction:column;justify-content:space-between;gap:7px;transition:all .16s ease;box-shadow:0 8px 18px rgba(26,11,50,.08);}
       .weekly-goal-choice strong{font-size:.84rem;line-height:1.2;font-weight:950;}
       .weekly-goal-choice span{font-size:.7rem;color:#475569;font-weight:800;}
@@ -1076,7 +1006,7 @@
     const modal = document.getElementById('weekly-goals-modal');
     if (!modal) return;
     const selectedIds = new Set(state.draftSelected.map(goal => goal.id));
-    const suggestedFromSetup = !state.selected.length && state.draftSelected.length > 0;
+    const showingOnboardingSuggestions = !state.selected.length && state.draftSelected.length > 0;
     const groupHtml = GOAL_CATALOG.map(group => {
       const metaStyle = styleVarsForMeta(group);
       const goals = group.goals.map(goal => {
@@ -1137,7 +1067,7 @@
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;">
               <div>
                 <div style="font-weight:900;color:#0f172a;font-size:.88rem;">Selected</div>
-                <div style="font-size:.68rem;color:#64748b;font-weight:800;margin-top:2px;">${suggestedFromSetup ? 'Suggested from setup. Adjust before saving.' : 'Set the amount that feels right for your week.'}</div>
+                <div style="font-size:.68rem;color:#64748b;font-weight:800;margin-top:2px;">${showingOnboardingSuggestions ? 'Suggested from onboarding. Change anything before saving.' : 'Set the amount that feels right for your week.'}</div>
               </div>
               <div style="font-size:.75rem;font-weight:900;color:${state.draftSelected.length === MAX_GOALS ? '#047857' : '#64748b'};">${state.draftSelected.length} / ${MAX_GOALS}</div>
             </div>
@@ -1147,19 +1077,16 @@
         </div>
         <div style="position:sticky;bottom:0;background:white;border-top:1px solid #e2e8f0;padding:13px 20px calc(13px + env(safe-area-inset-bottom));display:flex;gap:10px;">
           <button type="button" onclick="closeWeeklyGoalsModal()" style="flex:0 0 auto;border:1px solid #cbd5e1;background:white;color:#0f172a;border-radius:12px;padding:12px 14px;font-weight:900;cursor:pointer;">Cancel</button>
-          <button type="button" onclick="saveWeeklyGoalsFromModal()" ${state.draftSelected.length ? '' : 'disabled'} style="flex:1;border:none;background:${state.draftSelected.length ? 'linear-gradient(135deg,#f5d98a,#d8b25e 56%,#9f7628)' : '#cbd5e1'};color:${state.draftSelected.length ? '#090909' : 'white'};border-radius:12px;padding:12px 16px;font-weight:950;cursor:${state.draftSelected.length ? 'pointer' : 'not-allowed'};">Save goals</button>
+          <button type="button" onclick="saveWeeklyGoalsFromModal()" ${state.draftSelected.length ? '' : 'disabled'} style="flex:1;border:none;background:${state.draftSelected.length ? 'linear-gradient(135deg,#321a55,#4a2575 56%,#d8b25e)' : '#cbd5e1'};color:white;border-radius:12px;padding:12px 16px;font-weight:950;cursor:${state.draftSelected.length ? 'pointer' : 'not-allowed'};">Save goals</button>
         </div>
       </div>
     `;
   }
 
-  window.openWeeklyGoalsModal = async function(options) {
-    const requestedWeek = resolveRequestedWeek(options);
-    if (window.currentUser && requestedWeek && (!state.week || state.week.start !== requestedWeek.start)) {
-      await loadWeekAndRender(requestedWeek);
-    }
-    const setupSuggestions = !state.selected.length ? getOnboardingSuggestedGoals() : [];
-    state.draftSelected = (state.selected.length ? state.selected : setupSuggestions).map(goal => Object.assign({}, goal));
+  window.openWeeklyGoalsModal = function() {
+    state.draftSelected = state.selected.length
+      ? state.selected.map(goal => Object.assign({}, goal))
+      : suggestWeeklyGoalsFromOnboarding();
     renderModal();
     const modal = document.getElementById('weekly-goals-modal');
     if (modal) modal.style.display = 'flex';
@@ -1234,13 +1161,13 @@
     showToastSafe('Weekly goals saved.', 'success');
   };
 
-  async function loadWeekAndRender(week) {
+  async function loadAndRender() {
     const card = document.getElementById('weekly-goals-card');
     if (!card || !window.currentUser || !window.currentUser.id) return;
     if (state.loading) return;
 
     state.loading = true;
-    state.week = week || getPlanningWeek(new Date());
+    state.week = getPlanningWeek(new Date());
     renderCard();
 
     state.row = await fetchWeeklyRow(window.currentUser.id, state.week.start);
@@ -1258,10 +1185,6 @@
 
     state.loading = false;
     renderCard();
-  }
-
-  async function loadAndRender() {
-    await loadWeekAndRender(getPlanningWeek(new Date()));
   }
 
   function init() {
