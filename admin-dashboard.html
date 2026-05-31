@@ -9551,6 +9551,15 @@
             };
         }
 
+        function isDirectExternalDmSendRoute(alert) {
+            const data = alert?.data || {};
+            const channel = data.channel;
+            const graphRecipientId = getAlertIgGraphRecipientId(data);
+            const hasThread = !!data.ig_thread_id || !!graphRecipientId;
+            const hasRecipient = !!data.subscriber_id || !!graphRecipientId;
+            return (channel === 'instagram' || channel === 'messenger') && hasThread && hasRecipient;
+        }
+
         function isManualIgBlockedAlert(alert) {
             const data = alert?.data || {};
             const graph = data.instagram_graph && typeof data.instagram_graph === 'object' ? data.instagram_graph : {};
@@ -9560,11 +9569,11 @@
             const humanAgentApproved = data.human_agent_approved === true || graph.human_agent_approved === true;
             if (humanAgentRequired && !humanAgentApproved) return true;
             const manualFlag = data.manual_ig_required === true
+                || data.manual_ig_required === 'true'
                 || data.channel === 'manual_ig'
                 || data.delivery_channel === 'manual_ig';
             if (!manualFlag) return false;
-            if (getAlertIgGraphRecipientId(data)) return false;
-            return !data.ig_thread_id;
+            return !isDirectExternalDmSendRoute(alert);
         }
 
         function isExternalDmAlert(alert) {
@@ -14322,7 +14331,7 @@
             const cadence = data.cadence_label || data.cadence || 'Challenge check-in';
             const channel = data.delivery_channel === 'messenger'
                 ? 'Messenger'
-                : (data.delivery_channel === 'instagram_graph' ? 'Instagram Graph' : (data.delivery_channel === 'instagram' ? 'Instagram' : 'Manual IG'));
+                : (data.delivery_channel === 'instagram_graph' ? 'Instagram' : (data.delivery_channel === 'instagram' ? 'Instagram' : 'Manual IG'));
             const windowLabel = data.ig_window_status?.label || '';
             const bg = manual ? '#fff7ed' : '#eff6ff';
             const border = manual ? '#fed7aa' : '#bfdbfe';
@@ -14347,6 +14356,7 @@
         function renderManualChallengeCheckinActions(alert, hasMessage, canEdit) {
             if (!isChallengeCheckinAlert(alert) || alert.status !== 'pending') return '';
             const manualRequired = isManualIgBlockedAlert(alert);
+            if (!manualRequired) return '';
             const hasIgRoute = manualRequired
                 || !!alert.data?.ig_thread_id
                 || !!alert.data?.subscriber_id
@@ -15324,7 +15334,7 @@
                         ${canSendFromHere ? `
                             <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}', this)">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                                Send
+                                Send now
                             </button>
                             ${alert.status === 'pending' && (isDmAlert || isFollowUp) && timingSuggestion ? `
                                 <button class="alert-btn alert-btn-recommended" onclick="useRecommendedReplyTiming('${alert.id}', this)" title="Use the AI recommended timing: ${escapeHtml(timingSuggestion.reason)}">
