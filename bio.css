@@ -138,7 +138,7 @@ select {
     color: var(--text-main);
     font-family: "Outfit", sans-serif;
     font-weight: 900;
-    letter-spacing: -0.5px;
+    letter-spacing: 0;
 }
 
 .brand img {
@@ -246,7 +246,7 @@ h3 {
     font-family: "Outfit", sans-serif;
     margin: 0;
     line-height: 1.02;
-    letter-spacing: -0.05em;
+    letter-spacing: 0;
 }
 
 h1 {
@@ -255,13 +255,13 @@ h1 {
 
 h2 {
     font-size: clamp(1.6rem, 3.8vw, 2.8rem);
-    letter-spacing: -0.04em;
+    letter-spacing: 0;
 }
 
 h3 {
     font-size: 1.12rem;
     line-height: 1.18;
-    letter-spacing: -0.03em;
+    letter-spacing: 0;
 }
 
 .hero-title {
@@ -485,7 +485,7 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
     font-family: "Outfit", sans-serif;
     font-size: 1.08rem;
     font-weight: 800;
-    letter-spacing: -0.03em;
+    letter-spacing: 0;
 }
 
 .hub-button small {
@@ -523,7 +523,7 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
 .coming-soon strong {
     color: var(--text-main);
     font-weight: 800;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
 }
 
 .coming-soon span {
@@ -956,7 +956,7 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
     font-size: 1.02rem;
     font-weight: 900;
     color: var(--secondary);
-    letter-spacing: -0.03em;
+    letter-spacing: 0;
 }
 
 .timeline-body p {
@@ -989,6 +989,10 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
+}
+
+.character-offer-grid {
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .offer-card {
@@ -1046,7 +1050,7 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
     font-family: "Outfit", sans-serif;
     font-size: clamp(1.18rem, 2vw, 1.55rem);
     line-height: 1.08;
-    letter-spacing: -0.04em;
+    letter-spacing: 0;
 }
 
 .feature-motion-scene {
@@ -1058,6 +1062,105 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
         linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
         radial-gradient(circle at 50% 0%, rgba(245, 217, 138, 0.14), transparent 52%);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+.ask-scene {
+    background:
+        radial-gradient(circle at 50% 16%, rgba(90, 166, 166, 0.16), transparent 34%),
+        linear-gradient(180deg, rgba(216, 178, 94, 0.10), rgba(255, 255, 255, 0.03));
+}
+
+.ask-thread {
+    position: absolute;
+    inset: 22px 18px;
+}
+
+.ask-input-shell {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 12px;
+    min-height: 58px;
+    padding: 0 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.84);
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    color: #151515;
+    box-shadow: 0 18px 40px rgba(17, 17, 17, 0.10);
+    animation: askInputLift 4.2s ease-in-out infinite;
+}
+
+.ask-input-shell span {
+    font-family: "Outfit", sans-serif;
+    font-size: 1.1rem;
+    font-weight: 900;
+}
+
+.ask-input-shell i {
+    width: 2px;
+    height: 24px;
+    border-radius: 999px;
+    background: #5aa6a6;
+    animation: askCursor 1s steps(2, start) infinite;
+}
+
+.ask-response,
+.ask-typing {
+    position: absolute;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 16px;
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    box-shadow: 0 14px 32px rgba(17, 17, 17, 0.09);
+}
+
+.ask-response {
+    padding: 0 14px;
+    background: rgba(255, 255, 255, 0.72);
+    color: #221f19;
+    font-size: 0.8rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    animation: askBubbleFloat 4.8s ease-in-out infinite;
+}
+
+.ask-response-one {
+    left: 8px;
+    top: 104px;
+}
+
+.ask-response-two {
+    right: 4px;
+    top: 160px;
+    animation-delay: -1.6s;
+}
+
+.ask-typing {
+    left: 28px;
+    bottom: 20px;
+    gap: 6px;
+    padding: 0 14px;
+    background: rgba(90, 166, 166, 0.14);
+}
+
+.ask-typing i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #5aa6a6;
+    animation: askTypingDot 1.2s ease-in-out infinite;
+}
+
+.ask-typing i:nth-child(2) {
+    animation-delay: 0.16s;
+}
+
+.ask-typing i:nth-child(3) {
+    animation-delay: 0.32s;
 }
 
 .nutrition-scene {
@@ -1490,6 +1593,176 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
+.feed-scene {
+    background:
+        radial-gradient(circle at 24% 20%, rgba(90, 166, 166, 0.14), transparent 34%),
+        linear-gradient(180deg, rgba(143, 189, 107, 0.10), rgba(255, 255, 255, 0.03));
+}
+
+.feed-post {
+    position: absolute;
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    background: rgba(255, 255, 255, 0.76);
+    box-shadow: 0 16px 36px rgba(17, 17, 17, 0.10);
+}
+
+.feed-post-main {
+    left: 20px;
+    right: 20px;
+    top: 22px;
+    min-height: 154px;
+    padding: 16px;
+    border-radius: 18px;
+    animation: feedCardDrift 5s ease-in-out infinite;
+}
+
+.feed-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #5aa6a6, #d8b25e);
+    box-shadow: 0 0 0 6px rgba(90, 166, 166, 0.12);
+}
+
+.feed-lines {
+    position: absolute;
+    left: 64px;
+    right: 18px;
+    top: 20px;
+    display: grid;
+    gap: 8px;
+}
+
+.feed-lines span {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(17, 17, 17, 0.10);
+}
+
+.feed-lines span:first-child {
+    width: 72%;
+}
+
+.feed-photo {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    height: 72px;
+    overflow: hidden;
+    border-radius: 14px;
+    background:
+        linear-gradient(135deg, rgba(216, 178, 94, 0.68), rgba(90, 166, 166, 0.48)),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.18), transparent);
+}
+
+.feed-photo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 0 28%, rgba(255, 255, 255, 0.42) 42%, transparent 58% 100%);
+    transform: translateX(-100%);
+    animation: feedSweep 3.8s ease-in-out infinite;
+}
+
+.feed-post-small {
+    left: 24px;
+    bottom: 22px;
+    min-width: 104px;
+    padding: 10px 12px;
+    border-radius: 16px;
+    animation: feedSmallPop 4.2s ease-in-out infinite;
+}
+
+.feed-post-small strong,
+.feed-post-small span {
+    display: block;
+}
+
+.feed-post-small strong {
+    font-family: "Outfit", sans-serif;
+    color: #151515;
+    font-size: 0.96rem;
+}
+
+.feed-post-small span {
+    color: #64735a;
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.feed-reactions {
+    position: absolute;
+    right: 20px;
+    bottom: 28px;
+    min-height: 44px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    box-shadow: 0 16px 32px rgba(17, 17, 17, 0.10);
+    animation: reactionPop 3.4s ease-in-out infinite;
+}
+
+.feed-reactions span {
+    color: #151515;
+    font-weight: 900;
+    font-size: 0.78rem;
+}
+
+.feed-reactions i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #bf6f4a;
+    box-shadow: 14px 0 0 #8fbd6b;
+}
+
+@keyframes askInputLift {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+@keyframes askCursor {
+    0%, 45% { opacity: 1; }
+    46%, 100% { opacity: 0; }
+}
+
+@keyframes askBubbleFloat {
+    0%, 100% { transform: translateY(0); opacity: 0.82; }
+    50% { transform: translateY(-7px); opacity: 1; }
+}
+
+@keyframes askTypingDot {
+    0%, 100% { transform: translateY(0); opacity: 0.36; }
+    45% { transform: translateY(-4px); opacity: 1; }
+}
+
+@keyframes feedCardDrift {
+    0%, 100% { transform: translateY(0) rotate(-0.5deg); }
+    50% { transform: translateY(-7px) rotate(0.5deg); }
+}
+
+@keyframes feedSweep {
+    0%, 28% { transform: translateX(-110%); }
+    70%, 100% { transform: translateX(110%); }
+}
+
+@keyframes feedSmallPop {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-6px) scale(1.02); }
+}
+
+@keyframes reactionPop {
+    0%, 100% { transform: scale(1); }
+    18% { transform: scale(1.06); }
+    32% { transform: scale(1); }
+}
+
 @keyframes orbitSpin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
@@ -1579,7 +1852,7 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
     font-size: 2rem;
     font-weight: 900;
     color: var(--secondary);
-    letter-spacing: -0.04em;
+    letter-spacing: 0;
 }
 
 .offer-copy {
