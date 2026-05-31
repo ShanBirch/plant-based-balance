@@ -14,6 +14,13 @@
     <link rel="icon" type="image/png" href="balance_logo_transparent.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://esm.sh" crossorigin>
+    <link rel="preconnect" href="https://f005.backblazeb2.com" crossorigin>
+    <link rel="modulepreload" href="https://esm.sh/three@0.160.0?target=es2020" crossorigin="anonymous">
+    <link rel="modulepreload" href="https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js?target=es2020" crossorigin="anonymous">
+    <link rel="modulepreload" href="https://esm.sh/three@0.160.0/examples/jsm/loaders/DRACOLoader.js?target=es2020" crossorigin="anonymous">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/meshoptimizer@0.21.0/meshopt_decoder.min.js" as="script">
+    <link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb?v=balance-showcase-1" as="fetch" crossorigin="anonymous" fetchpriority="high" data-balance-character-preload="true">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <script>
         (function () {
@@ -21,27 +28,31 @@
             document.documentElement.classList.add('reveal-ready');
         })();
     </script>
-    <link rel="stylesheet" href="bio.css">
-    <script src="bio-animations.js" defer></script>
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="bio.css?v=balance-app-motion-1">
+    <script src="bio-animations.js?v=balance-app-motion-1" defer></script>
     <script type="module">
-        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-        import { DRACOLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
-
-        window.THREE = THREE;
-        window.GLTFLoader = GLTFLoader;
-        window.DRACOLoader = DRACOLoader;
+        document.documentElement.setAttribute('data-balance-character-deps', 'loading');
+        window.balanceCharacterDeps = Promise.all([
+            import('https://esm.sh/three@0.160.0?target=es2020'),
+            import('https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js?target=es2020'),
+            import('https://esm.sh/three@0.160.0/examples/jsm/loaders/DRACOLoader.js?target=es2020')
+        ]).then(function (modules) {
+            window.THREE = modules[0];
+            window.GLTFLoader = modules[1].GLTFLoader;
+            window.DRACOLoader = modules[2].DRACOLoader;
+            document.documentElement.setAttribute('data-balance-character-deps', 'ready');
+            window.dispatchEvent(new Event('balance:character-deps-ready'));
+            return true;
+        }).catch(function (err) {
+            document.documentElement.setAttribute('data-balance-character-deps', 'failed');
+            document.documentElement.setAttribute('data-balance-character-deps-error', err && err.message ? err.message.slice(0, 180) : 'unknown');
+            console.warn('Balance character dependencies failed to load', err);
+            return false;
+        });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/meshoptimizer@0.21.0/meshopt_decoder.min.js" defer></script>
-    <script src="lib/avatar3d.js" defer></script>
-    <script src="balance-character-live.js" defer></script>
+    <script src="lib/avatar3d.js?v=balance-app-motion-1" defer></script>
+    <script src="balance-character-live.js?v=balance-app-motion-1" defer></script>
 </head>
 <body class="bio-page landing-page">
     <div class="page-shell">
@@ -99,52 +110,98 @@
                     </p>
                 </div>
 
-                <div class="surface offer-card trial-card featured reveal">
-                    <span class="label">nutrition tab</span>
-                    <h3>The nutrition tab keeps meals, micronutrients, and daily totals easy to check at a glance.</h3>
-                    <p class="offer-copy">
-                        Quick log tools for meals, snacks, and check-ins keep the day clear without extra tapping.
-                    </p>
-                    <ul class="offer-list">
-                        <li>Micronutrients, calories, and meal totals.</li>
-                        <li>Quick log tools for meals, snacks, and check-ins.</li>
-                        <li>A clear snapshot of what the day still needs.</li>
-                    </ul>
-                </div>
+                <div class="feature-motion-grid">
+                    <article class="surface feature-motion-card nutrition-motion reveal">
+                        <div class="feature-motion-copy">
+                            <span class="label">nutrition</span>
+                            <h3>Food tracking without making the day feel like admin.</h3>
+                            <p class="offer-copy">
+                                Calories, macros, micronutrients, meals, snacks, and quick check-ins all stay visible in one calm snapshot.
+                            </p>
+                        </div>
+                        <div class="feature-motion-scene nutrition-scene" aria-hidden="true">
+                            <div class="nutrition-orbit">
+                                <span class="orbit orbit-one"></span>
+                                <span class="orbit orbit-two"></span>
+                                <span class="macro-chip macro-protein">protein</span>
+                                <span class="macro-chip macro-carbs">carbs</span>
+                                <span class="macro-chip macro-iron">iron</span>
+                                <div class="nutrition-plate">
+                                    <div class="plate-ring"></div>
+                                    <div class="plate-core">
+                                        <strong>1,840</strong>
+                                        <span>today</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="nutrition-bars">
+                                <span style="--fill: 82%"></span>
+                                <span style="--fill: 64%"></span>
+                                <span style="--fill: 92%"></span>
+                            </div>
+                            <div class="micro-dot-field">
+                                <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                            </div>
+                        </div>
+                    </article>
 
-                <div class="surface nutrition-video-card reveal">
-                    <div class="nutrition-video-copy">
-                        <span class="label">nutrition widget</span>
-                        <h3>Watch the nutrition widget in action.</h3>
-                        <p class="offer-copy">
-                            This is the kind of quick check-in that makes the nutrition side feel simple, fast, and actually usable on a busy day.
-                        </p>
-                    </div>
-                    <div class="nutrition-video-frame">
-                        <video
-                            class="nutrition-video"
-                            src="assets/nutrition.mp4"
-                            autoplay
-                            muted
-                            loop
-                            playsinline
-                            controls
-                            preload="metadata"
-                        ></video>
-                    </div>
-                </div>
+                    <article class="surface feature-motion-card movement-motion reveal">
+                        <div class="feature-motion-copy">
+                            <span class="label">movement</span>
+                            <h3>The training week feels alive before you even start.</h3>
+                            <p class="offer-copy">
+                                Workouts, programs, form checks, and trend cues sit together so the next session is obvious.
+                            </p>
+                        </div>
+                        <div class="feature-motion-scene movement-scene" aria-hidden="true">
+                            <div class="movement-route">
+                                <span class="route-line"></span>
+                                <i class="route-node node-one"></i>
+                                <i class="route-node node-two"></i>
+                                <i class="route-node node-three"></i>
+                                <i class="route-node node-four"></i>
+                            </div>
+                            <div class="movement-card-mini">
+                                <strong>Today</strong>
+                                <span>Lower body</span>
+                            </div>
+                            <div class="movement-bars">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                            <div class="movement-lift">
+                                <span></span>
+                            </div>
+                        </div>
+                    </article>
 
-                <div class="surface offer-card trial-card reveal">
-                    <span class="label">nutrition tracker</span>
-                    <h3>See the tracker without hunting for it.</h3>
-                    <p class="offer-copy">
-                        Calories, macros, and micronutrients stay in one quick snapshot so you can check what is left before the next meal.
-                    </p>
-                    <ul class="offer-list">
-                        <li>A fast daily snapshot before the next meal.</li>
-                        <li>Calories, macros, and micronutrients in one place.</li>
-                        <li>Simple enough to glance at and keep moving.</li>
-                    </ul>
+                    <article class="surface feature-motion-card learn-motion reveal">
+                        <div class="feature-motion-copy">
+                            <span class="label">learn</span>
+                            <h3>Small lessons that keep the reason switched on.</h3>
+                            <p class="offer-copy">
+                                Quizzes, XP, and short explanations make the why easier to remember when motivation dips.
+                            </p>
+                        </div>
+                        <div class="feature-motion-scene learn-scene" aria-hidden="true">
+                            <div class="learn-bulb">
+                                <span></span>
+                            </div>
+                            <div class="learn-notification">
+                                <strong>Daily quiz</strong>
+                                <span>+25 XP</span>
+                            </div>
+                            <div class="learn-ping ping-one"></div>
+                            <div class="learn-ping ping-two"></div>
+                            <div class="learn-stack">
+                                <span>why</span>
+                                <span>quiz</span>
+                                <span>xp</span>
+                            </div>
+                        </div>
+                    </article>
                 </div>
 
                 <div class="offer-grid">
@@ -156,28 +213,6 @@
                             <li>Log food or open the camera straight away.</li>
                             <li>Start a workout or open a quiz in seconds.</li>
                             <li>Jump to the right screen without hunting for it.</li>
-                        </ul>
-                    </article>
-
-                    <article class="surface offer-card reveal">
-                        <span class="label">training</span>
-                        <h3>Movement</h3>
-                        <p class="offer-copy">The training tab keeps the workout side organised without losing the coaching feel.</p>
-                        <ul class="offer-list">
-                            <li>Coach Shan's workouts this week and today's workout.</li>
-                            <li>Workout builder, program library, and journal.</li>
-                            <li>Form checks, science cues, and trend insights.</li>
-                        </ul>
-                    </article>
-
-                    <article class="surface offer-card reveal">
-                        <span class="label">education</span>
-                        <h3>Learn</h3>
-                        <p class="offer-copy">Short lessons that make the why easier to remember and the habits easier to repeat.</p>
-                        <ul class="offer-list">
-                            <li>Bite-sized lessons that feel quick, not heavy.</li>
-                            <li>Daily quizzes that reward consistency.</li>
-                            <li>XP for learning, not just logging.</li>
                         </ul>
                     </article>
 
