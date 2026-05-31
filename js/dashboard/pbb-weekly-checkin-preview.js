@@ -2,13 +2,6 @@
   'use strict';
 
   var PREVIEW_KEY = 'pbb_weekly_checkin_preview';
-  var DOGFOOD_UNTIL = '2026-06-16T00:00:00+10:00';
-  var DOGFOOD_USER_IDS = {
-    '00a6605e-8edb-4917-85ba-24a23f179059': true
-  };
-  var DOGFOOD_EMAILS = {
-    'shannonbirch@cocospersonaltraining.com': true
-  };
 
   var DEFAULT_DATA = {
     profile: {
@@ -72,7 +65,8 @@
     data: null,
     loading: false,
     overlayOpen: false,
-    source: 'default'
+    source: 'default',
+    hasLiveData: false
   };
 
   function readPreviewFlagFromQuery(){
@@ -94,36 +88,13 @@
     }
   }
 
-  function getCurrentUserField(field){
-    try {
-      var user = window.currentUser || window.user || {};
-      return user[field] || user.user && user.user[field] || '';
-    } catch (_) {
-      return '';
-    }
-  }
-
-  function isDogfoodAccount(){
-    var id = String(getCurrentUserField('id') || getCurrentUserField('user_id') || '').trim();
-    var email = String(getCurrentUserField('email') || '').trim().toLowerCase();
-    return !!(DOGFOOD_USER_IDS[id] || DOGFOOD_EMAILS[email]);
-  }
-
-  function isSundayWindow(){
-    return new Date().getDay() === 0;
-  }
-
-  function isDogfoodWindow(){
-    var until = new Date(DOGFOOD_UNTIL).getTime();
-    return Number.isFinite(until) && Date.now() < until;
-  }
-
-  function isDogfoodEnabled(){
-    return isDogfoodAccount() && isDogfoodWindow() && isSundayWindow();
+  function isReviewWindow(){
+    var day = new Date().getDay();
+    return day === 0 || day === 1;
   }
 
   function isReviewEnabled(){
-    return isExplicitPreviewEnabled() || isDogfoodEnabled();
+    return isExplicitPreviewEnabled() || (isReviewWindow() && state.hasLiveData);
   }
 
   function cardPillLabel(){
@@ -200,7 +171,8 @@
   function getWeekWindow(){
     var now = new Date();
     var dayOfWeek = now.getDay();
-    var mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    // Sunday and Monday both review the completed Monday-to-Sunday week.
+    var mondayOffset = dayOfWeek === 0 ? -6 : (dayOfWeek === 1 ? -7 : 1 - dayOfWeek);
     var start = new Date(now);
     start.setDate(now.getDate() + mondayOffset);
     start.setHours(0, 0, 0, 0);
@@ -1162,6 +1134,7 @@
   async function maybeLoadLiveData(){
     if (state.loading) return;
     if (window.PBB_WEEKLY_CHECKIN_PREVIEW_DATA) return;
+    if (!isReviewWindow() && !isExplicitPreviewEnabled()) return;
     if (!window.supabaseClient || !window.supabaseClient.from) return;
 
     state.loading = true;
@@ -1170,6 +1143,7 @@
       if (live) {
         state.data = normalizePreviewData(live);
         state.source = 'live';
+        state.hasLiveData = true;
         renderCard();
         if (state.overlayOpen) openWeeklyCheckinPreview();
       }
@@ -1185,9 +1159,11 @@
     if (window.PBB_WEEKLY_CHECKIN_PREVIEW_DATA) {
       state.data = normalizePreviewData(window.PBB_WEEKLY_CHECKIN_PREVIEW_DATA);
       state.source = 'preview';
+      state.hasLiveData = false;
     } else {
       state.data = normalizePreviewData(DEFAULT_DATA);
       state.source = 'default';
+      state.hasLiveData = false;
     }
     renderCard();
     maybeLoadLiveData();
