@@ -14920,8 +14920,8 @@ if(!window._pbbIsIOSSafari) {
 </div>
 
 <!-- Quick Meal Text Input Overlay (shown when shortcut camera is cancelled) -->
-<div id="quick-meal-text-overlay" style="display:none; position:fixed; inset:0; background:rgba(26,26,46,0.97); z-index:10020; flex-direction:column; align-items:center; justify-content:center; padding:24px;">
-    <div style="width:100%; max-width:420px;">
+<div id="quick-meal-text-overlay" style="display:none; position:fixed; inset:0; background:rgba(26,26,46,0.97); z-index:10020; flex-direction:column; align-items:center; justify-content:flex-start; padding:calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px)) 20px; box-sizing:border-box; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;">
+    <div style="width:100%; max-width:420px; margin:auto 0; padding:20px 0;">
         <div style="text-align:center; margin-bottom:24px;">
             <div style="font-size:1.5rem; font-weight:700; color:#fff; margin-bottom:6px;">Quick Log</div>
             <div id="quick-meal-subtitle" style="font-size:0.9rem; color:#9ca3af;">Describe what you ate</div>
@@ -15717,7 +15717,7 @@ if (window._pbbIsIOSSafari) {
             }
 
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=6';
+            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=7';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -15777,7 +15777,7 @@ if (window._pbbIsIOSSafari) {
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=6" data-pbb-calorie-tracker="1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=7" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js" data-pbb-meal-builder="1"><\/script>');
     }
 })();

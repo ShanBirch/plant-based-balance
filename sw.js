@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v205'; // v205: weekly review selected-goal sync; v204: weekly review Sunday dogfood and light mode
+const CACHE_NAME = 'pbb-app-v206'; // v206: meal text logging stays scrollable while analysis runs; v205: weekly review selected-goal sync
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',

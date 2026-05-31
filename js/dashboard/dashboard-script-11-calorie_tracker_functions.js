@@ -68,17 +68,16 @@ function selectPhotoMealType(type) {
 }
 
 function openMealTextInput(source) {
-    // Use native QuickMealActivity text input (dark theme, faster)
-    if (window.NativePermissions && typeof window.NativePermissions.openQuickMealText === 'function') {
-        window.NativePermissions.openQuickMealText();
-        return;
-    }
-    // Fallback to the in-WebView Quick Log overlay on non-native platforms
-    // (iOS / web). This matches the Android native QuickMealActivity UX
-    // instead of the legacy "Log a Meal" modal whose "Analyze My Meal"
-    // button was broken on iOS.
+    // Keep in-app text logging in the WebView so Android does not leave an
+    // invisible QuickMealActivity over the app while background analysis runs.
     if (typeof openQuickMealTextInput === 'function') {
         openQuickMealTextInput();
+        return;
+    }
+    // Native fallback is kept for older bundles where the WebView overlay has
+    // not loaded yet.
+    if (window.NativePermissions && typeof window.NativePermissions.openQuickMealText === 'function') {
+        window.NativePermissions.openQuickMealText();
         return;
     }
     // Final fallback (should not normally trigger — kept as a safety net)
