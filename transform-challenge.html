@@ -194,6 +194,39 @@
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.6; transform: scale(0.85); }
         }
+        @keyframes phoneFloat {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-7px); }
+        }
+        @keyframes badgePop {
+            0%, 100% { transform: scale(1); }
+            20% { transform: scale(1.06); }
+            36% { transform: scale(1); }
+        }
+        @keyframes downloadDrop {
+            0%, 100% { opacity: 0.52; transform: translateY(-7px); }
+            50% { opacity: 1; transform: translateY(7px); }
+        }
+        @keyframes targetBreathe {
+            0%, 100% { transform: translate(-50%, -50%) scale(0.96); }
+            50% { transform: translate(-50%, -50%) scale(1.04); }
+        }
+        @keyframes chipHover {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        @keyframes pathSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes scoreFill {
+            0%, 100% { transform: scaleX(0.82); opacity: 0.74; }
+            50% { transform: scaleX(1); opacity: 1; }
+        }
+        @keyframes scorePulse {
+            0% { opacity: 0.75; transform: scale(0.62); }
+            100% { opacity: 0; transform: scale(1.55); }
+        }
         .cta-big {
             display: inline-block;
             background: var(--green);
@@ -281,35 +314,262 @@
         /* HOW IT WORKS */
         .steps {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 26px;
-            max-width: 920px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 18px;
+            max-width: 980px;
             margin: 0 auto;
         }
         .step {
-            text-align: center;
-            padding: 20px 18px;
+            position: relative;
+            overflow: hidden;
+            min-height: 410px;
+            padding: 20px 20px 24px;
+            border-radius: 22px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018));
+            border: 1px solid var(--border);
+            box-shadow: 0 22px 70px rgba(0, 0, 0, 0.20);
+            text-align: left;
+        }
+        .step::before {
+            content: "";
+            position: absolute;
+            inset: -1px;
+            background: radial-gradient(circle at 18% 10%, rgba(245, 217, 138, 0.14), transparent 34%);
+            pointer-events: none;
+        }
+        .step > * {
+            position: relative;
+            z-index: 1;
+        }
+        .step-diagram {
+            position: relative;
+            height: 178px;
+            margin-bottom: 20px;
+            border-radius: 18px;
+            background:
+                radial-gradient(circle at 24% 20%, rgba(245, 217, 138, 0.20), transparent 28%),
+                linear-gradient(180deg, rgba(245, 217, 138, 0.08), rgba(255, 255, 255, 0.025));
+            border: 1px solid rgba(245, 217, 138, 0.14);
+            overflow: hidden;
         }
         .step-num {
             font-family: 'Montserrat', sans-serif;
             font-weight: 900;
-            font-size: 3.4rem;
-            background: linear-gradient(135deg, var(--green) 0%, var(--green-bright) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 0.78rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 42px;
+            min-height: 30px;
+            padding: 0 10px;
+            border-radius: 999px;
+            color: #111111;
+            background: var(--green);
             line-height: 1;
             margin-bottom: 14px;
+            letter-spacing: 1.6px;
         }
         .step-title {
             font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            font-size: 1.1rem;
+            font-weight: 800;
+            font-size: 1.12rem;
             margin-bottom: 10px;
         }
         .step-desc {
             color: var(--muted);
             font-size: 0.94rem;
+            line-height: 1.58;
+        }
+        .download-phone {
+            position: absolute;
+            left: 50%;
+            top: 20px;
+            width: 88px;
+            height: 136px;
+            transform: translateX(-50%);
+            border-radius: 23px;
+            background: #090909;
+            border: 2px solid rgba(245, 217, 138, 0.52);
+            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+            animation: phoneFloat 4.6s ease-in-out infinite;
+        }
+        .download-phone::before {
+            content: "";
+            position: absolute;
+            left: 34px;
+            right: 34px;
+            top: 7px;
+            height: 4px;
+            border-radius: 99px;
+            background: rgba(255, 255, 255, 0.34);
+        }
+        .download-screen {
+            position: absolute;
+            inset: 17px 9px 10px;
+            padding: 16px 10px;
+            border-radius: 16px;
+            background: linear-gradient(180deg, #191919, #0c0c0c);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .download-screen strong,
+        .download-screen span,
+        .download-badge {
+            display: block;
+        }
+        .download-screen strong {
+            color: var(--text);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.74rem;
+            margin-bottom: 14px;
+        }
+        .download-screen span {
+            height: 7px;
+            border-radius: 999px;
+            background: rgba(245, 217, 138, 0.30);
+            margin-bottom: 8px;
+        }
+        .download-screen span:nth-child(3) { width: 72%; }
+        .download-screen span:nth-child(4) { width: 52%; }
+        .download-badge {
+            position: absolute;
+            right: 22px;
+            bottom: 24px;
+            min-width: 76px;
+            padding: 9px 11px;
+            border-radius: 999px;
+            color: #111111;
+            background: var(--green);
+            font-weight: 900;
+            font-size: 0.72rem;
+            box-shadow: 0 10px 30px rgba(245, 217, 138, 0.24);
+            animation: badgePop 3.2s ease-in-out infinite;
+        }
+        .download-arrow {
+            position: absolute;
+            left: 30px;
+            top: 52px;
+            width: 40px;
+            height: 62px;
+            border-radius: 999px;
+            border: 2px solid rgba(245, 217, 138, 0.42);
+            animation: downloadDrop 2.6s ease-in-out infinite;
+        }
+        .download-arrow::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            bottom: 9px;
+            width: 14px;
+            height: 14px;
+            border-right: 3px solid var(--green);
+            border-bottom: 3px solid var(--green);
+            transform: translateX(-50%) rotate(45deg);
+        }
+        .goals-target {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 112px;
+            height: 112px;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background:
+                radial-gradient(circle, var(--green) 0 12%, transparent 13% 26%, rgba(245, 217, 138, 0.26) 27% 42%, transparent 43% 58%, rgba(245, 217, 138, 0.15) 59% 100%);
+            border: 1px solid rgba(245, 217, 138, 0.24);
+            animation: targetBreathe 4.4s ease-in-out infinite;
+        }
+        .goal-chip {
+            position: absolute;
+            padding: 8px 11px;
+            border-radius: 999px;
+            background: rgba(5, 5, 5, 0.78);
+            border: 1px solid rgba(245, 217, 138, 0.22);
+            color: var(--text);
+            font-size: 0.7rem;
+            font-weight: 800;
+            box-shadow: 0 12px 26px rgba(0, 0, 0, 0.24);
+            animation: chipHover 4s ease-in-out infinite;
+        }
+        .goal-chip.one { left: 18px; top: 26px; }
+        .goal-chip.two { right: 16px; top: 62px; animation-delay: -0.8s; }
+        .goal-chip.three { left: 44px; bottom: 24px; animation-delay: -1.5s; }
+        .goal-path {
+            position: absolute;
+            inset: 26px 30px;
+            border: 1px dashed rgba(245, 217, 138, 0.22);
+            border-radius: 50%;
+            animation: pathSpin 14s linear infinite;
+        }
+        .score-board {
+            position: absolute;
+            left: 18px;
+            right: 18px;
+            top: 16px;
+            bottom: 16px;
+            padding: 14px;
+            border-radius: 18px;
+            background: rgba(5, 5, 5, 0.72);
+            border: 1px solid rgba(245, 217, 138, 0.18);
+            box-shadow: 0 18px 38px rgba(0, 0, 0, 0.26);
+        }
+        .score-total {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 13px;
+            color: var(--text);
+            font-weight: 900;
+            font-size: 0.82rem;
+        }
+        .score-total span {
+            min-width: 56px;
+            padding: 7px 9px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, var(--green) 0%, var(--green-bright) 100%);
+            color: #111111;
+            text-align: center;
+        }
+        .score-row {
+            display: grid;
+            grid-template-columns: 70px minmax(0, 1fr) 38px;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 11px;
+            color: var(--muted);
+            font-size: 0.7rem;
+            font-weight: 800;
+        }
+        .score-row strong {
+            color: var(--text);
+            font-size: 0.72rem;
+            text-align: right;
+        }
+        .score-bar {
+            height: 9px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+        }
+        .score-bar span {
+            display: block;
+            height: 100%;
+            width: var(--score-width);
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--green), rgba(245, 217, 138, 0.34));
+            transform-origin: left;
+            animation: scoreFill 3.4s ease-in-out infinite;
+        }
+        .score-row:nth-child(3) .score-bar span { animation-delay: -0.5s; }
+        .score-row:nth-child(4) .score-bar span { animation-delay: -1s; }
+        .score-pulse {
+            position: absolute;
+            right: 22px;
+            bottom: 18px;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid rgba(245, 217, 138, 0.42);
+            animation: scorePulse 2.5s ease-out infinite;
         }
 
         /* ABOUT */
@@ -591,6 +851,22 @@
             opacity: 1;
             transform: translateY(0);
         }
+        @media (prefers-reduced-motion: reduce) {
+            .hero-scarcity .dot,
+            .download-phone,
+            .download-badge,
+            .download-arrow,
+            .goals-target,
+            .goal-chip,
+            .goal-path,
+            .score-bar span,
+            .score-pulse {
+                animation: none !important;
+            }
+            .reveal {
+                transition: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -657,16 +933,56 @@
             <h2 class="section-title">Download the app, set your goals, and learn the scoring system.</h2>
             <div class="steps">
                 <div class="step">
+                    <div class="step-diagram download-diagram" aria-hidden="true">
+                        <div class="download-arrow"></div>
+                        <div class="download-phone">
+                            <div class="download-screen">
+                                <strong>Balance</strong>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                        <span class="download-badge">Ready</span>
+                    </div>
                     <div class="step-num">01</div>
                     <h3 class="step-title">Download the app</h3>
                     <p class="step-desc">Get Balance on your phone so you are ready to start right away.</p>
                 </div>
                 <div class="step">
+                    <div class="step-diagram goals-diagram" aria-hidden="true">
+                        <div class="goal-path"></div>
+                        <div class="goals-target"></div>
+                        <span class="goal-chip one">Nutrition</span>
+                        <span class="goal-chip two">Training</span>
+                        <span class="goal-chip three">Check-ins</span>
+                    </div>
                     <div class="step-num">02</div>
                     <h3 class="step-title">Set up your goals</h3>
                     <p class="step-desc">Tell the app what you want to focus on so the 30 days point in the right direction.</p>
                 </div>
                 <div class="step">
+                    <div class="step-diagram score-diagram" aria-hidden="true">
+                        <div class="score-board">
+                            <div class="score-total">Challenge XP <span>+120</span></div>
+                            <div class="score-row">
+                                <span>Meals</span>
+                                <div class="score-bar"><span style="--score-width: 76%"></span></div>
+                                <strong>30</strong>
+                            </div>
+                            <div class="score-row">
+                                <span>Workouts</span>
+                                <div class="score-bar"><span style="--score-width: 88%"></span></div>
+                                <strong>50</strong>
+                            </div>
+                            <div class="score-row">
+                                <span>Check-in</span>
+                                <div class="score-bar"><span style="--score-width: 62%"></span></div>
+                                <strong>40</strong>
+                            </div>
+                            <div class="score-pulse"></div>
+                        </div>
+                    </div>
                     <div class="step-num">03</div>
                     <h3 class="step-title">Learn the scoring system</h3>
                     <p class="step-desc">See how workouts, meals, check-ins, and XP all work together before day one.</p>
