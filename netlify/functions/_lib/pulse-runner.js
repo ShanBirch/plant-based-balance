@@ -112,7 +112,7 @@ const PER_CLIENT_DETECTORS = {
 // usual suppression layers. Inbound DMs and real-time wins would otherwise get
 // eaten by "recently contacted" or "pulse cooldown" and disappear.
 const ALWAYS_SHOW_TYPES = new Set(['unread_message', 'incoming_dm']);
-const ALWAYS_SHOW_WIN_SUBTYPES = new Set(['pb', 'streak', 'level_up']);
+const ALWAYS_SHOW_WIN_SUBTYPES = new Set(['streak', 'level_up']);
 
 function shouldAlwaysShow(alert) {
     if (ALWAYS_SHOW_TYPES.has(alert.alert_type)) return true;
@@ -169,7 +169,7 @@ Alert-type guidance:
 - inactive_client: gentle check-in
 - unread_message: react to the client's actual words
 - challenge_dropout: motivating nudge
-- win_to_celebrate: brief celebration (subtype=pb/streak/level_up/comeback)
+- win_to_celebrate: brief celebration (subtype=streak/level_up/comeback)
 - nutrition_gap: helpful not judgmental
 - workout_dropoff / meal_dropoff: casual "what's up"
 - checkin_due: prompt weekly review

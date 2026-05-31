@@ -1,10 +1,9 @@
 /**
  * PB Celebration Draft — Event-Driven Function
  *
- * Fires the moment a client breaks a personal best. Generates an AI hype
- * message in Shannon's voice and queues it as a `coach_alerts` row so Shannon
- * can send encouragement within seconds of the PB happening, instead of
- * finding out 2 hours later from the batch scan.
+ * Fires the moment a client breaks a personal best. Immediate PB coaching
+ * alerts are off by default because they happen too often; PBs still feed
+ * weekly/Sunday check-ins from `pb_history`.
  *
  * Trigger: DB trigger on `pb_history` INSERT
  *          (see database/pb_celebration_trigger.sql)
@@ -35,6 +34,7 @@ const {
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 const PB_COACH_PUSH_ENABLED = process.env.PB_COACH_PUSH_ENABLED === 'true';
+const PB_IMMEDIATE_COACH_ALERTS_ENABLED = process.env.PB_IMMEDIATE_COACH_ALERTS_ENABLED === 'true';
 
 // ============================================================
 // Context loading
@@ -213,6 +213,17 @@ exports.handler = async (event) => {
 
     if (!userId || !exerciseName || !pbType) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing required PB fields' }) };
+    }
+
+    if (!PB_IMMEDIATE_COACH_ALERTS_ENABLED) {
+        console.log(`[pb-celebration] immediate coaching alert skipped for ${userId} / ${exerciseName}; PB remains available for weekly check-ins`);
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                skipped: 'immediate_pb_coaching_alerts_disabled',
+                retained_for_weekly_checkins: true,
+            }),
+        };
     }
 
     // 1. Dedup — skip if we already alerted on this client's PB for this exercise in the last 24h

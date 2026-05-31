@@ -2077,11 +2077,11 @@
                         <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                             <div>
                                 <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Needs You</h2>
-                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Client-manager reviewed DMs and onboarding-link handoffs waiting for Shannon.</p>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Client-manager reviewed DMs, month-one milestones and onboarding-link handoffs waiting for Shannon.</p>
                             </div>
                             <div style="display:inline-flex; align-items:center; gap:8px; font-size:0.78rem; color:#64748b; font-weight:800;">
                                 <span id="needs-you-view-all-count" class="alert-view-count">0</span>
-                                <span>reviewed DMs + onboarding handoffs</span>
+                                <span>reviewed DMs + milestones</span>
                             </div>
                         </div>
                     </div>
@@ -2115,7 +2115,7 @@
                                     <button type="button" id="alert-view-checkins" class="alert-view-chip" onclick="setAlertView('checkins')" title="Legacy onboarding, weekly and proactive check-in drafts">
                                         Legacy Check-ins <span id="alert-view-checkins-count" class="alert-view-count">0</span>
                                     </button>
-                                    <button type="button" id="alert-view-personal_bests" class="alert-view-chip" onclick="setAlertView('personal_bests')" title="PBs, first workouts, badges and celebration moments">
+                                    <button type="button" id="alert-view-personal_bests" class="alert-view-chip" onclick="setAlertView('personal_bests')" title="First workouts, badges and bigger celebration moments">
                                         Personal Bests <span id="alert-view-personal_bests-count" class="alert-view-count">0</span>
                                     </button>
                                     <button type="button" id="alert-view-sent_later" class="alert-view-chip" onclick="setAlertView('sent_later')" title="Drafts you scheduled to fire later">
@@ -9472,7 +9472,7 @@
         let currentNeedsYouView = 'all';
         let needsYouCounts = { all: 0 };
         const NEEDS_YOU_TABS = ['all'];
-        const NEEDS_YOU_ALERT_TYPES = [...new Set([...DM_ALERT_TYPES, ...FOLLOW_UP_ALERT_TYPES])];
+        const NEEDS_YOU_ALERT_TYPES = [...new Set([...DM_ALERT_TYPES, ...FOLLOW_UP_ALERT_TYPES, 'onboarding_day_30'])];
         const CLIENT_MANAGER_REVIEW_MARKERS = [
             'balance-combined-dm-manager',
             'balance-client-dm-manager',
@@ -9480,7 +9480,7 @@
             'codex-client-dm-manager',
         ];
         const NEEDS_YOU_EMPTY_STATES = {
-            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'No client-manager reviewed DMs or onboarding-link handoffs are waiting right now.' },
+            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'No client-manager reviewed DMs, month-one milestones or onboarding-link handoffs are waiting right now.' },
         };
         let currentChallengeCheckinView = 'pending';
         const CHALLENGE_CHECKIN_TABS = ['pending', 'manual', 'later', 'sent_today', 'all'];
@@ -10751,6 +10751,7 @@
 
         function alertMatchesClientView(alert, view) {
             if (isChallengeCheckinAlert(alert)) return false;
+            if (alert?.alert_type === 'onboarding_day_30' && needsYouHasOperatorWork(alert)) return false;
             if (view === 'checkins') return isCheckinAlert(alert);
             if (view === 'personal_bests') return isPersonalBestAlert(alert);
             if (view === 'needs_attention') return isNeedsAttentionQueueItem(alert);
@@ -10947,6 +10948,7 @@
             if (!alert || alert.status !== 'pending') return false;
             if (!NEEDS_YOU_ALERT_TYPES.includes(alert.alert_type)) return false;
             if (isCocosDmAlert(alert)) return false;
+            if (alert.alert_type === 'onboarding_day_30') return true;
             if (isLeadOnboardingHandoff(alert)) return true;
             if (!DM_ALERT_TYPES.includes(alert.alert_type)) return false;
             if (!getAlertClientIdentity(alert)) return false;
@@ -11051,6 +11053,10 @@
         function routePendingAlertToInbox(alert) {
             const isDmAlert = DM_ALERT_TYPES.includes(alert?.alert_type);
             if (isLeadOnboardingHandoff(alert)) {
+                openNeedsYouForAlert(alert, 'all');
+                return;
+            }
+            if (alert?.alert_type === 'onboarding_day_30' && needsYouHasOperatorWork(alert)) {
                 openNeedsYouForAlert(alert, 'all');
                 return;
             }
@@ -13717,7 +13723,7 @@
         //   40     — coach-facing planning artifacts (weekly_digest)
         const ALERT_TYPE_URGENCY = {
             incoming_dm:         1,   // real client message waiting — highest of all
-            win_to_celebrate:    2,   // PB hype is time-sensitive
+            win_to_celebrate:    9,   // Bigger win moments, not routine PBs
             first_workout:       3,
             badge_earned:        3,   // milestone badges — same urgency as first_workout
             onboarding_welcome:  4,   // new client, first impression
@@ -13982,7 +13988,7 @@
                 const ALERT_EMPTY = {
                     needs_attention: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'No client issues', body: 'No dropoffs, plateaus or urgent coaching signals right now.' },
                     checkins: { icon: 'clipboard-check', iconColor: '#48864B', headerColor: '#48864B', header: 'No legacy check-ins due', body: 'Old onboarding, weekly and morning check-ins are clear. Cohort check-ins now live in the Check-ins tab.' },
-                    personal_bests: { icon: 'trophy', iconColor: '#48864B', headerColor: '#48864B', header: 'No wins waiting', body: 'PBs, badges and celebration drafts will land here.' },
+                    personal_bests: { icon: 'trophy', iconColor: '#48864B', headerColor: '#48864B', header: 'No wins waiting', body: 'Badges and bigger celebration drafts will land here.' },
                     sent_later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Drafts you Send Later will appear here until they fire.' },
                     sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing sent today yet', body: 'Replies you fire today will land here for review.' },
                     unsent: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No discarded drafts', body: `Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.` },

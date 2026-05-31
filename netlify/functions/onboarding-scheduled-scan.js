@@ -117,7 +117,8 @@ const MILESTONES = [
         lengthBrief: '2-4 sentences',
         windowLabel: 'MONTH',
         windowMs: 30 * 24 * 60 * 60 * 1000,
-        instructions: `First-month celebration. Summarise the wins specifically (workout count, PBs hit, weight change if logged). Name ONE thing to focus on next month. Include one thoughtful question about what made the month easier/harder or what support they need next. Genuine pride, not corporate "congrats on your journey". Aussie hype.`,
+        requiresNeedsYou: true,
+        instructions: `First-month celebration. Summarise the wins specifically (workout count, PBs hit, weight change if logged). Name ONE thing to focus on next month. Do not force a question; ask one only if a missing detail genuinely helps Shannon steer the next month. Genuine pride, not corporate "congrats on your journey". Aussie hype.`,
     },
 ];
 
@@ -221,6 +222,7 @@ async function loadOnboardingFactsCompact(clientId) {
 // ============================================================
 
 async function draftAndQueue({ coachId, clientId, clientName, milestone }) {
+    const needsYouRequired = milestone.requiresNeedsYou === true;
     const [memory, profile, activitySummary, onboardingFacts, editExamples] = await Promise.all([
         loadClientMemory(coachId, clientId),
         loadClientProfileFacts(clientId),
@@ -277,6 +279,20 @@ async function draftAndQueue({ coachId, clientId, clientName, milestone }) {
             draft_model: draftModel,
             activity_snapshot: activitySummary,
             drafted_at: new Date().toISOString(),
+            ...(needsYouRequired ? {
+                needs_you_required: true,
+                operator_queue: 'needs_you',
+                needs_you_reason: 'month-one milestone needs Shannon approval before sending',
+                needs_you_reasons: ['month_one_milestone'],
+                codex_review: {
+                    decision: 'needs_you',
+                    queue: 'needs_you',
+                    reason: 'Month-one milestone should be reviewed and sent manually.',
+                    needs_shannon_approval: true,
+                    source: 'onboarding-scheduled-scan',
+                    reviewed_at: new Date().toISOString(),
+                },
+            } : {}),
         },
     };
 
@@ -300,7 +316,7 @@ async function draftAndQueue({ coachId, clientId, clientName, milestone }) {
     // Auto-send for trusted clients, otherwise push the approve-gate
     // notification.
     let autoSent = false;
-    if (draftText && alertId) {
+    if (!needsYouRequired && draftText && alertId) {
         autoSent = await maybeAutoSendDraft({
             coachId,
             clientId,

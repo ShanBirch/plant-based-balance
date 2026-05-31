@@ -210,36 +210,13 @@ async function detectChallengeDropouts({ supabaseQuery, excludeIds, clientScope 
 }
 
 // ============================================================
-// Wins to celebrate — PBs + streak milestones (24h window)
-// Backup for real-time pb-celebration-draft trigger.
+// Wins to celebrate — streak milestones.
+// Individual PBs stay out of immediate coaching notifications; weekly/Sunday
+// check-ins read `pb_history` directly.
 // ============================================================
 
 async function detectWinsToCelebrate({ supabaseQuery, excludeIds, clientScope }) {
     const alerts = [];
-
-    const recentPBs = await supabaseQuery(
-        `personal_bests?select=user_id,exercise_name,best_weight_kg,best_weight_reps,best_weight_date,updated_at&updated_at=gte.${iso(1)}&order=updated_at.desc&limit=20`
-    ).catch(() => []);
-    for (const pb of recentPBs) {
-        if (!inScope(pb.user_id, excludeIds, clientScope)) continue;
-        const user = await supabaseQuery(`users?select=id,name,email&id=eq.${pb.user_id}&limit=1`).catch(() => []);
-        if (!user[0]) continue;
-
-        const existing = await supabaseQuery(
-            `coach_alerts?client_id=eq.${pb.user_id}&alert_type=eq.win_to_celebrate&status=eq.pending&data->>exercise_name=eq.${encodeURIComponent(pb.exercise_name)}&created_at=gte.${iso(1)}&limit=1`
-        ).catch(() => []);
-        if (existing.length) continue;
-
-        alerts.push({
-            client_id: pb.user_id,
-            client_name: nameOf(user[0]),
-            alert_type: 'win_to_celebrate',
-            priority: 'medium',
-            title: `${nameOf(user[0])} hit a PB! ${pb.exercise_name}: ${pb.best_weight_kg}kg x ${pb.best_weight_reps}`,
-            description: `New personal best achieved ${pb.best_weight_date || 'recently'}.`,
-            data: { subtype: 'pb', exercise_name: pb.exercise_name, weight_kg: pb.best_weight_kg, reps: pb.best_weight_reps },
-        });
-    }
 
     const streakers = await supabaseQuery(
         `user_points?select=user_id,current_streak&current_streak=gte.7&order=current_streak.desc&limit=20`
