@@ -271,10 +271,17 @@
     }
   }
 
+  function resolveGoalDefinition(raw) {
+    const goalId = typeof raw === 'string'
+      ? raw
+      : raw && (raw.id || raw.goal_id || raw.goalId);
+    return goalId && GOAL_BY_ID[goalId] ? GOAL_BY_ID[goalId] : null;
+  }
+
   function normalizeGoal(raw) {
-    const def = raw && GOAL_BY_ID[raw.id];
+    const def = resolveGoalDefinition(raw);
     if (!def) return null;
-    let target = Number(raw.target);
+    let target = Number(raw && typeof raw === 'object' ? raw.target : null);
     if (!Number.isFinite(target) || target <= 0) target = def.target;
     target = Math.min(def.max, Math.max(def.min, target));
     if (def.step >= 1) target = Math.round(target);
