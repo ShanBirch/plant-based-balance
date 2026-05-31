@@ -1466,6 +1466,140 @@ html.reveal-ready .feature-motion-card:not(.is-motion-live) *::after {
 .movement-lift span::before { left: -18px; }
 .movement-lift span::after { right: -18px; }
 
+.analytics-scene {
+    background:
+        radial-gradient(circle at 28% 18%, rgba(90, 166, 166, 0.14), transparent 34%),
+        linear-gradient(180deg, rgba(90, 166, 166, 0.10), rgba(255, 255, 255, 0.03));
+}
+
+.analytics-dashboard {
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    top: 22px;
+    min-height: 174px;
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    box-shadow: 0 18px 38px rgba(17, 17, 17, 0.10);
+    animation: analyticsCardFloat 5.2s ease-in-out infinite;
+}
+
+.analytics-topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.analytics-topline strong,
+.analytics-topline span,
+.analytics-insight strong,
+.analytics-insight span {
+    display: block;
+}
+
+.analytics-topline strong {
+    font-family: "Outfit", sans-serif;
+    color: #151515;
+    font-size: 0.98rem;
+}
+
+.analytics-topline span {
+    min-width: 56px;
+    padding: 6px 9px;
+    border-radius: 999px;
+    background: rgba(143, 189, 107, 0.18);
+    color: #1f6f5a;
+    font-size: 0.76rem;
+    font-weight: 900;
+    text-align: center;
+}
+
+.analytics-chart {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 18px;
+    height: 90px;
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.analytics-chart span {
+    flex: 1;
+    min-width: 0;
+    height: var(--height);
+    border-radius: 999px 999px 7px 7px;
+    background: linear-gradient(180deg, #5aa6a6, rgba(143, 189, 107, 0.58));
+    transform-origin: bottom;
+    animation: analyticsBarRise 2.8s ease-in-out infinite;
+}
+
+.analytics-chart span:nth-child(2) { animation-delay: -0.35s; }
+.analytics-chart span:nth-child(3) { animation-delay: -0.7s; }
+.analytics-chart span:nth-child(4) { animation-delay: -1.05s; }
+.analytics-chart span:nth-child(5) { animation-delay: -1.4s; }
+
+.analytics-line {
+    position: absolute;
+    left: 22px;
+    right: 22px;
+    bottom: 76px;
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(216, 178, 94, 0.22), #d8b25e, rgba(90, 166, 166, 0.42));
+    animation: analyticsLineSweep 3.6s ease-in-out infinite;
+}
+
+.analytics-insight {
+    position: absolute;
+    left: 22px;
+    right: 22px;
+    bottom: 18px;
+    padding: 11px 14px;
+    border-radius: 16px;
+    background: rgba(21, 21, 21, 0.86);
+    box-shadow: 0 16px 34px rgba(17, 17, 17, 0.16);
+    animation: analyticsInsightPop 4.2s ease-in-out infinite;
+}
+
+.analytics-insight strong {
+    color: #fffaf0;
+    font-family: "Outfit", sans-serif;
+    font-size: 0.86rem;
+}
+
+.analytics-insight span {
+    margin-top: 2px;
+    color: rgba(255, 250, 240, 0.72);
+    font-size: 0.68rem;
+    font-weight: 800;
+}
+
+.analytics-rings {
+    position: absolute;
+    right: 28px;
+    top: 96px;
+    width: 58px;
+    height: 58px;
+    pointer-events: none;
+}
+
+.analytics-rings span {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid rgba(90, 166, 166, 0.34);
+    animation: analyticsRingPulse 2.4s ease-out infinite;
+}
+
+.analytics-rings span:nth-child(2) {
+    animation-delay: 0.65s;
+}
+
 .learn-scene {
     background:
         radial-gradient(circle at 50% 38%, rgba(255, 230, 150, 0.24), transparent 32%),
@@ -1817,6 +1951,31 @@ html.reveal-ready .feature-motion-card:not(.is-motion-live) *::after {
 @keyframes liftRep {
     0%, 100% { transform: translateY(7px) rotate(-2deg); }
     50% { transform: translateY(-10px) rotate(2deg); }
+}
+
+@keyframes analyticsCardFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
+}
+
+@keyframes analyticsBarRise {
+    0%, 100% { transform: scaleY(0.86); opacity: 0.78; }
+    50% { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes analyticsLineSweep {
+    0%, 100% { opacity: 0.68; transform: rotate(-8deg) translateX(-3px); }
+    50% { opacity: 1; transform: rotate(-8deg) translateX(4px); }
+}
+
+@keyframes analyticsInsightPop {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-5px) scale(1.015); }
+}
+
+@keyframes analyticsRingPulse {
+    0% { opacity: 0.85; transform: scale(0.55); }
+    100% { opacity: 0; transform: scale(1.35); }
 }
 
 @keyframes bulbFloat {
