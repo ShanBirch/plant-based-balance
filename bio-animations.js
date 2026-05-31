@@ -1,12 +1,14 @@
 (function () {
     const revealTargets = document.querySelectorAll('.reveal');
-    if (!revealTargets.length) return;
+    const motionTargets = document.querySelectorAll('.feature-motion-card');
+    if (!revealTargets.length && !motionTargets.length) return;
 
     const prefersReducedMotion = window.matchMedia
         && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (prefersReducedMotion || !('IntersectionObserver' in window)) {
         revealTargets.forEach((el) => el.classList.add('visible'));
+        motionTargets.forEach((el) => el.classList.add('is-motion-live'));
         return;
     }
 
@@ -22,4 +24,17 @@
     });
 
     revealTargets.forEach((el) => observer.observe(el));
+    window.bioRevealObserver = observer;
+
+    const motionObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            entry.target.classList.toggle('is-motion-live', entry.isIntersecting);
+        });
+    }, {
+        threshold: 0.08,
+        rootMargin: '180px 0px',
+    });
+
+    motionTargets.forEach((el) => motionObserver.observe(el));
+    window.bioMotionObserver = motionObserver;
 })();

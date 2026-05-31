@@ -28,31 +28,37 @@
             document.documentElement.classList.add('reveal-ready');
         })();
     </script>
-    <link rel="stylesheet" href="bio.css?v=balance-app-motion-2">
-    <script src="bio-animations.js?v=balance-app-motion-2" defer></script>
-    <script type="module">
-        document.documentElement.setAttribute('data-balance-character-deps', 'loading');
-        window.balanceCharacterDeps = Promise.all([
-            import('https://esm.sh/three@0.160.0?target=es2020'),
-            import('https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js?target=es2020'),
-            import('https://esm.sh/three@0.160.0/examples/jsm/loaders/DRACOLoader.js?target=es2020')
-        ]).then(function (modules) {
-            window.THREE = modules[0];
-            window.GLTFLoader = modules[1].GLTFLoader;
-            window.DRACOLoader = modules[2].DRACOLoader;
-            document.documentElement.setAttribute('data-balance-character-deps', 'ready');
-            window.dispatchEvent(new Event('balance:character-deps-ready'));
-            return true;
-        }).catch(function (err) {
-            document.documentElement.setAttribute('data-balance-character-deps', 'failed');
-            document.documentElement.setAttribute('data-balance-character-deps-error', err && err.message ? err.message.slice(0, 180) : 'unknown');
-            console.warn('Balance character dependencies failed to load', err);
-            return false;
-        });
+    <link rel="stylesheet" href="bio.css?v=balance-app-motion-5">
+    <script src="bio-animations.js?v=balance-app-motion-5" defer></script>
+    <script>
+        window.loadBalanceCharacterDeps = function () {
+            if (window.balanceCharacterDeps) return window.balanceCharacterDeps;
+
+            document.documentElement.setAttribute('data-balance-character-deps', 'loading');
+            window.balanceCharacterDeps = Promise.all([
+                import('https://esm.sh/three@0.160.0?target=es2020'),
+                import('https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js?target=es2020'),
+                import('https://esm.sh/three@0.160.0/examples/jsm/loaders/DRACOLoader.js?target=es2020')
+            ]).then(function (modules) {
+                window.THREE = modules[0];
+                window.GLTFLoader = modules[1].GLTFLoader;
+                window.DRACOLoader = modules[2].DRACOLoader;
+                document.documentElement.setAttribute('data-balance-character-deps', 'ready');
+                window.dispatchEvent(new Event('balance:character-deps-ready'));
+                return true;
+            }).catch(function (err) {
+                document.documentElement.setAttribute('data-balance-character-deps', 'failed');
+                document.documentElement.setAttribute('data-balance-character-deps-error', err && err.message ? err.message.slice(0, 180) : 'unknown');
+                console.warn('Balance character dependencies failed to load', err);
+                return false;
+            });
+
+            return window.balanceCharacterDeps;
+        };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/meshoptimizer@0.21.0/meshopt_decoder.min.js" defer></script>
-    <script src="lib/avatar3d.js?v=balance-app-motion-2" defer></script>
-    <script src="balance-character-live.js?v=balance-app-motion-2" defer></script>
+    <script src="lib/avatar3d.js?v=balance-app-motion-5" defer></script>
+    <script src="balance-character-live.js?v=balance-app-motion-5" defer></script>
 </head>
 <body class="bio-page landing-page">
     <div class="page-shell">

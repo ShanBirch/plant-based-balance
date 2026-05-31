@@ -1034,6 +1034,12 @@ body.bio-page[data-bio-theme="light"] .hub-logo-ring-track {
     opacity: 0.8;
 }
 
+html.reveal-ready .feature-motion-card:not(.is-motion-live) *,
+html.reveal-ready .feature-motion-card:not(.is-motion-live) *::before,
+html.reveal-ready .feature-motion-card:not(.is-motion-live) *::after {
+    animation-play-state: paused !important;
+}
+
 .feature-motion-copy,
 .feature-motion-scene {
     position: relative;
