@@ -122,6 +122,8 @@ let progressPhotoCaptureState = null;
         } else if (doneCard) {
             doneCard.style.display = 'flex';
         }
+
+        updateProgressPhotoDoneCardState();
     }
 
     function getProgressPhotoDismissKey() {
@@ -160,6 +162,128 @@ let progressPhotoCaptureState = null;
         if (copy) copy.textContent = text || 'Uploading your progress photos...';
     }
 
+    function getProgressPhotoShareState() {
+        return window._latestProgressPhotoShare || null;
+    }
+
+    function getProgressPhotoWeekLabel(photoWeek) {
+        if (!photoWeek) return 'this week';
+        const parsed = new Date(photoWeek + 'T00:00:00');
+        if (Number.isNaN(parsed.getTime())) return 'this week';
+        return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function parseProgressPhotoNotes(notes) {
+        if (!notes) return null;
+        if (typeof notes === 'object') return notes;
+        try {
+            return JSON.parse(notes);
+        } catch (error) {
+            console.warn('Could not parse progress photo notes:', error);
+            return null;
+        }
+    }
+
+    function buildProgressPhotoUploads(savedPhoto) {
+        const parsedNotes = parseProgressPhotoNotes(savedPhoto?.notes);
+        const rawShots = Array.isArray(parsedNotes?.shots) ? parsedNotes.shots : [];
+        const uploads = rawShots
+            .map(function(shot, index) {
+                if (!shot) return null;
+                return {
+                    angle: shot.angle || shot.key || ('shot-' + (index + 1)),
+                    title: shot.title || shot.label || ('Shot ' + (index + 1)),
+                    url: shot.photo_url || shot.url || shot.media_url || '',
+                    fileName: shot.storage_path || shot.fileName || ''
+                };
+            })
+            .filter(function(upload) { return upload && upload.url; });
+
+        if (!uploads.length && savedPhoto?.photo_url) {
+            uploads.push({
+                angle: 'front',
+                title: 'Front',
+                url: savedPhoto.photo_url,
+                fileName: savedPhoto.storage_path || ''
+            });
+        }
+
+        return { parsedNotes, uploads };
+    }
+
+    async function hydrateProgressPhotoShareState(savedPhoto) {
+        if (!savedPhoto) return null;
+
+        const existingState = getProgressPhotoShareState();
+        if (existingState?.savedPhoto?.id === savedPhoto.id) {
+            return existingState;
+        }
+
+        const { parsedNotes, uploads } = buildProgressPhotoUploads(savedPhoto);
+        if (!uploads.length) return null;
+
+        const shareState = {
+            userId: savedPhoto.user_id || window.currentUser?.id,
+            photoWeek: savedPhoto.photo_week,
+            uploads: uploads,
+            primaryUpload: uploads[0],
+            savedPhoto: savedPhoto,
+            sharedToFeed: Boolean(parsedNotes?.shared_to_feed_at || parsedNotes?.shared_story_id),
+            sharePending: false,
+            shareStoryId: parsedNotes?.shared_story_id || null
+        };
+
+        if (!shareState.sharedToFeed && shareState.userId && window.dbHelpers?.stories?.getUserStories) {
+            try {
+                const stories = await window.dbHelpers.stories.getUserStories(shareState.userId);
+                const existingStory = Array.isArray(stories) ? stories.find(function(story) {
+                    if (story?.media_type !== 'progress_photo_card' || !story.caption) return false;
+                    try {
+                        const cardData = JSON.parse(story.caption);
+                        return cardData?.photo_week === shareState.photoWeek;
+                    } catch (error) {
+                        return false;
+                    }
+                }) : null;
+
+                if (existingStory) {
+                    shareState.sharedToFeed = true;
+                    shareState.shareStoryId = existingStory.story_id || existingStory.id || shareState.shareStoryId;
+                }
+            } catch (error) {
+                console.warn('Could not inspect existing progress photo stories:', error);
+            }
+        }
+
+        window._latestProgressPhotoShare = shareState;
+        return shareState;
+    }
+
+    function updateProgressPhotoDoneCardState() {
+        const shareState = getProgressPhotoShareState();
+        const copy = document.getElementById('progress-photo-done-copy');
+        const shareBtn = document.getElementById('progress-photo-share-btn');
+        if (!copy || !shareBtn) return;
+
+        const isShared = Boolean(shareState?.sharedToFeed);
+        const isSharing = Boolean(shareState?.sharePending);
+        const needsRetry = Boolean(shareState?.shareStoryId && !isShared);
+
+        if (isShared) {
+            copy.textContent = '+20 XP earned. Shared to the feed.';
+        } else if (needsRetry) {
+            copy.textContent = 'Feed post created. Tap again to finish the +10 XP.';
+        } else {
+            copy.textContent = '+10 XP earned. Want to share it to the feed for another +10 XP?';
+        }
+
+        shareBtn.disabled = isShared || isSharing;
+        shareBtn.style.opacity = (isShared || isSharing) ? '0.68' : '1';
+        shareBtn.textContent = isSharing
+            ? 'Sharing...'
+            : (isShared ? 'Shared to Feed' : (needsRetry ? 'Retry +10 XP' : 'Share to Feed +10 XP'));
+    }
+
     async function awardProgressPhotoXP(userId, photoRecord, file) {
         if (!userId || !photoRecord?.id) return null;
 
@@ -182,6 +306,41 @@ let progressPhotoCaptureState = null;
             console.warn('Progress photo XP award skipped:', result?.reason || result?.error || result);
         } catch (xpError) {
             console.warn('Progress photo XP award failed:', xpError);
+        }
+
+        return null;
+    }
+
+    async function awardProgressPhotoShareXP(userId, storyId) {
+        if (!userId || !storyId) return null;
+
+        try {
+            const result = await window.db?.points?.awardPoints(
+                userId,
+                'progress_photo_share',
+                storyId,
+                { aiConfidence: 'high' }
+            );
+
+            if (result?.success) {
+                if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
+                if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+                if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
+                return result;
+            }
+
+            const alreadyClaimed = String(result?.error || '').toLowerCase() === 'already claimed'
+                || String(result?.reason || '').toLowerCase().includes('already been awarded');
+            if (alreadyClaimed) {
+                if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
+                if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+                if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
+                return { ...result, success: true, alreadyClaimed: true };
+            }
+
+            console.warn('Progress photo share XP award skipped:', result?.reason || result?.error || result);
+        } catch (xpError) {
+            console.warn('Progress photo share XP award failed:', xpError);
         }
 
         return null;
@@ -229,6 +388,7 @@ let progressPhotoCaptureState = null;
             if (thisWeeksPhoto) {
                 // Already done this week
                 markProgressPhotoCompletedForCurrentWeek();
+                await hydrateProgressPhotoShareState(thisWeeksPhoto);
                 showProgressPhotoCompletedState(card, doneCard, uploadingCard);
             } else {
                 // Show the upload card
@@ -465,6 +625,16 @@ let progressPhotoCaptureState = null;
             const savedPhoto = await window.db.progressPhotos.save(userId, primaryUpload.url, primaryUpload.fileName, notes);
 
             markProgressPhotoCompletedForCurrentWeek();
+            window._latestProgressPhotoShare = {
+                userId: userId,
+                photoWeek: savedPhoto.photo_week,
+                uploads: uploads,
+                primaryUpload: primaryUpload,
+                savedPhoto: savedPhoto,
+                sharedToFeed: false,
+                sharePending: false,
+                shareStoryId: null
+            };
             await awardProgressPhotoXP(userId, savedPhoto, shots[0].file);
 
             if (uploadingCard) uploadingCard.style.display = 'none';
@@ -489,6 +659,118 @@ let progressPhotoCaptureState = null;
             } else {
                 if (card) card.style.display = 'block';
                 alert('Failed to upload progress photos. Please try again.');
+            }
+        }
+    }
+
+    async function shareWeeklyProgressPhotoToFeed() {
+        const shareState = getProgressPhotoShareState();
+        const userId = window.currentUser?.id;
+
+        if (!userId) {
+            showToast('Please log in to share', 'error');
+            return;
+        }
+
+        if (!shareState?.uploads || shareState.uploads.length === 0) {
+            showToast('No progress photo set is ready to share yet.', 'error');
+            return;
+        }
+
+        if (shareState.sharedToFeed) {
+            showToast('This progress photo set is already on the feed.', 'info');
+            updateProgressPhotoDoneCardState();
+            return;
+        }
+
+        if (shareState.sharePending) return;
+
+        shareState.sharePending = true;
+        updateProgressPhotoDoneCardState();
+
+        try {
+            let storyId = shareState.shareStoryId || null;
+
+            if (!storyId) {
+                const shots = shareState.uploads.map(function(upload, index) {
+                    return {
+                        angle: upload.angle,
+                        title: upload.title,
+                        photo_url: upload.url,
+                        storage_path: upload.fileName,
+                        index: index
+                    };
+                });
+
+                const weekLabel = getProgressPhotoWeekLabel(shareState.photoWeek);
+                const primaryShot = shots[0];
+                const story = await window.dbHelpers?.stories?.create(userId, {
+                    media_type: 'progress_photo_card',
+                    media_url: primaryShot?.photo_url || shareState.primaryUpload?.url || '',
+                    thumbnail_url: primaryShot?.photo_url || shareState.primaryUpload?.url || null,
+                    caption: JSON.stringify({
+                        card_type: 'progress_photo',
+                        title: 'Week of ' + weekLabel,
+                        summary: 'Front, side, back check-in.',
+                        photo_week: shareState.photoWeek,
+                        shots: shots,
+                        source: 'weekly_progress_photos'
+                    }),
+                    duration: 5,
+                    background_color: '#f43f5e'
+                });
+
+                if (!story?.id) {
+                    throw new Error('Failed to create feed post');
+                }
+
+                storyId = story.id;
+                shareState.shareStoryId = storyId;
+            }
+
+            const pointsResult = await awardProgressPhotoShareXP(userId, storyId);
+            if (!pointsResult?.success) {
+                throw new Error(pointsResult?.reason || pointsResult?.error || 'Failed to award feed share XP');
+            }
+
+            const sharedNotes = parseProgressPhotoNotes(shareState.savedPhoto?.notes) || {};
+            const updatedNotes = {
+                ...sharedNotes,
+                shared_to_feed_at: new Date().toISOString(),
+                shared_story_id: storyId
+            };
+
+            try {
+                const persistedPhoto = await window.db.progressPhotos.save(
+                    userId,
+                    shareState.savedPhoto?.photo_url || shareState.primaryUpload?.url || '',
+                    shareState.savedPhoto?.storage_path || shareState.primaryUpload?.fileName || '',
+                    JSON.stringify(updatedNotes)
+                );
+                shareState.savedPhoto = persistedPhoto;
+            } catch (persistError) {
+                console.warn('Could not persist progress photo share state:', persistError);
+            }
+
+            shareState.sharedToFeed = true;
+            shareState.sharePending = false;
+            shareState.shareStoryId = storyId;
+
+            updateProgressPhotoDoneCardState();
+
+            if (typeof loadPhotoFeed === 'function') {
+                loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
+            }
+
+            showToast('Shared to the feed! +10 XP', 'success');
+        } catch (error) {
+            console.error('Error sharing progress photo set:', error);
+            shareState.sharePending = false;
+            updateProgressPhotoDoneCardState();
+            if (shareState.shareStoryId) {
+                showToast('Feed post created. Tap Retry +10 XP if the bonus did not land.', 'info');
+            } else {
+                showToast('Failed to share your progress photos. Please try again.', 'error');
             }
         }
     }
@@ -548,6 +830,7 @@ let progressPhotoCaptureState = null;
     window.openProgressPhotoCapture = openProgressPhotoCapture;
     window.closeProgressPhotoShotGuide = closeProgressPhotoShotGuide;
     window.awardProgressPhotoXP = awardProgressPhotoXP;
+    window.shareWeeklyProgressPhotoToFeed = shareWeeklyProgressPhotoToFeed;
     window.isProgressPhotoPromptWindow = isProgressPhotoPromptWindow;
     window.getNextProgressPhotoPromptBoundary = getNextProgressPhotoPromptBoundary;
     window.requestProgressPhotoCardCheck = requestProgressPhotoCardCheck;

@@ -395,7 +395,7 @@
         grid.innerHTML = stories.map(story => {
             const storyId = story.id;
             const isImage = story.media_type === 'image' || story.media_type === 'video';
-            const isCardType = ['workout_card', 'nutrition_card', 'meal_card', 'level_up_card'].includes(story.media_type);
+            const isCardType = ['workout_card', 'nutrition_card', 'meal_card', 'level_up_card', 'progress_photo_card'].includes(story.media_type);
             const isTextPost = story.media_type === 'text' || (!isCardType && !story.media_url && !story.thumbnail_url);
 
             if (isImage && story.media_url) {
