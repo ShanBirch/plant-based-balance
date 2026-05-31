@@ -1002,8 +1002,8 @@ window.addEventListener('load', function() {
         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #94a3b8;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
     </div>
 
-    <!-- Weekly Wrapped Card (Home) — replaces the auto-popup. Visible Sun 12:00 → Wed
-         while the current ISO week's wrapped is unseen. Tapping plays the slideshow;
+    <!-- Weekly Wrapped Card (Home) - replaces the auto-popup. Visible Sun 09:00 -> Mon 12:00
+         Brisbane time while the current ISO week's wrapped is unseen. Tapping plays the slideshow;
          dismissing or finishing marks this week seen so it won't reappear until next week. -->
     <div id="weekly-wrapped-card" style="display: none; margin: 0 25px 14px; cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 6px 20px rgba(76,29,149,0.35); background: linear-gradient(135deg, #1a1033 0%, #2d1b69 55%, #4c1d95 100%); position: relative;" onclick="openWeeklyWrappedFromCard()">
         <button type="button" aria-label="Dismiss" onclick="event.stopPropagation(); dismissWeeklyWrappedCard()" style="position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; background: rgba(255,255,255,0.18); border: none; border-radius: 50%; color: rgba(255,255,255,0.9); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; line-height: 1; padding: 0; z-index: 2;">×</button>
@@ -12322,7 +12322,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'dashboard', sel:'.battle-trigger-btn,#tamagotchi-widget-container', title:'Battle your friends', body:"Challenge friends to Battle FitGotchis (stats battle), Workout Duel (same workout, highest volume wins), or Quiz Battle (15 questions, fastest + most correct wins FitCoins). Win battles for rare drops." },
 
-    { tab:'dashboard', sel:'#weekly-wrapped-card,.profile-icon[onclick*="profile"]', title:'Weekly Wrapped', body:"Every Sunday afternoon a Wrapped card lands on your home screen — tap it for a slideshow recap of your week (workouts, PBs, mood, streak + a forecast for next week). Dismiss with × if you'd rather not watch. Replay it any time from Profile → Health Tools → Replay Weekly Wrapped." },
+    { tab:'dashboard', sel:'#weekly-wrapped-card,.profile-icon[onclick*="profile"]', title:'Weekly Wrapped', body:"Every Sunday morning a Wrapped card lands on your home screen. Tap it for a slideshow recap of your week (workouts, PBs, mood, streak + a forecast for next week). It stays up until Monday midday. Dismiss with × if you'd rather not watch. Replay it any time from Profile → Health Tools → Replay Weekly Wrapped." },
 
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Replay the full tour anytime', body:"Need a refresher? Open Profile and tap Replay App Tour to go through the full feature walkthrough.", quick: true },
 
@@ -12705,7 +12705,7 @@ if(!window._pbbIsIOSSafari) {
       tab: 'dashboard',
       sel: '#weekly-wrapped-card,.profile-icon[onclick*="profile"]',
       title: 'Your Week, Wrapped',
-      body: "Every Sunday arvo a Wrapped card lands on your home screen — tap it for a punchy slideshow of your week (workouts, PBs, mood, streak + a forecast for next week). Hit × to dismiss. Replay any time from Profile → Health Tools.",
+      body: "Every Sunday morning a Wrapped card lands on your home screen. Tap it for a punchy slideshow of your week (workouts, PBs, mood, streak + a forecast for next week). It stays up until Monday midday. Hit × to dismiss. Replay any time from Profile → Health Tools.",
       action: async function(){
         // Opening Wrapped from the celebration splash → spotlight would show
         // behind the takeover, so we just leave the splash to do the intro
@@ -13416,11 +13416,11 @@ if(!window._pbbIsIOSSafari) {
  *   - window.checkWeeklyWrappedAutoOpen()    — kept for back-compat; now just
  *     refreshes the home card visibility instead of auto-popping the slideshow.
  *
- * Display rule for the home card: Sunday arvo → Monday arvo
- * (Sun 12:00 through Mon 18:00), while this ISO week's wrapped is unseen.
+ * Display rule for the home card: Sunday morning -> Monday midday
+ * (Sun 09:00 through Mon 12:00 Brisbane), while this ISO week's wrapped is unseen.
  * Tapping the card opens the slideshow; tapping × dismisses. Either path
  * marks the current ISO week as seen so the card will not reappear until
- * next Sunday arvo.
+ * next Sunday morning.
  */
 (function(){
   // Wait for the library to be ready. It loads deferred on iOS Safari, so we
@@ -13459,14 +13459,14 @@ if(!window._pbbIsIOSSafari) {
       if (!window.weeklyWrapped || typeof window.weeklyWrapped.getCurrentISOWeek !== 'function') return false;
       var isoWeek = window.weeklyWrapped.getCurrentISOWeek();
       if (window.weeklyWrapped.hasSeen(isoWeek)) return false;
-      var now = new Date();
-      var dow = now.getDay();   // 0 Sun … 6 Sat
-      var hour = now.getHours();
-      // Sunday arvo → Monday arvo (Sun 12:00 through Mon 18:00). Once
-      // dismissed/seen, won't reappear until next Sunday's wrapped
+      var now = new Date(Date.now() + (10 * 60 * 60 * 1000));
+      var dow = now.getUTCDay();   // 0 Sun … 6 Sat in Brisbane wall-clock time
+      var hour = now.getUTCHours();
+      // Sunday morning -> Monday midday (Sun 09:00 through Mon 12:00 Brisbane).
+      // Once dismissed/seen, won't reappear until next Sunday's wrapped
       // (different ISO week).
-      if (dow === 0) return hour >= 12;        // Sun: only after noon
-      if (dow === 1) return hour < 18;         // Mon: only until 6pm
+      if (dow === 0) return hour >= 9;         // Sun: only after 9am
+      if (dow === 1) return hour < 12;         // Mon: only until noon
       return false;                             // Tue-Sat: hide
     } catch(_) { return false; }
   }

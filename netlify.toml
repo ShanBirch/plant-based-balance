@@ -292,11 +292,11 @@
 [functions."pulse-evening"]
   schedule = "0 9 * * *"
 
-# Weekly Wrapped user push - Sunday 07:00 UTC (≈ Sun 17:00 AEST / 18:00 AEDT).
+# Weekly Wrapped user push - Saturday 23:00 UTC (Sun 09:00 Brisbane).
 # One push per active user linking into the Spotify-Wrapped-style recap.
 # The push is a pinger only — client fetches the week's aggregate on open.
 [functions."weekly-wrapped-push"]
-  schedule = "0 7 * * 0"
+  schedule = "0 23 * * 6"
 
 # Auto feed comments - hourly scanner, code gates to 07:30-21:45 Brisbane.
 # Adds one simple Shannon comment to fresh feed posts after a human-ish delay.

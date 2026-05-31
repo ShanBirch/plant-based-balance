@@ -1,8 +1,9 @@
 /**
- * Weekly Wrapped — Sunday Afternoon User Push
+ * Weekly Wrapped - Sunday morning user push
  *
- * Fires one push per active user ≈ Sunday 17:00 AEST (Sunday 07:00 UTC).
- * Copy: "Your week is wrapped 🎬 — tap to see how you stacked up."
+ * Fires one push per active user at Sunday 09:00 Brisbane time (Saturday
+ * 23:00 UTC).
+ * Copy: "Your week is wrapped 🎬 - tap to see how you stacked up."
  *
  * The push just pings the app; it doesn't embed any data. When the user opens
  * the app, `dashboard.html` auto-triggers `weeklyWrapped.open()` which fetches
@@ -11,17 +12,21 @@
  * Dedup: records `push_sent_at` in `weekly_wrapped` per (user_id, iso_week) so
  * a re-run doesn't double-push.
  *
- * Schedule: netlify.toml `[functions."weekly-wrapped-push"] schedule = "0 7 * * 0"`
- *   - Sun 07:00 UTC
- *   - AEST (UTC+10): Sun 17:00 local
- *   - AEDT (UTC+11): Sun 18:00 local
- *   Close enough to "Sunday arvo" without DST acrobatics.
+ * Schedule: netlify.toml `[functions."weekly-wrapped-push"] schedule = "0 23 * * 6"`
+ *   - Sat 23:00 UTC
+ *   - Brisbane (UTC+10): Sun 09:00 local
+ * NOTE: the home card stays visible until Monday 12:00 Brisbane.
  */
 
 const { supabaseQuery } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const DAY_MS = 24 * 60 * 60 * 1000;
+const BRISBANE_OFFSET_MS = 10 * 60 * 60 * 1000;
+
+function getBrisbaneWallClockDate(date = new Date()) {
+    return new Date(date.getTime() + BRISBANE_OFFSET_MS);
+}
 
 // ============================================================
 // ISO week helpers (mirror of client lib/weekly-wrapped.js)
@@ -167,7 +172,7 @@ exports.handler = async () => {
     // Use the wrapped-week ISO so the server label matches whatever the
     // client computes when the user opens it later (Sun push now, user
     // opens Mon morning — both resolve to the same iso_week).
-    const isoWeek = getISOWeek(getWrappedWeekStart(new Date()));
+    const isoWeek = getISOWeek(getWrappedWeekStart(getBrisbaneWallClockDate(new Date())));
     console.log(`[weekly-wrapped] starting for ${isoWeek} at ${new Date().toISOString()}`);
 
     const [recipients, alreadyPushed] = await Promise.all([
@@ -206,3 +211,7 @@ exports.handler = async () => {
     console.log(`[weekly-wrapped] done — ${JSON.stringify(summary)}`);
     return { statusCode: 200, body: JSON.stringify(summary) };
 };
+
+exports.getBrisbaneWallClockDate = getBrisbaneWallClockDate;
+exports.getWrappedWeekStart = getWrappedWeekStart;
+exports.getISOWeek = getISOWeek;
