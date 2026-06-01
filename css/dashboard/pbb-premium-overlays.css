@@ -2779,6 +2779,81 @@ body > div[id*="modal"] [style*="border"][style*="rgba(59,130,246"] {
     box-shadow: none !important;
 }
 
+/* Quick nutrition logging opens with the phone keyboard, so keep this flow light and readable. */
+#quick-meal-text-overlay,
+#quick-manual-entry-overlay {
+    background: rgba(248, 245, 238, 0.98) !important;
+    color: #151515 !important;
+    backdrop-filter: blur(12px) saturate(112%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(112%) !important;
+}
+
+#quick-meal-text-overlay > div > div:first-child > div:first-child,
+#quick-manual-entry-overlay > div > div:first-child > div:first-child {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+#quick-meal-subtitle,
+#quick-manual-entry-overlay > div > div:first-child > div:nth-child(2),
+#quick-manual-entry-overlay label span {
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
+#quick-meal-text-input,
+#quick-manual-entry-overlay input {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-color: rgba(184, 137, 43, 0.26) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+    box-shadow: 0 12px 30px rgba(57, 47, 31, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+}
+
+#quick-meal-text-input::placeholder,
+#quick-manual-entry-overlay input::placeholder {
+    color: rgba(21, 21, 21, 0.46) !important;
+    -webkit-text-fill-color: rgba(21, 21, 21, 0.46) !important;
+}
+
+#quick-meal-text-overlay button[onclick*="openSavedMealsFromQuickLog"] {
+    background: rgba(17, 17, 17, 0.06) !important;
+    color: #111111 !important;
+    border: 1px solid rgba(17, 17, 17, 0.08) !important;
+}
+
+#quick-meal-text-overlay .quick-meal-type-pill,
+#quick-manual-entry-overlay .quick-manual-type-pill {
+    background: rgba(255, 255, 255, 0.78) !important;
+    border-color: rgba(17, 17, 17, 0.12) !important;
+    color: #4b5563 !important;
+    box-shadow: none !important;
+}
+
+#quick-meal-text-overlay .quick-meal-type-pill.active,
+#quick-manual-entry-overlay .quick-manual-type-pill.active {
+    background: #111111 !important;
+    border-color: #111111 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+#quick-meal-submit-btn,
+#quick-manual-submit-btn {
+    background: #111111 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    box-shadow: 0 14px 32px rgba(17, 17, 17, 0.16) !important;
+}
+
+#quick-meal-text-overlay button[onclick*="closeQuickMealTextInput"],
+#quick-manual-entry-overlay button[onclick*="closeQuickManualEntry"] {
+    background: rgba(255, 255, 255, 0.72) !important;
+    color: #4b5563 !important;
+    -webkit-text-fill-color: #4b5563 !important;
+    border-color: rgba(17, 17, 17, 0.1) !important;
+}
+
 .meal-breakdown-insight,
 .meal-breakdown-total-stat,
 .meal-breakdown-ingredient,
