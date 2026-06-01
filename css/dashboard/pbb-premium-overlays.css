@@ -2874,6 +2874,120 @@ body > div[id*="modal"] [style*="border"][style*="rgba(59,130,246"] {
     color: #f5d98a !important;
 }
 
+/* Meal logged breakdown: keep the post-log nutrition modal readable in both themes. */
+.meal-breakdown-popup.visible,
+.meal-breakdown-popup.visible .meal-breakdown-card {
+    opacity: 1 !important;
+}
+
+html[data-pbb-theme="light"] .meal-breakdown-card {
+    background:
+        radial-gradient(circle at 88% 0%, rgba(216, 178, 94, 0.12), transparent 30%),
+        linear-gradient(180deg, #ffffff 0%, #fffdf8 55%, #f8f5ee 100%) !important;
+    border: 1px solid rgba(184, 137, 43, 0.18) !important;
+    color: #151515 !important;
+    box-shadow: 0 24px 58px rgba(57, 47, 31, 0.2) !important;
+}
+
+html[data-pbb-theme="light"] .meal-breakdown-logged-label,
+html[data-pbb-theme="light"] .meal-breakdown-insight-label,
+html[data-pbb-theme="light"] .meal-breakdown-ingredient-cals {
+    color: #8c5500 !important;
+    -webkit-text-fill-color: #8c5500 !important;
+}
+
+html[data-pbb-theme="light"] .meal-breakdown-meal-name,
+html[data-pbb-theme="light"] .meal-breakdown-total-value,
+html[data-pbb-theme="light"] .meal-breakdown-ingredient-name {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .meal-breakdown-total-label,
+html[data-pbb-theme="light"] .meal-breakdown-ingredients-title,
+html[data-pbb-theme="light"] .meal-breakdown-ingredient-portion {
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] .meal-breakdown-total-stat,
+html[data-pbb-theme="light"] .meal-breakdown-ingredient,
+html[data-pbb-theme="light"] .meal-breakdown-insight {
+    background: rgba(255, 255, 255, 0.76) !important;
+    border-color: rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .meal-breakdown-total-stat + .meal-breakdown-total-stat {
+    border-left-color: rgba(184, 137, 43, 0.16) !important;
+}
+
+html[data-pbb-theme="light"] .meal-breakdown-divider {
+    background: rgba(184, 137, 43, 0.2) !important;
+}
+
+html[data-pbb-theme="light"] .meal-breakdown-dismiss {
+    background: rgba(17, 17, 17, 0.06) !important;
+    border: 1px solid rgba(17, 17, 17, 0.08) !important;
+    color: #4b5563 !important;
+    -webkit-text-fill-color: #4b5563 !important;
+}
+
+html[data-pbb-theme="light"] .meal-breakdown-insight {
+    border-left-color: #b8892b !important;
+}
+
+html[data-pbb-theme="light"] .meal-breakdown-insight-text {
+    color: #374151 !important;
+    -webkit-text-fill-color: #374151 !important;
+}
+
+html[data-pbb-theme="light"] .meal-breakdown-macro-pill.p {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #b91c1c !important;
+}
+
+html[data-pbb-theme="light"] .meal-breakdown-macro-pill.c {
+    background: rgba(245, 158, 11, 0.12) !important;
+    color: #92400e !important;
+}
+
+html[data-pbb-theme="light"] .meal-breakdown-macro-pill.f {
+    background: rgba(59, 130, 246, 0.1) !important;
+    color: #1d4ed8 !important;
+}
+
+html[data-pbb-theme="light"] .meal-breakdown-macro-pill.fi {
+    background: rgba(123, 168, 131, 0.14) !important;
+    color: #2f6b39 !important;
+}
+
+html:not([data-pbb-theme="light"]) .meal-breakdown-meal-name,
+html:not([data-pbb-theme="light"]) .meal-breakdown-total-value,
+html:not([data-pbb-theme="light"]) .meal-breakdown-ingredient-name {
+    color: #f8f7f2 !important;
+    -webkit-text-fill-color: #f8f7f2 !important;
+}
+
+html:not([data-pbb-theme="light"]) .meal-breakdown-total-label,
+html:not([data-pbb-theme="light"]) .meal-breakdown-ingredients-title,
+html:not([data-pbb-theme="light"]) .meal-breakdown-ingredient-portion,
+html:not([data-pbb-theme="light"]) .meal-breakdown-insight-text {
+    color: rgba(248, 247, 242, 0.72) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.72) !important;
+}
+
+html:not([data-pbb-theme="light"]) .meal-breakdown-divider {
+    background: rgba(245, 217, 138, 0.2) !important;
+}
+
+html:not([data-pbb-theme="light"]) .meal-breakdown-dismiss {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(245, 217, 138, 0.16) !important;
+    color: #f8f7f2 !important;
+    -webkit-text-fill-color: #f8f7f2 !important;
+}
+
 #view-workout-success,
 #view-activity-success {
     background:
