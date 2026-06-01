@@ -2,6 +2,8 @@ const assert = require('assert');
 
 const {
     normalizeDraftComment,
+    applyRelationshipAwareStoryCommentGuard,
+    relationshipContextHasKnownPetNames,
     repairDraftCommentWithContext,
     parseStoryUrl,
     assessStoryCommentSafety,
@@ -549,6 +551,25 @@ const visiblePetQuestionSafety = assessStoryCommentSafety({
     comment: "Oh so cute, what's their name?",
 });
 assert.strictEqual(visiblePetQuestionSafety.safeToComment, true);
+
+const knownPetRelationshipContext = 'Existing IG thread found. Known relationship anchors: pets=dogs Specter and Ocean. Recent DM timeline: Shannon: oh so cute, whats their name? | Them: They are the dogs I house sat. Specter and Ocean';
+assert.strictEqual(relationshipContextHasKnownPetNames(knownPetRelationshipContext), true);
+assert.strictEqual(
+    applyRelationshipAwareStoryCommentGuard("Oh so cute, what's their name?", {
+        relationshipContext: knownPetRelationshipContext,
+    }),
+    'theyre cute haha',
+    'story comments should not ask pet names again when the thread already knows them'
+);
+const repeatedPetQuestionSafety = assessStoryCommentSafety({
+    storyOwner: 'pam',
+    description: 'Two dogs are sitting on a couch.',
+    visibleText: 'Puppy love',
+    comment: 'oh so cute, whats their name?',
+    relationshipContext: knownPetRelationshipContext,
+});
+assert.strictEqual(repeatedPetQuestionSafety.safeToComment, false);
+assert.strictEqual(repeatedPetQuestionSafety.reason, 'known_pet_name_thread');
 
 const ambiguousSubstanceSafety = assessStoryCommentSafety({
     storyOwner: 'madisondangen',

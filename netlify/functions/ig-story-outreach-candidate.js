@@ -396,6 +396,25 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     return applyShannonStoryVoice(text);
 }
 
+const STORY_PET_NAME_QUESTION_RE = /\b(?:what(?:'s|s| is)|what are)\s+(?:their|the|your|these|those)\s+names?\b/i;
+
+function relationshipContextHasKnownPetNames(value) {
+    const text = cleanText(value || '', 5000);
+    if (!text) return false;
+    return STORY_PET_NAME_QUESTION_RE.test(text)
+        || /\b(?:dog|dogs|puppy|puppies|pet|pets|cat|cats|kitten|kittens)\b.{0,180}\b(?:named|called|names?|specter|ocean|nero)\b/i.test(text)
+        || /\b(?:specter|ocean)\b/i.test(text);
+}
+
+function applyRelationshipAwareStoryCommentGuard(comment, { relationshipContext = '', sharedContent = false } = {}) {
+    const text = cleanText(comment || '', MAX_COMMENT_CHARS);
+    if (!text) return '';
+    if (STORY_PET_NAME_QUESTION_RE.test(text) && relationshipContextHasKnownPetNames(relationshipContext)) {
+        return sharedContent ? 'so cute' : 'theyre cute haha';
+    }
+    return text;
+}
+
 function repairDraftCommentWithContext({ comment = '', description = '', visibleText = '', storyOwner = '', sharedFromUsername = '', sharedContent = false } = {}) {
     const raw = cleanText(comment, MAX_COMMENT_CHARS);
     if (/^(?:block|skip|no comment|no_comment)$/i.test(raw)) return '';
@@ -536,7 +555,7 @@ function assessAudioVisualCommentConsistency({ description = '', visibleText = '
     return { safeToComment: true, reason: '' };
 }
 
-function assessStoryCommentSafety({ description = '', visibleText = '', comment = '', raw = {}, storyOwner = '', sharedFromUsername = '', surfaceContext = {} } = {}) {
+function assessStoryCommentSafety({ description = '', visibleText = '', comment = '', raw = {}, storyOwner = '', sharedFromUsername = '', surfaceContext = {}, relationshipContext = '' } = {}) {
     const text = cleanText([
         description,
         visibleText,
@@ -546,6 +565,9 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
         raw?.visible_text,
     ].filter(Boolean).join(' '), 4000);
     if (!text) return { safeToComment: true, reason: '' };
+    if (STORY_PET_NAME_QUESTION_RE.test(comment) && relationshipContextHasKnownPetNames(relationshipContext)) {
+        return { safeToComment: false, reason: 'known_pet_name_thread' };
+    }
     const transcript = cleanText(surfaceContext?.audioTranscript || raw?.audio_transcript || raw?.audioTranscript || '', 1600);
     const transcriptWords = transcript.toLowerCase().match(/[a-z']+/g) || [];
     const fillerWords = new Set(['wow', 'yeah', 'yep', 'yes', 'nah', 'no', 'um', 'uh', 'oh', 'okay', 'ok', 'lol', 'haha', 'hahaha']);
@@ -837,6 +859,7 @@ Rules:
 - Treat audio transcript as supplemental. If audio/transcript and visible frames point to different subjects, avoid transcript-only details and plan to skip unless a visible-only opener is clearly safe.
 - Prefer one tiny natural question when the story gives a clear handle: pet name, location, food/drink, class, hobby, travel, weather, event, or an interesting object.
 - For animal stories with no visible pet name, prefer: oh so cute, whats their name?
+- If existing relationship context already includes pet names or a recent pet-name question, do not ask for the pet names again. React to the animal or the known name instead.
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
 - If the answer is already visible in the story context, do not ask it. React to the known detail instead.
 - If the story shows an unfamiliar event, venue, class, food, hobby, or object, prefer the obvious small context question using the visible noun over "never seen that thing" or another dead-end observation.
@@ -896,6 +919,7 @@ Rules:
 - Do not ask a question if the story already gives the answer.
 - For pets with no visible name, "whats their name?" is often better than a dead-end compliment.
 - For animal stories with no visible pet name, prefer: oh so cute, whats their name?
+- If existing relationship context already includes pet names or a recent pet-name question, do not ask for the pet names again. React to the animal or the known name instead.
 - Treat audio transcript as supplemental. If audio/transcript and visible frames point to different subjects, do not use transcript-only details in the comment.
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
 - For visible locations, food, classes, hobbies, or odd objects, ask the obvious small context question if it feels natural.
@@ -930,9 +954,13 @@ STORY CONTEXT:
 ${context}`;
         const reply = await callGeminiFallback([{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 220, temperature: 0.45 });
         const parsed = parseJsonMaybe(reply) || {};
-        return normalizeDraftComment(parsed.comment || initialComment || '', {
+        const normalized = normalizeDraftComment(parsed.comment || initialComment || '', {
             storyOwner: username,
             sharedFromUsername,
+            sharedContent: isSharedStoryContext({ storyContentType, sharedFromUsername, storyOwner: username, surfaceContext }),
+        });
+        return applyRelationshipAwareStoryCommentGuard(normalized, {
+            relationshipContext,
             sharedContent: isSharedStoryContext({ storyContentType, sharedFromUsername, storyOwner: username, surfaceContext }),
         });
     } catch (err) {
@@ -943,7 +971,10 @@ ${context}`;
 
 async function reviewStoryComment({ username, description, visibleText, storyContentType, sharedFromUsername, surfaceContext, draftPlan, comment, relationshipContext }) {
     const sharedContent = isSharedStoryContext({ storyContentType, sharedFromUsername, storyOwner: username, surfaceContext });
-    const normalizedComment = normalizeDraftComment(comment, { storyOwner: username, sharedFromUsername, sharedContent });
+    const normalizedComment = applyRelationshipAwareStoryCommentGuard(
+        normalizeDraftComment(comment, { storyOwner: username, sharedFromUsername, sharedContent }),
+        { relationshipContext, sharedContent }
+    );
     const deterministicSafety = assessStoryCommentSafety({
         description,
         visibleText,
@@ -951,6 +982,7 @@ async function reviewStoryComment({ username, description, visibleText, storyCon
         storyOwner: username,
         sharedFromUsername,
         surfaceContext,
+        relationshipContext,
     });
     if (!normalizedComment) {
         return normalizeStoryCommentReviewPayload({
@@ -1081,6 +1113,7 @@ Rules:
 - Mostly lowercase and text-like.
 - Prefer "whats", "hows", and "thats" when it still reads clearly.
 - Prefer one tiny specific question if the critique says the original is a dead end and the story has a safe handle.
+- If existing relationship context already includes pet names or a recent pet-name question, do not ask for the pet names again. Use a short animal reaction instead.
 - No name, profile name, username, @handle, or direct address.
 - No Balance/coaching/challenge/app/program/link/meal-plan pitch. Story comments are first-touch rapport, not the offer step.
 - Mild broad selfie comments like "looking good" can pass. Do not be flirty, sexual, body-specific, weight/physique-focused, or weirdly intense.
@@ -1108,9 +1141,12 @@ ORIGINAL COMMENT:
 ${comment}`;
         const reply = await callGeminiFallback([{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 220, temperature: 0.4 });
         const parsed = parseJsonMaybe(reply) || {};
-        const repaired = normalizeDraftComment(parsed.comment || '', {
+        const repaired = applyRelationshipAwareStoryCommentGuard(normalizeDraftComment(parsed.comment || '', {
             storyOwner: username,
             sharedFromUsername,
+            sharedContent: isSharedStoryContext({ storyContentType, sharedFromUsername, storyOwner: username, surfaceContext }),
+        }), {
+            relationshipContext,
             sharedContent: isSharedStoryContext({ storyContentType, sharedFromUsername, storyOwner: username, surfaceContext }),
         });
         if (!repaired || repaired === comment) return null;
@@ -1939,6 +1975,7 @@ Rules:
 - Prefer one tiny natural question when the story has an obvious harmless handle: pet name, location, food/drink, training class, hobby, event, weather, travel, or a clear object.
 - Do not ask a question if the story already answers it. If a pet name is visible, react to that pet/name; if no pet name is visible, asking "whats their name?" is good.
 - For animal stories with no visible pet name, prefer: oh so cute, whats their name?
+- If existing relationship context already includes pet names or a recent pet-name question, do not ask for the pet names again. React to the animal or the known name instead.
 - Audio transcript is supplemental. If transcript/audio and the visible frames point to different subjects, never base the comment on transcript-only details; set safe_to_comment=false with safety_reason="audio_visual_mismatch" unless a clear visible-only comment exists.
 - If a beach/coastal story says "this is my clubbing" or "vamos a la playa", do not ask if it is a club or venue. Treat it as beach-over-clubbing contrast.
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
@@ -2035,6 +2072,7 @@ Rules:
             storyOwner: username,
             sharedFromUsername,
             surfaceContext,
+            relationshipContext,
         });
         const suppliedSafe = modelSafety.safeToComment && suppliedSafety.safeToComment;
         return {
@@ -2065,6 +2103,7 @@ Rules:
         storyOwner: username,
         sharedFromUsername,
         surfaceContext,
+        relationshipContext,
     });
     let safeToComment = modelSafety.safeToComment && deterministicSafety.safeToComment;
     let safetyReason = modelSafety.safeToComment ? deterministicSafety.reason : modelSafety.reason;
@@ -2112,6 +2151,10 @@ Rules:
         sharedFromUsername,
         sharedContent,
     });
+    parsedComment = applyRelationshipAwareStoryCommentGuard(parsedComment, {
+        relationshipContext,
+        sharedContent,
+    });
     const initialDraftComment = safeToComment
         ? normalizeDraftComment(parsedComment, {
             storyOwner: username,
@@ -2145,9 +2188,12 @@ Rules:
         draftReview = pipeline.draftReview || null;
         draftRepair = pipeline.draftRepair || null;
         draftCommentBeforeReview = pipeline.draftCommentBeforeReview || finalDraftComment;
-        const normalizedPipelineComment = normalizeDraftComment(pipeline.finalComment || finalDraftComment, {
+        const normalizedPipelineComment = applyRelationshipAwareStoryCommentGuard(normalizeDraftComment(pipeline.finalComment || finalDraftComment, {
             storyOwner: username,
             sharedFromUsername,
+            sharedContent,
+        }), {
+            relationshipContext,
             sharedContent,
         });
         if (normalizedPipelineComment) {
@@ -2623,6 +2669,8 @@ exports._test = {
     cleanIgUsername,
     parseStoryUrl,
     normalizeDraftComment,
+    applyRelationshipAwareStoryCommentGuard,
+    relationshipContextHasKnownPetNames,
     repairDraftCommentWithContext,
     mentionsHandleToken,
     assessStoryCommentSafety,

@@ -766,6 +766,7 @@ function finalizeDraftChunksFromRawText(rawText, {
     currentMessageText = '',
     qualifier = null,
     nativeStoryContextSummary = null,
+    knownContextText = '',
     hasDecodedMedia = false,
     allowDailyGreeting = false,
 } = {}) {
@@ -777,7 +778,9 @@ function finalizeDraftChunksFromRawText(rawText, {
         qualifier,
     });
     const cleaned = splitCoachDraftIntoDmBubbles(
-        suppressPetSpeciesGuessingInDraftChunks(baseChunks, {
+        suppressPetSpeciesGuessingInDraftChunks(suppressAlreadyKnownContextQuestionsInDraftChunks(baseChunks, {
+            contextText: knownContextText,
+        }), {
             currentMessageText,
             qualifier,
             nativeStoryContextSummary,
@@ -1529,6 +1532,59 @@ function suppressPetSpeciesGuessingInDraftChunks(chunks, { currentMessageText = 
         .filter(Boolean);
 }
 
+const PET_NAME_QUESTION_RE = /\b(?:what(?:'s|s| is)|what are)\s+(?:their|the|your|these|those)\s+names?\b/i;
+const HOUSE_SITTING_DURATION_QUESTION_RE = /\bhow\s+long\b[^?\n.!]{0,120}\bhouse\s*sitt(?:ing|ed)?\b[^?\n.!]*\?/i;
+
+function normalizeKnownContextText(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function hasKnownPetNameContext(value) {
+    const text = normalizeKnownContextText(value);
+    if (!text) return false;
+    return PET_NAME_QUESTION_RE.test(text)
+        || /\b(?:dog|dogs|puppy|puppies|pet|pets|cat|cats|kitten|kittens)\b.{0,180}\b(?:named|called|names?|specter|ocean|nero)\b/i.test(text)
+        || /\b(?:specter|ocean)\b/i.test(text);
+}
+
+function hasHouseSittingPetContext(value) {
+    const text = normalizeKnownContextText(value);
+    if (!text) return false;
+    return HOUSE_SITTING_DURATION_QUESTION_RE.test(text)
+        || (/\bhouse\s*(?:sat|sitting)\b/i.test(text) && /\b(?:dog|dogs|puppy|puppies|pet|pets|specter|ocean|them)\b/i.test(text));
+}
+
+function stripQuestionSentence(text, pattern) {
+    const testPattern = new RegExp(pattern.source, 'i');
+    return String(text || '')
+        .split(/(?<=[.!?])\s+|\n+/)
+        .map(sentence => sentence.trim())
+        .filter(sentence => sentence && !testPattern.test(sentence))
+        .join(' ')
+        .replace(/\s+([,.!?])/g, '$1')
+        .replace(/([,.!?]){2,}/g, '$1')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+}
+
+function suppressAlreadyKnownContextQuestionsInDraftChunks(chunks, { contextText = '' } = {}) {
+    const knownPetNames = hasKnownPetNameContext(contextText);
+    const houseSittingPets = hasHouseSittingPetContext(contextText);
+    return (Array.isArray(chunks) ? chunks : [])
+        .map(chunk => {
+            let out = String(chunk || '').trim();
+            if (!out) return '';
+            if (knownPetNames && PET_NAME_QUESTION_RE.test(out)) {
+                out = stripQuestionSentence(out, PET_NAME_QUESTION_RE);
+            }
+            if (houseSittingPets && HOUSE_SITTING_DURATION_QUESTION_RE.test(out)) {
+                out = stripQuestionSentence(out, HOUSE_SITTING_DURATION_QUESTION_RE);
+            }
+            return out.trim();
+        })
+        .filter(Boolean);
+}
+
 function normalizedIgLeadMessageKey(text) {
     return replaceIgMediaMarkers(String(text || ''), { photo: 'photo', audio: 'voice note', video: 'video' })
         .toLowerCase()
@@ -2177,6 +2233,7 @@ CONVERSATION RESPONSIBILITY:
 - Do not default to a question. Use a question only when it is the most natural next text. If they are bantering, answering a previous question, or sending a quick update, a short reaction can be the whole reply.
 - If Shannon asked whether someone was okay after a sad animal/pet story and they reply that they are okay but the animals are not, treat that as the answer. Do not ask "what happened to them" or mine the sad story for details. Acknowledge the cruelty/heartbreak, then if a question is useful bridge through values instead: how long they have been vegan/plant-based, what got them into it, or later how they go with fitness. Once vegan values plus fitness context are warm, a soft free-challenge invite can be earned.
 - If they answer a pet-name question with just a name, use the native story context and/or known memory for the species. Do not ask what kind of dog/cat/breed it is unless the species is explicit and that question is genuinely needed. A short reaction like "nero is cute" is enough.
+- If dog/pet names, ownership, house-sitting status, or house-sitting timing are already in the timeline, do not ask for them again. Acknowledge the known names or give a clean reaction, then stop or move to a more useful thread.
 - Do not comment on their emoji usage as a topic. Emojis are tone only.
 - When they send rich personal detail, the natural question often belongs inside the paragraph that reflects that exact detail, not as a final closer. Example shape: "that makes sense, getting lost in cooking would be so therapeutic. do you have a number 1 thing you love making?" then keep responding to the other things they shared or answer what they asked Shannon.
 - Keep the spotlight on them unless they directly ask about Shannon.
@@ -2344,6 +2401,7 @@ Rules:
         currentMessageText,
         qualifier,
         nativeStoryContextSummary: nativeStoryOutreachContext?.summary || null,
+        knownContextText: totalConversationText,
         hasDecodedMedia,
         allowDailyGreeting,
     });
@@ -3951,6 +4009,7 @@ exports._test = {
     isSalesAcquisitionThread,
     buildAcquisitionStyleBlock,
     buildAcquisitionMomentumBlock,
+    suppressAlreadyKnownContextQuestionsInDraftChunks,
     suppressPetSpeciesGuessingInDraftChunks,
     getCocosAutoContextBypass,
     getBalanceAutoContextBypass,
