@@ -426,6 +426,12 @@
 
 # Ensure we redirect legacy URLs
 [[redirects]]
+  from = "/"
+  to = "/balance.html"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/quiz"
   to = "/quiz.html"
   status = 200
