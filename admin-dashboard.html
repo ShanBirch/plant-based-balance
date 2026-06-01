@@ -2112,8 +2112,8 @@
                                     <button type="button" id="alert-view-needs_attention" class="alert-view-chip alert-view-chip-on" onclick="setAlertView('needs_attention')" title="Client-manager reviewed DMs and leads ready for the onboarding link">
                                         Needs Attention <span id="alert-view-needs_attention-count" class="alert-view-count">0</span>
                                     </button>
-                                    <button type="button" id="alert-view-checkins" class="alert-view-chip" onclick="setAlertView('checkins')" title="Legacy onboarding, weekly and proactive check-in drafts">
-                                        Legacy Check-ins <span id="alert-view-checkins-count" class="alert-view-count">0</span>
+                                    <button type="button" id="alert-view-checkins" class="alert-view-chip" onclick="setAlertView('checkins')" title="Weekly check-ins and onboarding day 7/14/30 milestones">
+                                        Check-ins <span id="alert-view-checkins-count" class="alert-view-count">0</span>
                                     </button>
                                     <button type="button" id="alert-view-personal_bests" class="alert-view-chip" onclick="setAlertView('personal_bests')" title="First workouts, badges and bigger celebration moments">
                                         Personal Bests <span id="alert-view-personal_bests-count" class="alert-view-count">0</span>
@@ -5609,6 +5609,9 @@
                 .replace(/\\+r\\+n/g, '\n')
                 .replace(/\\+n/g, '\n')
                 .replace(/\\+r/g, '\n')
+                // Literal "/n" sometimes leaks out of model output and must
+                // be treated as a newline before the scheduler stores it.
+                .replace(/(^|[\s>])\/n(?=$|[\s<,.;:!?])/g, '$1\n')
                 .replace(/\\+t/g, ' ');
         }
 
@@ -9431,14 +9434,11 @@
         const CHECKIN_ALERT_TYPES = [
             'checkin_due',
             'weekly_checkin',
-            'morning_pulse',
-            'onboarding_welcome',
-            'onboarding_day_3',
             'onboarding_day_7',
             'onboarding_day_14',
             'onboarding_day_30',
         ];
-        const CHECKIN_SUBTYPES = ['checkin_due', 'weekly_checkin', 'morning_pulse', 'challenge_checkin'];
+        const CHECKIN_SUBTYPES = ['checkin_due', 'weekly_checkin', 'challenge_checkin'];
         const PERSONAL_BEST_ALERT_TYPES = ['win_to_celebrate', 'first_workout', 'badge_earned', 'level_up', 'comeback', 'milestone_near'];
         const PERSONAL_BEST_SUBTYPES = ['pb', 'personal_best', 'streak', 'level_up', 'comeback', 'first_workout', 'badge_earned'];
         let clientPendingTotal = 0;
@@ -9485,15 +9485,18 @@
         let currentNeedsYouView = 'all';
         let needsYouCounts = { all: 0 };
         const NEEDS_YOU_TABS = ['all'];
-        const NEEDS_YOU_ALERT_TYPES = [...new Set([...DM_ALERT_TYPES, ...FOLLOW_UP_ALERT_TYPES, 'onboarding_day_30'])];
+        const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES];
         const CLIENT_MANAGER_REVIEW_MARKERS = [
             'balance-combined-dm-manager',
+            'balance-lead-client-manager',
             'balance-client-dm-manager',
             'client-dm-manager',
             'codex-client-dm-manager',
         ];
+        const NEEDS_YOU_AI_CONFUSION_RE = /\b(?:is\s+this\s+(?:ai|a\.?i\.?|a\s+bot|automated)|are\s+you\s+(?:ai|a\.?i\.?|a\s+bot|automated|real)|am\s+i\s+talking\s+to\s+(?:ai|a\s+bot|a\s+person)|chatgpt|robot|automated\s+reply|real\s+person)\b/i;
+        const NEEDS_YOU_USER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|this|that|it)|sorry[, ]+\s*i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)|what\s+do\s+you\s+mean|what\s+did\s+you\s+mean|wdym|i'?m\s+confused|that'?s\s+confusing|not\s+sure\s+what\s+you\s+mean)\b/i;
         const NEEDS_YOU_EMPTY_STATES = {
-            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'No client-manager reviewed DMs, month-one milestones or onboarding-link handoffs are waiting right now.' },
+            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'No client-manager handoffs for client media, missing context, or confused/AI-suspicious replies are waiting right now.' },
         };
         let currentChallengeCheckinView = 'pending';
         const CHALLENGE_CHECKIN_TABS = ['pending', 'manual', 'later', 'sent_today', 'all'];
@@ -10677,6 +10680,7 @@
             const view = normalizeDmAudience(audience);
             return (rows || []).filter(alert => {
                 if (isCocosDmAlert(alert)) return false;
+                if (isNeedsYouRoutedDmAlert(alert)) return false;
                 if (needsYouHasOperatorWork(alert, clientIds)) return false;
                 const isClient = alertBelongsToDmClients(alert, clientIds);
                 return view === 'clients' ? isClient : !isClient;
@@ -10897,13 +10901,90 @@
             );
         }
 
-        function needsYouClientDraftInfo(alert) {
+        function needsYouReviewBundle(alert) {
             const data = alert?.data || {};
             const rawCodexReview = data.codex_review || data.codexReview || null;
             const codexReview = rawCodexReview && typeof rawCodexReview === 'object' ? rawCodexReview : {};
             const draftReview = (data.draft_review || data.draftReview) && typeof (data.draft_review || data.draftReview) === 'object'
                 ? (data.draft_review || data.draftReview)
                 : {};
+            return { data, rawCodexReview, codexReview, draftReview };
+        }
+
+        function isClientManagerReview(alert) {
+            const { rawCodexReview, codexReview } = needsYouReviewBundle(alert);
+            if (!rawCodexReview) return false;
+            const markerText = [
+                codexReview.source,
+                codexReview.decision,
+                codexReview.reviewed_by,
+                codexReview.reviewer_model,
+                codexReview.automation_id,
+            ].map(v => String(v || '').toLowerCase()).join(' ');
+            return CLIENT_MANAGER_REVIEW_MARKERS.some(marker => markerText.includes(marker));
+        }
+
+        function isExplicitClientManagerNeedsYou(alert) {
+            const { data, codexReview } = needsYouReviewBundle(alert);
+            if (!isClientManagerReview(alert)) return false;
+            const queue = String(codexReview.queue || data.operator_queue || '').toLowerCase();
+            const decision = String(codexReview.decision || data.decision || '').toLowerCase();
+            const reason = String(codexReview.reason || data.needs_you_reason || '').toLowerCase();
+            return queue === 'needs_you'
+                || codexReview.needs_shannon_approval === true
+                || decision.includes('needs_you')
+                || decision.includes('needs_shannon')
+                || reason.includes('needs you')
+                || reason.includes('needs shannon');
+        }
+
+        function needsYouLatestText(alert) {
+            const data = alert?.data || {};
+            const batchCurrent = Array.isArray(data.inbound_message_batch)
+                ? data.inbound_message_batch.find(m => m && m.is_current)
+                : null;
+            return [
+                batchCurrent?.text,
+                data.message_preview,
+                data.client_message,
+                data.draft_evidence?.current_message,
+                alert?.description,
+            ].filter(Boolean).join(' ');
+        }
+
+        function needsYouAllowedReasonInfo(alert, activeClientIds = dmClientIdsCache.ids) {
+            const { data, codexReview, draftReview } = needsYouReviewBundle(alert);
+            const reasonText = [
+                codexReview.decision,
+                codexReview.reason,
+                data.needs_you_reason,
+                ...(Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : []),
+                draftReview.summary,
+                draftReview.notification_reason,
+                ...(Array.isArray(draftReview.issues) ? draftReview.issues : []),
+            ].map(v => String(v || '').toLowerCase()).join(' ');
+            const latestText = needsYouLatestText(alert);
+            const mediaReview = getAlertMediaReviewInfo(alert);
+            const contextReview = getAlertContextReviewInfo(alert);
+            const isDm = DM_ALERT_TYPES.includes(alert?.alert_type);
+            const isClientDm = isDm && !!getAlertClientIdentity(alert) && alertBelongsToDmClients(alert, activeClientIds);
+            if (isClientDm && mediaReview.required) {
+                return { allowed: true, reason: 'client_media' };
+            }
+            if (contextReview.required || draftReview.context_loss_suspected === true || /\b(context|missing thread|missing conversation|context loss|lost context|understand total|unclear context)\b/i.test(reasonText)) {
+                return { allowed: true, reason: 'missing_context' };
+            }
+            if (NEEDS_YOU_AI_CONFUSION_RE.test(latestText) || NEEDS_YOU_AI_CONFUSION_RE.test(reasonText)) {
+                return { allowed: true, reason: 'ai_suspicion' };
+            }
+            if (NEEDS_YOU_USER_CONFUSION_RE.test(latestText) || NEEDS_YOU_USER_CONFUSION_RE.test(reasonText)) {
+                return { allowed: true, reason: 'user_confused' };
+            }
+            return { allowed: false, reason: '' };
+        }
+
+        function needsYouClientDraftInfo(alert, activeClientIds = dmClientIdsCache.ids) {
+            const { rawCodexReview, codexReview, draftReview } = needsYouReviewBundle(alert);
             const verdict = String(draftReview.verdict || '').toLowerCase();
             const markerText = [
                 codexReview.source,
@@ -10912,17 +10993,38 @@
                 codexReview.reviewer_model,
                 codexReview.automation_id,
             ].map(v => String(v || '').toLowerCase()).join(' ');
-            const hasClientManagerReviewTag = CLIENT_MANAGER_REVIEW_MARKERS.some(marker => markerText.includes(marker));
             const explicitlyQuiet = /dismiss|duplicate|no[_ -]?response|no[_ -]?action|leave[_ -]?untouched|stale|handled/.test(markerText);
-            const hasCodexReviewTag = !!rawCodexReview && hasClientManagerReviewTag && !explicitlyQuiet;
             const reviewer = codexReview.reviewed_by || codexReview.reviewer_model || codexReview.source || draftReview.reviewed_by || draftReview.reviewer_model || '';
             const needsReview = verdict === 'warn' || draftReview.notification_required === true || draftReview.safe_to_send === false;
-            const onboardingHandoff = isLeadOnboardingHandoff(alert);
+            const reasonInfo = needsYouAllowedReasonInfo(alert, activeClientIds);
+            const ready = !!(
+                rawCodexReview
+                && !explicitlyQuiet
+                && isExplicitClientManagerNeedsYou(alert)
+                && reasonInfo.allowed
+                && needsYouHasSuggestedDraft(alert)
+            );
             return {
-                ready: onboardingHandoff || (hasCodexReviewTag && needsYouHasSuggestedDraft(alert)),
-                needsReview: onboardingHandoff || needsReview,
+                ready,
+                needsReview: ready || needsReview,
                 reviewer,
+                reason: reasonInfo.reason,
             };
+        }
+
+        function isNeedsYouRoutedDmAlert(alert) {
+            const { data, codexReview } = needsYouReviewBundle(alert);
+            const queue = String(codexReview.queue || data.operator_queue || '').toLowerCase();
+            const decision = String(codexReview.decision || data.decision || '').toLowerCase();
+            const reason = String(codexReview.reason || data.needs_you_reason || '').toLowerCase();
+            const needsYouFlag = data.needs_you_required === true || String(data.needs_you_required || '').toLowerCase() === 'true';
+            return queue === 'needs_you'
+                || needsYouFlag
+                || codexReview.needs_shannon_approval === true
+                || decision.includes('needs_you')
+                || decision.includes('needs_shannon')
+                || reason.includes('needs you')
+                || reason.includes('needs shannon');
         }
 
         function isLeadOnboardingHandoff(alert) {
@@ -10945,8 +11047,12 @@
             return !!(
                 data.lead_onboarding_handoff === true
                 || String(data.lead_onboarding_handoff || '').toLowerCase() === 'true'
+                || data.client_manager_review_required === true
+                || data.signup_link_manual_only === true
                 || decisionText.includes('onboarding_handoff')
                 || decisionText.includes('onboarding_link_request_handoff')
+                || decisionText.includes('client_manager_review_required')
+                || decisionText.includes('signup_link_manager_review')
                 || decisionText.includes('accepted_app_bridge')
                 || decisionText.includes('manual_onboarding')
                 || challengeLinkNeedsApproval
@@ -10970,13 +11076,10 @@
             if (!alert || alert.status !== 'pending') return false;
             if (!NEEDS_YOU_ALERT_TYPES.includes(alert.alert_type)) return false;
             if (isCocosDmAlert(alert)) return false;
-            if (alert.alert_type === 'onboarding_day_30') return true;
-            if (isLeadOnboardingHandoff(alert)) return true;
+            if (isLeadOnboardingHandoff(alert) && needsYouHasSuggestedDraft(alert)) return true;
             if (!DM_ALERT_TYPES.includes(alert.alert_type)) return false;
-            if (!getAlertClientIdentity(alert)) return false;
-            if (!alertBelongsToDmClients(alert, activeClientIds)) return false;
             if (!needsYouHasSuggestedDraft(alert)) return false;
-            return needsYouClientDraftInfo(alert).ready;
+            return needsYouClientDraftInfo(alert, activeClientIds).ready;
         }
 
         function needsYouMatchesView(alert, view = currentNeedsYouView, activeClientIds = dmClientIdsCache.ids) {
@@ -11075,6 +11178,10 @@
         function routePendingAlertToInbox(alert) {
             const isDmAlert = DM_ALERT_TYPES.includes(alert?.alert_type);
             if (isLeadOnboardingHandoff(alert)) {
+                openNeedsYouForAlert(alert, 'all');
+                return;
+            }
+            if (isDmAlert && isNeedsYouRoutedDmAlert(alert)) {
                 openNeedsYouForAlert(alert, 'all');
                 return;
             }
@@ -11847,6 +11954,7 @@
                 if (!isCurrentDmLoad(loadSeq, viewAtStart, audienceAtStart)) return;
                 alertsCache = (viewAtStart === 'unread')
                     ? collapsePendingByUser(dedupePendingAlerts(data || []))
+                        .filter(a => !isNeedsYouRoutedDmAlert(a) && !needsYouHasOperatorWork(a, activeClientIds))
                     : (data || []);
                 alertsCache = filterDmAlertsByAudience(alertsCache, audienceAtStart, activeClientIds);
                 renderAlertFeed(alertsCache, {
@@ -13123,7 +13231,8 @@
                     const el = document.getElementById(id);
                     if (el) el.textContent = String(n ?? 0);
                 };
-                const collapsedUnread = collapsePendingByUser(dedupePendingAlerts(unreadRes?.data || []));
+                const collapsedUnread = collapsePendingByUser(dedupePendingAlerts(unreadRes?.data || []))
+                    .filter(a => !isNeedsYouRoutedDmAlert(a) && !needsYouHasOperatorWork(a, activeClientIds));
                 const unreadClients = filterDmAlertsByAudience(collapsedUnread, 'clients', activeClientIds).length;
                 const unreadLeads = filterDmAlertsByAudience(collapsedUnread, 'leads', activeClientIds).length;
                 setDmAudienceBadges({ clients: unreadClients, leads: unreadLeads, all: unreadClients + unreadLeads });
@@ -13256,7 +13365,7 @@
             // that so neither shows a number that doesn't match what Shannon
             // can see on screen.
             if (currentDmView !== 'unread') return;
-            const pending = alertsCache.filter(a => a.status === 'pending' && DM_ALERT_TYPES.includes(a.alert_type));
+            const pending = alertsCache.filter(a => a.status === 'pending' && DM_ALERT_TYPES.includes(a.alert_type) && !isNeedsYouRoutedDmAlert(a));
             const visibleCount = pending.length;
             const chip = document.getElementById('dm-view-unread-count');
             if (chip) chip.textContent = String(visibleCount);
@@ -15275,6 +15384,7 @@
             const instagramGraphDmActionsHtml = renderInstagramGraphDmActions(alert, isDmAlert);
             const autoSendHoldNoticeHtml = renderAutoSendReviewHoldNotice(alert);
             const challengeOfferWarningHtml = renderChallengeOfferWarning(alert);
+            const signupLinkHandoffHtml = renderSignupLinkHandoffStrip(alert);
 
             return `
             <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}" data-alert-id="${alert.id}">
@@ -15296,6 +15406,7 @@
                 ${cocosOutcomeStripHtml}
                 ${cocosNeedsAttentionStripHtml}
                 ${challengeOfferWarningHtml}
+                ${signupLinkHandoffHtml}
                 ${humanAgentDmStripHtml}
                 ${timingSuggestionHtml}
                 ${checkinDeliveryHtml}
@@ -16384,6 +16495,14 @@
                 reasons.push('reference_heavy_reply_without_tracked_context');
                 labels.push('reply refers to missing thread context');
             }
+            if (NEEDS_YOU_AI_CONFUSION_RE.test(latest)) {
+                reasons.push('ai_suspicion_or_authenticity_question');
+                labels.push('client may be questioning whether this is AI');
+            }
+            if (NEEDS_YOU_USER_CONFUSION_RE.test(latest)) {
+                reasons.push('client_does_not_understand_context');
+                labels.push('client says they do not understand the message/context');
+            }
 
             const uniqueReasons = [...new Set(reasons.filter(Boolean))];
             return {
@@ -16946,6 +17065,59 @@
             </div>`;
         }
 
+        function getSignupLinkHandoffUrl(alert) {
+            const data = alert?.data || {};
+            const url = String(data.signup_link_handoff_url || data.signupLinkHandoffUrl || '').trim();
+            if (/^https?:\/\//i.test(url)) return url;
+            return '';
+        }
+
+        async function copySignupHandoffLink(alertId, btn) {
+            const alertData = alertsCache.find(a => String(a.id) === String(alertId));
+            const url = getSignupLinkHandoffUrl(alertData);
+            if (!url) return;
+            const original = btn ? btn.innerHTML : '';
+            try {
+                await navigator.clipboard.writeText(url);
+                if (btn) {
+                    btn.innerHTML = '<i data-lucide="check" style="width:12px;height:12px;"></i>Copied';
+                    if (window.lucide) lucide.createIcons();
+                    setTimeout(() => {
+                        btn.innerHTML = original || '<i data-lucide="copy" style="width:12px;height:12px;"></i>Copy link';
+                        if (window.lucide) lucide.createIcons();
+                    }, 1400);
+                }
+            } catch {
+                window.prompt('Copy this link:', url);
+            }
+        }
+
+        function renderSignupLinkHandoffStrip(alert) {
+            const url = getSignupLinkHandoffUrl(alert);
+            if (!url) return '';
+            const data = alert?.data || {};
+            const needsReview = data.client_manager_review_required === true || data.signup_link_manual_only === true;
+            const draftText = getResolvedAlertMessage(alert);
+            const promisedMissing = /\b(?:here'?s|heres|here is)\s+(?:the\s+)?link\b/i.test(draftText) && !/https?:\/\//i.test(draftText);
+            const note = promisedMissing
+                ? 'Draft promises a link but the URL is missing. Copy or edit it in before sending.'
+                : (needsReview ? 'Client-manager marked this as a link handoff. Check timing before sending.' : 'Approved challenge bio link is ready.');
+            return `<div style="margin:8px 0; padding:8px 10px; border:1px solid ${promisedMissing ? '#fbbf24' : '#bbf7d0'}; background:${promisedMissing ? '#fffbeb' : '#f0fdf4'}; color:${promisedMissing ? '#92400e' : '#166534'}; border-radius:8px; font-size:0.76rem; font-weight:800; line-height:1.35;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+                    <span>${escapeHtml(note)}</span>
+                    <span style="font-family:monospace; font-size:0.72rem; font-weight:700; overflow-wrap:anywhere;">${escapeHtml(url)}</span>
+                </div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:7px;">
+                    <button class="alert-btn alert-btn-send" type="button" onclick="copySignupHandoffLink('${alert.id}', this)" title="Copy the onboarding link">
+                        <i data-lucide="copy" style="width:12px;height:12px;"></i>Copy link
+                    </button>
+                    <button class="alert-btn alert-btn-view" type="button" onclick="window.open('${escapeHtml(url)}', '_blank')" title="Open the onboarding link">
+                        <i data-lucide="external-link" style="width:12px;height:12px;"></i>Open link
+                    </button>
+                </div>
+            </div>`;
+        }
+
         function renderConversationPanel(alert, clientName) {
             const latest = alert?.data?.message_preview;
             const batch = Array.isArray(alert?.data?.inbound_message_batch)
@@ -17213,6 +17385,40 @@
             return exact[delayMs] || '';
         }
 
+        function _replyTimingRecentInboundCount(recentInboundMessages) {
+            return Array.isArray(recentInboundMessages)
+                ? recentInboundMessages.filter(m => String(m?.text || '').trim()).length
+                : 0;
+        }
+
+        function _replyTimingIsChattyConversation({
+            isLead,
+            isConverted,
+            isPaying,
+            isOnboarding,
+            hotIntent,
+            supportFastIntent,
+            smallTalkIntent,
+            directQuestion,
+            recentInboundCount,
+            warmth,
+            replyLen,
+        }) {
+            if (hotIntent || supportFastIntent || isOnboarding) return false;
+            const lowPressureConversation = smallTalkIntent || directQuestion || recentInboundCount >= 2;
+            if (!lowPressureConversation) return false;
+            const clientChatty = !isLead && (isConverted || isPaying);
+            const leadChatty = isLead && (recentInboundCount >= 2 || warmth >= 60);
+            const conversationFeelsChatty = replyLen <= 220 || recentInboundCount >= 3 || warmth >= 70;
+            return conversationFeelsChatty && (clientChatty || leadChatty);
+        }
+
+        function _replyTimingChattyDelayMs({ directQuestion, recentInboundCount, warmth }) {
+            if (recentInboundCount >= 3 || warmth >= 70) return 2 * 60 * 60 * 1000;
+            if (directQuestion || recentInboundCount >= 2 || warmth >= 60) return 90 * 60 * 1000;
+            return 60 * 60 * 1000;
+        }
+
         function _replyTimingLearnedProfile(alert) {
             const profile = alert?.data?.response_timing_profile;
             if (!profile || typeof profile !== 'object') return null;
@@ -17259,6 +17465,7 @@
                 .filter(Boolean)
                 .join(' ');
             const inboundLen = _replyTimingTextLength(inboundText);
+            const recentInboundCount = _replyTimingRecentInboundCount(recentInboundForTiming);
             const warmth = Number(q.warmth_score || 0);
             const questionMoment = !!(q.is_question_moment || q.question_moment);
             const qualifierStage = _replyTimingQualifierStage(q);
@@ -17272,6 +17479,19 @@
             const directQuestion = _replyTimingHasDirectQuestion(inboundText);
             const lowStakesRapport = smallTalkIntent && !supportFastIntent && !hotIntent;
             const lowSignalLongReply = replyLen >= 220 && inboundLen <= 160;
+            const chattyConversation = _replyTimingIsChattyConversation({
+                isLead,
+                isConverted,
+                isPaying,
+                isOnboarding,
+                hotIntent,
+                supportFastIntent,
+                smallTalkIntent,
+                directQuestion,
+                recentInboundCount,
+                warmth,
+                replyLen,
+            });
 
             let delayMs = 15 * 60 * 1000;
             let reason = 'balanced pace, keeps it human without letting the thread cool';
@@ -17309,6 +17529,12 @@
                 delayMs = 5 * 60 * 1000;
                 reason = 'onboarding needs quick back-and-forth while they are setting up';
                 confidence = 0.76;
+            } else if (chattyConversation) {
+                delayMs = _replyTimingChattyDelayMs({ directQuestion, recentInboundCount, warmth });
+                reason = isLead
+                    ? 'chatty lead rapport, give it breathing room before replying'
+                    : 'chatty client rapport, 1-2 hour pacing keeps it human unless it is urgent';
+                confidence = 0.8;
             } else if (isLead && lowStakesRapport) {
                 delayMs = directQuestion ? 30 * 60 * 1000 : 45 * 60 * 1000;
                 if (lowSignalLongReply) delayMs = Math.max(delayMs, 60 * 60 * 1000);
@@ -17353,6 +17579,18 @@
                         reason = `learned fast support timing from ${scopeText} (${learnedTiming.sample_count} actions)`;
                         confidence = Math.max(confidence, learnedTiming.confidence);
                     }
+                } else if (chattyConversation) {
+                    const minChattyDelay = directQuestion ? 60 * 60 * 1000 : 90 * 60 * 1000;
+                    const maxChattyDelay = 2 * 60 * 60 * 1000;
+                    const adjustedDelay = _replyTimingClampDelay(learnedTiming.delay_ms, minChattyDelay, maxChattyDelay);
+                    delayMs = adjustedDelay;
+                    const scopeText = learnedTiming.scope === 'person'
+                        ? 'your past timing with this person'
+                        : 'your recent DM timing';
+                    reason = adjustedDelay === learnedTiming.delay_ms
+                        ? `learned from ${scopeText} (${learnedTiming.sample_count} actions)`
+                        : `learned from ${scopeText}, adjusted for chatty pacing`;
+                    confidence = Math.max(confidence, learnedTiming.confidence);
                 } else if (lowStakesRapport) {
                     const minRapportDelay = directQuestion ? 30 * 60 * 1000 : 45 * 60 * 1000;
                     const maxRapportDelay = directQuestion ? 90 * 60 * 1000 : 2 * 60 * 60 * 1000;
@@ -17399,10 +17637,12 @@
                     small_talk_intent: smallTalkIntent,
                     direct_question: directQuestion,
                     low_stakes_rapport: lowStakesRapport,
+                    chatty_conversation: chattyConversation,
                     active_onboarding: isOnboarding,
                     post_onboarding_client: isConverted,
                     low_signal_long_reply: lowSignalLongReply,
                     reply_chars: replyLen,
+                    recent_inbound_count: recentInboundCount,
                     inbound_chars: inboundLen,
                     learned_timing: learnedTiming ? {
                         scope: learnedTiming.scope,

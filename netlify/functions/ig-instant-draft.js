@@ -313,6 +313,7 @@ const COCOS_SIMPLE_OPENER_RE = /^(yo+|yoo+|hey+|heya+|hi+|hello+|hiya+|morning+|
 const COCOS_RISKY_REPLY_RE = /\b(challenge|join|joined|sign\s*up|signup|link|price|cost|program|plan|meal|workout|coach|coaching|injur|injury|pain|hurt|sore|hospital|doctor|medical|sorry|grief|death|died|anxiety|depress|sad|trauma|pregnan|calorie|macro|eating disorder)\b/i;
 const COCOS_DRAFT_REVIEW_TIMEOUT_MS = 12000;
 const COCOS_DRAFT_REPAIR_TIMEOUT_MS = 9000;
+const BALANCE_SOFT_CONTEXT_REASONS = new Set(['draft_review_timeout']);
 
 function draftTextFromDraft(draft) {
     if (!draft) return '';
@@ -493,14 +494,39 @@ function getCocosAutoContextBypass({ cocosAutoSendLane, contextReview, draft, dr
     };
 }
 
-function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, cocosContextBypass }) {
+function getBalanceAutoContextBypass({ balanceAutoSendLane, contextReview, draft, draftReview, currentMessage }) {
+    if (!balanceAutoSendLane || !contextReview?.required) return null;
+    const reasons = (Array.isArray(contextReview.reasons) ? contextReview.reasons : [contextReview.reason])
+        .filter(Boolean)
+        .map(v => String(v));
+    if (!reasons.length || reasons.some(reason => !BALANCE_SOFT_CONTEXT_REASONS.has(reason))) return null;
+    if (!isReviewTimeoutOnly(draftReview)) return null;
+
+    const latestText = normalizeCoachDraftText(currentMessage || contextReview.latest_text || '').trim();
+    const draftText = draftTextFromDraft(draft);
+    const hasTrackedContext = contextReview.tracked_outbound_context === true;
+    const contextIndependent = contextReview.context_dependent === false;
+    if (!hasTrackedContext && !contextIndependent) return null;
+    if (!latestText || latestText.length > 260 || COCOS_RISKY_REPLY_RE.test(latestText)) return null;
+    if (!draftText || draftText.length > 260 || COCOS_RISKY_REPLY_RE.test(draftText)) return null;
+
+    return {
+        allowed: true,
+        reason: contextIndependent ? 'soft_review_timeout_context_independent' : 'soft_review_timeout_tracked_context',
+        context_reasons: reasons,
+        draft_review_reason: 'review_timeout',
+    };
+}
+
+function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass }) {
+    const effectiveContextBypass = contextBypass || cocosContextBypass;
     if (mediaReview?.required) {
         return {
             code: 'media_review',
             label: `${mediaReview.label || 'Media'} needs Shannon review`,
         };
     }
-    if (contextReview?.required && !cocosContextBypass?.allowed) {
+    if (contextReview?.required && !effectiveContextBypass?.allowed) {
         return {
             code: 'context_review',
             label: 'tracked DM context may be incomplete',
@@ -536,7 +562,7 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
             label: 'free challenge invite needs human readiness first',
         };
     }
-    if (draftReview && !isDraftReviewAutoSendSafe(draftReview) && !cocosContextBypass?.allowed) {
+    if (draftReview && !isDraftReviewAutoSendSafe(draftReview) && !effectiveContextBypass?.allowed) {
         return {
             code: 'draft_review',
             label: draftReview?.summary || 'AI draft needs Shannon review',
@@ -745,6 +771,11 @@ function finalizeDraftChunksFromRawText(rawText, {
 } = {}) {
     const parsed = parseDraftChunks(rawText, maxChunks);
     const baseChunks = Array.isArray(parsed.chunks) ? parsed.chunks : [];
+    const repairMissingLink = (chunks) => repairMissingChallengeBioLinkChunks(chunks, {
+        maxChunks,
+        currentMessageText,
+        qualifier,
+    });
     const cleaned = splitCoachDraftIntoDmBubbles(
         suppressPetSpeciesGuessingInDraftChunks(baseChunks, {
             currentMessageText,
@@ -757,7 +788,7 @@ function finalizeDraftChunksFromRawText(rawText, {
                 : stripLeadingGreeting(c, leadName))
             .filter(Boolean)
     );
-    if (cleaned.length) return cleaned.slice(0, maxChunks);
+    if (cleaned.length) return repairMissingLink(cleaned).slice(0, maxChunks);
 
     // Never let a non-empty model response become a blank Needs You card.
     // If a conservative cleaner stripped the whole thing, keep the model's
@@ -770,7 +801,7 @@ function finalizeDraftChunksFromRawText(rawText, {
                 : stripLeadingGreeting(c, leadName))
             .filter(Boolean)
     );
-    return unfiltered.slice(0, maxChunks);
+    return repairMissingLink(unfiltered).slice(0, maxChunks);
 }
 
 function buildEmptyMediaDraftFallbackChunks({ mediaDecode = {}, currentMessageText = '' } = {}) {
@@ -814,7 +845,7 @@ ${truncateTail(totalConversationText || '(no prior tracked context)', 2600)}
 
 Attached media below is from the latest unanswered inbound batch. If a voice note is attached, listen to it and reply to what they said. Do not transcribe it. Do not say you listened to, heard, opened, checked, saw, or watched the media. If the media is genuinely not understandable, write one casual message asking them to resend it or type the gist.
 
-Write in Shannon's casual texting voice with normal phone autocorrect casing. Keep it short unless the audio asks for detailed help. No AI/automation wording. No em-dashes.
+Write in Shannon's casual texting voice with normal phone autocorrect casing. Keep it short unless the audio asks for detailed help. No AI/automation wording. No em-dashes. Never type literal backslash-n escape sequences in the reply text. Use normal punctuation instead.
 
 JSON only:
 {"messages":["exact DM text"]}`;
@@ -1000,14 +1031,24 @@ BALANCE CHALLENGE LINK:
 - Interested leads can get into Balance and start with coaching immediately so they are ready before the challenge cohort starts.
 - Approved challenge link: ${ONE_ON_ONE_COACHING_URL}
 - When the latest message asks for the challenge link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct challenge/details invite, send the approved bio link in the draft.
+- If the latest message asks to reconnect with Balance, the app/helper, login, password, account access, or any app bug, treat it as support first and do not send the challenge bio link.
 - Keep the link handoff light, not a brochure: stoked they are keen, here's the link, it has the quick info on the challenge and how the app works, check it out and download the app, then come back to Shannon here to chat through it.
 - Frame it as a free challenge with Shannon check-ins and app structure. Mention XP, leaderboard, or the $1,000 first-place cash prize only when they ask what is included or need the fuller rundown. Paid coaching comes later if the 30 days help.
 - If they only ask a general help question and have not asked for challenge details/link, do not send the link yet. Reply to the question and ask a low-pressure permission question if the challenge might fit.
 - If they ask whether it is local/in-person or mention they already have a PT/trainer, do not send the link yet. Answer that the challenge support is online through Balance and check whether that would still suit them.`;
 }
 
-function buildChallengeNextStepBlock(qualifier) {
+function buildChallengeNextStepBlock(qualifier, currentMessageText = '') {
     if (!qualifier || typeof qualifier !== 'object') return '';
+    if (isAppReconnectOrAccountSupportRequest(currentMessageText)) {
+        return `
+
+APP SUPPORT NEXT STEP:
+The newest message is about Balance/app/helper reconnection, account access, login, or a tech/workout setup issue. Treat this as support, not a challenge signup moment.
+- Do not send the challenge bio link in this reply, even if the lead previously accepted the challenge.
+- Acknowledge it simply and ask for the practical detail Shannon needs, such as what screen/error they see or which email/account they used.
+- Do not mention AI, automation, or an assistant. Keep the wording as Shannon personally helping them get sorted.`;
+    }
     const url = challengeUrlForRoute(qualifier.challenge_route || 'generic');
     if (qualifier.stage === 'won') {
         return `
@@ -1015,7 +1056,8 @@ function buildChallengeNextStepBlock(qualifier) {
 FREE CHALLENGE ACCEPTED NEXT STEP:
 They have accepted the free 30-day Balance Challenge. Do NOT ask more qualifier/intake questions in this reply.
 Your reply should:
-- Send this link: ${url}
+- Send this exact URL in the draft: ${url}
+- If you write "here's the link" or "heres the link", the URL must be visible in the same bubble or the next bubble.
 - Keep the explanation tiny: the link has quick info on the challenge and how the Balance app works.
 - Say the app is a little different, so they should check it out, download it, then come back to Shannon here and chat through it.
 - Use the vibe: "yeah sounds so good, stoked you're keen for the challenge" rather than a brochure.
@@ -1026,7 +1068,7 @@ Do not offer to manually write a meal plan or workout program in DMs before sign
         return `
 
 FREE CHALLENGE OFFER PITCHED:
-The free 30-day Balance Challenge has already been offered. If they sound keen, ask for details/link, ask how to start, or reply positively with "yes / sounds good / keen", send this link: ${url}. Keep the handoff tight in 2-3 bubbles: stoked they are keen, here's the link, it has the quick challenge/app info, check it out and download the app, then come back here to chat through it. If they are still unsure, answer the concern and keep it easy.`;
+The free 30-day Balance Challenge has already been offered. If they sound keen, ask for details/link, ask how to start, or reply positively with "yes / sounds good / keen", send this exact URL in the draft: ${url}. If you write "here's the link" or "heres the link", the URL must be visible in the same bubble or the next bubble. Keep the handoff tight in 2-3 bubbles: stoked they are keen, here's the link, it has the quick challenge/app info, check it out and download the app, then come back here to chat through it. If they are still unsure, answer the concern and keep it easy.`;
     }
     if (hasEarnedChallengeInviteMoment({ qualifier })) {
         return `
@@ -1083,8 +1125,48 @@ function isPositiveChallengeLinkConfirmationText(text) {
     return /\b(?:yes|yeah|yea|yep|sure|please|pls|sounds good|sounds so good|keen|okay|ok|sweet|let'?s do it|lets do it|do it)\b/i.test(String(text || ''));
 }
 
+function hasVisibleUrl(text) {
+    return /https?:\/\/\S+/i.test(String(text || ''));
+}
+
+function promisesLinkWithoutUrl(text) {
+    const s = String(text || '');
+    if (!s || hasVisibleUrl(s)) return false;
+    return /\b(?:here'?s|heres|here is)\s+(?:the\s+)?link\b/i.test(s)
+        || /\b(?:link|url)\s+(?:is|below|here)\b/i.test(s)
+        || /\b(?:check it out|grab the app|download the app)\b/i.test(s);
+}
+
+function isAppReconnectOrAccountSupportRequest(text) {
+    const s = String(text || '').toLowerCase();
+    if (!s) return false;
+    if (/\b(30\s*day|30-day|free challenge|challenge link|sign ?up|signup|join)\b/i.test(s)) return false;
+    return /\b(reconnect(?:ed|ing)?|connect(?:ed|ing)? back|app helper|balance helper|balance app helper|account access|app access|login|log in|locked out|password|reset link|face id|face recognition|old email|spam|manual(?:ly)? reset|app glitch|glitched|bug)\b/i.test(s);
+}
+
+function repairMissingChallengeBioLinkChunks(chunks, { maxChunks = MAX_CHUNKS, currentMessageText = '', qualifier = null } = {}) {
+    const list = Array.isArray(chunks) ? chunks.map(c => String(c || '').trim()).filter(Boolean) : [];
+    if (!list.length) return list;
+    const joined = list.join('\n');
+    if (!promisesLinkWithoutUrl(joined)) return list;
+    if (isAppReconnectOrAccountSupportRequest(currentMessageText)) return list;
+
+    const allowed = qualifier?.stage === 'won'
+        || hasChallengeInviteReadinessSignal(currentMessageText)
+        || (qualifier?.stage === 'pitched' && isPositiveChallengeLinkConfirmationText(currentMessageText));
+    if (!allowed) return list;
+
+    const url = challengeUrlForRoute(qualifier?.challenge_route || 'generic');
+    if (list.length < maxChunks) return [...list, url];
+
+    const next = [...list];
+    next[next.length - 1] = `${next[next.length - 1]}\n${url}`;
+    return next;
+}
+
 function isApprovedChallengeBioHandoffAllowed({ draftText, qualifier, currentMessage } = {}) {
     if (!isApprovedChallengeBioLinkText(draftText)) return false;
+    if (isAppReconnectOrAccountSupportRequest(currentMessage)) return false;
     if (qualifier?.stage === 'won') return true;
     if (hasChallengeInviteReadinessSignal(currentMessage)) return true;
     return qualifier?.stage === 'pitched' && isPositiveChallengeLinkConfirmationText(currentMessage);
@@ -1129,17 +1211,18 @@ function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linke
     const evidenceIds = [threadId ? `ig_threads:${threadId}` : '', manychatMessageId ? `manychat_message_id:${manychatMessageId}` : '']
         .filter(Boolean);
     return {
-        lead_onboarding_handoff: true,
-        needs_you_required: true,
-        operator_queue: 'needs_you',
-        style_note: 'Lead is ready for a non-approved Balance/app link step. Give the short app rundown first and let Shannon approve/send the actual link manually.',
+        lead_onboarding_handoff: false,
+        needs_you_required: false,
+        operator_queue: null,
+        client_manager_review_required: true,
+        style_note: 'Lead is near a Balance/app link step. Hold automatic sending until the client manager checks readiness and either approves the draft or hands it to Shannon.',
         signup_link_manual_only: true,
         signup_link_handoff_url: ONE_ON_ONE_COACHING_URL,
         codex_review: {
             source: 'ig-instant-draft',
-            decision: 'needs_shannon_onboarding_handoff',
-            queue: 'needs_you',
-            needs_shannon_approval: true,
+            decision: 'client_manager_review_required',
+            queue: null,
+            needs_shannon_approval: false,
             reason,
             evidence_ids: evidenceIds,
             reviewed_at: new Date().toISOString(),
@@ -1340,7 +1423,8 @@ function buildIgStoryReplyPromptContextBlock({ leadName, currentMessage = '', re
 STORY REPLY CONTEXT:
 ${rows.join('\n')}
 
-This is Shannon's story/post context, not ${leadName || 'the lead'}'s own message. Use it only to understand what they replied to. Do not write as if ${leadName || 'the lead'} logged, ate, posted, or said those story details unless their actual reply says so.`;
+This is Shannon's story/post context, not ${leadName || 'the lead'}'s own message. Use it only to understand what they replied to. Do not write as if ${leadName || 'the lead'} logged, ate, posted, or said those story details unless their actual reply says so.\nIf this is clearly them replying to Shannon's native story opener or a comment Shannon left on their post, that is a normal send-back path. If the context is unclear, the message suggests confusion or AI suspicion, or the inbound includes media that needs inspection, do not guess a reply. Mark it for Needs You instead.`;
+
 }
 
 function compactStoryMemoryText(value, max = 500) {
@@ -1924,7 +2008,7 @@ Use this batch as context, not a checklist. First decide what is still live: dir
     // still 'new' — linked_user_id is the truth, the column lags.
     const isOnboardedOrPostFunnel = !isSalesLeadThread;
     const funnelContext = isOnboardedOrPostFunnel ? '' : META_AD_FUNNEL_CONTEXT;
-    const challengeNextStepBlock = buildChallengeNextStepBlock(qualifier);
+    const challengeNextStepBlock = buildChallengeNextStepBlock(qualifier, currentMessageText);
     const oneOnOneCoachingBlock = isOnboardedOrPostFunnel ? '' : buildOneOnOneCoachingBlock();
     const qualifierRelationshipBlock = buildQualifierRelationshipBlock(qualifier);
 
@@ -2086,6 +2170,7 @@ CONVERSATION RESPONSIBILITY:
 - If the newest message is light media/banter attached to a heavier earlier message, decide whether the media is just a softener before writing. Do not let a puppy photo or quick joke erase a vulnerable disclosure or practical request.
 - If they send a voice note, photo, or video that was decoded, do not open with a receipt like "just listened to your voice note", "saw your photo", or "watched the video". Reply straight to what it means.
 - Only add a Shannon day/work/training/pet update when they directly ask what Shannon is doing, how his day is going, or what is on his agenda. If they ask what a topic is like "by you", "near you", or where Shannon is, answer that topic briefly instead of adding a random app/Sunshine/day update. First check whether Shannon already answered that exact personal question in the recent timeline.
+- Do not assume the client is currently working, just finished work, on shift, or recovering after a shift from old work-history context. Mention today's shift/work only when the latest message, the current unanswered batch, or a same-day direct answer proves it.
 - Do not open with "morning", "afternoon", or "evening" when this is already an active same-day thread or Shannon already greeted them recently.
 - If they admit they have been "slacking", off track, missed training, or had a rough week, don't reply with filler like "ahh yeah man" on its own, don't ask "wby"/"what about you", and don't repeat the same broad question. Validate lightly, then ask one concrete follow-up about what got in the way or what small session they can lock in next.
 - The funnel should feel invisible. It can take hours or months. One smooth human question beats a forced qualifier or pitch.
@@ -2112,7 +2197,7 @@ ACTION CLAIMS:
 - If they report a weird food/meal name from the app, correct obvious voice-to-text or typo errors using the conversation and app context instead of repeating the nonsense phrase as a real meal. Example: if the likely plan meal is "Berry Almond Baked Oats", do not call it "very almond mixed oats".
 - If they report a calorie/logging discrepancy, acknowledge it as something Shannon should check. Do not promise to manually adjust or log anything unless the app data below proves it has already been done.
 ${acquisitionStyleBlock}
-- For first/early replies to Shannon's story opener, default to asking one light question about their hook. Only skip when they only said thanks/emoji/filler, it is a genuinely short no-response-needed reply, the topic is a current safety/medical/rehab advice situation, or the thread is clearly closing. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is not sensitive by itself. Keep it as light rapport if you can reply without advice. A Shannon-side personal aside cannot be the whole reply in this moment. Example: if they reply about InsightTimer filling your cup, ask whether they use it more for meditations or the little reminders.
+- For first/early replies to Shannon's story opener, default to asking one light question about their hook. Only skip when they only said thanks/emoji/filler, it is a genuinely short no-response-needed reply, the topic is a current safety/medical/rehab advice situation, or the thread is clearly closing. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is not sensitive by itself. Keep it as light rapport if you can reply without advice. If the context is unclear, the message suggests confusion or AI suspicion, or media needs inspection, stop and hand it to Needs You instead of guessing. A Shannon-side personal aside cannot be the whole reply in this moment. Example: if they reply about InsightTimer filling your cup, ask whether they use it more for meditations or the little reminders.
 
 NEVER reveal AI, automation, "trained on Shannon's voice", "24/7", or anything that breaks the personal-coach illusion. Shannon is replying personally.
 
@@ -2162,6 +2247,7 @@ Rules:
 - Do not park every question at the end. If the question belongs to one specific detail, put it with that detail and keep going.
 - Make each chunk a paragraph-sized bubble. If a thought is getting long, finish the sentence or paragraph, send that chunk, then continue in the next chunk.
 - Don't artificially split a single sentence. Each chunk should stand on its own.
+- Never put literal backslash-n escape sequences inside a chunk. Use normal punctuation, or start a new chunk if you need a pause.
 - The JSON wrapper is only for the system. The chunk strings must contain only the exact DM text Shannon would send. Never put "json", "messages", "chunk", labels, or formatting instructions inside a chunk.
 - No quotes, labels, code-fence, or commentary outside the JSON.`;
     prompt = prompt.replace(
@@ -2543,6 +2629,7 @@ exports._test = {
     sanitizeIgStoryReplyContextText,
     stripObviousMediaReceiptPreamble,
     getCocosAutoContextBypass,
+    getBalanceAutoContextBypass,
     getAutoDmHoldReason,
     isSignupLinkHandoffText,
     buildLeadOnboardingHandoffData,
@@ -2588,7 +2675,8 @@ exports.handler = async (event) => {
     const botAccount = thread.custom_data?.bot_account || thread.custom_data?.instagram_graph?.bot_account || '';
     const algorithmFork = algorithmForkForBotAccount(botAccount);
     const cocosAutoSendLane = isCocosBotAccount(botAccount);
-    const autoSendEnabled = !!thread.auto_send_enabled || cocosAutoSendLane;
+    const balanceAutoSendCandidate = !!thread.auto_send_enabled;
+    const autoSendEnabled = cocosAutoSendLane;
 
     // Idempotency — when ManyChat supplied a message_id, reuse it. Otherwise
     // fall back to thread+timestamp (less robust but better than nothing
@@ -3046,13 +3134,13 @@ exports.handler = async (event) => {
         manychatMessageId,
         currentMessage: displayMessage,
     });
-    if (leadOnboardingHandoffData?.needs_you_required) {
+    if (leadOnboardingHandoffData?.client_manager_review_required) {
         challengeOfferWarning = {
             ...(challengeOfferWarning || {}),
             required: true,
-            code: 'signup_link_manual_handoff',
+            code: 'signup_link_manager_review',
             dot: '!',
-            label: 'signup link needs Shannon',
+            label: 'signup link needs manager review',
             reason: leadOnboardingHandoffData.codex_review.reason,
             detected_at: new Date().toISOString(),
         };
@@ -3602,12 +3690,13 @@ exports.handler = async (event) => {
         });
     }
 
-    // Auto-DM path: explicit per-thread opt-in only. Even when allowed, it
-    // schedules through Send Later so cold leads never get instant replies.
-    // Review flags hold this one reply for Shannon, but auto mode stays on
-    // until Shannon explicitly cancels it from the admin dashboard.
+    // Direct auto-DM path is only for isolated test lanes. Balance IG/FB
+    // replies must first pass through the Codex lead/client manager, which
+    // stamps codex_review; the scheduled worker promotes only those approved
+    // rows into the auto lane.
     let autoHandled = false;
     const blockedStage = ['churned'].includes(effectiveLeadStage);
+    const balanceAutoSendLane = false;
     const cocosContextBypass = getCocosAutoContextBypass({
         cocosAutoSendLane,
         contextReview: effectiveContextReview,
@@ -3615,11 +3704,19 @@ exports.handler = async (event) => {
         draftReview,
         currentMessage: displayMessage,
     });
-    if (cocosContextBypass?.allowed) {
+    const balanceContextBypass = getBalanceAutoContextBypass({
+        balanceAutoSendLane,
+        contextReview: effectiveContextReview,
+        draft,
+        draftReview,
+        currentMessage: displayMessage,
+    });
+    const autoContextBypass = cocosContextBypass || balanceContextBypass;
+    if (autoContextBypass?.allowed) {
         currentAlertData = {
             ...(currentAlertData || {}),
             auto_send_context_bypass: {
-                ...cocosContextBypass,
+                ...autoContextBypass,
                 allowed_at: new Date().toISOString(),
             },
         };
@@ -3637,7 +3734,7 @@ exports.handler = async (event) => {
             leadStage: effectiveLeadStage,
             linkedUserId: thread.linked_user_id,
             meaningfulLeadReplyCount,
-            cocosContextBypass,
+            contextBypass: autoContextBypass,
         })
         : null;
     if (!autoHoldReason && autoSendEnabled && blockedStage) {
@@ -3660,11 +3757,11 @@ exports.handler = async (event) => {
             reason: autoHoldReason,
         }) || currentAlertData;
         console.warn(`[ig-draft] auto-send held for thread ${thread.id}: ${autoHoldReason.code}`);
-    } else if (autoSendEnabled && cocosAutoSendLane && currentAlertData?.auto_send_review_hold) {
+    } else if (autoSendEnabled && currentAlertData?.auto_send_review_hold) {
         currentAlertData = await clearIgAutoSendHoldForCurrentDraft({
             alertId,
             alertData: currentAlertData,
-            reason: 'cocos_repaired_or_refreshed_draft_passed_review',
+            reason: autoContextBypass?.allowed ? 'soft_context_bypass_passed_review' : 'refreshed_draft_passed_review',
         }) || currentAlertData;
     }
 
@@ -3714,6 +3811,9 @@ exports.handler = async (event) => {
             }) || currentAlertData;
             console.warn('[ig-draft] auto schedule failed, falling back to approve-gate:', e.message);
         }
+    }
+    if (!autoHandled && balanceAutoSendCandidate && !cocosAutoSendLane) {
+        console.log(`[ig-draft] Balance auto-send deferred to Codex manager review for thread ${thread.id}`);
     }
 
     // Auto DMs now always schedule through schedule-coach-reply.
@@ -3853,6 +3953,7 @@ exports._test = {
     buildAcquisitionMomentumBlock,
     suppressPetSpeciesGuessingInDraftChunks,
     getCocosAutoContextBypass,
+    getBalanceAutoContextBypass,
     getAutoDmHoldReason,
     collectCocosAutoRepairIssues,
     shouldAttemptCocosDraftRepair,
@@ -3861,5 +3962,7 @@ exports._test = {
     isSignupLinkHandoffText,
     buildLeadOnboardingHandoffData,
     finalizeDraftChunksFromRawText,
+    repairMissingChallengeBioLinkChunks,
+    buildChallengeNextStepBlock,
     buildEmptyMediaDraftFallbackChunks,
 };

@@ -31,6 +31,7 @@ const { normalizeCoachDraftText } = require('./_lib/client-context');
 // kicking in, it's either a worker outage or someone schedule-bombed the API.
 const MAX_PER_RUN = 25;
 const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
+const DEFAULT_CHALLENGE_BIO_URL = 'https://future-balance.netlify.app/bio.html';
 
 async function supabase(path, options = {}) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -83,7 +84,7 @@ function buildAutoSendReviewHold(alert) {
         || alert?.alert_type === 'ig_incoming_dm'
         || alert?.alert_type === 'fb_incoming_dm';
     if (!isManyChatDm) return null;
-    const softContextBypass = hasCocosAutoContextBypass(data);
+    const softContextBypass = hasAutoContextBypass(data);
     if (data.auto_send_review_approved_at) return null;
     if (data.auto_send_review_hold?.code) return data.auto_send_review_hold;
     if (data.media_review?.required) {
@@ -137,10 +138,58 @@ function hasCocosAutoContextBypass(data = {}) {
         || /review did not finish|review timeout|timed out/.test(summary);
 }
 
+function hasAutoContextBypass(data = {}) {
+    if (hasCocosAutoContextBypass(data)) return true;
+    const bypass = data.auto_send_context_bypass || {};
+    const reason = String(bypass.reason || '').toLowerCase();
+    if (bypass.allowed !== true || !reason.startsWith('soft_review_timeout')) return false;
+    const review = data.draft_review || {};
+    if (String(review.verdict || '').toLowerCase() === 'block' || review.context_loss_suspected) return false;
+    const issues = Array.isArray(review.issues) ? review.issues.map(v => String(v || '').toLowerCase()) : [];
+    const notificationReason = String(review.notification_reason || '').toLowerCase();
+    const summary = String(review.summary || '').toLowerCase();
+    return notificationReason === 'review_timeout'
+        || issues.includes('review_timeout')
+        || /review did not finish|review timeout|timed out/.test(summary);
+}
+
 function truncate(value, max = 220) {
     const text = String(value || '').trim();
     if (text.length <= max) return text;
     return `${text.slice(0, Math.max(0, max - 1))}...`;
+}
+
+function hasVisibleUrl(text) {
+    return /https?:\/\/\S+/i.test(String(text || ''));
+}
+
+function promisesLinkWithoutUrl(text) {
+    const s = String(text || '');
+    if (!s || hasVisibleUrl(s)) return false;
+    return /\b(?:here'?s|heres|here is)\s+(?:the\s+)?link\b/i.test(s)
+        || /\b(?:link|url)\s+(?:is|below|here)\b/i.test(s)
+        || /\b(?:check it out|grab the app|download the app)\b/i.test(s);
+}
+
+function resolveSignupHandoffUrl(alert) {
+    const data = alert?.data || {};
+    const url = String(data.signup_link_handoff_url || data.signupLinkHandoffUrl || '').trim();
+    if (/^https?:\/\//i.test(url)) return url;
+    if (data.approved_link_auto_sendable === true || data.signup_link_manual_only === true || data.client_manager_review_required === true) {
+        return DEFAULT_CHALLENGE_BIO_URL;
+    }
+    return '';
+}
+
+function repairMissingScheduledLinkHandoff(alert, replyText) {
+    const text = normalizeCoachDraftText(replyText || '');
+    const url = resolveSignupHandoffUrl(alert);
+    if (!text || !url || !promisesLinkWithoutUrl(text)) return { text, repaired: false, url: '' };
+    return {
+        text: `${text}\n${url}`,
+        repaired: true,
+        url,
+    };
 }
 
 async function sendAutoSendHoldNotification(alert, autoHold) {
@@ -196,7 +245,8 @@ async function sendAutoSendHoldNotification(alert, autoHold) {
  * to flip to 'sent' once delivered.
  */
 async function fireAlert(alert) {
-    const replyText = normalizeCoachDraftText(alert.scheduled_reply_text || alert.suggested_message || '');
+    const repairedLink = repairMissingScheduledLinkHandoff(alert, alert.scheduled_reply_text || alert.suggested_message || '');
+    const replyText = repairedLink.text;
     const draftText = normalizeCoachDraftText(alert.suggested_message || '');
     if (!replyText) {
         // Defensive: a scheduled alert with no text shouldn't exist. Mark it
@@ -239,6 +289,26 @@ async function fireAlert(alert) {
         }
         await sendAutoSendHoldNotification(alert, autoHold);
         return { ok: false, error: `auto_review_hold_${autoHold.code}` };
+    }
+
+    if (repairedLink.repaired) {
+        try {
+            await supabase(`coach_alerts?id=eq.${alert.id}`, {
+                method: 'PATCH',
+                body: {
+                    scheduled_reply_text: replyText,
+                    data: {
+                        ...(alert.data || {}),
+                        scheduled_link_repaired_at: new Date().toISOString(),
+                        scheduled_link_repaired_by: 'scheduled_worker',
+                        scheduled_link_repaired_url: repairedLink.url,
+                    },
+                },
+                prefer: 'return=minimal',
+            });
+        } catch (e) {
+            console.warn(`[scheduled-worker] failed to persist repaired link for ${alert.id}:`, e.message);
+        }
     }
 
     const res = await fetch(`${SITE_URL}/.netlify/functions/send-coach-reply`, {
@@ -325,4 +395,6 @@ exports.handler = async () => {
 exports._test = {
     buildAutoSendReviewHold,
     hasCocosAutoContextBypass,
+    hasAutoContextBypass,
+    repairMissingScheduledLinkHandoff,
 };

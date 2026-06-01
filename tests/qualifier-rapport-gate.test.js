@@ -15,6 +15,7 @@ const {
     isPrematureChallengeInvite,
     isInPersonOrExistingCoachPreference,
     handlesInPersonOrExistingCoachPreference,
+    isAppOrWorkoutPlanSupportRequest,
 } = require('../netlify/functions/_lib/qualifier-engine');
 const {
     isSignupLinkHandoffText,
@@ -38,6 +39,8 @@ const vagueWarmth = applyRapportGate({
 
 assert.strictEqual(vagueWarmth.stage, 'current_state');
 assert.strictEqual(hasChallengeInviteReadinessSignal('keen haha yeah that sounds cool'), false);
+assert.strictEqual(hasChallengeInviteReadinessSignal('Can I be reconnected with the balance app helper?'), false);
+assert.strictEqual(isAppOrWorkoutPlanSupportRequest('Can I be reconnected with the balance app helper?'), true);
 assert.ok(!/challenge|link/i.test(vagueWarmth.next_question), vagueWarmth.next_question);
 assert.strictEqual(vagueWarmth.is_question_moment, false);
 assert.strictEqual(vagueWarmth.next_question, '');
@@ -310,7 +313,9 @@ const unreadyBioHandoff = buildLeadOnboardingHandoffData({
     manychatMessageId: 'message-456',
 });
 
-assert.strictEqual(unreadyBioHandoff.needs_you_required, true);
+assert.strictEqual(unreadyBioHandoff.needs_you_required, false);
+assert.strictEqual(unreadyBioHandoff.operator_queue, null);
+assert.strictEqual(unreadyBioHandoff.client_manager_review_required, true);
 assert.strictEqual(unreadyBioHandoff.signup_link_manual_only, true);
 
 assert.strictEqual(

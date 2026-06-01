@@ -198,7 +198,7 @@ function isAccountSupportLinkContext(text) {
     if (/\b(30\s*day|30-day|free challenge|plant.?based challenge|transform challenge|challenge link|sign ?up|signup|join)\b/i.test(s)) {
         return false;
     }
-    return /\b(reset link|password reset|password|login|log in|locked out|face id|face recognition|old email|spam|manual(?:ly)? reset|reset it|reset this|uninstall|reinstall|app glitch|tech tangle|tech hassle)\b/i.test(s);
+    return /\b(reset link|password reset|password|login|log in|locked out|face id|face recognition|old email|spam|manual(?:ly)? reset|reset it|reset this|uninstall|reinstall|reconnect(?:ed|ing)?|connect(?:ed|ing)? back|app helper|balance helper|balance app helper|account access|app access|app glitch|tech tangle|tech hassle)\b/i.test(s);
 }
 
 function hasHumanHelpIntent(text) {
@@ -277,7 +277,7 @@ function hasDirectPracticalAnswer(text) {
 }
 
 function isAppOrWorkoutPlanSupportRequest(text) {
-    return /\b(app|glitch|glitched|bug|display|log my workout|logging|workout plan|workout plans|full.?body plan|full.?body plans|m\/w\/f|mon\/wed\/fri|movement on off days|same exercises|rep schemes?|new challenges|fresh plans?|fresh workouts?|routine|plans? delivered|another app|tech hassle|face recognition|face id|password reset|reset link|login|log in|locked out|old email|spam|manual(?:ly)? reset)\b/i.test(String(text || ''));
+    return /\b(app|glitch|glitched|bug|display|log my workout|logging|workout plan|workout plans|full.?body plan|full.?body plans|m\/w\/f|mon\/wed\/fri|movement on off days|same exercises|rep schemes?|new challenges|fresh plans?|fresh workouts?|routine|plans? delivered|another app|tech hassle|face recognition|face id|password reset|reset link|login|log in|locked out|reconnect(?:ed|ing)?|connect(?:ed|ing)? back|app helper|balance helper|balance app helper|account access|app access|old email|spam|manual(?:ly)? reset)\b/i.test(String(text || ''));
 }
 
 function hasChallengeInviteReadinessSignal(text) {
@@ -740,7 +740,7 @@ NO DEAD-END STATEMENTS: unless the lead is clearly closing the thread, do not su
 
 PLATEAU / TRIED-EVERYTHING GATE: when a lead says they are stuck, plateaued, not progressing, or have already tried lots of fixes and nothing changed, this is a diagnostic coaching moment, not an offer moment. Prefer a specific question about the sticking point, technique, recovery, load/intensity, food, or what changed when they tried those fixes. Do not move to the free challenge purely because they are frustrated.
 
-APP / WORKOUT SUPPORT GATE: if they mention the app glitching, logging problems, needing a specific workout plan, full-body M/W/F plans, stale exercises, rep schemes, or simplifying tech, treat it as a support/programming request first. Do not convert that into a free challenge offer unless they explicitly ask to start, work with Shannon, or get the link.
+APP / WORKOUT SUPPORT GATE: if they mention the app glitching, logging problems, reconnecting to Balance, the app/helper, account access, needing a specific workout plan, full-body M/W/F plans, stale exercises, rep schemes, or simplifying tech, treat it as a support/programming request first. Do not convert that into a free challenge offer unless they explicitly ask to start, work with Shannon, or get the link.
 
 LOCAL / IN-PERSON / EXISTING TRAINER GATE: if they say they want someone local, in-person, face-to-face, a PT, a personal trainer, or they already have a trainer/coach, treat that as a preference or compatibility objection. Do not invite or send the link yet. First answer plainly that the challenge support is online through Balance, then ask whether online check-ins/accountability would still be useful, or ask how it needs to fit around their current trainer.
 
@@ -1118,6 +1118,7 @@ module.exports = {
     hasEarnedChallengeInviteMoment,
     isChallengeInviteText,
     isChallengeOfferWarningText,
+    isAppOrWorkoutPlanSupportRequest,
     isPrematureChallengeInvite,
     warmthLabelFor,
     stageMetaFor,
