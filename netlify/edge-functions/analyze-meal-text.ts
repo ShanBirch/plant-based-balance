@@ -1,5 +1,6 @@
 import type { Context } from "@netlify/edge-functions";
 import { parseModelJsonObject } from "./lib/model-json.mjs";
+import { callOpenAIGeminiCompat, shouldUseOpenAIPrimary } from "./lib/openai-responses.mjs";
 
 type MealPlanMeal = {
   id: string;
@@ -352,8 +353,9 @@ export default async function (request: Request, context: Context) {
     }
 
     const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const hasOpenAI = !!Deno.env.get("OPENAI_API_KEY");
 
-    if (!apiKey) {
+    if (!apiKey && !hasOpenAI) {
       console.error("Missing GEMINI_API_KEY");
       return new Response(JSON.stringify({ error: "Server configuration error: Missing API Key" }), {
         status: 500,
@@ -446,7 +448,7 @@ IMPORTANT:
     let nutritionData: any = null;
     let lastError = "";
 
-    for (const model of modelFallbacks) {
+    if (apiKey && !shouldUseOpenAIPrimary()) for (const model of modelFallbacks) {
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       console.log(`Sending request to Gemini API (${model}) for text-based food analysis...`);
 
@@ -502,6 +504,23 @@ IMPORTANT:
       // Only fall back on rate limit (429) or server errors (5xx)
       if (geminiResponse.status !== 429 && geminiResponse.status < 500) {
         return new Response(JSON.stringify({ error: "Gemini API error", details: errorText }), { status: geminiResponse.status });
+      }
+    }
+
+    if (!nutritionData && hasOpenAI) {
+      try {
+        const { data, model } = await callOpenAIGeminiCompat(payload, {
+          profile: "nutrition",
+          label: "analyze-meal-text",
+        });
+        const candidate = data?.candidates?.[0];
+        const parts = candidate?.content?.parts || [];
+        const aiText = parts.map((p: { text?: string }) => p?.text || '').join('');
+        nutritionData = parseModelJsonObject(aiText, "analyze-meal-text OpenAI nutrition JSON");
+        console.log(`[analyze-meal-text] parsed nutrition JSON with ${model}`);
+      } catch (err: any) {
+        lastError = err?.message || String(err);
+        console.warn(`[analyze-meal-text] OpenAI fallback failed: ${lastError}`);
       }
     }
 

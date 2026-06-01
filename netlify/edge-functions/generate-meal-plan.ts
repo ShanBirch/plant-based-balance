@@ -1,5 +1,6 @@
 
 import type { Context } from "https://edge.netlify.com";
+import { callOpenAIGeminiCompat, shouldUseOpenAIPrimary } from "./lib/openai-responses.mjs";
 
 /**
  * Generate meals for a SINGLE DAY of a meal plan using Gemini AI.
@@ -24,8 +25,9 @@ export default async function (request: Request, context: Context) {
     const body = await request.json();
     const { userData, weekNumber, dayNumber, previousDays, previousWeeks } = body;
     const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const hasOpenAI = !!Deno.env.get("OPENAI_API_KEY");
 
-    if (!apiKey) {
+    if (!apiKey && !hasOpenAI) {
       return new Response(JSON.stringify({ error: "Missing API Key" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
@@ -210,6 +212,14 @@ RESPOND WITH VALID JSON:
 }`;
 
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const modelPayload = {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        maxOutputTokens: 4096,
+        temperature: 0.7,
+        responseMimeType: "application/json",
+      }
+    };
 
     // Gemini can be flaky with 429/503. Retry a couple of times with a short backoff
     // before giving up, so the frontend loop doesn't have to pay the full cost of
@@ -224,14 +234,7 @@ RESPOND WITH VALID JSON:
           const res = await fetch(geminiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ role: "user", parts: [{ text: prompt }] }],
-              generationConfig: {
-                maxOutputTokens: 4096,
-                temperature: 0.7,
-                responseMimeType: "application/json",
-              }
-            }),
+            body: JSON.stringify(modelPayload),
             signal: controller.signal,
           });
           clearTimeout(timeoutId);
@@ -257,27 +260,49 @@ RESPOND WITH VALID JSON:
       throw lastErr || new Error('Gemini call failed');
     }
 
-    let response: Response;
-    try {
-      response = await callGemini();
-    } catch (err) {
-      if ((err as Error)?.name === 'AbortError') {
-        console.error(`Gemini timeout for week ${week} day ${day}`);
-        return new Response(JSON.stringify({ error: "Gemini timed out", details: "AI service did not respond in time" }), {
-          status: 504,
-          headers: { "Content-Type": "application/json" },
-        });
+    let data: any = null;
+    let lastError = '';
+    if (apiKey && !shouldUseOpenAIPrimary()) {
+      let response: Response;
+      try {
+        response = await callGemini();
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError' && !hasOpenAI) {
+          console.error(`Gemini timeout for week ${week} day ${day}`);
+          return new Response(JSON.stringify({ error: "Gemini timed out", details: "AI service did not respond in time" }), {
+            status: 504,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        lastError = (err as Error)?.message || String(err);
+        response = null as unknown as Response;
       }
-      throw err;
+
+      if (response?.ok) {
+        data = await response.json();
+      } else if (response) {
+        lastError = await response.text();
+        console.error(`Gemini error for week ${week} day ${day}:`, lastError);
+        if (!hasOpenAI) throw new Error(`Gemini API error: ${response.status}`);
+      }
     }
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error(`Gemini error for week ${week} day ${day}:`, errText);
-      throw new Error(`Gemini API error: ${response.status}`);
+    if (!data && hasOpenAI) {
+      try {
+        const result = await callOpenAIGeminiCompat(modelPayload, {
+          profile: "nutrition",
+          label: "generate-meal-plan",
+        });
+        data = result.data;
+      } catch (err) {
+        lastError = (err as Error)?.message || String(err);
+        console.error(`[generate-meal-plan] OpenAI fallback failed: ${lastError}`);
+      }
     }
 
-    const data = await response.json();
+    if (!data) {
+      throw new Error(`AI meal plan generation failed: ${lastError || 'unknown error'}`);
+    }
     const candidate = data.candidates?.[0];
     const parts = candidate?.content?.parts || [];
     const text = parts.map((p: { text?: string }) => p?.text || '').join('');

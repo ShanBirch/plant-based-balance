@@ -1,4 +1,5 @@
 import { Context } from "@netlify/edge-functions";
+import { callOpenAIGeminiCompat, shouldUseOpenAIPrimary } from "./lib/openai-responses.mjs";
 
 export default async function (request: Request, context: Context) {
   if (request.method !== "POST") {
@@ -8,8 +9,9 @@ export default async function (request: Request, context: Context) {
   try {
     const { imageBase64, mimeType } = await request.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const hasOpenAI = !!Deno.env.get("OPENAI_API_KEY");
 
-    if (!apiKey) {
+    if (!apiKey && !hasOpenAI) {
       return new Response(JSON.stringify({ error: "Server configuration error" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
@@ -70,7 +72,7 @@ IMPORTANT:
     let lastError = "";
     let usedModel = "";
 
-    for (const model of modelFallbacks) {
+    if (apiKey && !shouldUseOpenAIPrimary()) for (const model of modelFallbacks) {
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       console.log(`Sending request to Gemini API (${model}) for food identification...`);
 
@@ -95,6 +97,20 @@ IMPORTANT:
           status: geminiResponse.status,
           headers: { "Content-Type": "application/json" },
         });
+      }
+    }
+
+    if (!geminiData && hasOpenAI) {
+      try {
+        const result = await callOpenAIGeminiCompat(payload, {
+          profile: "vision",
+          label: "identify-food",
+        });
+        geminiData = result.data;
+        usedModel = result.model;
+      } catch (err: any) {
+        lastError = err?.message || String(err);
+        console.warn(`[identify-food] OpenAI fallback failed: ${lastError}`);
       }
     }
 

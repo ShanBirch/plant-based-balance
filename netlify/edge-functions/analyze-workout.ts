@@ -5,6 +5,7 @@
  */
 
 import type { Context } from "https://edge.netlify.com";
+import { callOpenAIGeminiCompat, shouldUseOpenAIPrimary } from "./lib/openai-responses.mjs";
 
 interface AnalyzeWorkoutRequest {
   imageBase64: string;
@@ -50,8 +51,9 @@ export default async (request: Request, context: Context): Promise<Response> => 
     const { imageBase64, mimeType, workoutType, activityType } = body;
 
     const apiKey = Deno.env.get('GEMINI_API_KEY');
+    const hasOpenAI = !!Deno.env.get('OPENAI_API_KEY');
 
-    if (!apiKey) {
+    if (!apiKey && !hasOpenAI) {
       console.error('Missing GEMINI_API_KEY');
       return new Response(JSON.stringify({
         error: 'Server configuration error',
@@ -174,35 +176,61 @@ Be fair and inclusive - yoga selfies, meditation sessions, and stretching routin
       }
     };
 
-    console.log('Sending workout photo to Gemini for analysis...');
+    let geminiData: any = null;
+    let lastError = '';
+    if (apiKey && !shouldUseOpenAIPrimary()) {
+      console.log('Sending workout photo to Gemini for analysis...');
 
-    const geminiResponse = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+      const geminiResponse = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', geminiResponse.status, errorText);
+      if (geminiResponse.ok) {
+        geminiData = await geminiResponse.json();
+      } else {
+        lastError = await geminiResponse.text();
+        console.error('Gemini API error:', geminiResponse.status, lastError);
 
-      let userMessage = 'Failed to analyze workout photo';
-      if (geminiResponse.status === 429) {
-        userMessage = 'AI service busy. Please try again in a moment.';
-      } else if (geminiResponse.status === 400) {
-        userMessage = 'Invalid image format. Please try a different photo.';
+        if (!hasOpenAI && geminiResponse.status < 500 && geminiResponse.status !== 429) {
+          let userMessage = 'Failed to analyze workout photo';
+          if (geminiResponse.status === 400) {
+            userMessage = 'Invalid image format. Please try a different photo.';
+          }
+          return new Response(JSON.stringify({
+            error: userMessage,
+            status: geminiResponse.status
+          }), {
+            status: geminiResponse.status,
+            headers
+          });
+        }
       }
+    }
 
+    if (!geminiData && hasOpenAI) {
+      try {
+        const result = await callOpenAIGeminiCompat(payload, {
+          profile: 'vision',
+          label: 'analyze-workout',
+        });
+        geminiData = result.data;
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : String(err);
+        console.error('[analyze-workout] OpenAI fallback failed:', lastError);
+      }
+    }
+
+    if (!geminiData) {
       return new Response(JSON.stringify({
-        error: userMessage,
-        status: geminiResponse.status
+        error: 'AI service busy. Please try again in a moment.',
+        details: lastError,
       }), {
-        status: geminiResponse.status,
+        status: 503,
         headers
       });
     }
-
-    const geminiData = await geminiResponse.json();
     const candidate = geminiData?.candidates?.[0];
     const parts = candidate?.content?.parts || [];
     const aiText = parts.map((p: { text?: string }) => p?.text || '').join('');

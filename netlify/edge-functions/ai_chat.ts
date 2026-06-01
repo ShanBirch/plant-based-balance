@@ -1,5 +1,6 @@
 
 import type { Context } from "https://edge.netlify.com";
+import { callOpenAIGeminiCompat, shouldUseOpenAIPrimary } from "./lib/openai-responses.mjs";
 
 export default async function (request: Request, context: Context) {
   // Only accept POST
@@ -10,8 +11,9 @@ export default async function (request: Request, context: Context) {
   try {
     const { message, mode, contextData, memberPersona, conversationStatus, localTime, chatHistory, currentDateTime, brisbaneTime } = await request.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const hasOpenAI = !!Deno.env.get("OPENAI_API_KEY");
 
-    if (!apiKey) {
+    if (!apiKey && !hasOpenAI) {
       console.error("Missing GEMINI_API_KEY");
       return new Response(JSON.stringify({ error: "Server configuration error: Missing API Key" }), {
         status: 500,
@@ -489,22 +491,40 @@ export default async function (request: Request, context: Context) {
         });
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
-    
     const payload = { contents };
+    let data: any = null;
+    let lastError = "";
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+    if (apiKey && !shouldUseOpenAIPrimary()) {
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
 
-    const data = await response.json();
-    console.log("Gemini API response status:", response.status);
+      data = await response.json();
+      console.log("Gemini API response status:", response.status);
 
-    if (!response.ok) {
+      if (!response.ok) {
+        lastError = data.error?.message || "Failed to fetch from Gemini";
         console.error("Gemini API Error:", JSON.stringify(data));
-        throw new Error(data.error?.message || "Failed to fetch from Gemini");
+        data = null;
+        if (!hasOpenAI) throw new Error(lastError);
+      }
+    }
+
+    if (!data && hasOpenAI) {
+      try {
+        const result = await callOpenAIGeminiCompat(payload, {
+          profile: "coach_fallback",
+          label: "ai-chat",
+        });
+        data = result.data;
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : String(err);
+        throw new Error(lastError);
+      }
     }
 
     const candidate = data.candidates?.[0];

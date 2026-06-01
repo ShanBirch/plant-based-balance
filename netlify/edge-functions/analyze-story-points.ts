@@ -5,6 +5,7 @@
 
 import type { Context } from "https://edge.netlify.com";
 import { createClient } from '@supabase/supabase-js';
+import { callOpenAIGeminiCompat, shouldUseOpenAIPrimary } from "./lib/openai-responses.mjs";
 
 // Points configuration for story posts
 const STORY_POINTS_CONFIG = {
@@ -73,10 +74,11 @@ export default async (request: Request, context: Context): Promise<Response> => 
     }
 
     const apiKey = Deno.env.get('GEMINI_API_KEY');
+    const hasOpenAI = !!Deno.env.get('OPENAI_API_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!apiKey) {
+    if (!apiKey && !hasOpenAI) {
       console.error('Missing GEMINI_API_KEY');
       return new Response(JSON.stringify({
         error: 'Server configuration error',
@@ -232,26 +234,55 @@ Be encouraging and inclusive - yoga, meditation, and workout completion screens 
 
     console.log(`Analyzing story ${storyId} for workout content...`);
 
-    const geminiResponse = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+    let geminiData: any = null;
+    let lastError = '';
+    if (apiKey && !shouldUseOpenAIPrimary()) {
+      const geminiResponse = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', geminiResponse.status, errorText);
+      if (geminiResponse.ok) {
+        geminiData = await geminiResponse.json();
+      } else {
+        lastError = await geminiResponse.text();
+        console.error('Gemini API error:', geminiResponse.status, lastError);
 
+        if (!hasOpenAI && geminiResponse.status < 500 && geminiResponse.status !== 429) {
+          return new Response(JSON.stringify({
+            error: 'Failed to analyze story',
+            status: geminiResponse.status
+          }), {
+            status: geminiResponse.status,
+            headers
+          });
+        }
+      }
+    }
+
+    if (!geminiData && hasOpenAI) {
+      try {
+        const result = await callOpenAIGeminiCompat(payload, {
+          profile: 'vision',
+          label: 'analyze-story-points',
+        });
+        geminiData = result.data;
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : String(err);
+        console.error('[analyze-story-points] OpenAI fallback failed:', lastError);
+      }
+    }
+
+    if (!geminiData) {
       return new Response(JSON.stringify({
         error: 'Failed to analyze story',
-        status: geminiResponse.status
+        details: lastError,
       }), {
-        status: geminiResponse.status,
+        status: 503,
         headers
       });
     }
-
-    const geminiData = await geminiResponse.json();
     const candidate = geminiData?.candidates?.[0];
     const parts = candidate?.content?.parts || [];
     const aiText = parts.map((p: { text?: string }) => p?.text || '').join('');

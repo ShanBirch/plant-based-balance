@@ -17,12 +17,13 @@
  *   - stripLeadingGreeting: kills "hey Hannah," style openings unless daily greeting is allowed
  */
 
-const { callGeminiModelChain } = require('./ai-router');
+const { callGeminiModelChain, callOpenAIModelChain } = require('./ai-router');
 const { loadFirebaseServiceAccount } = require('./firebase-service-account');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 // Fine-tuned Shannon voice model on Vertex AI (v7 — trained on 402 curated client conversations)
 const VERTEX_PROJECT_ID = '103426154831';
@@ -1571,6 +1572,25 @@ function looksLikeReasoningLeak(text) {
 const MAX_RETRY_OUTPUT_TOKENS = 8192;
 const MAX_GENERATION_ATTEMPTS = 5;
 
+function envFlagEnabled(value) {
+    return ['1', 'true', 'yes', 'on', 'enabled'].includes(String(value || '').trim().toLowerCase());
+}
+
+function preferredAiProvider() {
+    return String(
+        process.env.COACH_AI_PROVIDER
+        || process.env.AI_PROVIDER
+        || process.env.MODEL_PROVIDER
+        || ''
+    ).trim().toLowerCase();
+}
+
+function shouldUseOpenAIPrimary() {
+    return preferredAiProvider() === 'openai'
+        || envFlagEnabled(process.env.GEMINI_DISABLED)
+        || envFlagEnabled(process.env.GOOGLE_AI_DISABLED);
+}
+
 function nextOutputTokenBudget(generationConfig, defaultMax) {
     const current = Number(generationConfig?.maxOutputTokens) || defaultMax;
     const next = Math.min(MAX_RETRY_OUTPUT_TOKENS, Math.max(current + 1024, current * 2));
@@ -1578,6 +1598,12 @@ function nextOutputTokenBudget(generationConfig, defaultMax) {
 }
 
 async function callVertexAIModel(contents, generationConfig = {}) {
+    if (shouldUseOpenAIPrimary()) {
+        return callOpenAITextModel(contents, generationConfig, {
+            profile: 'coach_fallback',
+            label: 'openai-coach-primary',
+        });
+    }
     const accessToken = await getVertexAIAccessToken();
     const url = `https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_LOCATION}/endpoints/${VERTEX_ENDPOINT_ID}:generateContent`;
     let config = { maxOutputTokens: 1024, temperature: 0.8, ...generationConfig };
@@ -1608,30 +1634,64 @@ async function callVertexAIModel(contents, generationConfig = {}) {
     return '';
 }
 
+async function callOpenAITextModel(contents, generationConfig = {}, { profile = 'coach_fallback', label = 'openai-coach-fallback', models } = {}) {
+    if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
+    const { data, model } = await callOpenAIModelChain({
+        apiKey: OPENAI_API_KEY,
+        profile,
+        label,
+        models,
+        payload: {
+            contents,
+            generationConfig,
+        },
+    });
+    return extractCandidateText(data, model);
+}
+
 async function callGeminiFallback(contents, generationConfig = {}) {
-    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured');
-    let config = { maxOutputTokens: 2048, temperature: 0.8, ...generationConfig };
-    for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
-        const { data, model } = await callGeminiModelChain({
-            apiKey: GEMINI_API_KEY,
+    const useOpenAIPrimary = shouldUseOpenAIPrimary() || !GEMINI_API_KEY;
+    if (useOpenAIPrimary) {
+        return callOpenAITextModel(contents, generationConfig, {
             profile: 'coach_fallback',
-            label: 'coach-fallback',
-            payload: {
-                contents,
-                generationConfig: config,
-            },
+            label: 'openai-coach-fallback',
         });
-        if (data.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
-            const nextMax = nextOutputTokenBudget(config, 2048);
-            if (nextMax > config.maxOutputTokens && attempt < MAX_GENERATION_ATTEMPTS - 1) {
-                console.warn(`[${model}] MAX_TOKENS at ${config.maxOutputTokens}, retrying with ${nextMax}`);
-                config = { ...config, maxOutputTokens: nextMax };
-                continue;
-            }
-        }
-        return extractCandidateText(data, model);
     }
-    return '';
+    let config = { maxOutputTokens: 2048, temperature: 0.8, ...generationConfig };
+    let lastGeminiError = null;
+    for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
+        try {
+            const { data, model } = await callGeminiModelChain({
+                apiKey: GEMINI_API_KEY,
+                profile: 'coach_fallback',
+                label: 'coach-fallback',
+                payload: {
+                    contents,
+                    generationConfig: config,
+                },
+            });
+            if (data.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
+                const nextMax = nextOutputTokenBudget(config, 2048);
+                if (nextMax > config.maxOutputTokens && attempt < MAX_GENERATION_ATTEMPTS - 1) {
+                    console.warn(`[${model}] MAX_TOKENS at ${config.maxOutputTokens}, retrying with ${nextMax}`);
+                    config = { ...config, maxOutputTokens: nextMax };
+                    continue;
+                }
+            }
+            return extractCandidateText(data, model);
+        } catch (err) {
+            lastGeminiError = err;
+            break;
+        }
+    }
+    if (OPENAI_API_KEY) {
+        console.warn(`[coach-fallback] Gemini failed, falling back to OpenAI: ${lastGeminiError?.message || 'unknown error'}`);
+        return callOpenAITextModel(contents, generationConfig, {
+            profile: 'coach_fallback',
+            label: 'openai-after-gemini-failure',
+        });
+    }
+    throw lastGeminiError || new Error('GEMINI_API_KEY not configured');
 }
 
 /**
@@ -1646,6 +1706,12 @@ async function callGeminiFallback(contents, generationConfig = {}) {
  * a minute.
  */
 async function callVertexGeminiMultimodal(contents, generationConfig = {}) {
+    if (shouldUseOpenAIPrimary()) {
+        return callOpenAITextModel(contents, generationConfig, {
+            profile: 'coach_fallback',
+            label: 'openai-multimodal-primary',
+        });
+    }
     const accessToken = await getVertexAIAccessToken();
     // Vertex AI uses version-suffixed model IDs. `gemini-2.0-flash` (no suffix)
     // is a public-API name and 404s on Vertex. `gemini-1.5-flash-002` is the
@@ -1665,7 +1731,15 @@ async function callVertexGeminiMultimodal(contents, generationConfig = {}) {
         });
         if (!response.ok) {
             const errText = await response.text();
-            throw new Error(`Vertex Gemini multimodal call failed: ${response.status} ${errText.slice(0, 500)}`);
+            const err = new Error(`Vertex Gemini multimodal call failed: ${response.status} ${errText.slice(0, 500)}`);
+            if (OPENAI_API_KEY) {
+                console.warn(`[vertex-gemini] failed, falling back to OpenAI: ${err.message}`);
+                return callOpenAITextModel(contents, generationConfig, {
+                    profile: 'coach_fallback',
+                    label: 'openai-after-vertex-gemini-failure',
+                });
+            }
+            throw err;
         }
         const data = await response.json();
         if (data.candidates?.[0]?.finishReason === 'MAX_TOKENS') {

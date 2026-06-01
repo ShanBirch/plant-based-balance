@@ -1,5 +1,6 @@
 import { Context } from "@netlify/edge-functions";
 import { parseModelJsonObject } from "./lib/model-json.mjs";
+import { callOpenAIGeminiCompat, shouldUseOpenAIPrimary } from "./lib/openai-responses.mjs";
 
 export default async function (request: Request, context: Context) {
   // Only accept POST
@@ -10,8 +11,9 @@ export default async function (request: Request, context: Context) {
   try {
     const { imageBase64, mimeType, description, only_verify } = await request.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const hasOpenAI = !!Deno.env.get("OPENAI_API_KEY");
 
-    if (!apiKey) {
+    if (!apiKey && !hasOpenAI) {
       console.error("Missing GEMINI_API_KEY");
       return new Response(JSON.stringify({ error: "Server configuration error: Missing API Key" }), {
         status: 500,
@@ -169,7 +171,7 @@ IMPORTANT:
     let lastError = "";
     let usedModel = "";
 
-    for (const model of modelFallbacks) {
+    if (apiKey && !shouldUseOpenAIPrimary()) for (const model of modelFallbacks) {
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       console.log(`Sending request to Gemini API (${model}) for food analysis...`);
 
@@ -205,6 +207,20 @@ IMPORTANT:
       if (geminiResponse.status !== 429 && geminiResponse.status < 500) {
         console.error(`[analyze_food] Non-retriable error from ${model} (status ${geminiResponse.status}) — not attempting fallback models`);
         return new Response(JSON.stringify({ error: "Gemini API error", details: errorText }), { status: geminiResponse.status });
+      }
+    }
+
+    if (!geminiData && hasOpenAI) {
+      try {
+        const result = await callOpenAIGeminiCompat(payload, {
+          profile: "vision",
+          label: "analyze-food",
+        });
+        geminiData = result.data;
+        usedModel = result.model;
+      } catch (err: any) {
+        lastError = err?.message || String(err);
+        console.error(`[analyze_food] OpenAI fallback failed: ${lastError}`);
       }
     }
 
