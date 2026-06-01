@@ -24,11 +24,24 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const { callOpenAIModelChain } = require('./_lib/ai-router');
 
 // gemini-2.5-flash — current GA model. 2.0-flash is now deprecated for paid
 // keys (returns 429 RESOURCE_EXHAUSTED disguised as a rate limit).
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const RUNNING_NOTES_CAP = 50;          // max lines kept in running_notes
+
+function envFlagEnabled(value) {
+    return ['1', 'true', 'yes', 'on', 'enabled'].includes(String(value || '').trim().toLowerCase());
+}
+
+function shouldUseOpenAIPrimary() {
+    const provider = String(process.env.AI_PROVIDER || process.env.MODEL_PROVIDER || '').trim().toLowerCase();
+    return provider === 'openai'
+        || envFlagEnabled(process.env.GEMINI_DISABLED)
+        || envFlagEnabled(process.env.GOOGLE_AI_DISABLED);
+}
 
 async function supabaseQuery(path, options = {}) {
     const url = `${SUPABASE_URL}/rest/v1/${path}`;
@@ -88,6 +101,58 @@ async function callGeminiJSON(prompt) {
         const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
         try { return JSON.parse(cleaned); } catch { return {}; }
     }
+}
+
+function buildMemoryPayload(prompt) {
+    return {
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+            maxOutputTokens: 512,
+            temperature: 0.2,
+            responseMimeType: 'application/json',
+        },
+    };
+}
+
+function parseMemoryJson(raw) {
+    if (!raw) return {};
+    try { return JSON.parse(raw); }
+    catch {
+        const cleaned = String(raw).replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+        try { return JSON.parse(cleaned); } catch { return {}; }
+    }
+}
+
+function extractCandidateText(data) {
+    const candidate = data?.candidates?.[0];
+    const parts = candidate?.content?.parts || [];
+    return parts.map(p => p?.text || '').join('');
+}
+
+async function callOpenAIJSON(prompt) {
+    if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
+    const { data } = await callOpenAIModelChain({
+        apiKey: OPENAI_API_KEY,
+        profile: 'default',
+        label: 'extract-client-memory-openai',
+        payload: buildMemoryPayload(prompt),
+    });
+    return parseMemoryJson(extractCandidateText(data));
+}
+
+async function callMemoryJSON(prompt) {
+    let geminiError = null;
+    if (GEMINI_API_KEY && !shouldUseOpenAIPrimary()) {
+        try {
+            return await callGeminiJSON(prompt);
+        } catch (err) {
+            geminiError = err;
+            if (!OPENAI_API_KEY) throw err;
+            console.warn(`[extract-memory] Gemini failed, falling back to OpenAI: ${err.message}`);
+        }
+    }
+    if (OPENAI_API_KEY) return callOpenAIJSON(prompt);
+    throw geminiError || new Error('No AI key configured for memory extraction');
 }
 
 // ============================================================
@@ -259,9 +324,9 @@ exports.handler = async (event) => {
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
         return { statusCode: 500, body: JSON.stringify({ error: 'Server misconfigured' }) };
     }
-    if (!GEMINI_API_KEY) {
-        console.warn('[extract-memory] GEMINI_API_KEY missing — skipping');
-        return { statusCode: 200, body: JSON.stringify({ skipped: 'no_gemini_key' }) };
+    if (!GEMINI_API_KEY && !OPENAI_API_KEY) {
+        console.warn('[extract-memory] no AI key configured — skipping');
+        return { statusCode: 200, body: JSON.stringify({ skipped: 'no_ai_key' }) };
     }
 
     let payload;
@@ -372,10 +437,10 @@ exports.handler = async (event) => {
             sentMessage,
             recentHistory,
         });
-        extracted = await callGeminiJSON(prompt);
+        extracted = await callMemoryJSON(prompt);
     } catch (err) {
-        console.error('[extract-memory] Gemini failed:', err.message);
-        return { statusCode: 200, body: JSON.stringify({ skipped: 'gemini_failed' }) };
+        console.error('[extract-memory] AI extraction failed:', err.message);
+        return { statusCode: 200, body: JSON.stringify({ skipped: 'ai_failed' }) };
     }
 
     // 5. Merge
