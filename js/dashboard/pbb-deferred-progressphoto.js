@@ -487,6 +487,13 @@ let progressPhotoCaptureState = null;
         renderProgressPhotoShotGuide(0);
     }
 
+    function getProgressPhotoNextShotIndex() {
+        if (!progressPhotoCaptureState || !Array.isArray(progressPhotoCaptureState.shots)) return -1;
+        return progressPhotoCaptureState.shots.findIndex(function(shot) {
+            return !shot;
+        });
+    }
+
     function continueProgressPhotoShotFlow(index, file) {
         if (!progressPhotoCaptureState) return;
         progressPhotoCaptureState.shots[index] = file;
@@ -671,7 +678,12 @@ let progressPhotoCaptureState = null;
     async function handleProgressPhotoSelect(event) {
         const file = event.target.files[0];
         if (!file) return;
-        await saveProgressPhotoSet([{ meta: PROGRESS_PHOTO_SHOTS[0], file }]);
+        const activeShotIndex = getProgressPhotoNextShotIndex();
+        if (activeShotIndex >= 0) {
+            continueProgressPhotoShotFlow(activeShotIndex, file);
+        } else {
+            await saveProgressPhotoSet([{ meta: PROGRESS_PHOTO_SHOTS[0], file }]);
+        }
 
         // Reset file input so same file can be re-selected
         event.target.value = '';
@@ -714,6 +726,11 @@ let progressPhotoCaptureState = null;
 
         var card = document.getElementById('weekly-progress-photo-card');
         if (card) card.style.display = 'none';
+        const activeShotIndex = getProgressPhotoNextShotIndex();
+        if (activeShotIndex >= 0) {
+            continueProgressPhotoShotFlow(activeShotIndex, file);
+            return;
+        }
         await saveProgressPhotoSet([{ meta: PROGRESS_PHOTO_SHOTS[0], file }]);
     }
     window.handleProgressPhotoCaptureFromFile = handleProgressPhotoCaptureFromFile;
