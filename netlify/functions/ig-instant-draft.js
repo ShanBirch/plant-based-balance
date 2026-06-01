@@ -44,6 +44,7 @@ const {
     buildDailyGreetingPolicyBlock,
     shouldAllowDailyGreeting,
     buildShannonDmTuningBlock,
+    buildOpenAIShannonVoiceBlock,
     loadEditExamples,
     loadResponseTimingProfile,
     buildReplyTimingSuggestion,
@@ -1905,6 +1906,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
     const heardFirstConversation = buildHeardFirstConversationBlock();
     const shannonDmTuning = buildShannonDmTuningBlock();
+    const openAiShannonVoice = buildOpenAIShannonVoiceBlock();
     const isSalesLeadThread = isSalesAcquisitionThread({ leadStage, linkedUserId });
     const accountExperimentBlock = isSalesLeadThread ? buildAccountExperimentBlock(botAccount) : '';
     const acquisitionMomentumBlock = buildAcquisitionMomentumBlock({ botAccount, leadStage, linkedUserId });
@@ -2210,6 +2212,7 @@ ${nameUsePolicy}
 ${relationshipDiscovery}
 ${heardFirstConversation}
 ${shannonDmTuning}
+${openAiShannonVoice}
 ${accountExperimentBlock}
 ${acquisitionMomentumBlock}
 ${cocosRewardLearningBlock}

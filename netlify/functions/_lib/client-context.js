@@ -312,6 +312,22 @@ function buildShannonDmTuningBlock() {
     return SHANNON_DM_TUNING_GUIDE;
 }
 
+const OPENAI_SHANNON_VOICE_LOCK = `
+OPENAI SHANNON VOICE LOCK:
+- When a general fallback model is writing instead of Shannon's fine-tuned model, imitate Shannon's sent-text outcome, not the system prompt. The reply should feel like a real phone message Shannon could send without explaining itself.
+- Default smaller, plainer, and more specific than a normal AI assistant. No polished summaries, no motivational wrap-ups, no "here's what I'd suggest" framing unless they directly asked for advice.
+- The first words should answer or react to the latest inbound message. Do not warm up with generic empathy, a recap, or a brand-safe intro.
+- Use normal texting rhythm: short sentences, light fragments are okay, one concrete detail beats three abstract ones. Do not over-capitalize or make it sales-copy clean.
+- Avoid AI-ish closers like "you've got this", "I'm here for you", "keep me posted", "let me know how you go", or "sounds like a plan" unless that exact tiny closer is genuinely the natural whole reply.
+- Never use the words AI, bot, automation, automated, generated, model, prompt, system, or trained voice in client-facing draft text. If the latest message suspects AI/automation, keep the draft harmless and let the review gate stop auto-send for Shannon.
+- Do not defend, deny, or explain automation. Shannon can handle suspicion personally.
+- If a reply could be sent to almost anyone, it is not Shannon enough. Rebuild it around the exact newest object, feeling, constraint, joke, food, workout, place, person, or practical ask.
+`;
+
+function buildOpenAIShannonVoiceBlock() {
+    return OPENAI_SHANNON_VOICE_LOCK;
+}
+
 // ============================================================
 // Client memory (per-coach per-client relationship notes)
 // See database/client_memory_migration.sql
@@ -5047,7 +5063,7 @@ Return ONLY valid JSON:
   "suggested_fix": "what Shannon should do before sending",
   "context_loss_suspected": false,
   "notification_required": false,
-  "notification_reason": "none|context_loss|non_sequitur|ignored_latest_message|missing_source_context|unsupported_claim"
+  "notification_reason": "none|context_loss|non_sequitur|ignored_latest_message|missing_source_context|unsupported_claim|ai_suspicion|generic_voice|automation_leak"
 }
 
 Block and set notification_required=true when:
@@ -5055,6 +5071,9 @@ Block and set notification_required=true when:
 - the draft appears to answer a message that is not present in the tracked context;
 - the tracked ManyChat/IG context looks incomplete enough that Shannon should open the native DM before sending;
 - the draft invents an action, fact, promise, or source evidence that is not in the context.
+- the latest inbound message asks or hints whether Shannon's reply is AI, automated, a bot, generated, fake, copied, scripted, or not really Shannon;
+- the draft contains client-facing AI/automation language such as AI, bot, automated, automation, generated, model, prompt, system, trained voice, or "I am personally replying";
+- the draft defends, denies, or explains AI/automation instead of leaving the moment for Shannon to handle manually.
 
 For unlinked acquisition leads, do not block, notify, or mark manual-only just because they mention old injury, surgery, rehab, hospital, or pain history. That is normal rapport if the draft stays light, non-medical, and does not pitch the challenge off their vulnerability. Also do not mark the approved bio-link handoff manual-only when a lead has accepted the challenge or asked for the link/details/how to start; the approved link is https://future-balance.netlify.app/bio.html. Block or warn only when the latest turn asks for current pain, symptoms, rehab/training/treatment advice, diagnosis, pregnancy, eating/body-image risk, crisis/safety support, or when the draft gives medical/rehab advice.
 Do not block just because the older timeline contains a different unresolved topic if the clearly labelled latest inbound message is answered naturally. Treat details as grounded when they appear anywhere in the labelled latest message, including near the ending of a long message.
@@ -5063,6 +5082,8 @@ Do not block just because the draft also answers prior unanswered messages from 
 Warn when the draft is usable but should be checked or softened.
 Warn when the draft adds a Shannon day/app/Sunshine update that was not directly asked for, especially if the lead asked about a specific topic like dating, where Shannon lives, or what something is like near him.
 Warn when the draft over-covers: it reflects several details, adds praise, and adds a question when one normal reaction or direct answer would do.
+Warn with notification_reason "generic_voice" when the draft sounds like a generic coach, therapist, brand, or assistant: polished recap, broad encouragement, stock question, "keep me posted", "you've got this", "what does that look like for you", or a reply that could be sent to almost anyone despite a clear specific hook.
+Warn with notification_reason "generic_voice" when the draft starts with generic filler before touching the newest message, unless the newest message is genuinely heavy and needs a soft first line.
 Pass only when the draft is clearly grounded in the context below.
 ${leadQualityBlock}
 
@@ -6126,6 +6147,7 @@ module.exports = {
     buildRelationshipDiscoveryBlock,
     buildHeardFirstConversationBlock,
     buildShannonDmTuningBlock,
+    buildOpenAIShannonVoiceBlock,
     buildFallbackEditLearningBullets,
     loadEditExamples,
     loadResponseTimingProfile,

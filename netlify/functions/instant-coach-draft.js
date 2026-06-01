@@ -45,6 +45,7 @@ const {
     buildDailyGreetingPolicyBlock,
     shouldAllowDailyGreeting,
     buildShannonDmTuningBlock,
+    buildOpenAIShannonVoiceBlock,
     loadEditExamples,
     loadResponseTimingProfile,
     loadRecentWorkouts,
@@ -311,6 +312,7 @@ async function generateDraftReply({ clientName, clientSnapshot, conversationHist
     const relationshipDiscoveryBlock = buildRelationshipDiscoveryBlock();
     const heardFirstConversationBlock = buildHeardFirstConversationBlock();
     const shannonDmTuningBlock = buildShannonDmTuningBlock();
+    const openAiShannonVoiceBlock = buildOpenAIShannonVoiceBlock();
 
     // Inline any photos attached to the CURRENT client message so Gemini can
     // actually see them. Prior photos in history stay marked [photo] — no need
@@ -447,6 +449,7 @@ ${nameUsePolicyBlock}
 ${relationshipDiscoveryBlock}
 ${heardFirstConversationBlock}
 ${shannonDmTuningBlock}
+${openAiShannonVoiceBlock}
 ${checkinThreadBlock}
 
 CONVERSATION RESPONSIBILITY:
