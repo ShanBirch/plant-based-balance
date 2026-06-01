@@ -3,6 +3,8 @@
 const PROGRESS_PHOTO_PROMPT_START_HOUR = 0;
 const PROGRESS_PHOTO_PROMPT_END_HOUR = 5;
 const PROGRESS_PHOTO_COMPLETED_KEY = 'progressPhotoCompletedWeek';
+const PROGRESS_PHOTO_SHARE_POINTS = 10;
+const PROGRESS_PHOTO_SHARE_TX_TYPE = 'earn_progress_photo_share';
 const PROGRESS_PHOTO_SHOTS = [
     {
         key: 'front',
@@ -122,6 +124,8 @@ let progressPhotoCaptureState = null;
         } else if (doneCard) {
             doneCard.style.display = 'flex';
         }
+
+        requestProgressPhotoShareState();
     }
 
     function getProgressPhotoDismissKey() {
@@ -187,6 +191,173 @@ let progressPhotoCaptureState = null;
         return null;
     }
 
+    function setProgressPhotoShareButtonState(state, message) {
+        const btn = document.getElementById('progress-photo-share-feed-btn');
+        const status = document.getElementById('progress-photo-share-feed-status');
+        if (!btn) return;
+
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.display = 'none';
+        btn.textContent = 'Share to Feed +' + PROGRESS_PHOTO_SHARE_POINTS + ' XP';
+
+        if (status) {
+            status.style.display = 'none';
+            status.textContent = '';
+        }
+
+        if (state === 'ready') {
+            btn.style.display = 'block';
+            return;
+        }
+
+        if (state === 'loading') {
+            btn.style.display = 'block';
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            btn.textContent = message || 'Checking share bonus...';
+            return;
+        }
+
+        if (state === 'sharing') {
+            btn.style.display = 'block';
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            btn.textContent = message || 'Sharing...';
+            return;
+        }
+
+        if (state === 'shared' && status) {
+            status.style.display = 'block';
+            status.textContent = message || 'Shared to Feed.';
+        }
+
+        if (state === 'error') {
+            btn.style.display = 'block';
+            if (status) {
+                status.style.display = 'block';
+                status.textContent = message || 'Could not share yet. Please try again.';
+            }
+        }
+    }
+
+    async function getCurrentProgressPhotoForShare() {
+        if (window._pbbCurrentProgressPhoto?.id) return window._pbbCurrentProgressPhoto;
+        if (!window.currentUser?.id || !window.db?.progressPhotos?.getThisWeeksPhoto) return null;
+        const photo = await window.db.progressPhotos.getThisWeeksPhoto(window.currentUser.id);
+        if (photo?.id) window._pbbCurrentProgressPhoto = photo;
+        return photo || null;
+    }
+
+    async function hasProgressPhotoShareLedger(photoId) {
+        if (!photoId || !window.currentUser?.id || !window.supabaseClient) return false;
+        const { data, error } = await window.supabaseClient
+            .from('point_transactions')
+            .select('id')
+            .eq('user_id', window.currentUser.id)
+            .eq('transaction_type', PROGRESS_PHOTO_SHARE_TX_TYPE)
+            .eq('reference_id', photoId)
+            .limit(1)
+            .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+            console.warn('Could not check progress photo share ledger:', error);
+            return false;
+        }
+        return !!data;
+    }
+
+    async function requestProgressPhotoShareState(photo) {
+        const doneCard = document.getElementById('weekly-progress-photo-done-card');
+        if (!doneCard || doneCard.style.display === 'none') return;
+
+        try {
+            const currentPhoto = photo?.id ? photo : await getCurrentProgressPhotoForShare();
+            if (!currentPhoto?.id) {
+                setProgressPhotoShareButtonState('loading', 'Loading share option...');
+                requestProgressPhotoCardCheck(1200);
+                return;
+            }
+
+            if (await hasProgressPhotoShareLedger(currentPhoto.id)) {
+                setProgressPhotoShareButtonState('shared', 'Shared to Feed. +' + PROGRESS_PHOTO_SHARE_POINTS + ' XP already earned.');
+                return;
+            }
+
+            setProgressPhotoShareButtonState('ready');
+        } catch (error) {
+            console.warn('Could not prepare progress photo share option:', error);
+            setProgressPhotoShareButtonState('error');
+        }
+    }
+
+    async function shareProgressPhotoToFeed() {
+        if (!window.currentUser?.id) {
+            alert('Please log in to share your progress photos.');
+            return;
+        }
+
+        try {
+            setProgressPhotoShareButtonState('sharing', 'Sharing...');
+            const photo = await getCurrentProgressPhotoForShare();
+            if (!photo?.id) {
+                throw new Error('No progress photo found for this week yet.');
+            }
+
+            const sessionResult = window.supabaseClient?.auth?.getSession
+                ? await window.supabaseClient.auth.getSession()
+                : null;
+            const accessToken = sessionResult?.data?.session?.access_token;
+            if (!accessToken) {
+                throw new Error('Please log in again before sharing.');
+            }
+
+            const response = await fetch('/api/share-progress-photo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + accessToken
+                },
+                body: JSON.stringify({
+                    userId: window.currentUser.id,
+                    photoId: photo.id
+                })
+            });
+
+            let result = null;
+            try { result = await response.json(); } catch (e) {}
+            if (!response.ok || !result?.success) {
+                throw new Error(result?.error || result?.message || 'Share failed');
+            }
+
+            const pointsAwarded = Number(result.pointsAwarded || 0);
+            if (pointsAwarded > 0) {
+                if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
+                if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+                if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
+                if (typeof showToast === 'function') {
+                    showToast('Shared to Feed. +' + pointsAwarded + ' XP earned!', 'success');
+                }
+            } else if (typeof showToast === 'function') {
+                showToast('Already shared to Feed.', 'info');
+            }
+
+            setProgressPhotoShareButtonState('shared', 'Shared to Feed. +' + PROGRESS_PHOTO_SHARE_POINTS + ' XP earned.');
+
+            if (typeof loadPhotoFeed === 'function') {
+                loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
+            }
+            if (typeof loadStoriesCarousel === 'function') {
+                loadStoriesCarousel();
+            }
+        } catch (error) {
+            console.error('Error sharing progress photo to feed:', error);
+            setProgressPhotoShareButtonState('error', error.message || 'Could not share yet. Please try again.');
+            if (typeof showToast === 'function') showToast('Could not share progress photos yet.', 'error');
+            else alert('Could not share progress photos yet. Please try again.');
+        }
+    }
+
     /**
      * Check if the Monday prompt window is open and the user has not uploaded
      * a progress photo this week.
@@ -210,15 +381,14 @@ let progressPhotoCaptureState = null;
                 return;
             }
 
-            if (isProgressPhotoCompletedForCurrentWeek()) {
-                showProgressPhotoCompletedState(card, doneCard, uploadingCard);
-                return;
-            }
-
             const progressPhotos = window.db && window.db.progressPhotos;
             if (!progressPhotos || typeof progressPhotos.getThisWeeksPhoto !== 'function') {
                 window._pbbProgressPhotoLastCheckError = 'progressPhotos helper not ready';
-                showProgressPhotoUploadCard(card, doneCard, uploadingCard);
+                if (isProgressPhotoCompletedForCurrentWeek()) {
+                    showProgressPhotoCompletedState(card, doneCard, uploadingCard);
+                } else {
+                    showProgressPhotoUploadCard(card, doneCard, uploadingCard);
+                }
                 requestProgressPhotoCardCheck(1500);
                 return;
             }
@@ -228,6 +398,7 @@ let progressPhotoCaptureState = null;
 
             if (thisWeeksPhoto) {
                 // Already done this week
+                window._pbbCurrentProgressPhoto = thisWeeksPhoto;
                 markProgressPhotoCompletedForCurrentWeek();
                 showProgressPhotoCompletedState(card, doneCard, uploadingCard);
             } else {
@@ -463,6 +634,7 @@ let progressPhotoCaptureState = null;
             });
             const primaryUpload = uploads[0];
             const savedPhoto = await window.db.progressPhotos.save(userId, primaryUpload.url, primaryUpload.fileName, notes);
+            window._pbbCurrentProgressPhoto = savedPhoto;
 
             markProgressPhotoCompletedForCurrentWeek();
             await awardProgressPhotoXP(userId, savedPhoto, shots[0].file);
@@ -548,6 +720,8 @@ let progressPhotoCaptureState = null;
     window.openProgressPhotoCapture = openProgressPhotoCapture;
     window.closeProgressPhotoShotGuide = closeProgressPhotoShotGuide;
     window.awardProgressPhotoXP = awardProgressPhotoXP;
+    window.shareProgressPhotoToFeed = shareProgressPhotoToFeed;
+    window.requestProgressPhotoShareState = requestProgressPhotoShareState;
     window.isProgressPhotoPromptWindow = isProgressPhotoPromptWindow;
     window.getNextProgressPhotoPromptBoundary = getNextProgressPhotoPromptBoundary;
     window.requestProgressPhotoCardCheck = requestProgressPhotoCardCheck;

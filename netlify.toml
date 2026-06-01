@@ -68,6 +68,10 @@
   function = "analyze-story-points"
   path = "/api/analyze-story-points"
 
+[[edge_functions]]
+  function = "share-progress-photo"
+  path = "/api/share-progress-photo"
+
 # Admin AI Coach Edge Function
 [[edge_functions]]
   function = "admin-ai-coach"
