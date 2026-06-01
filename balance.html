@@ -28,8 +28,8 @@
             document.documentElement.classList.add('reveal-ready');
         })();
     </script>
-    <link rel="stylesheet" href="bio.css?v=balance-app-motion-6">
-    <script src="bio-animations.js?v=balance-app-motion-6" defer></script>
+    <link rel="stylesheet" href="bio.css?v=balance-character-loader-1">
+    <script src="bio-animations.js?v=balance-character-loader-1" defer></script>
     <script>
         window.loadBalanceCharacterDeps = function () {
             if (window.balanceCharacterDeps) return window.balanceCharacterDeps;
@@ -57,8 +57,8 @@
         };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/meshoptimizer@0.21.0/meshopt_decoder.min.js" defer></script>
-    <script src="lib/avatar3d.js?v=balance-app-motion-6" defer></script>
-    <script src="balance-character-live.js?v=balance-app-motion-6" defer></script>
+    <script src="lib/avatar3d.js?v=balance-character-loader-1" defer></script>
+    <script src="balance-character-live.js?v=balance-character-loader-1" defer></script>
 </head>
 <body class="bio-page landing-page">
     <div class="page-shell">
@@ -306,7 +306,15 @@
                 <div class="surface character-live-panel">
                     <div class="fitgotchi-live-frame">
                         <div id="balance-character-stage" class="fitgotchi-stage" role="img" aria-label="Live Balance character animation"></div>
-                        <div class="fitgotchi-loading">Loading character</div>
+                        <div class="fitgotchi-loading" aria-live="polite">
+                            <div class="fitgotchi-loading-row">
+                                <span class="fitgotchi-loading-text">Loading character</span>
+                                <span class="fitgotchi-loading-percent">0%</span>
+                            </div>
+                            <div class="fitgotchi-loading-track" aria-hidden="true">
+                                <span class="fitgotchi-loading-fill"></span>
+                            </div>
+                        </div>
                     </div>
                     <div class="character-live-copy">
                         <span class="label">live character</span>
