@@ -93,8 +93,37 @@
     return day === 0 || day === 1;
   }
 
+  function getReviewUserId(){
+    return window.currentUser && (window.currentUser.id || window.currentUser.user_id) || window.PBB_WEEKLY_CHECKIN_USER_ID || null;
+  }
+
+  function getReviewSeenKey(){
+    var userId = getReviewUserId();
+    if (!userId) return null;
+    var week = getWeekWindow();
+    return 'pbb_weekly_checkin_seen_' + userId + '_' + week.startKey;
+  }
+
+  function hasViewedReview(){
+    if (isExplicitPreviewEnabled()) return false;
+    try {
+      var key = getReviewSeenKey();
+      return !!(key && localStorage.getItem(key) === '1');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function markReviewViewed(){
+    if (isExplicitPreviewEnabled()) return;
+    try {
+      var key = getReviewSeenKey();
+      if (key) localStorage.setItem(key, '1');
+    } catch (_) {}
+  }
+
   function isReviewEnabled(){
-    return isExplicitPreviewEnabled() || (isReviewWindow() && state.hasLiveData);
+    return isExplicitPreviewEnabled() || (isReviewWindow() && state.hasLiveData && !hasViewedReview());
   }
 
   function cardPillLabel(){
@@ -746,7 +775,7 @@
     var supabase = window.supabaseClient;
     if (!supabase || !supabase.from) return null;
 
-    var userId = window.currentUser && (window.currentUser.id || window.currentUser.user_id) || window.PBB_WEEKLY_CHECKIN_USER_ID || null;
+    var userId = getReviewUserId();
     if (!userId) return null;
 
     var week = getWeekWindow();
@@ -1059,6 +1088,9 @@
 
   function openWeeklyCheckinPreview(){
     ensureStyles();
+    markReviewViewed();
+    renderCard();
+
     var existing = document.getElementById('weekly-checkin-preview-overlay');
     if (existing) existing.remove();
 
