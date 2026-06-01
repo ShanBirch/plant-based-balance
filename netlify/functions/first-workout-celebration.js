@@ -67,7 +67,7 @@ async function generateFirstWorkoutDraft({ clientName, profileBlock, memoryBlock
 
     const prompt = `Draft a SHORT message celebrating a client logging their very first workout with Shannon. This is a meaningful start — a warm acknowledgement, not over-the-top hype (save "fkn legend" for PB moments).
 
-CRITICAL — DO NOT GREET with "hey [name]" / "hi" / "yo". Jump straight into content. Aussie casual, 1-2 sentences max, lowercase-friendly, warm.
+CRITICAL — DO NOT GREET with "hey [name]" / "hi" / "yo". Jump straight into content. Aussie casual, 1-2 sentences max, normal phone autocorrect casing, warm.
 
 ${workoutLine} Acknowledge it, maybe tie it back to something they mentioned (goals, plateau, getting started). Prefer ending with ONE open question about how it felt, what surprised them, or what made it easier/harder. Use a short encouragement only if a question would feel forced.
 

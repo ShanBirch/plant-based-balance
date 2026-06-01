@@ -442,7 +442,7 @@ ${igHistoryText}` : ''}` : '';
 GREETING RULE:
 ${dailyGreetingPolicyBlock}
 
-Keep it brief — 1–3 sentences max. Match energy: if they're celebrating, celebrate. If they're stressed, validate first. If it's a practical question, answer directly. Australian casual tone, lowercase-friendly, no corporate fluff.
+Keep it brief — 1–3 sentences max. Match energy: if they're celebrating, celebrate. If they're stressed, validate first. If it's a practical question, answer directly. Australian casual tone, normal phone autocorrect casing, no corporate fluff.
 ${nameUsePolicyBlock}
 ${relationshipDiscoveryBlock}
 ${heardFirstConversationBlock}

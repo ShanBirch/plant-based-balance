@@ -814,7 +814,7 @@ ${truncateTail(totalConversationText || '(no prior tracked context)', 2600)}
 
 Attached media below is from the latest unanswered inbound batch. If a voice note is attached, listen to it and reply to what they said. Do not transcribe it. Do not say you listened to, heard, opened, checked, saw, or watched the media. If the media is genuinely not understandable, write one casual message asking them to resend it or type the gist.
 
-Write in Shannon's casual lowercase texting voice. Keep it short unless the audio asks for detailed help. No AI/automation wording. No em-dashes.
+Write in Shannon's casual texting voice with normal phone autocorrect casing. Keep it short unless the audio asks for detailed help. No AI/automation wording. No em-dashes.
 
 JSON only:
 {"messages":["exact DM text"]}`;
@@ -1653,7 +1653,7 @@ function resolveReplyMode({ currentMessageText, recentInboundMessages = [], hist
             chunkExample: '{"messages": ["chunk 1", "chunk 2", "chunk 3", "chunk 4 (only if needed)"]}',
             chunkRule: '3 to 4 chunks for long support replies. Prefer fewer fuller bubbles with paragraph gaps inside each bubble instead of a pile of tiny separate bubbles.',
             lengthRule: 'Aim for 1800-3600 characters total for long multi-message batches. Go longer if that is what it takes to answer every meaningful question or share.',
-            styleRule: 'Detailed support chunks: each message can include 1-3 short paragraphs separated by a blank line, lowercase-friendly, Australian casual.',
+            styleRule: 'Detailed support chunks: each message can include 1-3 short paragraphs separated by a blank line, normal phone autocorrect casing, Australian casual.',
             extraBlock: `
 
 DEEP CLIENT SUPPORT MODE:
@@ -1677,7 +1677,7 @@ They are already an app or challenge client, and this is a long, emotional, prac
             chunkExample: '{"messages": ["chunk 1", "chunk 2 (if needed)"]}',
             chunkRule: '1 to 2 chunks. Answer the program, plan, or app need first. Only add a tiny check question if it is genuinely useful.',
             lengthRule: 'Keep the total reply under 350 characters unless they need exact steps.',
-            styleRule: 'Quick chunks: direct, helpful, lowercase-friendly, Australian casual.',
+            styleRule: 'Quick chunks: direct, helpful, normal phone autocorrect casing, Australian casual.',
             extraBlock: `
 
 QUICK CLIENT SUPPORT MODE:
@@ -1699,7 +1699,7 @@ They are already an app or challenge client and this looks like a program, plan,
                 chunkExample: '{"messages": ["chunk 1", "chunk 2 (if useful)"]}',
                 chunkRule: '1 to 2 chunks. One-liner is often right. Do not add a question unless it is clearly useful right now.',
                 lengthRule: 'Aim for 80-280 characters. Go longer only if they asked something detailed or vulnerable.',
-                styleRule: 'Short chunks: direct, warm, lowercase-friendly, Australian casual.',
+                styleRule: 'Short chunks: direct, warm, normal phone autocorrect casing, Australian casual.',
                 extraBlock: `
 
 ONGOING CLIENT RAPPORT MODE:
@@ -1720,7 +1720,7 @@ They are past signup/onboarding. Treat this as Shannon getting to know an active
             chunkExample: '{"messages": ["chunk 1", "chunk 2 (if needed)", "chunk 3 (if needed)"]}',
             chunkRule: '1 to 3 chunks. One-liner is fine, just one item in the array.',
             lengthRule: 'Keep the total reply under 500 characters unless they asked a detailed question.',
-            styleRule: 'Tight chunks: each message 1-2 sentences max, lowercase-friendly, Australian casual.',
+            styleRule: 'Tight chunks: each message 1-2 sentences max, normal phone autocorrect casing, Australian casual.',
             extraBlock: '',
         };
     }
@@ -1734,7 +1734,7 @@ They are past signup/onboarding. Treat this as Shannon getting to know an active
         chunkExample: '{"messages": ["chunk 1", "chunk 2", "chunk 3", "chunk 4 (only if needed)"]}',
         chunkRule: '3 to 4 chunks for long replies. Prefer fewer fuller bubbles with paragraph gaps inside each bubble instead of a pile of tiny separate bubbles.',
         lengthRule: 'Aim for 1400-2800 characters total when the inbound is long, emotional, or multi-topic. Go longer if several long messages need separate answers.',
-        styleRule: 'Thoughtful chunks: each message can include 1-3 short paragraphs separated by a blank line, lowercase-friendly, Australian casual.',
+        styleRule: 'Thoughtful chunks: each message can include 1-3 short paragraphs separated by a blank line, normal phone autocorrect casing, Australian casual.',
         extraBlock: `
 
 DEEP REPLY MODE:

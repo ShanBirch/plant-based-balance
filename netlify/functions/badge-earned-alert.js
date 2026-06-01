@@ -150,7 +150,7 @@ async function generateBadgeDraft({ clientName, badges, profileBlock, memoryBloc
 
     const prompt = `Draft a SHORT message acknowledging a client who just unlocked ${isMulti ? 'multiple milestone badges' : 'a milestone badge'} in the app. Send it unprompted — you noticed the milestone, not a reply.
 
-CRITICAL — DO NOT GREET with "hey [name]" / "hi" / "yo". Jump straight into content. Aussie casual, 1-2 sentences max, lowercase-friendly, warm. Profanity welcome — that's Shannon's voice.
+CRITICAL — DO NOT GREET with "hey [name]" / "hi" / "yo". Jump straight into content. Aussie casual, 1-2 sentences max, normal phone autocorrect casing, warm. Profanity welcome — that's Shannon's voice.
 
 ${isMulti ? 'Acknowledge the milestones together — not a list. Pick the most meaningful one and build the message around it, maybe nod at the other(s) if it flows.' : 'Reference the specific milestone — it shows you noticed.'} Prefer ending with ONE open question that keeps momentum and learns something real about what helped or what got in the way. Use a short hype beat only if a question would feel forced.
 

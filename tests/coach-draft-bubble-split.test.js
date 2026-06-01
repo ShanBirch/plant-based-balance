@@ -1,7 +1,9 @@
 const assert = require('assert');
 
 const {
+    applyPhoneAutocorrectCapitalization,
     splitCoachDraftIntoDmBubbles,
+    stripLeadingGreeting,
 } = require('../netlify/functions/_lib/client-context');
 
 assert.deepStrictEqual(
@@ -12,6 +14,16 @@ assert.deepStrictEqual(
 assert.deepStrictEqual(
     splitCoachDraftIntoDmBubbles(['ahh yum', 'that is a good sweet treat']),
     ['ahh yum', 'that is a good sweet treat']
+);
+
+assert.strictEqual(
+    applyPhoneAutocorrectCapitalization("yeah that makes sense. i'm keen to see how that goes"),
+    "Yeah that makes sense. I'm keen to see how that goes"
+);
+
+assert.strictEqual(
+    stripLeadingGreeting('Hey Sarah, yeah that makes sense. i can sort that'),
+    'Yeah that makes sense. I can sort that'
 );
 
 const manyTinyBubbles = [

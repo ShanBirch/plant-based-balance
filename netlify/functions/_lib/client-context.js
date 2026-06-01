@@ -162,7 +162,7 @@ ABOUT SHANNON (the coach you are speaking as — facts to draw on if a client as
 - Has been through bulk/cut and leaning-down frustration himself; did a big 2024 bulk, has starved himself to get lean before, and knows that does not last
 - Needs calorie tracking to be easy or he will find reasons not to do it
 - Works alone a lot on the app/business, so he can relate to the weird isolated "mad scientist" headspace of building something mostly solo
-- Australian casual tone, lowercase-friendly, no corporate fluff`;
+- Australian casual tone, normal phone autocorrect casing, no corporate fluff`;
 
 function buildCoachBioBlock() {
     return COACH_BIO;
@@ -2054,6 +2054,16 @@ function normalizeCoachDraftText(text) {
     return normalizeCoachDraftChunks(text).join('\n').trim();
 }
 
+function applyPhoneAutocorrectCapitalization(text) {
+    if (!text) return text;
+    let out = String(text);
+    out = out.replace(/\bi(['’](?:m|ll|d|ve|re))?\b/g, (_, suffix = '') => `I${suffix}`);
+    out = out.replace(/(^|[.!?]\s+|\n+)(["'([{]*)([a-z])/g, (_, prefix, opener, letter) => (
+        `${prefix}${opener}${letter.toUpperCase()}`
+    ));
+    return out;
+}
+
 /**
  * Strips robotic "hey Hannah," / "hi there" / "yo" openers. All coach
  * drafts are replies in an ongoing relationship, so real greetings are
@@ -2102,9 +2112,7 @@ function stripLeadingGreeting(text, clientName, options = {}) {
         out = stripDisallowedTimeGreetingWithClientName(out, clientName);
     }
     out = out.trim();
-    if (out && /^[A-Z][a-z]/.test(out) && /[a-z]/.test(text)) {
-        out = out[0].toLowerCase() + out.slice(1);
-    }
+    out = applyPhoneAutocorrectCapitalization(out);
     return out || text;
 }
 
@@ -6044,6 +6052,7 @@ module.exports = {
     callVertexGeminiMultimodal,
     normalizeCoachDraftChunks,
     normalizeCoachDraftText,
+    applyPhoneAutocorrectCapitalization,
     splitCoachDraftIntoDmBubbles,
     stripLeadingGreeting,
     truncate,

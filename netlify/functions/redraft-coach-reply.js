@@ -277,7 +277,7 @@ exports.handler = async (event) => {
     //    primary directive. Keep it tight.
     let prompt = `You are redrafting a reply Shannon (the coach) drafted to a client. The original draft is below. Shannon has given a one-line hint about what to change. Produce a NEW reply that follows the hint while staying true to Shannon's voice.
 
-CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content. NO em-dashes. Australian casual, lowercase-friendly. Keep it 1-3 sentences max unless the hint asks otherwise. NEVER reveal AI / automation / "trained on Shannon's voice".
+CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content. NO em-dashes. Australian casual, normal phone autocorrect casing. Keep it 1-3 sentences max unless the hint asks otherwise. NEVER reveal AI / automation / "trained on Shannon's voice".
 ${nameUsePolicy}
 ${relationshipDiscovery}
 ${heardFirstConversation}
