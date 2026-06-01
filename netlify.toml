@@ -379,6 +379,11 @@
 [functions."cocos-learning-run"]
   schedule = "55 18 * * *"
 
+# Client/lead manager - routes permanent people, media, AI suspicion,
+# confused replies, and missing context into Needs You.
+[functions."client-lead-manager"]
+  schedule = "*/30 * * * *"
+
 # ManyChat reconcile is intentionally unscheduled for IG Graph cutover. Keep the
 # function file for manual legacy rescue until the external ManyChat account is
 # fully disconnected.

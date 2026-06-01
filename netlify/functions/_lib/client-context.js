@@ -408,6 +408,49 @@ function isAiAutomationOptedOut(record = {}) {
         || leadOverride.friend_manual_only === true;
 }
 
+function normalizeAlwaysNeedsYouName(value) {
+    return String(value || '')
+        .replace(/^@+/, '')
+        .replace(/[_.'"-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+}
+
+function isAlwaysNeedsYouPerson(record = {}) {
+    const source = asPlainObject(record);
+    const customData = asPlainObject(source.custom_data || source);
+    const candidates = [
+        source.name,
+        source.client_name,
+        source.profile_name,
+        source.full_name,
+        source.first_name,
+        source.ig_username,
+        source.username,
+        source.handle,
+        customData.name,
+        customData.client_name,
+        customData.profile_name,
+        customData.full_name,
+        customData.first_name,
+        customData.ig_username,
+        customData.username,
+        customData.handle,
+    ]
+        .map(normalizeAlwaysNeedsYouName)
+        .filter(Boolean);
+    return candidates.some(name => {
+        const tokens = name.split(/\s+/).filter(Boolean);
+        return tokens.includes('shane')
+            || tokens.includes('fra')
+            || tokens.some(token => /^francesca\b/.test(token))
+            || name === 'shane'
+            || name === 'fra'
+            || name.startsWith('francesca ');
+    });
+}
+
 async function loadClientMemory(coachId, clientId) {
     try {
         const rows = await supabaseQuery(
@@ -4031,6 +4074,8 @@ function isMediaReviewRequired(alertOrData) {
 const CONTEXT_REFERENCE_RE = /\b(that|this|it|they|them|those|there|one|same|too|also|again|before|after|above|below|earlier|previous|last one|first one|second one|other one|what you mean|what do you mean|which one|wdym)\b/i;
 const CONTEXT_ACK_RE = /^(yes|yeah|yep|yup|nah|no|nope|ok|okay|cool|sure|haha|lol|lmao|same|me too|exactly|true|fair|definitely|probably|maybe|sounds good|all good|i can|i can't|i dont|i don't|i did|i didn't|i do|i will|i wont|i won't)\b/i;
 const STANDALONE_INTENT_RE = /\b(challenge|app|link|sign ?up|signup|join|price|cost|how much|what is|tell me|interested|keen|i'?m in|im in|workout|meal|calorie|protein|weight|steps|coach|coaching|plant.?based|vegan)\b/i;
+const AI_SUSPICION_RE = /\b(?:is\s+this\s+(?:ai|a\.?i\.?|a\s+bot|automated)|are\s+you\s+(?:ai|a\.?i\.?|a\s+bot|automated|real)|am\s+i\s+talking\s+to\s+(?:ai|a\s+bot|a\s+person)|as\s+(?:a\s+)?(?:bot|robot)|self[-\s]?aware|chatgpt|robot|automated\s+reply|real\s+person)\b/i;
+const USER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|this|that|it)|sorry[, ]+\s*i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)|what\s+do\s+you\s+mean|what\s+did\s+you\s+mean|wdym|i'?m\s+confused|that'?s\s+confusing|not\s+sure\s+what\s+you\s+mean)\b/i;
 
 function normalizeContextText(value) {
     return String(value || '')
@@ -4130,6 +4175,14 @@ function buildContextReviewInfo(alertOrData) {
     if (manyChat && contextDependent && !trackedOutbound && priorContextCount <= 1) {
         reasons.push('reference_heavy_reply_without_tracked_context');
         labels.push('reply refers to missing thread context');
+    }
+    if (AI_SUSPICION_RE.test(latest)) {
+        reasons.push('ai_suspicion_or_authenticity_question');
+        labels.push('client may be questioning whether this is AI');
+    }
+    if (USER_CONFUSION_RE.test(latest)) {
+        reasons.push('client_does_not_understand_context');
+        labels.push('client says they do not understand the message/context');
     }
 
     const uniqueReasons = [...new Set(reasons.filter(Boolean))];
@@ -6136,6 +6189,7 @@ module.exports = {
     recentlyMessaged,
     isTestAccount,
     isAiAutomationOptedOut,
+    isAlwaysNeedsYouPerson,
     buildMemoryBlock,
     normalizeSex,
     loadClientProfileFacts,

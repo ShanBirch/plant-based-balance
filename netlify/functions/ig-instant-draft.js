@@ -43,6 +43,7 @@ const {
     buildHeardFirstConversationBlock,
     buildDailyGreetingPolicyBlock,
     shouldAllowDailyGreeting,
+    isAlwaysNeedsYouPerson,
     buildShannonDmTuningBlock,
     buildOpenAIShannonVoiceBlock,
     loadEditExamples,
@@ -2825,6 +2826,13 @@ exports.handler = async (event) => {
         ? linkedClientProfile.name
         : '';
     const leadName = linkedClientName || threadDisplayName;
+    const permanentNeedsYouClient = isAlwaysNeedsYouPerson({
+        name: leadName,
+        client_name: leadName,
+        profile_name: thread.profile_name,
+        ig_username: thread.ig_username,
+        username: thread.ig_username,
+    });
     const history = await loadIgHistory(threadId, messageText);
 
     let memoryBlock = '';
@@ -3230,6 +3238,24 @@ exports.handler = async (event) => {
         suggested_message: draft.joined || null,
         status: 'pending',
         data: {
+            client_manager_review_required: permanentNeedsYouClient || undefined,
+            needs_you_required: permanentNeedsYouClient || undefined,
+            operator_queue: permanentNeedsYouClient ? 'needs_you' : null,
+            needs_you_reason: permanentNeedsYouClient ? 'always_needs_you_person' : undefined,
+            needs_you_reasons: permanentNeedsYouClient ? ['always_needs_you_person'] : undefined,
+            codex_review: permanentNeedsYouClient ? {
+                source: 'balance-combined-dm-manager',
+                decision: 'client_manager_review_required',
+                queue: 'needs_you',
+                needs_shannon_approval: true,
+                reason: 'always_needs_you_person',
+                evidence_ids: [
+                    thread.id ? `ig_threads:${thread.id}` : '',
+                    thread.linked_user_id ? `users:${thread.linked_user_id}` : '',
+                ].filter(Boolean),
+                reviewed_at: new Date().toISOString(),
+                automation_id: 'balance-combined-dm-manager',
+            } : undefined,
             channel,
             delivery_channel: deliveryChannel,
             manual_ig_required: isDirectGraphManual || undefined,

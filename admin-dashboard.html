@@ -10980,6 +10980,9 @@
             if (NEEDS_YOU_USER_CONFUSION_RE.test(latestText) || NEEDS_YOU_USER_CONFUSION_RE.test(reasonText)) {
                 return { allowed: true, reason: 'user_confused' };
             }
+            if (/\b(permanent needs you|always needs you|permanent_needs_you|manual_review_only|always_needs_you_person)\b/i.test(reasonText)) {
+                return { allowed: true, reason: 'permanent_client' };
+            }
             return { allowed: false, reason: '' };
         }
 
@@ -11078,7 +11081,13 @@
             if (isCocosDmAlert(alert)) return false;
             if (isLeadOnboardingHandoff(alert) && needsYouHasSuggestedDraft(alert)) return true;
             if (!DM_ALERT_TYPES.includes(alert.alert_type)) return false;
-            if (!needsYouHasSuggestedDraft(alert)) return false;
+            if (!needsYouHasSuggestedDraft(alert)) {
+                const reasonInfo = needsYouAllowedReasonInfo(alert, activeClientIds);
+                const mediaReview = getAlertMediaReviewInfo(alert);
+                return isNeedsYouRoutedDmAlert(alert)
+                    && reasonInfo.allowed
+                    && (mediaReview.required || reasonInfo.reason === 'permanent_client');
+            }
             return needsYouClientDraftInfo(alert, activeClientIds).ready;
         }
 

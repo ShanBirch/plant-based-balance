@@ -44,6 +44,7 @@ const {
     buildHeardFirstConversationBlock,
     buildDailyGreetingPolicyBlock,
     shouldAllowDailyGreeting,
+    isAlwaysNeedsYouPerson,
     buildShannonDmTuningBlock,
     buildOpenAIShannonVoiceBlock,
     loadEditExamples,
@@ -774,6 +775,11 @@ exports.handler = async (event) => {
     // straight off senderId — no ig_threads lead_stage in this path.
     const lifecycle = await resolveLifecycleStage({ userId: senderId });
 
+    const permanentNeedsYouClient = isAlwaysNeedsYouPerson({
+        name: clientName,
+        client_name: clientName,
+    });
+
     if (!simple && !isFormCheck) {
         try {
             const [memory, onboardingPhase, igContext, coachDayNotes] = await Promise.all([
@@ -860,6 +866,24 @@ exports.handler = async (event) => {
         suggested_message: draftText || null,
         status: 'pending',
         data: {
+            client_manager_review_required: permanentNeedsYouClient || undefined,
+            needs_you_required: permanentNeedsYouClient || undefined,
+            operator_queue: permanentNeedsYouClient ? 'needs_you' : null,
+            needs_you_reason: permanentNeedsYouClient ? 'always_needs_you_person' : undefined,
+            needs_you_reasons: permanentNeedsYouClient ? ['always_needs_you_person'] : undefined,
+            codex_review: permanentNeedsYouClient ? {
+                source: 'balance-client-dm-manager',
+                decision: 'client_manager_review_required',
+                queue: 'needs_you',
+                needs_shannon_approval: true,
+                reason: 'always_needs_you_person',
+                evidence_ids: [
+                    `nudges:${nudgeId}`,
+                    senderId ? `users:${senderId}` : '',
+                ].filter(Boolean),
+                reviewed_at: new Date().toISOString(),
+                automation_id: 'balance-client-dm-manager',
+            } : undefined,
             nudge_id: nudgeId,
             message_preview: truncate(messageText, 400),
             last_outbound_message: lastOutboundMessage,
