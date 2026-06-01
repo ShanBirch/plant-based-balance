@@ -1720,6 +1720,19 @@ function decodeLooseDraftString(value) {
     return out;
 }
 
+function normalizeVisibleEscapedControlChars(value) {
+    return String(value || '')
+        .replace(/(?:&#(?:x5c|92);|&bsol;|&Backslash;)/gi, '\\')
+        .replace(/\\+u000d\\+u000a/gi, '\n')
+        .replace(/\\+u000a/gi, '\n')
+        .replace(/\\+u000d/gi, '\n')
+        .replace(/\\+u2028|\\+u2029/gi, '\n')
+        .replace(/\\+r\\+n/g, '\n')
+        .replace(/\\+n/g, '\n')
+        .replace(/\\+r/g, '\n')
+        .replace(/\\+t/g, ' ');
+}
+
 function extractLooseDraftMessageChunks(text) {
     const trimmed = String(text || '').trim();
     const keyMatch = trimmed.match(/["']?messages?["']?\s*:/i);
@@ -1874,7 +1887,7 @@ const DEFAULT_DM_BUBBLE_HARD_MAX_CHARS = 900;
 const DEFAULT_DM_BUBBLE_PREFERRED_MAX = 4;
 
 function cleanOutboundDmBubbleText(text) {
-    return String(text || '')
+    return normalizeVisibleEscapedControlChars(text)
         .replace(/\r\n?/g, '\n')
         .replace(/\u00a0/g, ' ')
         .replace(/[ \t]+/g, ' ')
@@ -2051,7 +2064,7 @@ function normalizeCoachDraftChunks(text) {
  * suggested_message values.
  */
 function normalizeCoachDraftText(text) {
-    return normalizeCoachDraftChunks(text).join('\n').trim();
+    return cleanOutboundDmBubbleText(normalizeCoachDraftChunks(text).join('\n'));
 }
 
 function applyPhoneAutocorrectCapitalization(text) {
@@ -2517,7 +2530,12 @@ function formatGapSincePrevious(previousValue, value) {
 
 function formatTimedConversationLine({ speaker, text, createdAt, previousCreatedAt, now = new Date() }) {
     const cleanedSpeaker = String(speaker || 'Unknown').trim() || 'Unknown';
-    const cleanedText = String(text || '').trim();
+    const cleanedText = normalizeVisibleEscapedControlChars(text)
+        .replace(/\r\n?/g, '\n')
+        .split(/\n+/)
+        .map(part => part.trim())
+        .filter(Boolean)
+        .join(' / ');
     const timing = [
         formatCoachLocalTimestamp(createdAt),
         formatRelativeTime(createdAt, now),

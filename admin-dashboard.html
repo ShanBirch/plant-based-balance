@@ -5599,8 +5599,21 @@
             return ADMIN_DM_CHUNK_GAP_MIN_MS + Math.floor(Math.random() * ADMIN_DM_CHUNK_GAP_JITTER_MS);
         }
 
-        function cleanAdminDmChunkText(text) {
+        function normalizeAdminVisibleEscapedControlChars(text) {
             return String(text || '')
+                .replace(/(?:&#(?:x5c|92);|&bsol;|&Backslash;)/gi, '\\')
+                .replace(/\\+u000d\\+u000a/gi, '\n')
+                .replace(/\\+u000a/gi, '\n')
+                .replace(/\\+u000d/gi, '\n')
+                .replace(/\\+u2028|\\+u2029/gi, '\n')
+                .replace(/\\+r\\+n/g, '\n')
+                .replace(/\\+n/g, '\n')
+                .replace(/\\+r/g, '\n')
+                .replace(/\\+t/g, ' ');
+        }
+
+        function cleanAdminDmChunkText(text) {
+            return normalizeAdminVisibleEscapedControlChars(text)
                 .replace(/\r\n?/g, '\n')
                 .replace(/\u00a0/g, ' ')
                 .replace(/[ \t]+/g, ' ')
@@ -14216,13 +14229,13 @@
                     const nested = normalizeCoachDraftTextForAdmin(trimmed);
                     if (nested && nested !== trimmed) return nested;
                 }
-                return trimmed;
+                return cleanAdminDmChunkText(trimmed);
             }
             if (Array.isArray(value)) {
                 return value.map(item => {
-                    if (typeof item === 'string') return item.trim();
+                    if (typeof item === 'string') return cleanAdminDmChunkText(item);
                     if (item && typeof item === 'object') {
-                        return String(item.message || item.text || item.reply || '').trim();
+                        return cleanAdminDmChunkText(item.message || item.text || item.reply || '');
                     }
                     return '';
                 }).filter(Boolean).join('\n').trim();
@@ -14264,14 +14277,14 @@
                 for (const attempt of attempts) {
                     try {
                         const extracted = extractDraftTextFromAdminJson(JSON.parse(attempt));
-                        if (extracted) return extracted;
+                        if (extracted) return cleanAdminDmChunkText(extracted);
                     } catch { /* not direct JSON */ }
 
                     const jsonBlock = attempt.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
                     if (jsonBlock) {
                         try {
                             const extracted = extractDraftTextFromAdminJson(JSON.parse(jsonBlock[0]));
-                            if (extracted) return extracted;
+                            if (extracted) return cleanAdminDmChunkText(extracted);
                         } catch { /* not a clean JSON block */ }
                     }
 
@@ -14279,16 +14292,16 @@
                     if (messagesMatch) {
                         try {
                             const extracted = extractDraftTextFromAdminJson(JSON.parse(messagesMatch[1]));
-                            if (extracted) return extracted;
+                            if (extracted) return cleanAdminDmChunkText(extracted);
                         } catch { /* malformed messages array */ }
                     }
 
                     const looseExtracted = extractLooseDraftMessagesFromAdminText(attempt);
-                    if (looseExtracted) return looseExtracted;
+                    if (looseExtracted) return cleanAdminDmChunkText(looseExtracted);
                 }
             }
 
-            return candidates[0] || original;
+            return cleanAdminDmChunkText(candidates[0] || original);
         }
 
         function getResolvedAlertMessage(alert) {

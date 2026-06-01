@@ -2,6 +2,8 @@ const assert = require('assert');
 
 const {
     applyPhoneAutocorrectCapitalization,
+    formatTimedConversationLine,
+    normalizeCoachDraftText,
     splitCoachDraftIntoDmBubbles,
     stripLeadingGreeting,
 } = require('../netlify/functions/_lib/client-context');
@@ -9,6 +11,50 @@ const {
 assert.deepStrictEqual(
     splitCoachDraftIntoDmBubbles('line one\n\nline two'),
     ['line one', 'line two']
+);
+
+assert.deepStrictEqual(
+    splitCoachDraftIntoDmBubbles('line one\\nline two'),
+    ['line one\nline two']
+);
+
+assert.strictEqual(
+    normalizeCoachDraftText('line one\\nline two'),
+    'line one\nline two'
+);
+
+assert.strictEqual(
+    normalizeCoachDraftText('line one\\\\nline two'),
+    'line one\nline two'
+);
+
+assert.strictEqual(
+    normalizeCoachDraftText('Haha nah mate,\\nJust me being a weirdo'),
+    'Haha nah mate,\nJust me being a weirdo'
+);
+
+assert.strictEqual(
+    normalizeCoachDraftText('line one\\r\\nline two'),
+    'line one\nline two'
+);
+
+assert.strictEqual(
+    normalizeCoachDraftText('line one\\u000Aline two'),
+    'line one\nline two'
+);
+
+assert.strictEqual(
+    normalizeCoachDraftText('line one&#92;nline two'),
+    'line one\nline two'
+);
+
+assert.ok(
+    !formatTimedConversationLine({
+        speaker: 'Shannon',
+        text: 'Haha nah mate,\\nJust me being a weirdo',
+        createdAt: '2026-06-01T07:31:00.000Z',
+        now: new Date('2026-06-01T07:40:00.000Z'),
+    }).includes('\\n')
 );
 
 assert.deepStrictEqual(
