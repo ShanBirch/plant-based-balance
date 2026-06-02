@@ -517,10 +517,23 @@ let progressPhotoCaptureState = null;
     function captureProgressPhotoShot(index) {
         const shot = PROGRESS_PHOTO_SHOTS[index] || PROGRESS_PHOTO_SHOTS[0];
         const photoInput = document.getElementById('progress-photo-input');
+        const overlay = document.getElementById('progress-photo-shot-guide');
+        const restoreCurrentGuide = function() {
+            if (progressPhotoCaptureState) {
+                renderProgressPhotoShotGuide(index);
+            }
+        };
+
+        // Hide the guide before opening the camera so it doesn't sit above
+        // the camera modal and make the capture step look frozen.
+        if (overlay) overlay.style.display = 'none';
 
         if (typeof openWorkoutCamera === 'function') {
             openWorkoutCamera(function(file) {
-                if (!file) return;
+                if (!file) {
+                    restoreCurrentGuide();
+                    return;
+                }
                 continueProgressPhotoShotFlow(index, file);
             }, shot.label);
             return;
@@ -531,7 +544,10 @@ let progressPhotoCaptureState = null;
                 const file = event.target.files && event.target.files[0];
                 event.target.value = '';
                 photoInput.onchange = handleProgressPhotoSelect;
-                if (!file) return;
+                if (!file) {
+                    restoreCurrentGuide();
+                    return;
+                }
                 continueProgressPhotoShotFlow(index, file);
             };
             photoInput.click();
