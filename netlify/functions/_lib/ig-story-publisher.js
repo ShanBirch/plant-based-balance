@@ -1,16 +1,26 @@
-const {
-    supabaseQuery,
-} = require('./client-context');
-const {
-    resolveMetaIgAccessToken,
-} = require('./meta-ig-accounts');
-
 const DEFAULT_SITE_URL = 'https://plantbased-balance.org';
 const DEFAULT_VIDEO_PATH = '/assets/ig/challenge-story-next-round.mp4';
 const DEFAULT_GRAPH_BASE = 'https://graph.instagram.com';
 
 function cleanString(value, max = 1000) {
     return String(value || '').trim().slice(0, max);
+}
+
+function parseJsonObject(raw) {
+    try {
+        const parsed = JSON.parse(cleanString(raw, 20000));
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+        return {};
+    }
+}
+
+function sanitizeEnvSuffix(value) {
+    return cleanString(value, 120)
+        .replace(/^@+/, '')
+        .replace(/[^a-zA-Z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .toUpperCase();
 }
 
 function normalizeGraphApiVersion(value) {
@@ -50,6 +60,43 @@ function defaultIgUserId() {
         || process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID,
         120
     );
+}
+
+function mappedAccountConfig(igUserId) {
+    const map = parseJsonObject(process.env.META_IG_ACCOUNT_MAP_JSON || process.env.META_INSTAGRAM_ACCOUNT_MAP_JSON || '');
+    const account = map[igUserId] || {};
+    return account && typeof account === 'object' ? account : {};
+}
+
+function tokenEnvCandidates(igUserId) {
+    const account = mappedAccountConfig(igUserId);
+    const botAccount = cleanString(account.bot_account || account.botAccount || account.handle || '', 120);
+    const explicit = cleanString(account.access_token_env || account.accessTokenEnv || account.token_env || '', 160);
+    const suffixes = [sanitizeEnvSuffix(botAccount), sanitizeEnvSuffix(igUserId)].filter(Boolean);
+    const names = [];
+    if (explicit) names.push(explicit);
+    for (const suffix of suffixes) {
+        names.push(`META_IG_ACCESS_TOKEN_${suffix}`);
+        names.push(`INSTAGRAM_GRAPH_ACCESS_TOKEN_${suffix}`);
+        names.push(`IG_GRAPH_ACCESS_TOKEN_${suffix}`);
+        names.push(`META_IG_${suffix}_ACCESS_TOKEN`);
+    }
+    names.push(
+        'META_IG_COCOS_ACCESS_TOKEN',
+        'META_IG_ACCESS_TOKEN',
+        'INSTAGRAM_ACCESS_TOKEN',
+        'INSTAGRAM_GRAPH_ACCESS_TOKEN',
+        'IG_GRAPH_ACCESS_TOKEN'
+    );
+    return [...new Set(names)].filter(Boolean);
+}
+
+function resolveAccessToken(igUserId) {
+    for (const envName of tokenEnvCandidates(igUserId)) {
+        const token = cleanString(process.env[envName] || '', 5000);
+        if (token) return { token, source: `env:${envName}` };
+    }
+    return { token: '', source: 'none' };
 }
 
 function graphUrl(path) {
@@ -137,7 +184,7 @@ async function publishBalanceChallengeStory(options = {}) {
     if (!igUserId) throw new Error('Missing Instagram Graph account id');
     if (!videoUrl || !/^https:\/\//i.test(videoUrl)) throw new Error('Story video URL must be a public https URL');
 
-    const resolved = await resolveMetaIgAccessToken(igUserId, supabaseQuery);
+    const resolved = resolveAccessToken(igUserId);
     if (!resolved.token) throw new Error('Missing Instagram Graph access token');
 
     const container = await graphPost(`${encodeURIComponent(igUserId)}/media`, {

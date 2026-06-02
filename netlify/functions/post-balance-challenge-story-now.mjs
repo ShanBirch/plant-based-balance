@@ -7,7 +7,10 @@ const {
 } = require('./_lib/ig-story-publisher');
 
 function json(status, body) {
-    return Response.json(body, { status });
+    return new Response(JSON.stringify(body), {
+        status,
+        headers: { 'Content-Type': 'application/json' },
+    });
 }
 
 function getSecret() {
