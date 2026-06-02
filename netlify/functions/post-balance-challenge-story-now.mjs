@@ -136,7 +136,8 @@ async function secretValueForKey(key) {
 }
 
 function looksLikeUsableToken(token) {
-    return /^EA[A-Za-z0-9_-]{20,}/.test(cleanString(token, 5000));
+    const clean = cleanString(token, 5000);
+    return clean.length >= 40 && !clean.includes('*') && !/\s/.test(clean);
 }
 
 async function resolveAccessToken(igUserId) {
