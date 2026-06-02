@@ -520,13 +520,23 @@ function cleanMessageCue(value, maxWords = 5) {
         .replace(/https?:\/\/\S+/gi, ' ')
         .replace(/#[a-z0-9_]+/gi, ' ')
         .replace(/[^\w\s&+'-]/g, ' ')
-        .replace(/\b(the best|best|easy|quick|simple|healthy|vegan|plant based|plant-based|recipe|shorts?|reels?|explained|fix your|how to|stop doing|mistakes?)\b/gi, ' ')
+        .replace(/\b(the best|best|easy|quick|simple|healthy|vegan|plant based|plant-based|recipe|shorts?|reels?|explained|fix your|how to|how much|how many|can you|can your body|new science|new study|new research|study says|stop doing|mistakes?)\b/gi, ' ')
         .replace(/\s+/g, ' ')
         .trim()
         .toLowerCase();
     const words = cleaned.split(/\s+/).filter(Boolean);
     if (words.length < 2) return '';
     return words.slice(0, maxWords).join(' ');
+}
+
+const COOKING_COPY_TOPIC_IDS = new Set(['plant_based_cooking', 'meal_prep_planning']);
+const PRACTICAL_COOKING_RE = /\b(recipe|cook|cooking|make|made|bake|baked|roast|roasted|fry|fried|airfry|air fry|blend|blended|chop|chopped|salad|tofu|tempeh|lentil|beans?|chickpea|curry|dahl|dal|pasta|soup|sandwich|wrap|bowl|oats|smoothie|sauce|dressing|cucumber|breakfast|lunch|dinner|snack)\b/i;
+const SCIENCE_EXPLAINER_RE = /\b(absorb|absorption|study|science|research|evidence|myth|explained|how much|how many|can you|grams?|per meal|one meal|muscle protein synthesis|protein timing)\b/i;
+
+function isPracticalCookingReel(topicId, topicText) {
+    if (!COOKING_COPY_TOPIC_IDS.has(topicId)) return false;
+    if (SCIENCE_EXPLAINER_RE.test(topicText) && !PRACTICAL_COOKING_RE.test(topicText)) return false;
+    return PRACTICAL_COOKING_RE.test(topicText);
 }
 
 function cookingMessage(reel, itemIndex = 0) {
@@ -555,7 +565,7 @@ function buildMessageOpener(reel, itemIndex = 0) {
     const topicText = `${topicId} ${topicLabel} ${reel?.title || ''}`.toLowerCase();
     const cue = cleanMessageCue(reel?.title, 4);
     const optionsByTopic = (() => {
-        if (/cook|meal|recipe|food|salad|tofu|snack|dinner|lunch|breakfast/.test(topicText)) {
+        if (isPracticalCookingReel(topicId, topicText)) {
             return null;
         }
         if (/technique|weight_training|athlean|squat|deadlift|bench|form|training/.test(topicText)) {
@@ -574,7 +584,23 @@ function buildMessageOpener(reel, itemIndex = 0) {
                 'tiny motivation hit for later',
             ];
         }
-        if (/protein|macro|micro|nutrition|supplement/.test(topicText)) {
+        if (/protein/.test(topicText)) {
+            if (/\b(absorb|absorption|per meal|one meal|muscle protein synthesis|protein timing)\b/.test(topicText)) {
+                return [
+                    'this answers that protein per meal thing pretty well',
+                    'good little protein absorption one',
+                    'worth a look for the protein myth bit',
+                    'this clears up the protein per meal thing',
+                ];
+            }
+            return [
+                'good little protein one',
+                'this makes the protein bit simpler',
+                'worth a look for the food nerd side',
+                'this one breaks the protein bit down nicely',
+            ];
+        }
+        if (/macro|micro|nutrition|supplement/.test(topicText)) {
             return [
                 cue ? `good little ${cue} one` : 'good little nutrition one',
                 'this makes the nutrition bit simpler',

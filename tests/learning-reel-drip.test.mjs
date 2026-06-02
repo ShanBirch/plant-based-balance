@@ -104,6 +104,17 @@ assert.ok(proteinMessage.includes('https://www.youtube.com/shorts/abc123xyz'));
 assert.match(proteinMessage, /protein|nutrition/);
 assert.ok(!proteinMessage.includes("this is cool, reckon you'll like this one"));
 
+const proteinAbsorptionMessage = _test.buildVisibleMessage({
+    topic_id: 'protein_science',
+    topic_label: 'Protein',
+    title: 'How Much Protein Can You Absorb In One Meal? (New Science)',
+    url: 'https://www.youtube.com/shorts/agPLP9iZnMo',
+    video_id: 'agPLP9iZnMo',
+}, 0);
+assert.ok(proteinAbsorptionMessage.includes('https://www.youtube.com/shorts/agPLP9iZnMo'));
+assert.match(proteinAbsorptionMessage, /protein|absorption|per meal|timing|myth/);
+assert.doesNotMatch(proteinAbsorptionMessage, /make me this|make this|eat this|looks yum|dinner/);
+
 const cookingMessage = _test.buildVisibleMessage({
     topic_id: 'plant_based_cooking',
     topic_label: 'Plant-based cooking',
