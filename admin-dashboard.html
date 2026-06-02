@@ -876,6 +876,17 @@
         .alert-thread-bubble.from-coach .alert-thread-bubble-label { color: #1d4ed8; }
         .alert-thread-bubble.latest { border-left-color: #48864B; box-shadow: 0 1px 2px rgba(72,134,75,0.08); position: relative; padding-right: 56px; }
         .alert-thread-bubble.latest::after { content: 'latest'; position: absolute; top: 8px; right: 8px; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; color: #48864B; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1px 6px; border-radius: 6px; font-weight: 700; }
+        .dm-clean-explanation { margin: 8px 0; padding: 10px 12px; border-radius: 9px; border: 1px solid #dbe4ef; background: #f8fafc; color: #334155; font-size: 0.82rem; line-height: 1.45; }
+        .dm-clean-explanation.needs-you { border-color: #fde68a; background: #fffbeb; color: #78350f; }
+        .dm-clean-explanation.safe { border-color: #bbf7d0; background: #f0fdf4; color: #14532d; }
+        .dm-clean-explanation-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+        .dm-clean-explanation-label { font-size: 0.68rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; color: inherit; opacity: 0.78; }
+        .dm-clean-explanation-pill { font-size: 0.68rem; font-weight: 900; padding: 2px 7px; border-radius: 999px; border: 1px solid currentColor; color: inherit; background: rgba(255,255,255,0.55); }
+        .dm-clean-explanation-body { font-weight: 700; color: inherit; }
+        .dm-clean-explanation-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+        .dm-clean-explanation-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,0.64); border: 1px solid rgba(100,116,139,0.18); color: inherit; font-size: 0.7rem; font-weight: 800; }
+        .dm-clean-explanation-link { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(100,116,139,0.18); display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+        .dm-clean-explanation-url { flex: 1; min-width: 190px; font-family: monospace; font-size: 0.72rem; overflow-wrap: anywhere; color: inherit; opacity: 0.9; }
         .alert-story-context { margin: 0 0 8px; padding: 8px 10px; background: #ecfeff; border: 1px solid #a5f3fc; border-left: 3px solid #0891b2; border-radius: 8px; color: #164e63; }
         .alert-story-context-label { display: inline-flex; align-items: center; width: fit-content; padding: 2px 7px; border-radius: 999px; background: #cffafe; border: 1px solid #67e8f9; color: #0e7490; font-size: 0.62rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; }
         .alert-story-context-body { margin-top: 5px; font-size: 0.78rem; line-height: 1.42; color: #155e75; }
@@ -14240,22 +14251,6 @@
                 ? `<span class="ig-stage-chip ig-stage-chip-complete">life ${relDone}/${relKeys.length}</span>`
                 : '';
 
-            const nextQuestion = (q.next_question || '').trim();
-            const whyNow = (q.why_now || '').trim();
-            const questionBlock = (nextQuestion && q.is_question_moment)
-                ? `
-                    <div class="ig-stage-next-card">
-                        <div class="ig-stage-next-label">Next question</div>
-                        <div class="ig-stage-next-question">"${escapeHtml(nextQuestion)}"</div>
-                        ${whyNow ? `<div class="ig-stage-next-why"><span class="ig-stage-next-why-label">why now:</span> ${escapeHtml(whyNow)}</div>` : ''}
-                    </div>`
-                : (whyNow
-                    ? `
-                    <div class="ig-stage-next-card ig-stage-next-card-read">
-                        <div class="ig-stage-why-read"><span class="ig-stage-why-read-label">read:</span>${escapeHtml(whyNow)}</div>
-                    </div>`
-                    : '');
-
             return `
                 <div class="qualifier-strip" style="margin-top:6px; margin-bottom:6px; padding:8px 10px; background:linear-gradient(180deg, #fafbff 0%, #f5f7fb 100%); border-radius:6px; border:1px solid #e2e8f0;">
                     <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
@@ -14266,7 +14261,6 @@
                         ${anchorChip}
                         ${relationshipChip}
                     </div>
-                    ${questionBlock}
                 </div>`;
         }
 
@@ -15354,7 +15348,6 @@
             const cocosNeedsAttentionStripHtml = renderCocosNeedsAttentionStrip(alert);
             const followUpReasonHtml = renderFollowUpReasonStrip(alert);
             const timingSuggestion = humanAgentState.required ? null : getReplyTimingSuggestion(alert);
-            const timingSuggestionHtml = renderReplyTimingSuggestion(alert, timingSuggestion);
             // Lifecycle dot — server-resolved coloured dot encoding the
             // outer funnel layer (lead / invited / trial / paying / churned)
             // alongside the qualifier strip's stage progression. Prefixed on
@@ -15376,7 +15369,14 @@
                 ? activeEdit.message
                 : displayMessage;
             const needsYouApprovalInfo = currentFeed === 'needs-you' ? needsYouClientDraftInfo(alert) : null;
-            const needsYouApprovalHtml = needsYouApprovalInfo?.ready
+            const cleanExplanationHtml = renderDmCleanExplanation(alert, {
+                isDmAlert,
+                isFollowUp,
+                needsYouApprovalInfo,
+                timingSuggestion,
+            });
+            const timingSuggestionHtml = cleanExplanationHtml ? '' : renderReplyTimingSuggestion(alert, timingSuggestion);
+            const needsYouApprovalHtml = needsYouApprovalInfo?.ready && !cleanExplanationHtml
                 ? `<div style="margin:8px 0; padding:8px 10px; background:${needsYouApprovalInfo.needsReview ? '#fff7ed' : '#f0fdf4'}; border:1px solid ${needsYouApprovalInfo.needsReview ? '#fed7aa' : '#bbf7d0'}; color:${needsYouApprovalInfo.needsReview ? '#9a3412' : '#166534'}; border-radius:8px; font-size:0.76rem; font-weight:800; line-height:1.35;">Codex checked this client DM draft${needsYouApprovalInfo.reviewer ? ` (${escapeHtml(needsYouApprovalInfo.reviewer)})` : ''}. Shannon can edit or send it from here.</div>`
                 : '';
             const suggestedMessageHtml = hasMessage
@@ -15392,8 +15392,8 @@
             const autoSendDmActionHtml = renderAutoSendDmAction(alert, isDmAlert);
             const instagramGraphDmActionsHtml = renderInstagramGraphDmActions(alert, isDmAlert);
             const autoSendHoldNoticeHtml = renderAutoSendReviewHoldNotice(alert);
-            const challengeOfferWarningHtml = renderChallengeOfferWarning(alert);
-            const signupLinkHandoffHtml = renderSignupLinkHandoffStrip(alert);
+            const challengeOfferWarningHtml = cleanExplanationHtml ? '' : renderChallengeOfferWarning(alert);
+            const signupLinkHandoffHtml = cleanExplanationHtml ? '' : renderSignupLinkHandoffStrip(alert);
 
             return `
             <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}" data-alert-id="${alert.id}">
@@ -15412,6 +15412,7 @@
                 </div>
                 ${followUpReasonHtml}
                 ${qualifierStripHtml}
+                ${cleanExplanationHtml}
                 ${cocosOutcomeStripHtml}
                 ${cocosNeedsAttentionStripHtml}
                 ${challengeOfferWarningHtml}
@@ -17125,6 +17126,106 @@
                     </button>
                 </div>
             </div>`;
+        }
+
+        function cleanDmExplanationText(value) {
+            return String(value || '')
+                .replace(/\s+/g, ' ')
+                .replace(/^(read|why now|why this works|why|reason)\s*:\s*/i, '')
+                .trim();
+        }
+
+        function getDraftReviewSummary(alert) {
+            const review = alert?.data?.draft_review || alert?.data?.draftReview || {};
+            return review && typeof review === 'object' ? cleanDmExplanationText(review.summary || review.suggested_fix || '') : '';
+        }
+
+        function buildDmCleanExplanation(alert, { isDmAlert = false, isFollowUp = false, needsYouApprovalInfo = null, timingSuggestion = null } = {}) {
+            if (!alert || (!isDmAlert && !isFollowUp && !isLeadOnboardingHandoff(alert))) return null;
+            const data = alert.data || {};
+            const mediaReview = getAlertMediaReviewInfo(alert);
+            const contextReview = getAlertContextReviewInfo(alert);
+            const linkUrl = getSignupLinkHandoffUrl(alert);
+            const warning = getChallengeOfferWarningInfo(alert);
+            const q = data.qualifier && typeof data.qualifier === 'object' ? data.qualifier : {};
+            const isNeedsYou = currentFeed === 'needs-you'
+                || isNeedsYouRoutedDmAlert(alert)
+                || isLeadOnboardingHandoff(alert)
+                || !!needsYouApprovalInfo?.ready;
+            let tone = isNeedsYou ? 'needs-you' : 'safe';
+            let pill = isNeedsYou ? 'Needs You' : 'Relevant';
+            let body = '';
+
+            if (mediaReview.required) {
+                body = `${mediaReview.label || 'Media'} attached, so Shannon should check it before replying.`;
+            } else if (contextReview.required) {
+                body = `Needs You because the saved thread context may be incomplete: ${contextReview.label || 'the latest message depends on missing context'}.`;
+            } else if (isLeadOnboardingHandoff(alert) || data.signup_link_manual_only === true || data.client_manager_review_required === true) {
+                body = linkUrl
+                    ? 'Needs You because this is a signup/link handoff. Check the timing and approve the URL before it goes out.'
+                    : 'Needs You because this is a signup/link handoff, but the final URL needs checking before anything is sent.';
+            } else if (needsYouApprovalInfo?.ready) {
+                const reviewSummary = getDraftReviewSummary(alert);
+                body = reviewSummary || 'Needs You because the manager reviewed this DM and found a real manual-check reason.';
+            } else if (isNeedsYou) {
+                body = cleanDmExplanationText(data.codex_review?.reason || data.needs_you_reason || getDraftReviewSummary(alert))
+                    || 'Needs You because this reply needs Shannon judgment before anything goes out.';
+            } else {
+                const qualifierWhy = cleanDmExplanationText(q.why_now || '');
+                const draftWhy = cleanDmExplanationText(data.draft_reasoning || data.reasoning || '');
+                const followUpWhy = cleanDmExplanationText(data.follow_up_reason || data.reason || alert.description || '');
+                const timingWhy = cleanDmExplanationText(timingSuggestion?.reason || '');
+                body = draftWhy || qualifierWhy || followUpWhy || timingWhy || 'Relevant because it answers the latest DM using the saved conversation context.';
+                if (q.next_question && q.is_question_moment) {
+                    body = `${body} Suggested next handle: "${String(q.next_question).trim()}".`;
+                }
+            }
+
+            if (!body) return null;
+            if (!isNeedsYou && warning?.reason && !body.toLowerCase().includes('challenge')) {
+                body = `${body} Challenge note: ${cleanDmExplanationText(warning.reason)}.`;
+            }
+
+            const meta = [];
+            if (timingSuggestion?.label) meta.push(`Timing: ${timingSuggestion.label}`);
+            if (q.stage_label || q.stage) meta.push(`Stage: ${q.stage_label || String(q.stage).replace(/_/g, ' ')}`);
+            if (Number.isFinite(Number(q.warmth_score))) meta.push(`${Number(q.warmth_score)}% ${q.warmth_label || 'warmth'}`);
+
+            return {
+                tone,
+                pill,
+                body: body.slice(0, 340),
+                meta,
+                linkUrl,
+            };
+        }
+
+        function renderDmCleanExplanation(alert, options = {}) {
+            const info = buildDmCleanExplanation(alert, options);
+            if (!info) return '';
+            const linkHtml = info.linkUrl ? `
+                <div class="dm-clean-explanation-link">
+                    <span class="dm-clean-explanation-url">${escapeHtml(info.linkUrl)}</span>
+                    <button class="alert-btn alert-btn-send" type="button" onclick="copySignupHandoffLink('${alert.id}', this)" title="Copy the signup link">
+                        <i data-lucide="copy" style="width:12px;height:12px;"></i>Copy link
+                    </button>
+                    <button class="alert-btn alert-btn-view" type="button" onclick="window.open('${escapeHtml(info.linkUrl)}', '_blank')" title="Open the signup link">
+                        <i data-lucide="external-link" style="width:12px;height:12px;"></i>Open link
+                    </button>
+                </div>` : '';
+            const metaHtml = info.meta.length
+                ? `<div class="dm-clean-explanation-meta">${info.meta.slice(0, 3).map(item => `<span class="dm-clean-explanation-chip">${escapeHtml(item)}</span>`).join('')}</div>`
+                : '';
+            return `
+                <div class="dm-clean-explanation ${escapeHtml(info.tone)}">
+                    <div class="dm-clean-explanation-head">
+                        <span class="dm-clean-explanation-label">Why this is here</span>
+                        <span class="dm-clean-explanation-pill">${escapeHtml(info.pill)}</span>
+                    </div>
+                    <div class="dm-clean-explanation-body">${escapeHtml(info.body)}</div>
+                    ${metaHtml}
+                    ${linkHtml}
+                </div>`;
         }
 
         function renderConversationPanel(alert, clientName) {
