@@ -1,6 +1,7 @@
 const DEFAULT_SITE_URL = 'https://plantbased-balance.org';
 const DEFAULT_VIDEO_PATH = '/assets/ig/challenge-story-next-round.mp4';
 const DEFAULT_GRAPH_BASE = 'https://graph.instagram.com';
+const SHAN_N_SUNNY_IG_USER_ID = '17841415641641750';
 
 function cleanString(value, max = 1000) {
     return String(value || '').trim().slice(0, max);
@@ -54,7 +55,10 @@ function graphVersion() {
 
 function defaultIgUserId() {
     return cleanString(
-        process.env.INSTAGRAM_GRAPH_ACCOUNT_ID
+        process.env.BALANCE_CHALLENGE_STORY_IG_USER_ID
+        || process.env.SHAN_N_SUNNY_IG_USER_ID
+        || SHAN_N_SUNNY_IG_USER_ID
+        || process.env.INSTAGRAM_GRAPH_ACCOUNT_ID
         || process.env.IG_GRAPH_BUSINESS_ACCOUNT_ID
         || process.env.META_IG_USER_ID
         || process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID,
@@ -74,10 +78,7 @@ function mappedAccountConfig(igUserId) {
 
 function igUserIdCandidates(explicit) {
     const cleanExplicit = cleanString(explicit, 120);
-    const mappedIds = Object.keys(accountMap()).map(id => cleanString(id, 120)).filter(Boolean);
-    const ids = cleanExplicit
-        ? [cleanExplicit]
-        : (mappedIds.length ? mappedIds.slice(0, 1) : [defaultIgUserId()]);
+    const ids = [cleanExplicit || defaultIgUserId()];
     return [...new Set(ids)];
 }
 
@@ -283,6 +284,7 @@ async function publishBalanceChallengeStory(options = {}) {
             return {
                 ok: true,
                 source: cleanString(options.source || 'balance_challenge_story', 120),
+                targetHandle: igUserId === SHAN_N_SUNNY_IG_USER_ID ? 'shan_n_sunny' : '',
                 igUserId,
                 videoUrl,
                 creationId,
@@ -321,6 +323,7 @@ async function publishExistingContainer({ igUserId, creationId }) {
     return {
         ok: true,
         source: 'existing_container',
+        targetHandle: cleanIgUserId === SHAN_N_SUNNY_IG_USER_ID ? 'shan_n_sunny' : '',
         igUserId: cleanIgUserId,
         creationId: cleanCreationId,
         status,
