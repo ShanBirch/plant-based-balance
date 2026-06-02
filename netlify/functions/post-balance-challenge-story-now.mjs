@@ -259,10 +259,9 @@ async function publishBalanceChallengeStory(options = {}) {
 
     const errors = [];
     for (const igUserId of candidates) {
-        const debug = { envAttempts: [], secretLookup: null };
-        const resolved = await resolveAccessToken(igUserId, debug);
+        const resolved = await resolveAccessToken(igUserId);
         if (!resolved.token) {
-            errors.push({ igUserId, error: 'missing_token', debug });
+            errors.push({ igUserId, error: 'missing_token' });
             continue;
         }
 
