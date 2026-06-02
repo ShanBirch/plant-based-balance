@@ -6083,7 +6083,6 @@ async function openChallengeLeaderboard(challengeId) {
 
     modal.style.display = 'block';
     pushNavigationState('challenge-leaderboard-modal', closeChallengeLeaderboard);
-    renderChallengeLeaderboardChatCard(null);
 
     try {
         // Get challenge details
@@ -6118,7 +6117,6 @@ async function openChallengeLeaderboard(challengeId) {
 
             // Show rare reward preview so participants know what they're competing for
             renderChallengeRarePreview(challenge.rare_reward_id);
-            renderChallengeLeaderboardChatCard(challenge);
 
             const endDate = new Date(challenge.end_date);
             const now = new Date();
@@ -6382,47 +6380,6 @@ async function openChallengeLeaderboard(challengeId) {
     }
 }
 
-async function renderChallengeLeaderboardChatCard(challenge, leaderboard = []) {
-    const card = document.getElementById('challenge-leaderboard-chat-card');
-    if (!card) return;
-
-    const isSystemCohort = challenge &&
-        challenge.status === 'active' &&
-        challenge.is_system_cohort === true &&
-        ['plant_based_30', 'transform_30'].includes(challenge.cohort_type);
-
-    if (!isSystemCohort) {
-        card.style.display = 'none';
-        return;
-    }
-
-    const titleEl = document.getElementById('challenge-leaderboard-chat-title');
-    const subtitleEl = document.getElementById('challenge-leaderboard-chat-subtitle');
-    const participantCount = Array.isArray(leaderboard) && leaderboard.length
-        ? leaderboard.length
-        : Number(challenge.participant_count || challenge.accepted_count || 0);
-
-    if (titleEl) titleEl.textContent = `${challenge.name || '30 Day Challenge'} Chat`;
-    if (subtitleEl) {
-        subtitleEl.textContent = participantCount > 0
-            ? `${participantCount} member${participantCount === 1 ? '' : 's'} in this challenge.`
-            : 'Everyone in your challenge is here.';
-    }
-    card.style.display = 'block';
-
-    try {
-        const chat = await syncActiveChallengeChatForMessages(challenge.id);
-        if (!chat) return;
-        if (titleEl) titleEl.textContent = chat.chat_name || `${challenge.name || '30 Day Challenge'} Chat`;
-        if (subtitleEl) {
-            const count = Number(chat.member_count || participantCount || 0);
-            const names = chat.member_names ? String(chat.member_names) : '';
-            subtitleEl.textContent = names || (count ? `${count} member${count === 1 ? '' : 's'} in this challenge.` : 'Everyone in your challenge is here.');
-        }
-    } catch (error) {
-        console.warn('[challenge-chat] leaderboard card sync failed:', error);
-    }
-}
 
 // Render the "Winner's Prize" preview card inside the challenge leaderboard.
 // Shows participants which rare skin the winner of the challenge will receive.
@@ -9716,3 +9673,4 @@ _runWhenDomReady(() => {
     // Event Listeners (Community only - Coach uses form onsubmit)
     document.getElementById('community-chat-input')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendCommunityMessage(); });
 });
+
