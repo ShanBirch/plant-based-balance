@@ -12267,16 +12267,13 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do.", quick: true },
     { tab:'dashboard', sel:'#weekly-goals-card', title:'Weekly goals', body:"Choose up to 3 goals for the week. Balance tracks the exact signals you picked and carries the results into Weekly Wrapped.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
-    { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP.", quick: true },
-    { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. You can earn 10 XP if you are down from last Friday, then post the review card to Feed for another 10 XP." },
+    { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Friday board day can earn 10 XP if you are down from last Friday, plus 10 XP for sharing the review card to Feed.", quick: true },
     { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#progress-photo-share-feed-btn,#weekly-progress-photo-done-card', title:'Share progress photos', body:"After your Monday progress photos are saved, share them to Feed for an extra 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-done-card'); return c && c.style.display !== 'none'; } },
-    { tab:'dashboard', sel:'#fitbit-performance-card,#transformation-hub-card', title:'Weigh-in manager', body:"Tap Activity Insights, then Transformation, to review weigh-in history, add a missed weigh-in, or delete a bad entry before it bends the graph." },
     { tab:'dashboard', sel:'#weekly-checkin-card', title:'Weekly Review', body:"A shimmering gold review card shows the person's onboarding goal, weekly progress, check-ins, mood signals, and one clear action to set next week goals.", quick: true, condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
-    { tab:'dashboard', sel:'#monthly-raffle-section', title:'Monthly Raffle', body:"Each month you have the first 3 days to enter the raffle. Every entrant pays coins into a shared pool — one winner takes the whole pool plus a rare skin.", condition: function(){ var s = document.getElementById('monthly-raffle-section'); return s && s.style.display !== 'none'; } },
 
     { tab:'dashboard', sel:'#calorie-tracker-widget', title:'Calorie tracker widget', body:"Home shows calories and macros, with one-tap logging for photos, barcodes, typed meals, manual macros, Build-a-Meal, and recent meals.", quick: true, xpReward:'nutrition' },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically.", quick: true },
@@ -12286,47 +12283,24 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openQuickManualEntry"],.camera-btn-widget[onclick*="openQuickManualEntry"],[title="Quick log calories & macros"]', title:'Quick log calories & macros', body:"Already know the numbers? Tap Quick Log to enter calories and macros directly. It is the fastest way to track something when you do not need AI, a photo, or a barcode." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"],[title="Build a meal"]', title:'Build-a-Meal', body:"Use Build-a-Meal when one meal has a few parts. Add items by photo, barcode, text, or manual entry until the whole plate is saved together." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openRecentMealsModal"],.camera-btn-widget[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Use Recent & saved meals to re-log food you have already tracked. Tap the clock, pick the meal, and it drops back into today." },
-    { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Android food logging', body:"Pro tip: on Android, use the Ask Balance widget camera button or type “track these calories” to jump straight into food logging.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
-    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Ask Balance widget', body:"On Android, add Ask Balance to your phone home screen. Type macros or a weigh-in without opening the app, or tap the camera button to log food from the widget.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
-    { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily Weigh-In widget', body:"On Android, add the Daily Weigh-In widget to your phone home screen. Adjust the number and log your weight without opening the app.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
-    { tab:'dashboard', sel:'#mood-checkin-card', title:'Mood Check widget', body:"On Android, add the Mood Check widget to your phone home screen. Tap mood, energy, and stress for the current check-in window.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
-    { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily Quiz widget', body:"On Android, add the Daily Quiz widget to your phone home screen and answer today's Health IQ quiz without opening the app.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
-    { tab:'dashboard', sel:'#daily-quiz-card,#daily-weigh-in-card,#mood-checkin-card', title:'iPhone widgets', body:"On iPhone, add Balance widgets for calories, Daily Quiz, Daily Weigh-In, and Mood Check. The quiz can be placed as a larger widget when the question needs more room.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'ios'); } catch(e){ return false; } } },
-    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Character widget', body:"Android users can add a square home-screen widget that shows their character and opens this view.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
-    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'iPhone shortcuts', body:"On iPhone, use Siri or Shortcuts with Balance to open workout, meal plan, quick log, character, messages, or form check.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'ios'); } catch(e){ return false; } } },
-    { tab:'meals', sel:'#meals-log-list,.meal-log-card', title:'Share meals to Feed', body:"Tap any logged meal, then Share meal to Feed. It counts toward weekly community goals when you pick that goal." },
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#browse-plans-pill', title:'Your meal plan', body:"Tap here for your AI-generated meal plan for the week — tap any day to see recipes." },
-    { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Dietary Requirements', body:"Vegan + gluten-free + halal? Tick all that apply. Your meal plan and grocery list now follow every box you check — update any time from Profile → Dietary Requirements." },
-    { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Change Password', body:"Open Profile > Settings > Password to change your login password any time." },
+    { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Profile settings', body:"Open Profile when you need settings, dietary requirements, password changes, character customisation, or to replay this tour later." },
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Share to group chat', body:"After finishing a workout you can share it straight to your group chat (tap the messages icon top-right) for XP and hype." },
-    { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Chat options', body:"Open Messages, choose a group, and tap the three-dot menu for Members or Leave chat." },
-    { tab:'movement-tab', sel:'#today-workout-card', title:'Exercise Notes', body:"During any workout, tap the pencil icon on an exercise card to write a quick note for form cues, tips, or reminders. If Coach Shannon has left a tip, it shows automatically." },
-    { tab:'movement-tab', sel:'#today-workout-card', title:'Exercise form science', body:"Start a workout and open Science & form cues on each exercise to read force transfer, core bracing, posture, scapula, and glute med cues between sets." },
     { tab:'movement-tab', sel:'#form-check-quick-card', title:'Form Checks', body:"Film a quick exercise clip and send it to Shannon when you want him to check your technique. During a workout, use the form-check button at the top of workout mode." },
-    { tab:'movement-tab', sel:'#mvmt-workout-journal-section', title:'Tap a workout to see every set', body:"Open Movement Trends and tap any card in your Workout Journal to see the full session — every exercise, every set, reps, weight, and volume.", condition: function(){ return !!document.getElementById('mvmt-workout-journal-section'); } },
 
     { tab:'learning', sel:'#learning-content [style*="background: white"],#learning-content [style*="background:white"],#learning-content', title:'Learn & earn XP', body:"Duolingo-style bite-sized fitness lessons. Score 100% on the quiz to earn XP." },
 
     { tab:'cycle', sel:'#cycle-hero-card,#view-cycle', title:'Cycle Syncing', body:"Log your period and get workouts synced to your hormonal phases.", condition: function(){ try { return (window.currentUser && (window.currentUser.gender === 'female' || window.currentUser.gender === 'Female')); } catch(e){ return false; } } },
-    { tab:'cycle', sel:'#weekly-calendar', title:'Drag workout days', body:"Hold the grip on a workout day and drop it onto another day to swap your weekly schedule.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
-    { tab:'cycle', sel:'#weekly-calendar', title:'Add walks and classes', body:"Tap a day, then add a walk, fitness class, Pilates, yoga, or another activity into your Cycle plan.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
+    { tab:'cycle', sel:'#weekly-calendar', title:'Plan your week', body:"Use the weekly calendar to drag workout days around, tap a day, and add walks, classes, Pilates, yoga, or another activity.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
 
-    { tab:'friends', sel:'#feed-composer-card,#view-friends', title:'Your feed', body:"Share workouts and gym selfies to your feed for XP." },
     { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Write a quick update, add a photo or video if you want, then post straight from the top of Feed." },
 
-    { tab:'dashboard', sel:'.battle-trigger-btn,#tamagotchi-widget-container', title:'Battle your friends', body:"Challenge friends to Battle FitGotchis (stats battle), Workout Duel (same workout, highest volume wins), or Quiz Battle (15 questions, fastest + most correct wins FitCoins). Win battles for rare drops." },
-
-    { tab:'dashboard', sel:'#weekly-wrapped-card,.profile-icon[onclick*="profile"]', title:'Weekly Wrapped', body:"Every Sunday morning a Wrapped card lands on your home screen. Tap it for a slideshow recap of your week (workouts, PBs, mood, streak + a forecast for next week). It stays up until Monday midday. Dismiss with × if you'd rather not watch. Replay it any time from Profile → Health Tools → Replay Weekly Wrapped." },
-
-    { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Replay the full tour anytime', body:"Need a refresher? Open Profile and tap Replay App Tour to go through the full feature walkthrough.", quick: true },
-
-    { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Customize your character', body:"Want to change your FitGotchi's hair, skin, or shorts? Jump straight there any time from Profile → Health Tools → Customize Character — no need to redo onboarding." },
 
     { tab:'dashboard', sel:'#dm-view,#dm-messages-container', title:'Say hi to Coach Shan', body:"Coach Shan built this app and would love your feedback to help make it better. This is his DM — type a message and say hi any time.", action: async function(){
         try {
@@ -13218,6 +13192,10 @@ if(!window._pbbIsIOSSafari) {
       condition: function(){ var s = document.getElementById('monthly-raffle-section'); return s && s.style.display !== 'none'; }
     }
   ];
+
+  // First-run onboarding now uses the guided walkthrough only. Keep legacy
+  // feature-drop entries dormant so users do not see duplicate spotlight cards.
+  allFeatures = [];
 
   var revealIdx = 0;
   var revealSteps = [];
