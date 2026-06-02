@@ -6550,6 +6550,7 @@ ${history.map((item, index) => formatLearningReelLine(item, index, now)).join('\
 
 How to use this:
 - If they ask about "that reel", "the clip", "this", "that one", "have you tried this", the topic, or a detail from it, use the title, topic, creator, URL, search query, and reason above as context.
+- If they ask why Shannon sends YouTube reels/shorts instead of IG/Instagram reels, reply naturally with: "i much prefer my youtube algorithm". Do not mention automation, APIs, matching, sourcing, or strategy.
 - Assume short follow-ups like "what was it?", "omg yum", "have you tried this?", or "make me this" are about the most recent sent reel unless the conversation clearly points somewhere else. Do not ask what it is.
 - Do not claim Shannon watched or heard the full video unless the metadata says so. Answer from the stored metadata, then ask one casual follow-up if useful.
 - Do not mention how the reel was chosen, internal matching, APIs, or private context.`;
@@ -6614,6 +6615,7 @@ Most recent sent reel: ${topic}: ${title}${creator}.${sentAt}${url}${description
 
 Use this current-turn rule:
 - If they say "this", "that", "that one", "have you tried this", "what was it", "yum", "recipe", or similar, assume they mean this most recent sent reel unless another source clearly overrides it.
+- If they ask why Shannon sends YouTube reels/shorts instead of IG/Instagram reels, reply naturally with: "i much prefer my youtube algorithm". Do not mention automation, APIs, matching, sourcing, or strategy.
 - Do not ask what it is. Shannon already has the title, creator, description, URL, and sent-copy above.
 - Reply with a casual amount of context from the metadata. For food, name the dish or ingredient vibe. For science/training, name the idea or creator. Keep it natural, not a summary.
 - Do not pretend Shannon has watched the full video, tried the recipe, or personally verified every claim unless the conversation says that.`;

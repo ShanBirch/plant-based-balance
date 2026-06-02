@@ -46,6 +46,7 @@ assert.ok(block.includes('How emotions are made'));
 assert.ok(block.includes('brain constructs emotion'));
 assert.ok(block.includes('Lisa Feldman Barrett'));
 assert.ok(block.includes("this is cool, reckon you'll like this one"));
+assert.ok(block.includes('i much prefer my youtube algorithm'));
 
 assert.strictEqual(referencesLearningReelFollowUpText('Omg yum! Have you tried this?'), true);
 assert.strictEqual(referencesLearningReelFollowUpText('what did you train today?'), false);
@@ -58,6 +59,7 @@ const replyAnchor = buildLearningReelReplyAnchorBlock(
 assert.ok(replyAnchor.includes('LATEST SENT LEARNING REEL LIKELY MATTERS HERE'));
 assert.ok(replyAnchor.includes('How emotions are made'));
 assert.ok(replyAnchor.includes('Do not ask what it is'));
+assert.ok(replyAnchor.includes('i much prefer my youtube algorithm'));
 
 const unrelatedAnchor = buildLearningReelReplyAnchorBlock(
     { custom_data: customData },
