@@ -6056,72 +6056,86 @@ const WIZARD_LEARNING_INTEREST_LABELS = {
 const WIZARD_LEARNING_INTEREST_YOUTUBE_TOPICS = {
     plant_based_cooking: {
         topic: 'plant-based cooking',
-        queries: ['high protein plant based meals', 'easy vegan meal prep', 'plant based cooking tips'],
+        queries: ['Pick Up Limes high protein vegan meals', 'Rainbow Plant Life easy vegan meals', 'Simnett Nutrition plant based fitness meals'],
+        sources: ['Pick Up Limes', 'Rainbow Plant Life', 'Simnett Nutrition'],
         learning_modules: ['fuel']
     },
     macronutrient_science: {
         topic: 'macros',
-        queries: ['macros explained for fat loss', 'protein carbs fat basics', 'how to balance macros'],
+        queries: ['Jeff Nippard macros explained', 'Renaissance Periodization nutrition for fat loss', 'Dr Layne Norton energy balance'],
+        sources: ['Jeff Nippard', 'Renaissance Periodization', 'Dr. Layne Norton', 'The Proof with Simon Hill'],
         learning_modules: ['fuel']
     },
     micronutrient_science: {
         topic: 'vitamins and minerals',
-        queries: ['plant based vitamins and minerals', 'micronutrients explained', 'vegan iron b12 calcium'],
+        queries: ['NutritionFacts.org b12 iron calcium vegan', 'The Proof with Simon Hill plant based micronutrients', 'Dr Rhonda Patrick micronutrients'],
+        sources: ['NutritionFacts.org', 'The Proof with Simon Hill', 'Dr. Rhonda Patrick'],
         learning_modules: ['fuel']
     },
     behavior_change_science: {
         topic: 'behaviour change',
-        queries: ['how to build healthy habits', 'behaviour change fitness', 'habit stacking nutrition'],
+        queries: ['BJ Fogg tiny habits', 'Big Think behavior science habits', 'Andrew Huberman habits behavior change'],
+        sources: ['BJ Fogg', 'Big Think', 'TED-Ed', 'Andrew Huberman', 'Precision Nutrition'],
         learning_modules: ['mind']
     },
     mindset: {
         topic: 'mindset',
-        queries: ['Lisa Feldman Barrett mindset emotions', 'Andrew Huberman motivation habits', 'Karl Friston predictive brain habits'],
+        queries: ['Lisa Feldman Barrett emotions Big Think', 'Andrew Huberman motivation habits', 'BJ Fogg tiny habits motivation'],
+        sources: ['Andrew Huberman', 'Big Think', 'BJ Fogg', 'TED'],
         learning_modules: ['mind']
     },
     neuroscience: {
         topic: 'neuroscience',
-        queries: ['Lisa Feldman Barrett brain emotions', 'Andrew Huberman dopamine motivation', 'Karl Friston free energy predictive brain'],
+        queries: ['Lisa Feldman Barrett brain emotions', 'Andrew Huberman dopamine motivation', 'Karl Friston free energy principle UCL'],
+        sources: ['Andrew Huberman', 'Big Think', 'TED-Ed', 'UCL', 'Serious Science'],
         learning_modules: ['mind', 'body']
     },
     longevity: {
         topic: 'longevity',
-        queries: ['longevity health habits', 'metabolic health basics', 'sleep stress longevity'],
+        queries: ['Dr Rhonda Patrick longevity healthspan', 'NutritionFacts.org plant based longevity', 'The Proof with Simon Hill healthspan nutrition'],
+        sources: ['Dr. Rhonda Patrick', 'NutritionFacts.org', 'The Proof with Simon Hill', 'Andrew Huberman', 'TED-Ed'],
         learning_modules: ['longevity', 'hormones']
     },
     weight_training_technique: {
         topic: 'weight training technique',
-        queries: ['weight training form tips', 'gym technique basics', 'strength training technique'],
+        queries: ['Squat University lifting technique', 'Jeff Nippard exercise form', 'Renaissance Periodization training form'],
+        sources: ['Squat University', 'Jeff Nippard', 'Renaissance Periodization', 'Jeremy Ethier'],
         learning_modules: ['workouts', 'growth']
     },
     meal_prep_planning: {
         topic: 'meal prep and planning',
-        queries: ['healthy meal prep planning', 'high protein vegan meal prep', 'weekly meal planning tips'],
+        queries: ['Pick Up Limes vegan meal prep', 'Rainbow Plant Life weekly plant based meals', 'Simnett Nutrition high protein vegan prep'],
+        sources: ['Pick Up Limes', 'Rainbow Plant Life', 'Simnett Nutrition', 'Precision Nutrition'],
         learning_modules: ['fuel']
     },
     protein_science: {
         topic: 'protein',
-        queries: ['plant based protein tips', 'protein intake explained', 'high protein vegan foods'],
+        queries: ['Simnett Nutrition plant based protein tips', 'The Proof with Simon Hill plant protein muscle', 'Jeff Nippard protein intake'],
+        sources: ['Simnett Nutrition', 'The Proof with Simon Hill', 'Jeff Nippard', 'Renaissance Periodization', 'Dr. Layne Norton', 'NutritionFacts.org'],
         learning_modules: ['fuel']
     },
     supplements: {
         topic: 'supplements',
-        queries: ['vegan supplements explained', 'creatine basics', 'b12 iron omega 3 vegan'],
+        queries: ['NutritionFacts.org b12 supplement', 'Examine creatine evidence', 'Dr Rhonda Patrick omega 3 evidence'],
+        sources: ['NutritionFacts.org', 'Examine', 'Dr. Rhonda Patrick', 'The Proof with Simon Hill', 'Dr. Layne Norton'],
         learning_modules: ['fuel']
     },
     recovery_sleep_energy: {
         topic: 'recovery sleep and energy',
-        queries: ['sleep recovery fitness tips', 'stress recovery energy', 'how sleep affects training'],
+        queries: ['Andrew Huberman sleep tools', 'Dr Rhonda Patrick sleep recovery', 'Renaissance Periodization recovery from training'],
+        sources: ['Andrew Huberman', 'Dr. Rhonda Patrick', 'Renaissance Periodization', 'Squat University', 'TED-Ed'],
         learning_modules: ['longevity', 'hormones']
     },
     fat_loss_basics: {
         topic: 'fat loss',
-        queries: ['fat loss basics explained', 'calorie deficit tips', 'sustainable fat loss habits'],
+        queries: ['Jeff Nippard fat loss basics', 'Renaissance Periodization sustainable dieting', 'Dr Layne Norton calorie deficit'],
+        sources: ['Jeff Nippard', 'Renaissance Periodization', 'Dr. Layne Norton', 'Precision Nutrition', 'NutritionFacts.org'],
         learning_modules: ['fuel', 'mind']
     },
     muscle_gain_basics: {
         topic: 'muscle growth',
-        queries: ['muscle growth basics', 'hypertrophy training tips', 'build muscle nutrition'],
+        queries: ['Renaissance Periodization hypertrophy training', 'Jeff Nippard build muscle', 'Simnett Nutrition vegan muscle gain'],
+        sources: ['Renaissance Periodization', 'Jeff Nippard', 'Simnett Nutrition', 'Jeremy Ethier', 'Dr. Layne Norton'],
         learning_modules: ['workouts', 'growth']
     }
 };
@@ -6135,6 +6149,7 @@ function buildWizardLearningInterestItem(id) {
         label,
         youtube_topic: youtube.topic || label,
         youtube_queries: Array.isArray(youtube.queries) ? youtube.queries.slice() : [],
+        youtube_sources: Array.isArray(youtube.sources) ? youtube.sources.slice() : [],
         learning_modules: Array.isArray(youtube.learning_modules) ? youtube.learning_modules.slice() : []
     };
 }
@@ -9364,6 +9379,10 @@ async function wizardNext() {
             if (Array.isArray(item.youtube_queries)) queries.push(...item.youtube_queries);
             return queries;
         }, []);
+        const learningInterestYoutubeSources = Array.from(new Set(learningInterestItems.reduce((sources, item) => {
+            if (Array.isArray(item.youtube_sources)) sources.push(...item.youtube_sources);
+            return sources;
+        }, [])));
         const onboardingGoalIntents = goalIntentIds
             .map(id => ({ id, label: WIZARD_GOAL_INTENT_LABELS[id] }))
             .filter(item => item.label);
@@ -9404,6 +9423,7 @@ async function wizardNext() {
             learning_interest_labels: learningInterestLabels,
             learning_interest_youtube_topics: learningInterestYoutubeTopics,
             learning_interest_youtube_queries: learningInterestYoutubeQueries,
+            learning_interest_youtube_sources: learningInterestYoutubeSources,
             onboarding_learning_interests: learningInterestItems,
             onboarding_chat_freeform: onboardingChatFreeform,
             goal_catcher: goalCatcher,
