@@ -12249,7 +12249,14 @@ if(!window._pbbIsIOSSafari) {
 <script>
 (function(){
   const steps = [
-    { tab:'dashboard', sel:'#tamagotchi-widget-container,#view-dashboard', title:'Ask Balance by long hold', body:"Complete the walkthrough checkpoints to earn enough XP to reach Level 4. Ask is off the tab bar now. Press and hold any open space for 3 seconds to bring it up. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in.", xpReward:'intro' },
+    { tab:'dashboard', sel:'#ask-balance-command-palette .ask-balance-command-card,#ask-balance-command-palette', title:'Ask Balance by long hold', body:"Ask is off the tab bar now. Press and hold any open space for 3 seconds to bring it up. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in.", xpReward:'intro', action: async function(){
+        try {
+            if (typeof window.showAskBalanceCommandPalette === 'function') {
+                window.showAskBalanceCommandPalette('');
+            }
+        } catch(e) { console.warn('[tour] could not open Ask Balance palette', e); }
+        await new Promise(function(r){ setTimeout(r, 260); });
+      } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Feature Drops', body:"When Balance adds something new, you will get a Feature Drop on your next app open. Tap Show me and Balance points you to the feature and explains what changed." },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do.", quick: true },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Level character rewards', body:"Level 55 unlocks Character 1 first. Every 5 levels after that unlocks the next numbered 3D character skin in story order, with the same celebration and Equip Now flow." },
@@ -12344,6 +12351,7 @@ if(!window._pbbIsIOSSafari) {
   let activeSteps = [];
   let idx = 0;
   let resizeHandler = null;
+  let showingXpIntro = false;
 
   function isVisible(el){
     if (!el) return false;
@@ -12389,6 +12397,11 @@ if(!window._pbbIsIOSSafari) {
         movementTrendsPage.classList.remove('active');
       }
     }
+    var statAlloc = document.getElementById('stat-alloc-overlay');
+    if (statAlloc) {
+      statAlloc.remove();
+      window.__balancePendingStatAllocationModal = true;
+    }
   }
 
   function resetTourTemporaryTargets(){
@@ -12399,6 +12412,54 @@ if(!window._pbbIsIOSSafari) {
       var text = ptr.querySelector('.ptr-text');
       if (text) text.textContent = 'Pull to refresh';
     }
+    try {
+      if (typeof window.hideAskBalanceCommandPalette === 'function') {
+        window.hideAskBalanceCommandPalette();
+      }
+    } catch(e) {}
+  }
+
+  function setTourXpNote(visible, text){
+    var note = document.getElementById('tour-xp-note');
+    if (!note) return;
+    note.textContent = text || '';
+    note.style.display = visible ? 'inline-flex' : 'none';
+  }
+
+  function playQueuedWalkthroughLevelUp(){
+    var queued = window.__balanceQueuedWalkthroughLevelUp;
+    if (!queued || typeof window.triggerLevelUpCelebration !== 'function') return false;
+    window.__balanceQueuedWalkthroughLevelUp = null;
+    window.__balancePendingStatAllocationModal = false;
+    setTimeout(function(){
+      try {
+        window.triggerLevelUpCelebration(
+          queued.newLevel,
+          queued.title,
+          queued.previousLevel,
+          queued.lifetimePoints,
+          queued.currentStreak || 0,
+          queued.previousProgress || 0
+        );
+      } catch(e) {
+        console.warn('[tour] queued level-up celebration failed', e);
+      }
+    }, 500);
+    return true;
+  }
+
+  function showPendingStatAllocationAfterTour(){
+    if (!window.__balancePendingStatAllocationModal) return;
+    window.__balancePendingStatAllocationModal = false;
+    setTimeout(function(){
+      try {
+        if (typeof window.showStatAllocationModal === 'function') {
+          window.showStatAllocationModal();
+        }
+      } catch(e) {
+        console.warn('[tour] pending stat allocation modal failed', e);
+      }
+    }, 750);
   }
 
   function showTourPullToRefreshHint(){
@@ -12480,6 +12541,8 @@ if(!window._pbbIsIOSSafari) {
   async function showStep(i){
     if (i < 0 || i >= activeSteps.length) { endFeatureTour(false); return; }
     idx = i;
+    showingXpIntro = false;
+    window.__balanceGuidedTourShowingIntro = false;
     const step = activeSteps[i];
     resetTourTemporaryTargets();
     closeTourBlockingSurfaces();
@@ -12507,6 +12570,7 @@ if(!window._pbbIsIOSSafari) {
     document.getElementById('tour-counter').textContent = 'Step ' + (i+1) + ' / ' + activeSteps.length;
     document.getElementById('tour-title').textContent = step.title;
     document.getElementById('tour-body').textContent = step.body;
+    setTourXpNote(false);
     document.getElementById('tour-back-btn').style.visibility = i === 0 ? 'hidden' : 'visible';
     document.getElementById('tour-next-btn').textContent = (i === activeSteps.length - 1) ? 'Finish' : 'Next';
 
@@ -12525,20 +12589,56 @@ if(!window._pbbIsIOSSafari) {
   }
 
   window.tourNext = function(){
+    if (showingXpIntro) {
+      showingXpIntro = false;
+      showStep(0);
+      return;
+    }
     if (idx >= activeSteps.length - 1) { endFeatureTour(false); return; }
     showStep(idx + 1);
   };
-  window.tourBack = function(){ if (idx > 0) showStep(idx - 1); };
+  window.tourBack = function(){
+    if (idx > 0) {
+      showStep(idx - 1);
+    } else if (idx === 0) {
+      showTourXpIntro();
+    }
+  };
+
+  async function showTourXpIntro(){
+    showingXpIntro = true;
+    window.__balanceGuidedTourShowingIntro = true;
+    idx = -1;
+    resetTourTemporaryTargets();
+    closeTourBlockingSurfaces();
+    await ensureTab('dashboard');
+    document.getElementById('tour-counter').textContent = 'Walkthrough XP';
+    document.getElementById('tour-title').textContent = 'Complete the walkthrough to earn XP';
+    document.getElementById('tour-body').textContent = 'Finish the guided walkthrough once to earn XP checkpoints and reach Level 4.';
+    setTourXpNote(false);
+    document.getElementById('tour-back-btn').style.visibility = 'hidden';
+    document.getElementById('tour-next-btn').textContent = 'Yes, start';
+    positionBubbleAndSpotlight(null);
+  }
 
   window.endFeatureTour = function(skipped){
     resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.remove('active');
+    window.__balanceGuidedTourActive = false;
+    window.__balanceGuidedTourShowingIntro = false;
+    showingXpIntro = false;
+    setTourXpNote(false);
     try { localStorage.setItem('featureTourComplete','1'); } catch(e){}
     if (resizeHandler) {
       window.removeEventListener('resize', resizeHandler);
       window.removeEventListener('scroll', resizeHandler, true);
       resizeHandler = null;
+    }
+    if (!skipped) {
+      if (!playQueuedWalkthroughLevelUp()) {
+        showPendingStatAllocationAfterTour();
+      }
     }
   };
 
@@ -12555,9 +12655,16 @@ if(!window._pbbIsIOSSafari) {
     }
     if (!activeSteps.length) return;
     idx = 0;
+    showingXpIntro = false;
+    window.__balanceGuidedTourActive = true;
+    window.__balanceGuidedTourShowingIntro = true;
     closeTourBlockingSurfaces();
     const overlay = document.getElementById('guided-tour-overlay');
-    if (!overlay) return;
+    if (!overlay) {
+      window.__balanceGuidedTourActive = false;
+      window.__balanceGuidedTourShowingIntro = false;
+      return;
+    }
     overlay.classList.add('active');
     if (typeof pushNavigationState === 'function') {
       try { pushNavigationState('guided-tour-overlay', function(){ endFeatureTour(true); }); } catch(e){}
@@ -12569,7 +12676,7 @@ if(!window._pbbIsIOSSafari) {
     };
     window.addEventListener('resize', resizeHandler);
     window.addEventListener('scroll', resizeHandler, true);
-    showStep(0);
+    showTourXpIntro();
   };
 
   window.replayFeatureTour = function(){
@@ -12730,9 +12837,17 @@ if(!window._pbbIsIOSSafari) {
     {
       id: 'ask-balance-long-hold-only-v1',
       tab: 'dashboard',
-      sel: '#view-dashboard',
+      sel: '#ask-balance-command-palette .ask-balance-command-card,#ask-balance-command-palette',
       title: 'Ask Balance by long hold',
-      body: "Ask is off the tab bar now. Press and hold any open space for 3 seconds to bring it up. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in."
+      body: "Ask is off the tab bar now. Press and hold any open space for 3 seconds to bring it up. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in.",
+      action: async function(){
+        try {
+          if (typeof window.showAskBalanceCommandPalette === 'function') {
+            window.showAskBalanceCommandPalette('');
+          }
+        } catch(e) { console.warn('[feature-reveal] could not open Ask Balance palette', e); }
+        await new Promise(function(r){ setTimeout(r, 260); });
+      }
     },
     {
       id: 'body-part-volume-insights-v1',
@@ -13282,6 +13397,11 @@ if(!window._pbbIsIOSSafari) {
     if (i < 0 || i >= revealSteps.length) { endFeatureReveal(false); return; }
     revealIdx = i;
     var step = revealSteps[i];
+    try {
+      if (typeof window.hideAskBalanceCommandPalette === 'function') {
+        window.hideAskBalanceCommandPalette();
+      }
+    } catch(e) {}
     await ensureTab(step.tab, step.subtab);
     if (typeof step.action === 'function') {
       try { await step.action(); } catch(e){ console.warn('[feature-reveal] step action failed', e); }
@@ -13301,6 +13421,8 @@ if(!window._pbbIsIOSSafari) {
     document.getElementById('tour-counter').textContent = 'Feature Drop - ' + (i+1) + ' / ' + revealSteps.length;
     document.getElementById('tour-title').textContent = step.title;
     document.getElementById('tour-body').textContent = step.body;
+    var xpNote = document.getElementById('tour-xp-note');
+    if (xpNote) xpNote.style.display = 'none';
     document.getElementById('tour-back-btn').style.visibility = i === 0 ? 'hidden' : 'visible';
     document.getElementById('tour-next-btn').textContent = (i === revealSteps.length - 1) ? 'Got it!' : 'Next';
 
@@ -13340,6 +13462,11 @@ if(!window._pbbIsIOSSafari) {
   window.endFeatureReveal = function(skipped) {
     var overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.remove('active');
+    try {
+      if (typeof window.hideAskBalanceCommandPalette === 'function') {
+        window.hideAskBalanceCommandPalette();
+      }
+    } catch(e) {}
     markAllSeen();
     if (revealResizeHandler) {
       window.removeEventListener('resize', revealResizeHandler);
@@ -15752,7 +15879,7 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=3';
+            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=4';
             s.onload = function() {
                 if(window._crumb)window._crumb('script10_deferred_loaded');
                 // Run loadPointsWidget now that it's available
@@ -15764,7 +15891,7 @@ if (window._pbbIsIOSSafari) {
         }, 1500);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=3"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=4"><\/script>');
 }
 </script>
 
@@ -16488,13 +16615,13 @@ if(!window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-14-stat_system_save_load_display.js';
+                s.src = 'js/dashboard/dashboard-script-14-stat_system_save_load_display.js?v=2';
                 s.onload = function() { if(window._crumb)window._crumb('script14_deferred_loaded'); };
                 document.head.appendChild(s);
             }, 3500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-14-stat_system_save_load_display.js"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-14-stat_system_save_load_display.js?v=2"><\/script>');
     }
     </script>
 

@@ -1647,6 +1647,27 @@ function makeWalkthroughRewardRef(step) {
     return 'walkthrough:' + encodeURIComponent(String(checkpoint));
 }
 
+function queueWalkthroughLevelUpCelebration(payload) {
+    try {
+        const existing = window.__balanceQueuedWalkthroughLevelUp;
+        if (!existing) {
+            window.__balanceQueuedWalkthroughLevelUp = payload;
+            return;
+        }
+
+        window.__balanceQueuedWalkthroughLevelUp = {
+            newLevel: Math.max(existing.newLevel || 1, payload.newLevel || 1),
+            title: (payload.newLevel || 1) >= (existing.newLevel || 1) ? payload.title : existing.title,
+            previousLevel: existing.previousLevel || payload.previousLevel,
+            lifetimePoints: Math.max(existing.lifetimePoints || 0, payload.lifetimePoints || 0),
+            currentStreak: payload.currentStreak || existing.currentStreak || 0,
+            previousProgress: existing.previousProgress ?? payload.previousProgress ?? 0
+        };
+    } catch (e) {
+        window.__balanceQueuedWalkthroughLevelUp = payload;
+    }
+}
+
 async function awardPointsForWalkthroughStep(step, stepNumber, totalSteps) {
     try {
         if (!step?.xpReward && !step?.walkthroughReward) return null;
@@ -1703,16 +1724,28 @@ async function awardPointsForWalkthroughStep(step, stepNumber, totalSteps) {
             const newLifetimePoints = result.newLifetimePoints || lifetimeBefore + (result.pointsAwarded || 0) + (result.bonusPoints || 0);
             const newLevelData = calculateLevel(newLifetimePoints);
             if (newLevelData.level > previousLevel) {
-                setTimeout(() => {
-                    triggerLevelUpCelebration(
-                        newLevelData.level,
-                        getLevelTitle(newLevelData.level),
-                        previousLevel,
-                        newLifetimePoints,
-                        result.currentStreak || 0,
-                        previousProgress
-                    );
-                }, 900);
+                const levelUpPayload = {
+                    newLevel: newLevelData.level,
+                    title: getLevelTitle(newLevelData.level),
+                    previousLevel,
+                    lifetimePoints: newLifetimePoints,
+                    currentStreak: result.currentStreak || 0,
+                    previousProgress
+                };
+                if (window.__balanceGuidedTourActive) {
+                    queueWalkthroughLevelUpCelebration(levelUpPayload);
+                } else {
+                    setTimeout(() => {
+                        triggerLevelUpCelebration(
+                            levelUpPayload.newLevel,
+                            levelUpPayload.title,
+                            levelUpPayload.previousLevel,
+                            levelUpPayload.lifetimePoints,
+                            levelUpPayload.currentStreak,
+                            levelUpPayload.previousProgress
+                        );
+                    }, 900);
+                }
             }
 
             await loadPointsWidget();

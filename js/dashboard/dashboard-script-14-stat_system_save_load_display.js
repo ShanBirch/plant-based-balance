@@ -166,6 +166,10 @@
         function showStatAllocationModal() {
             if (window.guestMode) return; // Skip in guest preview mode
             if (window.isAdminViewing) return; // Admin view-as is read-only
+            if (window.__balanceGuidedTourActive) {
+                window.__balancePendingStatAllocationModal = true;
+                return;
+            }
             const pointsLeft = getUnallocatedPoints();
             if (pointsLeft <= 0) return;
             // Prevent duplicate modals if multiple triggers fire at the same time
