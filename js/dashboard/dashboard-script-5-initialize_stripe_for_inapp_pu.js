@@ -6023,6 +6023,7 @@ let wizardCuisinePreferences = new Set();
 let wizardFavoriteFoods = new Set();
 let wizardFoodAllergies = new Set();
 let wizardDietaryRequirements = new Set();
+let wizardLearningInterests = new Set();
 
 const WIZARD_GOAL_INTENT_LABELS = {
     lose_weight: 'Lose fat',
@@ -6033,6 +6034,21 @@ const WIZARD_GOAL_INTENT_LABELS = {
     hit_protein: 'Hit protein consistently',
     more_energy: 'Energy and longevity',
     build_community: 'Build a community'
+};
+
+const WIZARD_LEARNING_INTEREST_LABELS = {
+    plant_based_cooking: 'Plant-based cooking',
+    macronutrient_science: 'Macronutrient science',
+    micronutrient_science: 'Micronutrient science',
+    behavior_change_science: 'Behavior change science',
+    weight_training_technique: 'Weight training technique',
+    meal_prep_planning: 'Meal prep and planning',
+    protein_science: 'Protein science',
+    supplements: 'Supplements',
+    recovery_sleep_energy: 'Recovery, sleep and energy',
+    fat_loss_basics: 'Fat loss basics',
+    muscle_gain_basics: 'Muscle gain basics',
+    healthy_habits: 'Healthy habit building'
 };
 
 const WIZARD_PRIMARY_GOAL_LABELS = {
@@ -7422,6 +7438,7 @@ function toggleWizardChip(el, group) {
                  : group === 'favorites' ? wizardFavoriteFoods
                  : group === 'allergies' ? wizardFoodAllergies
                  : group === 'dietary_requirements' ? wizardDietaryRequirements
+                 : group === 'learning_interests' ? wizardLearningInterests
                  : null;
     if (!target) return;
     if (target.has(value)) target.delete(value);
@@ -9203,6 +9220,8 @@ async function wizardNext() {
         const weeklyGoalFocusIds = readWizardJsonField('wizard-weekly-goal-focus', []);
         const weeklyGoalFocusLabels = readWizardJsonField('wizard-weekly-goal-focus-labels', []);
         const onboardingChatFreeform = readWizardJsonField('wizard-chat-freeform', {});
+        const learningInterestIds = Array.from(wizardLearningInterests);
+        const learningInterestLabels = learningInterestIds.map(id => WIZARD_LEARNING_INTEREST_LABELS[id]).filter(Boolean);
         const onboardingGoalIntents = goalIntentIds
             .map(id => ({ id, label: WIZARD_GOAL_INTENT_LABELS[id] }))
             .filter(item => item.label);
@@ -9239,6 +9258,11 @@ async function wizardNext() {
             weekly_goal_focus: weeklyGoalFocusIds,
             weekly_goal_focus_labels: weeklyGoalFocusLabels,
             onboarding_weekly_goal_focus: onboardingWeeklyGoalFocus,
+            learning_interests: learningInterestIds,
+            learning_interest_labels: learningInterestLabels,
+            onboarding_learning_interests: learningInterestIds
+                .map(id => ({ id, label: WIZARD_LEARNING_INTEREST_LABELS[id] }))
+                .filter(item => item.label),
             onboarding_chat_freeform: onboardingChatFreeform,
             goal_catcher: goalCatcher,
             main_blocker: goalCatcher.main_blocker,

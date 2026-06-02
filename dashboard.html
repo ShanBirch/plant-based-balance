@@ -13719,6 +13719,26 @@ if(!window._pbbIsIOSSafari) {
                     </select>
                 </div>
 
+                <!-- Learning interests -->
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-top:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:6px; font-size:0.9rem;">What are you interested in learning about?</label>
+                    <p style="margin:0 0 12px; font-size:0.78rem; color:#64748b; line-height:1.4;">Pick a few topics. We’ll use these to tailor the Learning tab and future coaching tips.</p>
+                    <div class="pref-checkbox-list wizard-learning-chips" style="justify-content:flex-start; gap:6px;">
+                        <div class="pref-checkbox" data-value="plant_based_cooking" onclick="toggleWizardChip(this, 'learning_interests')">🌱 Plant-based cooking</div>
+                        <div class="pref-checkbox" data-value="macronutrient_science" onclick="toggleWizardChip(this, 'learning_interests')">📊 Macronutrient science</div>
+                        <div class="pref-checkbox" data-value="micronutrient_science" onclick="toggleWizardChip(this, 'learning_interests')">🧪 Micronutrient science</div>
+                        <div class="pref-checkbox" data-value="behavior_change_science" onclick="toggleWizardChip(this, 'learning_interests')">🧠 Behavior change science</div>
+                        <div class="pref-checkbox" data-value="weight_training_technique" onclick="toggleWizardChip(this, 'learning_interests')">🏋️ Weight training technique</div>
+                        <div class="pref-checkbox" data-value="meal_prep_planning" onclick="toggleWizardChip(this, 'learning_interests')">🥗 Meal prep &amp; planning</div>
+                        <div class="pref-checkbox" data-value="protein_science" onclick="toggleWizardChip(this, 'learning_interests')">💪 Protein science</div>
+                        <div class="pref-checkbox" data-value="recovery_sleep_energy" onclick="toggleWizardChip(this, 'learning_interests')">😴 Recovery, sleep &amp; energy</div>
+                        <div class="pref-checkbox" data-value="fat_loss_basics" onclick="toggleWizardChip(this, 'learning_interests')">🔥 Fat loss basics</div>
+                        <div class="pref-checkbox" data-value="muscle_gain_basics" onclick="toggleWizardChip(this, 'learning_interests')">📈 Muscle gain basics</div>
+                        <div class="pref-checkbox" data-value="supplements" onclick="toggleWizardChip(this, 'learning_interests')">💊 Supplements</div>
+                        <div class="pref-checkbox" data-value="healthy_habits" onclick="toggleWizardChip(this, 'learning_interests')">✅ Healthy habit building</div>
+                    </div>
+                </div>
+
                 <!-- Dietary Requirements (multi-select) -->
                 <div class="wizard-input-group" id="wizard-dietary-requirements-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-top:15px;">
                     <label style="display:block; font-weight:600; margin-bottom:6px; font-size:0.9rem;">Dietary Requirements</label>

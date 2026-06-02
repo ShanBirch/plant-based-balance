@@ -187,6 +187,12 @@ async function loadOnboardingFactsCompact(clientId) {
                 ? pd.onboarding_weekly_goal_focus.map(item => item?.label || item).filter(Boolean)
                 : [];
         if (weeklyGoalFocusLabels.length) out.push(`weekly goal targets: ${weeklyGoalFocusLabels.slice(0, 6).join(', ')}`);
+        const learningInterestLabels = Array.isArray(pd.learning_interest_labels)
+            ? pd.learning_interest_labels
+            : Array.isArray(pd.onboarding_learning_interests)
+                ? pd.onboarding_learning_interests.map(item => item?.label || item).filter(Boolean)
+                : [];
+        if (learningInterestLabels.length) out.push(`learning interests: ${learningInterestLabels.slice(0, 8).join(', ')}`);
         const onboardingFreeform = (pd.onboarding_chat_freeform && typeof pd.onboarding_chat_freeform === 'object')
             ? pd.onboarding_chat_freeform
             : {};

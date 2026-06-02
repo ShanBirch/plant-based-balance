@@ -847,6 +847,17 @@ function buildClientProfileBlock({ clientName = 'Client', profile = {}, customDa
         lines.push(`Weekly goal targets: ${weeklyGoalFocusLabels.slice(0, 6).join(', ')}`);
     }
 
+    const learningInterestLabels = Array.isArray(pd.learning_interest_labels)
+        ? pd.learning_interest_labels
+        : Array.isArray(pd.onboarding_learning_interests)
+            ? pd.onboarding_learning_interests.map(item => item?.label || item).filter(Boolean)
+            : Array.isArray(custom.learning_interest_labels)
+                ? custom.learning_interest_labels
+                : [];
+    if (learningInterestLabels.length) {
+        lines.push(`Learning interests: ${learningInterestLabels.slice(0, 8).join(', ')}`);
+    }
+
     const onboardingFreeform = (pd.onboarding_chat_freeform && typeof pd.onboarding_chat_freeform === 'object')
         ? pd.onboarding_chat_freeform
         : {};
