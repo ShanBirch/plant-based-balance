@@ -476,6 +476,10 @@ function showLevelUpSidePulse(newLevel, title, previousLevel = null) {
 
         const pulse = document.createElement('div');
         pulse.className = 'level-up-side-pulse';
+        if (window.__balanceGuidedTourActive) {
+            pulse.classList.add('walkthrough-level-up-side-pulse');
+            pulse.style.zIndex = '400002';
+        }
         const levelsGained = previousLevel ? Math.max(1, newLevel - previousLevel) : 1;
         const levelLabel = levelsGained > 1 ? `+${levelsGained} levels` : `Level ${newLevel}`;
 
@@ -494,6 +498,32 @@ function showLevelUpSidePulse(newLevel, title, previousLevel = null) {
         setTimeout(() => pulse.remove(), 4200);
     } catch (e) {
         console.warn('Level-up side pulse failed:', e);
+    }
+}
+
+function playWalkthroughLevelUpCelebration(payload) {
+    if (!payload) return;
+    try {
+        window.__balancePendingStatAllocationModal = true;
+        showLevelUpSidePulse(payload.newLevel, payload.title, payload.previousLevel);
+        if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
+        if (typeof triggerVictoryAnimation === 'function' && currentActiveTab === 'dashboard') {
+            triggerVictoryAnimation();
+        }
+        if (payload.previousLevel && typeof checkNewAnimationUnlocks === 'function') {
+            checkNewAnimationUnlocks(payload.previousLevel, payload.newLevel);
+        }
+        if (payload.previousLevel && payload.newLevel > payload.previousLevel && typeof window.grantStatPointsForLevelUp === 'function') {
+            window.grantStatPointsForLevelUp(payload.previousLevel, payload.newLevel);
+        }
+        if (typeof window.applyBackgroundForLevel === 'function') {
+            window.applyBackgroundForLevel(payload.newLevel);
+        }
+        if (typeof window.updateBattleButtonLock === 'function') {
+            window.updateBattleButtonLock();
+        }
+    } catch (e) {
+        console.warn('[tour] walkthrough level-up side celebration failed', e);
     }
 }
 
@@ -1732,20 +1762,20 @@ async function awardPointsForWalkthroughStep(step, stepNumber, totalSteps) {
                     currentStreak: result.currentStreak || 0,
                     previousProgress
                 };
-                if (window.__balanceGuidedTourActive) {
-                    queueWalkthroughLevelUpCelebration(levelUpPayload);
-                } else {
-                    setTimeout(() => {
-                        triggerLevelUpCelebration(
-                            levelUpPayload.newLevel,
-                            levelUpPayload.title,
-                            levelUpPayload.previousLevel,
-                            levelUpPayload.lifetimePoints,
-                            levelUpPayload.currentStreak,
-                            levelUpPayload.previousProgress
-                        );
-                    }, 900);
-                }
+                setTimeout(() => {
+                    if (window.__balanceGuidedTourActive) {
+                        playWalkthroughLevelUpCelebration(levelUpPayload);
+                        return;
+                    }
+                    triggerLevelUpCelebration(
+                        levelUpPayload.newLevel,
+                        levelUpPayload.title,
+                        levelUpPayload.previousLevel,
+                        levelUpPayload.lifetimePoints,
+                        levelUpPayload.currentStreak,
+                        levelUpPayload.previousProgress
+                    );
+                }, window.__balanceGuidedTourActive ? 650 : 900);
             }
 
             await loadPointsWidget();

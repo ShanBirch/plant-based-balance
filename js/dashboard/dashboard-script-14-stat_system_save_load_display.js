@@ -162,6 +162,7 @@
                 // No separate timeout needed here.
             }
         }
+        window.grantStatPointsForLevelUp = grantStatPoints;
 
         function showStatAllocationModal() {
             if (window.guestMode) return; // Skip in guest preview mode

@@ -12325,6 +12325,26 @@ if(!window._pbbIsIOSSafari) {
       } }
   ];
 
+  const walkthroughRewardByTitle = {
+    'Ask Balance by long hold': 'tour-01',
+    'Meet your FitGotchi': 'tour-02',
+    'Pull to refresh': 'tour-03',
+    'Daily weigh-in': 'tour-04',
+    'Daily mood check-in': 'tour-05',
+    'Daily quiz': 'tour-06',
+    'Wellness Challenges': 'tour-07',
+    'Calorie tracker widget': 'tour-08',
+    'Quick log calories & macros': 'tour-09',
+    'Your workout for the day': 'tour-10',
+    'Learn & earn XP': 'tour-11',
+    'Say hi to Coach Shan': 'tour-12'
+  };
+  steps.forEach(function(step){
+    if (step && walkthroughRewardByTitle[step.title]) {
+      step.xpReward = walkthroughRewardByTitle[step.title];
+    }
+  });
+
   let activeSteps = [];
   let idx = 0;
   let resizeHandler = null;
@@ -12685,7 +12705,7 @@ if(!window._pbbIsIOSSafari) {
     await ensureTab('dashboard');
     document.getElementById('tour-counter').textContent = 'Walkthrough XP';
     document.getElementById('tour-title').textContent = 'Complete the walkthrough to earn XP';
-    document.getElementById('tour-body').textContent = 'Finish the guided walkthrough once to earn XP checkpoints and reach Level 4.';
+    document.getElementById('tour-body').textContent = 'Earn 1 XP at key walkthrough checkpoints and reach Level 4 as you learn the app.';
     setTourXpNote(false);
     document.getElementById('tour-back-btn').style.visibility = 'hidden';
     document.getElementById('tour-next-btn').textContent = 'Yes, start';
