@@ -77,7 +77,7 @@ function igUserIdCandidates(explicit) {
     const mappedIds = Object.keys(accountMap()).map(id => cleanString(id, 120)).filter(Boolean);
     const ids = cleanExplicit
         ? [cleanExplicit]
-        : (mappedIds.length ? mappedIds : [defaultIgUserId()]);
+        : (mappedIds.length ? mappedIds.slice(0, 1) : [defaultIgUserId()]);
     return [...new Set(ids)];
 }
 
@@ -229,7 +229,7 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function waitForContainer(containerId, token, { timeoutMs = 7000, intervalMs = 1500 } = {}) {
+async function waitForContainer(containerId, token, { timeoutMs = 22000, intervalMs = 2000 } = {}) {
     const started = Date.now();
     let lastStatus = null;
 
