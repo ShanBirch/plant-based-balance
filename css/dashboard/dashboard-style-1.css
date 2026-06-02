@@ -38,6 +38,89 @@
         -webkit-font-smoothing: antialiased;
     }
 
+    .level-up-side-pulse {
+        position: fixed;
+        top: calc(88px + env(safe-area-inset-top, 0px));
+        right: 14px;
+        z-index: 11000;
+        pointer-events: none;
+        animation: levelUpSidePulseIn 0.38s cubic-bezier(.2,.8,.2,1), levelUpSidePulseOut 0.38s ease-in 3.85s forwards;
+    }
+
+    .level-up-side-pulse-content {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        min-width: 190px;
+        max-width: min(310px, calc(100vw - 28px));
+        padding: 12px 14px;
+        color: #fff;
+        background:
+            radial-gradient(circle at 16% 0%, rgba(245,217,138,0.34), transparent 32%),
+            linear-gradient(135deg, rgba(9,9,9,0.96), rgba(24,24,24,0.94));
+        border: 1px solid rgba(245,217,138,0.36);
+        border-radius: 18px;
+        box-shadow: 0 20px 45px rgba(0,0,0,0.36), 0 0 22px rgba(216,178,94,0.2);
+        backdrop-filter: blur(14px);
+    }
+
+    .level-up-side-pulse-badge {
+        width: 44px;
+        height: 44px;
+        flex: 0 0 auto;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #090909;
+        font-weight: 950;
+        font-size: 1.1rem;
+        background: linear-gradient(135deg, #f5d98a, #d8b25e);
+        box-shadow: 0 8px 18px rgba(216,178,94,0.36);
+    }
+
+    .level-up-side-pulse-kicker {
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #f5d98a;
+        font-weight: 850;
+        line-height: 1;
+    }
+
+    .level-up-side-pulse-title {
+        margin-top: 3px;
+        font-size: 0.98rem;
+        font-weight: 900;
+        line-height: 1.08;
+    }
+
+    .level-up-side-pulse-rank {
+        margin-top: 3px;
+        color: rgba(255,255,255,0.72);
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    @keyframes levelUpSidePulseIn {
+        from {
+            opacity: 0;
+            transform: translateX(24px) scale(0.96);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+        }
+    }
+
+    @keyframes levelUpSidePulseOut {
+        to {
+            opacity: 0;
+            transform: translateX(22px) scale(0.98);
+        }
+    }
+
     /* Fixed Bottom Navigation */
     .bottom-nav {
         position: fixed;

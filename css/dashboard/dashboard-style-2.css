@@ -260,6 +260,16 @@ body:has(#onboarding-wizard.active) {
     overscroll-behavior: none;
 }
 
+html:has(#onboarding-wizard.active) #health-connect-modal,
+html:has(#onboarding-wizard.active) #native-permissions-modal,
+html:has(#onboarding-wizard.active) #guest-signup-modal,
+body:has(#onboarding-wizard.active) #health-connect-modal,
+body:has(#onboarding-wizard.active) #native-permissions-modal,
+body:has(#onboarding-wizard.active) #guest-signup-modal {
+    display: none !important;
+    pointer-events: none !important;
+}
+
 #onboarding-wizard.onboarding-overlay {
     position: fixed !important;
     inset: 0 !important;
@@ -1257,6 +1267,51 @@ body:has(#onboarding-wizard.active) {
 }
 #onboarding-wizard #slide-6 .wizard-input-group p {
     color: rgba(255,255,255,0.64) !important;
+}
+#onboarding-wizard #wizard-calendar-preview {
+    background: rgba(255,255,255,0.07) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    box-shadow: 0 18px 45px rgba(0,0,0,0.2) !important;
+}
+#onboarding-wizard .wizard-calendar-row {
+    min-height: 56px;
+    border-bottom-color: rgba(255,255,255,0.1) !important;
+}
+#onboarding-wizard .wizard-calendar-day {
+    color: #86efac !important;
+}
+#onboarding-wizard .wizard-calendar-workout {
+    min-width: 0;
+}
+#onboarding-wizard .wizard-calendar-icon {
+    color: #f8fafc !important;
+    flex: 0 0 auto;
+}
+#onboarding-wizard .wizard-calendar-workout-text {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    min-width: 0 !important;
+}
+#onboarding-wizard .wizard-calendar-workout-name {
+    color: #ffffff !important;
+    display: block !important;
+    font-size: 0.86rem !important;
+    font-weight: 800 !important;
+    line-height: 1.18 !important;
+}
+#onboarding-wizard .wizard-calendar-workout-desc {
+    color: rgba(255,255,255,0.64) !important;
+    display: block !important;
+    font-size: 0.74rem !important;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
+}
+#onboarding-wizard .wizard-calendar-edit-icon {
+    color: #86efac !important;
+}
+#wizard-workout-dropdown-overlay h3 {
+    color: #1a4d2e !important;
 }
 
 /* Glass size button active state (background:#e0f2fe) → dark blue */

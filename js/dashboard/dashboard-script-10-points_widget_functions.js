@@ -4,14 +4,15 @@
 
 const POINTS_FOR_FREE_WEEK = 200;
 const MAX_LEVEL = 99;
-const LEVEL_CURVE_MULTIPLIER = 0.07;
-const LEVEL_CURVE_EXPONENT = 2.4;
-const LEVEL_LINEAR_BONUS = 0.7;
+const LEVEL_BASE_XP_PER_LEVEL = 3;
+const LEVEL_CURVE_MULTIPLIER = 0.3;
+const LEVEL_CURVE_EXPONENT = 2.1;
 
 // Calculate points required for a given level
 function getPointsForLevel(level) {
     if (level <= 1) return 0;
-    return Math.floor(LEVEL_CURVE_MULTIPLIER * Math.pow(level, LEVEL_CURVE_EXPONENT) + LEVEL_LINEAR_BONUS * level);
+    const levelIndex = level - 1;
+    return Math.floor(LEVEL_BASE_XP_PER_LEVEL * levelIndex + LEVEL_CURVE_MULTIPLIER * Math.pow(levelIndex, LEVEL_CURVE_EXPONENT));
 }
 
 // Calculate user's current level from lifetime points
@@ -469,6 +470,33 @@ function triggerXPBarRainbow() {
     }
 }
 
+function showLevelUpSidePulse(newLevel, title, previousLevel = null) {
+    try {
+        document.querySelectorAll('.level-up-side-pulse').forEach(el => el.remove());
+
+        const pulse = document.createElement('div');
+        pulse.className = 'level-up-side-pulse';
+        const levelsGained = previousLevel ? Math.max(1, newLevel - previousLevel) : 1;
+        const levelLabel = levelsGained > 1 ? `+${levelsGained} levels` : `Level ${newLevel}`;
+
+        pulse.innerHTML = `
+            <div class="level-up-side-pulse-content">
+                <div class="level-up-side-pulse-badge">${newLevel}</div>
+                <div>
+                    <div class="level-up-side-pulse-kicker">Level up</div>
+                    <div class="level-up-side-pulse-title">${levelLabel}</div>
+                    <div class="level-up-side-pulse-rank">${title}</div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(pulse);
+        setTimeout(() => pulse.remove(), 4200);
+    } catch (e) {
+        console.warn('Level-up side pulse failed:', e);
+    }
+}
+
 /**
  * NEW LEVEL UP CELEBRATION SYSTEM
  * Shows celebration directly in the Tamagotchi widget instead of as a popup toast.
@@ -477,6 +505,7 @@ function triggerXPBarRainbow() {
  */
 function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifetimePoints = 0, currentStreak = 0, previousProgress = 0) {
     if (window.isAdminViewing) return; // Admin view-as is read-only
+    showLevelUpSidePulse(newLevel, title, previousLevel);
     console.log('🎉 Level Up Celebration triggered!', { newLevel, title, previousLevel });
 
     // Persist celebration data so it can be recovered if page reloads mid-flow
@@ -1578,6 +1607,123 @@ async function awardPointsForPersonalBest(pbRefId, pbData) {
         return result;
     } catch (error) {
         console.error('Error awarding points for personal best:', error);
+        return null;
+    }
+}
+
+const WALKTHROUGH_TARGET_LEVEL = 4;
+const WALKTHROUGH_TARGET_LIFETIME_XP = getPointsForLevel(WALKTHROUGH_TARGET_LEVEL);
+const WALKTHROUGH_XP_STORAGE_PREFIX = 'pbb_walkthrough_xp_awarded_v2';
+
+function getWalkthroughStorageKey() {
+    return `${WALKTHROUGH_XP_STORAGE_PREFIX}:${window.currentUser?.id || 'guest'}`;
+}
+
+function getWalkthroughAwardedRefs() {
+    try {
+        const raw = localStorage.getItem(getWalkthroughStorageKey());
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function markWalkthroughRefAwarded(ref) {
+    try {
+        const awarded = getWalkthroughAwardedRefs();
+        if (awarded.indexOf(ref) === -1) {
+            awarded.push(ref);
+            localStorage.setItem(getWalkthroughStorageKey(), JSON.stringify(awarded));
+        }
+    } catch (e) {
+        console.warn('Could not persist walkthrough XP ref', e);
+    }
+}
+
+function makeWalkthroughRewardRef(step) {
+    const checkpoint = step?.xpReward || step?.walkthroughReward;
+    if (!checkpoint) return null;
+    return 'walkthrough:' + encodeURIComponent(String(checkpoint));
+}
+
+async function awardPointsForWalkthroughStep(step, stepNumber, totalSteps) {
+    try {
+        if (!step?.xpReward && !step?.walkthroughReward) return null;
+
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return null;
+
+        const rewardRef = makeWalkthroughRewardRef(step || {});
+        if (!rewardRef) return null;
+
+        const awardedRefs = getWalkthroughAwardedRefs();
+        if (awardedRefs.indexOf(rewardRef) !== -1) {
+            return { success: false, alreadyAwarded: true, pointsAwarded: 0 };
+        }
+
+        let pointsBefore = null;
+        try {
+            pointsBefore = await window.db?.points?.getPoints(window.currentUser.id);
+        } catch (e) {
+            console.log('Could not get previous points');
+        }
+        const lifetimeBefore = pointsBefore?.lifetime_points || 0;
+        if (lifetimeBefore >= WALKTHROUGH_TARGET_LIFETIME_XP) {
+            return { success: false, targetReached: true, pointsAwarded: 0 };
+        }
+
+        const previousLevelData = calculateLevel(lifetimeBefore);
+        const previousLevel = previousLevelData.level;
+        const previousProgress = previousLevelData.progress || 0;
+
+        const result = await window.db?.points?.awardPoints(
+            window.currentUser.id,
+            'walkthrough',
+            rewardRef,
+            {
+                stepNumber,
+                totalSteps,
+                checkpoint: step.xpReward || step.walkthroughReward,
+                title: step.title || null
+            }
+        );
+
+        if (result?.alreadyAwarded) {
+            markWalkthroughRefAwarded(rewardRef);
+            return result;
+        }
+
+        if (result?.success) {
+            if ((result.pointsAwarded || 0) > 0) {
+                showToast(`Walkthrough checkpoint complete. +${result.pointsAwarded} XP earned.`, 'success');
+                markWalkthroughRefAwarded(rewardRef);
+            }
+
+            const newLifetimePoints = result.newLifetimePoints || lifetimeBefore + (result.pointsAwarded || 0) + (result.bonusPoints || 0);
+            const newLevelData = calculateLevel(newLifetimePoints);
+            if (newLevelData.level > previousLevel) {
+                setTimeout(() => {
+                    triggerLevelUpCelebration(
+                        newLevelData.level,
+                        getLevelTitle(newLevelData.level),
+                        previousLevel,
+                        newLifetimePoints,
+                        result.currentStreak || 0,
+                        previousProgress
+                    );
+                }, 900);
+            }
+
+            await loadPointsWidget();
+            if (typeof refreshChallengeProgress === 'function') {
+                refreshChallengeProgress();
+            }
+        }
+
+        return result;
+    } catch (error) {
+        console.error('Error awarding walkthrough XP:', error);
         return null;
     }
 }

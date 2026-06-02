@@ -14,6 +14,8 @@ const POINTS_CONFIG = {
   POINTS_PER_PERSONAL_BEST: 1,
   POINTS_PER_PROGRESS_PHOTO: 10,
   POINTS_PER_DAILY_LOG: 2,
+  POINTS_PER_WALKTHROUGH_CHECKPOINT: 3,
+  WALKTHROUGH_LEVEL_4_LIFETIME_XP: 12,
   POINTS_PER_MEAL_TIMING: 1,    // 1 bonus point for logging a meal within 30 minutes of scheduled time
   MEAL_TIMING_WINDOW_MINUTES: 30,
   DAILY_LOG_TOLERANCE: 0.20,  // 20% tolerance for hitting macro/calorie goals
@@ -41,9 +43,16 @@ const POINTS_CONFIG = {
   POINTS_FOR_FREE_WEEK: 200,
 };
 
+const WALKTHROUGH_REFERENCE_IDS: Record<string, string> = {
+  'walkthrough:intro': '00000000-0000-4000-8000-000000000101',
+  'walkthrough:nutrition': '00000000-0000-4000-8000-000000000102',
+  'walkthrough:movement': '00000000-0000-4000-8000-000000000103',
+  'walkthrough:finish': '00000000-0000-4000-8000-000000000104',
+};
+
 interface AwardPointsRequest {
   userId: string;
-  type: 'meal' | 'workout' | 'personal_best' | 'progress_photo' | 'daily_log';
+  type: 'meal' | 'workout' | 'personal_best' | 'progress_photo' | 'daily_log' | 'walkthrough';
   referenceId: string;
   photoTimestamp?: string;  // ISO timestamp from EXIF or file
   aiConfidence?: string;    // 'high', 'medium', 'low'
@@ -120,18 +129,32 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
-    if (type !== 'meal' && type !== 'workout' && type !== 'personal_best' && type !== 'progress_photo' && type !== 'daily_log') {
+    if (type !== 'meal' && type !== 'workout' && type !== 'personal_best' && type !== 'progress_photo' && type !== 'daily_log' && type !== 'walkthrough') {
       return new Response(JSON.stringify({
         error: 'Invalid type',
-        message: 'Type must be "meal", "workout", "personal_best", "progress_photo", or "daily_log"'
+        message: 'Type must be "meal", "workout", "personal_best", "progress_photo", "daily_log", or "walkthrough"'
       }), {
         status: 400,
         headers
       });
     }
 
-    // Personal bests and daily logs don't require photo verification
-    const skipPhotoValidation = type === 'personal_best' || type === 'daily_log';
+    const databaseReferenceId = type === 'walkthrough'
+      ? WALKTHROUGH_REFERENCE_IDS[referenceId]
+      : referenceId;
+
+    if (!databaseReferenceId) {
+      return new Response(JSON.stringify({
+        error: 'Invalid walkthrough checkpoint',
+        reason: 'Walkthrough XP can only be awarded for configured checkpoints.'
+      }), {
+        status: 400,
+        headers
+      });
+    }
+
+    // Personal bests, daily logs, and walkthrough checkpoints don't require photo verification.
+    const skipPhotoValidation = type === 'personal_best' || type === 'daily_log' || type === 'walkthrough';
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -401,6 +424,51 @@ export default async (request: Request, context: Context): Promise<Response> => 
         .eq('nutrition_date', nutritionDate);
     }
 
+    const transactionTypeMap: Record<string, string> = {
+      meal: 'earn_meal',
+      workout: 'earn_workout',
+      personal_best: 'earn_personal_best',
+      progress_photo: 'earn_progress_photo',
+      daily_log: 'earn_daily_log',
+      walkthrough: 'earn_walkthrough',
+    };
+    const referenceTypeMap: Record<string, string> = {
+      meal: 'meal_log',
+      workout: 'workout',
+      personal_best: 'personal_best',
+      progress_photo: 'weekly_progress_photo',
+      daily_log: 'daily_nutrition',
+      walkthrough: 'walkthrough_step',
+    };
+    const transactionType = transactionTypeMap[type];
+    const referenceType = referenceTypeMap[type];
+
+    if (type !== 'daily_log') {
+      const { data: existingTransaction } = await supabase
+        .from('point_transactions')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('transaction_type', transactionType)
+        .eq('reference_id', databaseReferenceId)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingTransaction) {
+        return new Response(JSON.stringify({
+          success: false,
+          alreadyAwarded: true,
+          error: 'Already claimed',
+          reason: type === 'walkthrough'
+            ? 'You already earned XP for this walkthrough checkpoint.'
+            : 'You already earned points for this event.',
+          pointsAwarded: 0
+        }), {
+          status: 200,
+          headers
+        });
+      }
+    }
+
     // === CHECK FOR DOUBLE XP ===
     // Fetch user's double XP status
     const { data: userData } = await supabase
@@ -410,7 +478,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
       .single();
 
     const now = new Date();
-    const hasDoubleXp = userData?.double_xp_until && new Date(userData.double_xp_until) > now;
+    const hasDoubleXp = type !== 'walkthrough' && !!(userData?.double_xp_until && new Date(userData.double_xp_until) > now);
     const xpMultiplier = hasDoubleXp ? 2 : 1;
 
     // === AWARD POINTS ===
@@ -423,12 +491,11 @@ export default async (request: Request, context: Context): Promise<Response> => 
       basePoints = POINTS_CONFIG.POINTS_PER_PROGRESS_PHOTO;
     } else if (type === 'daily_log') {
       basePoints = POINTS_CONFIG.POINTS_PER_DAILY_LOG;
+    } else if (type === 'walkthrough') {
+      basePoints = POINTS_CONFIG.POINTS_PER_WALKTHROUGH_CHECKPOINT;
     } else {
       basePoints = POINTS_CONFIG.POINTS_PER_PERSONAL_BEST;
     }
-
-    // Apply double XP multiplier
-    const pointsToAward = basePoints * xpMultiplier;
 
     // Get current points record
     const { data: userPoints, error: fetchError } = await supabase
@@ -441,6 +508,39 @@ export default async (request: Request, context: Context): Promise<Response> => 
       // PGRST116 = no rows returned, which is fine for new users
       console.error('Error fetching user points:', fetchError);
     }
+
+    if (type === 'walkthrough') {
+      const remainingWalkthroughXp = Math.max(
+        0,
+        POINTS_CONFIG.WALKTHROUGH_LEVEL_4_LIFETIME_XP - (userPoints?.lifetime_points || 0)
+      );
+      basePoints = Math.min(basePoints, remainingWalkthroughXp);
+
+      if (basePoints <= 0) {
+        return new Response(JSON.stringify({
+          success: false,
+          targetReached: true,
+          error: 'Walkthrough XP target reached',
+          reason: 'This account already has enough XP to reach Level 4.',
+          pointsAwarded: 0,
+          basePoints: 0,
+          xpMultiplier: 1,
+          doubleXpActive: false,
+          bonusPoints: 0,
+          bonusDescription: null,
+          newTotal: userPoints?.current_points || 0,
+          currentStreak: userPoints?.current_streak || 0,
+          milestonesUnlocked: [],
+          canRedeem: (userPoints?.current_points || 0) >= POINTS_CONFIG.POINTS_FOR_FREE_WEEK
+        }), {
+          status: 200,
+          headers
+        });
+      }
+    }
+
+    // Apply double XP multiplier. Walkthrough XP intentionally never doubles.
+    const pointsToAward = basePoints * xpMultiplier;
 
     // Calculate dates for streak (prefer client's local date for timezone correctness)
     const today = (body.clientDate && /^\d{4}-\d{2}-\d{2}$/.test(body.clientDate))
@@ -468,7 +568,8 @@ export default async (request: Request, context: Context): Promise<Response> => 
     let bonusPoints = 0;
     let bonusDescription = '';
 
-    const streakJustIncremented = lastPostDate === yesterday;
+    const shouldUpdatePostStreak = type !== 'walkthrough';
+    const streakJustIncremented = shouldUpdatePostStreak && lastPostDate === yesterday;
     if (streakJustIncremented) {
       const streakBonus = POINTS_CONFIG.STREAK_BONUSES.find(b => b.days === newStreak);
       if (streakBonus) {
@@ -532,11 +633,13 @@ export default async (request: Request, context: Context): Promise<Response> => 
     const updateData: Record<string, unknown> = {
       current_points: newCurrentPoints,
       lifetime_points: newLifetimePoints,
-      current_streak: newStreak,
-      longest_streak: Math.max(userPoints?.longest_streak || 0, newStreak),
-      last_post_date: today,
       updated_at: new Date().toISOString(),
     };
+    if (shouldUpdatePostStreak) {
+      updateData.current_streak = newStreak;
+      updateData.longest_streak = Math.max(userPoints?.longest_streak || 0, newStreak);
+      updateData.last_post_date = today;
+    }
 
     // Update type-specific counters
     if (type === 'meal') {
@@ -570,7 +673,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
         updateData.workout_streak as number
       );
     }
-    // personal_best and daily_log types don't update specific counters - just award points
+    // personal_best, daily_log, and walkthrough types don't update specific counters.
 
     // Upsert points record
     const { error: updateError } = await supabase
@@ -588,24 +691,10 @@ export default async (request: Request, context: Context): Promise<Response> => 
     }
 
     // Log main transaction
-    const transactionTypeMap: Record<string, string> = {
-      meal: 'earn_meal',
-      workout: 'earn_workout',
-      personal_best: 'earn_personal_best',
-      progress_photo: 'earn_progress_photo',
-      daily_log: 'earn_daily_log',
-    };
-    const referenceTypeMap: Record<string, string> = {
-      meal: 'meal_log',
-      workout: 'workout',
-      personal_best: 'personal_best',
-      progress_photo: 'weekly_progress_photo',
-      daily_log: 'daily_nutrition',
-    };
-    const transactionType = transactionTypeMap[type];
-    const referenceType = referenceTypeMap[type];
     const description = type === 'daily_log'
       ? `Earned ${pointsToAward} points for hitting daily nutrition goals`
+      : type === 'walkthrough'
+        ? `Earned ${pointsToAward} point${pointsToAward === 1 ? '' : 's'} for completing a walkthrough checkpoint`
       : type === 'personal_best'
         ? `Earned ${pointsToAward} point for personal best`
         : type === 'progress_photo'
@@ -616,11 +705,11 @@ export default async (request: Request, context: Context): Promise<Response> => 
       user_id: userId,
       transaction_type: transactionType,
       points_amount: pointsToAward,
-      reference_id: referenceId,
+      reference_id: databaseReferenceId,
       reference_type: referenceType,
       photo_verified: type === 'meal' || type === 'workout' || type === 'progress_photo',
       photo_timestamp: photoTimestamp || null,
-      verification_method: (type === 'personal_best' || type === 'daily_log') ? 'data_verified' : (photoHash ? 'hash_verified' : (photoTimestamp ? 'timestamp_verified' : 'none')),
+      verification_method: (type === 'personal_best' || type === 'daily_log' || type === 'walkthrough') ? 'data_verified' : (photoHash ? 'hash_verified' : (photoTimestamp ? 'timestamp_verified' : 'none')),
       ai_confidence: aiConfidence || null,
       description: description
     });
@@ -735,7 +824,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
       mealTimingBonus: mealTimingBonus,
       mealOnTime: mealOnTime,
       newTotal: finalTotal,
-      currentStreak: newStreak,
+      currentStreak: shouldUpdatePostStreak ? newStreak : (userPoints?.current_streak || 0),
       milestonesUnlocked: milestones,
       canRedeem: finalTotal >= POINTS_CONFIG.POINTS_FOR_FREE_WEEK
     };

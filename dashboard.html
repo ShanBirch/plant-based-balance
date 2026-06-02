@@ -12193,9 +12193,9 @@ if(!window._pbbIsIOSSafari) {
 
 <!-- ========== GUIDED FEATURE TOUR ========== -->
 <style>
-  #guided-tour-overlay { position: fixed; inset: 0; z-index: 99990; pointer-events: none; display: none; }
+  #guided-tour-overlay { position: fixed; inset: 0; z-index: 400000; pointer-events: none; display: none; }
   #guided-tour-overlay.active { display: block; }
-  #guided-tour-bubble { z-index: 99991; }
+  #guided-tour-bubble { z-index: 400001; }
   #guided-tour-spotlight {
     position: absolute;
     border-radius: 14px;
@@ -12219,6 +12219,7 @@ if(!window._pbbIsIOSSafari) {
     transition: top 0.28s cubic-bezier(.4,0,.2,1), left 0.28s cubic-bezier(.4,0,.2,1);
   }
   #guided-tour-bubble .tour-counter { font-size: 0.72rem; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; font-weight: 800; }
+  #guided-tour-bubble .tour-xp-note { display: inline-flex; align-items: center; gap: 6px; background: rgba(245,158,11,0.12); color: #92400e; border: 1px solid rgba(245,158,11,0.18); border-radius: 999px; padding: 6px 10px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 10px; }
   #guided-tour-bubble .tour-title { font-size: 1.08rem; font-weight: 800; margin: 0 0 6px; color: #111827; }
   #guided-tour-bubble .tour-body { font-size: 0.95rem; line-height: 1.45; color: #111827; margin: 0 0 14px; font-weight: 600; }
   #guided-tour-bubble .tour-actions { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
@@ -12227,11 +12228,13 @@ if(!window._pbbIsIOSSafari) {
   #guided-tour-bubble .tour-back { background: #f1f5f9; color: #0f172a; }
   #guided-tour-bubble .tour-next { background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; }
   #guided-tour-bubble .tour-right { display: flex; gap: 8px; }
+  #ptr-indicator.ptr-tour-preview { height: 52px !important; opacity: 1 !important; overflow: hidden !important; }
 </style>
 <div id="guided-tour-overlay">
   <div id="guided-tour-spotlight"></div>
   <div id="guided-tour-bubble">
     <div class="tour-counter" id="tour-counter">Step 1 / 1</div>
+    <div class="tour-xp-note" id="tour-xp-note">Complete the walkthrough to earn XP and reach Level 4.</div>
     <h3 class="tour-title" id="tour-title"></h3>
     <p class="tour-body" id="tour-body"></p>
     <div class="tour-actions">
@@ -12246,16 +12249,16 @@ if(!window._pbbIsIOSSafari) {
 <script>
 (function(){
   const steps = [
-    { tab:'dashboard', sel:'#view-dashboard', title:'Ask Balance by long hold', body:"Ask is off the tab bar now. Press and hold any open space for 3 seconds to bring it up. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in." },
+    { tab:'dashboard', sel:'#tamagotchi-widget-container,#view-dashboard', title:'Ask Balance by long hold', body:"Complete the walkthrough checkpoints to earn enough XP to reach Level 4. Ask is off the tab bar now. Press and hold any open space for 3 seconds to bring it up. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in.", xpReward:'intro' },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Feature Drops', body:"When Balance adds something new, you will get a Feature Drop on your next app open. Tap Show me and Balance points you to the feature and explains what changed." },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do.", quick: true },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Level character rewards', body:"Level 55 unlocks Character 1 first. Every 5 levels after that unlocks the next numbered 3D character skin in story order, with the same celebration and Equip Now flow." },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
-    { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP.", quick: true },
+    { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP.", quick: true },
     { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. Tap yes to review the share card first, then post it to the feed for +2 XP." },
     { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#progress-photo-share-feed-btn,#weekly-progress-photo-done-card', title:'Share progress photos', body:"After your Monday progress photos are saved, share them to Feed for an extra 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-done-card'); return c && c.style.display !== 'none'; } },
-    { tab:'dashboard', sel:'#transformation-hub-card', title:'Weigh-in manager', body:"Tap Transformation to review your weigh-in history, add a missed weigh-in, or delete a bad entry before it bends the graph." },
+    { tab:'dashboard', sel:'#fitbit-performance-card,#transformation-hub-card', title:'Weigh-in manager', body:"Tap Activity Insights, then Transformation, to review weigh-in history, add a missed weigh-in, or delete a bad entry before it bends the graph." },
     { tab:'dashboard', sel:'#weekly-goals-card', title:'Weekly goals', body:"Choose up to 3 goals for the week. Balance tracks the exact signals you picked and carries the results into Weekly Wrapped.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#weekly-checkin-card', title:'Weekly Review', body:"A shimmering gold review card shows the person's onboarding goal, weekly progress, check-ins, mood signals, and one clear action to set next week goals.", quick: true, condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
@@ -12266,7 +12269,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#monthly-raffle-section', title:'Monthly Raffle', body:"Each month you have the first 3 days to enter the raffle. Every entrant pays coins into a shared pool — one winner takes the whole pool plus a rare skin.", condition: function(){ var s = document.getElementById('monthly-raffle-section'); return s && s.style.display !== 'none'; } },
 
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Challenge point breakdowns', body:"Open a challenge leaderboard and select any participant to see where their XP is coming from: nutrition, workouts, weigh-ins, learning, posts, and bonuses." },
-    { tab:'dashboard', sel:'#calorie-tracker-widget', title:'Calorie tracker widget', body:"Home shows calories and macros, with one-tap logging for photos, barcodes, typed meals, manual macros, Build-a-Meal, and recent meals.", quick: true },
+    { tab:'dashboard', sel:'#calorie-tracker-widget', title:'Calorie tracker widget', body:"Home shows calories and macros, with one-tap logging for photos, barcodes, typed meals, manual macros, Build-a-Meal, and recent meals.", quick: true, xpReward:'nutrition' },
     { tab:'dashboard', sel:'#calorie-tracker-widget .nutrition-range-toggle', title:'Day, week, month nutrition', body:"Switch calories and macros between today, this week, and this month so you can see what is left in the full period." },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically.", quick: true },
     { tab:'meals', sel:'[onclick*="openMealFromGallery"]', title:'Upload from your photos', body:"Took a photo of your meal earlier? Tap the gallery icon to pick it from your photo library and log it later." },
@@ -12290,7 +12293,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Change Password', body:"Open Profile > Settings > Password to change your login password any time." },
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
-    { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true },
+    { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Share to group chat', body:"After finishing a workout you can share it straight to your group chat (tap the messages icon top-right) for XP and hype." },
@@ -12300,13 +12303,13 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#form-check-quick-card', title:'Form Checks', body:"Film a quick exercise clip and send it to Shannon when you want him to check your technique. During a workout, use the form-check button at the top of workout mode." },
     { tab:'movement-tab', sel:'#mvmt-workout-journal-section', title:'Tap a workout to see every set', body:"Open Movement Trends and tap any card in your Workout Journal to see the full session — every exercise, every set, reps, weight, and volume.", condition: function(){ return !!document.getElementById('mvmt-workout-journal-section'); } },
 
-    { tab:'learning', sel:'#view-learning', title:'Learn & earn XP', body:"Duolingo-style bite-sized fitness lessons. Score 100% on the quiz to earn XP." },
+    { tab:'learning', sel:'#learning-content [style*="background: white"],#learning-content [style*="background:white"],#learning-content', title:'Learn & earn XP', body:"Duolingo-style bite-sized fitness lessons. Score 100% on the quiz to earn XP." },
 
     { tab:'cycle', sel:'#cycle-hero-card,#view-cycle', title:'Cycle Syncing', body:"Log your period and get workouts synced to your hormonal phases.", condition: function(){ try { return (window.currentUser && (window.currentUser.gender === 'female' || window.currentUser.gender === 'Female')); } catch(e){ return false; } } },
     { tab:'cycle', sel:'#weekly-calendar', title:'Drag workout days', body:"Hold the grip on a workout day and drop it onto another day to swap your weekly schedule.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
     { tab:'cycle', sel:'#weekly-calendar', title:'Add walks and classes', body:"Tap a day, then add a walk, fitness class, Pilates, yoga, or another activity into your Cycle plan.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
 
-    { tab:'friends', sel:'#view-friends', title:'Your feed', body:"Share workouts and gym selfies to your feed for XP." },
+    { tab:'friends', sel:'#feed-composer-card,#view-friends', title:'Your feed', body:"Share workouts and gym selfies to your feed for XP." },
     { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Write a quick update, add a photo or video if you want, then post straight from the top of Feed." },
 
     { tab:'dashboard', sel:'.battle-trigger-btn,#tamagotchi-widget-container', title:'Battle your friends', body:"Challenge friends to Battle FitGotchis (stats battle), Workout Duel (same workout, highest volume wins), or Quiz Battle (15 questions, fastest + most correct wins FitCoins). Win battles for rare drops." },
@@ -12367,9 +12370,53 @@ if(!window._pbbIsIOSSafari) {
           if (isVisible(nodes[j])) return nodes[j];
         }
       }
-      // Fallback: first match even if hidden
-      return document.querySelector(sel);
+      return null;
     } catch(e){ return null; }
+  }
+
+  function closeTourBlockingSurfaces(){
+    ['health-connect-modal', 'native-permissions-modal', 'guest-signup-modal'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (el.style.display && el.style.display !== 'none') el.style.display = 'none';
+      el.classList.remove('active', 'visible', 'show');
+    });
+    var movementTrendsPage = document.getElementById('movement-weekly-trends-page');
+    if (movementTrendsPage && movementTrendsPage.classList.contains('active')) {
+      if (typeof closeMovementWeeklyTrendsPage === 'function') {
+        try { closeMovementWeeklyTrendsPage(); } catch(e) { movementTrendsPage.classList.remove('active'); }
+      } else {
+        movementTrendsPage.classList.remove('active');
+      }
+    }
+  }
+
+  function resetTourTemporaryTargets(){
+    var ptr = document.getElementById('ptr-indicator');
+    if (ptr && ptr.dataset.tourPreview === '1') {
+      ptr.classList.remove('ptr-tour-preview', 'ptr-threshold', 'ptr-refreshing');
+      ptr.dataset.tourPreview = '';
+      var text = ptr.querySelector('.ptr-text');
+      if (text) text.textContent = 'Pull to refresh';
+    }
+  }
+
+  function showTourPullToRefreshHint(){
+    var ptr = document.getElementById('ptr-indicator');
+    if (!ptr) return;
+    ptr.dataset.tourPreview = '1';
+    ptr.classList.add('ptr-tour-preview', 'ptr-threshold');
+    var text = ptr.querySelector('.ptr-text');
+    if (text) text.textContent = 'Pull down to refresh';
+  }
+
+  async function showTourMovementTrends(){
+    try {
+      if (typeof openMovementWeeklyTrendsPage === 'function') openMovementWeeklyTrendsPage();
+    } catch(e) {
+      console.warn('[tour] could not open Movement Trends', e);
+    }
+    await new Promise(function(r){ setTimeout(r, 520); });
   }
 
   async function ensureTab(tabName){
@@ -12385,6 +12432,7 @@ if(!window._pbbIsIOSSafari) {
     if (!spot || !bubble) return;
 
     if (!target) {
+      spot.style.opacity = '0';
       spot.style.width = '0px'; spot.style.height = '0px';
       spot.style.top = '-200px'; spot.style.left = '50%';
       bubble.style.top = '50%';
@@ -12392,6 +12440,7 @@ if(!window._pbbIsIOSSafari) {
       bubble.style.transform = 'translate(-50%, -50%)';
       return;
     }
+    spot.style.opacity = '1';
     bubble.style.transform = '';
     const r = target.getBoundingClientRect();
     const pad = 8;
@@ -12399,8 +12448,8 @@ if(!window._pbbIsIOSSafari) {
     const vh = Math.max(window.innerHeight || 640, 320);
     const top = Math.max(r.top - pad, 8);
     const left = Math.max(r.left - pad, 8);
-    const width = Math.max(0, Math.min(r.width + pad*2, vw - 16));
-    const height = Math.max(0, r.height + pad*2);
+    const width = Math.max(24, Math.min(r.width + pad*2, vw - left - 8));
+    const height = Math.max(24, Math.min(r.height + pad*2, vh - top - 90));
     spot.style.top = top + 'px';
     spot.style.left = left + 'px';
     spot.style.width = width + 'px';
@@ -12432,15 +12481,27 @@ if(!window._pbbIsIOSSafari) {
     if (i < 0 || i >= activeSteps.length) { endFeatureTour(false); return; }
     idx = i;
     const step = activeSteps[i];
+    resetTourTemporaryTargets();
+    closeTourBlockingSurfaces();
     await ensureTab(step.tab);
+    if (step.sel === '#ptr-indicator') showTourPullToRefreshHint();
+    if (step.title === 'Tap a workout to see every set') {
+      await showTourMovementTrends();
+    }
     if (typeof step.action === 'function') {
       try { await step.action(); } catch(e){ console.warn('[tour] step action failed', e); }
     }
 
-    const target = q(step.sel);
+    let target = q(step.sel);
+    if (!target && step.title === 'Customize your character') {
+      target = q('#view-dashboard .profile-icon,.profile-icon');
+    }
+    if (!target && step.title === 'Say hi to Coach Shan') {
+      target = q('#direct-message-modal #dm-messages-container,#dm-messages-container,#view-dashboard .header-msg-icon,.header-msg-icon');
+    }
     if (target && typeof target.scrollIntoView === 'function') {
-      try { target.scrollIntoView({ block:'center', behavior:'smooth' }); } catch(e){}
-      await new Promise(function(r){ setTimeout(r, 350); });
+      try { target.scrollIntoView({ block:'center', behavior:'auto' }); } catch(e){}
+      await new Promise(function(r){ setTimeout(r, 120); });
     }
 
     document.getElementById('tour-counter').textContent = 'Step ' + (i+1) + ' / ' + activeSteps.length;
@@ -12450,6 +12511,17 @@ if(!window._pbbIsIOSSafari) {
     document.getElementById('tour-next-btn').textContent = (i === activeSteps.length - 1) ? 'Finish' : 'Next';
 
     positionBubbleAndSpotlight(target);
+    setTimeout(function(){ positionBubbleAndSpotlight(q(step.sel)); }, 180);
+    setTimeout(function(){ positionBubbleAndSpotlight(q(step.sel)); }, 520);
+
+    const checkpoint = step.xpReward
+      || step.walkthroughReward
+      || (step.title === 'Say hi to Coach Shan' ? 'finish' : null);
+    if (checkpoint && typeof awardPointsForWalkthroughStep === 'function') {
+      awardPointsForWalkthroughStep(Object.assign({}, step, { xpReward: checkpoint }), i + 1, activeSteps.length).catch(function(e){
+        console.warn('[tour] walkthrough XP award failed', e);
+      });
+    }
   }
 
   window.tourNext = function(){
@@ -12459,6 +12531,7 @@ if(!window._pbbIsIOSSafari) {
   window.tourBack = function(){ if (idx > 0) showStep(idx - 1); };
 
   window.endFeatureTour = function(skipped){
+    resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.remove('active');
     try { localStorage.setItem('featureTourComplete','1'); } catch(e){}
@@ -12470,7 +12543,7 @@ if(!window._pbbIsIOSSafari) {
   };
 
   function wantsFullTour(force, options){
-    return force === 'full' || (force && typeof force === 'object' && force.full === true) || (options && options.full === true);
+    return force === true || force === 'full' || (force && typeof force === 'object' && force.full === true) || (options && options.full === true);
   }
 
   window.startFeatureTour = function(force, options){
@@ -12482,6 +12555,7 @@ if(!window._pbbIsIOSSafari) {
     }
     if (!activeSteps.length) return;
     idx = 0;
+    closeTourBlockingSurfaces();
     const overlay = document.getElementById('guided-tour-overlay');
     if (!overlay) return;
     overlay.classList.add('active');
@@ -13546,7 +13620,7 @@ if(!window._pbbIsIOSSafari) {
 })();
 </script>
 
-<div class="onboarding-overlay" id="onboarding-wizard" style="display:none; z-index:12000;">
+<div class="onboarding-overlay" id="onboarding-wizard" style="display:none; z-index:13000;">
     <div class="wizard-particles" id="wizard-particles"></div>
     <div class="onboarding-modal wizard-container" style="max-width: 450px; max-height: 90vh; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
 
@@ -13864,11 +13938,11 @@ if(!window._pbbIsIOSSafari) {
                     <button type="button" onclick="selectTrainingFrequency(6)" class="freq-btn" data-freq="6" style="width:45px; height:45px; border-radius:50%; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:18px; font-weight:700; cursor:pointer;">6</button>
                     <button type="button" onclick="selectTrainingFrequency(7)" class="freq-btn" data-freq="7" style="width:45px; height:45px; border-radius:50%; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:18px; font-weight:700; cursor:pointer;">7</button>
                 </div>
-                <p id="freq-tip" style="text-align:center; color:#48864B; font-size:13px; min-height:35px; padding:8px; background:rgba(72,134,75,0.1); border-radius:8px; margin-bottom:20px;">Select how many days you want to train</p>
+                <p id="freq-tip" style="text-align:center; color:#48864B; font-size:13px; min-height:35px; padding:8px; background:rgba(72,134,75,0.1); border-radius:8px; margin-bottom:12px;">Select how many days you want to train</p>
 
                 <!-- Day Selector -->
-                <p style="text-align:center; color:#666; margin-bottom:10px; font-weight:600;">Which days work for you?</p>
-                <div style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-bottom:15px;">
+                <p style="text-align:center; color:#666; margin-bottom:8px; font-weight:600;">Suggested days, tap to change.</p>
+                <div style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
                     <button type="button" onclick="toggleTrainingDay('monday')" class="day-btn" data-day="monday" style="width:42px; height:42px; border-radius:8px; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:11px; font-weight:700; cursor:pointer;">Mon</button>
                     <button type="button" onclick="toggleTrainingDay('tuesday')" class="day-btn" data-day="tuesday" style="width:42px; height:42px; border-radius:8px; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:11px; font-weight:700; cursor:pointer;">Tue</button>
                     <button type="button" onclick="toggleTrainingDay('wednesday')" class="day-btn" data-day="wednesday" style="width:42px; height:42px; border-radius:8px; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:11px; font-weight:700; cursor:pointer;">Wed</button>

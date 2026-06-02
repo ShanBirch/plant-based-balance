@@ -5900,6 +5900,21 @@ function setOnboardingScrollLock(locked) {
     } catch (e) {}
 }
 
+function closeOnboardingBlockingSurfaces() {
+    [
+        'health-connect-modal',
+        'native-permissions-modal',
+        'guest-signup-modal',
+        'weekly-goals-modal',
+        'store-review-modal'
+    ].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.display = 'none';
+        el.classList.remove('active', 'visible', 'show');
+    });
+}
+
 function normalizeWizardStep() {
     while (skippedWizardSlides.includes(currentWizardStep) && currentWizardStep < finalWizardStep) {
         currentWizardStep++;
@@ -7812,6 +7827,7 @@ function initOnboardingWizard() {
     // Guard against multiple simultaneous triggers
     const modal = document.getElementById('onboarding-wizard');
     if (!modal) return;
+    closeOnboardingBlockingSurfaces();
     if (modal.style.display === 'flex') return; // Already showing
     initWizardKeyboardFlow();
 
@@ -8796,6 +8812,7 @@ function startFitgotchiStory(onComplete) {
 
 function updateWizardUI() {
     normalizeWizardStep();
+    closeOnboardingBlockingSurfaces();
     const wizardOverlay = document.getElementById('onboarding-wizard');
     if (wizardOverlay) {
         wizardOverlay.classList.toggle('wizard-chat-mode', currentWizardStep === 1);
@@ -10251,6 +10268,46 @@ function wizardCopyLink() {
 
 // ========== WORKOUT CALENDAR FUNCTIONS ==========
 
+function getWizardSuggestedTrainingDays(num) {
+    const suggestions = {
+        2: ['monday', 'thursday'],
+        3: ['monday', 'wednesday', 'friday'],
+        4: ['monday', 'tuesday', 'thursday', 'friday'],
+        5: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        6: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+        7: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+    };
+    return (suggestions[num] || []).slice();
+}
+
+function formatWizardTrainingDays(days) {
+    const labels = {
+        monday: 'Mon',
+        tuesday: 'Tue',
+        wednesday: 'Wed',
+        thursday: 'Thu',
+        friday: 'Fri',
+        saturday: 'Sat',
+        sunday: 'Sun'
+    };
+    return days.map(day => labels[day] || day).join(', ');
+}
+
+function applyWizardTrainingDays(days) {
+    wizardSelectedDays = new Set(days);
+
+    document.querySelectorAll('.day-btn').forEach(btn => {
+        const isSelected = wizardSelectedDays.has(btn.dataset.day);
+        btn.style.background = isSelected ? '#2f6f38' : 'rgba(255,255,255,0.08)';
+        btn.style.color = isSelected ? '#fff' : 'rgba(255,255,255,0.92)';
+    });
+
+    const hiddenInput = document.getElementById('wizard-training-days');
+    if (hiddenInput) {
+        hiddenInput.value = Array.from(wizardSelectedDays).join(',');
+    }
+}
+
 function selectTrainingFrequency(num) {
     wizardTrainingFrequency = num;
     document.getElementById('wizard-training-frequency').value = num;
@@ -10277,16 +10334,11 @@ function selectTrainingFrequency(num) {
         6: 'Serious training - we\'ll ensure proper recovery',
         7: 'Every day! We\'ll include active recovery days'
     };
-    document.getElementById('freq-tip').textContent = tips[num] || '';
+    const suggestedDays = getWizardSuggestedTrainingDays(num);
+    const suggestedText = suggestedDays.length ? `${formatWizardTrainingDays(suggestedDays)} selected. Tap any day to change.` : '';
+    document.getElementById('freq-tip').textContent = [tips[num], suggestedText].filter(Boolean).join('. ');
 
-    // Reset day selection if frequency changed
-    if (wizardSelectedDays.size > num) {
-        wizardSelectedDays.clear();
-        document.querySelectorAll('.day-btn').forEach(btn => {
-            btn.style.background = 'rgba(255,255,255,0.08)';
-            btn.style.color = 'rgba(255,255,255,0.92)';
-        });
-    }
+    applyWizardTrainingDays(suggestedDays);
     updateDaysCounter();
 }
 
@@ -10475,25 +10527,42 @@ function renderWizardCalendarPreview() {
         const info = workoutInfo[workout] || { icon: '?', name: 'Unknown', desc: '' };
 
         const row = document.createElement('div');
+        row.className = 'wizard-calendar-row';
         row.style.cssText = `display:flex; align-items:center; padding:12px 0; cursor:pointer; transition:background 0.2s;${idx < 6 ? ' border-bottom:1px solid rgba(255,255,255,0.1);' : ''}`;
         row.onmouseenter = () => { row.style.background = 'rgba(255,255,255,0.05)'; };
         row.onmouseleave = () => { row.style.background = 'transparent'; };
 
         const dayCol = document.createElement('div');
+        dayCol.className = 'wizard-calendar-day';
         dayCol.style.cssText = 'width:90px; font-weight:600; color:#86efac; font-size:13px;';
         dayCol.textContent = dayLabels[idx];
 
         const workoutCol = document.createElement('div');
+        workoutCol.className = 'wizard-calendar-workout';
         workoutCol.style.cssText = 'flex:1; display:flex; align-items:center; gap:10px;';
 
         const icon = document.createElement('span');
+        icon.className = 'wizard-calendar-icon';
         icon.style.fontSize = '18px';
         icon.textContent = info.icon;
 
         const workoutText = document.createElement('div');
-        workoutText.innerHTML = `<div style="font-weight:500; color:#ffffff; font-size:13px;">${info.name}</div>${info.desc ? `<div style="font-size:11px; color:rgba(255,255,255,0.6);">${info.desc}</div>` : ''}`;
+        workoutText.className = 'wizard-calendar-workout-text';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'wizard-calendar-workout-name';
+        nameEl.textContent = info.name;
+        workoutText.appendChild(nameEl);
+
+        if (info.desc) {
+            const descEl = document.createElement('div');
+            descEl.className = 'wizard-calendar-workout-desc';
+            descEl.textContent = info.desc;
+            workoutText.appendChild(descEl);
+        }
 
         const editIcon = document.createElement('span');
+        editIcon.className = 'wizard-calendar-edit-icon';
         editIcon.style.cssText = 'margin-left:auto; color:#86efac; font-size:14px;';
         editIcon.innerHTML = '&#9662;';
 
@@ -10531,9 +10600,30 @@ function openCalendarEditor() {
     updateWizardUI();
 }
 
+function getWizardSelectedEquipment() {
+    const legacySelectValue = document.getElementById('wizard-equipment')?.value;
+    if (legacySelectValue) return legacySelectValue;
+
+    try {
+        const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        if (sessionProfile.equipment_access) return sessionProfile.equipment_access;
+    } catch (e) {}
+
+    try {
+        const localProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        if (localProfile.equipment_access) return localProfile.equipment_access;
+    } catch (e) {}
+
+    if (wizardChatAnswers && wizardChatAnswers.equipment_access) {
+        return wizardChatAnswers.equipment_access;
+    }
+
+    return 'none';
+}
+
 // Get workout options based on wizard equipment selection
 function getWizardWorkoutOptions() {
-    const equipment = document.getElementById('wizard-equipment')?.value || 'none';
+    const equipment = getWizardSelectedEquipment();
     const options = [];
 
     // Base options available to everyone
@@ -10610,7 +10700,7 @@ function showWizardWorkoutDropdown(day, dayLabel, updateCallback) {
     overlay.style.right = '0';
     overlay.style.bottom = '0';
     overlay.style.background = 'rgba(0,0,0,0.3)';
-    overlay.style.zIndex = '13000';
+    overlay.style.zIndex = '13050';
     overlay.style.display = 'flex';
     overlay.style.alignItems = 'center';
     overlay.style.justifyContent = 'center';
