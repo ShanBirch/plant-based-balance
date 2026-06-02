@@ -12265,7 +12265,6 @@ if(!window._pbbIsIOSSafari) {
         await new Promise(function(r){ setTimeout(r, 260); });
       } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do.", quick: true },
-    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Level character rewards', body:"Level 55 unlocks Character 1 first. Every 5 levels after that unlocks the next numbered 3D character skin in story order, with the same celebration and Equip Now flow." },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
     { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP.", quick: true },
     { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. Tap yes to review the share card first, then post it to the feed for +2 XP." },
@@ -13024,13 +13023,6 @@ if(!window._pbbIsIOSSafari) {
       title: 'Weekly Review',
       body: "A shimmering gold review card shows the person's onboarding goal, weekly progress, check-ins, mood signals, and one clear action to set next week goals.",
       condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; }
-    },
-    {
-      id: 'level-character-rewards-v2',
-      tab: 'dashboard',
-      sel: '#tamagotchi-widget-container',
-      title: 'Level character rewards',
-      body: "Level 55 unlocks Character 1 first. Every 5 levels after that unlocks the next numbered 3D character skin in story order, with the usual preview and Equip Now button."
     },
     {
       id: 'customize-character-shortcut-v1',
