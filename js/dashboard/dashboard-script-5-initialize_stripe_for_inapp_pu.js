@@ -6038,18 +6038,106 @@ const WIZARD_GOAL_INTENT_LABELS = {
 
 const WIZARD_LEARNING_INTEREST_LABELS = {
     plant_based_cooking: 'Plant-based cooking',
-    macronutrient_science: 'Macronutrient science',
-    micronutrient_science: 'Micronutrient science',
-    behavior_change_science: 'Behavior change science',
+    macronutrient_science: 'Macros',
+    micronutrient_science: 'Vitamins & minerals',
+    behavior_change_science: 'Behaviour change',
+    mindset: 'Mindset',
+    neuroscience: 'Neuroscience',
+    longevity: 'Longevity',
     weight_training_technique: 'Weight training technique',
-    meal_prep_planning: 'Meal prep and planning',
-    protein_science: 'Protein science',
+    meal_prep_planning: 'Meal prep & planning',
+    protein_science: 'Protein',
     supplements: 'Supplements',
-    recovery_sleep_energy: 'Recovery, sleep and energy',
-    fat_loss_basics: 'Fat loss basics',
-    muscle_gain_basics: 'Muscle gain basics',
-    healthy_habits: 'Healthy habit building'
+    recovery_sleep_energy: 'Recovery, sleep & energy',
+    fat_loss_basics: 'Fat loss',
+    muscle_gain_basics: 'Muscle growth'
 };
+
+const WIZARD_LEARNING_INTEREST_YOUTUBE_TOPICS = {
+    plant_based_cooking: {
+        topic: 'plant-based cooking',
+        queries: ['high protein plant based meals', 'easy vegan meal prep', 'plant based cooking tips'],
+        learning_modules: ['fuel']
+    },
+    macronutrient_science: {
+        topic: 'macros',
+        queries: ['macros explained for fat loss', 'protein carbs fat basics', 'how to balance macros'],
+        learning_modules: ['fuel']
+    },
+    micronutrient_science: {
+        topic: 'vitamins and minerals',
+        queries: ['plant based vitamins and minerals', 'micronutrients explained', 'vegan iron b12 calcium'],
+        learning_modules: ['fuel']
+    },
+    behavior_change_science: {
+        topic: 'behaviour change',
+        queries: ['how to build healthy habits', 'behaviour change fitness', 'habit stacking nutrition'],
+        learning_modules: ['mind']
+    },
+    mindset: {
+        topic: 'mindset',
+        queries: ['fitness mindset for beginners', 'motivation consistency fitness', 'identity based habits fitness'],
+        learning_modules: ['mind']
+    },
+    neuroscience: {
+        topic: 'neuroscience',
+        queries: ['neuroscience of habits', 'predictive brain explained', 'dopamine motivation fitness'],
+        learning_modules: ['mind', 'body']
+    },
+    longevity: {
+        topic: 'longevity',
+        queries: ['longevity health habits', 'metabolic health basics', 'sleep stress longevity'],
+        learning_modules: ['longevity', 'hormones']
+    },
+    weight_training_technique: {
+        topic: 'weight training technique',
+        queries: ['weight training form tips', 'gym technique basics', 'strength training technique'],
+        learning_modules: ['workouts', 'growth']
+    },
+    meal_prep_planning: {
+        topic: 'meal prep and planning',
+        queries: ['healthy meal prep planning', 'high protein vegan meal prep', 'weekly meal planning tips'],
+        learning_modules: ['fuel']
+    },
+    protein_science: {
+        topic: 'protein',
+        queries: ['plant based protein tips', 'protein intake explained', 'high protein vegan foods'],
+        learning_modules: ['fuel']
+    },
+    supplements: {
+        topic: 'supplements',
+        queries: ['vegan supplements explained', 'creatine basics', 'b12 iron omega 3 vegan'],
+        learning_modules: ['fuel']
+    },
+    recovery_sleep_energy: {
+        topic: 'recovery sleep and energy',
+        queries: ['sleep recovery fitness tips', 'stress recovery energy', 'how sleep affects training'],
+        learning_modules: ['longevity', 'hormones']
+    },
+    fat_loss_basics: {
+        topic: 'fat loss',
+        queries: ['fat loss basics explained', 'calorie deficit tips', 'sustainable fat loss habits'],
+        learning_modules: ['fuel', 'mind']
+    },
+    muscle_gain_basics: {
+        topic: 'muscle growth',
+        queries: ['muscle growth basics', 'hypertrophy training tips', 'build muscle nutrition'],
+        learning_modules: ['workouts', 'growth']
+    }
+};
+
+function buildWizardLearningInterestItem(id) {
+    const label = WIZARD_LEARNING_INTEREST_LABELS[id];
+    if (!label) return null;
+    const youtube = WIZARD_LEARNING_INTEREST_YOUTUBE_TOPICS[id] || {};
+    return {
+        id,
+        label,
+        youtube_topic: youtube.topic || label,
+        youtube_queries: Array.isArray(youtube.queries) ? youtube.queries.slice() : [],
+        learning_modules: Array.isArray(youtube.learning_modules) ? youtube.learning_modules.slice() : []
+    };
+}
 
 const WIZARD_PRIMARY_GOAL_LABELS = {
     Flat: 'Lose weight / get lean',
@@ -6357,7 +6445,6 @@ const WIZARD_CHAT_STEPS = [
         key: 'learning_interests',
         type: 'multi',
         question: 'What are you interested in learning about?',
-        prelude: 'I can tailor your Learning tab and the little coaching tips you get from Shannon.',
         required: true,
         maxSelect: 5,
         submitLabel: 'Lock learning topics',
@@ -6367,14 +6454,16 @@ const WIZARD_CHAT_STEPS = [
             { value: 'macronutrient_science', label: WIZARD_LEARNING_INTEREST_LABELS.macronutrient_science },
             { value: 'micronutrient_science', label: WIZARD_LEARNING_INTEREST_LABELS.micronutrient_science },
             { value: 'behavior_change_science', label: WIZARD_LEARNING_INTEREST_LABELS.behavior_change_science },
+            { value: 'mindset', label: WIZARD_LEARNING_INTEREST_LABELS.mindset },
+            { value: 'neuroscience', label: WIZARD_LEARNING_INTEREST_LABELS.neuroscience },
+            { value: 'longevity', label: WIZARD_LEARNING_INTEREST_LABELS.longevity },
             { value: 'weight_training_technique', label: WIZARD_LEARNING_INTEREST_LABELS.weight_training_technique },
             { value: 'meal_prep_planning', label: WIZARD_LEARNING_INTEREST_LABELS.meal_prep_planning },
             { value: 'protein_science', label: WIZARD_LEARNING_INTEREST_LABELS.protein_science },
             { value: 'recovery_sleep_energy', label: WIZARD_LEARNING_INTEREST_LABELS.recovery_sleep_energy },
             { value: 'fat_loss_basics', label: WIZARD_LEARNING_INTEREST_LABELS.fat_loss_basics },
             { value: 'muscle_gain_basics', label: WIZARD_LEARNING_INTEREST_LABELS.muscle_gain_basics },
-            { value: 'supplements', label: WIZARD_LEARNING_INTEREST_LABELS.supplements },
-            { value: 'healthy_habits', label: WIZARD_LEARNING_INTEREST_LABELS.healthy_habits }
+            { value: 'supplements', label: WIZARD_LEARNING_INTEREST_LABELS.supplements }
         ]
     },
     { key: 'ig_handle', type: 'text', question: 'Last one, what is your Instagram handle? You can skip this.', placeholder: '@yourhandle', optional: true }
@@ -6615,15 +6704,17 @@ function wizardChatMultiFromText(step, raw) {
             ['plant_based_cooking', ['plant based cooking', 'plant based', 'vegan cooking', 'recipes', 'cooking']],
             ['macronutrient_science', ['macronutrient', 'macronutrients', 'macros', 'macro', 'calories', 'carbs', 'fats']],
             ['micronutrient_science', ['micronutrient', 'micronutrients', 'vitamins', 'minerals', 'iron', 'b12']],
-            ['behavior_change_science', ['behavior', 'behaviour', 'habit', 'habits', 'mindset', 'discipline']],
+            ['behavior_change_science', ['behavior', 'behaviour', 'behaviour change', 'behavior change', 'habit', 'habits', 'discipline']],
+            ['mindset', ['mindset', 'motivation', 'identity', 'mental', 'confidence']],
+            ['neuroscience', ['neuroscience', 'brain', 'dopamine', 'predictive brain', 'nervous system']],
+            ['longevity', ['longevity', 'metabolic health', 'aging', 'ageing', 'lifespan', 'healthspan']],
             ['weight_training_technique', ['weight training', 'lifting', 'technique', 'form', 'gym technique']],
             ['meal_prep_planning', ['meal prep', 'meal planning', 'planning', 'prep']],
             ['protein_science', ['protein']],
             ['recovery_sleep_energy', ['recovery', 'sleep', 'energy', 'fatigue']],
             ['fat_loss_basics', ['fat loss', 'lose fat', 'weight loss']],
             ['muscle_gain_basics', ['muscle', 'muscle gain', 'build muscle', 'hypertrophy']],
-            ['supplements', ['supplement', 'supplements', 'creatine']],
-            ['healthy_habits', ['healthy habits', 'health habits', 'routine']]
+            ['supplements', ['supplement', 'supplements', 'creatine']]
         ],
         dietary_requirements: [
             ['vegan', ['vegan', 'plant based', 'plantbased']],
@@ -7176,6 +7267,10 @@ function saveWizardChatIntakeToInputs() {
     const goalIntentLabels = goalIntentIds.map(id => WIZARD_GOAL_INTENT_LABELS[id]).filter(Boolean);
     const weeklyGoalFocusIds = Array.isArray(answers.weekly_goal_focus) ? answers.weekly_goal_focus : [];
     const weeklyGoalFocusLabels = weeklyGoalFocusIds.map(id => WIZARD_WEEKLY_GOAL_FOCUS_LABELS[id]).filter(Boolean);
+    const learningInterestIds = Array.isArray(answers.learning_interests)
+        ? answers.learning_interests
+        : (answers.learning_interests ? [answers.learning_interests] : []);
+    const learningInterestItems = learningInterestIds.map(buildWizardLearningInterestItem).filter(Boolean);
     const inferredGoalBodyType = answers.goalBodyType || deriveWizardGoalBodyType(goalIntentIds);
     setWizardFieldValue('wizard-goal-type', inferredGoalBodyType);
     setWizardFieldValue('wizard-goal-intents', JSON.stringify(goalIntentIds));
@@ -7189,11 +7284,14 @@ function saveWizardChatIntakeToInputs() {
     setWizardFieldValue('wizard-independence-goal', answers.independence_goal);
 
     wizardDietaryRequirements = new Set(Array.isArray(answers.dietary_requirements) ? answers.dietary_requirements : []);
+    wizardLearningInterests = new Set(learningInterestItems.map(item => item.id));
     try {
         localStorage.setItem('onboardingGoalIntentIds', JSON.stringify(goalIntentIds));
         localStorage.setItem('onboardingGoalIntents', JSON.stringify(goalIntentIds.map(id => ({ id, label: WIZARD_GOAL_INTENT_LABELS[id] })).filter(item => item.label)));
         localStorage.setItem('onboardingWeeklyGoalFocusIds', JSON.stringify(weeklyGoalFocusIds));
         localStorage.setItem('onboardingWeeklyGoalFocus', JSON.stringify(weeklyGoalFocusIds.map(id => ({ id, label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS[id] })).filter(item => item.label)));
+        localStorage.setItem('onboardingLearningInterestIds', JSON.stringify(Array.from(wizardLearningInterests)));
+        localStorage.setItem('onboardingLearningInterests', JSON.stringify(learningInterestItems));
     } catch (e) {}
     return true;
 }
@@ -9259,7 +9357,13 @@ async function wizardNext() {
         const weeklyGoalFocusLabels = readWizardJsonField('wizard-weekly-goal-focus-labels', []);
         const onboardingChatFreeform = readWizardJsonField('wizard-chat-freeform', {});
         const learningInterestIds = Array.from(wizardLearningInterests);
-        const learningInterestLabels = learningInterestIds.map(id => WIZARD_LEARNING_INTEREST_LABELS[id]).filter(Boolean);
+        const learningInterestItems = learningInterestIds.map(buildWizardLearningInterestItem).filter(Boolean);
+        const learningInterestLabels = learningInterestItems.map(item => item.label);
+        const learningInterestYoutubeTopics = learningInterestItems.map(item => item.youtube_topic).filter(Boolean);
+        const learningInterestYoutubeQueries = learningInterestItems.reduce((queries, item) => {
+            if (Array.isArray(item.youtube_queries)) queries.push(...item.youtube_queries);
+            return queries;
+        }, []);
         const onboardingGoalIntents = goalIntentIds
             .map(id => ({ id, label: WIZARD_GOAL_INTENT_LABELS[id] }))
             .filter(item => item.label);
@@ -9298,9 +9402,9 @@ async function wizardNext() {
             onboarding_weekly_goal_focus: onboardingWeeklyGoalFocus,
             learning_interests: learningInterestIds,
             learning_interest_labels: learningInterestLabels,
-            onboarding_learning_interests: learningInterestIds
-                .map(id => ({ id, label: WIZARD_LEARNING_INTEREST_LABELS[id] }))
-                .filter(item => item.label),
+            learning_interest_youtube_topics: learningInterestYoutubeTopics,
+            learning_interest_youtube_queries: learningInterestYoutubeQueries,
+            onboarding_learning_interests: learningInterestItems,
             onboarding_chat_freeform: onboardingChatFreeform,
             goal_catcher: goalCatcher,
             main_blocker: goalCatcher.main_blocker,
