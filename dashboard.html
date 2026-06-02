@@ -12271,7 +12271,10 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#progress-photo-share-feed-btn,#weekly-progress-photo-done-card', title:'Share progress photos', body:"After your Monday progress photos are saved, share them to Feed for an extra 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-done-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#weekly-checkin-card', title:'Weekly Review', body:"A shimmering gold review card shows the person's onboarding goal, weekly progress, check-ins, mood signals, and one clear action to set next week goals.", quick: true, condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
-    { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
+    { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach.", action: async function(){
+        showTourMoodCheckinPreview();
+        await new Promise(function(r){ setTimeout(r, 120); });
+      } },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
 
@@ -12387,6 +12390,43 @@ if(!window._pbbIsIOSSafari) {
       var text = ptr.querySelector('.ptr-text');
       if (text) text.textContent = 'Pull to refresh';
     }
+    var mood = document.getElementById('mood-checkin-card');
+    if (mood && mood.dataset.tourPreview === '1') {
+      mood.style.display = mood.dataset.tourPreviousDisplay || 'none';
+      var title = document.getElementById('mood-checkin-title');
+      if (title && typeof mood.dataset.tourPreviousTitle !== 'undefined') {
+        title.textContent = mood.dataset.tourPreviousTitle;
+      }
+      var subtitle = document.getElementById('mood-checkin-subtitle');
+      if (subtitle && typeof mood.dataset.tourPreviousSubtitle !== 'undefined') {
+        subtitle.textContent = mood.dataset.tourPreviousSubtitle;
+      }
+      var form = document.getElementById('mood-checkin-form');
+      if (form && typeof mood.dataset.tourPreviousFormDisplay !== 'undefined') {
+        form.style.display = mood.dataset.tourPreviousFormDisplay;
+      }
+      var success = document.getElementById('mood-checkin-success');
+      if (success && typeof mood.dataset.tourPreviousSuccessDisplay !== 'undefined') {
+        success.style.display = mood.dataset.tourPreviousSuccessDisplay;
+      }
+      var submit = document.getElementById('mood-checkin-submit');
+      if (submit && typeof mood.dataset.tourPreviousSubmitDisplay !== 'undefined') {
+        submit.style.display = mood.dataset.tourPreviousSubmitDisplay;
+      }
+      delete mood.dataset.tourPreview;
+      delete mood.dataset.tourPreviousDisplay;
+      delete mood.dataset.tourPreviousTitle;
+      delete mood.dataset.tourPreviousSubtitle;
+      delete mood.dataset.tourPreviousFormDisplay;
+      delete mood.dataset.tourPreviousSuccessDisplay;
+      delete mood.dataset.tourPreviousSubmitDisplay;
+    }
+    var moodDone = document.getElementById('mood-checkin-done-card');
+    if (moodDone && moodDone.dataset.tourHidden === '1') {
+      moodDone.style.display = moodDone.dataset.tourPreviousDisplay || 'none';
+      delete moodDone.dataset.tourHidden;
+      delete moodDone.dataset.tourPreviousDisplay;
+    }
     try {
       if (typeof window.hideAskBalanceCommandPalette === 'function') {
         window.hideAskBalanceCommandPalette();
@@ -12444,6 +12484,48 @@ if(!window._pbbIsIOSSafari) {
     ptr.classList.add('ptr-tour-preview', 'ptr-threshold');
     var text = ptr.querySelector('.ptr-text');
     if (text) text.textContent = 'Pull down to refresh';
+  }
+
+  function showTourMoodCheckinPreview(){
+    var card = document.getElementById('mood-checkin-card');
+    if (!card) return;
+    var done = document.getElementById('mood-checkin-done-card');
+    if (done && isVisible(done)) {
+      done.dataset.tourHidden = '1';
+      done.dataset.tourPreviousDisplay = done.style.display || '';
+      done.style.display = 'none';
+    }
+    if (isVisible(card)) return;
+
+    card.dataset.tourPreview = '1';
+    card.dataset.tourPreviousDisplay = card.style.display || '';
+
+    var title = document.getElementById('mood-checkin-title');
+    if (title) {
+      card.dataset.tourPreviousTitle = title.textContent || '';
+      title.textContent = 'Daily mood check-in';
+    }
+    var subtitle = document.getElementById('mood-checkin-subtitle');
+    if (subtitle) {
+      card.dataset.tourPreviousSubtitle = subtitle.textContent || '';
+      subtitle.textContent = 'Mood, energy, and stress in 3 taps';
+    }
+    var form = document.getElementById('mood-checkin-form');
+    if (form) {
+      card.dataset.tourPreviousFormDisplay = form.style.display || '';
+      form.style.display = 'block';
+    }
+    var success = document.getElementById('mood-checkin-success');
+    if (success) {
+      card.dataset.tourPreviousSuccessDisplay = success.style.display || '';
+      success.style.display = 'none';
+    }
+    var submit = document.getElementById('mood-checkin-submit');
+    if (submit) {
+      card.dataset.tourPreviousSubmitDisplay = submit.style.display || '';
+      submit.style.display = 'none';
+    }
+    card.style.display = 'block';
   }
 
   async function showTourMovementTrends(){
