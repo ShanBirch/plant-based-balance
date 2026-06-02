@@ -1,0 +1,173 @@
+const {
+    supabaseQuery,
+} = require('./client-context');
+const {
+    resolveMetaIgAccessToken,
+} = require('./meta-ig-accounts');
+
+const DEFAULT_SITE_URL = 'https://plantbased-balance.org';
+const DEFAULT_VIDEO_PATH = '/assets/ig/challenge-story-next-round.mp4';
+const DEFAULT_GRAPH_BASE = 'https://graph.instagram.com';
+
+function cleanString(value, max = 1000) {
+    return String(value || '').trim().slice(0, max);
+}
+
+function normalizeGraphApiVersion(value) {
+    const raw = cleanString(value, 40);
+    if (!raw) return 'v25.0';
+    return raw.startsWith('v') ? raw : `v${raw}`;
+}
+
+function siteUrl() {
+    return cleanString(process.env.URL || process.env.SITE_URL || DEFAULT_SITE_URL, 300).replace(/\/+$/, '');
+}
+
+function defaultBalanceChallengeStoryUrl() {
+    const explicit = cleanString(process.env.BALANCE_CHALLENGE_STORY_VIDEO_URL, 700);
+    if (explicit) return explicit;
+    return `${siteUrl()}${DEFAULT_VIDEO_PATH}`;
+}
+
+function graphBase() {
+    return cleanString(process.env.META_IG_GRAPH_BASE || process.env.IG_GRAPH_BASE || DEFAULT_GRAPH_BASE, 200).replace(/\/+$/, '');
+}
+
+function graphVersion() {
+    return normalizeGraphApiVersion(
+        process.env.IG_GRAPH_API_VERSION
+        || process.env.INSTAGRAM_GRAPH_API_VERSION
+        || process.env.META_GRAPH_API_VERSION
+        || 'v25.0'
+    );
+}
+
+function defaultIgUserId() {
+    return cleanString(
+        process.env.INSTAGRAM_GRAPH_ACCOUNT_ID
+        || process.env.IG_GRAPH_BUSINESS_ACCOUNT_ID
+        || process.env.META_IG_USER_ID
+        || process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID,
+        120
+    );
+}
+
+function graphUrl(path) {
+    return `${graphBase()}/${graphVersion()}/${String(path || '').replace(/^\/+/, '')}`;
+}
+
+async function graphPost(path, params) {
+    const body = new URLSearchParams();
+    Object.entries(params || {}).forEach(([key, value]) => {
+        if (value != null && value !== '') body.set(key, String(value));
+    });
+    const res = await fetch(graphUrl(path), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+    });
+    const text = await res.text();
+    let data = {};
+    try {
+        data = text ? JSON.parse(text) : {};
+    } catch {
+        data = { raw: text };
+    }
+    if (!res.ok) {
+        const message = data?.error?.message || text || `Graph API error ${res.status}`;
+        const error = new Error(message);
+        error.status = res.status;
+        error.graph = data;
+        throw error;
+    }
+    return data;
+}
+
+async function graphGet(path, params) {
+    const url = new URL(graphUrl(path));
+    Object.entries(params || {}).forEach(([key, value]) => {
+        if (value != null && value !== '') url.searchParams.set(key, String(value));
+    });
+    const res = await fetch(url);
+    const text = await res.text();
+    let data = {};
+    try {
+        data = text ? JSON.parse(text) : {};
+    } catch {
+        data = { raw: text };
+    }
+    if (!res.ok) {
+        const message = data?.error?.message || text || `Graph API error ${res.status}`;
+        const error = new Error(message);
+        error.status = res.status;
+        error.graph = data;
+        throw error;
+    }
+    return data;
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function waitForContainer(containerId, token, { timeoutMs = 22000, intervalMs = 2000 } = {}) {
+    const started = Date.now();
+    let lastStatus = null;
+
+    while (Date.now() - started <= timeoutMs) {
+        const status = await graphGet(containerId, {
+            fields: 'status_code,status',
+            access_token: token,
+        });
+        lastStatus = status;
+        const code = cleanString(status.status_code || status.status, 80).toUpperCase();
+        if (code === 'FINISHED') return status;
+        if (['ERROR', 'EXPIRED'].includes(code)) {
+            throw new Error(`Instagram media container ${containerId} is ${code.toLowerCase()}`);
+        }
+        await sleep(intervalMs);
+    }
+
+    throw new Error(`Instagram media container ${containerId} was not ready in time. Last status: ${JSON.stringify(lastStatus || {})}`);
+}
+
+async function publishBalanceChallengeStory(options = {}) {
+    const igUserId = cleanString(options.igUserId || defaultIgUserId(), 120);
+    const videoUrl = cleanString(options.videoUrl || defaultBalanceChallengeStoryUrl(), 700);
+    if (!igUserId) throw new Error('Missing Instagram Graph account id');
+    if (!videoUrl || !/^https:\/\//i.test(videoUrl)) throw new Error('Story video URL must be a public https URL');
+
+    const resolved = await resolveMetaIgAccessToken(igUserId, supabaseQuery);
+    if (!resolved.token) throw new Error('Missing Instagram Graph access token');
+
+    const container = await graphPost(`${encodeURIComponent(igUserId)}/media`, {
+        media_type: 'STORIES',
+        video_url: videoUrl,
+        access_token: resolved.token,
+    });
+    const creationId = cleanString(container.id, 120);
+    if (!creationId) throw new Error('Instagram did not return a media container id');
+
+    const status = await waitForContainer(creationId, resolved.token, options.poll || {});
+    const published = await graphPost(`${encodeURIComponent(igUserId)}/media_publish`, {
+        creation_id: creationId,
+        access_token: resolved.token,
+    });
+
+    return {
+        ok: true,
+        source: cleanString(options.source || 'balance_challenge_story', 120),
+        igUserId,
+        videoUrl,
+        creationId,
+        status,
+        mediaId: cleanString(published.id, 120),
+        graphVersion: graphVersion(),
+    };
+}
+
+module.exports = {
+    DEFAULT_VIDEO_PATH,
+    defaultBalanceChallengeStoryUrl,
+    publishBalanceChallengeStory,
+};
