@@ -2,10 +2,12 @@ const assert = require('assert');
 
 const {
     buildMemoryBlock,
+    buildCoachBioBlock,
     buildShannonDmTuningBlock,
 } = require('../netlify/functions/_lib/client-context');
 
 const block = buildShannonDmTuningBlock();
+const bioBlock = buildCoachBioBlock();
 
 assert.ok(block.includes('Emotional replies need one true acknowledgement'), 'warns against validation stacks');
 assert.ok(block.includes('support-line closers'), 'names support-line closers as a pattern');
@@ -13,6 +15,10 @@ assert.ok(block.includes('"I\'m here for you"'), 'calls out the repeated here-fo
 assert.ok(block.includes('"if you need to talk about it"'), 'calls out talk-about-it closers');
 assert.ok(block.includes('Use them sparingly'), 'allows support closers only sparingly');
 assert.ok(block.includes('If a similar reassurance already appeared recently, do not repeat it'), 'prevents repeated reassurance loops');
+assert.ok(block.includes('Vegetarian voice guard'), 'keeps meat praise out of Shannon DM tuning');
+assert.ok(block.includes('do not call meat, bacon, fish, or other animal products yum/elite/delicious'), 'prevents praising meat in Shannon voice');
+assert.ok(bioBlock.includes('Shannon is vegetarian'), 'keeps vegetarian fact in coach bio');
+assert.ok(bioBlock.includes('do not praise meat, bacon, fish, or other animal products'), 'keeps meat praise out of coach bio facts');
 
 const memoryBlock = buildMemoryBlock({
     coach_instructions: [
