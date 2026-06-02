@@ -15051,7 +15051,7 @@ if(!window._pbbIsIOSSafari) {
 <!-- Generic Camera Modal (getUserMedia camera for photos - used by workout, story, activity, progress, meal) -->
 <div id="workout-camera-modal" style="display:none; position:fixed; inset:0; background:#000; z-index:10014; flex-direction:column;">
     <!-- Close button -->
-    <button onclick="closeWorkoutCamera()" style="position:absolute; top:52px; right:16px; background:rgba(0,0,0,0.5); border:none; color:white; width:48px; height:48px; border-radius:50%; font-size:1.8rem; cursor:pointer; z-index:5; backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center;">&times;</button>
+    <button onclick="closeWorkoutCamera(true)" style="position:absolute; top:52px; right:16px; background:rgba(0,0,0,0.5); border:none; color:white; width:48px; height:48px; border-radius:50%; font-size:1.8rem; cursor:pointer; z-index:5; backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center;">&times;</button>
     <!-- Label (dynamic - updated by openWorkoutCamera) -->
     <div style="position:absolute; top:52px; left:0; right:0; z-index:4; text-align:center; pointer-events:none;">
         <span id="generic-camera-label" style="background:rgba(0,0,0,0.5); color:#fff; padding:8px 20px; border-radius:20px; font-size:0.9rem; font-weight:600; backdrop-filter:blur(10px);">Take a photo</span>

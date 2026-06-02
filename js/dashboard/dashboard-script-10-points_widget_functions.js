@@ -1797,7 +1797,7 @@ function stopWorkoutCamera() {
     if (video) video.srcObject = null;
 }
 
-function closeWorkoutCamera() {
+function closeWorkoutCamera(resolveAsCancel = false) {
     stopWorkoutCamera();
     const modal = document.getElementById('workout-camera-modal');
     if (modal) modal.style.display = 'none';
@@ -1806,6 +1806,9 @@ function closeWorkoutCamera() {
     // Exit immersive mode
     if (window.NativePermissions && window.NativePermissions.exitImmersiveMode) {
         try { window.NativePermissions.exitImmersiveMode(); } catch(e) {}
+    }
+    if (resolveAsCancel) {
+        finishWorkoutCameraCallback(null);
     }
 }
 
