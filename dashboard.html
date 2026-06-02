@@ -12283,7 +12283,9 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'[onclick*="openMealFromGallery"]', title:'Upload from your photos', body:"Took a photo of your meal earlier? Tap the gallery icon to pick it from your photo library and log it later." },
     { tab:'meals', sel:'[title="Scan barcode"]', title:'Barcode scanner', body:"Scan any food packaging barcode to instantly pull up its nutrition info and log it." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealTextInput"],[title="Type your meal"]', title:'Type your meal', body:"Prefer to type? Describe your meal in words and the AI will log the calories and macros for you." },
-    { tab:'meals', sel:'.meal-icon-btn[onclick*="openQuickManualEntry"],[onclick*="openQuickManualEntry"]', title:'Quick log calories & macros', body:"Already know the numbers? Tap here to punch in calories and macros directly — no AI, no photo needed." },
+    { tab:'meals', sel:'.meal-icon-btn[onclick*="openQuickManualEntry"],.camera-btn-widget[onclick*="openQuickManualEntry"],[title="Quick log calories & macros"]', title:'Quick log calories & macros', body:"Already know the numbers? Tap Quick Log to enter calories and macros directly. It is the fastest way to track something when you do not need AI, a photo, or a barcode." },
+    { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"],[title="Build a meal"]', title:'Build-a-Meal', body:"Use Build-a-Meal when one meal has a few parts. Add items by photo, barcode, text, or manual entry until the whole plate is saved together." },
+    { tab:'meals', sel:'.meal-icon-btn[onclick*="openRecentMealsModal"],.camera-btn-widget[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Use Recent & saved meals to re-log food you have already tracked. Tap the clock, pick the meal, and it drops back into today." },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Android food logging', body:"Pro tip: on Android, use the Ask Balance widget camera button or type “track these calories” to jump straight into food logging.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Ask Balance widget', body:"On Android, add Ask Balance to your phone home screen. Type macros or a weigh-in without opening the app, or tap the camera button to log food from the widget.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily Weigh-In widget', body:"On Android, add the Daily Weigh-In widget to your phone home screen. Adjust the number and log your weight without opening the app.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
@@ -12292,8 +12294,6 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#daily-quiz-card,#daily-weigh-in-card,#mood-checkin-card', title:'iPhone widgets', body:"On iPhone, add Balance widgets for calories, Daily Quiz, Daily Weigh-In, and Mood Check. The quiz can be placed as a larger widget when the question needs more room.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'ios'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Character widget', body:"Android users can add a square home-screen widget that shows their character and opens this view.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'iPhone shortcuts', body:"On iPhone, use Siri or Shortcuts with Balance to open workout, meal plan, quick log, character, messages, or form check.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'ios'); } catch(e){ return false; } } },
-    { tab:'meals', sel:'[onclick*="openMealBuilder"]', title:'Build-a-Meal', body:"Combine multiple ingredients into one saved meal — open it and tap Photo, Barcode, or Text to stack items until the whole meal is built." },
-    { tab:'meals', sel:'[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Jump back to any meal you've logged before — tap the clock to re-log a recent or saved meal in one tap." },
     { tab:'meals', sel:'#meals-log-list,.meal-log-card', title:'Share meals to Feed', body:"Tap any logged meal, then Share meal to Feed. It counts toward weekly community goals when you pick that goal." },
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#browse-plans-pill', title:'Your meal plan', body:"Tap here for your AI-generated meal plan for the week — tap any day to see recipes." },
@@ -13153,22 +13153,6 @@ if(!window._pbbIsIOSSafari) {
       body: "Prefer to type? Describe your meal in words and the AI will log the calories and macros for you."
     },
     {
-      id: 'quick-manual-entry-v1',
-      tab: 'meals',
-      subtab: 'calorie-tracker',
-      sel: '.meal-icon-btn[onclick*="openQuickManualEntry"]',
-      title: 'Quick log calories & macros',
-      body: "Already know the numbers? Tap here to punch in calories and macros directly — no AI, no photo, straight into your day."
-    },
-    {
-      id: 'recent-saved-meals-button',
-      tab: 'meals',
-      subtab: 'calorie-tracker',
-      sel: '.meal-icon-btn[onclick*="openRecentMealsModal"]',
-      title: 'Recent & saved meals',
-      body: "Jump back to any meal you've logged before — tap the clock to re-log a recent or saved meal in one tap."
-    },
-    {
       id: 'feed-composer-text-media-v1',
       tab: 'friends',
       sel: '#feed-composer-card',
@@ -13182,14 +13166,6 @@ if(!window._pbbIsIOSSafari) {
       sel: '#meals-log-list,.meal-log-card',
       title: 'Share meals to Feed',
       body: "Tap any logged meal, then Share meal to Feed. It counts toward weekly community goals when you pick that goal."
-    },
-    {
-      id: 'meal-builder-barcode-v1',
-      tab: 'meals',
-      subtab: 'calorie-tracker',
-      sel: '.meal-icon-btn[onclick*="openMealBuilder"]',
-      title: 'Scan barcodes into Build-a-Meal',
-      body: "Build-a-Meal now has a barcode scanner — open it and tap Barcode to scan multiple products straight into a single saved meal."
     },
     {
       id: 'pull-to-refresh-dashboard-v1',
