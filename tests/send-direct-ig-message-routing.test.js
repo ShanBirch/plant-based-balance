@@ -80,4 +80,15 @@ assert.strictEqual(legacyIgRoute.ok, false);
 assert.strictEqual(legacyIgRoute.transport, 'unavailable');
 assert.strictEqual(legacyIgRoute.code, 'graph_recipient_missing');
 
+assert.deepStrictEqual(
+    _test.learningReelPayloadFromBody({
+        learningReel: { title: 'Protein timing', url: 'https://www.youtube.com/shorts/abc' },
+    }),
+    { title: 'Protein timing', url: 'https://www.youtube.com/shorts/abc' }
+);
+assert.strictEqual(
+    _test.learningReelSourceFromBody({ learning_reel_source: 'youtube-learning-sender' }),
+    'youtube-learning-sender'
+);
+
 console.log('send-direct-ig-message routing tests passed');

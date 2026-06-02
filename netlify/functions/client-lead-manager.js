@@ -11,6 +11,8 @@ const {
     buildMediaReviewInfo,
     buildContextReviewInfo,
     isAlwaysNeedsYouPerson,
+    normalizeLearningReelHistory,
+    buildLearningReelContextBlock,
     truncate,
 } = require('./_lib/client-context');
 
@@ -46,10 +48,32 @@ function draftReviewNeedsContext(data = {}) {
         || /\b(context_loss|missing_context|missing thread|missing conversation|unclear context|lost context|understand total)\b/i.test(text);
 }
 
+function latestAlertMessageText(data = {}) {
+    const currentFromBatch = Array.isArray(data.inbound_message_batch)
+        ? data.inbound_message_batch.find(m => m && m.is_current)
+        : null;
+    return String(
+        currentFromBatch?.text
+        || data.message_preview
+        || data.client_message
+        || data.draft_evidence?.current_message
+        || ''
+    ).trim();
+}
+
+function referencesOutboundLearningReel(text = '') {
+    const value = String(text || '').toLowerCase();
+    if (!value) return false;
+    return /\b(what|why|which|that|the|your|you|u|sent|send|reckon|think|question)\b[\s\S]{0,80}\b(reel|youtube|short|clip|video)\b/i.test(value)
+        || /\b(reel|youtube|short|clip|video)\b[\s\S]{0,80}\b(about|mean|sent|send|reckon|think|question|explain)\b/i.test(value);
+}
+
 function classifyNeedsYou(alert = {}) {
     const data = alert.data || {};
     const mediaReview = buildMediaReviewInfo(alert);
     const contextReview = buildContextReviewInfo(alert);
+    const learningReels = normalizeLearningReelHistory(data);
+    const latestText = latestAlertMessageText(data);
     const reasons = [];
     const labels = [];
 
@@ -69,6 +93,10 @@ function classifyNeedsYou(alert = {}) {
         reasons.push('draft_review_context_loss');
         labels.push('AI may not have the full conversation context');
     }
+    if (referencesOutboundLearningReel(latestText) && learningReels.length === 0) {
+        reasons.push('missing_learning_reel_context');
+        labels.push('client may be referring to a reel but no sent-reel context is stored');
+    }
 
     const uniqueReasons = [...new Set(reasons.filter(Boolean))];
     const uniqueLabels = [...new Set(labels.filter(Boolean))];
@@ -84,6 +112,8 @@ function classifyNeedsYou(alert = {}) {
 function buildNeedsYouData(alert, classification) {
     const data = alert.data || {};
     const reason = classification.label;
+    const learningReels = normalizeLearningReelHistory(data);
+    const learningReelContextBlock = buildLearningReelContextBlock(data);
     const existingReview = data.codex_review && typeof data.codex_review === 'object'
         ? data.codex_review
         : {};
@@ -99,6 +129,10 @@ function buildNeedsYouData(alert, classification) {
         needs_you_required: true,
         needs_you_reason: reason,
         needs_you_reasons: classification.reasons,
+        learning_reels: learningReels.length ? {
+            recent: learningReels,
+            last_sent: learningReels[0],
+        } : (data.learning_reels || null),
         operator_queue: 'needs_you',
         codex_review: {
             ...existingReview,
@@ -107,6 +141,7 @@ function buildNeedsYouData(alert, classification) {
             queue: 'needs_you',
             needs_shannon_approval: true,
             reason,
+            learning_reel_context: learningReelContextBlock ? truncate(learningReelContextBlock, 1800) : undefined,
             evidence_ids: [
                 alert.id ? `coach_alerts:${alert.id}` : '',
                 alert.client_id ? `users:${alert.client_id}` : '',

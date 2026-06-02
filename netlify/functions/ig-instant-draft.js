@@ -28,6 +28,8 @@ const {
     shouldIncludeCoachDayContext,
     cancelPriorScheduledForIgThread,
     selectRecentInboundSinceLastReplyIg,
+    normalizeLearningReelHistory,
+    buildLearningReelContextBlock,
     resolveLifecycleStage,
     lifecycleForFcmData,
     fireDraftReasoning,
@@ -1890,7 +1892,7 @@ They sent a long, emotional, or multi-topic message. Do not compress this into a
     };
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount, coachId = null }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount, coachId = null }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -2222,6 +2224,7 @@ ${replyMode.extraBlock}
 ${nativeStoryOutreachContext?.block || ''}
 ${currentTurnAnchorBlock}
 ${checkinThreadBlock}
+${learningReelContextBlock}
 
 CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
@@ -2392,7 +2395,7 @@ Rules:
             } catch (err2) {
                 console.error('[ig-draft] Gemini fallback failed:', err2.message);
                 lastError = `${lastError ? lastError + ' | ' : ''}gemini: ${err2.message.slice(0, 200)}`;
-                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, currentTurnAnchorBlock, storyReplyPromptContextBlock, mediaContextPromptBlock };
+                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, currentTurnAnchorBlock, storyReplyPromptContextBlock, mediaContextPromptBlock, learningReelContextBlock };
             }
         }
     }
@@ -2493,6 +2496,7 @@ Rules:
         storyReplyPromptContextBlock,
         nativeStoryOutreachContextBlock: nativeStoryOutreachContext?.block || '',
         mediaContextPromptBlock,
+        learningReelContextBlock,
         emptyDraftRecovery,
     };
 }
@@ -2978,6 +2982,8 @@ exports.handler = async (event) => {
             console.warn('[ig-draft] active check-in thread lookup failed:', e.message);
         }
     }
+    const learningReelHistory = normalizeLearningReelHistory(thread).slice(0, 6);
+    const learningReelContextBlock = buildLearningReelContextBlock(thread);
     const nativeStoryOutreachContext = buildNativeStoryOutreachContextBlock(thread, leadName);
 
     const channel = thread.channel || 'instagram';
@@ -3076,6 +3082,7 @@ exports.handler = async (event) => {
             memoryBlock,
             coachDayContextBlock,
             checkinThreadBlock,
+            learningReelContextBlock,
             nativeStoryOutreachContext,
             history,
             currentMessage: messageText,
@@ -3107,6 +3114,7 @@ exports.handler = async (event) => {
             currentTurnAnchorBlock: '',
             storyReplyPromptContextBlock: '',
             nativeStoryOutreachContextBlock: nativeStoryOutreachContext?.block || '',
+            learningReelContextBlock,
         };
     }
 
@@ -3171,11 +3179,13 @@ exports.handler = async (event) => {
         inbound_message_batch: inboundMessageBatch,
         recent_inbound_messages: displayRecentInboundMessages,
         last_outbound_message: lastOutboundMessage,
+        learning_reels: learningReelHistory,
         first_captured_lead_reply: firstCapturedLeadReply,
         draft_evidence: {
             current_message: displayMessage,
             recent_timeline: draft.timeline || '',
             story_context: draft.storyReplyPromptContextBlock || '',
+            learning_reel_context: draft.learningReelContextBlock || '',
         },
     });
     const proposedActions = detectProposedCoachActions({
@@ -3289,6 +3299,10 @@ exports.handler = async (event) => {
             manychat_message_id: manychatMessageId || null,
             message_preview: truncate(displaySourceMessage, 400),
             last_outbound_message: lastOutboundMessage,
+            learning_reels: learningReelHistory.length ? {
+                recent: learningReelHistory,
+                last_sent: learningReelHistory[0],
+            } : null,
             proposed_actions: proposedActions,
             // Multi-message split — `draft_messages` is the array of chunks
             // we want to send as separate IG/Messenger bubbles. `draft_text`
@@ -3342,6 +3356,7 @@ exports.handler = async (event) => {
                 story_context: truncate(String(draft.storyReplyPromptContextBlock || '').trim(), 1400),
                 native_story_context: truncate(String(draft.nativeStoryOutreachContextBlock || '').trim(), 1400),
                 media_context: truncate(String(draft.mediaContextPromptBlock || '').trim(), 1800),
+                learning_reel_context: truncate(String(draft.learningReelContextBlock || '').trim(), 1800),
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 shannon_day_context: truncate(coachDayContextBlock.replace(/\n{3,}/g, '\n\n').trim(), 1600),
@@ -3393,6 +3408,10 @@ exports.handler = async (event) => {
             ...(existingPending.data || alertRow.data),
             message_preview: truncate(messageText, 400),
             last_outbound_message: lastOutboundMessage || existingPending.data?.last_outbound_message || null,
+            learning_reels: learningReelHistory.length ? {
+                recent: learningReelHistory,
+                last_sent: learningReelHistory[0],
+            } : (existingPending.data?.learning_reels || null),
             proposed_actions: mergeProposedActions(existingPending.data?.proposed_actions, proposedActions),
             manychat_message_id: manychatMessageId || (existingPending.data && existingPending.data.manychat_message_id) || null,
             lead_stage: effectiveLeadStage || thread.lead_stage || existingPending.data?.lead_stage || 'new',
@@ -3469,6 +3488,7 @@ exports.handler = async (event) => {
                 recent_activity: truncate(weeklyAppContext || '', 3000),
                 recent_timeline: truncateTail(draft.timeline || '', 4000),
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
+                learning_reel_context: truncate(String(draft.learningReelContextBlock || '').trim(), 1800),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 checkin_thread_context: truncate(checkinThreadBlock.replace(/\n{3,}/g, '\n\n').trim(), 1800),
                 cross_channel_context: linkedNudges.length

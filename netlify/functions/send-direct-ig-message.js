@@ -15,6 +15,8 @@ const {
     normalizeCoachDraftText,
     splitCoachDraftIntoDmBubbles,
     fireCoachEditAnalysis,
+    normalizeLearningReelItems,
+    mergeLearningReelContext,
 } = require('./_lib/client-context');
 const { sendInstagramSeenReceiptForThread } = require('./_lib/instagram-graph-seen');
 
@@ -175,6 +177,25 @@ function sourceForDelivery(delivery) {
 function deliveryChannelForTransport(delivery) {
     if (delivery.transport === 'instagram_graph') return 'instagram_graph';
     return delivery.channel;
+}
+
+function learningReelPayloadFromBody(body = {}) {
+    return body.learningReels
+        || body.learning_reels
+        || body.learningReel
+        || body.learning_reel
+        || body.learningReelContext
+        || body.learning_reel_context
+        || null;
+}
+
+function learningReelSourceFromBody(body = {}) {
+    return firstString([
+        body.learningReelSource,
+        body.learning_reel_source,
+        body.reelSource,
+        body.reel_source,
+    ]) || 'send-direct-ig-message';
 }
 
 function graphMessageIdFromResponse(response) {
@@ -396,6 +417,8 @@ exports.handler = async (event = {}) => {
 
     const threadId = String(body.threadId || body.igThreadId || '').trim();
     const message = normalizeCoachDraftText(body.message || body.replyText || '').trim();
+    const learningReelPayload = learningReelPayloadFromBody(body);
+    const learningReelSource = learningReelSourceFromBody(body);
     if (!threadId) return json(400, { error: 'Missing threadId' });
     if (!message) return json(400, { error: 'Missing message' });
     if (message.length > 8000) return json(400, { error: 'Message too long (max 8000 chars)' });
@@ -507,26 +530,50 @@ exports.handler = async (event = {}) => {
         }
     }
 
+    const sentMessageText = sentChunks.map(r => r.text).join('\n');
+    const learningReelItems = normalizeLearningReelItems(learningReelPayload, {
+        sentAt,
+        sentMessage: sentMessageText,
+        source: learningReelSource,
+        graphMessageIds: sentGraphMessageIds,
+        messageIds,
+        platform: 'youtube',
+    });
+
     if (sentChunks.length > 0) {
         try {
             const patch = { last_outbound_at: sentAt };
-            if (delivery.transport === 'instagram_graph') {
+            if (delivery.transport === 'instagram_graph' || learningReelItems.length > 0) {
                 const customData = safeObject(thread.custom_data);
-                const graph = safeObject(customData.instagram_graph);
-                patch.custom_data = {
-                    ...customData,
-                    instagram_graph: {
-                        ...graph,
-                        source: 'instagram_graph',
-                        ig_graph_user_id: delivery.recipientId || graph.ig_graph_user_id || null,
-                        ig_account_id: delivery.accountId || graph.ig_account_id || null,
-                        send_ready: true,
-                        last_send_at: sentAt,
-                        last_send_source: source,
-                        last_send_tag: graphMessageTag || graph.last_send_tag || undefined,
-                        last_sent_graph_message_ids: sentGraphMessageIds,
-                    },
-                };
+                let nextCustomData = customData;
+                if (learningReelItems.length > 0) {
+                    nextCustomData = mergeLearningReelContext(nextCustomData, learningReelItems, {
+                        sentAt,
+                        sentMessage: sentMessageText,
+                        source: learningReelSource,
+                        graphMessageIds: sentGraphMessageIds,
+                        messageIds,
+                        platform: 'youtube',
+                    });
+                }
+                if (delivery.transport === 'instagram_graph') {
+                    const graph = safeObject(customData.instagram_graph);
+                    nextCustomData = {
+                        ...nextCustomData,
+                        instagram_graph: {
+                            ...graph,
+                            source: 'instagram_graph',
+                            ig_graph_user_id: delivery.recipientId || graph.ig_graph_user_id || null,
+                            ig_account_id: delivery.accountId || graph.ig_account_id || null,
+                            send_ready: true,
+                            last_send_at: sentAt,
+                            last_send_source: source,
+                            last_send_tag: graphMessageTag || graph.last_send_tag || undefined,
+                            last_sent_graph_message_ids: sentGraphMessageIds,
+                        },
+                    };
+                }
+                patch.custom_data = nextCustomData;
             }
             await supabaseQuery(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
                 method: 'PATCH',
@@ -576,6 +623,7 @@ exports.handler = async (event = {}) => {
         sent_graph_message_ids: sentGraphMessageIds,
         message_ids: messageIds,
         history_logged: messageIds.length === sentChunks.length,
+        learning_reels_logged: learningReelItems.length,
         seen_receipt: seenReceipt,
         ...cleanup,
     });
@@ -590,5 +638,7 @@ exports._test = {
     resolveGraphMessageTag,
     resolveThreadGraphAccountId,
     resolveThreadGraphRecipientId,
+    learningReelPayloadFromBody,
+    learningReelSourceFromBody,
     sourceForDelivery,
 };

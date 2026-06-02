@@ -4137,8 +4137,10 @@ function countPriorContextMessages(data) {
 
 function hasTrackedOutboundContext(data) {
     if (data?.last_outbound_message || data?.last_shannon_message) return true;
+    if (normalizeLearningReelHistory(data).length > 0) return true;
     const evidence = data?.draft_evidence || {};
     if (evidence.cross_channel_context) return true;
+    if (evidence.learning_reel_context) return true;
     return /\bShannon\b/i.test(String(evidence.recent_timeline || ''));
 }
 
@@ -6155,6 +6157,288 @@ function selectRecentInboundSinceLastReplyIg({ history, max = 5, currentCreatedA
     return collected.filter(m => m.text).reverse();
 }
 
+// ============================================================
+// Outbound learning reels - private thread context
+// ------------------------------------------------------------
+// The visible DM can stay casual while ig_threads.custom_data keeps the
+// title/topic/source metadata future drafts need when clients respond.
+// ============================================================
+
+const LEARNING_REEL_HISTORY_LIMIT = 30;
+const LEARNING_REEL_PROMPT_LIMIT = 6;
+
+function compactLearningString(value, max = 240) {
+    return truncate(String(value || '').replace(/\s+/g, ' ').trim(), max);
+}
+
+function compactLearningStringArray(value, maxItems = 10, maxLength = 80) {
+    const list = Array.isArray(value) ? value : (value ? [value] : []);
+    return [...new Set(list
+        .map(item => compactLearningString(item, maxLength))
+        .filter(Boolean))]
+        .slice(0, maxItems);
+}
+
+function listFromLearningValue(value) {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') return [value];
+    const obj = plainObject(value);
+    for (const key of ['items', 'reels', 'videos', 'learning_reels', 'learningReels']) {
+        if (Array.isArray(obj[key])) return obj[key];
+    }
+    return Object.keys(obj).length ? [obj] : [];
+}
+
+function normalizeLearningReelItem(value, defaults = {}) {
+    const item = typeof value === 'string' ? { url: value } : plainObject(value);
+    if (!Object.keys(item).length) return null;
+    const url = compactLearningString(
+        item.url
+        || item.reel_url
+        || item.reelUrl
+        || item.youtube_url
+        || item.youtubeUrl
+        || item.short_url
+        || item.shortUrl
+        || item.link,
+        600
+    );
+    const platform = compactLearningString(
+        item.platform
+        || item.content_platform
+        || (url.includes('youtube.com') || url.includes('youtu.be') ? 'youtube' : '')
+        || (url.includes('instagram.com') ? 'instagram' : '')
+        || defaults.platform
+        || 'youtube',
+        40
+    );
+    const normalized = {
+        content_type: 'learning_reel',
+        platform,
+        sent_at: item.sent_at || item.sentAt || item.created_at || item.createdAt || defaults.sentAt || null,
+        topic_id: compactLearningString(item.topic_id || item.topicId || item.interest_id || item.interestId, 80),
+        topic_label: compactLearningString(
+            item.topic_label
+            || item.topicLabel
+            || item.topic
+            || item.interest
+            || item.interest_label
+            || item.category
+            || defaults.topicLabel,
+            120
+        ),
+        title: compactLearningString(item.title || item.video_title || item.videoTitle || item.reel_title || item.reelTitle, 220),
+        channel_title: compactLearningString(
+            item.channel_title
+            || item.channelTitle
+            || item.creator
+            || item.author
+            || item.channel
+            || item.source_name
+            || item.sourceName,
+            140
+        ),
+        url,
+        video_id: compactLearningString(item.video_id || item.videoId || item.youtube_video_id || item.youtubeVideoId, 100),
+        youtube_query: compactLearningString(item.youtube_query || item.youtubeQuery || item.query || item.search_query || item.searchQuery, 220),
+        reason: compactLearningString(item.reason || item.why || item.match_reason || item.matchReason || defaults.reason, 360),
+        sent_message: compactLearningString(
+            item.sent_message
+            || item.sentMessage
+            || item.visible_message
+            || item.visibleMessage
+            || item.message
+            || defaults.sentMessage,
+            700
+        ),
+        learning_modules: compactLearningStringArray(item.learning_modules || item.learningModules || item.modules, 12, 80),
+        graph_message_ids: compactLearningStringArray(
+            item.graph_message_ids
+            || item.graphMessageIds
+            || item.sent_graph_message_ids
+            || item.sentGraphMessageIds
+            || defaults.graphMessageIds,
+            12,
+            120
+        ),
+        message_ids: compactLearningStringArray(item.message_ids || item.messageIds || defaults.messageIds, 12, 120),
+        source: compactLearningString(item.source || defaults.source || 'learning_reels', 80),
+    };
+    const hasUsefulContext = normalized.url
+        || normalized.title
+        || normalized.topic_label
+        || normalized.channel_title
+        || normalized.youtube_query
+        || normalized.reason;
+    if (!hasUsefulContext) return null;
+    return Object.fromEntries(Object.entries(normalized).filter(([, v]) => {
+        if (Array.isArray(v)) return v.length > 0;
+        return v !== '' && v !== null && v !== undefined;
+    }));
+}
+
+function learningReelDedupeKey(item) {
+    return [
+        item?.sent_at || '',
+        item?.video_id || '',
+        item?.url || '',
+        item?.title || '',
+        item?.topic_label || '',
+    ].join('|').toLowerCase();
+}
+
+function normalizeLearningReelItems(value, defaults = {}) {
+    const seen = new Set();
+    const out = [];
+    for (const raw of listFromLearningValue(value)) {
+        const item = normalizeLearningReelItem(raw, defaults);
+        if (!item) continue;
+        const key = learningReelDedupeKey(item);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(item);
+    }
+    return out;
+}
+
+function collectLearningReelContextSources(source = {}) {
+    const obj = plainObject(source);
+    const customData = plainObject(obj.custom_data || obj.customData || obj);
+    const sourceLooksLikeContext = obj.history
+        || obj.last_sent
+        || obj.lastSent
+        || obj.last_sent_batch
+        || obj.lastSentBatch
+        || obj.items
+        || obj.reels
+        || obj.videos;
+    const data = plainObject(obj.data);
+    return [
+        sourceLooksLikeContext ? obj : null,
+        customData.learning_reels,
+        customData.learningReels,
+        customData.learning_reel_context,
+        customData.learningReelContext,
+        customData.last_learning_reel,
+        data.learning_reels,
+        data.learningReels,
+        data.learning_reel_context,
+        data.learningReelContext,
+        obj.learning_reels,
+        obj.learningReels,
+        obj.learning_reel_context,
+        obj.learningReelContext,
+    ].filter(Boolean);
+}
+
+function normalizeLearningReelHistory(source = {}) {
+    const seen = new Set();
+    const history = [];
+    for (const sourceValue of collectLearningReelContextSources(source)) {
+        const obj = plainObject(sourceValue);
+        const lists = [
+            obj.last_sent_batch,
+            obj.lastSentBatch,
+            obj.history,
+            obj.recent,
+            obj.items,
+            obj.reels,
+            obj.videos,
+            obj.last_sent,
+            obj.lastSent,
+            sourceValue,
+        ].filter(Boolean);
+        for (const value of lists) {
+            for (const item of normalizeLearningReelItems(value)) {
+                const key = learningReelDedupeKey(item);
+                if (seen.has(key)) continue;
+                seen.add(key);
+                history.push(item);
+            }
+        }
+    }
+    return history
+        .sort((a, b) => (Date.parse(b.sent_at || '') || 0) - (Date.parse(a.sent_at || '') || 0))
+        .slice(0, LEARNING_REEL_HISTORY_LIMIT);
+}
+
+function mergeLearningReelContext(customData, learningReels, options = {}) {
+    const base = plainObject(customData);
+    const sentAt = options.sentAt || new Date().toISOString();
+    const nextItems = normalizeLearningReelItems(learningReels, {
+        sentAt,
+        sentMessage: options.sentMessage || '',
+        source: options.source || 'learning_reels',
+        graphMessageIds: options.graphMessageIds || [],
+        messageIds: options.messageIds || [],
+        platform: options.platform || 'youtube',
+        reason: options.reason || '',
+        topicLabel: options.topicLabel || '',
+    });
+    if (!nextItems.length) return base;
+
+    const existingContext = plainObject(base.learning_reels);
+    const existingHistory = normalizeLearningReelHistory({ custom_data: base });
+    const previousTotal = Number(existingContext.total_sent || 0);
+    const seen = new Set();
+    const history = [...nextItems, ...existingHistory].filter(item => {
+        const key = learningReelDedupeKey(item);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    }).slice(0, LEARNING_REEL_HISTORY_LIMIT);
+
+    return {
+        ...base,
+        learning_reels: {
+            ...existingContext,
+            source: options.source || existingContext.source || 'learning_reels',
+            updated_at: sentAt,
+            last_sent_at: sentAt,
+            last_sent_count: nextItems.length,
+            total_sent: (Number.isFinite(previousTotal) && previousTotal > 0 ? previousTotal : 0) + nextItems.length,
+            last_sent: nextItems[0],
+            last_sent_batch: nextItems,
+            history,
+        },
+    };
+}
+
+function formatLearningReelLine(item, index, now = new Date()) {
+    const relative = formatRelativeTime(item.sent_at, now);
+    const timing = item.sent_at
+        ? ` [${formatCoachLocalTimestamp(item.sent_at) || item.sent_at}${relative ? `, ${relative}` : ''}]`
+        : '';
+    const topic = item.topic_label || item.topic_id || 'learning reel';
+    const title = item.title ? `"${item.title}"` : 'untitled reel';
+    const creator = item.channel_title ? ` by ${item.channel_title}` : '';
+    const modules = Array.isArray(item.learning_modules) && item.learning_modules.length
+        ? ` Modules: ${item.learning_modules.join(', ')}.`
+        : '';
+    const query = item.youtube_query ? ` Search/query: ${item.youtube_query}.` : '';
+    const reason = item.reason ? ` Why sent: ${item.reason}.` : '';
+    const visible = item.sent_message ? ` Visible DM copy: "${truncate(item.sent_message, 220)}".` : '';
+    const url = item.url ? ` URL: ${item.url}.` : '';
+    return `${index + 1}. ${topic}${timing}: ${title}${creator}.${url}${query}${modules}${reason}${visible}`;
+}
+
+function buildLearningReelContextBlock(source = {}, options = {}) {
+    const limit = Math.max(1, Math.min(LEARNING_REEL_PROMPT_LIMIT, Number(options.limit || LEARNING_REEL_PROMPT_LIMIT)));
+    const history = normalizeLearningReelHistory(source).slice(0, limit);
+    if (!history.length) return '';
+    const now = options.now || new Date();
+    return `
+
+RECENT LEARNING REELS SHANNON SENT (private context for this reply):
+${history.map((item, index) => formatLearningReelLine(item, index, now)).join('\n')}
+
+How to use this:
+- If they ask about "that reel", "the clip", the topic, or a detail from it, use the title, topic, creator, URL, search query, and reason above as context.
+- Do not claim Shannon watched or heard the full video unless the metadata says so. Answer from the stored metadata, then ask one casual follow-up if useful.
+- Do not mention how the reel was chosen, internal matching, APIs, or private context.`;
+}
+
 module.exports = {
     // constants (exposed for tests / scripts)
     SUPABASE_URL,
@@ -6178,6 +6462,10 @@ module.exports = {
     cancelPriorScheduledForIgThread,
     selectRecentInboundSinceLastReply,
     selectRecentInboundSinceLastReplyIg,
+    normalizeLearningReelItems,
+    normalizeLearningReelHistory,
+    mergeLearningReelContext,
+    buildLearningReelContextBlock,
     resolveLifecycleStage,
     lifecycleForFcmData,
     LIFECYCLE_STAGES,

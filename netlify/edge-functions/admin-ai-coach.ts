@@ -451,6 +451,7 @@ WHEN TO CALL TOOLS:
 - Don't over-call. If the answer is already in the conversation, just answer.
 - For SQL, prefer one well-shaped query over several small ones.
 - Cite what you found ("from dashboard.html line ~22389: ...") so Shannon can verify.
+- If Shannon asks what reel/YouTube short was sent to a lead or client, check ig_threads.custom_data->'learning_reels' as well as ig_messages. The visible DM text may only be casual copy plus a URL.
 `;
 
 function buildGeneralSystemPrompt(analyticsSummary: string | undefined, personalityBlock: string): string {
@@ -897,6 +898,61 @@ function compactText(value: unknown, max = 180): string {
   return text.length > max ? `${text.slice(0, max - 1).trim()}...` : text;
 }
 
+function asObject(value: unknown): Record<string, any> {
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, any> : {};
+}
+
+function learningReelList(value: unknown): any[] {
+  const obj = asObject(value);
+  const raw = Array.isArray((value as any))
+    ? value as any[]
+    : Array.isArray(obj.history)
+      ? obj.history
+      : Array.isArray(obj.last_sent_batch)
+        ? obj.last_sent_batch
+        : obj.last_sent
+          ? [obj.last_sent]
+          : [];
+  return raw
+    .filter((item: any) => item && typeof item === "object")
+    .sort((a: any, b: any) => Date.parse(String(b.sent_at || "")) - Date.parse(String(a.sent_at || "")))
+    .slice(0, 6);
+}
+
+function formatLearningReelShort(value: unknown): string {
+  const reel = learningReelList(value)[0];
+  if (!reel) return "";
+  const topic = compactText(reel.topic_label || reel.topic_id || "learning reel", 60);
+  const title = compactText(reel.title || reel.url || "untitled", 90);
+  const creator = reel.channel_title ? ` by ${compactText(reel.channel_title, 60)}` : "";
+  return ` Reel context: ${topic}, "${title}"${creator}.`;
+}
+
+function formatLearningReelContext(value: unknown): string {
+  const reels = learningReelList(value);
+  if (!reels.length) return "";
+  const lines = reels.map((reel: any, index: number) => {
+    const sent = reel.sent_at ? `, sent ${formatAppTime(reel.sent_at)}` : "";
+    const topic = compactText(reel.topic_label || reel.topic_id || "learning reel", 80);
+    const title = compactText(reel.title || reel.url || "untitled", 140);
+    const creator = reel.channel_title ? ` by ${compactText(reel.channel_title, 80)}` : "";
+    const url = reel.url ? ` URL: ${reel.url}.` : "";
+    const query = reel.youtube_query ? ` Query: ${compactText(reel.youtube_query, 140)}.` : "";
+    const reason = reel.reason ? ` Why: ${compactText(reel.reason, 180)}.` : "";
+    const visible = reel.sent_message ? ` Visible copy: "${compactText(reel.sent_message, 160)}".` : "";
+    return `${index + 1}. ${topic}${sent}: "${title}"${creator}.${url}${query}${reason}${visible}`;
+  });
+  return `\n\n**Recent learning reels sent**\n${lines.join("\n")}`;
+}
+
 function isCapturedPlaceholder(value: unknown): boolean {
   const text = String(value || "").trim().toLowerCase();
   return !text || text === "message sent" || text === "sent" || text === "message";
@@ -931,7 +987,7 @@ function hasOpenFollowUpHandle(text: string): boolean {
 function isFollowUpAssistantQuery(query: string): boolean {
   const q = String(query || "").toLowerCase();
   if (/\bunread messages?\b.*\beveryone\b/.test(q)) return false;
-  return /\b(follow[\s-]?up|needs attention|haven'?t|havent|hasn'?t|hasnt|responded|replied|waiting|few days|couple days|reach(?:ed)? out|last speak|last spoke|last say|last said|what did i send|what did we send|message them|draft .*follow|worth replying|worth following)\b/i.test(q);
+  return /\b(follow[\s-]?up|needs attention|haven'?t|havent|hasn'?t|hasnt|responded|replied|waiting|few days|couple days|reach(?:ed)? out|last speak|last spoke|last say|last said|what did i send|what did we send|what reel|which reel|youtube short|youtube reel|message them|draft .*follow|worth replying|worth following)\b/i.test(q);
 }
 
 function wantsFollowUpDraft(query: string): boolean {
@@ -939,7 +995,7 @@ function wantsFollowUpDraft(query: string): boolean {
 }
 
 function wantsFollowUpContext(query: string): boolean {
-  return /\b(last speak|last spoke|last say|last said|what did i send|what did we send|context|speak about|talk about)\b/i.test(String(query || ""));
+  return /\b(last speak|last spoke|last say|last said|what did i send|what did we send|what reel|which reel|youtube short|youtube reel|context|speak about|talk about)\b/i.test(String(query || ""));
 }
 
 function extractFollowUpTarget(query: string, chatHistory?: any[]): string {
@@ -985,6 +1041,7 @@ ig_rows AS (
     COALESCE(NULLIF(t.channel, ''), 'instagram') AS channel,
     COALESCE(NULLIF(t.lead_stage, ''), 'new') AS stage,
     t.linked_user_id::text AS client_id,
+    t.custom_data->'learning_reels' AS learning_reels,
     t.last_inbound_at,
     t.last_outbound_at,
     out_msg.display_text AS last_outbound_text,
@@ -1049,6 +1106,7 @@ in_app_rows AS (
     'in_app'::text AS channel,
     'client'::text AS stage,
     p.client_id::text AS client_id,
+    NULL::jsonb AS learning_reels,
     in_msg.created_at AS last_inbound_at,
     out_msg.created_at AS last_outbound_at,
     out_msg.message AS last_outbound_text,
@@ -1121,7 +1179,8 @@ function formatFollowUpRow(row: any, index: number): string {
     ? "_outbound text was not captured, only a send event_"
     : `"${compactText(row.last_outbound_text, 150)}"`;
   const lastFromThem = row.last_inbound_text ? ` Last from them: "${compactText(row.last_inbound_text, 120)}"` : "";
-  return `${index + 1}. **${row.name || "Unknown"}**${handle} (${label}, ${row.channel || "dm"}, sent ${sent}): you sent ${sentText}.${lastFromThem}`;
+  const reelContext = formatLearningReelShort(row.learning_reels);
+  return `${index + 1}. **${row.name || "Unknown"}**${handle} (${label}, ${row.channel || "dm"}, sent ${sent}): you sent ${sentText}.${reelContext}${lastFromThem}`;
 }
 
 function draftFollowUpLine(row: any): string {
@@ -1213,6 +1272,7 @@ LIMIT 12`;
     }).join("\n")
     : "- No stored messages found for this thread.";
 
+  const reelContext = formatLearningReelContext(row.learning_reels);
   const draft = wantsFollowUpDraft(query) ? `\n\n**Possible message**\n${draftFollowUpLine(row)}` : "";
   const rawMissing = isCapturedPlaceholder(row.last_outbound_raw_text) && isCapturedPlaceholder(row.last_outbound_text);
   const warning = rawMissing
@@ -1220,7 +1280,7 @@ LIMIT 12`;
     : "";
 
   return {
-    reply: `**Last context for ${row.name || row.handle}${row.handle ? ` (@${row.handle})` : ""}**\n\n${history}${draft}${warning}`,
+    reply: `**Last context for ${row.name || row.handle}${row.handle ? ` (@${row.handle})` : ""}**\n\n${history}${reelContext}${draft}${warning}`,
     toolCalls,
     modelUsed: "fast-follow-up-query",
   };
