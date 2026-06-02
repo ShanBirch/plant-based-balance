@@ -1,6 +1,6 @@
 const DEFAULT_SITE_URL = 'https://plantbased-balance.org';
 const DEFAULT_VIDEO_PATH = '/assets/ig/challenge-story-next-round.mp4';
-const DEFAULT_GRAPH_BASE = 'https://graph.facebook.com';
+const DEFAULT_GRAPH_BASE = 'https://graph.instagram.com';
 
 function cleanString(value, max = 1000) {
     return String(value || '').trim().slice(0, max);
