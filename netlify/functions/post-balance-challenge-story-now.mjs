@@ -104,10 +104,49 @@ function tokenEnvCandidates(igUserId) {
     return [...new Set(names)].filter(Boolean);
 }
 
-function resolveAccessToken(igUserId) {
+function tokenSecretKeyCandidates(igUserId) {
+    const account = mappedAccountConfig(igUserId);
+    const botAccount = cleanString(account.bot_account || account.botAccount || account.handle || '', 120);
+    const explicit = cleanString(account.token_secret_key || account.tokenSecretKey || account.secret_key || '', 180);
+    const suffixes = [sanitizeEnvSuffix(botAccount).toLowerCase(), sanitizeEnvSuffix(igUserId).toLowerCase()].filter(Boolean);
+    const names = [];
+    if (explicit) names.push(explicit);
+    for (const suffix of suffixes) {
+        names.push(`instagram_graph_access_token_${suffix}`);
+        names.push(`meta_ig_access_token_${suffix}`);
+    }
+    names.push('instagram_graph_access_token', 'meta_ig_access_token');
+    return [...new Set(names)].filter(Boolean);
+}
+
+async function secretValueForKey(key) {
+    const supabaseUrl = cleanString(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '', 300).replace(/\/+$/, '');
+    const serviceKey = cleanString(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '', 5000);
+    if (!supabaseUrl || !serviceKey || !key) return '';
+    const url = `${supabaseUrl}/rest/v1/app_private_secrets?select=value&key=eq.${encodeURIComponent(key)}&limit=1`;
+    const res = await fetch(url, {
+        headers: {
+            apikey: serviceKey,
+            Authorization: `Bearer ${serviceKey}`,
+        },
+    });
+    if (!res.ok) return '';
+    const rows = await res.json().catch(() => []);
+    return cleanString(rows?.[0]?.value || '', 5000);
+}
+
+function looksLikeUsableToken(token) {
+    return /^EA[A-Za-z0-9_-]{20,}/.test(cleanString(token, 5000));
+}
+
+async function resolveAccessToken(igUserId) {
     for (const envName of tokenEnvCandidates(igUserId)) {
         const token = cleanString(process.env[envName] || '', 5000);
-        if (token) return { token, source: `env:${envName}` };
+        if (looksLikeUsableToken(token)) return { token, source: `env:${envName}` };
+    }
+    for (const key of tokenSecretKeyCandidates(igUserId)) {
+        const token = await secretValueForKey(key);
+        if (looksLikeUsableToken(token)) return { token, source: `secret:${key}` };
     }
     return { token: '', source: 'none' };
 }
@@ -199,7 +238,7 @@ async function publishBalanceChallengeStory(options = {}) {
 
     const errors = [];
     for (const igUserId of candidates) {
-        const resolved = resolveAccessToken(igUserId);
+        const resolved = await resolveAccessToken(igUserId);
         if (!resolved.token) {
             errors.push({ igUserId, error: 'missing_token' });
             continue;
