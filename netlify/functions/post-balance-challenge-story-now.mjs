@@ -304,6 +304,31 @@ async function publishBalanceChallengeStory(options = {}) {
     throw error;
 }
 
+async function publishExistingContainer({ igUserId, creationId }) {
+    const cleanIgUserId = cleanString(igUserId, 120);
+    const cleanCreationId = cleanString(creationId, 120);
+    if (!cleanIgUserId || !cleanCreationId) throw new Error('Missing igUserId or creationId');
+
+    const resolved = await resolveAccessToken(cleanIgUserId, {});
+    if (!resolved.token) throw new Error('Missing Instagram Graph access token');
+
+    const status = await waitForContainer(cleanCreationId, resolved.token, { timeoutMs: 12000, intervalMs: 2000 });
+    const published = await graphPost(`${encodeURIComponent(cleanIgUserId)}/media_publish`, {
+        creation_id: cleanCreationId,
+        access_token: resolved.token,
+    });
+
+    return {
+        ok: true,
+        source: 'existing_container',
+        igUserId: cleanIgUserId,
+        creationId: cleanCreationId,
+        status,
+        mediaId: cleanString(published.id, 120),
+        graphVersion: graphVersion(),
+    };
+}
+
 function json(status, body) {
     return new Response(JSON.stringify(body), {
         status,
@@ -352,10 +377,12 @@ export default async (req) => {
     }
 
     try {
-        const result = await publishBalanceChallengeStory({
-            source: 'manual_now',
-            videoUrl: body.videoUrl || defaultBalanceChallengeStoryUrl(),
-        });
+        const result = body.creationId
+            ? await publishExistingContainer(body)
+            : await publishBalanceChallengeStory({
+                source: 'manual_now',
+                videoUrl: body.videoUrl || defaultBalanceChallengeStoryUrl(),
+            });
         return json(200, result);
     } catch (error) {
         console.error('[post-balance-challenge-story-now] failed:', error);
