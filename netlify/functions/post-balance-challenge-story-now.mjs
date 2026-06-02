@@ -73,11 +73,11 @@ function mappedAccountConfig(igUserId) {
 }
 
 function igUserIdCandidates(explicit) {
-    const ids = [
-        cleanString(explicit, 120),
-        defaultIgUserId(),
-        ...Object.keys(accountMap()).map(id => cleanString(id, 120)),
-    ].filter(Boolean);
+    const cleanExplicit = cleanString(explicit, 120);
+    const mappedIds = Object.keys(accountMap()).map(id => cleanString(id, 120)).filter(Boolean);
+    const ids = cleanExplicit
+        ? [cleanExplicit]
+        : (mappedIds.length ? mappedIds : [defaultIgUserId()]);
     return [...new Set(ids)];
 }
 
