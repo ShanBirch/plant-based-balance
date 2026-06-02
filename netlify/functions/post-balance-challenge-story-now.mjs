@@ -220,14 +220,15 @@ function json(status, body) {
     });
 }
 
-function getSecret() {
-    return String(
-        process.env.IG_STORY_BOT_BRIDGE_SECRET
-        || process.env.META_IG_SYNC_SECRET
-        || process.env.META_IG_WEBHOOK_VERIFY_TOKEN
-        || process.env.META_WEBHOOK_VERIFY_TOKEN
-        || ''
-    ).trim();
+function getSecrets() {
+    return [
+        process.env.IG_STORY_BOT_BRIDGE_SECRET,
+        process.env.META_IG_SYNC_SECRET,
+        process.env.META_IG_WEBHOOK_VERIFY_TOKEN,
+        process.env.META_WEBHOOK_VERIFY_TOKEN,
+    ]
+        .map(value => String(value || '').trim())
+        .filter(Boolean);
 }
 
 async function readJson(req) {
@@ -240,14 +241,13 @@ async function readJson(req) {
 
 function isAuthorized(req, body = {}) {
     if (process.env.CONTEXT === 'dev') return true;
-    const secret = getSecret();
     const provided = String(
         req.headers.get('x-ig-story-secret')
         || req.headers.get('x-meta-ig-sync-secret')
         || body.secret
         || ''
     ).trim();
-    return Boolean(secret && provided === secret);
+    return Boolean(provided && getSecrets().includes(provided));
 }
 
 export default async (req) => {

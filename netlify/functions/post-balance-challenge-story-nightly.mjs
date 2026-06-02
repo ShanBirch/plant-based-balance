@@ -5,13 +5,14 @@ function siteUrl() {
 }
 
 function secret() {
-    return String(
-        process.env.IG_STORY_BOT_BRIDGE_SECRET
-        || process.env.META_IG_SYNC_SECRET
-        || process.env.META_IG_WEBHOOK_VERIFY_TOKEN
-        || process.env.META_WEBHOOK_VERIFY_TOKEN
-        || ''
-    ).trim();
+    return [
+        process.env.IG_STORY_BOT_BRIDGE_SECRET,
+        process.env.META_IG_SYNC_SECRET,
+        process.env.META_IG_WEBHOOK_VERIFY_TOKEN,
+        process.env.META_WEBHOOK_VERIFY_TOKEN,
+    ]
+        .map(value => String(value || '').trim())
+        .find(Boolean) || '';
 }
 
 export default async (req) => {
