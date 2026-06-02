@@ -26,6 +26,7 @@ const SUBSCRIBER_TIER_SCORE = {
     '750k+': 18,
     '500k+': 15,
     '250k+': 12,
+    '100k+': 9,
     academic: 18,
     expert: 14
 };
@@ -121,7 +122,7 @@ const CURATED_LEARNING_REEL_SOURCES = [
         channelTitle: 'The Proof with Simon Hill',
         channelId: 'UChRSPNKMRhZxBmbivC8L_FA',
         handle: '@TheProofWithSimonHill',
-        subscriberTier: '250k+',
+        subscriberTier: '100k+',
         qualityScore: 91,
         sourceKind: 'plant_based_science',
         profileUrl: 'https://www.youtube.com/@TheProofWithSimonHill',
