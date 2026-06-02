@@ -379,6 +379,10 @@
 [functions."cocos-learning-run"]
   schedule = "55 18 * * *"
 
+# Coco's seven-day learning reel drip for Shannon's IG test thread.
+[functions."learning-reel-drip"]
+  schedule = "17 * * * *"
+
 # Client/lead manager - routes permanent people, media, AI suspicion,
 # confused replies, and missing context into Needs You.
 [functions."client-lead-manager"]

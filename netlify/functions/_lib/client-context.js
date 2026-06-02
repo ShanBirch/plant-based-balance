@@ -6273,6 +6273,15 @@ function normalizeLearningReelItem(value, defaults = {}) {
             120
         ),
         title: compactLearningString(item.title || item.video_title || item.videoTitle || item.reel_title || item.reelTitle, 220),
+        description: compactLearningString(
+            item.description
+            || item.video_description
+            || item.videoDescription
+            || item.youtube_description
+            || item.youtubeDescription
+            || item.summary,
+            900
+        ),
         channel_title: compactLearningString(
             item.channel_title
             || item.channelTitle
@@ -6285,6 +6294,14 @@ function normalizeLearningReelItem(value, defaults = {}) {
         ),
         url,
         video_id: videoId,
+        published_at: item.published_at || item.publishedAt || item.youtube_published_at || item.youtubePublishedAt || null,
+        duration_seconds: Number.isFinite(Number(item.duration_seconds || item.durationSeconds || item.duration_sec || item.durationSec))
+            ? Number(item.duration_seconds || item.durationSeconds || item.duration_sec || item.durationSec)
+            : undefined,
+        view_count: Number.isFinite(Number(item.view_count || item.viewCount))
+            ? Number(item.view_count || item.viewCount)
+            : undefined,
+        thumbnail_url: compactLearningString(item.thumbnail_url || item.thumbnailUrl || item.thumbnail, 600),
         youtube_query: compactLearningString(item.youtube_query || item.youtubeQuery || item.query || item.search_query || item.searchQuery, 220),
         reason: compactLearningString(item.reason || item.why || item.match_reason || item.matchReason || defaults.reason, 360),
         sent_message: compactLearningString(
@@ -6507,11 +6524,12 @@ function formatLearningReelLine(item, index, now = new Date()) {
     const modules = Array.isArray(item.learning_modules) && item.learning_modules.length
         ? ` Modules: ${item.learning_modules.join(', ')}.`
         : '';
+    const description = item.description ? ` Description: ${truncate(item.description, 320)}.` : '';
     const query = item.youtube_query ? ` Search/query: ${item.youtube_query}.` : '';
     const reason = item.reason ? ` Why sent: ${item.reason}.` : '';
     const visible = item.sent_message ? ` Visible DM copy: "${truncate(item.sent_message, 220)}".` : '';
     const url = item.url ? ` URL: ${item.url}.` : '';
-    return `${index + 1}. ${topic}${timing}: ${title}${creator}.${url}${query}${modules}${reason}${visible}`;
+    return `${index + 1}. ${topic}${timing}: ${title}${creator}.${url}${description}${query}${modules}${reason}${visible}`;
 }
 
 function buildLearningReelContextBlock(source = {}, options = {}) {

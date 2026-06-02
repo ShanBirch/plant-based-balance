@@ -13,6 +13,7 @@ const sentAt = '2026-06-02T02:00:00.000Z';
 const customData = mergeLearningReelContext({}, [{
     topic_label: 'Mindset',
     title: 'How emotions are made',
+    description: 'Lisa Feldman Barrett explains how the brain constructs emotion from prediction and body signals.',
     channel_title: 'Lisa Feldman Barrett',
     url: 'https://www.youtube.com/shorts/DXDp7tqpcdU?feature=share',
     youtube_query: 'Lisa Feldman Barrett emotional brain short',
@@ -30,6 +31,7 @@ const history = normalizeLearningReelHistory({ custom_data: customData });
 assert.strictEqual(history.length, 1);
 assert.strictEqual(history[0].topic_label, 'Mindset');
 assert.strictEqual(history[0].title, 'How emotions are made');
+assert.strictEqual(history[0].description, 'Lisa Feldman Barrett explains how the brain constructs emotion from prediction and body signals.');
 assert.strictEqual(history[0].channel_title, 'Lisa Feldman Barrett');
 assert.strictEqual(history[0].sent_at, sentAt);
 assert.strictEqual(history[0].video_id, 'DXDp7tqpcdU');
@@ -39,6 +41,7 @@ const block = buildLearningReelContextBlock({ custom_data: customData });
 assert.ok(block.includes('RECENT LEARNING REELS SHANNON SENT'));
 assert.ok(block.includes('Mindset'));
 assert.ok(block.includes('How emotions are made'));
+assert.ok(block.includes('brain constructs emotion'));
 assert.ok(block.includes('Lisa Feldman Barrett'));
 assert.ok(block.includes("this is cool, reckon you'll like this one"));
 
