@@ -2,7 +2,7 @@ const assert = require('assert');
 
 const { _private } = require('../netlify/functions/challenge-checkin-scan');
 
-const { manualCheckinPreference, coachCheckinsExplicitlyDisabled } = _private;
+const { manualCheckinPreference, coachCheckinsExplicitlyDisabled, isPayingClientUser } = _private;
 
 assert.strictEqual(manualCheckinPreference(null, 'monday'), null);
 
@@ -50,10 +50,22 @@ assert.strictEqual(
 assert.ok(
     manualCheckinPreference({
         preferences: {
+            coach_checkins: { enabled: true, cadences: ['saturday'] },
+        },
+    }, 'sunday'),
+    'legacy Saturday roster preferences should map to the new Sunday review cadence'
+);
+
+assert.ok(
+    manualCheckinPreference({
+        preferences: {
             weekly_checkins: { enabled: true },
         },
     }, 'wednesday'),
     'legacy weekly_checkins ON should still work for existing roster clients'
 );
+
+assert.strictEqual(isPayingClientUser({ subscription_status: 'active' }), true);
+assert.strictEqual(isPayingClientUser({ subscription_status: null }), false);
 
 console.log('challenge check-in roster preferences ok');

@@ -21,13 +21,13 @@ assert.ok(
 );
 
 assert.ok(
-    dashboard.includes("const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'onboarding_day_30'];"),
-    'month-one milestones should be loaded into Needs You'
+    dashboard.includes("const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'onboarding_day_30', 'weekly_checkin'];"),
+    'month-one milestones and actionable coach check-ins should be loaded into Needs You'
 );
 
 assert.ok(
-    dashboard.includes("if (alert.alert_type === 'weekly_checkin') return false;"),
-    'old weekly check-ins should stay out of Needs You'
+    dashboard.includes("if (alert.alert_type === 'weekly_checkin') return isCoachCheckinApprovalDraft(alert);"),
+    'only actionable coach check-in approval drafts should enter Needs You'
 );
 
 assert.ok(

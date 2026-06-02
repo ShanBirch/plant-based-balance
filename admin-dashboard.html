@@ -2274,7 +2274,7 @@
                         <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                             <div>
                                 <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Check-ins</h2>
-                                <p id="challenge-checkin-subtitle" style="font-size:0.8rem; color:#64748b; margin-top:2px;">30-day challenge drafts by 6am Monday/Saturday and 6pm Wednesday</p>
+                                <p id="challenge-checkin-subtitle" style="font-size:0.8rem; color:#64748b; margin-top:2px;">30-day challenge drafts by 6am Monday/Sunday and 6pm Wednesday</p>
                             </div>
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                                 <div role="tablist" id="checkin-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
@@ -2960,7 +2960,7 @@
                             </label>
                         </div>
                         <!-- Coach check-in roster toggle. This controls Shannon's
-                             scheduled Mon/Wed/Sat draft workload only. It does
+                             scheduled Mon/Wed/Sun draft workload only. It does
                              not disable the client's in-app weekly review card. -->
                         <div id="cm-coach-checkins-card" style="display:flex; align-items:flex-start; gap:12px; padding:14px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px;">
                             <div style="flex:1; min-width:0;">
@@ -2969,7 +2969,7 @@
                                     <span id="cm-coach-checkins-state" style="font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:999px; background:#dbeafe; color:#1d4ed8;">OFF</span>
                                 </div>
                                 <div style="font-size:0.76rem; color:#1e40af; line-height:1.45; margin-top:4px;">
-                                    When ON, this client appears in the scheduled Mon/Wed/Sat check-in draft roster. App weekly review cards stay separate.
+                                    When ON, this client appears in the scheduled Mon/Wed/Sun check-in draft roster. App weekly review cards stay separate.
                                 </div>
                             </div>
                             <label style="position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0; cursor:pointer;" title="Toggle coach check-ins">
@@ -8906,7 +8906,7 @@
             return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
         }
 
-        function _clientCoachCheckinsEnabled(preferences) {
+        function _clientCoachCheckinsPreferenceState(preferences) {
             const prefs = _safeClientMemoryPrefs(preferences);
             const coach = _safeClientMemoryPrefs(prefs.coach_checkins);
             const challenge = _safeClientMemoryPrefs(prefs.challenge_checkins);
@@ -8923,7 +8923,15 @@
                 if (value === true) return true;
                 if (value === false) return false;
             }
-            return false;
+            return null;
+        }
+
+        function _clientCoachCheckinsEnabled(preferences) {
+            return _clientCoachCheckinsPreferenceState(preferences) === true;
+        }
+
+        function _isPaidClientStatus(status) {
+            return ['active', 'paid', 'paying', 'trialing'].includes(String(status || '').trim().toLowerCase());
         }
 
         function _buildClientMemoryPreferencesForSave() {
@@ -8932,7 +8940,7 @@
             prefs.coach_checkins = {
                 ..._safeClientMemoryPrefs(prefs.coach_checkins),
                 enabled,
-                cadences: ['monday', 'wednesday', 'saturday'],
+                cadences: ['monday', 'wednesday', 'sunday'],
                 source: 'admin_notes_modal',
             };
             prefs.coach_checkins_enabled = enabled;
@@ -9086,7 +9094,8 @@
                     document.getElementById('cm-autosend').checked = !!data.auto_send_enabled;
                     _renderAutoSendToggle();
                     const coachCheckinsInput = document.getElementById('cm-coach-checkins');
-                    if (coachCheckinsInput) coachCheckinsInput.checked = _clientCoachCheckinsEnabled(data.preferences);
+                    const coachCheckinsState = _clientCoachCheckinsPreferenceState(data.preferences);
+                    if (coachCheckinsInput) coachCheckinsInput.checked = coachCheckinsState === true;
                     _renderCoachCheckinsToggle();
                 }
 
@@ -9094,11 +9103,16 @@
                 try {
                     const { data: userRow } = await window.supabaseClient
                         .from('users')
-                        .select('is_test_account')
+                        .select('is_test_account,subscription_status')
                         .eq('id', clientId)
                         .maybeSingle();
                     document.getElementById('cm-testaccount').checked = !!userRow?.is_test_account;
                     _renderTestAccountToggle();
+                    const coachCheckinsInput = document.getElementById('cm-coach-checkins');
+                    if (coachCheckinsInput && _clientCoachCheckinsPreferenceState(_clientMemoryPreferences) === null && _isPaidClientStatus(userRow?.subscription_status)) {
+                        coachCheckinsInput.checked = true;
+                        _renderCoachCheckinsToggle();
+                    }
                 } catch (e) { /* non-critical */ }
             } catch (e) {
                 console.error('Failed to load client memory:', e);
@@ -9590,7 +9604,7 @@
         let currentNeedsYouView = 'all';
         let needsYouCounts = { all: 0 };
         const NEEDS_YOU_TABS = ['all'];
-        const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'onboarding_day_30'];
+        const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'onboarding_day_30', 'weekly_checkin'];
         const CLIENT_MANAGER_REVIEW_MARKERS = [
             'balance-combined-dm-manager',
             'balance-lead-client-manager',
@@ -9618,6 +9632,19 @@
 
         function isChallengeCheckinAlert(alert) {
             return alert?.data?.subtype === 'challenge_checkin' || alert?.data?.challenge_checkin === true;
+        }
+
+        function isCoachCheckinApprovalDraft(alert) {
+            const data = alert?.data || {};
+            return alert?.alert_type === 'weekly_checkin'
+                && alert?.status === 'pending'
+                && needsYouHasSuggestedDraft(alert)
+                && (
+                    isChallengeCheckinAlert(alert)
+                    || data.non_challenge_checkin === true
+                    || data.manual_checkin_roster === true
+                    || data.free_trial_checkin === true
+                );
         }
 
         function getAlertIgGraphRecipientId(data = {}) {
@@ -11207,7 +11234,7 @@
         function needsYouHasOperatorWork(alert, activeClientIds = dmClientIdsCache.ids) {
             if (!alert || alert.status !== 'pending') return false;
             if (!NEEDS_YOU_ALERT_TYPES.includes(alert.alert_type)) return false;
-            if (alert.alert_type === 'weekly_checkin') return false;
+            if (alert.alert_type === 'weekly_checkin') return isCoachCheckinApprovalDraft(alert);
             if (alert.alert_type === 'onboarding_day_30') {
                 return isNeedsYouRoutedDmAlert(alert) && needsYouHasSuggestedDraft(alert);
             }
@@ -11646,7 +11673,7 @@
 
         function emptyChallengeCheckinStates() {
             return {
-                pending: { icon: 'clipboard-check', iconColor: '#48864B', headerColor: '#48864B', header: 'No challenge check-ins pending', body: 'New 30-day challenge drafts land here by 6am Monday/Saturday and 6pm Wednesday.' },
+                pending: { icon: 'clipboard-check', iconColor: '#48864B', headerColor: '#48864B', header: 'No challenge check-ins pending', body: 'New 30-day challenge drafts land here by 6am Monday/Sunday and 6pm Wednesday.' },
                 manual: { icon: 'instagram', iconColor: '#9a3412', headerColor: '#9a3412', header: 'No manual IG sends', body: 'Anyone without a linked IG thread will show here with copy and mark-sent controls.' },
                 later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Check-ins you send later will sit here until they fire.' },
                 sent_today: { icon: 'send', iconColor: '#48864B', headerColor: '#48864B', header: 'No check-ins sent today yet', body: 'Approved or manually marked check-ins will show here after sending.' },
