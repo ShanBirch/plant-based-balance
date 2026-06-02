@@ -6353,6 +6353,30 @@ const WIZARD_CHAT_STEPS = [
         emptyLabel: 'No restrictions',
         submitLabel: 'Done'
     },
+    {
+        key: 'learning_interests',
+        type: 'multi',
+        question: 'What are you interested in learning about?',
+        prelude: 'I can tailor your Learning tab and the little coaching tips you get from Shannon.',
+        required: true,
+        maxSelect: 5,
+        submitLabel: 'Lock learning topics',
+        textPlaceholder: 'Or type what you want to learn...',
+        options: [
+            { value: 'plant_based_cooking', label: WIZARD_LEARNING_INTEREST_LABELS.plant_based_cooking },
+            { value: 'macronutrient_science', label: WIZARD_LEARNING_INTEREST_LABELS.macronutrient_science },
+            { value: 'micronutrient_science', label: WIZARD_LEARNING_INTEREST_LABELS.micronutrient_science },
+            { value: 'behavior_change_science', label: WIZARD_LEARNING_INTEREST_LABELS.behavior_change_science },
+            { value: 'weight_training_technique', label: WIZARD_LEARNING_INTEREST_LABELS.weight_training_technique },
+            { value: 'meal_prep_planning', label: WIZARD_LEARNING_INTEREST_LABELS.meal_prep_planning },
+            { value: 'protein_science', label: WIZARD_LEARNING_INTEREST_LABELS.protein_science },
+            { value: 'recovery_sleep_energy', label: WIZARD_LEARNING_INTEREST_LABELS.recovery_sleep_energy },
+            { value: 'fat_loss_basics', label: WIZARD_LEARNING_INTEREST_LABELS.fat_loss_basics },
+            { value: 'muscle_gain_basics', label: WIZARD_LEARNING_INTEREST_LABELS.muscle_gain_basics },
+            { value: 'supplements', label: WIZARD_LEARNING_INTEREST_LABELS.supplements },
+            { value: 'healthy_habits', label: WIZARD_LEARNING_INTEREST_LABELS.healthy_habits }
+        ]
+    },
     { key: 'ig_handle', type: 'text', question: 'Last one, what is your Instagram handle? You can skip this.', placeholder: '@yourhandle', optional: true }
 ];
 
@@ -6586,6 +6610,20 @@ function wizardChatMultiFromText(step, raw) {
             ['perfect_lessons', ['perfect quizzes', '100', 'score 100', 'lesson']],
             ['message_coach', ['coach', 'message', 'check in', 'checkin']],
             ['share_workout_feed', ['community', 'feed', 'share', 'post']]
+        ],
+        learning_interests: [
+            ['plant_based_cooking', ['plant based cooking', 'plant based', 'vegan cooking', 'recipes', 'cooking']],
+            ['macronutrient_science', ['macronutrient', 'macronutrients', 'macros', 'macro', 'calories', 'carbs', 'fats']],
+            ['micronutrient_science', ['micronutrient', 'micronutrients', 'vitamins', 'minerals', 'iron', 'b12']],
+            ['behavior_change_science', ['behavior', 'behaviour', 'habit', 'habits', 'mindset', 'discipline']],
+            ['weight_training_technique', ['weight training', 'lifting', 'technique', 'form', 'gym technique']],
+            ['meal_prep_planning', ['meal prep', 'meal planning', 'planning', 'prep']],
+            ['protein_science', ['protein']],
+            ['recovery_sleep_energy', ['recovery', 'sleep', 'energy', 'fatigue']],
+            ['fat_loss_basics', ['fat loss', 'lose fat', 'weight loss']],
+            ['muscle_gain_basics', ['muscle', 'muscle gain', 'build muscle', 'hypertrophy']],
+            ['supplements', ['supplement', 'supplements', 'creatine']],
+            ['healthy_habits', ['healthy habits', 'health habits', 'routine']]
         ],
         dietary_requirements: [
             ['vegan', ['vegan', 'plant based', 'plantbased']],
