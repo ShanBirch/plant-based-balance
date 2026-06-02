@@ -1,6 +1,6 @@
 const DEFAULT_SITE_URL = 'https://plantbased-balance.org';
 const DEFAULT_VIDEO_PATH = '/assets/ig/challenge-story-next-round.mp4';
-const DEFAULT_GRAPH_BASE = 'https://graph.instagram.com';
+const DEFAULT_GRAPH_BASE = 'https://graph.facebook.com';
 
 function cleanString(value, max = 1000) {
     return String(value || '').trim().slice(0, max);
@@ -62,10 +62,23 @@ function defaultIgUserId() {
     );
 }
 
+function accountMap() {
+    return parseJsonObject(process.env.META_IG_ACCOUNT_MAP_JSON || process.env.META_INSTAGRAM_ACCOUNT_MAP_JSON || '');
+}
+
 function mappedAccountConfig(igUserId) {
-    const map = parseJsonObject(process.env.META_IG_ACCOUNT_MAP_JSON || process.env.META_INSTAGRAM_ACCOUNT_MAP_JSON || '');
+    const map = accountMap();
     const account = map[igUserId] || {};
     return account && typeof account === 'object' ? account : {};
+}
+
+function igUserIdCandidates(explicit) {
+    const ids = [
+        cleanString(explicit, 120),
+        defaultIgUserId(),
+        ...Object.keys(accountMap()).map(id => cleanString(id, 120)),
+    ].filter(Boolean);
+    return [...new Set(ids)];
 }
 
 function tokenEnvCandidates(igUserId) {
@@ -179,38 +192,56 @@ async function waitForContainer(containerId, token, { timeoutMs = 22000, interva
 }
 
 async function publishBalanceChallengeStory(options = {}) {
-    const igUserId = cleanString(options.igUserId || defaultIgUserId(), 120);
+    const candidates = igUserIdCandidates(options.igUserId);
     const videoUrl = cleanString(options.videoUrl || defaultBalanceChallengeStoryUrl(), 700);
-    if (!igUserId) throw new Error('Missing Instagram Graph account id');
+    if (!candidates.length) throw new Error('Missing Instagram Graph account id');
     if (!videoUrl || !/^https:\/\//i.test(videoUrl)) throw new Error('Story video URL must be a public https URL');
 
-    const resolved = resolveAccessToken(igUserId);
-    if (!resolved.token) throw new Error('Missing Instagram Graph access token');
+    const errors = [];
+    for (const igUserId of candidates) {
+        const resolved = resolveAccessToken(igUserId);
+        if (!resolved.token) {
+            errors.push({ igUserId, error: 'missing_token' });
+            continue;
+        }
 
-    const container = await graphPost(`${encodeURIComponent(igUserId)}/media`, {
-        media_type: 'STORIES',
-        video_url: videoUrl,
-        access_token: resolved.token,
-    });
-    const creationId = cleanString(container.id, 120);
-    if (!creationId) throw new Error('Instagram did not return a media container id');
+        try {
+            const container = await graphPost(`${encodeURIComponent(igUserId)}/media`, {
+                media_type: 'STORIES',
+                video_url: videoUrl,
+                access_token: resolved.token,
+            });
+            const creationId = cleanString(container.id, 120);
+            if (!creationId) throw new Error('Instagram did not return a media container id');
 
-    const status = await waitForContainer(creationId, resolved.token, options.poll || {});
-    const published = await graphPost(`${encodeURIComponent(igUserId)}/media_publish`, {
-        creation_id: creationId,
-        access_token: resolved.token,
-    });
+            const status = await waitForContainer(creationId, resolved.token, options.poll || {});
+            const published = await graphPost(`${encodeURIComponent(igUserId)}/media_publish`, {
+                creation_id: creationId,
+                access_token: resolved.token,
+            });
 
-    return {
-        ok: true,
-        source: cleanString(options.source || 'balance_challenge_story', 120),
-        igUserId,
-        videoUrl,
-        creationId,
-        status,
-        mediaId: cleanString(published.id, 120),
-        graphVersion: graphVersion(),
-    };
+            return {
+                ok: true,
+                source: cleanString(options.source || 'balance_challenge_story', 120),
+                igUserId,
+                videoUrl,
+                creationId,
+                status,
+                mediaId: cleanString(published.id, 120),
+                graphVersion: graphVersion(),
+            };
+        } catch (error) {
+            errors.push({
+                igUserId,
+                error: error.message || 'publish_failed',
+                graph: error.graph || null,
+            });
+        }
+    }
+
+    const error = new Error(`No configured Instagram account could publish this story: ${errors.map(item => `${item.igUserId}:${item.error}`).join('; ')}`);
+    error.graph = { account_errors: errors };
+    throw error;
 }
 
 function json(status, body) {
