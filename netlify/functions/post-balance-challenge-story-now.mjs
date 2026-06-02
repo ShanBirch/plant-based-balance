@@ -229,7 +229,7 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function waitForContainer(containerId, token, { timeoutMs = 22000, intervalMs = 2000 } = {}) {
+async function waitForContainer(containerId, token, { timeoutMs = 7000, intervalMs = 1500 } = {}) {
     const started = Date.now();
     let lastStatus = null;
 
