@@ -33,6 +33,22 @@ const PAUSE_RECHECK_MS = 60 * 60 * 1000;
 const MAX_SEARCH_QUERIES = 3;
 const MAX_SEARCH_RESULTS_PER_QUERY = 12;
 const MAX_DETAIL_IDS = 50;
+const VEGAN_SAFE_FOOD_TOPIC_IDS = new Set([
+    'plant_based_cooking',
+    'meal_prep_planning',
+    'protein_science',
+    'macronutrient_science',
+    'micronutrient_science',
+    'supplements',
+    'fat_loss_basics',
+    'muscle_gain_basics',
+]);
+const VEGAN_SAFE_SOURCE_KIND_RE = /\b(plant_based|vegan|wfpb)\b/i;
+const VEGAN_SAFE_POSITIVE_RE = /\b(vegan|plant[-\s]?based|wfpb|whole[-\s]?food[-\s]?plant[-\s]?based|dairy[-\s]?free|egg[-\s]?free|meat[-\s]?free|animal[-\s]?free|no dairy|no eggs|no meat|tofu|tempeh|seitan|lentils?|chickpeas?|beans?|legumes?|edamame|soy|pea protein|soy protein|hemp protein|algae omega|nutritional yeast)\b/i;
+const VEGAN_SAFE_ANIMAL_PRODUCT_RE = /\b(whey|casein|collagen|gelatin|gelatine|dairy|milk|yogh?urt|greek yoghurt|greek yogurt|cheese|cottage cheese|egg|eggs|chicken|beef|steak|turkey|fish|salmon|tuna|prawn|prawns|shrimp|pork|bacon|ham|lamb|meat|bone broth|honey|animal protein|carnivore)\b/i;
+const VEGAN_SAFE_SAFE_MILK_RE = /\b(?:soy|soya|almond|oat|coconut|rice|cashew|hemp|pea|plant[-\s]?based|vegan|dairy[-\s]?free|non[-\s]?dairy)\s+milk\b/gi;
+const VEGAN_SAFE_SAFE_CHEESE_RE = /\b(?:vegan|plant[-\s]?based|dairy[-\s]?free|non[-\s]?dairy)\s+cheese\b/gi;
+const VEGAN_SAFE_NUTRITION_CONTEXT_RE = /\b(food|meal|recipe|cook|cooking|prep|protein|macro|nutrition|diet|dieting|calorie|supplement|creatine|b12|iron|omega|fat loss|muscle gain|hypertrophy)\b/i;
 const TOPIC_SEQUENCE = [
     'plant_based_cooking',
     'protein_science',
@@ -93,6 +109,14 @@ function safeObject(value) {
 
 function cleanString(value, max = 500) {
     return String(value || '').trim().slice(0, max);
+}
+
+function cleanStringArray(value, maxItems = 20, maxLength = 120) {
+    const list = Array.isArray(value) ? value : (value ? [value] : []);
+    return [...new Set(list
+        .map(item => cleanString(item, maxLength))
+        .filter(Boolean))]
+        .slice(0, maxItems);
 }
 
 function normalizeHandle(value) {
@@ -222,12 +246,106 @@ function hoursSinceIso(value, nowMs = Date.now()) {
 
 async function loadTargetThread(handle) {
     const encoded = encodeURIComponent(`*${handle}*`);
-    const select = 'id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,last_inbound_at,last_outbound_at,custom_data,auto_send_enabled';
+    const select = 'id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,last_inbound_at,last_outbound_at,custom_data,goals,personal_context,running_notes,qualifier,auto_send_enabled';
     const rows = await supabase(
         `ig_threads?select=${select}&channel=eq.instagram&ig_username=ilike.${encoded}&order=last_inbound_at.desc.nullslast&limit=20`
     );
     const exact = rows.find(row => normalizeHandle(row.ig_username) === handle);
     return exact || rows[0] || null;
+}
+
+function veganContextText(value, depth = 0) {
+    if (value == null || depth > 4) return '';
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        return ` ${String(value)} `;
+    }
+    if (Array.isArray(value)) return value.map(item => veganContextText(item, depth + 1)).join(' ');
+    if (typeof value === 'object') {
+        return Object.entries(value)
+            .filter(([key]) => !/token|secret|key|password|credential/i.test(key))
+            .map(([key, item]) => ` ${key} ${veganContextText(item, depth + 1)} `)
+            .join(' ');
+    }
+    return '';
+}
+
+function textHasVeganRequiredSignal(text) {
+    const value = cleanString(text, 8000);
+    if (!value) return false;
+    if (/\b(not vegan|isn't vegan|isnt vegan|not plant[-\s]?based|omnivore|eats everything|eat everything)\b/i.test(value)) {
+        return false;
+    }
+    return /\b(vegan|plant[-\s]?based|plantbased|whole[-\s]?food[-\s]?plant[-\s]?based|wfpb|plant_based_30|vegan_challenge|vegan challenge)\b/i.test(value);
+}
+
+function resolveVeganSafetyRequirement(thread = {}, linkedContext = {}) {
+    const customData = safeObject(thread.custom_data);
+    const drip = safeObject(customData.learning_reel_drip);
+    const qualifier = safeObject(thread.qualifier || customData.qualifier);
+    const reasons = [];
+
+    if (customData.vegan_safe_required === true || drip.vegan_safe_required === true) {
+        reasons.push('thread_flag');
+    }
+    if (qualifier.challenge_route === 'vegan') {
+        reasons.push('qualifier_vegan_route');
+    }
+
+    const quizRows = Array.isArray(linkedContext.quizRows) ? linkedContext.quizRows : [];
+    if (quizRows.some(row => /\b(vegan|plant[-_\s]?based|plantbased|wfpb)\b/i.test(veganContextText(row)))) {
+        reasons.push('linked_quiz_diet');
+    }
+
+    const challengeRows = Array.isArray(linkedContext.challengeRows) ? linkedContext.challengeRows : [];
+    if (challengeRows.some(row => /\b(plant_based_30|vegan[_\s-]?challenge|plant[-_\s]?based)\b/i.test(veganContextText(row)))) {
+        reasons.push('plant_based_challenge');
+    }
+
+    const threadText = veganContextText({
+        lead_stage: thread.lead_stage,
+        goals: thread.goals,
+        personal_context: thread.personal_context,
+        running_notes: thread.running_notes,
+        custom_data: {
+            dietary_preference: customData.dietary_preference,
+            dietary_requirements: customData.dietary_requirements,
+            diet_type: customData.diet_type,
+            onboarding: customData.onboarding,
+            learning_interests: customData.learning_interests,
+            lead_context: customData.lead_context,
+        },
+        qualifier,
+    });
+    if (textHasVeganRequiredSignal(threadText)) {
+        reasons.push('thread_text_signal');
+    }
+
+    return {
+        required: reasons.length > 0,
+        reasons: [...new Set(reasons)],
+    };
+}
+
+async function loadLinkedVeganContext(thread = {}) {
+    const linkedUserId = cleanString(thread.linked_user_id, 120);
+    if (!linkedUserId) return { quizRows: [], challengeRows: [] };
+    const encoded = encodeURIComponent(linkedUserId);
+    const [quizRows, challengeRows] = await Promise.all([
+        supabase(`quiz_results?select=dietary_preference,created_at&user_id=eq.${encoded}&order=created_at.desc&limit=3`).catch(error => {
+            console.warn('[learning-reel-drip] quiz vegan context lookup failed:', error.message);
+            return [];
+        }),
+        supabase(`challenge_participants?select=status,challenge:challenges(cohort_type,name,is_system_cohort)&user_id=eq.${encoded}&limit=20`).catch(error => {
+            console.warn('[learning-reel-drip] challenge vegan context lookup failed:', error.message);
+            return [];
+        }),
+    ]);
+    return { quizRows, challengeRows };
+}
+
+async function loadVeganSafetyRequirement(thread = {}) {
+    const linkedContext = await loadLinkedVeganContext(thread);
+    return resolveVeganSafetyRequirement(thread, linkedContext);
 }
 
 function configuredTopics() {
@@ -424,6 +542,88 @@ function sentVideoIdsFromState(state) {
     ].map(value => cleanString(value, 120)).filter(Boolean));
 }
 
+function veganSafetyTextForCandidate(candidate = {}) {
+    return [
+        candidate.title,
+        candidate.description,
+        candidate.channelTitle,
+        candidate.channel_title,
+        candidate.query,
+        candidate.youtube_query,
+        ...(Array.isArray(candidate.tags) ? candidate.tags : []),
+    ].map(value => cleanString(value, 1000)).filter(Boolean).join(' ');
+}
+
+function stripVeganSafeAnimalProductPhrases(text) {
+    return cleanString(text, 8000)
+        .replace(VEGAN_SAFE_SAFE_MILK_RE, ' plant drink ')
+        .replace(VEGAN_SAFE_SAFE_CHEESE_RE, ' plant slice ')
+        .replace(/\b(?:vegan|plant[-\s]?based|dairy[-\s]?free|non[-\s]?dairy)\s+yogh?urt\b/gi, ' plant cultured food ')
+        .replace(/\b(?:vegan|plant[-\s]?based|egg[-\s]?free)\s+eggs?\b/gi, ' plant scramble ')
+        .replace(/\b(?:vegan|plant[-\s]?based|meat[-\s]?free)\s+(?:meat|chicken|beef|pork|bacon|ham|fish|tuna|salmon)\b/gi, ' vegan protein ');
+}
+
+function candidateHasAnimalProductSignal(candidate = {}) {
+    const text = stripVeganSafeAnimalProductPhrases(veganSafetyTextForCandidate(candidate));
+    return VEGAN_SAFE_ANIMAL_PRODUCT_RE.test(text);
+}
+
+function candidateHasVeganPositiveSignal(candidate = {}) {
+    return VEGAN_SAFE_POSITIVE_RE.test(veganSafetyTextForCandidate(candidate));
+}
+
+function isPlantBasedSourceCandidate(candidate = {}) {
+    return VEGAN_SAFE_SOURCE_KIND_RE.test(candidate.source_kind || candidate.sourceKind || '');
+}
+
+function isFoodOrNutritionCandidate(candidate = {}, topicId = candidate.topic_id || candidate.topicId || '') {
+    const topic = cleanString(topicId, 100);
+    if (VEGAN_SAFE_FOOD_TOPIC_IDS.has(topic)) return true;
+    return VEGAN_SAFE_NUTRITION_CONTEXT_RE.test(veganSafetyTextForCandidate(candidate));
+}
+
+function assessCandidateVeganSafety(candidate = {}, context = {}) {
+    if (!context.required) {
+        return { required: false, status: 'not_required', reasons: [] };
+    }
+
+    const reasons = [];
+    const topicId = candidate.topic_id || candidate.topicId || context.topicId || context.topic_id || '';
+    if (candidateHasAnimalProductSignal(candidate)) {
+        return {
+            required: true,
+            status: 'unsafe',
+            reasons: ['animal_product_signal'],
+        };
+    }
+
+    if (isPlantBasedSourceCandidate(candidate)) {
+        reasons.push('plant_based_source');
+    }
+    if (candidateHasVeganPositiveSignal(candidate)) {
+        reasons.push('vegan_metadata_signal');
+    }
+
+    const foodOrNutrition = isFoodOrNutritionCandidate(candidate, topicId);
+    if (foodOrNutrition && !reasons.length) {
+        return {
+            required: true,
+            status: 'unknown',
+            reasons: ['food_or_nutrition_without_vegan_signal'],
+        };
+    }
+
+    if (!foodOrNutrition) {
+        reasons.push('non_food_topic_no_animal_signal');
+    }
+
+    return {
+        required: true,
+        status: 'safe',
+        reasons: [...new Set(reasons)],
+    };
+}
+
 function candidateFromResult(raw, detail, topicId, query) {
     const detailSnippet = safeObject(detail?.snippet);
     const searchSnippet = safeObject(raw?.snippet);
@@ -435,6 +635,7 @@ function candidateFromResult(raw, detail, topicId, query) {
     const title = cleanString(snippet.title || searchSnippet.title || '', 300);
     const channelTitle = cleanString(snippet.channelTitle || searchSnippet.channelTitle || '', 180);
     const description = cleanString(snippet.description || searchSnippet.description || '', 5000);
+    const tags = cleanStringArray(snippet.tags || detailSnippet.tags || searchSnippet.tags, 30, 120);
     const source = findCuratedLearningReelSource({ channelTitle, channelId }, topicId);
     const url = `https://www.youtube.com/shorts/${videoId}`;
     const reasonParts = [
@@ -457,6 +658,7 @@ function candidateFromResult(raw, detail, topicId, query) {
         channelId,
         channel_id: channelId,
         description,
+        tags,
         publishedAt: snippet.publishedAt || null,
         published_at: snippet.publishedAt || null,
         durationSec,
@@ -472,7 +674,7 @@ function candidateFromResult(raw, detail, topicId, query) {
     };
 }
 
-async function findReelForTopic({ topicId, thread, state }) {
+async function findReelForTopic({ topicId, thread, state, veganSafetyRequirement = { required: false, reasons: [] } }) {
     const queries = buildCuratedLearningReelQueries(topicId, { perSource: 1 }).slice(0, MAX_SEARCH_QUERIES);
     const seenIds = new Set();
     const rawCandidates = [];
@@ -488,17 +690,42 @@ async function findReelForTopic({ topicId, thread, state }) {
 
     const details = await youtubeVideoDetails(rawCandidates.map(candidate => candidate.item?.id?.videoId).filter(Boolean));
     const existingSentIds = sentVideoIdsFromState(state);
+    let duplicateRejectedCount = 0;
+    let veganRejectedCount = 0;
+    const veganRejectedSamples = [];
     const candidates = rawCandidates.map(({ query, item }) => {
         const detail = details.get(item?.id?.videoId) || {};
         const candidate = candidateFromResult(item, detail, topicId, query);
+        const veganSafety = assessCandidateVeganSafety(candidate, {
+            required: veganSafetyRequirement.required,
+            topicId,
+        });
         return {
             ...candidate,
+            vegan_safety: veganSafety,
             score: scoreCuratedLearningReelCandidate(candidate, topicId),
         };
     }).filter(candidate => {
-        if (!candidate.video_id || existingSentIds.has(candidate.video_id)) return false;
+        if (!candidate.video_id) return false;
+        if (existingSentIds.has(candidate.video_id)) {
+            duplicateRejectedCount += 1;
+            return false;
+        }
         if (candidate.score < 0) return false;
         if (candidate.duration_seconds && candidate.duration_seconds > 240) return false;
+        if (veganSafetyRequirement.required && candidate.vegan_safety?.status !== 'safe') {
+            veganRejectedCount += 1;
+            if (veganRejectedSamples.length < 5) {
+                veganRejectedSamples.push({
+                    video_id: candidate.video_id,
+                    title: candidate.title,
+                    channel_title: candidate.channel_title,
+                    status: candidate.vegan_safety?.status || 'unknown',
+                    reasons: candidate.vegan_safety?.reasons || [],
+                });
+            }
+            return false;
+        }
         const normalized = normalizeLearningReelItems([candidate], {
             source: SOURCE,
             platform: 'youtube',
@@ -506,7 +733,13 @@ async function findReelForTopic({ topicId, thread, state }) {
         return !findDuplicateLearningReels(thread, normalized).length;
     }).sort((a, b) => b.score - a.score);
 
-    return candidates[0] || null;
+    return {
+        candidate: candidates[0] || null,
+        raw_count: rawCandidates.length,
+        duplicate_rejected_count: duplicateRejectedCount,
+        vegan_rejected_count: veganRejectedCount,
+        vegan_rejected_samples: veganRejectedSamples,
+    };
 }
 
 function messageVariantIndex(reel, itemIndex = 0, length = 1) {
@@ -554,7 +787,6 @@ function buildMessageOpener(reel, itemIndex = 0) {
     const topicId = cleanString(reel?.topic_id || reel?.topicId, 80);
     const topicLabel = cleanString(reel?.topic_label || reel?.topicLabel, 120).toLowerCase();
     const topicText = `${topicId} ${topicLabel} ${reel?.title || ''}`.toLowerCase();
-    const cue = cleanMessageCue(reel?.title, 4);
     const optionsByTopic = (() => {
         if (isPracticalCookingReel(topicId, topicText)) {
             return null;
@@ -662,7 +894,7 @@ async function logOutbound(thread, text, graphMessageId) {
     return rows?.[0]?.id || null;
 }
 
-async function sendDueReel({ thread, state, item, nowMs = Date.now() }) {
+async function sendDueReel({ thread, state, item, nowMs = Date.now(), veganSafetyRequirement = { required: false, reasons: [] } }) {
     const graph = resolveThreadGraph(thread);
     if (!graph.recipientId || !graph.accountId) {
         const next = patchState(state, {
@@ -686,18 +918,33 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now() }) {
         return { sent: false, blocker: 'standard_24h_messaging_window_closed', state: next };
     }
 
-    const reel = await findReelForTopic({ topicId: item.topic_id, thread, state });
+    const reelResult = await findReelForTopic({ topicId: item.topic_id, thread, state, veganSafetyRequirement });
+    const reel = reelResult.candidate;
     if (!reel) {
+        const skipReason = veganSafetyRequirement.required && reelResult.vegan_rejected_count > 0
+            ? 'no_vegan_safe_candidate'
+            : 'no_curated_candidate';
         const next = updatePlanItem(state, item.index, {
-            status: 'skipped_no_candidate',
+            status: `skipped_${skipReason}`,
             skipped_at: new Date(nowMs).toISOString(),
+            vegan_safe_required: veganSafetyRequirement.required || undefined,
+            vegan_safety_reasons: veganSafetyRequirement.reasons || undefined,
         });
         next.skipped = [
             ...(Array.isArray(state.skipped) ? state.skipped : []),
-            { topic_id: item.topic_id, topic_label: item.topic_label, skipped_at: new Date(nowMs).toISOString(), reason: 'no_curated_candidate' },
+            {
+                topic_id: item.topic_id,
+                topic_label: item.topic_label,
+                skipped_at: new Date(nowMs).toISOString(),
+                reason: skipReason,
+                vegan_safe_required: veganSafetyRequirement.required || undefined,
+                vegan_safety_reasons: veganSafetyRequirement.reasons || undefined,
+                vegan_rejected_count: reelResult.vegan_rejected_count || undefined,
+                vegan_rejected_samples: reelResult.vegan_rejected_samples || undefined,
+            },
         ].slice(-30);
         await persistThreadState(thread, next);
-        return { sent: false, blocker: 'no_curated_candidate', state: next };
+        return { sent: false, blocker: skipReason, state: next };
     }
 
     const { token, source: tokenSource } = await resolveMetaIgAccessToken(graph.accountId, supabase);
@@ -728,6 +975,8 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now() }) {
         sent_message: message,
         source: SOURCE,
         platform: 'youtube',
+        vegan_safe_required: veganSafetyRequirement.required || undefined,
+        vegan_safety: reel.vegan_safety || undefined,
         graph_message_ids: graphMessageId ? [graphMessageId] : [],
         message_ids: messageId ? [messageId] : [],
     };
@@ -739,6 +988,8 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now() }) {
         channel_title: reel.channel_title,
         url: reel.url,
         token_source: tokenSource,
+        vegan_safe_required: veganSafetyRequirement.required || undefined,
+        vegan_safety: reel.vegan_safety || undefined,
     });
     nextState = {
         ...nextState,
@@ -754,6 +1005,8 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now() }) {
                 title: reel.title,
                 channel_title: reel.channel_title,
                 url: reel.url,
+                vegan_safe_required: veganSafetyRequirement.required || undefined,
+                vegan_safety: reel.vegan_safety || undefined,
             },
         ].slice(-40),
     };
@@ -789,6 +1042,7 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now() }) {
             channel_title: reel.channel_title,
             url: reel.url,
             description: truncate(reel.description || '', 260),
+            vegan_safety: reel.vegan_safety || null,
         },
         graph_message_id: graphMessageId,
         message_id: messageId,
@@ -802,6 +1056,13 @@ async function runDrip({ sendDue = true } = {}) {
     if (!thread) return { ok: false, error: 'target_thread_not_found', target_handle: handle };
 
     let state = normalizeDripState(thread, nowMs);
+    const veganSafetyRequirement = await loadVeganSafetyRequirement(thread);
+    state = {
+        ...state,
+        vegan_safe_required: veganSafetyRequirement.required || undefined,
+        vegan_safety_reasons: veganSafetyRequirement.reasons || undefined,
+        vegan_safety_checked_at: new Date(nowMs).toISOString(),
+    };
     await persistThreadState(thread, state);
     if (state.status === 'not_started') {
         return { ok: true, target_handle: handle, status: state.status, reason: state.reason };
@@ -810,7 +1071,15 @@ async function runDrip({ sendDue = true } = {}) {
         return { ok: true, target_handle: handle, status: state.status, next_send_at: state.next_send_at || null };
     }
     if (!sendDue) {
-        return { ok: true, target_handle: handle, status: state.status, next_send_at: state.next_send_at || null, plan: state.plan };
+        return {
+            ok: true,
+            target_handle: handle,
+            status: state.status,
+            next_send_at: state.next_send_at || null,
+            vegan_safe_required: veganSafetyRequirement.required,
+            vegan_safety_reasons: veganSafetyRequirement.reasons,
+            plan: state.plan,
+        };
     }
     if (shouldHoldPausedState(state, nowMs)) {
         return {
@@ -835,7 +1104,7 @@ async function runDrip({ sendDue = true } = {}) {
         return { ok: true, target_handle: handle, status: state.status, next_send_at: state.next_send_at, due: false };
     }
 
-    const result = await sendDueReel({ thread, state, item: due, nowMs });
+    const result = await sendDueReel({ thread, state, item: due, nowMs, veganSafetyRequirement });
     return {
         ok: true,
         target_handle: handle,
@@ -844,6 +1113,8 @@ async function runDrip({ sendDue = true } = {}) {
         blocker: result.blocker || null,
         status: result.state?.status || state.status,
         next_send_at: result.state?.next_send_at || null,
+        vegan_safe_required: veganSafetyRequirement.required,
+        vegan_safety_reasons: veganSafetyRequirement.reasons,
         reel: result.reel || null,
     };
 }
@@ -874,11 +1145,13 @@ export default async function handler(req) {
 
 export const _test = {
     applyCocosThreadCustomData,
+    assessCandidateVeganSafety,
     buildInitialPlan,
     buildVisibleMessage,
     candidateFromResult,
     nextDuePlanItem,
     normalizeDripState,
+    resolveVeganSafetyRequirement,
     resolveThreadGraph,
     shouldHoldPausedState,
     updatePlanItem,

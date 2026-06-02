@@ -6328,6 +6328,8 @@ function normalizeLearningReelItem(value, defaults = {}) {
         ),
         message_ids: compactLearningStringArray(item.message_ids || item.messageIds || defaults.messageIds, 12, 120),
         source: compactLearningString(item.source || defaults.source || 'learning_reels', 80),
+        vegan_safe_required: (item.vegan_safe_required === true || item.veganSafeRequired === true || defaults.veganSafeRequired === true) ? true : undefined,
+        vegan_safety: plainObject(item.vegan_safety || item.veganSafety || defaults.veganSafety),
     };
     const hasUsefulContext = normalized.url
         || normalized.title
@@ -6338,6 +6340,7 @@ function normalizeLearningReelItem(value, defaults = {}) {
     if (!hasUsefulContext) return null;
     return Object.fromEntries(Object.entries(normalized).filter(([, v]) => {
         if (Array.isArray(v)) return v.length > 0;
+        if (v && typeof v === 'object') return Object.keys(v).length > 0;
         return v !== '' && v !== null && v !== undefined;
     }));
 }

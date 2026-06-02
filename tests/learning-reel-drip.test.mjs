@@ -139,4 +139,71 @@ assert.ok(brainMessage.includes('https://www.youtube.com/shorts/F0BkuN8MPtQ'));
 assert.match(brainMessage, /interesting|worth a look/);
 assert.doesNotMatch(brainMessage, /when did the first|this bit on|brain show up/i);
 
+const veganThreadRequirement = _test.resolveVeganSafetyRequirement({
+    custom_data: {
+        learning_reel_drip: { vegan_safe_required: true },
+    },
+});
+assert.strictEqual(veganThreadRequirement.required, true);
+assert.ok(veganThreadRequirement.reasons.includes('thread_flag'));
+
+const veganRouteRequirement = _test.resolveVeganSafetyRequirement({
+    qualifier: { challenge_route: 'vegan' },
+});
+assert.strictEqual(veganRouteRequirement.required, true);
+assert.ok(veganRouteRequirement.reasons.includes('qualifier_vegan_route'));
+
+const nonVeganCorrectionRequirement = _test.resolveVeganSafetyRequirement({
+    running_notes: 'Shannon asked vegan hey? They said no not vegan, I eat everything.',
+});
+assert.strictEqual(nonVeganCorrectionRequirement.required, false);
+
+const unsafeJeffMilk = _test.assessCandidateVeganSafety({
+    topic_id: 'protein_science',
+    title: 'How I make my protein shake',
+    description: 'Jeff uses milk and whey protein powder.',
+    channelTitle: 'Jeff Nippard',
+    source_kind: 'evidence_fitness',
+}, { required: true });
+assert.strictEqual(unsafeJeffMilk.status, 'unsafe');
+assert.ok(unsafeJeffMilk.reasons.includes('animal_product_signal'));
+
+const ambiguousJeffProtein = _test.assessCandidateVeganSafety({
+    topic_id: 'protein_science',
+    title: 'How Much Protein Can You Absorb In One Meal? (New Science)',
+    description: 'How many grams of protein can you absorb in one meal?',
+    channelTitle: 'Jeff Nippard',
+    source_kind: 'evidence_fitness',
+}, { required: true });
+assert.strictEqual(ambiguousJeffProtein.status, 'unknown');
+assert.ok(ambiguousJeffProtein.reasons.includes('food_or_nutrition_without_vegan_signal'));
+
+const safePlantProtein = _test.assessCandidateVeganSafety({
+    topic_id: 'protein_science',
+    title: 'Plant based protein tips',
+    description: 'Vegan protein intake using tofu, tempeh and pea protein.',
+    channelTitle: 'Simnett Nutrition',
+    source_kind: 'plant_based_fitness',
+}, { required: true });
+assert.strictEqual(safePlantProtein.status, 'safe');
+
+const safeTechnique = _test.assessCandidateVeganSafety({
+    topic_id: 'weight_training_technique',
+    title: 'Fix your squat form',
+    description: 'A technique cue for better squat depth.',
+    channelTitle: 'Jeff Nippard',
+    source_kind: 'evidence_fitness',
+}, { required: true });
+assert.strictEqual(safeTechnique.status, 'safe');
+assert.ok(safeTechnique.reasons.includes('non_food_topic_no_animal_signal'));
+
+const safeSoyMilk = _test.assessCandidateVeganSafety({
+    topic_id: 'meal_prep_planning',
+    title: 'High protein vegan smoothie',
+    description: 'Uses soy milk, banana and pea protein.',
+    channelTitle: 'Pick Up Limes',
+    source_kind: 'plant_based_practical',
+}, { required: true });
+assert.strictEqual(safeSoyMilk.status, 'safe');
+
 console.log('learning reel drip tests passed');
