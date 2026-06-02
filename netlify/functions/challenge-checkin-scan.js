@@ -224,29 +224,124 @@ function dateKeyFromValue(value, fallback = null) {
     return brisbaneParts(d).dateKey;
 }
 
-function manualCheckinPreference(memory) {
+function normalizeCadenceKey(value) {
+    const raw = String(value || '').trim().toLowerCase();
+    if (!raw) return '';
+    if (raw.startsWith('mon')) return 'monday';
+    if (raw.startsWith('wed')) return 'wednesday';
+    if (raw.startsWith('sat') || raw.startsWith('fri')) return 'saturday';
+    return raw;
+}
+
+function parseCheckinCadences(...values) {
+    for (const value of values) {
+        const list = Array.isArray(value)
+            ? value
+            : typeof value === 'string'
+                ? value.split(',')
+                : [];
+        const normalized = list.map(normalizeCadenceKey).filter(Boolean);
+        if (normalized.length) return new Set(normalized);
+    }
+    return null;
+}
+
+function boolPref(value) {
+    if (value === true || value === false) return value;
+    if (typeof value === 'string') {
+        const s = value.trim().toLowerCase();
+        if (['1', 'true', 'yes', 'on', 'enabled'].includes(s)) return true;
+        if (['0', 'false', 'no', 'off', 'disabled'].includes(s)) return false;
+    }
+    return null;
+}
+
+function firstDefined(...values) {
+    for (const value of values) {
+        if (value !== undefined && value !== null) return value;
+    }
+    return undefined;
+}
+
+function manualCheckinPreference(memory, cadenceKey = null) {
     const prefs = safeObject(memory?.preferences);
+    const coach = safeObject(prefs.coach_checkins);
     const nested = safeObject(prefs.challenge_checkins);
     const weekly = safeObject(prefs.weekly_checkins);
-    const type = nested.type || weekly.type || prefs.checkin_type || (nested.free_trial === true ? 'free_trial_30' : null);
+    const type = coach.type || nested.type || weekly.type || prefs.checkin_type || (nested.free_trial === true ? 'free_trial_30' : null);
     const isFreeTrial = type === 'free_trial_30' || nested.free_trial === true || weekly.free_trial === true;
-    const enabled = nested.enabled === true
+    const explicitEnabled = boolPref(firstDefined(
+        coach.enabled,
+        prefs.coach_checkins_enabled,
+        nested.enabled,
+        weekly.enabled,
+        prefs.include_challenge_checkins,
+        prefs.manual_checkins_enabled
+    ));
+    if (explicitEnabled === false) return null;
+
+    const enabled = explicitEnabled === true
+        || coach.enabled === true
         || weekly.enabled === true
+        || nested.enabled === true
+        || prefs.coach_checkins_enabled === true
         || prefs.include_challenge_checkins === true
         || prefs.manual_checkins_enabled === true;
     if (!enabled) return null;
+
+    const cadences = parseCheckinCadences(
+        coach.cadences,
+        coach.days,
+        nested.cadences,
+        nested.days,
+        weekly.cadences,
+        weekly.days,
+        prefs.checkin_cadences
+    );
+    const normalizedCadence = normalizeCadenceKey(cadenceKey);
+    if (cadences && normalizedCadence && !cadences.has(normalizedCadence)) return null;
+
     return {
-        label: nested.label || weekly.label || prefs.checkin_label || (isFreeTrial ? '30-day free trial' : 'Weekly coaching check-ins'),
-        startedAt: nested.started_at || nested.start_date || weekly.started_at || weekly.start_date || null,
-        endDate: nested.end_date || weekly.end_date || null,
+        label: coach.label || nested.label || weekly.label || prefs.checkin_label || (isFreeTrial ? '30-day free trial' : 'Weekly coaching check-ins'),
+        startedAt: coach.started_at || coach.start_date || nested.started_at || nested.start_date || weekly.started_at || weekly.start_date || null,
+        endDate: coach.end_date || nested.end_date || weekly.end_date || null,
         type: type || (isFreeTrial ? 'free_trial_30' : 'manual_checkin'),
-        cohortType: nested.cohort_type || weekly.cohort_type || (isFreeTrial ? FREE_TRIAL_CHECKIN_COHORT_TYPE : MANUAL_CHECKIN_COHORT_TYPE),
+        cohortType: coach.cohort_type || nested.cohort_type || weekly.cohort_type || (isFreeTrial ? FREE_TRIAL_CHECKIN_COHORT_TYPE : MANUAL_CHECKIN_COHORT_TYPE),
         isFreeTrial,
-        source: nested.source || weekly.source || 'client_memory.preferences',
+        cadences: cadences ? Array.from(cadences) : null,
+        source: coach.source || nested.source || weekly.source || 'client_memory.preferences',
     };
 }
 
-async function loadManualCheckinGroups({ adminUserIds, dateKey }) {
+function coachCheckinsExplicitlyDisabled(memory, cadenceKey = null) {
+    const prefs = safeObject(memory?.preferences);
+    const coach = safeObject(prefs.coach_checkins);
+    const nested = safeObject(prefs.challenge_checkins);
+    const weekly = safeObject(prefs.weekly_checkins);
+    const explicitEnabled = boolPref(firstDefined(
+        coach.enabled,
+        prefs.coach_checkins_enabled,
+        nested.enabled,
+        weekly.enabled,
+        prefs.include_challenge_checkins,
+        prefs.manual_checkins_enabled
+    ));
+    if (explicitEnabled === false) return true;
+
+    const cadences = parseCheckinCadences(
+        coach.cadences,
+        coach.days,
+        nested.cadences,
+        nested.days,
+        weekly.cadences,
+        weekly.days,
+        prefs.checkin_cadences
+    );
+    const normalizedCadence = normalizeCadenceKey(cadenceKey);
+    return !!(cadences && normalizedCadence && !cadences.has(normalizedCadence));
+}
+
+async function loadManualCheckinGroups({ adminUserIds, dateKey, cadenceKey = null }) {
     let assignments = [];
     try {
         assignments = await supabaseQuery(
@@ -279,7 +374,7 @@ async function loadManualCheckinGroups({ adminUserIds, dateKey }) {
         if (SHANNON_EMAILS.has(String(client.email || '').toLowerCase())) continue;
 
         const memory = memoryByPair.get(`${assignment.coach_id}:${assignment.client_id}`);
-        const pref = manualCheckinPreference(memory);
+        const pref = manualCheckinPreference(memory, cadenceKey);
         if (!pref) continue;
 
         const startedAt = dateKeyFromValue(pref.startedAt || assignment.assigned_at || memory?.created_at, dateKey);
@@ -935,6 +1030,10 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
         }),
     ]);
 
+    if (!isManualCheckin && coachCheckinsExplicitlyDisabled(memory, cadence.key)) {
+        return { skipped: 'coach_checkins_disabled' };
+    }
+
     const profileBlock = buildClientProfileBlock({ clientName, profile });
     const memoryBlock = buildMemoryBlock(memory);
     const checkinStartDate = isManualCheckin
@@ -1197,6 +1296,7 @@ async function runScan({ force = false, cadenceKey = null, regeneratePending = f
         skipped_not_checkin_day: 0,
         skipped_self_admin_test: 0,
         skipped_pending_exists: 0,
+        skipped_coach_checkins_disabled: 0,
         deduped: 0,
         regenerated: 0,
         manual_checkin_clients: 0,
@@ -1250,6 +1350,7 @@ async function runScan({ force = false, cadenceKey = null, regeneratePending = f
             }
             const result = settled.value || {};
             if (result.skipped === 'pending_exists') summary.skipped_pending_exists++;
+            else if (result.skipped === 'coach_checkins_disabled') summary.skipped_coach_checkins_disabled++;
             else if (result.deduped) summary.deduped++;
             else if (result.regenerated) {
                 summary.regenerated++;
@@ -1268,7 +1369,7 @@ async function runScan({ force = false, cadenceKey = null, regeneratePending = f
         }
     }
 
-    const manualGroups = await loadManualCheckinGroups({ adminUserIds, dateKey });
+    const manualGroups = await loadManualCheckinGroups({ adminUserIds, dateKey, cadenceKey: effectiveCadence.key });
     for (const group of manualGroups) {
         const participants = (group.participants || []).slice(0, MAX_PARTICIPANTS_PER_RUN);
         summary.manual_checkin_clients += participants.length;
@@ -1346,3 +1447,9 @@ exports.handler = async (event = {}) => {
 };
 
 exports.runScan = runScan;
+exports._private = {
+    manualCheckinPreference,
+    coachCheckinsExplicitlyDisabled,
+    normalizeCadenceKey,
+    parseCheckinCadences,
+};

@@ -456,7 +456,7 @@ function isAlwaysNeedsYouPerson(record = {}) {
 async function loadClientMemory(coachId, clientId) {
     try {
         const rows = await supabaseQuery(
-            `client_memory?select=goals,communication_style,running_notes,injuries_limits,personal_context,coach_instructions&coach_id=eq.${coachId}&client_id=eq.${clientId}&limit=1`
+            `client_memory?select=goals,communication_style,running_notes,injuries_limits,personal_context,coach_instructions,preferences&coach_id=eq.${coachId}&client_id=eq.${clientId}&limit=1`
         );
         return rows[0] || null;
     } catch (e) {

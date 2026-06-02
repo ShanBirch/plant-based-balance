@@ -46,6 +46,43 @@ const {
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+function safeObject(value) {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function boolPref(value) {
+    if (value === true || value === false) return value;
+    if (typeof value === 'string') {
+        const s = value.trim().toLowerCase();
+        if (['1', 'true', 'yes', 'on', 'enabled'].includes(s)) return true;
+        if (['0', 'false', 'no', 'off', 'disabled'].includes(s)) return false;
+    }
+    return null;
+}
+
+function firstDefined(...values) {
+    for (const value of values) {
+        if (value !== undefined && value !== null) return value;
+    }
+    return undefined;
+}
+
+function coachCheckinsExplicitlyDisabled(memory) {
+    const prefs = safeObject(memory?.preferences);
+    const coach = safeObject(prefs.coach_checkins);
+    const challenge = safeObject(prefs.challenge_checkins);
+    const weekly = safeObject(prefs.weekly_checkins);
+    const explicitEnabled = boolPref(firstDefined(
+        coach.enabled,
+        prefs.coach_checkins_enabled,
+        challenge.enabled,
+        weekly.enabled,
+        prefs.include_challenge_checkins,
+        prefs.manual_checkins_enabled
+    ));
+    return explicitEnabled === false;
+}
+
 // ============================================================
 // Activity summary — mirrors onboarding-scheduled-scan's but 7-day window
 // ============================================================
@@ -161,8 +198,12 @@ async function buildAndQueue({ coachId, clientId, clientName, daysSinceAssigned 
         return { skipped: 'recently_messaged' };
     }
 
-    const [memory, profile, activitySummary] = await Promise.all([
-        loadClientMemory(coachId, clientId),
+    const memory = await loadClientMemory(coachId, clientId);
+    if (coachCheckinsExplicitlyDisabled(memory)) {
+        return { skipped: 'coach_checkins_disabled' };
+    }
+
+    const [profile, activitySummary] = await Promise.all([
         loadClientProfileFacts(clientId),
         buildWeekSummary(clientId),
     ]);
@@ -306,6 +347,7 @@ exports.handler = async () => {
         skipped_pending: 0,
         skipped_onboarding: 0,
         skipped_recently_messaged: 0,
+        skipped_coach_checkins_disabled: 0,
         failed: 0,
     };
 
@@ -342,6 +384,7 @@ exports.handler = async () => {
             if (result.skipped === 'dedup') summary.skipped_dedup++;
             else if (result.skipped === 'pending_exists') summary.skipped_pending++;
             else if (result.skipped === 'recently_messaged') summary.skipped_recently_messaged++;
+            else if (result.skipped === 'coach_checkins_disabled') summary.skipped_coach_checkins_disabled++;
             else if (result.alertId) summary.fired++;
             else summary.failed++;
         } catch (err) {

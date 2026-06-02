@@ -2959,6 +2959,25 @@
                                 <span id="cm-autosend-knob" style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:transform 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span>
                             </label>
                         </div>
+                        <!-- Coach check-in roster toggle. This controls Shannon's
+                             scheduled Mon/Wed/Sat draft workload only. It does
+                             not disable the client's in-app weekly review card. -->
+                        <div id="cm-coach-checkins-card" style="display:flex; align-items:flex-start; gap:12px; padding:14px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px;">
+                            <div style="flex:1; min-width:0;">
+                                <div style="display:flex; align-items:center; gap:8px; font-size:0.9rem; font-weight:700; color:#1e3a8a; flex-wrap:wrap;">
+                                    <span>Coach check-ins</span>
+                                    <span id="cm-coach-checkins-state" style="font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:999px; background:#dbeafe; color:#1d4ed8;">OFF</span>
+                                </div>
+                                <div style="font-size:0.76rem; color:#1e40af; line-height:1.45; margin-top:4px;">
+                                    When ON, this client appears in the scheduled Mon/Wed/Sat check-in draft roster. App weekly review cards stay separate.
+                                </div>
+                            </div>
+                            <label style="position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0; cursor:pointer;" title="Toggle coach check-ins">
+                                <input type="checkbox" id="cm-coach-checkins" onchange="_onCoachCheckinsToggle()" style="opacity:0; width:0; height:0;">
+                                <span id="cm-coach-checkins-slider" style="position:absolute; inset:0; background:#cbd5e1; border-radius:999px; transition:background 0.2s;"></span>
+                                <span id="cm-coach-checkins-knob" style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:transform 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span>
+                            </label>
+                        </div>
                         <label style="display:flex; flex-direction:column; gap:4px;">
                             <span style="font-size:0.82rem; font-weight:600; color:#374151;">Goals</span>
                             <textarea id="cm-goals" rows="3" placeholder="e.g. lose 5kg by June, run sub-30 5k" style="width:100%; padding:10px 12px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem; font-family:inherit; resize:vertical; box-sizing:border-box;"></textarea>
@@ -8881,6 +8900,71 @@
         /** Called from the checkbox onchange. Only updates visuals — save happens on Save. */
         function _onAutoSendToggle() { _renderAutoSendToggle(); }
 
+        let _clientMemoryPreferences = {};
+
+        function _safeClientMemoryPrefs(value) {
+            return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+        }
+
+        function _clientCoachCheckinsEnabled(preferences) {
+            const prefs = _safeClientMemoryPrefs(preferences);
+            const coach = _safeClientMemoryPrefs(prefs.coach_checkins);
+            const challenge = _safeClientMemoryPrefs(prefs.challenge_checkins);
+            const weekly = _safeClientMemoryPrefs(prefs.weekly_checkins);
+            const candidates = [
+                coach.enabled,
+                prefs.coach_checkins_enabled,
+                challenge.enabled,
+                weekly.enabled,
+                prefs.include_challenge_checkins,
+                prefs.manual_checkins_enabled,
+            ];
+            for (const value of candidates) {
+                if (value === true) return true;
+                if (value === false) return false;
+            }
+            return false;
+        }
+
+        function _buildClientMemoryPreferencesForSave() {
+            const enabled = !!document.getElementById('cm-coach-checkins')?.checked;
+            const prefs = { ..._safeClientMemoryPrefs(_clientMemoryPreferences) };
+            prefs.coach_checkins = {
+                ..._safeClientMemoryPrefs(prefs.coach_checkins),
+                enabled,
+                cadences: ['monday', 'wednesday', 'saturday'],
+                source: 'admin_notes_modal',
+            };
+            prefs.coach_checkins_enabled = enabled;
+            prefs.manual_checkins_enabled = enabled;
+            prefs.include_challenge_checkins = enabled;
+            prefs.challenge_checkins = {
+                ..._safeClientMemoryPrefs(prefs.challenge_checkins),
+                enabled,
+            };
+            prefs.weekly_checkins = {
+                ..._safeClientMemoryPrefs(prefs.weekly_checkins),
+                enabled,
+            };
+            return prefs;
+        }
+
+        function _renderCoachCheckinsToggle() {
+            const cb = document.getElementById('cm-coach-checkins');
+            const slider = document.getElementById('cm-coach-checkins-slider');
+            const knob = document.getElementById('cm-coach-checkins-knob');
+            const state = document.getElementById('cm-coach-checkins-state');
+            if (!cb || !slider || !knob || !state) return;
+            const on = !!cb.checked;
+            slider.style.background = on ? '#2563eb' : '#cbd5e1';
+            knob.style.transform = on ? 'translateX(20px)' : 'translateX(0)';
+            state.textContent = on ? 'ON' : 'OFF';
+            state.style.background = on ? '#dbeafe' : '#e2e8f0';
+            state.style.color = on ? '#1d4ed8' : '#475569';
+        }
+
+        function _onCoachCheckinsToggle() { _renderCoachCheckinsToggle(); }
+
         /** Reflect current cm-testaccount checkbox state in the visual slider + chip. */
         function _renderTestAccountToggle() {
             const cb = document.getElementById('cm-testaccount');
@@ -8967,6 +9051,10 @@
                 ['cm-goals','cm-style','cm-injuries','cm-personal','cm-notes','cm-coach-instructions'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
                 document.getElementById('cm-autosend').checked = false;
                 _renderAutoSendToggle();
+                _clientMemoryPreferences = {};
+                const coachCheckinsEl = document.getElementById('cm-coach-checkins');
+                if (coachCheckinsEl) coachCheckinsEl.checked = false;
+                _renderCoachCheckinsToggle();
                 document.getElementById('cm-testaccount').checked = false;
                 _renderTestAccountToggle();
                 // Render per-client edit-rate pill (hidden until cache populated)
@@ -8981,12 +9069,13 @@
 
                 const { data, error } = await window.supabaseClient
                     .from('client_memory')
-                    .select('goals,communication_style,running_notes,injuries_limits,personal_context,auto_send_enabled')
+                    .select('goals,communication_style,running_notes,injuries_limits,personal_context,coach_instructions,preferences,auto_send_enabled')
                     .eq('coach_id', coachId)
                     .eq('client_id', clientId)
                     .maybeSingle();
                 if (error) throw error;
                 if (data) {
+                    _clientMemoryPreferences = _safeClientMemoryPrefs(data.preferences);
                     document.getElementById('cm-goals').value = data.goals || '';
                     document.getElementById('cm-style').value = data.communication_style || '';
                     document.getElementById('cm-injuries').value = data.injuries_limits || '';
@@ -8996,6 +9085,9 @@
                     if (ciEl) ciEl.value = data.coach_instructions || '';
                     document.getElementById('cm-autosend').checked = !!data.auto_send_enabled;
                     _renderAutoSendToggle();
+                    const coachCheckinsInput = document.getElementById('cm-coach-checkins');
+                    if (coachCheckinsInput) coachCheckinsInput.checked = _clientCoachCheckinsEnabled(data.preferences);
+                    _renderCoachCheckinsToggle();
                 }
 
                 // Test-account flag lives on users, not client_memory — fetch separately
@@ -9401,11 +9493,13 @@
                     personal_context: toVal(document.getElementById('cm-personal').value),
                     coach_instructions: ciEl ? toVal(ciEl.value) : null,
                     auto_send_enabled: !!document.getElementById('cm-autosend').checked,
+                    preferences: _buildClientMemoryPreferencesForSave(),
                 };
                 const { error } = await window.supabaseClient
                     .from('client_memory')
                     .upsert(payload, { onConflict: 'coach_id,client_id' });
                 if (error) throw error;
+                _clientMemoryPreferences = _safeClientMemoryPrefs(payload.preferences);
                 const badge = document.getElementById('client-memory-saved-badge');
                 badge.style.display = 'inline-block';
                 setTimeout(() => { badge.style.display = 'none'; }, 3000);
