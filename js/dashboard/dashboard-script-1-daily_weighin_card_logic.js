@@ -1,5 +1,7 @@
 // ===== DAILY WEIGH-IN CARD LOGIC =====
 
+const FRIDAY_WEIGH_SHARE_POINTS = 10;
+
     /**
      * Check if user has weighed in today and show/hide card accordingly
      */
@@ -267,7 +269,7 @@
                 </div>
                 <div style="display:flex; gap:7px; flex-wrap:wrap; margin-bottom:12px;">
                     <span style="background:${lost ? 'rgba(22,163,74,0.28)' : 'rgba(255,255,255,0.16)'}; color:${lost ? '#dcfce7' : '#ffffff'}; border:1px solid ${lost ? 'rgba(134,239,172,0.48)' : 'rgba(255,255,255,0.24)'}; padding:6px 9px; border-radius:999px; font-size:0.72rem; font-weight:900;">+10 XP if down from last Friday</span>
-                    <span style="background:rgba(59,130,246,0.3); color:#eff6ff; border:1px solid rgba(147,197,253,0.5); padding:6px 9px; border-radius:999px; font-size:0.72rem; font-weight:900;">+2 XP for feed post</span>
+                    <span style="background:rgba(59,130,246,0.3); color:#eff6ff; border:1px solid rgba(147,197,253,0.5); padding:6px 9px; border-radius:999px; font-size:0.72rem; font-weight:900;">+${FRIDAY_WEIGH_SHARE_POINTS} XP for feed post</span>
                 </div>
                 <div style="font-size:0.84rem; color:#ffffff; line-height:1.42; font-weight:760; margin-bottom:13px;">${escapeWeighInHtml(changeCopy)} Tap yes to review the feed card before anything posts.</div>
                 <div style="display:grid; grid-template-columns:1fr auto; gap:9px;">
@@ -296,7 +298,7 @@
             <div style="width:44px; height:44px; background:rgba(255,255,255,0.18); border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.9rem; font-weight:950;">FRI</div>
             <div style="flex:1; min-width:0; padding-right:18px;">
                 <div style="font-weight:950; font-size:1rem; color:#ffffff;">Posted to feed</div>
-                <div style="font-size:0.84rem; color:#f8fafc; font-weight:750; margin-top:2px;">${Number(data?.share_points_awarded || 0) > 0 ? '+2 XP for sharing. ' : ''}Friday weigh-in posted.</div>
+                <div style="font-size:0.84rem; color:#f8fafc; font-weight:750; margin-top:2px;">${Number(data?.share_points_awarded || 0) > 0 ? '+' + Number(data.share_points_awarded || 0) + ' XP for sharing. ' : ''}Friday weigh-in posted.</div>
             </div>
         `;
     }
@@ -397,7 +399,7 @@
             comparison_label: payload.comparison_label || (isFinite(previous) ? 'last_friday' : 'first_friday'),
             lost_weight: !!payload.lost_weight || Number(payload.loss_points_awarded || 0) > 0,
             loss_points_awarded: Number(payload.loss_points_awarded || 0),
-            share_points_available: 2,
+            share_points_available: FRIDAY_WEIGH_SHARE_POINTS,
             challenge_id: payload.challenge_id || null,
             challenge_name: payload.challenge_name || '30 Day Challenge',
             shared_to: 'feed'
@@ -430,7 +432,7 @@
         if (!weighInId || !window.currentUser || !window.supabaseClient) return 0;
         if (await hasFridayWeighShareLedger(weighInId)) return 0;
 
-        const sharePoints = 2;
+        const sharePoints = FRIDAY_WEIGH_SHARE_POINTS;
         const { data: currentPoints } = await window.supabaseClient
             .from('user_points')
             .select('current_points,lifetime_points')
@@ -608,7 +610,7 @@
                     <div id="friday-weigh-share-detail" style="font-size:0.92rem; color:#475569; line-height:1.45; margin-bottom:14px;"></div>
                     <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
                         <span id="friday-weigh-loss-chip" style="background:#dcfce7; color:#166534; border:1px solid #86efac; padding:6px 10px; border-radius:999px; font-size:0.78rem; font-weight:800;">+10 XP if down from last Friday</span>
-                        <span style="background:#dbeafe; color:#1e3a8a; border:1px solid #93c5fd; padding:6px 10px; border-radius:999px; font-size:0.78rem; font-weight:850;">+2 XP for feed post</span>
+                        <span style="background:#dbeafe; color:#1e3a8a; border:1px solid #93c5fd; padding:6px 10px; border-radius:999px; font-size:0.78rem; font-weight:850;">+${FRIDAY_WEIGH_SHARE_POINTS} XP for feed post</span>
                     </div>
                     <div style="font-size:0.88rem; color:#334155; line-height:1.45; font-weight:650; background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:12px; margin-bottom:16px;">
                         This posts a Friday board-day card to the feed so people can react and keep the challenge moving.
@@ -659,7 +661,7 @@
 
         if (postBtn) {
             postBtn.disabled = false;
-            postBtn.textContent = 'Post to feed (+2 XP)';
+            postBtn.textContent = 'Post to feed (+' + FRIDAY_WEIGH_SHARE_POINTS + ' XP)';
         }
 
         modal.style.display = 'flex';
@@ -727,7 +729,7 @@
             showWeighRewardToast('Could not post Friday weigh-in to feed. Try again.', 'error');
             if (postBtn) {
                 postBtn.disabled = false;
-                postBtn.textContent = 'Post to feed (+2 XP)';
+                postBtn.textContent = 'Post to feed (+' + FRIDAY_WEIGH_SHARE_POINTS + ' XP)';
             }
         }
     }

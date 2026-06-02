@@ -1432,12 +1432,12 @@ window.addEventListener('load', function() {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=63';
+                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=64';
                 document.head.appendChild(s);
             }, 3000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=63"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=64"><\/script>');
     }
     </script>
 
@@ -12267,7 +12267,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do.", quick: true },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
     { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP.", quick: true },
-    { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. Tap yes to review the share card first, then post it to the feed for +2 XP." },
+    { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. You can earn 10 XP if you are down from last Friday, then post the review card to Feed for another 10 XP." },
     { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#progress-photo-share-feed-btn,#weekly-progress-photo-done-card', title:'Share progress photos', body:"After your Monday progress photos are saved, share them to Feed for an extra 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-done-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#fitbit-performance-card,#transformation-hub-card', title:'Weigh-in manager', body:"Tap Activity Insights, then Transformation, to review weigh-in history, add a missed weigh-in, or delete a bad entry before it bends the graph." },
@@ -13256,7 +13256,7 @@ if(!window._pbbIsIOSSafari) {
       tab: 'dashboard',
       sel: '#daily-weigh-in-card,#daily-weigh-in-done-card',
       title: 'Friday weigh-ins',
-      body: "Friday now opens a review card before posting your weigh-in to the feed. Tap yes, check the card, then post it for +2 XP."
+      body: "Friday now opens a review card before posting your weigh-in to the feed. Earn 10 XP if you are down from last Friday, then post it to Feed for another 10 XP."
     },
     {
       id: 'group-chat-options-menu-v1',
