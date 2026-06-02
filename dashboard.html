@@ -12252,10 +12252,14 @@ if(!window._pbbIsIOSSafari) {
 <script>
 (function(){
   const steps = [
-    { tab:'dashboard', sel:'#ask-balance-command-palette .ask-balance-command-card,#ask-balance-command-palette', title:'Ask Balance by long hold', body:"Ask is off the tab bar now. Press and hold any open space for 3 seconds to bring it up. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in.", xpReward:'intro', action: async function(){
+    { tab:'dashboard', sel:'#ask-balance-command-palette .ask-balance-command-card,#ask-balance-command-palette', title:'Ask Balance by long hold', body:"Press and hold any open space for 3 seconds to open Ask Balance. Type what you want and Balance can log food, start workouts, open quizzes, post to Feed, or help change a workout.", xpReward:'intro', tourBottomReserve:16, action: async function(){
         try {
             if (typeof window.showAskBalanceCommandPalette === 'function') {
-                window.showAskBalanceCommandPalette('');
+                window.showAskBalanceCommandPalette('', { focus:false });
+                setTimeout(function(){
+                    var askInput = document.getElementById('ask-balance-palette-input');
+                    if (askInput && typeof askInput.blur === 'function') askInput.blur();
+                }, 90);
             }
         } catch(e) { console.warn('[tour] could not open Ask Balance palette', e); }
         await new Promise(function(r){ setTimeout(r, 260); });
@@ -12489,7 +12493,7 @@ if(!window._pbbIsIOSSafari) {
     await new Promise(function(r){ setTimeout(r, 320); });
   }
 
-  function positionBubbleAndSpotlight(target){
+  function positionBubbleAndSpotlight(target, step){
     const spot = document.getElementById('guided-tour-spotlight');
     const bubble = document.getElementById('guided-tour-bubble');
     if (!spot || !bubble) return;
@@ -12509,10 +12513,11 @@ if(!window._pbbIsIOSSafari) {
     const pad = 8;
     const vw = Math.max(window.innerWidth || 360, 240);
     const vh = Math.max(window.innerHeight || 640, 320);
+    const bottomReserve = step && typeof step.tourBottomReserve === 'number' ? step.tourBottomReserve : 90;
     const top = Math.max(r.top - pad, 8);
     const left = Math.max(r.left - pad, 8);
     const width = Math.max(24, Math.min(r.width + pad*2, vw - left - 8));
-    const height = Math.max(24, Math.min(r.height + pad*2, vh - top - 90));
+    const height = Math.max(24, Math.min(r.height + pad*2, vh - top - bottomReserve));
     spot.style.top = top + 'px';
     spot.style.left = left + 'px';
     spot.style.width = width + 'px';
@@ -12528,7 +12533,7 @@ if(!window._pbbIsIOSSafari) {
     } else {
       bubbleTop = Math.max(safeTop + 20, top - bubbleH - 12);
     }
-    const maxTop = vh - bubbleH - 90; // leave room above bottom nav
+    const maxTop = vh - bubbleH - bottomReserve; // default leaves room above bottom nav
     if (bubbleTop > maxTop) bubbleTop = maxTop;
     if (bubbleTop < safeTop) bubbleTop = safeTop;
     bubble.style.top = bubbleTop + 'px';
@@ -12576,9 +12581,9 @@ if(!window._pbbIsIOSSafari) {
     document.getElementById('tour-back-btn').style.visibility = i === 0 ? 'hidden' : 'visible';
     document.getElementById('tour-next-btn').textContent = (i === activeSteps.length - 1) ? 'Finish' : 'Next';
 
-    positionBubbleAndSpotlight(target);
-    setTimeout(function(){ positionBubbleAndSpotlight(q(step.sel)); }, 180);
-    setTimeout(function(){ positionBubbleAndSpotlight(q(step.sel)); }, 520);
+    positionBubbleAndSpotlight(target, step);
+    setTimeout(function(){ positionBubbleAndSpotlight(q(step.sel), step); }, 180);
+    setTimeout(function(){ positionBubbleAndSpotlight(q(step.sel), step); }, 520);
 
     const checkpoint = step.xpReward
       || step.walkthroughReward
@@ -12674,7 +12679,7 @@ if(!window._pbbIsIOSSafari) {
     resizeHandler = function(){
       const step = activeSteps[idx];
       if (!step) return;
-      positionBubbleAndSpotlight(q(step.sel));
+      positionBubbleAndSpotlight(q(step.sel), step);
     };
     window.addEventListener('resize', resizeHandler);
     window.addEventListener('scroll', resizeHandler, true);
@@ -12940,11 +12945,16 @@ if(!window._pbbIsIOSSafari) {
       tab: 'dashboard',
       sel: '#ask-balance-command-palette .ask-balance-command-card,#ask-balance-command-palette',
       title: 'Ask Balance by long hold',
-      body: "Ask is off the tab bar now. Press and hold any open space for 3 seconds to bring it up. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in.",
+      body: "Press and hold any open space for 3 seconds to open Ask Balance. Type what you want and Balance can log food, start workouts, open quizzes, post to Feed, or help change a workout.",
+      tourBottomReserve: 16,
       action: async function(){
         try {
           if (typeof window.showAskBalanceCommandPalette === 'function') {
-            window.showAskBalanceCommandPalette('');
+            window.showAskBalanceCommandPalette('', { focus:false });
+            setTimeout(function(){
+              var askInput = document.getElementById('ask-balance-palette-input');
+              if (askInput && typeof askInput.blur === 'function') askInput.blur();
+            }, 90);
           }
         } catch(e) { console.warn('[feature-reveal] could not open Ask Balance palette', e); }
         await new Promise(function(r){ setTimeout(r, 260); });
@@ -13445,7 +13455,7 @@ if(!window._pbbIsIOSSafari) {
     }
   }
 
-  function positionReveal(target) {
+  function positionReveal(target, step) {
     var spot = document.getElementById('guided-tour-spotlight');
     var bubble = document.getElementById('guided-tour-bubble');
     if (!spot || !bubble) return;
@@ -13463,6 +13473,7 @@ if(!window._pbbIsIOSSafari) {
     var pad = 8;
     var vw = Math.max(window.innerWidth || 360, 240);
     var vh = Math.max(window.innerHeight || 640, 320);
+    var bottomReserve = step && typeof step.tourBottomReserve === 'number' ? step.tourBottomReserve : 90;
     var top = Math.max(r.top - pad, 8);
     var left = Math.max(r.left - pad, 8);
     var width = Math.max(0, Math.min(r.width + pad*2, vw - 16));
@@ -13482,7 +13493,7 @@ if(!window._pbbIsIOSSafari) {
     } else {
       bubbleTop = Math.max(safeTop + 20, top - bubbleH - 12);
     }
-    var maxTop = vh - bubbleH - 90;
+    var maxTop = vh - bubbleH - bottomReserve;
     if (bubbleTop > maxTop) bubbleTop = maxTop;
     if (bubbleTop < safeTop) bubbleTop = safeTop;
     bubble.style.top = bubbleTop + 'px';
@@ -13527,7 +13538,7 @@ if(!window._pbbIsIOSSafari) {
     document.getElementById('tour-back-btn').style.visibility = i === 0 ? 'hidden' : 'visible';
     document.getElementById('tour-next-btn').textContent = (i === revealSteps.length - 1) ? 'Got it!' : 'Next';
 
-    positionReveal(target);
+    positionReveal(target, step);
   }
 
   function startSpotlightWalkthrough() {
@@ -13553,7 +13564,7 @@ if(!window._pbbIsIOSSafari) {
     revealResizeHandler = function(){
       var step = revealSteps[revealIdx];
       if (!step) return;
-      positionReveal(q(step.sel));
+      positionReveal(q(step.sel), step);
     };
     window.addEventListener('resize', revealResizeHandler);
     window.addEventListener('scroll', revealResizeHandler, true);
@@ -16761,12 +16772,12 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-16-chat_state.js?v=57';
+            s.src = 'js/dashboard/dashboard-script-16-chat_state.js?v=58';
             document.head.appendChild(s);
         }, 4000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-16-chat_state.js?v=57"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-16-chat_state.js?v=58"><\/script>');
 }
 </script>
 

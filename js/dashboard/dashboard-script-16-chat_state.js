@@ -87,7 +87,7 @@
         // Kept for older inline handlers; Ask Balance is now a real app page.
     }
 
-    function showAskBalanceCommandPalette(prefill) {
+    function showAskBalanceCommandPalette(prefill, options) {
         const palette = document.getElementById('ask-balance-command-palette');
         const input = document.getElementById('ask-balance-palette-input');
         if (!palette || !input) {
@@ -97,6 +97,10 @@
         if (typeof prefill === 'string') input.value = prefill;
         palette.classList.add('visible');
         palette.setAttribute('aria-hidden', 'false');
+        if (options && options.focus === false) {
+            if (typeof input.blur === 'function') input.blur();
+            return;
+        }
         setTimeout(() => {
             input.focus();
             if (input.setSelectionRange) input.setSelectionRange(input.value.length, input.value.length);
