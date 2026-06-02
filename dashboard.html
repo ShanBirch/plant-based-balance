@@ -12779,6 +12779,14 @@ if(!window._pbbIsIOSSafari) {
     try {
       localStorage.removeItem('featureTourComplete');
       localStorage.removeItem('pbb_walkthrough_xp_awarded_v2');
+      localStorage.removeItem('fitgotchi_level');
+      localStorage.removeItem('fitgotchi_rank');
+      localStorage.removeItem('fitgotchi_xp_text');
+      localStorage.removeItem('fitgotchi_xp_percent');
+      localStorage.removeItem('pendingLevelUpCelebration');
+      localStorage.removeItem('unallocatedStatPoints');
+      window.__balanceQueuedWalkthroughLevelUp = null;
+      window.__balancePendingStatAllocationModal = false;
       var userId = window.currentUser && window.currentUser.id ? window.currentUser.id : null;
       if (userId) localStorage.removeItem('pbb_walkthrough_xp_awarded_v2:' + userId);
       Object.keys(localStorage).forEach(function(key){
