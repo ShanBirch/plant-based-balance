@@ -1,12 +1,16 @@
 /**
  * send-instagram-graph-action
  *
- * Admin-only Graph sender actions for Instagram DMs:
+ * Graph sender actions for Instagram DMs:
  * - react/unreact to an inbound message
  * - mark the current thread as seen
  *
  * The Messages UI only enables these controls when the ig_messages row has a
  * stored Graph message id and the thread has a Graph recipient id.
+ *
+ * Admin dashboard calls use Shannon's bearer token. Cron/inline-reply calls may
+ * react to a pending DM alert by alertId only, matching the capability-token
+ * model used by send-coach-reply and dismiss-coach-reply.
  */
 
 const {
@@ -163,9 +167,17 @@ async function loadMessage(messageId) {
 async function loadAlert(alertId) {
     if (!alertId) return null;
     const rows = await supabaseQuery(
-        `coach_alerts?select=id,alert_type,created_at,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
+        `coach_alerts?select=id,alert_type,created_at,status,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
     );
     return rows[0] || null;
+}
+
+function isAlertCapabilityReactionRequest({ admin, action, alertId, body }) {
+    if (admin.ok) return false;
+    if (admin.error !== 'missing_admin_token') return false;
+    if (!alertId || action !== 'react') return false;
+    if (String(body.messageId || body.igMessageId || '').trim()) return false;
+    return true;
 }
 
 async function postInstagramSenderAction({ accountId, recipientId, action, graphMessageId, reaction }) {
@@ -247,13 +259,43 @@ async function patchThreadActionState({ thread, graphMessageId, localMessageId, 
     return nextCustomData;
 }
 
+async function resolveAlertAfterReaction({ alert, action, reaction, graphMessageId, source, nowIso }) {
+    if (!alert || action !== 'react') return { resolved: false };
+    if (alert.status && alert.status !== 'pending') {
+        return { resolved: false, reason: 'alert_not_pending' };
+    }
+
+    const mergedData = {
+        ...safeObject(alert.data),
+        dismiss_reason: 'conversation_closed_with_instagram_like',
+        dismissed_via: source || 'instagram_graph_action',
+        instagram_action: action,
+        instagram_reaction: reaction,
+        instagram_graph_action: {
+            action,
+            reaction,
+            graph_message_id: graphMessageId || null,
+            source: source || '',
+            reacted_at: nowIso,
+        },
+    };
+
+    await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alert.id)}`, {
+        method: 'PATCH',
+        body: {
+            status: 'dismissed',
+            actioned_at: nowIso,
+            data: mergedData,
+        },
+        prefer: 'return=minimal',
+    });
+    return { resolved: true };
+}
+
 exports.handler = async (event = {}) => {
     if (event.httpMethod === 'OPTIONS') return json(204, {});
     if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return json(500, { error: 'Supabase env missing' });
-
-    const admin = await verifyAdminToken(event);
-    if (!admin.ok) return json(403, { error: admin.error });
 
     let body = {};
     try {
@@ -272,6 +314,9 @@ exports.handler = async (event = {}) => {
     let threadId = String(body.threadId || body.igThreadId || '').trim();
     let graphMessageId = '';
     const alertId = String(body.alertId || body.coachAlertId || '').trim();
+    const admin = await verifyAdminToken(event);
+    const alertCapabilityMode = isAlertCapabilityReactionRequest({ admin, action, alertId, body });
+    if (!admin.ok && !alertCapabilityMode) return json(403, { error: admin.error });
 
     if (!threadId && alertId) {
         alert = await loadAlert(alertId);
@@ -296,6 +341,9 @@ exports.handler = async (event = {}) => {
         if (!alert) return json(404, { error: 'DM alert not found' });
         if (!DM_ALERT_TYPES.has(alert.alert_type)) {
             return json(409, { error: 'Can only react from DM alerts' });
+        }
+        if (alertCapabilityMode && alert.status && alert.status !== 'pending') {
+            return json(409, { error: 'Alert already actioned', status: alert.status });
         }
         const data = safeObject(alert.data);
         threadId = threadId || String(data.ig_thread_id || data.thread_id || '').trim();
@@ -348,7 +396,7 @@ exports.handler = async (event = {}) => {
             localMessageId: message?.id || null,
             action,
             reaction,
-            adminUserId: admin.userId,
+            adminUserId: admin.ok ? admin.userId : 'alert_capability',
             source,
             nowIso: new Date().toISOString(),
         });
@@ -357,10 +405,31 @@ exports.handler = async (event = {}) => {
         console.warn('[send-instagram-graph-action] action sent but state patch failed:', err.message || err);
     }
 
+    let alertResolved = false;
+    let alertResolveError = '';
+    if (body.resolveAlert && alert && action === 'react') {
+        try {
+            const resolved = await resolveAlertAfterReaction({
+                alert,
+                action,
+                reaction,
+                graphMessageId,
+                source,
+                nowIso: new Date().toISOString(),
+            });
+            alertResolved = !!resolved.resolved;
+        } catch (err) {
+            alertResolveError = err.message || String(err);
+            console.warn('[send-instagram-graph-action] action sent but alert resolve failed:', alertResolveError);
+        }
+    }
+
     return json(200, {
         ok: true,
         action,
         state_persisted: statePersisted,
+        alert_resolved: alertResolved,
+        alert_resolve_error: alertResolveError || null,
         reaction: action === 'react' ? reaction : null,
         graph_message_id: graphMessageId || null,
         thread_id: thread.id,
@@ -371,6 +440,7 @@ exports.handler = async (event = {}) => {
 
 exports._test = {
     cleanGraphMessageId,
+    isAlertCapabilityReactionRequest,
     resolveThreadGraphRecipientId,
     resolveThreadGraphAccountId,
 };
