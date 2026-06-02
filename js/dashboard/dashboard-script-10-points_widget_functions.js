@@ -527,6 +527,28 @@ function playWalkthroughLevelUpCelebration(payload) {
     }
 }
 
+function showWalkthroughXpPulse(points) {
+    try {
+        const amount = Math.max(1, Number(points) || 1);
+        document.querySelectorAll('.walkthrough-xp-pulse').forEach(el => el.remove());
+
+        const pulse = document.createElement('div');
+        pulse.className = 'walkthrough-xp-pulse';
+        pulse.innerHTML = `
+            <div class="walkthrough-xp-pulse-orb">+${amount}</div>
+            <div>
+                <div class="walkthrough-xp-pulse-label">XP earned</div>
+                <div class="walkthrough-xp-pulse-sub">Walkthrough</div>
+            </div>
+        `;
+
+        document.body.appendChild(pulse);
+        setTimeout(() => pulse.remove(), 2200);
+    } catch (e) {
+        console.warn('[tour] walkthrough XP pulse failed', e);
+    }
+}
+
 /**
  * NEW LEVEL UP CELEBRATION SYSTEM
  * Shows celebration directly in the Tamagotchi widget instead of as a popup toast.
@@ -1747,7 +1769,7 @@ async function awardPointsForWalkthroughStep(step, stepNumber, totalSteps) {
 
         if (result?.success) {
             if ((result.pointsAwarded || 0) > 0) {
-                showToast(`Walkthrough checkpoint complete. +${result.pointsAwarded} XP earned.`, 'success');
+                showWalkthroughXpPulse(result.pointsAwarded);
                 markWalkthroughRefAwarded(rewardRef);
             }
 
