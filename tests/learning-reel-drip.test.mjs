@@ -112,8 +112,9 @@ const proteinAbsorptionMessage = _test.buildVisibleMessage({
     video_id: 'agPLP9iZnMo',
 }, 0);
 assert.ok(proteinAbsorptionMessage.includes('https://www.youtube.com/shorts/agPLP9iZnMo'));
-assert.match(proteinAbsorptionMessage, /protein|absorption|per meal|timing|myth/);
+assert.match(proteinAbsorptionMessage, /interesting|worth a look|protein|useful/);
 assert.doesNotMatch(proteinAbsorptionMessage, /make me this|make this|eat this|looks yum|dinner/);
+assert.doesNotMatch(proteinAbsorptionMessage, /per meal thing|food nerd side|this bit on/i);
 
 const cookingMessage = _test.buildVisibleMessage({
     topic_id: 'plant_based_cooking',
@@ -122,8 +123,20 @@ const cookingMessage = _test.buildVisibleMessage({
     url: 'https://www.youtube.com/shorts/xMdz4-AiYA4',
     video_id: 'xMdz4-AiYA4',
 }, 0);
-assert.match(cookingMessage, /cucumber salad|make me this|looks yum|eat this|dinner/);
+assert.match(cookingMessage, /looks yum|looks good|would eat|worth trying|yum/);
 assert.ok(cookingMessage.includes('https://www.youtube.com/shorts/xMdz4-AiYA4'));
 assert.ok(!cookingMessage.includes("this is cool, reckon you'll like this one"));
+assert.doesNotMatch(cookingMessage, /cucumber salad|make me this/i);
+
+const brainMessage = _test.buildVisibleMessage({
+    topic_id: 'mindset_neuroscience',
+    topic_label: 'Mindset and neuroscience',
+    title: 'When did the first brain show up on Earth?',
+    url: 'https://www.youtube.com/shorts/F0BkuN8MPtQ',
+    video_id: 'F0BkuN8MPtQ',
+}, 0);
+assert.ok(brainMessage.includes('https://www.youtube.com/shorts/F0BkuN8MPtQ'));
+assert.match(brainMessage, /interesting|worth a look/);
+assert.doesNotMatch(brainMessage, /when did the first|this bit on|brain show up/i);
 
 console.log('learning reel drip tests passed');

@@ -540,22 +540,13 @@ function isPracticalCookingReel(topicId, topicText) {
 }
 
 function cookingMessage(reel, itemIndex = 0) {
-    const cue = cleanMessageCue(reel?.title, 4);
-    const withCue = [
-        `mhmm make me this ${cue}`,
-        `ok this ${cue} looks yum`,
-        `need this ${cue} situation`,
-        `would absolutely eat this ${cue}`,
-        `this ${cue} looks very worth trying`,
-    ];
-    const fallback = [
-        'mhmm make me this',
+    const options = [
         'ok this looks yum',
-        'need this for dinner',
-        'would absolutely eat this',
-        'this looks very worth trying',
+        'this looks good',
+        'would eat this',
+        'this looks worth trying',
+        'yum, this one',
     ];
-    const options = cue ? withCue : fallback;
     return options[messageVariantIndex(reel, itemIndex, options.length)];
 }
 
@@ -570,55 +561,55 @@ function buildMessageOpener(reel, itemIndex = 0) {
         }
         if (/technique|weight_training|athlean|squat|deadlift|bench|form|training/.test(topicText)) {
             return [
-                'this is a good technique one',
-                cue ? `good little ${cue} cue` : 'good little form cue',
-                'this one is handy for training',
-                'worth saving this for the gym',
+                'good little technique one',
+                'worth saving this one',
+                'this one is useful',
+                'good one for later',
             ];
         }
         if (/motivation/.test(topicText)) {
             return [
-                'good little hype watch',
-                'save this for a flat training day',
-                'this one has good training energy',
-                'tiny motivation hit for later',
+                'tiny hype watch',
+                'save this for later',
+                'good little training boost',
+                'this one is good',
             ];
         }
         if (/protein/.test(topicText)) {
             if (/\b(absorb|absorption|per meal|one meal|muscle protein synthesis|protein timing)\b/.test(topicText)) {
                 return [
-                    'this answers that protein per meal thing pretty well',
-                    'good little protein absorption one',
-                    'worth a look for the protein myth bit',
-                    'this clears up the protein per meal thing',
+                    'this is interesting',
+                    'worth a look',
+                    'good little protein one',
+                    'this one is useful',
                 ];
             }
             return [
                 'good little protein one',
-                'this makes the protein bit simpler',
-                'worth a look for the food nerd side',
-                'this one breaks the protein bit down nicely',
+                'this is interesting',
+                'worth a look',
+                'this one is useful',
             ];
         }
         if (/macro|micro|nutrition|supplement/.test(topicText)) {
             return [
-                cue ? `good little ${cue} one` : 'good little nutrition one',
-                'this makes the nutrition bit simpler',
-                'worth a look for the food nerd side',
-                'this one breaks it down nicely',
+                'good little nutrition one',
+                'this is interesting',
+                'worth a look',
+                'this one is useful',
             ];
         }
         if (/mindset|neuro|brain|behaviour|behavior|longevity/.test(topicText)) {
             return [
-                'this is a good brain one',
-                cue ? `this bit on ${cue} is interesting` : 'this bit is interesting',
-                'worth a look for the mindset side',
-                'this one explains it nicely',
+                'worth a look',
+                'this one is interesting',
+                'interesting little watch',
+                'this is interesting',
             ];
         }
         return [
-            'this one is worth a watch',
-            cue ? `this bit on ${cue} is good` : 'this bit is good',
+            'this is interesting',
+            'worth a look',
             'quick one for later',
             'saved this one for you',
         ];
