@@ -119,11 +119,15 @@ function tokenSecretKeyCandidates(igUserId) {
     return [...new Set(names)].filter(Boolean);
 }
 
-async function secretValueForKey(key, debug = null) {
+let cachedDefaultSecretToken = null;
+
+async function defaultSecretToken(debug = null) {
     const supabaseUrl = cleanString(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '', 300).replace(/\/+$/, '');
     const serviceKey = cleanString(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '', 5000);
-    if (!supabaseUrl || !serviceKey || !key) {
-        if (debug) debug.secretLookups.push({ key, ok: false, reason: 'missing_supabase_env' });
+    const key = 'instagram_graph_access_token';
+    if (cachedDefaultSecretToken) return cachedDefaultSecretToken;
+    if (!supabaseUrl || !serviceKey) {
+        if (debug) debug.secretLookup = { key, ok: false, reason: 'missing_supabase_env' };
         return '';
     }
     const url = `${supabaseUrl}/rest/v1/app_private_secrets?select=value&key=eq.${encodeURIComponent(key)}&limit=1`;
@@ -134,12 +138,13 @@ async function secretValueForKey(key, debug = null) {
         },
     });
     if (!res.ok) {
-        if (debug) debug.secretLookups.push({ key, ok: false, status: res.status });
+        if (debug) debug.secretLookup = { key, ok: false, status: res.status };
         return '';
     }
     const rows = await res.json().catch(() => []);
     const token = cleanString(rows?.[0]?.value || '', 5000);
-    if (debug) debug.secretLookups.push({ key, ok: Boolean(token), rows: Array.isArray(rows) ? rows.length : 0 });
+    if (debug) debug.secretLookup = { key, ok: Boolean(token), rows: Array.isArray(rows) ? rows.length : 0, usable: looksLikeUsableToken(token) };
+    if (looksLikeUsableToken(token)) cachedDefaultSecretToken = token;
     return token;
 }
 
@@ -161,10 +166,8 @@ async function resolveAccessToken(igUserId, debug = null) {
         if (looksLikeUsableToken(token)) return { token, source: `env:${envName}` };
     }
     if (debug) debug.envAttempts = envAttempts;
-    for (const key of tokenSecretKeyCandidates(igUserId)) {
-        const token = await secretValueForKey(key, debug);
-        if (looksLikeUsableToken(token)) return { token, source: `secret:${key}` };
-    }
+    const token = await defaultSecretToken(debug);
+    if (looksLikeUsableToken(token)) return { token, source: 'secret:instagram_graph_access_token' };
     return { token: '', source: 'none' };
 }
 
@@ -255,7 +258,7 @@ async function publishBalanceChallengeStory(options = {}) {
 
     const errors = [];
     for (const igUserId of candidates) {
-        const debug = { envAttempts: [], secretLookups: [] };
+        const debug = { envAttempts: [], secretLookup: null };
         const resolved = await resolveAccessToken(igUserId, debug);
         if (!resolved.token) {
             errors.push({ igUserId, error: 'missing_token', debug });
