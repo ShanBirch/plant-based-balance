@@ -3,6 +3,7 @@ const assert = require('assert');
 const {
     buildContextReviewInfo,
     buildLearningReelContextBlock,
+    findDuplicateLearningReels,
     mergeLearningReelContext,
     normalizeLearningReelHistory,
 } = require('../netlify/functions/_lib/client-context');
@@ -13,7 +14,7 @@ const customData = mergeLearningReelContext({}, [{
     topic_label: 'Mindset',
     title: 'How emotions are made',
     channel_title: 'Lisa Feldman Barrett',
-    url: 'https://www.youtube.com/shorts/example',
+    url: 'https://www.youtube.com/shorts/DXDp7tqpcdU?feature=share',
     youtube_query: 'Lisa Feldman Barrett emotional brain short',
     reason: 'Matched the client learning interest: Mindset.',
     learning_modules: ['Mindset', 'Neuroscience'],
@@ -31,6 +32,7 @@ assert.strictEqual(history[0].topic_label, 'Mindset');
 assert.strictEqual(history[0].title, 'How emotions are made');
 assert.strictEqual(history[0].channel_title, 'Lisa Feldman Barrett');
 assert.strictEqual(history[0].sent_at, sentAt);
+assert.strictEqual(history[0].video_id, 'DXDp7tqpcdU');
 assert.deepStrictEqual(history[0].graph_message_ids, ['ig_mid_1']);
 
 const block = buildLearningReelContextBlock({ custom_data: customData });
@@ -39,6 +41,19 @@ assert.ok(block.includes('Mindset'));
 assert.ok(block.includes('How emotions are made'));
 assert.ok(block.includes('Lisa Feldman Barrett'));
 assert.ok(block.includes("this is cool, reckon you'll like this one"));
+
+const duplicateReels = findDuplicateLearningReels({ custom_data: customData }, [{
+    title: 'Different title from another share page',
+    url: 'https://youtu.be/DXDp7tqpcdU',
+}]);
+assert.strictEqual(duplicateReels.length, 1);
+assert.strictEqual(duplicateReels[0].previous.title, 'How emotions are made');
+
+const uniqueReels = findDuplicateLearningReels({ custom_data: customData }, [{
+    title: 'A new Huberman clip',
+    url: 'https://www.youtube.com/shorts/7gBJbEDwccw',
+}]);
+assert.strictEqual(uniqueReels.length, 0);
 
 const contextReviewWithReel = buildContextReviewInfo({
     channel: 'instagram',

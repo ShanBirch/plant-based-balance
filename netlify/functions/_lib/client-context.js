@@ -6179,6 +6179,42 @@ function compactLearningStringArray(value, maxItems = 10, maxLength = 80) {
         .slice(0, maxItems);
 }
 
+function youtubeVideoIdFromUrl(value) {
+    const url = String(value || '').trim();
+    if (!url) return '';
+    const patterns = [
+        /(?:youtube\.com\/shorts\/)([A-Za-z0-9_-]{6,})/i,
+        /(?:youtube\.com\/embed\/)([A-Za-z0-9_-]{6,})/i,
+        /(?:youtube\.com\/watch\?[^#\s]*v=)([A-Za-z0-9_-]{6,})/i,
+        /(?:youtu\.be\/)([A-Za-z0-9_-]{6,})/i,
+    ];
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match?.[1]) return match[1];
+    }
+    return '';
+}
+
+function canonicalLearningReelUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    const videoId = youtubeVideoIdFromUrl(raw);
+    if (videoId) return `https://www.youtube.com/shorts/${videoId}`;
+    return raw
+        .replace(/[?#].*$/, '')
+        .replace(/\/+$/, '')
+        .toLowerCase();
+}
+
+function normalizeLearningIdentityText(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/&amp;/g, '&')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 function listFromLearningValue(value) {
     if (!value) return [];
     if (Array.isArray(value)) return value;
@@ -6203,6 +6239,14 @@ function normalizeLearningReelItem(value, defaults = {}) {
         || item.shortUrl
         || item.link,
         600
+    );
+    const videoId = compactLearningString(
+        item.video_id
+        || item.videoId
+        || item.youtube_video_id
+        || item.youtubeVideoId
+        || youtubeVideoIdFromUrl(url),
+        100
     );
     const platform = compactLearningString(
         item.platform
@@ -6240,7 +6284,7 @@ function normalizeLearningReelItem(value, defaults = {}) {
             140
         ),
         url,
-        video_id: compactLearningString(item.video_id || item.videoId || item.youtube_video_id || item.youtubeVideoId, 100),
+        video_id: videoId,
         youtube_query: compactLearningString(item.youtube_query || item.youtubeQuery || item.query || item.search_query || item.searchQuery, 220),
         reason: compactLearningString(item.reason || item.why || item.match_reason || item.matchReason || defaults.reason, 360),
         sent_message: compactLearningString(
@@ -6278,7 +6322,22 @@ function normalizeLearningReelItem(value, defaults = {}) {
     }));
 }
 
+function learningReelIdentityKeys(item) {
+    const keys = [];
+    const videoId = compactLearningString(item?.video_id || youtubeVideoIdFromUrl(item?.url), 100).toLowerCase();
+    if (videoId) keys.push(`video:${videoId}`);
+    const canonicalUrl = canonicalLearningReelUrl(item?.url);
+    if (canonicalUrl) keys.push(`url:${canonicalUrl.toLowerCase()}`);
+    const title = normalizeLearningIdentityText(item?.title);
+    const channel = normalizeLearningIdentityText(item?.channel_title);
+    if (title && channel) keys.push(`title_channel:${title}|${channel}`);
+    else if (title && !canonicalUrl && !videoId) keys.push(`title:${title}`);
+    return [...new Set(keys)];
+}
+
 function learningReelDedupeKey(item) {
+    const identityKeys = learningReelIdentityKeys(item);
+    if (identityKeys.length) return identityKeys[0];
     return [
         item?.sent_at || '',
         item?.video_id || '',
@@ -6361,6 +6420,38 @@ function normalizeLearningReelHistory(source = {}) {
     return history
         .sort((a, b) => (Date.parse(b.sent_at || '') || 0) - (Date.parse(a.sent_at || '') || 0))
         .slice(0, LEARNING_REEL_HISTORY_LIMIT);
+}
+
+function findDuplicateLearningReels(source = {}, learningReels = []) {
+    const existingHistory = normalizeLearningReelHistory(source);
+    const incoming = normalizeLearningReelItems(learningReels);
+    if (!existingHistory.length || !incoming.length) return [];
+
+    const existingByKey = new Map();
+    for (const existing of existingHistory) {
+        for (const key of learningReelIdentityKeys(existing)) {
+            if (!existingByKey.has(key)) existingByKey.set(key, existing);
+        }
+    }
+
+    const duplicates = [];
+    const seenDuplicateKeys = new Set();
+    for (const item of incoming) {
+        for (const key of learningReelIdentityKeys(item)) {
+            const previous = existingByKey.get(key);
+            if (!previous) continue;
+            const duplicateKey = `${key}|${item.url || item.title || ''}`;
+            if (seenDuplicateKeys.has(duplicateKey)) continue;
+            seenDuplicateKeys.add(duplicateKey);
+            duplicates.push({
+                match_key: key,
+                incoming: item,
+                previous,
+            });
+            break;
+        }
+    }
+    return duplicates;
 }
 
 function mergeLearningReelContext(customData, learningReels, options = {}) {
@@ -6464,6 +6555,7 @@ module.exports = {
     selectRecentInboundSinceLastReplyIg,
     normalizeLearningReelItems,
     normalizeLearningReelHistory,
+    findDuplicateLearningReels,
     mergeLearningReelContext,
     buildLearningReelContextBlock,
     resolveLifecycleStage,

@@ -16,6 +16,7 @@ const {
     splitCoachDraftIntoDmBubbles,
     fireCoachEditAnalysis,
     normalizeLearningReelItems,
+    findDuplicateLearningReels,
     mergeLearningReelContext,
 } = require('./_lib/client-context');
 const { sendInstagramSeenReceiptForThread } = require('./_lib/instagram-graph-seen');
@@ -51,6 +52,7 @@ const INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED = envFlagEnabled(
     || process.env.META_HUMAN_AGENT_ENABLED
 );
 const HUMAN_AGENT_NOT_APPROVED_MESSAGE = 'Meta Human Agent is still only ready for testing, so API sends after 24 hours must be copied/sent manually in Instagram until the feature is approved.';
+const LEARNING_REEL_URL_RE = /https?:\/\/(?:www\.)?(?:youtube\.com\/(?:shorts\/|watch\?[^#\s]*v=|embed\/)|youtu\.be\/)[^\s<>"')]+/gi;
 
 function json(statusCode, body) {
     return {
@@ -179,14 +181,21 @@ function deliveryChannelForTransport(delivery) {
     return delivery.channel;
 }
 
-function learningReelPayloadFromBody(body = {}) {
-    return body.learningReels
+function learningReelPayloadFromMessage(message = '') {
+    const matches = String(message || '').match(LEARNING_REEL_URL_RE) || [];
+    return [...new Set(matches.map(url => url.trim()).filter(Boolean))]
+        .map(url => ({ url, source: 'message_youtube_link' }));
+}
+
+function learningReelPayloadFromBody(body = {}, message = '') {
+    const explicit = body.learningReels
         || body.learning_reels
         || body.learningReel
         || body.learning_reel
         || body.learningReelContext
         || body.learning_reel_context
         || null;
+    return explicit || learningReelPayloadFromMessage(message);
 }
 
 function learningReelSourceFromBody(body = {}) {
@@ -417,7 +426,7 @@ exports.handler = async (event = {}) => {
 
     const threadId = String(body.threadId || body.igThreadId || '').trim();
     const message = normalizeCoachDraftText(body.message || body.replyText || '').trim();
-    const learningReelPayload = learningReelPayloadFromBody(body);
+    const learningReelPayload = learningReelPayloadFromBody(body, message);
     const learningReelSource = learningReelSourceFromBody(body);
     if (!threadId) return json(400, { error: 'Missing threadId' });
     if (!message) return json(400, { error: 'Missing message' });
@@ -464,6 +473,36 @@ exports.handler = async (event = {}) => {
     const primaryAlert = pendingAlerts[0] || null;
     const chunks = splitCoachDraftIntoDmBubbles([message]);
     if (!chunks.length) return json(400, { error: 'Message is empty' });
+
+    const learningReelItemsForGuard = normalizeLearningReelItems(learningReelPayload, {
+        source: learningReelSource,
+        platform: 'youtube',
+    });
+    const duplicateLearningReels = findDuplicateLearningReels(thread, learningReelItemsForGuard);
+    if (duplicateLearningReels.length > 0) {
+        return json(409, {
+            error: 'Learning reel already sent to this thread',
+            code: 'duplicate_learning_reel',
+            thread_id: thread.id,
+            duplicates: duplicateLearningReels.map(item => ({
+                match_key: item.match_key,
+                incoming: {
+                    title: item.incoming.title || null,
+                    url: item.incoming.url || null,
+                    video_id: item.incoming.video_id || null,
+                    topic_label: item.incoming.topic_label || null,
+                },
+                previous: {
+                    title: item.previous.title || null,
+                    url: item.previous.url || null,
+                    video_id: item.previous.video_id || null,
+                    topic_label: item.previous.topic_label || null,
+                    sent_at: item.previous.sent_at || null,
+                    sent_message: item.previous.sent_message || null,
+                },
+            })),
+        });
+    }
 
     const seenReceipt = delivery.transport === 'instagram_graph'
         ? await sendInstagramSeenReceiptForThread({
@@ -638,6 +677,7 @@ exports._test = {
     resolveGraphMessageTag,
     resolveThreadGraphAccountId,
     resolveThreadGraphRecipientId,
+    learningReelPayloadFromMessage,
     learningReelPayloadFromBody,
     learningReelSourceFromBody,
     sourceForDelivery,

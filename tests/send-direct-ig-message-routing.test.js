@@ -90,5 +90,13 @@ assert.strictEqual(
     _test.learningReelSourceFromBody({ learning_reel_source: 'youtube-learning-sender' }),
     'youtube-learning-sender'
 );
+assert.deepStrictEqual(
+    _test.learningReelPayloadFromMessage('this is cool\nhttps://youtu.be/DXDp7tqpcdU?t=3'),
+    [{ url: 'https://youtu.be/DXDp7tqpcdU?t=3', source: 'message_youtube_link' }]
+);
+assert.deepStrictEqual(
+    _test.learningReelPayloadFromBody({}, 'watch this https://www.youtube.com/shorts/7gBJbEDwccw?feature=share'),
+    [{ url: 'https://www.youtube.com/shorts/7gBJbEDwccw?feature=share', source: 'message_youtube_link' }]
+);
 
 console.log('send-direct-ig-message routing tests passed');
