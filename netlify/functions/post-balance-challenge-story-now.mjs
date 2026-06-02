@@ -4,7 +4,7 @@ const require = createRequire(import.meta.url);
 const {
     defaultBalanceChallengeStoryUrl,
     publishBalanceChallengeStory,
-} = require('./_lib/ig-story-publisher');
+} = require('./_lib/ig-story-publisher.js');
 
 function json(status, body) {
     return new Response(JSON.stringify(body), {
