@@ -509,20 +509,101 @@ async function findReelForTopic({ topicId, thread, state }) {
     return candidates[0] || null;
 }
 
-const MESSAGE_PREFIXES = [
-    "this is cool, reckon you'll like this one",
-    'this one feels up your alley',
-    'good little watch for what you said you wanted to learn',
-    'this explains it pretty cleanly',
-    'found this one and thought of your learning topics',
-    'quick one for you, worth a look',
-    'this is a good little one for today',
-    'saved this one for you',
-];
+function messageVariantIndex(reel, itemIndex = 0, length = 1) {
+    const seed = `${itemIndex}:${reel?.video_id || reel?.videoId || reel?.url || reel?.title || ''}`;
+    const hash = Array.from(seed).reduce((acc, char) => ((acc * 31) + char.charCodeAt(0)) >>> 0, 7);
+    return hash % Math.max(1, length);
+}
+
+function cleanMessageCue(value, maxWords = 5) {
+    const cleaned = cleanString(value, 180)
+        .replace(/https?:\/\/\S+/gi, ' ')
+        .replace(/#[a-z0-9_]+/gi, ' ')
+        .replace(/[^\w\s&+'-]/g, ' ')
+        .replace(/\b(the best|best|easy|quick|simple|healthy|vegan|plant based|plant-based|recipe|shorts?|reels?|explained|fix your|how to|stop doing|mistakes?)\b/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+    const words = cleaned.split(/\s+/).filter(Boolean);
+    if (words.length < 2) return '';
+    return words.slice(0, maxWords).join(' ');
+}
+
+function cookingMessage(reel, itemIndex = 0) {
+    const cue = cleanMessageCue(reel?.title, 4);
+    const withCue = [
+        `mhmm make me this ${cue}`,
+        `ok this ${cue} looks yum`,
+        `need this ${cue} situation`,
+        `would absolutely eat this ${cue}`,
+        `this ${cue} looks very worth trying`,
+    ];
+    const fallback = [
+        'mhmm make me this',
+        'ok this looks yum',
+        'need this for dinner',
+        'would absolutely eat this',
+        'this looks very worth trying',
+    ];
+    const options = cue ? withCue : fallback;
+    return options[messageVariantIndex(reel, itemIndex, options.length)];
+}
+
+function buildMessageOpener(reel, itemIndex = 0) {
+    const topicId = cleanString(reel?.topic_id || reel?.topicId, 80);
+    const topicLabel = cleanString(reel?.topic_label || reel?.topicLabel, 120).toLowerCase();
+    const topicText = `${topicId} ${topicLabel} ${reel?.title || ''}`.toLowerCase();
+    const cue = cleanMessageCue(reel?.title, 4);
+    const optionsByTopic = (() => {
+        if (/cook|meal|recipe|food|salad|tofu|snack|dinner|lunch|breakfast/.test(topicText)) {
+            return null;
+        }
+        if (/technique|weight_training|athlean|squat|deadlift|bench|form|training/.test(topicText)) {
+            return [
+                'this is a good technique one',
+                cue ? `good little ${cue} cue` : 'good little form cue',
+                'this one is handy for training',
+                'worth saving this for the gym',
+            ];
+        }
+        if (/motivation/.test(topicText)) {
+            return [
+                'good little hype watch',
+                'save this for a flat training day',
+                'this one has good training energy',
+                'tiny motivation hit for later',
+            ];
+        }
+        if (/protein|macro|micro|nutrition|supplement/.test(topicText)) {
+            return [
+                cue ? `good little ${cue} one` : 'good little nutrition one',
+                'this makes the nutrition bit simpler',
+                'worth a look for the food nerd side',
+                'this one breaks it down nicely',
+            ];
+        }
+        if (/mindset|neuro|brain|behaviour|behavior|longevity/.test(topicText)) {
+            return [
+                'this is a good brain one',
+                cue ? `this bit on ${cue} is interesting` : 'this bit is interesting',
+                'worth a look for the mindset side',
+                'this one explains it nicely',
+            ];
+        }
+        return [
+            'this one is worth a watch',
+            cue ? `this bit on ${cue} is good` : 'this bit is good',
+            'quick one for later',
+            'saved this one for you',
+        ];
+    })();
+    if (!optionsByTopic) return cookingMessage(reel, itemIndex);
+    return optionsByTopic[messageVariantIndex(reel, itemIndex, optionsByTopic.length)];
+}
 
 function buildVisibleMessage(reel, itemIndex = 0) {
-    const prefix = MESSAGE_PREFIXES[Math.abs(Number(itemIndex) || 0) % MESSAGE_PREFIXES.length];
-    return normalizeCoachDraftText(`${prefix}\n${reel.url}`).trim();
+    const opener = buildMessageOpener(reel, itemIndex);
+    return normalizeCoachDraftText(`${opener}\n${reel.url}`).trim();
 }
 
 async function postToInstagramGraph({ recipientId, accountId, token, text }) {

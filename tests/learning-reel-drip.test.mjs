@@ -99,6 +99,20 @@ assert.strictEqual(candidate.duration_seconds, 45);
 assert.strictEqual(candidate.view_count, 120000);
 assert.strictEqual(candidate.thumbnail_url, 'https://img.youtube.com/high.jpg');
 
-assert.ok(_test.buildVisibleMessage(candidate, 0).includes('https://www.youtube.com/shorts/abc123xyz'));
+const proteinMessage = _test.buildVisibleMessage(candidate, 0);
+assert.ok(proteinMessage.includes('https://www.youtube.com/shorts/abc123xyz'));
+assert.match(proteinMessage, /protein|nutrition/);
+assert.ok(!proteinMessage.includes("this is cool, reckon you'll like this one"));
+
+const cookingMessage = _test.buildVisibleMessage({
+    topic_id: 'plant_based_cooking',
+    topic_label: 'Plant-based cooking',
+    title: 'The BEST cucumber salad',
+    url: 'https://www.youtube.com/shorts/xMdz4-AiYA4',
+    video_id: 'xMdz4-AiYA4',
+}, 0);
+assert.match(cookingMessage, /cucumber salad|make me this|looks yum|eat this|dinner/);
+assert.ok(cookingMessage.includes('https://www.youtube.com/shorts/xMdz4-AiYA4'));
+assert.ok(!cookingMessage.includes("this is cool, reckon you'll like this one"));
 
 console.log('learning reel drip tests passed');
