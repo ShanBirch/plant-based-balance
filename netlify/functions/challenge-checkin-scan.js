@@ -7,7 +7,7 @@
  *
  * Schedule:
  * - Sun 19:30 UTC -> Mon 05:30 Brisbane: encouragement only.
- * - Wed 08:00 UTC -> Wed 18:00 Brisbane: midweek review after Wednesday activity.
+ * - Tue 20:00 UTC -> Wed 06:00 Brisbane: chill midweek conversation check.
  * - Sat 19:30 UTC -> Sun 05:30 Brisbane: full weekly review.
  */
 
@@ -107,12 +107,12 @@ function cadenceForWeekday(weekday) {
     if (key === 'wed') {
         return {
             key: 'wednesday',
-            label: 'Wednesday night halfway check',
+            label: 'Wednesday morning chill check',
             lookbackDays: 3,
             depth: 'quick',
             priority: 'medium',
-            lengthRule: '2 to 3 short sentences.',
-            prompt: 'Middle-of-the-week check-in. Keep it light and simple: mention how many sessions they have logged, pick one specific exercise/set that looked good if available, mention meal logging only if they have logged meals for 2-3 days, then say keep it up and that Shannon will check back in Sunday morning. End with a soft "need anything from me?" style question only if it fits.',
+            lengthRule: '1 to 3 short sentences.',
+            prompt: 'Wednesday morning chill check. Recent conversation comes first: if they were sick, stressed, sore, stuck, travelling, busy, waiting on Shannon, or already mid-conversation, reply to that naturally before mentioning training or food. Only mention sessions, an exercise, meals, or weekly goals when it fits the current chat. End with a soft check like "how are you feeling today?" or "need anything from me?" only if it helps.',
         };
     }
     if (key === 'sun') {
@@ -852,7 +852,7 @@ function buildGoalProgressFrame({ memory, participant, challengeDay, daysLeft, i
 - Bigger 30-day / north-star goal to reference: ${goalText ? truncate(goalText, 520) : 'No clear bigger goal captured yet.'}
 - Treat the week goal as the next checkpoint toward the bigger goal, not as the whole goal.
 - For Sunday/full-review check-ins, start with this warm rewind shape before the goal: "${reviewOpening}"
-- For Wednesday/Sunday/full-review style check-ins, make the two layers obvious in Shannon's natural voice:
+- For Sunday/full-review style check-ins, make the two layers obvious in Shannon's natural voice:
   1. "you said..." or "you told me..." plus the bigger 30-day goal
   2. "so for ${weekLabel}, this is the bit we are building..."
   3. compare the current week's evidence against that bigger goal and this week's focus.
@@ -887,7 +887,7 @@ async function generateDraft({
     const cadenceRules = cadence.depth === 'encouragement'
         ? '\nMONDAY RULE: do not mention food, workouts, sleep, steps, rank, gaps, or compliance. Keep it to encouragement plus Weekly Goals setup. If Weekly Goals are not saved yet, ask them to choose 3 for the week as a bundle; never ask them to pick one main focus.'
         : cadence.depth === 'quick'
-            ? '\nWEDNESDAY RULE: this is not a review. Structure it like Shannon checking in quickly mid-week: "good to see you have already got X sessions done", then one exercise highlight, then meals if they logged them for 2-3 days, then "keep it up, we will check back in Sunday morning". Use at most one question, ideally "need anything from me?" Do not mention rank, points, weight, mood, energy, sleep, steps, gaps, or overall challenge position unless there are no workout or meal signals at all.'
+            ? '\nWEDNESDAY RULE: this is not a review and not a report card. Treat it like a relaxed 6am check-in from Shannon. If the recent conversation says they were sick, stressed, sore, stuck, busy, travelling, had a blocker, or asked Shannon something that has not clearly been answered yet, make the draft a natural reply to that first. Example direction only: if Sukh said she was sick Monday, ask how she is feeling today before anything else. If the latest conversation line is from the client and Shannon has not replied, do not ignore it or open a new topic; weave the check-in into that reply. Mention workouts, meals, weekly goals, or Sunday only if it fits the conversation. Use at most one soft question, such as "how are you feeling today?" or "need anything from me?" Do not mention rank, points, weight, mood, energy, sleep, steps, gaps, or overall challenge position unless there are no useful conversation, workout, or meal signals at all.'
             : '\nSUNDAY RULE: this is the full weekly review. Use food, workouts, sleep, steps and any other available data, but only mention what is actually present.';
     const isFreeTrialCheckin = isManualCheckin && checkinMeta.isFreeTrial;
     const checkinKind = isFreeTrialCheckin ? 'free trial check-in' : isManualCheckin ? 'coaching check-in' : 'challenge check-in';
@@ -899,9 +899,11 @@ async function generateDraft({
     const activityDetailRule = isManualCheckin
         ? '- Reference the actual coaching/activity details below only when that fits the moment.'
         : '- Reference the actual challenge/activity details below only when that fits the moment.';
-    const goalRule = isManualCheckin
-        ? '- For Wednesday and Sunday, frame the message around the bigger goal and the current week. Do not call it a challenge.'
-        : '- For Wednesday and Sunday, frame the message around both the bigger 30-day goal and the current challenge week. Sunday/full-review should sound like: "Heya! Week 2 is complete, which means we are halfway through our 30 day challenge. Let\'s wind back and have a look at your bigger goal, so you said X. For week 2, Y is what we are building..."';
+    const goalRule = cadence.key === 'wednesday'
+        ? '- For Wednesday, do not force a bigger-goal frame. This should feel like Shannon checking in on the person and the current chat. Mention goals only if the conversation or Weekly Goals context makes that feel natural.'
+        : isManualCheckin
+            ? '- For Sunday, frame the message around the bigger goal and the current week. Do not call it a challenge.'
+            : '- For Sunday, frame the message around both the bigger 30-day goal and the current challenge week. Sunday/full-review should sound like: "Heya! Week 2 is complete, which means we are halfway through our 30 day challenge. Let\'s wind back and have a look at your bigger goal, so you said X. For week 2, Y is what we are building..."';
     const rankRule = isManualCheckin
         ? '- Do not mention rank, points, leaderboards, or challenge position.'
         : '- Mention rank positively or neutrally. Never shame someone for being lower on the board.';
@@ -926,7 +928,7 @@ CRITICAL:
 ${greetingRule}
 - Keep it casual Australian, direct, warm, and specific.
 - Length: ${cadence.lengthRule}
-- Follow the check-in moment exactly. Monday is encouragement only, Wednesday is a quick halfway touch, Sunday is the full data review.
+- Follow the check-in moment exactly. Monday is encouragement only, Wednesday is a relaxed morning conversation check, Sunday is the full data review.
 ${activityDetailRule}
 ${goalRule}
 - For Sunday, recap the week as evidence toward the bigger goal first, then use the recent conversation to make the next weekly focus or final question relevant instead of generic.
@@ -950,10 +952,11 @@ RECENT CONVERSATION THIS WEEK (oldest -> newest):
 ${conversationBlock || 'No tracked app/IG conversation in this activity window.'}
 
 CONVERSATION USE:
-- If they talked about a specific issue, win, schedule problem, app problem, food setup, injury, or life context this week, check in on that naturally.
+- If they talked about a specific issue, win, schedule problem, app problem, food setup, sickness, injury, stress, or life context this week, check in on that naturally.
+- If the latest useful message is from the client and Shannon has not clearly replied yet, write this as a natural reply to that message first. Do not send a disconnected check-in.
 - Do not repeat the transcript back to them.
 - Do not mention that a system or prompt reviewed the conversation.
-- If the conversation has no useful hook, ask a simple "how are you feeling after week one?" style question.
+- If the conversation has no useful hook, ask a simple "how are you feeling today?" style question.
 
 ${checkinContextBlock}
 
@@ -984,7 +987,9 @@ Reply with just the message text, no quotes, no labels.`;
 
     const fallback = cadence.key === 'sunday'
         ? `solid week to look back on here. what felt like the biggest win, and what do we need to tighten up for next week?`
-        : `quick challenge check-in, what is the main thing that would make the next couple of days easier to nail?`;
+        : cadence.key === 'wednesday'
+            ? `quick midweek check-in, how are you feeling today? need anything from me?`
+            : `quick challenge check-in, what is the main thing that would make the next couple of days easier to nail?`;
     return { text: fallback, model: 'deterministic-fallback' };
 }
 
@@ -994,8 +999,11 @@ async function hasPendingChallengeCheckin({ coachId, clientId }) {
 
 async function loadPendingChallengeCheckin({ coachId, clientId }) {
     try {
+        // Shannon can have more than one admin/coach identity attached to a
+        // client through cohorts and the manual roster. Keep one pending
+        // check-in per client so the admin queue does not double up.
         const rows = await supabaseQuery(
-            `coach_alerts?select=id,data&coach_id=eq.${coachId}&client_id=eq.${clientId}&alert_type=eq.weekly_checkin&status=eq.pending&data->>subtype=eq.challenge_checkin&order=created_at.desc&limit=1`
+            `coach_alerts?select=id,data&client_id=eq.${clientId}&alert_type=eq.weekly_checkin&status=eq.pending&data->>subtype=eq.challenge_checkin&order=created_at.desc&limit=1`
         );
         return rows[0] || null;
     } catch (err) {

@@ -1,5 +1,5 @@
 /**
- * Wednesday 6pm Brisbane schedule wrapper for challenge-checkin-scan.
+ * Wednesday 6am Brisbane schedule wrapper for challenge-checkin-scan.
  * Netlify supports one cron per function entry, so this file reuses the same
  * handler at a second wall-clock time.
  */

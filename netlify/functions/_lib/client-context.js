@@ -2302,7 +2302,7 @@ function checkinThreadDefaults(cadence) {
     if (key === 'wednesday') {
         return {
             state: 'midweek_checkin_active',
-            objective: 'Use the client reply to unblock the week, support all 3 Weekly Goals as a bundle, and make one practical adjustment without forcing a sales pitch.',
+            objective: 'Keep the midweek check relaxed, answer the current conversation first, and only use Weekly Goals or one practical adjustment when it naturally helps.',
         };
     }
     if (key === 'saturday') {

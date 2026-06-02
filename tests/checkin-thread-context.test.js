@@ -9,7 +9,7 @@ const {
 
 const metadata = buildCheckinThreadMetadata({
     cadence: 'wednesday',
-    cadenceLabel: 'Wednesday night halfway check',
+    cadenceLabel: 'Wednesday morning chill check',
     dateKey: '2026-05-20',
     challengeName: '30 Day Challenge',
     challengeWeek: 'week 3',
@@ -19,7 +19,7 @@ const metadata = buildCheckinThreadMetadata({
 assert.strictEqual(metadata.active, true);
 assert.strictEqual(metadata.cadence, 'wednesday');
 assert.strictEqual(metadata.state, 'midweek_checkin_active');
-assert.ok(metadata.objective.includes('all 3 Weekly Goals as a bundle'));
+assert.ok(metadata.objective.includes('answer the current conversation first'));
 assert.strictEqual(metadata.expires_at, '2026-05-23T08:00:00.000Z');
 
 const block = buildCheckinConversationBlock({
@@ -30,7 +30,7 @@ const block = buildCheckinConversationBlock({
 });
 
 assert.ok(block.includes('ACTIVE CHECK-IN THREAD'));
-assert.ok(block.includes('Wednesday night halfway check'));
+assert.ok(block.includes('Wednesday morning chill check'));
 assert.ok(block.includes('First answer what they actually just said'));
 assert.ok(block.includes('Do not ask them to pick one main focus'));
 assert.ok(block.includes('one training goal, one food/tracking goal, and one recovery or consistency goal'));
@@ -46,7 +46,7 @@ const legacyContext = normalizeActiveCheckinAlert({
         subtype: 'challenge_checkin',
         challenge_checkin: true,
         cadence: 'wednesday',
-        cadence_label: 'Wednesday night halfway check',
+        cadence_label: 'Wednesday morning chill check',
         challenge_week: 'week 3',
     },
     created_at: '2026-05-20T07:43:47.244Z',

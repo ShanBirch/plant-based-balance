@@ -331,12 +331,12 @@
 
 # Challenge check-ins - active cohort drafts for Shannon to approve/edit/send.
 # Mon/Sun drafts: Sun/Sat 19:30 UTC (Mon/Sun 05:30 Brisbane) so they are ready before 6am.
-# Wednesday drafts: Wed 08:00 UTC (Wed 18:00 Brisbane) so the scan can include Wednesday activity.
+# Wednesday drafts: Tue 20:00 UTC (Wed 06:00 Brisbane) so they are ready in the morning.
 [functions."challenge-checkin-scan"]
   schedule = "30 19 * * 0,6"
 
 [functions."challenge-checkin-scan-wednesday"]
-  schedule = "0 8 * * 3"
+  schedule = "0 20 * * 2"
 
 # Challenge leaderboard refresher - releases future-dated seed/test activity
 # by timestamp and keeps active participant rows current without a page open.
