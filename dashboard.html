@@ -12275,7 +12275,6 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#weekly-checkin-card', title:'Weekly Review', body:"A shimmering gold review card shows the person's onboarding goal, weekly progress, check-ins, mood signals, and one clear action to set next week goals.", quick: true, condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
-    { tab:'dashboard', sel:'#fitbit-performance-card', title:'Body-part volume', body:"Activity Insights now splits lifting volume by chest, back, legs, shoulders and core, with 1M, 3M and 6M views for short and longer trends." },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
     { tab:'dashboard', sel:'#monthly-raffle-section', title:'Monthly Raffle', body:"Each month you have the first 3 days to enter the raffle. Every entrant pays coins into a shared pool — one winner takes the whole pool plus a rare skin.", condition: function(){ var s = document.getElementById('monthly-raffle-section'); return s && s.style.display !== 'none'; } },
 
@@ -12957,20 +12956,6 @@ if(!window._pbbIsIOSSafari) {
         } catch(e) { console.warn('[feature-reveal] could not open Ask Balance palette', e); }
         await new Promise(function(r){ setTimeout(r, 260); });
       }
-    },
-    {
-      id: 'body-part-volume-insights-v1',
-      tab: 'dashboard',
-      sel: '#fitbit-performance-card',
-      title: 'Body-part volume',
-      body: "Activity Insights now splits lifting volume by chest, back, legs, shoulders and core so you can see what is moving up, steady or dropping."
-    },
-    {
-      id: 'body-part-volume-timeframes-v1',
-      tab: 'dashboard',
-      sel: '#fitbit-performance-card',
-      title: 'Volume timeframe views',
-      body: "Switch body-part volume between 1M, 3M and 6M views to check short momentum or the bigger training trend."
     },
     {
       id: 'weekly-progress-photos-three-shot-v1',
