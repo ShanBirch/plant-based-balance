@@ -13,6 +13,7 @@ const {
     isAlwaysNeedsYouPerson,
     normalizeLearningReelHistory,
     buildLearningReelContextBlock,
+    reviewDraftAndUpdateAlert,
     truncate,
 } = require('./_lib/client-context');
 
@@ -46,6 +47,126 @@ function draftReviewNeedsContext(data = {}) {
     ].map(v => String(v || '').toLowerCase()).join(' ');
     return review.context_loss_suspected === true
         || /\b(context_loss|missing_context|missing thread|missing conversation|unclear context|lost context|understand total)\b/i.test(text);
+}
+
+function draftReviewNeedsManualCheck(data = {}) {
+    const review = normalizeDraftReview(data);
+    if (!review || Object.keys(review).length === 0) return false;
+    if (draftReviewNeedsContext(data)) return true;
+    if (review.notification_required === true) return true;
+
+    const verdict = String(review.verdict || '').trim().toLowerCase();
+    if (verdict === 'warn' || verdict === 'block') return true;
+
+    const reason = String(review.notification_reason || review.notificationReason || '').trim().toLowerCase();
+    if (reason && reason !== 'none') return true;
+
+    const text = [
+        review.summary,
+        review.suggested_fix,
+        review.suggestedFix,
+        ...(Array.isArray(review.issues) ? review.issues : []),
+    ].map(v => String(v || '').toLowerCase()).join(' ');
+    return /\b(manual check|needs? (?:shannon|human|manual)|open (?:the )?(?:source )?dm|non[- ]?sequitur|ignored latest|unsupported claim|does(?:n'?t| not) follow|out of context)\b/i.test(text);
+}
+
+function draftReviewNeedsYouLabel(data = {}) {
+    const review = normalizeDraftReview(data);
+    if (!review || Object.keys(review).length === 0) return 'AI draft needs Shannon review';
+    if (draftReviewNeedsContext(data)) return 'AI may not have the full conversation context';
+    return truncate(review.summary || review.suggested_fix || 'AI draft needs Shannon review', 180);
+}
+
+function hasDraftReview(data = {}) {
+    const review = normalizeDraftReview(data);
+    return !!(review && Object.keys(review).length > 0 && (review.reviewed_at || review.verdict || review.summary));
+}
+
+function formatReviewList(items, mapper) {
+    const rows = (Array.isArray(items) ? items : [])
+        .map(mapper)
+        .map(v => String(v || '').trim())
+        .filter(Boolean);
+    return rows.length ? rows.join('\n') : '';
+}
+
+function buildDraftReviewContextBlocks(alert = {}) {
+    const data = alert.data || {};
+    const evidence = data.draft_evidence || {};
+    const clientName = alert.client_name || data.client_name || data.profile_name || data.ig_username || 'client';
+    const latest = evidence.current_message || data.message_preview || alert.description || '';
+    const priorText = formatReviewList(evidence.prior_unanswered || data.recent_inbound_messages, m => `- "${truncate(m.text || m.message || '', 220)}"`);
+    const timelineText = evidence.recent_timeline || '';
+    const activityText = evidence.recent_activity || '';
+    const workoutText = evidence.recent_workouts || '';
+    const memoryText = evidence.memory_context || '';
+    const shannonDayText = evidence.shannon_day_context || '';
+    const checkinText = evidence.checkin_thread_context || '';
+    const crossChannelText = evidence.cross_channel_context || '';
+
+    return [
+        `Just-arrived message from ${clientName}: "${truncate(latest, 500)}"`,
+        priorText ? `Prior unanswered messages:\n${priorText}` : '',
+        timelineText ? `Recent timestamped timeline:\n${truncate(timelineText, 2400)}` : '',
+        activityText ? `Recent activity snapshot:\n${truncate(activityText, 1200)}` : '',
+        workoutText ? `Exact recent workout logs:\n${truncate(workoutText, 1200)}` : '',
+        memoryText ? `Memory/context used:\n${truncate(memoryText, 1200)}` : '',
+        shannonDayText ? `Shannon self-story context:\n${truncate(shannonDayText, 900)}` : '',
+        checkinText ? `Active check-in thread:\n${truncate(checkinText, 1200)}` : '',
+        crossChannelText ? `Cross-channel context:\n${truncate(crossChannelText, 1200)}` : '',
+    ].filter(Boolean).join('\n\n');
+}
+
+function shouldRunDraftReview(alert = {}) {
+    const data = alert.data || {};
+    if (!alert.suggested_message) return false;
+    if (hasDraftReview(data)) return false;
+    if (data.client_manager_review_required || data.needs_you_required) return false;
+    return true;
+}
+
+async function ensureDraftReview(alert = {}) {
+    if (!shouldRunDraftReview(alert)) return alert;
+    const contextBlocks = buildDraftReviewContextBlocks(alert);
+    try {
+        const result = await reviewDraftAndUpdateAlert({
+            alertId: alert.id,
+            draftText: alert.suggested_message,
+            alertType: alert.alert_type,
+            contextBlocks,
+            clientName: alert.client_name || alert.data?.profile_name || alert.data?.ig_username || 'client',
+            channelLabel: alert.data?.channel || 'in-app',
+            existingContextReview: buildContextReviewInfo(alert),
+        });
+        return {
+            ...alert,
+            data: {
+                ...(alert.data || {}),
+                draft_review: result?.review || null,
+                context_review: result?.contextReview?.required ? result.contextReview : null,
+            },
+        };
+    } catch (error) {
+        console.warn('[client-lead-manager] draft review failed:', error.message);
+        return {
+            ...alert,
+            data: {
+                ...(alert.data || {}),
+                draft_review: {
+                    verdict: 'warn',
+                    confidence: 0,
+                    summary: 'Client/lead manager could not verify this draft, so it needs manual eyes.',
+                    issues: ['client_manager_review_failed'],
+                    suggested_fix: 'Open the source conversation before sending.',
+                    context_loss_suspected: false,
+                    notification_required: true,
+                    notification_reason: 'client_manager_review_failed',
+                    reviewed_at: new Date().toISOString(),
+                    reviewer_model: MANAGER_SOURCE,
+                },
+            },
+        };
+    }
 }
 
 function latestAlertMessageText(data = {}) {
@@ -91,7 +212,10 @@ function classifyNeedsYou(alert = {}) {
     }
     if (draftReviewNeedsContext(data)) {
         reasons.push('draft_review_context_loss');
-        labels.push('AI may not have the full conversation context');
+        labels.push(draftReviewNeedsYouLabel(data));
+    } else if (draftReviewNeedsManualCheck(data)) {
+        reasons.push('draft_review_manual_check');
+        labels.push(draftReviewNeedsYouLabel(data));
     }
     if (referencesOutboundLearningReel(latestText) && learningReels.length === 0) {
         reasons.push('missing_learning_reel_context');
@@ -180,9 +304,10 @@ async function runClientLeadManager({ limit = MAX_PER_RUN } = {}) {
     const alerts = await loadPendingDmAlerts(limit);
     const routed = [];
     for (const alert of alerts) {
-        const classification = classifyNeedsYou(alert);
+        const reviewedAlert = await ensureDraftReview(alert);
+        const classification = classifyNeedsYou(reviewedAlert);
         if (!classification.shouldRoute) continue;
-        routed.push(await stampNeedsYouAlert(alert, classification));
+        routed.push(await stampNeedsYouAlert(reviewedAlert, classification));
     }
     return {
         scanned: alerts.length,
@@ -211,4 +336,7 @@ exports._test = {
     classifyNeedsYou,
     buildNeedsYouData,
     draftReviewNeedsContext,
+    draftReviewNeedsManualCheck,
+    buildDraftReviewContextBlocks,
+    shouldRunDraftReview,
 };
