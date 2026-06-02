@@ -1608,6 +1608,14 @@ let workoutCameraStream = null;
 let workoutCameraFacingMode = 'environment';
 let _workoutCameraCallback = null;
 
+function finishWorkoutCameraCallback(file) {
+    const cb = _workoutCameraCallback;
+    _workoutCameraCallback = null;
+    if (typeof cb === 'function') {
+        cb(file || null);
+    }
+}
+
 // Primary entry point: prefers the native camera bridge for speed, falls back
 // to the in-WebView getUserMedia modal if the bridge isn't available.
 async function openWorkoutCamera(callback, label) {
@@ -1624,7 +1632,7 @@ async function openWorkoutCamera(callback, label) {
                 if (window.NativePermissions.isPermissionPermanentlyDenied
                     && window.NativePermissions.isPermissionPermanentlyDenied()) {
                     showCameraPermissionSettingsDialog();
-                    _workoutCameraCallback = null;
+                    finishWorkoutCameraCallback(null);
                     return;
                 }
                 const granted = await new Promise((resolve) => {
@@ -1642,7 +1650,7 @@ async function openWorkoutCamera(callback, label) {
                 });
                 if (!granted) {
                     showCameraPermissionSettingsDialog();
-                    _workoutCameraCallback = null;
+                    finishWorkoutCameraCallback(null);
                     return;
                 }
             }
@@ -1674,16 +1682,12 @@ async function openWorkoutCamera(callback, label) {
 
             if (dataUrl && typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
                 const file = dataUrlToFile(dataUrl, `workout-${Date.now()}.jpg`);
-                if (typeof _workoutCameraCallback === 'function') {
-                    const cb = _workoutCameraCallback;
-                    _workoutCameraCallback = null;
-                    cb(file);
-                }
+                finishWorkoutCameraCallback(file);
                 return;
             }
             // User cancelled — just bail, no fallback needed since the native
             // camera bridge is available on this platform.
-            _workoutCameraCallback = null;
+            finishWorkoutCameraCallback(null);
             return;
         } catch (bridgeErr) {
             console.warn('Native workout camera bridge failed, falling back:', bridgeErr);
@@ -1693,7 +1697,11 @@ async function openWorkoutCamera(callback, label) {
 
     // Fallback: in-WebView camera modal (getUserMedia)
     const modal = document.getElementById('workout-camera-modal');
-    if (!modal) { console.error('workout-camera-modal not found'); return; }
+    if (!modal) {
+        console.error('workout-camera-modal not found');
+        finishWorkoutCameraCallback(null);
+        return;
+    }
 
     // Update dynamic label
     const labelEl = document.getElementById('generic-camera-label');
@@ -1729,6 +1737,7 @@ async function startWorkoutCamera() {
                 window.NativePermissions.isPermissionPermanentlyDenied()) {
                 showCameraPermissionSettingsDialog();
                 closeWorkoutCamera();
+                finishWorkoutCameraCallback(null);
                 return;
             }
             if (!window.NativePermissions.hasCameraPermission()) {
@@ -1748,6 +1757,7 @@ async function startWorkoutCamera() {
                 if (!granted) {
                     showCameraPermissionSettingsDialog();
                     closeWorkoutCamera();
+                    finishWorkoutCameraCallback(null);
                     return;
                 }
             }
@@ -1774,6 +1784,7 @@ async function startWorkoutCamera() {
             showToast('Could not access camera. Check permissions.', 'error');
         }
         closeWorkoutCamera();
+        finishWorkoutCameraCallback(null);
     }
 }
 
@@ -1826,10 +1837,7 @@ function captureWorkoutPhoto() {
         }
         const file = new File([blob], `workout-${Date.now()}.jpg`, { type: 'image/jpeg' });
         closeWorkoutCamera();
-        if (typeof _workoutCameraCallback === 'function') {
-            _workoutCameraCallback(file);
-            _workoutCameraCallback = null;
-        }
+        finishWorkoutCameraCallback(file);
     }, 'image/jpeg', 0.92);
 }
 // --- End Workout Camera ---

@@ -554,6 +554,7 @@ let progressPhotoCaptureState = null;
             return;
         }
 
+        restoreCurrentGuide();
         alert('Camera not available. Please try again.');
     }
 
