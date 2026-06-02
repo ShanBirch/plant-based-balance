@@ -79,31 +79,24 @@ export default async (request: Request, context: Context): Promise<Response> => 
 
     const removedPoints = (removedRows || []).reduce((sum, row) => sum + Math.max(0, Number(row.points_amount) || 0), 0);
 
-    if (removedPoints > 0) {
-      const { data: pointsRow, error: pointsError } = await supabase
-        .from("user_points")
-        .select("current_points,lifetime_points")
-        .eq("user_id", userId)
-        .maybeSingle();
+    // This endpoint is test-account only. Reset the point totals fully so the
+    // Level 4 walkthrough cap cannot block the next replay from earning XP.
+    const { error: updateError } = await supabase
+      .from("user_points")
+      .upsert({
+        user_id: userId,
+        current_points: 0,
+        lifetime_points: 0,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
 
-      if (pointsError) throw pointsError;
-
-      const { error: updateError } = await supabase
-        .from("user_points")
-        .upsert({
-          user_id: userId,
-          current_points: Math.max(0, (Number(pointsRow?.current_points) || 0) - removedPoints),
-          lifetime_points: Math.max(0, (Number(pointsRow?.lifetime_points) || 0) - removedPoints),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "user_id" });
-
-      if (updateError) throw updateError;
-    }
+    if (updateError) throw updateError;
 
     return new Response(JSON.stringify({
       success: true,
       removedTransactions: removedRows?.length || 0,
       removedPoints,
+      resetPointsToZero: true,
       localStorageKeysToClear: WALKTHROUGH_STORAGE_KEYS,
       message: "Walkthrough test state reset",
     }), { status: 200, headers });

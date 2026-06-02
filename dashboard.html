@@ -12462,6 +12462,15 @@ if(!window._pbbIsIOSSafari) {
     await new Promise(function(r){ setTimeout(r, 320); });
   }
 
+  async function waitForWalkthroughAwarder(timeoutMs){
+    const timeoutAt = Date.now() + (timeoutMs || 1800);
+    while (Date.now() < timeoutAt) {
+      if (typeof awardPointsForWalkthroughStep === 'function') return awardPointsForWalkthroughStep;
+      await new Promise(function(r){ setTimeout(r, 120); });
+    }
+    return typeof awardPointsForWalkthroughStep === 'function' ? awardPointsForWalkthroughStep : null;
+  }
+
   function positionBubbleAndSpotlight(target, step){
     const spot = document.getElementById('guided-tour-spotlight');
     const bubble = document.getElementById('guided-tour-bubble');
@@ -12557,8 +12566,13 @@ if(!window._pbbIsIOSSafari) {
     const checkpoint = step.xpReward
       || step.walkthroughReward
       || (step.title === 'Say hi to Coach Shan' ? 'finish' : null);
-    if (checkpoint && typeof awardPointsForWalkthroughStep === 'function') {
-      awardPointsForWalkthroughStep(Object.assign({}, step, { xpReward: checkpoint }), i + 1, activeSteps.length).catch(function(e){
+    if (checkpoint) {
+      const awardWalkthroughXp = await waitForWalkthroughAwarder(2200);
+      if (!awardWalkthroughXp) {
+        console.warn('[tour] walkthrough XP awarder unavailable for checkpoint', checkpoint);
+        return;
+      }
+      awardWalkthroughXp(Object.assign({}, step, { xpReward: checkpoint }), i + 1, activeSteps.length).catch(function(e){
         console.warn('[tour] walkthrough XP award failed', e);
       });
     }
