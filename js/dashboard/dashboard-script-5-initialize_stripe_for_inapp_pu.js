@@ -6076,12 +6076,12 @@ const WIZARD_LEARNING_INTEREST_YOUTUBE_TOPICS = {
     },
     mindset: {
         topic: 'mindset',
-        queries: ['fitness mindset for beginners', 'motivation consistency fitness', 'identity based habits fitness'],
+        queries: ['Lisa Feldman Barrett mindset emotions', 'Andrew Huberman motivation habits', 'Karl Friston predictive brain habits'],
         learning_modules: ['mind']
     },
     neuroscience: {
         topic: 'neuroscience',
-        queries: ['neuroscience of habits', 'predictive brain explained', 'dopamine motivation fitness'],
+        queries: ['Lisa Feldman Barrett brain emotions', 'Andrew Huberman dopamine motivation', 'Karl Friston free energy predictive brain'],
         learning_modules: ['mind', 'body']
     },
     longevity: {
