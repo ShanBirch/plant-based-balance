@@ -3,9 +3,11 @@ const assert = require('assert');
 const {
     buildContextReviewInfo,
     buildLearningReelContextBlock,
+    buildLearningReelReplyAnchorBlock,
     findDuplicateLearningReels,
     mergeLearningReelContext,
     normalizeLearningReelHistory,
+    referencesLearningReelFollowUpText,
 } = require('../netlify/functions/_lib/client-context');
 const { _test: managerTest } = require('../netlify/functions/client-lead-manager');
 
@@ -44,6 +46,25 @@ assert.ok(block.includes('How emotions are made'));
 assert.ok(block.includes('brain constructs emotion'));
 assert.ok(block.includes('Lisa Feldman Barrett'));
 assert.ok(block.includes("this is cool, reckon you'll like this one"));
+
+assert.strictEqual(referencesLearningReelFollowUpText('Omg yum! Have you tried this?'), true);
+assert.strictEqual(referencesLearningReelFollowUpText('what did you train today?'), false);
+
+const replyAnchor = buildLearningReelReplyAnchorBlock(
+    { custom_data: customData },
+    'Omg yum! Have you tried this?',
+    { now: new Date(sentAt) }
+);
+assert.ok(replyAnchor.includes('LATEST SENT LEARNING REEL LIKELY MATTERS HERE'));
+assert.ok(replyAnchor.includes('How emotions are made'));
+assert.ok(replyAnchor.includes('Do not ask what it is'));
+
+const unrelatedAnchor = buildLearningReelReplyAnchorBlock(
+    { custom_data: customData },
+    'what did you train today?',
+    { now: new Date(sentAt) }
+);
+assert.strictEqual(unrelatedAnchor, '');
 
 const duplicateReels = findDuplicateLearningReels({ custom_data: customData }, [{
     title: 'Different title from another share page',
@@ -97,5 +118,30 @@ const routedWithReel = managerTest.classifyNeedsYou({
     },
 });
 assert.strictEqual(routedWithReel.shouldRoute, false);
+
+const routedIgnoredReelContext = managerTest.classifyNeedsYou({
+    suggested_message: 'Haha yum, what was it?',
+    data: {
+        channel: 'instagram',
+        ig_thread_id: 'thread-1',
+        message_preview: 'Omg yum! Have you tried this?',
+        inbound_message_batch: [{ text: 'Omg yum! Have you tried this?', is_current: true }],
+        learning_reels: customData.learning_reels,
+    },
+});
+assert.strictEqual(routedIgnoredReelContext.shouldRoute, true);
+assert.ok(routedIgnoredReelContext.reasons.includes('draft_ignored_learning_reel_context'));
+
+const routedUsesReelContext = managerTest.classifyNeedsYou({
+    suggested_message: 'yeah that Lisa Feldman Barrett one is interesting, the brain prediction bit is wild',
+    data: {
+        channel: 'instagram',
+        ig_thread_id: 'thread-1',
+        message_preview: 'Omg yum! Have you tried this?',
+        inbound_message_batch: [{ text: 'Omg yum! Have you tried this?', is_current: true }],
+        learning_reels: customData.learning_reels,
+    },
+});
+assert.strictEqual(routedUsesReelContext.shouldRoute, false);
 
 console.log('learning reel context tests passed');

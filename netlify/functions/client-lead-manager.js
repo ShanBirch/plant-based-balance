@@ -13,6 +13,7 @@ const {
     isAlwaysNeedsYouPerson,
     normalizeLearningReelHistory,
     buildLearningReelContextBlock,
+    referencesLearningReelFollowUpText,
     reviewDraftAndUpdateAlert,
     truncate,
 } = require('./_lib/client-context');
@@ -103,6 +104,7 @@ function buildDraftReviewContextBlocks(alert = {}) {
     const shannonDayText = evidence.shannon_day_context || '';
     const checkinText = evidence.checkin_thread_context || '';
     const crossChannelText = evidence.cross_channel_context || '';
+    const learningReelText = evidence.learning_reel_context || buildLearningReelContextBlock(data);
 
     return [
         `Just-arrived message from ${clientName}: "${truncate(latest, 500)}"`,
@@ -114,6 +116,7 @@ function buildDraftReviewContextBlocks(alert = {}) {
         shannonDayText ? `Shannon self-story context:\n${truncate(shannonDayText, 900)}` : '',
         checkinText ? `Active check-in thread:\n${truncate(checkinText, 1200)}` : '',
         crossChannelText ? `Cross-channel context:\n${truncate(crossChannelText, 1200)}` : '',
+        learningReelText ? `Recent sent learning reel context:\n${truncate(learningReelText, 1800)}` : '',
     ].filter(Boolean).join('\n\n');
 }
 
@@ -183,10 +186,14 @@ function latestAlertMessageText(data = {}) {
 }
 
 function referencesOutboundLearningReel(text = '') {
-    const value = String(text || '').toLowerCase();
+    return referencesLearningReelFollowUpText(text);
+}
+
+function draftAsksWhatSentReelWas(draftText = '') {
+    const value = String(draftText || '').toLowerCase().replace(/\s+/g, ' ').trim();
     if (!value) return false;
-    return /\b(what|why|which|that|the|your|you|u|sent|send|reckon|think|question)\b[\s\S]{0,80}\b(reel|youtube|short|clip|video)\b/i.test(value)
-        || /\b(reel|youtube|short|clip|video)\b[\s\S]{0,80}\b(about|mean|sent|send|reckon|think|question|explain)\b/i.test(value);
+    return /\b(what\s+(?:is|was)\s+(?:it|that|this|the reel|the video|the clip)|what'?s\s+(?:it|that|this)|which\s+(?:one|reel|video|clip)|what\s+was\s+that\s+(?:one\s+)?about)\b/i.test(value)
+        || /\b(what was it|what is it|what's it|what was the recipe|what recipe was it)\b/i.test(value);
 }
 
 function classifyNeedsYou(alert = {}) {
@@ -220,6 +227,10 @@ function classifyNeedsYou(alert = {}) {
     if (referencesOutboundLearningReel(latestText) && learningReels.length === 0) {
         reasons.push('missing_learning_reel_context');
         labels.push('client may be referring to a reel but no sent-reel context is stored');
+    }
+    if (referencesOutboundLearningReel(latestText) && learningReels.length > 0 && draftAsksWhatSentReelWas(alert.suggested_message || data.draft_text || '')) {
+        reasons.push('draft_ignored_learning_reel_context');
+        labels.push('draft appears to ignore the stored sent-reel context');
     }
 
     const uniqueReasons = [...new Set(reasons.filter(Boolean))];

@@ -109,11 +109,13 @@ const reviewContext = manager.buildDraftReviewContextBlocks(makeAlert({
             current_message: 'yeah send me the link',
             prior_unanswered: [{ text: 'how do i start?' }],
             recent_timeline: 'Lead: how do i start?\nShannon: i can send the link',
+            learning_reel_context: 'Most recent sent reel: Plant-based cooking: "The BEST cucumber salad" by Pick Up Limes.',
         },
     },
 }));
 assert.ok(reviewContext.includes('Just-arrived message from Lead'));
 assert.ok(reviewContext.includes('Prior unanswered messages'));
+assert.ok(reviewContext.includes('Recent sent learning reel context'));
 assert.strictEqual(manager.shouldRunDraftReview(makeAlert({
     suggested_message: 'hey',
     data: { message_preview: 'hey' },

@@ -30,6 +30,7 @@ const {
     selectRecentInboundSinceLastReplyIg,
     normalizeLearningReelHistory,
     buildLearningReelContextBlock,
+    buildLearningReelReplyAnchorBlock,
     resolveLifecycleStage,
     lifecycleForFcmData,
     fireDraftReasoning,
@@ -1892,7 +1893,7 @@ They sent a long, emotional, or multi-topic message. Do not compress this into a
     };
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount, coachId = null }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount, coachId = null }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -2019,6 +2020,10 @@ MEDIA CONTEXT RULES:
 - Treat reel captions, titles, creator/account names, thumbnails, transcripts, and metadata as media evidence only.
 - Do not treat questions inside a reel caption or transcript as a question from ${leadName}. If a reel says "what are you up to this weekend?", react to the reel or why ${leadName} shared it, but do not answer with Shannon's weekend/day unless ${leadName} typed that question separately.
 - If the reason ${leadName} shared the reel is unclear, keep it short and broad instead of explaining the reel back to them.` : '';
+    const learningReelEvidenceBlock = [learningReelReplyAnchorBlock, learningReelContextBlock]
+        .map(v => String(v || '').trim())
+        .filter(Boolean)
+        .join('\n\n');
     const currentMessageText = rewrittenMessage;
     const replyMode = resolveReplyMode({ currentMessageText, recentInboundMessages: sanitizedPriorInboundMessages, history, leadStage, linkedUserId, onboardingPhase });
     const promptNow = new Date();
@@ -2278,6 +2283,7 @@ ${oneOnOneCoachingBlock}
 ${unansweredBatchBlock}
 ${storyReplyPromptContextBlock}
 ${mediaContextPromptBlock}
+${learningReelReplyAnchorBlock}
 
 TOTAL CONVERSATION TIMELINE (all known channels, oldest -> newest, includes their new message at the end):
 ${totalConversationText}
@@ -2395,7 +2401,7 @@ Rules:
             } catch (err2) {
                 console.error('[ig-draft] Gemini fallback failed:', err2.message);
                 lastError = `${lastError ? lastError + ' | ' : ''}gemini: ${err2.message.slice(0, 200)}`;
-                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, currentTurnAnchorBlock, storyReplyPromptContextBlock, mediaContextPromptBlock, learningReelContextBlock };
+                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, currentTurnAnchorBlock, storyReplyPromptContextBlock, mediaContextPromptBlock, learningReelContextBlock, learningReelReplyAnchorBlock, learningReelEvidenceBlock };
             }
         }
     }
@@ -2497,6 +2503,8 @@ Rules:
         nativeStoryOutreachContextBlock: nativeStoryOutreachContext?.block || '',
         mediaContextPromptBlock,
         learningReelContextBlock,
+        learningReelReplyAnchorBlock,
+        learningReelEvidenceBlock,
         emptyDraftRecovery,
     };
 }
@@ -2984,6 +2992,11 @@ exports.handler = async (event) => {
     }
     const learningReelHistory = normalizeLearningReelHistory(thread).slice(0, 6);
     const learningReelContextBlock = buildLearningReelContextBlock(thread);
+    const learningReelReplyAnchorBlock = buildLearningReelReplyAnchorBlock(thread, messageText);
+    const learningReelEvidenceBlock = [learningReelReplyAnchorBlock, learningReelContextBlock]
+        .map(v => String(v || '').trim())
+        .filter(Boolean)
+        .join('\n\n');
     const nativeStoryOutreachContext = buildNativeStoryOutreachContextBlock(thread, leadName);
 
     const channel = thread.channel || 'instagram';
@@ -3083,6 +3096,7 @@ exports.handler = async (event) => {
             coachDayContextBlock,
             checkinThreadBlock,
             learningReelContextBlock,
+            learningReelReplyAnchorBlock,
             nativeStoryOutreachContext,
             history,
             currentMessage: messageText,
@@ -3115,6 +3129,8 @@ exports.handler = async (event) => {
             storyReplyPromptContextBlock: '',
             nativeStoryOutreachContextBlock: nativeStoryOutreachContext?.block || '',
             learningReelContextBlock,
+            learningReelReplyAnchorBlock,
+            learningReelEvidenceBlock,
         };
     }
 
@@ -3185,7 +3201,7 @@ exports.handler = async (event) => {
             current_message: displayMessage,
             recent_timeline: draft.timeline || '',
             story_context: draft.storyReplyPromptContextBlock || '',
-            learning_reel_context: draft.learningReelContextBlock || '',
+            learning_reel_context: draft.learningReelEvidenceBlock || draft.learningReelContextBlock || '',
         },
     });
     const proposedActions = detectProposedCoachActions({
@@ -3356,7 +3372,7 @@ exports.handler = async (event) => {
                 story_context: truncate(String(draft.storyReplyPromptContextBlock || '').trim(), 1400),
                 native_story_context: truncate(String(draft.nativeStoryOutreachContextBlock || '').trim(), 1400),
                 media_context: truncate(String(draft.mediaContextPromptBlock || '').trim(), 1800),
-                learning_reel_context: truncate(String(draft.learningReelContextBlock || '').trim(), 1800),
+                learning_reel_context: truncate(String(draft.learningReelEvidenceBlock || draft.learningReelContextBlock || '').trim(), 1800),
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 shannon_day_context: truncate(coachDayContextBlock.replace(/\n{3,}/g, '\n\n').trim(), 1600),
@@ -3488,7 +3504,7 @@ exports.handler = async (event) => {
                 recent_activity: truncate(weeklyAppContext || '', 3000),
                 recent_timeline: truncateTail(draft.timeline || '', 4000),
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
-                learning_reel_context: truncate(String(draft.learningReelContextBlock || '').trim(), 1800),
+                learning_reel_context: truncate(String(draft.learningReelEvidenceBlock || draft.learningReelContextBlock || '').trim(), 1800),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 checkin_thread_context: truncate(checkinThreadBlock.replace(/\n{3,}/g, '\n\n').trim(), 1800),
                 cross_channel_context: linkedNudges.length
@@ -3591,7 +3607,11 @@ exports.handler = async (event) => {
                 return `${speaker}: ${replaceIgMediaMarkers(m.message || '')}`;
             }).join('\n'), 1200)}`
             : '';
-        const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}`;
+        const learningReelReviewText = draft.learningReelEvidenceBlock || learningReelEvidenceBlock || draft.learningReelContextBlock || '';
+        const learningReelReviewContext = learningReelReviewText
+            ? `\nRecent sent learning reel context:\n${truncate(learningReelReviewText, 1800)}`
+            : '';
+        const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReviewContext}`;
         const reviewTimeoutMs = cocosAutoSendLane ? COCOS_DRAFT_REVIEW_TIMEOUT_MS : IG_DRAFT_REVIEW_TIMEOUT_MS;
         try {
             const reviewResult = await withTimeout(reviewDraftAndUpdateAlert({
@@ -4025,7 +4045,11 @@ exports.handler = async (event) => {
                 return `${speaker}: ${replaceIgMediaMarkers(m.message || '')}`;
             }).join('\n'), 1200)}`
             : '';
-        const contextBlocks = `Just-arrived ${channelLabel} message from ${leadName}: "${truncate(displayMessage, 400)}"${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}`;
+        const learningReelReasoningText = draft.learningReelEvidenceBlock || learningReelEvidenceBlock || draft.learningReelContextBlock || '';
+        const learningReelReasoningContext = learningReelReasoningText
+            ? `\nRecent sent learning reel context:\n${truncate(learningReelReasoningText, 1400)}`
+            : '';
+        const contextBlocks = `Just-arrived ${channelLabel} message from ${leadName}: "${truncate(displayMessage, 400)}"${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReasoningContext}`;
         fireDraftReasoning({
             alertId,
             draftText: draft.joined,

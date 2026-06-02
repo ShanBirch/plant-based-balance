@@ -6543,9 +6543,74 @@ RECENT LEARNING REELS SHANNON SENT (private context for this reply):
 ${history.map((item, index) => formatLearningReelLine(item, index, now)).join('\n')}
 
 How to use this:
-- If they ask about "that reel", "the clip", the topic, or a detail from it, use the title, topic, creator, URL, search query, and reason above as context.
+- If they ask about "that reel", "the clip", "this", "that one", "have you tried this", the topic, or a detail from it, use the title, topic, creator, URL, search query, and reason above as context.
+- Assume short follow-ups like "what was it?", "omg yum", "have you tried this?", or "make me this" are about the most recent sent reel unless the conversation clearly points somewhere else. Do not ask what it is.
 - Do not claim Shannon watched or heard the full video unless the metadata says so. Answer from the stored metadata, then ask one casual follow-up if useful.
 - Do not mention how the reel was chosen, internal matching, APIs, or private context.`;
+}
+
+function referencesLearningReelFollowUpText(text = '') {
+    const value = String(text || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    if (!value) return false;
+    return /\b(what|why|which|that|this|the|your|you|u|sent|send|reckon|think|question)\b[\s\S]{0,80}\b(reel|youtube|short|clip|video|vid)\b/i.test(value)
+        || /\b(reel|youtube|short|clip|video|vid)\b[\s\S]{0,80}\b(about|mean|sent|send|reckon|think|question|explain|watch|watched|try|tried)\b/i.test(value)
+        || /\b(have|has|had|did|do|would|will|could|should)\s+(you|u)\s+(try|tried|make|made|cook|cooked|watch|watched|seen|see)\s+(this|that|it|one)\b/i.test(value)
+        || /\b(try|tried|make|made|cook|cooked|watch|watched)\s+(this|that|it|one)\b/i.test(value)
+        || /\b(make me this|make this|need to make this|i need this|we need this|recipe|omg yum|yum+|looks yum|looks good|that looks good|this looks good|what was it|what is it|what's it|what was that|what is that|what's that|what was this|what is this|what's this)\b/i.test(value);
+}
+
+function isShortLearningReelContextualReply(text = '') {
+    const value = String(text || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    if (!value) return false;
+    const words = value.split(/\s+/).filter(Boolean);
+    if (words.length > 18) return false;
+    return /\b(this|that|it|one|yum+|recipe|try|tried|make|made|cook|cooked|watch|watched)\b/i.test(value)
+        || /\blooks?\s+(yum|good|nice|solid)\b/i.test(value)
+        || /\bneed\s+(this|that|to make)\b/i.test(value);
+}
+
+function learningReelSentRecently(item = {}, now = new Date(), maxAgeHours = 48) {
+    const sentMs = Date.parse(item?.sent_at || '');
+    if (!Number.isFinite(sentMs) || sentMs <= 0) return true;
+    const nowMs = now instanceof Date ? now.getTime() : Date.parse(now || '');
+    if (!Number.isFinite(nowMs) || nowMs <= 0) return true;
+    const ageMs = nowMs - sentMs;
+    if (ageMs < 0) return true;
+    return ageMs <= Math.max(1, Number(maxAgeHours || 48)) * 60 * 60 * 1000;
+}
+
+function buildLearningReelReplyAnchorBlock(source = {}, currentMessage = '', options = {}) {
+    const history = normalizeLearningReelHistory(source);
+    if (!history.length) return '';
+    const latest = history[0];
+    const now = options.now || new Date();
+    const directReference = referencesLearningReelFollowUpText(currentMessage);
+    const freshContextualReply = learningReelSentRecently(latest, now, options.maxAgeHours || 48)
+        && isShortLearningReelContextualReply(currentMessage);
+    if (!options.force && !directReference && !freshContextualReply) return '';
+
+    const title = latest.title ? `"${latest.title}"` : 'untitled reel';
+    const topic = latest.topic_label || latest.topic_id || 'learning reel';
+    const creator = latest.channel_title ? ` by ${latest.channel_title}` : '';
+    const description = latest.description ? `\nStored video description: ${truncate(latest.description, 520)}` : '';
+    const reason = latest.reason ? `\nWhy Shannon sent it: ${truncate(latest.reason, 300)}` : '';
+    const visible = latest.sent_message ? `\nVisible DM copy Shannon sent: "${truncate(latest.sent_message, 260)}"` : '';
+    const query = latest.youtube_query ? `\nSearch/query used: ${truncate(latest.youtube_query, 220)}` : '';
+    const url = latest.url ? `\nURL: ${latest.url}` : '';
+    const relative = formatRelativeTime(latest.sent_at, now);
+    const sentAt = latest.sent_at ? `\nSent: ${formatCoachLocalTimestamp(latest.sent_at) || latest.sent_at}${relative ? `, ${relative}` : ''}` : '';
+
+    return `
+
+LATEST SENT LEARNING REEL LIKELY MATTERS HERE:
+The latest client message may be replying to a reel Shannon just sent.
+Most recent sent reel: ${topic}: ${title}${creator}.${sentAt}${url}${description}${query}${reason}${visible}
+
+Use this current-turn rule:
+- If they say "this", "that", "that one", "have you tried this", "what was it", "yum", "recipe", or similar, assume they mean this most recent sent reel unless another source clearly overrides it.
+- Do not ask what it is. Shannon already has the title, creator, description, URL, and sent-copy above.
+- Reply with a casual amount of context from the metadata. For food, name the dish or ingredient vibe. For science/training, name the idea or creator. Keep it natural, not a summary.
+- Do not pretend Shannon has watched the full video, tried the recipe, or personally verified every claim unless the conversation says that.`;
 }
 
 module.exports = {
@@ -6576,6 +6641,8 @@ module.exports = {
     findDuplicateLearningReels,
     mergeLearningReelContext,
     buildLearningReelContextBlock,
+    referencesLearningReelFollowUpText,
+    buildLearningReelReplyAnchorBlock,
     resolveLifecycleStage,
     lifecycleForFcmData,
     LIFECYCLE_STAGES,
