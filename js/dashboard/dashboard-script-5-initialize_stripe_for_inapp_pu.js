@@ -6044,6 +6044,7 @@ const WIZARD_LEARNING_INTEREST_LABELS = {
     mindset: 'Mindset',
     neuroscience: 'Neuroscience',
     longevity: 'Longevity',
+    workout_motivation: 'Workout motivation',
     weight_training_technique: 'Weight training technique',
     meal_prep_planning: 'Meal prep & planning',
     protein_science: 'Protein',
@@ -6096,10 +6097,16 @@ const WIZARD_LEARNING_INTEREST_YOUTUBE_TOPICS = {
         sources: ['Dr. Rhonda Patrick', 'NutritionFacts.org', 'The Proof with Simon Hill', 'Andrew Huberman', 'TED-Ed'],
         learning_modules: ['longevity', 'hormones']
     },
+    workout_motivation: {
+        topic: 'workout motivation',
+        queries: ['Andrew Huberman workout motivation habits', 'BJ Fogg tiny habits exercise', 'ATHLEAN-X workout excuses'],
+        sources: ['Andrew Huberman', 'BJ Fogg', 'Big Think', 'TED-Ed', 'Precision Nutrition', 'ATHLEAN-X'],
+        learning_modules: ['mind', 'workouts']
+    },
     weight_training_technique: {
         topic: 'weight training technique',
-        queries: ['Squat University lifting technique', 'Jeff Nippard exercise form', 'Renaissance Periodization training form'],
-        sources: ['Squat University', 'Jeff Nippard', 'Renaissance Periodization', 'Jeremy Ethier'],
+        queries: ['Squat University lifting technique', 'ATHLEAN-X exercise form', 'Jeff Nippard exercise form'],
+        sources: ['Squat University', 'ATHLEAN-X', 'Jeff Nippard', 'Renaissance Periodization', 'Jeremy Ethier'],
         learning_modules: ['workouts', 'growth']
     },
     meal_prep_planning: {
@@ -6472,6 +6479,7 @@ const WIZARD_CHAT_STEPS = [
             { value: 'mindset', label: WIZARD_LEARNING_INTEREST_LABELS.mindset },
             { value: 'neuroscience', label: WIZARD_LEARNING_INTEREST_LABELS.neuroscience },
             { value: 'longevity', label: WIZARD_LEARNING_INTEREST_LABELS.longevity },
+            { value: 'workout_motivation', label: WIZARD_LEARNING_INTEREST_LABELS.workout_motivation },
             { value: 'weight_training_technique', label: WIZARD_LEARNING_INTEREST_LABELS.weight_training_technique },
             { value: 'meal_prep_planning', label: WIZARD_LEARNING_INTEREST_LABELS.meal_prep_planning },
             { value: 'protein_science', label: WIZARD_LEARNING_INTEREST_LABELS.protein_science },
@@ -6723,6 +6731,7 @@ function wizardChatMultiFromText(step, raw) {
             ['mindset', ['mindset', 'motivation', 'identity', 'mental', 'confidence']],
             ['neuroscience', ['neuroscience', 'brain', 'dopamine', 'predictive brain', 'nervous system']],
             ['longevity', ['longevity', 'metabolic health', 'aging', 'ageing', 'lifespan', 'healthspan']],
+            ['workout_motivation', ['workout motivation', 'training motivation', 'exercise motivation', 'workout consistency', 'show up to train']],
             ['weight_training_technique', ['weight training', 'lifting', 'technique', 'form', 'gym technique']],
             ['meal_prep_planning', ['meal prep', 'meal planning', 'planning', 'prep']],
             ['protein_science', ['protein']],

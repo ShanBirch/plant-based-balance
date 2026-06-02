@@ -39,6 +39,18 @@ assert.ok(
     curatedLearningReelSourceNames('neuroscience').some(name => name === 'UCL'),
     'neuroscience should include a Karl Friston friendly academic source'
 );
+assert.ok(
+    curatedLearningReelSourceNames('weight_training_technique').some(name => name === 'ATHLEAN-X'),
+    'weight training technique should include ATHLEAN-X'
+);
+assert.ok(
+    curatedLearningReelSourceNames('workout_motivation').some(name => name === 'Andrew Huberman'),
+    'workout motivation should include Huberman'
+);
+assert.ok(
+    curatedLearningReelSourceNames('workout_motivation').some(name => name === 'BJ Fogg'),
+    'workout motivation should include habit-science sources'
+);
 
 const trustedProteinCandidate = {
     topicId: 'protein_science',

@@ -6,6 +6,7 @@ const LEARNING_REEL_TOPIC_LABELS = {
     mindset: 'Mindset',
     neuroscience: 'Neuroscience',
     longevity: 'Longevity',
+    workout_motivation: 'Workout motivation',
     weight_training_technique: 'Weight training technique',
     meal_prep_planning: 'Meal prep & planning',
     protein_science: 'Protein',
@@ -17,6 +18,7 @@ const LEARNING_REEL_TOPIC_LABELS = {
 
 const SUBSCRIBER_TIER_SCORE = {
     '20m+': 36,
+    '10m+': 34,
     '8m+': 32,
     '7m+': 31,
     '6m+': 30,
@@ -39,6 +41,7 @@ const TOPIC_KEYWORD_RE = {
     mindset: /\b(mindset|motivation|emotion|confidence|identity|habit|consistency|resilience|lisa feldman barrett|huberman|fogg)\b/i,
     neuroscience: /\b(neuro|brain|dopamine|emotion|prediction|predictive|free energy|friston|barrett|huberman|nervous system)\b/i,
     longevity: /\b(longevity|healthspan|lifespan|aging|ageing|metabolic|zone 2|vo2|sleep|recovery|cardio|microbiome)\b/i,
+    workout_motivation: /\b(workout|training|train|motivation|discipline|consistency|habit|excuse|energy|show up|start|identity|dopamine)\b/i,
     weight_training_technique: /\b(form|technique|squat|deadlift|bench|press|row|hinge|lunge|training|lifting|mobility)\b/i,
     meal_prep_planning: /\b(meal prep|meal planning|prep|batch|weekly meals|recipe|plant|vegan|protein)\b/i,
     protein_science: /\b(protein|amino|leucine|muscle protein|plant protein|vegan protein|protein intake|hypertrophy)\b/i,
@@ -148,6 +151,7 @@ const CURATED_LEARNING_REEL_SOURCES = [
         aliases: ['jeff nippard', 'jeffnippard'],
         topics: {
             macronutrient_science: ['macros explained', 'protein carbs fat', 'calorie deficit'],
+            workout_motivation: ['workout motivation', 'training consistency', 'stay consistent lifting'],
             weight_training_technique: ['exercise form', 'lifting technique', 'best exercises'],
             protein_science: ['protein intake', 'protein timing', 'muscle protein synthesis'],
             fat_loss_basics: ['fat loss basics', 'calorie deficit', 'dieting science'],
@@ -166,6 +170,7 @@ const CURATED_LEARNING_REEL_SOURCES = [
         aliases: ['renaissance periodization', 'rp strength', 'dr mike israetel', 'mike israetel'],
         topics: {
             macronutrient_science: ['macros explained', 'nutrition for fat loss', 'dieting basics'],
+            workout_motivation: ['training motivation', 'workout discipline', 'stay consistent training'],
             weight_training_technique: ['lifting technique', 'training form', 'exercise science'],
             protein_science: ['protein for muscle growth', 'protein intake'],
             recovery_sleep_energy: ['recovery from training', 'deloads', 'training fatigue'],
@@ -202,6 +207,7 @@ const CURATED_LEARNING_REEL_SOURCES = [
         aliases: ['precision nutrition'],
         topics: {
             behavior_change_science: ['healthy habits', 'behavior change coaching', 'nutrition habits'],
+            workout_motivation: ['fitness motivation habits', 'workout consistency', 'healthy habits'],
             macronutrient_science: ['macros explained', 'nutrition basics'],
             fat_loss_basics: ['sustainable fat loss', 'weight loss habits'],
             meal_prep_planning: ['meal planning habits', 'healthy meal prep']
@@ -223,6 +229,21 @@ const CURATED_LEARNING_REEL_SOURCES = [
         }
     },
     {
+        id: 'athlean_x',
+        channelTitle: 'ATHLEAN-X',
+        handle: '@athleanx',
+        subscriberTier: '10m+',
+        qualityScore: 84,
+        sourceKind: 'technique_strength',
+        profileUrl: 'https://www.youtube.com/@athleanx',
+        aliases: ['athlean x', 'athlean-x', 'athleanx', 'jeff cavaliere'],
+        topics: {
+            workout_motivation: ['workout excuses', 'training motivation', 'stay consistent workouts'],
+            weight_training_technique: ['exercise form', 'shoulder safe lifting', 'athletic strength technique'],
+            muscle_gain_basics: ['build muscle technique', 'muscle growth exercises']
+        }
+    },
+    {
         id: 'jeremy_ethier',
         channelTitle: 'Jeremy Ethier',
         channelId: 'UCERm5yFZ1SptUEU4wZ2vJvw',
@@ -233,6 +254,7 @@ const CURATED_LEARNING_REEL_SOURCES = [
         profileUrl: 'https://www.youtube.com/@JeremyEthier',
         aliases: ['jeremy ethier', 'built with science'],
         topics: {
+            workout_motivation: ['workout motivation', 'training consistency'],
             weight_training_technique: ['exercise form', 'gym technique'],
             fat_loss_basics: ['fat loss basics', 'weight loss science'],
             muscle_gain_basics: ['build muscle', 'hypertrophy basics']
@@ -252,6 +274,7 @@ const CURATED_LEARNING_REEL_SOURCES = [
             behavior_change_science: ['habits behavior change', 'motivation dopamine'],
             mindset: ['motivation habits', 'stress mindset', 'emotion regulation'],
             neuroscience: ['dopamine motivation', 'brain habits', 'nervous system'],
+            workout_motivation: ['motivation dopamine', 'habits exercise', 'workout consistency'],
             longevity: ['sleep exercise longevity', 'healthspan habits'],
             recovery_sleep_energy: ['sleep tools', 'recovery sleep', 'circadian rhythm']
         }
@@ -269,6 +292,7 @@ const CURATED_LEARNING_REEL_SOURCES = [
         topics: {
             behavior_change_science: ['behavior science habits', 'psychology motivation'],
             mindset: ['lisa feldman barrett emotions', 'mindset psychology', 'confidence psychology'],
+            workout_motivation: ['motivation psychology', 'habit psychology', 'discipline psychology'],
             neuroscience: ['lisa feldman barrett brain emotions', 'predictive brain', 'neuroscience emotions']
         }
     },
@@ -286,6 +310,7 @@ const CURATED_LEARNING_REEL_SOURCES = [
             behavior_change_science: ['habit psychology', 'behavior science', 'motivation psychology'],
             mindset: ['emotions brain', 'motivation psychology', 'resilience psychology'],
             neuroscience: ['brain dopamine', 'neuroscience explained', 'how the brain works'],
+            workout_motivation: ['motivation psychology', 'exercise habits', 'how motivation works'],
             longevity: ['sleep health', 'exercise health', 'aging biology']
         }
     },
@@ -316,6 +341,7 @@ const CURATED_LEARNING_REEL_SOURCES = [
         aliases: ['bj fogg', 'b j fogg', 'behavior design lab', 'stanford behavior design lab'],
         topics: {
             behavior_change_science: ['tiny habits', 'behavior design', 'habit design'],
+            workout_motivation: ['tiny habits exercise', 'workout habits', 'behavior design workouts'],
             mindset: ['tiny habits motivation', 'behavior design confidence']
         }
     },
