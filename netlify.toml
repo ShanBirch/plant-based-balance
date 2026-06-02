@@ -72,6 +72,10 @@
   function = "share-progress-photo"
   path = "/api/share-progress-photo"
 
+[[edge_functions]]
+  function = "reset-walkthrough-test-state"
+  path = "/api/reset-walkthrough-test-state"
+
 # Admin AI Coach Edge Function
 [[edge_functions]]
   function = "admin-ai-coach"

@@ -11332,6 +11332,9 @@ if(!window._pbbIsIOSSafari) {
                 <button onclick="replayFeatureTour()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>💡</span> Replay App Tour
                 </button>
+                <button id="btn-reset-walkthrough-test-state" onclick="resetWalkthroughTestState()" style="display:none; background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; padding:12px 20px; border-radius:8px; font-weight:700; font-size:0.9rem; cursor:pointer; align-items:center; justify-content:center; gap:8px;">
+                    <span>TEST</span> Reset Walkthrough Test
+                </button>
                 <button id="btn-replay-weekly-wrapped" onclick="replayWeeklyWrapped()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🎞️</span> Replay Weekly Wrapped
                 </button>
@@ -12682,6 +12685,112 @@ if(!window._pbbIsIOSSafari) {
     try { localStorage.removeItem('featureTourComplete'); } catch(e){}
     startFeatureTour('full');
   };
+
+  function clearWalkthroughTourStorage(){
+    try {
+      localStorage.removeItem('featureTourComplete');
+      localStorage.removeItem('pbb_walkthrough_xp_awarded_v2');
+      var userId = window.currentUser && window.currentUser.id ? window.currentUser.id : null;
+      if (userId) localStorage.removeItem('pbb_walkthrough_xp_awarded_v2:' + userId);
+      Object.keys(localStorage).forEach(function(key){
+        if (key.indexOf('pbb_walkthrough_xp_awarded_v2') === 0) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch(e) {
+      console.warn('[tour] could not clear walkthrough storage', e);
+    }
+  }
+
+  window.getWalkthroughTestAccountFlag = async function(){
+    if (window.currentUser && typeof window.currentUser.is_test_account !== 'undefined') {
+      return !!window.currentUser.is_test_account;
+    }
+    if (!(window.currentUser && window.currentUser.id) || !window.supabaseClient) return false;
+    try {
+      const { data, error } = await window.supabaseClient
+        .from('users')
+        .select('is_test_account')
+        .eq('id', window.currentUser.id)
+        .maybeSingle();
+      if (error) throw error;
+      if (window.currentUser && data && typeof data.is_test_account !== 'undefined') {
+        window.currentUser.is_test_account = !!data.is_test_account;
+      }
+      return !!(data && data.is_test_account);
+    } catch(e) {
+      console.warn('[tour] could not load test-account flag', e);
+      return false;
+    }
+  };
+
+  window.updateWalkthroughTestResetVisibility = async function(){
+    var btn = document.getElementById('btn-reset-walkthrough-test-state');
+    if (!btn) return;
+    var isTest = await window.getWalkthroughTestAccountFlag();
+    btn.style.display = isTest ? 'flex' : 'none';
+  };
+
+  window.resetWalkthroughTestState = async function(){
+    var btn = document.getElementById('btn-reset-walkthrough-test-state');
+    try {
+      var isTest = await window.getWalkthroughTestAccountFlag();
+      if (!isTest) {
+        if (typeof showToast === 'function') showToast('Walkthrough reset is only for test accounts.', 'error');
+        return;
+      }
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Resetting...';
+      }
+
+      var session = window.authHelpers && typeof window.authHelpers.getSession === 'function'
+        ? await window.authHelpers.getSession()
+        : null;
+      if (!session || !session.access_token) throw new Error('No active session');
+
+      var response = await fetch('/api/reset-walkthrough-test-state', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.access_token
+        },
+        body: JSON.stringify({})
+      });
+      var result = await response.json().catch(function(){ return {}; });
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Reset failed');
+      }
+
+      clearWalkthroughTourStorage();
+      if (typeof loadPointsWidget === 'function') {
+        try { await loadPointsWidget(); } catch(e) {}
+      }
+      if (typeof showToast === 'function') {
+        showToast('Walkthrough test reset. Starting fresh tour.', 'success');
+      }
+      startFeatureTour('full');
+    } catch(e) {
+      console.warn('[tour] reset walkthrough test state failed', e);
+      if (typeof showToast === 'function') showToast('Could not reset walkthrough test state.', 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>TEST</span> Reset Walkthrough Test';
+      }
+      window.updateWalkthroughTestResetVisibility();
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    window.updateWalkthroughTestResetVisibility();
+    var tries = 0;
+    var timer = setInterval(function(){
+      window.updateWalkthroughTestResetVisibility();
+      tries += 1;
+      if (tries >= 20 || (window.currentUser && window.currentUser.id)) clearInterval(timer);
+    }, 1000);
+  });
 })();
 </script>
 <!-- ========== END GUIDED FEATURE TOUR ========== -->
