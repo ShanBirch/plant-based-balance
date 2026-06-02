@@ -1,21 +1,21 @@
-import { createRequire } from 'node:module';
-
-const require = createRequire(import.meta.url);
+import learningReelSources from './_lib/learning-reel-sources.js';
+import clientContext from './_lib/client-context.js';
+import metaIgAccounts from './_lib/meta-ig-accounts.js';
 
 const {
     buildCuratedLearningReelQueries,
     findCuratedLearningReelSource,
     scoreCuratedLearningReelCandidate,
     LEARNING_REEL_TOPIC_LABELS,
-} = require('./_lib/learning-reel-sources.js');
+} = learningReelSources;
 const {
     findDuplicateLearningReels,
     mergeLearningReelContext,
     normalizeCoachDraftText,
     normalizeLearningReelItems,
     truncate,
-} = require('./_lib/client-context.js');
-const { resolveMetaIgAccessToken } = require('./_lib/meta-ig-accounts.js');
+} = clientContext;
+const { resolveMetaIgAccessToken } = metaIgAccounts;
 
 const DRIP_ID = 'shan_n_sunny_cocos_learning_drip_2026_06';
 const DEFAULT_TARGET_HANDLE = 'shan_n_sunny';
