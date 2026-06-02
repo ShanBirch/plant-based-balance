@@ -51,7 +51,7 @@ const TOPIC_SEQUENCE = [
 ];
 
 export const config = {
-    schedule: '17 * * * *',
+    schedule: '*/5 * * * *',
 };
 
 function getEnv(name) {

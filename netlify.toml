@@ -381,7 +381,7 @@
 
 # Coco's seven-day learning reel drip for Shannon's IG test thread.
 [functions."learning-reel-drip"]
-  schedule = "17 * * * *"
+  schedule = "*/5 * * * *"
 
 # Client/lead manager - routes permanent people, media, AI suspicion,
 # confused replies, and missing context into Needs You.
