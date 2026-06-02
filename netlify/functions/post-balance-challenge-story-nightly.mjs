@@ -1,10 +1,9 @@
-import { createRequire } from 'node:module';
+import publisher from './_lib/ig-story-publisher.js';
 
-const require = createRequire(import.meta.url);
 const {
     defaultBalanceChallengeStoryUrl,
     publishBalanceChallengeStory,
-} = require('./_lib/ig-story-publisher.js');
+} = publisher;
 
 export default async (req) => {
     let nextRun = null;
