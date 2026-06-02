@@ -4,16 +4,35 @@ const { _test } = await import('../netlify/functions/learning-reel-drip.mjs');
 
 const nowMs = Date.parse('2026-06-02T02:00:00.000Z');
 const plan = _test.buildInitialPlan(nowMs);
-assert.strictEqual(plan.length, 14);
+assert.strictEqual(plan.length, 168);
 assert.strictEqual(plan[0].topic_id, 'plant_based_cooking');
 assert.strictEqual(plan[1].topic_id, 'protein_science');
 assert.strictEqual(plan[3].topic_id, 'workout_motivation');
-assert.strictEqual(Date.parse(plan[1].due_at) - Date.parse(plan[0].due_at), 12 * 60 * 60 * 1000);
+assert.strictEqual(plan[14].topic_id, 'plant_based_cooking');
+assert.strictEqual(Date.parse(plan[1].due_at) - Date.parse(plan[0].due_at), 60 * 60 * 1000);
 
 const state = _test.normalizeDripState({ custom_data: {} }, nowMs);
 assert.strictEqual(state.id, 'shan_n_sunny_cocos_learning_drip_2026_06');
+assert.strictEqual(state.revision, 'hourly_168_v2');
 assert.strictEqual(state.status, 'active');
-assert.strictEqual(state.plan.length, 14);
+assert.strictEqual(state.total_sends, 168);
+assert.strictEqual(state.plan.length, 168);
+
+const upgraded = _test.normalizeDripState({
+    custom_data: {
+        learning_reel_drip: {
+            id: state.id,
+            status: 'active',
+            interval_ms: 12 * 60 * 60 * 1000,
+            plan: plan.slice(0, 14),
+            sent: [{ video_id: 'already-sent' }],
+        },
+    },
+}, nowMs);
+assert.strictEqual(upgraded.revision, 'hourly_168_v2');
+assert.strictEqual(upgraded.previous_plan_count, 14);
+assert.strictEqual(upgraded.plan.length, 168);
+assert.strictEqual(upgraded.sent[0].video_id, 'already-sent');
 
 const due = _test.nextDuePlanItem(state, nowMs);
 assert.strictEqual(due.topic_id, 'plant_based_cooking');

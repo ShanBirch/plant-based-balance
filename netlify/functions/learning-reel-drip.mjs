@@ -25,10 +25,13 @@ const SOURCE = 'learning_reel_drip_instagram_graph';
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const LEGACY_GRAPH_SUBSCRIBER_PREFIX = 'meta_ig:';
 const DEFAULT_AUTOSTART_UNTIL = '2026-06-10T00:00:00+10:00';
-const DEFAULT_INTERVAL_MS = 12 * 60 * 60 * 1000;
-const PAUSE_RECHECK_MS = 3 * 60 * 60 * 1000;
-const MAX_SEARCH_QUERIES = 5;
-const MAX_SEARCH_RESULTS_PER_QUERY = 6;
+const DRIP_REVISION = 'hourly_168_v2';
+const DEFAULT_INTERVAL_MS = 60 * 60 * 1000;
+const DEFAULT_DRIP_DAYS = 7;
+const DEFAULT_TOTAL_SENDS = DEFAULT_DRIP_DAYS * 24;
+const PAUSE_RECHECK_MS = 60 * 60 * 1000;
+const MAX_SEARCH_QUERIES = 3;
+const MAX_SEARCH_RESULTS_PER_QUERY = 12;
 const MAX_DETAIL_IDS = 50;
 const TOPIC_SEQUENCE = [
     'plant_based_cooking',
@@ -231,19 +234,36 @@ function configuredTopics() {
     const raw = getEnv('LEARNING_REEL_DRIP_TOPICS');
     if (!raw) return TOPIC_SEQUENCE;
     const values = raw.split(',').map(value => value.trim()).filter(Boolean);
-    return values.filter(topicId => LEARNING_REEL_TOPIC_LABELS[topicId]);
+    const topics = values.filter(topicId => LEARNING_REEL_TOPIC_LABELS[topicId]);
+    return topics.length ? topics : TOPIC_SEQUENCE;
+}
+
+function configuredIntervalMs() {
+    return Math.max(60 * 60 * 1000, Number(getEnv('LEARNING_REEL_DRIP_INTERVAL_MS') || DEFAULT_INTERVAL_MS));
+}
+
+function configuredTotalSends() {
+    const explicit = Number(getEnv('LEARNING_REEL_DRIP_TOTAL_SENDS') || 0);
+    if (Number.isFinite(explicit) && explicit > 0) return Math.min(336, Math.floor(explicit));
+    const days = Number(getEnv('LEARNING_REEL_DRIP_DAYS') || DEFAULT_DRIP_DAYS);
+    const safeDays = Number.isFinite(days) && days > 0 ? Math.min(14, days) : DEFAULT_DRIP_DAYS;
+    return Math.max(1, Math.floor(safeDays * 24));
 }
 
 function buildInitialPlan(nowMs = Date.now()) {
     const topics = configuredTopics();
-    const intervalMs = Math.max(60 * 60 * 1000, Number(getEnv('LEARNING_REEL_DRIP_INTERVAL_MS') || DEFAULT_INTERVAL_MS));
-    return topics.map((topicId, index) => ({
-        index,
-        topic_id: topicId,
-        topic_label: LEARNING_REEL_TOPIC_LABELS[topicId] || topicId,
-        due_at: new Date(nowMs + (index * intervalMs)).toISOString(),
-        status: 'pending',
-    }));
+    const intervalMs = configuredIntervalMs();
+    const totalSends = configuredTotalSends();
+    return Array.from({ length: totalSends }, (_, index) => {
+        const topicId = topics[index % topics.length];
+        return {
+            index,
+            topic_id: topicId,
+            topic_label: LEARNING_REEL_TOPIC_LABELS[topicId] || topicId,
+            due_at: new Date(nowMs + (index * intervalMs)).toISOString(),
+            status: 'pending',
+        };
+    });
 }
 
 function autostartAllowed(nowMs = Date.now()) {
@@ -257,9 +277,29 @@ function normalizeDripState(thread, nowMs = Date.now()) {
     const customData = safeObject(thread.custom_data);
     const existing = safeObject(customData.learning_reel_drip);
     if (existing.id === DRIP_ID && Array.isArray(existing.plan)) {
+        const totalSends = configuredTotalSends();
+        const intervalMs = configuredIntervalMs();
+        if (existing.revision !== DRIP_REVISION || existing.plan.length !== totalSends || Number(existing.interval_ms) !== intervalMs) {
+            const replannedAt = new Date(nowMs).toISOString();
+            const plan = buildInitialPlan(nowMs);
+            return {
+                ...existing,
+                status: existing.status === 'stopped' ? 'stopped' : 'active',
+                revision: DRIP_REVISION,
+                previous_revision: existing.revision || 'initial_14_reels',
+                previous_plan_count: existing.plan.length,
+                replanned_at: replannedAt,
+                updated_at: replannedAt,
+                next_send_at: plan[0]?.due_at || null,
+                interval_ms: intervalMs,
+                total_sends: totalSends,
+                plan,
+            };
+        }
         return {
             ...existing,
             status: existing.status || 'active',
+            revision: existing.revision || DRIP_REVISION,
             plan: existing.plan,
         };
     }
@@ -276,13 +316,15 @@ function normalizeDripState(thread, nowMs = Date.now()) {
     return {
         id: DRIP_ID,
         status: 'active',
+        revision: DRIP_REVISION,
         target_handle: DEFAULT_TARGET_HANDLE,
         bot_account: COCOS_BOT_ACCOUNT,
         algorithm_fork: COCOS_ALGORITHM_FORK,
         started_at: startedAt,
         updated_at: startedAt,
         next_send_at: plan[0]?.due_at || null,
-        interval_ms: Math.max(60 * 60 * 1000, Number(getEnv('LEARNING_REEL_DRIP_INTERVAL_MS') || DEFAULT_INTERVAL_MS)),
+        interval_ms: configuredIntervalMs(),
+        total_sends: configuredTotalSends(),
         plan,
         sent: [],
         skipped: [],
