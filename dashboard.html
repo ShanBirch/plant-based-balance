@@ -12278,7 +12278,6 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
     { tab:'dashboard', sel:'#monthly-raffle-section', title:'Monthly Raffle', body:"Each month you have the first 3 days to enter the raffle. Every entrant pays coins into a shared pool — one winner takes the whole pool plus a rare skin.", condition: function(){ var s = document.getElementById('monthly-raffle-section'); return s && s.style.display !== 'none'; } },
 
-    { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Challenge point breakdowns', body:"Open a challenge leaderboard and select any participant to see where their XP is coming from: nutrition, workouts, weigh-ins, learning, posts, and bonuses." },
     { tab:'dashboard', sel:'#calorie-tracker-widget', title:'Calorie tracker widget', body:"Home shows calories and macros, with one-tap logging for photos, barcodes, typed meals, manual macros, Build-a-Meal, and recent meals.", quick: true, xpReward:'nutrition' },
     { tab:'dashboard', sel:'#calorie-tracker-widget .nutrition-range-toggle', title:'Day, week, month nutrition', body:"Switch calories and macros between today, this week, and this month so you can see what is left in the full period." },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically.", quick: true },
@@ -13227,13 +13226,6 @@ if(!window._pbbIsIOSSafari) {
       sel: '#form-check-quick-card',
       title: 'Form Checks',
       body: "Not sure if a movement looks right? Film a quick clip and send it to Shannon for a technique check. Workouts also have an in-session form-check button."
-    },
-    {
-      id: 'challenge-point-breakdowns-v1',
-      tab: 'dashboard',
-      sel: '#home-challenges-container,#home-challenges-list,#home-challenges-empty',
-      title: 'Challenge point breakdowns',
-      body: "Challenge leaderboards now show where each person's XP is coming from. Open a leaderboard, select a participant, and see their nutrition, workout, weigh-in, learning, post, and bonus XP."
     },
     {
       id: 'friday-weigh-in-feed-share-v1',
