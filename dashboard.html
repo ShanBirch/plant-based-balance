@@ -12257,7 +12257,6 @@ if(!window._pbbIsIOSSafari) {
         } catch(e) { console.warn('[tour] could not open Ask Balance palette', e); }
         await new Promise(function(r){ setTimeout(r, 260); });
       } },
-    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Feature Drops', body:"When Balance adds something new, you will get a Feature Drop on your next app open. Tap Show me and Balance points you to the feature and explains what changed." },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do.", quick: true },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Level character rewards', body:"Level 55 unlocks Character 1 first. Every 5 levels after that unlocks the next numbered 3D character skin in story order, with the same celebration and Equip Now flow." },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
@@ -12827,13 +12826,6 @@ if(!window._pbbIsIOSSafari) {
   // -------------------------------------------------------
 
   var allFeatures = [
-    {
-      id: 'feature-drop-popups-v1',
-      tab: 'dashboard',
-      sel: '#tamagotchi-widget-container',
-      title: 'Feature Drops',
-      body: "When Balance adds something new, you will get a Feature Drop like this on your next app open. Tap Show me and Balance points you to the feature and explains what changed."
-    },
     {
       id: 'ask-balance-long-hold-only-v1',
       tab: 'dashboard',
