@@ -12279,7 +12279,6 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#monthly-raffle-section', title:'Monthly Raffle', body:"Each month you have the first 3 days to enter the raffle. Every entrant pays coins into a shared pool — one winner takes the whole pool plus a rare skin.", condition: function(){ var s = document.getElementById('monthly-raffle-section'); return s && s.style.display !== 'none'; } },
 
     { tab:'dashboard', sel:'#calorie-tracker-widget', title:'Calorie tracker widget', body:"Home shows calories and macros, with one-tap logging for photos, barcodes, typed meals, manual macros, Build-a-Meal, and recent meals.", quick: true, xpReward:'nutrition' },
-    { tab:'dashboard', sel:'#calorie-tracker-widget .nutrition-range-toggle', title:'Day, week, month nutrition', body:"Switch calories and macros between today, this week, and this month so you can see what is left in the full period." },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically.", quick: true },
     { tab:'meals', sel:'[onclick*="openMealFromGallery"]', title:'Upload from your photos', body:"Took a photo of your meal earlier? Tap the gallery icon to pick it from your photo library and log it later." },
     { tab:'meals', sel:'[title="Scan barcode"]', title:'Barcode scanner', body:"Scan any food packaging barcode to instantly pull up its nutrition info and log it." },
@@ -13168,13 +13167,6 @@ if(!window._pbbIsIOSSafari) {
       sel: '.meal-icon-btn[onclick*="openRecentMealsModal"]',
       title: 'Recent & saved meals',
       body: "Jump back to any meal you've logged before — tap the clock to re-log a recent or saved meal in one tap."
-    },
-    {
-      id: 'nutrition-period-summary-v1',
-      tab: 'dashboard',
-      sel: '#calorie-tracker-widget .nutrition-range-toggle',
-      title: 'Day, week, month nutrition',
-      body: "Switch calories and macros between today, this week, and this month so you can see what is left in the full period."
     },
     {
       id: 'feed-composer-text-media-v1',
