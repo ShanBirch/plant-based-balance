@@ -46,6 +46,19 @@ assert.strictEqual(nextState.plan[0].status, 'sent');
 assert.strictEqual(nextState.status, 'active');
 assert.strictEqual(nextState.next_send_at, state.plan[1].due_at);
 
+assert.deepStrictEqual(_test.youtubeVideoIdsFromText(
+    'save this for later https://www.youtube.com/shorts/czkGj5vJEFQ'
+), ['czkGj5vJEFQ']);
+assert.deepStrictEqual(_test.youtubeVideoIdsFromText(
+    'watch https://youtu.be/AgPLP9iZnMo?t=1 and https://www.youtube.com/watch?v=F0BkuN8MPtQ'
+), ['AgPLP9iZnMo', 'F0BkuN8MPtQ']);
+const stateVideoIds = _test.sentVideoIdsFromState({
+    sent: [{ video_id: 'czkGj5vJEFQ' }],
+    plan: [{ video_id: 'AgPLP9iZnMo' }],
+});
+assert.ok(stateVideoIds.has('czkgj5vjefq'));
+assert.ok(stateVideoIds.has('agplp9iznmo'));
+
 assert.strictEqual(_test.shouldHoldPausedState({
     status: 'paused',
     next_send_at: new Date(nowMs + 60 * 60 * 1000).toISOString(),

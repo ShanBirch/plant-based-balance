@@ -535,11 +535,57 @@ async function persistThreadState(thread, state, extraPatch = {}) {
     return thread;
 }
 
+function normalizeVideoId(value) {
+    return cleanString(value, 120).toLowerCase();
+}
+
 function sentVideoIdsFromState(state) {
     return new Set([
         ...(Array.isArray(state.sent) ? state.sent : []).map(item => item?.video_id),
         ...(Array.isArray(state.plan) ? state.plan : []).map(item => item?.video_id),
-    ].map(value => cleanString(value, 120)).filter(Boolean));
+    ].map(normalizeVideoId).filter(Boolean));
+}
+
+function youtubeVideoIdsFromText(value) {
+    const text = cleanString(value, 8000);
+    const matches = [];
+    const patterns = [
+        /youtube\.com\/shorts\/([A-Za-z0-9_-]{6,})/gi,
+        /youtube\.com\/watch\?[^#\s]*\bv=([A-Za-z0-9_-]{6,})/gi,
+        /youtu\.be\/([A-Za-z0-9_-]{6,})/gi,
+    ];
+    for (const pattern of patterns) {
+        let match;
+        while ((match = pattern.exec(text))) {
+            const videoId = cleanString(match[1], 120);
+            if (videoId) matches.push({ videoId, index: match.index });
+        }
+    }
+    const ids = [];
+    const seen = new Set();
+    for (const match of matches.sort((a, b) => a.index - b.index)) {
+        const key = normalizeVideoId(match.videoId);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        ids.push(match.videoId);
+    }
+    return ids;
+}
+
+async function loadRecentOutboundLearningReelVideoIds(threadId, limit = 100) {
+    if (!threadId) return new Set();
+    try {
+        const rows = await supabase(
+            `ig_messages?select=text,source,created_at&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.out&order=created_at.desc&limit=${limit}`
+        );
+        return new Set((Array.isArray(rows) ? rows : [])
+            .flatMap(row => youtubeVideoIdsFromText(row?.text))
+            .map(normalizeVideoId)
+            .filter(Boolean));
+    } catch (error) {
+        console.warn('[learning-reel-drip] could not load recent outbound reel ids:', error?.message || error);
+        return new Set();
+    }
 }
 
 function veganSafetyTextForCandidate(candidate = {}) {
@@ -674,7 +720,13 @@ function candidateFromResult(raw, detail, topicId, query) {
     };
 }
 
-async function findReelForTopic({ topicId, thread, state, veganSafetyRequirement = { required: false, reasons: [] } }) {
+async function findReelForTopic({
+    topicId,
+    thread,
+    state,
+    veganSafetyRequirement = { required: false, reasons: [] },
+    existingVideoIds = new Set(),
+}) {
     const queries = buildCuratedLearningReelQueries(topicId, { perSource: 1 }).slice(0, MAX_SEARCH_QUERIES);
     const seenIds = new Set();
     const rawCandidates = [];
@@ -689,7 +741,10 @@ async function findReelForTopic({ topicId, thread, state, veganSafetyRequirement
     }
 
     const details = await youtubeVideoDetails(rawCandidates.map(candidate => candidate.item?.id?.videoId).filter(Boolean));
-    const existingSentIds = sentVideoIdsFromState(state);
+    const existingSentIds = new Set([
+        ...sentVideoIdsFromState(state),
+        ...[...(existingVideoIds || [])].map(normalizeVideoId).filter(Boolean),
+    ]);
     let duplicateRejectedCount = 0;
     let veganRejectedCount = 0;
     const veganRejectedSamples = [];
@@ -707,7 +762,7 @@ async function findReelForTopic({ topicId, thread, state, veganSafetyRequirement
         };
     }).filter(candidate => {
         if (!candidate.video_id) return false;
-        if (existingSentIds.has(candidate.video_id)) {
+        if (existingSentIds.has(normalizeVideoId(candidate.video_id))) {
             duplicateRejectedCount += 1;
             return false;
         }
@@ -730,7 +785,12 @@ async function findReelForTopic({ topicId, thread, state, veganSafetyRequirement
             source: SOURCE,
             platform: 'youtube',
         });
-        return !findDuplicateLearningReels(thread, normalized).length;
+        const threadDuplicates = findDuplicateLearningReels(thread, normalized);
+        if (threadDuplicates.length) {
+            duplicateRejectedCount += 1;
+            return false;
+        }
+        return true;
     }).sort((a, b) => b.score - a.score);
 
     return {
@@ -918,12 +978,22 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now(), veganSafet
         return { sent: false, blocker: 'standard_24h_messaging_window_closed', state: next };
     }
 
-    const reelResult = await findReelForTopic({ topicId: item.topic_id, thread, state, veganSafetyRequirement });
+    const recentOutboundVideoIds = await loadRecentOutboundLearningReelVideoIds(thread.id);
+    const reelResult = await findReelForTopic({
+        topicId: item.topic_id,
+        thread,
+        state,
+        veganSafetyRequirement,
+        existingVideoIds: recentOutboundVideoIds,
+    });
     const reel = reelResult.candidate;
     if (!reel) {
-        const skipReason = veganSafetyRequirement.required && reelResult.vegan_rejected_count > 0
-            ? 'no_vegan_safe_candidate'
-            : 'no_curated_candidate';
+        let skipReason = 'no_curated_candidate';
+        if (reelResult.duplicate_rejected_count > 0) {
+            skipReason = 'no_non_duplicate_candidate';
+        } else if (veganSafetyRequirement.required && reelResult.vegan_rejected_count > 0) {
+            skipReason = 'no_vegan_safe_candidate';
+        }
         const next = updatePlanItem(state, item.index, {
             status: `skipped_${skipReason}`,
             skipped_at: new Date(nowMs).toISOString(),
@@ -939,12 +1009,43 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now(), veganSafet
                 reason: skipReason,
                 vegan_safe_required: veganSafetyRequirement.required || undefined,
                 vegan_safety_reasons: veganSafetyRequirement.reasons || undefined,
+                duplicate_rejected_count: reelResult.duplicate_rejected_count || undefined,
                 vegan_rejected_count: reelResult.vegan_rejected_count || undefined,
                 vegan_rejected_samples: reelResult.vegan_rejected_samples || undefined,
             },
         ].slice(-30);
         await persistThreadState(thread, next);
         return { sent: false, blocker: skipReason, state: next };
+    }
+
+    const latestOutboundVideoIds = await loadRecentOutboundLearningReelVideoIds(thread.id);
+    if (latestOutboundVideoIds.has(normalizeVideoId(reel.video_id))) {
+        const skippedAt = new Date(nowMs).toISOString();
+        const next = updatePlanItem(state, item.index, {
+            status: 'skipped_duplicate_reel',
+            skipped_at: skippedAt,
+            video_id: reel.video_id,
+            title: reel.title,
+            channel_title: reel.channel_title,
+            url: reel.url,
+            duplicate_source: 'ig_messages_pre_send',
+        });
+        next.skipped = [
+            ...(Array.isArray(state.skipped) ? state.skipped : []),
+            {
+                topic_id: item.topic_id,
+                topic_label: item.topic_label,
+                skipped_at: skippedAt,
+                reason: 'duplicate_learning_reel',
+                duplicate_source: 'ig_messages_pre_send',
+                video_id: reel.video_id,
+                title: reel.title,
+                channel_title: reel.channel_title,
+                url: reel.url,
+            },
+        ].slice(-30);
+        await persistThreadState(thread, next);
+        return { sent: false, blocker: 'duplicate_learning_reel', state: next };
     }
 
     const { token, source: tokenSource } = await resolveMetaIgAccessToken(graph.accountId, supabase);
@@ -1153,6 +1254,8 @@ export const _test = {
     normalizeDripState,
     resolveVeganSafetyRequirement,
     resolveThreadGraph,
+    sentVideoIdsFromState,
     shouldHoldPausedState,
     updatePlanItem,
+    youtubeVideoIdsFromText,
 };
