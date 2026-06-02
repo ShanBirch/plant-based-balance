@@ -59,6 +59,49 @@ const stateVideoIds = _test.sentVideoIdsFromState({
 assert.ok(stateVideoIds.has('czkgj5vjefq'));
 assert.ok(stateVideoIds.has('agplp9iznmo'));
 
+assert.strictEqual(_test.sourceDiversityKey('Jeff Nippard'), 'jeff nippard');
+assert.strictEqual(_test.learningReelSourceKey({
+    source_id: 'jeff_nippard',
+    channel_title: 'Jeff Nippard',
+}), 'jeff nippard');
+const recentSourceKeys = _test.recentLearningReelSourceKeys({
+    custom_data: {
+        learning_reels: {
+            history: [{
+                video_id: 'older-jeff',
+                channel_title: 'Jeff Nippard',
+                sent_at: '2026-06-02T00:00:00.000Z',
+            }],
+        },
+    },
+}, {
+    sent: [
+        {
+            video_id: 'latest-jeff',
+            source_id: 'jeff_nippard',
+            sent_at: '2026-06-02T01:00:00.000Z',
+        },
+        {
+            video_id: 'rp-one',
+            source_id: 'renaissance_periodization',
+            sent_at: '2026-06-01T23:00:00.000Z',
+        },
+    ],
+});
+assert.deepStrictEqual(recentSourceKeys.slice(0, 3), [
+    'jeff nippard',
+    'jeff nippard',
+    'renaissance periodization',
+]);
+assert.strictEqual(_test.shouldDeferCandidateForSourceMix(
+    { source_id: 'jeff_nippard', channel_title: 'Jeff Nippard' },
+    recentSourceKeys
+), true);
+assert.strictEqual(_test.shouldDeferCandidateForSourceMix(
+    { source_id: 'athlean_x', channel_title: 'ATHLEAN-X' },
+    recentSourceKeys
+), false);
+
 assert.strictEqual(_test.shouldHoldPausedState({
     status: 'paused',
     next_send_at: new Date(nowMs + 60 * 60 * 1000).toISOString(),

@@ -30,9 +30,11 @@ const DEFAULT_INTERVAL_MS = 60 * 60 * 1000;
 const DEFAULT_DRIP_DAYS = 7;
 const DEFAULT_TOTAL_SENDS = DEFAULT_DRIP_DAYS * 24;
 const PAUSE_RECHECK_MS = 60 * 60 * 1000;
-const MAX_SEARCH_QUERIES = 3;
+const MAX_SEARCH_QUERIES = 8;
 const MAX_SEARCH_RESULTS_PER_QUERY = 12;
 const MAX_DETAIL_IDS = 50;
+const RECENT_SOURCE_MIX_WINDOW = 8;
+const MAX_RECENT_SAME_SOURCE = 2;
 const VEGAN_SAFE_FOOD_TOPIC_IDS = new Set([
     'plant_based_cooking',
     'meal_prep_planning',
@@ -588,6 +590,105 @@ async function loadRecentOutboundLearningReelVideoIds(threadId, limit = 100) {
     }
 }
 
+function sourceDiversityKey(value) {
+    return cleanString(value, 180)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+function learningReelSourceKey(item = {}) {
+    return sourceDiversityKey(
+        item.source_id
+        || item.sourceId
+        || item.channel_id
+        || item.channelId
+        || item.channel_title
+        || item.channelTitle
+        || item.channel
+        || item.source
+        || ''
+    );
+}
+
+function learningReelTimestampMs(item = {}) {
+    const ts = Date.parse(
+        item.sent_at
+        || item.sentAt
+        || item.created_at
+        || item.createdAt
+        || item.updated_at
+        || item.updatedAt
+        || ''
+    );
+    return Number.isFinite(ts) ? ts : 0;
+}
+
+function collectLearningReelItems(value, output = [], depth = 0) {
+    if (!value || depth > 3) return output;
+    if (Array.isArray(value)) {
+        for (const item of value) collectLearningReelItems(item, output, depth + 1);
+        return output;
+    }
+    if (typeof value !== 'object') return output;
+
+    if (
+        value.video_id
+        || value.videoId
+        || value.url
+        || value.channel_title
+        || value.channelTitle
+        || value.source_id
+        || value.sourceId
+    ) {
+        output.push(value);
+    }
+
+    for (const key of ['history', 'items', 'recent', 'sent', 'reels', 'videos', 'learning_reels', 'learningReels']) {
+        if (value[key]) collectLearningReelItems(value[key], output, depth + 1);
+    }
+    return output;
+}
+
+function recentLearningReelSourceKeys(thread = {}, state = {}, limit = RECENT_SOURCE_MIX_WINDOW) {
+    const customData = safeObject(thread.custom_data);
+    const drip = safeObject(customData.learning_reel_drip);
+    const items = [
+        ...collectLearningReelItems(Array.isArray(state.sent) ? state.sent : []),
+        ...collectLearningReelItems((Array.isArray(state.plan) ? state.plan : []).filter(item => item?.status === 'sent')),
+        ...collectLearningReelItems(drip.sent),
+        ...collectLearningReelItems((Array.isArray(drip.plan) ? drip.plan : []).filter(item => item?.status === 'sent')),
+        ...collectLearningReelItems(customData.learning_reels),
+        ...collectLearningReelItems(customData.learningReels),
+        ...collectLearningReelItems(customData.learning_reel_context),
+        ...collectLearningReelItems(customData.learningReelContext),
+    ];
+    const seen = new Set();
+    return items
+        .map((item, index) => ({ item, index }))
+        .filter(({ item }) => learningReelSourceKey(item))
+        .sort((a, b) => {
+            const delta = learningReelTimestampMs(b.item) - learningReelTimestampMs(a.item);
+            return delta || b.index - a.index;
+        })
+        .filter(({ item }) => {
+            const identity = normalizeVideoId(item.video_id || item.videoId || item.url || `${learningReelSourceKey(item)}:${learningReelTimestampMs(item)}`);
+            if (seen.has(identity)) return false;
+            seen.add(identity);
+            return true;
+        })
+        .map(({ item }) => learningReelSourceKey(item))
+        .slice(0, Math.max(1, limit));
+}
+
+function shouldDeferCandidateForSourceMix(candidate = {}, recentSourceKeys = []) {
+    const key = learningReelSourceKey(candidate);
+    if (!key) return false;
+    const recent = recentSourceKeys.slice(0, RECENT_SOURCE_MIX_WINDOW);
+    if (recent[0] === key) return true;
+    return recent.filter(sourceKey => sourceKey === key).length >= MAX_RECENT_SAME_SOURCE;
+}
+
 function veganSafetyTextForCandidate(candidate = {}) {
     return [
         candidate.title,
@@ -747,8 +848,10 @@ async function findReelForTopic({
     ]);
     let duplicateRejectedCount = 0;
     let veganRejectedCount = 0;
+    let sourceMixDeferredCount = 0;
     const veganRejectedSamples = [];
-    const candidates = rawCandidates.map(({ query, item }) => {
+    const recentSourceKeys = recentLearningReelSourceKeys(thread, state);
+    const eligibleCandidates = rawCandidates.map(({ query, item }) => {
         const detail = details.get(item?.id?.videoId) || {};
         const candidate = candidateFromResult(item, detail, topicId, query);
         const veganSafety = assessCandidateVeganSafety(candidate, {
@@ -791,12 +894,20 @@ async function findReelForTopic({
             return false;
         }
         return true;
-    }).sort((a, b) => b.score - a.score);
+    });
+    const sourceMixedCandidates = eligibleCandidates.filter(candidate => {
+        const defer = shouldDeferCandidateForSourceMix(candidate, recentSourceKeys);
+        if (defer) sourceMixDeferredCount += 1;
+        return !defer;
+    });
+    const candidates = (sourceMixedCandidates.length ? sourceMixedCandidates : eligibleCandidates)
+        .sort((a, b) => b.score - a.score);
 
     return {
         candidate: candidates[0] || null,
         raw_count: rawCandidates.length,
         duplicate_rejected_count: duplicateRejectedCount,
+        source_mix_deferred_count: sourceMixedCandidates.length ? sourceMixDeferredCount : 0,
         vegan_rejected_count: veganRejectedCount,
         vegan_rejected_samples: veganRejectedSamples,
     };
@@ -1086,7 +1197,10 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now(), veganSafet
         sent_at: sentAt,
         video_id: reel.video_id,
         title: reel.title,
+        source_id: reel.source_id,
+        source_kind: reel.source_kind,
         channel_title: reel.channel_title,
+        channel_id: reel.channel_id,
         url: reel.url,
         token_source: tokenSource,
         vegan_safe_required: veganSafetyRequirement.required || undefined,
@@ -1104,7 +1218,10 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now(), veganSafet
                 sent_at: sentAt,
                 video_id: reel.video_id,
                 title: reel.title,
+                source_id: reel.source_id,
+                source_kind: reel.source_kind,
                 channel_title: reel.channel_title,
+                channel_id: reel.channel_id,
                 url: reel.url,
                 vegan_safe_required: veganSafetyRequirement.required || undefined,
                 vegan_safety: reel.vegan_safety || undefined,
@@ -1250,12 +1367,16 @@ export const _test = {
     buildInitialPlan,
     buildVisibleMessage,
     candidateFromResult,
+    learningReelSourceKey,
     nextDuePlanItem,
     normalizeDripState,
+    recentLearningReelSourceKeys,
     resolveVeganSafetyRequirement,
     resolveThreadGraph,
     sentVideoIdsFromState,
+    shouldDeferCandidateForSourceMix,
     shouldHoldPausedState,
+    sourceDiversityKey,
     updatePlanItem,
     youtubeVideoIdsFromText,
 };
