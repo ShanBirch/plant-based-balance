@@ -5149,6 +5149,7 @@ Do not block just because the draft also answers prior unanswered messages from 
 
 Warn when the draft is usable but should be checked or softened.
 Warn when the draft adds a Shannon day/app/Sunshine update that was not directly asked for, especially if the lead asked about a specific topic like dating, where Shannon lives, or what something is like near him.
+Do not warn or block just because the draft answers Shannon's day, evening, sleep, weekend, plans, or what he is up to when the latest inbound directly asks about that. In that case, a short personal answer plus one tie-back is context-following rapport, not unsolicited filler.
 Warn when the draft over-covers: it reflects several details, adds praise, and adds a question when one normal reaction or direct answer would do.
 Warn with notification_reason "generic_voice" when the draft sounds like a generic coach, therapist, brand, or assistant: polished recap, broad encouragement, stock question, "keep me posted", "you've got this", "what does that look like for you", or a reply that could be sent to almost anyone despite a clear specific hook.
 Warn with notification_reason "generic_voice" when the draft starts with generic filler before touching the newest message, unless the newest message is genuinely heavy and needs a soft first line.
