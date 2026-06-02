@@ -11052,24 +11052,48 @@
             ].map(v => String(v || '').toLowerCase()).join(' ');
             const qualifierStage = String(data.qualifier?.stage || '').toLowerCase();
             const warning = data.challenge_offer_warning || data.challengeOfferWarning || {};
+            const linkUrl = getSignupLinkHandoffUrl(alert);
+            const latestText = needsYouLatestText(alert);
+            const draftText = getResolvedAlertMessage(alert);
+            const textForIntent = [
+                latestText,
+                draftText,
+                data.draft_text,
+                data.suggested_message,
+                decisionText,
+            ].map(v => String(v || '').toLowerCase()).join(' ');
+            const advancedQualifierStage = ['pitched', 'won'].includes(qualifierStage);
+            const linkIntent = /\b(send(?:\s+me)?\s+(?:the\s+)?link|link please|link pls|where do i sign|how do i start|sign\s?up|signup|join(?:ing)?|download(?:\s+the)?\s+app|app link|bio link|challenge link|let['\u2019]?s do|lets do|i['\u2019]?m in|im in|keen(?:\s+to)?\s+(?:join|start|do)|ready to start)\b/i.test(textForIntent);
+            const draftHasLinkHandoff = /https?:\/\/|here['\u2019]?s\s+(?:the\s+)?link|here is\s+(?:the\s+)?link|bio\.html|signup|sign up|download(?:\s+the)?\s+app/i.test(draftText);
+            const explicitManualHandoffFlag = !!(
+                data.lead_onboarding_handoff === true
+                || String(data.lead_onboarding_handoff || '').toLowerCase() === 'true'
+                || decisionText.includes('onboarding_handoff')
+                || decisionText.includes('onboarding_link_request_handoff')
+                || decisionText.includes('accepted_app_bridge')
+                || decisionText.includes('manual_onboarding')
+            );
+            const managerReviewLinkFlag = !!(
+                data.client_manager_review_required === true
+                || data.signup_link_manual_only === true
+                || decisionText.includes('client_manager_review_required')
+                || decisionText.includes('signup_link_manager_review')
+            );
+            const hasLiveLinkHandoffEvidence = !!(
+                explicitManualHandoffFlag
+                || draftHasLinkHandoff
+                || (linkUrl && (advancedQualifierStage || linkIntent || draftHasLinkHandoff))
+            );
             const challengeLinkNeedsApproval = !!(
                 warning?.required
-                && ['pitched', 'won'].includes(qualifierStage)
+                && advancedQualifierStage
                 && (DM_ALERT_TYPES.includes(alert?.alert_type) || FOLLOW_UP_ALERT_TYPES.includes(alert?.alert_type))
                 && !!(data.ig_thread_id || data.subscriber_id || data.ig_username)
             );
             return !!(
-                data.lead_onboarding_handoff === true
-                || String(data.lead_onboarding_handoff || '').toLowerCase() === 'true'
-                || data.client_manager_review_required === true
-                || data.signup_link_manual_only === true
-                || decisionText.includes('onboarding_handoff')
-                || decisionText.includes('onboarding_link_request_handoff')
-                || decisionText.includes('client_manager_review_required')
-                || decisionText.includes('signup_link_manager_review')
-                || decisionText.includes('accepted_app_bridge')
-                || decisionText.includes('manual_onboarding')
-                || challengeLinkNeedsApproval
+                challengeLinkNeedsApproval
+                || hasLiveLinkHandoffEvidence
+                || (managerReviewLinkFlag && (linkIntent || draftHasLinkHandoff || !!linkUrl))
             );
         }
 
@@ -17148,9 +17172,9 @@
             const linkUrl = getSignupLinkHandoffUrl(alert);
             const warning = getChallengeOfferWarningInfo(alert);
             const q = data.qualifier && typeof data.qualifier === 'object' ? data.qualifier : {};
-            const isNeedsYou = currentFeed === 'needs-you'
-                || isNeedsYouRoutedDmAlert(alert)
-                || isLeadOnboardingHandoff(alert)
+            const linkHandoff = isLeadOnboardingHandoff(alert);
+            const isNeedsYou = isNeedsYouRoutedDmAlert(alert)
+                || linkHandoff
                 || !!needsYouApprovalInfo?.ready;
             let tone = isNeedsYou ? 'needs-you' : 'safe';
             let pill = isNeedsYou ? 'Needs You' : 'Relevant';
@@ -17160,7 +17184,7 @@
                 body = `${mediaReview.label || 'Media'} attached, so Shannon should check it before replying.`;
             } else if (contextReview.required) {
                 body = `Needs You because the saved thread context may be incomplete: ${contextReview.label || 'the latest message depends on missing context'}.`;
-            } else if (isLeadOnboardingHandoff(alert) || data.signup_link_manual_only === true || data.client_manager_review_required === true) {
+            } else if (linkHandoff) {
                 body = linkUrl
                     ? 'Needs You because this is a signup/link handoff. Check the timing and approve the URL before it goes out.'
                     : 'Needs You because this is a signup/link handoff, but the final URL needs checking before anything is sent.';
