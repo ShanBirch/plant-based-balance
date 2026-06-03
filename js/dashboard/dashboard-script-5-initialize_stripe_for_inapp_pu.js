@@ -15452,13 +15452,19 @@ function dismissWorkoutRecovery() {
 
 // Initialize recovery check when user is loaded
 _onDomReady(function() {
-    // Wait a bit for user to be loaded
-    setTimeout(() => {
+    let recoveryCheckAttempts = 0;
+    const tryRecoveryCheck = () => {
+        recoveryCheckAttempts++;
         if (window.currentUser) {
             checkForUnsavedWorkout();
             flushPendingWorkoutSaves();
+            return;
         }
-    }, 2000);
+        if (recoveryCheckAttempts < 20) {
+            setTimeout(tryRecoveryCheck, 1000);
+        }
+    };
+    setTimeout(tryRecoveryCheck, 1000);
 });
 
 window.addEventListener('online', function() {

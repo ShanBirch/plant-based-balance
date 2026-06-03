@@ -45,6 +45,129 @@ function findVideoMatch(name) {
 // Inline video playback for workout cards
 let currentInlineVideo = null;
 
+function clearInlineVideoLoadTimer(video) {
+    if (video && video._pbbInlineLoadTimer) {
+        clearTimeout(video._pbbInlineLoadTimer);
+        video._pbbInlineLoadTimer = null;
+    }
+}
+
+function getInlineVideoStatus(container, videoUrl) {
+    if (!container) return null;
+
+    let status = container.querySelector('.inline-video-status');
+    if (status) return status;
+
+    status = document.createElement('div');
+    status.className = 'inline-video-status';
+    status.style.cssText = 'display:none; position:absolute; inset:0; z-index:4; background:rgba(2,6,23,0.86); color:white; align-items:center; justify-content:center; flex-direction:column; gap:10px; text-align:center; padding:16px; box-sizing:border-box;';
+    status.innerHTML = `
+        <div style="font-size:0.88rem; font-weight:750; line-height:1.35;">Video is stuck loading</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+            <button type="button" data-inline-video-retry style="border:none; background:#44FF44; color:#0f172a; border-radius:10px; min-height:38px; padding:8px 12px; font-weight:800; cursor:pointer;">Retry</button>
+            <button type="button" data-inline-video-open style="border:1px solid rgba(255,255,255,0.35); background:rgba(255,255,255,0.12); color:white; border-radius:10px; min-height:38px; padding:8px 12px; font-weight:800; cursor:pointer;">Open</button>
+        </div>
+    `;
+
+    const retryBtn = status.querySelector('[data-inline-video-retry]');
+    const openBtn = status.querySelector('[data-inline-video-open]');
+    if (retryBtn) {
+        retryBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            status.style.display = 'none';
+            const video = container.querySelector('video');
+            const playOverlay = container.querySelector('.inline-play-overlay');
+            if (video) {
+                stopInlineVideo(video);
+                startInlineVideoPlayback(container, video, videoUrl, playOverlay);
+            }
+        });
+    }
+    if (openBtn) {
+        openBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            window.open(videoUrl, '_blank', 'noopener');
+        });
+    }
+
+    container.appendChild(status);
+    return status;
+}
+
+function showInlineVideoStatus(container, videoUrl) {
+    const status = getInlineVideoStatus(container, videoUrl);
+    if (status) status.style.display = 'flex';
+}
+
+function hideInlineVideoStatus(container) {
+    const status = container ? container.querySelector('.inline-video-status') : null;
+    if (status) status.style.display = 'none';
+}
+
+function startInlineVideoPlayback(container, video, videoUrl, playOverlay) {
+    if (!container || !video || !videoUrl) return;
+
+    clearInlineVideoLoadTimer(video);
+    hideInlineVideoStatus(container);
+    cacheWorkoutVideosForOffline(videoUrl);
+
+    if (playOverlay) playOverlay.style.display = 'none';
+    video.controls = true;
+    video.muted = false;
+    video.playsInline = true;
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+
+    video.onerror = function() {
+        clearInlineVideoLoadTimer(video);
+        if (playOverlay) playOverlay.style.display = 'none';
+        video.controls = false;
+        showInlineVideoStatus(container, videoUrl);
+        currentInlineVideo = null;
+    };
+
+    video.onwaiting = function() {
+        clearInlineVideoLoadTimer(video);
+        video._pbbInlineLoadTimer = setTimeout(function() {
+            if (!video || video.readyState >= 2 || video.paused) return;
+            video.pause();
+            video.controls = false;
+            showInlineVideoStatus(container, videoUrl);
+            currentInlineVideo = null;
+        }, 8000);
+    };
+
+    video.oncanplay = function() {
+        clearInlineVideoLoadTimer(video);
+        hideInlineVideoStatus(container);
+    };
+
+    if (video.src !== videoUrl) {
+        video.src = videoUrl;
+        video.load();
+    }
+
+    video.play().catch(e => {
+        console.error("Inline video play error:", e);
+        clearInlineVideoLoadTimer(video);
+        video.controls = false;
+        showInlineVideoStatus(container, videoUrl);
+        currentInlineVideo = null;
+    });
+
+    video._pbbInlineLoadTimer = setTimeout(function() {
+        if (!video || video.readyState >= 2 || video.paused) return;
+        video.pause();
+        video.controls = false;
+        showInlineVideoStatus(container, videoUrl);
+        currentInlineVideo = null;
+    }, 8000);
+
+    currentInlineVideo = video;
+}
+
 function playInlineVideo(event, videoUrl) {
     event.stopPropagation();
     event.preventDefault();
@@ -65,33 +188,20 @@ function playInlineVideo(event, videoUrl) {
     // Check if video is already playing - if so, pause it
     if (!video.paused) {
         video.pause();
+        clearInlineVideoLoadTimer(video);
+        hideInlineVideoStatus(container);
         if (playOverlay) playOverlay.style.display = 'flex';
         video.controls = false;
         currentInlineVideo = null;
         return;
     }
 
-    // Hide play overlay and show controls
-    if (playOverlay) playOverlay.style.display = 'none';
-    video.controls = true;
-    video.muted = false;
-
-    // Set source directly on video element (currentSrc may be from source tag)
-    if (!video.currentSrc || !video.currentSrc.includes('backblazeb2')) {
-        video.src = videoUrl;
-    }
-
-    // Play the video
-    video.play().catch(e => {
-        console.error("Inline video play error:", e);
-        if (playOverlay) playOverlay.style.display = 'flex';
-        video.controls = false;
-    });
-
-    currentInlineVideo = video;
+    startInlineVideoPlayback(container, video, videoUrl, playOverlay);
 
     // Listen for video end to reset
     video.onended = function() {
+        clearInlineVideoLoadTimer(video);
+        hideInlineVideoStatus(container);
         if (playOverlay) playOverlay.style.display = 'flex';
         video.controls = false;
         video.currentTime = 0;
@@ -112,6 +222,7 @@ function playInlineVideo(event, videoUrl) {
 
 function stopInlineVideo(video) {
     if (!video) return;
+    clearInlineVideoLoadTimer(video);
     video.pause();
     video.currentTime = 0;
     video.controls = false;
