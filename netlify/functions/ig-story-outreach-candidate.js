@@ -148,6 +148,12 @@ function isLowContextStoryQuestion(text) {
     );
 }
 
+function isSongIdentificationQuestion(text) {
+    const value = cleanText(text, 160);
+    if (!value) return false;
+    return /\b(?:what(?:'s|s| is| was)?|which|name\s+(?:of|for))\s+(?:the\s+)?(?:song|track|tune|music|audio)\b|\b(?:what(?:'s|s| is| was)?|which)\s+(?:song|track|tune)\s+(?:is|was)\s+(?:this|that|it)\b|\b(?:what(?:'s|s| is| was))\s+(?:this|that|it)\s+(?:song|track|tune)\b/i.test(value);
+}
+
 const ANIMAL_WELFARE_SUPPORT_COMMENT = "i can't believe this happens, so sad. you okay?";
 const ANIMAL_WELFARE_ADVOCACY_COMMENT = "so true, it just normalises it hey";
 
@@ -261,6 +267,9 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     }
     if (sharedContent && /\bwhat\s+(?:breed|kind(?:\s+of\s+(?:dog|cat|pet|animal))?)\??/i.test(text)) {
         return SHARED_PET_BREED_COMMENT;
+    }
+    if (isSongIdentificationQuestion(text)) {
+        return 'good song choice';
     }
     if (/^are\s+\w+(?:,\s*)?good\s+work!?\??$/i.test(text)) {
         return 'good song choice';
@@ -456,6 +465,9 @@ function repairDraftCommentWithContext({ comment = '', description = '', visible
     if (/\bwhat(?:'s|s| is)\s+the\s+occasion\b/i.test(rawLower)) {
         if (/\bsong|music|track|audio\b/i.test(text)) return clean('good song choice');
         if (/\btable|restaurant|bar|cafe|dinner|lunch|drink\b/i.test(text)) return clean('what was the spot?');
+    }
+    if (isSongIdentificationQuestion(raw) || isSongIdentificationQuestion(normalized)) {
+        return clean('good song choice');
     }
     if (/\bwho\s+(?:took|shot|did)\s+(?:that|this|the)\s+(?:photo|pic|picture|shot)\b/i.test(rawLower)) {
         if (/\b(portrait|selfie|photo of|picture of|wearing|dress|shirt|jacket|necklace|looking to the side|looking off)\b/i.test(text)) {
@@ -862,6 +874,7 @@ Rules:
 - If existing relationship context already includes pet names or a recent pet-name question, do not ask for the pet names again. React to the animal or the known name instead.
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
 - If the answer is already visible in the story context, do not ask it. React to the known detail instead.
+- Never ask what song, track, tune, music, or audio it is. If music is the only clear handle, use a non-question reaction like "good song choice" or skip.
 - If the story shows an unfamiliar event, venue, class, food, hobby, or object, prefer the obvious small context question using the visible noun over "never seen that thing" or another dead-end observation.
 - If this is an existing client or active IG thread, do not write like a cold first touch. Keep it warmer but still short.
 - Do not use the person's name, profile name, username, @handle, or direct address.
@@ -875,6 +888,7 @@ Rules:
 - For a clear portrait/selfie, prefer a simple broad vibe like "looking good" over asking who took the photo.
 - For a clear portrait/selfie, prefer a simple broad vibe like "looking good" over asking who took the photo.
 - For plain selfie/pose videos, do not invent an occasion. If the only real handle is the visible song or audio, a tiny music comment is okay.
+- Music comments must be non-question reactions. Do not ask what song, track, tune, or audio it is.
 - For animal-cruelty, factory-farming, animal-welfare, or vegan-advocacy stories, do not make a normal light joke. If it is actual distress/cruelty and not graphic gore, plan a soft supportive check-in such as "i can't believe this happens, so sad. you okay?" If it is an advocacy, theory, or opinion text post, prefer "so true, it just normalises it hey".
 - If the story is heavy, political, sexual, violent, medical, grief-related, race/slur/discrimination-related, disaster-related, or otherwise sensitive, say to avoid commenting.
 - If the story is sad, low-mood, mental-health related, blurry, unclear, or hard to understand, say to avoid commenting.
@@ -920,6 +934,7 @@ Rules:
 - For pets with no visible name, "whats their name?" is often better than a dead-end compliment.
 - For animal stories with no visible pet name, prefer: oh so cute, whats their name?
 - If existing relationship context already includes pet names or a recent pet-name question, do not ask for the pet names again. React to the animal or the known name instead.
+- Never ask what song, track, tune, music, or audio it is. If music is the only clear handle, use a non-question reaction like "good song choice" or return an empty comment.
 - Treat audio transcript as supplemental. If audio/transcript and visible frames point to different subjects, do not use transcript-only details in the comment.
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
 - For visible locations, food, classes, hobbies, or odd objects, ask the obvious small context question if it feels natural.
@@ -932,6 +947,7 @@ Rules:
 - Keep appearance comments broad and harmless. Do not be flirty, sexual, body-specific, weight/physique-focused, or weirdly intense.
 - For a clear portrait/selfie, prefer a simple broad vibe like "looking good" over asking who took the photo.
 - For plain selfie/pose videos, do not invent an occasion. If the only real handle is the visible song or audio, a tiny music comment is okay.
+- Music comments must be non-question reactions. Do not ask what song, track, tune, or audio it is.
 - No name, profile name, username, @handle, or direct address.
 - No Balance/coaching/challenge/app/program/link/meal-plan pitch. Product/challenge talk belongs later in the lead-only DM qualifier after a direct help/start signal or 3-6 meaningful lead replies with real context.
 - No unsupported claims. Use only the story context.
@@ -1976,6 +1992,7 @@ Rules:
 - Do not ask a question if the story already answers it. If a pet name is visible, react to that pet/name; if no pet name is visible, asking "whats their name?" is good.
 - For animal stories with no visible pet name, prefer: oh so cute, whats their name?
 - If existing relationship context already includes pet names or a recent pet-name question, do not ask for the pet names again. React to the animal or the known name instead.
+- Never ask what song, track, tune, music, or audio it is. Popular or labelled music does not need identifying. If music is the only clear handle, use a non-question reaction like "good song choice" or set safe_to_comment=false.
 - Audio transcript is supplemental. If transcript/audio and the visible frames point to different subjects, never base the comment on transcript-only details; set safe_to_comment=false with safety_reason="audio_visual_mismatch" unless a clear visible-only comment exists.
 - If a beach/coastal story says "this is my clubbing" or "vamos a la playa", do not ask if it is a club or venue. Treat it as beach-over-clubbing contrast.
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
@@ -1989,6 +2006,7 @@ Rules:
 - Normal selfies and nights out can be simple. "looking good" or "looks like a fun night" is fine when it fits.
 - Keep appearance comments broad and harmless. Do not be flirty, sexual, body-specific, weight/physique-focused, or weirdly intense.
 - For plain selfie/pose videos, do not invent an occasion. If the only real handle is the visible song or audio, a tiny music comment is okay.
+- Music comments must be non-question reactions. Do not ask what song, track, tune, or audio it is.
 - If existing relationship context says this is a client, lead, or active thread, write warmer and more familiar, but still short and grounded.
 - Comment must not include the story owner's name, profile name, username, @handle, or a direct address like "Alice,".
 - Normal selfies and nights out can be simple. "looking good" or "looks like a fun night" is fine when it fits.

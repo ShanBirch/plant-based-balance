@@ -426,6 +426,27 @@ assert.strictEqual(
     'clipped lyric/effort comments should be repaired'
 );
 
+assert.strictEqual(
+    normalizeDraftComment('what song was that?', {
+        storyOwner: 'cookie17133.priv',
+        sharedContent: false,
+    }),
+    'good song choice',
+    'story opener should not ask the lead to identify obvious or attached music'
+);
+
+assert.strictEqual(
+    repairDraftCommentWithContext({
+        comment: 'what song was this?',
+        description: 'A mirror selfie video with attached popular music playing.',
+        visibleText: '',
+        storyOwner: 'cookie17133.priv',
+        sharedContent: false,
+    }),
+    'good song choice',
+    'story repair should turn song-ID questions into non-question reactions'
+);
+
 const transcriptNote = storyAnalysisTranscriptNote({
     audioTranscript: 'You need to watch this show immediately on Netflix.',
 });
