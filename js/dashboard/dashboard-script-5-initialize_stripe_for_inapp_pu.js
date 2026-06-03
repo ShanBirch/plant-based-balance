@@ -5892,6 +5892,8 @@ let currentWizardStep = 1;
 const totalWizardSteps = 19;
 const skippedWizardSlides = [2, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18];
 const finalWizardStep = 19;
+let wizardSlideTransitionTimer = null;
+const wizardSlideTransitionMs = 280;
 
 function setOnboardingScrollLock(locked) {
     try {
@@ -8811,12 +8813,36 @@ function startFitgotchiStory(onComplete) {
 }
 
 function updateWizardUI() {
+    const previouslyActiveSlide = document.querySelector('#onboarding-wizard .wizard-slide.slide-active');
+    const previousStepMatch = previouslyActiveSlide?.id?.match(/^slide-(\d+)$/);
+    const previousStep = previousStepMatch ? parseInt(previousStepMatch[1], 10) : currentWizardStep;
     normalizeWizardStep();
     closeOnboardingBlockingSurfaces();
     const wizardOverlay = document.getElementById('onboarding-wizard');
+    const wizardContent = document.querySelector('#onboarding-wizard .wizard-content');
+    const isChangingSlides = !!previouslyActiveSlide && previousStep !== currentWizardStep;
+    const isMovingBack = previousStep > currentWizardStep;
+
+    if (wizardSlideTransitionTimer) {
+        clearTimeout(wizardSlideTransitionTimer);
+        wizardSlideTransitionTimer = null;
+    }
+
     if (wizardOverlay) {
-        wizardOverlay.classList.toggle('wizard-chat-mode', currentWizardStep === 1);
+        const wasChatMode = wizardOverlay.classList.contains('wizard-chat-mode');
+        const isChatMode = currentWizardStep === 1;
+        if (wasChatMode !== isChatMode) {
+            wizardOverlay.classList.add('wizard-mode-transition');
+            setTimeout(() => wizardOverlay.classList.remove('wizard-mode-transition'), wizardSlideTransitionMs);
+        }
+        wizardOverlay.classList.toggle('wizard-chat-mode', isChatMode);
         if (currentWizardStep !== 1) wizardOverlay.classList.remove('wizard-chat-keyboard');
+    }
+
+    if (wizardContent && isChangingSlides) {
+        const transitionHeight = Math.max(wizardContent.offsetHeight || 0, previouslyActiveSlide.offsetHeight || 0, 280);
+        wizardContent.style.setProperty('--wizard-transition-height', transitionHeight + 'px');
+        wizardContent.classList.add('wizard-slide-transitioning');
     }
 
     // 1. Slides — use class-based transitions for smooth animation
@@ -8825,15 +8851,35 @@ function updateWizardUI() {
         if (!slide) continue;
         if (i === currentWizardStep) {
             // Show the target slide with entrance animation
-            slide.classList.remove('slide-exit');
+            slide.classList.remove('slide-exit', 'slide-exit-back', 'slide-enter-back');
             slide.style.display = 'block';
+            if (isMovingBack) slide.classList.add('slide-enter-back');
             // Force a reflow so the transition from opacity:0 → 1 actually animates
             slide.offsetHeight;
             slide.classList.add('slide-active');
+            slide.classList.remove('slide-enter-back');
+        } else if (slide === previouslyActiveSlide && isChangingSlides) {
+            slide.classList.remove('slide-active', 'slide-exit', 'slide-exit-back', 'slide-enter-back');
+            slide.style.display = 'block';
+            slide.offsetHeight;
+            if (isMovingBack) slide.classList.add('slide-exit-back');
+            slide.classList.add('slide-exit');
         } else {
-            slide.classList.remove('slide-active', 'slide-exit');
+            slide.classList.remove('slide-active', 'slide-exit', 'slide-exit-back', 'slide-enter-back');
             slide.style.display = 'none';
         }
+    }
+
+    if (wizardContent && isChangingSlides) {
+        wizardSlideTransitionTimer = setTimeout(() => {
+            document.querySelectorAll('#onboarding-wizard .wizard-slide.slide-exit').forEach(slide => {
+                slide.classList.remove('slide-exit', 'slide-exit-back');
+                if (!slide.classList.contains('slide-active')) slide.style.display = 'none';
+            });
+            wizardContent.classList.remove('wizard-slide-transitioning');
+            wizardContent.style.removeProperty('--wizard-transition-height');
+            wizardSlideTransitionTimer = null;
+        }, wizardSlideTransitionMs);
     }
 
     // 2. Dots - hide optional/deferred slides so first-run onboarding stays tight.
