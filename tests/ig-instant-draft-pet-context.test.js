@@ -133,4 +133,30 @@ assert.deepStrictEqual(
     ['That view is unreal']
 );
 
+const goldCoastBeachContext = buildNativeStoryOutreachContextBlock({
+    ig_username: 'vanessa_araujo_girl',
+    custom_data: {
+        last_story_outreach: {
+            story_id: 'story-gold-coast-sunset',
+            story_description: 'A selfie video at sunset with ocean water, waves, and sandy beach visible behind her on the Gold Coast.',
+            story_visible_text: '',
+            story_content_type: 'own_story',
+            sent_comment: 'that sunset looks unreal',
+            captured_at: '2026-06-03T09:58:00.000Z',
+        },
+    },
+}, 'Vanessa');
+
+assert.strictEqual(
+    hasKnownStoryLocationContext({ nativeStoryContextSummary: goldCoastBeachContext.summary }),
+    true
+);
+
+assert.deepStrictEqual(
+    finalizeDraftChunksFromRawText('{"messages":["Yeah that sunset looked unreal. Gold Coast sunsets are a cheat code.","Were you on the beach for it or did you grab a view from somewhere?"]}', {
+        nativeStoryContextSummary: goldCoastBeachContext.summary,
+    }),
+    ['Yeah that sunset looked unreal. Gold Coast sunsets are a cheat code.']
+);
+
 console.log('ig instant draft pet context tests passed');

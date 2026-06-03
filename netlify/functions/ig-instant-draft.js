@@ -1437,7 +1437,7 @@ function buildIgStoryReplyPromptContextBlock({ leadName, currentMessage = '', re
 STORY REPLY CONTEXT:
 ${rows.join('\n')}
 
-This is Shannon's story/post context, not ${leadName || 'the lead'}'s own message. Use it only to understand what they replied to. Do not write as if ${leadName || 'the lead'} logged, ate, posted, or said those story details unless their actual reply says so. If visible text or a location sticker already names a place, treat that place as known. Do not ask where it is, where they are watching from, or where they are based from that story.\nIf this is clearly them replying to Shannon's native story opener or a comment Shannon left on their post, that is a normal send-back path. If the context is unclear, the message suggests confusion or AI suspicion, or the inbound includes media that needs inspection, do not guess a reply. Mark it for Needs You instead.`;
+This is Shannon's story/post context, not ${leadName || 'the lead'}'s own message. Use it only to understand what they replied to. Do not write as if ${leadName || 'the lead'} logged, ate, posted, or said those story details unless their actual reply says so. If visible text or a location sticker already names a place, treat that place as known. Do not ask where it is, where they are watching from, or where they are based from that story. If the visual story context already shows beach, ocean, sand, coast, or waterfront, do not ask whether they were on/at the beach.\nIf this is clearly them replying to Shannon's native story opener or a comment Shannon left on their post, that is a normal send-back path. If the context is unclear, the message suggests confusion or AI suspicion, or the inbound includes media that needs inspection, do not guess a reply. Mark it for Needs You instead.`;
 
 }
 
@@ -1504,7 +1504,7 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
 NATIVE STORY OPENER CONTEXT:
 ${lines.join('\n')}
 
-Use this if the new message is replying to Shannon's native story opener. Do not pretend ${leadName || 'the lead'} said the story context themselves. If the story context identifies an animal as a cat, dog, rabbit, horse, or another species, keep that species exactly. If the species is unknown, stay neutral and never guess dog, cat, breed, or type from a pet name alone. If visible story text or a location sticker already names a place, treat that place as known and do not ask where it is or where they are watching from.`,
+Use this if the new message is replying to Shannon's native story opener. Do not pretend ${leadName || 'the lead'} said the story context themselves. If the story context identifies an animal as a cat, dog, rabbit, horse, or another species, keep that species exactly. If the species is unknown, stay neutral and never guess dog, cat, breed, or type from a pet name alone. If visible story text or a location sticker already names a place, treat that place as known and do not ask where it is or where they are watching from. If the visual story context already shows beach, ocean, sand, coast, or waterfront, do not ask whether they were on/at the beach.`,
     };
 }
 
@@ -1544,7 +1544,8 @@ function suppressPetSpeciesGuessingInDraftChunks(chunks, { currentMessageText = 
 }
 
 const STORY_LOCATION_TYPE_RE = /\b(?:beach|bay|creek|river|lake|mount|mt|mountain|lookout|point|headland|island|park|national\s+park|falls|waterfall|coast|coastal|harbour|harbor|marina|jetty|pier|hotel|resort|cafe|restaurant|bar|pub|club|stadium|arena|airport|station|suburb|city|town|village)\b/i;
-const STORY_LOCATION_QUESTION_RE = /\b(?:where(?:'s|s| is| was)?\s+(?:this|that|it|the\s+(?:view|beach|spot|place|sunset|sunrise))|where\s+(?:are|were)\s+you(?:\s+(?:watching|seeing|looking\s+at|staying|based))?(?:\s+(?:from|this|that|it))?|where\s+(?:is|was)\s+(?:this|that|it)|what(?:'s|s| is)\s+(?:this|that)\s+(?:place|spot|beach|view))\b[^?!.\n]*\?/i;
+const STORY_BEACH_SCENE_RE = /\b(?:beach|ocean|sea|sand|sandy|shore|shoreline|coast|coastal|waterfront|surf|waves?)\b/i;
+const STORY_LOCATION_QUESTION_RE = /\b(?:(?:where(?:'s|s| is| was)?\s+(?:this|that|it|the\s+(?:view|beach|spot|place|sunset|sunrise))|where\s+(?:are|were)\s+you(?:\s+(?:watching|seeing|looking\s+at|staying|based))?(?:\s+(?:from|this|that|it))?|where\s+(?:is|was)\s+(?:this|that|it)|what(?:'s|s| is)\s+(?:this|that)\s+(?:place|spot|beach|view)|(?:are|were|was)\s+(?:you|that|this|it)\s+(?:on|at|by|near)\s+(?:the\s+)?(?:beach|ocean|water|waterfront|coast)|did\s+you\s+(?:grab|get|have)\s+(?:a\s+)?view\s+from\s+somewhere))\b[^?!.\n]*\?/i;
 
 function hasKnownStoryLocationContext({ currentMessageText = '', nativeStoryContextSummary = null } = {}) {
     const rawStoryContext = extractIgStoryContextForPrompt(currentMessageText);
@@ -1558,6 +1559,7 @@ function hasKnownStoryLocationContext({ currentMessageText = '', nativeStoryCont
         nativeStoryContextSummary?.story_description,
         nativeStoryContextSummary?.sent_comment,
     ].filter(Boolean).join(' ');
+    if (STORY_BEACH_SCENE_RE.test(broaderContext)) return true;
     return /\b(?:location\s+(?:tag|sticker)|tagged|at)\b.{0,80}/i.test(broaderContext)
         && STORY_LOCATION_TYPE_RE.test(broaderContext);
 }
@@ -1580,7 +1582,7 @@ function suppressStoryLocationQuestionsInDraftChunks(chunks, { currentMessageTex
         nativeStoryContextSummary?.story_description,
         nativeStoryContextSummary?.story_visible_text,
     ].filter(Boolean).join(' ');
-    return [/\b(?:view|beach|sunset|sunrise|ocean|sea|coast)\b/i.test(contextText)
+    return [/\b(?:view|beach|sunset|sunrise|ocean|sea|coast|waterfront)\b/i.test(contextText)
         ? 'that view is unreal'
         : 'looks like a good spot'];
 }
