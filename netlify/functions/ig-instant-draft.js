@@ -783,13 +783,19 @@ function finalizeDraftChunksFromRawText(rawText, {
         qualifier,
     });
     const cleaned = splitCoachDraftIntoDmBubbles(
-        suppressPetSpeciesGuessingInDraftChunks(suppressAlreadyKnownContextQuestionsInDraftChunks(baseChunks, {
-            contextText: knownContextText,
-        }), {
-            currentMessageText,
-            qualifier,
-            nativeStoryContextSummary,
-        })
+        suppressStoryLocationQuestionsInDraftChunks(
+            suppressPetSpeciesGuessingInDraftChunks(suppressAlreadyKnownContextQuestionsInDraftChunks(baseChunks, {
+                contextText: knownContextText,
+            }), {
+                currentMessageText,
+                qualifier,
+                nativeStoryContextSummary,
+            }),
+            {
+                currentMessageText,
+                nativeStoryContextSummary,
+            }
+        )
             .map(c => stripObviousMediaReceiptPreamble(c, { hasDecodedMedia }))
             .map((c, i) => i === 0
                 ? stripLeadingGreeting(c, leadName, { allowGreeting: allowDailyGreeting })
@@ -1431,7 +1437,7 @@ function buildIgStoryReplyPromptContextBlock({ leadName, currentMessage = '', re
 STORY REPLY CONTEXT:
 ${rows.join('\n')}
 
-This is Shannon's story/post context, not ${leadName || 'the lead'}'s own message. Use it only to understand what they replied to. Do not write as if ${leadName || 'the lead'} logged, ate, posted, or said those story details unless their actual reply says so.\nIf this is clearly them replying to Shannon's native story opener or a comment Shannon left on their post, that is a normal send-back path. If the context is unclear, the message suggests confusion or AI suspicion, or the inbound includes media that needs inspection, do not guess a reply. Mark it for Needs You instead.`;
+This is Shannon's story/post context, not ${leadName || 'the lead'}'s own message. Use it only to understand what they replied to. Do not write as if ${leadName || 'the lead'} logged, ate, posted, or said those story details unless their actual reply says so. If visible text or a location sticker already names a place, treat that place as known. Do not ask where it is, where they are watching from, or where they are based from that story.\nIf this is clearly them replying to Shannon's native story opener or a comment Shannon left on their post, that is a normal send-back path. If the context is unclear, the message suggests confusion or AI suspicion, or the inbound includes media that needs inspection, do not guess a reply. Mark it for Needs You instead.`;
 
 }
 
@@ -1498,7 +1504,7 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
 NATIVE STORY OPENER CONTEXT:
 ${lines.join('\n')}
 
-Use this if the new message is replying to Shannon's native story opener. Do not pretend ${leadName || 'the lead'} said the story context themselves. If the story context identifies an animal as a cat, dog, rabbit, horse, or another species, keep that species exactly. If the species is unknown, stay neutral and never guess dog, cat, breed, or type from a pet name alone.`,
+Use this if the new message is replying to Shannon's native story opener. Do not pretend ${leadName || 'the lead'} said the story context themselves. If the story context identifies an animal as a cat, dog, rabbit, horse, or another species, keep that species exactly. If the species is unknown, stay neutral and never guess dog, cat, breed, or type from a pet name alone. If visible story text or a location sticker already names a place, treat that place as known and do not ask where it is or where they are watching from.`,
     };
 }
 
@@ -1535,6 +1541,48 @@ function suppressPetSpeciesGuessingInDraftChunks(chunks, { currentMessageText = 
             return out;
         })
         .filter(Boolean);
+}
+
+const STORY_LOCATION_TYPE_RE = /\b(?:beach|bay|creek|river|lake|mount|mt|mountain|lookout|point|headland|island|park|national\s+park|falls|waterfall|coast|coastal|harbour|harbor|marina|jetty|pier|hotel|resort|cafe|restaurant|bar|pub|club|stadium|arena|airport|station|suburb|city|town|village)\b/i;
+const STORY_LOCATION_QUESTION_RE = /\b(?:where(?:'s|s| is| was)?\s+(?:this|that|it|the\s+(?:view|beach|spot|place|sunset|sunrise))|where\s+(?:are|were)\s+you(?:\s+(?:watching|seeing|looking\s+at|staying|based))?(?:\s+(?:from|this|that|it))?|where\s+(?:is|was)\s+(?:this|that|it)|what(?:'s|s| is)\s+(?:this|that)\s+(?:place|spot|beach|view))\b[^?!.\n]*\?/i;
+
+function hasKnownStoryLocationContext({ currentMessageText = '', nativeStoryContextSummary = null } = {}) {
+    const rawStoryContext = extractIgStoryContextForPrompt(currentMessageText);
+    const visibleText = [
+        nativeStoryContextSummary?.story_visible_text,
+        rawStoryContext,
+    ].filter(Boolean).join(' ');
+    if (STORY_LOCATION_TYPE_RE.test(visibleText)) return true;
+
+    const broaderContext = [
+        nativeStoryContextSummary?.story_description,
+        nativeStoryContextSummary?.sent_comment,
+    ].filter(Boolean).join(' ');
+    return /\b(?:location\s+(?:tag|sticker)|tagged|at)\b.{0,80}/i.test(broaderContext)
+        && STORY_LOCATION_TYPE_RE.test(broaderContext);
+}
+
+function suppressStoryLocationQuestionsInDraftChunks(chunks, { currentMessageText = '', nativeStoryContextSummary = null } = {}) {
+    if (!hasKnownStoryLocationContext({ currentMessageText, nativeStoryContextSummary })) {
+        return Array.isArray(chunks) ? chunks : [];
+    }
+    const input = Array.isArray(chunks) ? chunks : [];
+    const cleaned = input
+        .map(chunk => {
+            const out = stripQuestionSentence(chunk, STORY_LOCATION_QUESTION_RE);
+            return out || String(chunk || '').replace(STORY_LOCATION_QUESTION_RE, '').trim();
+        })
+        .filter(Boolean);
+    if (cleaned.length || !input.length) return cleaned;
+
+    const contextText = [
+        currentMessageText,
+        nativeStoryContextSummary?.story_description,
+        nativeStoryContextSummary?.story_visible_text,
+    ].filter(Boolean).join(' ');
+    return [/\b(?:view|beach|sunset|sunrise|ocean|sea|coast)\b/i.test(contextText)
+        ? 'that view is unreal'
+        : 'looks like a good spot'];
 }
 
 const PET_NAME_QUESTION_RE = /\b(?:what(?:'s|s| is)|what are)\s+(?:their|the|your|these|those)\s+names?\b/i;
@@ -4084,6 +4132,8 @@ exports._test = {
     buildAcquisitionMomentumBlock,
     suppressAlreadyKnownContextQuestionsInDraftChunks,
     suppressPetSpeciesGuessingInDraftChunks,
+    suppressStoryLocationQuestionsInDraftChunks,
+    hasKnownStoryLocationContext,
     getCocosAutoContextBypass,
     getBalanceAutoContextBypass,
     getAutoDmHoldReason,

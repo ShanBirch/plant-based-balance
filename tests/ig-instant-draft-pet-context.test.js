@@ -6,6 +6,9 @@ const {
     buildAcquisitionStyleBlock,
     buildAcquisitionMomentumBlock,
     suppressPetSpeciesGuessingInDraftChunks,
+    suppressStoryLocationQuestionsInDraftChunks,
+    hasKnownStoryLocationContext,
+    finalizeDraftChunksFromRawText,
 } = require('../netlify/functions/ig-instant-draft')._test;
 
 assert.strictEqual(isSalesAcquisitionThread({ leadStage: 'qualifying', linkedUserId: null }), true);
@@ -93,5 +96,41 @@ const neutralChunks = suppressPetSpeciesGuessingInDraftChunks([
 });
 
 assert.deepStrictEqual(neutralChunks, ['nero looks cute']);
+
+const tugunContext = buildNativeStoryOutreachContextBlock({
+    ig_username: 'lealthaisb',
+    custom_data: {
+        last_story_outreach: {
+            story_id: 'story-tugun-beach',
+            story_description: 'A sunrise ocean view from a balcony over the beach.',
+            story_visible_text: 'I just love this site, or maybe just the view Tugun Beach',
+            story_content_type: 'own_story',
+            sent_comment: 'what a view',
+            captured_at: '2026-06-03T09:00:00.000Z',
+        },
+    },
+}, 'lealthaisb');
+
+assert.strictEqual(
+    hasKnownStoryLocationContext({ nativeStoryContextSummary: tugunContext.summary }),
+    true
+);
+
+assert.deepStrictEqual(
+    suppressStoryLocationQuestionsInDraftChunks([
+        'that view is unreal',
+        'where are you watching it from?',
+    ], {
+        nativeStoryContextSummary: tugunContext.summary,
+    }),
+    ['that view is unreal']
+);
+
+assert.deepStrictEqual(
+    finalizeDraftChunksFromRawText('{"messages":["where are you watching it from?"]}', {
+        nativeStoryContextSummary: tugunContext.summary,
+    }),
+    ['That view is unreal']
+);
 
 console.log('ig instant draft pet context tests passed');

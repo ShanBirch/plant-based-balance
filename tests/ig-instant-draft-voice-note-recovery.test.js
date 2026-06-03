@@ -13,7 +13,7 @@ const recoveredAfterGuard = _test.finalizeDraftChunksFromRawText(
 );
 assert.deepStrictEqual(
     recoveredAfterGuard,
-    ['what kind of dog is it?'],
+    ['What kind of dog is it?'],
     'a conservative cleaner must not turn a non-empty model reply into a blank Needs You draft'
 );
 
@@ -28,7 +28,7 @@ const cleanedReceipt = _test.finalizeDraftChunksFromRawText(
 );
 assert.strictEqual(
     cleanedReceipt[0],
-    'that makes sense. what happened after that?',
+    'That makes sense. What happened after that?',
     'decoded voice-note drafts should not open with a listening receipt'
 );
 
