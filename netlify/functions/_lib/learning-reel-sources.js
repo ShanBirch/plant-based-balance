@@ -291,9 +291,9 @@ const CURATED_LEARNING_REEL_SOURCES = [
         aliases: ['big think', 'bigthink'],
         topics: {
             behavior_change_science: ['behavior science habits', 'psychology motivation'],
-            mindset: ['lisa feldman barrett emotions', 'mindset psychology', 'confidence psychology'],
+            mindset: { queries: ['lisa feldman barrett emotions', 'mindset psychology', 'confidence psychology'], priority: 28 },
             workout_motivation: ['motivation psychology', 'habit psychology', 'discipline psychology'],
-            neuroscience: ['lisa feldman barrett brain emotions', 'predictive brain', 'neuroscience emotions']
+            neuroscience: { queries: ['lisa feldman barrett brain emotions', 'predictive brain', 'neuroscience emotions'], priority: 32 }
         }
     },
     {
@@ -326,8 +326,8 @@ const CURATED_LEARNING_REEL_SOURCES = [
         aliases: ['ted'],
         topics: {
             behavior_change_science: ['behavior change', 'habit change', 'motivation psychology'],
-            mindset: ['lisa feldman barrett emotions', 'resilience', 'mindset psychology'],
-            neuroscience: ['brain emotions', 'neuroscience talk']
+            mindset: { queries: ['lisa feldman barrett emotions', 'resilience', 'mindset psychology'], priority: 24 },
+            neuroscience: { queries: ['lisa feldman barrett emotions', 'brain emotions', 'neuroscience talk'], priority: 24 }
         }
     },
     {
