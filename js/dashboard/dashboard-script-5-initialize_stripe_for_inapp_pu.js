@@ -13660,6 +13660,7 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
         // Setup volume tracking for this card
         setupVolumeTracking(card);
     });
+    queueWorkoutExerciseVideosForOffline(exercises);
 
     hideAllAppViews();
     document.getElementById('view-active-workout').style.display = 'block';
@@ -14920,6 +14921,7 @@ document.addEventListener('visibilitychange', function() {
 // ===========================================
 
 const WORKOUT_BACKUP_KEY = 'pbb_workout_backup';
+const PENDING_WORKOUT_SAVES_KEY = 'pbb_pending_workout_saves';
 let workoutAutoSaveInterval = null;
 
 // Collect all workout data from the DOM
@@ -15047,6 +15049,63 @@ function getWorkoutBackup() {
     } catch (e) {
         console.error('Failed to read workout backup:', e);
         return null;
+    }
+}
+
+function getPendingWorkoutSaves() {
+    try {
+        const raw = localStorage.getItem(PENDING_WORKOUT_SAVES_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        console.error('Failed to read pending workout saves:', e);
+        return [];
+    }
+}
+
+function setPendingWorkoutSaves(items) {
+    try {
+        localStorage.setItem(PENDING_WORKOUT_SAVES_KEY, JSON.stringify(items || []));
+    } catch (e) {
+        console.error('Failed to store pending workout saves:', e);
+    }
+}
+
+function queuePendingWorkoutSave(sets, metadata) {
+    if (!sets || sets.length === 0) return null;
+    const pending = getPendingWorkoutSaves();
+    const item = {
+        id: 'offline_workout_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        createdAt: new Date().toISOString(),
+        workoutName: metadata?.workoutName || window.currentWorkoutName || 'Workout',
+        duration: metadata?.duration || document.getElementById('workout-timer')?.innerText || '00:00',
+        sets
+    };
+    pending.push(item);
+    setPendingWorkoutSaves(pending);
+    return item;
+}
+
+async function flushPendingWorkoutSaves() {
+    const user = window.currentUser;
+    if (!user || !navigator.onLine) return;
+
+    const pending = getPendingWorkoutSaves();
+    if (!pending.length) return;
+
+    const remaining = [];
+    for (const item of pending) {
+        try {
+            await saveWorkoutWithRetry(item.sets || [], user.id);
+            console.log('Synced offline workout:', item.id);
+        } catch (e) {
+            console.error('Failed to sync pending workout:', item.id, e);
+            remaining.push(item);
+        }
+    }
+
+    setPendingWorkoutSaves(remaining);
+    if (pending.length !== remaining.length && typeof showToast === 'function') {
+        showToast('Offline workout synced', 'success');
     }
 }
 
@@ -15397,8 +15456,13 @@ _onDomReady(function() {
     setTimeout(() => {
         if (window.currentUser) {
             checkForUnsavedWorkout();
+            flushPendingWorkoutSaves();
         }
     }, 2000);
+});
+
+window.addEventListener('online', function() {
+    setTimeout(flushPendingWorkoutSaves, 1000);
 });
 
 // Backup workout data when page goes to background or before unload
@@ -15678,6 +15742,33 @@ async function finishWorkout() {
         }
     } catch(e) {
         console.error("Failed to save workout to DB:", e);
+        if (setsToSave.length > 0 && window.currentUser) {
+            queuePendingWorkoutSave(setsToSave, {
+                workoutName: window.currentWorkoutName || 'Workout',
+                duration
+            });
+            if (window.workoutHistoryCache) {
+                window.workoutHistoryCache.push(...setsToSave);
+            }
+            clearWorkoutBackup();
+            workoutStartTime = null;
+            completedWorkoutDataForShare = {
+                duration: duration,
+                improvements: [],
+                milestones: [],
+                newPBs: [],
+                workoutName: window.currentWorkoutName || 'Workout',
+                sets: setsToSave,
+                pendingSync: true
+            };
+            if (typeof showToast === 'function') {
+                showToast('Workout saved offline. It will sync when your connection returns.', 'success');
+            }
+            hideAllAppViews();
+            document.getElementById('view-workout-success').style.display = 'flex';
+            pushNavigationState('view-workout-success', () => closeSuccessScreen());
+            return;
+        }
         // Show user-friendly error dialog with retry option
         const setCount = setsToSave.length;
         const exerciseCount = new Set(setsToSave.map(s => s.exercise)).size;
@@ -18317,6 +18408,20 @@ function openLibraryWorkoutOverview(categoryKey, subcategoryKey, workoutId) {
 window.currentWorkoutKey = null;
 window.currentWorkoutCustomizations = null;
 
+function queueWorkoutExerciseVideosForOffline(exercises) {
+    try {
+        if (!Array.isArray(exercises) || typeof cacheWorkoutVideosForOffline !== 'function') return;
+        if (navigator.connection && navigator.connection.saveData) return;
+        const urls = exercises
+            .map(ex => findVideoMatch(ex.name))
+            .filter(Boolean);
+        if (urls.length === 0) return;
+        setTimeout(() => cacheWorkoutVideosForOffline(urls), 1500);
+    } catch (e) {
+        console.warn('Failed to queue workout videos for offline cache:', e);
+    }
+}
+
 async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
     const category = WORKOUT_LIBRARY[categoryKey];
     const subcategory = category.subcategories[subcategoryKey];
@@ -18560,6 +18665,7 @@ function renderWorkoutExercises(exercises) {
         // Setup volume tracking for this card
         setupVolumeTracking(card);
     });
+    queueWorkoutExerciseVideosForOffline(exercises);
 }
 
 // Render yoga exercises with individual timers
@@ -18665,6 +18771,7 @@ function renderYogaExercises(exercises) {
             </div>
         `;
     });
+    queueWorkoutExerciseVideosForOffline(exercises);
 }
 
 // Delete exercise from workout

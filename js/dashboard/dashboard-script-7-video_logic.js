@@ -1,6 +1,20 @@
 // Video Logic
 let currentVideoUrl = '';
 
+function cacheWorkoutVideosForOffline(videoUrls) {
+    if (!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+    const urls = Array.isArray(videoUrls) ? videoUrls : [videoUrls];
+    const uniqueUrls = [...new Set(urls)]
+        .filter(url => typeof url === 'string' && /^https?:\/\//.test(url) && /\.(mp4|mov|webm)(\?|$)/i.test(url));
+    if (uniqueUrls.length === 0) return;
+
+    navigator.serviceWorker.controller.postMessage({
+        type: 'CACHE_WORKOUT_VIDEOS',
+        urls: uniqueUrls
+    });
+}
+window.cacheWorkoutVideosForOffline = cacheWorkoutVideosForOffline;
+
 function findVideoMatch(name) {
     if(EXERCISE_VIDEOS[name]) return EXERCISE_VIDEOS[name];
 
@@ -41,6 +55,7 @@ function playInlineVideo(event, videoUrl) {
     const playOverlay = container.querySelector('.inline-play-overlay');
 
     if (!video || !videoUrl) return;
+    cacheWorkoutVideosForOffline(videoUrl);
 
     // Stop any other playing inline video
     if (currentInlineVideo && currentInlineVideo !== video) {

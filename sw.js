@@ -1,12 +1,22 @@
-const CACHE_NAME = 'pbb-app-v206'; // v206: meal text logging stays scrollable while analysis runs; v205: weekly review selected-goal sync
+const CACHE_NAME = 'pbb-app-v207'; // v207: offline workout shell/data scripts; v206: meal text logging stays scrollable while analysis runs
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
+const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v1';
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',
   './welcome.html',
   './lib/supabase.js',
   './lib/auth-guard.js',
-  './login.html'
+  './login.html',
+  './exercise_videos.js',
+  './workout_library.js',
+  './workout_library_extended.js',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=109',
+  './js/dashboard/dashboard-script-7-video_logic.js',
+  './js/dashboard/pbb-deferred-workoutbuilder.js?v=3',
+  './js/dashboard/pbb-deferred-yourworkouts.js',
+  './js/dashboard/pbb-deferred-savedworkouts.js',
+  './js/dashboard/dashboard-script-12-program_builder_state.js?v=4'
 ];
 
 // Onboarding models needed immediately on first login.
@@ -74,7 +84,7 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(
-        keys.filter(k => k !== CACHE_NAME && k !== MODEL_CACHE_NAME).map(k => caches.delete(k))
+        keys.filter(k => k !== CACHE_NAME && k !== MODEL_CACHE_NAME && k !== WORKOUT_VIDEO_CACHE_NAME).map(k => caches.delete(k))
       ))
       .then(() => self.clients.claim())
       .then(() => broadcast({ event: 'sw_active' }))
@@ -87,11 +97,92 @@ self.addEventListener('message', (e) => {
     caches.open(MODEL_CACHE_NAME)
       .then((cache) => cacheModelsSequentially(cache, ONBOARDING_MODELS));
   }
+  if (e.data && e.data.type === 'CACHE_WORKOUT_VIDEOS') {
+    const urls = Array.isArray(e.data.urls) ? e.data.urls : [];
+    e.waitUntil(cacheWorkoutVideos(urls));
+  }
 });
+
+async function cacheWorkoutVideos(urls) {
+  const uniqueUrls = [...new Set(urls)].filter(url => /^https?:\/\//.test(url || ''));
+  if (uniqueUrls.length === 0) return;
+
+  const cache = await caches.open(WORKOUT_VIDEO_CACHE_NAME);
+  for (const url of uniqueUrls) {
+    try {
+      if (await cache.match(url)) continue;
+      const response = await fetch(url, { mode: 'cors', cache: 'reload' });
+      if (response && response.ok && response.status === 200) {
+        await cache.put(url, response.clone());
+        await broadcast({ event: 'workout_video_cached', url });
+      }
+    } catch (error) {
+      await broadcast({ event: 'workout_video_error', url, detail: error && error.message ? error.message : String(error) });
+    }
+  }
+}
+
+function createRangeResponse(request, response) {
+  const range = request.headers.get('range');
+  if (!range) return response;
+
+  return response.arrayBuffer().then(buffer => {
+    const size = buffer.byteLength;
+    const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+    if (!match) return response;
+
+    let start = match[1] ? parseInt(match[1], 10) : 0;
+    let end = match[2] ? parseInt(match[2], 10) : size - 1;
+
+    if (Number.isNaN(start) || start < 0) start = 0;
+    if (Number.isNaN(end) || end >= size) end = size - 1;
+    if (start > end || start >= size) {
+      return new Response(null, {
+        status: 416,
+        headers: {
+          'Content-Range': `bytes */${size}`
+        }
+      });
+    }
+
+    const chunk = buffer.slice(start, end + 1);
+    const headers = new Headers(response.headers);
+    headers.set('Content-Range', `bytes ${start}-${end}/${size}`);
+    headers.set('Accept-Ranges', 'bytes');
+    headers.set('Content-Length', String(chunk.byteLength));
+    headers.set('Content-Type', response.headers.get('Content-Type') || 'video/mp4');
+
+    return new Response(chunk, {
+      status: 206,
+      statusText: 'Partial Content',
+      headers
+    });
+  }).catch(() => response);
+}
 
 // Fetch - Network First for HTML/JS/CSS and 3D models, Cache First for images
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
+
+  if (url.pathname.match(/\.(mp4|mov|webm)$/i)) {
+    e.respondWith(
+      caches.open(WORKOUT_VIDEO_CACHE_NAME).then(cache => {
+        return cache.match(url.href).then(cached => {
+          if (cached) {
+            return createRangeResponse(e.request, cached.clone());
+          }
+
+          return fetch(e.request).then(response => {
+            if (response && response.ok && response.status === 200 && !e.request.headers.has('range')) {
+              cache.put(url.href, response.clone());
+            }
+            return response;
+          }).catch(() => caches.match(e.request));
+        });
+      })
+    );
+    return;
+  }
 
   // Admin is an operator surface, so never let a shortcut/PWA shell keep an old cached HTML theme.
   if (url.pathname.endsWith('/admin-dashboard.html') || url.pathname.endsWith('admin-dashboard.html')) {
