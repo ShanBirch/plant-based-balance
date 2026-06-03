@@ -22,7 +22,6 @@ const DEFAULT_TARGET_HANDLE = 'shan_n_sunny';
 const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
 const COCOS_ALGORITHM_FORK = 'cocos_acquisition_v1';
 const SOURCE = 'learning_reel_drip_instagram_graph';
-const LISA_BARRETT_BATCH_SOURCE = 'learning_reel_lisa_barrett_manual_batch';
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const LEGACY_GRAPH_SUBSCRIBER_PREFIX = 'meta_ig:';
 const DEFAULT_AUTOSTART_UNTIL = '2026-06-10T00:00:00+10:00';
@@ -68,63 +67,6 @@ const TOPIC_SEQUENCE = [
     'supplements',
     'meal_prep_planning',
 ];
-const LISA_BARRETT_BATCH_REELS = [
-    {
-        video_id: 'mJLROKV2SzU',
-        title: 'How emotions work | Neuroscientist Lisa Feldman Barrett',
-        channel_title: 'Big Think',
-        source_id: 'big_think',
-        source_kind: 'expert_host',
-        topic_id: 'neuroscience',
-        topic_label: 'Neuroscience',
-        description: 'Lisa Feldman Barrett explains how the brain constructs emotions from body signals, context and prediction.',
-    },
-    {
-        video_id: '0gks6ceq4eQ',
-        title: "You aren't at the mercy of your emotions, your brain creates them",
-        channel_title: 'TED',
-        source_id: 'ted',
-        source_kind: 'expert_host',
-        topic_id: 'neuroscience',
-        topic_label: 'Neuroscience',
-        description: 'Lisa Feldman Barrett TED talk on constructed emotion and why emotions are not hardwired reactions.',
-    },
-    {
-        video_id: 'NGArM23mMNM',
-        title: 'Lisa Feldman Barrett follow-up interview on changing predictions',
-        channel_title: 'The Well',
-        source_id: 'big_think',
-        source_kind: 'expert_host',
-        topic_id: 'mindset',
-        topic_label: 'Mindset',
-        description: 'A Lisa Feldman Barrett interview on changing the brain predictions that shape emotion.',
-    },
-    {
-        video_id: 'RVD4OsLEntY',
-        title: 'Making Emotion (How Emotions Are Made)',
-        channel_title: 'Lisa Feldman Barrett',
-        source_id: 'lisa_feldman_barrett',
-        source_kind: 'expert_primary',
-        topic_id: 'neuroscience',
-        topic_label: 'Neuroscience',
-        description: 'Lisa Feldman Barrett explains the core idea behind constructed emotion.',
-    },
-    {
-        video_id: 'ZYAEh3T5a80',
-        title: 'Lisa Feldman Barrett TEDx talk on how emotions are made',
-        channel_title: 'TEDx',
-        source_id: 'tedx',
-        source_kind: 'expert_host',
-        topic_id: 'neuroscience',
-        topic_label: 'Neuroscience',
-        description: 'A TEDx-style Lisa Feldman Barrett talk on emotion construction and the predictive brain.',
-    },
-].map(item => ({
-    ...item,
-    url: `https://www.youtube.com/watch?v=${item.video_id}`,
-    platform: 'youtube',
-    reason: 'Lisa Feldman Barrett manual review batch',
-}));
 
 export const config = {
     schedule: '*/5 * * * *',
@@ -1109,14 +1051,14 @@ async function postToInstagramGraph({ recipientId, accountId, token, text }) {
     return parsed;
 }
 
-async function logOutbound(thread, text, graphMessageId, source = SOURCE) {
+async function logOutbound(thread, text, graphMessageId) {
     const rows = await supabase('ig_messages', {
         method: 'POST',
         body: [{
             thread_id: thread.id,
             direction: 'out',
             text,
-            source,
+            source: SOURCE,
             manychat_message_id: graphMessageId ? `${GRAPH_SUBSCRIBER_PREFIX}${graphMessageId}` : null,
         }],
     });
@@ -1325,136 +1267,6 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now(), veganSafet
     };
 }
 
-function buildLisaBarrettBatchMessage(reel, index = 0) {
-    const openers = [
-        'this is interesting',
-        'reckon this one is worth a look',
-        'this one is pretty good',
-        'this bit is interesting',
-        'save this one for later',
-    ];
-    return normalizeCoachDraftText(`${openers[index % openers.length]}\n${reel.url}`).trim();
-}
-
-async function sendLisaBarrettBatch({ nowMs = Date.now() } = {}) {
-    const handle = normalizeHandle(getEnv('LEARNING_REEL_DRIP_TARGET_HANDLE') || DEFAULT_TARGET_HANDLE);
-    const thread = await loadTargetThread(handle);
-    if (!thread) return { ok: false, error: 'target_thread_not_found', target_handle: handle };
-
-    const state = normalizeDripState(thread, nowMs);
-    if (state.lisa_barrett_manual_batch_sent_at) {
-        return {
-            ok: true,
-            target_handle: handle,
-            sent: false,
-            skipped: true,
-            reason: 'lisa_barrett_batch_already_sent',
-            sent_at: state.lisa_barrett_manual_batch_sent_at,
-        };
-    }
-
-    const graph = resolveThreadGraph(thread);
-    if (!graph.recipientId || !graph.accountId) {
-        return { ok: false, target_handle: handle, error: 'graph_recipient_or_account_missing' };
-    }
-    const { token, source: tokenSource } = await resolveMetaIgAccessToken(graph.accountId, supabase);
-    if (!token) return { ok: false, target_handle: handle, error: 'instagram_graph_token_missing' };
-
-    const existingVideoIds = await loadRecentOutboundLearningReelVideoIds(thread.id, 200);
-    const customData = safeObject(thread.custom_data);
-    const eligibleReels = LISA_BARRETT_BATCH_REELS.filter(reel => {
-        if (existingVideoIds.has(normalizeVideoId(reel.video_id))) return false;
-        const normalized = normalizeLearningReelItems([reel], {
-            source: LISA_BARRETT_BATCH_SOURCE,
-            platform: 'youtube',
-        });
-        return !findDuplicateLearningReels(thread, normalized).length;
-    });
-    if (eligibleReels.length < LISA_BARRETT_BATCH_REELS.length) {
-        return {
-            ok: false,
-            target_handle: handle,
-            error: 'not_enough_unsent_lisa_barrett_reels',
-            requested: LISA_BARRETT_BATCH_REELS.length,
-            eligible: eligibleReels.length,
-        };
-    }
-
-    const sentAt = new Date(nowMs).toISOString();
-    const sentReels = [];
-    for (let i = 0; i < eligibleReels.length; i += 1) {
-        const reel = eligibleReels[i];
-        const message = buildLisaBarrettBatchMessage(reel, i);
-        const response = await postToInstagramGraph({
-            recipientId: graph.recipientId,
-            accountId: graph.accountId,
-            token,
-            text: message,
-        });
-        const graphMessageId = response?.message_id || response?.id || null;
-        const messageId = await logOutbound(thread, message, graphMessageId, LISA_BARRETT_BATCH_SOURCE);
-        sentReels.push({
-            ...reel,
-            sent_at: sentAt,
-            sent_message: message,
-            source: LISA_BARRETT_BATCH_SOURCE,
-            graph_message_ids: graphMessageId ? [graphMessageId] : [],
-            message_ids: messageId ? [messageId] : [],
-        });
-    }
-
-    const nextState = {
-        ...state,
-        updated_at: sentAt,
-        lisa_barrett_manual_batch_sent_at: sentAt,
-        lisa_barrett_manual_batch_count: sentReels.length,
-        sent: [
-            ...(Array.isArray(state.sent) ? state.sent : []),
-            ...sentReels.map(reel => ({
-                topic_id: reel.topic_id,
-                topic_label: reel.topic_label,
-                sent_at: sentAt,
-                video_id: reel.video_id,
-                title: reel.title,
-                source_id: reel.source_id,
-                source_kind: reel.source_kind,
-                channel_title: reel.channel_title,
-                url: reel.url,
-            })),
-        ].slice(-40),
-    };
-    const withDripState = applyCocosThreadCustomData(customData, graph, nextState);
-    const nextCustomData = mergeLearningReelContext(withDripState, sentReels, {
-        sentAt,
-        source: LISA_BARRETT_BATCH_SOURCE,
-        platform: 'youtube',
-        topicLabel: 'Lisa Feldman Barrett',
-        reason: 'Manual Lisa Feldman Barrett review batch',
-    });
-    await supabase(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
-        method: 'PATCH',
-        body: {
-            last_outbound_at: sentAt,
-            auto_send_enabled: true,
-            custom_data: nextCustomData,
-        },
-        prefer: 'return=minimal',
-    });
-
-    return {
-        ok: true,
-        target_handle: handle,
-        sent: true,
-        count: sentReels.length,
-        token_source: tokenSource,
-        reels: sentReels.map(reel => ({
-            title: reel.title,
-            channel_title: reel.channel_title,
-            url: reel.url,
-        })),
-    };
-}
-
 async function runDrip({ sendDue = true } = {}) {
     const nowMs = Date.now();
     const handle = normalizeHandle(getEnv('LEARNING_REEL_DRIP_TARGET_HANDLE') || DEFAULT_TARGET_HANDLE);
@@ -1532,16 +1344,6 @@ export default async function handler(req) {
     const action = url.searchParams.get('action') || '';
     const token = url.searchParams.get('token') || '';
     const expectedToken = getEnv('LEARNING_REEL_DRIP_TOKEN');
-
-    if (action === 'send_lisa_barrett_batch') {
-        try {
-            const result = await sendLisaBarrettBatch({ nowMs: Date.now() });
-            return json(result.ok === false ? 409 : 200, result);
-        } catch (error) {
-            console.error('[learning-reel-drip] Lisa Barrett batch failed:', error);
-            return json(500, { ok: false, error: error.message || String(error) });
-        }
-    }
 
     if (!YOUTUBE_API_KEY) return json(500, { ok: false, error: 'YOUTUBE_API_KEY missing' });
 
