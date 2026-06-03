@@ -39,7 +39,7 @@ const TOPIC_KEYWORD_RE = {
     micronutrient_science: /\b(micronutrient|vitamin|mineral|iron|b12|calcium|zinc|iodine|omega|nutrient)\b/i,
     behavior_change_science: /\b(behaviou?r|habit|tiny habit|behavior design|identity|consistency|motivation|discipline|prompt)\b/i,
     mindset: /\b(mindset|motivation|emotion|confidence|identity|habit|consistency|resilience|lisa feldman barrett|huberman|fogg)\b/i,
-    neuroscience: /\b(neuro|brain|dopamine|emotion|prediction|predictive|free energy|friston|barrett|huberman|nervous system)\b/i,
+    neuroscience: /\b(neuro|brain|dopamine|emotion|prediction|predictive|barrett|huberman|nervous system)\b/i,
     longevity: /\b(longevity|healthspan|lifespan|aging|ageing|metabolic|zone 2|vo2|sleep|recovery|cardio|microbiome)\b/i,
     workout_motivation: /\b(workout|training|train|motivation|discipline|consistency|habit|excuse|energy|show up|start|identity|dopamine)\b/i,
     weight_training_technique: /\b(form|technique|squat|deadlift|bench|press|row|hinge|lunge|training|lifting|mobility)\b/i,
@@ -343,32 +343,6 @@ const CURATED_LEARNING_REEL_SOURCES = [
             behavior_change_science: ['tiny habits', 'behavior design', 'habit design'],
             workout_motivation: ['tiny habits exercise', 'workout habits', 'behavior design workouts'],
             mindset: ['tiny habits motivation', 'behavior design confidence']
-        }
-    },
-    {
-        id: 'ucl',
-        channelTitle: 'UCL',
-        handle: '@UCLTV',
-        subscriberTier: 'academic',
-        qualityScore: 88,
-        sourceKind: 'academic_host',
-        profileUrl: 'https://www.youtube.com/@UCLTV',
-        aliases: ['ucl', 'university college london', 'ucltv'],
-        topics: {
-            neuroscience: ['karl friston free energy principle', 'active inference', 'predictive brain']
-        }
-    },
-    {
-        id: 'serious_science',
-        channelTitle: 'Serious Science',
-        handle: '@SeriousScience',
-        subscriberTier: 'academic',
-        qualityScore: 84,
-        sourceKind: 'academic_host',
-        profileUrl: 'https://www.youtube.com/@SeriousScience',
-        aliases: ['serious science'],
-        topics: {
-            neuroscience: ['karl friston free energy principle', 'predictive brain', 'active inference']
         }
     },
     {

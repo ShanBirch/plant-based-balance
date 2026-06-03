@@ -36,8 +36,12 @@ assert.ok(
     'neuroscience should include a Lisa Feldman Barrett friendly source'
 );
 assert.ok(
-    curatedLearningReelSourceNames('neuroscience').some(name => name === 'UCL'),
-    'neuroscience should include a Karl Friston friendly academic source'
+    !curatedLearningReelSourceNames('neuroscience').some(name => name === 'UCL'),
+    'neuroscience should not include Karl Friston-specific sources'
+);
+assert.ok(
+    !curatedLearningReelSourceNames('neuroscience').some(name => name === 'Serious Science'),
+    'neuroscience should not include Friston-heavy academic sources'
 );
 assert.ok(
     curatedLearningReelSourceNames('weight_training_technique').some(name => name === 'ATHLEAN-X'),
