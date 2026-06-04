@@ -662,7 +662,7 @@ async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason =
  */
 const META_AD_FUNNEL_CONTEXT = `
 LEAD ACQUISITION CONTEXT:
-Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, then DMs them first. He initiates the conversation. Some leads also come from Shannon's Meta ads or challenge angles. The DM offer right now is the free 30-day Balance Challenge, starting Monday, 8 June, with free entry for new starters, Shannon check-ins, app structure, and a $1,000 first-place cash prize. Interested leads should be encouraged to get into Balance and start with coaching immediately so they are set up before the challenge starts. Paid coaching is the natural follow-up after the 30 days, not the headline. The words below trigger offer-inquiry mode:
+Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, then DMs them first. He initiates the conversation. Some leads also come from Shannon's Meta ads or challenge angles. The DM offer right now is the free 30-day Balance Challenge, starting Monday, 8 June, with free entry for new starters, Shannon check-ins, app structure, and a $500 first-place cash prize. Interested leads should be encouraged to get into Balance and start with coaching immediately so they are set up before the challenge starts. Paid coaching is the natural follow-up after the 30 days, not the headline. The words below trigger offer-inquiry mode:
   1. "What's actually included?"
   2. "Do I need to already be Plant Based?"
   3. "I'm In - save me a spot!"
@@ -679,7 +679,7 @@ THE OFFERING (for context — never list as a brochure; speak like a friend):
 - The challenge is 30 days of stacking consistent actions, building XP, and climbing the leaderboard with Shannon checking in. Do not call the character FitGotchi in DMs. Say "little character" or "game-style character".
 - Once they start, the Balance app helps set up their workout program and meal plan. Shannon can edit it if needed after they sign up.
 - Shannon checks in Monday, Wednesday, Friday. Friday is a weekly review and adjustment check-in.
-- The challenge has a $1,000 cash prize for first place, confirmed after the final leaderboard review and fair-play checks.
+- The challenge has a $500 cash prize for first place, confirmed after the final leaderboard review and fair-play checks.
 - Keep it free/no pressure. The paid coaching choice comes later, after they have felt the support.
 
 RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
@@ -1047,7 +1047,7 @@ BALANCE CHALLENGE LINK:
 - When the latest message asks for the challenge link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct challenge/details invite, send the approved bio link in the draft.
 - If the latest message asks to reconnect with Balance, the app/helper, login, password, account access, or any app bug, treat it as support first and do not send the challenge bio link.
 - Keep the link handoff light, not a brochure: stoked they are keen, here's the link, it has the quick info on the challenge and how the app works, check it out and download the app, then come back to Shannon here to chat through it.
-- Frame it as a free challenge with Shannon check-ins and app structure. Mention XP, leaderboard, or the $1,000 first-place cash prize only when they ask what is included or need the fuller rundown. Paid coaching comes later if the 30 days help.
+- Frame it as a free challenge with Shannon check-ins and app structure. Mention XP, leaderboard, or the $500 first-place cash prize only when they ask what is included or need the fuller rundown. Paid coaching comes later if the 30 days help.
 - If they only ask a general help question and have not asked for challenge details/link, do not send the link yet. Reply to the question and ask a low-pressure permission question if the challenge might fit.
 - If they ask whether it is local/in-person or mention they already have a PT/trainer, do not send the link yet. Answer that the challenge support is online through Balance and check whether that would still suit them.`;
 }

@@ -722,7 +722,7 @@ function buildEvaluationPrompt({ leadName, channel, currentQualifier, history, c
             .join('\n')
         : '(none)';
 
-    return `You are scoring a lead's progress through a 4-stage qualifier funnel for Shannon, a personal coach who is currently offering the free 30-day Balance Challenge. It starts Monday, 8 June, is free for new starters, and has a $1,000 first-place cash prize. Interested leads can get into Balance and start with coaching immediately so they are set up before the challenge starts. Paid coaching is the follow-up after trust is built, not the headline offer in DMs.
+    return `You are scoring a lead's progress through a 4-stage qualifier funnel for Shannon, a personal coach who is currently offering the free 30-day Balance Challenge. It starts Monday, 8 June, is free for new starters, and has a $500 first-place cash prize. Interested leads can get into Balance and start with coaching immediately so they are set up before the challenge starts. Paid coaching is the follow-up after trust is built, not the headline offer in DMs.
 
 IMPORTANT CONTEXT: Shannon initiates these conversations. He finds people by browsing stories, reels, and posts on Instagram/Facebook, then DMs them first (replying to their story, commenting on a post, or cold-messaging). The leads are NOT coming to him. Shannon is the one reaching out and starting the chat. The hook_context field records what Shannon said to open the conversation.
 
