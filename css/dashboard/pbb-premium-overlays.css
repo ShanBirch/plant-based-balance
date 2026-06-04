@@ -4111,6 +4111,8 @@ html[data-pbb-theme="light"] #home-challenges-list > div[style*="border-radius: 
 html[data-pbb-theme="light"] #home-challenges-list > div[style*="border-radius: 20px"] [style*="color:white"],
 html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] [style*="color: white"],
 html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] [style*="color:white"],
+html[data-pbb-theme="light"] #home-challenges-empty [style*="color: white"],
+html[data-pbb-theme="light"] #home-challenges-empty [style*="color:white"],
 html[data-pbb-theme="light"] .cohort-waiting-card [style*="color: white"],
 html[data-pbb-theme="light"] .cohort-active-card [style*="color: white"],
 html[data-pbb-theme="light"] .cohort-acceptance-card [style*="color: white"] {
@@ -4124,13 +4126,33 @@ html[data-pbb-theme="light"] #home-challenges-list > div[style*="border-radius: 
 html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] [style*="rgba(255,255,255,0.5)"],
 html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] [style*="rgba(255,255,255,0.7)"],
 html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] [style*="rgba(255,255,255,0.8)"],
-html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] [style*="rgba(255,255,255,0.85)"] {
+html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] [style*="rgba(255,255,255,0.85)"],
+html[data-pbb-theme="light"] #home-challenges-empty [style*="rgba(255,255,255,0.5)"],
+html[data-pbb-theme="light"] #home-challenges-empty [style*="rgba(255,255,255,0.7)"],
+html[data-pbb-theme="light"] #home-challenges-empty [style*="rgba(255,255,255,0.8)"],
+html[data-pbb-theme="light"] #home-challenges-empty [style*="rgba(255,255,255,0.85)"],
+html[data-pbb-theme="light"] .cohort-waiting-card [style*="rgba(255,255,255,0.5)"],
+html[data-pbb-theme="light"] .cohort-waiting-card [style*="rgba(255,255,255,0.7)"],
+html[data-pbb-theme="light"] .cohort-waiting-card [style*="rgba(255,255,255,0.8)"],
+html[data-pbb-theme="light"] .cohort-waiting-card [style*="rgba(255,255,255,0.85)"],
+html[data-pbb-theme="light"] .cohort-waiting-card [style*="rgba(255,255,255,0.92)"],
+html[data-pbb-theme="light"] .cohort-active-card [style*="rgba(255,255,255,0.5)"],
+html[data-pbb-theme="light"] .cohort-active-card [style*="rgba(255,255,255,0.7)"],
+html[data-pbb-theme="light"] .cohort-active-card [style*="rgba(255,255,255,0.8)"],
+html[data-pbb-theme="light"] .cohort-active-card [style*="rgba(255,255,255,0.85)"],
+html[data-pbb-theme="light"] .cohort-active-card [style*="rgba(255,255,255,0.92)"],
+html[data-pbb-theme="light"] .cohort-acceptance-card [style*="rgba(255,255,255,0.5)"],
+html[data-pbb-theme="light"] .cohort-acceptance-card [style*="rgba(255,255,255,0.7)"],
+html[data-pbb-theme="light"] .cohort-acceptance-card [style*="rgba(255,255,255,0.8)"],
+html[data-pbb-theme="light"] .cohort-acceptance-card [style*="rgba(255,255,255,0.85)"],
+html[data-pbb-theme="light"] .cohort-acceptance-card [style*="rgba(255,255,255,0.92)"] {
     color: #6f6a61 !important;
     fill: #6f6a61 !important;
 }
 
 html[data-pbb-theme="light"] #home-challenges-list > div[style*="border-radius: 20px"] svg,
 html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] svg,
+html[data-pbb-theme="light"] #home-challenges-empty svg,
 html[data-pbb-theme="light"] .cohort-waiting-card svg,
 html[data-pbb-theme="light"] .cohort-active-card svg,
 html[data-pbb-theme="light"] .cohort-acceptance-card svg {

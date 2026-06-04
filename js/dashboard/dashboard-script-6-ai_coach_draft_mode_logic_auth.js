@@ -4931,9 +4931,8 @@ function renderCohortWaitingCard(cohort) {
                 <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.6); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
             </div>
             <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(245,217,138,0.16); color: #f5d98a; border: 1px solid rgba(245,217,138,0.3); border-radius: 999px; padding: 6px 10px; font-size: 0.76rem; font-weight: 900; margin-bottom: 12px;">${COHORT_CASH_PRIZE_LABEL}</div>
-            <div style="background: rgba(245,217,138,0.12); border: 1px solid rgba(245,217,138,0.14); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; gap: 6px; align-items: center;">${dots}</div>
-                <span style="color: white; font-weight: 800; font-size: 1rem;">${joined} / ${needed}</span>
+            <div style="background: rgba(245,217,138,0.12); border: 1px solid rgba(245,217,138,0.14); border-radius: 12px; padding: 10px 14px;">
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">${dots}</div>
             </div>
         </div>
     </div>`;
