@@ -770,6 +770,8 @@ function finalizeDraftChunksFromRawText(rawText, {
     leadName = '',
     currentMessageText = '',
     qualifier = null,
+    leadStage = null,
+    linkedUserId = null,
     nativeStoryContextSummary = null,
     knownContextText = '',
     hasDecodedMedia = false,
@@ -781,6 +783,12 @@ function finalizeDraftChunksFromRawText(rawText, {
         maxChunks,
         currentMessageText,
         qualifier,
+        leadStage,
+        linkedUserId,
+    });
+    const suppressClientLinkHandoff = (chunks) => suppressExistingClientSignupLinkHandoffInDraftChunks(chunks, {
+        leadStage,
+        linkedUserId,
     });
     const cleaned = splitCoachDraftIntoDmBubbles(
         suppressStoryLocationQuestionsInDraftChunks(
@@ -802,7 +810,7 @@ function finalizeDraftChunksFromRawText(rawText, {
                 : stripLeadingGreeting(c, leadName))
             .filter(Boolean)
     );
-    if (cleaned.length) return repairMissingLink(cleaned).slice(0, maxChunks);
+    if (cleaned.length) return suppressClientLinkHandoff(repairMissingLink(cleaned)).slice(0, maxChunks);
 
     // Never let a non-empty model response become a blank Needs You card.
     // If a conservative cleaner stripped the whole thing, keep the model's
@@ -815,7 +823,7 @@ function finalizeDraftChunksFromRawText(rawText, {
                 : stripLeadingGreeting(c, leadName))
             .filter(Boolean)
     );
-    return repairMissingLink(unfiltered).slice(0, maxChunks);
+    return suppressClientLinkHandoff(repairMissingLink(unfiltered)).slice(0, maxChunks);
 }
 
 function buildEmptyMediaDraftFallbackChunks({ mediaDecode = {}, currentMessageText = '' } = {}) {
@@ -846,6 +854,8 @@ async function generateMediaRecoveryDraft({
     replyMode,
     allowDailyGreeting,
     qualifier,
+    leadStage = null,
+    linkedUserId = null,
     nativeStoryContextSummary,
 } = {}) {
     if (!Array.isArray(mediaParts) || mediaParts.length === 0) return { chunks: [], rawText: '', model: null, error: null };
@@ -880,6 +890,8 @@ JSON only:
                 leadName,
                 currentMessageText,
                 qualifier,
+                leadStage,
+                linkedUserId,
                 nativeStoryContextSummary,
                 hasDecodedMedia: true,
                 allowDailyGreeting,
@@ -1158,9 +1170,34 @@ function isAppReconnectOrAccountSupportRequest(text) {
     return /\b(reconnect(?:ed|ing)?|connect(?:ed|ing)? back|app helper|balance helper|balance app helper|account access|app access|login|log in|locked out|password|reset link|face id|face recognition|old email|spam|manual(?:ly)? reset|app glitch|glitched|bug)\b/i.test(s);
 }
 
-function repairMissingChallengeBioLinkChunks(chunks, { maxChunks = MAX_CHUNKS, currentMessageText = '', qualifier = null } = {}) {
+function isExistingClientThread({ leadStage, linkedUserId } = {}) {
+    if (linkedUserId) return true;
+    return ['in_app', 'paying'].includes(String(leadStage || '').toLowerCase());
+}
+
+function suppressExistingClientSignupLinkHandoffInDraftChunks(chunks, { leadStage, linkedUserId } = {}) {
+    const input = Array.isArray(chunks) ? chunks : [];
+    if (!isExistingClientThread({ leadStage, linkedUserId })) return input;
+    const cleaned = input
+        .map(chunk => {
+            const text = String(chunk || '').trim();
+            if (!text) return '';
+            if (!isSignupLinkHandoffText(text)) return text;
+            const sentences = text
+                .split(/(?<=[.!?])\s+|\n+/)
+                .map(part => part.trim())
+                .filter(Boolean)
+                .filter(part => !isSignupLinkHandoffText(part) && !/\b(?:download|grab|check(?:\s+this|\s+it)?|jump in|sign ?up)\b.{0,80}\b(?:app|balance|challenge|link)\b/i.test(part));
+            return sentences.join(' ').trim();
+        })
+        .filter(Boolean);
+    return cleaned;
+}
+
+function repairMissingChallengeBioLinkChunks(chunks, { maxChunks = MAX_CHUNKS, currentMessageText = '', qualifier = null, leadStage = null, linkedUserId = null } = {}) {
     const list = Array.isArray(chunks) ? chunks.map(c => String(c || '').trim()).filter(Boolean) : [];
     if (!list.length) return list;
+    if (isExistingClientThread({ leadStage, linkedUserId })) return list;
     const joined = list.join('\n');
     if (!promisesLinkWithoutUrl(joined)) return list;
     if (isAppReconnectOrAccountSupportRequest(currentMessageText)) return list;
@@ -2124,7 +2161,7 @@ Use this batch as context, not a checklist. First decide what is still live: dir
     // still 'new' — linked_user_id is the truth, the column lags.
     const isOnboardedOrPostFunnel = !isSalesLeadThread;
     const funnelContext = isOnboardedOrPostFunnel ? '' : META_AD_FUNNEL_CONTEXT;
-    const challengeNextStepBlock = buildChallengeNextStepBlock(qualifier, currentMessageText);
+    const challengeNextStepBlock = isOnboardedOrPostFunnel ? '' : buildChallengeNextStepBlock(qualifier, currentMessageText);
     const oneOnOneCoachingBlock = isOnboardedOrPostFunnel ? '' : buildOneOnOneCoachingBlock();
     const qualifierRelationshipBlock = buildQualifierRelationshipBlock(qualifier);
 
@@ -2463,6 +2500,8 @@ Rules:
         leadName,
         currentMessageText,
         qualifier,
+        leadStage,
+        linkedUserId,
         nativeStoryContextSummary: nativeStoryOutreachContext?.summary || null,
         knownContextText: totalConversationText,
         hasDecodedMedia,
@@ -2482,6 +2521,8 @@ Rules:
             replyMode,
             allowDailyGreeting,
             qualifier,
+            leadStage,
+            linkedUserId,
             nativeStoryContextSummary: nativeStoryOutreachContext?.summary || null,
         });
         if (recovery.chunks.length) {
@@ -4147,6 +4188,8 @@ exports._test = {
     buildLeadOnboardingHandoffData,
     finalizeDraftChunksFromRawText,
     repairMissingChallengeBioLinkChunks,
+    suppressExistingClientSignupLinkHandoffInDraftChunks,
+    isExistingClientThread,
     buildChallengeNextStepBlock,
     buildEmptyMediaDraftFallbackChunks,
 };

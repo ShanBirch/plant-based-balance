@@ -5,6 +5,9 @@ const {
     buildLeadOnboardingHandoffData,
     finalizeDraftChunksFromRawText,
     buildChallengeNextStepBlock,
+    repairMissingChallengeBioLinkChunks,
+    suppressExistingClientSignupLinkHandoffInDraftChunks,
+    isExistingClientThread,
 } = require('../netlify/functions/ig-instant-draft')._test;
 const scheduledWorker = require('../netlify/functions/scheduled-coach-reply-worker')._test;
 
@@ -70,6 +73,50 @@ const supportBlock = buildChallengeNextStepBlock(
 );
 assert.match(supportBlock, /APP SUPPORT NEXT STEP/);
 assert.doesNotMatch(supportBlock, /future-balance\.netlify\.app\/bio\.html/);
+
+assert.strictEqual(
+    isExistingClientThread({ leadStage: 'qualifying', linkedUserId: 'client-miranda' }),
+    true,
+    'linked_user_id is the source of truth for existing-client IG threads'
+);
+
+const mirandaClientChunks = finalizeDraftChunksFromRawText(
+    JSON.stringify({
+        messages: [
+            "Hahaha love it. You're basically using the app as a competition tracker now",
+            "Stoked though. Check this for the quick challenge + how Balance works, download it, then come back and chat here: https://future-balance.netlify.app/bio.html",
+        ],
+    }),
+    {
+        qualifier: { stage: 'won' },
+        currentMessageText: 'mentioned you in a story photo',
+        leadStage: 'in_app',
+        linkedUserId: 'client-miranda',
+    }
+);
+assert.match(mirandaClientChunks.join('\n'), /competition tracker/);
+assert.doesNotMatch(mirandaClientChunks.join('\n'), /future-balance\.netlify\.app\/bio\.html|download it|quick challenge/i);
+
+assert.deepStrictEqual(
+    repairMissingChallengeBioLinkChunks(["love it", "here's the link, download the app"], {
+        qualifier: { stage: 'won' },
+        currentMessageText: 'yeah sounds good',
+        leadStage: 'in_app',
+        linkedUserId: 'client-miranda',
+    }),
+    ["love it", "here's the link, download the app"],
+    'existing-client link repair must not append the bio URL'
+);
+
+assert.deepStrictEqual(
+    suppressExistingClientSignupLinkHandoffInDraftChunks([
+        "love it. here's the link: https://future-balance.netlify.app/bio.html",
+    ], {
+        linkedUserId: 'client-miranda',
+    }),
+    ['love it.'],
+    'existing-client cleanup should keep useful banter but strip signup link handoff'
+);
 
 const scheduledRepair = scheduledWorker.repairMissingScheduledLinkHandoff({
     data: { signup_link_handoff_url: 'https://future-balance.netlify.app/bio.html' },
