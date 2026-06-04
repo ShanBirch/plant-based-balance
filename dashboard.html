@@ -978,6 +978,9 @@ window.addEventListener('load', function() {
         </div>
     </div>
 
+    <!-- Challenge invite renders here until the user joins, then moves into Challenges below. -->
+    <div id="home-cohort-challenge-invite-top" style="margin: 0 25px 14px;"></div>
+
     <!-- Duplicate Install Banner Removed -->
 
     <!-- Hidden inputs for camera -->
@@ -10153,9 +10156,10 @@ if(!window._pbbIsIOSSafari) {
                     <div style="width: 56px; height: 56px; background: rgba(255,255,255,0.22); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.8rem;">🌱</div>
                     <div style="flex: 1; min-width: 0;">
                         <div style="font-weight: 800; color: white; font-size: 1.05rem; margin-bottom: 3px;">30 days, all in together.</div>
-                        <div id="cohort-info-status-line" style="font-size: 0.82rem; color: rgba(255,255,255,0.92);">Challenge is live.</div>
+                        <div id="cohort-info-status-line" style="font-size: 0.82rem; color: rgba(255,255,255,0.92);">Starts when 15 people join.</div>
                     </div>
                 </div>
+                <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(245,217,138,0.16); color: #f5d98a; border: 1px solid rgba(245,217,138,0.3); border-radius: 999px; padding: 7px 11px; font-size: 0.78rem; font-weight: 900; margin-bottom: 12px;">1st Place $500 cash</div>
                 <div style="background: rgba(245,217,138,0.12); border: 1px solid rgba(245,217,138,0.14); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
                     <div id="cohort-info-dots" style="display: flex; gap: 6px; align-items: center;"></div>
                     <span id="cohort-info-count" style="color: white; font-weight: 800; font-size: 1rem;">— / —</span>
@@ -10182,18 +10186,18 @@ if(!window._pbbIsIOSSafari) {
                 <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
                     <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(59,130,246,0.18); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.05rem;">👥</div>
                     <div style="flex: 1;">
-                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 2px;">Jump in while it is live</div>
-                        <div style="color: rgba(255,255,255,0.65); font-size: 0.8rem; line-height: 1.45;">The challenge starts now. New invitees can still join the same leaderboard while the 30-day clock is running.</div>
+                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 2px;">Starts when 15 join</div>
+                        <div style="color: rgba(255,255,255,0.65); font-size: 0.8rem; line-height: 1.45;">Claim your spot now. Once 15 people are in, the challenge clock begins.</div>
                     </div>
                 </div>
                 <div style="display: flex; align-items: flex-start; gap: 12px;">
                     <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(251,191,36,0.18); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.05rem;">🏆</div>
                     <div style="flex: 1;">
-                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 6px;">Top 3 win free coaching with Shannon</div>
+                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 6px;">1st Place $500 cash</div>
                         <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <span style="font-size: 1rem;">🥇</span>
-                                <span style="color: rgba(255,255,255,0.92); font-size: 0.82rem; line-height: 1.4;"><strong style="color: #fbbf24;">1st place</strong> &middot; 4 weeks free online coaching</span>
+                                <span style="color: rgba(255,255,255,0.92); font-size: 0.82rem; line-height: 1.4;"><strong style="color: #fbbf24;">1st place</strong> &middot; $500 cash prize</span>
                             </div>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <span style="font-size: 1rem;">🥈</span>
@@ -12289,6 +12293,8 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
 
+    { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'Challenge invite', body:"Join the next challenge from Home. 1st Place is $500 cash, and the challenge starts when 15 people are in.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
+
     { tab:'dashboard', sel:'#calorie-tracker-widget', title:'Calorie tracker widget', body:"Home shows calories and macros, with one-tap logging for photos, barcodes, typed meals, manual macros, Build-a-Meal, and recent meals.", quick: true, xpReward:'nutrition' },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically.", quick: true },
     { tab:'meals', sel:'[onclick*="openMealFromGallery"]', title:'Upload from your photos', body:"Took a photo of your meal earlier? Tap the gallery icon to pick it from your photo library and log it later." },
@@ -13237,6 +13243,14 @@ if(!window._pbbIsIOSSafari) {
       sel: '#view-movement .header-msg-icon,.header-msg-icon',
       title: 'Chat options',
       body: "Group chats now use a three-dot options menu. Open Members from there, or choose Leave chat when you want out."
+    },
+    {
+      id: 'cohort-cash-prize-15-start-v1',
+      tab: 'dashboard',
+      sel: '#home-cohort-challenge-invite-top',
+      title: 'Challenge invite',
+      body: "The next challenge invite is on Home. 1st Place is $500 cash, and the challenge starts when 15 people are in.",
+      condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; }
     },
     {
       id: 'monthly-raffle-v1',
