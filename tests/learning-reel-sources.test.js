@@ -55,6 +55,14 @@ assert.ok(
     curatedLearningReelSourceNames('workout_motivation').some(name => name === 'BJ Fogg'),
     'workout motivation should include habit-science sources'
 );
+assert.ok(
+    curatedLearningReelSourceNames('bunny_reels').some(name => name === 'Sincerely, Cinnabun'),
+    'bunny reels should include rabbit-specific sources'
+);
+assert.ok(
+    curatedLearningReelSourceNames('bunny_reels').some(name => name === 'Lennon The Bunny'),
+    'bunny reels should include Lennon The Bunny'
+);
 
 const trustedProteinCandidate = {
     topicId: 'protein_science',
@@ -91,6 +99,24 @@ assert.strictEqual(
 assert.strictEqual(
     scoreCuratedLearningReelCandidate(randomViralCandidate),
     -1000
+);
+
+const trustedBunnyCandidate = {
+    topicId: 'bunny_reels',
+    channelTitle: 'Lennon The Bunny',
+    title: 'Cute free roam rabbit binky #shorts',
+    description: 'A pet rabbit does a happy bunny binky and flop.',
+    durationSec: 32,
+    viewCount: 140000
+};
+
+assert.strictEqual(
+    findCuratedLearningReelSource(trustedBunnyCandidate, 'bunny_reels').id,
+    'lennon_the_bunny'
+);
+assert.ok(
+    scoreCuratedLearningReelCandidate(trustedBunnyCandidate) > 100,
+    'trusted bunny candidate should score strongly'
 );
 
 const wrongTopicCandidate = {

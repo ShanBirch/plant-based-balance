@@ -1,5 +1,6 @@
 const LEARNING_REEL_TOPIC_LABELS = {
     plant_based_cooking: 'Plant-based cooking',
+    bunny_reels: 'Bunny reels',
     macronutrient_science: 'Macros',
     micronutrient_science: 'Vitamins & minerals',
     behavior_change_science: 'Behaviour change',
@@ -35,6 +36,7 @@ const SUBSCRIBER_TIER_SCORE = {
 
 const TOPIC_KEYWORD_RE = {
     plant_based_cooking: /\b(plant|vegan|vegetarian|recipe|meal|cook|cooking|lentil|tofu|beans?|tempeh|protein)\b/i,
+    bunny_reels: /\b(bunny|bunnies|rabbit|rabbits|houserabbit|house rabbit|free roam rabbit|pet rabbit|bink(?:y|ies)|flop|hay|rabbit care|rabbit enrichment|cute rabbit)\b/i,
     macronutrient_science: /\b(macro|macronutrient|calorie|protein|carb|carbs|fat|fats|energy balance|nutrition)\b/i,
     micronutrient_science: /\b(micronutrient|vitamin|mineral|iron|b12|calcium|zinc|iodine|omega|nutrient)\b/i,
     behavior_change_science: /\b(behaviou?r|habit|tiny habit|behavior design|identity|consistency|motivation|discipline|prompt)\b/i,
@@ -54,6 +56,45 @@ const TOPIC_KEYWORD_RE = {
 const LEARNING_REEL_BLOCKLIST_RE = /\b(detox|cleanse|miracle|belly fat|fat burner|carnivore|liver king|medical medium|dr\.?\s*berg|gary brecka|alkaline|parasite cleanse|adrenal fatigue|hormone reset|cortisol face|ozempic alternative|ice hack|hack your|age backwards|anti[-\s]?aging secrets?|lose \d+\s*(?:kg|kilos?|pounds?|lbs?)|after 50|fitfixen)\b/i;
 
 const CURATED_LEARNING_REEL_SOURCES = [
+    {
+        id: 'sincerely_cinnabun',
+        channelTitle: 'Sincerely, Cinnabun',
+        handle: '@SincerelyCinnabun',
+        subscriberTier: '100k+',
+        qualityScore: 88,
+        sourceKind: 'rabbit_care',
+        profileUrl: 'https://www.youtube.com/@SincerelyCinnabun',
+        aliases: ['sincerely cinnabun', 'sincerely, cinnabun', 'cinnabun'],
+        topics: {
+            bunny_reels: { queries: ['bunny rabbit shorts', 'pet rabbit care shorts', 'cute rabbit moments'], priority: 18 }
+        }
+    },
+    {
+        id: 'lennon_the_bunny',
+        channelTitle: 'Lennon The Bunny',
+        handle: '@LennonTheBunny',
+        subscriberTier: '750k+',
+        qualityScore: 86,
+        sourceKind: 'rabbit_care',
+        profileUrl: 'https://www.youtube.com/@LennonTheBunny',
+        aliases: ['lennon the bunny', 'lennonthebunny', 'lennon bunny'],
+        topics: {
+            bunny_reels: { queries: ['bunny rabbit shorts', 'free roam rabbit shorts', 'cute bunny care'], priority: 16 }
+        }
+    },
+    {
+        id: '101rabbits',
+        channelTitle: '101Rabbits',
+        handle: '@101Rabbits',
+        subscriberTier: '100k+',
+        qualityScore: 84,
+        sourceKind: 'rabbit_care',
+        profileUrl: 'https://www.youtube.com/@101Rabbits',
+        aliases: ['101 rabbits', '101rabbits'],
+        topics: {
+            bunny_reels: { queries: ['pet rabbit shorts', 'rabbit care shorts', 'cute bunny moments'], priority: 14 }
+        }
+    },
     {
         id: 'pick_up_limes',
         channelTitle: 'Pick Up Limes',

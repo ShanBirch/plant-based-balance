@@ -52,17 +52,21 @@ const CLIENT_PILOT_TARGETS = [
         handle: 'cavazzanafrancesca',
     },
     {
-        id: 'lil_vegan_food_pilot',
+        id: 'lil_bunny_reel_pilot',
         label: 'Lil',
         handle: 'liligrace_h',
+        revision: 'bunny_reels_3_per_week_v1',
+        topics: ['bunny_reels'],
         caption_mode: 'url_only',
+        vegan_safe_required: false,
     },
 ].map(target => ({
     ...target,
-    revision: CLIENT_PILOT_REVISION,
+    revision: target.revision || CLIENT_PILOT_REVISION,
     interval_ms: CLIENT_PILOT_INTERVAL_MS,
     total_sends: CLIENT_PILOT_TOTAL_SENDS,
-    topics: CLIENT_PILOT_TOPICS,
+    topics: target.topics || CLIENT_PILOT_TOPICS,
+    vegan_safe_required: target.vegan_safe_required !== false,
 }));
 const VEGAN_SAFE_FOOD_TOPIC_IDS = new Set([
     'plant_based_cooking',
@@ -454,6 +458,14 @@ function buildClientPilotPlan(config, nowMs = Date.now()) {
     });
 }
 
+function clientPilotRequiresVeganSafety(config = {}) {
+    return config.vegan_safe_required !== false;
+}
+
+function clientPilotVeganSafetyReasons(config = {}) {
+    return clientPilotRequiresVeganSafety(config) ? ['client_pilot_vegan_food_only'] : [];
+}
+
 function autostartAllowed(nowMs = Date.now()) {
     const explicit = getEnv('LEARNING_REEL_DRIP_AUTOSTART');
     if (explicit && !['1', 'true', 'yes', 'on'].includes(explicit.toLowerCase())) return false;
@@ -526,6 +538,8 @@ function normalizeClientPilotState(thread, config, nowMs = Date.now()) {
     const intervalMs = Number(config.interval_ms || CLIENT_PILOT_INTERVAL_MS);
     const totalSends = Number(config.total_sends || CLIENT_PILOT_TOTAL_SENDS);
     const topics = Array.isArray(config.topics) && config.topics.length ? config.topics : CLIENT_PILOT_TOPICS;
+    const veganSafeRequired = clientPilotRequiresVeganSafety(config);
+    const veganSafetyReasons = clientPilotVeganSafetyReasons(config);
     if (existing.id === config.id && Array.isArray(existing.plan)) {
         const existingTopics = Array.isArray(existing.topics) ? existing.topics : [];
         const topicsChanged = existingTopics.join(',') !== topics.join(',');
@@ -549,7 +563,8 @@ function normalizeClientPilotState(thread, config, nowMs = Date.now()) {
                 interval_ms: intervalMs,
                 total_sends: totalSends,
                 topics,
-                vegan_safe_required: true,
+                vegan_safe_required: veganSafeRequired,
+                vegan_safety_reasons: veganSafetyReasons,
                 pilot_label: config.label,
                 target_handle: config.handle,
                 plan,
@@ -562,7 +577,8 @@ function normalizeClientPilotState(thread, config, nowMs = Date.now()) {
             interval_ms: Number(existing.interval_ms || intervalMs),
             total_sends: Number(existing.total_sends || totalSends),
             topics: existingTopics.length ? existingTopics : topics,
-            vegan_safe_required: true,
+            vegan_safe_required: veganSafeRequired,
+            vegan_safety_reasons: veganSafetyReasons,
             pilot_label: existing.pilot_label || config.label,
             target_handle: existing.target_handle || config.handle,
             plan: existing.plan,
@@ -585,8 +601,8 @@ function normalizeClientPilotState(thread, config, nowMs = Date.now()) {
         interval_ms: intervalMs,
         total_sends: totalSends,
         topics,
-        vegan_safe_required: true,
-        vegan_safety_reasons: ['client_pilot_vegan_food_only'],
+        vegan_safe_required: veganSafeRequired,
+        vegan_safety_reasons: veganSafetyReasons,
         require_coach_reply_after_inbound: true,
         plan,
         sent: [],
@@ -700,11 +716,12 @@ function applyClientPilotThreadCustomData(customData, graph, config, state) {
     const base = safeObject(customData);
     const currentGraph = safeObject(base.instagram_graph);
     const pilots = safeObject(base.learning_reel_pilots);
+    const veganSafeRequired = clientPilotRequiresVeganSafety(config);
     return {
         ...base,
         bot_account: base.bot_account || COCOS_BOT_ACCOUNT,
         algorithm_fork: base.algorithm_fork || COCOS_ALGORITHM_FORK,
-        vegan_safe_required: true,
+        vegan_safe_required: veganSafeRequired || base.vegan_safe_required === true || undefined,
         learning_reel_pilots: {
             ...pilots,
             [config.id]: state,
@@ -1494,6 +1511,7 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now(), veganSafet
 }
 
 function buildClientPilotReelPayload({ reel, item, config, message, nowIso }) {
+    const veganSafeRequired = clientPilotRequiresVeganSafety(config);
     return {
         ...reel,
         content_type: 'learning_reel',
@@ -1505,7 +1523,7 @@ function buildClientPilotReelPayload({ reel, item, config, message, nowIso }) {
         source: SOURCE,
         pilot_id: config.id,
         pilot_label: config.label,
-        vegan_safe_required: true,
+        vegan_safe_required: veganSafeRequired || undefined,
         vegan_safety: reel.vegan_safety || undefined,
     };
 }
@@ -1610,8 +1628,8 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
     }
 
     const veganSafetyRequirement = {
-        required: true,
-        reasons: ['client_pilot_vegan_food_only'],
+        required: clientPilotRequiresVeganSafety(config),
+        reasons: clientPilotVeganSafetyReasons(config),
     };
     const recentOutboundVideoIds = await loadRecentOutboundLearningReelVideoIds(thread.id);
     const reelResult = await findReelForTopic({
@@ -1633,7 +1651,7 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
         const next = updateClientPilotPlanItem(state, item.index, {
             status: `skipped_${skipReason}`,
             skipped_at: skippedAt,
-            vegan_safe_required: true,
+            vegan_safe_required: veganSafetyRequirement.required || undefined,
             vegan_safety_reasons: veganSafetyRequirement.reasons,
         }, nowMs);
         next.skipped = [
@@ -1643,7 +1661,7 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
                 topic_label: item.topic_label,
                 skipped_at: skippedAt,
                 reason: skipReason,
-                vegan_safe_required: true,
+                vegan_safe_required: veganSafetyRequirement.required || undefined,
                 vegan_safety_reasons: veganSafetyRequirement.reasons,
                 duplicate_rejected_count: reelResult.duplicate_rejected_count || undefined,
                 vegan_rejected_count: reelResult.vegan_rejected_count || undefined,
@@ -1778,7 +1796,7 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
         platform: 'youtube',
         pilot_id: config.id,
         pilot_label: config.label,
-        vegan_safe_required: true,
+        vegan_safe_required: veganSafetyRequirement.required || undefined,
         vegan_safety: reel.vegan_safety || undefined,
         graph_message_ids: graphMessageId ? [graphMessageId] : [],
         message_ids: messageId ? [messageId] : [],
@@ -1794,7 +1812,7 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
         channel_id: reel.channel_id,
         url: reel.url,
         token_source: tokenSource,
-        vegan_safe_required: true,
+        vegan_safe_required: veganSafetyRequirement.required || undefined,
         vegan_safety: reel.vegan_safety || undefined,
     }, nowMs);
     nextState = {
@@ -1812,7 +1830,7 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
                 channel_title: reel.channel_title,
                 channel_id: reel.channel_id,
                 url: reel.url,
-                vegan_safe_required: true,
+                vegan_safe_required: veganSafetyRequirement.required || undefined,
                 vegan_safety: reel.vegan_safety || undefined,
             },
         ].slice(-40),
@@ -1939,10 +1957,14 @@ async function runClientPilotDrip(config, { sendDue = true, nowMs = Date.now() }
     }
 
     let state = normalizeClientPilotState(thread, config, nowMs);
+    const veganSafetyRequirement = {
+        required: clientPilotRequiresVeganSafety(config),
+        reasons: clientPilotVeganSafetyReasons(config),
+    };
     state = {
         ...state,
-        vegan_safe_required: true,
-        vegan_safety_reasons: ['client_pilot_vegan_food_only'],
+        vegan_safe_required: veganSafetyRequirement.required,
+        vegan_safety_reasons: veganSafetyRequirement.reasons,
         vegan_safety_checked_at: new Date(nowMs).toISOString(),
     };
     await persistClientPilotState(thread, config, state);
@@ -2019,8 +2041,8 @@ async function runClientPilotDrip(config, { sendDue = true, nowMs = Date.now() }
         next_send_at: result.state?.next_send_at || null,
         manual_alert_id: result.manual_alert_id || null,
         manual_alert_deduped: result.manual_alert_deduped || false,
-        vegan_safe_required: true,
-        vegan_safety_reasons: ['client_pilot_vegan_food_only'],
+        vegan_safe_required: veganSafetyRequirement.required,
+        vegan_safety_reasons: veganSafetyRequirement.reasons,
         reel: result.reel || null,
     };
 }
