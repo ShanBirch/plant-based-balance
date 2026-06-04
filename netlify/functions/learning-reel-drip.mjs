@@ -35,6 +35,28 @@ const MAX_SEARCH_RESULTS_PER_QUERY = 12;
 const MAX_DETAIL_IDS = 50;
 const RECENT_SOURCE_MIX_WINDOW = 8;
 const MAX_RECENT_SAME_SOURCE = 2;
+const CLIENT_PILOT_REVISION = 'vegan_food_3_per_week_v1';
+const CLIENT_PILOT_INTERVAL_MS = Math.floor((7 * 24 * 60 * 60 * 1000) / 3);
+const CLIENT_PILOT_TOTAL_SENDS = 12;
+const CLIENT_PILOT_TOPICS = ['plant_based_cooking', 'meal_prep_planning'];
+const CLIENT_PILOT_TARGETS = [
+    {
+        id: 'mon_vegan_food_pilot',
+        label: 'Mon',
+        handle: 'monica.l.sheekey',
+    },
+    {
+        id: 'francesca_vegan_food_pilot',
+        label: 'Francesca',
+        handle: 'cavazzanafrancesca',
+    },
+].map(target => ({
+    ...target,
+    revision: CLIENT_PILOT_REVISION,
+    interval_ms: CLIENT_PILOT_INTERVAL_MS,
+    total_sends: CLIENT_PILOT_TOTAL_SENDS,
+    topics: CLIENT_PILOT_TOPICS,
+}));
 const VEGAN_SAFE_FOOD_TOPIC_IDS = new Set([
     'plant_based_cooking',
     'meal_prep_planning',
@@ -246,6 +268,29 @@ function hoursSinceIso(value, nowMs = Date.now()) {
     return (nowMs - ts) / (60 * 60 * 1000);
 }
 
+function hasCoachRepliedSinceLastInbound(thread = {}) {
+    const inboundMs = Date.parse(thread.last_inbound_at || '');
+    const outboundMs = Date.parse(thread.last_outbound_at || '');
+    return Number.isFinite(inboundMs) && Number.isFinite(outboundMs) && outboundMs > inboundMs;
+}
+
+function isLearningReelOutboundSource(source) {
+    return /^learning_reel/i.test(cleanString(source, 180));
+}
+
+async function hasNonLearningReelOutboundAfterLastInbound(thread = {}) {
+    if (!hasCoachRepliedSinceLastInbound(thread)) return false;
+    try {
+        const rows = await supabase(
+            `ig_messages?select=source,created_at&thread_id=eq.${encodeURIComponent(thread.id)}&direction=eq.out&created_at=gt.${encodeURIComponent(thread.last_inbound_at)}&order=created_at.desc&limit=20`
+        );
+        return (Array.isArray(rows) ? rows : []).some(row => !isLearningReelOutboundSource(row.source));
+    } catch (error) {
+        console.warn('[learning-reel-drip] coach reply gate lookup failed:', error?.message || error);
+        return false;
+    }
+}
+
 async function loadTargetThread(handle) {
     const encoded = encodeURIComponent(`*${handle}*`);
     const select = 'id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,last_inbound_at,last_outbound_at,custom_data,goals,personal_context,running_notes,qualifier,auto_send_enabled';
@@ -386,6 +431,22 @@ function buildInitialPlan(nowMs = Date.now()) {
     });
 }
 
+function buildClientPilotPlan(config, nowMs = Date.now()) {
+    const topics = Array.isArray(config.topics) && config.topics.length ? config.topics : CLIENT_PILOT_TOPICS;
+    const intervalMs = Number(config.interval_ms || CLIENT_PILOT_INTERVAL_MS);
+    const totalSends = Number(config.total_sends || CLIENT_PILOT_TOTAL_SENDS);
+    return Array.from({ length: totalSends }, (_, index) => {
+        const topicId = topics[index % topics.length];
+        return {
+            index,
+            topic_id: topicId,
+            topic_label: LEARNING_REEL_TOPIC_LABELS[topicId] || topicId,
+            due_at: new Date(nowMs + (index * intervalMs)).toISOString(),
+            status: 'pending',
+        };
+    });
+}
+
 function autostartAllowed(nowMs = Date.now()) {
     const explicit = getEnv('LEARNING_REEL_DRIP_AUTOSTART');
     if (explicit && !['1', 'true', 'yes', 'on'].includes(explicit.toLowerCase())) return false;
@@ -451,6 +512,81 @@ function normalizeDripState(thread, nowMs = Date.now()) {
     };
 }
 
+function normalizeClientPilotState(thread, config, nowMs = Date.now()) {
+    const customData = safeObject(thread.custom_data);
+    const pilots = safeObject(customData.learning_reel_pilots);
+    const existing = safeObject(pilots[config.id]);
+    const intervalMs = Number(config.interval_ms || CLIENT_PILOT_INTERVAL_MS);
+    const totalSends = Number(config.total_sends || CLIENT_PILOT_TOTAL_SENDS);
+    const topics = Array.isArray(config.topics) && config.topics.length ? config.topics : CLIENT_PILOT_TOPICS;
+    if (existing.id === config.id && Array.isArray(existing.plan)) {
+        const existingTopics = Array.isArray(existing.topics) ? existing.topics : [];
+        const topicsChanged = existingTopics.join(',') !== topics.join(',');
+        if (
+            existing.revision !== config.revision
+            || Number(existing.interval_ms) !== intervalMs
+            || Number(existing.total_sends) !== totalSends
+            || topicsChanged
+        ) {
+            const replannedAt = new Date(nowMs).toISOString();
+            const plan = buildClientPilotPlan(config, nowMs);
+            return {
+                ...existing,
+                status: existing.status === 'stopped' ? 'stopped' : 'active',
+                revision: config.revision,
+                previous_revision: existing.revision || null,
+                previous_plan_count: existing.plan.length,
+                replanned_at: replannedAt,
+                updated_at: replannedAt,
+                next_send_at: plan[0]?.due_at || null,
+                interval_ms: intervalMs,
+                total_sends: totalSends,
+                topics,
+                vegan_safe_required: true,
+                pilot_label: config.label,
+                target_handle: config.handle,
+                plan,
+            };
+        }
+        return {
+            ...existing,
+            status: existing.status || 'active',
+            revision: existing.revision || config.revision,
+            interval_ms: Number(existing.interval_ms || intervalMs),
+            total_sends: Number(existing.total_sends || totalSends),
+            topics: existingTopics.length ? existingTopics : topics,
+            vegan_safe_required: true,
+            pilot_label: existing.pilot_label || config.label,
+            target_handle: existing.target_handle || config.handle,
+            plan: existing.plan,
+        };
+    }
+
+    const startedAt = new Date(nowMs).toISOString();
+    const plan = buildClientPilotPlan(config, nowMs);
+    return {
+        id: config.id,
+        status: 'active',
+        revision: config.revision,
+        target_handle: config.handle,
+        pilot_label: config.label,
+        bot_account: COCOS_BOT_ACCOUNT,
+        algorithm_fork: COCOS_ALGORITHM_FORK,
+        started_at: startedAt,
+        updated_at: startedAt,
+        next_send_at: plan[0]?.due_at || null,
+        interval_ms: intervalMs,
+        total_sends: totalSends,
+        topics,
+        vegan_safe_required: true,
+        vegan_safety_reasons: ['client_pilot_vegan_food_only'],
+        require_coach_reply_after_inbound: true,
+        plan,
+        sent: [],
+        skipped: [],
+    };
+}
+
 function nextDuePlanItem(state, nowMs = Date.now()) {
     if (!Array.isArray(state.plan)) return null;
     return state.plan
@@ -483,6 +619,41 @@ function updatePlanItem(state, index, patch) {
         completed_at: complete ? new Date().toISOString() : state.completed_at || null,
         plan: updatedPlan,
     };
+}
+
+function respacePendingPlanItems(state, startMs = Date.now(), intervalMs = CLIENT_PILOT_INTERVAL_MS) {
+    const pending = (Array.isArray(state.plan) ? state.plan : [])
+        .filter(item => item && item.status === 'pending')
+        .sort((a, b) => Number(a.index || 0) - Number(b.index || 0));
+    const dueByIndex = new Map(pending.map((item, position) => [
+        item.index,
+        new Date(startMs + ((position + 1) * intervalMs)).toISOString(),
+    ]));
+    const plan = (Array.isArray(state.plan) ? state.plan : []).map(item => (
+        dueByIndex.has(item.index) ? { ...item, due_at: dueByIndex.get(item.index) } : item
+    ));
+    const nextMs = nextPendingSendAt({ ...state, plan });
+    return {
+        ...state,
+        plan,
+        next_send_at: nextMs ? new Date(nextMs).toISOString() : null,
+    };
+}
+
+function updateClientPilotPlanItem(state, index, patch, nowMs = Date.now()) {
+    const plan = Array.isArray(state.plan) ? state.plan : [];
+    const updatedPlan = plan.map(item => item.index === index ? { ...item, ...patch } : item);
+    const complete = !updatedPlan.some(item => item.status === 'pending');
+    const next = {
+        ...state,
+        status: complete ? 'completed' : 'active',
+        paused_reason: null,
+        updated_at: new Date(nowMs).toISOString(),
+        completed_at: complete ? new Date(nowMs).toISOString() : state.completed_at || null,
+        plan: updatedPlan,
+    };
+    if (complete) return { ...next, next_send_at: null };
+    return respacePendingPlanItems(next, nowMs, Number(state.interval_ms || CLIENT_PILOT_INTERVAL_MS));
 }
 
 function shouldHoldPausedState(state, nowMs = Date.now()) {
@@ -518,6 +689,30 @@ function applyCocosThreadCustomData(customData, graph, state) {
     };
 }
 
+function applyClientPilotThreadCustomData(customData, graph, config, state) {
+    const base = safeObject(customData);
+    const currentGraph = safeObject(base.instagram_graph);
+    const pilots = safeObject(base.learning_reel_pilots);
+    return {
+        ...base,
+        bot_account: base.bot_account || COCOS_BOT_ACCOUNT,
+        algorithm_fork: base.algorithm_fork || COCOS_ALGORITHM_FORK,
+        vegan_safe_required: true,
+        learning_reel_pilots: {
+            ...pilots,
+            [config.id]: state,
+        },
+        instagram_graph: {
+            ...currentGraph,
+            bot_account: currentGraph.bot_account || COCOS_BOT_ACCOUNT,
+            algorithm_fork: currentGraph.algorithm_fork || COCOS_ALGORITHM_FORK,
+            ig_graph_user_id: graph.recipientId || currentGraph.ig_graph_user_id || null,
+            ig_account_id: graph.accountId || currentGraph.ig_account_id || null,
+            send_ready: !!graph.recipientId,
+        },
+    };
+}
+
 async function persistThreadState(thread, state, extraPatch = {}) {
     const graph = resolveThreadGraph(thread);
     const customData = applyCocosThreadCustomData(thread.custom_data, graph, state);
@@ -533,6 +728,23 @@ async function persistThreadState(thread, state, extraPatch = {}) {
     });
     thread.custom_data = customData;
     thread.auto_send_enabled = true;
+    if (extraPatch.last_outbound_at) thread.last_outbound_at = extraPatch.last_outbound_at;
+    return thread;
+}
+
+async function persistClientPilotState(thread, config, state, extraPatch = {}) {
+    const graph = resolveThreadGraph(thread);
+    const customData = applyClientPilotThreadCustomData(thread.custom_data, graph, config, state);
+    const patch = {
+        custom_data: customData,
+        ...extraPatch,
+    };
+    await supabase(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
+        method: 'PATCH',
+        body: patch,
+        prefer: 'return=minimal',
+    });
+    thread.custom_data = customData;
     if (extraPatch.last_outbound_at) thread.last_outbound_at = extraPatch.last_outbound_at;
     return thread;
 }
@@ -1267,6 +1479,227 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now(), veganSafet
     };
 }
 
+async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Date.now() }) {
+    const graph = resolveThreadGraph(thread);
+    if (!graph.recipientId || !graph.accountId) {
+        const next = patchState(state, {
+            status: 'paused',
+            paused_reason: 'graph_recipient_or_account_missing',
+            next_send_at: new Date(nowMs + PAUSE_RECHECK_MS).toISOString(),
+        });
+        await persistClientPilotState(thread, config, next);
+        return { sent: false, blocker: 'graph_recipient_or_account_missing', state: next };
+    }
+
+    const lastInboundHours = hoursSinceIso(thread.last_inbound_at, nowMs);
+    if (lastInboundHours === null || lastInboundHours > 24) {
+        const next = patchState(state, {
+            status: 'paused',
+            paused_reason: 'standard_24h_messaging_window_closed_waiting_for_client_reply',
+            last_inbound_hours: lastInboundHours,
+            next_send_at: new Date(nowMs + PAUSE_RECHECK_MS).toISOString(),
+        });
+        await persistClientPilotState(thread, config, next);
+        return { sent: false, blocker: 'standard_24h_messaging_window_closed', state: next };
+    }
+
+    if (!await hasNonLearningReelOutboundAfterLastInbound(thread)) {
+        const next = patchState(state, {
+            status: 'paused',
+            paused_reason: 'waiting_for_shannon_reply_after_latest_client_message',
+            next_send_at: new Date(nowMs + PAUSE_RECHECK_MS).toISOString(),
+            last_inbound_at: thread.last_inbound_at || null,
+            last_outbound_at: thread.last_outbound_at || null,
+        });
+        await persistClientPilotState(thread, config, next);
+        return { sent: false, blocker: 'waiting_for_shannon_reply_after_latest_client_message', state: next };
+    }
+
+    const veganSafetyRequirement = {
+        required: true,
+        reasons: ['client_pilot_vegan_food_only'],
+    };
+    const recentOutboundVideoIds = await loadRecentOutboundLearningReelVideoIds(thread.id);
+    const reelResult = await findReelForTopic({
+        topicId: item.topic_id,
+        thread,
+        state,
+        veganSafetyRequirement,
+        existingVideoIds: recentOutboundVideoIds,
+    });
+    const reel = reelResult.candidate;
+    if (!reel) {
+        let skipReason = 'no_curated_candidate';
+        if (reelResult.duplicate_rejected_count > 0) {
+            skipReason = 'no_non_duplicate_candidate';
+        } else if (reelResult.vegan_rejected_count > 0) {
+            skipReason = 'no_vegan_safe_candidate';
+        }
+        const skippedAt = new Date(nowMs).toISOString();
+        const next = updateClientPilotPlanItem(state, item.index, {
+            status: `skipped_${skipReason}`,
+            skipped_at: skippedAt,
+            vegan_safe_required: true,
+            vegan_safety_reasons: veganSafetyRequirement.reasons,
+        }, nowMs);
+        next.skipped = [
+            ...(Array.isArray(state.skipped) ? state.skipped : []),
+            {
+                topic_id: item.topic_id,
+                topic_label: item.topic_label,
+                skipped_at: skippedAt,
+                reason: skipReason,
+                vegan_safe_required: true,
+                vegan_safety_reasons: veganSafetyRequirement.reasons,
+                duplicate_rejected_count: reelResult.duplicate_rejected_count || undefined,
+                vegan_rejected_count: reelResult.vegan_rejected_count || undefined,
+                vegan_rejected_samples: reelResult.vegan_rejected_samples || undefined,
+            },
+        ].slice(-30);
+        await persistClientPilotState(thread, config, next);
+        return { sent: false, blocker: skipReason, state: next };
+    }
+
+    const latestOutboundVideoIds = await loadRecentOutboundLearningReelVideoIds(thread.id);
+    if (latestOutboundVideoIds.has(normalizeVideoId(reel.video_id))) {
+        const skippedAt = new Date(nowMs).toISOString();
+        const next = updateClientPilotPlanItem(state, item.index, {
+            status: 'skipped_duplicate_reel',
+            skipped_at: skippedAt,
+            video_id: reel.video_id,
+            title: reel.title,
+            source_id: reel.source_id,
+            source_kind: reel.source_kind,
+            channel_title: reel.channel_title,
+            channel_id: reel.channel_id,
+            url: reel.url,
+            duplicate_source: 'ig_messages_pre_send',
+        }, nowMs);
+        next.skipped = [
+            ...(Array.isArray(state.skipped) ? state.skipped : []),
+            {
+                topic_id: item.topic_id,
+                topic_label: item.topic_label,
+                skipped_at: skippedAt,
+                reason: 'duplicate_learning_reel',
+                duplicate_source: 'ig_messages_pre_send',
+                video_id: reel.video_id,
+                title: reel.title,
+                channel_title: reel.channel_title,
+                url: reel.url,
+            },
+        ].slice(-30);
+        await persistClientPilotState(thread, config, next);
+        return { sent: false, blocker: 'duplicate_learning_reel', state: next };
+    }
+
+    const { token, source: tokenSource } = await resolveMetaIgAccessToken(graph.accountId, supabase);
+    if (!token) {
+        const next = patchState(state, {
+            status: 'paused',
+            paused_reason: 'instagram_graph_token_missing',
+            next_send_at: new Date(nowMs + PAUSE_RECHECK_MS).toISOString(),
+        });
+        await persistClientPilotState(thread, config, next);
+        return { sent: false, blocker: 'instagram_graph_token_missing', state: next };
+    }
+
+    const message = buildVisibleMessage(reel, item.index);
+    const response = await postToInstagramGraph({
+        recipientId: graph.recipientId,
+        accountId: graph.accountId,
+        token,
+        text: message,
+    });
+    const graphMessageId = response?.message_id || response?.id || null;
+    const sentAt = new Date(nowMs).toISOString();
+    const messageId = await logOutbound(thread, message, graphMessageId);
+
+    const reelContext = {
+        ...reel,
+        sent_at: sentAt,
+        sent_message: message,
+        source: SOURCE,
+        platform: 'youtube',
+        pilot_id: config.id,
+        pilot_label: config.label,
+        vegan_safe_required: true,
+        vegan_safety: reel.vegan_safety || undefined,
+        graph_message_ids: graphMessageId ? [graphMessageId] : [],
+        message_ids: messageId ? [messageId] : [],
+    };
+    let nextState = updateClientPilotPlanItem(state, item.index, {
+        status: 'sent',
+        sent_at: sentAt,
+        video_id: reel.video_id,
+        title: reel.title,
+        source_id: reel.source_id,
+        source_kind: reel.source_kind,
+        channel_title: reel.channel_title,
+        channel_id: reel.channel_id,
+        url: reel.url,
+        token_source: tokenSource,
+        vegan_safe_required: true,
+        vegan_safety: reel.vegan_safety || undefined,
+    }, nowMs);
+    nextState = {
+        ...nextState,
+        sent: [
+            ...(Array.isArray(state.sent) ? state.sent : []),
+            {
+                topic_id: item.topic_id,
+                topic_label: item.topic_label,
+                sent_at: sentAt,
+                video_id: reel.video_id,
+                title: reel.title,
+                source_id: reel.source_id,
+                source_kind: reel.source_kind,
+                channel_title: reel.channel_title,
+                channel_id: reel.channel_id,
+                url: reel.url,
+                vegan_safe_required: true,
+                vegan_safety: reel.vegan_safety || undefined,
+            },
+        ].slice(-40),
+    };
+
+    const currentCustomData = applyClientPilotThreadCustomData(thread.custom_data, graph, config, nextState);
+    const nextCustomData = mergeLearningReelContext(currentCustomData, [reelContext], {
+        sentAt,
+        sentMessage: message,
+        source: SOURCE,
+        graphMessageIds: graphMessageId ? [graphMessageId] : [],
+        messageIds: messageId ? [messageId] : [],
+        platform: 'youtube',
+        topicLabel: reel.topic_label,
+        reason: reel.reason,
+    });
+
+    await supabase(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
+        method: 'PATCH',
+        body: {
+            last_outbound_at: sentAt,
+            custom_data: nextCustomData,
+        },
+        prefer: 'return=minimal',
+    });
+    return {
+        sent: true,
+        state: nextState,
+        reel: {
+            topic_id: item.topic_id,
+            topic_label: item.topic_label,
+            title: reel.title,
+            channel_title: reel.channel_title,
+            url: reel.url,
+            description: truncate(reel.description || '', 260),
+            vegan_safety: reel.vegan_safety || null,
+        },
+        graph_message_id: graphMessageId,
+        message_id: messageId,
+    };
+}
+
 async function runDrip({ sendDue = true } = {}) {
     const nowMs = Date.now();
     const handle = normalizeHandle(getEnv('LEARNING_REEL_DRIP_TARGET_HANDLE') || DEFAULT_TARGET_HANDLE);
@@ -1337,6 +1770,133 @@ async function runDrip({ sendDue = true } = {}) {
     };
 }
 
+async function runClientPilotDrip(config, { sendDue = true, nowMs = Date.now() } = {}) {
+    const handle = normalizeHandle(config.handle);
+    const thread = await loadTargetThread(handle);
+    if (!thread) {
+        return {
+            ok: false,
+            pilot_id: config.id,
+            pilot_label: config.label,
+            target_handle: handle,
+            error: 'target_thread_not_found',
+        };
+    }
+
+    let state = normalizeClientPilotState(thread, config, nowMs);
+    state = {
+        ...state,
+        vegan_safe_required: true,
+        vegan_safety_reasons: ['client_pilot_vegan_food_only'],
+        vegan_safety_checked_at: new Date(nowMs).toISOString(),
+    };
+    await persistClientPilotState(thread, config, state);
+
+    if (state.status === 'completed' || state.status === 'stopped') {
+        return {
+            ok: true,
+            pilot_id: config.id,
+            pilot_label: config.label,
+            target_handle: handle,
+            status: state.status,
+            next_send_at: state.next_send_at || null,
+        };
+    }
+    if (!sendDue) {
+        return {
+            ok: true,
+            pilot_id: config.id,
+            pilot_label: config.label,
+            target_handle: handle,
+            status: state.status,
+            next_send_at: state.next_send_at || null,
+            topics: state.topics,
+            total_sends: state.total_sends,
+            interval_ms: state.interval_ms,
+            require_coach_reply_after_inbound: true,
+            latest_inbound_has_non_learning_reel_outbound: await hasNonLearningReelOutboundAfterLastInbound(thread),
+            plan: state.plan,
+        };
+    }
+    if (shouldHoldPausedState(state, nowMs)) {
+        return {
+            ok: true,
+            pilot_id: config.id,
+            pilot_label: config.label,
+            target_handle: handle,
+            status: state.status,
+            paused_reason: state.paused_reason || null,
+            next_send_at: state.next_send_at || null,
+            due: false,
+        };
+    }
+
+    const due = nextDuePlanItem(state, nowMs);
+    if (!due) {
+        const nextMs = nextPendingSendAt(state);
+        state = patchState(state, {
+            status: 'active',
+            paused_reason: null,
+            next_send_at: nextMs ? new Date(nextMs).toISOString() : null,
+        });
+        await persistClientPilotState(thread, config, state);
+        return {
+            ok: true,
+            pilot_id: config.id,
+            pilot_label: config.label,
+            target_handle: handle,
+            status: state.status,
+            next_send_at: state.next_send_at,
+            due: false,
+        };
+    }
+
+    const result = await sendDueClientPilotReel({ thread, config, state, item: due, nowMs });
+    return {
+        ok: true,
+        pilot_id: config.id,
+        pilot_label: config.label,
+        target_handle: handle,
+        due: true,
+        sent: result.sent,
+        blocker: result.blocker || null,
+        status: result.state?.status || state.status,
+        next_send_at: result.state?.next_send_at || null,
+        vegan_safe_required: true,
+        vegan_safety_reasons: ['client_pilot_vegan_food_only'],
+        reel: result.reel || null,
+    };
+}
+
+async function runClientPilotDrips({ sendDue = true, nowMs = Date.now() } = {}) {
+    const results = [];
+    for (const config of CLIENT_PILOT_TARGETS) {
+        try {
+            results.push(await runClientPilotDrip(config, { sendDue, nowMs }));
+        } catch (error) {
+            console.error(`[learning-reel-drip] client pilot failed for ${config.handle}:`, error);
+            results.push({
+                ok: false,
+                pilot_id: config.id,
+                pilot_label: config.label,
+                target_handle: config.handle,
+                error: error.message || String(error),
+            });
+        }
+    }
+    return results;
+}
+
+async function runAllDrips({ sendDue = true } = {}) {
+    const nowMs = Date.now();
+    const primary = await runDrip({ sendDue });
+    const clientPilots = await runClientPilotDrips({ sendDue, nowMs });
+    return {
+        ...primary,
+        client_pilots: clientPilots,
+    };
+}
+
 export default async function handler(req) {
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return json(500, { ok: false, error: 'Supabase env missing' });
 
@@ -1349,12 +1909,12 @@ export default async function handler(req) {
 
     if (action === 'status' || action === 'dry_run') {
         if (!expectedToken || token !== expectedToken) return json(404, { ok: false, error: 'not_found' });
-        const result = await runDrip({ sendDue: false });
+        const result = await runAllDrips({ sendDue: false });
         return json(result.ok === false ? 404 : 200, result);
     }
 
     try {
-        const result = await runDrip({ sendDue: true });
+        const result = await runAllDrips({ sendDue: true });
         return json(result.ok === false ? 404 : 200, result);
     } catch (error) {
         console.error('[learning-reel-drip] failed:', error);
@@ -1364,20 +1924,29 @@ export default async function handler(req) {
 
 export const _test = {
     applyCocosThreadCustomData,
+    applyClientPilotThreadCustomData,
     assessCandidateVeganSafety,
     buildInitialPlan,
+    buildClientPilotPlan,
     buildVisibleMessage,
     candidateFromResult,
+    CLIENT_PILOT_INTERVAL_MS,
+    CLIENT_PILOT_TARGETS,
+    hasCoachRepliedSinceLastInbound,
+    isLearningReelOutboundSource,
     learningReelSourceKey,
     nextDuePlanItem,
     normalizeDripState,
+    normalizeClientPilotState,
     recentLearningReelSourceKeys,
+    respacePendingPlanItems,
     resolveVeganSafetyRequirement,
     resolveThreadGraph,
     sentVideoIdsFromState,
     shouldDeferCandidateForSourceMix,
     shouldHoldPausedState,
     sourceDiversityKey,
+    updateClientPilotPlanItem,
     updatePlanItem,
     youtubeVideoIdsFromText,
 };

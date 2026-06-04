@@ -18,6 +18,55 @@ assert.strictEqual(state.status, 'active');
 assert.strictEqual(state.total_sends, 168);
 assert.strictEqual(state.plan.length, 168);
 
+const pilotConfig = _test.CLIENT_PILOT_TARGETS.find(target => target.id === 'mon_vegan_food_pilot');
+assert.ok(pilotConfig);
+assert.strictEqual(pilotConfig.handle, 'monica.l.sheekey');
+const pilotPlan = _test.buildClientPilotPlan(pilotConfig, nowMs);
+assert.strictEqual(pilotPlan.length, 12);
+assert.strictEqual(pilotPlan[0].topic_id, 'plant_based_cooking');
+assert.strictEqual(pilotPlan[1].topic_id, 'meal_prep_planning');
+assert.strictEqual(pilotPlan[2].topic_id, 'plant_based_cooking');
+assert.strictEqual(Date.parse(pilotPlan[1].due_at) - Date.parse(pilotPlan[0].due_at), _test.CLIENT_PILOT_INTERVAL_MS);
+assert.ok(_test.CLIENT_PILOT_INTERVAL_MS >= 55 * 60 * 60 * 1000);
+assert.ok(_test.CLIENT_PILOT_INTERVAL_MS <= 57 * 60 * 60 * 1000);
+
+const pilotState = _test.normalizeClientPilotState({ custom_data: {} }, pilotConfig, nowMs);
+assert.strictEqual(pilotState.id, 'mon_vegan_food_pilot');
+assert.strictEqual(pilotState.vegan_safe_required, true);
+assert.deepStrictEqual(pilotState.topics, ['plant_based_cooking', 'meal_prep_planning']);
+assert.strictEqual(pilotState.require_coach_reply_after_inbound, true);
+assert.strictEqual(pilotState.plan.length, 12);
+
+assert.strictEqual(_test.hasCoachRepliedSinceLastInbound({
+    last_inbound_at: '2026-06-04T10:00:00.000Z',
+    last_outbound_at: '2026-06-04T09:59:00.000Z',
+}), false);
+assert.strictEqual(_test.hasCoachRepliedSinceLastInbound({
+    last_inbound_at: '2026-06-04T10:00:00.000Z',
+    last_outbound_at: '2026-06-04T10:01:00.000Z',
+}), true);
+assert.strictEqual(_test.isLearningReelOutboundSource('learning_reel_drip_instagram_graph'), true);
+assert.strictEqual(_test.isLearningReelOutboundSource('admin_dashboard_direct_instagram_graph'), false);
+
+const overduePilotState = {
+    ...pilotState,
+    plan: pilotState.plan.map(item => ({
+        ...item,
+        due_at: new Date(nowMs - ((item.index + 1) * 60 * 1000)).toISOString(),
+    })),
+};
+const rolledPilotState = _test.updateClientPilotPlanItem(overduePilotState, 0, {
+    status: 'sent',
+    sent_at: new Date(nowMs).toISOString(),
+    video_id: 'pilot-video-one',
+}, nowMs);
+assert.strictEqual(rolledPilotState.plan[0].status, 'sent');
+assert.strictEqual(Date.parse(rolledPilotState.next_send_at) - nowMs, _test.CLIENT_PILOT_INTERVAL_MS);
+assert.strictEqual(
+    Date.parse(rolledPilotState.plan[2].due_at) - Date.parse(rolledPilotState.plan[1].due_at),
+    _test.CLIENT_PILOT_INTERVAL_MS
+);
+
 const upgraded = _test.normalizeDripState({
     custom_data: {
         learning_reel_drip: {
