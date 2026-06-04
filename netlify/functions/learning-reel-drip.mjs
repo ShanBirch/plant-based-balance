@@ -10,6 +10,7 @@ const {
 } = learningReelSources;
 const {
     findDuplicateLearningReels,
+    insertCoachAlert,
     mergeLearningReelContext,
     normalizeCoachDraftText,
     normalizeLearningReelItems,
@@ -49,6 +50,12 @@ const CLIENT_PILOT_TARGETS = [
         id: 'francesca_vegan_food_pilot',
         label: 'Francesca',
         handle: 'cavazzanafrancesca',
+    },
+    {
+        id: 'lil_vegan_food_pilot',
+        label: 'Lil',
+        handle: 'liligrace_h',
+        caption_mode: 'url_only',
     },
 ].map(target => ({
     ...target,
@@ -1238,6 +1245,13 @@ function buildVisibleMessage(reel, itemIndex = 0) {
     return normalizeCoachDraftText(`${opener}\n${reel.url}`).trim();
 }
 
+function buildClientPilotVisibleMessage(reel, itemIndex = 0, config = {}) {
+    if (config.caption_mode === 'url_only') {
+        return normalizeCoachDraftText(reel?.url || '').trim();
+    }
+    return buildVisibleMessage(reel, itemIndex);
+}
+
 async function postToInstagramGraph({ recipientId, accountId, token, text }) {
     if (!token) throw new Error('Instagram Graph access token missing');
     if (!recipientId) throw new Error('Instagram Graph recipient id missing');
@@ -1479,6 +1493,110 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now(), veganSafet
     };
 }
 
+function buildClientPilotReelPayload({ reel, item, config, message, nowIso }) {
+    return {
+        ...reel,
+        content_type: 'learning_reel',
+        platform: 'youtube',
+        proposed_at: nowIso,
+        topic_id: item.topic_id,
+        topic_label: item.topic_label || reel.topic_label,
+        sent_message: message,
+        source: SOURCE,
+        pilot_id: config.id,
+        pilot_label: config.label,
+        vegan_safe_required: true,
+        vegan_safety: reel.vegan_safety || undefined,
+    };
+}
+
+async function createManualLearningReelNeedsYouAlert({ thread, config, item, reel, message, blocker, nowMs = Date.now() }) {
+    const nowIso = new Date(nowMs).toISOString();
+    const graph = resolveThreadGraph(thread);
+    const clientName = firstString([thread.profile_name, config.label, thread.ig_username, config.handle]) || 'Client';
+    const reelPayload = buildClientPilotReelPayload({ reel, item, config, message, nowIso });
+    const idempotencyKey = [
+        'learning_reel_manual_needs_you',
+        config.id,
+        thread.id,
+        item.index,
+        reel.video_id || youtubeVideoIdsFromText(reel.url || '')[0] || reel.url || reel.title || nowIso,
+    ].map(part => cleanString(part, 180).replace(/\s+/g, '_')).join(':');
+    const reason = blocker || 'standard_24h_messaging_window_closed';
+    const alertRow = {
+        client_id: thread.linked_user_id || null,
+        client_name: clientName,
+        coach_id: thread.coach_id || null,
+        alert_type: 'ig_incoming_dm',
+        priority: 'medium',
+        title: `Send ${clientName} this learning reel manually`,
+        description: `${clientName} is outside the Instagram messaging window. Suggested reel: ${truncate(reel.title || reel.url || 'learning reel', 180)}`,
+        suggested_message: message || reel.url || null,
+        status: 'pending',
+        data: {
+            channel: 'instagram',
+            delivery_channel: 'instagram_graph',
+            client_manager_review_required: true,
+            needs_you_required: true,
+            operator_queue: 'needs_you',
+            needs_you_reason: reason,
+            needs_you_reasons: [reason, 'learning_reel_manual_send_required'],
+            manual_ig_required: true,
+            manual_reason: reason,
+            manual_ig_handle: thread.ig_username || config.handle || null,
+            ig_thread_id: thread.id,
+            ig_username: thread.ig_username || config.handle || null,
+            ig_graph_recipient_id: graph.recipientId || undefined,
+            ig_graph_account_id: graph.accountId || undefined,
+            bot_account: COCOS_BOT_ACCOUNT,
+            algorithm_fork: COCOS_ALGORITHM_FORK,
+            message_preview: truncate(message || reel.url || '', 400),
+            draft_text: message || reel.url || '',
+            draft_messages: message ? [message] : [],
+            learning_reels: {
+                recent: [reelPayload],
+                last_sent: reelPayload,
+                manual_send_required: true,
+            },
+            learning_reel_manual_send: {
+                required: true,
+                reason,
+                pilot_id: config.id,
+                pilot_label: config.label,
+                topic_id: item.topic_id,
+                topic_label: item.topic_label || reel.topic_label || null,
+                title: reel.title || null,
+                channel_title: reel.channel_title || null,
+                url: reel.url || null,
+                video_id: reel.video_id || null,
+                suggested_message: message || reel.url || '',
+                created_at: nowIso,
+            },
+            codex_review: {
+                source: SOURCE,
+                decision: 'client_manager_review_required',
+                queue: 'needs_you',
+                needs_shannon_approval: true,
+                reason,
+                evidence_ids: [
+                    thread.id ? `ig_threads:${thread.id}` : '',
+                    thread.linked_user_id ? `users:${thread.linked_user_id}` : '',
+                    reel.video_id ? `youtube:${reel.video_id}` : '',
+                ].filter(Boolean),
+                reviewed_at: nowIso,
+                automation_id: SOURCE,
+            },
+        },
+    };
+
+    try {
+        return await insertCoachAlert(alertRow, idempotencyKey);
+    } catch (error) {
+        console.warn('[learning-reel-drip] manual Needs You alert insert failed:', error?.message || error);
+        return { alertId: null, deduped: false, error: error?.message || String(error) };
+    }
+}
+
 async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Date.now() }) {
     const graph = resolveThreadGraph(thread);
     if (!graph.recipientId || !graph.accountId) {
@@ -1489,30 +1607,6 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
         });
         await persistClientPilotState(thread, config, next);
         return { sent: false, blocker: 'graph_recipient_or_account_missing', state: next };
-    }
-
-    const lastInboundHours = hoursSinceIso(thread.last_inbound_at, nowMs);
-    if (lastInboundHours === null || lastInboundHours > 24) {
-        const next = patchState(state, {
-            status: 'paused',
-            paused_reason: 'standard_24h_messaging_window_closed_waiting_for_client_reply',
-            last_inbound_hours: lastInboundHours,
-            next_send_at: new Date(nowMs + PAUSE_RECHECK_MS).toISOString(),
-        });
-        await persistClientPilotState(thread, config, next);
-        return { sent: false, blocker: 'standard_24h_messaging_window_closed', state: next };
-    }
-
-    if (!await hasNonLearningReelOutboundAfterLastInbound(thread)) {
-        const next = patchState(state, {
-            status: 'paused',
-            paused_reason: 'waiting_for_shannon_reply_after_latest_client_message',
-            next_send_at: new Date(nowMs + PAUSE_RECHECK_MS).toISOString(),
-            last_inbound_at: thread.last_inbound_at || null,
-            last_outbound_at: thread.last_outbound_at || null,
-        });
-        await persistClientPilotState(thread, config, next);
-        return { sent: false, blocker: 'waiting_for_shannon_reply_after_latest_client_message', state: next };
     }
 
     const veganSafetyRequirement = {
@@ -1593,6 +1687,68 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
         return { sent: false, blocker: 'duplicate_learning_reel', state: next };
     }
 
+    const message = buildClientPilotVisibleMessage(reel, item.index, config);
+    const lastInboundHours = hoursSinceIso(thread.last_inbound_at, nowMs);
+    if (lastInboundHours === null || lastInboundHours > 24) {
+        const blocker = 'standard_24h_messaging_window_closed';
+        const alertResult = await createManualLearningReelNeedsYouAlert({
+            thread,
+            config,
+            item,
+            reel,
+            message,
+            blocker,
+            nowMs,
+        });
+        const next = patchState(state, {
+            status: 'paused',
+            paused_reason: 'standard_24h_messaging_window_closed_manual_needs_you_created',
+            last_inbound_hours: lastInboundHours,
+            pending_manual_alert_id: alertResult.alertId || state.pending_manual_alert_id || null,
+            pending_manual_alert_deduped: alertResult.deduped || undefined,
+            pending_manual_reel: {
+                topic_id: item.topic_id,
+                topic_label: item.topic_label,
+                video_id: reel.video_id,
+                title: reel.title,
+                channel_title: reel.channel_title,
+                url: reel.url,
+                suggested_message: message,
+                created_at: new Date(nowMs).toISOString(),
+            },
+            next_send_at: new Date(nowMs + PAUSE_RECHECK_MS).toISOString(),
+        });
+        await persistClientPilotState(thread, config, next);
+        return {
+            sent: false,
+            blocker,
+            state: next,
+            manual_alert_id: alertResult.alertId || null,
+            manual_alert_deduped: alertResult.deduped || false,
+            reel: {
+                topic_id: item.topic_id,
+                topic_label: item.topic_label,
+                title: reel.title,
+                channel_title: reel.channel_title,
+                url: reel.url,
+                description: truncate(reel.description || '', 260),
+                vegan_safety: reel.vegan_safety || null,
+            },
+        };
+    }
+
+    if (!await hasNonLearningReelOutboundAfterLastInbound(thread)) {
+        const next = patchState(state, {
+            status: 'paused',
+            paused_reason: 'waiting_for_shannon_reply_after_latest_client_message',
+            next_send_at: new Date(nowMs + PAUSE_RECHECK_MS).toISOString(),
+            last_inbound_at: thread.last_inbound_at || null,
+            last_outbound_at: thread.last_outbound_at || null,
+        });
+        await persistClientPilotState(thread, config, next);
+        return { sent: false, blocker: 'waiting_for_shannon_reply_after_latest_client_message', state: next };
+    }
+
     const { token, source: tokenSource } = await resolveMetaIgAccessToken(graph.accountId, supabase);
     if (!token) {
         const next = patchState(state, {
@@ -1604,7 +1760,6 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
         return { sent: false, blocker: 'instagram_graph_token_missing', state: next };
     }
 
-    const message = buildVisibleMessage(reel, item.index);
     const response = await postToInstagramGraph({
         recipientId: graph.recipientId,
         accountId: graph.accountId,
@@ -1862,6 +2017,8 @@ async function runClientPilotDrip(config, { sendDue = true, nowMs = Date.now() }
         blocker: result.blocker || null,
         status: result.state?.status || state.status,
         next_send_at: result.state?.next_send_at || null,
+        manual_alert_id: result.manual_alert_id || null,
+        manual_alert_deduped: result.manual_alert_deduped || false,
         vegan_safe_required: true,
         vegan_safety_reasons: ['client_pilot_vegan_food_only'],
         reel: result.reel || null,
@@ -1928,6 +2085,8 @@ export const _test = {
     assessCandidateVeganSafety,
     buildInitialPlan,
     buildClientPilotPlan,
+    buildClientPilotReelPayload,
+    buildClientPilotVisibleMessage,
     buildVisibleMessage,
     candidateFromResult,
     CLIENT_PILOT_INTERVAL_MS,

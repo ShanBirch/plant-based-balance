@@ -37,6 +37,34 @@ assert.deepStrictEqual(pilotState.topics, ['plant_based_cooking', 'meal_prep_pla
 assert.strictEqual(pilotState.require_coach_reply_after_inbound, true);
 assert.strictEqual(pilotState.plan.length, 12);
 
+const lilPilotConfig = _test.CLIENT_PILOT_TARGETS.find(target => target.id === 'lil_vegan_food_pilot');
+assert.ok(lilPilotConfig);
+assert.strictEqual(lilPilotConfig.handle, 'liligrace_h');
+assert.strictEqual(lilPilotConfig.caption_mode, 'url_only');
+const lilMessage = _test.buildClientPilotVisibleMessage({
+    url: 'https://www.youtube.com/shorts/test-bunny-food',
+    title: 'Easy vegan tofu bowl',
+    topic_id: 'plant_based_cooking',
+    topic_label: 'Plant-based cooking',
+}, 0, lilPilotConfig);
+assert.strictEqual(lilMessage, 'https://www.youtube.com/shorts/test-bunny-food');
+const manualReelPayload = _test.buildClientPilotReelPayload({
+    reel: {
+        video_id: 'test-bunny-food',
+        url: 'https://www.youtube.com/shorts/test-bunny-food',
+        title: 'Easy vegan tofu bowl',
+        channel_title: 'Vegan Creator',
+        description: 'A quick plant-based meal idea.',
+    },
+    item: { topic_id: 'plant_based_cooking', topic_label: 'Plant-based cooking' },
+    config: lilPilotConfig,
+    message: lilMessage,
+    nowIso: new Date(nowMs).toISOString(),
+});
+assert.strictEqual(manualReelPayload.pilot_id, 'lil_vegan_food_pilot');
+assert.strictEqual(manualReelPayload.sent_message, 'https://www.youtube.com/shorts/test-bunny-food');
+assert.strictEqual(manualReelPayload.vegan_safe_required, true);
+
 assert.strictEqual(_test.hasCoachRepliedSinceLastInbound({
     last_inbound_at: '2026-06-04T10:00:00.000Z',
     last_outbound_at: '2026-06-04T09:59:00.000Z',
