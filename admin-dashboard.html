@@ -1950,6 +1950,7 @@
                     <i class="nav-chevron" data-lucide="chevron-right"></i>
                 </div>
                 <div class="nav-submenu" id="dm-nav-submenu">
+                    <div class="nav-item nav-subitem" id="dm-nav-all" data-dm-audience="all" onclick="openDmAudience('all', this)"><span>All</span><span id="dm-nav-all-count" class="alert-badge">0</span></div>
                     <div class="nav-item nav-subitem" id="dm-nav-clients" data-dm-audience="clients" onclick="openDmAudience('clients', this)"><span>Clients</span><span id="dm-nav-clients-count" class="alert-badge">0</span></div>
                     <div class="nav-item nav-subitem" id="dm-nav-leads" data-dm-audience="leads" onclick="openDmAudience('leads', this)"><span>Leads</span><span id="dm-nav-leads-count" class="alert-badge">0</span></div>
                 </div>
@@ -2318,12 +2319,15 @@
                     <div class="content-card" style="flex-shrink:0;">
                         <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                             <div>
-                                <h2 id="dm-section-title" style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Client DMs</h2>
-                                <p id="dm-section-subtitle" style="font-size:0.8rem; color:#64748b; margin-top:2px;">Active coaching clients first, including clients who are not currently in a challenge.</p>
+                                <h2 id="dm-section-title" style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">All DMs</h2>
+                                <p id="dm-section-subtitle" style="font-size:0.8rem; color:#64748b; margin-top:2px;">One queue for app inbox, Instagram, and Messenger messages waiting on Shannon.</p>
                             </div>
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                                 <div class="dm-audience-tabs" aria-label="DM audience">
-                                    <button type="button" id="dm-audience-clients" data-dm-audience="clients" class="alert-view-chip alert-view-chip-on" onclick="openDmAudience('clients')" title="Only active coaching clients">
+                                    <button type="button" id="dm-audience-all" data-dm-audience="all" class="alert-view-chip alert-view-chip-on" onclick="openDmAudience('all')" title="All incoming app, Instagram, and Messenger messages">
+                                        All <span id="dm-audience-all-count" class="alert-view-count">0</span>
+                                    </button>
+                                    <button type="button" id="dm-audience-clients" data-dm-audience="clients" class="alert-view-chip" onclick="openDmAudience('clients')" title="Only active coaching clients">
                                         Clients <span id="dm-audience-clients-count" class="alert-view-count">0</span>
                                     </button>
                                     <button type="button" id="dm-audience-leads" data-dm-audience="leads" class="alert-view-chip" onclick="openDmAudience('leads')" title="IG, Messenger, and app leads who are not active coaching clients">
@@ -9572,9 +9576,9 @@
         const ALERT_EXCLUDED_TYPES_PG = `(${DM_ALERT_TYPES.concat(FOLLOW_UP_ALERT_TYPES).join(',')})`;
         // DMs tab state — mirrors Alerts but scoped to message-type alerts
         let currentDmView = 'unread';
-        let currentDmAudience = 'clients';
+        let currentDmAudience = 'all';
         let dmLoadSeq = 0;
-        const DM_AUDIENCES = ['clients', 'leads'];
+        const DM_AUDIENCES = ['all', 'clients', 'leads'];
         const DM_TABS = ['unread', 'later', 'waiting', 'streaks', 'sent_today', 'discarded'];
         const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
         const COCOS_OWNER_IDS = new Set(['17841435394720504', '26328183736859579']);
@@ -10594,17 +10598,22 @@
         }
 
         function normalizeDmAudience(audience) {
-            return audience === 'leads' ? 'leads' : 'clients';
+            if (audience === 'clients' || audience === 'leads' || audience === 'all') return audience;
+            return 'all';
         }
 
         function dmAudienceLabel(audience = currentDmAudience) {
-            return normalizeDmAudience(audience) === 'leads' ? 'Lead DMs' : 'Client DMs';
+            const view = normalizeDmAudience(audience);
+            if (view === 'leads') return 'Lead DMs';
+            if (view === 'clients') return 'Client DMs';
+            return 'All DMs';
         }
 
         function dmAudienceSubtitle(audience = currentDmAudience) {
-            return normalizeDmAudience(audience) === 'leads'
-                ? 'IG, Messenger and app leads who are not active coaching clients.'
-                : 'Active coaching clients first, including clients who are not currently in a challenge.';
+            const view = normalizeDmAudience(audience);
+            if (view === 'leads') return 'IG, Messenger and app leads who are not active coaching clients.';
+            if (view === 'clients') return 'Active coaching clients first, including clients who are not currently in a challenge.';
+            return 'One queue for app inbox, Instagram, and Messenger messages waiting on Shannon.';
         }
 
         function setBadgeText(id, value) {
@@ -10631,8 +10640,10 @@
                 all: Number(counts.all ?? ((counts.clients || 0) + (counts.leads || 0))),
             };
             dmUnreadAudienceCounts = next;
+            setBadgeText('dm-nav-all-count', next.all);
             setBadgeText('dm-nav-clients-count', next.clients);
             setBadgeText('dm-nav-leads-count', next.leads);
+            setBadgeText('dm-audience-all-count', next.all);
             setBadgeText('dm-audience-clients-count', next.clients);
             setBadgeText('dm-audience-leads-count', next.leads);
             setDmParentBadge(next.all);
@@ -10670,10 +10681,10 @@
                 return;
             }
             group.classList.add('expanded');
-            openDmAudience('clients', document.getElementById('dm-nav-clients'));
+            openDmAudience('all', document.getElementById('dm-nav-all'));
         }
 
-        function openDmAudience(audience = 'clients', el = null) {
+        function openDmAudience(audience = 'all', el = null) {
             const next = normalizeDmAudience(audience);
             currentDmAudience = next;
             const navEl = el || document.getElementById(`dm-nav-${next}`);
@@ -10814,6 +10825,7 @@
                 if (isCocosDmAlert(alert)) return false;
                 if (isNeedsYouRoutedDmAlert(alert)) return false;
                 if (needsYouHasOperatorWork(alert, clientIds)) return false;
+                if (view === 'all') return true;
                 const isClient = alertBelongsToDmClients(alert, clientIds);
                 return view === 'clients' ? isClient : !isClient;
             });
@@ -10841,6 +10853,7 @@
             const view = normalizeDmAudience(audience);
             return (rows || []).filter(row => {
                 if (isCocosDmRow(row)) return false;
+                if (view === 'all') return true;
                 const isClient = dmRowBelongsToClients(row, clientIds);
                 return view === 'clients' ? isClient : !isClient;
             });
@@ -11371,7 +11384,7 @@
                     openNeedsYouForAlert(alert, 'all');
                     return;
                 }
-                currentDmAudience = getAlertClientIdentity(alert) ? 'clients' : 'leads';
+                currentDmAudience = 'all';
                 updateDmAudienceUi();
                 activateDmView('unread');
                 if (typeof showSection === 'function') {
@@ -12043,6 +12056,9 @@
                 }
                 if (json.blankDraftRepairCount > 0) {
                     console.log('[unread-repair] requested draft repair for ' + json.blankDraftRepairCount + ' blank DM alert(s)');
+                }
+                if (json.appInboxRepairCount > 0) {
+                    console.log('[unread-repair] dispatched ' + json.appInboxRepairCount + ' app inbox message(s) into DMs');
                 }
             } catch (e) {
                 console.warn('[unread-repair] failed:', e.message || e);
@@ -12933,7 +12949,7 @@
 
             container.innerHTML = `
                 <div style="font-size:0.78rem; color:#64748b; padding:0 4px 12px;">
-                    ${escapeHtml(opts.intro || `Longest waiting at the top. Showing ${normalizeDmAudience(currentDmAudience) === 'clients' ? 'active client' : 'lead'} threads where Shannon sent the latest message.`)}
+                    ${escapeHtml(opts.intro || `Longest waiting at the top. Showing ${normalizeDmAudience(currentDmAudience) === 'all' ? 'all' : normalizeDmAudience(currentDmAudience) === 'clients' ? 'active client' : 'lead'} threads where Shannon sent the latest message.`)}
                 </div>
                 ${rows.map(renderWaitingForReplyRow).join('')}
             `;
@@ -19199,7 +19215,7 @@
                 loadNeedsYou(true);
             }, 500);
         } else if (window.location.search.includes('tab=dms')) {
-            setTimeout(() => openDmAudience('clients', getNavItemForSection('dms')), 500);
+            setTimeout(() => openDmAudience('all', getNavItemForSection('dms')), 500);
         } else if (window.location.search.includes('tab=alerts')) {
             setTimeout(() => showSection('alerts', getNavItemForSection('alerts')), 500);
         } else if (window.location.search.includes('tab=checkins')) {
