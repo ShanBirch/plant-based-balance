@@ -1,6 +1,8 @@
 const LEARNING_REEL_TOPIC_LABELS = {
     plant_based_cooking: 'Plant-based cooking',
     bunny_reels: 'Bunny reels',
+    core_training_technique: 'Core training technique',
+    pelvic_tilt_balance: 'Pelvic tilt & balance',
     macronutrient_science: 'Macros',
     micronutrient_science: 'Vitamins & minerals',
     behavior_change_science: 'Behaviour change',
@@ -37,6 +39,8 @@ const SUBSCRIBER_TIER_SCORE = {
 const TOPIC_KEYWORD_RE = {
     plant_based_cooking: /\b(plant|vegan|vegetarian|recipe|meal|cook|cooking|lentil|tofu|beans?|tempeh|protein)\b/i,
     bunny_reels: /\b(bunny|bunnies|rabbit|rabbits|houserabbit|house rabbit|free roam rabbit|pet rabbit|bink(?:y|ies)|flop|hay|rabbit care|rabbit enrichment|cute rabbit)\b/i,
+    core_training_technique: /\b(core|abs?|abdominals?|brace|bracing|trunk|dead bug|plank|anti[-\s]?extension|hollow|pelvic tilt|posterior pelvic tilt|anterior pelvic tilt|rib cage|neutral spine)\b/i,
+    pelvic_tilt_balance: /\b(pelvic tilt|anterior pelvic tilt|posterior pelvic tilt|pelvis|center of gravity|centre of gravity|center of mass|centre of mass|weight shift|posture|stack|rib cage|neutral spine|balance)\b/i,
     macronutrient_science: /\b(macro|macronutrient|calorie|protein|carb|carbs|fat|fats|energy balance|nutrition)\b/i,
     micronutrient_science: /\b(micronutrient|vitamin|mineral|iron|b12|calcium|zinc|iodine|omega|nutrient)\b/i,
     behavior_change_science: /\b(behaviou?r|habit|tiny habit|behavior design|identity|consistency|motivation|discipline|prompt)\b/i,
@@ -56,6 +60,49 @@ const TOPIC_KEYWORD_RE = {
 const LEARNING_REEL_BLOCKLIST_RE = /\b(detox|cleanse|miracle|belly fat|fat burner|carnivore|liver king|medical medium|dr\.?\s*berg|gary brecka|alkaline|parasite cleanse|adrenal fatigue|hormone reset|cortisol face|ozempic alternative|ice hack|hack your|age backwards|anti[-\s]?aging secrets?|lose \d+\s*(?:kg|kilos?|pounds?|lbs?)|after 50|fitfixen)\b/i;
 
 const CURATED_LEARNING_REEL_SOURCES = [
+    {
+        id: 'conor_harris',
+        channelTitle: 'Conor Harris',
+        handle: '@ConorHarris',
+        subscriberTier: '100k+',
+        qualityScore: 89,
+        sourceKind: 'movement_biomechanics',
+        profileUrl: 'https://www.youtube.com/@ConorHarris',
+        aliases: ['conor harris', 'conorharris'],
+        topics: {
+            pelvic_tilt_balance: { queries: ['center of gravity pelvic tilt', 'anterior pelvic tilt center of gravity', 'pelvic tilt posture'], priority: 24 },
+            core_training_technique: { queries: ['core bracing pelvic position', 'dead bug core', 'rib cage pelvis stack'], priority: 14 }
+        }
+    },
+    {
+        id: 'e3_rehab',
+        channelTitle: 'E3 Rehab',
+        channelId: 'UCkb9jgRxR2D5bc1fSDofwtA',
+        handle: '@E3Rehab',
+        subscriberTier: '500k+',
+        qualityScore: 91,
+        sourceKind: 'evidence_rehab',
+        profileUrl: 'https://www.youtube.com/@E3Rehab',
+        aliases: ['e3 rehab', 'e3rehab'],
+        topics: {
+            pelvic_tilt_balance: { queries: ['pelvic tilt posture', 'anterior pelvic tilt', 'posterior pelvic tilt'], priority: 18 },
+            core_training_technique: { queries: ['dead bug core', 'core stability', 'bracing core'], priority: 18 }
+        }
+    },
+    {
+        id: 'zac_cupples',
+        channelTitle: 'Zac Cupples',
+        handle: '@ZacCupplesPT',
+        subscriberTier: '100k+',
+        qualityScore: 87,
+        sourceKind: 'movement_biomechanics',
+        profileUrl: 'https://www.youtube.com/@ZacCupplesPT',
+        aliases: ['zac cupples', 'zaccupples', 'zac cupples pt'],
+        topics: {
+            pelvic_tilt_balance: { queries: ['pelvic tilt center of mass', 'swayback pelvis', 'center of gravity posture'], priority: 16 },
+            core_training_technique: { queries: ['core breathing brace', 'rib cage pelvis stack', 'dead bug core'], priority: 10 }
+        }
+    },
     {
         id: 'sincerely_cinnabun',
         channelTitle: 'Sincerely, Cinnabun',
@@ -266,6 +313,8 @@ const CURATED_LEARNING_REEL_SOURCES = [
         aliases: ['squat university', 'squatuniversity'],
         topics: {
             weight_training_technique: ['squat form', 'deadlift form', 'lifting technique', 'gym form tips'],
+            core_training_technique: ['core bracing', 'dead bug core', 'neutral spine core'],
+            pelvic_tilt_balance: ['pelvic tilt posture', 'butt wink pelvic tilt', 'squat pelvic tilt'],
             recovery_sleep_energy: ['mobility recovery', 'training pain', 'movement fixes']
         }
     },
@@ -281,6 +330,8 @@ const CURATED_LEARNING_REEL_SOURCES = [
         topics: {
             workout_motivation: ['workout excuses', 'training motivation', 'stay consistent workouts'],
             weight_training_technique: ['exercise form', 'shoulder safe lifting', 'athletic strength technique'],
+            core_training_technique: ['core bracing', 'ab training form', 'dead bug core'],
+            pelvic_tilt_balance: ['anterior pelvic tilt', 'pelvic tilt posture', 'fix pelvic tilt'],
             muscle_gain_basics: ['build muscle technique', 'muscle growth exercises']
         }
     },

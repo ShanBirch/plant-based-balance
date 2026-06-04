@@ -60,6 +60,16 @@ const CLIENT_PILOT_TARGETS = [
         caption_mode: 'url_only',
         vegan_safe_required: false,
     },
+    {
+        id: 'miranda_core_pelvic_tilt_pilot',
+        label: 'Miranda',
+        handle: 'miranda_laree_is_me',
+        revision: 'core_pelvic_tilt_review_3_per_week_v1',
+        topics: ['pelvic_tilt_balance', 'core_training_technique', 'weight_training_technique'],
+        vegan_safe_required: false,
+        review_before_send: true,
+        review_reason: 'miranda_core_pelvic_tilt_review',
+    },
 ].map(target => ({
     ...target,
     revision: target.revision || CLIENT_PILOT_REVISION,
@@ -67,6 +77,7 @@ const CLIENT_PILOT_TARGETS = [
     total_sends: CLIENT_PILOT_TOTAL_SENDS,
     topics: target.topics || CLIENT_PILOT_TOPICS,
     vegan_safe_required: target.vegan_safe_required !== false,
+    review_before_send: target.review_before_send === true,
 }));
 const VEGAN_SAFE_FOOD_TOPIC_IDS = new Set([
     'plant_based_cooking',
@@ -567,6 +578,8 @@ function normalizeClientPilotState(thread, config, nowMs = Date.now()) {
                 vegan_safety_reasons: veganSafetyReasons,
                 pilot_label: config.label,
                 target_handle: config.handle,
+                review_before_send: config.review_before_send === true,
+                review_reason: config.review_reason || null,
                 plan,
             };
         }
@@ -581,6 +594,8 @@ function normalizeClientPilotState(thread, config, nowMs = Date.now()) {
             vegan_safety_reasons: veganSafetyReasons,
             pilot_label: existing.pilot_label || config.label,
             target_handle: existing.target_handle || config.handle,
+            review_before_send: config.review_before_send === true,
+            review_reason: config.review_reason || existing.review_reason || null,
             plan: existing.plan,
         };
     }
@@ -604,6 +619,8 @@ function normalizeClientPilotState(thread, config, nowMs = Date.now()) {
         vegan_safe_required: veganSafeRequired,
         vegan_safety_reasons: veganSafetyReasons,
         require_coach_reply_after_inbound: true,
+        review_before_send: config.review_before_send === true,
+        review_reason: config.review_reason || null,
         plan,
         sent: [],
         skipped: [],
@@ -1706,6 +1723,73 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
     }
 
     const message = buildClientPilotVisibleMessage(reel, item.index, config);
+    if (config.review_before_send === true) {
+        const blocker = config.review_reason || 'review_before_send';
+        const alertResult = await createManualLearningReelNeedsYouAlert({
+            thread,
+            config,
+            item,
+            reel,
+            message,
+            blocker,
+            nowMs,
+        });
+        const reviewedAt = new Date(nowMs).toISOString();
+        let next = updateClientPilotPlanItem(state, item.index, {
+            status: 'manual_review_created',
+            manual_review_at: reviewedAt,
+            manual_alert_id: alertResult.alertId || null,
+            manual_alert_deduped: alertResult.deduped || undefined,
+            video_id: reel.video_id,
+            title: reel.title,
+            source_id: reel.source_id,
+            source_kind: reel.source_kind,
+            channel_title: reel.channel_title,
+            channel_id: reel.channel_id,
+            url: reel.url,
+            suggested_message: message,
+            review_reason: blocker,
+            vegan_safe_required: veganSafetyRequirement.required || undefined,
+            vegan_safety: reel.vegan_safety || undefined,
+        }, nowMs);
+        next = {
+            ...next,
+            manual_reviews: [
+                ...(Array.isArray(state.manual_reviews) ? state.manual_reviews : []),
+                {
+                    topic_id: item.topic_id,
+                    topic_label: item.topic_label,
+                    created_at: reviewedAt,
+                    manual_alert_id: alertResult.alertId || null,
+                    manual_alert_deduped: alertResult.deduped || false,
+                    reason: blocker,
+                    video_id: reel.video_id,
+                    title: reel.title,
+                    channel_title: reel.channel_title,
+                    url: reel.url,
+                    suggested_message: message,
+                },
+            ].slice(-40),
+        };
+        await persistClientPilotState(thread, config, next);
+        return {
+            sent: false,
+            blocker,
+            state: next,
+            manual_alert_id: alertResult.alertId || null,
+            manual_alert_deduped: alertResult.deduped || false,
+            reel: {
+                topic_id: item.topic_id,
+                topic_label: item.topic_label,
+                title: reel.title,
+                channel_title: reel.channel_title,
+                url: reel.url,
+                description: truncate(reel.description || '', 260),
+                vegan_safety: reel.vegan_safety || null,
+            },
+        };
+    }
+
     const lastInboundHours = hoursSinceIso(thread.last_inbound_at, nowMs);
     if (lastInboundHours === null || lastInboundHours > 24) {
         const blocker = 'standard_24h_messaging_window_closed';

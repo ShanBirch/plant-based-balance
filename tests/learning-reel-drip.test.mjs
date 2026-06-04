@@ -68,6 +68,20 @@ assert.strictEqual(manualReelPayload.topic_id, 'bunny_reels');
 assert.strictEqual(manualReelPayload.sent_message, 'https://www.youtube.com/shorts/test-bunny-flop');
 assert.strictEqual(manualReelPayload.vegan_safe_required, undefined);
 
+const mirandaPilotConfig = _test.CLIENT_PILOT_TARGETS.find(target => target.id === 'miranda_core_pelvic_tilt_pilot');
+assert.ok(mirandaPilotConfig);
+assert.strictEqual(mirandaPilotConfig.handle, 'miranda_laree_is_me');
+assert.deepStrictEqual(mirandaPilotConfig.topics, ['pelvic_tilt_balance', 'core_training_technique', 'weight_training_technique']);
+assert.strictEqual(mirandaPilotConfig.vegan_safe_required, false);
+assert.strictEqual(mirandaPilotConfig.review_before_send, true);
+const mirandaState = _test.normalizeClientPilotState({ custom_data: {} }, mirandaPilotConfig, nowMs);
+assert.strictEqual(mirandaState.id, 'miranda_core_pelvic_tilt_pilot');
+assert.strictEqual(mirandaState.review_before_send, true);
+assert.strictEqual(mirandaState.vegan_safe_required, false);
+assert.deepStrictEqual(mirandaState.vegan_safety_reasons, []);
+assert.strictEqual(mirandaState.plan[0].topic_id, 'pelvic_tilt_balance');
+assert.strictEqual(mirandaState.plan[1].topic_id, 'core_training_technique');
+
 assert.strictEqual(_test.hasCoachRepliedSinceLastInbound({
     last_inbound_at: '2026-06-04T10:00:00.000Z',
     last_outbound_at: '2026-06-04T09:59:00.000Z',
