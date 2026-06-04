@@ -207,7 +207,7 @@ function classifyNeedsYou(alert = {}) {
 
     if (isAlwaysNeedsYouPerson(alertIdentity(alert))) {
         reasons.push('always_needs_you_person');
-        labels.push('Shane/Fra permanent Needs You route');
+        labels.push('Shane/Fra/Miranda permanent Needs You route');
     }
     if (mediaReview.required) {
         reasons.push('media_review_required');

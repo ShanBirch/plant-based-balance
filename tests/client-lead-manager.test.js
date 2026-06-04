@@ -1,4 +1,6 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 
 const clientContext = require('../netlify/functions/_lib/client-context');
 const manager = require('../netlify/functions/client-lead-manager')._test;
@@ -28,11 +30,18 @@ function makeAlert(overrides = {}) {
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Shane' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ profile_name: 'Fra' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'francesca_balance' }), true);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Miranda' }), true);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'miranda_balance' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Frank' }), false);
 
 const shane = manager.classifyNeedsYou(makeAlert({ client_name: 'Shane' }));
 assert.strictEqual(shane.shouldRoute, true);
 assert.ok(shane.reasons.includes('always_needs_you_person'));
+assert.match(shane.label, /Miranda/);
+
+const miranda = manager.classifyNeedsYou(makeAlert({ client_name: 'Miranda' }));
+assert.strictEqual(miranda.shouldRoute, true);
+assert.ok(miranda.reasons.includes('always_needs_you_person'));
 
 const media = manager.classifyNeedsYou(makeAlert({
     data: {
@@ -130,5 +139,17 @@ assert.strictEqual(stamped.operator_queue, 'needs_you');
 assert.strictEqual(stamped.needs_you_required, true);
 assert.strictEqual(stamped.codex_review.source, 'balance-lead-client-manager');
 assert.strictEqual(stamped.codex_review.queue, 'needs_you');
+
+const instantDraftSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/instant-coach-draft.js'), 'utf8');
+assert.ok(
+    instantDraftSource.includes('!permanentNeedsYouClient && !mediaReview.required'),
+    'in-app client DM auto-send should be blocked for permanent Needs You clients'
+);
+
+const igDraftSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/ig-instant-draft.js'), 'utf8');
+assert.ok(
+    igDraftSource.includes("code: 'always_needs_you_person'") && igDraftSource.includes("label: 'permanent Needs You client'"),
+    'IG auto-send should be held for permanent Needs You clients'
+);
 
 console.log('client-lead-manager tests passed');

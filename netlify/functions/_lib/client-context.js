@@ -446,9 +446,11 @@ function isAlwaysNeedsYouPerson(record = {}) {
         const tokens = name.split(/\s+/).filter(Boolean);
         return tokens.includes('shane')
             || tokens.includes('fra')
+            || tokens.includes('miranda')
             || tokens.some(token => /^francesca\b/.test(token))
             || name === 'shane'
             || name === 'fra'
+            || name === 'miranda'
             || name.startsWith('francesca ');
     });
 }

@@ -3961,6 +3961,12 @@ exports.handler = async (event) => {
             label: 'lead is churned',
         };
     }
+    if (!autoHoldReason && autoSendEnabled && permanentNeedsYouClient) {
+        autoHoldReason = {
+            code: 'always_needs_you_person',
+            label: 'permanent Needs You client',
+        };
+    }
     if (!autoHoldReason && autoSendEnabled && isDirectGraphManual) {
         autoHoldReason = {
             code: 'manual_ig',

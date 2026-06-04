@@ -951,7 +951,10 @@ exports.handler = async (event) => {
     if (!simple && !isFormCheck && mediaReview.required) {
         console.log(`[instant-draft] auto-send blocked for media-review alert ${alertId}`);
     }
-    if (!simple && !isFormCheck && !mediaReview.required && draftText && alertId) {
+    if (!simple && !isFormCheck && permanentNeedsYouClient) {
+        console.log(`[instant-draft] auto-send blocked for permanent Needs You client ${clientName}`);
+    }
+    if (!simple && !isFormCheck && !permanentNeedsYouClient && !mediaReview.required && draftText && alertId) {
         autoSent = await maybeAutoSendDraft({
             coachId: receiverId,
             clientId: senderId,
