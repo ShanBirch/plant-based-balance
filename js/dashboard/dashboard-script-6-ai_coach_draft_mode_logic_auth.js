@@ -5199,10 +5199,10 @@ function renderCohortInfoParticipants(participants, isActive) {
             ? `<span style="color: rgba(255,255,255,0.85); font-weight: 700; font-size: 0.9rem;">${p.challenge_points || 0} XP</span>`
             : `<span style="color: rgba(245,217,138,0.95); font-weight: 700; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;">Ready</span>`;
         return `
-            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <div class="cohort-info-participant-row" style="display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.05);">
                 <div style="width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: rgba(216,178,94,0.22); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${photo}</div>
                 <div style="flex: 1; min-width: 0;">
-                    <div style="color: white; font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}${isMe ? ' <span style=\"font-size: 0.65rem; font-weight: 800; color: rgba(245,217,138,0.95); letter-spacing: 0.1em; margin-left: 4px;\">YOU</span>' : ''}</div>
+                    <div class="cohort-info-participant-name" style="color: #f8f7f2; -webkit-text-fill-color: #f8f7f2; font-weight: 850; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}${isMe ? ' <span class=\"cohort-info-you-badge\" style=\"font-size: 0.65rem; font-weight: 800; color: rgba(245,217,138,0.95); -webkit-text-fill-color: rgba(245,217,138,0.95); letter-spacing: 0.1em; margin-left: 4px;\">YOU</span>' : ''}</div>
                 </div>
                 ${trailing}
             </div>
