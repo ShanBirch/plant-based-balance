@@ -9616,6 +9616,9 @@
             'client-dm-manager',
             'codex-client-dm-manager',
         ];
+        function normalizeClientManagerMarkerText(value) {
+            return String(value || '').toLowerCase().replace(/_/g, '-');
+        }
         const NEEDS_YOU_AI_CONFUSION_RE = /\b(?:is\s+this\s+(?:ai|a\.?i\.?|a\s+bot|automated)|whether\s+(?:this|it)\s+is\s+(?:ai|a\.?i\.?|a\s+bot|automated)|ai\s*\/\s*automated|ai\s+assistant|are\s+you\s+(?:ai|a\.?i\.?|a\s+bot|automated|real)|am\s+i\s+talking\s+to\s+(?:ai|a\s+bot|a\s+person)|chatgpt|robot|automated\s+reply|real\s+person)\b/i;
         const NEEDS_YOU_USER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|this|that|it)|sorry[, ]+\s*i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)|(?:what|wat)\s+(?:do|did)\s+(?:you|u)\s+mean(?:\s+by\s+(?:that|this|it))?|what\s+are\s+you\s+meaning|what\s+you\s+mean|wdym|i'?m\s+confused|that'?s\s+confusing|not\s+sure\s+what\s+you\s+mean)\b/i;
         const NEEDS_YOU_EMPTY_STATES = {
@@ -11065,8 +11068,8 @@
                 codexReview.reviewed_by,
                 codexReview.reviewer_model,
                 codexReview.automation_id,
-            ].map(v => String(v || '').toLowerCase()).join(' ');
-            return CLIENT_MANAGER_REVIEW_MARKERS.some(marker => markerText.includes(marker));
+            ].map(normalizeClientManagerMarkerText).join(' ');
+            return CLIENT_MANAGER_REVIEW_MARKERS.some(marker => markerText.includes(normalizeClientManagerMarkerText(marker)));
         }
 
         function isExplicitClientManagerNeedsYou(alert) {

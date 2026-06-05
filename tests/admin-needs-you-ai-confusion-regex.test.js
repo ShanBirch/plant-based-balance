@@ -35,4 +35,20 @@ assert.ok(
     'month-one milestones should have explicit Needs You operator-work handling'
 );
 
+assert.ok(
+    dashboard.includes('function normalizeClientManagerMarkerText(value)'),
+    'client-manager review matching should normalize cron marker text'
+);
+
+assert.ok(
+    dashboard.includes("String(value || '').toLowerCase().replace(/_/g, '-')"),
+    'client-manager marker normalization should treat cron underscore sources like hyphenated markers'
+);
+
+assert.ok(
+    dashboard.includes("].map(normalizeClientManagerMarkerText).join(' ');") &&
+    dashboard.includes('markerText.includes(normalizeClientManagerMarkerText(marker))'),
+    'client-manager review matching should normalize both alert source text and known marker text'
+);
+
 console.log('admin Needs You AI confusion regex tests passed');
