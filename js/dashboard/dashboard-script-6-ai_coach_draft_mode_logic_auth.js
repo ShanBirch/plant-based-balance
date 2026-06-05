@@ -4807,8 +4807,8 @@ function renderCohortDashboardInviteCard(inviteStatus) {
             <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
                 <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem;">&#127942;</div>
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 900; color: white; font-size: 1.02rem; margin-bottom: 2px;">Next Challenge</div>
-                    <div style="font-size: 0.78rem; color: rgba(255,255,255,0.92);">Starts when ${needed} people join.</div>
+                    <div class="cohort-card-title" style="font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; font-size: 1.02rem; margin-bottom: 2px;">Next Challenge</div>
+                    <div class="cohort-card-subtitle" style="font-size: 0.78rem; color: rgba(248,247,242,0.86); -webkit-text-fill-color: rgba(248,247,242,0.86);">Starts when ${needed} people join.</div>
                 </div>
             </div>
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: linear-gradient(135deg, #22c55e 0%, #84cc16 46%, #facc15 100%); color: #07130b; border: 1px solid rgba(254,240,138,0.95); border-radius: 16px; padding: 10px 12px; font-weight: 950; margin-bottom: 12px; box-shadow: 0 10px 28px rgba(34,197,94,0.35), 0 0 0 1px rgba(255,255,255,0.08) inset;">
@@ -4897,8 +4897,8 @@ function renderCohortAcceptanceCard(cohort) {
             <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
                 <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem;">⏳</div>
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 800; color: white; font-size: 1.02rem; margin-bottom: 2px;">Your cohort is ready!</div>
-                    <div style="font-size: 0.78rem; color: rgba(255,255,255,0.92);">${countdown ? `Accept your spot — ${countdown}.` : 'Accept your spot to start.'}</div>
+                    <div class="cohort-card-title" style="font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; font-size: 1.02rem; margin-bottom: 2px;">Your cohort is ready!</div>
+                    <div class="cohort-card-subtitle" style="font-size: 0.78rem; color: rgba(248,247,242,0.86); -webkit-text-fill-color: rgba(248,247,242,0.86);">${countdown ? `Accept your spot — ${countdown}.` : 'Accept your spot to start.'}</div>
                 </div>
             </div>
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: linear-gradient(135deg, #22c55e 0%, #84cc16 46%, #facc15 100%); color: #07130b; border: 1px solid rgba(254,240,138,0.95); border-radius: 16px; padding: 10px 12px; font-weight: 950; margin-bottom: 12px; box-shadow: 0 10px 28px rgba(34,197,94,0.35), 0 0 0 1px rgba(255,255,255,0.08) inset;">
@@ -4931,8 +4931,8 @@ function renderCohortWaitingCard(cohort) {
             <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
                 <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem;">🌱</div>
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 800; color: white; font-size: 1.02rem; margin-bottom: 2px;">${cohort.challenge_name || '30 Day Challenge'}</div>
-                    <div style="font-size: 0.78rem; color: rgba(255,255,255,0.92);">${subtitle}</div>
+                    <div class="cohort-card-title" style="font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; font-size: 1.02rem; margin-bottom: 2px;">${cohort.challenge_name || '30 Day Challenge'}</div>
+                    <div class="cohort-card-subtitle" style="font-size: 0.78rem; color: rgba(248,247,242,0.86); -webkit-text-fill-color: rgba(248,247,242,0.86);">${subtitle}</div>
                 </div>
                 <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.6); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
             </div>
@@ -5027,7 +5027,7 @@ function renderCohortActiveCard(cohort) {
         <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
             <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.5rem;">🌱</div>
             <div style="flex: 1; min-width: 0;">
-                <div style="font-weight: 800; color: white; font-size: 0.98rem; margin-bottom: 3px;">${cohort.challenge_name || '30 Day Challenge'}</div>
+                <div class="cohort-card-title" style="font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; font-size: 0.98rem; margin-bottom: 3px;">${cohort.challenge_name || '30 Day Challenge'}</div>
                 <div style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #22c55e 0%, #84cc16 48%, #facc15 100%); color: #07130b; border: 1px solid rgba(254,240,138,0.85); border-radius: 999px; padding: 4px 8px; font-size: 0.68rem; font-weight: 950; margin-bottom: 6px; box-shadow: 0 6px 18px rgba(34,197,94,0.28);"><span>1st Place</span><span style="color: #ffffff; text-shadow: 0 1px 6px rgba(0,0,0,0.38);">${COHORT_CASH_PRIZE_LABEL}</span></div>
                 <div style="display: flex; gap: 12px; font-size: 0.78rem; color: rgba(255,255,255,0.85);">
                     <span>#${rank}</span>
