@@ -1080,6 +1080,21 @@ select:focus,
     color: var(--text-main) !important;
 }
 
+#last-volume-popup h3 {
+    color: #f8f7f2 !important;
+    -webkit-text-fill-color: #f8f7f2 !important;
+}
+
+#last-volume-popup #popup-last-volume {
+    color: var(--pbb-luxe-gold-light) !important;
+    -webkit-text-fill-color: var(--pbb-luxe-gold-light) !important;
+}
+
+#last-volume-popup p {
+    color: rgba(248, 247, 242, 0.72) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.72) !important;
+}
+
 #guest-signup-title,
 .adaptive-modal-title,
 .completion-modal h2,
