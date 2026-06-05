@@ -447,10 +447,12 @@ function isAlwaysNeedsYouPerson(record = {}) {
         return tokens.includes('shane')
             || tokens.includes('fra')
             || tokens.includes('miranda')
+            || tokens.includes('monica')
             || tokens.some(token => /^francesca\b/.test(token))
             || name === 'shane'
             || name === 'fra'
             || name === 'miranda'
+            || name === 'monica'
             || name.startsWith('francesca ');
     });
 }

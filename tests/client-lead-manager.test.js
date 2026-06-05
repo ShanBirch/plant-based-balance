@@ -32,16 +32,23 @@ assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ profile_name: 'Fra' })
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'francesca_balance' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Miranda' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'miranda_balance' }), true);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Monica' }), true);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'monica_balance' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Frank' }), false);
 
 const shane = manager.classifyNeedsYou(makeAlert({ client_name: 'Shane' }));
 assert.strictEqual(shane.shouldRoute, true);
 assert.ok(shane.reasons.includes('always_needs_you_person'));
 assert.match(shane.label, /Miranda/);
+assert.match(shane.label, /Monica/);
 
 const miranda = manager.classifyNeedsYou(makeAlert({ client_name: 'Miranda' }));
 assert.strictEqual(miranda.shouldRoute, true);
 assert.ok(miranda.reasons.includes('always_needs_you_person'));
+
+const monica = manager.classifyNeedsYou(makeAlert({ client_name: 'Monica' }));
+assert.strictEqual(monica.shouldRoute, true);
+assert.ok(monica.reasons.includes('always_needs_you_person'));
 
 const media = manager.classifyNeedsYou(makeAlert({
     data: {
