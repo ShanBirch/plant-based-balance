@@ -27,6 +27,10 @@ Every full-screen view, modal, or popup MUST fit within the visible viewport —
 
 If you add a new popup/modal/overlay, verify on a small phone viewport that the close button, primary action, and all content are reachable.
 
+### Light Mode Font Contrast
+
+Always verify that fonts are readable in light mode before shipping mobile UI. Any card, popup, or generated style block that changes backgrounds must set explicit readable text colors for headings, body text, labels, buttons, and nested cards. For Capacitor/iOS views, include `-webkit-text-fill-color` when overriding contrast-sensitive text so WebKit does not keep stale or inherited white text on light surfaces.
+
 ### Navigation: Swipe-Back Instead of Back Buttons
 
 Do NOT add back buttons to view headers. The app uses swipe-back gesture navigation consistently. When creating a new full-screen view:
