@@ -57,6 +57,16 @@ assert.strictEqual(blockedVoiceConfig.enabled, true);
 assert.strictEqual(blockedVoiceConfig.available, false);
 assert.strictEqual(blockedVoiceConfig.blockedReason, 'voice_messages_require_instagram_graph');
 
+assert.strictEqual(
+    sendIg.isInstagramAudioUnsupportedError('Instagram Graph audio 400: This attachment format is not supported.'),
+    true
+);
+
+assert.strictEqual(
+    sendIg.isInstagramAudioUnsupportedError('Instagram Graph 500: timeout'),
+    false
+);
+
 const immediateTiming = igDraft.normalizeIgAutoTimingSuggestion({
     timingSuggestion: { delay_ms: 30 * 60 * 1000, label: '30m', reason: 'normal timing' },
     allowImmediate: true,

@@ -809,6 +809,12 @@ async function postInstagramGraphAudio({ recipientId, accountId, audioUrl, tag }
     return parsed;
 }
 
+function isInstagramAudioUnsupportedError(errorMessage = '') {
+    const text = String(errorMessage || '').toLowerCase();
+    return text.includes('attachment format is not supported')
+        || (text.includes('audio') && text.includes('not supported'));
+}
+
 async function postInstagramGraphSenderAction({ recipientId, accountId, senderAction, timeoutMs = 0 }) {
     const allowedActions = new Set(['mark_seen', 'typing_on', 'typing_off']);
     if (!allowedActions.has(senderAction)) {
@@ -1314,19 +1320,35 @@ exports.handler = async (event) => {
                     alertData,
                     supabaseQuery: supabase,
                 });
-                const r = await postInstagramGraphAudio({
-                    recipientId: graphRecipientId,
-                    accountId: graphAccountId,
-                    audioUrl: audio.url,
-                    tag: graphMessageTag,
-                });
+                let r;
+                let audioFallbackDelivery = null;
+                try {
+                    r = await postInstagramGraphAudio({
+                        recipientId: graphRecipientId,
+                        accountId: graphAccountId,
+                        audioUrl: audio.url,
+                        tag: graphMessageTag,
+                    });
+                } catch (audioErr) {
+                    if (!isInstagramAudioUnsupportedError(audioErr.message)) throw audioErr;
+                    audioFallbackDelivery = 'text_link';
+                    r = await postToInstagramGraph({
+                        recipientId: graphRecipientId,
+                        accountId: graphAccountId,
+                        text: `voice note: ${audio.url}`,
+                        tag: graphMessageTag,
+                    });
+                }
                 sendResults.push({
                     ok: true,
                     response: r,
                     text: audio.text || chunkText,
                     transport: deliveryTransport,
                     kind: 'audio',
-                    audio,
+                    audio: {
+                        ...audio,
+                        fallbackDelivery: audioFallbackDelivery,
+                    },
                 });
             } else {
                 const r = shouldUseGraph
@@ -1367,6 +1389,7 @@ exports.handler = async (event) => {
             model_id: r.audio.modelId,
             output_format: r.audio.outputFormat,
             text: r.audio.text,
+            fallback_delivery: r.audio.fallbackDelivery || null,
         }));
 
     // 4. Log every successfully-delivered chunk to ig_messages (so the next
@@ -1428,6 +1451,7 @@ exports.handler = async (event) => {
         outbound_voice_message: voiceMessageConfig.enabled ? true : (alertData.outbound_voice_message || undefined),
         outbound_voice_message_reason: voiceMessageConfig.reason || alertData.outbound_voice_message_reason || undefined,
         sent_voice_messages: sentVoiceMessages.length ? sentVoiceMessages : undefined,
+        voice_delivery_fallback: sentVoiceMessages.find(v => v.fallback_delivery)?.fallback_delivery || undefined,
         instagram_seen_receipt: seenReceipt,
         sent_graph_message_tag: graphMessageTag || undefined,
         ig_graph_recipient_id: graphRecipientId || alertData.ig_graph_recipient_id || null,
@@ -1597,6 +1621,7 @@ exports._test = {
     resolveChunkPacing,
     resolveChunkGaps,
     resolveOutboundVoiceMessageConfig,
+    isInstagramAudioUnsupportedError,
     isCocosAlertData,
     isChallengeOfferSend,
     isSendClaimStale,
