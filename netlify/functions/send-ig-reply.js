@@ -1436,6 +1436,7 @@ exports.handler = async (event) => {
         outbound_voice_message: voiceMessageConfig.enabled ? true : (alertData.outbound_voice_message || undefined),
         outbound_voice_message_reason: voiceMessageConfig.reason || alertData.outbound_voice_message_reason || undefined,
         sent_voice_messages: sentVoiceMessages.length ? sentVoiceMessages : undefined,
+        voice_delivery_fallback: null,
         instagram_seen_receipt: seenReceipt,
         sent_graph_message_tag: graphMessageTag || undefined,
         ig_graph_recipient_id: graphRecipientId || alertData.ig_graph_recipient_id || null,
