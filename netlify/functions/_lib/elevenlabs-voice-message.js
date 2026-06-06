@@ -1,6 +1,6 @@
 const { createHash, randomUUID } = require('crypto');
 
-const DEFAULT_SHANNON_PROFESSIONAL_VOICE_ID = 'qndkzv7PLOlM7dM2zfZQ';
+const DEFAULT_SHANNON_PROFESSIONAL_VOICE_ID = 'UHnJrglEof8vTMenwnVm';
 const DEFAULT_MODEL_ID = 'eleven_multilingual_v2';
 const DEFAULT_OUTPUT_FORMAT = 'pcm_16000';
 const MAX_TTS_CHARS = 3500;

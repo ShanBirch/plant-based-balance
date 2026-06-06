@@ -3422,7 +3422,7 @@ exports.handler = async (event) => {
             auto_send_allow_immediate: voiceReplyTestLane || undefined,
             outbound_voice_message: voiceReplyTestLane || undefined,
             outbound_voice_message_reason: voiceReplyTestLane ? 'cocos_pt_studio_to_shan_n_sunny_test' : undefined,
-            elevenlabs_voice_id: voiceReplyTestLane ? 'qndkzv7PLOlM7dM2zfZQ' : undefined,
+            elevenlabs_voice_id: voiceReplyTestLane ? 'UHnJrglEof8vTMenwnVm' : undefined,
             elevenlabs_voice_name: voiceReplyTestLane ? 'Shannon Balance Professional 20260606' : undefined,
             manychat_message_id: manychatMessageId || null,
             message_preview: truncate(displaySourceMessage, 400),
@@ -3575,7 +3575,7 @@ exports.handler = async (event) => {
                 ? 'cocos_pt_studio_to_shan_n_sunny_test'
                 : existingPending.data?.outbound_voice_message_reason || undefined,
             elevenlabs_voice_id: voiceReplyTestLane
-                ? 'qndkzv7PLOlM7dM2zfZQ'
+                ? 'UHnJrglEof8vTMenwnVm'
                 : existingPending.data?.elevenlabs_voice_id || undefined,
             elevenlabs_voice_name: voiceReplyTestLane
                 ? 'Shannon Balance Professional 20260606'
