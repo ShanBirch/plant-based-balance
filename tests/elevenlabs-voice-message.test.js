@@ -21,6 +21,19 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    voice.isCocosToShanSunnyVoiceTest({
+        botAccount: 'cocos_pt_studio',
+        igUsername: 'cocos_pt_studio',
+        customData: {
+            instagram_graph: {
+                ig_account_id: '17841415641641750',
+            },
+        },
+    }),
+    true
+);
+
+assert.strictEqual(
     igDraft.isCocosToShanSunnyVoiceTest({
         botAccount: '@shan_n_sunny',
         igUsername: '@cocos_pt_studio',

@@ -4,6 +4,7 @@ const DEFAULT_SHANNON_PROFESSIONAL_VOICE_ID = 'qndkzv7PLOlM7dM2zfZQ';
 const DEFAULT_MODEL_ID = 'eleven_multilingual_v2';
 const DEFAULT_OUTPUT_FORMAT = 'mp3_44100_128';
 const MAX_TTS_CHARS = 3500;
+const SHAN_N_SUNNY_GRAPH_ACCOUNT_IDS = new Set(['17841415641641750']);
 
 function cleanString(value, max = 500) {
     return String(value || '').trim().slice(0, max);
@@ -246,7 +247,16 @@ function isCocosToShanSunnyVoiceTest({ botAccount, igUsername, customData = {} }
     const graph = safeObject(customData.instagram_graph);
     const bot = normalizeAccountKey(botAccount || customData.bot_account || graph.bot_account);
     const lead = normalizeAccountKey(igUsername || customData.ig_username || graph.ig_username || graph.username);
-    return bot === 'shan_n_sunny' && lead === 'cocos_pt_studio';
+    const accountId = cleanString(
+        customData.ig_graph_account_id
+        || customData.ig_account_id
+        || graph.ig_account_id
+        || graph.account_id
+        || graph.owner_id,
+        120
+    );
+    const shanSunnyReceiver = bot === 'shan_n_sunny' || SHAN_N_SUNNY_GRAPH_ACCOUNT_IDS.has(accountId);
+    return shanSunnyReceiver && lead === 'cocos_pt_studio';
 }
 
 module.exports = {
