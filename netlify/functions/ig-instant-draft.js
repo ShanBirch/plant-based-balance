@@ -880,7 +880,7 @@ ${truncateTail(totalConversationText || '(no prior tracked context)', 2600)}
 
 Attached media below is from the latest unanswered inbound batch. If a voice note is attached, listen to it and reply to what they said. Do not transcribe it. Do not say you listened to, heard, opened, checked, saw, or watched the media. If the media is genuinely not understandable, write one casual message asking them to resend it or type the gist.
 
-Write in Shannon's casual texting voice with normal phone autocorrect casing. Keep it short unless the audio asks for detailed help. No AI/automation wording. No em-dashes. Never type literal backslash-n escape sequences in the reply text. Use normal punctuation instead.
+Write in Shannon's casual texting voice with normal phone autocorrect casing. Use contractions so the reply sounds spoken: it's, I'd, wouldn't, don't, can't, you're. Keep it short unless the audio asks for detailed help. No AI/automation wording. No em-dashes. Never type literal backslash-n escape sequences in the reply text. Use normal punctuation instead.
 
 JSON only:
 {"messages":["exact DM text"]}`;
@@ -2313,7 +2313,7 @@ There is no reliable prior DM context in the system. Usually Shannon has already
 GREETING RULE:
 ${dailyGreetingPolicyBlock}
 
-This is ${channelShort}. ${replyMode.styleRule} No emojis unless they used one first. No links unless absolutely necessary. Sound like a person texting back, not a brand.
+This is ${channelShort}. ${replyMode.styleRule} Use contractions so the reply sounds like Shannon talking: it's, I'd, wouldn't, don't, can't, you're. No emojis unless they used one first. No links unless absolutely necessary. Sound like a person texting back, not a brand.
 ${nameUsePolicy}
 ${relationshipDiscovery}
 ${heardFirstConversation}

@@ -86,6 +86,18 @@ assert.strictEqual(
     'hey there\n\nsecond bubble'
 );
 
+assert.strictEqual(
+    voice.buildTtsText([
+        'I would not overthink it. It is useful if you can repeat it. Do not make it ten new rules. You cannot keep that up.',
+    ]),
+    "I wouldn't overthink it. It's useful if you can repeat it. Don't make it ten new rules. You can't keep that up."
+);
+
+assert.strictEqual(
+    voice._test.normalizeShannonVoiceContractions('i wouldnt say it is bad, but you are probably overthinking it'),
+    "i wouldn't say it's bad, but you're probably overthinking it"
+);
+
 const wav = voice._test.wrapPcm16LeAsWav(Buffer.from([0, 0, 255, 127]), 16000, 1);
 assert.strictEqual(wav.toString('ascii', 0, 4), 'RIFF');
 assert.strictEqual(wav.toString('ascii', 8, 12), 'WAVE');

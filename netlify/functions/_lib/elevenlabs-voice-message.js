@@ -27,6 +27,66 @@ function normalizeAccountKey(value) {
     return String(value || '').trim().replace(/^@+/, '').toLowerCase();
 }
 
+function preserveInitialCase(original, replacement) {
+    const first = String(original || '').charAt(0);
+    if (first && first === first.toLowerCase()) {
+        return replacement.charAt(0).toLowerCase() + replacement.slice(1);
+    }
+    return replacement.charAt(0).toUpperCase() + replacement.slice(1);
+}
+
+function normalizeShannonVoiceContractions(text = '') {
+    let value = String(text || '');
+    const replacements = [
+        [/\bcan\s+not\b/gi, "can't"],
+        [/\bcannot\b/gi, "can't"],
+        [/\bwould\s+not\b/gi, "wouldn't"],
+        [/\bshould\s+not\b/gi, "shouldn't"],
+        [/\bcould\s+not\b/gi, "couldn't"],
+        [/\bwill\s+not\b/gi, "won't"],
+        [/\bdo\s+not\b/gi, "don't"],
+        [/\bdoes\s+not\b/gi, "doesn't"],
+        [/\bdid\s+not\b/gi, "didn't"],
+        [/\bis\s+not\b/gi, "isn't"],
+        [/\bare\s+not\b/gi, "aren't"],
+        [/\bwas\s+not\b/gi, "wasn't"],
+        [/\bwere\s+not\b/gi, "weren't"],
+        [/\bi\s+am\b/gi, "I'm"],
+        [/\bi\s+have\b/gi, "I've"],
+        [/\bi\s+will\b/gi, "I'll"],
+        [/\bi\s+would\b/gi, "I'd"],
+        [/\bit\s+is\b/gi, "it's"],
+        [/\bthat\s+is\b/gi, "that's"],
+        [/\bthere\s+is\b/gi, "there's"],
+        [/\bwhat\s+is\b/gi, "what's"],
+        [/\bwho\s+is\b/gi, "who's"],
+        [/\bwhere\s+is\b/gi, "where's"],
+        [/\bhere\s+is\b/gi, "here's"],
+        [/\byou\s+are\b/gi, "you're"],
+        [/\byou\s+have\b/gi, "you've"],
+        [/\byou\s+will\b/gi, "you'll"],
+        [/\bwe\s+are\b/gi, "we're"],
+        [/\bwe\s+have\b/gi, "we've"],
+        [/\bwe\s+will\b/gi, "we'll"],
+        [/\bthey\s+are\b/gi, "they're"],
+        [/\bthey\s+have\b/gi, "they've"],
+        [/\bthey\s+will\b/gi, "they'll"],
+        [/\bwouldnt\b/gi, "wouldn't"],
+        [/\bshouldnt\b/gi, "shouldn't"],
+        [/\bcouldnt\b/gi, "couldn't"],
+        [/\bdont\b/gi, "don't"],
+        [/\bdoesnt\b/gi, "doesn't"],
+        [/\bdidnt\b/gi, "didn't"],
+        [/\bcant\b/gi, "can't"],
+        [/\bwont\b/gi, "won't"],
+        [/\bisnt\b/gi, "isn't"],
+    ];
+    for (const [pattern, replacement] of replacements) {
+        value = value.replace(pattern, match => preserveInitialCase(match, replacement));
+    }
+    return value;
+}
+
 function resolveVoiceId(alertData = {}) {
     return cleanString(
         alertData.elevenlabs_voice_id
@@ -95,7 +155,7 @@ function buildTtsText(messages = []) {
         .replace(/[^\S\n]+\n/g, '\n')
         .replace(/\n{3,}/g, '\n\n')
         .trim();
-    return text.slice(0, MAX_TTS_CHARS);
+    return normalizeShannonVoiceContractions(text).slice(0, MAX_TTS_CHARS);
 }
 
 function resolveAudioUploadFormat(outputFormat, contentType = '') {
@@ -338,6 +398,7 @@ module.exports = {
     _test: {
         isVoiceMessageRequested,
         normalizeAccountKey,
+        normalizeShannonVoiceContractions,
         resolveAudioUploadFormat,
         resolveModelId,
         resolveOutputFormat,
