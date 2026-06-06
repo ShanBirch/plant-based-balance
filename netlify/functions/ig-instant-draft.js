@@ -105,6 +105,9 @@ const {
     detectProposedCoachActions,
     mergeProposedActions,
 } = require('./_lib/coach-actions');
+const {
+    isCocosToShanSunnyVoiceTest,
+} = require('./_lib/elevenlabs-voice-message');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const HISTORY_LIMIT = 40;
@@ -214,10 +217,13 @@ function formatAutoDelayLabel(delayMs) {
     return `${hours}h`;
 }
 
-function normalizeIgAutoTimingSuggestion({ timingSuggestion, delayMs, timingLabel }) {
-    const rawDelay = Number(timingSuggestion?.delay_ms ?? delayMs ?? IG_AUTO_SEND_DEFAULT_DELAY_MS);
+function normalizeIgAutoTimingSuggestion({ timingSuggestion, delayMs, timingLabel, allowImmediate = false }) {
+    const rawDelay = allowImmediate
+        ? 0
+        : Number(timingSuggestion?.delay_ms ?? delayMs ?? IG_AUTO_SEND_DEFAULT_DELAY_MS);
+    const minDelayMs = allowImmediate ? 0 : IG_AUTO_SEND_MIN_DELAY_MS;
     const normalizedDelayMs = Number.isFinite(rawDelay)
-        ? Math.min(IG_AUTO_SEND_MAX_DELAY_MS, Math.max(IG_AUTO_SEND_MIN_DELAY_MS, Math.round(rawDelay)))
+        ? Math.min(IG_AUTO_SEND_MAX_DELAY_MS, Math.max(minDelayMs, Math.round(rawDelay)))
         : IG_AUTO_SEND_DEFAULT_DELAY_MS;
     const adjustedForMinimum = Number.isFinite(rawDelay) && normalizedDelayMs !== Math.round(rawDelay);
     const action = normalizedDelayMs === 0 ? 'send_now' : 'schedule';
@@ -265,7 +271,12 @@ function withTimeout(promise, timeoutMs, label) {
 
 async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayMs, timingLabel, timingSuggestion }) {
     if (!alertId || !replyText) throw new Error('missing alertId or replyText');
-    const normalizedTiming = normalizeIgAutoTimingSuggestion({ timingSuggestion, delayMs, timingLabel });
+    const normalizedTiming = normalizeIgAutoTimingSuggestion({
+        timingSuggestion,
+        delayMs,
+        timingLabel,
+        allowImmediate: alertData?.auto_send_allow_immediate === true,
+    });
     const scheduledAt = new Date();
     const scheduledFor = new Date(scheduledAt.getTime() + normalizedTiming.delay_ms);
     const mergedData = {
@@ -2840,8 +2851,13 @@ exports.handler = async (event) => {
     const botAccount = thread.custom_data?.bot_account || thread.custom_data?.instagram_graph?.bot_account || '';
     const algorithmFork = algorithmForkForBotAccount(botAccount);
     const cocosAutoSendLane = isCocosBotAccount(botAccount);
+    const voiceReplyTestLane = isCocosToShanSunnyVoiceTest({
+        botAccount,
+        igUsername: thread.ig_username,
+        customData: thread.custom_data,
+    });
     const balanceAutoSendCandidate = !!thread.auto_send_enabled;
-    const autoSendEnabled = cocosAutoSendLane;
+    const autoSendEnabled = cocosAutoSendLane || voiceReplyTestLane;
 
     // Idempotency — when ManyChat supplied a message_id, reuse it. Otherwise
     // fall back to thread+timestamp (less robust but better than nothing
@@ -3403,6 +3419,11 @@ exports.handler = async (event) => {
             lead_stage: effectiveLeadStage || thread.lead_stage || 'new',
             auto_send_enabled_at_draft: autoSendEnabled,
             auto_send_default_reason: cocosAutoSendLane ? 'cocos_auto_lane' : undefined,
+            auto_send_allow_immediate: voiceReplyTestLane || undefined,
+            outbound_voice_message: voiceReplyTestLane || undefined,
+            outbound_voice_message_reason: voiceReplyTestLane ? 'cocos_pt_studio_to_shan_n_sunny_test' : undefined,
+            elevenlabs_voice_id: voiceReplyTestLane ? 'qndkzv7PLOlM7dM2zfZQ' : undefined,
+            elevenlabs_voice_name: voiceReplyTestLane ? 'Shannon Balance Professional 20260606' : undefined,
             manychat_message_id: manychatMessageId || null,
             message_preview: truncate(displaySourceMessage, 400),
             last_outbound_message: lastOutboundMessage,
@@ -3548,6 +3569,17 @@ exports.handler = async (event) => {
             algorithm_fork: algorithmFork,
             auto_send_enabled_at_draft: autoSendEnabled,
             auto_send_default_reason: cocosAutoSendLane ? 'cocos_auto_lane' : existingPending.data?.auto_send_default_reason,
+            auto_send_allow_immediate: voiceReplyTestLane || existingPending.data?.auto_send_allow_immediate || undefined,
+            outbound_voice_message: voiceReplyTestLane || existingPending.data?.outbound_voice_message || undefined,
+            outbound_voice_message_reason: voiceReplyTestLane
+                ? 'cocos_pt_studio_to_shan_n_sunny_test'
+                : existingPending.data?.outbound_voice_message_reason || undefined,
+            elevenlabs_voice_id: voiceReplyTestLane
+                ? 'qndkzv7PLOlM7dM2zfZQ'
+                : existingPending.data?.elevenlabs_voice_id || undefined,
+            elevenlabs_voice_name: voiceReplyTestLane
+                ? 'Shannon Balance Professional 20260606'
+                : existingPending.data?.elevenlabs_voice_name || undefined,
             draft_messages: draft.chunks,
             draft_text: draft.joined,
             draft_model: draft.model,
@@ -4198,4 +4230,6 @@ exports._test = {
     isExistingClientThread,
     buildChallengeNextStepBlock,
     buildEmptyMediaDraftFallbackChunks,
+    normalizeIgAutoTimingSuggestion,
+    isCocosToShanSunnyVoiceTest,
 };

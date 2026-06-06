@@ -97,6 +97,10 @@ const {
 const {
     isChallengeOfferWarningText,
 } = require('./_lib/qualifier-engine');
+const {
+    createVoiceMessageAudio,
+    resolveOutboundVoiceMessageConfig,
+} = require('./_lib/elevenlabs-voice-message');
 
 // Inter-chunk delay. Keep multi-bubble IG/Messenger replies paced like a
 // person typing, not a bot dumping a batch. Dashboard-approved big replies use
@@ -771,6 +775,40 @@ async function postToInstagramGraph({ recipientId, accountId, text, tag }) {
     return parsed;
 }
 
+async function postInstagramGraphAudio({ recipientId, accountId, audioUrl, tag }) {
+    const accessToken = await getInstagramGraphAccessToken(accountId);
+    if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
+    if (!recipientId) throw new Error('Instagram Graph recipient id missing');
+    if (!audioUrl) throw new Error('Instagram Graph audio URL missing');
+
+    const targetAccount = accountId || 'me';
+    const res = await fetch(`https://graph.instagram.com/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(targetAccount)}/messages`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            recipient: { id: recipientId },
+            message: {
+                attachment: {
+                    type: 'audio',
+                    payload: { url: audioUrl },
+                },
+            },
+            ...(tag ? { tag } : {}),
+        }),
+    });
+    const responseText = await res.text();
+    let parsed;
+    try { parsed = responseText ? JSON.parse(responseText) : {}; } catch { parsed = { raw: responseText }; }
+    if (!res.ok) {
+        const detail = parsed?.error?.message || responseText;
+        throw new Error(`Instagram Graph audio ${res.status}: ${String(detail || '').slice(0, 400)}`);
+    }
+    return parsed;
+}
+
 async function postInstagramGraphSenderAction({ recipientId, accountId, senderAction, timeoutMs = 0 }) {
     const allowedActions = new Set(['mark_seen', 'typing_on', 'typing_off']);
     if (!allowedActions.has(senderAction)) {
@@ -1197,6 +1235,23 @@ exports.handler = async (event) => {
     if (messagesToSend.length === 0) messagesToSend = [replyText];
     const chunkPacing = resolveChunkPacing(messagesToSend.length, deliveryPacing);
     const plannedChunkGapsMs = resolveChunkGaps(messagesToSend, chunkPacing);
+    const voiceMessageConfig = resolveOutboundVoiceMessageConfig(alertData, { shouldUseGraph, channel });
+    if (voiceMessageConfig.enabled && !voiceMessageConfig.available) {
+        return {
+            statusCode: 409,
+            body: JSON.stringify({
+                error: 'Voice message delivery requires Instagram Graph',
+                code: voiceMessageConfig.blockedReason || 'voice_message_unavailable',
+            }),
+        };
+    }
+    const outboundItems = voiceMessageConfig.enabled
+        ? [{
+            kind: 'audio',
+            text: messagesToSend.join('\n\n'),
+            voiceConfig: voiceMessageConfig,
+        }]
+        : messagesToSend.map(text => ({ kind: 'text', text }));
 
     let claimedAlert;
     let sendClaimId = '';
@@ -1230,7 +1285,7 @@ exports.handler = async (event) => {
     const instagramTypingActions = [];
     let firstError = null;
     const deliveryTransport = shouldUseGraph ? 'instagram_graph' : 'manychat';
-    for (let i = 0; i < messagesToSend.length; i++) {
+    for (let i = 0; i < outboundItems.length; i++) {
         let typingStartedForChunk = false;
         if (i > 0) {
             const gapMs = plannedChunkGapsMs[i - 1] || chunkPacing.minMs || CHUNK_GAP_MIN_MS;
@@ -1249,14 +1304,38 @@ exports.handler = async (event) => {
             }
             await sleep(gapMs);
         }
-        const chunkText = messagesToSend[i];
+        const item = outboundItems[i];
+        const chunkText = item.text;
         try {
-            const r = shouldUseGraph
-                ? await postToInstagramGraph({ recipientId: graphRecipientId, accountId: graphAccountId, text: chunkText, tag: graphMessageTag })
-                : await postToManyChat({ subscriberId, text: chunkText, channel });
-            sendResults.push({ ok: true, response: r, text: chunkText, transport: deliveryTransport });
+            if (item.kind === 'audio') {
+                const audio = await createVoiceMessageAudio({
+                    messages: messagesToSend,
+                    alertId,
+                    alertData,
+                    supabaseQuery: supabase,
+                });
+                const r = await postInstagramGraphAudio({
+                    recipientId: graphRecipientId,
+                    accountId: graphAccountId,
+                    audioUrl: audio.url,
+                    tag: graphMessageTag,
+                });
+                sendResults.push({
+                    ok: true,
+                    response: r,
+                    text: audio.text || chunkText,
+                    transport: deliveryTransport,
+                    kind: 'audio',
+                    audio,
+                });
+            } else {
+                const r = shouldUseGraph
+                    ? await postToInstagramGraph({ recipientId: graphRecipientId, accountId: graphAccountId, text: chunkText, tag: graphMessageTag })
+                    : await postToManyChat({ subscriberId, text: chunkText, channel });
+                sendResults.push({ ok: true, response: r, text: chunkText, transport: deliveryTransport, kind: 'text' });
+            }
         } catch (err) {
-            console.error(`[send-ig-reply] chunk ${i + 1}/${messagesToSend.length} failed:`, err.message);
+            console.error(`[send-ig-reply] chunk ${i + 1}/${outboundItems.length} failed:`, err.message);
             if (shouldUseGraph && typingStartedForChunk) {
                 const typingOffAction = await sendInstagramGraphTypingAction({
                     channel,
@@ -1268,14 +1347,27 @@ exports.handler = async (event) => {
                 if (typingOffAction.attempted) instagramTypingActions.push(typingOffAction);
             }
             firstError = err.message;
-            sendResults.push({ ok: false, error: err.message, text: chunkText, transport: deliveryTransport });
+            sendResults.push({ ok: false, error: err.message, text: chunkText, transport: deliveryTransport, kind: item.kind });
             break;
         }
     }
 
     const sentChunks = sendResults.filter(r => r.ok);
-    const allOk = firstError === null && sentChunks.length === messagesToSend.length;
+    const allOk = firstError === null && sentChunks.length === outboundItems.length;
     const sentAtIso = new Date().toISOString();
+    const sentVoiceMessages = sentChunks
+        .filter(r => r.kind === 'audio' && r.audio)
+        .map(r => ({
+            url: r.audio.url,
+            file_name: r.audio.fileName,
+            file_id: r.audio.fileId,
+            size_bytes: r.audio.sizeBytes,
+            content_type: r.audio.contentType,
+            voice_id: r.audio.voiceId,
+            model_id: r.audio.modelId,
+            output_format: r.audio.outputFormat,
+            text: r.audio.text,
+        }));
 
     // 4. Log every successfully-delivered chunk to ig_messages (so the next
     //    AI draft has the conversation history including our outbound).
@@ -1290,7 +1382,9 @@ exports.handler = async (event) => {
                     thread_id: igThreadId,
                     direction: 'out',
                     text: result.text,
-                    source: shouldUseGraph ? 'instagram_graph_send' : source,
+                    source: result.kind === 'audio'
+                        ? 'instagram_graph_voice_send'
+                        : (shouldUseGraph ? 'instagram_graph_send' : source),
                     alert_id: alertId,
                     manychat_message_id: graphMessageId ? `${GRAPH_SUBSCRIBER_PREFIX}${graphMessageId}` : null,
                 }],
@@ -1324,12 +1418,16 @@ exports.handler = async (event) => {
         sent_at: sentAtIso,
         sent_via: source,
         chunks_sent: sentChunks.length,
-        chunks_total: messagesToSend.length,
+        chunks_total: outboundItems.length,
         sent_chunks: sentChunks.map(r => r.text),
         sent_split_strategy: 'paragraph_coalesced_v2',
         sent_delivery_pacing: chunkPacing.strategy,
         delivery_channel: shouldUseGraph ? 'instagram_graph' : (alertData.delivery_channel || channel),
         delivery_transport: deliveryTransport,
+        delivery_payload_kind: voiceMessageConfig.enabled ? 'audio' : 'text',
+        outbound_voice_message: voiceMessageConfig.enabled ? true : (alertData.outbound_voice_message || undefined),
+        outbound_voice_message_reason: voiceMessageConfig.reason || alertData.outbound_voice_message_reason || undefined,
+        sent_voice_messages: sentVoiceMessages.length ? sentVoiceMessages : undefined,
         instagram_seen_receipt: seenReceipt,
         sent_graph_message_tag: graphMessageTag || undefined,
         ig_graph_recipient_id: graphRecipientId || alertData.ig_graph_recipient_id || null,
@@ -1420,7 +1518,7 @@ exports.handler = async (event) => {
     if (!allOk) {
         const clientName = alertData.ig_username || alertData.client_name || 'IG lead';
         const sentSummary = sentChunks.length > 0
-            ? `Sent ${sentChunks.length}/${messagesToSend.length} before error.`
+            ? `Sent ${sentChunks.length}/${outboundItems.length} before error.`
             : 'Send failed before any chunks delivered.';
         try {
             await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
@@ -1443,7 +1541,7 @@ exports.handler = async (event) => {
                 error: shouldUseGraph ? 'Instagram Graph send failed' : 'ManyChat send failed',
                 details: firstError,
                 chunks_sent: sentChunks.length,
-                chunks_total: messagesToSend.length,
+                chunks_total: outboundItems.length,
             }),
         };
     }
@@ -1481,7 +1579,8 @@ exports.handler = async (event) => {
             wasEdited,
             delivery_transport: deliveryTransport,
             chunks_sent: sentChunks.length,
-            chunks_total: messagesToSend.length,
+            chunks_total: outboundItems.length,
+            delivery_payload_kind: voiceMessageConfig.enabled ? 'audio' : 'text',
             ...cleanup,
         }),
     };
@@ -1497,6 +1596,7 @@ exports._test = {
     resolveThreadGraphRecipientId,
     resolveChunkPacing,
     resolveChunkGaps,
+    resolveOutboundVoiceMessageConfig,
     isCocosAlertData,
     isChallengeOfferSend,
     isSendClaimStale,
