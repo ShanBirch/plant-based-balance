@@ -48,6 +48,7 @@ const voiceConfig = sendIg.resolveOutboundVoiceMessageConfig(
 assert.strictEqual(voiceConfig.enabled, true);
 assert.strictEqual(voiceConfig.available, true);
 assert.strictEqual(voiceConfig.voiceId, voice.DEFAULT_SHANNON_PROFESSIONAL_VOICE_ID);
+assert.strictEqual(voiceConfig.outputFormat, voice.DEFAULT_OUTPUT_FORMAT);
 
 const blockedVoiceConfig = sendIg.resolveOutboundVoiceMessageConfig(
     { outbound_voice_message: true },
@@ -83,6 +84,23 @@ assert.strictEqual(normalTiming.delay_ms, 15 * 60 * 1000);
 assert.strictEqual(
     voice.buildTtsText(['hey there', 'second bubble']),
     'hey there\n\nsecond bubble'
+);
+
+const wav = voice._test.wrapPcm16LeAsWav(Buffer.from([0, 0, 255, 127]), 16000, 1);
+assert.strictEqual(wav.toString('ascii', 0, 4), 'RIFF');
+assert.strictEqual(wav.toString('ascii', 8, 12), 'WAVE');
+assert.strictEqual(wav.readUInt32LE(24), 16000);
+assert.strictEqual(wav.readUInt16LE(34), 16);
+assert.strictEqual(wav.readUInt32LE(40), 4);
+
+assert.deepStrictEqual(
+    voice._test.resolveAudioUploadFormat('pcm_16000', 'application/octet-stream'),
+    {
+        contentType: 'audio/wav',
+        extension: 'wav',
+        sourceEncoding: 'pcm_s16le',
+        sampleRate: 16000,
+    }
 );
 
 console.log('elevenlabs voice message tests passed');

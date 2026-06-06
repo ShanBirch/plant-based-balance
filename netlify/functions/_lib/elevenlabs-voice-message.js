@@ -2,7 +2,7 @@ const { createHash, randomUUID } = require('crypto');
 
 const DEFAULT_SHANNON_PROFESSIONAL_VOICE_ID = 'qndkzv7PLOlM7dM2zfZQ';
 const DEFAULT_MODEL_ID = 'eleven_multilingual_v2';
-const DEFAULT_OUTPUT_FORMAT = 'mp3_44100_128';
+const DEFAULT_OUTPUT_FORMAT = 'pcm_16000';
 const MAX_TTS_CHARS = 3500;
 const SHAN_N_SUNNY_GRAPH_ACCOUNT_IDS = new Set(['17841415641641750']);
 
@@ -98,6 +98,54 @@ function buildTtsText(messages = []) {
     return text.slice(0, MAX_TTS_CHARS);
 }
 
+function resolveAudioUploadFormat(outputFormat, contentType = '') {
+    const format = cleanString(outputFormat || DEFAULT_OUTPUT_FORMAT, 80).toLowerCase();
+    const pcmMatch = format.match(/^pcm_(\d{4,6})$/);
+    if (pcmMatch) {
+        return {
+            contentType: 'audio/wav',
+            extension: 'wav',
+            sourceEncoding: 'pcm_s16le',
+            sampleRate: Number(pcmMatch[1]),
+        };
+    }
+    if (format.includes('mp3') || /mpeg|mp3/i.test(contentType)) {
+        return {
+            contentType: contentType || 'audio/mpeg',
+            extension: 'mp3',
+            sourceEncoding: 'encoded',
+            sampleRate: null,
+        };
+    }
+    return {
+        contentType: contentType || 'audio/mpeg',
+        extension: 'mp3',
+        sourceEncoding: 'encoded',
+        sampleRate: null,
+    };
+}
+
+function wrapPcm16LeAsWav(pcmBuffer, sampleRate = 16000, channels = 1) {
+    const pcm = Buffer.isBuffer(pcmBuffer) ? pcmBuffer : Buffer.from(pcmBuffer || []);
+    const byteRate = sampleRate * channels * 2;
+    const blockAlign = channels * 2;
+    const header = Buffer.alloc(44);
+    header.write('RIFF', 0);
+    header.writeUInt32LE(36 + pcm.length, 4);
+    header.write('WAVE', 8);
+    header.write('fmt ', 12);
+    header.writeUInt32LE(16, 16);
+    header.writeUInt16LE(1, 20);
+    header.writeUInt16LE(channels, 22);
+    header.writeUInt32LE(sampleRate, 24);
+    header.writeUInt32LE(byteRate, 28);
+    header.writeUInt16LE(blockAlign, 32);
+    header.writeUInt16LE(16, 34);
+    header.write('data', 36);
+    header.writeUInt32LE(pcm.length, 40);
+    return Buffer.concat([header, pcm]);
+}
+
 async function secretValueForKey(key, supabaseQuery) {
     const cleanKey = cleanString(key, 180);
     if (!cleanKey || typeof supabaseQuery !== 'function') return '';
@@ -145,7 +193,7 @@ async function generateElevenLabsSpeech({ text, voiceId, modelId, outputFormat, 
             }),
         }
     );
-    const contentType = res.headers.get('content-type') || 'audio/mpeg';
+    const responseContentType = res.headers.get('content-type') || 'audio/mpeg';
     const arrayBuffer = await res.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     if (!res.ok) {
@@ -153,10 +201,26 @@ async function generateElevenLabsSpeech({ text, voiceId, modelId, outputFormat, 
         throw new Error(`ElevenLabs ${res.status}: ${detail}`);
     }
     if (!buffer.length) throw new Error('ElevenLabs returned empty audio');
-    return { buffer, contentType };
+    const uploadFormat = resolveAudioUploadFormat(outputFormat, responseContentType);
+    if (uploadFormat.sourceEncoding === 'pcm_s16le') {
+        return {
+            buffer: wrapPcm16LeAsWav(buffer, uploadFormat.sampleRate || 16000, 1),
+            contentType: uploadFormat.contentType,
+            extension: uploadFormat.extension,
+            sourceEncoding: uploadFormat.sourceEncoding,
+            sampleRate: uploadFormat.sampleRate,
+        };
+    }
+    return {
+        buffer,
+        contentType: uploadFormat.contentType,
+        extension: uploadFormat.extension,
+        sourceEncoding: uploadFormat.sourceEncoding,
+        sampleRate: uploadFormat.sampleRate,
+    };
 }
 
-async function uploadVoiceNoteToB2({ buffer, contentType = 'audio/mpeg', alertId = '' }) {
+async function uploadVoiceNoteToB2({ buffer, contentType = 'audio/mpeg', extension = 'mp3', alertId = '' }) {
     const keyId = cleanString(process.env.B2_KEY_ID || '', 5000);
     const appKey = cleanString(process.env.B2_APPLICATION_KEY || '', 5000);
     const bucketId = cleanString(process.env.B2_BUCKET_ID || '', 500);
@@ -188,7 +252,8 @@ async function uploadVoiceNoteToB2({ buffer, contentType = 'audio/mpeg', alertId
 
     const dateKey = new Date().toISOString().slice(0, 10);
     const cleanAlertId = cleanString(alertId, 80).replace(/[^a-zA-Z0-9_-]+/g, '-');
-    const fileName = `ai-voice-notes/${dateKey}/${Date.now()}-${cleanAlertId || 'alert'}-${randomUUID()}.mp3`;
+    const safeExtension = cleanString(extension, 12).replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() || 'mp3';
+    const fileName = `ai-voice-notes/${dateKey}/${Date.now()}-${cleanAlertId || 'alert'}-${randomUUID()}.${safeExtension}`;
     const sha1 = createHash('sha1').update(buffer).digest('hex');
 
     const uploadRes = await fetch(upload.uploadUrl, {
@@ -232,6 +297,7 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
     const uploaded = await uploadVoiceNoteToB2({
         buffer: speech.buffer,
         contentType: speech.contentType || 'audio/mpeg',
+        extension: speech.extension || 'mp3',
         alertId,
     });
     return {
@@ -240,6 +306,8 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
         voiceId: config.voiceId,
         modelId: config.modelId,
         outputFormat: config.outputFormat,
+        sourceEncoding: speech.sourceEncoding || null,
+        sampleRate: speech.sampleRate || null,
     };
 }
 
@@ -261,6 +329,7 @@ function isCocosToShanSunnyVoiceTest({ botAccount, igUsername, customData = {} }
 
 module.exports = {
     DEFAULT_SHANNON_PROFESSIONAL_VOICE_ID,
+    DEFAULT_OUTPUT_FORMAT,
     buildTtsText,
     createVoiceMessageAudio,
     isCocosToShanSunnyVoiceTest,
@@ -269,8 +338,10 @@ module.exports = {
     _test: {
         isVoiceMessageRequested,
         normalizeAccountKey,
+        resolveAudioUploadFormat,
         resolveModelId,
         resolveOutputFormat,
         resolveVoiceId,
+        wrapPcm16LeAsWav,
     },
 };
