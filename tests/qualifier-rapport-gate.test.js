@@ -53,6 +53,30 @@ assert.strictEqual(
     isUnsafeStockDiscoveryQuestion("what's for lunch today?"),
     true
 );
+assert.strictEqual(
+    isUnsafeStockDiscoveryQuestion('what does that look like for you?'),
+    true
+);
+assert.strictEqual(
+    isUnsafeStockDiscoveryQuestion('what kind of difference would that make?'),
+    true
+);
+assert.strictEqual(
+    isUnsafeStockDiscoveryQuestion('anything in particular making it hectic?'),
+    true
+);
+assert.strictEqual(
+    isUnsafeStockDiscoveryQuestion('how are you finding it so far?'),
+    true
+);
+assert.strictEqual(
+    isUnsafeStockDiscoveryQuestion('why by April?'),
+    false
+);
+assert.strictEqual(
+    isUnsafeStockDiscoveryQuestion('food or training?'),
+    false
+);
 
 const foodBanter = applyRapportGate({
     qualifier: {
@@ -115,6 +139,8 @@ assert.match(igDraftSource, /download the app/);
 assert.match(igDraftSource, /Do not call the character FitGotchi in DMs/);
 assert.match(qualifierSource, /not an app explainer/);
 assert.match(igDraftSource, /Earn the next response/);
+assert.match(igDraftSource, /SHANNON FOLLOW-UP QUESTION FINGERPRINT/);
+assert.match(igDraftSource, /why by April\?/);
 assert.match(igDraftSource, /local\/in-person trainer/);
 assert.match(qualifierSource, /LOCAL \/ IN-PERSON \/ EXISTING TRAINER GATE/);
 assert.ok(!/Example shape:\s*"honestly this is pretty much what the free 30 day challenge is for/i.test(igDraftSource));

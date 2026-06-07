@@ -450,7 +450,16 @@ function isUnsafeStockDiscoveryQuestion(text) {
         || /\bwhat do you normally do when you get a bit of time\b/i.test(q)
         || /\bwhat are your goals\b/i.test(q)
         || /\bwhat'?s your goal\b/i.test(q)
-        || /\bwhat does your current exercise routine consist of\b/i.test(q);
+        || /\bwhat does your current exercise routine consist of\b/i.test(q)
+        || /\bwhat does that look like for you\b/i.test(q)
+        || /\bwhat would that look like for you\b/i.test(q)
+        || /\bwhat kind of difference would that make\b/i.test(q)
+        || /\bwhat would that change for you\b/i.test(q)
+        || /\bwhat usually makes (?:it|that) (?:feel )?(?:so )?(?:hard|difficult|hectic|a struggle)\b/i.test(q)
+        || /\banything in particular (?:making|that makes) (?:it|that) (?:feel )?(?:so )?(?:hard|difficult|hectic|a struggle)\b/i.test(q)
+        || /\bhow are you finding it(?: so far)?\b/i.test(q)
+        || /\bdoes that actually help\b/i.test(q)
+        || /\bwhat'?s been (?:the )?(?:biggest|main) (?:struggle|challenge|barrier|thing holding you back)\b/i.test(q);
 }
 
 function chooseRapportQuestion(currentMessage, facts = {}) {
