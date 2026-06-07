@@ -4448,6 +4448,54 @@ html[data-pbb-theme="light"] #calendar-workout-action-modal button:not(#action-m
     stroke: #6f6a61 !important;
 }
 
+/* Progress photo guide must stay dark and readable in every app theme. */
+#progress-photo-shot-guide {
+    background: rgba(5, 5, 10, 0.985) !important;
+    color: #f8f7f2 !important;
+    -webkit-text-fill-color: #f8f7f2 !important;
+    backdrop-filter: blur(8px) saturate(115%);
+    -webkit-backdrop-filter: blur(8px) saturate(115%);
+}
+
+#progress-photo-shot-guide .progress-photo-guide-panel,
+#progress-photo-shot-guide .progress-photo-guide-title,
+#progress-photo-shot-guide .progress-photo-guide-copy,
+#progress-photo-shot-guide .progress-photo-guide-dot,
+#progress-photo-shot-guide .progress-photo-guide-step-label,
+#progress-photo-shot-guide .progress-photo-guide-close,
+#progress-photo-shot-guide .progress-photo-guide-capture {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+#progress-photo-shot-guide .progress-photo-guide-eyebrow {
+    color: rgba(248, 247, 242, 0.66) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.66) !important;
+}
+
+#progress-photo-shot-guide .progress-photo-guide-card {
+    background: rgba(24, 24, 32, 0.96) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.36) !important;
+}
+
+#progress-photo-shot-guide .progress-photo-guide-kicker,
+#progress-photo-shot-guide .progress-photo-guide-helper,
+#progress-photo-shot-guide .progress-photo-guide-count {
+    color: rgba(248, 247, 242, 0.74) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.74) !important;
+}
+
+#progress-photo-shot-guide .progress-photo-guide-close {
+    background: rgba(255, 255, 255, 0.16) !important;
+}
+
+#progress-photo-shot-guide .progress-photo-guide-capture {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.28);
+}
+
 /* Final Learn/recovered-workout readability pass: these surfaces mix inline
    colors with theme variables, so keep the actual text contrast explicit. */
 #workout-recovery-dialog > div,

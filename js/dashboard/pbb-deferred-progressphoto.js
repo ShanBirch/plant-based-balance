@@ -424,7 +424,8 @@ let progressPhotoCaptureState = null;
 
         overlay = document.createElement('div');
         overlay.id = 'progress-photo-shot-guide';
-        overlay.style.cssText = 'display:none; position:fixed; inset:0; z-index:100200; background:rgba(10,10,18,0.94); padding:calc(20px + env(safe-area-inset-top, 0px)) 18px calc(20px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; align-items:center; justify-content:center;';
+        overlay.className = 'progress-photo-shot-guide';
+        overlay.style.cssText = 'display:none; position:fixed; inset:0; z-index:100200; background:rgba(5,5,10,0.98); padding:calc(20px + env(safe-area-inset-top, 0px)) 18px calc(20px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; align-items:center; justify-content:center;';
         document.body.appendChild(overlay);
         return overlay;
     }
@@ -444,29 +445,29 @@ let progressPhotoCaptureState = null;
             const isCurrent = dotIndex === index;
             const bg = isDone ? '#22c55e' : (isCurrent ? '#ec4899' : 'rgba(255,255,255,0.18)');
             const color = (isDone || isCurrent) ? '#fff' : 'rgba(255,255,255,0.72)';
-            return '<div style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:8px;">'
-                + '<div style="width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:' + bg + '; color:' + color + '; font-size:0.82rem; font-weight:800;">' + (dotIndex + 1) + '</div>'
-                + '<div style="font-size:0.72rem; color:' + color + '; font-weight:700; text-align:center; line-height:1.2;">' + item.title + '</div>'
+            return '<div class="progress-photo-guide-step" style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:8px;">'
+                + '<div class="progress-photo-guide-dot" style="width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:' + bg + '; color:' + color + '; font-size:0.82rem; font-weight:800;">' + (dotIndex + 1) + '</div>'
+                + '<div class="progress-photo-guide-step-label" style="font-size:0.72rem; color:' + color + '; font-weight:700; text-align:center; line-height:1.2;">' + item.title + '</div>'
                 + '</div>';
         }).join('');
 
         overlay.innerHTML = ''
-            + '<div style="width:100%; max-width:420px; color:#fff;">'
-            + '<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:22px;">'
+            + '<div class="progress-photo-guide-panel" style="width:100%; max-width:420px; color:#fff;">'
+            + '<div class="progress-photo-guide-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:22px;">'
             + '<div>'
-            + '<div style="font-size:0.78rem; color:rgba(255,255,255,0.62); font-weight:800; text-transform:uppercase; letter-spacing:0;">Progress photo set</div>'
-            + '<div style="font-size:1.35rem; line-height:1.15; font-weight:800; margin-top:5px;">' + shot.title + '</div>'
+            + '<div class="progress-photo-guide-eyebrow" style="font-size:0.78rem; color:rgba(255,255,255,0.62); font-weight:800; text-transform:uppercase; letter-spacing:0;">Progress photo set</div>'
+            + '<div class="progress-photo-guide-title" style="font-size:1.35rem; line-height:1.15; font-weight:800; margin-top:5px;">' + shot.title + '</div>'
             + '</div>'
-            + '<button type="button" id="progress-photo-guide-close" style="width:42px; height:42px; border-radius:50%; border:none; background:rgba(255,255,255,0.12); color:#fff; font-size:1.45rem; line-height:1; display:flex; align-items:center; justify-content:center;">&times;</button>'
+            + '<button type="button" id="progress-photo-guide-close" class="progress-photo-guide-close" style="width:42px; height:42px; border-radius:50%; border:none; background:rgba(255,255,255,0.12); color:#fff; font-size:1.45rem; line-height:1; display:flex; align-items:center; justify-content:center;">&times;</button>'
             + '</div>'
-            + '<div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.14); border-radius:16px; padding:18px; margin-bottom:18px;">'
+            + '<div class="progress-photo-guide-card" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.14); border-radius:16px; padding:18px; margin-bottom:18px;">'
             + '<div style="display:flex; gap:10px; margin-bottom:20px;">' + dots + '</div>'
-            + '<div style="font-size:0.88rem; color:rgba(255,255,255,0.72); font-weight:700; margin-bottom:8px;">Shot ' + (index + 1) + ' of ' + PROGRESS_PHOTO_SHOTS.length + '</div>'
-            + '<div style="font-size:1.05rem; line-height:1.45; font-weight:700;">' + shot.guide + '</div>'
-            + '<div style="font-size:0.88rem; line-height:1.4; color:rgba(255,255,255,0.68); margin-top:10px;">Keep the same lighting, distance, and posture each week.</div>'
+            + '<div class="progress-photo-guide-kicker" style="font-size:0.88rem; color:rgba(255,255,255,0.72); font-weight:700; margin-bottom:8px;">Shot ' + (index + 1) + ' of ' + PROGRESS_PHOTO_SHOTS.length + '</div>'
+            + '<div class="progress-photo-guide-copy" style="font-size:1.05rem; line-height:1.45; font-weight:700;">' + shot.guide + '</div>'
+            + '<div class="progress-photo-guide-helper" style="font-size:0.88rem; line-height:1.4; color:rgba(255,255,255,0.68); margin-top:10px;">Keep the same lighting, distance, and posture each week.</div>'
             + '</div>'
-            + '<button type="button" id="progress-photo-guide-capture" style="width:100%; border:none; border-radius:16px; background:linear-gradient(135deg,#ec4899,#f43f5e); color:#fff; padding:16px 18px; font-size:1rem; font-weight:800; box-shadow:0 12px 30px rgba(236,72,153,0.3);">Take ' + shot.title.toLowerCase() + ' photo</button>'
-            + '<div style="text-align:center; color:rgba(255,255,255,0.58); font-size:0.82rem; margin-top:13px;">' + completed + ' captured</div>'
+            + '<button type="button" id="progress-photo-guide-capture" class="progress-photo-guide-capture" style="width:100%; border:none; border-radius:16px; background:linear-gradient(135deg,#ec4899,#f43f5e); color:#fff; padding:16px 18px; font-size:1rem; font-weight:800; box-shadow:0 12px 30px rgba(236,72,153,0.3);">Take ' + shot.title.toLowerCase() + ' photo</button>'
+            + '<div class="progress-photo-guide-count" style="text-align:center; color:rgba(255,255,255,0.58); font-size:0.82rem; margin-top:13px;">' + completed + ' captured</div>'
             + '</div>';
 
         const closeBtn = document.getElementById('progress-photo-guide-close');
