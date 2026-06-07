@@ -9772,7 +9772,10 @@
         }
 
         function isCocosDmAlert(alert) {
-            return !!alert && DM_ALERT_TYPES.includes(alert.alert_type) && isCocosMetaPayload(alert.data || {});
+            return !!alert
+                && DM_ALERT_TYPES.includes(alert.alert_type)
+                && !isNeedsYouRoutedDmAlert(alert)
+                && isCocosMetaPayload(alert.data || {});
         }
 
         function getCocosNeedsAttentionInfo(alert) {

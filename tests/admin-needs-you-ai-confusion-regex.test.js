@@ -76,4 +76,10 @@ assert.ok(
     'explicitly routed DM drafts with allowed reasons should remain visible in Needs You'
 );
 
+assert.ok(
+    dashboard.includes('&& !isNeedsYouRoutedDmAlert(alert)') &&
+    dashboard.includes('&& isCocosMetaPayload(alert.data || {})'),
+    'legacy Cocos classification should not hide DMs explicitly routed to Needs You'
+);
+
 console.log('admin Needs You AI confusion regex tests passed');
