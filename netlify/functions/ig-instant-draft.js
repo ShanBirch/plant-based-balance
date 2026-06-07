@@ -107,6 +107,7 @@ const {
 } = require('./_lib/coach-actions');
 const {
     isCocosToShanSunnyVoiceTest,
+    resolveCocosShanSunnyVoiceTestReason,
 } = require('./_lib/elevenlabs-voice-message');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -2856,6 +2857,13 @@ exports.handler = async (event) => {
         igUsername: thread.ig_username,
         customData: thread.custom_data,
     });
+    const voiceReplyTestReason = voiceReplyTestLane
+        ? resolveCocosShanSunnyVoiceTestReason({
+            botAccount,
+            igUsername: thread.ig_username,
+            customData: thread.custom_data,
+        })
+        : '';
     const balanceAutoSendCandidate = !!thread.auto_send_enabled;
     const autoSendEnabled = cocosAutoSendLane || voiceReplyTestLane;
 
@@ -3421,7 +3429,7 @@ exports.handler = async (event) => {
             auto_send_default_reason: cocosAutoSendLane ? 'cocos_auto_lane' : undefined,
             auto_send_allow_immediate: voiceReplyTestLane || undefined,
             outbound_voice_message: voiceReplyTestLane || undefined,
-            outbound_voice_message_reason: voiceReplyTestLane ? 'cocos_pt_studio_to_shan_n_sunny_test' : undefined,
+            outbound_voice_message_reason: voiceReplyTestReason || undefined,
             elevenlabs_voice_id: voiceReplyTestLane ? 'UHnJrglEof8vTMenwnVm' : undefined,
             elevenlabs_voice_name: voiceReplyTestLane ? 'Shannon Balance Professional 20260606' : undefined,
             manychat_message_id: manychatMessageId || null,
@@ -3572,7 +3580,7 @@ exports.handler = async (event) => {
             auto_send_allow_immediate: voiceReplyTestLane || existingPending.data?.auto_send_allow_immediate || undefined,
             outbound_voice_message: voiceReplyTestLane || existingPending.data?.outbound_voice_message || undefined,
             outbound_voice_message_reason: voiceReplyTestLane
-                ? 'cocos_pt_studio_to_shan_n_sunny_test'
+                ? voiceReplyTestReason
                 : existingPending.data?.outbound_voice_message_reason || undefined,
             elevenlabs_voice_id: voiceReplyTestLane
                 ? 'UHnJrglEof8vTMenwnVm'

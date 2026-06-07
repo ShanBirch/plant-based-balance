@@ -5,6 +5,7 @@ const DEFAULT_MODEL_ID = 'eleven_multilingual_v2';
 const DEFAULT_OUTPUT_FORMAT = 'pcm_16000';
 const MAX_TTS_CHARS = 3500;
 const SHAN_N_SUNNY_GRAPH_ACCOUNT_IDS = new Set(['17841415641641750']);
+const COCOS_GRAPH_ACCOUNT_IDS = new Set(['17841435394720504', '26328183736859579']);
 
 function cleanString(value, max = 500) {
     return String(value || '').trim().slice(0, max);
@@ -371,7 +372,7 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
     };
 }
 
-function isCocosToShanSunnyVoiceTest({ botAccount, igUsername, customData = {} } = {}) {
+function resolveCocosShanSunnyVoiceTestReason({ botAccount, igUsername, customData = {} } = {}) {
     const graph = safeObject(customData.instagram_graph);
     const bot = normalizeAccountKey(botAccount || customData.bot_account || graph.bot_account);
     const lead = normalizeAccountKey(igUsername || customData.ig_username || graph.ig_username || graph.username);
@@ -384,7 +385,16 @@ function isCocosToShanSunnyVoiceTest({ botAccount, igUsername, customData = {} }
         120
     );
     const shanSunnyReceiver = bot === 'shan_n_sunny' || SHAN_N_SUNNY_GRAPH_ACCOUNT_IDS.has(accountId);
-    return shanSunnyReceiver && lead === 'cocos_pt_studio';
+    if (shanSunnyReceiver && lead === 'cocos_pt_studio') return 'cocos_pt_studio_to_shan_n_sunny_test';
+
+    const cocosReceiver = bot === 'cocos_pt_studio' || COCOS_GRAPH_ACCOUNT_IDS.has(accountId);
+    if (cocosReceiver && lead === 'shan_n_sunny') return 'shan_n_sunny_to_cocos_pt_studio_test';
+
+    return '';
+}
+
+function isCocosToShanSunnyVoiceTest(input = {}) {
+    return !!resolveCocosShanSunnyVoiceTestReason(input);
 }
 
 module.exports = {
@@ -394,11 +404,13 @@ module.exports = {
     createVoiceMessageAudio,
     isCocosToShanSunnyVoiceTest,
     parseBoolean,
+    resolveCocosShanSunnyVoiceTestReason,
     resolveOutboundVoiceMessageConfig,
     _test: {
         isVoiceMessageRequested,
         normalizeAccountKey,
         normalizeShannonVoiceContractions,
+        resolveCocosShanSunnyVoiceTestReason,
         resolveAudioUploadFormat,
         resolveModelId,
         resolveOutputFormat,

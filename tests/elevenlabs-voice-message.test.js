@@ -17,7 +17,15 @@ assert.strictEqual(
         botAccount: 'cocos_pt_studio',
         igUsername: 'shan_n_sunny',
     }),
-    false
+    true
+);
+
+assert.strictEqual(
+    voice.resolveCocosShanSunnyVoiceTestReason({
+        botAccount: 'cocos_pt_studio',
+        igUsername: 'shan_n_sunny',
+    }),
+    'shan_n_sunny_to_cocos_pt_studio_test'
 );
 
 assert.strictEqual(
@@ -27,6 +35,19 @@ assert.strictEqual(
         customData: {
             instagram_graph: {
                 ig_account_id: '17841415641641750',
+            },
+        },
+    }),
+    true
+);
+
+assert.strictEqual(
+    voice.isCocosToShanSunnyVoiceTest({
+        botAccount: '',
+        igUsername: 'shan_n_sunny',
+        customData: {
+            instagram_graph: {
+                ig_account_id: '17841435394720504',
             },
         },
     }),
