@@ -392,6 +392,11 @@
 [functions."client-lead-manager"]
   schedule = "*/30 * * * *"
 
+# Support Radar - daily human-support pass across app activity + chats.
+# Creates only high-signal Needs You check-ins, capped and deduped.
+[functions."support-radar-scan"]
+  schedule = "17 20 * * *"
+
 # ManyChat reconcile is intentionally unscheduled for IG Graph cutover. Keep the
 # function file for manual legacy rescue until the external ManyChat account is
 # fully disconnected.
