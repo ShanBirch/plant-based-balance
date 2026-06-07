@@ -71,4 +71,9 @@ assert.ok(
     'DM unread badge should count routed DMs while excluding the Cocos lane'
 );
 
+assert.ok(
+    dashboard.includes("if (isNeedsYouRoutedDmAlert(alert) && reasonInfo.allowed && needsYouHasSuggestedDraft(alert)) return true;"),
+    'explicitly routed DM drafts with allowed reasons should remain visible in Needs You'
+);
+
 console.log('admin Needs You AI confusion regex tests passed');

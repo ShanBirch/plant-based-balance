@@ -11255,8 +11255,9 @@
             if (isCocosDmAlert(alert)) return false;
             if (isLeadOnboardingHandoff(alert) && needsYouHasSuggestedDraft(alert)) return true;
             if (!DM_ALERT_TYPES.includes(alert.alert_type)) return false;
+            const reasonInfo = needsYouAllowedReasonInfo(alert, activeClientIds);
+            if (isNeedsYouRoutedDmAlert(alert) && reasonInfo.allowed && needsYouHasSuggestedDraft(alert)) return true;
             if (!needsYouHasSuggestedDraft(alert)) {
-                const reasonInfo = needsYouAllowedReasonInfo(alert, activeClientIds);
                 const mediaReview = getAlertMediaReviewInfo(alert);
                 return isNeedsYouRoutedDmAlert(alert)
                     && reasonInfo.allowed
