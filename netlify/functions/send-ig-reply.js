@@ -28,6 +28,10 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const MANYCHAT_API_TOKEN = process.env.MANYCHAT_API_TOKEN;
 const MANYCHAT_SEND_URL = process.env.MANYCHAT_SEND_URL || 'https://api.manychat.com/fb/sending/sendContent';
+const {
+    mergeLearningReelContext,
+    normalizeLearningReelItems,
+} = require('./_lib/client-context');
 function normalizeGraphApiVersion(value) {
     const raw = String(value || '').trim();
     if (!raw) return 'v25.0';
@@ -525,6 +529,44 @@ async function supabase(path, options = {}) {
     const text = await res.text();
     if (!text || !text.trim()) return [];
     try { return JSON.parse(text); } catch { return []; }
+}
+
+function sentTextContainsLearningReel(item = {}, sentText = '') {
+    const text = String(sentText || '');
+    const url = String(item.url || item.youtube_url || '').trim();
+    const videoId = String(item.video_id || item.videoId || '').trim();
+    return (!!url && text.includes(url)) || (!!videoId && text.includes(videoId));
+}
+
+async function mergeSentLearningReelContext({ alertData = {}, messagesToSend = [], sentAtIso }) {
+    const igThreadId = String(alertData.ig_thread_id || '').trim();
+    if (!igThreadId) return null;
+    const sentText = (Array.isArray(messagesToSend) ? messagesToSend : [messagesToSend]).join('\n\n');
+    const incoming = normalizeLearningReelItems(alertData.learning_reels || alertData.learningReels || [], {
+        source: alertData.daily_reel_opportunity_source || 'approved_learning_reel',
+        platform: 'youtube',
+    })
+        .filter(item => sentTextContainsLearningReel(item, sentText))
+        .map(item => ({
+            ...item,
+            sent_at: sentAtIso || item.sent_at || new Date().toISOString(),
+            approved_send: true,
+        }));
+    if (!incoming.length) return null;
+
+    const rows = await supabase(`ig_threads?select=id,custom_data&id=eq.${encodeURIComponent(igThreadId)}&limit=1`);
+    const thread = rows[0] || null;
+    if (!thread) return null;
+    const nextCustomData = mergeLearningReelContext(thread.custom_data || {}, incoming, {
+        source: alertData.daily_reel_opportunity_source || 'approved_learning_reel',
+        platform: 'youtube',
+    });
+    await supabase(`ig_threads?id=eq.${encodeURIComponent(igThreadId)}`, {
+        method: 'PATCH',
+        body: { custom_data: nextCustomData },
+        prefer: 'return=minimal',
+    });
+    return incoming;
 }
 
 function createSendClaim(source) {
@@ -1522,6 +1564,14 @@ exports.handler = async (event) => {
         }
     } catch (err) {
         console.warn('[send-ig-reply] alert status update failed (non-fatal):', err.message);
+    }
+
+    if (allOk && alertMarkedSent) {
+        try {
+            await mergeSentLearningReelContext({ alertData, messagesToSend, sentAtIso });
+        } catch (err) {
+            console.warn('[send-ig-reply] learning reel context merge failed (non-fatal):', err.message);
+        }
     }
 
     if (!allOk) {

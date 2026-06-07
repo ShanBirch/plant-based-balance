@@ -397,6 +397,11 @@
 [functions."support-radar-scan"]
   schedule = "17 20 * * *"
 
+# Daily Reel Opportunity - scans yesterday/recent client conversations for one
+# useful YouTube Short suggestion and puts it in Needs You for approval.
+[functions."daily-reel-opportunity-scan"]
+  schedule = "48 20 * * *"
+
 # ManyChat reconcile is intentionally unscheduled for IG Graph cutover. Keep the
 # function file for manual legacy rescue until the external ManyChat account is
 # fully disconnected.
