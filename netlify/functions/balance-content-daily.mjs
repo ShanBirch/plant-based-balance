@@ -13,9 +13,8 @@ const {
 const DEFAULT_SUPABASE_URL = 'https://hzapaorxqboevxnumxkv.supabase.co';
 const SHANNON_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 
-export const config = {
-    schedule: '0 19 * * 0-5',
-};
+// Scheduling now lives in a Codex thread automation so Shannon can see and reply to each run.
+// Keep this function callable for manual/Codex-triggered publishing.
 
 function getEnv(name) {
     const netlifyValue = globalThis.Netlify?.env?.get?.(name);
@@ -328,3 +327,4 @@ export const _test = {
     findPosterUserId,
     publishPostToFeed,
 };
+
