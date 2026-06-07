@@ -10826,8 +10826,6 @@
             const view = normalizeDmAudience(audience);
             return (rows || []).filter(alert => {
                 if (isCocosDmAlert(alert)) return false;
-                if (isNeedsYouRoutedDmAlert(alert)) return false;
-                if (needsYouHasOperatorWork(alert, clientIds)) return false;
                 if (view === 'all') return true;
                 const isClient = alertBelongsToDmClients(alert, clientIds);
                 return view === 'clients' ? isClient : !isClient;
@@ -11366,10 +11364,6 @@
                 openNeedsYouForAlert(alert, 'all');
                 return;
             }
-            if (isDmAlert && isNeedsYouRoutedDmAlert(alert)) {
-                openNeedsYouForAlert(alert, 'all');
-                return;
-            }
             if (alert?.alert_type === 'onboarding_day_30' && needsYouHasOperatorWork(alert)) {
                 openNeedsYouForAlert(alert, 'all');
                 return;
@@ -11381,10 +11375,6 @@
                         showSection('cocos', getNavItemForSection('cocos'));
                     }
                     loadCocosDms();
-                    return;
-                }
-                if (needsYouHasOperatorWork(alert)) {
-                    openNeedsYouForAlert(alert, 'all');
                     return;
                 }
                 currentDmAudience = 'all';
@@ -12142,7 +12132,6 @@
                 if (!isCurrentDmLoad(loadSeq, viewAtStart, audienceAtStart)) return;
                 alertsCache = (viewAtStart === 'unread')
                     ? collapsePendingByUser(dedupePendingAlerts(data || []))
-                        .filter(a => !isNeedsYouRoutedDmAlert(a) && !needsYouHasOperatorWork(a, activeClientIds))
                     : (data || []);
                 alertsCache = filterDmAlertsByAudience(alertsCache, audienceAtStart, activeClientIds);
                 renderAlertFeed(alertsCache, {
@@ -13420,7 +13409,7 @@
                     if (el) el.textContent = String(n ?? 0);
                 };
                 const collapsedUnread = collapsePendingByUser(dedupePendingAlerts(unreadRes?.data || []))
-                    .filter(a => !isNeedsYouRoutedDmAlert(a) && !needsYouHasOperatorWork(a, activeClientIds));
+                    .filter(a => !isCocosDmAlert(a));
                 const unreadClients = filterDmAlertsByAudience(collapsedUnread, 'clients', activeClientIds).length;
                 const unreadLeads = filterDmAlertsByAudience(collapsedUnread, 'leads', activeClientIds).length;
                 setDmAudienceBadges({ clients: unreadClients, leads: unreadLeads, all: unreadClients + unreadLeads });
@@ -13553,7 +13542,7 @@
             // that so neither shows a number that doesn't match what Shannon
             // can see on screen.
             if (currentDmView !== 'unread') return;
-            const pending = alertsCache.filter(a => a.status === 'pending' && DM_ALERT_TYPES.includes(a.alert_type) && !isNeedsYouRoutedDmAlert(a));
+            const pending = alertsCache.filter(a => a.status === 'pending' && DM_ALERT_TYPES.includes(a.alert_type) && !isCocosDmAlert(a));
             const visibleCount = pending.length;
             const chip = document.getElementById('dm-view-unread-count');
             if (chip) chip.textContent = String(visibleCount);

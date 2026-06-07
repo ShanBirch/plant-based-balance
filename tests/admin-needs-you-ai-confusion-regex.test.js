@@ -51,4 +51,24 @@ assert.ok(
     'client-manager review matching should normalize both alert source text and known marker text'
 );
 
+assert.ok(
+    dashboard.includes("if (view === 'all') return true;"),
+    'All DMs should include both client and lead DM alerts'
+);
+
+assert.ok(
+    !dashboard.includes(".filter(a => !isNeedsYouRoutedDmAlert(a) && !needsYouHasOperatorWork(a, activeClientIds))"),
+    'Needs You-routed DMs should remain visible in the DM unread list'
+);
+
+assert.ok(
+    !dashboard.includes("if (isDmAlert && isNeedsYouRoutedDmAlert(alert))"),
+    'New routed DM notifications should open the DM inbox, not bypass it'
+);
+
+assert.ok(
+    dashboard.includes("const pending = alertsCache.filter(a => a.status === 'pending' && DM_ALERT_TYPES.includes(a.alert_type) && !isCocosDmAlert(a));"),
+    'DM unread badge should count routed DMs while excluding the Cocos lane'
+);
+
 console.log('admin Needs You AI confusion regex tests passed');
