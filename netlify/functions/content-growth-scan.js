@@ -445,17 +445,17 @@ async function scanMetrics(options = {}) {
     const synced = { instagram: [], youtube: [] };
     const errors = [];
     try {
-        synced.instagram = await syncInstagramPosts(options.instagramLimit || 80);
+        synced.instagram = await syncInstagramPosts(options.instagramLimit || 25);
     } catch (err) {
         errors.push({ stage: 'sync_instagram', error: err.message });
     }
     try {
-        synced.youtube = await syncYoutubeRecent(options.youtubeLimit || 25);
+        synced.youtube = await syncYoutubeRecent(options.youtubeLimit || 8);
     } catch (err) {
         errors.push({ stage: 'sync_youtube', error: err.message });
     }
 
-    const posts = await duePosts(options.limit || 40);
+    const posts = await duePosts(options.limit || 6);
     const snapshots = [];
     for (const post of posts) {
         try {
