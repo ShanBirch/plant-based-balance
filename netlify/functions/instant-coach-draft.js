@@ -69,6 +69,7 @@ const {
 } = require('./_lib/client-context');
 const { buildQualifierRelationshipBlock } = require('./_lib/qualifier-engine');
 const { detectProposedCoachActions } = require('./_lib/coach-actions');
+const { buildExerciseLibrarySupportBlock } = require('./_lib/exercise-library-search');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
@@ -369,6 +370,11 @@ Use this batch as context, not a checklist. First decide what is still live: dir
         : '(no recent activity snapshot)';
     const workoutEvidenceText = clientSnapshot.recentWorkoutEvidence || '';
     const clientProfileBlock = buildClientProfileBlock({ clientName, profile: clientSnapshot });
+    const exerciseLibrarySupportBlock = buildExerciseLibrarySupportBlock({
+        currentMessage: currentMessageText,
+        conversationText: historyText,
+        recentInboundMessages,
+    });
 
     // Onboarding mode: first 72h with this coach. Shifts the prompt from
     // "answer their question" to "keep the get-to-know-you conversation
@@ -492,6 +498,7 @@ APP FEATURES (the client is using FITGotchi / Plant Based Balance — DO NOT rec
 - Challenges with friends, Health IQ quizzes, custom trackers/checklists, cycle tracking, wearable sync (Fitbit/Oura/WHOOP), all in-app.
 If they ask "how do I X?", point them to the right tab IN THIS APP. Never suggest downloading another tracker.
 ${appXpGuideBlock}
+${exerciseLibrarySupportBlock}
 ${coachBioBlock}
 ${coachDayContextBlock}
 ${unansweredBatchBlock}

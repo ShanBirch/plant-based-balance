@@ -84,6 +84,7 @@ const {
     isTestAccount,
     isAiAutomationOptedOut,
 } = require('./_lib/client-context');
+const { buildExerciseLibrarySupportBlock } = require('./_lib/exercise-library-search');
 
 const {
     isQualifierEligible,
@@ -2266,6 +2267,11 @@ Treat this as the SAME relationship as the ${channelLabel} thread below. Don't a
             previousCreatedAt: mergedConversationEvents[i - 1]?.created_at,
             now: promptNow,
         })).join('\n');
+    const exerciseLibrarySupportBlock = buildExerciseLibrarySupportBlock({
+        currentMessage: currentMessageText,
+        conversationText: totalConversationText,
+        recentInboundMessages,
+    });
     const lastShannonConversationEvent = [...mergedConversationEvents].reverse()
         .find(event => event.speaker === 'Shannon');
     const currentTurnAnchorBlock = buildCurrentTurnAnchorBlock({
@@ -2386,6 +2392,7 @@ ${coachBio}
 ${coachDayContextBlock}
 ${appNavigationGuide}
 ${appXpGuide}
+${exerciseLibrarySupportBlock}
 ${funnelContext}
 ${challengeNextStepBlock}
 ${oneOnOneCoachingBlock}

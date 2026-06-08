@@ -17,6 +17,7 @@ const {
     reviewDraftAndUpdateAlert,
     truncate,
 } = require('./_lib/client-context');
+const { buildExerciseLibrarySupportBlock } = require('./_lib/exercise-library-search');
 
 const MANAGER_SOURCE = 'balance-lead-client-manager';
 const MAX_PER_RUN = 80;
@@ -105,11 +106,17 @@ function buildDraftReviewContextBlocks(alert = {}) {
     const checkinText = evidence.checkin_thread_context || '';
     const crossChannelText = evidence.cross_channel_context || '';
     const learningReelText = evidence.learning_reel_context || buildLearningReelContextBlock(data);
+    const exerciseLibrarySupportBlock = buildExerciseLibrarySupportBlock({
+        currentMessage: latest,
+        conversationText: [timelineText, crossChannelText, priorText].filter(Boolean).join('\n'),
+        recentInboundMessages: evidence.prior_unanswered || data.recent_inbound_messages || [],
+    });
 
     return [
         `Just-arrived message from ${clientName}: "${truncate(latest, 500)}"`,
         priorText ? `Prior unanswered messages:\n${priorText}` : '',
         timelineText ? `Recent timestamped timeline:\n${truncate(timelineText, 2400)}` : '',
+        exerciseLibrarySupportBlock ? exerciseLibrarySupportBlock.trim() : '',
         activityText ? `Recent activity snapshot:\n${truncate(activityText, 1200)}` : '',
         workoutText ? `Exact recent workout logs:\n${truncate(workoutText, 1200)}` : '',
         memoryText ? `Memory/context used:\n${truncate(memoryText, 1200)}` : '',

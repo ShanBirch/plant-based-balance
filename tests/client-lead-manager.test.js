@@ -132,6 +132,21 @@ const reviewContext = manager.buildDraftReviewContextBlocks(makeAlert({
 assert.ok(reviewContext.includes('Just-arrived message from Lead'));
 assert.ok(reviewContext.includes('Prior unanswered messages'));
 assert.ok(reviewContext.includes('Recent sent learning reel context'));
+
+const exerciseSupportContext = manager.buildDraftReviewContextBlocks(makeAlert({
+    suggested_message: 'switch to Cable Hip Abduction instead',
+    data: {
+        message_preview: 'No seated option',
+        draft_evidence: {
+            current_message: 'No seated option',
+            recent_timeline: 'Lead: What can I list this machine under in the app?\nShannon: List that under seated Hip Abduction (machine).',
+        },
+    },
+}));
+assert.ok(exerciseSupportContext.includes('APP EXERCISE LIBRARY CHECK'));
+assert.ok(exerciseSupportContext.includes('Machine Seated Abduction'));
+assert.ok(exerciseSupportContext.includes('Do not recommend a substitute'));
+
 assert.strictEqual(manager.shouldRunDraftReview(makeAlert({
     suggested_message: 'hey',
     data: { message_preview: 'hey' },
