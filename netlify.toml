@@ -378,6 +378,11 @@
 [functions."content-radar-generate"]
   schedule = "45 19 * * *"
 
+# Cross-platform content growth loop - snapshots IG/YouTube/TikTok post metrics
+# and writes a compact brief for the content automation to read.
+[functions."content-growth-scan"]
+  schedule = "12 */6 * * *"
+
 # Coco's reward learner - scores the scoped acquisition lane and updates only
 # Coco's active learned rules. Runs daily in lean-cost mode.
 [functions."cocos-learning-run"]

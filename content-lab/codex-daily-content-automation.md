@@ -17,20 +17,21 @@ Each time this automation wakes up:
 1. Use the current Australia/Brisbane date.
 2. If today is Sunday, do not create or post a main feed post. Reply with a short Sunday-off note and stop.
 3. Run `git fetch origin main` and inspect `git status --short --branch`. Do not overwrite Shannon's local changes.
-4. Generate a review pack with one exercise post, one science review, and one Proof Pulse post:
+4. Read the latest cross-platform growth brief from `content_growth_briefs`, or call `content-growth-scan` with `action: "latest"` if needed. Use it to bias hook style, remakes, and platform-specific wording, while keeping the fixed lane schedule intact.
+5. Generate a review pack with one exercise post, one science review, and one Proof Pulse post:
    `node content-lab\src\balance-content-week.js --date=<YYYY-MM-DD> --one-of-each`
-5. Identify today's scheduled lane:
+6. Identify today's scheduled lane:
    - Monday: exercise
    - Tuesday: science
    - Wednesday: proof
    - Thursday: exercise
    - Friday: science
    - Saturday: proof
-6. Publish only today's scheduled lane to the Balance app feed.
+7. Publish only today's scheduled lane to the Balance app feed.
    - Prefer invoking the shipped `balance-content-daily` function logic or deployed function endpoint.
    - If using Netlify env vars locally, never print secrets. Only print status, lane, title, and story id.
    - Duplicate guard is expected. If today's lane already exists, report `duplicate_skipped` and do not create another post.
-7. Reply in this thread with:
+8. Reply in this thread with:
    - created review pack path
    - posted lane and title
    - story id or duplicate status
