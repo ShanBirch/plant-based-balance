@@ -6,6 +6,8 @@ Schedule: daily at 5:00 AM Australia/Brisbane, Monday to Saturday. Sunday is off
 Run type: thread automation, attached to the ongoing Balance content automation thread, so Shannon can see the run and reply to it.
 Project: C:\Users\shann\.gemini\antigravity\plant_based_balance
 
+Current approval mode: build review packs only. Do not publish from an unattended automation run. Shannon will review the asset and explicitly approve publishing.
+
 ## Prompt
 
 Read AGENTS.md, CODEX.md, CLAUDE.md, `content-lab\content-feed-daily-balance-post-system.md`, and `C:\Users\shann\.codex\automations\balance-daily-content-feed\posted-ledger.md` first.
@@ -38,22 +40,23 @@ Each time this automation wakes up:
    - Thursday: exercise
    - Friday: science
    - Saturday: proof
-8. Publish only today's scheduled lane to Shannon's Instagram feed/Reels, not the Balance app feed.
-   - Do not create or replace Balance app `stories` rows unless Shannon explicitly asks for an in-app post.
-   - Exercise and science MP4s should publish as Instagram Reels with feed sharing enabled from the public HTTPS video URL.
-   - Proof Pulse should publish as an Instagram carousel feed post using the rendered PNG slides.
-   - If using Netlify env vars locally, never print secrets. Only print status, lane, title, platform media ID, permalink, or duplicate status.
-   - Duplicate guard is expected. If today's lane already exists on Instagram, report `duplicate_skipped` and do not create another post.
-   - After successful publish or duplicate skip, append the posted ledger with date, lane, title, source ID, platform media ID/permalink or duplicate status, and asset path.
+8. Do not publish from the unattended automation run. Build today's scheduled lane for Shannon approval only.
+   - For Tuesday 2026-06-09 specifically, build the science review Reel and stop for approval.
+   - Do not call Instagram, TikTok, YouTube, Balance app feed, or any publisher unless Shannon explicitly asks in the current thread after reviewing the asset.
+   - Report `ready_to_post` only when the asset, caption, thumbnail, CTA, and lane-specific checks have passed.
+   - Exercise and science Reels must have the hook in three places: first frame or cover, first spoken line when there is voiceover, and first caption line.
+   - Reel covers should carry the hook as the tap reason and must be readable in the square Instagram grid crop.
+   - Science hooks must stay faithful to the paper. Keep the science review format Shannon likes; do not make it clickbait or dilute it into generic tips.
+   - If using Netlify env vars locally, never print secrets. Only print status, lane, title, asset paths, and review blockers.
 9. Reply in this thread with:
    - created review pack path
-   - posted lane and title
+   - scheduled lane and title
    - title/hook
    - growth signal used
    - asset/video or carousel
    - caption
    - CTA
-   - platform media ID/permalink or duplicate status
+   - approval status: waiting for Shannon
    - any problem that needs Shannon's input
 
 Do not mention AI, automation, Gemini, Vertex, Codex, or models in any client/prospect-facing feed copy.

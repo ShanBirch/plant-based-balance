@@ -60,6 +60,13 @@ Video standard:
 - White lower panel with timed coaching cues.
 - Dark outro with centered Balance logo, yellow spinning ring, `plantbased-balance.org/bio`, and `Download now`.
 
+Thumbnail/cover:
+
+- Use a 1080x1920 still from the finished vertical technique reel, not the raw landscape source.
+- The cover should carry the hook as the tap reason, not just the exercise name.
+- Check the square Instagram grid crop before treating the cover as ready. The hook must still be readable.
+- Do not use the outro, a blank frame, or a frame where the lifter is hidden.
+
 Exercise script structure:
 
 1. Hook: short mistake or benefit.
@@ -69,6 +76,14 @@ Exercise script structure:
 5. Common mistake.
 6. Fix.
 7. Save prompt.
+
+Hook-led Reel structure:
+
+1. First frame: exercise name plus the hook.
+2. First spoken line: the problem, mistake, myth, or benefit. Do not start with only the exercise name if a stronger hook exists.
+3. First caption line: the same hook or a close variant.
+4. Payoff: setup cue, main movement cue, control cue, common mistake, fix.
+5. CTA: save/follow only if it feels natural.
 
 Exercise voiceover should sound like Shannon coaching over the rep, not reading labels. Use contractions, natural phrasing, breath pauses, and the saved CTA style.
 
@@ -106,6 +121,16 @@ Science script structure:
 
 Use the growth brief to choose the paper angle and first line. For example, if practical myth-busting is outperforming, lead with the misconception. If saves are stronger than comments, make the takeaway more concrete.
 
+Keep the science review format Shannon likes. Do not turn it into hype or generic tips. The hook should usually be a clear useful question or takeaway from the actual paper, not a clickbait claim.
+
+Science hook rules:
+
+- First frame: bold paper-based hook, readable in the square grid crop.
+- First spoken line: clearly say what the reel is about before study details.
+- First caption line: repeat the hook or a close practical version.
+- Good shapes: `Can X actually change Y?`, `This study tested something simple`, or `The useful bit was not what people usually argue about`.
+- Avoid overclaiming from one paper. If a stronger hook would make the science less faithful, keep the clear version.
+
 The science MP4 must use ElevenLabs. If the output manifest does not say `voice: elevenlabs`, do not post it.
 
 ## Lane 3: Proof Pulse
@@ -139,6 +164,13 @@ Proof Pulse structure:
 3. Practical lesson for the viewer.
 4. Soft invite to DM.
 5. Optional approved anonymous quote/screenshot.
+
+Proof Pulse hook rules:
+
+- Lead with the human pattern, not just the count.
+- First caption line should make the proof feel relatable, for example `The people getting results in Balance are not having perfect weeks.`
+- Use the numbers as proof after the hook.
+- CTA stays soft: message BALANCE only when the post naturally points to the challenge.
 
 Wednesday angle: midweek momentum. Show people are still moving even if the week is messy.
 

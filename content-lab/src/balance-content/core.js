@@ -31,7 +31,7 @@ const DEFAULT_EXERCISES = [
   {
     title: 'Lat Pulldown',
     videoUrl: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/lat-pulldown.mp4',
-    hook: 'Do not turn your pulldown into a shrug.',
+    hook: "Don't turn your pulldown into a shrug.",
     cue: 'Pull the shoulder blades down first, then drive the elbows toward your ribs.',
     reason: 'You will feel more lats and less neck.',
     save: 'Save it for pull day.',
@@ -68,6 +68,12 @@ const DEFAULT_PROOF_COUNTS = {
 
 function cleanText(value, max = 2000) {
   return String(value || '').replace(/\r\n/g, '\n').replace(/\s+\n/g, '\n').trim().slice(0, max);
+}
+
+function cleanHook(value, fallback = '') {
+  return cleanText(value || fallback, 180)
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([?.!,])/g, '$1');
 }
 
 function safeSlug(value) {
@@ -163,6 +169,14 @@ function loadScienceRenderInput(paperId) {
   return loadJsonIfExists(filePath, null);
 }
 
+function scienceHookFromRenderInput(renderInput, fallbackTitle = 'Science review') {
+  const hookBeat = Array.isArray(renderInput?.beats)
+    ? renderInput.beats.find(beat => beat?.type === 'hook') || renderInput.beats[0]
+    : null;
+  const candidate = hookBeat?.headline || hookBeat?.body || renderInput?.title || fallbackTitle;
+  return cleanHook(String(candidate || '').replace(/\n+/g, ' '), fallbackTitle);
+}
+
 function selectItem(items, seed, offset = 0) {
   if (!items.length) return null;
   return items[(hashString(seed) + offset) % items.length];
@@ -177,20 +191,20 @@ function buildExercisePost({ dateString, offset = 0 }) {
   const day = dayNameForDate(dateString);
   const exercise = selectItem(DEFAULT_EXERCISES, `${dateString}:exercise`, offset) || DEFAULT_EXERCISES[0];
   const prefix = buildPrefix({ dateString, lane: 'exercise', day });
+  const hook = cleanHook(exercise.hook, `${exercise.title} form cue.`);
+  const cta = exercise.save;
   const caption = [
-    prefix,
+    hook,
     '',
-    `${exercise.title} form cue.`,
-    '',
-    exercise.hook,
-    '',
-    `Cue: ${exercise.cue}`,
+    `Set up: ${exercise.cue}`,
     '',
     `Why it matters: ${exercise.reason}`,
     '',
-    `Video for review: ${exercise.videoUrl}`,
+    'Common mistake: rushing the rep before the setup is locked in.',
     '',
-    exercise.save,
+    'Fix: set the position first, then move with control.',
+    '',
+    cta,
   ].join('\n');
 
   return {
@@ -199,12 +213,14 @@ function buildExercisePost({ dateString, offset = 0 }) {
     day,
     lane: 'exercise',
     title: `${exercise.title} form cue`,
+    hook,
     source: 'exercise_videos.js',
     mediaType: 'text',
     mediaUrl: '',
     thumbnailUrl: null,
     assetUrl: exercise.videoUrl,
     caption,
+    cta,
     prefix,
     status: 'created',
   };
@@ -228,14 +244,13 @@ function buildSciencePost({ dateString, offset = 0 }) {
   const renderInput = loadScienceRenderInput(paper.id);
   const prefix = buildPrefix({ dateString, lane: 'science', day });
   const title = paper.slideTitle || renderInput?.title || paper.title || paper.topic || 'Science review';
-  const titleLine = `${String(title).replace(/[.!?]+$/g, '')}.`;
+  const hook = scienceHookFromRenderInput(renderInput, paper.hook || title);
   const paperIntro = paper.spokenAuthors
     ? `This review uses ${possessiveName(paper.spokenAuthors)} paper to look at ${paper.topic || 'one useful health idea'}.`
     : `This review looks at ${paper.topic || 'one useful health idea'}.`;
+  const cta = 'Follow for more health science.';
   const caption = [
-    prefix,
-    '',
-    titleLine,
+    hook,
     '',
     paperIntro,
     '',
@@ -247,7 +262,7 @@ function buildSciencePost({ dateString, offset = 0 }) {
     '',
     paper.url ? `Source: ${paper.url}` : '',
     '',
-    'Follow for more health science.',
+    cta,
   ].filter(line => line !== null && line !== undefined).join('\n');
 
   return {
@@ -256,12 +271,14 @@ function buildSciencePost({ dateString, offset = 0 }) {
     day,
     lane: 'science',
     title,
+    hook,
     source: `content-lab/config/science-papers.json:${paper.id || 'fallback'}`,
     mediaType: 'text',
     mediaUrl: '',
     thumbnailUrl: null,
     assetUrl: null,
     caption,
+    cta,
     prefix,
     status: 'created',
     paperId: paper.id || null,
@@ -288,10 +305,14 @@ function buildProofPost({ dateString, counts = DEFAULT_PROOF_COUNTS }) {
   const prefix = buildPrefix({ dateString, lane: 'proof', day });
   const isSaturday = day === 'Saturday';
   const title = isSaturday ? 'This week inside Balance' : 'Small wins from inside Balance this week';
+  const hook = isSaturday
+    ? 'This week inside Balance was not about perfect weeks.'
+    : 'The people getting results in Balance are not having perfect weeks.';
+  const cta = isSaturday
+    ? 'Want in for the next 30-day vegan fitness challenge? Message me BALANCE.'
+    : 'If you want to try the 30-day vegan fitness challenge, message me BALANCE.';
   const caption = [
-    prefix,
-    '',
-    `${title}.`,
+    hook,
     '',
     `${c.workout_sessions_7d} workouts logged across ${c.workout_users_7d} people in the last 7 days.`,
     `${c.users_with_2_plus_workouts_7d} people got at least two sessions done.`,
@@ -299,9 +320,7 @@ function buildProofPost({ dateString, counts = DEFAULT_PROOF_COUNTS }) {
     '',
     'The bit that matters is not perfect weeks. It is people checking in, adjusting quickly, and not disappearing when life gets messy.',
     '',
-    isSaturday
-      ? 'Want in for the next 30-day vegan fitness challenge? Message me BALANCE.'
-      : 'If you want to try the 30-day vegan fitness challenge, message me BALANCE.',
+    cta,
   ].join('\n');
 
   return {
@@ -310,12 +329,14 @@ function buildProofPost({ dateString, counts = DEFAULT_PROOF_COUNTS }) {
     day,
     lane: 'proof',
     title,
+    hook,
     source: 'Supabase aggregate proof signals',
     mediaType: 'text',
     mediaUrl: '',
     thumbnailUrl: null,
     assetUrl: null,
     caption,
+    cta,
     prefix,
     status: 'created',
     counts: c,
@@ -359,6 +380,8 @@ function markdownForPost(post) {
     `- Source: ${post.source}`,
   ];
   if (post.assetUrl) lines.push(`- Asset: ${post.assetUrl}`);
+  if (post.hook) lines.push(`- Hook: ${post.hook}`);
+  if (post.cta) lines.push(`- CTA: ${post.cta}`);
   if (post.paperId) lines.push(`- Paper ID: ${post.paperId}`);
   lines.push('', '## Feed Caption', '', '```text', post.caption, '```', '');
   return lines.join('\n');
