@@ -531,6 +531,11 @@
   status = 200
 
 [[redirects]]
+  from = "/tiktok-studio"
+  to = "/tiktok-studio.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/login.html"
   status = 200
