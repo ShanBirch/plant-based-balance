@@ -10075,6 +10075,18 @@ if(!window._pbbIsIOSSafari) {
                     </div>
                 </div>
             </div>
+            <!-- Biggest Effort Prize -->
+            <div id="challenge-effort-prize-card" style="margin: 0 4px 22px; padding: 14px 16px; border-radius: 16px; background: linear-gradient(135deg, rgba(20,184,166,0.16), rgba(245,158,11,0.13)); border: 1px solid rgba(45,212,191,0.28); box-shadow: 0 4px 20px rgba(20,184,166,0.12);">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="width: 42px; height: 42px; border-radius: 13px; background: rgba(45,212,191,0.16); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.45rem;">&#128170;</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 0.65rem; color: rgba(94,234,212,0.92); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 900; margin-bottom: 3px;">Biggest Effort Prize</div>
+                        <div style="font-size: 0.95rem; font-weight: 800; color: white; margin-bottom: 3px;">Most Improved Momentum</div>
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.64); line-height: 1.45;">For the person who lifts their consistency the most across the challenge. Workouts, check-ins, habit logs, updates, and showing up all count.</div>
+                        <div id="challenge-effort-prize-watch" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);"></div>
+                    </div>
+                </div>
+            </div>
             <!-- Podium -->
             <div id="challenge-podium" style="display: flex; justify-content: center; align-items: flex-end; gap: 10px;">
                 <!-- 2nd Place -->
@@ -10209,6 +10221,10 @@ if(!window._pbbIsIOSSafari) {
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <span style="font-size: 1rem;">🥉</span>
                                 <span style="color: rgba(255,255,255,0.85); font-size: 0.82rem; line-height: 1.4;"><strong style="color: #d97706;">3rd place</strong> &middot; 1 week free online coaching</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 1rem;">&#128170;</span>
+                                <span style="color: rgba(255,255,255,0.88); font-size: 0.82rem; line-height: 1.4;"><strong style="color: #5eead4;">Biggest effort</strong> &middot; most improved momentum</span>
                             </div>
                         </div>
                         <div style="color: rgba(255,255,255,0.55); font-size: 0.75rem; line-height: 1.4; margin-top: 8px;">Everyone who finishes the 30 days earns bonus XP and a finisher's drop.</div>
@@ -12296,7 +12312,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
 
-    { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'Challenge invite', body:"Join the next challenge from Home. 1st Place is $500 cash, and the challenge starts when 15 people are in.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
+    { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'Challenge invite', body:"Join the next challenge from Home. 1st Place is $500 cash, plus there is a Biggest Effort prize for most improved momentum.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
 
     { tab:'dashboard', sel:'#calorie-tracker-widget', title:'Calorie tracker widget', body:"Home shows calories and macros, with one-tap logging for photos, barcodes, typed meals, manual macros, Build-a-Meal, and recent meals.", quick: true, xpReward:'nutrition' },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically.", quick: true },
@@ -13268,6 +13284,14 @@ if(!window._pbbIsIOSSafari) {
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({
+    id: 'cohort-biggest-effort-prize-v1',
+    tab: 'dashboard',
+    sel: '#home-cohort-challenge-invite-top,#challenge-effort-prize-card',
+    title: 'Biggest Effort Prize',
+    body: "The next challenge now has a Biggest Effort prize for the person who builds the most improved momentum.",
+    condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); var e = document.getElementById('challenge-effort-prize-card'); return (c && c.innerHTML.trim() !== '') || (e && e.offsetParent !== null); }
+  });
 
   var revealIdx = 0;
   var revealSteps = [];
@@ -14507,13 +14531,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=19';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=19"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20"><\/script>');
 }
 </script>
 
