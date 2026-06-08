@@ -63,6 +63,7 @@ Current strategic priority: build the AI-operated business layer around Balance:
 - Shannon's coaching voice varies by gender and individual. The system must observe Shannon's actual sent messages before trusting automation.
 - Push directly to `main` when shipping. No PR ceremony unless Shannon explicitly asks. Treat pushing `main` for Netlify deploy as the default ship path.
 - Do not leave completed work sitting unmerged or only mentioned in chat. If Shannon asks to merge or ship, finish the commit and push to `main` in the same session unless there is a concrete blocker.
+- When Shannon says "push", treat that as explicit approval to carefully ship. Do not stop with "the worktree has unrelated dirty changes" or "`main` is behind origin/main" as the final answer. Preserve unrelated local work, stage only the intended files, use a clean worktree when the main workspace is messy, integrate `origin/main` when needed, and push. Only stop for a hard blocker such as auth failure, a conflict that needs Shannon's product decision, or apparent secret/destructive risk.
 - Before editing in this repo, run `git fetch origin main`, check `git status`, and ensure local files are current.
 - Never revert Shannon's existing local changes without explicit permission.
 - When editing from a worktree, edit only inside that worktree, not through a parent project path.
@@ -290,6 +291,7 @@ Also read `CLAUDE.md` for detailed UI patterns. The big ones:
 5. Give Shannon a short morning briefing with the next most useful business/build moves.
 6. If editing user-facing copy, scan for em dashes before committing.
 7. If shipping, commit focused changes and push directly to `origin main`.
+8. If Shannon says "push", keep going through fetch/status, selective staging, commit, update from `origin/main` if required, and push. A dirty worktree or a behind local `main` is a caution signal, not a reason to decline the push.
 
 ## Current Business Lens
 
