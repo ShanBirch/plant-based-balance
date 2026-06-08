@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v207'; // v207: offline workout shell/data scripts; v206: meal text logging stays scrollable while analysis runs
+const CACHE_NAME = 'pbb-app-v208'; // v208: workout builder search only; v207: offline workout shell/data scripts
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v1';
 const ASSETS = [
@@ -13,7 +13,7 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=109',
   './js/dashboard/dashboard-script-7-video_logic.js',
-  './js/dashboard/pbb-deferred-workoutbuilder.js?v=3',
+  './js/dashboard/pbb-deferred-workoutbuilder.js?v=4',
   './js/dashboard/pbb-deferred-yourworkouts.js',
   './js/dashboard/pbb-deferred-savedworkouts.js',
   './js/dashboard/dashboard-script-12-program_builder_state.js?v=4'

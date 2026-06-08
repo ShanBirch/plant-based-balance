@@ -96,140 +96,12 @@ async function openWorkoutBuilder() {
     }
 }
 
-// Initialize filter state
-if (typeof window.activeFilters === 'undefined') {
-    window.activeFilters = {
-        workoutType: [],
-        equipment: [],
-        muscle: []
-    };
-}
-
-// Toggle filter chip
-function toggleFilter(category, value) {
-    const filters = window.activeFilters[category];
-    const index = filters.indexOf(value);
-
-    // Find the button element
-    const btn = document.querySelector(`.filter-chip[data-category="${category}"][data-value="${value}"]`);
-    if (!btn) return;
-
-    if (index > -1) {
-        // Remove filter
-        filters.splice(index, 1);
-        btn.style.background = 'white';
-        btn.style.color = '#64748b';
-        btn.style.borderColor = '#e2e8f0';
-    } else {
-        // Add filter
-        filters.push(value);
-        btn.style.background = 'var(--primary)';
-        btn.style.color = 'white';
-        btn.style.borderColor = 'var(--primary)';
+function exerciseSearchTermMatches(keyLower, term, terms) {
+    if (keyLower.includes(term)) return true;
+    if (term === 'hip' && terms.some(t => t.includes('abduct') || t.includes('adduct'))) {
+        return keyLower.includes('abduct') || keyLower.includes('adduct');
     }
-
-    // Show/hide clear button
-    const hasActiveFilters = Object.values(window.activeFilters).some(arr => arr.length > 0);
-    document.getElementById('clear-filters-btn').style.display = hasActiveFilters ? 'block' : 'none';
-
-    // Re-run filter
-    filterExerciseLibrary(document.getElementById('builder-search').value);
-}
-
-// Clear all filters
-function clearAllFilters() {
-    window.activeFilters = {
-        workoutType: [],
-        equipment: [],
-        muscle: []
-    };
-
-    // Reset all filter chip styles
-    document.querySelectorAll('.filter-chip').forEach(btn => {
-        btn.style.background = 'white';
-        btn.style.color = '#64748b';
-        btn.style.borderColor = '#e2e8f0';
-    });
-
-    // Hide clear button
-    document.getElementById('clear-filters-btn').style.display = 'none';
-
-    // Re-run filter
-    filterExerciseLibrary(document.getElementById('builder-search').value);
-}
-
-// Toggle filter section expand/collapse
-function toggleFilterSection(sectionId) {
-    const content = document.getElementById(`filter-content-${sectionId}`);
-    const chevron = document.getElementById(`chevron-${sectionId}`);
-
-    if (content.style.display === 'none') {
-        content.style.display = 'block';
-        chevron.style.transform = 'rotate(180deg)';
-    } else {
-        content.style.display = 'none';
-        chevron.style.transform = 'rotate(0deg)';
-    }
-}
-
-// Check if exercise matches category filter
-function matchesFilter(exerciseName) {
-    const nameLower = exerciseName.toLowerCase();
-
-    // Check workout type filters
-    if (window.activeFilters.workoutType.length > 0) {
-        const matchesWorkoutType = window.activeFilters.workoutType.some(type => {
-            if (type === 'yoga') return nameLower.includes('yoga');
-            if (type === 'pilates') return nameLower.includes('pilates');
-            if (type === 'cardio') return nameLower.includes('sprint') || nameLower.includes('run') || nameLower.includes('jump') || nameLower.includes('hop') || nameLower.includes('burpee');
-            if (type === 'stretch') return nameLower.includes('stretch') || nameLower.includes('foam roller');
-            return false;
-        });
-        if (!matchesWorkoutType) return false;
-    }
-
-    // Check equipment filters
-    if (window.activeFilters.equipment.length > 0) {
-        const matchesEquipment = window.activeFilters.equipment.some(equip => {
-            if (equip === 'dumbbell') return nameLower.includes('dumbbell');
-            if (equip === 'barbell') return nameLower.includes('barbell');
-            if (equip === 'cable') return nameLower.includes('cable');
-            if (equip === 'band') return nameLower.includes('band') || nameLower.includes('miniband');
-            if (equip === 'kettlebell') return nameLower.includes('kettlebell');
-            if (equip === 'machine') return nameLower.includes('machine');
-            if (equip === 'bodyweight') {
-                // Bodyweight = doesn't contain any equipment keywords
-                return !nameLower.includes('dumbbell') &&
-                       !nameLower.includes('barbell') &&
-                       !nameLower.includes('cable') &&
-                       !nameLower.includes('band') &&
-                       !nameLower.includes('kettlebell') &&
-                       !nameLower.includes('machine') &&
-                       !nameLower.includes('ball') &&
-                       !nameLower.includes('trx') &&
-                       !nameLower.includes('sled');
-            }
-            return false;
-        });
-        if (!matchesEquipment) return false;
-    }
-
-    // Check muscle group filters
-    if (window.activeFilters.muscle.length > 0) {
-        const matchesMuscle = window.activeFilters.muscle.some(muscle => {
-            if (muscle === 'chest') return nameLower.includes('chest') || nameLower.includes('pec') || (nameLower.includes('press') && (nameLower.includes('bench') || nameLower.includes('floor')));
-            if (muscle === 'back') return nameLower.includes('back') || nameLower.includes('lat') || nameLower.includes('row') || nameLower.includes('pull up') || nameLower.includes('pullup');
-            if (muscle === 'shoulders') return nameLower.includes('shoulder') || nameLower.includes('delt') || nameLower.includes('raise') || nameLower.includes('overhead press');
-            if (muscle === 'arms') return nameLower.includes('bicep') || nameLower.includes('tricep') || nameLower.includes('curl') || nameLower.includes('extension') && !nameLower.includes('leg') && !nameLower.includes('back');
-            if (muscle === 'core') return nameLower.includes('ab') || nameLower.includes('core') || nameLower.includes('crunch') || nameLower.includes('plank') || nameLower.includes('oblique');
-            if (muscle === 'legs') return nameLower.includes('squat') || nameLower.includes('lunge') || nameLower.includes('leg') || nameLower.includes('quad') || nameLower.includes('hamstring') || nameLower.includes('calf');
-            if (muscle === 'glutes') return nameLower.includes('glute') || nameLower.includes('hip') || nameLower.includes('kickback');
-            return false;
-        });
-        if (!matchesMuscle) return false;
-    }
-
-    return true;
+    return false;
 }
 
 function filterExerciseLibrary(query) {
@@ -259,7 +131,7 @@ function filterExerciseLibrary(query) {
         return;
     }
 
-    // 1. Gather Matches (search query + category filters)
+    // 1. Gather matches from the search query only.
     const matchedKeys = [];
     for (let key of allKeys) {
         const keyLower = key.toLowerCase();
@@ -268,17 +140,14 @@ function filterExerciseLibrary(query) {
         let matchesQuery = true;
         if (terms.length > 0) {
             for (let term of terms) {
-                if (!keyLower.includes(term)) {
+                if (!exerciseSearchTermMatches(keyLower, term, terms)) {
                     matchesQuery = false;
                     break;
                 }
             }
         }
 
-        // Check category filters
-        const matchesCategories = matchesFilter(key);
-
-        if (matchesQuery && matchesCategories) {
+        if (matchesQuery) {
             matchedKeys.push(key);
         }
     }
