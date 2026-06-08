@@ -12312,7 +12312,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
 
-    { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'Challenge invite', body:"Join the next challenge from Home. 1st Place is $500 cash, plus there is a Biggest Effort prize for most improved momentum.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
+    { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'Challenge invite', body:"Join the next challenge from Home. 1st Place is $500 cash, and the challenge starts when 15 people are in.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
 
     { tab:'dashboard', sel:'#calorie-tracker-widget', title:'Calorie tracker widget', body:"Home shows calories and macros, with one-tap logging for photos, barcodes, typed meals, manual macros, Build-a-Meal, and recent meals.", quick: true, xpReward:'nutrition' },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically.", quick: true },
@@ -13287,10 +13287,10 @@ if(!window._pbbIsIOSSafari) {
   allFeatures.push({
     id: 'cohort-biggest-effort-prize-v1',
     tab: 'dashboard',
-    sel: '#home-cohort-challenge-invite-top,#challenge-effort-prize-card',
+    sel: '#challenge-effort-prize-card',
     title: 'Biggest Effort Prize',
     body: "The next challenge now has a Biggest Effort prize for the person who builds the most improved momentum.",
-    condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); var e = document.getElementById('challenge-effort-prize-card'); return (c && c.innerHTML.trim() !== '') || (e && e.offsetParent !== null); }
+    condition: function(){ var e = document.getElementById('challenge-effort-prize-card'); return e && e.offsetParent !== null; }
   });
 
   var revealIdx = 0;

@@ -4626,22 +4626,6 @@ async function loadHomeChallenges() {
 
 const COHORT_START_TARGET = 15;
 const COHORT_CASH_PRIZE_LABEL = '$500 CASH';
-const COHORT_EFFORT_PRIZE_LABEL = 'Biggest Effort';
-
-function renderCohortEffortPrizeStrip() {
-    return `
-            <div style="display: flex; align-items: center; gap: 10px; background: rgba(20,184,166,0.12); border: 1px solid rgba(45,212,191,0.24); border-radius: 14px; padding: 10px 12px; margin-bottom: 12px;">
-                <div style="width: 30px; height: 30px; border-radius: 10px; background: rgba(45,212,191,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">&#128170;</div>
-                <div style="min-width: 0;">
-                    <div style="font-size: 0.76rem; color: #5eead4; font-weight: 900;">${COHORT_EFFORT_PRIZE_LABEL}</div>
-                    <div style="font-size: 0.72rem; color: rgba(255,255,255,0.68); line-height: 1.35;">For the most improved momentum, not just top score.</div>
-                </div>
-            </div>`;
-}
-
-function renderCohortEffortPrizePill() {
-    return `<div style="display: inline-flex; align-items: center; gap: 5px; background: rgba(20,184,166,0.14); color: #5eead4; border: 1px solid rgba(45,212,191,0.26); border-radius: 999px; padding: 4px 8px; font-size: 0.66rem; font-weight: 900; margin-bottom: 6px;"><span>&#128170;</span><span>${COHORT_EFFORT_PRIZE_LABEL}</span></div>`;
-}
 
 async function tryAutoEnrollInCohort() {
     if (!window.currentUser?.id) return;
@@ -4831,7 +4815,6 @@ function renderCohortDashboardInviteCard(inviteStatus) {
                 <span style="font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;">1st Place</span>
                 <span style="font-size: 1.16rem; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.38); white-space: nowrap;">${COHORT_CASH_PRIZE_LABEL}</span>
             </div>
-            ${renderCohortEffortPrizeStrip()}
             <div style="background: rgba(245,217,138,0.12); border: 1px solid rgba(245,217,138,0.14); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                 <span style="color: rgba(255,255,255,0.92); font-size: 0.78rem; font-weight: 600;">${joinedLabel}</span>
                 <span style="color: white; font-weight: 800; font-size: 1rem;">${spotsLabel}</span>
@@ -4922,7 +4905,6 @@ function renderCohortAcceptanceCard(cohort) {
                 <span style="font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;">1st Place</span>
                 <span style="font-size: 1.16rem; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.38); white-space: nowrap;">${COHORT_CASH_PRIZE_LABEL}</span>
             </div>
-            ${renderCohortEffortPrizeStrip()}
             <div style="background: rgba(255,255,255,0.18); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                 <span style="color: rgba(255,255,255,0.92); font-size: 0.78rem; font-weight: 600;">${accepted} of ${needed} confirmed</span>
                 <span style="color: white; font-weight: 800; font-size: 1rem;">${accepted} / ${needed}</span>
@@ -4958,7 +4940,6 @@ function renderCohortWaitingCard(cohort) {
                 <span style="font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;">1st Place</span>
                 <span style="font-size: 1.16rem; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.38); white-space: nowrap;">${COHORT_CASH_PRIZE_LABEL}</span>
             </div>
-            ${renderCohortEffortPrizeStrip()}
             <div style="background: rgba(245,217,138,0.12); border: 1px solid rgba(245,217,138,0.14); border-radius: 12px; padding: 10px 14px;">
                 <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">${dots}</div>
             </div>
@@ -5048,7 +5029,6 @@ function renderCohortActiveCard(cohort) {
             <div style="flex: 1; min-width: 0;">
                 <div class="cohort-card-title" style="font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; font-size: 0.98rem; margin-bottom: 3px;">${cohort.challenge_name || '30 Day Challenge'}</div>
                 <div style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #22c55e 0%, #84cc16 48%, #facc15 100%); color: #07130b; border: 1px solid rgba(254,240,138,0.85); border-radius: 999px; padding: 4px 8px; font-size: 0.68rem; font-weight: 950; margin-bottom: 6px; box-shadow: 0 6px 18px rgba(34,197,94,0.28);"><span>1st Place</span><span style="color: #ffffff; text-shadow: 0 1px 6px rgba(0,0,0,0.38);">${COHORT_CASH_PRIZE_LABEL}</span></div>
-                ${renderCohortEffortPrizePill()}
                 <div style="display: flex; gap: 12px; font-size: 0.78rem; color: rgba(255,255,255,0.85);">
                     <span>#${rank}</span>
                     <span>⏱️ ${days}d left</span>
