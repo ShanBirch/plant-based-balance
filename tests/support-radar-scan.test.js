@@ -3,6 +3,11 @@ const assert = require('assert');
 const radar = require('../netlify/functions/support-radar-scan')._test;
 
 const NOW = new Date('2026-06-07T00:00:00.000Z').getTime();
+const realDateNow = Date.now;
+Date.now = () => NOW;
+process.on('exit', () => {
+    Date.now = realDateNow;
+});
 
 function assignment(overrides = {}) {
     return {

@@ -402,6 +402,11 @@
 [functions."daily-reel-opportunity-scan"]
   schedule = "48 20 * * *"
 
+# Recent Workout Touch - catches fresh completed workouts and creates at most a
+# weekly Needs You message per client, only during Shannon's waking hours.
+[functions."recent-workout-touch-scan"]
+  schedule = "*/15 * * * *"
+
 # ManyChat reconcile is intentionally unscheduled for IG Graph cutover. Keep the
 # function file for manual legacy rescue until the external ManyChat account is
 # fully disconnected.
