@@ -2711,11 +2711,74 @@ async function shareNutritionToFeed() {
     }
 }
 
+function getLevelUpShareKey(userId, level) {
+    return `level_up_feed_share:${userId}:${level}`;
+}
+
+function getLevelUpShareValue(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+}
+
+function setLevelUpShareValue(key, value) {
+    try { localStorage.setItem(key, value); } catch (e) { /* ignore storage errors */ }
+}
+
+function clearLevelUpShareValue(key) {
+    try { localStorage.removeItem(key); } catch (e) { /* ignore storage errors */ }
+}
+
+function levelUpCaptionMatches(caption, level) {
+    try {
+        const payload = typeof caption === 'string' ? JSON.parse(caption) : caption;
+        return payload?.card_type === 'level_up' && Number(payload?.level) === Number(level);
+    } catch (e) {
+        return false;
+    }
+}
+
+async function hasExistingLevelUpFeedPost(userId, level) {
+    try {
+        const stories = await dbHelpers.stories.getUserStories(userId);
+        return (stories || []).some(story =>
+            story?.media_type === 'level_up_card' && levelUpCaptionMatches(story.caption, level)
+        );
+    } catch (e) {
+        console.warn('Could not check existing level-up feed post:', e);
+        return false;
+    }
+}
+
 // Share level-up achievement card to feed
 async function shareLevelUpToFeed(levelData) {
     if (!window.currentUser || !levelData) return;
 
+    const level = levelData.newLevel || levelData.level;
+    if (!level) return;
+
+    if (!window.__levelUpFeedSharePending) {
+        window.__levelUpFeedSharePending = new Set();
+    }
+
+    const shareKey = getLevelUpShareKey(window.currentUser.id, level);
+    if (window.__levelUpFeedSharePending.has(shareKey)) {
+        console.log('Level-up feed share already pending:', shareKey);
+        return;
+    }
+    if (getLevelUpShareValue(shareKey) === 'shared') {
+        console.log('Level-up feed share already completed:', shareKey);
+        return;
+    }
+
+    window.__levelUpFeedSharePending.add(shareKey);
+    setLevelUpShareValue(shareKey, 'pending');
+
     try {
+        if (await hasExistingLevelUpFeedPost(window.currentUser.id, level)) {
+            setLevelUpShareValue(shareKey, 'shared');
+            console.log('Level-up feed post already exists:', { level });
+            return;
+        }
+
         // Get streak
         let streak = 0;
         try {
@@ -2730,8 +2793,8 @@ async function shareLevelUpToFeed(levelData) {
 
         const cardPayload = {
             card_type: 'level_up',
-            level: levelData.newLevel || levelData.level,
-            title: levelData.title || getLevelTitle(levelData.newLevel || levelData.level),
+            level: level,
+            title: levelData.title || getLevelTitle(level),
             previous_level: levelData.previousLevel || null,
             previous_title: levelData.previousLevel ? getLevelTitle(levelData.previousLevel) : null,
             lifetime_xp: levelData.lifetimePoints || 0,
@@ -2747,6 +2810,7 @@ async function shareLevelUpToFeed(levelData) {
         });
 
         console.log('Level-up card story created:', story);
+        setLevelUpShareValue(shareKey, 'shared');
 
         // Refresh feed if visible
         if (typeof loadPhotoFeed === 'function') {
@@ -2757,7 +2821,10 @@ async function shareLevelUpToFeed(levelData) {
 
     } catch (error) {
         console.error('Error sharing level-up card:', error);
+        clearLevelUpShareValue(shareKey);
         showToast('Failed to share level up. Please try again.', 'error');
+    } finally {
+        window.__levelUpFeedSharePending.delete(shareKey);
     }
 }
 

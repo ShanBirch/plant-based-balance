@@ -129,10 +129,10 @@ function fallbackComment(story) {
     const type = String(story.media_type || '').toLowerCase();
     const text = raw.toLowerCase();
     if (payload?.card_type === 'pb') return 'thats a solid pb';
-    if (payload?.card_type === 'level_up' || type === 'level_up_card') return 'yeh nice, moving up';
+    if (payload?.card_type === 'level_up' || type === 'level_up_card') return 'lets goo';
     if (payload?.card_type === 'nutrition' || type === 'nutrition_card') return 'solid day that';
-    if (payload?.card_type === 'meal' || type === 'meal_card' || /\b(meal|food|breakfast|lunch|dinner|tofu|tempeh|protein)\b/.test(text)) return 'that looks good';
-    if (payload?.card_type === 'workout' || type === 'workout_card' || /\b(workout|session|gym|run|walk|ride|lift|sets|reps)\b/.test(text)) return 'nice work, howd that one feel?';
+    if (payload?.card_type === 'meal' || type === 'meal_card' || /\b(meal|food|breakfast|lunch|dinner|tofu|tempeh|protein)\b/.test(text)) return 'so good';
+    if (payload?.card_type === 'workout' || type === 'workout_card' || /\b(workout|session|gym|run|walk|ride|lift|sets|reps)\b/.test(text)) return 'nice work';
     return 'nice one';
 }
 
@@ -171,6 +171,8 @@ function normalizeGeneratedComment(value) {
         .replace(/\byou\?re\b/g, 'youre')
         .replace(/\bit's\b/g, 'its');
     if (!comment || /^(skip|no comment|none|null|n\/a)$/i.test(comment)) return '';
+    if (comment.includes('?')) return '';
+    if (/\b(what'?s your next goal|whats your next goal|next goal|howd|how did|how are you|how was|what are you|what did|what do you|what'?s next|whats next)\b/i.test(comment)) return '';
     if (comment.length > 120) comment = truncate(comment, 120).replace(/[,.!?;:]+$/g, '').trim();
     if (/@|http|www\.|balance|challenge|coaching|coach|app|ai|automation|bot/i.test(comment)) return '';
     if (/\b(hot|sexy|skinny|fat|body|weight|physique|looking good|look good)\b/i.test(comment)) return '';
@@ -244,9 +246,10 @@ Rules:
 - lower-case casual Shannon voice
 - 2 to 12 words, max 120 characters
 - no greeting, no name, no emoji, no exclamation mark
+- no questions, just a short hype/support comment
 - no mention of Balance, app, coaching, challenge, AI, automation, or links
 - never comment on body, weight, appearance, attractiveness, or medical stuff
-- one light question is ok only if it fits naturally
+- for level ups, prefer comments like hell yeah, lets goo, so good, nice one, huge, love that
 - if this should not be commented on, return {"comment":""}
 
 POST:
