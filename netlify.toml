@@ -521,6 +521,11 @@
   force = true
 
 [[redirects]]
+  from = "/tiktok-content"
+  to = "/tiktok-content.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/login.html"
   status = 200
