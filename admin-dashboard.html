@@ -359,6 +359,11 @@
         .content-performance-platform.ok { background:#ecfdf5; border-color:#bbf7d0; }
         .content-performance-platform.warn { background:#fffbeb; border-color:#fde68a; }
         .content-performance-platform.muted { background:#f8fafc; border-color:#e2e8f0; }
+        .content-performance-lanes { display:flex; flex-wrap:wrap; gap:7px; padding:10px 16px 0; }
+        .content-performance-lane { border:1px solid #dbe4ef; background:#fff; color:#334155; border-radius:999px; padding:6px 9px; font-size:0.74rem; font-weight:900; }
+        .content-performance-lane.story { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+        .content-performance-lane.feed { background:#ecfdf5; color:#166534; border-color:#bbf7d0; }
+        .content-performance-lane.video { background:#fef3c7; color:#92400e; border-color:#fde68a; }
         .content-performance-list { padding:14px 16px 16px; display:flex; flex-direction:column; gap:12px; }
         .content-performance-post { display:grid; grid-template-columns:minmax(150px,220px) minmax(0,1fr); gap:14px; border:1px solid #e2e8f0; border-radius:8px; padding:12px; background:#fff; }
         .content-performance-visual { position:relative; min-height:180px; aspect-ratio:4/5; border-radius:8px; overflow:hidden; background:#0f172a; display:flex; align-items:center; justify-content:center; color:#cbd5e1; }
@@ -367,6 +372,7 @@
         .content-performance-visual.media-error::after { content:'Preview unavailable'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:14px; text-align:center; color:#cbd5e1; font-weight:900; font-size:0.8rem; }
         .content-performance-visual-fallback { padding:14px; font-weight:900; font-size:0.84rem; text-align:center; line-height:1.3; }
         .content-performance-rank-badge { position:absolute; top:9px; left:9px; min-width:34px; height:30px; border-radius:999px; background:rgba(15,23,42,0.86); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:0.78rem; padding:0 9px; }
+        .content-performance-type-badge { position:absolute; top:47px; left:9px; border-radius:999px; background:rgba(255,255,255,0.92); color:#0f172a; padding:5px 8px; font-weight:900; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.03em; }
         .content-performance-score-badge { position:absolute; right:9px; bottom:9px; border-radius:999px; background:#166534; color:#fff; padding:6px 9px; font-weight:900; font-size:0.72rem; box-shadow:0 8px 20px rgba(0,0,0,0.18); }
         .content-performance-post-body { min-width:0; display:flex; flex-direction:column; gap:9px; }
         .content-performance-rank { width:34px; height:34px; border-radius:8px; background:#0f172a; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:0.82rem; }
@@ -2800,8 +2806,11 @@
                                 <button id="content-performance-refresh-btn" onclick="loadContentPerformance(true)" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
                                     <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i> Refresh
                                 </button>
-                                <button id="content-performance-ig-sync-btn" onclick="refreshContentPerformanceIg(this)" class="ai-view-account-btn" style="margin:0; font-size:0.8rem; background:#166534;">
-                                    <i data-lucide="instagram" style="width:14px; height:14px;"></i> Sync IG
+                                <button id="content-performance-ig-sync-btn" onclick="refreshContentPerformanceIg(this, 'media')" class="ai-view-account-btn" style="margin:0; font-size:0.8rem; background:#166534;">
+                                    <i data-lucide="instagram" style="width:14px; height:14px;"></i> Sync Feed/Reels
+                                </button>
+                                <button id="content-performance-story-sync-btn" onclick="refreshContentPerformanceIg(this, 'stories')" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
+                                    <i data-lucide="clock-3" style="width:14px; height:14px;"></i> Sync Stories
                                 </button>
                             </div>
                         </div>
@@ -2810,7 +2819,7 @@
                         <div class="content-performance-head">
                             <div>
                                 <h3>Ranked Posts</h3>
-                                <p>Combined score uses views/reach plus deeper signals like comments, saves, shares, replies, reposts and quotes.</p>
+                        <p>Feed/reels/carousels stay available from Graph. Stories are short-lived and only show if synced while live.</p>
                             </div>
                         </div>
                         <div id="content-performance-body">
@@ -4691,6 +4700,7 @@
             const statuses = summary.statuses || {};
             const byPlatform = summary.byPlatform || {};
             const groups = contentPerformanceGroups(rows);
+            const laneCounts = contentPerformanceLaneCounts(rows);
             const generated = data.generatedAt ? ` | updated ${timeAgo(data.generatedAt)}` : '';
             setContentPerformanceStatus(`${groups.length} ranked posts from ${rows.length} platform rows in the last ${data.windowDays || 90} days${generated}`);
             if (!rows.length) {
@@ -4706,10 +4716,46 @@
                 <div class="content-performance-grid">
                     ${['instagram', 'threads', 'youtube', 'tiktok'].map(key => contentPerformancePlatformStatus(key, statuses[key], byPlatform[key])).join('')}
                 </div>
+                ${renderContentPerformanceLaneCounts(laneCounts)}
                 <div class="content-performance-list">
                     ${groups.slice(0, 30).map((group, index) => renderContentPerformancePost(group, index + 1, statuses)).join('')}
                 </div>`;
             lucide.createIcons();
+        }
+
+        function contentPerformanceLane(row = {}) {
+            const raw = `${row.type || ''} ${row.mediaProductType || ''} ${row.mediaType || ''}`.toLowerCase();
+            if (/\bstory\b/.test(raw)) return 'story';
+            if (/\breel|video|short\b/.test(raw)) return 'video';
+            if (/\bcarousel|album\b/.test(raw)) return 'carousel';
+            return 'feed';
+        }
+
+        function contentPerformanceLaneLabel(lane) {
+            return lane === 'story' ? 'Story'
+                : lane === 'video' ? 'Reel/Video'
+                    : lane === 'carousel' ? 'Carousel'
+                        : 'Feed Post';
+        }
+
+        function contentPerformanceLaneCounts(rows = []) {
+            return rows.reduce((acc, row) => {
+                const lane = contentPerformanceLane(row);
+                acc[lane] = (acc[lane] || 0) + 1;
+                return acc;
+            }, {});
+        }
+
+        function renderContentPerformanceLaneCounts(counts = {}) {
+            const lanes = [
+                ['feed', 'Feed Posts'],
+                ['video', 'Reels/Videos'],
+                ['carousel', 'Carousels'],
+                ['story', 'Stories'],
+            ];
+            return `<div class="content-performance-lanes">
+                ${lanes.map(([key, label]) => `<span class="content-performance-lane ${key}">${adminEsc(label)}: ${adminEsc(contentPerformanceNumber(counts[key] || 0))}</span>`).join('')}
+            </div>`;
         }
 
         function contentPerformanceGroupKey(row = {}) {
@@ -4755,6 +4801,7 @@
             const openPayload = adminEsc(igOperatorEncode({ url: bestLink }));
             const visualHtml = renderContentPerformanceVisual(visual, headline);
             const meta = [
+                contentPerformanceLaneLabel(contentPerformanceLane(visual)),
                 `${group.rows?.length || 0} platform row${group.rows?.length === 1 ? '' : 's'}`,
                 visual.postedLabel,
                 visual.type,
@@ -4764,6 +4811,7 @@
                     <div class="content-performance-visual">
                         ${visualHtml}
                         <div class="content-performance-rank-badge">#${adminEsc(rank)}</div>
+                        <div class="content-performance-type-badge">${adminEsc(contentPerformanceLaneLabel(contentPerformanceLane(visual)))}</div>
                         <div class="content-performance-score-badge">${adminEsc(contentPerformanceNumber(group.score))} score</div>
                     </div>
                     <div class="content-performance-post-body">
@@ -4867,14 +4915,16 @@
             }
         }
 
-        async function refreshContentPerformanceIg(btn) {
+        async function refreshContentPerformanceIg(btn, mode = 'media') {
             const original = btn ? btn.innerHTML : '';
+            const safeMode = String(mode || 'media').toLowerCase() === 'stories' ? 'stories' : 'media';
+            const label = safeMode === 'stories' ? 'Stories' : 'Feed/Reels';
             if (btn) {
                 btn.disabled = true;
                 btn.innerHTML = '<i data-lucide="loader-2" style="width:14px;height:14px;"></i> Syncing';
                 lucide.createIcons();
             }
-            setContentPerformanceStatus('Syncing Instagram media from Graph...');
+            setContentPerformanceStatus(`Syncing Instagram ${label} from Graph...`);
             try {
                 let after = '';
                 let total = 0;
@@ -4883,7 +4933,7 @@
                 while (page < 4) {
                     page += 1;
                     const cursor = after ? `&after=${encodeURIComponent(after)}` : '';
-                    const res = await fetch(`/.netlify/functions/meta-ig-sync-content?mode=media&limit=50&pages=1&include_insights=true&include_analysis=false${cursor}`, {
+                    const res = await fetch(`/.netlify/functions/meta-ig-sync-content?mode=${safeMode}&limit=50&pages=1&include_insights=true&include_analysis=false${cursor}`, {
                         method: 'POST',
                         headers,
                         body: JSON.stringify({ manual_admin_refresh: true, page }),
@@ -4894,11 +4944,11 @@
                     if (!data.has_next || !after) break;
                 }
                 contentPerformanceLoaded = false;
-                setContentPerformanceStatus(`Synced ${total.toLocaleString('en-AU')} IG items. Reloading posts...`);
+                setContentPerformanceStatus(`Synced ${total.toLocaleString('en-AU')} IG ${label} items. Reloading posts...`);
                 await loadContentPerformance(true);
             } catch (e) {
                 console.error('refreshContentPerformanceIg failed:', e);
-                setContentPerformanceStatus('Instagram sync failed.');
+                setContentPerformanceStatus(`Instagram ${label} sync failed.`);
                 window.alert('Could not sync Instagram metrics: ' + (e.message || e));
             } finally {
                 if (btn) {
