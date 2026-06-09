@@ -268,6 +268,7 @@ export default async (req) => {
 
     const action = scheduled ? 'publish-daily' : cleanString(body.action || 'plan', 80).toLowerCase();
     const dateString = forcedDate(body);
+    const scienceCategory = cleanString(body.scienceCategory || body.science_category || body.category || '', 80);
     let cachedCounts = null;
     const getCounts = async () => {
         if (!cachedCounts) cachedCounts = await countsForRun(body);
@@ -277,7 +278,7 @@ export default async (req) => {
     try {
         if (action === 'create-one-of-each') {
             const counts = await getCounts();
-            const posts = createOneOfEach({ dateString, counts });
+            const posts = createOneOfEach({ dateString, counts, scienceCategory });
             return json(200, { ok: true, action, date: dateString, posts });
         }
 
@@ -285,8 +286,8 @@ export default async (req) => {
             const lane = cleanString(body.lane || '', 40);
             const counts = lane === 'proof' ? await getCounts() : undefined;
             const post = lane
-                ? createPostForLane({ lane, dateString, counts })
-                : createDailyPost({ dateString, counts });
+                ? createPostForLane({ lane, dateString, counts, scienceCategory })
+                : createDailyPost({ dateString, counts, scienceCategory });
             if (post.skipped) return json(200, { ok: true, skipped: true, post });
             if (body.dryRun) return json(200, { ok: true, dryRun: true, post });
             const published = await publishPostToFeed(post);
@@ -296,7 +297,7 @@ export default async (req) => {
         if (action === 'publish-daily') {
             const lane = laneForDate(dateString);
             const counts = lane === 'proof' ? await getCounts() : undefined;
-            const post = createDailyPost({ dateString, counts });
+            const post = createDailyPost({ dateString, counts, scienceCategory });
             if (post.skipped) return json(200, { ok: true, skipped: true, post });
             if (body.dryRun) return json(200, { ok: true, dryRun: true, post });
             const published = await publishPostToFeed(post);
@@ -306,7 +307,7 @@ export default async (req) => {
         if (action === 'plan') {
             const lane = laneForDate(dateString);
             const counts = lane === 'proof' ? await getCounts() : undefined;
-            const post = createDailyPost({ dateString, counts });
+            const post = createDailyPost({ dateString, counts, scienceCategory });
             return json(200, { ok: true, action, date: dateString, post });
         }
 

@@ -20,6 +20,8 @@ function parseArgs(argv) {
   for (const arg of argv) {
     if (arg === '--one-of-each') out.oneOfEach = true;
     if (arg === '--dry-run') out.dryRun = true;
+    const flagMatch = arg.match(/^--([^=]+)$/);
+    if (flagMatch) out[flagMatch[1]] = true;
     const match = arg.match(/^--([^=]+)=(.*)$/);
     if (match) out[match[1]] = match[2];
   }
@@ -69,9 +71,10 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const dateString = args.date || args.week || formatBrisbaneDate();
   const counts = countsFromArgs(args);
+  const scienceCategory = args['science-category'] || args.scienceCategory || args.category || '';
   let posts = args.oneOfEach
-    ? createOneOfEach({ dateString, counts })
-    : [createDailyPost({ dateString, counts })].filter(post => !post.skipped);
+    ? createOneOfEach({ dateString, counts, scienceCategory })
+    : [createDailyPost({ dateString, counts, scienceCategory })].filter(post => !post.skipped);
 
   if (!posts.length) {
     console.log(JSON.stringify({
@@ -86,8 +89,8 @@ async function main() {
   const sciencePipeline = await prepareScience(posts, args);
   if (sciencePipeline) {
     posts = args.oneOfEach
-      ? createOneOfEach({ dateString, counts })
-      : [createDailyPost({ dateString, counts })].filter(post => !post.skipped);
+      ? createOneOfEach({ dateString, counts, scienceCategory })
+      : [createDailyPost({ dateString, counts, scienceCategory })].filter(post => !post.skipped);
     posts = posts.map(post => (
       post.lane === 'science'
         ? {

@@ -66,6 +66,19 @@ const DEFAULT_PROOF_COUNTS = {
   active_challenge_participants: 18,
 };
 
+const SCIENCE_CATEGORY_ROTATION = [
+  { id: 'plant_based_nutrition', label: 'Plant-based nutrition' },
+  { id: 'nutrition_metabolism', label: 'Nutrition / metabolism' },
+  { id: 'state_change_mindset', label: 'Food, exercise & mindset' },
+  { id: 'mindset_motivation', label: 'Mindset / motivation' },
+  { id: 'neuroscience', label: 'Neuroscience' },
+  { id: 'resistance_training', label: 'Resistance training' },
+  { id: 'cardio_conditioning', label: 'Cardio / conditioning' },
+  { id: 'sleep_recovery', label: 'Sleep / recovery' },
+  { id: 'glp1_appetite_hormones', label: 'GLP-1s / appetite hormones' },
+  { id: 'mental_health_training', label: 'Mental health / training' },
+];
+
 function cleanText(value, max = 2000) {
   return String(value || '').replace(/\r\n/g, '\n').replace(/\s+\n/g, '\n').trim().slice(0, max);
 }
@@ -82,6 +95,20 @@ function safeSlug(value) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 80) || 'post';
+}
+
+function normalizeScienceCategory(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 80);
+}
+
+function scienceCategoryLabel(categoryId) {
+  const normalized = normalizeScienceCategory(categoryId);
+  return SCIENCE_CATEGORY_ROTATION.find(category => category.id === normalized)?.label
+    || normalized.split('_').filter(Boolean).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
 function possessiveName(value) {
@@ -169,6 +196,20 @@ function loadScienceRenderInput(paperId) {
   return loadJsonIfExists(filePath, null);
 }
 
+function scienceCategoryIdsForPaper(paper) {
+  const values = [
+    paper?.category,
+    ...(Array.isArray(paper?.secondaryCategories) ? paper.secondaryCategories : []),
+  ];
+  return new Set(values.map(normalizeScienceCategory).filter(Boolean));
+}
+
+function paperMatchesScienceCategory(paper, categoryId) {
+  const normalized = normalizeScienceCategory(categoryId);
+  if (!normalized) return true;
+  return scienceCategoryIdsForPaper(paper).has(normalized);
+}
+
 function scienceHookFromRenderInput(renderInput, fallbackTitle = 'Science review') {
   const hookBeat = Array.isArray(renderInput?.beats)
     ? renderInput.beats.find(beat => beat?.type === 'hook') || renderInput.beats[0]
@@ -180,6 +221,39 @@ function scienceHookFromRenderInput(renderInput, fallbackTitle = 'Science review
 function selectItem(items, seed, offset = 0) {
   if (!items.length) return null;
   return items[(hashString(seed) + offset) % items.length];
+}
+
+function selectScienceCategory(dateString, offset = 0, requestedCategory = '') {
+  const normalized = normalizeScienceCategory(requestedCategory);
+  if (normalized) {
+    return {
+      id: normalized,
+      label: scienceCategoryLabel(normalized),
+      requested: true,
+    };
+  }
+  const selected = selectItem(SCIENCE_CATEGORY_ROTATION, `${dateString}:science-category`, offset)
+    || SCIENCE_CATEGORY_ROTATION[0];
+  return {
+    ...selected,
+    requested: false,
+  };
+}
+
+function selectSciencePaper({ dateString, offset = 0, scienceCategory = '' } = {}) {
+  const papers = loadSciencePapers();
+  const category = selectScienceCategory(dateString, offset, scienceCategory);
+  const categoryPapers = papers.filter(paper => paperMatchesScienceCategory(paper, category.id));
+  const candidates = categoryPapers.length ? categoryPapers : papers;
+  const paper = selectItem(candidates, `${dateString}:science:${category.id}`, offset) || candidates[0] || null;
+  return {
+    paper,
+    category: {
+      ...category,
+      fallbackUsed: Boolean(category.id && !categoryPapers.length),
+      candidateCount: candidates.length,
+    },
+  };
 }
 
 function buildPrefix({ dateString, lane, day }) {
@@ -226,20 +300,29 @@ function buildExercisePost({ dateString, offset = 0 }) {
   };
 }
 
-function buildSciencePost({ dateString, offset = 0 }) {
+function buildSciencePost({ dateString, offset = 0, scienceCategory = '' }) {
   const day = dayNameForDate(dateString);
-  const papers = loadSciencePapers();
-  const paper = selectItem(papers, `${dateString}:science`, offset) || papers[0] || {
+  const selected = selectSciencePaper({ dateString, offset, scienceCategory });
+  const paper = selected.paper || {
     id: 'plant-protein-muscle',
     slideTitle: 'Plant protein held up',
     spokenAuthors: 'Hevia-Larrain and colleagues',
     journal: 'Sports Medicine',
     year: 2021,
+    category: 'plant_based_nutrition',
+    categoryLabel: 'Plant-based nutrition',
     topic: 'plant protein and muscle gain',
     finding: 'Plant-based diets can support muscle and strength gains when protein and training are set up properly.',
     doesNotProve: 'It does not prove every protein food is identical.',
     humanTakeaway: 'Plant-based muscle gain is about enough protein, good training, and consistency.',
     url: 'https://link.springer.com/article/10.1007/s40279-021-01434-9',
+  };
+  const category = selected.paper ? selected.category : {
+    id: 'plant_based_nutrition',
+    label: 'Plant-based nutrition',
+    requested: false,
+    fallbackUsed: true,
+    candidateCount: 1,
   };
   const renderInput = loadScienceRenderInput(paper.id);
   const prefix = buildPrefix({ dateString, lane: 'science', day });
@@ -272,7 +355,7 @@ function buildSciencePost({ dateString, offset = 0 }) {
     lane: 'science',
     title,
     hook,
-    source: `content-lab/config/science-papers.json:${paper.id || 'fallback'}`,
+    source: `content-lab/config/science-papers.json:${paper.id || 'fallback'}:${category.id || 'all'}`,
     mediaType: 'text',
     mediaUrl: '',
     thumbnailUrl: null,
@@ -282,6 +365,9 @@ function buildSciencePost({ dateString, offset = 0 }) {
     prefix,
     status: 'created',
     paperId: paper.id || null,
+    scienceCategory: category.id || paper.category || null,
+    scienceCategoryLabel: category.label || paper.categoryLabel || null,
+    scienceCategoryFallbackUsed: Boolean(category.fallbackUsed),
   };
 }
 
@@ -343,14 +429,14 @@ function buildProofPost({ dateString, counts = DEFAULT_PROOF_COUNTS }) {
   };
 }
 
-function createPostForLane({ lane, dateString, counts, offset = 0 }) {
+function createPostForLane({ lane, dateString, counts, offset = 0, scienceCategory = '' }) {
   if (lane === 'exercise') return buildExercisePost({ dateString, offset });
-  if (lane === 'science') return buildSciencePost({ dateString, offset });
+  if (lane === 'science') return buildSciencePost({ dateString, offset, scienceCategory });
   if (lane === 'proof') return buildProofPost({ dateString, counts });
   throw new Error(`Unsupported lane: ${lane}`);
 }
 
-function createDailyPost({ dateString = formatBrisbaneDate(), counts, offset = 0 } = {}) {
+function createDailyPost({ dateString = formatBrisbaneDate(), counts, offset = 0, scienceCategory = '' } = {}) {
   const lane = laneForDate(dateString);
   if (!lane) {
     return {
@@ -361,12 +447,12 @@ function createDailyPost({ dateString = formatBrisbaneDate(), counts, offset = 0
       lane: null,
     };
   }
-  return createPostForLane({ lane, dateString, counts, offset });
+  return createPostForLane({ lane, dateString, counts, offset, scienceCategory });
 }
 
-function createOneOfEach({ dateString = formatBrisbaneDate(), counts } = {}) {
+function createOneOfEach({ dateString = formatBrisbaneDate(), counts, scienceCategory = '' } = {}) {
   return ['exercise', 'science', 'proof'].map((lane, index) =>
-    createPostForLane({ lane, dateString, counts, offset: index })
+    createPostForLane({ lane, dateString, counts, offset: index, scienceCategory })
   );
 }
 
@@ -383,6 +469,7 @@ function markdownForPost(post) {
   if (post.hook) lines.push(`- Hook: ${post.hook}`);
   if (post.cta) lines.push(`- CTA: ${post.cta}`);
   if (post.paperId) lines.push(`- Paper ID: ${post.paperId}`);
+  if (post.scienceCategoryLabel) lines.push(`- Science Category: ${post.scienceCategoryLabel}`);
   lines.push('', '## Feed Caption', '', '```text', post.caption, '```', '');
   return lines.join('\n');
 }
@@ -412,6 +499,7 @@ module.exports = {
   BRISBANE_TZ,
   DAY_LANES,
   DEFAULT_PROOF_COUNTS,
+  SCIENCE_CATEGORY_ROTATION,
   cleanText,
   createDailyPost,
   createOneOfEach,
@@ -424,5 +512,6 @@ module.exports = {
   normalizeCounts,
   parseDateOnly,
   safeSlug,
+  selectSciencePaper,
   writeReviewPack,
 };
