@@ -4786,15 +4786,25 @@
         }
 
         function contentPerformanceVisualWeight(row = {}) {
+            if (row.previewUrl && row.previewKind === 'image') return 4;
+            if (row.previewUrl) return 3;
             if (row.thumbnailUrl && !contentPerformanceLooksVideoUrl(row.thumbnailUrl)) return 3;
             if (row.mediaUrl || contentPerformanceLooksVideoUrl(row.thumbnailUrl)) return 2;
             return 1;
         }
 
         function renderContentPerformanceVisual(row = {}, headline = '') {
+            const preview = String(row.previewUrl || '');
+            const previewKind = String(row.previewKind || '').toLowerCase();
             const thumb = String(row.thumbnailUrl || '');
             const media = String(row.mediaUrl || '');
             const typeHint = `${row.mediaType || ''} ${row.mediaProductType || ''} ${row.type || ''}`.toLowerCase();
+            if (preview) {
+                if (previewKind === 'video') {
+                    return `<video src="${adminEsc(preview)}" muted playsinline preload="metadata" controls></video>`;
+                }
+                return `<img src="${adminEsc(preview)}" alt="" loading="lazy" onerror="this.closest('.content-performance-visual').classList.add('media-error'); this.remove();">`;
+            }
             const thumbIsVideo = contentPerformanceLooksVideoUrl(thumb);
             const mediaIsVideo = contentPerformanceLooksVideoUrl(media) || /\b(video|reel)\b/i.test(typeHint);
             if (thumb && !thumbIsVideo) {

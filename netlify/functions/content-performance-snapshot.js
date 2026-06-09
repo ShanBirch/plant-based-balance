@@ -11,6 +11,7 @@ const {
     SUPABASE_SERVICE_KEY,
     supabaseQuery,
 } = require('./_lib/client-context');
+const crypto = require('crypto');
 
 const ADMIN_EMAILS = new Set(['shannonbirch@cocospersonaltraining.com']);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -75,6 +76,24 @@ function dateLabel(value) {
 function isoDateDaysAgo(daysAgo) {
     const date = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
     return date.toISOString().slice(0, 10);
+}
+
+function signPreviewPath(platform, id, kind = 'auto') {
+    const safePlatform = cleanText(platform, 40);
+    const safeId = cleanText(id, 140);
+    if (!safePlatform || !safeId || !SUPABASE_SERVICE_KEY) return '';
+    const exp = String(Math.floor(Date.now() / 1000) + 60 * 60 * 6);
+    const payload = `${safePlatform}:${safeId}:${kind}:${exp}`;
+    const sig = crypto.createHmac('sha256', SUPABASE_SERVICE_KEY).update(payload).digest('hex');
+    const params = new URLSearchParams({ p: safePlatform, id: safeId, kind, exp, sig });
+    return `/.netlify/functions/content-performance-media?${params}`;
+}
+
+function previewKindForMedia({ thumbnailUrl = '', mediaType = '', mediaProductType = '', type = '' } = {}) {
+    if (thumbnailUrl) return 'image';
+    const hint = `${mediaType} ${mediaProductType} ${type}`.toLowerCase();
+    if (/\b(video|reel)\b/.test(hint)) return 'video';
+    return 'image';
 }
 
 function formBody(params) {
@@ -200,6 +219,8 @@ function standardRow(row) {
         mediaUrl: row.mediaUrl || '',
         mediaType: row.mediaType || '',
         mediaProductType: row.mediaProductType || '',
+        previewUrl: row.previewUrl || '',
+        previewKind: row.previewKind || previewKindForMedia(row),
         postedAt: row.postedAt || null,
         postedLabel: row.postedLabel || dateLabel(row.postedAt),
         syncedAt: row.syncedAt || null,
@@ -285,6 +306,13 @@ async function loadInstagramRows(windowDays) {
         mediaUrl: row.media_url || '',
         mediaType: row.media_type || '',
         mediaProductType: row.media_product_type || '',
+        previewUrl: signPreviewPath('instagram', row.id, row.thumbnail_url ? 'thumb' : 'auto'),
+        previewKind: previewKindForMedia({
+            thumbnailUrl: row.thumbnail_url,
+            mediaType: row.media_type,
+            mediaProductType: row.media_product_type,
+            type: row.content_type,
+        }),
         postedAt: row.posted_at || row.created_at,
         syncedAt: row.graph_synced_at || null,
         metrics: {
@@ -393,6 +421,13 @@ async function loadThreadsRows(windowDays) {
             mediaUrl: post.media_url || '',
             mediaType: post.media_type || '',
             mediaProductType: post.media_product_type || '',
+            previewUrl: signPreviewPath('threads', post.id, post.thumbnail_url ? 'thumb' : 'auto'),
+            previewKind: previewKindForMedia({
+                thumbnailUrl: post.thumbnail_url,
+                mediaType: post.media_type,
+                mediaProductType: post.media_product_type,
+                type: post.media_type,
+            }),
             postedAt: post.timestamp || null,
             syncedAt: new Date().toISOString(),
             metrics: {
@@ -493,6 +528,8 @@ async function loadYoutubeRows(windowDays) {
         mediaUrl: '',
         mediaType: 'video',
         mediaProductType: 'video',
+        previewUrl: video.snippet?.thumbnails?.medium?.url || video.snippet?.thumbnails?.default?.url || '',
+        previewKind: 'image',
         postedAt: video.snippet?.publishedAt || null,
         syncedAt: new Date().toISOString(),
         metrics: {
