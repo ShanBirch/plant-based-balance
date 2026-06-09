@@ -58,6 +58,36 @@ function graphVersion() {
   return raw.startsWith('v') ? raw : `v${raw}`;
 }
 
+function supabaseUrl() {
+  return cleanString(getEnv('SUPABASE_URL') || getEnv('VITE_SUPABASE_URL'), 300).replace(/\/+$/, '');
+}
+
+function serviceKey() {
+  return cleanString(getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('SUPABASE_SERVICE_KEY'), 5000);
+}
+
+async function readPrivateSecret(key) {
+  if (!supabaseUrl() || !serviceKey()) return '';
+  const url = `${supabaseUrl()}/rest/v1/app_private_secrets?select=value&key=eq.${encodeURIComponent(key)}&limit=1`;
+  const res = await fetch(url, {
+    headers: {
+      apikey: serviceKey(),
+      Authorization: `Bearer ${serviceKey()}`,
+    },
+  });
+  if (!res.ok) return '';
+  const rows = await res.json().catch(() => []);
+  return cleanString(rows?.[0]?.value, 5000);
+}
+
+async function resolveThreadsAccessToken() {
+  const envToken = cleanString(getEnv('THREADS_ACCESS_TOKEN'), 5000);
+  if (envToken) return { token: envToken, source: 'env' };
+  const secretToken = await readPrivateSecret('threads_access_token');
+  if (secretToken) return { token: secretToken, source: 'supabase:app_private_secrets' };
+  return { token: '', source: 'none' };
+}
+
 function graphUrl(apiPath) {
   return `${graphBase()}/${graphVersion()}/${String(apiPath || '').replace(/^\/+/, '')}`;
 }
@@ -105,7 +135,8 @@ async function graphPost(apiPath, params = {}) {
 }
 
 async function publishThreadsText({ text, publish }) {
-  const token = cleanString(getEnv('THREADS_ACCESS_TOKEN'), 5000);
+  const resolved = await resolveThreadsAccessToken();
+  const token = resolved.token;
   const userId = cleanString(getEnv('THREADS_USER_ID') || 'me', 120);
   const postText = cleanString(text || 'Testing the Balance Threads publisher.', 500);
   const base = {
@@ -116,6 +147,7 @@ async function publishThreadsText({ text, publish }) {
     graphVersion: graphVersion(),
     text: postText,
     tokenAvailable: Boolean(token),
+    tokenSource: resolved.source,
   };
 
   if (!postText) return { ...base, error: 'missing_text' };
