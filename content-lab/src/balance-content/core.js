@@ -70,6 +70,7 @@ const SCIENCE_CATEGORY_ROTATION = [
   { id: 'plant_based_nutrition', label: 'Plant-based nutrition' },
   { id: 'nutrition_metabolism', label: 'Nutrition / metabolism' },
   { id: 'state_change_mindset', label: 'Food, exercise & mindset' },
+  { id: 'longevity_healthspan', label: 'Longevity / healthspan' },
   { id: 'mindset_motivation', label: 'Mindset / motivation' },
   { id: 'neuroscience', label: 'Neuroscience' },
   { id: 'resistance_training', label: 'Resistance training' },
