@@ -28,6 +28,7 @@ function secrets() {
     getEnv('IG_STORY_BOT_BRIDGE_SECRET'),
     getEnv('META_IG_SYNC_SECRET'),
     getEnv('MANYCHAT_WEBHOOK_SECRET'),
+    getEnv('THREADS_ADMIN_SECRET'),
   ].map(value => cleanString(value, 500)).filter(Boolean);
 }
 
@@ -37,6 +38,7 @@ function isAuthorized(req, body = {}) {
     getHeader(req, 'x-balance-content-secret')
       || getHeader(req, 'x-ig-story-secret')
       || getHeader(req, 'x-manychat-secret')
+      || getHeader(req, 'x-threads-secret')
       || body.secret,
     500
   );
