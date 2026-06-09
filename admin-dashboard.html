@@ -308,7 +308,8 @@
         .conv-card { background: white; border: 1px solid #f1f5f9; border-radius: 12px; padding: 16px 20px; flex: 1; min-width: 160px; }
         .conv-card .conv-val { font-size: 1.6rem; font-weight: 800; font-family: 'Montserrat', sans-serif; }
         .conv-card .conv-lbl { font-size: 0.72rem; color: #64748b; margin-top: 2px; }
-        #content-radar.section.active { height: calc(100dvh - 48px); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+        #content-radar.section.active,
+        #content-performance.section.active { height: calc(100dvh - 48px); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
         .content-radar-shell { display:flex; flex-direction:column; gap:14px; min-height:100%; padding-bottom:calc(72px + env(safe-area-inset-bottom, 0px)); }
         .content-radar-header { padding:16px 20px; display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; }
         .content-radar-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
@@ -625,7 +626,8 @@
             .warmth-chip .wc-val { font-size: 1.1rem; }
             .conv-card .conv-val { font-size: 1.2rem; }
             .content-radar-header { padding:14px; }
-            #content-radar.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
+            #content-radar.section.active,
+            #content-performance.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
             .content-radar-actions { width:100%; justify-content:flex-start; }
             .content-radar-stats, .content-radar-layout, .content-radar-ops-grid, .content-performance-grid { grid-template-columns:1fr; }
             .content-radar-idea-head { flex-direction:column; align-items:stretch; }
@@ -1986,7 +1988,8 @@
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" hidden data-admin-hidden-entry="ig-leads" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
             <div class="nav-item" hidden data-admin-hidden-entry="ig-operator" onclick="showSection('ig-operator', this); focusIgOperatorInput();"><i data-lucide="wand-sparkles"></i><span>IG Operator</span></div>
-            <div class="nav-item" onclick="showSection('content-radar', this); loadContentRadar(); loadContentPerformance(true);"><i data-lucide="radar"></i><span>Content Radar</span></div>
+            <div class="nav-item" onclick="showSection('content-performance', this); loadContentPerformance(true);"><i data-lucide="bar-chart-3"></i><span>Post Performance</span></div>
+            <div class="nav-item" onclick="showSection('content-radar', this); loadContentRadar();"><i data-lucide="radar"></i><span>Content Radar</span></div>
             <div class="nav-item" hidden data-admin-hidden-entry="metrics" onclick="showSection('metrics', this); loadMetrics();"><i data-lucide="target"></i><span>Metrics</span></div>
             <div class="sidebar-footer">
                 <button type="button" class="dashboard-btn theme-toggle-btn" id="admin-theme-toggle" onclick="toggleAdminTheme()" aria-label="Switch admin theme"><i data-lucide="moon"></i><span>Dark mode</span></button>
@@ -2731,7 +2734,7 @@
                         <div class="content-radar-header">
                             <div>
                                 <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Content Radar</h2>
-                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Post performance, DM themes and client language turned into better content.</p>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">DM themes, IG replies and client language turned into posts.</p>
                                 <div id="content-radar-status" class="content-radar-status">Open the tab to load the latest radar.</div>
                             </div>
                             <div class="content-radar-actions">
@@ -2744,27 +2747,10 @@
                                 <button id="content-radar-refresh-btn" onclick="loadContentRadar(true)" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
                                     <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i> Refresh
                                 </button>
-                                <button id="content-performance-refresh-btn" onclick="loadContentPerformance(true)" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
-                                    <i data-lucide="bar-chart-3" style="width:14px; height:14px;"></i> Posts
-                                </button>
-                                <button id="content-performance-ig-sync-btn" onclick="refreshContentPerformanceIg(this)" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
-                                    <i data-lucide="instagram" style="width:14px; height:14px;"></i> Sync IG
-                                </button>
                                 <button id="content-radar-generate-btn" onclick="generateContentRadar()" class="ai-view-account-btn" style="margin:0; font-size:0.8rem; background:#166534;">
                                     <i data-lucide="radar" style="width:14px; height:14px;"></i> Generate
                                 </button>
                             </div>
-                        </div>
-                    </div>
-                    <div id="content-performance-panel" class="content-performance-panel">
-                        <div class="content-performance-head">
-                            <div>
-                                <h3>Post Performance</h3>
-                                <p id="content-performance-status">Load the latest cross-platform post snapshot.</p>
-                            </div>
-                        </div>
-                        <div id="content-performance-body">
-                            <div class="content-radar-empty" style="border:0; border-radius:0;">No post performance loaded yet.</div>
                         </div>
                     </div>
                     <div id="content-radar-body">
@@ -2772,6 +2758,47 @@
                             <i data-lucide="radar" style="width:34px; height:34px; margin-bottom:10px;"></i>
                             <h3 style="font-family:'Montserrat',sans-serif; color:#475569; margin-bottom:6px;">No radar loaded yet</h3>
                             <p style="font-size:0.84rem;">Generate one from recent DMs, client memory and IG content feedback.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- POST PERFORMANCE -->
+            <div id="content-performance" class="section">
+                <div class="content-radar-shell">
+                    <div class="content-card">
+                        <div class="content-radar-header">
+                            <div>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Post Performance</h2>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">See which posts worked across Instagram, Threads, YouTube and TikTok.</p>
+                                <div id="content-performance-status" class="content-radar-status">Open the tab to load post performance.</div>
+                            </div>
+                            <div class="content-radar-actions">
+                                <select id="content-performance-window" class="ai-timeframe-select" aria-label="Post Performance window">
+                                    <option value="14">14 days</option>
+                                    <option value="30">30 days</option>
+                                    <option value="60">60 days</option>
+                                    <option value="90" selected>90 days</option>
+                                    <option value="180">180 days</option>
+                                </select>
+                                <button id="content-performance-refresh-btn" onclick="loadContentPerformance(true)" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
+                                    <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i> Refresh
+                                </button>
+                                <button id="content-performance-ig-sync-btn" onclick="refreshContentPerformanceIg(this)" class="ai-view-account-btn" style="margin:0; font-size:0.8rem; background:#166534;">
+                                    <i data-lucide="instagram" style="width:14px; height:14px;"></i> Sync IG
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="content-performance-panel" class="content-performance-panel">
+                        <div class="content-performance-head">
+                            <div>
+                                <h3>Ranked Posts</h3>
+                                <p>Combined score uses views/reach plus deeper signals like comments, saves, shares, replies, reposts and quotes.</p>
+                            </div>
+                        </div>
+                        <div id="content-performance-body">
+                            <div class="content-radar-empty" style="border:0; border-radius:0;">No post performance loaded yet.</div>
                         </div>
                     </div>
                 </div>
@@ -4598,9 +4625,9 @@
             }
             contentPerformanceLoading = true;
             const body = document.getElementById('content-performance-body');
-            const windowDays = Number(document.getElementById('content-radar-window')?.value || 90);
+            const windowDays = Number(document.getElementById('content-performance-window')?.value || document.getElementById('content-radar-window')?.value || 90);
             if (body) body.innerHTML = '<div class="content-radar-empty" style="border:0; border-radius:0;"><div class="loading">Loading post performance...</div></div>';
-            setContentPerformanceStatus('Loading Instagram and Threads performance...');
+            setContentPerformanceStatus('Loading post performance...');
             try {
                 const data = await contentPerformanceRequest({ windowDays });
                 contentPerformanceLoaded = true;
@@ -19356,9 +19383,8 @@
                 case 'ig-leads': return typeof loadIgLeads === 'function' ? loadIgLeads() : null;
                 case 'ig-operator': return typeof focusIgOperatorInput === 'function' ? focusIgOperatorInput() : null;
                 case 'conversion-operator': return loadConversionOperator(true);
-                case 'content-radar':
-                    if (typeof loadContentPerformance === 'function') loadContentPerformance(true);
-                    return typeof loadContentRadar === 'function' ? loadContentRadar(true) : null;
+                case 'content-performance': return typeof loadContentPerformance === 'function' ? loadContentPerformance(true) : null;
+                case 'content-radar': return typeof loadContentRadar === 'function' ? loadContentRadar(true) : null;
                 case 'your-day': return loadYourDay(true);
                 case 'ai-coach':
                 default:
@@ -19577,6 +19603,10 @@
             setTimeout(() => {
                 showSection('content-radar', getNavItemForSection('content-radar'));
                 loadContentRadar();
+            }, 500);
+        } else if (window.location.search.includes('tab=content-performance')) {
+            setTimeout(() => {
+                showSection('content-performance', getNavItemForSection('content-performance'));
                 loadContentPerformance();
             }, 500);
         } else if (window.location.search.includes('tab=your-day')) {
