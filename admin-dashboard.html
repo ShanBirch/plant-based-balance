@@ -363,6 +363,8 @@
         .content-performance-post { display:grid; grid-template-columns:minmax(150px,220px) minmax(0,1fr); gap:14px; border:1px solid #e2e8f0; border-radius:8px; padding:12px; background:#fff; }
         .content-performance-visual { position:relative; min-height:180px; aspect-ratio:4/5; border-radius:8px; overflow:hidden; background:#0f172a; display:flex; align-items:center; justify-content:center; color:#cbd5e1; }
         .content-performance-visual img { width:100%; height:100%; object-fit:cover; display:block; }
+        .content-performance-visual video { width:100%; height:100%; object-fit:cover; display:block; background:#0f172a; }
+        .content-performance-visual.media-error::after { content:'Preview unavailable'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:14px; text-align:center; color:#cbd5e1; font-weight:900; font-size:0.8rem; }
         .content-performance-visual-fallback { padding:14px; font-weight:900; font-size:0.84rem; text-align:center; line-height:1.3; }
         .content-performance-rank-badge { position:absolute; top:9px; left:9px; min-width:34px; height:30px; border-radius:999px; background:rgba(15,23,42,0.86); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:0.78rem; padding:0 9px; }
         .content-performance-score-badge { position:absolute; right:9px; bottom:9px; border-radius:999px; background:#166534; color:#fff; padding:6px 9px; font-weight:900; font-size:0.72rem; box-shadow:0 8px 20px rgba(0,0,0,0.18); }
@@ -4736,7 +4738,7 @@
                 existing.postedAt = existing.postedAt || row.postedAt || '';
                 existing.headline = existing.headline || row.caption || row.title || row.summary || 'Untitled post';
                 existing.caption = existing.caption || row.caption || row.summary || '';
-                if (!existing.visual || (!existing.visual.thumbnailUrl && row.thumbnailUrl)) existing.visual = row;
+                if (!existing.visual || contentPerformanceVisualWeight(row) > contentPerformanceVisualWeight(existing.visual)) existing.visual = row;
                 Object.entries(row.metrics || {}).forEach(([metric, value]) => {
                     existing.metrics[metric] = Number(existing.metrics[metric] || 0) + Number(value || 0);
                 });
@@ -4751,6 +4753,7 @@
             const copyPayload = adminEsc(igOperatorEncode({ text: headline }));
             const bestLink = (group.rows || []).find(row => row.permalink)?.permalink || '';
             const openPayload = adminEsc(igOperatorEncode({ url: bestLink }));
+            const visualHtml = renderContentPerformanceVisual(visual, headline);
             const meta = [
                 `${group.rows?.length || 0} platform row${group.rows?.length === 1 ? '' : 's'}`,
                 visual.postedLabel,
@@ -4759,7 +4762,7 @@
             return `
                 <div class="content-performance-post">
                     <div class="content-performance-visual">
-                        ${visual.thumbnailUrl ? `<img src="${adminEsc(visual.thumbnailUrl)}" alt="" loading="lazy">` : `<div class="content-performance-visual-fallback">${adminEsc(headline)}</div>`}
+                        ${visualHtml}
                         <div class="content-performance-rank-badge">#${adminEsc(rank)}</div>
                         <div class="content-performance-score-badge">${adminEsc(contentPerformanceNumber(group.score))} score</div>
                     </div>
@@ -4776,6 +4779,35 @@
                         </div>
                     </div>
                 </div>`;
+        }
+
+        function contentPerformanceLooksVideoUrl(url = '') {
+            return /\.(mp4|mov|m4v|webm)(?:$|[?#])/i.test(String(url || ''));
+        }
+
+        function contentPerformanceVisualWeight(row = {}) {
+            if (row.thumbnailUrl && !contentPerformanceLooksVideoUrl(row.thumbnailUrl)) return 3;
+            if (row.mediaUrl || contentPerformanceLooksVideoUrl(row.thumbnailUrl)) return 2;
+            return 1;
+        }
+
+        function renderContentPerformanceVisual(row = {}, headline = '') {
+            const thumb = String(row.thumbnailUrl || '');
+            const media = String(row.mediaUrl || '');
+            const typeHint = `${row.mediaType || ''} ${row.mediaProductType || ''} ${row.type || ''}`.toLowerCase();
+            const thumbIsVideo = contentPerformanceLooksVideoUrl(thumb);
+            const mediaIsVideo = contentPerformanceLooksVideoUrl(media) || /\b(video|reel)\b/i.test(typeHint);
+            if (thumb && !thumbIsVideo) {
+                return `<img src="${adminEsc(thumb)}" alt="" loading="lazy" onerror="this.closest('.content-performance-visual').classList.add('media-error'); this.remove();">`;
+            }
+            if (media || thumbIsVideo) {
+                const videoUrl = media || thumb;
+                if (mediaIsVideo || thumbIsVideo) {
+                    return `<video src="${adminEsc(videoUrl)}" muted playsinline preload="metadata" controls></video>`;
+                }
+                return `<img src="${adminEsc(videoUrl)}" alt="" loading="lazy" onerror="this.closest('.content-performance-visual').classList.add('media-error'); this.remove();">`;
+            }
+            return `<div class="content-performance-visual-fallback">${adminEsc(headline)}</div>`;
         }
 
         function renderContentPerformancePlatformCard(platform, row, status = {}) {
