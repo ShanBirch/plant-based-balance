@@ -32,7 +32,7 @@ function secrets() {
   ].map(value => cleanString(value, 500)).filter(Boolean);
 }
 
-function isAuthorized(req, body = {}) {
+async function isAuthorized(req, body = {}) {
   if (getEnv('CONTEXT') === 'dev') return true;
   const provided = cleanString(
     getHeader(req, 'x-balance-content-secret')
@@ -42,7 +42,10 @@ function isAuthorized(req, body = {}) {
       || body.secret,
     500
   );
-  return Boolean(provided && secrets().includes(provided));
+  if (!provided) return false;
+  if (secrets().includes(provided)) return true;
+  const privateSecret = await readPrivateSecret('threads_admin_secret');
+  return Boolean(privateSecret && provided === privateSecret);
 }
 
 async function readBody(req) {
@@ -192,7 +195,7 @@ async function publishThreadsText({ text, publish }) {
 export default async (req) => {
   const body = await readBody(req);
   if (req.method !== 'POST') return json(405, { ok: false, error: 'method_not_allowed' });
-  if (!isAuthorized(req, body)) return json(401, { ok: false, error: 'unauthorized' });
+  if (!(await isAuthorized(req, body))) return json(401, { ok: false, error: 'unauthorized' });
 
   try {
     const publish = body.publish === true;
