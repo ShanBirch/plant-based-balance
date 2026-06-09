@@ -2,7 +2,9 @@ const assert = require('assert');
 
 const {
     hasExerciseLibrarySupportIntent,
+    findExerciseLibraryMatchDetails,
     findExerciseLibraryMatches,
+    classifyExerciseLibrarySupport,
     buildExerciseLibrarySupportBlock,
 } = require('../netlify/functions/_lib/exercise-library-search');
 
@@ -29,6 +31,38 @@ assert.match(block, /APP EXERCISE LIBRARY CHECK/);
 assert.match(block, /Machine Seated Abduction/);
 assert.match(block, /Do not say an exercise is missing/);
 assert.match(block, /Do not recommend a substitute/);
+
+const torsoQuestion = 'What should I put "torso rotation machine" in as? [PHOTO:https://example.com/machine.jpg]';
+assert.strictEqual(hasExerciseLibrarySupportIntent(torsoQuestion), true);
+const torsoDetails = findExerciseLibraryMatchDetails(torsoQuestion);
+assert.ok(torsoDetails.some(row => row.name === 'Trunk Rotation'), 'torso should map to trunk rotation candidates');
+
+const torsoSupport = classifyExerciseLibrarySupport({
+    currentMessage: torsoQuestion,
+});
+assert.strictEqual(torsoSupport.isSupport, true);
+assert.strictEqual(torsoSupport.requiresVisualVerification, true);
+assert.strictEqual(torsoSupport.confusedFollowup, false);
+
+const torsoBlock = buildExerciseLibrarySupportBlock({
+    currentMessage: torsoQuestion,
+});
+assert.match(torsoBlock, /candidate/i);
+assert.match(torsoBlock, /name match is only a candidate/i);
+assert.match(torsoBlock, /closest label to log it under/i);
+
+const confusedSupport = classifyExerciseLibrarySupport({
+    currentMessage: 'No seated option',
+    conversationText: 'Miranda: What can I list this machine under in the app?\nShannon: List that under seated Hip Abduction (machine).',
+});
+assert.strictEqual(confusedSupport.isSupport, true);
+assert.strictEqual(confusedSupport.confusedFollowup, true);
+const confusedBlock = buildExerciseLibrarySupportBlock({
+    currentMessage: 'No seated option',
+    conversationText: 'Miranda: What can I list this machine under in the app?\nShannon: List that under seated Hip Abduction (machine).',
+});
+assert.match(confusedBlock, /do not keep guessing/i);
+assert.match(confusedBlock, /hang on, i'll check properly/i);
 
 const noSupportBlock = buildExerciseLibrarySupportBlock({
     currentMessage: 'haha got it',

@@ -17,7 +17,10 @@ const {
     reviewDraftAndUpdateAlert,
     truncate,
 } = require('./_lib/client-context');
-const { buildExerciseLibrarySupportBlock } = require('./_lib/exercise-library-search');
+const {
+    buildExerciseLibrarySupportBlock,
+    classifyExerciseLibrarySupport,
+} = require('./_lib/exercise-library-search');
 
 const MANAGER_SOURCE = 'balance-lead-client-manager';
 const MAX_PER_RUN = 80;
@@ -90,6 +93,24 @@ function formatReviewList(items, mapper) {
         .map(v => String(v || '').trim())
         .filter(Boolean);
     return rows.length ? rows.join('\n') : '';
+}
+
+function buildExerciseSupportClassification(alert = {}) {
+    const data = alert.data || {};
+    const evidence = data.draft_evidence || {};
+    const latest = evidence.current_message || data.message_preview || alert.description || '';
+    const priorText = formatReviewList(evidence.prior_unanswered || data.recent_inbound_messages, m => `- "${truncate(m.text || m.message || '', 220)}"`);
+    const conversationText = [
+        evidence.recent_timeline || '',
+        evidence.cross_channel_context || '',
+        data.last_outbound_message || data.last_shannon_message || '',
+        priorText,
+    ].filter(Boolean).join('\n');
+    return classifyExerciseLibrarySupport({
+        currentMessage: latest,
+        conversationText,
+        recentInboundMessages: evidence.prior_unanswered || data.recent_inbound_messages || [],
+    });
 }
 
 function buildDraftReviewContextBlocks(alert = {}) {
@@ -209,14 +230,20 @@ function classifyNeedsYou(alert = {}) {
     const contextReview = buildContextReviewInfo(alert);
     const learningReels = normalizeLearningReelHistory(data);
     const latestText = latestAlertMessageText(data);
+    const exerciseSupport = buildExerciseSupportClassification(alert);
+    const exerciseLookupFastTrack = exerciseSupport.isSupport && exerciseSupport.canFastTrack;
     const reasons = [];
     const labels = [];
 
-    if (isAlwaysNeedsYouPerson(alertIdentity(alert))) {
+    if (exerciseSupport.confusedFollowup) {
+        reasons.push('exercise_lookup_confused_followup');
+        labels.push('exercise lookup got confusing, send a holding reply and leave it for Shannon');
+    }
+    if (isAlwaysNeedsYouPerson(alertIdentity(alert)) && !exerciseLookupFastTrack) {
         reasons.push('always_needs_you_person');
         labels.push('Shane/Fra/Miranda/Monica permanent Needs You route');
     }
-    if (mediaReview.required) {
+    if (mediaReview.required && !exerciseLookupFastTrack) {
         reasons.push('media_review_required');
         labels.push(mediaReview.label || 'media needs Shannon review');
     }
@@ -248,6 +275,7 @@ function classifyNeedsYou(alert = {}) {
         label: uniqueLabels.join(', ') || 'Needs Shannon review',
         mediaReview,
         contextReview,
+        exerciseSupport,
     };
 }
 

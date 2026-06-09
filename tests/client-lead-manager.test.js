@@ -50,6 +50,34 @@ const monica = manager.classifyNeedsYou(makeAlert({ client_name: 'Monica' }));
 assert.strictEqual(monica.shouldRoute, true);
 assert.ok(monica.reasons.includes('always_needs_you_person'));
 
+const mirandaExerciseLookup = manager.classifyNeedsYou(makeAlert({
+    client_name: 'Miranda',
+    data: {
+        channel: 'instagram',
+        message_preview: 'What should I put torso rotation machine in as?',
+        image_url_count: 1,
+        draft_evidence: {
+            current_message: 'What should I put torso rotation machine in as?',
+            recent_timeline: 'Miranda: [photo]\nMiranda: What should I put torso rotation machine in as?',
+        },
+    },
+}));
+assert.strictEqual(mirandaExerciseLookup.shouldRoute, false, 'reviewed exercise lookup can bypass permanent/media Needs You');
+
+const mirandaConfusedExerciseLookup = manager.classifyNeedsYou(makeAlert({
+    client_name: 'Miranda',
+    data: {
+        channel: 'instagram',
+        message_preview: 'No seated option',
+        draft_evidence: {
+            current_message: 'No seated option',
+            recent_timeline: 'Miranda: What can I list this machine under in the app?\nShannon: List that under seated Hip Abduction (machine).',
+        },
+    },
+}));
+assert.strictEqual(mirandaConfusedExerciseLookup.shouldRoute, true);
+assert.ok(mirandaConfusedExerciseLookup.reasons.includes('exercise_lookup_confused_followup'));
+
 const media = manager.classifyNeedsYou(makeAlert({
     data: {
         message_preview: '[PHOTO:https://example.com/photo.jpg]',
