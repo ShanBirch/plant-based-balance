@@ -9608,7 +9608,7 @@
         let currentNeedsYouView = 'all';
         let needsYouCounts = { all: 0 };
         const NEEDS_YOU_TABS = ['all'];
-        const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'onboarding_day_30', 'weekly_checkin', 'first_workout', 'win_to_celebrate', 'badge_earned'];
+        const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'onboarding_day_30', 'weekly_checkin', 'first_workout'];
         const CLIENT_MANAGER_REVIEW_MARKERS = [
             'balance-combined-dm-manager',
             'balance-lead-client-manager',
@@ -11255,9 +11255,6 @@
             if (alert.alert_type === 'first_workout') {
                 return needsYouHasSuggestedDraft(alert);
             }
-            if (alert.alert_type === 'win_to_celebrate' || alert.alert_type === 'badge_earned') {
-                return isNeedsYouRoutedDmAlert(alert) && needsYouHasSuggestedDraft(alert);
-            }
             if (alert.alert_type === 'onboarding_day_30') {
                 return isNeedsYouRoutedDmAlert(alert) && needsYouHasSuggestedDraft(alert);
             }
@@ -11379,10 +11376,6 @@
                 return;
             }
             if (alert?.alert_type === 'first_workout' && needsYouHasOperatorWork(alert)) {
-                openNeedsYouForAlert(alert, 'all');
-                return;
-            }
-            if ((alert?.alert_type === 'win_to_celebrate' || alert?.alert_type === 'badge_earned') && needsYouHasOperatorWork(alert)) {
                 openNeedsYouForAlert(alert, 'all');
                 return;
             }

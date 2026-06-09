@@ -38,8 +38,6 @@ const {
     truncate,
     isTestAccount,
     recentlyMessaged,
-    loadClientSocialContact,
-    buildSocialContactAlertData,
     fireDraftReasoning,
 } = require('./_lib/client-context');
 
@@ -56,15 +54,12 @@ const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 // ============================================================
 
 const BIG_BADGE_IDS = new Set([
-    // Workouts — first-workout has its own dedicated alert
-    'workout_5', 'workout_25', 'workout_100', 'workout_365',
+    // Workouts/PBs are intentionally not coach-alerted. First workout has
+    // its own approval-first touch; frequent PB/badge comments feel weird.
     // Streaks
     'streak_7', 'streak_30', 'streak_60',
     // Meal milestones
     'meal_10', 'meal_50', 'meal_100', 'meal_365',
-    // PB milestones — individual PBs already fire pb-celebration-draft,
-    // these are the "hit 10 / 25 / 50 PBs total" milestones.
-    'pb_10', 'pb_25', 'pb_50',
     // Rare collection milestones
     'rare_3', 'rare_6', 'rare_11',
     // Challenge milestones
@@ -72,18 +67,6 @@ const BIG_BADGE_IDS = new Set([
     // Level milestones
     'level_10', 'level_30', 'level_50', 'level_99',
 ]);
-
-function isWorkoutAdjacentBadge(badge = {}) {
-    const text = [
-        badge.id,
-        badge.category,
-        badge.name,
-        badge.desc,
-    ].map(v => String(v || '').toLowerCase()).join(' ');
-    return /\b(workout|personal best|pb)\b/.test(text)
-        || /^workout_/.test(String(badge.id || ''))
-        || /^pb_/.test(String(badge.id || ''));
-}
 
 // ============================================================
 // Helpers
@@ -281,16 +264,11 @@ exports.handler = async (event) => {
         // for later — just skip the push and skip auto-send.
     }
 
-    const workoutAdjacentCelebration = alertBadges.some(isWorkoutAdjacentBadge);
-
     // 5. Draft
     const clientName = await loadClientName(clientId);
-    const [memory, profile, socialContact] = await Promise.all([
+    const [memory, profile] = await Promise.all([
         loadClientMemory(coachId, clientId),
         loadClientProfileFacts(clientId),
-        workoutAdjacentCelebration
-            ? loadClientSocialContact(coachId, clientId)
-            : Promise.resolve({ hasSocialContact: false }),
     ]);
     const memoryBlock = buildMemoryBlock(memory);
     const profileBlock = buildClientProfileBlock({ clientName, profile });
@@ -330,28 +308,6 @@ exports.handler = async (event) => {
             })),
             draft_model: draftModel,
             drafted_at: new Date().toISOString(),
-            workout_adjacent_badge: workoutAdjacentCelebration,
-            ...(workoutAdjacentCelebration ? {
-                preferred_delivery_channel: socialContact.hasSocialContact ? 'instagram' : 'in_app',
-                in_app_fallback_reason: socialContact.hasSocialContact ? null : 'no linked IG contact found, approve into the Balance inbox',
-                workout_celebration_social_contact: socialContact.hasSocialContact,
-                ...buildSocialContactAlertData(socialContact),
-                ...(socialContact.hasSocialContact ? {
-                    social_contact_reason: 'Workout badge celebration should be approved first, then sent over IG/Facebook if available',
-                } : {}),
-                needs_you_required: true,
-                operator_queue: 'needs_you',
-                needs_you_reason: 'post-workout badge celebration needs Shannon approval before sending',
-                needs_you_reasons: ['post_workout', 'badge_earned'],
-                codex_review: {
-                    decision: 'needs_you',
-                    queue: 'needs_you',
-                    reason: 'Post-workout badge celebration is a relationship moment Shannon should approve before it sends.',
-                    needs_shannon_approval: true,
-                    source: 'badge-earned-alert',
-                    reviewed_at: new Date().toISOString(),
-                },
-            } : {}),
         },
     };
 
@@ -379,10 +335,9 @@ exports.handler = async (event) => {
     // alert is still in the feed for when Shannon opens the dashboard.
     const suppressPush = await recentlyMessaged({ coachId, clientId, hours: 24 });
 
-    // 7. Auto-send (if toggle is on for this client) OR push the approve-gate.
-    //    Workout/PB badge celebrations always stay approval-first.
+    // 7. Auto-send (if toggle is on for this client) OR push the approve-gate
     let autoSent = false;
-    if (!workoutAdjacentCelebration && !suppressPush && draftText && alertId) {
+    if (!suppressPush && draftText && alertId) {
         autoSent = await maybeAutoSendDraft({
             coachId,
             clientId,
