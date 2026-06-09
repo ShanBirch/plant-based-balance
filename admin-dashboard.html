@@ -359,6 +359,11 @@
         .content-performance-platform.ok { background:#ecfdf5; border-color:#bbf7d0; }
         .content-performance-platform.warn { background:#fffbeb; border-color:#fde68a; }
         .content-performance-platform.muted { background:#f8fafc; border-color:#e2e8f0; }
+        .content-performance-tabs { display:flex; gap:8px; padding:12px 16px 0; flex-wrap:wrap; }
+        .content-performance-tab { border:1px solid #dbe4ef; background:#fff; color:#334155; border-radius:8px; min-height:36px; padding:8px 11px; font-size:0.78rem; font-weight:900; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+        .content-performance-tab:hover { background:#f8fafc; }
+        .content-performance-tab.active { background:#0f172a; color:#fff; border-color:#0f172a; }
+        .content-performance-tab small { font-size:0.7rem; font-weight:900; opacity:0.78; }
         .content-performance-lanes { display:flex; flex-wrap:wrap; gap:7px; padding:10px 16px 0; }
         .content-performance-lane { border:1px solid #dbe4ef; background:#fff; color:#334155; border-radius:999px; padding:6px 9px; font-size:0.74rem; font-weight:900; }
         .content-performance-lane.story { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
@@ -2819,7 +2824,7 @@
                         <div class="content-performance-head">
                             <div>
                                 <h3>Ranked Posts</h3>
-                        <p>Feed/reels/carousels stay available from Graph. Stories are short-lived and only show if synced while live.</p>
+                                <p>Feed posts, reels and carousels are separate from short-lived story posts.</p>
                             </div>
                         </div>
                         <div id="content-performance-body">
@@ -4570,6 +4575,7 @@
         let contentPerformanceLoaded = false;
         let contentPerformanceLoading = false;
         let contentPerformanceCache = { rows: [], summary: null, windowDays: 90 };
+        let contentPerformanceView = 'feed';
 
         function contentRadarArray(value) {
             if (Array.isArray(value)) return value;
@@ -4701,13 +4707,17 @@
             const byPlatform = summary.byPlatform || {};
             const groups = contentPerformanceGroups(rows);
             const laneCounts = contentPerformanceLaneCounts(rows);
+            const activeView = contentPerformanceView === 'stories' ? 'stories' : 'feed';
+            const visibleGroups = groups.filter(group => contentPerformanceGroupView(group) === activeView);
+            const activeLabel = activeView === 'stories' ? 'story posts' : 'feed posts';
             const generated = data.generatedAt ? ` | updated ${timeAgo(data.generatedAt)}` : '';
-            setContentPerformanceStatus(`${groups.length} ranked posts from ${rows.length} platform rows in the last ${data.windowDays || 90} days${generated}`);
+            setContentPerformanceStatus(`${visibleGroups.length} ${activeLabel} from ${rows.length} platform rows in the last ${data.windowDays || 90} days${generated}`);
             if (!rows.length) {
                 body.innerHTML = `
                     <div class="content-performance-grid">
                         ${['instagram', 'threads', 'youtube', 'tiktok'].map(key => contentPerformancePlatformStatus(key, statuses[key], byPlatform[key])).join('')}
                     </div>
+                    ${renderContentPerformanceViewTabs(laneCounts)}
                     <div class="content-radar-empty" style="border:0; border-radius:0;">No synced post rows yet. Try Sync IG, then reload posts.</div>`;
                 lucide.createIcons();
                 return;
@@ -4716,11 +4726,19 @@
                 <div class="content-performance-grid">
                     ${['instagram', 'threads', 'youtube', 'tiktok'].map(key => contentPerformancePlatformStatus(key, statuses[key], byPlatform[key])).join('')}
                 </div>
+                ${renderContentPerformanceViewTabs(laneCounts)}
                 ${renderContentPerformanceLaneCounts(laneCounts)}
                 <div class="content-performance-list">
-                    ${groups.slice(0, 30).map((group, index) => renderContentPerformancePost(group, index + 1, statuses)).join('')}
+                    ${visibleGroups.length
+                        ? visibleGroups.slice(0, 30).map((group, index) => renderContentPerformancePost(group, index + 1, statuses)).join('')
+                        : `<div class="content-radar-empty" style="border:0; border-radius:0;">No ${adminEsc(activeLabel)} in this window yet. Try syncing Instagram ${activeView === 'stories' ? 'Stories' : 'Feed/Reels'} or expand the date window.</div>`}
                 </div>`;
             lucide.createIcons();
+        }
+
+        function setContentPerformanceView(view = 'feed') {
+            contentPerformanceView = String(view || '').toLowerCase() === 'stories' ? 'stories' : 'feed';
+            renderContentPerformance(contentPerformanceCache);
         }
 
         function contentPerformanceLane(row = {}) {
@@ -4736,6 +4754,15 @@
                 : lane === 'video' ? 'Reel/Video'
                     : lane === 'carousel' ? 'Carousel'
                         : 'Feed Post';
+        }
+
+        function contentPerformanceLaneView(lane) {
+            return lane === 'story' ? 'stories' : 'feed';
+        }
+
+        function contentPerformanceGroupView(group = {}) {
+            const visual = group.visual || group.rows?.[0] || {};
+            return contentPerformanceLaneView(contentPerformanceLane(visual));
         }
 
         function contentPerformanceLaneCounts(rows = []) {
@@ -4758,7 +4785,24 @@
             </div>`;
         }
 
+        function renderContentPerformanceViewTabs(counts = {}) {
+            const feedCount = Number(counts.feed || 0) + Number(counts.video || 0) + Number(counts.carousel || 0);
+            const storyCount = Number(counts.story || 0);
+            const activeView = contentPerformanceView === 'stories' ? 'stories' : 'feed';
+            const tabs = [
+                ['feed', 'Feed Posts', feedCount, 'layout-grid'],
+                ['stories', 'Story Posts', storyCount, 'clock-3'],
+            ];
+            return `<div class="content-performance-tabs" role="tablist" aria-label="Post type">
+                ${tabs.map(([key, label, count, icon]) => `
+                    <button type="button" class="content-performance-tab ${activeView === key ? 'active' : ''}" onclick="setContentPerformanceView('${adminEsc(key)}')" role="tab" aria-selected="${activeView === key ? 'true' : 'false'}">
+                        <i data-lucide="${adminEsc(icon)}" style="width:14px;height:14px;"></i>${adminEsc(label)} <small>${adminEsc(contentPerformanceNumber(count))}</small>
+                    </button>`).join('')}
+            </div>`;
+        }
+
         function contentPerformanceGroupKey(row = {}) {
+            const view = contentPerformanceLaneView(contentPerformanceLane(row));
             const source = String(row.caption || row.title || row.summary || row.externalId || row.id || '');
             const normalized = source
                 .toLowerCase()
@@ -4767,7 +4811,7 @@
                 .replace(/[^a-z0-9]+/g, ' ')
                 .trim()
                 .slice(0, 120);
-            return normalized.length >= 16 ? normalized : `${row.platform || 'post'}:${row.externalId || row.id || normalized}`;
+            return normalized.length >= 16 ? `${view}:${normalized}` : `${view}:${row.platform || 'post'}:${row.externalId || row.id || normalized}`;
         }
 
         function contentPerformanceGroups(rows = []) {
@@ -4929,11 +4973,13 @@
                 let after = '';
                 let total = 0;
                 let page = 0;
+                const limit = safeMode === 'stories' ? 25 : 12;
+                const maxPages = safeMode === 'stories' ? 2 : 8;
                 const headers = await getAdminJsonHeaders();
-                while (page < 4) {
+                while (page < maxPages) {
                     page += 1;
                     const cursor = after ? `&after=${encodeURIComponent(after)}` : '';
-                    const res = await fetch(`/.netlify/functions/meta-ig-sync-content?mode=${safeMode}&limit=50&pages=1&include_insights=true&include_analysis=false${cursor}`, {
+                    const res = await fetch(`/.netlify/functions/meta-ig-sync-content?mode=${safeMode}&limit=${limit}&pages=1&include_insights=false&include_analysis=false${cursor}`, {
                         method: 'POST',
                         headers,
                         body: JSON.stringify({ manual_admin_refresh: true, page }),
@@ -4943,6 +4989,7 @@
                     after = data.next_after || '';
                     if (!data.has_next || !after) break;
                 }
+                contentPerformanceView = safeMode === 'stories' ? 'stories' : 'feed';
                 contentPerformanceLoaded = false;
                 setContentPerformanceStatus(`Synced ${total.toLocaleString('en-AU')} IG ${label} items. Reloading posts...`);
                 await loadContentPerformance(true);
