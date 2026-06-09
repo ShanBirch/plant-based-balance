@@ -28,6 +28,8 @@ const {
     truncate,
     isTestAccount,
     recentlyMessaged,
+    loadClientSocialContact,
+    buildSocialContactAlertData,
     fireDraftReasoning,
 } = require('./_lib/client-context');
 
@@ -35,6 +37,7 @@ const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 const PB_COACH_PUSH_ENABLED = process.env.PB_COACH_PUSH_ENABLED === 'true';
 const PB_IMMEDIATE_COACH_ALERTS_ENABLED = process.env.PB_IMMEDIATE_COACH_ALERTS_ENABLED === 'true';
+const PB_CELEBRATION_AUTO_SEND_ENABLED = false;
 
 // ============================================================
 // Context loading
@@ -273,6 +276,8 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: JSON.stringify({ skipped: 'recently_messaged' }) };
     }
 
+    const socialContact = await loadClientSocialContact(coachId, userId);
+
     // 3. Describe the PB
     const { headline, detail } = describePB({
         exerciseName, pbType, newValue, newWeightKg, newReps, previousValue, improvement,
@@ -323,6 +328,25 @@ exports.handler = async (event) => {
             improvement,
             draft_model: draftModel,
             drafted_at: new Date().toISOString(),
+            preferred_delivery_channel: socialContact.hasSocialContact ? 'instagram' : 'in_app',
+            in_app_fallback_reason: socialContact.hasSocialContact ? null : 'no linked IG contact found, approve into the Balance inbox',
+            workout_celebration_social_contact: socialContact.hasSocialContact,
+            ...buildSocialContactAlertData(socialContact),
+            ...(socialContact.hasSocialContact ? {
+                social_contact_reason: 'PB celebration should be approved first, then sent over IG/Facebook if available',
+            } : {}),
+            needs_you_required: true,
+            operator_queue: 'needs_you',
+            needs_you_reason: 'post-workout PB celebration needs Shannon approval before sending',
+            needs_you_reasons: ['post_workout', 'personal_best'],
+            codex_review: {
+                decision: 'needs_you',
+                queue: 'needs_you',
+                reason: 'Post-workout PB celebration is a relationship moment Shannon should approve before it sends.',
+                needs_shannon_approval: true,
+                source: 'pb-celebration-draft',
+                reviewed_at: new Date().toISOString(),
+            },
         },
     };
 
@@ -349,10 +373,10 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: 'Alert insert failed', details: err.message }) };
     }
 
-    // 6. Auto-send for trusted clients. PBs stay in the admin Personal Bests
-    //    queue, but no longer create coach phone notifications by default.
+    // 6. PBs are post-workout relationship moments Shannon should approve,
+    //    even for clients who are otherwise trusted for auto-send.
     let autoSent = false;
-    if (draftText && alertId) {
+    if (PB_CELEBRATION_AUTO_SEND_ENABLED && draftText && alertId) {
         autoSent = await maybeAutoSendDraft({
             coachId,
             clientId: userId,

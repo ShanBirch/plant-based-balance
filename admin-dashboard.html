@@ -9608,7 +9608,7 @@
         let currentNeedsYouView = 'all';
         let needsYouCounts = { all: 0 };
         const NEEDS_YOU_TABS = ['all'];
-        const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'onboarding_day_30', 'weekly_checkin'];
+        const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'onboarding_day_30', 'weekly_checkin', 'first_workout', 'win_to_celebrate', 'badge_earned'];
         const CLIENT_MANAGER_REVIEW_MARKERS = [
             'balance-combined-dm-manager',
             'balance-lead-client-manager',
@@ -11252,6 +11252,12 @@
             if (!alert || alert.status !== 'pending') return false;
             if (!NEEDS_YOU_ALERT_TYPES.includes(alert.alert_type)) return false;
             if (alert.alert_type === 'weekly_checkin') return isCoachCheckinApprovalDraft(alert);
+            if (alert.alert_type === 'first_workout') {
+                return needsYouHasSuggestedDraft(alert);
+            }
+            if (alert.alert_type === 'win_to_celebrate' || alert.alert_type === 'badge_earned') {
+                return isNeedsYouRoutedDmAlert(alert) && needsYouHasSuggestedDraft(alert);
+            }
             if (alert.alert_type === 'onboarding_day_30') {
                 return isNeedsYouRoutedDmAlert(alert) && needsYouHasSuggestedDraft(alert);
             }
@@ -11369,6 +11375,14 @@
                 return;
             }
             if (alert?.alert_type === 'onboarding_day_30' && needsYouHasOperatorWork(alert)) {
+                openNeedsYouForAlert(alert, 'all');
+                return;
+            }
+            if (alert?.alert_type === 'first_workout' && needsYouHasOperatorWork(alert)) {
+                openNeedsYouForAlert(alert, 'all');
+                return;
+            }
+            if ((alert?.alert_type === 'win_to_celebrate' || alert?.alert_type === 'badge_earned') && needsYouHasOperatorWork(alert)) {
                 openNeedsYouForAlert(alert, 'all');
                 return;
             }
@@ -14674,7 +14688,7 @@
         }
 
         function isManualDmSendableAlert(alert) {
-            if (!alert || !DM_ALERT_TYPES.includes(alert.alert_type)) return false;
+            if (!alert) return false;
             if (!['pending', 'dismissed', 'canceled'].includes(alert.status)) return false;
             const channel = alert.data?.channel;
             const isManyChatLead = channel === 'instagram'
@@ -14700,6 +14714,31 @@
                     <i data-lucide="check" style="width:12px;height:12px;"></i>Manual sent
                 </button>
                 ${openIg}
+            `;
+        }
+
+        function isManualHandleOnlyAlert(alert) {
+            const data = alert?.data || {};
+            return !!alert
+                && ['pending', 'dismissed', 'canceled'].includes(alert.status)
+                && data.manual_ig_required === true
+                && !data.ig_thread_id
+                && !!(data.manual_ig_handle || data.ig_username);
+        }
+
+        function renderManualHandleActions(alert, hasMessage) {
+            if (!hasMessage || !isManualHandleOnlyAlert(alert)) return '';
+            const handle = (alert.data?.manual_ig_handle || alert.data?.ig_username || '').replace(/^@+/, '');
+            return `
+                <button class="alert-btn alert-btn-send" onclick="copyManualDmDraft('${alert.id}')" title="Copy this draft so you can paste it into Instagram">
+                    <i data-lucide="copy" style="width:12px;height:12px;"></i>Copy
+                </button>
+                <button class="alert-btn alert-btn-send" onclick="markManualHandleSent('${alert.id}')" title="Use after you have pasted and sent this in Instagram">
+                    <i data-lucide="check" style="width:12px;height:12px;"></i>Manual sent
+                </button>
+                <button class="alert-btn alert-btn-view" onclick="openManualIgProfile('${escapeHtml(handle)}')" title="Open Instagram profile">
+                    <i data-lucide="instagram" style="width:12px;height:12px;"></i>Open IG
+                </button>
             `;
         }
 
@@ -15153,6 +15192,64 @@
             }
         }
 
+        async function markManualHandleSent(alertId) {
+            const alertData = alertsCache.find(a => a.id === alertId);
+            if (!alertData) return;
+            const message = normalizeCoachDraftTextForAdmin(getAlertEditMessage(alertId, alertData)).trim();
+            if (!message) {
+                alert('Nothing to mark sent, the message is empty.');
+                return;
+            }
+            const btn = event?.target?.closest?.('.alert-btn');
+            const oldHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader" style="width:12px;height:12px; animation:spin 1s linear infinite;"></i>Saving...';
+                lucide.createIcons();
+            }
+            try {
+                const originalDraft = normalizeCoachDraftTextForAdmin(alertData.suggested_message || alertData.data?.draft_text || '');
+                const editReason = getAlertEditReason(alertId);
+                const sentAt = new Date().toISOString();
+                const wasEdited = !!originalDraft && message !== originalDraft;
+                const mergedData = {
+                    ...(alertData.data || {}),
+                    sent_message: message,
+                    was_edited: wasEdited,
+                    sent_at: sentAt,
+                    sent_via: 'manual_instagram',
+                    manual_ig_marked_sent: true,
+                    manual_ig_history_logged: false,
+                    manual_ig_history_skipped: 'handle_only_no_linked_thread',
+                };
+                if (wasEdited && editReason) mergedData.edit_reason = editReason;
+                const { error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .update({ status: 'sent', actioned_at: sentAt, data: mergedData })
+                    .eq('id', alertId)
+                    .eq('status', alertData.status || 'pending');
+                if (error) throw error;
+                clearAlertEditBuffer(alertId);
+                const card = document.getElementById(`alert-${alertId}`);
+                if (card) {
+                    card.style.animation = 'alertSlideOut 0.45s ease forwards';
+                    setTimeout(() => card.remove(), 450);
+                }
+                alertsCache = alertsCache.filter(a => a.id !== alertId);
+                refreshFeedCounts();
+                updateAlertBadge();
+                updateVoiceMatchRate();
+            } catch (e) {
+                console.error('markManualHandleSent failed:', e);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = oldHtml || '<i data-lucide="check" style="width:12px;height:12px;"></i>Manual sent';
+                    lucide.createIcons();
+                }
+                alert('Could not mark sent: ' + (e.message || e));
+            }
+        }
+
         function getAutoSendTargetFromDmAlert(alert) {
             if (!alert || !DM_ALERT_TYPES.includes(alert.alert_type)) return null;
             const data = alert.data || {};
@@ -15549,6 +15646,7 @@
             const checkinDeliveryHtml = renderChallengeCheckinDeliveryStrip(alert);
             const manualCheckinActionsHtml = renderManualChallengeCheckinActions(alert, hasMessage, canEdit);
             const manualDmActionsHtml = renderManualDmActions(alert, hasMessage);
+            const manualHandleActionsHtml = renderManualHandleActions(alert, hasMessage);
             const dmScreenshotContextActionHtml = renderDmScreenshotContextAction(alert);
             const autoSendDmActionHtml = renderAutoSendDmAction(alert, isDmAlert);
             const instagramGraphDmActionsHtml = renderInstagramGraphDmActions(alert, isDmAlert);
@@ -15655,6 +15753,7 @@
                             </button>
                         ` : ''}
                         ${manualDmActionsHtml}
+                        ${manualHandleActionsHtml}
                         ${instagramGraphDmActionsHtml}
                         ${dmScreenshotContextActionHtml}
                         ${autoSendDmActionHtml}

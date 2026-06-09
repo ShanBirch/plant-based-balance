@@ -31,10 +31,13 @@ const {
     stripLeadingGreeting,
     truncate,
     isTestAccount,
+    loadClientSocialContact,
+    buildSocialContactAlertData,
     fireDraftReasoning,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
+const FIRST_WORKOUT_AUTO_SEND_ENABLED = false;
 
 async function resolveCoach(clientId) {
     try {
@@ -140,9 +143,10 @@ exports.handler = async (event) => {
 
     // 3. Draft
     const clientName = await loadClientName(clientId);
-    const [memory, profile] = await Promise.all([
+    const [memory, profile, socialContact] = await Promise.all([
         loadClientMemory(coachId, clientId),
         loadClientProfileFacts(clientId),
+        loadClientSocialContact(coachId, clientId),
     ]);
     const memoryBlock = buildMemoryBlock(memory);
     const profileBlock = buildClientProfileBlock({ clientName, profile });
@@ -172,6 +176,25 @@ exports.handler = async (event) => {
             template_name: templateName || null,
             draft_model: draftModel,
             drafted_at: new Date().toISOString(),
+            preferred_delivery_channel: socialContact.hasSocialContact ? 'instagram' : 'in_app',
+            in_app_fallback_reason: socialContact.hasSocialContact ? null : 'no linked IG contact found, approve into the Balance inbox',
+            first_workout_social_contact: socialContact.hasSocialContact,
+            ...buildSocialContactAlertData(socialContact),
+            ...(socialContact.hasSocialContact ? {
+                social_contact_reason: 'first workout congrats should be approved first, then sent over IG/Facebook if available',
+            } : {}),
+            needs_you_required: true,
+            operator_queue: 'needs_you',
+            needs_you_reason: 'first workout needs Shannon approval before sending',
+            needs_you_reasons: ['first_workout'],
+            codex_review: {
+                decision: 'needs_you',
+                queue: 'needs_you',
+                reason: 'First workout is a high-retention moment Shannon should personally approve.',
+                needs_shannon_approval: true,
+                source: 'first-workout-celebration',
+                reviewed_at: new Date().toISOString(),
+            },
         },
     };
 
@@ -191,10 +214,10 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
     }
 
-    // 5. Auto-send for trusted clients, otherwise push the approve-gate
-    //    notification.
+    // 5. First workouts are retention moments Shannon should personally
+    //    approve, even for clients who are otherwise trusted for auto-send.
     let autoSent = false;
-    if (draftText && alertId) {
+    if (FIRST_WORKOUT_AUTO_SEND_ENABLED && draftText && alertId) {
         autoSent = await maybeAutoSendDraft({
             coachId,
             clientId,

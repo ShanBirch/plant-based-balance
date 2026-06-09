@@ -21,8 +21,8 @@ assert.ok(
 );
 
 assert.ok(
-    dashboard.includes("const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'onboarding_day_30', 'weekly_checkin'];"),
-    'month-one milestones and actionable coach check-ins should be loaded into Needs You'
+    dashboard.includes("const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'onboarding_day_30', 'weekly_checkin', 'first_workout', 'win_to_celebrate', 'badge_earned'];"),
+    'month-one milestones, actionable coach check-ins, first workouts, and PB/workout celebrations should be loaded into Needs You'
 );
 
 assert.ok(
@@ -33,6 +33,23 @@ assert.ok(
 assert.ok(
     dashboard.includes("if (alert.alert_type === 'onboarding_day_30')"),
     'month-one milestones should have explicit Needs You operator-work handling'
+);
+
+assert.ok(
+    dashboard.includes("if (alert.alert_type === 'first_workout')"),
+    'first workout alerts should have explicit Needs You operator-work handling'
+);
+
+assert.ok(
+    dashboard.includes("if (alert.alert_type === 'win_to_celebrate' || alert.alert_type === 'badge_earned')") &&
+    dashboard.includes("return isNeedsYouRoutedDmAlert(alert) && needsYouHasSuggestedDraft(alert);"),
+    'PB and workout badge celebrations should have explicit Needs You operator-work handling'
+);
+
+assert.ok(
+    dashboard.includes('function renderManualHandleActions(alert, hasMessage)') &&
+    dashboard.includes("manual_ig_history_skipped: 'handle_only_no_linked_thread'"),
+    'handle-only IG cards should support copy/open/manual-sent handling'
 );
 
 assert.ok(
