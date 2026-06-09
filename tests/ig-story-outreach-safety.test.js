@@ -9,6 +9,7 @@ const {
     assessStoryCommentSafety,
     assessAudioVisualCommentConsistency,
     relationshipStoryBlockReason,
+    hasRecentUnansweredInbound,
     storyRecentOutreachCooldown,
     isDryRunQualityJudge,
     validateEvidenceVideo,
@@ -96,7 +97,17 @@ const mirrorSelfieSafety = assessStoryCommentSafety({
     visibleText: '',
     comment: 'looking good',
 });
-assert.strictEqual(mirrorSelfieSafety.safeToComment, true);
+assert.strictEqual(mirrorSelfieSafety.safeToComment, false);
+assert.strictEqual(mirrorSelfieSafety.reason, 'specific_visual_hook_required');
+
+const scenicViewSafety = assessStoryCommentSafety({
+    storyOwner: 'view.spot',
+    description: 'A beach sunset with cliffs, waves, and a clear lookout view.',
+    visibleText: '',
+    comment: 'what a view',
+});
+assert.strictEqual(scenicViewSafety.safeToComment, true);
+assert.strictEqual(scenicViewSafety.reason, '');
 
 const gymActionSafety = assessStoryCommentSafety({
     storyOwner: 'gym.action',
@@ -190,6 +201,50 @@ assert.strictEqual(
     }),
     'looks like a fun night',
     'birthday props should not trigger a direct birthday wish to the story owner'
+);
+
+assert.strictEqual(
+    repairDraftCommentWithContext({
+        comment: 'what a view',
+        description: 'A man in an orange outfit is smiling on a beach at sunset with a spiky halo-like headpiece.',
+        visibleText: 'What',
+        storyOwner: 'sarahprobert.xox',
+    }),
+    'looks like a fun day',
+    'view comments should not be used when a person/costume is the main subject'
+);
+
+assert.strictEqual(
+    repairDraftCommentWithContext({
+        comment: 'looking good, what a cute pony',
+        description: 'A close-up story video of a white pony or horse eating hay while someone cuddles beside it outdoors.',
+        visibleText: 'isnt she lovely',
+        storyOwner: 'alana_wilkes12',
+    }),
+    'what a cute pony',
+    'animal-led stories should not mix appearance praise with the animal comment'
+);
+
+assert.strictEqual(
+    repairDraftCommentWithContext({
+        comment: 'thats a good line',
+        description: 'An Instagram story showing a gym-themed 2026 calendar graphic with monthly gym and coffee notes.',
+        visibleText: '2026 JAN: GYM FEB: GYM MAR: GYM APR: GYM MAY: GYM JUN: GYM',
+        storyOwner: 'grateful_vegan_sunflower',
+    }),
+    'gym all year haha',
+    'calendar/list graphics should get theme-aware comments, not generic quote praise'
+);
+
+assert.strictEqual(
+    repairDraftCommentWithContext({
+        comment: 'looking good',
+        description: 'A mirror selfie story shows a woman in black activewear with a quote about hurt people hurting people and accountability.',
+        visibleText: 'hurt people hurt people',
+        storyOwner: 'pnba_pro_mandacampbell',
+    }),
+    '',
+    'heavy quote selfies should not get appearance compliments'
 );
 
 assert.strictEqual(
@@ -426,6 +481,27 @@ assert.strictEqual(
     'clipped lyric/effort comments should be repaired'
 );
 
+assert.strictEqual(
+    normalizeDraftComment('what song was that?', {
+        storyOwner: 'cookie17133.priv',
+        sharedContent: false,
+    }),
+    'good song choice',
+    'story opener should not ask the lead to identify obvious or attached music'
+);
+
+assert.strictEqual(
+    repairDraftCommentWithContext({
+        comment: 'what song was this?',
+        description: 'A mirror selfie video with attached popular music playing.',
+        visibleText: '',
+        storyOwner: 'cookie17133.priv',
+        sharedContent: false,
+    }),
+    'good song choice',
+    'story repair should turn song-ID questions into non-question reactions'
+);
+
 const transcriptNote = storyAnalysisTranscriptNote({
     audioTranscript: 'You need to watch this show immediately on Netflix.',
 });
@@ -646,6 +722,70 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    relationshipStoryBlockReason(
+        { id: 'thread-admin-card' },
+        [{ status: 'pending', alert_type: 'general_idea', data: { subtype: 'ig_story_outreach_candidate' } }],
+        [],
+        recentStoryNow
+    ),
+    '',
+    'stale/non-DM admin cards should not block story comments as pending DM replies'
+);
+
+assert.strictEqual(
+    relationshipStoryBlockReason(
+        { id: 'thread-real-dm' },
+        [{ status: 'pending', alert_type: 'ig_incoming_dm', data: { ig_thread_id: 'thread-real-dm' } }],
+        [],
+        recentStoryNow
+    ),
+    'pending_dm_reply',
+    'real pending IG DM alerts should still block story comments'
+);
+
+assert.strictEqual(
+    hasRecentUnansweredInbound(
+        {
+            id: 'thread-latest-out',
+            last_inbound_at: '2026-05-23T13:00:00.000Z',
+            last_outbound_at: null,
+        },
+        [
+            { direction: 'out', text: 'all good', created_at: '2026-05-23T13:10:00.000Z', source: 'manual_ig' },
+            { direction: 'in', text: 'thanks', created_at: '2026-05-23T13:00:00.000Z', source: 'instagram' },
+        ],
+        recentStoryNow
+    ),
+    false,
+    'latest actual outbound message should clear stale thread timestamp open-DM holds'
+);
+
+assert.strictEqual(
+    hasRecentUnansweredInbound(
+        {
+            id: 'thread-reaction',
+            last_inbound_at: '2026-05-23T13:00:00.000Z',
+            last_outbound_at: null,
+        },
+        [{ direction: 'in', text: 'liked your message', created_at: '2026-05-23T13:00:00.000Z', source: 'instagram_reaction' }],
+        recentStoryNow
+    ),
+    false,
+    'likes/reactions should not count as a DM needing Shannon reply'
+);
+
+assert.strictEqual(
+    relationshipStoryBlockReason(
+        { id: 'thread-real-open' },
+        [],
+        [{ direction: 'in', text: 'hey can you help?', created_at: '2026-05-23T13:00:00.000Z', source: 'instagram' }],
+        recentStoryNow
+    ),
+    'open_dm_needs_reply',
+    'latest real inbound DM should still block story comments'
+);
+
+assert.strictEqual(
     isDryRunQualityJudge({ ignore_relationship_blocks: true }, true),
     true,
     'quality judging may ignore relationship blocks only while dry-running'
@@ -665,6 +805,11 @@ assert.strictEqual(
     shouldRecommendLikeFallback({ safetyReason: 'minor_or_toilet_context' }, ''),
     false,
     'sensitive story blocks should not recommend a like fallback'
+);
+assert.strictEqual(
+    shouldRecommendLikeFallback({ safetyReason: 'specific_visual_hook_required' }, ''),
+    true,
+    'broad story puns should fall back to like-only'
 );
 
 const noEvidenceFallback = buildStoryEvidenceAnalysisFallback({
