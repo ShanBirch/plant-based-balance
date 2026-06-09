@@ -5126,9 +5126,6 @@ async function openCohortInfo(challengeId) {
                 <div style="width: 14px; height: 14px; border-radius: 50%; background: ${i < joined ? '#f5d98a' : 'rgba(255,255,255,0.24)'}; ${i < joined ? 'box-shadow: 0 0 12px rgba(245,217,138,0.62);' : ''}"></div>
             `).join('');
         }
-        const countEl = document.getElementById('cohort-info-count');
-        if (countEl) countEl.textContent = `${joined} / ${needed}`;
-
         const summaryEl = document.getElementById('cohort-info-participant-summary');
         if (summaryEl) summaryEl.textContent = `${joined} joined`;
 
