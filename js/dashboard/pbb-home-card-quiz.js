@@ -868,11 +868,25 @@
         setTimeout(function() { if (strip && strip.parentNode) strip.remove(); }, 1300);
     }
 
+    function buildHomeQuizSurpriseFact(game) {
+        var lessonMap = window._learningLessonSurpriseFacts || {};
+        var lessonSurprise = (HLQ.lesson && lessonMap[HLQ.lesson.id]) || '';
+        var raw = (game && (game.surprise || game.surpriseFact))
+            || lessonSurprise
+            || (game && game.explanation)
+            || (HLQ.lesson && HLQ.lesson.content && HLQ.lesson.content.keyPoint)
+            || 'Take another look. The useful fact is hiding in the mismatch.';
+        var fact = String(raw).replace(/^surprise:\s*/i, '').trim();
+        if (fact.length <= 190) return fact;
+        var firstSentence = fact.match(/^.{70,190}?[.!?](\s|$)/);
+        return firstSentence ? firstSentence[0].trim() : fact.slice(0, 187).trim() + '...';
+    }
+
     function showWrongOptions(game) {
-        var explanation = (game && game.explanation) || (HLQ.lesson && HLQ.lesson.content && HLQ.lesson.content.keyPoint) || 'Take another look — you\'ve got this.';
+        var explanation = buildHomeQuizSurpriseFact(game);
         var html = ''
             + '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;">'
-            + '  <span style="font-size:0.65rem;color:rgba(255,255,255,0.78);text-transform:uppercase;letter-spacing:1.6px;font-weight:800;">A Hint</span>'
+            + '  <span style="font-size:0.65rem;color:rgba(255,255,255,0.78);text-transform:uppercase;letter-spacing:1.6px;font-weight:800;">Surprise fact</span>'
             + '</div>'
             + '<div style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.30);border-radius:14px;padding:16px 16px;margin-bottom:14px;">'
             + '  <p style="font-size:0.94rem;color:#fff;line-height:1.55;margin:0;font-weight:500;">' + escapeHtml(explanation) + '</p>'
