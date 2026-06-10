@@ -291,6 +291,24 @@
         .trend-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
         .trend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
         .trend-bar { display: inline-block; height: 18px; border-radius: 4px; min-width: 2px; vertical-align: middle; }
+        .app-stats-shell { display:flex; flex-direction:column; gap:16px; }
+        .app-stats-header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:16px 20px; border-bottom:1px solid #f1f5f9; }
+        .app-stats-title h2 { margin:0; font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:800; color:#1e293b; letter-spacing:0; }
+        .app-stats-title p { margin:3px 0 0; color:#64748b; font-size:0.78rem; line-height:1.35; }
+        .app-stats-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .app-stats-tabs { display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap; }
+        .app-stats-tab { border:0; background:transparent; color:#475569; border-radius:7px; padding:7px 12px; font:800 0.78rem 'Inter',sans-serif; cursor:pointer; }
+        .app-stats-tab.active { background:#0f172a; color:#fff; box-shadow:0 6px 16px rgba(15,23,42,0.12); }
+        .app-stats-refresh { min-height:34px; border:1px solid #dbe4ef; border-radius:8px; background:#fff; color:#1e293b; font:900 0.76rem 'Inter',sans-serif; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:8px 11px; }
+        .app-stats-refresh i { width:14px; height:14px; }
+        .app-stats-refresh:hover { border-color:#cbd5e1; background:#f8fafc; }
+        .app-stats-note { color:#64748b; font-size:0.74rem; font-weight:700; line-height:1.4; margin-top:8px; }
+        .app-stats-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+        .app-stats-recent-list { display:flex; flex-direction:column; gap:8px; }
+        .app-stats-person-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; border:1px solid #f1f5f9; border-radius:8px; padding:10px 12px; background:#fff; }
+        .app-stats-person-row strong { display:block; font-size:0.86rem; color:#1e293b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .app-stats-person-row span { display:block; margin-top:2px; font-size:0.72rem; color:#64748b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .app-stats-person-time { color:#475569; font-size:0.76rem; font-weight:900; white-space:nowrap; }
         .usage-bar-row { display: flex; align-items: center; margin-bottom: 12px; gap: 12px; }
         .usage-bar-label { width: 110px; font-weight: 600; font-size: 0.8rem; color: #1e293b; flex-shrink: 0; }
         .usage-bar-track { flex: 1; height: 28px; background: #f1f5f9; border-radius: 6px; overflow: hidden; }
@@ -1366,7 +1384,9 @@
         .ig-operator-lead,
         .ig-operator-draft-bubble,
         .ig-operator-stat,
-        .ig-operator-composer {
+        .ig-operator-composer,
+        .app-stats-person-row,
+        .app-stats-refresh {
             background: var(--admin-surface) !important;
             border-color: var(--admin-border) !important;
             box-shadow: var(--admin-shadow-soft) !important;
@@ -1392,7 +1412,9 @@
         .ig-leads-list,
         .user-directory-list,
         .auto-dms-list,
-        .auto-dms-detail {
+        .auto-dms-detail,
+        .app-stats-header,
+        .app-stats-tabs {
             background: var(--admin-surface-2) !important;
             border-color: var(--admin-border) !important;
             color: var(--admin-text) !important;
@@ -1426,7 +1448,10 @@
         .ig-operator-empty h3,
         .ig-operator-card h3,
         .ig-operator-lead-name,
-        .ig-operator-stat strong {
+        .ig-operator-stat strong,
+        .app-stats-title h2,
+        .app-stats-person-row strong,
+        .app-stats-person-time {
             color: var(--admin-text-strong) !important;
         }
 
@@ -1453,6 +1478,9 @@
         .ai-trend-group-count,
         .ai-trend-person small,
         .ai-trend-muted,
+        .app-stats-title p,
+        .app-stats-note,
+        .app-stats-person-row span,
         .content-radar-status,
         .content-radar-detail,
         .ig-operator-title p,
@@ -1571,6 +1599,7 @@
         .ig-operator-details summary::before,
         .alert-view-chip,
         .ig-leads-tab,
+        .app-stats-tab,
         .alert-view-count,
         .alert-group-header .alert-group-count {
             background: var(--admin-surface-3) !important;
@@ -1611,7 +1640,8 @@
         .ai-action-edit:hover,
         .ai-action-cancel:hover,
         .ig-operator-chip:hover,
-        .ig-operator-action:hover {
+        .ig-operator-action:hover,
+        .app-stats-refresh:hover {
             background: var(--admin-surface-3) !important;
             border-color: var(--admin-border-strong) !important;
             color: var(--admin-text-strong) !important;
@@ -1638,7 +1668,8 @@
         }
 
         .alert-view-chip.alert-view-chip-on,
-        .ig-leads-tab.active {
+        .ig-leads-tab.active,
+        .app-stats-tab.active {
             background: var(--admin-primary) !important;
             border-color: transparent !important;
             color: var(--admin-on-primary) !important;
@@ -2011,7 +2042,7 @@
             <div class="nav-item" hidden data-admin-hidden-entry="cocos" onclick="showSection('cocos', this); loadCocosDms();"><i data-lucide="instagram"></i><span>Coco's</span><span id="cocos-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" hidden data-admin-hidden-entry="auto-dms" onclick="showSection('auto-dms', this); loadAutoDms();"><i data-lucide="bot"></i><span>Auto DMs</span><span id="auto-dms-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('checkins', this); loadChallengeCheckins();"><i data-lucide="clipboard-check"></i><span>Check-ins</span><span id="checkin-badge" class="alert-badge" style="display:none;">0</span></div>
-            <div class="nav-item" onclick="showSection('conversion-operator', this); loadConversionOperator();"><i data-lucide="route"></i><span>Conversion</span></div>
+            <div class="nav-item" onclick="showSection('app-stats', this); loadAppStats();"><i data-lucide="activity"></i><span>App Stats</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" hidden data-admin-hidden-entry="ig-leads" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
             <div class="nav-item" hidden data-admin-hidden-entry="ig-operator" onclick="showSection('ig-operator', this); focusIgOperatorInput();"><i data-lucide="wand-sparkles"></i><span>IG Operator</span></div>
@@ -2631,6 +2662,45 @@
                 </div>
                 <div class="analytics-section"><h2>7-Day Activity</h2><div id="trend-chart"><div class="loading">Loading...</div></div></div>
                 <div class="analytics-section"><h2>Feature Usage (30d)</h2><div id="usage-bars" class="loading">Loading...</div></div>
+            </div>
+
+            <!-- APP STATS -->
+            <div id="app-stats" class="section">
+                <div class="app-stats-shell">
+                    <div class="content-card">
+                        <div class="app-stats-header">
+                            <div class="app-stats-title">
+                                <h2>App Stats</h2>
+                                <p id="app-stats-updated">Log ins by day, week and month.</p>
+                            </div>
+                            <div class="app-stats-actions">
+                                <div class="app-stats-tabs" role="tablist" aria-label="App stats time range">
+                                    <button type="button" id="app-stats-tab-day" class="app-stats-tab active" onclick="setAppStatsView('day')">Day</button>
+                                    <button type="button" id="app-stats-tab-week" class="app-stats-tab" onclick="setAppStatsView('week')">Week</button>
+                                    <button type="button" id="app-stats-tab-month" class="app-stats-tab" onclick="setAppStatsView('month')">Month</button>
+                                </div>
+                                <button type="button" class="app-stats-refresh" id="app-stats-refresh-btn" onclick="loadAppStats(true)" title="Refresh app stats">
+                                    <i data-lucide="refresh-cw"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card green"><h3 id="app-stats-primary-label">People Today</h3><div class="value" id="app-stats-primary">-</div><p class="stat-sub" id="app-stats-primary-sub">unique users</p></div>
+                        <div class="stat-card"><h3>Today</h3><div class="value" id="app-stats-today">-</div><p class="stat-sub">unique people</p></div>
+                        <div class="stat-card"><h3>Week</h3><div class="value" id="app-stats-week">-</div><p class="stat-sub">unique people</p></div>
+                        <div class="stat-card"><h3>Month</h3><div class="value" id="app-stats-month">-</div><p class="stat-sub">unique people</p></div>
+                    </div>
+                    <div class="analytics-section">
+                        <h2 id="app-stats-breakdown-title">Daily log ins</h2>
+                        <div id="app-stats-breakdown"><div class="loading">Loading app stats...</div></div>
+                        <div class="app-stats-note" id="app-stats-source-note"></div>
+                    </div>
+                    <div class="analytics-section">
+                        <h2>Recent log ins</h2>
+                        <div id="app-stats-recent"><div class="loading">Loading recent people...</div></div>
+                    </div>
+                </div>
             </div>
 
             <!-- COHORTS -->
@@ -3373,6 +3443,278 @@
             const mx=Math.max(...f.map(x=>x.c),1); let h='';
             f.forEach(x=>{h+=`<div class="usage-bar-row"><div class="usage-bar-label">${x.l}</div><div class="usage-bar-track"><div class="usage-bar-fill" style="background:${x.cl};width:${Math.max((x.c/mx)*100,2)}%;"></div></div><div class="usage-bar-value">${x.c}</div></div>`;});
             document.getElementById('usage-bars').innerHTML=h;
+        }
+        const APP_STATS_VIEWS = {
+            day: { label: 'Day', days: 1, primaryLabel: 'People Today', breakdownTitle: 'Today log ins' },
+            week: { label: 'Week', days: 7, primaryLabel: 'People This Week', breakdownTitle: 'Daily log ins, last 7 days' },
+            month: { label: 'Month', days: 30, primaryLabel: 'People This Month', breakdownTitle: 'Daily log ins, last 30 days' }
+        };
+        let appStatsView = 'day', appStatsSnapshot = null, appStatsLoadedAt = 0, appStatsLoading = false;
+
+        function appStatsStartOfDay(value = new Date()) {
+            const d = new Date(value);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+        function appStatsAddDays(value, days) {
+            const d = new Date(value);
+            d.setDate(d.getDate() + days);
+            return d;
+        }
+        function appStatsDateKey(value) {
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '';
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${d.getFullYear()}-${mm}-${dd}`;
+        }
+        function appStatsDateLabel(value, compact = false) {
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '--';
+            return d.toLocaleDateString('en-AU', compact
+                ? { weekday: 'short', day: 'numeric' }
+                : { weekday: 'short', day: 'numeric', month: 'short' });
+        }
+        function appStatsWindowStart(view, now = new Date()) {
+            const config = APP_STATS_VIEWS[view] || APP_STATS_VIEWS.day;
+            return appStatsAddDays(appStatsStartOfDay(now), -(config.days - 1));
+        }
+        function appStatsUserLabel(user) {
+            return user?.name || user?.email || 'Unknown user';
+        }
+        function appStatsIsInternalUser(user, adminIds) {
+            const email = String(user?.email || '').trim().toLowerCase();
+            const adminEmail = String(window.BALANCE_ADMIN_EMAIL || 'shannonbirch@cocospersonaltraining.com').toLowerCase();
+            return Boolean(user?.is_test_account || (user?.id && adminIds.has(user.id)) || email === adminEmail);
+        }
+        async function appStatsFetchUsers() {
+            if (Array.isArray(allUsers) && allUsers.length) return allUsers;
+            const { data, error } = await window.supabaseClient
+                .from('users')
+                .select('id,name,email,last_login,created_at,is_test_account')
+                .order('last_login', { ascending: false, nullsFirst: false })
+                .limit(2000);
+            if (error) throw error;
+            return data || [];
+        }
+        async function appStatsFetchAdminIds() {
+            try {
+                const { data, error } = await window.supabaseClient.from('admin_users').select('user_id');
+                if (error) throw error;
+                return new Set((data || []).map(row => row.user_id).filter(Boolean));
+            } catch (e) {
+                console.warn('Failed to load admin ids for app stats:', e);
+                return new Set();
+            }
+        }
+        function appStatsSourceRows(events, users, userMap, maxStart, usingFallback) {
+            if (!usingFallback && events.length) {
+                return events
+                    .map(row => ({
+                        userId: row.user_id,
+                        at: row.occurred_at,
+                        source: row.activity_type || 'page_view'
+                    }))
+                    .filter(row => row.userId && row.at && userMap.has(row.userId) && new Date(row.at) >= maxStart);
+            }
+            return users
+                .filter(user => user.last_login && userMap.has(user.id) && new Date(user.last_login) >= maxStart)
+                .map(user => ({ userId: user.id, at: user.last_login, source: 'last_login' }));
+        }
+        function appStatsSummarizeWindow(rows, userMap, view, now = new Date()) {
+            const config = APP_STATS_VIEWS[view] || APP_STATS_VIEWS.day;
+            const start = appStatsWindowStart(view, now);
+            const bucketMap = new Map();
+            for (let i = 0; i < config.days; i += 1) {
+                const day = appStatsAddDays(start, i);
+                const key = appStatsDateKey(day);
+                bucketMap.set(key, {
+                    key,
+                    label: appStatsDateLabel(day, config.days > 14),
+                    users: new Set(),
+                    opens: 0
+                });
+            }
+            const unique = new Set();
+            let opens = 0;
+            rows.forEach(row => {
+                const at = new Date(row.at);
+                if (Number.isNaN(at.getTime()) || at < start || at > now) return;
+                const bucket = bucketMap.get(appStatsDateKey(at));
+                if (!bucket) return;
+                bucket.users.add(row.userId);
+                bucket.opens += 1;
+                unique.add(row.userId);
+                opens += 1;
+            });
+            const buckets = Array.from(bucketMap.values()).map(bucket => ({
+                key: bucket.key,
+                label: bucket.label,
+                unique: bucket.users.size,
+                opens: bucket.opens
+            }));
+            const recent = rows
+                .filter(row => {
+                    const at = new Date(row.at);
+                    return !Number.isNaN(at.getTime()) && at >= start && at <= now && userMap.has(row.userId);
+                })
+                .sort((a, b) => new Date(b.at) - new Date(a.at))
+                .reduce((acc, row) => {
+                    if (acc.seen.has(row.userId)) return acc;
+                    acc.seen.add(row.userId);
+                    const user = userMap.get(row.userId);
+                    acc.list.push({
+                        userId: row.userId,
+                        name: appStatsUserLabel(user),
+                        email: user?.email || '',
+                        at: row.at,
+                        source: row.source
+                    });
+                    return acc;
+                }, { seen: new Set(), list: [] }).list.slice(0, 12);
+            return { view, label: config.label, start, unique: unique.size, opens, buckets, recent };
+        }
+        function buildAppStatsSnapshot({ events, users, adminIds, usingFallback }) {
+            const now = new Date();
+            const userMap = new Map();
+            (users || []).forEach(user => {
+                if (!user?.id || appStatsIsInternalUser(user, adminIds)) return;
+                userMap.set(user.id, user);
+            });
+            const maxStart = appStatsWindowStart('month', now);
+            const rows = appStatsSourceRows(events || [], users || [], userMap, maxStart, usingFallback);
+            const windows = {
+                day: appStatsSummarizeWindow(rows, userMap, 'day', now),
+                week: appStatsSummarizeWindow(rows, userMap, 'week', now),
+                month: appStatsSummarizeWindow(rows, userMap, 'month', now)
+            };
+            return {
+                generatedAt: now.toISOString(),
+                source: usingFallback ? 'last_login' : 'user_activity',
+                totalTrackedUsers: userMap.size,
+                windows
+            };
+        }
+        function renderAppStats(snapshot) {
+            if (!snapshot) return;
+            const config = APP_STATS_VIEWS[appStatsView] || APP_STATS_VIEWS.day;
+            const selected = snapshot.windows[appStatsView] || snapshot.windows.day;
+            Object.keys(APP_STATS_VIEWS).forEach(key => {
+                const tab = document.getElementById(`app-stats-tab-${key}`);
+                if (tab) tab.classList.toggle('active', key === appStatsView);
+            });
+            const updated = document.getElementById('app-stats-updated');
+            if (updated) updated.textContent = `Updated ${new Date(snapshot.generatedAt).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}`;
+            document.getElementById('app-stats-primary-label').textContent = config.primaryLabel;
+            document.getElementById('app-stats-primary').textContent = selected.unique;
+            document.getElementById('app-stats-primary-sub').textContent = `${selected.opens} app ${selected.opens === 1 ? 'open' : 'opens'}`;
+            document.getElementById('app-stats-today').textContent = snapshot.windows.day.unique;
+            document.getElementById('app-stats-week').textContent = snapshot.windows.week.unique;
+            document.getElementById('app-stats-month').textContent = snapshot.windows.month.unique;
+            document.getElementById('app-stats-breakdown-title').textContent = config.breakdownTitle;
+
+            const breakdown = document.getElementById('app-stats-breakdown');
+            const max = Math.max(...selected.buckets.map(row => row.unique), 1);
+            breakdown.innerHTML = `
+                <div class="app-stats-table-wrap">
+                    <table class="trend-table">
+                        <thead><tr><th>Day</th><th>People</th><th>App opens</th></tr></thead>
+                        <tbody>
+                            ${selected.buckets.map(row => `
+                                <tr>
+                                    <td style="font-weight:700; white-space:nowrap;">${adminEsc(row.label)}</td>
+                                    <td><span class="trend-bar" style="background:#48864B;width:${Math.max((row.unique / max) * 120, row.unique ? 8 : 2)}px;"></span> <strong>${adminEsc(row.unique)}</strong></td>
+                                    <td><strong>${adminEsc(row.opens)}</strong></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
+
+            const note = document.getElementById('app-stats-source-note');
+            if (note) {
+                note.textContent = snapshot.source === 'user_activity'
+                    ? 'Counting unique non-test, non-admin users with app activity rows. A person only counts once per day or period.'
+                    : 'No recent app activity rows were available, so this is using users.last_login. Daily history can only show each person on their latest login day.';
+            }
+
+            const recent = document.getElementById('app-stats-recent');
+            if (!selected.recent.length) {
+                recent.innerHTML = '<div class="loading">No log ins found for this range.</div>';
+            } else {
+                recent.innerHTML = `<div class="app-stats-recent-list">${selected.recent.map(row => `
+                    <div class="app-stats-person-row">
+                        <div>
+                            <strong>${adminEsc(row.name)}</strong>
+                            <span>${adminEsc(row.email || 'No email')}</span>
+                        </div>
+                        <div class="app-stats-person-time" title="${adminEsc(new Date(row.at).toLocaleString('en-AU'))}">${adminEsc(timeAgo(row.at))}</div>
+                    </div>
+                `).join('')}</div>`;
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+        function setAppStatsView(view) {
+            if (!APP_STATS_VIEWS[view]) return;
+            appStatsView = view;
+            if (appStatsSnapshot) renderAppStats(appStatsSnapshot);
+            else loadAppStats();
+        }
+        async function loadAppStats(force = false) {
+            if (appStatsLoading) return;
+            const isFresh = appStatsSnapshot && (Date.now() - appStatsLoadedAt < 60000);
+            if (isFresh && !force) {
+                renderAppStats(appStatsSnapshot);
+                return;
+            }
+            appStatsLoading = true;
+            const refresh = document.getElementById('app-stats-refresh-btn');
+            const breakdown = document.getElementById('app-stats-breakdown');
+            const recent = document.getElementById('app-stats-recent');
+            if (refresh) refresh.disabled = true;
+            if (breakdown) breakdown.innerHTML = '<div class="loading">Loading app stats...</div>';
+            if (recent) recent.innerHTML = '<div class="loading">Loading recent people...</div>';
+            try {
+                if (!window.supabaseClient) throw new Error('Supabase client not ready');
+                const maxStart = appStatsWindowStart('month').toISOString();
+                const [users, adminIds, eventsResult] = await Promise.all([
+                    appStatsFetchUsers(),
+                    appStatsFetchAdminIds(),
+                    window.supabaseClient
+                        .from('user_activity')
+                        .select('user_id,activity_type,occurred_at')
+                        .in('activity_type', ['login', 'page_view'])
+                        .gte('occurred_at', maxStart)
+                        .order('occurred_at', { ascending: false })
+                        .limit(10000)
+                ]);
+                if (eventsResult.error) throw eventsResult.error;
+                const events = eventsResult.data || [];
+                appStatsSnapshot = buildAppStatsSnapshot({
+                    events,
+                    users,
+                    adminIds,
+                    usingFallback: events.length === 0
+                });
+                appStatsLoadedAt = Date.now();
+                renderAppStats(appStatsSnapshot);
+            } catch (e) {
+                console.error('Failed to load app stats:', e);
+                try {
+                    const users = await appStatsFetchUsers();
+                    const adminIds = await appStatsFetchAdminIds();
+                    appStatsSnapshot = buildAppStatsSnapshot({ events: [], users, adminIds, usingFallback: true });
+                    appStatsLoadedAt = Date.now();
+                    renderAppStats(appStatsSnapshot);
+                } catch (fallbackError) {
+                    console.error('Failed to load app stats fallback:', fallbackError);
+                    if (breakdown) breakdown.innerHTML = `<div class="loading" style="color:#ef4444;">Failed to load app stats: ${adminEsc(fallbackError.message || e.message || 'Unknown error')}</div>`;
+                    if (recent) recent.innerHTML = '';
+                }
+            } finally {
+                appStatsLoading = false;
+                if (refresh) refresh.disabled = false;
+            }
         }
         function adminEsc(value) {
             return escapeHtml(String(value ?? ''));
@@ -19591,7 +19933,7 @@
                 case 'cohorts': return loadCohorts(true);
                 case 'ig-leads': return typeof loadIgLeads === 'function' ? loadIgLeads() : null;
                 case 'ig-operator': return typeof focusIgOperatorInput === 'function' ? focusIgOperatorInput() : null;
-                case 'conversion-operator': return loadConversionOperator(true);
+                case 'app-stats': return loadAppStats(true);
                 case 'content-performance': return typeof loadContentPerformance === 'function' ? loadContentPerformance(true) : null;
                 case 'content-radar': return typeof loadContentRadar === 'function' ? loadContentRadar(true) : null;
                 case 'your-day': return loadYourDay(true);
@@ -19798,10 +20140,10 @@
                 showSection('ig-operator', getNavItemForSection('ig-operator'));
                 focusIgOperatorInput();
             }, 500);
-        } else if (window.location.search.includes('tab=conversion-operator')) {
+        } else if (window.location.search.includes('tab=app-stats')) {
             setTimeout(() => {
-                showSection('conversion-operator', getNavItemForSection('conversion-operator'));
-                loadConversionOperator(true);
+                showSection('app-stats', getNavItemForSection('app-stats'));
+                loadAppStats(true);
             }, 500);
         } else if (window.location.search.includes('tab=cocos')) {
             setTimeout(() => {
