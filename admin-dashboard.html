@@ -393,6 +393,7 @@
         .content-performance-head { padding:14px 16px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; border-bottom:1px solid #f1f5f9; flex-wrap:wrap; }
         .content-performance-head h3 { font-family:'Montserrat',sans-serif; font-size:1rem; color:#0f172a; margin:0 0 3px; }
         .content-performance-head p { font-size:0.8rem; color:#64748b; line-height:1.35; margin:0; }
+        .content-performance-order { min-height:36px; border:1px solid #dbe4ef; border-radius:8px; background:#fff; color:#0f172a; padding:8px 34px 8px 10px; font-size:0.78rem; font-weight:900; cursor:pointer; }
         .content-performance-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:14px 16px 0; }
         .content-performance-platform { border:1px solid #e2e8f0; border-radius:8px; padding:10px; background:#f8fafc; min-width:0; }
         .content-performance-platform strong { display:block; color:#0f172a; font-size:0.86rem; margin-bottom:5px; }
@@ -2970,6 +2971,10 @@
                                 <h3>Ranked Posts</h3>
                                 <p>Feed posts, reels and carousels are separate from short-lived story posts.</p>
                             </div>
+                            <select id="content-performance-order" class="content-performance-order" aria-label="Post order" onchange="setContentPerformanceOrder(this.value)">
+                                <option value="successful" selected>Most successful</option>
+                                <option value="recent">Most recent</option>
+                            </select>
                         </div>
                         <div id="content-performance-body">
                             <div class="content-radar-empty" style="border:0; border-radius:0;">No post performance loaded yet.</div>
@@ -5121,6 +5126,7 @@
         let contentPerformanceLoading = false;
         let contentPerformanceCache = { rows: [], summary: null, windowDays: 90 };
         let contentPerformanceView = 'feed';
+        let contentPerformanceOrder = 'successful';
 
         function contentRadarArray(value) {
             if (Array.isArray(value)) return value;
@@ -5253,7 +5259,9 @@
             const groups = contentPerformanceGroups(rows);
             const laneCounts = contentPerformanceLaneCounts(rows);
             const activeView = contentPerformanceView === 'stories' ? 'stories' : 'feed';
-            const visibleGroups = groups.filter(group => contentPerformanceGroupView(group) === activeView);
+            const visibleGroups = contentPerformanceSortGroups(
+                groups.filter(group => contentPerformanceGroupView(group) === activeView)
+            );
             const activeLabel = activeView === 'stories' ? 'story posts' : 'feed posts';
             const generated = data.generatedAt ? ` | updated ${timeAgo(data.generatedAt)}` : '';
             setContentPerformanceStatus(`${visibleGroups.length} ${activeLabel} from ${rows.length} platform rows in the last ${data.windowDays || 90} days${generated}`);
@@ -5283,6 +5291,11 @@
 
         function setContentPerformanceView(view = 'feed') {
             contentPerformanceView = String(view || '').toLowerCase() === 'stories' ? 'stories' : 'feed';
+            renderContentPerformance(contentPerformanceCache);
+        }
+
+        function setContentPerformanceOrder(order = 'successful') {
+            contentPerformanceOrder = String(order || '').toLowerCase() === 'recent' ? 'recent' : 'successful';
             renderContentPerformance(contentPerformanceCache);
         }
 
@@ -5359,18 +5372,35 @@
             return normalized.length >= 16 ? `${view}:${normalized}` : `${view}:${row.platform || 'post'}:${row.externalId || row.id || normalized}`;
         }
 
+        function contentPerformanceDateMs(value) {
+            const ms = Date.parse(value || '');
+            return Number.isFinite(ms) ? ms : 0;
+        }
+
+        function contentPerformanceRowDateMs(row = {}) {
+            return Math.max(
+                contentPerformanceDateMs(row.postedAt),
+                contentPerformanceDateMs(row.createdAt),
+                contentPerformanceDateMs(row.syncedAt)
+            );
+        }
+
         function contentPerformanceGroups(rows = []) {
             const map = new Map();
             rows.forEach(row => {
                 const key = contentPerformanceGroupKey(row);
-                const existing = map.get(key) || { key, rows: [], platformRows: {}, score: 0, metrics: {}, visual: null, headline: '', caption: '', postedAt: '' };
+                const existing = map.get(key) || { key, rows: [], platformRows: {}, score: 0, metrics: {}, visual: null, headline: '', caption: '', postedAt: '', postedAtMs: 0 };
                 existing.rows.push(row);
                 const platform = row.platform || 'unknown';
                 if (!existing.platformRows[platform] || Number(row.score || 0) > Number(existing.platformRows[platform].score || 0)) {
                     existing.platformRows[platform] = row;
                 }
                 existing.score += Number(row.score || 0);
-                existing.postedAt = existing.postedAt || row.postedAt || '';
+                const rowDateMs = contentPerformanceRowDateMs(row);
+                if (rowDateMs > Number(existing.postedAtMs || 0)) {
+                    existing.postedAtMs = rowDateMs;
+                    existing.postedAt = row.postedAt || row.createdAt || row.syncedAt || '';
+                }
                 existing.headline = existing.headline || row.caption || row.title || row.summary || 'Untitled post';
                 existing.caption = existing.caption || row.caption || row.summary || '';
                 if (!existing.visual || contentPerformanceVisualWeight(row) > contentPerformanceVisualWeight(existing.visual)) existing.visual = row;
@@ -5379,7 +5409,19 @@
                 });
                 map.set(key, existing);
             });
-            return [...map.values()].sort((a, b) => Number(b.score || 0) - Number(a.score || 0));
+            return [...map.values()];
+        }
+
+        function contentPerformanceSortGroups(groups = []) {
+            const order = contentPerformanceOrder === 'recent' ? 'recent' : 'successful';
+            return [...groups].sort((a, b) => {
+                if (order === 'recent') {
+                    return Number(b.postedAtMs || 0) - Number(a.postedAtMs || 0)
+                        || Number(b.score || 0) - Number(a.score || 0);
+                }
+                return Number(b.score || 0) - Number(a.score || 0)
+                    || Number(b.postedAtMs || 0) - Number(a.postedAtMs || 0);
+            });
         }
 
         function renderContentPerformancePost(group = {}, rank = 0, statuses = {}) {
