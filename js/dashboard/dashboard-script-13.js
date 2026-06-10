@@ -984,10 +984,12 @@
                 requestAnimationFrame(() => {
                     const durationMs = (mv.duration > 0 ? mv.duration : 3.5) * 1000;
                     previewTimeoutId = setTimeout(() => {
-                        mv.pause();
-                        mv.currentTime = 0;
-                        mv.animationName = null;
-                        mv.removeAttribute('animation-name');
+                        if (window.applyIdleAnimation) {
+                            window.applyIdleAnimation(mv);
+                        } else {
+                            mv.pause();
+                            mv.currentTime = 0;
+                        }
                         previewTimeoutId = null;
                     }, durationMs);
                 });
@@ -1572,31 +1574,47 @@
 
 
         // Shared helper: play the best available resting animation on a model-viewer.
-        // Priority: idle > stand > first available animation.
         // Called on initial load AND whenever a new skin is set (including DBZ characters).
         window.applyIdleAnimation = function(mv) {
             if (!mv) return;
             const anims = mv.availableAnimations || [];
             if (!anims.length) return;
 
+            const src = String(mv.getAttribute('src') || mv.src || '').toLowerCase();
+            const activeRareSkin = String(localStorage.getItem('active_rare_skin') || '').toLowerCase();
+            const isShanbot = src.includes('shanbot') || activeRareSkin === 'shanbot';
+
             // Priority order for a natural resting pose.
             // Uses substring matching so names like "Armature|Idle", "idle_loop",
             // "Breathing Idle", "CharacterArmature|Idle" all resolve correctly.
-            const preferred = ['idle', 'breath', 'stand_hands_on_hips', 'arms_up_still', 'fold_arms', 'stand'];
+            const preferred = isShanbot
+                ? ['stand', 'idle', 'fold_arms']
+                : ['idle', 'breath', 'stand', 'stand_hands_on_hips', 'arms_up_still', 'fold_arms'];
             // Avoid static/pose-only clips as a resting animation
             const poseBlacklist = ['pose', 'tpose', 't-pose', 'bind', 'rest_pose', 'apose', 'a-pose'];
-            const isPose = (name) => poseBlacklist.some(p => name.toLowerCase().includes(p));
+            const actionBlacklist = [
+                'hit', 'kick', 'boxing', 'fight', 'karate', 'block', 'angry',
+                'scared', 'die', 'lose', 'dance', 'push_up', 'pushup', 'spin'
+            ];
+            const clean = (name) => String(name || '').toLowerCase();
+            const isPose = (name) => poseBlacklist.some(p => clean(name).includes(p));
+            const isAction = (name) => actionBlacklist.some(p => clean(name).includes(p));
+            const isRestCandidate = (name) => !isPose(name) && !isAction(name);
 
             let chosen = null;
             for (const needle of preferred) {
-                const match = anims.find(a => a.toLowerCase().includes(needle) && !isPose(a));
+                const match = anims.find(a => clean(a) === needle && isRestCandidate(a))
+                    || anims.find(a => clean(a).includes(needle) && isRestCandidate(a));
                 if (match) { chosen = match; break; }
             }
-            // Fallback: first non-pose animation, then absolute first
-            if (!chosen) chosen = anims.find(a => !isPose(a)) || anims[0];
+            // Fallback: first calm-ish animation, then first non-pose, then absolute first.
+            if (!chosen) chosen = anims.find(isRestCandidate) || anims.find(a => !isPose(a)) || anims[0];
             console.log('[applyIdleAnimation] available:', anims, '→ chose:', chosen);
 
-            mv.animationName = chosen;
+            if (mv.animationName !== chosen) {
+                mv.animationName = chosen;
+                mv.currentTime = 0;
+            }
             mv.play();
         };
 
@@ -1673,12 +1691,14 @@
                 mv.animationName = greetAnim;
                 mv.play();
 
-                // Return to static stance after animation plays
+                // Return to the shared resting loop after animation plays
                 setTimeout(() => {
-                    mv.pause();
-                    mv.currentTime = 0;
-                    mv.animationName = null;
-                    mv.removeAttribute('animation-name');
+                    if (window.applyIdleAnimation) {
+                        window.applyIdleAnimation(mv);
+                    } else {
+                        mv.pause();
+                        mv.currentTime = 0;
+                    }
                 }, 3000);
             }
         });

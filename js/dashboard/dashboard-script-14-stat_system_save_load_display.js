@@ -2484,13 +2484,12 @@
             if (hadAutoRotate) viewer.setAttribute('auto-rotate', '');
             viewer.style.left = '0';
 
-            viewer.animationName = 'idle';
-            setTimeout(() => {
-                viewer.pause();
-                viewer.currentTime = 0;
-                viewer.animationName = null;
-                viewer.removeAttribute('animation-name');
-            }, 500);
+            if (window.applyIdleAnimation) {
+                window.applyIdleAnimation(viewer);
+            } else {
+                viewer.animationName = 'stand';
+                viewer.play();
+            }
 
             } catch (e) {
                 console.error('Battle error:', e);

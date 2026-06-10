@@ -377,12 +377,14 @@ function triggerVictoryAnimation() {
                 }
             }, 2500);
 
-            // Return to static stance after celebration
+            // Return to the shared resting loop after celebration
             setTimeout(() => {
-                mv.pause();
-                mv.currentTime = 0;
-                mv.animationName = null;
-                mv.removeAttribute('animation-name');
+                if (window.applyIdleAnimation) {
+                    window.applyIdleAnimation(mv);
+                } else {
+                    mv.pause();
+                    mv.currentTime = 0;
+                }
             }, 6000);
         }
     }
