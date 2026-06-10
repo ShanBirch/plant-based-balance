@@ -309,6 +309,27 @@
         .app-stats-person-row strong { display:block; font-size:0.86rem; color:#1e293b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .app-stats-person-row span { display:block; margin-top:2px; font-size:0.72rem; color:#64748b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .app-stats-person-time { color:#475569; font-size:0.76rem; font-weight:900; white-space:nowrap; }
+        .app-engagement-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+        .app-engagement-head h2 { margin:0; }
+        .app-engagement-head p { margin:3px 0 0; color:#64748b; font-size:0.78rem; line-height:1.35; }
+        .app-engagement-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:12px; }
+        .app-engagement-mini { border:1px solid #e2e8f0; border-radius:8px; padding:11px 12px; background:#f8fafc; min-width:0; }
+        .app-engagement-mini strong { display:block; font-family:'Montserrat',sans-serif; font-size:1.35rem; font-weight:900; color:#0f172a; line-height:1; }
+        .app-engagement-mini span { display:block; margin-top:5px; font-size:0.7rem; font-weight:900; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; }
+        .app-engagement-mini.today strong { color:#15803d; }
+        .app-engagement-mini.watch strong { color:#b45309; }
+        .app-engagement-mini.drop strong { color:#c2410c; }
+        .app-engagement-mini.quiet strong { color:#dc2626; }
+        .app-engagement-list { display:flex; flex-direction:column; gap:8px; }
+        .app-engagement-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; border:1px solid #f1f5f9; border-radius:8px; padding:10px 12px; background:#fff; cursor:pointer; }
+        .app-engagement-row:hover { background:#f8fafc; border-color:#cbd5e1; }
+        .app-engagement-row strong { display:block; font-size:0.86rem; color:#1e293b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .app-engagement-row span { display:block; margin-top:2px; font-size:0.72rem; color:#64748b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .app-engagement-pill { display:inline-flex; align-items:center; justify-content:center; min-width:86px; border-radius:999px; padding:6px 9px; font-size:0.7rem; font-weight:900; border:1px solid #e2e8f0; color:#475569; background:#f8fafc; white-space:nowrap; }
+        .app-engagement-pill.today { color:#15803d; background:#f0fdf4; border-color:#bbf7d0; }
+        .app-engagement-pill.watch { color:#b45309; background:#fffbeb; border-color:#fde68a; }
+        .app-engagement-pill.drop { color:#c2410c; background:#fff7ed; border-color:#fed7aa; }
+        .app-engagement-pill.quiet { color:#dc2626; background:#fef2f2; border-color:#fecaca; }
         .usage-bar-row { display: flex; align-items: center; margin-bottom: 12px; gap: 12px; }
         .usage-bar-label { width: 110px; font-weight: 600; font-size: 0.8rem; color: #1e293b; flex-shrink: 0; }
         .usage-bar-track { flex: 1; height: 28px; background: #f1f5f9; border-radius: 6px; overflow: hidden; }
@@ -661,6 +682,9 @@
             .stat-card { padding: 12px; } .stat-card .value { font-size: 1.4rem; }
             .feature-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
             .feature-card { padding: 12px; } .feature-card .value { font-size: 1.1rem; }
+            .app-engagement-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+            .app-engagement-row { align-items:flex-start; grid-template-columns:minmax(0,1fr); }
+            .app-engagement-pill { justify-content:flex-start; width:max-content; min-width:0; }
             .usage-bar-label { width: 80px; font-size: 0.7rem; }
             .trend-table td,.trend-table th { padding: 6px; font-size: 0.75rem; }
             .funnel-label { width: 72px; font-size: 0.72rem; }
@@ -1386,6 +1410,8 @@
         .ig-operator-stat,
         .ig-operator-composer,
         .app-stats-person-row,
+        .app-engagement-row,
+        .app-engagement-mini,
         .app-stats-refresh {
             background: var(--admin-surface) !important;
             border-color: var(--admin-border) !important;
@@ -1451,6 +1477,9 @@
         .ig-operator-stat strong,
         .app-stats-title h2,
         .app-stats-person-row strong,
+        .app-engagement-head h2,
+        .app-engagement-mini strong,
+        .app-engagement-row strong,
         .app-stats-person-time {
             color: var(--admin-text-strong) !important;
         }
@@ -1481,6 +1510,9 @@
         .app-stats-title p,
         .app-stats-note,
         .app-stats-person-row span,
+        .app-engagement-head p,
+        .app-engagement-mini span,
+        .app-engagement-row span,
         .content-radar-status,
         .content-radar-detail,
         .ig-operator-title p,
@@ -1600,6 +1632,7 @@
         .alert-view-chip,
         .ig-leads-tab,
         .app-stats-tab,
+        .app-engagement-pill,
         .alert-view-count,
         .alert-group-header .alert-group-count {
             background: var(--admin-surface-3) !important;
@@ -1641,6 +1674,7 @@
         .ai-action-cancel:hover,
         .ig-operator-chip:hover,
         .ig-operator-action:hover,
+        .app-engagement-row:hover,
         .app-stats-refresh:hover {
             background: var(--admin-surface-3) !important;
             border-color: var(--admin-border-strong) !important;
@@ -2692,6 +2726,22 @@
                         <div class="stat-card"><h3>Month</h3><div class="value" id="app-stats-month">-</div><p class="stat-sub">unique people</p></div>
                     </div>
                     <div class="analytics-section">
+                        <div class="app-engagement-head">
+                            <div>
+                                <h2>Client engagement</h2>
+                                <p>Active clients only, sorted by who needs attention first.</p>
+                            </div>
+                            <div class="app-stats-note" id="app-engagement-updated"></div>
+                        </div>
+                        <div class="app-engagement-grid">
+                            <div class="app-engagement-mini today"><strong id="app-engagement-today">-</strong><span>Today</span></div>
+                            <div class="app-engagement-mini watch"><strong id="app-engagement-watch">-</strong><span>Watch</span></div>
+                            <div class="app-engagement-mini drop"><strong id="app-engagement-drop">-</strong><span>Dropping</span></div>
+                            <div class="app-engagement-mini quiet"><strong id="app-engagement-quiet">-</strong><span>Gone quiet</span></div>
+                        </div>
+                        <div id="app-engagement-list"><div class="loading">Loading client engagement...</div></div>
+                    </div>
+                    <div class="analytics-section">
                         <h2 id="app-stats-breakdown-title">Daily log ins</h2>
                         <div id="app-stats-breakdown"><div class="loading">Loading app stats...</div></div>
                         <div class="app-stats-note" id="app-stats-source-note"></div>
@@ -3449,6 +3499,7 @@
             week: { label: 'Week', days: 7, primaryLabel: 'People This Week', breakdownTitle: 'Daily log ins, last 7 days' },
             month: { label: 'Month', days: 30, primaryLabel: 'People This Month', breakdownTitle: 'Daily log ins, last 30 days' }
         };
+        const APP_STATS_DAY_MS = 24 * 60 * 60 * 1000;
         let appStatsView = 'day', appStatsSnapshot = null, appStatsLoadedAt = 0, appStatsLoading = false;
 
         function appStatsStartOfDay(value = new Date()) {
@@ -3505,6 +3556,20 @@
             } catch (e) {
                 console.warn('Failed to load admin ids for app stats:', e);
                 return new Set();
+            }
+        }
+        async function appStatsFetchActiveClients() {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('coach_clients')
+                    .select('client_id,assigned_at,status,client:client_id(id,name,email,last_login,is_test_account)')
+                    .eq('status', 'active')
+                    .limit(1000);
+                if (error) throw error;
+                return data || [];
+            } catch (e) {
+                console.warn('Failed to load active clients for app stats:', e);
+                return [];
             }
         }
         function appStatsSourceRows(events, users, userMap, maxStart, usingFallback) {
@@ -3574,7 +3639,66 @@
                 }, { seen: new Set(), list: [] }).list.slice(0, 12);
             return { view, label: config.label, start, unique: unique.size, opens, buckets, recent };
         }
-        function buildAppStatsSnapshot({ events, users, adminIds, usingFallback }) {
+        function appStatsDaysSince(at, now = new Date()) {
+            if (!at) return null;
+            const d = new Date(at);
+            if (Number.isNaN(d.getTime())) return null;
+            return Math.max(0, Math.floor((appStatsStartOfDay(now) - appStatsStartOfDay(d)) / APP_STATS_DAY_MS));
+        }
+        function appStatsEngagementBucket(daysSince) {
+            if (daysSince === null) return { key: 'quiet', label: 'Never opened', priority: 40 };
+            if (daysSince === 0) return { key: 'today', label: 'Logged today', priority: 10 };
+            if (daysSince <= 3) return { key: 'watch', label: daysSince === 1 ? 'Yesterday' : `${daysSince}d ago`, priority: 20 };
+            if (daysSince <= 6) return { key: 'drop', label: `${daysSince}d ago`, priority: 30 };
+            return { key: 'quiet', label: `${daysSince}d quiet`, priority: 40 };
+        }
+        function buildAppClientEngagement({ rows, activeClients, adminIds, now = new Date() }) {
+            const latestByUser = new Map();
+            (rows || []).forEach(row => {
+                if (!row?.userId || !row?.at) return;
+                const existing = latestByUser.get(row.userId);
+                if (!existing || new Date(row.at) > new Date(existing.at)) latestByUser.set(row.userId, row);
+            });
+            const seenClients = new Set();
+            const items = [];
+            (activeClients || []).forEach(cc => {
+                const client = cc.client || {};
+                const clientId = cc.client_id || client.id;
+                if (!clientId || seenClients.has(clientId) || appStatsIsInternalUser(client, adminIds)) return;
+                seenClients.add(clientId);
+                const latestEvent = latestByUser.get(clientId);
+                const lastSeenAt = latestEvent?.at || client.last_login || '';
+                const daysSince = appStatsDaysSince(lastSeenAt, now);
+                const bucket = appStatsEngagementBucket(daysSince);
+                items.push({
+                    clientId,
+                    name: appStatsUserLabel(client),
+                    email: client.email || '',
+                    assignedAt: cc.assigned_at || '',
+                    lastSeenAt,
+                    source: latestEvent?.source || (client.last_login ? 'last_login' : 'none'),
+                    daysSince,
+                    bucket: bucket.key,
+                    label: bucket.label,
+                    priority: bucket.priority
+                });
+            });
+            const counts = items.reduce((acc, item) => {
+                acc[item.bucket] = (acc[item.bucket] || 0) + 1;
+                return acc;
+            }, { today: 0, watch: 0, drop: 0, quiet: 0 });
+            items.sort((a, b) => {
+                if (b.priority !== a.priority) return b.priority - a.priority;
+                if ((b.daysSince ?? -1) !== (a.daysSince ?? -1)) return (b.daysSince ?? -1) - (a.daysSince ?? -1);
+                return String(b.lastSeenAt || b.assignedAt || '').localeCompare(String(a.lastSeenAt || a.assignedAt || ''));
+            });
+            return {
+                total: items.length,
+                counts,
+                items: items.slice(0, 18)
+            };
+        }
+        function buildAppStatsSnapshot({ events, users, activeClients, adminIds, usingFallback }) {
             const now = new Date();
             const userMap = new Map();
             (users || []).forEach(user => {
@@ -3592,6 +3716,7 @@
                 generatedAt: now.toISOString(),
                 source: usingFallback ? 'last_login' : 'user_activity',
                 totalTrackedUsers: userMap.size,
+                engagement: buildAppClientEngagement({ rows, activeClients, adminIds, now }),
                 windows
             };
         }
@@ -3638,6 +3763,48 @@
                     : 'No recent app activity rows were available, so this is using users.last_login. Daily history can only show each person on their latest login day.';
             }
 
+            const engagement = snapshot.engagement || { total: 0, counts: {}, items: [] };
+            const engagementUpdated = document.getElementById('app-engagement-updated');
+            if (engagementUpdated) engagementUpdated.textContent = `${engagement.total || 0} active clients`;
+            const engagementIds = {
+                today: 'app-engagement-today',
+                watch: 'app-engagement-watch',
+                drop: 'app-engagement-drop',
+                quiet: 'app-engagement-quiet'
+            };
+            Object.entries(engagementIds).forEach(([key, id]) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = engagement.counts?.[key] || 0;
+            });
+            const engagementList = document.getElementById('app-engagement-list');
+            if (engagementList) {
+                if (!engagement.items?.length) {
+                    engagementList.innerHTML = '<div class="loading">No active clients found.</div>';
+                } else {
+                    engagementList.innerHTML = `<div class="app-engagement-list">${engagement.items.map(item => {
+                        const lastSeen = item.lastSeenAt ? timeAgo(item.lastSeenAt) : 'Never';
+                        const detail = item.lastSeenAt
+                            ? `${lastSeen} · ${item.email || 'No email'}`
+                            : `Never opened · ${item.email || 'No email'}`;
+                        return `
+                            <div class="app-engagement-row" data-app-engagement-client="${adminEsc(item.clientId)}" data-app-engagement-name="${adminEsc(item.name)}" title="Open client details">
+                                <div>
+                                    <strong>${adminEsc(item.name)}</strong>
+                                    <span>${adminEsc(detail)}</span>
+                                </div>
+                                <div class="app-engagement-pill ${adminEsc(item.bucket)}">${adminEsc(item.label)}</div>
+                            </div>`;
+                    }).join('')}</div>`;
+                    engagementList.querySelectorAll('[data-app-engagement-client]').forEach(row => {
+                        row.addEventListener('click', () => {
+                            const clientId = row.getAttribute('data-app-engagement-client');
+                            const clientName = row.getAttribute('data-app-engagement-name') || 'Client';
+                            if (typeof openClientDrillIn === 'function') openClientDrillIn(clientId, clientName);
+                        });
+                    });
+                }
+            }
+
             const recent = document.getElementById('app-stats-recent');
             if (!selected.recent.length) {
                 recent.innerHTML = '<div class="loading">No log ins found for this range.</div>';
@@ -3671,14 +3838,17 @@
             const refresh = document.getElementById('app-stats-refresh-btn');
             const breakdown = document.getElementById('app-stats-breakdown');
             const recent = document.getElementById('app-stats-recent');
+            const engagementList = document.getElementById('app-engagement-list');
             if (refresh) refresh.disabled = true;
             if (breakdown) breakdown.innerHTML = '<div class="loading">Loading app stats...</div>';
             if (recent) recent.innerHTML = '<div class="loading">Loading recent people...</div>';
+            if (engagementList) engagementList.innerHTML = '<div class="loading">Loading client engagement...</div>';
             try {
                 if (!window.supabaseClient) throw new Error('Supabase client not ready');
                 const maxStart = appStatsWindowStart('month').toISOString();
-                const [users, adminIds, eventsResult] = await Promise.all([
+                const [users, activeClients, adminIds, eventsResult] = await Promise.all([
                     appStatsFetchUsers(),
+                    appStatsFetchActiveClients(),
                     appStatsFetchAdminIds(),
                     window.supabaseClient
                         .from('user_activity')
@@ -3693,6 +3863,7 @@
                 appStatsSnapshot = buildAppStatsSnapshot({
                     events,
                     users,
+                    activeClients,
                     adminIds,
                     usingFallback: events.length === 0
                 });
@@ -3702,8 +3873,9 @@
                 console.error('Failed to load app stats:', e);
                 try {
                     const users = await appStatsFetchUsers();
+                    const activeClients = await appStatsFetchActiveClients();
                     const adminIds = await appStatsFetchAdminIds();
-                    appStatsSnapshot = buildAppStatsSnapshot({ events: [], users, adminIds, usingFallback: true });
+                    appStatsSnapshot = buildAppStatsSnapshot({ events: [], users, activeClients, adminIds, usingFallback: true });
                     appStatsLoadedAt = Date.now();
                     renderAppStats(appStatsSnapshot);
                 } catch (fallbackError) {
