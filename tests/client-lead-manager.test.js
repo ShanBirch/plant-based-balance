@@ -107,6 +107,32 @@ assert.strictEqual(contextLoss.shouldRoute, true);
 assert.ok(contextLoss.reasons.includes('client_does_not_understand_context'));
 assert.ok(contextLoss.reasons.includes('draft_review_context_loss'));
 
+const curlyApostropheConfusion = manager.classifyNeedsYou(makeAlert({
+    data: {
+        last_outbound_message: 'standing lunge couple? hows that one feel?',
+        message_preview: "I don\u2019t understand your question",
+    },
+}));
+assert.strictEqual(curlyApostropheConfusion.shouldRoute, true);
+assert.ok(curlyApostropheConfusion.reasons.includes('client_does_not_understand_context'));
+
+const bareSorryConfusion = manager.classifyNeedsYou(makeAlert({
+    data: {
+        message_preview: 'sorry?',
+        last_outbound_message: 'wait canada? how was it?',
+    },
+}));
+assert.strictEqual(bareSorryConfusion.shouldRoute, true);
+assert.ok(bareSorryConfusion.reasons.includes('client_does_not_understand_context'));
+
+const lateReplyApology = manager.classifyNeedsYou(makeAlert({
+    data: {
+        message_preview: 'Sorry just seen this! It was so good',
+        last_outbound_message: 'how was it?',
+    },
+}));
+assert.strictEqual(lateReplyApology.reasons.includes('client_does_not_understand_context'), false);
+
 const nonSequiturReview = manager.classifyNeedsYou(makeAlert({
     data: {
         message_preview: 'yeah just the link would be good',

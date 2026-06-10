@@ -128,6 +128,8 @@ const IG_AUTO_SEND_MIN_DELAY_MS = 15 * 60 * 1000;
 const IG_AUTO_SEND_MAX_DELAY_MS = 8 * 60 * 60 * 1000;
 const IG_DRAFT_REVIEW_TIMEOUT_MS = 7000;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
+const STORY_OPENER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|your\s+question|this|that|it)|(?:what|wat)\s+(?:do|did)\s+(?:you|u)\s+mean|what\s+you\s+mean|wdym|i'?m\s+confused|not\s+sure\s+what\s+you\s+mean)\b/i;
+const SHORT_STORY_OPENER_CONFUSION_RE = /^(?:sorry|sorry\?|huh\??|pardon\??|what\??|what sorry\??|sorry what\??)$/i;
 
 function graphSubscriberParts(subscriberId = '') {
     const raw = String(subscriberId || '');
@@ -1827,6 +1829,7 @@ function countWords(text) {
 
 function normalizedShortAnswerText(text) {
     return plainSignalText(text)
+        .replace(/[‘’]/g, "'")
         .toLowerCase()
         .replace(/[^a-z0-9'\s]/g, ' ')
         .replace(/\s+/g, ' ')
@@ -1861,6 +1864,48 @@ function buildCurrentTurnAnchorBlock({ currentMessageText, lastShannonText } = {
         lines.push("- This is a short answer/confirmation. Treat it as answering Shannon's immediately previous message. A one-liner is usually enough; do not reopen older emotions, app issues, or banter unless the short answer clearly points there.");
     }
     return `\n${lines.join('\n')}`;
+}
+
+function normalizeStoryOpenerConfusionText(text) {
+    return plainSignalText(text)
+        .replace(/[‘’]/g, "'")
+        .replace(/[“”]/g, '"')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function isStoryOpenerConfusionMessage(text) {
+    const normalized = normalizeStoryOpenerConfusionText(text);
+    if (!normalized) return false;
+    return STORY_OPENER_CONFUSION_RE.test(normalized)
+        || SHORT_STORY_OPENER_CONFUSION_RE.test(normalized);
+}
+
+function buildNativeStoryConfusionRepairBlock({ currentMessageText = '', nativeStoryOutreachContext = null } = {}) {
+    const summary = nativeStoryOutreachContext?.summary || null;
+    const sentComment = String(summary?.sent_comment || '').trim();
+    if (!summary || !sentComment || !isStoryOpenerConfusionMessage(currentMessageText)) return '';
+
+    const storyDescription = String(summary.story_description || '').trim();
+    const visibleText = String(summary.story_visible_text || '').trim();
+    const sharedFrom = String(summary.shared_from_username || '').trim();
+    const contextLines = [
+        `- Shannon's confusing native story opener was: "${truncate(sentComment, 220)}"`,
+        storyDescription ? `- Story context: ${truncate(storyDescription, 280)}` : '',
+        visibleText ? `- Visible story text: ${truncate(visibleText, 220)}` : '',
+        sharedFrom ? `- It may have been shared/reposted content from @${truncate(sharedFrom, 80)}.` : '',
+    ].filter(Boolean).join('\n');
+
+    return `
+
+NATIVE STORY OPENER CONFUSION REPAIR:
+${contextLines}
+- Their latest message says they do not understand what Shannon meant.
+- First repair the confusion in plain language, for example "ah my bad, I meant..." or "sorry, I meant..."
+- If they mention it was only a repost/share, acknowledge that and do not write as if they personally posted or did the thing.
+- If their same message also answers the opener, briefly acknowledge that answer after the repair.
+- Do not ask a fresh qualifier, goal, age, blocker, challenge, app, or coaching question in this turn.
+- Usually stop after one short repair/acknowledgement bubble. Only add a tiny follow-up if it is needed to clarify the same story opener, not to advance the funnel.`;
 }
 
 function hasProgramSupportIntent(text) {
@@ -2278,6 +2323,11 @@ Treat this as the SAME relationship as the ${channelLabel} thread below. Don't a
         currentMessageText,
         lastShannonText: lastShannonConversationEvent?.text || '',
     });
+    const nativeStoryConfusionRepairBlock = buildNativeStoryConfusionRepairBlock({
+        currentMessageText,
+        nativeStoryOutreachContext,
+    });
+    const effectiveQualifierQuestion = nativeStoryConfusionRepairBlock ? null : qualifierQuestion;
 
     // Prior-draft block: when Shannon had a Send-later draft queued and the
     // lead messaged again before it fired, the main handler canceled the
@@ -2343,6 +2393,7 @@ ${firstCapturedLeadReplyBlock}
 ${replyMode.extraBlock}
 ${nativeStoryOutreachContext?.block || ''}
 ${currentTurnAnchorBlock}
+${nativeStoryConfusionRepairBlock}
 ${checkinThreadBlock}
 ${learningReelContextBlock}
 
@@ -2417,9 +2468,9 @@ CURRENT TIME (Australia/Brisbane): ${promptNowText}. Use the message timestamps 
 
 THEIR NEW MESSAGE (just arrived around ${promptNowText}):
 ${currentMessageText}${mediaInstruction ? ` ${mediaInstruction}` : ''}${editExamples}
-${qualifierQuestion ? `
+${effectiveQualifierQuestion ? `
 IMPORTANT — CONVERSATIONAL DISCOVERY:
-Use this question only if it naturally fits this exact reply: "${qualifierQuestion}"
+Use this question only if it naturally fits this exact reply: "${effectiveQualifierQuestion}"
 This is guidance, not a command. If the latest message is only thanks/emoji/filler, closing, a genuinely short no-response-needed reply, or a current safety/medical/rehab advice situation, skip it. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is normal rapport when the reply stays non-medical. If it is a first/early story/post reply with anything more than that, use the question or rewrite it around that topic so the reply earns the next response. If you do use it, ask only that one light question. When the reply has several things to answer, weave the question into the reflection that sparked it instead of defaulting to a standalone final bubble. Do not add a goal, age, blocker, or coaching pitch in the same reply.
 If the question sounds generic or ignores a fresher detail from their latest message, rewrite it around that detail or skip the question. Never paste a stock line like "what does a normal day look like", "are you much of a cook or more of a takeaway person", "you training at the moment", or "what are your goals" into an auto-DM draft.
 ` : ''}
@@ -2621,6 +2672,7 @@ Rules:
         currentTurnAnchorBlock,
         storyReplyPromptContextBlock,
         nativeStoryOutreachContextBlock: nativeStoryOutreachContext?.block || '',
+        nativeStoryConfusionRepairBlock,
         mediaContextPromptBlock,
         learningReelContextBlock,
         learningReelReplyAnchorBlock,
@@ -3260,6 +3312,7 @@ exports.handler = async (event) => {
             currentTurnAnchorBlock: '',
             storyReplyPromptContextBlock: '',
             nativeStoryOutreachContextBlock: nativeStoryOutreachContext?.block || '',
+            nativeStoryConfusionRepairBlock: '',
             learningReelContextBlock,
             learningReelReplyAnchorBlock,
             learningReelEvidenceBlock,
@@ -3508,6 +3561,7 @@ exports.handler = async (event) => {
                 recent_timeline: truncateTail(draft.timeline || '', 4000),
                 story_context: truncate(String(draft.storyReplyPromptContextBlock || '').trim(), 1400),
                 native_story_context: truncate(String(draft.nativeStoryOutreachContextBlock || '').trim(), 1400),
+                native_story_confusion_repair: truncate(String(draft.nativeStoryConfusionRepairBlock || '').trim(), 1400),
                 media_context: truncate(String(draft.mediaContextPromptBlock || '').trim(), 1800),
                 learning_reel_context: truncate(String(draft.learningReelEvidenceBlock || draft.learningReelContextBlock || '').trim(), 1800),
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
@@ -3651,6 +3705,10 @@ exports.handler = async (event) => {
                 recent_workouts: truncate(recentWorkoutEvidence || '', 2000),
                 recent_activity: truncate(weeklyAppContext || '', 3000),
                 recent_timeline: truncateTail(draft.timeline || '', 4000),
+                story_context: truncate(String(draft.storyReplyPromptContextBlock || '').trim(), 1400),
+                native_story_context: truncate(String(draft.nativeStoryOutreachContextBlock || '').trim(), 1400),
+                native_story_confusion_repair: truncate(String(draft.nativeStoryConfusionRepairBlock || '').trim(), 1400),
+                media_context: truncate(String(draft.mediaContextPromptBlock || '').trim(), 1800),
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
                 learning_reel_context: truncate(String(draft.learningReelEvidenceBlock || draft.learningReelContextBlock || '').trim(), 1800),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
@@ -4255,6 +4313,9 @@ exports._test = {
     isExistingClientThread,
     buildChallengeNextStepBlock,
     buildEmptyMediaDraftFallbackChunks,
+    buildCurrentTurnAnchorBlock,
+    isStoryOpenerConfusionMessage,
+    buildNativeStoryConfusionRepairBlock,
     normalizeIgAutoTimingSuggestion,
     isCocosToShanSunnyVoiceTest,
 };

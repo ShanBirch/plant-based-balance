@@ -4092,10 +4092,13 @@ const CONTEXT_REFERENCE_RE = /\b(that|this|it|they|them|those|there|one|same|too
 const CONTEXT_ACK_RE = /^(yes|yeah|yep|yup|nah|no|nope|ok|okay|cool|sure|haha|lol|lmao|same|me too|exactly|true|fair|definitely|probably|maybe|sounds good|all good|i can|i can't|i dont|i don't|i did|i didn't|i do|i will|i wont|i won't)\b/i;
 const STANDALONE_INTENT_RE = /\b(challenge|app|link|sign ?up|signup|join|price|cost|how much|what is|tell me|interested|keen|i'?m in|im in|workout|meal|calorie|protein|weight|steps|coach|coaching|plant.?based|vegan)\b/i;
 const AI_SUSPICION_RE = /\b(?:is\s+this\s+(?:ai|a\.?i\.?|a\s+bot|automated)|are\s+you\s+(?:ai|a\.?i\.?|a\s+bot|automated|real)|am\s+i\s+talking\s+to\s+(?:ai|a\s+bot|a\s+person)|as\s+(?:a\s+)?(?:bot|robot)|self[-\s]?aware|chatgpt|robot|automated\s+reply|real\s+person)\b/i;
-const USER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|this|that|it)|sorry[, ]+\s*i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)|(?:what|wat)\s+(?:do|did)\s+(?:you|u)\s+mean(?:\s+by\s+(?:that|this|it))?|what\s+are\s+you\s+meaning|what\s+you\s+mean|wdym|i'?m\s+confused|that'?s\s+confusing|not\s+sure\s+what\s+you\s+mean)\b/i;
+const USER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|your\s+question|this|that|it)|sorry[, ]+\s*i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)|(?:what|wat)\s+(?:do|did)\s+(?:you|u)\s+mean(?:\s+by\s+(?:that|this|it))?|what\s+are\s+you\s+meaning|what\s+you\s+mean|wdym|i'?m\s+confused|that'?s\s+confusing|not\s+sure\s+what\s+you\s+mean)\b/i;
+const SHORT_USER_CONFUSION_RE = /^(?:sorry|sorry\?|huh\??|pardon\??|what\??|what sorry\??|sorry what\??)$/i;
 
 function normalizeContextText(value) {
     return String(value || '')
+        .replace(/[‘’]/g, "'")
+        .replace(/[“”]/g, '"')
         .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, 'photo')
         .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, 'voice note')
         .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, 'video')
@@ -4174,7 +4177,8 @@ function buildContextReviewInfo(alertOrData) {
     }
 
     const latest = getContextReviewLatestText(data);
-    const contextDependent = isContextDependentText(latest);
+    const normalizedLatest = normalizeContextText(latest);
+    const contextDependent = isContextDependentText(normalizedLatest);
     const manyChat = isManyChatContext(data, alertOrData);
     const priorContextCount = countPriorContextMessages(data);
     const trackedOutbound = hasTrackedOutboundContext(data);
@@ -4195,11 +4199,15 @@ function buildContextReviewInfo(alertOrData) {
         reasons.push('reference_heavy_reply_without_tracked_context');
         labels.push('reply refers to missing thread context');
     }
-    if (AI_SUSPICION_RE.test(latest)) {
+    if (AI_SUSPICION_RE.test(normalizedLatest)) {
         reasons.push('ai_suspicion_or_authenticity_question');
         labels.push('client may be questioning whether this is AI');
     }
-    if (USER_CONFUSION_RE.test(latest)) {
+    if (USER_CONFUSION_RE.test(normalizedLatest)) {
+        reasons.push('client_does_not_understand_context');
+        labels.push('client says they do not understand the message/context');
+    }
+    if (manyChat && trackedOutbound && SHORT_USER_CONFUSION_RE.test(normalizedLatest)) {
         reasons.push('client_does_not_understand_context');
         labels.push('client says they do not understand the message/context');
     }
@@ -4213,7 +4221,7 @@ function buildContextReviewInfo(alertOrData) {
         required: uniqueReasons.length > 0,
         reasons: uniqueReasons,
         label,
-        latest_text: truncate(normalizeContextText(latest), 180),
+        latest_text: truncate(normalizedLatest, 180),
         context_dependent: contextDependent,
         first_captured_lead_reply: firstCaptured,
         manychat_message_id: messageId || null,

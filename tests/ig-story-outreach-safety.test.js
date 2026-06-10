@@ -329,6 +329,33 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    normalizeDraftComment("standing lunge couple? hows that one feel?", {
+        storyOwner: 'strongwithgizem',
+        sharedContent: false,
+    }),
+    'how was the session?',
+    'over-literal OCR exercise wording should become a normal session question'
+);
+
+assert.strictEqual(
+    normalizeDraftComment("wait canada? how was it?", {
+        storyOwner: 'puras_verduras_',
+        sharedContent: false,
+    }),
+    'how was it?',
+    'wait-location story questions should not sound like Shannon is confused by the story'
+);
+
+assert.strictEqual(
+    normalizeDraftComment("wait canada? how was it?", {
+        storyOwner: 'puras_verduras_',
+        sharedContent: true,
+    }),
+    '',
+    'shared location posts should not get direct travel-experience questions'
+);
+
+assert.strictEqual(
     normalizeDraftComment("What's in the little bag?", {
         storyOwner: 'madisondangen',
         sharedContent: false,

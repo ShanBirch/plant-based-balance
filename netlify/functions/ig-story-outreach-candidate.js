@@ -216,6 +216,15 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (/\b(?:the|this|that|these|those|some)\s+[bcdefghjklmnopqrstuvwxyz]\s+(?:sights?|views?|scenery|spots?|places?|vibes?)\b/i.test(text)) {
         return '';
     }
+    if (/^wait\s+[a-z][a-z .'-]{2,40}\?\s+how\s+(?:was|is)\s+it\??$/i.test(text)) {
+        return sharedContent ? '' : 'how was it?';
+    }
+    if (
+        /\b(?:lunge|squat|deadlift|bench|press|row|curl|plank|burpee|push\s*up|pull\s*up).{0,28}\bcouple\??/i.test(text)
+        && /\bhow(?:'s|s| is)\s+that\s+one\s+feel\??/i.test(text)
+    ) {
+        return sharedContent ? '' : 'how was the session?';
+    }
 
     const overlyLiteralClassReply =
         !sharedContent
