@@ -20,6 +20,10 @@ const {
     mergeLearningReelContext,
 } = require('./_lib/client-context');
 const { sendInstagramSeenReceiptForThread } = require('./_lib/instagram-graph-seen');
+const {
+    buildAlternateIgDeliveryData,
+    resolveAlternateIgDeliveryThread,
+} = require('./_lib/ig-thread-routing');
 
 const MANYCHAT_API_TOKEN = process.env.MANYCHAT_API_TOKEN;
 const MANYCHAT_SEND_URL = process.env.MANYCHAT_SEND_URL || 'https://api.manychat.com/fb/sending/sendContent';
@@ -53,6 +57,7 @@ const INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED = envFlagEnabled(
 );
 const HUMAN_AGENT_NOT_APPROVED_MESSAGE = 'Meta Human Agent is still only ready for testing, so API sends after 24 hours must be copied/sent manually in Instagram until the feature is approved.';
 const LEARNING_REEL_URL_RE = /https?:\/\/(?:www\.)?(?:youtube\.com\/(?:shorts\/|watch\?[^#\s]*v=|embed\/)|youtu\.be\/)[^\s<>"')]+/gi;
+const IG_THREAD_SEND_SELECT = 'id,subscriber_id,channel,ig_username,profile_name,linked_user_id,lead_stage,last_inbound_at,last_outbound_at,custom_data';
 
 function json(statusCode, body) {
     return {
@@ -95,9 +100,22 @@ function isGraphSubscriberId(value) {
 
 function graphRecipientFromSubscriberId(value) {
     const raw = String(value || '').trim();
-    if (raw.startsWith(GRAPH_SUBSCRIBER_PREFIX)) return raw.slice(GRAPH_SUBSCRIBER_PREFIX.length);
-    if (raw.startsWith(LEGACY_GRAPH_SUBSCRIBER_PREFIX)) return raw.slice(LEGACY_GRAPH_SUBSCRIBER_PREFIX.length);
-    return '';
+    const prefix = raw.startsWith(GRAPH_SUBSCRIBER_PREFIX)
+        ? GRAPH_SUBSCRIBER_PREFIX
+        : (raw.startsWith(LEGACY_GRAPH_SUBSCRIBER_PREFIX) ? LEGACY_GRAPH_SUBSCRIBER_PREFIX : '');
+    if (!prefix) return '';
+    const parts = raw.slice(prefix.length).split(':').filter(Boolean);
+    return parts.length >= 2 ? parts[parts.length - 1] : (parts[0] || '');
+}
+
+function graphAccountFromSubscriberId(value) {
+    const raw = String(value || '').trim();
+    const prefix = raw.startsWith(GRAPH_SUBSCRIBER_PREFIX)
+        ? GRAPH_SUBSCRIBER_PREFIX
+        : (raw.startsWith(LEGACY_GRAPH_SUBSCRIBER_PREFIX) ? LEGACY_GRAPH_SUBSCRIBER_PREFIX : '');
+    if (!prefix) return '';
+    const parts = raw.slice(prefix.length).split(':').filter(Boolean);
+    return parts.length >= 2 ? parts[0] : '';
 }
 
 function resolveThreadGraphRecipientId(thread = {}) {
@@ -120,6 +138,7 @@ function resolveThreadGraphAccountId(thread = {}) {
         graph.account_id,
         customData.ig_graph_account_id,
         customData.ig_account_id,
+        graphAccountFromSubscriberId(thread.subscriber_id),
         INSTAGRAM_GRAPH_ACCOUNT_ID,
     ]);
 }
@@ -327,6 +346,21 @@ async function loadPendingThreadAlerts(threadId) {
     }
 }
 
+async function loadPendingThreadAlertsForThreads(threadIds = []) {
+    const uniqueIds = [...new Set(threadIds.map(id => String(id || '').trim()).filter(Boolean))];
+    const rows = [];
+    const seen = new Set();
+    for (const threadId of uniqueIds) {
+        const threadRows = await loadPendingThreadAlerts(threadId);
+        for (const row of threadRows) {
+            if (!row?.id || seen.has(row.id)) continue;
+            seen.add(row.id);
+            rows.push(row);
+        }
+    }
+    return rows;
+}
+
 async function clearPendingThreadAlerts({
     pendingAlerts,
     primaryAlert,
@@ -339,6 +373,7 @@ async function clearPendingThreadAlerts({
     deliveryChannel,
     sentGraphMessageIds = [],
     sentChunkGapsMs = [],
+    alternateDelivery = null,
 }) {
     let primaryAlertId = null;
     let siblingAlertsCleared = 0;
@@ -365,6 +400,7 @@ async function clearPendingThreadAlerts({
         delivery_transport: deliveryTransport,
         cleared_by_direct_composer: true,
         instagram_seen_receipt: seenReceipt,
+        ...buildAlternateIgDeliveryData(alternateDelivery || {}),
     };
     if (sentGraphMessageIds.length) primaryData.sent_graph_message_ids = sentGraphMessageIds;
     if (!draftText) primaryData.manual_reply_without_draft = true;
@@ -435,7 +471,7 @@ exports.handler = async (event = {}) => {
     let thread;
     try {
         const rows = await supabaseQuery(
-            `ig_threads?select=id,subscriber_id,channel,ig_username,profile_name,linked_user_id,lead_stage,last_inbound_at,last_outbound_at,custom_data&id=eq.${encodeURIComponent(threadId)}&limit=1`
+            `ig_threads?select=${IG_THREAD_SEND_SELECT}&id=eq.${encodeURIComponent(threadId)}&limit=1`
         );
         thread = rows[0] || null;
     } catch (err) {
@@ -444,12 +480,32 @@ exports.handler = async (event = {}) => {
     }
     if (!thread) return json(404, { error: 'IG thread not found' });
 
-    const delivery = resolveDirectTransport(thread);
+    const requestedThread = thread;
+    let alternateDelivery = null;
+    let delivery = resolveDirectTransport(thread);
+    const shouldTryAlternateIgThread = delivery.channel === 'instagram' && (
+        !delivery.ok
+        || (delivery.transport === 'instagram_graph' && isHumanAgentWindow(thread.last_inbound_at) && !INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED)
+    );
+    if (shouldTryAlternateIgThread) {
+        alternateDelivery = await resolveAlternateIgDeliveryThread({
+            thread,
+            supabaseQuery,
+            selectColumns: IG_THREAD_SEND_SELECT,
+            humanAgentEnabled: INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED,
+            loggerPrefix: 'send-direct-ig-message',
+        });
+        if (alternateDelivery?.used && alternateDelivery.thread?.id) {
+            thread = alternateDelivery.thread;
+            delivery = resolveDirectTransport(thread);
+        }
+    }
     if (!delivery.ok) {
         return json(409, {
             error: delivery.error,
             code: delivery.code,
             channel: delivery.channel,
+            alternate_ig_delivery: alternateDelivery ? buildAlternateIgDeliveryData(alternateDelivery).alternate_ig_delivery || null : null,
         });
     }
     if (delivery.transport === 'instagram_graph' && isHumanAgentWindow(thread.last_inbound_at) && !INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED) {
@@ -457,6 +513,7 @@ exports.handler = async (event = {}) => {
             error: HUMAN_AGENT_NOT_APPROVED_MESSAGE,
             code: 'human_agent_not_approved',
             manual_ig_required: true,
+            alternate_ig_delivery: alternateDelivery ? buildAlternateIgDeliveryData(alternateDelivery).alternate_ig_delivery || null : null,
         });
     }
     if (delivery.transport === 'manychat' && !thread.subscriber_id) {
@@ -469,8 +526,8 @@ exports.handler = async (event = {}) => {
     const graphMessageTag = delivery.transport === 'instagram_graph'
         ? resolveGraphMessageTag(thread)
         : '';
-    const pendingAlerts = await loadPendingThreadAlerts(thread.id);
-    const primaryAlert = pendingAlerts[0] || null;
+    const pendingAlerts = await loadPendingThreadAlertsForThreads([requestedThread.id, thread.id]);
+    const primaryAlert = pendingAlerts.find(row => row?.data?.ig_thread_id === requestedThread.id) || pendingAlerts[0] || null;
     const chunks = splitCoachDraftIntoDmBubbles([message]);
     if (!chunks.length) return json(400, { error: 'Message is empty' });
 
@@ -648,11 +705,14 @@ exports.handler = async (event = {}) => {
         deliveryChannel,
         sentGraphMessageIds,
         sentChunkGapsMs,
+        alternateDelivery,
     });
 
     return json(200, {
         ok: true,
         thread_id: thread.id,
+        requested_thread_id: requestedThread.id,
+        alternate_ig_delivery: alternateDelivery?.used ? buildAlternateIgDeliveryData(alternateDelivery).alternate_ig_delivery : null,
         channel,
         delivery_channel: deliveryChannel,
         delivery_transport: delivery.transport,

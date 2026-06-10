@@ -80,6 +80,7 @@ const HUMAN_AGENT_MANUAL_ONLY_MESSAGE = 'Meta Human Agent 7-day replies must be 
 const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
 const COCOS_ALGORITHM_FORK = 'cocos_acquisition_v1';
 const COCOS_OWNER_IDS = new Set(['17841435394720504', '26328183736859579']);
+const IG_THREAD_SEND_SELECT = 'id,subscriber_id,channel,ig_username,profile_name,linked_user_id,lead_stage,last_inbound_at,last_outbound_at,custom_data';
 // Optional. ManyChat rejects most Meta message tags (HUMAN_AGENT, ACCOUNT_UPDATE,
 // etc.) with "Unsupported message tag" — they're only valid when the Page has
 // the corresponding subscription explicitly approved by Meta. Within the 24h
@@ -105,6 +106,10 @@ const {
     createVoiceMessageAudio,
     resolveOutboundVoiceMessageConfig,
 } = require('./_lib/elevenlabs-voice-message');
+const {
+    buildAlternateIgDeliveryData,
+    resolveAlternateIgDeliveryThread,
+} = require('./_lib/ig-thread-routing');
 
 // Inter-chunk delay. Keep multi-bubble IG/Messenger replies paced like a
 // person typing, not a bot dumping a batch. Dashboard-approved big replies use
@@ -685,7 +690,7 @@ async function loadIgThreadForSend(threadId) {
     if (!threadId) return null;
     try {
         const rows = await supabase(
-            `ig_threads?select=id,subscriber_id,channel,ig_username,profile_name,last_inbound_at,last_outbound_at,custom_data&id=eq.${encodeURIComponent(threadId)}&limit=1`
+            `ig_threads?select=${IG_THREAD_SEND_SELECT}&id=eq.${encodeURIComponent(threadId)}&limit=1`
         );
         return rows?.[0] || null;
     } catch (err) {
@@ -1063,10 +1068,13 @@ exports.handler = async (event) => {
         return { statusCode: 409, body: JSON.stringify({ error: 'Alert already actioned', status: alert.status }) };
     }
     const rawAlertData = alert.data || {};
-    const threadForSend = rawAlertData.ig_thread_id
+    let threadForSend = rawAlertData.ig_thread_id
         ? await loadIgThreadForSend(rawAlertData.ig_thread_id)
         : null;
-    const alertData = enrichAlertDataWithThreadGraph(rawAlertData, threadForSend);
+    const requestedThreadForSend = threadForSend;
+    const requestedIgThreadId = rawAlertData.ig_thread_id || requestedThreadForSend?.id || '';
+    let alternateDelivery = null;
+    let alertData = enrichAlertDataWithThreadGraph(rawAlertData, threadForSend);
     if (alertData.last_send_error || alertData.last_send_error_code || alertData.last_send_error_at) {
         try {
             const clearedData = {
@@ -1085,14 +1093,60 @@ exports.handler = async (event) => {
         }
     }
     const channel = alertData.channel;
-    const graphRecipientId = resolveGraphRecipientId(alertData);
-    const graphAccountId = resolveGraphAccountId(alertData);
-    const graphSendAvailable = channel === 'instagram' && !!graphRecipientId;
-    const shouldUseGraph = graphSendAvailable && (
-        alertData.delivery_channel === 'instagram_graph'
-        || graphSendAvailable
-        || String(alertData.subscriber_id || '').startsWith(GRAPH_SUBSCRIBER_PREFIX)
-    );
+    let graphRecipientId = '';
+    let graphAccountId = '';
+    let graphSendAvailable = false;
+    let shouldUseGraph = false;
+    let graphLastInboundAt = '';
+    let graphNeedsHumanAgent = false;
+    const recomputeGraphRouting = async () => {
+        graphRecipientId = resolveGraphRecipientId(alertData);
+        graphAccountId = resolveGraphAccountId(alertData);
+        graphSendAvailable = channel === 'instagram' && !!graphRecipientId;
+        shouldUseGraph = graphSendAvailable && (
+            alertData.delivery_channel === 'instagram_graph'
+            || graphSendAvailable
+            || String(alertData.subscriber_id || '').startsWith(GRAPH_SUBSCRIBER_PREFIX)
+        );
+        const currentThreadId = alertData.ig_thread_id || threadForSend?.id || '';
+        graphLastInboundAt = shouldUseGraph
+            ? (alertData.ig_last_inbound_at || alertData.last_inbound_at || threadForSend?.last_inbound_at || await loadThreadLastInboundAt(currentThreadId))
+            : '';
+        graphNeedsHumanAgent = shouldUseGraph && isHumanAgentWindow(graphLastInboundAt);
+    };
+    await recomputeGraphRouting();
+    if (channel === 'instagram' && threadForSend?.id && (!shouldUseGraph || graphNeedsHumanAgent)) {
+        const resolution = await resolveAlternateIgDeliveryThread({
+            thread: threadForSend,
+            supabaseQuery: supabase,
+            selectColumns: IG_THREAD_SEND_SELECT,
+            humanAgentEnabled: INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED,
+            loggerPrefix: 'send-ig-reply',
+        });
+        if (resolution?.used && resolution.thread?.id) {
+            threadForSend = resolution.thread;
+            alternateDelivery = resolution;
+            alertData = enrichAlertDataWithThreadGraph({
+                ...rawAlertData,
+                ig_thread_id: threadForSend.id,
+                thread_id: threadForSend.id,
+                subscriber_id: threadForSend.subscriber_id,
+                channel: threadForSend.channel || rawAlertData.channel,
+                ig_username: threadForSend.ig_username || rawAlertData.ig_username,
+                profile_name: threadForSend.profile_name || rawAlertData.profile_name,
+                ig_profile_name: threadForSend.profile_name || rawAlertData.ig_profile_name,
+                ig_last_inbound_at: threadForSend.last_inbound_at || null,
+                last_inbound_at: threadForSend.last_inbound_at || null,
+                ig_last_outbound_at: threadForSend.last_outbound_at || null,
+                last_outbound_at: threadForSend.last_outbound_at || null,
+                linked_user_id: threadForSend.linked_user_id || rawAlertData.linked_user_id,
+                ...buildAlternateIgDeliveryData(resolution),
+            }, threadForSend);
+            await recomputeGraphRouting();
+        } else {
+            alternateDelivery = resolution || null;
+        }
+    }
     if (isManualGraphOnly(alertData)) {
         return {
             statusCode: 400,
@@ -1151,10 +1205,6 @@ exports.handler = async (event) => {
     if (!subscriberId || !igThreadId) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Alert missing subscriber_id or ig_thread_id in data' }) };
     }
-    const graphLastInboundAt = shouldUseGraph
-        ? (alertData.ig_last_inbound_at || alertData.last_inbound_at || threadForSend?.last_inbound_at || await loadThreadLastInboundAt(igThreadId))
-        : '';
-    const graphNeedsHumanAgent = shouldUseGraph && isHumanAgentWindow(graphLastInboundAt);
     if (graphNeedsHumanAgent && !isHumanApprovedSource(source, alertData)) {
         const manualData = markHumanAgentManualFallback(alertData, {
             lastInboundAt: graphLastInboundAt,
@@ -1474,6 +1524,7 @@ exports.handler = async (event) => {
         sent_delivery_pacing: chunkPacing.strategy,
         delivery_channel: shouldUseGraph ? 'instagram_graph' : (alertData.delivery_channel || channel),
         delivery_transport: deliveryTransport,
+        ...buildAlternateIgDeliveryData(alternateDelivery || {}),
         delivery_payload_kind: voiceMessageConfig.enabled ? 'audio' : 'text',
         outbound_voice_message: voiceMessageConfig.enabled ? true : (alertData.outbound_voice_message || undefined),
         outbound_voice_message_reason: voiceMessageConfig.reason || alertData.outbound_voice_message_reason || undefined,
@@ -1611,6 +1662,16 @@ exports.handler = async (event) => {
         sentAt: sentAtIso,
         source,
     });
+    if (requestedIgThreadId && requestedIgThreadId !== igThreadId) {
+        const requestedCleanup = await clearManyChatHomeNotifications({
+            alertId,
+            igThreadId: requestedIgThreadId,
+            sentAt: sentAtIso,
+            source,
+        });
+        cleanup.requestedThreadSiblingAlertsCleared = requestedCleanup.siblingAlertsCleared || 0;
+        cleanup.siblingAlertsCleared = (cleanup.siblingAlertsCleared || 0) + (requestedCleanup.siblingAlertsCleared || 0);
+    }
 
     if (alertMarkedSent) {
         await notifyChallengeOfferSent({
@@ -1637,6 +1698,7 @@ exports.handler = async (event) => {
             alertId,
             wasEdited,
             delivery_transport: deliveryTransport,
+            alternate_ig_delivery: alternateDelivery?.used ? buildAlternateIgDeliveryData(alternateDelivery).alternate_ig_delivery : null,
             chunks_sent: sentChunks.length,
             chunks_total: outboundItems.length,
             delivery_payload_kind: voiceMessageConfig.enabled ? 'audio' : 'text',

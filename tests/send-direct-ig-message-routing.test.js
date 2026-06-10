@@ -18,6 +18,15 @@ const graphThread = {
 assert.strictEqual(_test.resolveThreadGraphRecipientId(graphThread), 'recipient_123');
 assert.strictEqual(_test.resolveThreadGraphAccountId(graphThread), 'account_456');
 
+const graphThreadWithAccountPrefix = {
+    id: 'thread-account-prefix',
+    subscriber_id: 'ig_graph:account_789:recipient_999',
+    channel: 'instagram',
+    custom_data: {},
+};
+assert.strictEqual(_test.resolveThreadGraphRecipientId(graphThreadWithAccountPrefix), 'recipient_999');
+assert.strictEqual(_test.resolveThreadGraphAccountId(graphThreadWithAccountPrefix), 'account_789');
+
 const graphRoute = _test.resolveDirectTransport(graphThread);
 assert.deepStrictEqual(
     {
