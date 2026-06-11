@@ -6,10 +6,20 @@
 import type { Context } from "https://edge.netlify.com";
 import Stripe from 'stripe';
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-  apiVersion: '2024-11-20.acacia',
-  httpClient: Stripe.createFetchHttpClient(),
-});
+let stripeClient: Stripe | null = null;
+
+function getStripeClient(): Stripe {
+  if (stripeClient) return stripeClient;
+  const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY') || '';
+  if (!stripeSecretKey) {
+    throw new Error('STRIPE_SECRET_KEY not configured');
+  }
+  stripeClient = new Stripe(stripeSecretKey, {
+    apiVersion: '2024-11-20.acacia',
+    httpClient: Stripe.createFetchHttpClient(),
+  });
+  return stripeClient;
+}
 
 interface ExtendSubscriptionRequest {
   userId: string;
@@ -66,6 +76,8 @@ export default async (request: Request, context: Context) => {
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    const stripe = getStripeClient();
 
     // Get active subscriptions for this customer
     const subscriptions = await stripe.subscriptions.list({
