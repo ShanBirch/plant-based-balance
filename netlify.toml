@@ -537,13 +537,33 @@
 
 [[redirects]]
   from = "/gold-coast-ai"
-  to = "/gold-coast-ai-solutions.html"
-  status = 200
+  to = "https://gold-coast-ai-solutions.netlify.app/"
+  status = 301
+  force = true
 
 [[redirects]]
   from = "/gold-coast-ai-schedule"
-  to = "/gold-coast-ai-posting-schedule.html"
-  status = 200
+  to = "https://gold-coast-ai-solutions.netlify.app/schedule"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/gold-coast-ai-solutions.html"
+  to = "https://gold-coast-ai-solutions.netlify.app/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/gold-coast-ai-posting-schedule.html"
+  to = "https://gold-coast-ai-solutions.netlify.app/schedule"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/assets/gold-coast-ai/*"
+  to = "https://gold-coast-ai-solutions.netlify.app/assets/gold-coast-ai/:splat"
+  status = 301
+  force = true
 
 [[redirects]]
   from = "/*"
