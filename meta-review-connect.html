@@ -258,11 +258,31 @@
             return `https://www.facebook.com/v25.0/dialog/oauth?${params.toString()}`;
         }
 
-        document.getElementById("connectMeta").addEventListener("click", function () {
-            this.disabled = true;
-            this.textContent = "Opening Meta permission dialog...";
+        const connectButton = document.getElementById("connectMeta");
+
+        function startMetaFlow() {
+            connectButton.disabled = true;
+            connectButton.textContent = "Opening Meta permission dialog...";
             window.location.href = buildMetaOAuthUrl();
-        });
+        }
+
+        connectButton.addEventListener("click", startMetaFlow);
+
+        if (new URLSearchParams(window.location.search).get("autostart") === "1") {
+            let seconds = 4;
+            connectButton.disabled = true;
+            connectButton.textContent = `Opening Meta permission dialog in ${seconds}...`;
+
+            const countdown = window.setInterval(function () {
+                seconds -= 1;
+                if (seconds <= 0) {
+                    window.clearInterval(countdown);
+                    startMetaFlow();
+                    return;
+                }
+                connectButton.textContent = `Opening Meta permission dialog in ${seconds}...`;
+            }, 1000);
+        }
     </script>
 </body>
 </html>
