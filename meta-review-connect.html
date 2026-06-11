@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Meta Review Connection - Balance</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Montserrat", Arial, sans-serif;
+            background: #f7f4ec;
+            color: #161718;
+        }
+        .shell {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            padding: 22px 32px;
+            border-bottom: 1px solid #e4ddcf;
+            background: rgba(255, 255, 255, 0.72);
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-weight: 800;
+            font-size: 20px;
+        }
+        .brand img {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: #fff;
+            border: 1px solid #e4ddcf;
+        }
+        .badge {
+            border: 1px solid #b9d6bf;
+            background: #eef8f0;
+            color: #1f6b38;
+            border-radius: 999px;
+            padding: 9px 13px;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: minmax(300px, 0.9fr) minmax(420px, 1.1fr);
+            gap: 34px;
+            align-items: center;
+            width: min(1180px, calc(100% - 48px));
+            margin: 0 auto;
+            padding: 54px 0;
+        }
+        h1 {
+            margin: 0 0 18px;
+            font-size: clamp(42px, 6vw, 76px);
+            line-height: 0.95;
+            letter-spacing: 0;
+        }
+        .lead {
+            margin: 0 0 28px;
+            color: #59606a;
+            font-size: 18px;
+            line-height: 1.65;
+            max-width: 600px;
+        }
+        .note {
+            border: 1px solid #ead9a8;
+            background: #fff8df;
+            border-radius: 8px;
+            padding: 16px 18px;
+            color: #654c11;
+            font-size: 14px;
+            line-height: 1.55;
+            font-weight: 700;
+            max-width: 600px;
+        }
+        .panel {
+            background: #ffffff;
+            border: 1px solid #e2ded6;
+            border-radius: 8px;
+            box-shadow: 0 18px 45px rgba(31, 32, 36, 0.08);
+            padding: 28px;
+        }
+        .panel h2 {
+            margin: 0 0 8px;
+            font-size: 22px;
+            letter-spacing: 0;
+        }
+        .panel p {
+            margin: 0;
+            color: #66717d;
+            line-height: 1.55;
+        }
+        .asset-list {
+            display: grid;
+            gap: 14px;
+            margin: 24px 0;
+        }
+        .asset {
+            display: grid;
+            grid-template-columns: 48px 1fr;
+            gap: 14px;
+            align-items: center;
+            border: 1px solid #e6e2da;
+            background: #fbfaf6;
+            border-radius: 8px;
+            padding: 14px;
+        }
+        .asset-icon {
+            display: grid;
+            place-items: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            background: #101c12;
+            color: #c8f26d;
+            font-weight: 900;
+            letter-spacing: 0;
+        }
+        .asset strong {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 15px;
+        }
+        .asset span {
+            color: #69727d;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .connect {
+            width: 100%;
+            border: 0;
+            border-radius: 8px;
+            background: #1877f2;
+            color: #fff;
+            cursor: pointer;
+            font: inherit;
+            font-size: 18px;
+            font-weight: 800;
+            padding: 18px 22px;
+            min-height: 62px;
+            box-shadow: 0 14px 28px rgba(24, 119, 242, 0.22);
+        }
+        .connect:disabled {
+            cursor: wait;
+            opacity: 0.72;
+        }
+        .fine-print {
+            margin-top: 16px;
+            font-size: 12px;
+            line-height: 1.55;
+            color: #737b84;
+        }
+        footer {
+            padding: 22px 32px;
+            color: #747474;
+            border-top: 1px solid #e4ddcf;
+            font-size: 13px;
+        }
+        @media (max-width: 860px) {
+            header {
+                align-items: flex-start;
+                flex-direction: column;
+                padding: 18px 20px;
+            }
+            main {
+                grid-template-columns: 1fr;
+                width: min(100% - 32px, 680px);
+                padding: 34px 0;
+            }
+            h1 {
+                font-size: clamp(36px, 12vw, 54px);
+            }
+            .panel {
+                padding: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <header>
+            <div class="brand">
+                <img src="balance_logo.png" alt="Balance logo">
+                <span>Balance</span>
+            </div>
+            <div class="badge">Meta App Review Connection</div>
+        </header>
+
+        <main>
+            <section>
+                <h1>Connect Meta assets to Balance</h1>
+                <p class="lead">This review page starts the Facebook Login for Business flow used by Balance to authorize Shannon Birch's owned Facebook Page and Instagram professional account.</p>
+                <div class="note">Balance clients sign in with the Balance account system. They do not use Meta Login. This connection is for the business Page and Instagram account used in one-to-one DM handling.</div>
+            </section>
+
+            <section class="panel" aria-labelledby="connect-title">
+                <h2 id="connect-title">Business asset permission grant</h2>
+                <p>Click the button below to open Meta's permission dialog, choose the Balance Page and Instagram account, and grant the requested permissions.</p>
+
+                <div class="asset-list">
+                    <div class="asset">
+                        <div class="asset-icon">FB</div>
+                        <div>
+                            <strong>Facebook Page</strong>
+                            <span>Used for Page conversations, Page metadata, and Page list resolution.</span>
+                        </div>
+                    </div>
+                    <div class="asset">
+                        <div class="asset-icon">IG</div>
+                        <div>
+                            <strong>Instagram professional account</strong>
+                            <span>Used for Instagram profile access and one-to-one message handling.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="connect" id="connectMeta" type="button">Connect Meta</button>
+                <p class="fine-print">After Meta confirms access, the browser returns to Balance. The following review screencast section shows how Balance uses the granted permissions in the admin DM workflow.</p>
+            </section>
+        </main>
+
+        <footer>
+            Balance, operated by Shannon Rhys Birch. Review utility, not a public client login screen.
+        </footer>
+    </div>
+
+    <script>
+        const APP_ID = "2059731324926909";
+        const CONFIG_ID = "1015550291421722";
+        const REDIRECT_URI = "https://plantbased-balance.org/";
+        const STATE = "balance_meta_review_connect";
+
+        function buildMetaOAuthUrl() {
+            const params = new URLSearchParams({
+                client_id: APP_ID,
+                redirect_uri: REDIRECT_URI,
+                config_id: CONFIG_ID,
+                response_type: "code",
+                override_default_response_type: "true",
+                auth_type: "rerequest",
+                state: STATE
+            });
+            return `https://www.facebook.com/v25.0/dialog/oauth?${params.toString()}`;
+        }
+
+        document.getElementById("connectMeta").addEventListener("click", function () {
+            this.disabled = true;
+            this.textContent = "Opening Meta permission dialog...";
+            window.location.href = buildMetaOAuthUrl();
+        });
+    </script>
+</body>
+</html>
