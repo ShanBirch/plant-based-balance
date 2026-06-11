@@ -19636,13 +19636,17 @@ let _customExerciseMediaStream = null;
 let _customExerciseMediaRecorder = null;
 let _customExerciseRecordedChunks = [];
 let _customExerciseVideoFile = null;
+let _customExerciseVideoObjectUrl = null;
 let _customExerciseRecTimerInterval = null;
 let _customExerciseRecStartTime = null;
 
 function openCreateCustomExerciseModal(context) {
     // context: 'workout' (during active workout) or 'library' (from workout library)
     window._customExerciseContext = context || 'library';
-    document.getElementById('create-custom-exercise-modal').style.display = 'block';
+    const modal = document.getElementById('create-custom-exercise-modal');
+    modal.style.display = 'flex';
+    window._customExercisePreviousBodyOverflow = document.body.style.overflow || '';
+    document.body.style.overflow = 'hidden';
 
     // Reset form
     document.getElementById('custom-exercise-name').value = '';
@@ -19652,11 +19656,25 @@ function openCreateCustomExerciseModal(context) {
     document.getElementById('custom-exercise-sets').value = '3';
     document.getElementById('custom-exercise-reps').value = '8-12';
     _customExerciseVideoFile = null;
+    if (_customExerciseVideoObjectUrl) {
+        URL.revokeObjectURL(_customExerciseVideoObjectUrl);
+        _customExerciseVideoObjectUrl = null;
+    }
     document.getElementById('custom-exercise-video-preview').style.display = 'none';
     document.getElementById('custom-exercise-camera-container').style.display = 'none';
     document.getElementById('custom-exercise-record-btn').style.display = 'flex';
     document.getElementById('custom-exercise-stop-btn').style.display = 'none';
     document.getElementById('custom-exercise-video-actions').style.display = 'flex';
+    document.getElementById('custom-exercise-record-btn').innerHTML = `
+        <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor;">
+            <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+        </svg>
+        Record Video
+    `;
+    const fileInput = document.getElementById('custom-exercise-file-input');
+    if (fileInput) fileInput.value = '';
+    updateCustomExerciseUploadStatus('');
+    validateCustomExerciseForm();
 
     // Load existing custom exercises
     loadMyCustomExercises();
@@ -19667,7 +19685,13 @@ function openCreateCustomExerciseModal(context) {
 
 function closeCreateCustomExerciseModal() {
     document.getElementById('create-custom-exercise-modal').style.display = 'none';
+    document.body.style.overflow = window._customExercisePreviousBodyOverflow || '';
     stopCameraStream();
+    clearCustomExerciseRecordingTimer();
+    if (_customExerciseVideoObjectUrl) {
+        URL.revokeObjectURL(_customExerciseVideoObjectUrl);
+        _customExerciseVideoObjectUrl = null;
+    }
 }
 
 function validateCustomExerciseForm() {
@@ -19679,6 +19703,14 @@ function validateCustomExerciseForm() {
 
 async function startCustomExerciseRecording() {
     try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+            alert('Recording is not available on this device. Please upload a video file instead.');
+            return;
+        }
+
+        _customExerciseVideoFile = null;
+        updateCustomExerciseUploadStatus('');
+
         // Request camera access (prefer back camera on mobile)
         const stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -19716,11 +19748,10 @@ async function startCustomExerciseRecording() {
             const blob = new Blob(_customExerciseRecordedChunks, { type: mimeType });
             const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
             _customExerciseVideoFile = new File([blob], `exercise-recording.${ext}`, { type: mimeType });
-            _customExerciseVideoFile.name = `exercise-recording.${ext}`;
 
             // Show preview
             const videoPlayback = document.getElementById('custom-exercise-video-playback');
-            videoPlayback.src = URL.createObjectURL(blob);
+            setCustomExercisePreviewUrl(blob);
             document.getElementById('custom-exercise-video-preview').style.display = 'block';
             document.getElementById('custom-exercise-camera-container').style.display = 'none';
             document.getElementById('custom-exercise-video-actions').style.display = 'flex';
@@ -19732,6 +19763,7 @@ async function startCustomExerciseRecording() {
                 Re-record Video
             `;
             document.getElementById('custom-exercise-stop-btn').style.display = 'none';
+            updateCustomExerciseUploadStatus('Video recorded. It will upload when you tap Save.');
 
             stopCameraStream();
         };
@@ -19760,11 +19792,7 @@ function stopCustomExerciseRecording() {
         _customExerciseMediaRecorder.stop();
     }
 
-    // Stop timer
-    if (_customExerciseRecTimerInterval) {
-        clearInterval(_customExerciseRecTimerInterval);
-        _customExerciseRecTimerInterval = null;
-    }
+    clearCustomExerciseRecordingTimer();
 
     const recIndicator = document.getElementById('custom-exercise-recording-indicator');
     if (recIndicator) recIndicator.style.display = 'none';
@@ -19777,28 +19805,79 @@ function stopCameraStream() {
     }
 }
 
+function clearCustomExerciseRecordingTimer() {
+    if (_customExerciseRecTimerInterval) {
+        clearInterval(_customExerciseRecTimerInterval);
+        _customExerciseRecTimerInterval = null;
+    }
+
+    const recIndicator = document.getElementById('custom-exercise-recording-indicator');
+    if (recIndicator) recIndicator.style.display = 'none';
+    const timer = document.getElementById('custom-exercise-rec-timer');
+    if (timer) timer.textContent = '0:00';
+}
+
+function setCustomExercisePreviewUrl(source) {
+    if (_customExerciseVideoObjectUrl) {
+        URL.revokeObjectURL(_customExerciseVideoObjectUrl);
+        _customExerciseVideoObjectUrl = null;
+    }
+
+    _customExerciseVideoObjectUrl = URL.createObjectURL(source);
+    const videoPlayback = document.getElementById('custom-exercise-video-playback');
+    videoPlayback.src = _customExerciseVideoObjectUrl;
+}
+
+function updateCustomExerciseUploadStatus(message, isError) {
+    const status = document.getElementById('custom-exercise-upload-status');
+    if (!status) return;
+
+    if (!message) {
+        status.style.display = 'none';
+        status.textContent = '';
+        return;
+    }
+
+    status.style.display = 'block';
+    status.textContent = message;
+    status.style.background = isError ? '#fef2f2' : '#ecfdf5';
+    status.style.color = isError ? '#b91c1c' : '#047857';
+}
+
 function handleCustomExerciseFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Validate it's a video
-    if (!file.type.startsWith('video/')) {
+    const fileName = file.name || '';
+    const fileExt = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : '';
+    const allowedVideoExts = ['mp4', 'mov', 'm4v', 'webm', '3gp', '3gpp'];
+    const looksLikeVideo = (file.type && file.type.startsWith('video/')) || allowedVideoExts.includes(fileExt);
+
+    // Validate it's a video. Some mobile browsers provide an empty MIME type for gallery videos.
+    if (!looksLikeVideo) {
         alert('Please select a video file.');
+        event.target.value = '';
         return;
     }
 
     // Max 100MB
     if (file.size > 100 * 1024 * 1024) {
         alert('Video must be under 100MB.');
+        event.target.value = '';
         return;
     }
 
     _customExerciseVideoFile = file;
+    stopCameraStream();
+    clearCustomExerciseRecordingTimer();
+    document.getElementById('custom-exercise-camera-container').style.display = 'none';
+    document.getElementById('custom-exercise-stop-btn').style.display = 'none';
+    document.getElementById('custom-exercise-video-actions').style.display = 'flex';
 
     // Show preview
-    const videoPlayback = document.getElementById('custom-exercise-video-playback');
-    videoPlayback.src = URL.createObjectURL(file);
+    setCustomExercisePreviewUrl(file);
     document.getElementById('custom-exercise-video-preview').style.display = 'block';
+    updateCustomExerciseUploadStatus(`Selected ${file.name || 'video'}. It will upload when you tap Save.`);
 
     // Update record button text
     document.getElementById('custom-exercise-record-btn').innerHTML = `
@@ -19812,6 +19891,11 @@ function handleCustomExerciseFileSelect(event) {
 function removeCustomExerciseVideo() {
     _customExerciseVideoFile = null;
     document.getElementById('custom-exercise-video-preview').style.display = 'none';
+    updateCustomExerciseUploadStatus('');
+    if (_customExerciseVideoObjectUrl) {
+        URL.revokeObjectURL(_customExerciseVideoObjectUrl);
+        _customExerciseVideoObjectUrl = null;
+    }
 
     // Reset record button
     document.getElementById('custom-exercise-record-btn').innerHTML = `
@@ -19830,6 +19914,11 @@ async function saveCustomExercise() {
     const name = document.getElementById('custom-exercise-name').value.trim();
     if (!name) {
         alert('Please enter an exercise name.');
+        return;
+    }
+
+    if (_customExerciseMediaRecorder && _customExerciseMediaRecorder.state !== 'inactive') {
+        alert('Please stop recording before saving the exercise.');
         return;
     }
 
@@ -19852,12 +19941,16 @@ async function saveCustomExercise() {
         // Upload video if one was recorded/selected
         if (_customExerciseVideoFile) {
             try {
+                updateCustomExerciseUploadStatus('Uploading video...');
                 const result = await storageHelpers.uploadExerciseVideo(user.id, _customExerciseVideoFile, exerciseId);
                 videoUrl = result.publicUrl;
                 storagePath = result.storagePath;
+                updateCustomExerciseUploadStatus('Video uploaded.');
             } catch (uploadErr) {
                 console.error('Video upload failed:', uploadErr);
-                // Continue saving without video - don't block the exercise creation
+                updateCustomExerciseUploadStatus('Video upload failed. Please try again or remove the video before saving.', true);
+                alert('Video upload failed. The exercise was not saved yet, so you can try again or remove the video and save without one.');
+                return;
             }
         }
 

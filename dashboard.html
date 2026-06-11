@@ -7700,16 +7700,16 @@ if(!window._pbbIsIOSSafari) {
 </div>
 
 <!-- CREATE CUSTOM EXERCISE MODAL -->
-<div id="create-custom-exercise-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 650; overflow-y: auto;">
-    <div style="background: white; min-height: 100%; max-width: 600px; margin: 0 auto; position: relative;">
+<div id="create-custom-exercise-modal" style="display: none; position: fixed; inset: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0,0,0,0.5); z-index: 200200; overflow: hidden; padding: calc(12px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box;">
+    <div style="background: white; width: 100%; max-width: 600px; max-height: 100%; margin: 0 auto; position: relative; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden;">
         <!-- Modal Header -->
-        <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
             <div onclick="closeCreateCustomExerciseModal()" style="font-weight: 600; cursor: pointer; color: var(--text-muted); padding: 10px;">Cancel</div>
             <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Create Exercise</div>
             <div onclick="saveCustomExercise()" id="save-custom-exercise-btn" style="font-weight: 600; cursor: pointer; color: var(--primary); padding: 10px;">Save</div>
         </div>
 
-        <div style="padding: 20px;">
+        <div style="padding: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; flex: 1; box-sizing: border-box;">
             <!-- Exercise Name -->
             <div style="margin-bottom: 20px;">
                 <label style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; display: block; margin-bottom: 8px;">Exercise Name *</label>
@@ -7785,7 +7785,7 @@ if(!window._pbbIsIOSSafari) {
                 <!-- Camera/Recording Area (shown when actively recording) -->
                 <div id="custom-exercise-camera-container" style="display: none; margin-bottom: 15px; border-radius: 12px; overflow: hidden; background: black; position: relative;">
                     <video id="custom-exercise-camera-feed" style="width: 100%; max-height: 400px; object-fit: cover;" autoplay playsinline muted></video>
-                    <div id="custom-exercise-recording-indicator" style="display: none; position: absolute; top: 12px; left: 12px; background: #ef4444; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 5px;">
+                    <div id="custom-exercise-recording-indicator" style="display: none; position: absolute; top: 12px; left: 12px; background: #ef4444; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; align-items: center; gap: 5px;">
                         <div style="width: 8px; height: 8px; background: white; border-radius: 50%; animation: pulse 1s infinite;"></div>
                         REC <span id="custom-exercise-rec-timer">0:00</span>
                     </div>
@@ -7817,9 +7817,11 @@ if(!window._pbbIsIOSSafari) {
                             <path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/>
                         </svg>
                         Upload from Gallery
-                        <input type="file" id="custom-exercise-file-input" accept="video/*" onchange="handleCustomExerciseFileSelect(event)" style="display: none;">
+                        <input type="file" id="custom-exercise-file-input" accept="video/*,.mp4,.mov,.m4v,.webm,.3gp,.3gpp" onchange="handleCustomExerciseFileSelect(event)" style="display: none;">
                     </label>
                 </div>
+
+                <div id="custom-exercise-upload-status" style="display: none; margin: 12px 0 0 0; padding: 10px 12px; border-radius: 10px; background: #ecfdf5; color: #047857; font-size: 0.8rem; font-weight: 700; line-height: 1.35;"></div>
 
                 <p style="color: #94a3b8; font-size: 0.8rem; margin: 12px 0 0 0; line-height: 1.4;">
                     Video is optional. You can always add one later.
