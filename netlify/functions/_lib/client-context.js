@@ -5599,11 +5599,51 @@ function countQuestionMarks(text) {
     return (String(text || '').match(/\?/g) || []).length;
 }
 
-function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, metrics }) {
+function isShortSocialRewriteLearningSignal({ alert, draftText, sentMessage, metrics }) {
+    const data = alert?.data || {};
+    const alertType = String(alert?.alert_type || '').toLowerCase();
+    const channelText = [
+        data.channel,
+        data.delivery_channel,
+        data.source_channel,
+    ].filter(Boolean).join(' ').toLowerCase();
+    const socialThread = alertType.includes('ig_incoming')
+        || /\b(instagram|messenger|manual_ig|instagram_graph)\b/.test(channelText);
+    if (!socialThread) return false;
+    if (!isAlwaysNeedsYouPerson({
+        client_name: alert?.client_name || data.client_name,
+        profile_name: data.profile_name,
+        ig_username: data.ig_username,
+    })) return false;
+
+    const draft = String(draftText || '');
+    const final = String(sentMessage || '');
+    const shortFinal = final.trim().length > 0 && final.trim().length <= 170;
+    const shortened = metrics?.draft_chars && metrics?.final_chars
+        ? metrics.final_chars < metrics.draft_chars * 0.7
+        : draft.length > final.length + 40;
+    const removedQuestions = countQuestionMarks(draft) > countQuestionMarks(final);
+    const lowRetention = Number(metrics?.draft_kept_pct) <= 20;
+    return shortFinal && shortened && (removedQuestions || lowRetention);
+}
+
+function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, metrics, alert = null }) {
     const reason = String(editReason || '').toLowerCase();
     const draft = String(draftText || '');
     const final = String(sentMessage || '');
     const bullets = [];
+    const shortSocialRewrite = isShortSocialRewriteLearningSignal({
+        alert,
+        draftText: draft,
+        sentMessage: final,
+        metrics,
+    });
+
+    if (shortSocialRewrite) {
+        bullets.push('For this relationship, default to very short social replies: one warm reaction, direct answer, or tiny question is often enough.');
+        bullets.push('Do not turn low-stakes IG banter, food, study, pastry, or casual life updates into coaching or discovery unless they ask for help.');
+        bullets.push('If unsure about a niche food, photo, or topic, admit it lightly or ask one concrete clarifier instead of pretending expertise.');
+    }
 
     if (/question|ask|asking|convo|conversation|rapport|get to know|psychologist|phycologist/.test(reason)) {
         bullets.push('Do not ask a question every reply. If the conversation only needs a reaction, joke, or acknowledgement, stop there.');
@@ -5695,9 +5735,10 @@ function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, 
         bullets.push('Use facts already present in the timeline as known context instead of asking whether they exist.');
         bullets.push('When they already have a tool, toy, app detail, birthday, pet detail, or plan, suggest the next step with that known thing.');
     }
-    if (/praise|easy|under achiever|underachiever|fra/.test(reason)) {
+    if (/praise|easy|under achiever|underachiever|fra|too many questions/.test(reason)) {
         bullets.push('For clients who need reassurance, lead with praise and keep the message easy to receive.');
         bullets.push('Avoid highlighting unfinished tasks when Shannon is trying to build confidence.');
+        bullets.push('Keep it easy to answer: one question max, or no question if a short reaction does the job.');
     }
 
     const draftQuestions = countQuestionMarks(draft);
@@ -5787,7 +5828,7 @@ function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, 
 
 function inferCoachEditLearningFallback({ alert, draftText, sentMessage, metrics, editReason }) {
     const clientName = alert?.client_name || alert?.data?.profile_name || alert?.data?.ig_username || 'this person';
-    const bullets = buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, metrics });
+    const bullets = buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, metrics, alert });
     const hasReason = !!String(editReason || '').trim();
     const summary = hasReason
         ? `Shannon's edit reason was captured and converted into reusable guidance for ${clientName}.`
@@ -5991,9 +6032,16 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
         return { ok: true, promptUpdated: false, editAnalysis };
     }
 
+    const shortSocialRewriteLearning = isShortSocialRewriteLearningSignal({
+        alert,
+        draftText: draft,
+        sentMessage: final,
+        metrics,
+    });
     const completeRewriteWithoutReason = !explicitEditReason
         && metrics.final_ai_generated_pct <= 5
-        && metrics.draft_kept_pct <= 5;
+        && metrics.draft_kept_pct <= 5
+        && !shortSocialRewriteLearning;
     if (completeRewriteWithoutReason) {
         const editAnalysis = {
             ...baseAnalysis,
@@ -6081,13 +6129,18 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
         draftText: draft,
         sentMessage: final,
         metrics,
+        alert,
     });
+    const learnedInstructions = shortSocialRewriteLearning
+        ? normalizeAutoLearnedBullets([...deterministicBullets, ...learning.auto_instructions])
+        : learning.auto_instructions;
+    const shouldUpdateFromLearning = learning.should_update_prompt || (shortSocialRewriteLearning && learnedInstructions.length > 0);
     let globalLearning = { ok: true, candidates: 0, activated: 0, skipped: 'not_enough_signal' };
     const globalCandidateRules = normalizeAutoLearnedBullets(
-        [...deterministicBullets, ...learning.auto_instructions],
+        [...deterministicBullets, ...learnedInstructions],
         GLOBAL_EDIT_LEARNING_ACTIVE_LIMIT
     ).slice(0, explicitEditReason ? 2 : 3);
-    if (learning.should_update_prompt && enoughSignal && globalCandidateRules.length > 0) {
+    if (shouldUpdateFromLearning && enoughSignal && globalCandidateRules.length > 0) {
         globalLearning = await recordGlobalEditLearningRules({
             alert,
             rules: globalCandidateRules,
@@ -6095,8 +6148,8 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
         });
     }
     let promptUpdated = false;
-    if (learning.should_update_prompt && enoughSignal && learning.auto_instructions.length > 0) {
-        const nextInstructions = buildCoachInstructionsWithEditLearning(manual, learning.auto_instructions) || '';
+    if (shouldUpdateFromLearning && enoughSignal && learnedInstructions.length > 0) {
+        const nextInstructions = buildCoachInstructionsWithEditLearning(manual, learnedInstructions) || '';
         if (nextInstructions.trim() !== String(target.existingInstructions || '').trim()) {
             try {
                 promptUpdated = await saveEditLearningInstructions(target, nextInstructions);
@@ -6110,13 +6163,13 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
         ...baseAnalysis,
         summary: learning.summary || 'Shannon edited the draft.',
         change_types: learning.change_types,
-        lessons: learning.lessons,
-        learned_instructions: learning.auto_instructions,
+        lessons: normalizeAutoLearnedBullets([...learning.lessons, ...deterministicBullets]),
+        learned_instructions: learnedInstructions,
         confidence: learning.confidence,
         prompt_updated: promptUpdated,
         global_prompt_updated: !!(globalLearning?.activated > 0),
         global_learning: globalLearning,
-        skipped: promptUpdated ? null : (learning.should_update_prompt ? 'no_instruction_change' : 'one_off_or_low_signal'),
+        skipped: promptUpdated ? null : (shouldUpdateFromLearning ? 'no_instruction_change' : 'one_off_or_low_signal'),
         target: { type: target.type, client_id: target.clientId || null, ig_thread_id: target.igThreadId || null },
     };
     await updateAlertEditAnalysis(alertId, editAnalysis);
