@@ -1,4 +1,4 @@
-import crypto from 'node:crypto';
+const crypto = require('crypto');
 
 const SITE_URL = 'https://plantbased-balance.org';
 
@@ -7,15 +7,12 @@ const jsonHeaders = {
     'Cache-Control': 'no-store',
 };
 
-function getEnv(name) {
-    return globalThis.Netlify?.env?.get?.(name) || '';
-}
-
-function json(body, status = 200) {
-    return new Response(JSON.stringify(body), {
-        status,
+function json(statusCode, body) {
+    return {
+        statusCode,
         headers: jsonHeaders,
-    });
+        body: JSON.stringify(body),
+    };
 }
 
 function decodeBase64Url(value) {
@@ -44,7 +41,7 @@ function parseSignedRequest(signedRequest) {
         return { data: null, verified: false, error: 'invalid_signed_request_payload' };
     }
 
-    const appSecret = getEnv('META_APP_SECRET') || getEnv('META_IG_APP_SECRET');
+    const appSecret = process.env.META_APP_SECRET || process.env.META_IG_APP_SECRET || '';
     if (!appSecret) {
         return { data, verified: false, error: 'missing_app_secret' };
     }
@@ -61,9 +58,11 @@ function parseSignedRequest(signedRequest) {
     };
 }
 
-async function readSignedRequest(req) {
-    const contentType = req.headers.get('content-type') || '';
-    const body = await req.text();
+function readSignedRequest(event) {
+    const contentType = event.headers?.['content-type'] || event.headers?.['Content-Type'] || '';
+    const body = event.isBase64Encoded
+        ? Buffer.from(event.body || '', 'base64').toString('utf8')
+        : (event.body || '');
 
     if (!body) return '';
 
@@ -85,13 +84,13 @@ function confirmationCode(metaUserId, requestId) {
     return `BAL-${crypto.createHash('sha256').update(seed).digest('hex').slice(0, 12).toUpperCase()}`;
 }
 
-export default async function handler(req, context) {
-    if (req.method === 'OPTIONS') {
-        return new Response(null, { status: 204, headers: jsonHeaders });
+exports.handler = async function handler(event, context) {
+    if (event.httpMethod === 'OPTIONS') {
+        return { statusCode: 204, headers: jsonHeaders, body: '' };
     }
 
-    if (req.method === 'GET') {
-        return json({
+    if (event.httpMethod === 'GET') {
+        return json(200, {
             service: 'Balance Meta data deletion callback',
             status: 'ready',
             contact: 'shannon@plantbased-balance.org',
@@ -99,22 +98,22 @@ export default async function handler(req, context) {
         });
     }
 
-    if (req.method !== 'POST') {
-        return json({ error: 'method_not_allowed' }, 405);
+    if (event.httpMethod !== 'POST') {
+        return json(405, { error: 'method_not_allowed' });
     }
 
-    const signedRequest = await readSignedRequest(req);
+    const signedRequest = readSignedRequest(event);
     const parsed = parseSignedRequest(signedRequest);
 
     if (!parsed.data) {
-        return json({ error: parsed.error || 'invalid_request' }, 400);
+        return json(400, { error: parsed.error || 'invalid_request' });
     }
 
     if (parsed.error === null && !parsed.verified) {
-        return json({ error: 'invalid_signature' }, 403);
+        return json(403, { error: 'invalid_signature' });
     }
 
-    const code = confirmationCode(parsed.data.user_id, context.requestId);
+    const code = confirmationCode(parsed.data.user_id, context.awsRequestId);
 
     console.log('[meta-data-deletion] request received', {
         confirmation_code: code,
@@ -122,13 +121,8 @@ export default async function handler(req, context) {
         meta_user_id_present: Boolean(parsed.data.user_id),
     });
 
-    return json({
+    return json(200, {
         url: `${SITE_URL}/data-deletion.html?code=${encodeURIComponent(code)}`,
         confirmation_code: code,
     });
-}
-
-export const config = {
-    path: '/api/meta/data-deletion',
-    method: ['GET', 'POST', 'OPTIONS'],
 };

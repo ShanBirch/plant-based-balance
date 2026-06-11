@@ -1,19 +1,16 @@
-import crypto from 'node:crypto';
+const crypto = require('crypto');
 
 const jsonHeaders = {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
 };
 
-function getEnv(name) {
-    return globalThis.Netlify?.env?.get?.(name) || '';
-}
-
-function json(body, status = 200) {
-    return new Response(JSON.stringify(body), {
-        status,
+function json(statusCode, body) {
+    return {
+        statusCode,
         headers: jsonHeaders,
-    });
+        body: JSON.stringify(body),
+    };
 }
 
 function decodeBase64Url(value) {
@@ -36,7 +33,7 @@ function verifySignedRequest(signedRequest) {
         return { data: null, verified: false, error: 'invalid_signed_request_payload' };
     }
 
-    const appSecret = getEnv('META_APP_SECRET') || getEnv('META_IG_APP_SECRET');
+    const appSecret = process.env.META_APP_SECRET || process.env.META_IG_APP_SECRET || '';
     if (!appSecret) {
         return { data, verified: false, error: 'missing_app_secret' };
     }
@@ -55,9 +52,11 @@ function verifySignedRequest(signedRequest) {
     };
 }
 
-async function readSignedRequest(req) {
-    const contentType = req.headers.get('content-type') || '';
-    const body = await req.text();
+function readSignedRequest(event) {
+    const contentType = event.headers?.['content-type'] || event.headers?.['Content-Type'] || '';
+    const body = event.isBase64Encoded
+        ? Buffer.from(event.body || '', 'base64').toString('utf8')
+        : (event.body || '');
 
     if (!body) return '';
 
@@ -74,31 +73,31 @@ async function readSignedRequest(req) {
     return params.get('signed_request') || params.get('signedRequest') || '';
 }
 
-export default async function handler(req) {
-    if (req.method === 'OPTIONS') {
-        return new Response(null, { status: 204, headers: jsonHeaders });
+exports.handler = async function handler(event) {
+    if (event.httpMethod === 'OPTIONS') {
+        return { statusCode: 204, headers: jsonHeaders, body: '' };
     }
 
-    if (req.method === 'GET') {
-        return json({
+    if (event.httpMethod === 'GET') {
+        return json(200, {
             service: 'Balance Meta deauthorize callback',
             status: 'ready',
         });
     }
 
-    if (req.method !== 'POST') {
-        return json({ error: 'method_not_allowed' }, 405);
+    if (event.httpMethod !== 'POST') {
+        return json(405, { error: 'method_not_allowed' });
     }
 
-    const signedRequest = await readSignedRequest(req);
+    const signedRequest = readSignedRequest(event);
     const parsed = verifySignedRequest(signedRequest);
 
     if (!parsed.data) {
-        return json({ error: parsed.error || 'invalid_request' }, 400);
+        return json(400, { error: parsed.error || 'invalid_request' });
     }
 
     if (parsed.error === null && !parsed.verified) {
-        return json({ error: 'invalid_signature' }, 403);
+        return json(403, { error: 'invalid_signature' });
     }
 
     console.log('[meta-deauthorize] request received', {
@@ -106,10 +105,5 @@ export default async function handler(req) {
         meta_user_id_present: Boolean(parsed.data.user_id),
     });
 
-    return json({ success: true });
-}
-
-export const config = {
-    path: '/api/meta/deauthorize',
-    method: ['GET', 'POST', 'OPTIONS'],
+    return json(200, { success: true });
 };
