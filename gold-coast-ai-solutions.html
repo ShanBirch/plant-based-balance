@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Gold Coast AI Solutions | Practical AI Systems for Small Business</title>
+    <meta name="description" content="Practical AI coaching, automation builds, and custom app systems for Gold Coast small business. In-person AI setup from Shannon Birch.">
+    <meta property="og:title" content="Gold Coast AI Solutions">
+    <meta property="og:description" content="Practical AI systems for Gold Coast small business: audits, in-person coaching, automations, and custom apps from $2,500.">
+    <meta property="og:image" content="https://plantbased-balance.org/assets/gold-coast-ai/hero-local-ai-systems.png">
+    <meta property="og:type" content="website">
+    <link rel="icon" type="image/png" href="assets/gold-coast-ai/hero-local-ai-systems.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --charcoal: #102027;
+            --ink: #17212a;
+            --muted: #5d6b75;
+            --line: #d7e0dd;
+            --paper: #f4efe6;
+            --white: #ffffff;
+            --blue: #2563eb;
+            --eucalyptus: #2f7d5c;
+            --yellow: #f5b642;
+            --coral: #ef6f61;
+            --mist: #e7f4ef;
+            --shadow: 0 18px 44px rgba(16, 32, 39, 0.12);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            color: var(--ink);
+            background: #fbfaf7;
+            font-family: "Inter", Arial, sans-serif;
+            line-height: 1.55;
+            overflow-x: hidden;
+        }
+
+        img {
+            max-width: 100%;
+            display: block;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        h1, h2, h3 {
+            margin: 0;
+            font-family: "Montserrat", "Inter", Arial, sans-serif;
+            letter-spacing: 0;
+            line-height: 1.04;
+        }
+
+        p {
+            margin: 0;
+        }
+
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            padding: calc(14px + env(safe-area-inset-top, 0px)) 28px 14px;
+            background: rgba(251, 250, 247, 0.94);
+            border-bottom: 1px solid rgba(16, 32, 39, 0.08);
+            backdrop-filter: blur(16px);
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            font-weight: 900;
+            min-width: 0;
+        }
+
+        .brand-mark {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background:
+                linear-gradient(135deg, var(--blue), var(--eucalyptus) 56%, var(--yellow));
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+        }
+
+        .brand span {
+            white-space: nowrap;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            color: var(--muted);
+            font-size: 0.9rem;
+            font-weight: 800;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+        }
+
+        .nav-links a:hover {
+            color: var(--ink);
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            min-height: 48px;
+            padding: 0 18px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            font: 900 0.94rem/1 "Inter", Arial, sans-serif;
+            text-decoration: none;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .button svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .button.primary {
+            background: var(--coral);
+            color: var(--white);
+            box-shadow: 0 14px 28px rgba(239, 111, 97, 0.24);
+        }
+
+        .button.primary:hover {
+            background: #db5f52;
+        }
+
+        .button.secondary {
+            background: rgba(255, 255, 255, 0.13);
+            border-color: rgba(255, 255, 255, 0.38);
+            color: var(--white);
+        }
+
+        .button.secondary:hover {
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        .hero {
+            position: relative;
+            min-height: 86dvh;
+            display: flex;
+            align-items: center;
+            color: var(--white);
+            overflow: hidden;
+            isolation: isolate;
+            padding-top: 72px;
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: -2;
+            background:
+                linear-gradient(90deg, rgba(16, 32, 39, 0.92) 0%, rgba(16, 32, 39, 0.74) 42%, rgba(16, 32, 39, 0.24) 100%),
+                url("assets/gold-coast-ai/hero-local-ai-systems.png") center right / cover no-repeat;
+        }
+
+        .hero::after {
+            content: "";
+            position: absolute;
+            inset: auto 0 0 0;
+            height: 150px;
+            z-index: -1;
+            background: linear-gradient(180deg, rgba(251, 250, 247, 0), #fbfaf7);
+        }
+
+        .hero-inner {
+            width: min(1180px, calc(100% - 48px));
+            margin: 0 auto;
+            padding: 66px 0 118px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            min-height: 34px;
+            padding: 0 12px;
+            border: 1px solid rgba(255, 255, 255, 0.26);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fce7b2;
+            font-size: 0.78rem;
+            font-weight: 900;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            max-width: 860px;
+            margin-top: 24px;
+            font-size: clamp(3rem, 7vw, 5.5rem);
+            font-weight: 900;
+        }
+
+        .hero-copy {
+            max-width: 680px;
+            margin-top: 22px;
+            color: rgba(255, 255, 255, 0.84);
+            font-size: clamp(1rem, 2vw, 1.18rem);
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        .hero-points {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 30px;
+            max-width: 760px;
+        }
+
+        .hero-point {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 38px;
+            padding: 0 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.88);
+            font-weight: 800;
+            font-size: 0.9rem;
+        }
+
+        .hero-point svg {
+            width: 16px;
+            height: 16px;
+            color: var(--yellow);
+        }
+
+        .section {
+            padding: 72px 0;
+        }
+
+        .section.alt {
+            background: var(--paper);
+        }
+
+        .wrap {
+            width: min(1180px, calc(100% - 48px));
+            margin: 0 auto;
+        }
+
+        .section-head {
+            display: grid;
+            grid-template-columns: minmax(0, 0.95fr) minmax(260px, 0.55fr);
+            gap: 34px;
+            align-items: end;
+            margin-bottom: 30px;
+        }
+
+        .section-head h2 {
+            color: var(--charcoal);
+            font-size: clamp(2rem, 4vw, 3.15rem);
+        }
+
+        .section-head p {
+            color: var(--muted);
+            font-weight: 650;
+        }
+
+        .offer-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .offer-card,
+        .lesson-card,
+        .system-card,
+        .faq-item {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+            box-shadow: 0 10px 28px rgba(16, 32, 39, 0.06);
+        }
+
+        .offer-card {
+            min-height: 302px;
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .offer-card.featured {
+            border-color: rgba(239, 111, 97, 0.48);
+            box-shadow: var(--shadow);
+        }
+
+        .icon-box {
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--mist);
+            color: var(--eucalyptus);
+        }
+
+        .icon-box svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .offer-card h3,
+        .system-card h3 {
+            color: var(--charcoal);
+            font-size: 1.2rem;
+        }
+
+        .price {
+            font-family: "Montserrat", "Inter", Arial, sans-serif;
+            font-size: 2rem;
+            line-height: 1;
+            font-weight: 900;
+            color: var(--blue);
+        }
+
+        .price span {
+            color: var(--muted);
+            font: 800 0.86rem/1 "Inter", Arial, sans-serif;
+        }
+
+        .offer-card p,
+        .system-card p,
+        .faq-item p {
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .offer-card ul,
+        .system-card ul {
+            margin: auto 0 0;
+            padding: 0;
+            list-style: none;
+            display: grid;
+            gap: 8px;
+            color: var(--ink);
+            font-weight: 750;
+            font-size: 0.92rem;
+        }
+
+        .offer-card li,
+        .system-card li {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .offer-card li::before,
+        .system-card li::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            margin-top: 8px;
+            border-radius: 50%;
+            flex: 0 0 auto;
+            background: var(--yellow);
+        }
+
+        .lesson-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .lesson-card {
+            min-height: 318px;
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .lesson-card::after {
+            content: attr(data-week);
+            position: absolute;
+            right: 16px;
+            bottom: -10px;
+            color: rgba(16, 32, 39, 0.06);
+            font: 900 6rem/1 "Montserrat", sans-serif;
+        }
+
+        .lesson-kicker {
+            display: inline-flex;
+            align-items: center;
+            width: max-content;
+            min-height: 32px;
+            padding: 0 10px;
+            border-radius: 8px;
+            background: var(--charcoal);
+            color: var(--white);
+            font-size: 0.75rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .lesson-card h3 {
+            position: relative;
+            color: var(--charcoal);
+            font-size: 1.28rem;
+        }
+
+        .lesson-card p {
+            position: relative;
+            color: var(--muted);
+            font-weight: 650;
+        }
+
+        .lesson-output {
+            position: relative;
+            margin-top: auto;
+            padding: 12px;
+            border-radius: 8px;
+            background: var(--mist);
+            color: var(--charcoal);
+            font-size: 0.88rem;
+            font-weight: 850;
+        }
+
+        .system-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .system-card {
+            padding: 20px;
+            min-height: 246px;
+        }
+
+        .process {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            counter-reset: step;
+        }
+
+        .step {
+            position: relative;
+            min-height: 210px;
+            padding: 22px;
+            border-radius: 8px;
+            background: var(--charcoal);
+            color: var(--white);
+            overflow: hidden;
+        }
+
+        .step::before {
+            counter-increment: step;
+            content: counter(step);
+            position: absolute;
+            right: 16px;
+            top: 10px;
+            color: rgba(255, 255, 255, 0.12);
+            font: 900 5.2rem/1 "Montserrat", sans-serif;
+        }
+
+        .step h3 {
+            position: relative;
+            font-size: 1.2rem;
+            max-width: 170px;
+        }
+
+        .step p {
+            position: relative;
+            margin-top: 16px;
+            color: rgba(255, 255, 255, 0.76);
+            font-weight: 650;
+        }
+
+        .proof-band {
+            background: var(--charcoal);
+            color: var(--white);
+            padding: 68px 0;
+        }
+
+        .proof-layout {
+            display: grid;
+            grid-template-columns: 0.9fr 1.1fr;
+            gap: 34px;
+            align-items: center;
+        }
+
+        .proof-layout h2 {
+            font-size: clamp(2rem, 4vw, 3rem);
+        }
+
+        .proof-layout p {
+            margin-top: 18px;
+            color: rgba(255, 255, 255, 0.76);
+            font-size: 1.03rem;
+            font-weight: 650;
+        }
+
+        .board {
+            display: grid;
+            gap: 10px;
+        }
+
+        .board-row {
+            min-height: 64px;
+            display: grid;
+            grid-template-columns: 150px 1fr auto;
+            gap: 12px;
+            align-items: center;
+            padding: 0 16px;
+            border: 1px solid rgba(255, 255, 255, 0.13);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.07);
+            font-weight: 850;
+        }
+
+        .board-row span {
+            color: #fce7b2;
+        }
+
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .faq-item {
+            padding: 22px;
+        }
+
+        .faq-item h3 {
+            font-size: 1.08rem;
+            color: var(--charcoal);
+            margin-bottom: 10px;
+        }
+
+        .final-cta {
+            padding: 74px 0 calc(82px + env(safe-area-inset-bottom, 0px));
+            background: linear-gradient(135deg, var(--blue), var(--eucalyptus));
+            color: var(--white);
+        }
+
+        .final-cta .wrap {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 26px;
+            align-items: center;
+        }
+
+        .final-cta h2 {
+            font-size: clamp(2rem, 4vw, 3.1rem);
+        }
+
+        .final-cta p {
+            margin-top: 14px;
+            color: rgba(255, 255, 255, 0.82);
+            font-weight: 650;
+            max-width: 720px;
+        }
+
+        @media (max-width: 940px) {
+            .nav {
+                padding-left: 18px;
+                padding-right: 18px;
+            }
+
+            .brand span {
+                white-space: normal;
+                line-height: 1.05;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .hero {
+                min-height: 88dvh;
+            }
+
+            .hero::before {
+                background:
+                    linear-gradient(180deg, rgba(16, 32, 39, 0.94) 0%, rgba(16, 32, 39, 0.78) 55%, rgba(16, 32, 39, 0.38) 100%),
+                    url("assets/gold-coast-ai/hero-local-ai-systems.png") center / cover no-repeat;
+            }
+
+            .hero-inner {
+                width: min(100% - 34px, 1180px);
+                padding: 54px 0 92px;
+            }
+
+            .section {
+                padding: 56px 0;
+            }
+
+            .wrap {
+                width: min(100% - 34px, 1180px);
+            }
+
+            .section-head,
+            .proof-layout,
+            .final-cta .wrap {
+                grid-template-columns: 1fr;
+            }
+
+            .offer-grid,
+            .lesson-grid,
+            .system-grid,
+            .process,
+            .faq-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .board-row {
+                grid-template-columns: 1fr;
+                gap: 4px;
+                padding: 14px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .button {
+                width: 100%;
+            }
+
+            .hero-actions {
+                width: 100%;
+            }
+
+            .hero-point {
+                width: 100%;
+            }
+
+            .offer-card,
+            .lesson-card,
+            .system-card,
+            .faq-item,
+            .step {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="#top" aria-label="Gold Coast AI Solutions home">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <span>Gold Coast AI Solutions</span>
+        </a>
+        <div class="nav-links">
+            <a href="#offers">Prices</a>
+            <a href="#package">4 Lessons</a>
+            <a href="#systems">What I Build</a>
+            <a href="#process">Process</a>
+            <a href="#contact">Contact</a>
+        </div>
+    </nav>
+
+    <main id="top">
+        <section class="hero">
+            <div class="hero-inner">
+                <span class="eyebrow">Gold Coast small business AI setup</span>
+                <h1>Gold Coast AI Solutions</h1>
+                <p class="hero-copy">Practical AI coaching, automations, and custom apps for local businesses that want fewer missed leads, faster admin, cleaner follow-up, and tools that actually fit the way they work.</p>
+                <div class="hero-actions">
+                    <a class="button primary" href="https://www.instagram.com/goldcoast_ai_solutions/" target="_blank" rel="noopener">
+                        <i data-lucide="message-circle" aria-hidden="true"></i>
+                        DM AUDIT
+                    </a>
+                    <a class="button secondary" href="#offers">
+                        <i data-lucide="tag" aria-hidden="true"></i>
+                        See prices
+                    </a>
+                </div>
+                <div class="hero-points" aria-label="Service highlights">
+                    <span class="hero-point"><i data-lucide="map-pin" aria-hidden="true"></i>Gold Coast, QLD</span>
+                    <span class="hero-point"><i data-lucide="home" aria-hidden="true"></i>In-person setup available</span>
+                    <span class="hero-point"><i data-lucide="settings-2" aria-hidden="true"></i>Automation and app builds</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="offers">
+            <div class="wrap">
+                <div class="section-head">
+                    <h2>Simple ways to start.</h2>
+                    <p>Start with a paid audit if you are unsure. Go straight to a build if you already know the system you need.</p>
+                </div>
+                <div class="offer-grid">
+                    <article class="offer-card">
+                        <span class="icon-box"><i data-lucide="search-check" aria-hidden="true"></i></span>
+                        <h3>AI Workflow Audit</h3>
+                        <div class="price">$350</div>
+                        <p>A 90-minute session to find the highest-value repeat tasks before you spend money building.</p>
+                        <ul>
+                            <li>Admin, leads, content, quotes, follow-up</li>
+                            <li>Ranked automation map</li>
+                            <li>Clear next-step recommendation</li>
+                        </ul>
+                    </article>
+                    <article class="offer-card featured">
+                        <span class="icon-box"><i data-lucide="home" aria-hidden="true"></i></span>
+                        <h3>4-Lesson AI Build Package</h3>
+                        <div class="price">$1,000 <span>4 sessions</span></div>
+                        <p>I come to your business and help you build the first version of your AI setup: website, app, socials, and operating loops.</p>
+                        <ul>
+                            <li>Session 1: connect to AI and build your first website</li>
+                            <li>Session 2: turn the website into an app-style tool</li>
+                            <li>Session 3 and 4: connect socials, then run loops</li>
+                        </ul>
+                    </article>
+                    <article class="offer-card">
+                        <span class="icon-box"><i data-lucide="workflow" aria-hidden="true"></i></span>
+                        <h3>Automation Build Sprint</h3>
+                        <div class="price">From $1,500</div>
+                        <p>One workflow fixed properly, with owner approval points and a clean handover.</p>
+                        <ul>
+                            <li>Lead capture and follow-up</li>
+                            <li>Content drafting systems</li>
+                            <li>Forms, sheets, reminders, CRM</li>
+                        </ul>
+                    </article>
+                    <article class="offer-card featured">
+                        <span class="icon-box"><i data-lucide="app-window" aria-hidden="true"></i></span>
+                        <h3>Custom App or Program Build</h3>
+                        <div class="price">From $2,500</div>
+                        <p>For businesses that need a portal, internal tool, client program, dashboard, or booking/check-in flow.</p>
+                        <ul>
+                            <li>Scoped build and test pass</li>
+                            <li>Admin dashboard if needed</li>
+                            <li>Optional support after launch</li>
+                        </ul>
+                    </article>
+                    <article class="offer-card">
+                        <span class="icon-box"><i data-lucide="badge-check" aria-hidden="true"></i></span>
+                        <h3>Monthly Support</h3>
+                        <div class="price">From $350 <span>/month</span></div>
+                        <p>Light ongoing support after a sprint or build so the system keeps improving with the business.</p>
+                        <ul>
+                            <li>Small changes and fixes</li>
+                            <li>New automation ideas</li>
+                            <li>Performance and workflow checks</li>
+                        </ul>
+                    </article>
+                    <article class="offer-card">
+                        <span class="icon-box"><i data-lucide="messages-square" aria-hidden="true"></i></span>
+                        <h3>Not Sure Yet?</h3>
+                        <div class="price">DM AUDIT</div>
+                        <p>Send me what kind of business you run and what task you are sick of doing manually.</p>
+                        <ul>
+                            <li>I will point you toward audit, coaching, or build</li>
+                            <li>No giant discovery process</li>
+                            <li>Plain advice first</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="section alt" id="package">
+            <div class="wrap">
+                <div class="section-head">
+                    <h2>The 4-lesson package.</h2>
+                    <p>Each session gives the business one visible asset, then connects it into the next step. Simple, practical, and built around the business you already run.</p>
+                </div>
+                <div class="lesson-grid">
+                    <article class="lesson-card" data-week="1">
+                        <span class="lesson-kicker">Session 1</span>
+                        <h3>Connect to your AI and build your first website</h3>
+                        <p>We set up the right AI tools, pull out your offer, services, prices, proof, and FAQs, then build a simple website that explains what you sell.</p>
+                        <div class="lesson-output">Output: a usable first website page and a clearer offer.</div>
+                    </article>
+                    <article class="lesson-card" data-week="2">
+                        <span class="lesson-kicker">Session 2</span>
+                        <h3>Turn your website into an app</h3>
+                        <p>We make the site feel like a tool: phone-friendly, easy to save, and shaped around one useful action such as a quote request, booking, form, portal, or check-in.</p>
+                        <div class="lesson-output">Output: an app-style experience people can actually use.</div>
+                    </article>
+                    <article class="lesson-card" data-week="3">
+                        <span class="lesson-kicker">Session 3</span>
+                        <h3>Connect your app to your socials</h3>
+                        <p>We connect the website/app flow to Instagram, Facebook, forms, DMs, content prompts, and enquiry capture so interest has somewhere useful to go.</p>
+                        <div class="lesson-output">Output: a cleaner path from social attention to lead capture.</div>
+                    </article>
+                    <article class="lesson-card" data-week="4">
+                        <span class="lesson-kicker">Session 4</span>
+                        <h3>Run loops</h3>
+                        <p>We build the repeatable loops: content idea, post, DM, lead capture, follow-up, review, improve. The goal is a system you can keep running after I leave.</p>
+                        <div class="lesson-output">Output: a weekly operating loop for content, leads, and follow-up.</div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="systems">
+            <div class="wrap">
+                <div class="section-head">
+                    <h2>What I build.</h2>
+                    <p>Useful AI usually starts with boring repeated work. That is where the money leaks and the owner gets dragged back into admin.</p>
+                </div>
+                <div class="system-grid">
+                    <article class="system-card">
+                        <span class="icon-box"><i data-lucide="inbox" aria-hidden="true"></i></span>
+                        <h3>Lead systems</h3>
+                        <p>Capture DMs, forms, and emails, draft replies, and remind you before good leads go cold.</p>
+                    </article>
+                    <article class="system-card">
+                        <span class="icon-box"><i data-lucide="file-pen-line" aria-hidden="true"></i></span>
+                        <h3>Quote and admin tools</h3>
+                        <p>Turn repeat questions, notes, and job details into cleaner drafts, tasks, and handovers.</p>
+                    </article>
+                    <article class="system-card">
+                        <span class="icon-box"><i data-lucide="calendar-check" aria-hidden="true"></i></span>
+                        <h3>Client follow-up</h3>
+                        <p>Keep check-ins, reminders, reviews, and next steps from living in someone's memory.</p>
+                    </article>
+                    <article class="system-card">
+                        <span class="icon-box"><i data-lucide="layout-dashboard" aria-hidden="true"></i></span>
+                        <h3>Apps and dashboards</h3>
+                        <p>Build the portal, program, tracker, or internal dashboard your current tools cannot quite do.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="proof-band">
+            <div class="wrap proof-layout">
+                <div>
+                    <h2>Built for owners who still want control.</h2>
+                    <p>The best systems do the repetitive prep work, then keep the owner in charge of anything that needs judgement, tone, pricing, or trust.</p>
+                </div>
+                <div class="board" aria-label="Example operating board">
+                    <div class="board-row"><span>Lead reply</span><strong>Drafted</strong><em>Owner approves</em></div>
+                    <div class="board-row"><span>Quote details</span><strong>Structured</strong><em>Ready to send</em></div>
+                    <div class="board-row"><span>Client check-in</span><strong>Flagged</strong><em>No one forgotten</em></div>
+                    <div class="board-row"><span>Weekly content</span><strong>Planned</strong><em>Local and useful</em></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="process">
+            <div class="wrap">
+                <div class="section-head">
+                    <h2>How the work runs.</h2>
+                    <p>No vague AI strategy deck. We find the repeat work, build the first useful thing, test it, then hand it over cleanly.</p>
+                </div>
+                <div class="process">
+                    <article class="step">
+                        <h3>Map the repeat work</h3>
+                        <p>We find the tasks that happen every week and cost time, leads, or follow-up.</p>
+                    </article>
+                    <article class="step">
+                        <h3>Choose the first win</h3>
+                        <p>We pick the smallest system likely to save time or protect revenue fastest.</p>
+                    </article>
+                    <article class="step">
+                        <h3>Build and test</h3>
+                        <p>I set up the workflow, app, dashboard, prompt, or automation and test it with real examples.</p>
+                    </article>
+                    <article class="step">
+                        <h3>Handover</h3>
+                        <p>You get the system, the operating notes, and the next recommended improvements.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="section alt">
+            <div class="wrap">
+                <div class="section-head">
+                    <h2>Quick answers.</h2>
+                    <p>Plain answers for the usual first questions.</p>
+                </div>
+                <div class="faq-grid">
+                    <article class="faq-item">
+                        <h3>Do I need to understand AI first?</h3>
+                        <p>No. Bring the business problem. I will help translate it into the right tool or workflow.</p>
+                    </article>
+                    <article class="faq-item">
+                        <h3>Can you come to my business?</h3>
+                        <p>Yes, the 4-lesson package is built for in-person setup on the Gold Coast.</p>
+                    </article>
+                    <article class="faq-item">
+                        <h3>Will AI send messages without approval?</h3>
+                        <p>Not by default. For most businesses, drafts and reminders with owner approval are the right first step.</p>
+                    </article>
+                    <article class="faq-item">
+                        <h3>What does an app build include?</h3>
+                        <p>It depends on scope, but common builds include client portals, admin dashboards, check-ins, program builders, and workflow tools.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="final-cta" id="contact">
+            <div class="wrap">
+                <div>
+                    <h2>Want me to look at your business?</h2>
+                    <p>DM `AUDIT` on Instagram and tell me what you do, where the admin gets annoying, and what task keeps repeating.</p>
+                </div>
+                <a class="button primary" href="https://www.instagram.com/goldcoast_ai_solutions/" target="_blank" rel="noopener">
+                    <i data-lucide="message-circle" aria-hidden="true"></i>
+                    Message on Instagram
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

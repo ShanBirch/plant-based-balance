@@ -1,0 +1,380 @@
+{
+  "brand": "Gold Coast AI Solutions",
+  "handle": "@goldcoast_ai_solutions",
+  "weekStart": "2026-06-15",
+  "createdAt": "2026-06-11T22:03:13.146Z",
+  "feed": [
+    {
+      "id": "mon-am-ai-update",
+      "day": "Monday",
+      "date": "2026-06-15",
+      "slot": "morning",
+      "lane": "daily_ai_update",
+      "format": "carousel",
+      "label": "Morning AI update",
+      "hook": "AI changed again. Here is the bit a local business should care about.",
+      "subhead": "Use the news only if it changes how you reply, quote, create, book, or follow up.",
+      "cta": "DM AUDIT",
+      "slides": [
+        "What changed in AI today?",
+        "Why it matters for a Gold Coast small business.",
+        "One practical thing to test before lunch.",
+        "What I would automate first.",
+        "DM AUDIT if you want me to map yours."
+      ],
+      "caption": "Most AI news is noise. The useful question is simple: does this help you reply faster, quote faster, create faster, or follow up better? If yes, test it. If no, ignore it. DM AUDIT and I will tell you the first 3 tasks I would look at in your business.",
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/feed/01-monday-morning-daily-ai-update.png"
+    },
+    {
+      "id": "mon-pm-coaching-sprint",
+      "day": "Monday",
+      "date": "2026-06-15",
+      "slot": "night",
+      "lane": "offer",
+      "format": "single",
+      "label": "Offer",
+      "hook": "Four lessons. One practical AI setup for your business.",
+      "subhead": "Website, app, socials, loops. $1,000 for four in-person sessions on the Gold Coast.",
+      "cta": "DM COACH",
+      "slides": [
+        "Session 1: connect to AI and build your website.",
+        "Session 2: turn the website into an app.",
+        "Session 3: connect your app to socials.",
+        "Session 4: run loops."
+      ],
+      "caption": "This is the simple local package: 4 in-person sessions at $250/hour. Session 1, connect to your AI and build your first website. Session 2, turn it into an app-style tool. Session 3, connect it to your socials. Session 4, run the content, lead, follow-up, review loop. DM COACH.",
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/feed/02-monday-night-offer.png"
+    },
+    {
+      "id": "tue-am-ai-update",
+      "day": "Tuesday",
+      "date": "2026-06-16",
+      "slot": "morning",
+      "lane": "daily_ai_update",
+      "format": "carousel",
+      "label": "Morning AI update",
+      "hook": "The AI update only matters if it saves a real job.",
+      "subhead": "Today look at quoting, booking, invoices, FAQs, and follow-up messages.",
+      "cta": "DM AUDIT",
+      "slides": [
+        "Pick one update from today.",
+        "Translate it into one business task.",
+        "Test it on old emails, old quotes, or old FAQs.",
+        "Keep the result if it saves time without making you sound weird."
+      ],
+      "caption": "The best AI test is not fancy. Take one repeated task you already do and see if the tool saves 15 minutes without dropping quality. That is the start of a real system.",
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/feed/03-tuesday-morning-daily-ai-update.png"
+    },
+    {
+      "id": "tue-pm-missed-enquiries",
+      "day": "Tuesday",
+      "date": "2026-06-16",
+      "slot": "night",
+      "lane": "evidence",
+      "format": "single",
+      "label": "Evidence",
+      "hook": "A missed enquiry is not just one message.",
+      "subhead": "It is the quote you did not send, the follow-up you forgot, and the job that went to someone faster.",
+      "cta": "DM AUDIT",
+      "slides": [
+        "Capture every lead.",
+        "Draft the first reply.",
+        "Remind you to follow up.",
+        "Keep the owner in control."
+      ],
+      "caption": "Small businesses do not usually need complicated AI first. They need fewer dropped leads. A simple enquiry and follow-up system can pay for itself faster than another content calendar.",
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/feed/04-tuesday-night-evidence.png"
+    },
+    {
+      "id": "wed-am-ai-update",
+      "day": "Wednesday",
+      "date": "2026-06-17",
+      "slot": "morning",
+      "lane": "daily_ai_update",
+      "format": "carousel",
+      "label": "Morning AI update",
+      "hook": "AI search is changing how people find local businesses.",
+      "subhead": "Your website needs clear services, prices, location, proof, and next steps.",
+      "cta": "DM AUDIT",
+      "slides": [
+        "People are asking AI before they click websites.",
+        "Clear service pages matter more.",
+        "Local proof matters more.",
+        "FAQs matter more.",
+        "Your site should answer the sale, not just look nice."
+      ],
+      "caption": "If someone asks an AI tool for a local recommendation, vague websites lose. Make your service, suburb, price range, proof, and next step obvious.",
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/feed/05-wednesday-morning-daily-ai-update.png"
+    },
+    {
+      "id": "wed-pm-process-first",
+      "day": "Wednesday",
+      "date": "2026-06-17",
+      "slot": "night",
+      "lane": "education",
+      "format": "single",
+      "label": "Education",
+      "hook": "AI will not fix a messy process.",
+      "subhead": "First we map the work. Then we automate the part that repeats.",
+      "cta": "DM AUDIT",
+      "slides": [
+        "Where does the enquiry come from?",
+        "Who replies?",
+        "What gets copied?",
+        "What gets forgotten?",
+        "That is the automation map."
+      ],
+      "caption": "The first win is usually not a chatbot. It is a clear process. Once the process is clear, the automation gets simple.",
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/feed/06-wednesday-night-education.png"
+    },
+    {
+      "id": "thu-am-ai-update",
+      "day": "Thursday",
+      "date": "2026-06-18",
+      "slot": "morning",
+      "lane": "daily_ai_update",
+      "format": "carousel",
+      "label": "Morning AI update",
+      "hook": "New AI content tools are useful, but only with a repeatable angle.",
+      "subhead": "Do not post random AI images. Turn your real work into weekly proof, tips, and offers.",
+      "cta": "DM AUDIT",
+      "slides": [
+        "Pick one repeatable content lane.",
+        "Use one template.",
+        "Batch the raw ideas.",
+        "Let AI draft, then edit for your voice.",
+        "Post the thing that sells the next step."
+      ],
+      "caption": "Content automation should not make your brand weirder. It should help you say the useful thing more consistently.",
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/feed/07-thursday-morning-daily-ai-update.png"
+    },
+    {
+      "id": "thu-pm-app-build",
+      "day": "Thursday",
+      "date": "2026-06-18",
+      "slot": "night",
+      "lane": "offer",
+      "format": "single",
+      "label": "Build offer",
+      "hook": "Need a client app, internal tool, or program builder?",
+      "subhead": "Custom builds start from $2,500. Good for portals, check-ins, dashboards, forms, and repeatable programs.",
+      "cta": "DM BUILD",
+      "slides": [
+        "Client portal.",
+        "Booking or check-in flow.",
+        "Program builder.",
+        "Admin dashboard.",
+        "Automated follow-up."
+      ],
+      "caption": "Some businesses do not need another SaaS subscription. They need one custom tool that fits the way they work. Custom app and program builds start from $2,500. DM BUILD.",
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/feed/08-thursday-night-offer.png"
+    },
+    {
+      "id": "fri-am-ai-update",
+      "day": "Friday",
+      "date": "2026-06-19",
+      "slot": "morning",
+      "lane": "daily_ai_update",
+      "format": "carousel",
+      "label": "Morning AI update",
+      "hook": "Your inbox is probably the easiest AI win.",
+      "subhead": "Not auto-spam. Drafts, summaries, follow-up reminders, and cleaner handovers.",
+      "cta": "DM AUDIT",
+      "slides": [
+        "Summarise long threads.",
+        "Draft replies in your style.",
+        "Flag forgotten follow-ups.",
+        "Turn emails into tasks.",
+        "Keep approval before anything sends."
+      ],
+      "caption": "The goal is not to let AI run wild in your inbox. The goal is to stop good leads and client requests getting buried.",
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/feed/09-friday-morning-daily-ai-update.png"
+    },
+    {
+      "id": "fri-pm-five-businesses",
+      "day": "Friday",
+      "date": "2026-06-19",
+      "slot": "night",
+      "lane": "cta",
+      "format": "single",
+      "label": "CTA",
+      "hook": "I am taking on 5 Gold Coast businesses for AI audits.",
+      "subhead": "I will find the first 3 tasks worth automating before you spend money building anything.",
+      "cta": "DM AUDIT",
+      "slides": [
+        "Good fit: repeated admin.",
+        "Good fit: slow lead follow-up.",
+        "Good fit: content bottleneck.",
+        "Good fit: forms, sheets, or client programs."
+      ],
+      "caption": "If you are curious but not sure what to build, start with the audit. I will look for the highest-value repeated work first. DM AUDIT.",
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/feed/10-friday-night-cta.png"
+    },
+    {
+      "id": "sat-am-ai-update",
+      "day": "Saturday",
+      "date": "2026-06-20",
+      "slot": "morning",
+      "lane": "daily_ai_update",
+      "format": "carousel",
+      "label": "Weekend AI test",
+      "hook": "Weekend AI test: write your FAQ from real customer questions.",
+      "subhead": "Grab old enquiries, paste the themes, and turn them into clearer website answers.",
+      "cta": "DM AUDIT",
+      "slides": [
+        "Find 10 repeated questions.",
+        "Group them by theme.",
+        "Draft plain answers.",
+        "Put the best ones on your site.",
+        "Use them in DMs and emails."
+      ],
+      "caption": "A good FAQ is not filler. It shortens the sale because it answers the questions people ask before they trust you.",
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/feed/11-saturday-morning-daily-ai-update.png"
+    },
+    {
+      "id": "sat-pm-build-proof",
+      "day": "Saturday",
+      "date": "2026-06-20",
+      "slot": "night",
+      "lane": "proof",
+      "format": "single",
+      "label": "Build proof",
+      "hook": "I build real systems, not AI slide decks.",
+      "subhead": "Apps, dashboards, content engines, lead workflows, and follow-up systems that have to survive real business use.",
+      "cta": "DM BUILD",
+      "slides": [
+        "Working app.",
+        "Admin dashboard.",
+        "Content automation.",
+        "Lead follow-up.",
+        "Owner approval."
+      ],
+      "caption": "The useful version of AI is boring in the best way: fewer missed tasks, faster replies, clearer handovers, and tools people actually use.",
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/feed/12-saturday-night-proof.png"
+    },
+    {
+      "id": "sun-am-ai-update",
+      "day": "Sunday",
+      "date": "2026-06-21",
+      "slot": "morning",
+      "lane": "daily_ai_update",
+      "format": "carousel",
+      "label": "Sunday setup",
+      "hook": "Before Monday, pick one repeat task to remove.",
+      "subhead": "Do not overhaul the business. Choose the one thing you hate doing twice.",
+      "cta": "DM AUDIT",
+      "slides": [
+        "One repeated task.",
+        "One clear input.",
+        "One useful output.",
+        "One human approval point.",
+        "That is enough for a first automation."
+      ],
+      "caption": "The best first automation is usually small. Pick one task that happens every week and make it easier before chasing the big shiny build.",
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/feed/13-sunday-morning-daily-ai-update.png"
+    },
+    {
+      "id": "sun-pm-weekly-checklist",
+      "day": "Sunday",
+      "date": "2026-06-21",
+      "slot": "night",
+      "lane": "checklist",
+      "format": "single",
+      "label": "Checklist",
+      "hook": "Your Monday AI checklist.",
+      "subhead": "One inbox rule, one FAQ answer, one follow-up reminder, one content prompt, one owner approval step.",
+      "cta": "DM AUDIT",
+      "slides": [
+        "Inbox rule.",
+        "FAQ answer.",
+        "Follow-up reminder.",
+        "Content prompt.",
+        "Approval step."
+      ],
+      "caption": "You do not need to become an AI expert next week. You just need one less manual task and one cleaner system.",
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/feed/14-sunday-night-checklist.png"
+    }
+  ],
+  "stories": [
+    {
+      "day": "Monday",
+      "date": "2026-06-15",
+      "hook": "Are you using AI in your business yet?",
+      "frames": [
+        "Poll: Yes daily / I have no idea where to start",
+        "Show: 4-lesson AI build package outline",
+        "CTA: Reply COACH if you want me to come map your setup"
+      ],
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/stories/01-monday-story-plan.png"
+    },
+    {
+      "day": "Tuesday",
+      "date": "2026-06-16",
+      "hook": "Where do leads fall through the cracks?",
+      "frames": [
+        "Poll: Instagram DMs / Email / Phone / Website forms",
+        "Show: simple lead capture to follow-up map",
+        "CTA: Reply AUDIT and I will tell you what I would check first"
+      ],
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/stories/02-tuesday-story-plan.png"
+    },
+    {
+      "day": "Wednesday",
+      "date": "2026-06-17",
+      "hook": "What task do you hate doing twice?",
+      "frames": [
+        "Question box: tell me the repeat task",
+        "Show: one messy process turned into 5 clean steps",
+        "CTA: best answers become anonymous examples"
+      ],
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/stories/03-wednesday-story-plan.png"
+    },
+    {
+      "day": "Thursday",
+      "date": "2026-06-18",
+      "hook": "Would a custom app help your business?",
+      "frames": [
+        "Poll: client portal / booking flow / dashboard / program builder",
+        "Show: dashboard or workflow mockup",
+        "CTA: Reply BUILD if you want a rough scope"
+      ],
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/stories/04-thursday-story-plan.png"
+    },
+    {
+      "day": "Friday",
+      "date": "2026-06-19",
+      "hook": "Friday audit spots.",
+      "frames": [
+        "Frame: I am opening 5 AI audit spots for Gold Coast businesses",
+        "Checklist: admin, leads, content, quotes, follow-up",
+        "CTA: Reply AUDIT"
+      ],
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/stories/05-friday-story-plan.png"
+    },
+    {
+      "day": "Saturday",
+      "date": "2026-06-20",
+      "hook": "Building useful AI, not hype.",
+      "frames": [
+        "Casual BTS: laptop, workflow board, local business scenario",
+        "Mini lesson: automate the repeat, keep the owner in control",
+        "CTA: Reply with the thing your team copies and pastes most"
+      ],
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/stories/06-saturday-story-plan.png"
+    },
+    {
+      "day": "Sunday",
+      "date": "2026-06-21",
+      "hook": "Sunday reset for business owners.",
+      "frames": [
+        "Checklist: pick one repeat task",
+        "Prompt: what input starts it and what output do you need?",
+        "CTA: DM AUDIT before the week gets busy"
+      ],
+      "assetPath": "content-lab/output/gold-coast-ai/week-one/stories/07-sunday-story-plan.png"
+    }
+  ],
+  "siteAssets": [
+    "assets/gold-coast-ai/hero-local-ai-systems.png"
+  ]
+}
