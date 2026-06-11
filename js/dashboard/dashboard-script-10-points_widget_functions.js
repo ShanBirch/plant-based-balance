@@ -2163,7 +2163,7 @@ async function onWorkoutSharePhotoReady(file) {
 
         // Update the sub-heading
         const sub = document.getElementById('share-section-sub');
-        if (sub) sub.textContent = 'Nice shot! Share it to earn up to 2 XP.';
+        if (sub) sub.textContent = 'Nice shot! Share it to earn 1 XP.';
     } catch (err) {
         console.error('Failed to process workout share photo:', err);
         showToast('Couldn\'t process that photo. Try again.', 'error');
@@ -2182,7 +2182,7 @@ function resetWorkoutShareUI() {
     if (shareStep) shareStep.style.display = 'none';
 
     const sub = document.getElementById('share-section-sub');
-    if (sub) sub.textContent = 'One photo → share it to the feed and a group chat to earn up to 2 XP.';
+    if (sub) sub.textContent = 'One photo, share it to the feed for 1 XP.';
 
     const takeBtn = document.getElementById('share-take-photo-btn');
     if (takeBtn) {
@@ -2198,15 +2198,6 @@ function resetWorkoutShareUI() {
         cardBtn.style.background = 'linear-gradient(135deg, #ffffff, #f0fdf4)';
         cardBtn.style.border = 'none';
         cardBtn.innerHTML = '<span style="font-size: 1.3rem;">📢</span><span style="font-size: 0.95rem;">Share to Feed (+1 XP)</span>';
-    }
-
-    const gcBtn = document.getElementById('share-workout-groupchat-btn');
-    if (gcBtn) {
-        gcBtn.disabled = false;
-        gcBtn.style.opacity = '1';
-        gcBtn.style.cursor = 'pointer';
-        gcBtn.style.background = 'linear-gradient(135deg, #ffffff, #eff6ff)';
-        gcBtn.innerHTML = '<span style="font-size: 1.3rem;">💬</span><span style="font-size: 0.95rem;">Share to Group Chat (+1 XP)</span>';
     }
 }
 window.resetWorkoutShareUI = resetWorkoutShareUI;
@@ -2357,15 +2348,6 @@ async function awardWorkoutSharePoint(shareType, photoTimestamp, photoHash) {
                 workoutPointsEarnedThisSession.story = true;
             } else {
                 workoutPointsEarnedThisSession.groupchat = true;
-                // Mark the group chat share button as done
-                const gcBtn = document.getElementById('share-workout-groupchat-btn');
-                if (gcBtn) {
-                    gcBtn.disabled = true;
-                    gcBtn.style.opacity = '0.65';
-                    gcBtn.style.cursor = 'default';
-                    gcBtn.style.background = 'rgba(68, 255, 68, 0.25)';
-                    gcBtn.innerHTML = '<span style="font-size:1.3rem;">✅</span><span style="font-size:0.95rem;">Shared! +1 XP</span>';
-                }
             }
 
             // Tally earned XP and update the confirmation banner
