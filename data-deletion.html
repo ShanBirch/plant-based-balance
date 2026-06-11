@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Deletion - Balance</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Montserrat', sans-serif; background: #0f0f0f; color: #ccc; line-height: 1.8; }
+        .container { max-width: 860px; margin: 0 auto; padding: 56px 24px 80px; }
+        h1 { font-size: 2rem; color: #00e676; margin-bottom: 0.5rem; }
+        h2 { font-size: 1.05rem; color: #00e676; margin-top: 2.25rem; margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+        p { margin-bottom: 1.1rem; color: #bbb; }
+        ol, ul { margin-bottom: 1.4rem; padding-left: 1.5rem; color: #bbb; }
+        li { margin-bottom: 0.5rem; }
+        strong { color: #ddd; }
+        a { color: #00e676; text-decoration: none; }
+        .last-updated { font-style: italic; color: #777; margin-bottom: 2.25rem; font-size: 0.9rem; }
+        .status { border: 1px solid #253827; background: #132016; border-radius: 8px; padding: 18px; margin: 24px 0; color: #d7f7dc; }
+        footer { text-align: center; padding: 36px 24px; color: #555; font-size: 0.85rem; border-top: 1px solid #222; }
+        footer a { margin: 0 10px; color: #777; }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <h1>Data Deletion</h1>
+        <p class="last-updated">Updated: June 11, 2026</p>
+
+        <p>This page explains how to request deletion of personal information connected with Balance, the Balance website, the Balance - Fitness Gamified app, and related online coaching services operated by Shannon Rhys Birch under the Balance brand.</p>
+
+        <section class="status" id="statusBox" hidden>
+            <strong>Request received.</strong>
+            <p id="confirmationText"></p>
+        </section>
+
+        <h2>Request Deletion</h2>
+        <p>To request deletion of your Balance account data or related personal information, email <a href="mailto:shannon@plantbased-balance.org">shannon@plantbased-balance.org</a> from the email address connected with your Balance account.</p>
+        <p>If your request relates to Facebook or Instagram data, include the Facebook Page, Instagram account, or email address you used when granting access, so we can identify the relevant record.</p>
+
+        <h2>What We Delete</h2>
+        <ul>
+            <li>Account and contact information no longer needed to provide the service.</li>
+            <li>Connected Meta authorization records, where applicable.</li>
+            <li>Stored coaching, support, or app data that is not required for legal, safety, billing, tax, dispute, or fraud-prevention reasons.</li>
+        </ul>
+
+        <h2>Processing Time</h2>
+        <p>We aim to respond to deletion requests within 30 days. Some records may be retained where required by law, payment records, safety obligations, or legitimate business record keeping.</p>
+
+        <h2>Privacy Policy</h2>
+        <p>For more detail about how Balance collects, uses, stores and protects personal information, read the <a href="/privacy.html">Privacy Policy</a>.</p>
+    </main>
+
+    <footer>
+        <p>
+            <a href="/privacy.html">Privacy Policy</a>
+            <a href="/terms.html">Terms of Service</a>
+            <a href="/client-agreement.html">Client Agreement</a>
+            <a href="/refund-policy.html">Refund Policy</a>
+        </p>
+        <p>&copy; 2026 Balance. Balance is operated by Shannon Rhys Birch, ABN 90 855 738 343.</p>
+    </footer>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        if (code) {
+            document.getElementById('confirmationText').textContent = `Confirmation code: ${code}`;
+            document.getElementById('statusBox').hidden = false;
+        }
+    </script>
+</body>
+</html>
