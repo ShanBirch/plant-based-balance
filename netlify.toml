@@ -306,8 +306,8 @@
 [functions."weekly-wrapped-push"]
   schedule = "0 23 * * 6"
 
-# Auto feed comments - hourly scanner, code gates to 07:30-21:45 Brisbane.
-# Adds one simple Shannon comment to fresh feed posts after a human-ish delay.
+# Auto feed reactions - hourly scanner, code gates to 07:30-21:45 Brisbane.
+# Adds one Shannon love reaction to fresh feed posts after a human-ish delay.
 [functions."auto-feed-comment"]
   schedule = "37 * * * *"
 
