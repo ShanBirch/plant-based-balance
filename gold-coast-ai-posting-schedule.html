@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Gold Coast AI Solutions Posting Schedule</title>
+    <meta name="description" content="Seven days of feed and story content for Gold Coast AI Solutions.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        :root {
+            --charcoal: #102027;
+            --ink: #17212a;
+            --muted: #5d6b75;
+            --line: #d7e0dd;
+            --paper: #f4efe6;
+            --white: #ffffff;
+            --blue: #2563eb;
+            --eucalyptus: #2f7d5c;
+            --yellow: #f5b642;
+            --coral: #ef6f61;
+            --mist: #e7f4ef;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            margin: 0;
+            color: var(--ink);
+            background: #fbfaf7;
+            font-family: "Inter", Arial, sans-serif;
+            line-height: 1.45;
+        }
+        a { color: inherit; }
+        h1, h2, h3 { margin: 0; font-family: "Montserrat", "Inter", Arial, sans-serif; letter-spacing: 0; line-height: 1.04; }
+        p { margin: 0; }
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: calc(14px + env(safe-area-inset-top, 0px)) 24px 14px;
+            border-bottom: 1px solid rgba(16, 32, 39, 0.08);
+            background: rgba(251, 250, 247, 0.94);
+            backdrop-filter: blur(14px);
+        }
+        .brand { font-weight: 900; text-decoration: none; }
+        .navlinks { display: flex; align-items: center; gap: 12px; font-size: 0.88rem; font-weight: 850; color: var(--muted); }
+        .navlinks a { text-decoration: none; }
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 42px;
+            padding: 0 14px;
+            border-radius: 8px;
+            background: var(--coral);
+            color: var(--white);
+            font-weight: 900;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .hero {
+            padding: 56px 0 34px;
+            background:
+                linear-gradient(120deg, rgba(16, 32, 39, 0.94), rgba(47, 125, 92, 0.86)),
+                url("assets/gold-coast-ai/hero-local-ai-systems.png") center / cover no-repeat;
+            color: var(--white);
+        }
+        .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            min-height: 32px;
+            padding: 0 10px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.14);
+            color: #fce7b2;
+            font-size: 0.78rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+        h1 { max-width: 920px; margin-top: 18px; font-size: clamp(2.4rem, 6vw, 4.8rem); }
+        .hero p { max-width: 720px; margin-top: 18px; color: rgba(255, 255, 255, 0.82); font-weight: 650; }
+        .section { padding: 46px 0; }
+        .section.alt { background: var(--paper); }
+        .section-head {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 18px;
+            align-items: end;
+            margin-bottom: 18px;
+        }
+        .section-head h2 { font-size: clamp(1.7rem, 3vw, 2.5rem); color: var(--charcoal); }
+        .section-head p { color: var(--muted); font-weight: 700; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .post {
+            display: grid;
+            grid-template-columns: 160px minmax(0, 1fr);
+            gap: 14px;
+            min-height: 210px;
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+            box-shadow: 0 10px 24px rgba(16, 32, 39, 0.06);
+        }
+        .post img {
+            width: 160px;
+            aspect-ratio: 4 / 5;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: var(--mist);
+        }
+        .story img { aspect-ratio: 9 / 16; }
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            min-height: 25px;
+            padding: 0 8px;
+            border-radius: 8px;
+            background: var(--mist);
+            color: var(--eucalyptus);
+            font-size: 0.72rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+        .chip.slot { background: #dbeafe; color: var(--blue); }
+        .chip.cta { background: #fff4d9; color: #9a6700; }
+        .post h3 { font-size: 1.08rem; color: var(--charcoal); }
+        .post p { margin-top: 9px; color: var(--muted); font-size: 0.92rem; font-weight: 650; }
+        .post a.asset-link { display: inline-flex; margin-top: 12px; color: var(--blue); font-weight: 900; text-decoration: none; }
+        .story-list {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .story {
+            display: grid;
+            gap: 12px;
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+        }
+        .story img {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+        }
+        .story ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-weight: 650; }
+        .footer {
+            padding: 36px 0 calc(44px + env(safe-area-inset-bottom, 0px));
+            background: var(--charcoal);
+            color: var(--white);
+        }
+        .footer .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+        @media (max-width: 900px) {
+            .navlinks { display: none; }
+            .section-head, .grid, .story-list { grid-template-columns: 1fr; }
+            .post { grid-template-columns: 118px minmax(0, 1fr); }
+            .post img { width: 118px; }
+        }
+        @media (max-width: 520px) {
+            .topbar { padding-left: 16px; padding-right: 16px; }
+            .wrap { width: min(100% - 28px, 1180px); }
+            .post { grid-template-columns: 1fr; }
+            .post img { width: 100%; max-height: 320px; }
+            .button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="topbar" aria-label="Schedule navigation">
+        <a class="brand" href="gold-coast-ai-solutions.html">Gold Coast AI Solutions</a>
+        <div class="navlinks">
+            <a href="#feed">Feed</a>
+            <a href="#stories">Stories</a>
+            <a href="assets/gold-coast-ai/week-one/manifest.json">Manifest</a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="wrap">
+            <span class="eyebrow">Week one content plan</span>
+            <h1>Posting schedule for Gold Coast AI Solutions</h1>
+            <p>One morning AI update and one night sales/proof/offer post per day, plus a daily story angle. Built around the $1,000 4-lesson package, automation builds, and custom apps from $2,500.</p>
+        </div>
+    </header>
+
+    <main>
+        <section class="section" id="feed">
+            <div class="wrap">
+                <div class="section-head">
+                    <div>
+                        <h2>Feed Posts</h2>
+                        <p>Fourteen feed posts: one in the morning, one at night.</p>
+                    </div>
+                    <a class="button" href="assets/gold-coast-ai/week-one/manifest.json">Open manifest</a>
+                </div>
+                <div class="grid">
+                    <article class="post">
+                        <img src="assets/gold-coast-ai/week-one/feed/01-monday-morning-daily-ai-update.png" alt="Monday morning AI update cover">
+                        <div><div class="meta"><span class="chip">Monday</span><span class="chip slot">Morning</span><span class="chip cta">DM AUDIT</span></div><h3>AI changed again. Here is the bit a local business should care about.</h3><p>Use the news only if it changes how you reply, quote, create, book, or follow up.</p><a class="asset-link" href="assets/gold-coast-ai/week-one/feed/01-monday-morning-daily-ai-update.png">Open asset</a></div>
+                    </article>
+                    <article class="post">
+                        <img src="assets/gold-coast-ai/week-one/feed/02-monday-night-offer.png" alt="Monday night offer cover">
+                        <div><div class="meta"><span class="chip">Monday</span><span class="chip slot">Night</span><span class="chip cta">DM COACH</span></div><h3>Four lessons. One practical AI setup for your business.</h3><p>Website, app, socials, loops. $1,000 for four in-person sessions on the Gold Coast.</p><a class="asset-link" href="assets/gold-coast-ai/week-one/feed/02-monday-night-offer.png">Open asset</a></div>
+                    </article>
+                    <article class="post">
+                        <img src="assets/gold-coast-ai/week-one/feed/03-tuesday-morning-daily-ai-update.png" alt="Tuesday morning AI update cover">
+                        <div><div class="meta"><span class="chip">Tuesday</span><span class="chip slot">Morning</span><span class="chip cta">DM AUDIT</span></div><h3>The AI update only matters if it saves a real job.</h3><p>Today look at quoting, booking, invoices, FAQs, and follow-up messages.</p><a class="asset-link" href="assets/gold-coast-ai/week-one/feed/03-tuesday-morning-daily-ai-update.png">Open asset</a></div>
+                    </article>
+                    <article class="post">
+                        <img src="assets/gold-coast-ai/week-one/feed/04-tuesday-night-evidence.png" alt="Tuesday night evidence cover">
+                        <div><div class="meta"><span class="chip">Tuesday</span><span class="chip slot">Night</span><span class="chip cta">DM AUDIT</span></div><h3>A missed enquiry is not just one message.</h3><p>It is the quote you did not send, the follow-up you forgot, and the job that went to someone faster.</p><a class="asset-link" href="assets/gold-coast-ai/week-one/feed/04-tuesday-night-evidence.png">Open asset</a></div>
+                    </article>
+                    <article class="post">
+                        <img src="assets/gold-coast-ai/week-one/feed/05-wednesday-morning-daily-ai-update.png" alt="Wednesday morning AI update cover">
+                        <div><div class="meta"><span class="chip">Wednesday</span><span class="chip slot">Morning</span><span class="chip cta">DM AUDIT</span></div><h3>AI search is changing how people find local businesses.</h3><p>Your website needs clear services, prices, location, proof, and next steps.</p><a class="asset-link" href="assets/gold-coast-ai/week-one/feed/05-wednesday-morning-daily-ai-update.png">Open asset</a></div>
+                    </article>
+                    <article class="post">
+                        <img src="assets/gold-coast-ai/week-one/feed/06-wednesday-night-education.png" alt="Wednesday night education cover">
+                        <div><div class="meta"><span class="chip">Wednesday</span><span class="chip slot">Night</span><span class="chip cta">DM AUDIT</span></div><h3>AI will not fix a messy process.</h3><p>First we map the work. Then we automate the part that repeats.</p><a class="asset-link" href="assets/gold-coast-ai/week-one/feed/06-wednesday-night-education.png">Open asset</a></div>
+                    </article>
+                    <article class="post">
+                        <img src="assets/gold-coast-ai/week-one/feed/07-thursday-morning-daily-ai-update.png" alt="Thursday morning AI update cover">
+                        <div><div class="meta"><span class="chip">Thursday</span><span class="chip slot">Morning</span><span class="chip cta">DM AUDIT</span></div><h3>New AI content tools are useful, but only with a repeatable angle.</h3><p>Do not post random AI images. Turn your real work into weekly proof, tips, and offers.</p><a class="asset-link" href="assets/gold-coast-ai/week-one/feed/07-thursday-morning-daily-ai-update.png">Open asset</a></div>
+                    </article>
+                    <article class="post">
+                        <img src="assets/gold-coast-ai/week-one/feed/08-thursday-night-offer.png" alt="Thursday night build offer cover">
+                        <div><div class="meta"><span class="chip">Thursday</span><span class="chip slot">Night</span><span class="chip cta">DM BUILD</span></div><h3>Need a client app, internal tool, or program builder?</h3><p>Custom builds start from $2,500. Good for portals, check-ins, dashboards, forms, and repeatable programs.</p><a class="asset-link" href="assets/gold-coast-ai/week-one/feed/08-thursday-night-offer.png">Open asset</a></div>
+                    </article>
+                    <article class="post">
+                        <img src="assets/gold-coast-ai/week-one/feed/09-friday-morning-daily-ai-update.png" alt="Friday morning AI update cover">
+                        <div><div class="meta"><span class="chip">Friday</span><span class="chip slot">Morning</span><span class="chip cta">DM AUDIT</span></div><h3>Your inbox is probably the easiest AI win.</h3><p>Not auto-spam. Drafts, summaries, follow-up reminders, and cleaner handovers.</p><a class="asset-link" href="assets/gold-coast-ai/week-one/feed/09-friday-morning-daily-ai-update.png">Open asset</a></div>
+                    </article>
+                    <article class="post">
+                        <img src="assets/gold-coast-ai/week-one/feed/10-friday-night-cta.png" alt="Friday night CTA cover">
+                        <div><div class="meta"><span class="chip">Friday</span><span class="chip slot">Night</span><span class="chip cta">DM AUDIT</span></div><h3>I am taking on 5 Gold Coast businesses for AI audits.</h3><p>I will find the first 3 tasks worth automating before you spend money building anything.</p><a class="asset-link" href="assets/gold-coast-ai/week-one/feed/10-friday-night-cta.png">Open asset</a></div>
+                    </article>
+                    <article class="post">
+                        <img src="assets/gold-coast-ai/week-one/feed/11-saturday-morning-daily-ai-update.png" alt="Saturday morning AI update cover">
+                        <div><div class="meta"><span class="chip">Saturday</span><span class="chip slot">Morning</span><span class="chip cta">DM AUDIT</span></div><h3>Weekend AI test: write your FAQ from real customer questions.</h3><p>Grab old enquiries, paste the themes, and turn them into clearer website answers.</p><a class="asset-link" href="assets/gold-coast-ai/week-one/feed/11-saturday-morning-daily-ai-update.png">Open asset</a></div>
+                    </article>
+                    <article class="post">
+                        <img src="assets/gold-coast-ai/week-one/feed/12-saturday-night-proof.png" alt="Saturday night proof cover">
+                        <div><div class="meta"><span class="chip">Saturday</span><span class="chip slot">Night</span><span class="chip cta">DM BUILD</span></div><h3>I build real systems, not AI slide decks.</h3><p>Apps, dashboards, content engines, lead workflows, and follow-up systems that have to survive real business use.</p><a class="asset-link" href="assets/gold-coast-ai/week-one/feed/12-saturday-night-proof.png">Open asset</a></div>
+                    </article>
+                    <article class="post">
+                        <img src="assets/gold-coast-ai/week-one/feed/13-sunday-morning-daily-ai-update.png" alt="Sunday morning AI update cover">
+                        <div><div class="meta"><span class="chip">Sunday</span><span class="chip slot">Morning</span><span class="chip cta">DM AUDIT</span></div><h3>Before Monday, pick one repeat task to remove.</h3><p>Do not overhaul the business. Choose the one thing you hate doing twice.</p><a class="asset-link" href="assets/gold-coast-ai/week-one/feed/13-sunday-morning-daily-ai-update.png">Open asset</a></div>
+                    </article>
+                    <article class="post">
+                        <img src="assets/gold-coast-ai/week-one/feed/14-sunday-night-checklist.png" alt="Sunday night checklist cover">
+                        <div><div class="meta"><span class="chip">Sunday</span><span class="chip slot">Night</span><span class="chip cta">DM AUDIT</span></div><h3>Your Monday AI checklist.</h3><p>One inbox rule, one FAQ answer, one follow-up reminder, one content prompt, one owner approval step.</p><a class="asset-link" href="assets/gold-coast-ai/week-one/feed/14-sunday-night-checklist.png">Open asset</a></div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="section alt" id="stories">
+            <div class="wrap">
+                <div class="section-head">
+                    <div>
+                        <h2>Story Prompts</h2>
+                        <p>Three to five story frames per day: poll, proof, lesson, CTA.</p>
+                    </div>
+                </div>
+                <div class="story-list">
+                    <article class="story"><img src="assets/gold-coast-ai/week-one/stories/01-monday-story-plan.png" alt="Monday story plan"><h3>Monday</h3><ul><li>Poll: using AI yet?</li><li>Show the 4-lesson package.</li><li>CTA: reply COACH.</li></ul></article>
+                    <article class="story"><img src="assets/gold-coast-ai/week-one/stories/02-tuesday-story-plan.png" alt="Tuesday story plan"><h3>Tuesday</h3><ul><li>Poll: where leads fall through.</li><li>Show lead capture map.</li><li>CTA: reply AUDIT.</li></ul></article>
+                    <article class="story"><img src="assets/gold-coast-ai/week-one/stories/03-wednesday-story-plan.png" alt="Wednesday story plan"><h3>Wednesday</h3><ul><li>Question box: repeat task.</li><li>Show messy process to clean steps.</li><li>Use answers as anonymous examples.</li></ul></article>
+                    <article class="story"><img src="assets/gold-coast-ai/week-one/stories/04-thursday-story-plan.png" alt="Thursday story plan"><h3>Thursday</h3><ul><li>Poll: portal, booking, dashboard, program builder.</li><li>Show a build mockup.</li><li>CTA: reply BUILD.</li></ul></article>
+                    <article class="story"><img src="assets/gold-coast-ai/week-one/stories/05-friday-story-plan.png" alt="Friday story plan"><h3>Friday</h3><ul><li>Open 5 audit spots.</li><li>Checklist: admin, leads, content, quotes, follow-up.</li><li>CTA: reply AUDIT.</li></ul></article>
+                    <article class="story"><img src="assets/gold-coast-ai/week-one/stories/06-saturday-story-plan.png" alt="Saturday story plan"><h3>Saturday</h3><ul><li>Casual build setup.</li><li>Lesson: automate repeat work.</li><li>Ask what they copy and paste most.</li></ul></article>
+                    <article class="story"><img src="assets/gold-coast-ai/week-one/stories/07-sunday-story-plan.png" alt="Sunday story plan"><h3>Sunday</h3><ul><li>Sunday reset checklist.</li><li>Prompt: input and output.</li><li>CTA: DM AUDIT before Monday.</li></ul></article>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="wrap">
+            <div>
+                <strong>Gold Coast AI Solutions</strong>
+                <p>Posting pack for @goldcoast_ai_solutions</p>
+            </div>
+            <a class="button" href="gold-coast-ai-solutions.html">Open website</a>
+        </div>
+    </footer>
+</body>
+</html>

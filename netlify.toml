@@ -536,6 +536,16 @@
   status = 200
 
 [[redirects]]
+  from = "/gold-coast-ai"
+  to = "/gold-coast-ai-solutions.html"
+  status = 200
+
+[[redirects]]
+  from = "/gold-coast-ai-schedule"
+  to = "/gold-coast-ai-posting-schedule.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/login.html"
   status = 200
