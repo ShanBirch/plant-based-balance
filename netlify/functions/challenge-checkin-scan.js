@@ -111,8 +111,8 @@ function cadenceForWeekday(weekday) {
             lookbackDays: 3,
             depth: 'quick',
             priority: 'medium',
-            lengthRule: '1 to 3 short sentences.',
-            prompt: 'Wednesday morning chill check. Recent conversation comes first: if they were sick, stressed, sore, stuck, travelling, busy, waiting on Shannon, or already mid-conversation, reply to that naturally before mentioning training or food. Only mention sessions, an exercise, meals, or weekly goals when it fits the current chat. End with a soft check like "how are you feeling today?" or "need anything from me?" only if it helps.',
+            lengthRule: '1 to 2 short sentences.',
+            prompt: 'Wednesday morning chill check. Default to a simple human check-in like "hey! how\'s your week going?" Use one small piece of context only when it clearly matters, for example if they were sick, stressed, sore, stuck, travelling, busy, waiting on Shannon, or already mid-conversation. Do not stack multiple context hooks just to prove you noticed them. Only mention sessions, an exercise, meals, photos, or weekly goals when it fits the current chat. End with one soft check like "how are you feeling today?", "how\'s your week going?", or "need anything from me?" only if it helps.',
         };
     }
     if (key === 'sun') {
@@ -762,7 +762,7 @@ function resolveThreadGraphAccountId(thread = {}) {
 function cleanDraftOutput(text, clientName, options = {}) {
     const allowHeyaWeekOpening = options.allowHeyaWeekOpening
         && /^\s*heya!\s+week\s+\d+\b/i.test(text || '');
-    const cleaned = allowHeyaWeekOpening ? text : stripLeadingGreeting(text, clientName);
+    const cleaned = allowHeyaWeekOpening ? text : stripLeadingGreeting(text, clientName, { allowGreeting: !!options.allowGreeting });
     return cleaned
         .replace(/^\s*(?:(?:friday|saturday|sunday)\s+)?check[- ]?in[.:]\s*/i, '')
         .replace(/[\u2014\u2013]/g, ',')
@@ -887,8 +887,11 @@ async function generateDraft({
     const cadenceRules = cadence.depth === 'encouragement'
         ? '\nMONDAY RULE: do not mention food, workouts, sleep, steps, rank, gaps, or compliance. Keep it to encouragement plus Weekly Goals setup. If Weekly Goals are not saved yet, ask them to choose 3 for the week as a bundle; never ask them to pick one main focus.'
         : cadence.depth === 'quick'
-            ? '\nWEDNESDAY RULE: this is not a review and not a report card. Treat it like a relaxed 6am check-in from Shannon. If the recent conversation says they were sick, stressed, sore, stuck, busy, travelling, had a blocker, or asked Shannon something that has not clearly been answered yet, make the draft a natural reply to that first. Example direction only: if Sukh said she was sick Monday, ask how she is feeling today before anything else. If the latest conversation line is from the client and Shannon has not replied, do not ignore it or open a new topic; weave the check-in into that reply. Mention workouts, meals, weekly goals, or Sunday only if it fits the conversation. Use at most one soft question, such as "how are you feeling today?" or "need anything from me?" Do not mention rank, points, weight, mood, energy, sleep, steps, gaps, or overall challenge position unless there are no useful conversation, workout, or meal signals at all.'
+            ? '\nWEDNESDAY RULE: this is not a review and not a report card. Treat it like a relaxed 6am check-in from Shannon. Default shape is simple: "hey! how\'s your week going?" If the recent conversation says they were sick, stressed, sore, stuck, busy, travelling, had a blocker, or asked Shannon something that has not clearly been answered yet, make the draft a natural reply to that first. Example direction only: if Sukh said she was sick Monday, ask how she is feeling today before anything else. If the latest conversation line is from the client and Shannon has not replied, do not ignore it or open a new topic; weave the check-in into that reply. Use only one small context hook, not a recap. Do not stack body feel + weekly photos + workout detail in the same opener. Mention workouts, meals, weekly goals, photos, or Sunday only if it fits the conversation. Use at most one soft question, such as "how are you feeling today?", "how\'s your week going?", or "need anything from me?" Do not mention rank, points, weight, mood, energy, sleep, steps, gaps, or overall challenge position unless there are no useful conversation, workout, or meal signals at all.'
             : '\nSUNDAY RULE: this is the full weekly review. Use food, workouts, sleep, steps and any other available data, but only mention what is actually present.';
+    const challengeTimingGuard = cadence.depth === 'encouragement'
+        ? ''
+        : '\nTIMING GUARD: if you mention challenge end timing, final stretch wording, or whether the challenge is finished, anchor it to Brisbane local date/time only. Do not infer today, tomorrow, or "already complete" from UTC.';
     const isFreeTrialCheckin = isManualCheckin && checkinMeta.isFreeTrial;
     const checkinKind = isFreeTrialCheckin ? 'free trial check-in' : isManualCheckin ? 'coaching check-in' : 'challenge check-in';
     const rhythmLine = isManualCheckin
@@ -907,7 +910,9 @@ async function generateDraft({
     const rankRule = isManualCheckin
         ? '- Do not mention rank, points, leaderboards, or challenge position.'
         : '- Mention rank positively or neutrally. Never shame someone for being lower on the board.';
-    const greetingRule = isManualCheckin
+    const greetingRule = cadence.key === 'wednesday'
+        ? '- A small no-name greeting like "hey!" or "morning!" is okay for Wednesday if it makes the check-in feel human.'
+        : isManualCheckin
         ? '- No greeting like "hey" or "hi". Jump straight in.'
         : '- No greeting like "hey" or "hi" for normal quick replies. For Sunday/full-review challenge goal reviews only, use the "Heya! Week..." opener from the goal frame.';
     const checkinContextBlock = isManualCheckin
@@ -931,6 +936,7 @@ ${greetingRule}
 - Follow the check-in moment exactly. Monday is encouragement only, Wednesday is a relaxed morning conversation check, Sunday is the full data review.
 ${activityDetailRule}
 ${goalRule}
+${challengeTimingGuard}
 - For Sunday, recap the week as evidence toward the bigger goal first, then use the recent conversation to make the next weekly focus or final question relevant instead of generic.
 - End with one useful question or one clear next move.
 - Do not claim Shannon has updated, tweaked, fixed, checked, sent, created, or changed anything unless the conversation below shows that action already happened.
@@ -970,7 +976,10 @@ Reply with just the message text, no quotes, no labels.`;
 
     try {
         const reply = await callVertexAIModel(contents, generationConfig);
-        const text = cleanDraftOutput(reply, clientName, { allowHeyaWeekOpening: cadence.depth === 'full' });
+        const text = cleanDraftOutput(reply, clientName, {
+            allowGreeting: cadence.key === 'wednesday',
+            allowHeyaWeekOpening: cadence.depth === 'full',
+        });
         if (text && text.trim()) return { text, model: 'vertex-v7' };
         throw new Error('empty_draft');
     } catch (err) {
@@ -978,7 +987,10 @@ Reply with just the message text, no quotes, no labels.`;
     }
     try {
         const reply = await callGeminiFallback(contents, generationConfig);
-        const text = cleanDraftOutput(reply, clientName, { allowHeyaWeekOpening: cadence.depth === 'full' });
+        const text = cleanDraftOutput(reply, clientName, {
+            allowGreeting: cadence.key === 'wednesday',
+            allowHeyaWeekOpening: cadence.depth === 'full',
+        });
         if (text && text.trim()) return { text, model: 'gemini-2.5-flash-fallback' };
         throw new Error('empty_draft');
     } catch (err) {
@@ -1471,6 +1483,8 @@ exports.handler = async (event = {}) => {
 
 exports.runScan = runScan;
 exports._private = {
+    cadenceForWeekday,
+    cleanDraftOutput,
     manualCheckinPreference,
     coachCheckinsExplicitlyDisabled,
     isPayingClientUser,

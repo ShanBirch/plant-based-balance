@@ -1100,7 +1100,7 @@ The newest message is about Balance/app/helper reconnection, account access, log
 - Do not mention AI, automation, or an assistant. Keep the wording as Shannon personally helping them get sorted.`;
     }
     const url = challengeUrlForRoute(qualifier.challenge_route || 'generic');
-    if (qualifier.stage === 'won') {
+    if (qualifier.stage === 'won' && isCurrentChallengeHandoffMoment({ qualifier, currentMessage: currentMessageText })) {
         return `
 
 FREE CHALLENGE ACCEPTED NEXT STEP:
@@ -1113,6 +1113,12 @@ Your reply should:
 - Use the vibe: "yeah sounds so good, stoked you're keen for the challenge" rather than a brochure.
 - Do it in 2-3 short bubbles, not one paragraph.
 Do not offer to manually write a meal plan or workout program in DMs before signup.`;
+    }
+    if (qualifier.stage === 'won') {
+        return `
+
+FREE CHALLENGE ALREADY ACCEPTED CONTEXT:
+They have accepted the free 30-day Balance Challenge earlier, but the newest message is not asking for the link, details, or next step. Do not resend the signup link from stored stage alone. Reply to the newest message naturally and only bring the link back if they ask how to start, ask for the link/details, or clearly confirm the challenge again.`;
     }
     if (qualifier.stage === 'pitched') {
         return `
@@ -1175,6 +1181,13 @@ function isPositiveChallengeLinkConfirmationText(text) {
     return /\b(?:yes|yeah|yea|yep|sure|please|pls|sounds good|sounds so good|keen|okay|ok|sweet|let'?s do it|lets do it|do it)\b/i.test(String(text || ''));
 }
 
+function isCurrentChallengeHandoffMoment({ qualifier, currentMessage } = {}) {
+    if (isAppReconnectOrAccountSupportRequest(currentMessage)) return false;
+    if (hasChallengeInviteReadinessSignal(currentMessage)) return true;
+    const stage = String(qualifier?.stage || '').toLowerCase();
+    return ['pitched', 'won'].includes(stage) && isPositiveChallengeLinkConfirmationText(currentMessage);
+}
+
 function hasVisibleUrl(text) {
     return /https?:\/\/\S+/i.test(String(text || ''));
 }
@@ -1226,9 +1239,7 @@ function repairMissingChallengeBioLinkChunks(chunks, { maxChunks = MAX_CHUNKS, c
     if (!promisesLinkWithoutUrl(joined)) return list;
     if (isAppReconnectOrAccountSupportRequest(currentMessageText)) return list;
 
-    const allowed = qualifier?.stage === 'won'
-        || hasChallengeInviteReadinessSignal(currentMessageText)
-        || (qualifier?.stage === 'pitched' && isPositiveChallengeLinkConfirmationText(currentMessageText));
+    const allowed = isCurrentChallengeHandoffMoment({ qualifier, currentMessage: currentMessageText });
     if (!allowed) return list;
 
     const url = challengeUrlForRoute(qualifier?.challenge_route || 'generic');
@@ -1242,9 +1253,7 @@ function repairMissingChallengeBioLinkChunks(chunks, { maxChunks = MAX_CHUNKS, c
 function isApprovedChallengeBioHandoffAllowed({ draftText, qualifier, currentMessage } = {}) {
     if (!isApprovedChallengeBioLinkText(draftText)) return false;
     if (isAppReconnectOrAccountSupportRequest(currentMessage)) return false;
-    if (qualifier?.stage === 'won') return true;
-    if (hasChallengeInviteReadinessSignal(currentMessage)) return true;
-    return qualifier?.stage === 'pitched' && isPositiveChallengeLinkConfirmationText(currentMessage);
+    return isCurrentChallengeHandoffMoment({ qualifier, currentMessage });
 }
 
 function isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId } = {}) {
@@ -1256,7 +1265,7 @@ function isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId } = {}) 
 function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linkedUserId, threadId, manychatMessageId, currentMessage }) {
     if (!isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId })) return null;
     const draftHasLinkDrop = isSignupLinkHandoffText(draftText);
-    const acceptedChallenge = qualifier?.stage === 'won';
+    const acceptedChallenge = isCurrentChallengeHandoffMoment({ qualifier, currentMessage });
     if (!draftHasLinkDrop && !acceptedChallenge) return null;
 
     if (isApprovedChallengeBioHandoffAllowed({ draftText, qualifier, currentMessage })) {

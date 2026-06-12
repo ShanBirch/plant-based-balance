@@ -25,7 +25,7 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-const { normalizeCoachDraftText } = require('./_lib/client-context');
+const { normalizeCoachDraftText, sanitizeVisibleOutboundDmText } = require('./_lib/client-context');
 
 // Hard floor so the worker has a fair chance of firing on time, hard ceiling
 // so a typo in the picker UI can't accidentally schedule something a year out.
@@ -233,8 +233,8 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const alertId = body.alertId;
-    const replyText = normalizeCoachDraftText(body.replyText || '').trim();
-    const draftText = normalizeCoachDraftText(body.draftText || '').trim();
+    const replyTextInput = normalizeCoachDraftText(body.replyText || '').trim();
+    const draftTextInput = normalizeCoachDraftText(body.draftText || '').trim();
     const source = body.source || 'send_later';
     const sendInMs = Number(body.sendInMs);
     // Optional one-line note from Shannon explaining WHY he's delaying.
@@ -250,7 +250,7 @@ exports.handler = async (event) => {
     const approveAutoReview = body.approveAutoReview === true || body.approve_auto_review === true;
     const approveAutoReviewFrom = String(body.approveAutoReviewFrom || body.approve_auto_review_from || source).slice(0, 80);
 
-    if (!alertId || !replyText) {
+    if (!alertId || !replyTextInput) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing alertId or replyText' }) };
     }
     if (!Number.isFinite(sendInMs) || sendInMs < MIN_DELAY_MS || sendInMs > MAX_DELAY_MS) {
@@ -286,6 +286,16 @@ exports.handler = async (event) => {
             error: HUMAN_AGENT_MANUAL_ONLY_MESSAGE,
             code: 'human_agent_manual_send_required',
         }) };
+    }
+    const shouldSanitizeVisibleLeadCopy = !alert.client_id;
+    const replyText = shouldSanitizeVisibleLeadCopy
+        ? sanitizeVisibleOutboundDmText(replyTextInput)
+        : replyTextInput;
+    const draftText = shouldSanitizeVisibleLeadCopy
+        ? sanitizeVisibleOutboundDmText(draftTextInput)
+        : draftTextInput;
+    if (!replyText) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Reply text became empty after visible-copy cleanup' }) };
     }
     // 2. Compute scheduled_for and stamp the row.
     const now = new Date();

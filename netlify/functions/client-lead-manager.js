@@ -11,9 +11,6 @@ const {
     buildMediaReviewInfo,
     buildContextReviewInfo,
     isAlwaysNeedsYouPerson,
-    normalizeLearningReelHistory,
-    buildLearningReelContextBlock,
-    referencesLearningReelFollowUpText,
     reviewDraftAndUpdateAlert,
     truncate,
 } = require('./_lib/client-context');
@@ -58,21 +55,24 @@ function draftReviewNeedsManualCheck(data = {}) {
     const review = normalizeDraftReview(data);
     if (!review || Object.keys(review).length === 0) return false;
     if (draftReviewNeedsContext(data)) return true;
-    if (review.notification_required === true) return true;
-
     const verdict = String(review.verdict || '').trim().toLowerCase();
-    if (verdict === 'warn' || verdict === 'block') return true;
-
     const reason = String(review.notification_reason || review.notificationReason || '').trim().toLowerCase();
-    if (reason && reason !== 'none') return true;
 
     const text = [
+        reason,
         review.summary,
         review.suggested_fix,
         review.suggestedFix,
         ...(Array.isArray(review.issues) ? review.issues : []),
     ].map(v => String(v || '').toLowerCase()).join(' ');
-    return /\b(manual check|needs? (?:shannon|human|manual)|open (?:the )?(?:source )?dm|non[- ]?sequitur|ignored latest|unsupported claim|does(?:n'?t| not) follow|out of context)\b/i.test(text);
+    const hardManualSignal = /\b(context[_ -]?loss|missing[_ -]?(?:source[_ -]?)?context|missing thread|missing conversation|unclear context|lost context|open (?:the )?(?:source )?dm|manual check|needs? (?:shannon|human|manual)|non[-_ ]?sequitur|ignored[_ -]?latest(?:[_ -]?message)?|unsupported[_ -]?claim|media[_ -]?review|voice[_ -]?note|ai[_ -]?suspicion|authenticity|does(?:n'?t| not) follow|out of context|safety|medical|diagnosis|treatment|pregnancy|eating[_ -]?disorder|body[_ -]?image|crisis|self[-_ ]?harm|non[_ -]?approved[_ -]?link)\b/i;
+
+    if (review.notification_required === true) {
+        return hardManualSignal.test(text) || reason === 'draft_review_required';
+    }
+    if (verdict === 'block') return true;
+    if (reason && reason !== 'none') return hardManualSignal.test(text);
+    return hardManualSignal.test(text);
 }
 
 function draftReviewNeedsYouLabel(data = {}) {
@@ -126,7 +126,6 @@ function buildDraftReviewContextBlocks(alert = {}) {
     const shannonDayText = evidence.shannon_day_context || '';
     const checkinText = evidence.checkin_thread_context || '';
     const crossChannelText = evidence.cross_channel_context || '';
-    const learningReelText = evidence.learning_reel_context || buildLearningReelContextBlock(data);
     const exerciseLibrarySupportBlock = buildExerciseLibrarySupportBlock({
         currentMessage: latest,
         conversationText: [timelineText, crossChannelText, priorText].filter(Boolean).join('\n'),
@@ -144,7 +143,6 @@ function buildDraftReviewContextBlocks(alert = {}) {
         shannonDayText ? `Shannon self-story context:\n${truncate(shannonDayText, 900)}` : '',
         checkinText ? `Active check-in thread:\n${truncate(checkinText, 1200)}` : '',
         crossChannelText ? `Cross-channel context:\n${truncate(crossChannelText, 1200)}` : '',
-        learningReelText ? `Recent sent learning reel context:\n${truncate(learningReelText, 1800)}` : '',
     ].filter(Boolean).join('\n\n');
 }
 
@@ -200,36 +198,10 @@ async function ensureDraftReview(alert = {}) {
     }
 }
 
-function latestAlertMessageText(data = {}) {
-    const currentFromBatch = Array.isArray(data.inbound_message_batch)
-        ? data.inbound_message_batch.find(m => m && m.is_current)
-        : null;
-    return String(
-        currentFromBatch?.text
-        || data.message_preview
-        || data.client_message
-        || data.draft_evidence?.current_message
-        || ''
-    ).trim();
-}
-
-function referencesOutboundLearningReel(text = '') {
-    return referencesLearningReelFollowUpText(text);
-}
-
-function draftAsksWhatSentReelWas(draftText = '') {
-    const value = String(draftText || '').toLowerCase().replace(/\s+/g, ' ').trim();
-    if (!value) return false;
-    return /\b(what\s+(?:is|was)\s+(?:it|that|this|the reel|the video|the clip)|what'?s\s+(?:it|that|this)|which\s+(?:one|reel|video|clip)|what\s+was\s+that\s+(?:one\s+)?about)\b/i.test(value)
-        || /\b(what was it|what is it|what's it|what was the recipe|what recipe was it)\b/i.test(value);
-}
-
 function classifyNeedsYou(alert = {}) {
     const data = alert.data || {};
     const mediaReview = buildMediaReviewInfo(alert);
     const contextReview = buildContextReviewInfo(alert);
-    const learningReels = normalizeLearningReelHistory(data);
-    const latestText = latestAlertMessageText(data);
     const exerciseSupport = buildExerciseSupportClassification(alert);
     const exerciseLookupFastTrack = exerciseSupport.isSupport && exerciseSupport.canFastTrack;
     const reasons = [];
@@ -258,14 +230,6 @@ function classifyNeedsYou(alert = {}) {
         reasons.push('draft_review_manual_check');
         labels.push(draftReviewNeedsYouLabel(data));
     }
-    if (referencesOutboundLearningReel(latestText) && learningReels.length === 0) {
-        reasons.push('missing_learning_reel_context');
-        labels.push('client may be referring to a reel but no sent-reel context is stored');
-    }
-    if (referencesOutboundLearningReel(latestText) && learningReels.length > 0 && draftAsksWhatSentReelWas(alert.suggested_message || data.draft_text || '')) {
-        reasons.push('draft_ignored_learning_reel_context');
-        labels.push('draft appears to ignore the stored sent-reel context');
-    }
 
     const uniqueReasons = [...new Set(reasons.filter(Boolean))];
     const uniqueLabels = [...new Set(labels.filter(Boolean))];
@@ -282,8 +246,6 @@ function classifyNeedsYou(alert = {}) {
 function buildNeedsYouData(alert, classification) {
     const data = alert.data || {};
     const reason = classification.label;
-    const learningReels = normalizeLearningReelHistory(data);
-    const learningReelContextBlock = buildLearningReelContextBlock(data);
     const existingReview = data.codex_review && typeof data.codex_review === 'object'
         ? data.codex_review
         : {};
@@ -299,10 +261,6 @@ function buildNeedsYouData(alert, classification) {
         needs_you_required: true,
         needs_you_reason: reason,
         needs_you_reasons: classification.reasons,
-        learning_reels: learningReels.length ? {
-            recent: learningReels,
-            last_sent: learningReels[0],
-        } : (data.learning_reels || null),
         operator_queue: 'needs_you',
         codex_review: {
             ...existingReview,
@@ -311,7 +269,6 @@ function buildNeedsYouData(alert, classification) {
             queue: 'needs_you',
             needs_shannon_approval: true,
             reason,
-            learning_reel_context: learningReelContextBlock ? truncate(learningReelContextBlock, 1800) : undefined,
             evidence_ids: [
                 alert.id ? `coach_alerts:${alert.id}` : '',
                 alert.client_id ? `users:${alert.client_id}` : '',

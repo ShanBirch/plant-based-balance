@@ -93,6 +93,7 @@ const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const {
     normalizeCoachDraftChunks,
     normalizeCoachDraftText,
+    sanitizeVisibleOutboundDmText,
     splitCoachDraftIntoDmBubbles,
     fireCoachEditAnalysis,
 } = require('./_lib/client-context');
@@ -1037,8 +1038,8 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const alertId = body.alertId;
-    const replyText = normalizeCoachDraftText(body.replyText || '').trim();
-    const draftText = normalizeCoachDraftText(body.draftText || '').trim();
+    const replyTextInput = normalizeCoachDraftText(body.replyText || '').trim();
+    const draftTextInput = normalizeCoachDraftText(body.draftText || '').trim();
     const source = body.source || 'inline_reply';
     const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
     const timingSuggestion = normalizeTimingSuggestion(body.timingSuggestion || body.reply_timing_suggestion);
@@ -1046,7 +1047,7 @@ exports.handler = async (event) => {
     const draftReviewOverride = [body.draftReviewOverride, body.draft_review_override, body.sendAnyway, body.send_anyway]
         .some(value => envFlagEnabled(value));
 
-    if (!alertId || !replyText) {
+    if (!alertId || !replyTextInput) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing alertId or replyText' }) };
     }
 
@@ -1093,6 +1094,19 @@ exports.handler = async (event) => {
         }
     }
     const channel = alertData.channel;
+    const shouldSanitizeVisibleLeadCopy = !alertData.client_id;
+    let replyText = shouldSanitizeVisibleLeadCopy
+        ? sanitizeVisibleOutboundDmText(replyTextInput)
+        : replyTextInput;
+    let draftText = shouldSanitizeVisibleLeadCopy
+        ? sanitizeVisibleOutboundDmText(draftTextInput)
+        : draftTextInput;
+    if (!replyText) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ error: 'Reply text became empty after visible-copy cleanup' }),
+        };
+    }
     let graphRecipientId = '';
     let graphAccountId = '';
     let graphSendAvailable = false;
@@ -1278,11 +1292,18 @@ exports.handler = async (event) => {
     // will hard-cut overlong text wherever it wants, even mid-word. We want
     // separate bubbles that stop at paragraph/sentence boundaries first.
     const rawDraftMessages = Array.isArray(alertData.draft_messages) ? alertData.draft_messages : [];
-    const draftMessages = normalizeCoachDraftChunks(rawDraftMessages)
+    let draftMessages = normalizeCoachDraftChunks(rawDraftMessages)
         .map(s => String(s || '').trim())
         .filter(Boolean);
-    const draftJoined = normalizeCoachDraftText(alertData.draft_text || draftText || draftMessages.join('\n')).trim();
-    const draftMessagesJoined = normalizeCoachDraftText(draftMessages.join('\n')).trim();
+    if (shouldSanitizeVisibleLeadCopy) {
+        draftMessages = draftMessages.map(chunk => sanitizeVisibleOutboundDmText(chunk)).filter(Boolean);
+    }
+    const draftJoined = shouldSanitizeVisibleLeadCopy
+        ? sanitizeVisibleOutboundDmText(alertData.draft_text || draftText || draftMessages.join('\n'))
+        : normalizeCoachDraftText(alertData.draft_text || draftText || draftMessages.join('\n')).trim();
+    const draftMessagesJoined = shouldSanitizeVisibleLeadCopy
+        ? sanitizeVisibleOutboundDmText(draftMessages.join('\n'))
+        : normalizeCoachDraftText(draftMessages.join('\n')).trim();
     const draftMessagesMatchDraft = !!draftJoined && draftMessagesJoined === draftJoined;
     const useDraftMessageChunks = draftMessages.length > 0
         && draftJoined

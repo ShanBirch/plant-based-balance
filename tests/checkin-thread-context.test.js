@@ -2,6 +2,7 @@ const assert = require('assert');
 
 const {
     buildCheckinThreadMetadata,
+    daysUntilDate,
     normalizeActiveCheckinAlert,
     buildCheckinConversationBlock,
     summarizeWeeklyGoalsRow,
@@ -21,6 +22,17 @@ assert.strictEqual(metadata.cadence, 'wednesday');
 assert.strictEqual(metadata.state, 'midweek_checkin_active');
 assert.ok(metadata.objective.includes('answer the current conversation first'));
 assert.strictEqual(metadata.expires_at, '2026-05-23T08:00:00.000Z');
+
+assert.strictEqual(
+    daysUntilDate('2026-06-02', new Date('2026-06-01T16:00:00.000Z')),
+    0,
+    'Brisbane local challenge end date should roll at Brisbane midnight, not UTC'
+);
+
+assert.strictEqual(
+    daysUntilDate('2026-06-03', new Date('2026-06-01T16:00:00.000Z')),
+    1
+);
 
 const block = buildCheckinConversationBlock({
     ...metadata,

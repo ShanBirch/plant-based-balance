@@ -2036,8 +2036,12 @@ const DEFAULT_DM_BUBBLE_TARGET_CHARS = 520;
 const DEFAULT_DM_BUBBLE_HARD_MAX_CHARS = 900;
 const DEFAULT_DM_BUBBLE_PREFERRED_MAX = 4;
 
+function stripOutboundDashPunctuation(text) {
+    return String(text || '').replace(/\s*[\u2014\u2013]+\s*/g, ', ');
+}
+
 function cleanOutboundDmBubbleText(text) {
-    return normalizeVisibleEscapedControlChars(text)
+    return stripOutboundDashPunctuation(normalizeVisibleEscapedControlChars(text))
         .replace(/\r\n?/g, '\n')
         .replace(/\u00a0/g, ' ')
         .replace(/[ \t]+/g, ' ')
@@ -2215,6 +2219,28 @@ function normalizeCoachDraftChunks(text) {
  */
 function normalizeCoachDraftText(text) {
     return cleanOutboundDmBubbleText(normalizeCoachDraftChunks(text).join('\n'));
+}
+
+const OUTBOUND_VISIBLE_ARTIFACT_RE = /\[(?:ephemeral|internal|draft|assistant|system|bot|ai|private|hidden|note)\]/ig;
+const OUTBOUND_VISIBLE_STRONG_PROFANITY_RE = /\b(?:fuck(?:in(?:g)?|ing|er|ers|s)?|fucks?|shit(?:ty|ted|ting|s)?|cunt(?:s)?|pussy|bitch(?:es)?|dick(?:head|s)?|cock(?:s)?|wanker|arsehole|bollocks)\b/ig;
+
+function sanitizeVisibleOutboundDmText(text, options = {}) {
+    let out = normalizeCoachDraftText(text || '');
+    if (!out) return '';
+
+    out = out
+        .replace(OUTBOUND_VISIBLE_ARTIFACT_RE, ' ')
+        .replace(/\b(?:ephemeral|internal|draft|assistant|system|bot|ai)\b(?:\s+note)?\s*:?\s*/ig, ' ');
+
+    if (options.stripProfanity !== false) {
+        out = out.replace(OUTBOUND_VISIBLE_STRONG_PROFANITY_RE, ' ');
+    }
+
+    return out
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/[ \t]*\n[ \t]*/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
 }
 
 function applyPhoneAutocorrectCapitalization(text) {
@@ -2567,6 +2593,20 @@ function parseDate(value) {
     return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function parseBrisbaneDateKey(dateKey) {
+    const raw = String(dateKey || '').trim().slice(0, 10);
+    if (!raw) return null;
+    const date = new Date(`${raw}T00:00:00+10:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function daysBetweenBrisbaneDateKeys(startDateKey, endDateKey) {
+    const start = parseBrisbaneDateKey(startDateKey);
+    const end = parseBrisbaneDateKey(endDateKey);
+    if (!start || !end) return null;
+    return Math.floor((end.getTime() - start.getTime()) / 86400000);
+}
+
 function coachLocalParts(value = new Date()) {
     const date = parseDate(value);
     if (!date) return null;
@@ -2881,16 +2921,17 @@ function averageNumeric(rows, key) {
 
 function dayOfChallenge(challenge, now = new Date()) {
     if (!challenge?.start_date) return null;
-    const start = new Date(`${challenge.start_date}T00:00:00Z`);
-    if (!Number.isFinite(start.getTime())) return null;
-    return Math.max(1, Math.floor((now.getTime() - start.getTime()) / 86400000) + 1);
+    const todayKey = coachLocalDateKey(now);
+    const diff = daysBetweenBrisbaneDateKeys(challenge.start_date, todayKey);
+    if (diff == null) return null;
+    return Math.max(1, diff + 1);
 }
 
 function daysUntilDate(dateKey, now = new Date()) {
-    if (!dateKey) return null;
-    const end = new Date(`${dateKey}T23:59:59Z`);
-    if (!Number.isFinite(end.getTime())) return null;
-    return Math.max(0, Math.ceil((end.getTime() - now.getTime()) / 86400000));
+    const todayKey = coachLocalDateKey(now);
+    const diff = daysBetweenBrisbaneDateKeys(todayKey, dateKey);
+    if (diff == null) return null;
+    return Math.max(0, diff);
 }
 
 async function loadChallengeRank(challengeId, userId) {
@@ -4088,6 +4129,62 @@ function isMediaReviewRequired(alertOrData) {
     return buildMediaReviewInfo(alertOrData).required;
 }
 
+function hasVoiceNoteInspectionSignal(data = {}) {
+    const decode = data.media_decode || data.mediaDecode || {};
+    if (Number(data.audio_url_count || data.audioUrlCount || decode.audio_url_count || decode.audioUrlCount) > 0) return true;
+    if (decode.audio_failed) return true;
+
+    const mediaSources = [
+        data.message_preview,
+        data.client_message,
+        data.draft_evidence?.current_message,
+        data.draft_evidence?.recent_timeline,
+    ];
+    if (mediaSources.some(value => /\[AUDIO:https?:\/\//i.test(String(normalizeImplicitMediaMarkers(value) || '')))) return true;
+
+    const lists = [
+        data.inbound_message_batch,
+        data.recent_inbound_messages,
+        data.draft_evidence?.prior_unanswered,
+    ];
+    for (const list of lists) {
+        if (!Array.isArray(list)) continue;
+        for (const item of list) {
+            if (!item || typeof item !== 'object') continue;
+            const media = Array.isArray(item.media) ? item.media : [];
+            if (media.some(entry => String(entry?.type || '').toLowerCase() === 'audio')) return true;
+            const text = normalizeImplicitMediaMarkers(item.text || item.message || item.body || item.message_text);
+            if (/\[AUDIO:https?:\/\//i.test(String(text || ''))) return true;
+        }
+    }
+
+    return false;
+}
+
+function buildVoiceNoteReviewInfo(alertOrData) {
+    const data = alertOrData?.data && typeof alertOrData.data === 'object'
+        ? alertOrData.data
+        : (alertOrData && typeof alertOrData === 'object' ? alertOrData : {});
+    const latest = getContextReviewLatestText(data);
+    const required = hasVoiceNoteInspectionSignal(data);
+    if (!required) {
+        return {
+            required: false,
+            reason: null,
+            label: '',
+            warning: '',
+            latest_text: truncate(normalizeContextText(latest), 180),
+        };
+    }
+    return {
+        required: true,
+        reason: 'voice_note_review_required',
+        label: 'voice note needs Shannon review',
+        warning: 'Warning: voice note attached. Open the source DM and inspect the audio before sending.',
+        latest_text: truncate(normalizeContextText(latest), 180),
+    };
+}
+
 const CONTEXT_REFERENCE_RE = /\b(that|this|it|they|them|those|there|one|same|too|also|again|before|after|above|below|earlier|previous|last one|first one|second one|other one|what you mean|what do you mean|wat do u mean|which one|wdym)\b/i;
 const CONTEXT_ACK_RE = /^(yes|yeah|yep|yup|nah|no|nope|ok|okay|cool|sure|haha|lol|lmao|same|me too|exactly|true|fair|definitely|probably|maybe|sounds good|all good|i can|i can't|i dont|i don't|i did|i didn't|i do|i will|i wont|i won't)\b/i;
 const STANDALONE_INTENT_RE = /\b(challenge|app|link|sign ?up|signup|join|price|cost|how much|what is|tell me|interested|keen|i'?m in|im in|workout|meal|calorie|protein|weight|steps|coach|coaching|plant.?based|vegan)\b/i;
@@ -4212,6 +4309,12 @@ function buildContextReviewInfo(alertOrData) {
         labels.push('client says they do not understand the message/context');
     }
 
+    const voiceNoteReview = buildVoiceNoteReviewInfo(data);
+    if (voiceNoteReview.required) {
+        reasons.push(voiceNoteReview.reason);
+        labels.push(voiceNoteReview.label);
+    }
+
     const uniqueReasons = [...new Set(reasons.filter(Boolean))];
     const label = stored.label
         || (labels.length ? [...new Set(labels)].join(', ') : '')
@@ -4228,8 +4331,11 @@ function buildContextReviewInfo(alertOrData) {
         prior_context_count: priorContextCount,
         tracked_outbound_context: trackedOutbound,
         warning: uniqueReasons.length
-            ? 'Warning: tracked ManyChat context may be incomplete. Open the source DM before sending.'
+            ? (voiceNoteReview.required
+                ? voiceNoteReview.warning
+                : 'Warning: tracked ManyChat context may be incomplete. Open the source DM before sending.')
             : '',
+        voice_note_review_required: voiceNoteReview.required,
     };
 }
 
@@ -5128,6 +5234,7 @@ IG/FB LEAD QUALITY CHECK:
 - Warn if an unlinked lead has reached that 3-6 meaningful reply window with a clear blocker/motivation and the draft keeps asking generic discovery instead of using a soft permission bridge.
 - Warn if a shan_n_sunny lead draft is technically contextual but does not progress the conversation: passive mirroring, generic praise, generic empathy, a stock broad question, or a dead-end reaction when the thread has a concrete next handle available.
 - Warn if the draft uses weak generic discovery such as "what kind of difference would that make", "what usually makes it hard", "how are you finding it", "anything in particular", or "what does that look like for you" when the lead already gave a more specific hook.
+- Keep visible lead copy clean: no raw escape sequences like "\\n", no bracketed system markers like "[ephemeral]", no raw JSON/fences, and no strong profanity unless the thread is clearly a non-lead celebration/support reply.
 - This invite timing rule is only for IG/FB leads. Do not apply it to linked app users, paying clients, check-ins, or support replies.
 - Warn if it is bland or generic while the context has a stronger personal hook Shannon could use.
 - Warn if it comments on emoji usage itself, such as "love the heart emoji", instead of using the emoji as tone and replying to the thing the person sent.
@@ -6770,6 +6877,7 @@ module.exports = {
     callVertexGeminiMultimodal,
     normalizeCoachDraftChunks,
     normalizeCoachDraftText,
+    sanitizeVisibleOutboundDmText,
     applyPhoneAutocorrectCapitalization,
     splitCoachDraftIntoDmBubbles,
     stripLeadingGreeting,
@@ -6788,6 +6896,7 @@ module.exports = {
     replacePhotoMarkers,
     replaceAudioMarkers,
     replaceVideoMarkers,
+    daysUntilDate,
     buildMessageImageParts,
     buildMessageMediaBatchParts,
     buildMessageMediaParts,

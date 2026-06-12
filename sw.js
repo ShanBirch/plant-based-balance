@@ -1,6 +1,6 @@
-const CACHE_NAME = 'pbb-app-v208'; // v208: workout builder search only; v207: offline workout shell/data scripts
+const CACHE_NAME = 'pbb-app-v209'; // v209: stream exercise videos directly through the native video player; v208: workout builder search only
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
-const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v1';
+const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',
@@ -12,7 +12,7 @@ const ASSETS = [
   './workout_library.js',
   './workout_library_extended.js',
   './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=109',
-  './js/dashboard/dashboard-script-7-video_logic.js',
+  './js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=4',
   './js/dashboard/pbb-deferred-yourworkouts.js',
   './js/dashboard/pbb-deferred-savedworkouts.js',
@@ -98,8 +98,7 @@ self.addEventListener('message', (e) => {
       .then((cache) => cacheModelsSequentially(cache, ONBOARDING_MODELS));
   }
   if (e.data && e.data.type === 'CACHE_WORKOUT_VIDEOS') {
-    const urls = Array.isArray(e.data.urls) ? e.data.urls : [];
-    e.waitUntil(cacheWorkoutVideos(urls));
+    e.waitUntil(broadcast({ event: 'workout_video_cache_skipped', reason: 'native_streaming' }));
   }
 });
 
@@ -165,22 +164,6 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
   if (url.pathname.match(/\.(mp4|mov|webm)$/i)) {
-    e.respondWith(
-      caches.open(WORKOUT_VIDEO_CACHE_NAME).then(cache => {
-        return cache.match(url.href).then(cached => {
-          if (cached) {
-            return createRangeResponse(e.request, cached.clone());
-          }
-
-          return fetch(e.request).then(response => {
-            if (response && response.ok && response.status === 200 && !e.request.headers.has('range')) {
-              cache.put(url.href, response.clone());
-            }
-            return response;
-          }).catch(() => caches.match(e.request));
-        });
-      })
-    );
     return;
   }
 

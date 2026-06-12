@@ -327,7 +327,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=37',
             'lib/native-iap.js',
-            'lib/stories.js?v=5',
+            'lib/stories.js?v=6',
             'lib/ai-opponents.js',
             'lib/games.js?v=2',
             'lib/nutrition-calculator.js',
@@ -346,7 +346,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=5"><\/script>');
+    document.write('<script src="lib/stories.js?v=6"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=2"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -14500,16 +14500,17 @@ if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !=
 </script>
 <script>
 // Script-7 (29KB) - video logic. Defer on iOS to reduce memory pressure.
+var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream';
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-7-video_logic.js';
+            s.src = pbbVideoLogicSrc;
             document.head.appendChild(s);
         }, 1000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-7-video_logic.js"><\/script>');
+    document.write('<script src="' + pbbVideoLogicSrc + '"><\/script>');
 }
 </script>
 

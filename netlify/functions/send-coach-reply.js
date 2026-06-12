@@ -26,6 +26,7 @@ const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
 const {
     normalizeCoachDraftText,
+    sanitizeVisibleOutboundDmText,
     fireCoachEditAnalysis,
 } = require('./_lib/client-context');
 
@@ -241,8 +242,8 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const alertId = body.alertId;
-    const replyText = normalizeCoachDraftText(body.replyText || '').trim();
-    const draftText = normalizeCoachDraftText(body.draftText || '').trim();
+    const replyTextInput = normalizeCoachDraftText(body.replyText || '').trim();
+    const draftTextInput = normalizeCoachDraftText(body.draftText || '').trim();
     const source = body.source || 'unknown';
     // Optional one-line note from Shannon explaining WHY he edited the
     // draft. Stamped into data.edit_reason when the reply differs from
@@ -250,7 +251,7 @@ exports.handler = async (event) => {
     const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
     const timingSuggestion = normalizeTimingSuggestion(body.timingSuggestion || body.reply_timing_suggestion);
 
-    if (!alertId || !replyText) {
+    if (!alertId || !replyTextInput) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing alertId or replyText' }) };
     }
 
@@ -283,6 +284,16 @@ exports.handler = async (event) => {
     // inserting a nudges row. That function chooses Instagram Graph first for
     // IG and keeps ManyChat only as the Messenger / legacy fallback.
     const alertData = alert.data || {};
+    const shouldSanitizeVisibleLeadCopy = !alert.client_id;
+    const replyText = shouldSanitizeVisibleLeadCopy
+        ? sanitizeVisibleOutboundDmText(replyTextInput)
+        : replyTextInput;
+    const draftText = shouldSanitizeVisibleLeadCopy
+        ? sanitizeVisibleOutboundDmText(draftTextInput)
+        : draftTextInput;
+    if (!replyText) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Reply text became empty after visible-copy cleanup' }) };
+    }
     const hasExternalThread = !!alertData.ig_thread_id;
     const isInstagramOrMessenger = alertData.channel === 'instagram'
         || alertData.channel === 'messenger'

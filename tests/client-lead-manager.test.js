@@ -87,6 +87,29 @@ const media = manager.classifyNeedsYou(makeAlert({
 assert.strictEqual(media.shouldRoute, true);
 assert.ok(media.reasons.includes('media_review_required'));
 
+const voiceNoteReview = clientContext.buildContextReviewInfo(makeAlert({
+    data: {
+        message_preview: '[AUDIO:https://example.com/voice.m4a]',
+        media_decode: {
+            audio_url_count: 1,
+        },
+    },
+}));
+assert.strictEqual(voiceNoteReview.required, true);
+assert.ok(voiceNoteReview.reasons.includes('voice_note_review_required'));
+assert.match(voiceNoteReview.warning, /voice note/i);
+
+const voiceNoteNeedsYou = manager.classifyNeedsYou(makeAlert({
+    data: {
+        message_preview: '[AUDIO:https://example.com/voice.m4a]',
+        media_decode: {
+            audio_url_count: 1,
+        },
+    },
+}));
+assert.strictEqual(voiceNoteNeedsYou.shouldRoute, true);
+assert.ok(voiceNoteNeedsYou.reasons.includes('voice_note_review_required'));
+
 const aiSuspicion = manager.classifyNeedsYou(makeAlert({
     data: {
         message_preview: 'is this AI?',
@@ -133,6 +156,15 @@ const lateReplyApology = manager.classifyNeedsYou(makeAlert({
 }));
 assert.strictEqual(lateReplyApology.reasons.includes('client_does_not_understand_context'), false);
 
+const typoWhatDoYouMean = manager.classifyNeedsYou(makeAlert({
+    data: {
+        message_preview: 'Wat do u mean',
+        last_outbound_message: 'Bacon + balsamic glaze on there is a bit elite',
+    },
+}));
+assert.strictEqual(typoWhatDoYouMean.shouldRoute, true);
+assert.ok(typoWhatDoYouMean.reasons.includes('client_does_not_understand_context'));
+
 const nonSequiturReview = manager.classifyNeedsYou(makeAlert({
     data: {
         message_preview: 'yeah just the link would be good',
@@ -147,6 +179,22 @@ const nonSequiturReview = manager.classifyNeedsYou(makeAlert({
 }));
 assert.strictEqual(nonSequiturReview.shouldRoute, true);
 assert.ok(nonSequiturReview.reasons.includes('draft_review_manual_check'));
+
+const genericVoiceReview = manager.classifyNeedsYou(makeAlert({
+    data: {
+        message_preview: 'yeah send me the link',
+        draft_review: {
+            verdict: 'warn',
+            confidence: 0.74,
+            summary: 'Draft is usable but a bit generic.',
+            issues: ['generic_voice'],
+            notification_reason: 'lead_quality',
+            context_loss_suspected: false,
+            notification_required: false,
+        },
+    },
+}));
+assert.strictEqual(genericVoiceReview.shouldRoute, false);
 
 const passReview = manager.classifyNeedsYou(makeAlert({
     data: {
@@ -179,13 +227,11 @@ const reviewContext = manager.buildDraftReviewContextBlocks(makeAlert({
             current_message: 'yeah send me the link',
             prior_unanswered: [{ text: 'how do i start?' }],
             recent_timeline: 'Lead: how do i start?\nShannon: i can send the link',
-            learning_reel_context: 'Most recent sent reel: Plant-based cooking: "The BEST cucumber salad" by Pick Up Limes.',
         },
     },
 }));
 assert.ok(reviewContext.includes('Just-arrived message from Lead'));
 assert.ok(reviewContext.includes('Prior unanswered messages'));
-assert.ok(reviewContext.includes('Recent sent learning reel context'));
 
 const exerciseSupportContext = manager.buildDraftReviewContextBlocks(makeAlert({
     suggested_message: 'switch to Cable Hip Abduction instead',

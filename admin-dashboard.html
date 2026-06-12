@@ -7217,6 +7217,7 @@
                 if(group){group.classList.add('expanded');group.classList.add('has-active');}
             }
             currentView=name;
+            if(name==='dms') currentFeed='dms';
             if(name==='dms') updateDmAudienceUi();
             if(name==='follow-ups') updateNeedsAttentionAudienceUi();
             if(window.innerWidth<=768)closeSidebar();
@@ -10689,6 +10690,7 @@
         let currentChallengeCheckinView = 'pending';
         const CHALLENGE_CHECKIN_TABS = ['pending', 'manual', 'later', 'sent_today', 'all'];
         let challengeCheckinCounts = { pending: 0, manual: 0, later: 0, sent_today: 0, all: 0, ig_ready: 0 };
+        const OVERDUE_MANUAL_IG_CHECKIN_HOURS = 12;
         // Cached uncontacted payload — Uncontacted renders differently from
         // the other tabs (two sections, not the standard alert feed) so we
         // store it separately when the tab loads.
@@ -10714,6 +10716,14 @@
                     || data.manual_checkin_roster === true
                     || data.free_trial_checkin === true
                 );
+        }
+
+        function isOverdueManualIgCheckin(alert, now = new Date()) {
+            if (!alert || alert.status !== 'pending' || alert.alert_type !== 'weekly_checkin') return false;
+            if (!isChallengeCheckinAlert(alert) || !isManualIgBlockedAlert(alert)) return false;
+            const createdAt = alert.created_at ? new Date(alert.created_at) : null;
+            if (!createdAt || Number.isNaN(createdAt.getTime())) return false;
+            return (now.getTime() - createdAt.getTime()) > OVERDUE_MANUAL_IG_CHECKIN_HOURS * 60 * 60 * 1000;
         }
 
         function getAlertIgGraphRecipientId(data = {}) {
@@ -11755,6 +11765,7 @@
         function openDmAudience(audience = 'all', el = null) {
             const next = normalizeDmAudience(audience);
             currentDmAudience = next;
+            currentFeed = 'dms';
             const navEl = el || document.getElementById(`dm-nav-${next}`);
             showSection('dms', navEl);
             updateDmAudienceUi();
@@ -12206,7 +12217,7 @@
                 codexReview.reviewed_by,
                 codexReview.reviewer_model,
                 codexReview.automation_id,
-            ].map(v => String(v || '').toLowerCase()).join(' ');
+            ].map(normalizeClientManagerMarkerText).join(' ');
             const explicitlyQuiet = /dismiss|duplicate|no[_ -]?response|no[_ -]?action|leave[_ -]?untouched|stale|handled/.test(markerText);
             const reviewer = codexReview.reviewed_by || codexReview.reviewer_model || codexReview.source || draftReview.reviewed_by || draftReview.reviewer_model || '';
             const needsReview = verdict === 'warn' || draftReview.notification_required === true || draftReview.safe_to_send === false;
@@ -12262,7 +12273,6 @@
                 data.suggested_message,
                 decisionText,
             ].map(v => String(v || '').toLowerCase()).join(' ');
-            const advancedQualifierStage = ['pitched', 'won'].includes(qualifierStage);
             const linkIntent = /\b(send(?:\s+me)?\s+(?:the\s+)?link|link please|link pls|where do i sign|how do i start|sign\s?up|signup|join(?:ing)?|download(?:\s+the)?\s+app|app link|bio link|challenge link|let['\u2019]?s do|lets do|i['\u2019]?m in|im in|keen(?:\s+to)?\s+(?:join|start|do)|ready to start)\b/i.test(textForIntent);
             const draftHasLinkHandoff = /https?:\/\/|here['\u2019]?s\s+(?:the\s+)?link|here is\s+(?:the\s+)?link|bio\.html|signup|sign up|download(?:\s+the)?\s+app/i.test(draftText);
             const explicitManualHandoffFlag = !!(
@@ -12282,11 +12292,11 @@
             const hasLiveLinkHandoffEvidence = !!(
                 explicitManualHandoffFlag
                 || draftHasLinkHandoff
-                || (linkUrl && (advancedQualifierStage || linkIntent || draftHasLinkHandoff))
+                || (linkUrl && linkIntent)
             );
             const challengeLinkNeedsApproval = !!(
                 warning?.required
-                && advancedQualifierStage
+                && (linkIntent || draftHasLinkHandoff || explicitManualHandoffFlag)
                 && (DM_ALERT_TYPES.includes(alert?.alert_type) || FOLLOW_UP_ALERT_TYPES.includes(alert?.alert_type))
                 && !!(data.ig_thread_id || data.subscriber_id || data.ig_username)
             );
@@ -12313,7 +12323,7 @@
         function needsYouHasOperatorWork(alert, activeClientIds = dmClientIdsCache.ids) {
             if (!alert || alert.status !== 'pending') return false;
             if (!NEEDS_YOU_ALERT_TYPES.includes(alert.alert_type)) return false;
-            if (alert.alert_type === 'weekly_checkin') return isCoachCheckinApprovalDraft(alert);
+            if (alert.alert_type === 'weekly_checkin') return isCoachCheckinApprovalDraft(alert) || isOverdueManualIgCheckin(alert);
             if (alert.alert_type === 'first_workout') {
                 return needsYouHasSuggestedDraft(alert);
             }
@@ -12325,6 +12335,7 @@
             if (!DM_ALERT_TYPES.includes(alert.alert_type)) return false;
             const reasonInfo = needsYouAllowedReasonInfo(alert, activeClientIds);
             if (isNeedsYouRoutedDmAlert(alert) && reasonInfo.allowed && needsYouHasSuggestedDraft(alert)) return true;
+            if (isNeedsYouRoutedDmAlert(alert) && reasonInfo.reason === 'client_media') return true;
             if (!needsYouHasSuggestedDraft(alert)) {
                 const mediaReview = getAlertMediaReviewInfo(alert);
                 return isNeedsYouRoutedDmAlert(alert)
@@ -12438,6 +12449,10 @@
                 return;
             }
             if (alert?.alert_type === 'first_workout' && needsYouHasOperatorWork(alert)) {
+                openNeedsYouForAlert(alert, 'all');
+                return;
+            }
+            if (alert?.alert_type === 'weekly_checkin' && needsYouHasOperatorWork(alert)) {
                 openNeedsYouForAlert(alert, 'all');
                 return;
             }
@@ -12680,13 +12695,13 @@
         }
 
         function isManualIgCheckin(alert) {
-            return isChallengeCheckinAlert(alert) && isManualIgBlockedAlert(alert);
+            return isChallengeCheckinAlert(alert) && isManualIgBlockedAlert(alert) && !isOverdueManualIgCheckin(alert);
         }
 
         function summarizeChallengeCheckinCounts(rows) {
             const startOfToday = new Date();
             startOfToday.setHours(0, 0, 0, 0);
-            const all = (rows || []).filter(isChallengeCheckinAlert);
+            const all = (rows || []).filter(isChallengeCheckinAlert).filter(a => !isOverdueManualIgCheckin(a));
             return {
                 pending: all.filter(a => a.status === 'pending').length,
                 manual: all.filter(a => a.status === 'pending' && isManualIgCheckin(a)).length,
@@ -12787,7 +12802,7 @@
 
                 const { data, error } = await query.limit(150);
                 if (error) throw error;
-                let rows = (data || []).filter(isChallengeCheckinAlert);
+                let rows = (data || []).filter(isChallengeCheckinAlert).filter(a => !isOverdueManualIgCheckin(a));
                 if (currentChallengeCheckinView === 'manual') rows = rows.filter(isManualIgCheckin);
                 alertsCache = rows;
                 renderAlertFeed(alertsCache, {
@@ -13133,8 +13148,13 @@
 
         function setDmView(view) {
             if (!DM_TABS.includes(view)) return;
-            if (currentDmView === view) return;
+            const shouldReload = currentView !== 'dms' || currentFeed !== 'dms' || currentDmView !== view;
+            if (currentDmView === view && !shouldReload) {
+                loadDms();
+                return;
+            }
             activateDmView(view);
+            currentFeed = 'dms';
             loadDms();
         }
 

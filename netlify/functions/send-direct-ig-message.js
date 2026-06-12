@@ -13,6 +13,7 @@ const {
     SUPABASE_SERVICE_KEY,
     supabaseQuery,
     normalizeCoachDraftText,
+    sanitizeVisibleOutboundDmText,
     splitCoachDraftIntoDmBubbles,
     fireCoachEditAnalysis,
     normalizeLearningReelItems,
@@ -461,12 +462,12 @@ exports.handler = async (event = {}) => {
     }
 
     const threadId = String(body.threadId || body.igThreadId || '').trim();
-    const message = normalizeCoachDraftText(body.message || body.replyText || '').trim();
-    const learningReelPayload = learningReelPayloadFromBody(body, message);
+    const messageInput = normalizeCoachDraftText(body.message || body.replyText || '').trim();
+    const learningReelPayload = learningReelPayloadFromBody(body, messageInput);
     const learningReelSource = learningReelSourceFromBody(body);
     if (!threadId) return json(400, { error: 'Missing threadId' });
-    if (!message) return json(400, { error: 'Missing message' });
-    if (message.length > 8000) return json(400, { error: 'Message too long (max 8000 chars)' });
+    if (!messageInput) return json(400, { error: 'Missing message' });
+    if (messageInput.length > 8000) return json(400, { error: 'Message too long (max 8000 chars)' });
 
     let thread;
     try {
@@ -521,6 +522,11 @@ exports.handler = async (event = {}) => {
     }
 
     const channel = delivery.channel;
+    const shouldSanitizeVisibleLeadCopy = !thread.linked_user_id;
+    const message = shouldSanitizeVisibleLeadCopy
+        ? sanitizeVisibleOutboundDmText(messageInput)
+        : messageInput;
+    if (!message) return json(400, { error: 'Message became empty after visible-copy cleanup' });
     const source = sourceForDelivery(delivery);
     const deliveryChannel = deliveryChannelForTransport(delivery);
     const graphMessageTag = delivery.transport === 'instagram_graph'

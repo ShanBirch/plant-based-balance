@@ -19,6 +19,7 @@ assert.strictEqual(isSignupLinkHandoffText('want me to send you the details?'), 
 
 const accepted = buildLeadOnboardingHandoffData({
     draftText: "i'll send the link through for you now",
+    currentMessage: 'yeah sounds good',
     qualifier: { stage: 'won' },
     leadStage: 'qualifying',
     linkedUserId: null,
@@ -117,6 +118,35 @@ assert.deepStrictEqual(
     ['love it.'],
     'existing-client cleanup should keep useful banter but strip signup link handoff'
 );
+
+const staleWonBlock = buildChallengeNextStepBlock(
+    { stage: 'won', challenge_route: 'vegan' },
+    'a win is a win'
+);
+assert.match(staleWonBlock, /ALREADY ACCEPTED CONTEXT/);
+assert.doesNotMatch(staleWonBlock, /future-balance\.netlify\.app\/bio\.html/);
+
+assert.strictEqual(
+    buildLeadOnboardingHandoffData({
+        draftText: 'a win is a win haha',
+        currentMessage: 'a win is a win',
+        qualifier: { stage: 'won' },
+        leadStage: 'qualifying',
+        linkedUserId: null,
+        threadId: 'thread-banter',
+    }),
+    null,
+    'a stale won stage plus banter should not attach signup-link handoff metadata'
+);
+
+const staleRepairChunks = finalizeDraftChunksFromRawText(
+    JSON.stringify({ messages: ["a win is a win haha", "here's the link"] }),
+    {
+        qualifier: { stage: 'won' },
+        currentMessageText: 'a win is a win',
+    }
+);
+assert.doesNotMatch(staleRepairChunks.join('\n'), /future-balance\.netlify\.app\/bio\.html/);
 
 const scheduledRepair = scheduledWorker.repairMissingScheduledLinkHandoff({
     data: { signup_link_handoff_url: 'https://future-balance.netlify.app/bio.html' },
