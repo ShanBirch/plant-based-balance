@@ -69,6 +69,7 @@ Current strategic priority: build the AI-operated business layer around Balance:
 - Never revert Shannon's existing local changes without explicit permission.
 - When editing from a worktree, edit only inside that worktree, not through a parent project path.
 - When building or editing a client's workout program, verify in the UI with a calendar/Cycle tab screenshot. Correct DB rows do not guarantee the workout renders.
+- When any backend coach action actually changes a client's program, workout schedule, exercises, or other client-facing state, always create a pending Needs You receipt for Shannon in `coach_alerts`, and make sure `admin-dashboard.html` routes that receipt into Needs You.
 - If creating a user-facing feature, update both feature discovery systems in `dashboard.html`: `allFeatures` and `steps`.
 - If shipping a user-facing feature or meaningful feature change, use a fresh `allFeatures.id` so returning users see the Feature Drop slide/pop-up on next login.
 
