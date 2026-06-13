@@ -197,8 +197,13 @@
             inset: 0;
             z-index: -2;
             background:
-                linear-gradient(90deg, rgba(16, 32, 39, 0.94) 0%, rgba(16, 32, 39, 0.78) 40%, rgba(16, 32, 39, 0.22) 100%),
-                url("assets/gold-coast-ai/hero-local-ai-systems.png") center right / cover no-repeat;
+                radial-gradient(circle at 78% 20%, rgba(242, 201, 76, 0.34), transparent 0 16%, transparent 31%),
+                radial-gradient(ellipse at 82% 72%, rgba(24, 160, 88, 0.42), transparent 38%),
+                radial-gradient(circle at 58% 90%, rgba(239, 111, 97, 0.16), transparent 34%),
+                linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+                linear-gradient(110deg, rgba(16, 32, 39, 0.98) 0%, rgba(16, 32, 39, 0.94) 46%, rgba(16, 32, 39, 0.84) 100%);
+            background-size: auto, auto, auto, 52px 52px, 52px 52px, auto;
         }
 
         .hero::after {
@@ -752,8 +757,12 @@
 
             .hero::before {
                 background:
-                    linear-gradient(180deg, rgba(16, 32, 39, 0.92) 0%, rgba(16, 32, 39, 0.84) 48%, rgba(16, 32, 39, 0.68) 100%),
-                    url("assets/gold-coast-ai/hero-local-ai-systems.png") center top / cover no-repeat;
+                    radial-gradient(circle at 88% 16%, rgba(242, 201, 76, 0.24), transparent 0 17%, transparent 32%),
+                    radial-gradient(ellipse at 88% 62%, rgba(24, 160, 88, 0.34), transparent 38%),
+                    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                    linear-gradient(180deg, rgba(16, 32, 39, 0.99) 0%, rgba(16, 32, 39, 0.94) 58%, rgba(16, 32, 39, 0.88) 100%);
+                background-size: auto, auto, 42px 42px, 42px 42px, auto;
             }
 
             .hero-inner {
