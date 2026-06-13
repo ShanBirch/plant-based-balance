@@ -7,9 +7,10 @@
     <meta name="description" content="AI is transforming people's lives and the way they work. Gold Coast AI Solutions turns that shift into practical systems for small business owners.">
     <meta property="og:title" content="Gold Coast AI Solutions">
     <meta property="og:description" content="AI is transforming people's lives and the way they work. Turn that shift into practical systems for your Gold Coast small business.">
-    <meta property="og:image" content="https://gold-coast-ai-solutions.netlify.app/assets/gold-coast-ai/hero-local-ai-systems.png">
+    <meta property="og:image" content="https://gold-coast-ai-solutions.netlify.app/assets/gold-coast-ai/gold-coast-ai-logo-square.png">
     <meta property="og:type" content="website">
-    <link rel="icon" type="image/png" href="assets/gold-coast-ai/hero-local-ai-systems.png">
+    <link rel="icon" type="image/png" href="assets/gold-coast-ai/gold-coast-ai-logo-square.png">
+    <link rel="apple-touch-icon" href="assets/gold-coast-ai/gold-coast-ai-logo-square.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
@@ -94,13 +95,14 @@
             min-width: 0;
         }
 
-        .brand-mark {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            background:
-                linear-gradient(135deg, var(--blue), var(--eucalyptus) 56%, var(--yellow));
-            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+        .brand-logo {
+            width: 40px;
+            height: 40px;
+            flex: 0 0 auto;
+            border-radius: 12px;
+            object-fit: cover;
+            background: var(--white);
+            box-shadow: 0 8px 18px rgba(16, 32, 39, 0.12), 0 0 0 1px rgba(37, 99, 235, 0.12);
         }
 
         .brand span {
@@ -212,6 +214,16 @@
             width: min(1180px, calc(100% - 48px));
             margin: 0 auto;
             padding: 72px 0 104px;
+        }
+
+        .hero-logo {
+            width: 118px;
+            height: 118px;
+            margin-bottom: 24px;
+            border-radius: 28px;
+            object-fit: cover;
+            background: var(--white);
+            box-shadow: 0 20px 54px rgba(0, 0, 0, 0.34);
         }
 
         .eyebrow {
@@ -749,6 +761,12 @@
                 padding: 112px 0 74px;
             }
 
+            .hero-logo {
+                width: 96px;
+                height: 96px;
+                border-radius: 24px;
+            }
+
             h1 {
                 font-size: clamp(2.85rem, 12vw, 4.3rem);
             }
@@ -842,7 +860,7 @@
 <body>
     <nav class="nav" aria-label="Main navigation">
         <a class="brand" href="#top" aria-label="Gold Coast AI Solutions home">
-            <span class="brand-mark" aria-hidden="true"></span>
+            <img class="brand-logo" src="assets/gold-coast-ai/gold-coast-ai-logo-square.png" alt="" aria-hidden="true">
             <span>Gold Coast AI Solutions</span>
         </a>
         <div class="nav-links">
@@ -858,6 +876,7 @@
     <main id="top">
         <section class="hero">
             <div class="hero-inner">
+                <img class="hero-logo" src="assets/gold-coast-ai/gold-coast-ai-logo-square.png" alt="Gold Coast AI Solutions logo">
                 <span class="eyebrow">Gold Coast small business AI setup</span>
                 <h1>Gold Coast AI Solutions</h1>
                 <p class="hero-copy">AI is transforming people's lives and the way they work. I help Gold Coast small businesses turn that shift into practical systems: fewer missed leads, faster admin, cleaner follow-up, and tools that give owners time, clarity, and control back.</p>
@@ -869,6 +888,10 @@
                     <a class="button secondary" href="#offers">
                         <i data-lucide="tag" aria-hidden="true"></i>
                         See prices
+                    </a>
+                    <a class="button secondary" href="assets/gold-coast-ai/gold-coast-ai-logo-square.png" download="gold-coast-ai-logo-square.png">
+                        <i data-lucide="download" aria-hidden="true"></i>
+                        Download logo
                     </a>
                 </div>
                 <div class="hero-points" aria-label="Service highlights">
