@@ -15,6 +15,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.en
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 
 const {
+    DAY_ORDER,
     applyMoveWorkoutDaysToSchedule,
     applyExerciseEditToSchedule,
     normalizeGeneratedProgramSchedule,
@@ -76,6 +77,46 @@ function currentProgramWeek(program) {
     const now = new Date();
     const weeks = Math.floor((now - start) / (7 * 24 * 60 * 60 * 1000)) + 1;
     return Math.max(1, weeks);
+}
+
+function brisbaneDateKey(date = new Date()) {
+    const parts = new Intl.DateTimeFormat('en-AU', {
+        timeZone: 'Australia/Brisbane',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).formatToParts(date);
+    const map = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    return `${map.year}-${map.month}-${map.day}`;
+}
+
+function dateKeyToUtcNoon(dateKey) {
+    return new Date(`${String(dateKey || '').slice(0, 10)}T12:00:00Z`);
+}
+
+function formatUtcDateKey(date) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+    return date.toISOString().slice(0, 10);
+}
+
+function addDaysToDateKey(dateKey, days) {
+    const date = dateKeyToUtcNoon(dateKey);
+    date.setUTCDate(date.getUTCDate() + Number(days || 0));
+    return formatUtcDateKey(date);
+}
+
+function dayIndexForDateKey(dateKey) {
+    const date = dateKeyToUtcNoon(dateKey);
+    if (Number.isNaN(date.getTime())) return 0;
+    return (date.getUTCDay() + 6) % 7;
+}
+
+function nextDayOnOrAfter(dateKey, targetDay) {
+    const targetIndex = DAY_ORDER.indexOf(targetDay);
+    if (targetIndex < 0) return dateKey;
+    const currentIndex = dayIndexForDateKey(dateKey);
+    const offset = (targetIndex - currentIndex + 7) % 7;
+    return addDaysToDateKey(dateKey, offset);
 }
 
 let workoutLibraryCache = null;
@@ -189,6 +230,44 @@ async function performMoveWorkoutDays({ alert, action }) {
         program_id: program.id,
         program_name: program.program_name,
         updated_at: updatedAt,
+    };
+}
+
+async function performSetProgramWeek({ alert, action }) {
+    const clientId = await resolveClientId(alert);
+    if (!clientId) throw new Error('No linked client account for this action');
+
+    const program = await loadActiveProgram(clientId);
+    const targetWeek = Math.max(1, Math.min(Number(action.payload?.target_week || 1) || 1, 16));
+    const targetDay = DAY_ORDER.includes(action.payload?.target_day)
+        ? action.payload.target_day
+        : (DAY_ORDER.includes(action.payload?.day) ? action.payload.day : '');
+    const todayKey = brisbaneDateKey();
+    const targetWeekStartsOn = nextDayOnOrAfter(todayKey, targetDay);
+    const startDate = addDaysToDateKey(targetWeekStartsOn, -7 * (targetWeek - 1));
+    const updatedAt = new Date().toISOString();
+
+    await supabase(`custom_workout_programs?id=eq.${encodeURIComponent(program.id)}`, {
+        method: 'PATCH',
+        body: {
+            start_date: startDate,
+            updated_at: updatedAt,
+        },
+        prefer: 'return=minimal',
+    });
+
+    return {
+        program_id: program.id,
+        program_name: program.program_name,
+        previous_start_date: program.start_date || null,
+        start_date: startDate,
+        target_week: targetWeek,
+        target_week_starts_on: targetWeekStartsOn,
+        target_day: targetDay || null,
+        updated_at: updatedAt,
+        summary: targetDay
+            ? `Set active program so week ${targetWeek} starts ${targetDay} (${targetWeekStartsOn}).`
+            : `Set active program to week ${targetWeek} from ${targetWeekStartsOn}.`,
     };
 }
 
@@ -396,6 +475,61 @@ async function sendDonePush({ alert, result }) {
     }
 }
 
+function coachActionReceiptTitle(alert, action) {
+    const clientName = alert.client_name || 'Client';
+    if (action.type === 'set_program_week') return `${clientName}: program week updated`;
+    if (action.type === 'move_workout_days') return `${clientName}: workout days updated`;
+    if (action.type === 'edit_workout_exercises') return `${clientName}: workout updated`;
+    if (action.type === 'regenerate_workout_program') return `${clientName}: program regenerated`;
+    return `${clientName}: coach action completed`;
+}
+
+async function insertNeedsYouActionReceipt({ alert, action, result, completedAt }) {
+    const idempotencyKey = `coach_action_receipt:${alert.id}:${action.id}`;
+    const existing = await supabase(
+        `coach_alerts?select=id&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
+    ).catch(() => []);
+    if (existing?.length) return;
+
+    const summary = result.summary || `${action.label || action.type || 'Coach action'} completed.`;
+    await supabase('coach_alerts', {
+        method: 'POST',
+        body: [{
+            alert_type: 'general_idea',
+            client_id: alert.client_id || null,
+            client_name: alert.client_name || null,
+            coach_id: alert.coach_id || null,
+            title: coachActionReceiptTitle(alert, action),
+            description: summary,
+            priority: 'medium',
+            status: 'pending',
+            idempotency_key: idempotencyKey,
+            data: {
+                subtype: 'coach_action_receipt',
+                operator_queue: 'needs_you',
+                needs_you_required: true,
+                needs_you_reason: 'coach_action_completed',
+                source_alert_id: alert.id,
+                source_action_id: action.id,
+                action_type: action.type,
+                action_label: action.label || '',
+                completed_at: completedAt,
+                result: {
+                    summary,
+                    program_id: result.program_id,
+                    program_name: result.program_name,
+                    previous_start_date: result.previous_start_date,
+                    start_date: result.start_date,
+                    target_week: result.target_week,
+                    target_week_starts_on: result.target_week_starts_on,
+                    target_day: result.target_day,
+                },
+            },
+        }],
+        prefer: 'return=minimal',
+    });
+}
+
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return json(500, { error: 'Server misconfigured' });
@@ -411,7 +545,7 @@ exports.handler = async (event) => {
     let alert;
     try {
         const rows = await supabase(
-            `coach_alerts?select=id,client_id,client_name,coach_id,status,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
+            `coach_alerts?select=id,alert_type,client_id,client_name,coach_id,status,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
         );
         alert = rows[0] || null;
     } catch (e) {
@@ -432,6 +566,8 @@ exports.handler = async (event) => {
             result = await performMoveWorkoutDays({ alert, action });
         } else if (action.type === 'edit_workout_exercises') {
             result = await performEditWorkoutExercises({ alert, action });
+        } else if (action.type === 'set_program_week') {
+            result = await performSetProgramWeek({ alert, action });
         } else if (action.type === 'regenerate_workout_program') {
             result = await performRegenerateWorkoutProgram({ alert, action });
         } else {
@@ -475,6 +611,10 @@ exports.handler = async (event) => {
                 exercise_before: result.exercise_before,
                 exercise_after: result.exercise_after,
                 generated_notes: result.generated_notes,
+                previous_start_date: result.previous_start_date,
+                start_date: result.start_date,
+                target_week: result.target_week,
+                target_week_starts_on: result.target_week_starts_on,
             },
         }),
         last_coach_action_result: {
@@ -482,6 +622,10 @@ exports.handler = async (event) => {
             type: action.type,
             completed_at: completedAt,
             summary: result.summary,
+            previous_start_date: result.previous_start_date,
+            start_date: result.start_date,
+            target_week: result.target_week,
+            target_week_starts_on: result.target_week_starts_on,
         },
     };
 
@@ -494,6 +638,9 @@ exports.handler = async (event) => {
     } catch (e) {
         return json(500, { error: 'Action completed but alert update failed', details: e.message, result });
     }
+
+    await insertNeedsYouActionReceipt({ alert: { ...alert, data: nextData }, action, result, completedAt })
+        .catch(e => console.warn('[perform-coach-action] receipt insert failed:', e.message));
 
     await sendDonePush({ alert: { ...alert, data: nextData }, result });
     return json(200, { ok: true, action: findAction(nextData, actionId), data: nextData, result });

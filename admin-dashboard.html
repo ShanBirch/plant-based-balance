@@ -10671,7 +10671,7 @@
         let currentNeedsYouView = 'all';
         let needsYouCounts = { all: 0 };
         const NEEDS_YOU_TABS = ['all'];
-        const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'onboarding_day_30', 'weekly_checkin', 'first_workout'];
+        const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'general_idea', 'onboarding_day_30', 'weekly_checkin', 'first_workout'];
         const CLIENT_MANAGER_REVIEW_MARKERS = [
             'balance-combined-dm-manager',
             'balance-lead-client-manager',
@@ -12320,9 +12320,20 @@
             return isClientManagerReviewedClientMessage(alert);
         }
 
+        function isCoachActionReceipt(alert) {
+            const data = alert?.data || {};
+            return alert?.alert_type === 'general_idea'
+                && (
+                    data.subtype === 'coach_action_receipt'
+                    || data.needs_you_reason === 'coach_action_completed'
+                    || !!data.source_action_id
+                );
+        }
+
         function needsYouHasOperatorWork(alert, activeClientIds = dmClientIdsCache.ids) {
             if (!alert || alert.status !== 'pending') return false;
             if (!NEEDS_YOU_ALERT_TYPES.includes(alert.alert_type)) return false;
+            if (isCoachActionReceipt(alert)) return true;
             if (alert.alert_type === 'weekly_checkin') return isCoachCheckinApprovalDraft(alert) || isOverdueManualIgCheckin(alert);
             if (alert.alert_type === 'first_workout') {
                 return needsYouHasSuggestedDraft(alert);
@@ -12355,12 +12366,14 @@
 
         function collapseNeedsYouRows(rows = []) {
             const dmRows = [];
+            const actionReceiptRows = [];
             const otherRows = [];
             rows.filter(a => a.status === 'pending').forEach(row => {
-                if (DM_ALERT_TYPES.includes(row.alert_type)) dmRows.push(row);
+                if (isCoachActionReceipt(row)) actionReceiptRows.push(row);
+                else if (DM_ALERT_TYPES.includes(row.alert_type)) dmRows.push(row);
                 else otherRows.push(row);
             });
-            return [...collapsePendingByUser(dmRows), ...collapsePendingByUser(otherRows)]
+            return [...collapsePendingByUser(dmRows), ...actionReceiptRows, ...collapsePendingByUser(otherRows)]
                 .sort((a, b) => Date.parse(b.created_at || '') - Date.parse(a.created_at || ''));
         }
 
@@ -16638,14 +16651,17 @@
 
         function renderAlertCard(alert) {
             const isChallengeCheckin = isChallengeCheckinAlert(alert);
+            const isActionReceipt = isCoachActionReceipt(alert);
             const manualIgRequired = isManualIgBlockedAlert(alert);
             const isFollowUp = isFollowUpAlert(alert);
             const followUpBlockedByActiveDm = isFollowUpBlockedByActiveDm(alert);
-            const typeLabel = isChallengeCheckin
-                ? (alert.data?.free_trial_checkin ? 'Trial check-in' : alert.data?.non_challenge_checkin ? 'Check-in' : 'Challenge check-in')
-                : (ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type);
+            const typeLabel = isActionReceipt
+                ? 'Program update'
+                : isChallengeCheckin
+                    ? (alert.data?.free_trial_checkin ? 'Trial check-in' : alert.data?.non_challenge_checkin ? 'Check-in' : 'Challenge check-in')
+                    : (ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type);
             const typeIcon = ALERT_TYPE_ICONS[alert.alert_type] || '📋';
-            const renderedTypeIcon = isFollowUp ? '->' : typeIcon;
+            const renderedTypeIcon = isActionReceipt ? 'OK' : (isFollowUp ? '->' : typeIcon);
             const time = timeAgo(alert.created_at);
             const displayMessage = getResolvedAlertMessage(alert);
             const hasMessage = displayMessage && displayMessage.trim();

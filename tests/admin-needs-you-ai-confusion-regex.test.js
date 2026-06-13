@@ -21,8 +21,17 @@ assert.ok(
 );
 
 assert.ok(
-    dashboard.includes("const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'onboarding_day_30', 'weekly_checkin', 'first_workout'];"),
-    'month-one milestones, actionable weekly check-ins, and first workouts should be loaded into Needs You'
+    dashboard.includes("const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'general_idea', 'onboarding_day_30', 'weekly_checkin', 'first_workout'];"),
+    'coach action receipts, month-one milestones, actionable weekly check-ins, and first workouts should be loaded into Needs You'
+);
+
+assert.ok(
+    dashboard.includes('function isCoachActionReceipt(alert)') &&
+    dashboard.includes("data.subtype === 'coach_action_receipt'") &&
+    dashboard.includes('if (isCoachActionReceipt(alert)) return true;') &&
+    dashboard.includes('const actionReceiptRows = [];') &&
+    dashboard.includes('if (isCoachActionReceipt(row)) actionReceiptRows.push(row);'),
+    'completed coach action receipts should route into Needs You without opening all general ideas'
 );
 
 assert.ok(
