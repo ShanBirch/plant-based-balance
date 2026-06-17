@@ -213,6 +213,27 @@ function toggleBuilderItem(btn, key) {
     updateBuilderUI();
 }
 
+function addCustomExerciseToBuilderSelection(exerciseName) {
+    if (!exerciseName) return false;
+
+    if (typeof EXERCISE_VIDEOS !== 'undefined' && !Object.prototype.hasOwnProperty.call(EXERCISE_VIDEOS, exerciseName)) {
+        EXERCISE_VIDEOS[exerciseName] = '';
+    }
+
+    if (!customWorkoutSelection.includes(exerciseName)) {
+        customWorkoutSelection.push(exerciseName);
+    }
+
+    const search = document.getElementById('builder-search');
+    if (search) search.value = exerciseName;
+
+    updateBuilderUI();
+    filterExerciseLibrary(exerciseName);
+    return true;
+}
+
+window.addCustomExerciseToBuilderSelection = addCustomExerciseToBuilderSelection;
+
 function updateBuilderUI() {
     const floatAction = document.getElementById('builder-floating-action');
     const countSpan = document.getElementById('builder-count');

@@ -19978,8 +19978,28 @@ async function saveCustomExercise() {
             }
         }
 
-        // If we're in an active workout context, offer to add it right away
-        if (window._customExerciseContext === 'workout') {
+        if (window._customExerciseContext === 'builder') {
+            closeCreateCustomExerciseModal();
+            const addedToBuilder = typeof window.addCustomExerciseToBuilderSelection === 'function'
+                ? window.addCustomExerciseToBuilderSelection(name)
+                : false;
+
+            if (typeof showToast === 'function') {
+                showToast(
+                    addedToBuilder
+                        ? `"${name}" added to your workout builder.`
+                        : `"${name}" has been created!`,
+                    'success'
+                );
+            } else {
+                alert(
+                    addedToBuilder
+                        ? `"${name}" added to your workout builder.`
+                        : `"${name}" has been created!`
+                );
+            }
+        } else if (window._customExerciseContext === 'workout') {
+            // If we're in an active workout context, offer to add it right away
             closeCreateCustomExerciseModal();
             const addNow = confirm(`"${name}" has been saved!\n\nWould you like to add it to your current workout?`);
             if (addNow) {
