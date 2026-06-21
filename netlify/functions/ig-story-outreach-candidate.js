@@ -109,6 +109,35 @@ function cleanIgUsername(value) {
     return clean;
 }
 
+function parseStoryCommentUsernameSet(value) {
+    const set = new Set();
+    String(value || '')
+        .split(/[\s,;|]+/)
+        .map(cleanIgUsername)
+        .filter(Boolean)
+        .forEach(username => set.add(username.toLowerCase()));
+    return set;
+}
+
+function storyCommentUsernameRule(username, env = process.env) {
+    const clean = cleanIgUsername(username);
+    if (!clean) return { allowed: false, reason: 'invalid_username' };
+    const lower = clean.toLowerCase();
+    const blocked = parseStoryCommentUsernameSet(
+        `${env.STORY_COMMENT_BLOCKED_USERNAMES || ''},${env.IG_STORY_OUTREACH_BLOCKED_USERNAMES || ''}`
+    );
+    if (blocked.has(lower)) {
+        return { allowed: false, reason: 'story_username_blocked' };
+    }
+    const allowlisted = parseStoryCommentUsernameSet(
+        `${env.STORY_COMMENT_ALLOWED_USERNAMES || ''},${env.IG_STORY_OUTREACH_ALLOWED_USERNAMES || ''}`
+    );
+    if (allowlisted.size && !allowlisted.has(lower)) {
+        return { allowed: false, reason: 'story_username_not_allowlisted' };
+    }
+    return { allowed: true, reason: '' };
+}
+
 function parseStoryUrl(url) {
     const clean = String(url || '').split('?')[0].replace(/\/+$/, '');
     const match = clean.match(/\/stories\/([^/?#]+)\/([^/?#]+)/i);
@@ -2629,6 +2658,17 @@ exports.handler = async (event = {}) => {
         return json(400, { error: 'story_url username does not match ig_username', url_username: urlUsername, ig_username: username });
     }
     if (body.identity_verified === false) return json(400, { error: 'identity_not_verified' });
+    const usernameRule = storyCommentUsernameRule(username);
+    if (!usernameRule.allowed) {
+        return json(409, {
+            error: usernameRule.reason,
+            safety_reason: usernameRule.reason,
+            ig_username: username,
+            story_id: storyId,
+            story_url: parsedUrl.cleanUrl,
+            sent_request: body.send_status === 'sent' || body.sent === true,
+        });
+    }
 
     let evidenceImages = [];
     let evidenceVideo = null;
@@ -2897,6 +2937,8 @@ exports.handler = async (event = {}) => {
 
 exports._test = {
     cleanIgUsername,
+    parseStoryCommentUsernameSet,
+    storyCommentUsernameRule,
     parseStoryUrl,
     normalizeDraftComment,
     applyRelationshipAwareStoryCommentGuard,

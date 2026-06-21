@@ -6,6 +6,8 @@ const {
     relationshipContextHasKnownPetNames,
     repairDraftCommentWithContext,
     parseStoryUrl,
+    parseStoryCommentUsernameSet,
+    storyCommentUsernameRule,
     assessStoryCommentSafety,
     assessAudioVisualCommentConsistency,
     relationshipStoryBlockReason,
@@ -25,6 +27,30 @@ assert.strictEqual(
     parseStoryUrl('https://www.instagram.com/stories/highlights/18100654963567629/').username,
     '',
     'Instagram highlights URLs must not be treated as real outreach usernames'
+);
+
+assert.deepStrictEqual(
+    [...parseStoryCommentUsernameSet('@mon_main, mon.alt; mon_third | stories').values()],
+    ['mon_main', 'mon.alt', 'mon_third'],
+    'story username config should normalize handles and ignore reserved story words'
+);
+
+assert.deepStrictEqual(
+    storyCommentUsernameRule('mon_alt', { STORY_COMMENT_BLOCKED_USERNAMES: 'mon_alt' }),
+    { allowed: false, reason: 'story_username_blocked' },
+    'blocked story usernames should be refused before drafting'
+);
+
+assert.deepStrictEqual(
+    storyCommentUsernameRule('mon_alt', { STORY_COMMENT_ALLOWED_USERNAMES: 'mon_main' }),
+    { allowed: false, reason: 'story_username_not_allowlisted' },
+    'story allowlists should narrow a focused run to the selected handle'
+);
+
+assert.deepStrictEqual(
+    storyCommentUsernameRule('mon_main', { STORY_COMMENT_ALLOWED_USERNAMES: '@mon_main, someone_else' }),
+    { allowed: true, reason: '' },
+    'allowlisted story usernames should pass the account gate'
 );
 
 assert.strictEqual(
