@@ -718,6 +718,26 @@
   force = true
 
 [[redirects]]
+  from = "/recover-pack"
+  to = "/recover-pack/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/recover-pack/"
+  to = "/recover-pack/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/recover-pack/guide"
+  to = "/recover-pack/guide.html"
+  status = 200
+
+[[redirects]]
+  from = "/recover-pack/guide/"
+  to = "/recover-pack/guide.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/login.html"
   status = 200

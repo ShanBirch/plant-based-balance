@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unlock The Recovery Window Pack</title>
+  <meta name="description" content="Answer a few questions to unlock the plant-based recovery window pack.">
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      --paper: #f7f3ea;
+      --ink: #191817;
+      --muted: #5b554d;
+      --grid: rgba(25, 24, 23, 0.08);
+      --green: #209b5a;
+      --yellow: #f3ca46;
+      --orange: #f25434;
+      --line: #25211d;
+      --panel: #fffaf0;
+      --dark: #171512;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+        var(--paper);
+      background-size: 34px 34px;
+    }
+
+    main {
+      width: min(760px, 100%);
+      margin: 0 auto;
+      padding: 20px 14px 34px;
+    }
+
+    .card {
+      border: 2px solid rgba(37, 33, 29, 0.18);
+      border-radius: 8px;
+      background: rgba(255, 250, 240, 0.92);
+    }
+
+    .hero {
+      padding: 22px 18px;
+      border: 3px solid var(--line);
+      box-shadow: 8px 8px 0 var(--yellow);
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--green);
+      font-size: 0.78rem;
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    h1 {
+      max-width: 11ch;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2.95rem, 12.8vw, 5.4rem);
+      line-height: 0.96;
+      letter-spacing: 0;
+      text-shadow: 0.055em 0.055em 0 var(--yellow);
+    }
+
+    .intro {
+      margin-top: 18px;
+      color: #3f3a34;
+      font-size: 1.05rem;
+      line-height: 1.42;
+      font-weight: 760;
+    }
+
+    .unlock-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .unlock-item {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border: 2px solid rgba(37, 33, 29, 0.16);
+      border-radius: 8px;
+      background: var(--panel);
+      font-weight: 850;
+      line-height: 1.28;
+    }
+
+    .mark {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: var(--green);
+      color: #fffaf0;
+      font-weight: 950;
+    }
+
+    .form-card {
+      margin-top: 28px;
+      padding: 18px;
+    }
+
+    h2 {
+      font-size: clamp(1.85rem, 8vw, 2.55rem);
+      line-height: 0.96;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .subcopy {
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 750;
+      line-height: 1.38;
+    }
+
+    form {
+      display: grid;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .field-row {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--ink);
+      font-size: 0.78rem;
+      font-weight: 950;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      min-height: 48px;
+      border: 2px solid rgba(37, 33, 29, 0.18);
+      border-radius: 8px;
+      padding: 12px 13px;
+      background: #fffdf6;
+      color: var(--ink);
+      font: inherit;
+      font-size: 1rem;
+    }
+
+    textarea {
+      min-height: 96px;
+      resize: vertical;
+      line-height: 1.35;
+    }
+
+    .check {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 10px;
+      align-items: start;
+      text-transform: none;
+      letter-spacing: 0;
+      color: #39342f;
+      font-size: 0.92rem;
+      line-height: 1.34;
+      font-weight: 750;
+    }
+
+    .check input {
+      min-height: 0;
+      width: 16px;
+      height: 16px;
+      margin-top: 3px;
+      accent-color: var(--green);
+    }
+
+    button {
+      min-height: 52px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--green);
+      color: #fffaf0;
+      font: inherit;
+      font-size: 1.05rem;
+      font-weight: 950;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .status {
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 800;
+    }
+
+    .status.ok {
+      color: var(--green);
+      font-weight: 950;
+    }
+
+    .status.err {
+      color: #9f3426;
+      font-weight: 950;
+    }
+
+    .honeypot {
+      display: none;
+    }
+
+    .field-title {
+      color: var(--ink);
+      font-size: 0.78rem;
+      font-weight: 950;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .helper {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 730;
+      line-height: 1.32;
+    }
+
+    .checks {
+      display: grid;
+      gap: 8px;
+    }
+
+    .choice-grid {
+      margin-top: 10px;
+    }
+
+    .mini {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 8px;
+      background: var(--dark);
+      color: #fff7e7;
+      font-weight: 780;
+      line-height: 1.36;
+    }
+
+    @media (min-width: 680px) {
+      .field-row {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .choice-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero card">
+      <p class="eyebrow">Recovery window pack</p>
+      <h1>Build your recovery meal.</h1>
+      <p class="intro">Answer a few questions first. The pack designs a plant-based recovery meal for the session you actually did.</p>
+      <div class="unlock-list" aria-label="What unlocks">
+        <div class="unlock-item"><span class="mark">1</span><span>Your recommended recovery meal and backup option.</span></div>
+        <div class="unlock-item"><span class="mark">2</span><span>A portion starting point scaled to the details you give.</span></div>
+        <div class="unlock-item"><span class="mark">3</span><span>A downloadable version you can save after training.</span></div>
+      </div>
+    </section>
+
+    <section class="form-card card">
+      <h2>Get your version</h2>
+      <p class="subcopy">This takes about 45 seconds. Optional body details help scale the meal, but you can skip them.</p>
+      <form id="recover-form" data-lead-form data-campaign="plant-based-recovery-window" data-redirect="guide.html">
+        <input type="hidden" name="campaign_slug" value="plant-based-recovery-window">
+        <input type="hidden" name="ig_username" id="igUsername">
+        <input type="hidden" name="utm_source" id="utmSource">
+        <input type="hidden" name="utm_medium" id="utmMedium">
+        <input type="hidden" name="utm_campaign" id="utmCampaign">
+        <input type="hidden" name="source_page" id="sourcePage">
+        <div class="honeypot" aria-hidden="true">
+          <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+        </div>
+
+        <label>
+          Email
+          <input name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+        </label>
+
+        <div>
+          <div class="field-title">Optional body context</div>
+          <p class="helper">Used only for a practical serving-size starting point.</p>
+          <div class="field-row">
+            <label>
+              Weight kg
+              <input name="body_weight" type="number" inputmode="decimal" min="35" max="220" step="0.5" placeholder="75">
+            </label>
+            <label>
+              Height cm
+              <input name="height_cm" type="number" inputmode="numeric" min="130" max="230" step="1" placeholder="175">
+            </label>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <label>
+            What did you train?
+            <select name="training_type" required>
+              <option value="">Choose one</option>
+              <option value="strength">Strength / weights</option>
+              <option value="run">Run / cardio</option>
+              <option value="class">Class / circuit</option>
+              <option value="walk">Walk / light session</option>
+              <option value="mixed">Mixed session</option>
+            </select>
+          </label>
+
+          <label>
+            How hard?
+            <select name="session_effort" required>
+              <option value="">Choose one</option>
+              <option value="easy">Easy / light</option>
+              <option value="moderate">Moderate</option>
+              <option value="hard">Hard</option>
+              <option value="very_hard">Very hard / sweaty</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label>
+            Next proper meal?
+            <select name="meal_timing" required>
+              <option value="">Choose one</option>
+              <option value="now">Now / within 30 minutes</option>
+              <option value="soon">Within 1-2 hours</option>
+              <option value="later">More than 2 hours away</option>
+              <option value="late">Late and I want something light</option>
+            </select>
+          </label>
+
+          <label>
+            Appetite now?
+            <select name="appetite" required>
+              <option value="">Choose one</option>
+              <option value="low">Low</option>
+              <option value="normal">Normal</option>
+              <option value="hungry">Hungry</option>
+              <option value="ravenous">Ravenous</option>
+            </select>
+          </label>
+        </div>
+
+        <label>
+          What usually goes wrong?
+          <select name="dm_problem" required>
+            <option value="">Choose one</option>
+            <option value="hungry">Hungry again an hour later</option>
+            <option value="flat">Flat or sore the next day</option>
+            <option value="appetite">No appetite after training</option>
+            <option value="protein">Not sure what protein to use</option>
+            <option value="busy">No time / need a grab-and-go option</option>
+          </select>
+        </label>
+
+        <div class="field-row">
+          <label>
+            Meal style
+            <select name="meal_style" required>
+              <option value="">Choose one</option>
+              <option value="bowl">Bowl / plate</option>
+              <option value="smoothie">Smoothie</option>
+              <option value="toast">Toast / yoghurt</option>
+              <option value="wrap">Wrap / sandwich</option>
+              <option value="grab">Grab-and-go</option>
+            </select>
+          </label>
+
+          <label>
+            Prep time
+            <select name="prep_time" required>
+              <option value="">Choose one</option>
+              <option value="0">No prep</option>
+              <option value="5">5 minutes</option>
+              <option value="10">10 minutes</option>
+              <option value="20">20 minutes</option>
+            </select>
+          </label>
+        </div>
+
+        <label>
+          Carb base
+          <select name="carb_preference" required>
+            <option value="">Choose one</option>
+            <option value="rice">Rice, pasta, noodles, or couscous</option>
+            <option value="oats">Oats, cereal, fruit, or smoothie carbs</option>
+            <option value="toast">Toast, wrap, bagel, or sandwich</option>
+            <option value="potato">Potato or sweet potato</option>
+            <option value="any">No preference</option>
+          </select>
+        </label>
+
+        <div>
+          <div class="field-title">Protein anchors you will actually eat</div>
+          <p class="helper">Pick at least one. The guide will use these first.</p>
+          <div class="checks choice-grid">
+            <label class="check"><input type="checkbox" name="protein_choices" value="tofu" checked><span>Tofu / tempeh</span></label>
+            <label class="check"><input type="checkbox" name="protein_choices" value="beans" checked><span>Beans / lentils</span></label>
+            <label class="check"><input type="checkbox" name="protein_choices" value="soy_yoghurt"><span>Soy yoghurt</span></label>
+            <label class="check"><input type="checkbox" name="protein_choices" value="powder"><span>Plant protein powder</span></label>
+            <label class="check"><input type="checkbox" name="protein_choices" value="seitan"><span>Seitan</span></label>
+          </div>
+        </div>
+
+        <label>
+          Anything you avoid or hate?
+          <textarea name="biggest_bottleneck" placeholder="Example: no protein powder, hate tofu, training late, need work snacks..."></textarea>
+        </label>
+
+        <div>
+          <div class="field-title">What do you want more of?</div>
+          <div class="checks">
+            <label class="check"><input type="checkbox" name="content_interests" value="recovery_window" checked><span>Recovery window reminders</span></label>
+            <label class="check"><input type="checkbox" name="content_interests" value="plant_based_protein" checked><span>Plant-based protein ideas</span></label>
+            <label class="check"><input type="checkbox" name="content_interests" value="quick_meals"><span>Fast meals after training</span></label>
+            <label class="check"><input type="checkbox" name="content_interests" value="training_recovery"><span>Training recovery basics</span></label>
+          </div>
+        </div>
+
+        <label class="check">
+          <input name="email_consent" type="checkbox" required>
+          <span>I agree to get the recovery pack follow-up and occasional Balance emails. Unsubscribe anytime.</span>
+        </label>
+
+        <button type="submit">Unlock The Pack</button>
+        <div class="status" id="status" data-form-status role="status" aria-live="polite"></div>
+      </form>
+      <p class="mini">The pack unlocks after the form so the meal can match your session, timing, appetite, food choices, and prep time.</p>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById('recover-form');
+    const status = document.getElementById('status');
+    const params = new URLSearchParams(window.location.search);
+    const campaign = form.dataset.campaign || 'plant-based-recovery-window';
+    const redirect = form.dataset.redirect || 'guide.html';
+    const isLocalPreview = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+      || /^192\.168\./.test(window.location.hostname)
+      || window.location.port === '8766';
+
+    function setHidden(id, value) {
+      const field = document.getElementById(id);
+      if (field) field.value = value || '';
+    }
+
+    setHidden('igUsername', params.get('ig') || params.get('username') || '');
+    setHidden('utmSource', params.get('utm_source') || 'instagram');
+    setHidden('utmMedium', params.get('utm_medium') || 'comment_reply');
+    setHidden('utmCampaign', params.get('utm_campaign') || campaign);
+    setHidden('sourcePage', window.location.href);
+
+    function collectPayload(formEl) {
+      const data = new FormData(formEl);
+      const payload = {};
+      const listFields = ['content_interests', 'ig_content_preferences', 'protein_choices'];
+      for (const [key, value] of data.entries()) {
+        if (listFields.includes(key)) {
+          payload[key] = payload[key] || [];
+          payload[key].push(value);
+        } else if (key === 'email_consent') {
+          payload[key] = true;
+        } else {
+          payload[key] = value;
+        }
+      }
+      if (payload.training_type && !payload.business_type) {
+        payload.business_type = payload.training_type;
+      }
+      if (!payload.protein_choices || !payload.protein_choices.length) {
+        payload.protein_choices = ['tofu', 'beans'];
+      }
+      return payload;
+    }
+
+    function buildLeadPayload(payload) {
+      const problemLabel = {
+        hungry: 'Hungry again an hour later',
+        flat: 'Flat or sore the next day',
+        appetite: 'No appetite after training',
+        protein: 'Not sure what protein to use',
+        busy: 'No time / need a grab-and-go option'
+      }[payload.dm_problem] || payload.dm_problem || '';
+      return {
+        email: payload.email,
+        email_consent: Boolean(payload.email_consent),
+        instagram: payload.ig_username || '',
+        ig_handle: payload.ig_username || '',
+        bot_account: 'shan_n_sunny',
+        resource_slug: 'recovery-window-meal-designer',
+        resource_title: 'Plant-Based Recovery Meal Designer',
+        step: 'recovery_meal_designer',
+        cohort_type: 'recovery_window_pack',
+        keyword: 'RECOVER',
+        utm_source: payload.utm_source || 'instagram',
+        utm_medium: payload.utm_medium || 'comment_reply',
+        utm_campaign: payload.utm_campaign || campaign,
+        source_page: payload.source_page || window.location.href,
+        landing_url: payload.source_page || window.location.href,
+        answers: {
+          goal: 'Build a plant-based post-training recovery meal',
+          diet_style: 'Plant-based',
+          training_days: payload.training_type || '',
+          hard_part: problemLabel,
+          current_setup: [
+            payload.session_effort && `Effort: ${payload.session_effort}`,
+            payload.meal_timing && `Timing: ${payload.meal_timing}`,
+            payload.appetite && `Appetite: ${payload.appetite}`,
+            payload.meal_style && `Meal style: ${payload.meal_style}`,
+            payload.prep_time && `Prep time: ${payload.prep_time} minutes`,
+            payload.carb_preference && `Carb base: ${payload.carb_preference}`,
+            payload.body_weight && `Weight kg: ${payload.body_weight}`,
+            payload.height_cm && `Height cm: ${payload.height_cm}`,
+            payload.biggest_bottleneck && `Notes: ${payload.biggest_bottleneck}`
+          ].filter(Boolean).join('\n'),
+          support: [
+            ...(payload.content_interests || []),
+            ...(payload.protein_choices || []).map((item) => `protein_${item}`)
+          ],
+          wants_challenge: 'not_asked'
+        },
+        raw_recovery_payload: payload
+      };
+    }
+
+    async function submitCapture(payload) {
+      if (isLocalPreview && params.get('capture') !== '1') {
+        return { ok: true, preview: true };
+      }
+      const response = await fetch('/.netlify/functions/science-resource-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildLeadPayload(payload))
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.ok === false) {
+        throw new Error(result.error || 'Something went wrong.');
+      }
+      return result;
+    }
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const button = form.querySelector('button[type="submit"]');
+      const payload = collectPayload(form);
+      if (!payload.email || !payload.email_consent) {
+        status.className = 'status err';
+        status.textContent = 'Email and consent are required.';
+        return;
+      }
+      status.className = 'status';
+      status.textContent = 'Submitting...';
+      button.disabled = true;
+
+      submitCapture(payload)
+        .then(() => {
+          sessionStorage.setItem('recoverPackUnlocked', '1');
+          sessionStorage.setItem('recoverPackAnswers', JSON.stringify({
+            ...payload,
+            problem: payload.dm_problem,
+            notes: payload.biggest_bottleneck,
+            unlocked_at: new Date().toISOString()
+          }));
+          status.className = 'status ok';
+          status.textContent = 'Unlocked. Opening the pack...';
+          if (payload.email) params.set('email', payload.email);
+          window.setTimeout(() => {
+            window.location.href = redirect + (params.toString() ? `?${params}` : '');
+          }, 350);
+        })
+        .catch((error) => {
+          status.className = 'status err';
+          status.textContent = error.message || 'Could not submit. Message me on Instagram instead.';
+          button.disabled = false;
+        });
+    });
+  </script>
+</body>
+</html>
