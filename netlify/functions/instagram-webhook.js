@@ -60,6 +60,20 @@ const INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV = process.env.INSTAGRAM_GRAPH_ACCESS_TOKE
     || process.env.INSTAGRAM_ACCESS_TOKEN
     || '';
 let cachedInstagramGraphAccessToken = INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV || '';
+const FOOD_PHOTO_TRACKING_ACK = process.env.IG_FOOD_PHOTO_TRACKING_ACK
+    || "Looks so good. I'll track it for you now.";
+const FOOD_PHOTO_TRACKING_DEFAULTS_DISABLED = envFlagEnabled(
+    process.env.IG_FOOD_PHOTO_TRACKING_DISABLE_DEFAULTS
+    || process.env.FOOD_PHOTO_TRACKING_DISABLE_DEFAULTS
+);
+const FOOD_PHOTO_TRACKING_OFFER_WINDOW_DAYS = Number(process.env.IG_FOOD_PHOTO_TRACKING_OFFER_WINDOW_DAYS || 30);
+const FOOD_PHOTO_TRACKING_OFFER_WINDOW_MS = (Number.isFinite(FOOD_PHOTO_TRACKING_OFFER_WINDOW_DAYS) && FOOD_PHOTO_TRACKING_OFFER_WINDOW_DAYS > 0
+    ? FOOD_PHOTO_TRACKING_OFFER_WINDOW_DAYS
+    : 30) * 24 * 60 * 60 * 1000;
+const FOOD_PHOTO_TRACKING_ALLOWED_TOKENS = new Set([
+    ...(FOOD_PHOTO_TRACKING_DEFAULTS_DISABLED ? [] : ['fra', 'romy']),
+    ...splitEnvList(process.env.IG_FOOD_PHOTO_TRACKING_ALLOWLIST || process.env.FOOD_PHOTO_TRACKING_ALLOWLIST || ''),
+].map(normalizeFoodTrackingToken).filter(Boolean));
 
 const SAFE_AUDIT_HEADERS = [
     'content-type',
@@ -161,6 +175,17 @@ async function getInstagramGraphAccessToken(accountId = '') {
     return cachedInstagramGraphAccessToken;
 }
 
+function envFlagEnabled(value) {
+    return ['1', 'true', 'yes', 'y', 'on', 'enabled'].includes(String(value || '').trim().toLowerCase());
+}
+
+function splitEnvList(value) {
+    return String(value || '')
+        .split(/[,\s]+/)
+        .map(item => item.trim())
+        .filter(Boolean);
+}
+
 function normalizeGraphApiVersion(value) {
     const raw = String(value || '').trim();
     if (!raw) return 'v25.0';
@@ -183,6 +208,252 @@ async function graphGet(path, params = {}, accountId = '') {
         throw new Error(`Graph ${res.status}: ${text.slice(0, 300)}`);
     }
     return text ? JSON.parse(text) : null;
+}
+
+function graphMessageIdFromResponse(response = {}) {
+    return response.message_id || response.id || null;
+}
+
+function normalizeFoodTrackingToken(value) {
+    return String(value || '')
+        .replace(/^@+/, '')
+        .replace(/^[\s"'`]+|[\s"'`.,!?]+$/g, '')
+        .trim()
+        .toLowerCase();
+}
+
+function booleanFlagValue(value) {
+    if (typeof value === 'boolean') return value;
+    const raw = String(value ?? '').trim().toLowerCase();
+    if (['1', 'true', 'yes', 'y', 'on', 'enabled'].includes(raw)) return true;
+    if (['0', 'false', 'no', 'n', 'off', 'disabled'].includes(raw)) return false;
+    return null;
+}
+
+function extractFoodPhotoUrls(text) {
+    const urls = [];
+    const seen = new Set();
+    const source = String(text || '');
+    const matches = source.matchAll(/\[PHOTO:(https?:\/\/[^\]\s]+)\]/gi);
+    for (const match of matches) {
+        const url = cleanUrl(match[1]);
+        if (url && !seen.has(url)) {
+            seen.add(url);
+            urls.push(url);
+        }
+    }
+    return urls;
+}
+
+function foodPhotoUrlsFromMessaging(event) {
+    const message = messageFromMessaging(event);
+    const attachments = Array.isArray(message.attachments) ? message.attachments : [];
+    const urls = [];
+    const seen = new Set();
+    for (const attachment of attachments) {
+        const payload = safeObject(attachment?.payload);
+        const type = String(attachment?.type || payload.type || '').toLowerCase();
+        const mimeType = String(payload.mime_type || payload.content_type || attachment?.mime_type || '').toLowerCase();
+        if (type === 'story_mention' || type === 'share' || type.includes('audio') || type.includes('video')) {
+            continue;
+        }
+        if (!type.includes('image') && !type.includes('photo') && !mimeType.startsWith('image/')) {
+            continue;
+        }
+        const url = cleanUrl(payload.url || payload.media_url || payload.attachment_url || attachment?.url);
+        if (url && !seen.has(url)) {
+            seen.add(url);
+            urls.push(url);
+        }
+    }
+    return urls;
+}
+
+function addFoodTrackingIdentityToken(tokens, value, splitWords = false) {
+    const token = normalizeFoodTrackingToken(value);
+    if (!token) return;
+    tokens.push(token);
+    if (!splitWords) return;
+    token.split(/[\s._-]+/).map(normalizeFoodTrackingToken).filter(Boolean).forEach(part => tokens.push(part));
+}
+
+function foodTrackingIdentityTokens(thread = {}) {
+    const customData = safeObject(thread.custom_data);
+    const graphData = safeObject(customData.instagram_graph);
+    const trackingData = safeObject(customData.food_photo_tracking);
+    const tokens = [];
+    addFoodTrackingIdentityToken(tokens, thread.id);
+    addFoodTrackingIdentityToken(tokens, thread.linked_user_id);
+    addFoodTrackingIdentityToken(tokens, thread.subscriber_id);
+    addFoodTrackingIdentityToken(tokens, thread.ig_username);
+    addFoodTrackingIdentityToken(tokens, thread.profile_name, true);
+    addFoodTrackingIdentityToken(tokens, graphData.ig_username);
+    addFoodTrackingIdentityToken(tokens, graphData.username);
+    addFoodTrackingIdentityToken(tokens, graphData.ig_graph_user_id);
+    addFoodTrackingIdentityToken(tokens, graphData.participant_id);
+    addFoodTrackingIdentityToken(tokens, trackingData.alias);
+    addFoodTrackingIdentityToken(tokens, trackingData.name, true);
+    const aliases = Array.isArray(trackingData.aliases) ? trackingData.aliases : [];
+    aliases.forEach(alias => addFoodTrackingIdentityToken(tokens, alias, true));
+    return [...new Set(tokens.filter(Boolean))];
+}
+
+function foodPhotoTrackingFlagFromCustomData(customData = {}) {
+    const data = safeObject(customData);
+    const trackingData = safeObject(data.food_photo_tracking || data.calorie_photo_tracking);
+    const candidates = [
+        trackingData.enabled,
+        trackingData.allowed,
+        data.food_photo_tracking_enabled,
+        data.calorie_photo_tracking_enabled,
+        data.manual_food_photo_tracking_enabled,
+    ];
+    for (const candidate of candidates) {
+        const parsed = booleanFlagValue(candidate);
+        if (parsed !== null) return parsed;
+    }
+    return null;
+}
+
+function isFoodPhotoTrackingAllowed(thread = {}) {
+    if (!thread?.linked_user_id) return false;
+    const explicit = foodPhotoTrackingFlagFromCustomData(thread.custom_data);
+    if (explicit === false) return false;
+    if (explicit === true) return true;
+    if (!FOOD_PHOTO_TRACKING_ALLOWED_TOKENS.size) return false;
+    const identityTokens = foodTrackingIdentityTokens(thread);
+    return identityTokens.some(token => FOOD_PHOTO_TRACKING_ALLOWED_TOKENS.has(token));
+}
+
+function normalizeFoodPhotoTrackingMessageText(value) {
+    return String(value || '')
+        .replace(/[\u2018\u2019]/g, "'")
+        .replace(/\[(?:PHOTO|VIDEO|AUDIO):[^\]]+\]/gi, ' ')
+        .toLowerCase()
+        .replace(/\bi\s*(?:'| )?ll\b/g, 'i will')
+        .replace(/\bi\s*can\b/g, 'i can')
+        .replace(/\bdon\s*t\b/g, 'dont')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function isFoodPhotoTrackingOfferText(text) {
+    const normalized = normalizeFoodPhotoTrackingMessageText(text);
+    if (!normalized) return false;
+    const asksForFoodPhotos = /\bsend (?:me |through |over |across )?(?:your )?(?:meals?|food|meal pics?|food pics?|photos?|pics?|pictures?)\b/.test(normalized)
+        || /\bsend (?:me )?(?:photos?|pics?|pictures?) of (?:your )?(?:meals?|food)\b/.test(normalized)
+        || /\b(?:send|shoot|flick) (?:me )?(?:a )?(?:photo|pic|picture)\b.*\b(?:meal|food)\b/.test(normalized);
+    const offersTracking = /\b(?:i (?:will|can)|ill) (?:log|track|add|put)\b.*\b(?:it|them|meal|meals|food|cals|calories|macros)\b/.test(normalized)
+        || /\b(?:i (?:will|can)|ill)\b.*\b(?:log|track|add|put)\b.*\b(?:meal|meals|food|cals|calories|macros)\b/.test(normalized);
+    const trackingDomain = /\b(?:meal|meals|food|cals|calories|macros)\b/.test(normalized);
+    return asksForFoodPhotos && offersTracking && trackingDomain;
+}
+
+function isFoodPhotoTrackingConsentText(text) {
+    const normalized = normalizeFoodPhotoTrackingMessageText(text);
+    if (!normalized) return false;
+    if (/\b(?:no|nah|nope|dont|stop|cancel|not now|rather not|not yet)\b/.test(normalized)) return false;
+    if (/^(?:yes|yeah|yep|yup|sure|ok|okay|perfect|deal|please|keen|sounds good|that works|love that|will do|done|agreed)\b/.test(normalized)) {
+        return true;
+    }
+    if (/\b(?:i will|ill|will|can|happy to|going to)\b.*\b(?:send|shoot|flick)\b.*\b(?:meal|meals|food|photos|pics|pictures)\b/.test(normalized)) {
+        return true;
+    }
+    if (/\b(?:send|sending|shooting|flicking)\b.*\b(?:meal|meals|food|photos|pics|pictures)\b/.test(normalized)) {
+        return true;
+    }
+    return false;
+}
+
+function foodPhotoTrackingOfferIsActive(customData = {}, nowIso = new Date().toISOString()) {
+    const trackingData = safeObject(safeObject(customData).food_photo_tracking);
+    if (foodPhotoTrackingFlagFromCustomData(customData) === true) return false;
+    if (trackingData.offer_status && trackingData.offer_status !== 'pending') return false;
+    const offeredAtMs = Date.parse(trackingData.last_offer_at || trackingData.offered_at || '');
+    if (!Number.isFinite(offeredAtMs)) return trackingData.offer_status === 'pending';
+    const nowMs = Date.parse(nowIso || '');
+    const referenceMs = Number.isFinite(nowMs) ? nowMs : Date.now();
+    return referenceMs - offeredAtMs <= FOOD_PHOTO_TRACKING_OFFER_WINDOW_MS;
+}
+
+function hasPendingFoodPhotoTrackingOffer(thread = {}, nowIso = new Date().toISOString()) {
+    if (!thread?.linked_user_id) return false;
+    return foodPhotoTrackingOfferIsActive(thread.custom_data, nowIso);
+}
+
+function graphSubscriberParts(subscriberId) {
+    const raw = String(subscriberId || '').trim();
+    if (!raw.startsWith(GRAPH_SUBSCRIBER_PREFIX)) return {};
+    const body = raw.slice(GRAPH_SUBSCRIBER_PREFIX.length);
+    const separatorIndex = body.indexOf(':');
+    if (separatorIndex < 0) return { participantId: body };
+    return {
+        accountId: body.slice(0, separatorIndex),
+        participantId: body.slice(separatorIndex + 1),
+    };
+}
+
+function firstCleanString(candidates = []) {
+    for (const candidate of candidates) {
+        const value = String(candidate || '').trim();
+        if (value) return value;
+    }
+    return '';
+}
+
+function resolveThreadGraphRecipientId(thread = {}) {
+    const customData = safeObject(thread.custom_data);
+    const graphData = safeObject(customData.instagram_graph);
+    const parts = graphSubscriberParts(thread.subscriber_id);
+    return firstCleanString([
+        graphData.ig_graph_user_id,
+        graphData.participant_id,
+        graphData.user_id,
+        customData.ig_graph_user_id,
+        parts.participantId,
+    ]);
+}
+
+function resolveThreadGraphAccountId(thread = {}) {
+    const customData = safeObject(thread.custom_data);
+    const graphData = safeObject(customData.instagram_graph);
+    const parts = graphSubscriberParts(thread.subscriber_id);
+    return firstCleanString([
+        graphData.ig_account_id,
+        graphData.account_id,
+        graphData.owner_id,
+        customData.ig_graph_account_id,
+        customData.ig_account_id,
+        parts.accountId,
+    ]);
+}
+
+async function postInstagramTextMessage({ accountId, recipientId, text }) {
+    const accessToken = await getInstagramGraphAccessToken(accountId);
+    if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
+    if (!accountId) throw new Error('Instagram Graph account id missing');
+    if (!recipientId) throw new Error('Instagram recipient id missing');
+
+    const res = await fetch(`${GRAPH_BASE}/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(accountId)}/messages`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            recipient: { id: recipientId },
+            message: { text },
+        }),
+    });
+    const responseText = await res.text();
+    let parsed;
+    try { parsed = responseText ? JSON.parse(responseText) : {}; } catch { parsed = { raw: responseText }; }
+    if (!res.ok) {
+        const detail = parsed?.error?.message || responseText;
+        throw new Error(`Instagram Graph message ${res.status}: ${String(detail || '').slice(0, 400)}`);
+    }
+    return parsed;
 }
 
 function eventTypeForMessaging(messaging = {}) {
@@ -1122,6 +1393,218 @@ async function dispatchDraft({ thread, messageText, dedupeId }) {
     }
 }
 
+function newFoodPhotoJobToken() {
+    if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+    return crypto.randomBytes(16).toString('hex');
+}
+
+async function patchThreadFoodPhotoTrackingState({ thread, state = {}, jobToken = '', nowIso = new Date().toISOString() }) {
+    if (!thread?.id) return;
+    const customData = safeObject(thread.custom_data);
+    const currentTracking = safeObject(customData.food_photo_tracking);
+    const nextTracking = {
+        ...currentTracking,
+        ...state,
+    };
+    if (jobToken) {
+        const pendingTokens = Array.isArray(currentTracking.pending_job_tokens)
+            ? currentTracking.pending_job_tokens.map(token => String(token || '').trim()).filter(Boolean)
+            : [];
+        nextTracking.active_job_token = jobToken;
+        nextTracking.pending_job_tokens = [
+            jobToken,
+            ...pendingTokens.filter(token => token !== jobToken),
+        ].slice(0, 10);
+    }
+    const nextCustomData = {
+        ...customData,
+        food_photo_tracking: nextTracking,
+    };
+    const body = {
+        custom_data: nextCustomData,
+        updated_at: nowIso,
+    };
+    if (state.last_ack_at) body.last_outbound_at = state.last_ack_at;
+    try {
+        await supabase(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
+            method: 'PATCH',
+            body,
+            prefer: 'return=minimal',
+        });
+        thread.custom_data = nextCustomData;
+        if (body.last_outbound_at) thread.last_outbound_at = body.last_outbound_at;
+    } catch (err) {
+        console.warn('[instagram-webhook] food photo tracking state patch failed:', err.message);
+    }
+}
+
+async function maybeMarkFoodPhotoTrackingOffer({ thread, messageText, inserted, graphMessageId, nowIso }) {
+    if (!thread?.linked_user_id) return false;
+    if (!isFoodPhotoTrackingOfferText(messageText)) return false;
+    await patchThreadFoodPhotoTrackingState({
+        thread,
+        nowIso,
+        state: {
+            offer_status: 'pending',
+            last_offer_at: nowIso,
+            last_offer_text: truncate(messageText, 500),
+            last_offer_message_id: inserted.messageId || null,
+            last_offer_graph_message_id: graphMessageId || null,
+            last_error: null,
+        },
+    });
+    return true;
+}
+
+async function maybeEnableFoodPhotoTrackingFromConsent({ thread, messageText, inserted, graphMessageId, nowIso }) {
+    if (!thread?.linked_user_id) return false;
+    if (!hasPendingFoodPhotoTrackingOffer(thread, nowIso)) return false;
+    if (!isFoodPhotoTrackingConsentText(messageText)) return false;
+    await patchThreadFoodPhotoTrackingState({
+        thread,
+        nowIso,
+        state: {
+            enabled: true,
+            allowed: true,
+            offer_status: 'accepted',
+            accepted_at: nowIso,
+            accepted_message_id: inserted.messageId || null,
+            accepted_graph_message_id: graphMessageId || null,
+            last_status: 'enabled_by_dm_consent',
+            last_error: null,
+        },
+    });
+    return true;
+}
+
+async function dispatchFoodPhotoTrackingJob({ thread, event, messageText, photoUrl, graphMessageId, igMessageId, dedupeId, jobToken, nowIso }) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), DRAFT_DISPATCH_TIMEOUT_MS);
+    try {
+        const response = await fetch(`${SITE_URL}/.netlify/functions/ig-food-photo-track-background`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({
+                threadId: thread.id,
+                userId: thread.linked_user_id,
+                photoUrl,
+                messageText,
+                graphMessageId,
+                igMessageId,
+                dedupeId,
+                jobToken,
+                queuedAt: nowIso,
+                igUsername: thread.ig_username || null,
+                profileName: thread.profile_name || null,
+                igAccountId: event?.igAccountId || resolveThreadGraphAccountId(thread) || null,
+            }),
+        });
+        if (!response.ok) {
+            const text = await response.text().catch(() => '');
+            return { queued: false, reason: `background_${response.status}`, details: text.slice(0, 300) };
+        }
+        return { queued: true, reason: 'background_dispatched', status: response.status };
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            return { queued: true, reason: 'background_dispatched_no_ack' };
+        }
+        console.warn('[instagram-webhook] food photo tracking dispatch failed:', err.message);
+        return { queued: false, reason: 'background_dispatch_failed', details: err.message };
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+async function maybeHandleFoodPhotoTracking({ thread, event, rawMessageText, messageText, inserted, graphMessageId, nowIso }) {
+    const directPhotoUrls = foodPhotoUrlsFromMessaging(event);
+    const photoUrls = directPhotoUrls.length ? directPhotoUrls : extractFoodPhotoUrls(rawMessageText);
+    const photoUrl = photoUrls[0] || '';
+    if (!photoUrl) return { handled: false, reason: 'no_photo' };
+    if (!isFoodPhotoTrackingAllowed(thread)) return { handled: false, reason: 'not_allowed' };
+
+    const accountId = resolveThreadGraphAccountId(thread) || normalizeId(event?.igAccountId) || normalizeId(recipientFromMessaging(event).id);
+    const recipientId = resolveThreadGraphRecipientId(thread) || normalizeId(senderFromMessaging(event).id);
+    if (!accountId || !recipientId) {
+        return { handled: false, reason: 'graph_route_missing' };
+    }
+    const jobToken = newFoodPhotoJobToken();
+    await patchThreadFoodPhotoTrackingState({
+        thread,
+        jobToken,
+        nowIso,
+        state: {
+            last_status: 'queued',
+            last_queued_at: nowIso,
+            last_photo_url: photoUrl,
+            last_inbound_message_id: inserted.messageId || null,
+            last_graph_message_id: graphMessageId || null,
+            last_dedupe_id: inserted.dedupeId || null,
+            last_error: null,
+        },
+    });
+
+    const dispatch = await dispatchFoodPhotoTrackingJob({
+        thread,
+        event,
+        messageText,
+        photoUrl,
+        graphMessageId,
+        igMessageId: inserted.messageId || null,
+        dedupeId: inserted.dedupeId || null,
+        jobToken,
+        nowIso,
+    });
+    if (!dispatch.queued) {
+        await patchThreadFoodPhotoTrackingState({
+            thread,
+            nowIso: new Date().toISOString(),
+            state: {
+                last_status: 'dispatch_failed',
+                last_error: dispatch.details || dispatch.reason || 'background dispatch failed',
+            },
+        });
+        return { handled: false, reason: dispatch.reason || 'dispatch_failed' };
+    }
+
+    try {
+        const sentAt = new Date().toISOString();
+        const graphResponse = await postInstagramTextMessage({
+            accountId,
+            recipientId,
+            text: FOOD_PHOTO_TRACKING_ACK,
+        });
+        const ackGraphMessageId = graphMessageIdFromResponse(graphResponse) || `food_photo_ack:${graphMessageId || inserted.messageId || jobToken}`;
+        const ackInserted = await insertGraphMessage({
+            threadId: thread.id,
+            direction: 'out',
+            text: FOOD_PHOTO_TRACKING_ACK,
+            graphMessageId: ackGraphMessageId,
+            nowIso: sentAt,
+        });
+        await patchThreadFoodPhotoTrackingState({
+            thread,
+            nowIso: sentAt,
+            state: {
+                last_ack_at: sentAt,
+                last_ack_message_id: ackInserted.messageId || null,
+                last_ack_graph_message_id: ackGraphMessageId,
+            },
+        });
+        return { handled: true, queued: true, acked: true, reason: dispatch.reason };
+    } catch (err) {
+        await patchThreadFoodPhotoTrackingState({
+            thread,
+            nowIso: new Date().toISOString(),
+            state: {
+                last_ack_error: err.message,
+            },
+        });
+        console.warn('[instagram-webhook] food photo ack failed:', err.message);
+        return { handled: true, queued: true, acked: false, reason: 'ack_failed' };
+    }
+}
+
 async function shouldRecoverMissingDraftForDedupedInbound({ thread, dedupeId, messageCreatedAt }) {
     if (!thread?.id || !dedupeId) return false;
     if (isAtOrAfterTimestamp(thread.last_outbound_at, messageCreatedAt)) return false;
@@ -1304,10 +1787,10 @@ async function markPendingGraphAlertsSent({ thread, threadId, messageText, nowIs
 
 async function processGraphMessages(payload, contentContextByMessageId = new Map(), options = {}) {
     const events = messagingEventsFromPayload(payload);
-    if (!events.length) return { processed: 0, inserted: 0, drafted: 0, skipped: 0, recoveredDrafts: 0 };
+    if (!events.length) return { processed: 0, inserted: 0, drafted: 0, skipped: 0, recoveredDrafts: 0, foodPhotoQueued: 0, foodPhotoAcked: 0, foodPhotoOffers: 0, foodPhotoEnabled: 0 };
 
     const defaultCoachId = await findDefaultCoachId();
-    const summary = { processed: 0, inserted: 0, drafted: 0, skipped: 0, recoveredDrafts: 0, outboundCleared: 0 };
+    const summary = { processed: 0, inserted: 0, drafted: 0, skipped: 0, recoveredDrafts: 0, outboundCleared: 0, foodPhotoQueued: 0, foodPhotoAcked: 0, foodPhotoSkipped: 0, foodPhotoOffers: 0, foodPhotoEnabled: 0 };
 
     for (const item of events) {
         if (!['messages', 'message_echoes'].includes(item.field) && !messageFromMessaging(item).mid) {
@@ -1397,10 +1880,45 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
             summary.inserted++;
 
             if (direction === 'in') {
+                if (await maybeEnableFoodPhotoTrackingFromConsent({
+                    thread,
+                    messageText,
+                    inserted,
+                    graphMessageId,
+                    nowIso,
+                })) {
+                    summary.foodPhotoEnabled++;
+                }
+                const foodTracking = await maybeHandleFoodPhotoTracking({
+                    thread,
+                    event: item,
+                    rawMessageText,
+                    messageText,
+                    inserted,
+                    graphMessageId,
+                    nowIso,
+                });
+                if (foodTracking.handled) {
+                    if (foodTracking.queued) summary.foodPhotoQueued++;
+                    if (foodTracking.acked) summary.foodPhotoAcked++;
+                    continue;
+                }
+                if (foodTracking.reason && foodTracking.reason !== 'no_photo') {
+                    summary.foodPhotoSkipped++;
+                }
                 if (await dispatchDraft({ thread, messageText, dedupeId: inserted.dedupeId })) {
                     summary.drafted++;
                 }
             } else {
+                if (await maybeMarkFoodPhotoTrackingOffer({
+                    thread,
+                    messageText,
+                    inserted,
+                    graphMessageId,
+                    nowIso,
+                })) {
+                    summary.foodPhotoOffers++;
+                }
                 summary.outboundCleared += await markPendingGraphAlertsSent({
                     thread,
                     threadId: thread.id,
@@ -1495,6 +2013,14 @@ async function auditPayload(payload, options) {
 
 exports._test = {
     messageTextForDraft,
+    extractFoodPhotoUrls,
+    foodPhotoUrlsFromMessaging,
+    foodTrackingIdentityTokens,
+    isFoodPhotoTrackingAllowed,
+    isFoodPhotoTrackingOfferText,
+    isFoodPhotoTrackingConsentText,
+    foodPhotoTrackingOfferIsActive,
+    hasPendingFoodPhotoTrackingOffer,
     timestampIsoFromMessaging,
     shouldProcessContentContextEvent,
     participantUsernameFromMessaging,
