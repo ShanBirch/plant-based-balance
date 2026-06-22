@@ -60,6 +60,16 @@ const INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV = process.env.INSTAGRAM_GRAPH_ACCESS_TOKE
     || process.env.INSTAGRAM_ACCESS_TOKEN
     || '';
 let cachedInstagramGraphAccessToken = INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV || '';
+const GOLD_COAST_AI_IG_ACCOUNT_IDS = new Set([
+    '17841422424052111',
+    ...splitEnvList(process.env.GOLD_COAST_AI_IG_ACCOUNT_IDS || process.env.GOLD_COAST_AI_IG_ACCOUNT_ID || ''),
+]);
+const GOLD_COAST_AI_WEBSITE_URL = process.env.GOLD_COAST_AI_WEBSITE_URL
+    || 'https://gold-coast-ai-solutions.netlify.app/';
+const COMMENT_PRIVATE_REPLY_DISABLED = envFlagEnabled(
+    process.env.IG_COMMENT_PRIVATE_REPLY_DISABLED
+    || process.env.META_IG_COMMENT_PRIVATE_REPLY_DISABLED
+);
 const FOOD_PHOTO_TRACKING_ACK = process.env.IG_FOOD_PHOTO_TRACKING_ACK
     || "Looks so good. I'll track it for you now.";
 const FOOD_PHOTO_TRACKING_DEFAULTS_DISABLED = envFlagEnabled(
@@ -208,6 +218,428 @@ async function graphGet(path, params = {}, accountId = '') {
         throw new Error(`Graph ${res.status}: ${text.slice(0, 300)}`);
     }
     return text ? JSON.parse(text) : null;
+}
+
+function normalizeHandle(value) {
+    return String(value || '')
+        .replace(/^@+/, '')
+        .trim()
+        .toLowerCase();
+}
+
+function normalizeCommentKeyword(value) {
+    const cleaned = String(value || '')
+        .trim()
+        .replace(/^["'`]+|["'`.,!?]+$/g, '')
+        .trim()
+        .toLowerCase();
+    if (!cleaned || /\s/.test(cleaned)) return null;
+    if (!/^[a-z0-9][a-z0-9_-]{0,40}$/.test(cleaned)) return null;
+    return cleaned;
+}
+
+function commentKeywordForPrivateReply(event = {}) {
+    if (event.type !== 'comment') return null;
+    return normalizeCommentKeyword(event.text);
+}
+
+function isGoldCoastAiAccount(event = {}, accountConfig = {}) {
+    const botAccount = normalizeHandle(accountConfig.botAccount);
+    const ownerId = String(event.ownerId || event.igAccountId || event.recipientId || '').trim();
+    return botAccount === 'goldcoast_ai_solutions' || GOLD_COAST_AI_IG_ACCOUNT_IDS.has(ownerId);
+}
+
+function shouldSendGoldCoastWebsitePrivateReply(event = {}, accountConfig = {}) {
+    if (COMMENT_PRIVATE_REPLY_DISABLED) return false;
+    if (commentKeywordForPrivateReply(event) !== 'website') return false;
+    if (!event.commentId || !event.fromId) return false;
+    return isGoldCoastAiAccount(event, accountConfig);
+}
+
+function firstString(...values) {
+    for (const value of values) {
+        if (value == null) continue;
+        if (Array.isArray(value)) {
+            const nested = firstString(...value);
+            if (nested) return nested;
+            continue;
+        }
+        if (typeof value === 'object') continue;
+        const text = String(value).trim();
+        if (text) return text;
+    }
+    return '';
+}
+
+function listFromValue(value) {
+    if (value == null || value === '') return [];
+    if (Array.isArray(value)) return value.flatMap(listFromValue);
+    if (typeof value === 'object') return [];
+    return splitEnvList(value);
+}
+
+function commentGiveawayConfigRaw() {
+    return process.env.META_IG_COMMENT_GIVEAWAYS_JSON
+        || process.env.IG_COMMENT_GIVEAWAYS_JSON
+        || process.env.COMMENT_GIVEAWAYS_JSON
+        || '';
+}
+
+function looksLikeCommentGiveawayCampaign(value) {
+    const obj = safeObject(value);
+    return [
+        'id',
+        'campaignId',
+        'campaign_id',
+        'keyword',
+        'keywords',
+        'commentKeyword',
+        'comment_keyword',
+        'trigger',
+        'url',
+        'giveawayUrl',
+        'giveaway_url',
+        'deliveryUrl',
+        'delivery_url',
+        'link',
+        'replyText',
+        'reply_text',
+        'privateReplyText',
+        'private_reply_text',
+        'message',
+        'mediaId',
+        'media_id',
+        'mediaIds',
+        'media_ids',
+        'igMediaId',
+        'ig_media_id',
+        'sourceKey',
+        'source_key',
+    ].some(key => Object.prototype.hasOwnProperty.call(obj, key));
+}
+
+function normalizeCommentGiveawayCampaign(raw = {}, defaults = {}) {
+    const campaign = {
+        ...safeObject(defaults),
+        ...safeObject(raw),
+    };
+    const source = campaign._source || defaults._source || 'config';
+    const keywords = [
+        ...listFromValue(campaign.keywords),
+        ...listFromValue(campaign.keyword),
+        ...listFromValue(campaign.commentKeyword),
+        ...listFromValue(campaign.comment_keyword),
+        ...listFromValue(campaign.trigger),
+    ].map(normalizeCommentKeyword).filter(Boolean);
+    const uniqueKeywords = [...new Set(keywords)];
+    const keyword = uniqueKeywords[0] || null;
+    if (!keyword) return null;
+
+    const accountHandles = [
+        ...listFromValue(campaign.account),
+        ...listFromValue(campaign.accountHandle),
+        ...listFromValue(campaign.account_handle),
+        ...listFromValue(campaign.botAccount),
+        ...listFromValue(campaign.bot_account),
+        ...listFromValue(campaign.handle),
+    ].map(normalizeHandle).filter(Boolean);
+    const ownerIds = [
+        ...listFromValue(campaign.ownerId),
+        ...listFromValue(campaign.owner_id),
+        ...listFromValue(campaign.ownerIds),
+        ...listFromValue(campaign.owner_ids),
+        ...listFromValue(campaign.accountId),
+        ...listFromValue(campaign.account_id),
+        ...listFromValue(campaign.accountIds),
+        ...listFromValue(campaign.account_ids),
+        ...listFromValue(campaign.igAccountId),
+        ...listFromValue(campaign.ig_account_id),
+    ];
+    const mediaIds = [
+        ...listFromValue(campaign.mediaId),
+        ...listFromValue(campaign.media_id),
+        ...listFromValue(campaign.mediaIds),
+        ...listFromValue(campaign.media_ids),
+        ...listFromValue(campaign.igMediaId),
+        ...listFromValue(campaign.ig_media_id),
+        ...listFromValue(campaign.postId),
+        ...listFromValue(campaign.post_id),
+    ];
+    const sourceKeys = [
+        ...listFromValue(campaign.sourceKey),
+        ...listFromValue(campaign.source_key),
+        ...listFromValue(campaign.sourceKeys),
+        ...listFromValue(campaign.source_keys),
+    ];
+    const permalinks = [
+        ...listFromValue(campaign.permalink),
+        ...listFromValue(campaign.permalinks),
+    ];
+    const appendUtm = booleanFlagValue(campaign.appendUtm ?? campaign.append_utm);
+    const globalFlag = booleanFlagValue(campaign.global)
+        || booleanFlagValue(campaign.accountWide)
+        || booleanFlagValue(campaign.account_wide)
+        || String(campaign.scope || '').trim().toLowerCase() === 'account';
+    const id = firstString(campaign.id, campaign.campaignId, campaign.campaign_id)
+        || [normalizeHandle(accountHandles[0]), keyword].filter(Boolean).join('_')
+        || `${keyword}_giveaway`;
+    const title = firstString(
+        campaign.title,
+        campaign.giveawayTitle,
+        campaign.giveaway_title,
+        campaign.name,
+        campaign.label
+    ) || `${keyword.toUpperCase()} giveaway`;
+    const url = cleanUrl(firstString(
+        campaign.url,
+        campaign.giveawayUrl,
+        campaign.giveaway_url,
+        campaign.deliveryUrl,
+        campaign.delivery_url,
+        campaign.link
+    ));
+    return {
+        ...campaign,
+        _source: source,
+        id,
+        keyword,
+        keywords: uniqueKeywords,
+        title,
+        url,
+        replyText: firstString(campaign.replyText, campaign.reply_text, campaign.privateReplyText, campaign.private_reply_text, campaign.message),
+        accountHandles: [...new Set(accountHandles)],
+        ownerIds: [...new Set(ownerIds)],
+        mediaIds: [...new Set(mediaIds)],
+        sourceKeys: [...new Set(sourceKeys)],
+        permalinks: [...new Set(permalinks.map(cleanUrl).filter(Boolean))],
+        appendUtm: appendUtm === false ? false : true,
+        global: globalFlag === true,
+        utmCampaign: firstString(campaign.utmCampaign, campaign.utm_campaign) || id || keyword,
+    };
+}
+
+function commentGiveawayCampaignsFromValue(value, defaults = {}) {
+    if (!value) return [];
+    if (Array.isArray(value)) {
+        return value.flatMap(item => commentGiveawayCampaignsFromValue(item, defaults));
+    }
+    const obj = safeObject(value);
+    if (!Object.keys(obj).length) return [];
+    if (Array.isArray(obj.campaigns)) {
+        const { campaigns, ...campaignDefaults } = obj;
+        return campaigns.flatMap(item => commentGiveawayCampaignsFromValue(item, {
+            ...defaults,
+            ...campaignDefaults,
+        }));
+    }
+    if (looksLikeCommentGiveawayCampaign(obj)) {
+        const normalized = normalizeCommentGiveawayCampaign(obj, defaults);
+        return normalized ? [normalized] : [];
+    }
+    return Object.entries(obj).flatMap(([key, child]) => {
+        if (Array.isArray(child) || Array.isArray(safeObject(child).campaigns)) {
+            return commentGiveawayCampaignsFromValue(child, {
+                ...defaults,
+                account: defaults.account || key,
+            });
+        }
+        if (looksLikeCommentGiveawayCampaign(child)) {
+            return commentGiveawayCampaignsFromValue({
+                id: safeObject(child).id || key,
+                ...safeObject(child),
+            }, defaults);
+        }
+        return [];
+    });
+}
+
+function commentGiveawayCampaignsFromConfig(raw = undefined) {
+    const source = raw === undefined ? commentGiveawayConfigRaw() : raw;
+    if (!source) return [];
+    let parsed = source;
+    if (typeof source === 'string') {
+        try {
+            parsed = JSON.parse(source);
+        } catch (err) {
+            console.warn('[instagram-webhook] comment giveaway config JSON invalid:', err.message);
+            return [];
+        }
+    }
+    return commentGiveawayCampaignsFromValue(parsed, { _source: 'env' });
+}
+
+function commentGiveawayCampaignsFromContentItem(contentItem = {}) {
+    const item = safeObject(contentItem);
+    const rawPayload = safeObject(item.raw_payload);
+    const defaults = {
+        _source: 'content_item',
+        mediaId: item.ig_media_id || item.ig_story_id || '',
+        sourceKey: item.source_key || '',
+        permalink: item.permalink || '',
+    };
+    return [
+        rawPayload.commentGiveaway,
+        rawPayload.comment_giveaway,
+        rawPayload.commentGiveaways,
+        rawPayload.comment_giveaways,
+        item.commentGiveaway,
+        item.comment_giveaway,
+    ].flatMap(value => commentGiveawayCampaignsFromValue(value, defaults));
+}
+
+function commentGiveawayCampaignAccountMatches(campaign = {}, event = {}, accountConfig = {}) {
+    if (!campaign.accountHandles?.length && !campaign.ownerIds?.length) return true;
+    const eventOwnerIds = new Set([
+        event.ownerId,
+        event.igAccountId,
+        event.recipientId,
+    ].map(value => String(value || '').trim()).filter(Boolean));
+    if (campaign.ownerIds?.some(id => eventOwnerIds.has(String(id || '').trim()))) return true;
+    const botAccount = normalizeHandle(accountConfig.botAccount);
+    return !!botAccount && campaign.accountHandles?.includes(botAccount);
+}
+
+function commentGiveawayCampaignMediaMatches(campaign = {}, event = {}, contentItem = {}) {
+    const item = safeObject(contentItem);
+    const eventMediaIds = new Set([
+        event.mediaId,
+        event.storyId,
+        item.ig_media_id,
+        item.ig_story_id,
+    ].map(value => String(value || '').trim()).filter(Boolean));
+    const eventSourceKeys = new Set([
+        sourceKeyForEvent(event),
+        item.source_key,
+    ].map(value => String(value || '').trim()).filter(Boolean));
+    const contentPermalink = cleanUrl(item.permalink || '');
+    if (campaign.mediaIds?.length) {
+        return campaign.mediaIds.some(id => eventMediaIds.has(String(id || '').trim()));
+    }
+    if (campaign.sourceKeys?.length) {
+        return campaign.sourceKeys.some(key => eventSourceKeys.has(String(key || '').trim()));
+    }
+    if (campaign.permalinks?.length) {
+        return !!contentPermalink && campaign.permalinks.includes(contentPermalink);
+    }
+    return campaign._source === 'content_item' || campaign.global === true;
+}
+
+function commentGiveawayCampaignMatches(campaign = {}, keyword, event = {}, contentItem = {}, accountConfig = {}) {
+    if (!campaign || !keyword) return false;
+    if (!campaign.keywords?.includes(keyword)) return false;
+    if (!commentGiveawayCampaignAccountMatches(campaign, event, accountConfig)) return false;
+    return commentGiveawayCampaignMediaMatches(campaign, event, contentItem);
+}
+
+function goldCoastWebsiteCampaign(event = {}, accountConfig = {}) {
+    if (!shouldSendGoldCoastWebsitePrivateReply(event, accountConfig)) return null;
+    return normalizeCommentGiveawayCampaign({
+        id: 'gold_coast_ai_website_keyword',
+        keyword: 'website',
+        title: 'Gold Coast AI Solutions website',
+        url: GOLD_COAST_AI_WEBSITE_URL,
+        replyText: [
+            'Got you - here is the Gold Coast AI Solutions website:',
+            '{url}',
+            '',
+            'If you want me to map the first AI setup for your business, reply with your industry.',
+        ].join('\n'),
+        global: true,
+        utmCampaign: 'website_keyword',
+    }, { _source: 'legacy' });
+}
+
+function resolveCommentGiveawayCampaign({ event = {}, contentItem = {}, accountConfig = {} } = {}) {
+    if (COMMENT_PRIVATE_REPLY_DISABLED) return null;
+    if (event.type !== 'comment' || !event.commentId || !event.fromId) return null;
+    const keyword = commentKeywordForPrivateReply(event);
+    if (!keyword) return null;
+    const candidates = [
+        ...commentGiveawayCampaignsFromContentItem(contentItem),
+        ...commentGiveawayCampaignsFromConfig(),
+    ];
+    const configured = candidates.find(campaign => (
+        commentGiveawayCampaignMatches(campaign, keyword, event, contentItem, accountConfig)
+    ));
+    return configured || goldCoastWebsiteCampaign(event, accountConfig);
+}
+
+function appendCommentGiveawayTrackingToUrl(rawUrl, event = {}, campaign = {}) {
+    const cleaned = cleanUrl(rawUrl);
+    if (!cleaned) return '';
+    if (campaign.appendUtm === false) return cleaned;
+    try {
+        const url = new URL(cleaned);
+        url.searchParams.set('utm_source', firstString(campaign.utmSource, campaign.utm_source) || 'instagram');
+        url.searchParams.set('utm_medium', firstString(campaign.utmMedium, campaign.utm_medium) || 'dm_private_reply');
+        url.searchParams.set('utm_campaign', campaign.utmCampaign || campaign.id || campaign.keyword || 'comment_giveaway');
+        const handle = normalizeHandle(event.username);
+        if (handle) url.searchParams.set('ig', handle);
+        return url.toString();
+    } catch {
+        return cleaned;
+    }
+}
+
+function interpolateCommentGiveawayTemplate(template, values = {}) {
+    return String(template || '').replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}|\{\s*([a-zA-Z0-9_]+)\s*\}/g, (_, doubleKey, singleKey) => {
+        const key = doubleKey || singleKey;
+        return values[key] == null ? '' : String(values[key]);
+    });
+}
+
+function buildGoldCoastWebsiteUrl(event = {}) {
+    return appendCommentGiveawayTrackingToUrl(GOLD_COAST_AI_WEBSITE_URL, event, {
+        keyword: 'website',
+        utmCampaign: 'website_keyword',
+    });
+}
+
+function buildCommentGiveawayPrivateReply({ campaign = {}, event = {} } = {}) {
+    const url = appendCommentGiveawayTrackingToUrl(campaign.url, event, campaign);
+    const title = campaign.title || 'your free content';
+    const template = campaign.replyText || [
+        `Got you - here is ${title}:`,
+        url || 'Reply here and I will send it through.',
+        '',
+        'Reply here if you want me to help with the next step.',
+    ].join('\n');
+    return interpolateCommentGiveawayTemplate(template, {
+        url,
+        giveawayUrl: url,
+        giveaway_url: url,
+        deliveryUrl: url,
+        delivery_url: url,
+        title,
+        keyword: campaign.keyword || '',
+        username: event.username || '',
+        handle: normalizeHandle(event.username),
+        campaignId: campaign.id || '',
+        campaign_id: campaign.id || '',
+    }).trim();
+}
+
+function buildGoldCoastWebsitePrivateReply(event = {}) {
+    const campaign = goldCoastWebsiteCampaign(event, { botAccount: 'goldcoast_ai_solutions' });
+    return buildCommentGiveawayPrivateReply({
+        campaign: campaign || {
+            keyword: 'website',
+            title: 'Gold Coast AI Solutions website',
+            url: GOLD_COAST_AI_WEBSITE_URL,
+            replyText: [
+                'Got you - here is the Gold Coast AI Solutions website:',
+                '{url}',
+                '',
+                'If you want me to map the first AI setup for your business, reply with your industry.',
+            ].join('\n'),
+            utmCampaign: 'website_keyword',
+        },
+        event,
+    });
+}
+
+function commentPrivateReplyDedupeId(commentId) {
+    return `${GRAPH_SUBSCRIBER_PREFIX}private_reply:${String(commentId || '').trim()}`;
 }
 
 function graphMessageIdFromResponse(response = {}) {
@@ -429,6 +861,33 @@ function resolveThreadGraphAccountId(thread = {}) {
     ]);
 }
 
+async function postInstagramPrivateReply({ accountId, commentId, text }) {
+    const accessToken = await getInstagramGraphAccessToken(accountId);
+    if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
+    if (!accountId) throw new Error('Instagram Graph account id missing');
+    if (!commentId) throw new Error('Instagram comment id missing');
+
+    const res = await fetch(`${GRAPH_BASE}/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(accountId)}/messages`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            recipient: { comment_id: commentId },
+            message: { text },
+        }),
+    });
+    const responseText = await res.text();
+    let parsed;
+    try { parsed = responseText ? JSON.parse(responseText) : {}; } catch { parsed = { raw: responseText }; }
+    if (!res.ok) {
+        const detail = parsed?.error?.message || responseText;
+        throw new Error(`Instagram Graph private reply ${res.status}: ${String(detail || '').slice(0, 400)}`);
+    }
+    return parsed;
+}
+
 async function postInstagramTextMessage({ accountId, recipientId, text }) {
     const accessToken = await getInstagramGraphAccessToken(accountId);
     if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
@@ -454,6 +913,137 @@ async function postInstagramTextMessage({ accountId, recipientId, text }) {
         throw new Error(`Instagram Graph message ${res.status}: ${String(detail || '').slice(0, 400)}`);
     }
     return parsed;
+}
+
+async function insertPrivateReplyMessage({ threadId, text, dedupeId, nowIso }) {
+    const existing = await findGraphMessageByDedupeId(dedupeId);
+    if (existing) return { inserted: false, deduped: true, messageId: existing.id || null, dedupeId };
+    try {
+        const rows = await supabase('ig_messages', {
+            method: 'POST',
+            body: [{
+                thread_id: threadId,
+                direction: 'out',
+                text,
+                manychat_message_id: dedupeId,
+                source: 'instagram_graph_private_reply',
+                created_at: nowIso,
+            }],
+            prefer: 'return=representation',
+        });
+        return { inserted: true, deduped: false, messageId: rows[0]?.id || null, dedupeId };
+    } catch (err) {
+        const duplicate = err.sqlstate === '23505' || /23505|duplicate key/i.test(err.message || '');
+        if (!duplicate) throw err;
+        const existing = await findGraphMessageByDedupeId(dedupeId);
+        return { inserted: false, deduped: true, messageId: existing?.id || null, dedupeId };
+    }
+}
+
+async function patchInteractionPrivateReplyState({ interaction, state }) {
+    if (!interaction?.id) return;
+    try {
+        await supabase(`ig_content_interactions?id=eq.${encodeURIComponent(interaction.id)}`, {
+            method: 'PATCH',
+            body: {
+                raw_payload: {
+                    ...safeObject(interaction.raw_payload),
+                    auto_private_reply: state,
+                },
+                processed_at: state.sent_at || state.failed_at || new Date().toISOString(),
+            },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[instagram-webhook] private reply state patch failed:', err.message);
+    }
+}
+
+async function maybeSendCommentKeywordPrivateReply({ event, interaction, contentItem }) {
+    const accountConfig = resolveMetaIgAccountConfig(event.ownerId || event.igAccountId || '');
+    const campaign = resolveCommentGiveawayCampaign({ event, contentItem, accountConfig });
+    if (!campaign) {
+        return { attempted: false, skipped: 'not_applicable' };
+    }
+
+    const dedupeId = commentPrivateReplyDedupeId(event.commentId);
+    const existing = await findGraphMessageByDedupeId(dedupeId);
+    if (existing) {
+        return { attempted: false, skipped: 'already_sent', messageId: existing.id || null, dedupeId };
+    }
+
+    const accountId = String(event.ownerId || event.igAccountId || event.recipientId || '').trim();
+    const text = buildCommentGiveawayPrivateReply({ campaign, event });
+    if (!text) {
+        return { attempted: false, skipped: 'empty_reply', dedupeId, campaignId: campaign.id || null };
+    }
+    const sentAt = new Date().toISOString();
+    const privateReplyState = {
+        keyword: campaign.keyword || commentKeywordForPrivateReply(event),
+        campaign_id: campaign.id || null,
+        campaign_title: campaign.title || null,
+        giveaway_url: appendCommentGiveawayTrackingToUrl(campaign.url, event, campaign) || null,
+        media_id: event.mediaId || contentItem?.ig_media_id || null,
+        source_key: contentItem?.source_key || sourceKeyForEvent(event) || null,
+        source: campaign._source || 'config',
+    };
+
+    try {
+        const graphResponse = await postInstagramPrivateReply({
+            accountId,
+            commentId: event.commentId,
+            text,
+        });
+        const graphMessageId = graphMessageIdFromResponse(graphResponse) || `private_reply:${event.commentId}`;
+        const defaultCoachId = await findDefaultCoachId();
+        const thread = await upsertGraphThread({
+            participantId: event.fromId,
+            participantUsername: event.username || '',
+            igAccountId: accountId,
+            direction: 'out',
+            nowIso: sentAt,
+            messageId: graphMessageId,
+            messageText: text,
+            defaultCoachId,
+        });
+        const inserted = thread?.id
+            ? await insertPrivateReplyMessage({ threadId: thread.id, text, dedupeId, nowIso: sentAt })
+            : { inserted: false, deduped: false, messageId: null, dedupeId };
+        await patchInteractionPrivateReplyState({
+            interaction,
+            state: {
+                status: 'sent',
+                ...privateReplyState,
+                sent_at: sentAt,
+                dedupe_id: dedupeId,
+                thread_id: thread?.id || null,
+                ig_message_id: inserted.messageId || null,
+                graph_message_id: graphMessageId,
+                graph_response: graphResponse || {},
+            },
+        });
+        return {
+            attempted: true,
+            sent: true,
+            dedupeId,
+            threadId: thread?.id || null,
+            messageId: inserted.messageId || null,
+            graphMessageId,
+            campaignId: campaign.id || null,
+        };
+    } catch (err) {
+        await patchInteractionPrivateReplyState({
+            interaction,
+            state: {
+                status: 'failed',
+                ...privateReplyState,
+                failed_at: new Date().toISOString(),
+                dedupe_id: dedupeId,
+                error: err.message || String(err),
+            },
+        });
+        throw err;
+    }
 }
 
 function eventTypeForMessaging(messaging = {}) {
@@ -953,7 +1543,16 @@ function shouldProcessContentContextEvent(event) {
 async function processContentInteractions(payload) {
     const events = normalizeMetaIgWebhookEvents(payload);
     const byMessageId = new Map();
-    const summary = { processed: 0, comments: 0, storyReplies: 0, outboundStoryRepliesSkipped: 0, failed: 0 };
+    const summary = {
+        processed: 0,
+        comments: 0,
+        storyReplies: 0,
+        outboundStoryRepliesSkipped: 0,
+        privateRepliesSent: 0,
+        privateRepliesSkipped: 0,
+        privateRepliesFailed: 0,
+        failed: 0,
+    };
     for (const event of events) {
         if (!shouldProcessContentContextEvent(event)) {
             summary.outboundStoryRepliesSkipped++;
@@ -961,10 +1560,24 @@ async function processContentInteractions(payload) {
         }
         try {
             const contentItem = await ensureAnalyzedContent(event);
-            await upsertContentInteraction(event, contentItem);
+            const interaction = await upsertContentInteraction(event, contentItem);
             await refreshLinkedStoryReplyMessages(contentItem);
             if (event.messageId && contentItem) {
                 byMessageId.set(event.messageId, buildContextMessage(event, contentItem));
+            }
+            if (event.type === 'comment') {
+                try {
+                    const autoReply = await maybeSendCommentKeywordPrivateReply({ event, interaction, contentItem });
+                    if (autoReply.sent) summary.privateRepliesSent++;
+                    else if (autoReply.skipped && autoReply.skipped !== 'not_applicable') summary.privateRepliesSkipped++;
+                } catch (err) {
+                    summary.privateRepliesFailed++;
+                    console.warn('[instagram-webhook] comment private reply failed:', {
+                        eventId: event.eventId || null,
+                        commentId: event.commentId || null,
+                        error: err.message,
+                    });
+                }
             }
             summary.processed++;
             if (event.type === 'comment') summary.comments++;
@@ -2024,6 +2637,17 @@ exports._test = {
     timestampIsoFromMessaging,
     shouldProcessContentContextEvent,
     participantUsernameFromMessaging,
+    normalizeCommentKeyword,
+    commentKeywordForPrivateReply,
+    commentGiveawayCampaignsFromConfig,
+    commentGiveawayCampaignsFromValue,
+    commentGiveawayCampaignsFromContentItem,
+    resolveCommentGiveawayCampaign,
+    buildCommentGiveawayPrivateReply,
+    shouldSendGoldCoastWebsitePrivateReply,
+    buildGoldCoastWebsiteUrl,
+    buildGoldCoastWebsitePrivateReply,
+    commentPrivateReplyDedupeId,
 };
 
 exports._internal = {

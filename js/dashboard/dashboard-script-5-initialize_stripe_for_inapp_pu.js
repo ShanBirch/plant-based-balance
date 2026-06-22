@@ -18858,18 +18858,36 @@ async function deleteExerciseFromWorkout(exerciseName, isUserAdded) {
 function openAddExerciseModal() {
     document.getElementById('add-exercise-modal').style.display = 'block';
     document.getElementById('add-exercise-search').value = '';
-    document.getElementById('add-exercise-results').innerHTML = `
-        <div style="text-align: center; padding: 40px; color: #94a3b8;">
-            Type to search for exercises from your library
-        </div>
-    `;
+    const loadPromises = [];
+
+    renderAddExerciseSuggestions({
+        loading: !!(window.currentUser && !(window.workoutHistoryCache && window.workoutHistoryCache.length > 0))
+    });
     document.getElementById('add-exercise-search').focus();
 
     // Preload custom exercises for search
     if (window.currentUser && typeof dbHelpers !== 'undefined' && dbHelpers.customExercises) {
-        dbHelpers.customExercises.getAll(window.currentUser.id).then(exercises => {
+        const customExercisesPromise = dbHelpers.customExercises.getAll(window.currentUser.id).then(exercises => {
             window._customExercisesCache = exercises || [];
         }).catch(() => {});
+        loadPromises.push(customExercisesPromise);
+    }
+
+    if (window.currentUser &&
+        typeof dbHelpers !== 'undefined' &&
+        dbHelpers.workouts &&
+        typeof _ensureWorkoutHistoryCache === 'function') {
+        loadPromises.push(_ensureWorkoutHistoryCache());
+    }
+
+    if (loadPromises.length > 0) {
+        Promise.allSettled(loadPromises).then(() => {
+            const modal = document.getElementById('add-exercise-modal');
+            const search = document.getElementById('add-exercise-search');
+            if (modal && modal.style.display !== 'none' && search && !search.value.trim()) {
+                renderAddExerciseSuggestions();
+            }
+        });
     }
 }
 
@@ -19351,16 +19369,313 @@ function scoreExerciseMatch(exerciseName, searchTerms, fullQuery) {
     return score;
 }
 
+function escapeAddExerciseHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[ch]));
+}
+
+function escapeAddExerciseJsString(value) {
+    return String(value ?? '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\r?\n/g, ' ');
+}
+
+function parseAddExerciseHistoryDate(value) {
+    if (!value) return null;
+    const raw = String(value);
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(raw)
+        ? new Date(raw + 'T12:00:00')
+        : new Date(raw);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getAddExerciseDateKey(value) {
+    if (!value) return '';
+    const raw = String(value);
+    if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+    const date = parseAddExerciseHistoryDate(raw);
+    return date ? date.toISOString().slice(0, 10) : raw;
+}
+
+function getAddExerciseDaysSince(date) {
+    if (!date) return null;
+    const dayMs = 24 * 60 * 60 * 1000;
+    const today = new Date();
+    const todayNoon = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
+    const dateNoon = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12);
+    return Math.max(0, Math.floor((todayNoon - dateNoon) / dayMs));
+}
+
+function formatAddExerciseDaysSince(days) {
+    if (days === null || Number.isNaN(days)) return '';
+    if (days === 0) return 'today';
+    if (days === 1) return 'yesterday';
+    return days + ' days ago';
+}
+
+function formatAddExerciseShortDate(date) {
+    if (!date) return '';
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatAddExerciseVolume(value) {
+    const rounded = Math.round(Math.abs(value || 0));
+    return rounded.toLocaleString() + ' kg';
+}
+
+function getAddExerciseExistingNames() {
+    return new Set(Array.from(document.querySelectorAll('#workout-exercises-list .exercise-logger-card'))
+        .map(card => (card.getAttribute('data-exercise-name') || '').trim().toLowerCase())
+        .filter(Boolean));
+}
+
+function getAddExerciseCustomExerciseMap() {
+    const customMap = new Map();
+    (window._customExercisesCache || []).forEach(ex => {
+        const name = (ex && ex.exercise_name ? String(ex.exercise_name).trim() : '');
+        if (name) customMap.set(name.toLowerCase(), ex);
+    });
+    return customMap;
+}
+
+function getAddExerciseSessionStats(rows) {
+    const sessionsByDate = {};
+
+    rows.forEach(row => {
+        const rawDate = row.date || row.workout_date || row.created_at;
+        const dateKey = getAddExerciseDateKey(rawDate);
+        if (!dateKey) return;
+        if (!sessionsByDate[dateKey]) {
+            sessionsByDate[dateKey] = {
+                dateKey,
+                date: parseAddExerciseHistoryDate(rawDate),
+                setCount: 0,
+                totalVolume: 0
+            };
+        }
+
+        const weight = parseFloat(row.kg || row.weight_kg) || 0;
+        const reps = parseFloat(row.reps) || 0;
+        sessionsByDate[dateKey].setCount += 1;
+        sessionsByDate[dateKey].totalVolume += weight * reps;
+    });
+
+    return Object.values(sessionsByDate)
+        .filter(session => session.date)
+        .sort((a, b) => b.date - a.date);
+}
+
+function getSuggestedExercisesForAdd(limit = 5) {
+    const history = Array.isArray(window.workoutHistoryCache) ? window.workoutHistoryCache : [];
+    const existingNames = getAddExerciseExistingNames();
+    const customMap = getAddExerciseCustomExerciseMap();
+    const libraryNames = typeof EXERCISE_VIDEOS !== 'undefined' ? new Set(Object.keys(EXERCISE_VIDEOS)) : new Set();
+    const historyByExercise = {};
+
+    history.forEach(row => {
+        const name = (row.exercise || row.exercise_name || '').trim();
+        if (!name || existingNames.has(name.toLowerCase())) return;
+        if (!historyByExercise[name]) historyByExercise[name] = [];
+        historyByExercise[name].push(row);
+    });
+
+    const suggestions = Object.keys(historyByExercise).map(name => {
+        const sessions = getAddExerciseSessionStats(historyByExercise[name]);
+        if (sessions.length === 0) return null;
+
+        const lastSession = sessions[0];
+        const previousSession = sessions[1] || null;
+        const daysSince = getAddExerciseDaysSince(lastSession.date);
+        const recentSessions = sessions.filter(session => {
+            const sessionDaysSince = getAddExerciseDaysSince(session.date);
+            return sessionDaysSince !== null && sessionDaysSince <= 60;
+        }).length;
+        const isCustom = customMap.has(name.toLowerCase());
+        const isFilmed = typeof SHANNON_FILMED_EXERCISES !== 'undefined' && SHANNON_FILMED_EXERCISES.has(name);
+        const isPopular = typeof POPULAR_EXERCISES !== 'undefined' && POPULAR_EXERCISES.has(name);
+        const reasons = [];
+        let score = 0;
+        let hasProgressReason = false;
+
+        if (previousSession && previousSession.totalVolume > 0 && lastSession.totalVolume > previousSession.totalVolume) {
+            const volumeDelta = lastSession.totalVolume - previousSession.totalVolume;
+            const progressPct = (volumeDelta / previousSession.totalVolume) * 100;
+            if (progressPct >= 3) {
+                score += 38 + Math.min(24, progressPct);
+                hasProgressReason = true;
+                reasons.push({
+                    priority: daysSince !== null && daysSince >= 14 ? 55 : 95,
+                    badge: 'Progressing',
+                    detail: '+' + formatAddExerciseVolume(volumeDelta) + ' last time'
+                });
+            }
+        }
+
+        if (daysSince !== null && daysSince >= 14) {
+            score += 22 + Math.min(35, daysSince);
+            reasons.push({
+                priority: 100 + Math.min(30, daysSince),
+                badge: 'Due again',
+                detail: 'Last done ' + formatAddExerciseDaysSince(daysSince)
+            });
+        } else if (daysSince !== null && daysSince >= 7) {
+            score += 12;
+            reasons.push({
+                priority: 45,
+                badge: 'Worth revisiting',
+                detail: 'Last done ' + formatAddExerciseDaysSince(daysSince)
+            });
+        }
+
+        if (recentSessions >= 3) {
+            score += Math.min(24, recentSessions * 4);
+            reasons.push({
+                priority: 70,
+                badge: 'Regular pick',
+                detail: recentSessions + ' recent sessions'
+            });
+        } else {
+            score += recentSessions * 3;
+        }
+
+        if (isCustom) score += 8;
+        if (isFilmed) score += 6;
+        if (isPopular) score += 5;
+        if (libraryNames.has(name)) score += 3;
+        if (daysSince !== null && daysSince <= 1) score -= hasProgressReason ? 8 : 30;
+
+        reasons.sort((a, b) => b.priority - a.priority);
+        const primaryReason = reasons[0] || {
+            badge: isCustom ? 'Your exercise' : 'Suggested',
+            detail: daysSince !== null ? 'Last done ' + formatAddExerciseDaysSince(daysSince) : 'From your library'
+        };
+
+        return {
+            name,
+            score,
+            badge: primaryReason.badge,
+            detail: primaryReason.detail,
+            meta: [
+                daysSince !== null ? 'Last done ' + formatAddExerciseDaysSince(daysSince) : '',
+                lastSession.setCount ? lastSession.setCount + ' set' + (lastSession.setCount === 1 ? '' : 's') : '',
+                lastSession.totalVolume > 0 ? formatAddExerciseVolume(lastSession.totalVolume) : '',
+                formatAddExerciseShortDate(lastSession.date)
+            ].filter(Boolean).join(' &middot; '),
+            isCustom
+        };
+    }).filter(Boolean);
+
+    const historyExerciseKeys = new Set(Object.keys(historyByExercise).map(name => name.toLowerCase()));
+
+    customMap.forEach((ex, lowerName) => {
+        const name = (ex.exercise_name || '').trim();
+        if (!name || existingNames.has(lowerName) || historyExerciseKeys.has(lowerName)) return;
+        suggestions.push({
+            name,
+            score: 9,
+            badge: 'Your exercise',
+            detail: ex.muscle_group ? String(ex.muscle_group).replace('_', ' ') : 'Saved in your library',
+            meta: ex.video_url ? 'Has video' : '',
+            isCustom: true
+        });
+    });
+
+    return suggestions
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+        .slice(0, limit);
+}
+
+function getAddExerciseSuggestionIconHtml(suggestion) {
+    if (suggestion.badge === 'Progressing') {
+        return '<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/></svg>';
+    }
+    if (suggestion.badge === 'Due again' || suggestion.badge === 'Worth revisiting') {
+        return '<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;"><path d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 1.57-.73 2.97-1.86 3.89l1.42 1.42A6.96 6.96 0 0019 13c0-3.86-3.14-7-7-7zm-5 5c0-1.57.73-2.97 1.86-3.89L7.44 5.69A6.96 6.96 0 005 11c0 3.86 3.14 7 7 7v3l4-4-4-4v3c-2.76 0-5-2.24-5-5z"/></svg>';
+    }
+    if (suggestion.isCustom) {
+        return '<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>';
+    }
+    return '<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/></svg>';
+}
+
+function renderAddExerciseSuggestions(options = {}) {
+    const resultsContainer = document.getElementById('add-exercise-results');
+    if (!resultsContainer) return;
+
+    const suggestions = getSuggestedExercisesForAdd(5);
+
+    if (options.loading && suggestions.length === 0) {
+        resultsContainer.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; color: #94a3b8;">
+                Finding suggestions from your recent workouts...
+            </div>
+        `;
+        return;
+    }
+
+    if (suggestions.length === 0) {
+        resultsContainer.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                Type to search for exercises from your library
+            </div>
+        `;
+        return;
+    }
+
+    const suggestionHtml = suggestions.map(suggestion => {
+        const escapedName = escapeAddExerciseJsString(suggestion.name);
+        const safeName = escapeAddExerciseHtml(suggestion.name);
+        const safeBadge = escapeAddExerciseHtml(suggestion.badge);
+        const safeDetail = escapeAddExerciseHtml(suggestion.detail);
+        const metaHtml = suggestion.meta ? `<div style="font-size:0.72rem; color:#94a3b8; margin-top:3px; line-height:1.35;">${suggestion.meta}</div>` : '';
+        const badgeColor = suggestion.badge === 'Progressing'
+            ? '#16a34a'
+            : suggestion.badge === 'Due again'
+                ? '#d97706'
+                : 'var(--primary)';
+
+        return `
+            <button type="button" onclick="selectExerciseToAdd('${escapedName}')" style="width:100%; border:1px solid #e2e8f0; background:white; border-radius:12px; padding:14px; margin-bottom:10px; cursor:pointer; display:flex; align-items:center; gap:12px; text-align:left; font-family:inherit; box-shadow:0 6px 16px rgba(15,23,42,0.04);">
+                <div style="width:42px; height:42px; background:${badgeColor}; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    ${getAddExerciseSuggestionIconHtml(suggestion)}
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap:8px; min-width:0; flex-wrap:wrap;">
+                        <div style="font-weight:800; color:var(--text-main); font-size:0.95rem; line-height:1.2; min-width:0; overflow:hidden; text-overflow:ellipsis;">${safeName}</div>
+                        <span style="background:#f8fafc; color:${badgeColor}; border:1px solid #e2e8f0; font-size:0.62rem; padding:2px 6px; border-radius:6px; font-weight:800; text-transform:uppercase; letter-spacing:0.3px; flex-shrink:0;">${safeBadge}</span>
+                    </div>
+                    <div style="font-size:0.8rem; color:#64748b; font-weight:600; margin-top:4px; line-height:1.35;">${safeDetail}</div>
+                    ${metaHtml}
+                </div>
+                <svg viewBox="0 0 24 24" style="width:22px; height:22px; fill:var(--primary); flex-shrink:0;">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                </svg>
+            </button>
+        `;
+    }).join('');
+
+    resultsContainer.innerHTML = `
+        <div style="padding:0 2px 12px 2px;">
+            <div style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin:2px 0 10px 2px;">Suggested Exercises</div>
+            ${suggestionHtml}
+            <div style="text-align:center; color:#94a3b8; font-size:0.8rem; padding:8px 8px 0 8px;">Type to search the full library</div>
+        </div>
+    `;
+}
+
 // Search exercises for add modal
 function searchExercisesForAdd(query) {
     const resultsContainer = document.getElementById('add-exercise-results');
 
     if (!query || query.length < 2) {
-        resultsContainer.innerHTML = `
-            <div style="text-align: center; padding: 40px; color: #94a3b8;">
-                Type at least 2 characters to search
-            </div>
-        `;
+        renderAddExerciseSuggestions();
         return;
     }
 

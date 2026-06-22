@@ -202,4 +202,88 @@ assert.strictEqual(_test.participantUsernameFromMessaging({
     },
 }, '978239761327698', 'out'), 'plant_lead');
 
+const websiteComment = {
+    type: 'comment',
+    ownerId: '17841422424052111',
+    fromId: '2420613208444110',
+    commentId: '18103608319999508',
+    username: 'shan_n_sunny',
+    text: ' WEBSITE! ',
+};
+
+assert.strictEqual(_test.commentKeywordForPrivateReply(websiteComment), 'website');
+assert.strictEqual(
+    _test.shouldSendGoldCoastWebsitePrivateReply(websiteComment, { botAccount: 'goldcoast_ai_solutions' }),
+    true
+);
+assert.strictEqual(
+    _test.commentKeywordForPrivateReply({ ...websiteComment, text: 'my website' }),
+    null
+);
+assert.strictEqual(
+    _test.commentPrivateReplyDedupeId(websiteComment.commentId),
+    'ig_graph:private_reply:18103608319999508'
+);
+const websiteReply = _test.buildGoldCoastWebsitePrivateReply(websiteComment);
+assert.match(websiteReply, /gold-coast-ai-solutions\.netlify\.app/);
+assert.match(websiteReply, /utm_campaign=website_keyword/);
+assert.match(websiteReply, /ig=shan_n_sunny/);
+
+const guideComment = {
+    type: 'comment',
+    ownerId: '17841400000000000',
+    fromId: '2420613208444110',
+    commentId: '18103608319999509',
+    username: 'plant_lead',
+    mediaId: 'reel-media-1',
+    text: ' GUIDE! ',
+};
+const guideGiveaway = {
+    keyword: 'guide',
+    account: 'shan_n_sunny',
+    title: 'Core Form Checklist',
+    giveawayUrl: 'https://example.com/core-form-checklist.pdf',
+    replyText: 'Got you {username} - here is {title}: {url}',
+};
+const guideContentItem = {
+    source_key: 'ig_media:reel-media-1',
+    ig_media_id: 'reel-media-1',
+    permalink: 'https://www.instagram.com/reel/example/',
+    raw_payload: { commentGiveaway: guideGiveaway },
+};
+const guideCampaign = _test.resolveCommentGiveawayCampaign({
+    event: guideComment,
+    contentItem: guideContentItem,
+    accountConfig: { botAccount: 'shan_n_sunny' },
+});
+assert.ok(guideCampaign);
+assert.strictEqual(guideCampaign.keyword, 'guide');
+assert.strictEqual(guideCampaign.title, 'Core Form Checklist');
+const guideReply = _test.buildCommentGiveawayPrivateReply({ campaign: guideCampaign, event: guideComment });
+assert.match(guideReply, /Core Form Checklist/);
+assert.match(guideReply, /core-form-checklist\.pdf/);
+assert.match(guideReply, /utm_campaign=shan_n_sunny_guide/);
+assert.match(guideReply, /ig=plant_lead/);
+assert.strictEqual(
+    _test.resolveCommentGiveawayCampaign({
+        event: guideComment,
+        contentItem: guideContentItem,
+        accountConfig: { botAccount: 'goldcoast_ai_solutions' },
+    }),
+    null
+);
+assert.strictEqual(
+    _test.resolveCommentGiveawayCampaign({
+        event: { ...guideComment, mediaId: 'reel-media-2' },
+        contentItem: {
+            ...guideContentItem,
+            source_key: 'ig_media:reel-media-2',
+            ig_media_id: 'reel-media-2',
+            raw_payload: { commentGiveaway: { ...guideGiveaway, mediaId: 'reel-media-1' } },
+        },
+        accountConfig: { botAccount: 'shan_n_sunny' },
+    }),
+    null
+);
+
 console.log('instagram webhook story media tests passed');

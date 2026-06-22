@@ -1,9 +1,11 @@
-const CACHE_NAME = 'pbb-app-v210'; // v210: valid lightweight logo cache + deferred dashboard feature scripts; v209: native video streaming
+const CACHE_NAME = 'pbb-app-v214'; // v214: remove stale feed challenge banner; v213: community Feed XP merge
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
   './dashboard.html',
   './balance_logo_transparent.svg',
+  './xp-guide.html',
+  './assets/balance_logo.png',
   './welcome.html',
   './lib/supabase.js',
   './lib/auth-guard.js',
@@ -178,15 +180,16 @@ self.addEventListener('fetch', (e) => {
 
   // Network first for HTML, JS, and CSS files (always get latest)
   if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    const fetchOptions = url.pathname.endsWith('.html') ? { cache: 'no-store' } : { cache: 'reload' };
     e.respondWith(
-      fetch(e.request)
+      fetch(e.request, fetchOptions)
         .then(response => {
           // Clone and cache fresh response
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
           return response;
         })
-        .catch(() => caches.match(e.request)) // Fallback to cache if offline
+        .catch(() => caches.match(e.request, { ignoreSearch: true })) // Fallback to cache if offline
     );
     return;
   }

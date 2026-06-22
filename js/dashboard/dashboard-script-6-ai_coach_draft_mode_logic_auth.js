@@ -4537,7 +4537,10 @@ async function loadHomeChallenges() {
                     </div>
                     <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.5); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
                 </div>
-                <div style="padding: 0 20px 14px 20px; text-align: right;">
+                <div style="padding: 0 20px 14px 20px; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+                     <button onclick="openXpGuidePage(event)" style="background: rgba(255,255,255,0.92); color: #92400e; border: 1px solid rgba(255,255,255,0.55); border-radius: 8px; padding: 5px 12px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">
+                         How to earn XP
+                     </button>
                      <button onclick="leaveChallengeFromCard(event, '${challenge.challenge_id}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 5px 12px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.2s;">
                          Cancel Challenge
                      </button>
@@ -4567,7 +4570,10 @@ async function loadHomeChallenges() {
                         <div style="font-size: 1.2rem; font-weight: 800; color: white;">${typeof formatChallengePoints === 'function' ? formatChallengePoints(challenge.user_points, challenge.challenge_type || 'xp', undefined, undefined, challenge.raw_points) : challenge.user_points}</div>
                     </div>
                 </div>
-                <div style="padding: 0 20px 14px 20px; text-align: right;">
+                <div style="padding: 0 20px 14px 20px; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+                     <button onclick="openXpGuidePage(event)" style="background: rgba(255,255,255,0.92); color: #312e81; border: 1px solid rgba(255,255,255,0.55); border-radius: 8px; padding: 5px 12px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">
+                         How to earn XP
+                     </button>
                      <button onclick="leaveChallengeFromCard(event, '${challenge.challenge_id}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 5px 12px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.2s;">
                          Leave Challenge
                      </button>
@@ -5040,6 +5046,9 @@ function renderCohortActiveCard(cohort) {
                 <div style="font-size: 0.65rem; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px;">XP</div>
             </div>
         </div>
+        <div style="padding: 0 20px 16px 20px; display: flex; justify-content: flex-end;">
+            <button onclick="openXpGuidePage(event)" style="background: rgba(255,255,255,0.92); color: #101828; border: 1px solid rgba(245,217,138,0.45); border-radius: 8px; padding: 6px 12px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">How to earn XP</button>
+        </div>
     </div>`;
 }
 
@@ -5229,6 +5238,16 @@ window._toggleExtraChallenges = function(toggleEl) {
 
 // Polls every 30s to update cards when opponents join pending challenges
 let _pendingChallengePollerTimer = null;
+
+function openXpGuidePage(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    window.location.href = 'xp-guide.html';
+}
+window.openXpGuidePage = openXpGuidePage;
+
 function _managePendingChallengePoller(hasPending) {
     if (hasPending && !_pendingChallengePollerTimer) {
         _pendingChallengePollerTimer = setInterval(() => {
@@ -5307,12 +5326,13 @@ async function loadChallenges() {
                         </div>
                     </div>
                     ` : ''}
-                    <div style="display: flex; gap: 8px;">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                         ${isInvited ? `
                             <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #7c3aed, #6366f1); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">🪙 Join Challenge</button>
                             <button onclick="declineChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: #f1f5f9; color: var(--text-muted); border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Decline</button>
                         ` : `
                             <button onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #7c3aed, #6366f1); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">View Leaderboard</button>
+                            <button onclick="openXpGuidePage(event)" style="flex: 1; min-width: 130px; padding: 10px; background: #ecfdf3; color: #087443; border: 1px solid #bbf7d0; border-radius: 8px; font-weight: 700; cursor: pointer;">How to earn XP</button>
                         `}
                     </div>
                 </div>
@@ -8892,6 +8912,406 @@ async function loadHomeFriendsModal() {
         container.innerHTML = '<div style="text-align: center; padding: 30px; color: #ef4444; font-size: 0.85rem;">Failed to load friends</div>';
     }
 }
+
+const FEED_LEVEL_LEADERBOARD_LIMIT = 10;
+let feedLevelLeaderboardLoaded = false;
+let feedLevelLeaderboardLoading = false;
+let feedLevelLeaderboardLastEventToggleAt = 0;
+
+function getFeedLevelFallbackInfo(lifetimePoints) {
+    const maxLevel = 99;
+    const base = 3;
+    const multiplier = 0.3;
+    const exponent = 2.1;
+    const pointsForLevel = level => {
+        if (level <= 1) return 0;
+        const levelIndex = level - 1;
+        return Math.floor(base * levelIndex + multiplier * Math.pow(levelIndex, exponent));
+    };
+    let level = 1;
+    while (level < maxLevel && Number(lifetimePoints || 0) >= pointsForLevel(level + 1)) level++;
+    return { level };
+}
+
+function getFeedLevelInfo(lifetimePoints) {
+    const safePoints = Math.max(0, Number(lifetimePoints || 0));
+    if (typeof calculateLevel === 'function') return calculateLevel(safePoints);
+    return getFeedLevelFallbackInfo(safePoints);
+}
+
+function getFeedLevelTitleForLevel(level) {
+    if (typeof getLevelTitle === 'function') return getLevelTitle(level);
+    if (level >= 99) return 'Legend';
+    if (level >= 90) return 'Master';
+    if (level >= 80) return 'Champion';
+    if (level >= 70) return 'Expert';
+    if (level >= 60) return 'Veteran';
+    if (level >= 50) return 'Dedicated';
+    if (level >= 40) return 'Committed';
+    if (level >= 30) return 'Consistent';
+    if (level >= 20) return 'Growing';
+    if (level >= 10) return 'Rising';
+    if (level >= 5) return 'Beginner';
+    return 'Newcomer';
+}
+
+function getFeedLevelInitials(name) {
+    const clean = String(name || 'Member').trim();
+    const parts = clean.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return clean.slice(0, 2).toUpperCase();
+}
+
+function getFeedLevelCurrentUserProfile() {
+    const user = window.currentUser || {};
+    const metadata = user.user_metadata || {};
+    const name = metadata.name || metadata.full_name || user.name || user.email?.split('@')[0] || 'You';
+    return {
+        id: user.id,
+        name,
+        photo: metadata.avatar_url || metadata.picture || user.profile_photo || ''
+    };
+}
+
+function getFeedLevelLeaderboardShellHtml() {
+    return `
+        <section id="feed-level-leaderboard-card" class="feed-level-leaderboard is-collapsed" aria-label="Top Levels">
+            <button type="button" class="feed-level-leaderboard-toggle" onclick="window.pbbToggleFeedLevelLeaderboardFromEvent ? window.pbbToggleFeedLevelLeaderboardFromEvent(event) : (window.toggleFeedLevelLeaderboard && window.toggleFeedLevelLeaderboard())" aria-expanded="false" aria-controls="feed-level-leaderboard-body">
+                <span class="feed-level-leaderboard-badge">10</span>
+                <span class="feed-level-leaderboard-copy">
+                    <span class="feed-level-leaderboard-title">Top Levels</span>
+                    <span id="feed-level-leaderboard-summary" class="feed-level-leaderboard-summary">Highest level in Balance so far.</span>
+                </span>
+                <span id="feed-level-leaderboard-top-value" class="feed-level-leaderboard-top-value">--</span>
+                <span class="feed-level-leaderboard-chevron" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+                </span>
+            </button>
+            <div id="feed-level-leaderboard-body" class="feed-level-leaderboard-body" aria-hidden="true">
+                <div class="feed-level-leaderboard-actions">
+                    <span>Highest level in Balance so far.</span>
+                    <button type="button" onclick="refreshFeedLevelLeaderboard(event)">Refresh</button>
+                </div>
+                <div id="feed-level-leaderboard-list" class="feed-level-leaderboard-list">
+                    <div class="feed-level-leaderboard-state">Loading levels...</div>
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function isLegacyFeedChallengeCard(el) {
+    if (!el || el.id || el.closest('#feed-composer-card, #friends-feed-section, #feed-messages-panel, #game-challenge-modal')) return false;
+    const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return text.includes('Challenge a Friend') &&
+        text.includes('Chess, Checkers, Connect 4') &&
+        text.includes('bet FitCoins');
+}
+
+function findLegacyFeedChallengeCards(view) {
+    if (!view) return [];
+    return Array.from(view.querySelectorAll('div')).filter(isLegacyFeedChallengeCard);
+}
+
+function removeLegacyFeedChallengeCards(view) {
+    const cards = findLegacyFeedChallengeCards(view);
+    cards.forEach(card => {
+        if (card.parentNode) card.remove();
+    });
+    return cards.length;
+}
+
+function ensureFeedLevelLeaderboardShell() {
+    const existing = document.getElementById('feed-level-leaderboard-card');
+    const view = document.getElementById('view-friends');
+    if (existing) {
+        removeLegacyFeedChallengeCards(view);
+        return existing;
+    }
+    if (!view) return null;
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = getFeedLevelLeaderboardShellHtml().trim();
+    const card = wrapper.firstElementChild;
+    const legacyCards = findLegacyFeedChallengeCards(view);
+    const legacyCard = legacyCards[0] || null;
+    const composer = document.getElementById('feed-composer-card');
+
+    if (legacyCard && legacyCard.parentNode) {
+        legacyCard.replaceWith(card);
+    } else if (composer && composer.parentNode) {
+        composer.parentNode.insertBefore(card, composer);
+    } else {
+        view.appendChild(card);
+    }
+
+    legacyCards.slice(1).forEach(extraCard => {
+        if (extraCard.parentNode) extraCard.remove();
+    });
+
+    return card;
+}
+
+function observeFeedLevelLeaderboardShell() {
+    const view = document.getElementById('view-friends');
+    if (!view || view.dataset.feedLevelLeaderboardObserver === 'true') return;
+    view.dataset.feedLevelLeaderboardObserver = 'true';
+
+    const observer = new MutationObserver(() => {
+        if (!document.getElementById('feed-level-leaderboard-card')) {
+            ensureFeedLevelLeaderboardShell();
+        } else {
+            removeLegacyFeedChallengeCards(view);
+        }
+        bindFeedLevelLeaderboardTouchEvents();
+    });
+    observer.observe(view, { childList: true, subtree: true });
+}
+
+function bindFeedLevelLeaderboardTouchEvents() {
+    const toggle = document.querySelector('#feed-level-leaderboard-card .feed-level-leaderboard-toggle');
+    if (!toggle || toggle.dataset.pbbTouchBound === 'true') return;
+    toggle.dataset.pbbTouchBound = 'true';
+    toggle.addEventListener('pointerup', event => {
+        if (event.pointerType === 'mouse') return;
+        handleFeedLevelLeaderboardToggleEvent(event);
+    }, { passive: false });
+    toggle.addEventListener('touchend', event => {
+        handleFeedLevelLeaderboardToggleEvent(event);
+    }, { passive: false });
+}
+
+function setFeedLevelLeaderboardOpen(isOpen) {
+    const card = ensureFeedLevelLeaderboardShell();
+    const body = document.getElementById('feed-level-leaderboard-body');
+    const toggle = card?.querySelector('.feed-level-leaderboard-toggle');
+    if (!card) return;
+
+    card.classList.toggle('is-collapsed', !isOpen);
+    card.classList.toggle('is-open', isOpen);
+    if (toggle) toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    if (body) body.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+}
+
+function toggleFeedLevelLeaderboard(forceOpen) {
+    const card = ensureFeedLevelLeaderboardShell();
+    if (!card) return;
+
+    const shouldOpen = typeof forceOpen === 'boolean'
+        ? forceOpen
+        : card.classList.contains('is-collapsed');
+
+    setFeedLevelLeaderboardOpen(shouldOpen);
+    if (shouldOpen && !feedLevelLeaderboardLoaded) {
+        loadFeedLevelLeaderboard();
+    }
+}
+
+function handleFeedLevelLeaderboardToggleEvent(event, forceOpen) {
+    if (event) {
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+        if (typeof event.stopPropagation === 'function') event.stopPropagation();
+        const now = Date.now();
+        if (now - feedLevelLeaderboardLastEventToggleAt < 320) return;
+        feedLevelLeaderboardLastEventToggleAt = now;
+    }
+    toggleFeedLevelLeaderboard(forceOpen);
+}
+
+function refreshFeedLevelLeaderboard(event) {
+    if (event) event.stopPropagation();
+    feedLevelLeaderboardLoaded = false;
+    loadFeedLevelLeaderboard(true);
+}
+
+function addFeedLevelRecord(recordsById, row) {
+    const userId = row?.user_id;
+    if (!userId) return;
+    const lifetimePoints = Math.max(0, Number(row.lifetime_points || 0));
+    const existing = recordsById.get(userId);
+    if (!existing || lifetimePoints > existing.lifetime_points) {
+        recordsById.set(userId, { user_id: userId, lifetime_points: lifetimePoints });
+    }
+}
+
+async function loadFeedLevelLeaderboard(force = false) {
+    if (feedLevelLeaderboardLoading && !force) return;
+
+    ensureFeedLevelLeaderboardShell();
+    const list = document.getElementById('feed-level-leaderboard-list');
+    const topValue = document.getElementById('feed-level-leaderboard-top-value');
+    const summary = document.getElementById('feed-level-leaderboard-summary');
+    if (!list) return;
+
+    if (!window.currentUser || !window.supabaseClient) {
+        list.innerHTML = '<div class="feed-level-leaderboard-state">Levels unavailable.</div>';
+        return;
+    }
+
+    feedLevelLeaderboardLoading = true;
+    list.innerHTML = '<div class="feed-level-leaderboard-state">Loading levels...</div>';
+
+    try {
+        const recordsById = new Map();
+        const friendProfiles = new Map();
+        const currentProfile = getFeedLevelCurrentUserProfile();
+
+        try {
+            const { data, error } = await window.supabaseClient
+                .from('user_points')
+                .select('user_id, lifetime_points')
+                .order('lifetime_points', { ascending: false })
+                .limit(FEED_LEVEL_LEADERBOARD_LIMIT);
+            if (error) throw error;
+            (data || []).forEach(row => addFeedLevelRecord(recordsById, row));
+        } catch (e) {
+            console.warn('Could not load global level leaderboard:', e);
+        }
+
+        let friends = [];
+        try {
+            friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
+            (friends || []).forEach(friend => {
+                if (!friend?.friend_id) return;
+                friendProfiles.set(friend.friend_id, {
+                    id: friend.friend_id,
+                    name: friend.friend_name || 'Friend',
+                    photo: friend.friend_photo || ''
+                });
+            });
+        } catch (e) {
+            console.warn('Could not load friend profiles for level leaderboard:', e);
+        }
+
+        const candidateIds = [window.currentUser.id]
+            .concat((friends || []).map(friend => friend.friend_id).filter(Boolean));
+        const uniqueCandidateIds = Array.from(new Set(candidateIds));
+
+        if (uniqueCandidateIds.length) {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('user_points')
+                    .select('user_id, lifetime_points')
+                    .in('user_id', uniqueCandidateIds);
+                if (error) throw error;
+                (data || []).forEach(row => addFeedLevelRecord(recordsById, row));
+            } catch (e) {
+                console.warn('Could not load friend level rows:', e);
+            }
+        }
+
+        if (!recordsById.has(window.currentUser.id) && window.db?.points?.getPoints) {
+            try {
+                const ownPoints = await window.db.points.getPoints(window.currentUser.id);
+                addFeedLevelRecord(recordsById, {
+                    user_id: window.currentUser.id,
+                    lifetime_points: ownPoints?.lifetime_points || 0
+                });
+            } catch (e) {
+                console.warn('Could not load current user level row:', e);
+            }
+        }
+
+        const ids = Array.from(recordsById.keys());
+        const profilesById = new Map();
+        if (currentProfile.id) profilesById.set(currentProfile.id, currentProfile);
+        friendProfiles.forEach((profile, id) => profilesById.set(id, profile));
+
+        if (ids.length) {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('users')
+                    .select('id, name, email, profile_photo')
+                    .in('id', ids);
+                if (error) throw error;
+                (data || []).forEach(user => {
+                    profilesById.set(user.id, {
+                        id: user.id,
+                        name: user.name || user.email?.split('@')[0] || 'Member',
+                        photo: user.profile_photo || ''
+                    });
+                });
+            } catch (e) {
+                console.warn('Could not load level leaderboard profile names:', e);
+            }
+        }
+
+        const ranked = ids.map((id, index) => {
+            const record = recordsById.get(id);
+            const profile = profilesById.get(id) || { id, name: `Member ${index + 1}`, photo: '' };
+            const levelInfo = getFeedLevelInfo(record.lifetime_points);
+            return {
+                id,
+                name: profile.name || 'Member',
+                photo: profile.photo || '',
+                lifetimePoints: record.lifetime_points,
+                level: levelInfo.level || 1,
+                title: getFeedLevelTitleForLevel(levelInfo.level || 1),
+                isCurrentUser: id === window.currentUser.id
+            };
+        }).sort((a, b) => {
+            if (b.level !== a.level) return b.level - a.level;
+            if (b.lifetimePoints !== a.lifetimePoints) return b.lifetimePoints - a.lifetimePoints;
+            return a.name.localeCompare(b.name);
+        }).slice(0, FEED_LEVEL_LEADERBOARD_LIMIT);
+
+        if (!ranked.length) {
+            list.innerHTML = '<div class="feed-level-leaderboard-state">No levels yet.</div>';
+            if (topValue) topValue.textContent = '--';
+            if (summary) summary.textContent = 'Highest level in Balance so far.';
+            feedLevelLeaderboardLoaded = true;
+            return;
+        }
+
+        const topEntry = ranked[0];
+        if (topValue) topValue.textContent = `Lv ${topEntry.level}`;
+        if (summary) summary.textContent = `${ranked.length} ranked so far`;
+
+        list.innerHTML = ranked.map((entry, index) => {
+            const rank = index + 1;
+            const safeName = escapeHtml(entry.name);
+            const initials = getFeedLevelInitials(entry.name);
+            const avatar = entry.photo
+                ? `<img src="${escapeHtml(entry.photo)}" alt="" onerror="this.parentElement.textContent='${initials}'">`
+                : initials;
+            return `
+                <div class="feed-level-row ${entry.isCurrentUser ? 'is-current-user' : ''}">
+                    <div class="feed-level-rank rank-${rank <= 3 ? rank : 'default'}">${rank}</div>
+                    <div class="feed-level-avatar">${avatar}</div>
+                    <div class="feed-level-person">
+                        <div class="feed-level-name">${safeName}${entry.isCurrentUser ? '<span>You</span>' : ''}</div>
+                        <div class="feed-level-meta">Level ${entry.level} / ${escapeHtml(entry.title)}</div>
+                    </div>
+                    <div class="feed-level-points">
+                        <strong>${entry.lifetimePoints.toLocaleString()}</strong>
+                        <small>XP</small>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        feedLevelLeaderboardLoaded = true;
+    } catch (error) {
+        console.error('Error loading level leaderboard:', error);
+        list.innerHTML = '<div class="feed-level-leaderboard-state">Could not load levels.</div>';
+    } finally {
+        feedLevelLeaderboardLoading = false;
+    }
+}
+
+window.toggleFeedLevelLeaderboard = toggleFeedLevelLeaderboard;
+window.pbbToggleFeedLevelLeaderboardFromEvent = handleFeedLevelLeaderboardToggleEvent;
+window.refreshFeedLevelLeaderboard = refreshFeedLevelLeaderboard;
+window.loadFeedLevelLeaderboard = loadFeedLevelLeaderboard;
+window.ensureFeedLevelLeaderboardShell = ensureFeedLevelLeaderboardShell;
+_runWhenDomReady(function() {
+    const card = ensureFeedLevelLeaderboardShell();
+    observeFeedLevelLeaderboardShell();
+    bindFeedLevelLeaderboardTouchEvents();
+    if (card && card.classList.contains('is-open') && !feedLevelLeaderboardLoaded) {
+        loadFeedLevelLeaderboard();
+    }
+});
 
 // Load group chats into the messages panel
 async function loadPanelGroupChats() {

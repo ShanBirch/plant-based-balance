@@ -89,7 +89,7 @@
       gradient: 'linear-gradient(135deg,#0891b2,#14b8a6)',
       goals: [
         { id: 'share_workout_feed', label: 'Share workout to Feed', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
-        { id: 'share_meal_feed', label: 'Share meal to Feed', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
+        { id: 'share_meal_feed', label: 'Share meal to Feed (+1 XP)', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
         { id: 'message_coach', label: 'Message your coach', target: 1, unit: 'messages', min: 1, max: 3, step: 1 },
         { id: 'invite_friend', label: 'Invite a friend', target: 1, unit: 'friends', min: 1, max: 3, step: 1 },
         { id: 'complete_game', label: 'Complete a game', target: 1, unit: 'games', min: 1, max: 5, step: 1 }
@@ -249,6 +249,30 @@
     return 'pbb_weekly_goals_' + userId + '_' + weekStart;
   }
 
+  function lastSavedLocalStorageKey(userId) {
+    return 'pbb_weekly_goals_last_' + userId;
+  }
+
+  function getWeekStartCandidates(weekStart) {
+    const candidates = [weekStart, addDaysKey(weekStart, -1), addDaysKey(weekStart, 1)];
+    return candidates.filter((key, index) => key && candidates.indexOf(key) === index);
+  }
+
+  function rowHasGoals(row) {
+    return normalizeSelected(row && row.selected_goals).length > 0;
+  }
+
+  function pickBestWeeklyRow(rows, weekStart) {
+    const candidates = getWeekStartCandidates(weekStart);
+    return (rows || [])
+      .filter(rowHasGoals)
+      .sort((a, b) => {
+        const aIndex = candidates.indexOf(String(a.week_start || ''));
+        const bIndex = candidates.indexOf(String(b.week_start || ''));
+        return (aIndex === -1 ? 99 : aIndex) - (bIndex === -1 ? 99 : bIndex);
+      })[0] || null;
+  }
+
   function showToastSafe(message, type) {
     if (typeof window.showToast === 'function') {
       window.showToast(message, type || 'info');
@@ -359,7 +383,7 @@
   }
 
   async function fetchWeeklyRow(userId, weekStart) {
-    const fallback = readLocalRow(userId, weekStart);
+    const fallback = readLocalRow(userId, weekStart) || findLocalRow(userId, weekStart);
     if (!window.supabaseClient || !state.tableAvailable) return fallback;
     try {
       const { data, error } = await window.supabaseClient
@@ -372,7 +396,22 @@
         state.tableAvailable = !isMissingTableError(error);
         return fallback;
       }
-      return data || fallback;
+      if (rowHasGoals(data)) return data;
+      if (rowHasGoals(fallback)) return fallback;
+
+      const candidates = getWeekStartCandidates(weekStart).filter(key => key !== weekStart);
+      const nearby = candidates.length
+        ? await window.supabaseClient
+          .from(TABLE_NAME)
+          .select('*')
+          .eq('user_id', userId)
+          .in('week_start', candidates)
+        : null;
+      if (nearby && nearby.error) {
+        state.tableAvailable = !isMissingTableError(nearby.error);
+        return fallback;
+      }
+      return pickBestWeeklyRow(nearby && nearby.data, weekStart) || data || fallback;
     } catch (error) {
       state.tableAvailable = !isMissingTableError(error);
       return fallback;
@@ -386,6 +425,23 @@
     } catch (_) {
       return null;
     }
+  }
+
+  function findLocalRow(userId, weekStart) {
+    const candidates = getWeekStartCandidates(weekStart);
+    for (const candidate of candidates) {
+      const row = readLocalRow(userId, candidate);
+      if (rowHasGoals(row)) return row;
+    }
+    try {
+      const raw = localStorage.getItem(lastSavedLocalStorageKey(userId));
+      const parsed = raw ? JSON.parse(raw) : null;
+      const row = parsed && parsed.row ? parsed.row : parsed;
+      if (row && candidates.includes(String(row.week_start || '')) && rowHasGoals(row)) {
+        return row;
+      }
+    } catch (_) {}
+    return null;
   }
 
   function isMissingTableError(error) {
@@ -413,6 +469,10 @@
 
     try {
       localStorage.setItem(localStorageKey(userId, week.start), JSON.stringify(payload));
+      localStorage.setItem(lastSavedLocalStorageKey(userId), JSON.stringify({
+        saved_at: new Date().toISOString(),
+        row: payload
+      }));
     } catch (_) {}
 
     if (!window.supabaseClient || !state.tableAvailable) return payload;
@@ -1035,9 +1095,14 @@
       .weekly-goal-stepper{display:flex;align-items:center;justify-content:flex-end;gap:5px;flex-wrap:nowrap;}
       .weekly-goal-stepper button{width:31px;height:31px;border-radius:10px;border:1px solid var(--goal-border);background:var(--goal-soft);color:var(--goal-accent);font-size:1rem;font-weight:950;cursor:pointer;}
       .weekly-goal-stepper input{width:64px;border:1px solid #cbd5e1;border-radius:10px;padding:7px 8px;font-size:.88rem;font-weight:900;color:#0f172a;text-align:center;}
+      .weekly-goal-footer{position:sticky;bottom:0;background:rgba(255,255,255,.98);border-top:1px solid #e2e8f0;padding:13px 20px calc(13px + env(safe-area-inset-bottom));box-shadow:0 -12px 28px rgba(15,23,42,.1);}
+      .weekly-goal-save-btn{width:100%;min-height:52px;border:0;border-radius:14px;background:linear-gradient(135deg,#321a55 0%,#4a2575 58%,#d8b25e 100%);color:#fff !important;-webkit-text-fill-color:#fff;font-size:.95rem;font-weight:950;font-family:inherit;letter-spacing:0;cursor:pointer;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.34);box-shadow:0 10px 20px rgba(50,26,85,.22);}
+      .weekly-goal-save-btn:disabled{background:#cbd5e1;color:#64748b !important;-webkit-text-fill-color:#64748b;cursor:not-allowed;text-shadow:none;box-shadow:none;}
       @media (max-width:420px){
         .weekly-goal-selected-row{align-items:flex-start;flex-wrap:wrap;}
         .weekly-goal-chip-wrap,.weekly-goal-stepper{width:100%;max-width:none;justify-content:flex-start;padding-left:44px;}
+        .weekly-goal-sheet{max-height:90vh;border-radius:22px 22px 0 0;}
+        .weekly-goal-footer{padding-left:16px;padding-right:16px;}
       }
     `;
     document.head.appendChild(style);
@@ -1049,6 +1114,11 @@
     if (!modal) return;
     const selectedIds = new Set(state.draftSelected.map(goal => goal.id));
     const showingOnboardingSuggestions = !state.selected.length && state.draftSelected.length > 0;
+    const weekLabel = state.week ? state.week.start : 'this week';
+    const modalTitle = state.selected.length
+      ? 'Edit goals for ' + weekLabel
+      : 'Choose 3 for ' + weekLabel;
+    const saveLabel = state.selected.length ? 'Update goals' : 'Save goals';
     const groupHtml = GOAL_CATALOG.map(group => {
       const metaStyle = styleVarsForMeta(group);
       const goals = group.goals.map(goal => {
@@ -1099,12 +1169,12 @@
           <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative;">
             <div>
               <div style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;font-weight:900;color:#fde68a;">Weekly goals</div>
-              <div style="font-size:1.25rem;font-weight:950;color:white;margin-top:2px;">Choose 3 for ${escapeHtml(state.week ? state.week.start : 'this week')}</div>
+              <div style="font-size:1.25rem;font-weight:950;color:white;margin-top:2px;">${escapeHtml(modalTitle)}</div>
             </div>
             <button type="button" onclick="closeWeeklyGoalsModal()" style="width:38px;height:38px;border:none;border-radius:50%;background:white;color:#0f172a;font-size:1.4rem;line-height:1;cursor:pointer;box-shadow:0 8px 18px rgba(15,23,42,.08);">&times;</button>
           </div>
         </div>
-        <div style="padding:16px 20px 92px;">
+        <div style="padding:16px 20px 112px;">
           <div style="padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#ffffff,#f8fafc);border:1px solid rgba(15,23,42,.08);box-shadow:0 8px 22px rgba(15,23,42,.05);">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;">
               <div>
@@ -1117,9 +1187,8 @@
           </div>
           ${groupHtml}
         </div>
-        <div style="position:sticky;bottom:0;background:white;border-top:1px solid #e2e8f0;padding:13px 20px calc(13px + env(safe-area-inset-bottom));display:flex;gap:10px;">
-          <button type="button" onclick="closeWeeklyGoalsModal()" style="flex:0 0 auto;border:1px solid #cbd5e1;background:white;color:#0f172a;border-radius:12px;padding:12px 14px;font-weight:900;cursor:pointer;">Cancel</button>
-          <button type="button" onclick="saveWeeklyGoalsFromModal()" ${state.draftSelected.length ? '' : 'disabled'} style="flex:1;border:none;background:${state.draftSelected.length ? 'linear-gradient(135deg,#321a55,#4a2575 56%,#d8b25e)' : '#cbd5e1'};color:white;border-radius:12px;padding:12px 16px;font-weight:950;cursor:${state.draftSelected.length ? 'pointer' : 'not-allowed'};">Save goals</button>
+        <div class="weekly-goal-footer">
+          <button type="button" class="weekly-goal-save-btn" onclick="saveWeeklyGoalsFromModal()" ${state.draftSelected.length ? '' : 'disabled'}>${escapeHtml(saveLabel)}</button>
         </div>
       </div>
     `;

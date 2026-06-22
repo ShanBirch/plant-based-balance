@@ -1678,12 +1678,26 @@ function buildMealFeedCardPayload(meal) {
     const rawMealType = meal && meal.meal_type ? String(meal.meal_type) : 'meal';
     const mealType = rawMealType.charAt(0).toUpperCase() + rawMealType.slice(1);
     const hasPhoto = meal && meal.photo_url && String(meal.photo_url).trim() !== '' && meal.photo_url !== 'text-input';
+    const ingredients = Array.isArray(meal && meal.food_items)
+        ? meal.food_items
+            .map(item => ({
+                name: String(item?.name || item?.food_name || '').trim(),
+                portion: String(item?.portion || item?.serving || item?.amount || '').trim(),
+                calories: Math.round(Number(item?.calories || 0)),
+                protein: Math.round(Number(item?.protein_g || item?.protein || 0)),
+                carbs: Math.round(Number(item?.carbs_g || item?.carbs || 0)),
+                fat: Math.round(Number(item?.fat_g || item?.fat || 0))
+            }))
+            .filter(item => item.name !== '')
+        : [];
 
     return {
         card_type: 'meal',
         meal_id: (meal && meal.id) || null,
         meal_type: mealType,
         foods: foodItemsText,
+        ingredients,
+        ingredient_count: ingredients.length,
         calories: Math.round(Number((meal && meal.calories) || 0)),
         protein: Math.round(Number((meal && meal.protein_g) || 0)),
         carbs: Math.round(Number((meal && meal.carbs_g) || 0)),
@@ -1756,14 +1770,15 @@ async function shareMealRecordToFeed(meal, btn) {
             btn.textContent = 'Shared to Feed';
             btn.style.opacity = '1';
         }
-        showToast('Meal shared to Feed!', 'success');
+        const pointsAwarded = Number(story?.points_awarded || 0);
+        showToast(pointsAwarded > 0 ? `Meal shared to Feed! +${pointsAwarded} XP` : 'Meal shared to Feed!', 'success');
         return story;
     } catch (error) {
         console.error('Error sharing meal to feed:', error);
         showToast('Failed to share meal. Please try again.', 'error');
         if (btn) {
             btn.disabled = false;
-            btn.textContent = btn.dataset.originalText || 'Share meal to Feed';
+            btn.textContent = btn.dataset.originalText || 'Share meal to Feed (+1 XP)';
             btn.style.opacity = '1';
         }
         return null;
@@ -8391,7 +8406,7 @@ function openMealDetailPopup(index) {
     if (shareBtn) {
         const alreadyShared = isMealSharedToFeed(meal.id);
         shareBtn.disabled = alreadyShared;
-        shareBtn.textContent = alreadyShared ? 'Shared to Feed' : 'Share meal to Feed';
+        shareBtn.textContent = alreadyShared ? 'Shared to Feed' : 'Share meal to Feed (+1 XP)';
         shareBtn.style.opacity = alreadyShared ? '0.85' : '1';
     }
 
