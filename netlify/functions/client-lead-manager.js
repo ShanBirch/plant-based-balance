@@ -457,9 +457,9 @@ function classifyNeedsYou(alert = {}) {
         reasons.push('exercise_lookup_confused_followup');
         labels.push('exercise lookup got confusing, send a holding reply and leave it for Shannon');
     }
-    if (!acquisitionLead && isAlwaysNeedsYouPerson(alertIdentity(alert)) && !exerciseLookupFastTrack) {
+    if (isAlwaysNeedsYouPerson(alertIdentity(alert))) {
         reasons.push('always_needs_you_person');
-        labels.push('Shane/Fra/Monica permanent Needs You route');
+        labels.push('Shane/Fra/Miranda/Monica/Dani draft-only Needs You route');
     }
     if (appProblemHold) {
         reasons.push(appProblemHold.code);
@@ -497,7 +497,8 @@ function classifyNeedsYou(alert = {}) {
 
 function buildNeedsYouData(alert, classification) {
     const data = alert.data || {};
-    const reason = classification.label;
+    const permanentDraftOnly = classification.reasons.includes('always_needs_you_person');
+    const reason = permanentDraftOnly ? 'always_needs_you_person' : classification.label;
     const existingReview = data.codex_review && typeof data.codex_review === 'object'
         ? data.codex_review
         : {};
@@ -511,16 +512,21 @@ function buildNeedsYouData(alert, classification) {
             : (data.context_review || data.contextReview || null),
         client_manager_review_required: true,
         needs_you_required: true,
+        needs_shannon_approval: true,
         needs_you_reason: reason,
         needs_you_reasons: classification.reasons,
+        needs_you_label: classification.label,
+        permanent_needs_you_draft_only: permanentDraftOnly || data.permanent_needs_you_draft_only || false,
+        outbound_attempted: permanentDraftOnly ? false : data.outbound_attempted,
         operator_queue: 'needs_you',
         codex_review: {
             ...existingReview,
             source: MANAGER_SOURCE,
-            decision: 'client_manager_review_required',
+            decision: permanentDraftOnly ? 'needs_you_permanent_person_draft_only' : 'client_manager_review_required',
             queue: 'needs_you',
             needs_shannon_approval: true,
             reason,
+            detail: classification.label,
             evidence_ids: [
                 alert.id ? `coach_alerts:${alert.id}` : '',
                 alert.client_id ? `users:${alert.client_id}` : '',

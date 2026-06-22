@@ -38,10 +38,12 @@ function makeAlert(overrides = {}) {
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Shane' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ profile_name: 'Fra' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'francesca_balance' }), true);
-assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Miranda' }), false);
-assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'miranda_balance' }), false);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Miranda' }), true);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'miranda_balance' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Monica' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'monica_balance' }), true);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Dani' }), true);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Daniela' }), false);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Frank' }), false);
 
 assert.strictEqual(manager.isAcquisitionLeadAlert(makeAlert()), true);
@@ -51,7 +53,8 @@ assert.strictEqual(manager.isAcquisitionLeadAlert(makeAlert({
 })), false);
 
 const coldLeadNamedShane = manager.classifyNeedsYou(makeAlert({ client_name: 'Shane' }));
-assert.strictEqual(coldLeadNamedShane.shouldRoute, false, 'cold leads should not be routed only because their name matches a permanent client');
+assert.strictEqual(coldLeadNamedShane.shouldRoute, true, 'permanent IG thread identities must route to Needs You');
+assert.ok(coldLeadNamedShane.reasons.includes('always_needs_you_person'));
 
 const shane = manager.classifyNeedsYou(makeAlert({
     client_id: 'client-shane',
@@ -60,7 +63,7 @@ const shane = manager.classifyNeedsYou(makeAlert({
 }));
 assert.strictEqual(shane.shouldRoute, true);
 assert.ok(shane.reasons.includes('always_needs_you_person'));
-assert.doesNotMatch(shane.label, /Miranda/);
+assert.match(shane.label, /Miranda/);
 assert.match(shane.label, /Monica/);
 
 const miranda = manager.classifyNeedsYou(makeAlert({
@@ -69,8 +72,23 @@ const miranda = manager.classifyNeedsYou(makeAlert({
     client_name: 'Miranda',
     data: { channel: 'in_app', lead_stage: 'paying' },
 }));
-assert.strictEqual(miranda.shouldRoute, false);
-assert.ok(!miranda.reasons.includes('always_needs_you_person'));
+assert.strictEqual(miranda.shouldRoute, true);
+assert.ok(miranda.reasons.includes('always_needs_you_person'));
+
+const permanentStamp = manager.buildNeedsYouData(makeAlert({
+    alert_type: 'incoming_dm',
+    client_id: 'client-miranda',
+    client_name: 'Miranda',
+    data: { channel: 'in_app', lead_stage: 'paying' },
+}), miranda);
+assert.strictEqual(permanentStamp.needs_you_required, true);
+assert.strictEqual(permanentStamp.operator_queue, 'needs_you');
+assert.strictEqual(permanentStamp.needs_shannon_approval, true);
+assert.strictEqual(permanentStamp.needs_you_reason, 'always_needs_you_person');
+assert.strictEqual(permanentStamp.permanent_needs_you_draft_only, true);
+assert.strictEqual(permanentStamp.outbound_attempted, false);
+assert.strictEqual(permanentStamp.codex_review.reason, 'always_needs_you_person');
+assert.strictEqual(permanentStamp.codex_review.decision, 'needs_you_permanent_person_draft_only');
 
 const mirandaAppDeflection = manager.classifyNeedsYou(makeAlert({
     alert_type: 'incoming_dm',
@@ -112,7 +130,8 @@ const mirandaVerifiedFix = manager.classifyNeedsYou(makeAlert({
         app_problem_fix_verified_at: '2026-06-22T21:28:00.000Z',
     },
 }));
-assert.strictEqual(mirandaVerifiedFix.shouldRoute, false);
+assert.strictEqual(mirandaVerifiedFix.shouldRoute, true);
+assert.ok(mirandaVerifiedFix.reasons.includes('always_needs_you_person'));
 
 const monica = manager.classifyNeedsYou(makeAlert({
     client_id: 'client-monica',
@@ -136,7 +155,8 @@ const mirandaExerciseLookup = manager.classifyNeedsYou(makeAlert({
         },
     },
 }));
-assert.strictEqual(mirandaExerciseLookup.shouldRoute, false, 'reviewed exercise lookup can bypass permanent/media Needs You');
+assert.strictEqual(mirandaExerciseLookup.shouldRoute, true, 'permanent Needs You must not be bypassed by exercise lookup fast track');
+assert.ok(mirandaExerciseLookup.reasons.includes('always_needs_you_person'));
 
 const mirandaConfusedExerciseLookup = manager.classifyNeedsYou(makeAlert({
     client_name: 'Miranda',
