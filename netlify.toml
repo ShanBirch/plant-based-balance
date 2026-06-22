@@ -365,6 +365,12 @@
 [functions."extract-ig-thread-memory"]
   schedule = "29 18 * * *"
 
+# Daily message learning - nightly safety net for sent client/lead DMs.
+# Runs at 23:41 Brisbane (13:41 UTC) and backfills any missed edit-learning
+# or in-app client_memory extraction from the last day of sent coach_alerts.
+[functions."daily-message-learning"]
+  schedule = "41 13 * * *"
+
 # Instagram content memory - keeps active story/post context fresh for IG drafts.
 [functions."meta-ig-sync-content"]
   schedule = "*/15 * * * *"
