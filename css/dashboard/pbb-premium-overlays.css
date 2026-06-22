@@ -2837,6 +2837,11 @@ body > div[id*="modal"] [style*="border"][style*="rgba(59,130,246"] {
 }
 
 /* Quick nutrition logging opens with the phone keyboard, so keep this flow light and readable. */
+#daily-workout-trend-card,
+#movement-workout-trend-card {
+    display: none !important;
+}
+
 #quick-meal-text-overlay,
 #quick-manual-entry-overlay {
     background: rgba(248, 245, 238, 0.98) !important;

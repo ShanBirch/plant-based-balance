@@ -1146,7 +1146,6 @@ function _switchAppTabReal(tabName, btn) {
         if (typeof checkAndShowDailyQuizCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowDailyQuizCard, 625);
         if (typeof checkAndShowMealTipCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowMealTipCard, 725);
         if (typeof checkAndShowProgressPhotoCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowProgressPhotoCard, 825);
-        if (typeof checkAndShowWorkoutTrendCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowWorkoutTrendCard, 950);
         if (typeof checkAndShowNudgeFriendsCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowNudgeFriendsCard, 1050);
         if (typeof initPerformanceCard === 'function') scheduleDashboardTaskForActiveUser(initPerformanceCard, 1200);
         if (typeof refreshRaffleStateFromServer === 'function') scheduleDashboardTaskForActiveUser(refreshRaffleStateFromServer, 1350);
@@ -1184,11 +1183,6 @@ function _switchAppTabReal(tabName, btn) {
                 });
             } else {
                 renderMovement();
-            }
-
-            // Load workout trend card in Movement tab
-            if (typeof loadMovementTrendCard === 'function') {
-                loadMovementTrendCard();
             }
 
             // Auto-Check-in Logic (Once per day)

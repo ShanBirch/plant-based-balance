@@ -1649,7 +1649,6 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
                 if (typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
                 if (typeof checkAndShowMealTipCard === 'function') checkAndShowMealTipCard();
                 if (typeof checkAndShowProgressPhotoCard === 'function') checkAndShowProgressPhotoCard();
-                if (typeof checkAndShowWorkoutTrendCard === 'function') checkAndShowWorkoutTrendCard();
                 if (typeof checkAndShowNudgeFriendsCard === 'function') checkAndShowNudgeFriendsCard();
                 if (typeof initPerformanceCard === 'function') initPerformanceCard();
                 if (typeof initFitbitDashboard === 'function') initFitbitDashboard();
