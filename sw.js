@@ -1,9 +1,9 @@
-const CACHE_NAME = 'pbb-app-v209'; // v209: stream exercise videos directly through the native video player; v208: workout builder search only
+const CACHE_NAME = 'pbb-app-v210'; // v210: valid lightweight logo cache + deferred dashboard feature scripts; v209: native video streaming
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
   './dashboard.html',
-  './assets/balance_logo.png',
+  './balance_logo_transparent.svg',
   './welcome.html',
   './lib/supabase.js',
   './lib/auth-guard.js',
@@ -239,8 +239,8 @@ self.addEventListener('push', (e) => {
   // Build notification options from server payload
   const options = {
     body: data.body,
-    icon: data.icon || './assets/balance_logo.png',
-    badge: data.badge || './assets/balance_logo.png',
+    icon: data.icon || './balance_logo_transparent.svg',
+    badge: data.badge || './balance_logo_transparent.svg',
     vibrate: data.vibrate || [200, 100, 200],
     tag: data.tag || 'dm-message',
     requireInteraction: data.requireInteraction || false,
