@@ -820,6 +820,21 @@ html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body [style*="background:#
     color: #fffaf2 !important;
 }
 
+.feed-meal-card .feed-meal-card-title,
+.feed-meal-card .feed-meal-card-food,
+.feed-meal-card .feed-meal-card-calories,
+.feed-meal-card .feed-meal-card-macro-value {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+    opacity: 1 !important;
+}
+
+.feed-meal-card .feed-meal-card-muted {
+    color: rgba(248, 247, 242, 0.84) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.84) !important;
+    opacity: 1 !important;
+}
+
 #feed-messages-panel,
 #add-friend-modal,
 #create-group-chat-modal,
@@ -3758,6 +3773,21 @@ html[data-pbb-theme="light"] [style*="color: #fff"],
 html[data-pbb-theme="light"] [style*="color:#f8f7f2"],
 html[data-pbb-theme="light"] [style*="color: #f8f7f2"] {
     color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .feed-meal-card .feed-meal-card-title,
+html[data-pbb-theme="light"] .feed-meal-card .feed-meal-card-food,
+html[data-pbb-theme="light"] .feed-meal-card .feed-meal-card-calories,
+html[data-pbb-theme="light"] .feed-meal-card .feed-meal-card-macro-value {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+    opacity: 1 !important;
+}
+
+html[data-pbb-theme="light"] .feed-meal-card .feed-meal-card-muted {
+    color: rgba(248, 247, 242, 0.84) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.84) !important;
+    opacity: 1 !important;
 }
 
 html[data-pbb-theme="light"] .coin-header-widget,
