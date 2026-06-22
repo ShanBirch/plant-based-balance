@@ -1,4 +1,63 @@
+if (typeof window.pbbEnsureWorkoutRuntimeReady !== 'function') {
+    window.pbbEnsureWorkoutRuntimeReady = function(requiredFunctions, options = {}) {
+        const timeoutMs = options.timeoutMs || 8000;
+        const startedAt = Date.now();
+        const required = Array.isArray(requiredFunctions) ? requiredFunctions : [];
+
+        return new Promise((resolve, reject) => {
+            const check = () => {
+                const missing = required.filter(name => typeof window[name] !== 'function');
+                if (missing.length === 0) {
+                    resolve(true);
+                    return;
+                }
+
+                if (Date.now() - startedAt >= timeoutMs) {
+                    reject(new Error(`Workout runtime not ready: ${missing.join(', ')}`));
+                    return;
+                }
+
+                setTimeout(check, 50);
+            };
+
+            check();
+        });
+    };
+}
+
+if (typeof window.pbbNotifyWorkoutRuntimeStillLoading !== 'function') {
+    window.pbbNotifyWorkoutRuntimeStillLoading = function(error) {
+        console.error('Workout runtime is still loading:', error);
+        alert('Workout is still loading. Give it a few seconds and tap Start again.');
+    };
+}
+
 async function startSavedWorkout(id) {
+        if (window._pbbStartingSavedWorkoutId === id) return;
+        window._pbbStartingSavedWorkoutId = id;
+
+        try {
+        try {
+            await window.pbbEnsureWorkoutRuntimeReady([
+                'normalizeHistoryCache',
+                'preloadExerciseNotes',
+                'findVideoMatch',
+                'formatPreviousWorkoutSummary',
+                'getPreviousWorkoutSummary',
+                'getExerciseNotesHtml',
+                'getSetRowHtml',
+                'getVolumeDisplayHtml',
+                'setupVolumeTracking',
+                'hideAllAppViews',
+                'startWorkoutTimer',
+                'pushNavigationState',
+                'showLastVolumePopup'
+            ]);
+        } catch (error) {
+            window.pbbNotifyWorkoutRuntimeStillLoading(error);
+            return;
+        }
+
         // Use cache populated by renderMovementView (205 lines — deferred on iOS)
         const saved = window.savedWorkoutsCache || [];
         const workout = saved.find(w => w.id === id);
@@ -119,6 +178,9 @@ async function startSavedWorkout(id) {
 
         // Show total volume popup and tracker
         showLastVolumePopup();
+        } finally {
+            window._pbbStartingSavedWorkoutId = null;
+        }
     }
 
     async function showWorkoutHistoryDetail(dateStr) {

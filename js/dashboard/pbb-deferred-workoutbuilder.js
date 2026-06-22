@@ -1,5 +1,39 @@
 let customWorkoutSelection = [];
 
+if (typeof window.pbbEnsureWorkoutRuntimeReady !== 'function') {
+    window.pbbEnsureWorkoutRuntimeReady = function(requiredFunctions, options = {}) {
+        const timeoutMs = options.timeoutMs || 8000;
+        const startedAt = Date.now();
+        const required = Array.isArray(requiredFunctions) ? requiredFunctions : [];
+
+        return new Promise((resolve, reject) => {
+            const check = () => {
+                const missing = required.filter(name => typeof window[name] !== 'function');
+                if (missing.length === 0) {
+                    resolve(true);
+                    return;
+                }
+
+                if (Date.now() - startedAt >= timeoutMs) {
+                    reject(new Error(`Workout runtime not ready: ${missing.join(', ')}`));
+                    return;
+                }
+
+                setTimeout(check, 50);
+            };
+
+            check();
+        });
+    };
+}
+
+if (typeof window.pbbNotifyWorkoutRuntimeStillLoading !== 'function') {
+    window.pbbNotifyWorkoutRuntimeStillLoading = function(error) {
+        console.error('Workout runtime is still loading:', error);
+        alert('Workout is still loading. Give it a few seconds and tap Start again.');
+    };
+}
+
 function setBuilderLibraryStatus(html) {
     const list = document.getElementById('builder-library-list');
     if (list) list.innerHTML = html;
@@ -249,83 +283,105 @@ function updateBuilderUI() {
 
 async function startCustomBuilderWorkout() {
     if (customWorkoutSelection.length === 0) return;
+    if (window._pbbStartingCustomBuilderWorkout) return;
+    window._pbbStartingCustomBuilderWorkout = true;
 
-    // Reuse name if already set by the SAVE button, otherwise prompt once
-    const workoutName = window.currentBuilderWorkoutName || prompt("Name your workout:");
-    if (!workoutName) return; // User cancelled
-    window.currentBuilderWorkoutName = workoutName;
-
-    // Auto-save the workout to database
-    const user = window.currentUser;
-    if (user) {
+    try {
         try {
-            const savedWorkout = await dbHelpers.workouts.saveCustomWorkout(user.id, workoutName, {
-                exercises: customWorkoutSelection,
-                date: new Date().toISOString()
-            });
-            // Track the workout ID so any added exercises get saved back
-            window.currentCustomWorkoutId = savedWorkout?.id || null;
-            window.currentWorkoutName = workoutName;
-            // Refresh the cache
-            const savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
-            window.savedWorkoutsCache = savedWorkouts;
-            if (typeof window.refreshWeeklyGoalsCard === 'function') {
-                window.refreshWeeklyGoalsCard();
-            }
-            // Preload workout history for previous stats and volume tracking
-            const rawHistory1 = await dbHelpers.workouts.getHistory(user.id);
-            window.workoutHistoryCache = normalizeHistoryCache(rawHistory1);
-        } catch(e) {
-            console.error("Failed to auto-save workout:", e);
-            window.currentCustomWorkoutId = null;
+            await window.pbbEnsureWorkoutRuntimeReady([
+                'normalizeHistoryCache',
+                'preloadExerciseNotes',
+                'findVideoMatch',
+                'formatPreviousWorkoutSummary',
+                'getPreviousWorkoutSummary',
+                'getExerciseNotesHtml',
+                'setupVolumeTracking',
+                'hideAllAppViews',
+                'startWorkoutTimer',
+                'pushNavigationState',
+                'showLastVolumePopup'
+            ]);
+        } catch (error) {
+            window.pbbNotifyWorkoutRuntimeStillLoading(error);
+            return;
         }
-    }
 
-    // Preload personal bests and exercise notes for all exercises in this workout
-    if (user) {
-        try {
-            window.personalBestsCache = await dbHelpers.personalBests.getForExercises(user.id, customWorkoutSelection);
-        } catch(e) { console.error("Failed to load personal bests", e); window.personalBestsCache = {}; }
-        await preloadExerciseNotes(customWorkoutSelection);
-    }
+        // Reuse name if already set by the SAVE button, otherwise prompt once
+        const workoutName = window.currentBuilderWorkoutName || prompt("Name your workout:");
+        if (!workoutName) return; // User cancelled
+        window.currentBuilderWorkoutName = workoutName;
 
-    // Construct a dynamic workout object
-    const customWorkout = {
-        title: workoutName,
-        name: workoutName,
-        description: 'Your personalized session',
-        exercises: customWorkoutSelection.map(key => ({
-            name: key,
-            sets: (window._coachExerciseSetCounts && window._coachExerciseSetCounts[key]) || 3,
-            reps: '12',
-            videoUrl: '', // Will be looked up
-            desc: ''
-        }))
-    };
+        // Auto-save the workout to database
+        const user = window.currentUser;
+        if (user) {
+            try {
+                const savedWorkout = await dbHelpers.workouts.saveCustomWorkout(user.id, workoutName, {
+                    exercises: customWorkoutSelection,
+                    date: new Date().toISOString()
+                });
+                // Track the workout ID so any added exercises get saved back
+                window.currentCustomWorkoutId = savedWorkout?.id || null;
+                window.currentWorkoutName = workoutName;
+                // Refresh the cache
+                const savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
+                window.savedWorkoutsCache = savedWorkouts;
+                if (typeof window.refreshWeeklyGoalsCard === 'function') {
+                    window.refreshWeeklyGoalsCard();
+                }
+                // Preload workout history for previous stats and volume tracking
+                const rawHistory1 = await dbHelpers.workouts.getHistory(user.id);
+                window.workoutHistoryCache = normalizeHistoryCache(rawHistory1);
+            } catch(e) {
+                console.error("Failed to auto-save workout:", e);
+                window.currentCustomWorkoutId = null;
+            }
+        }
 
-    // Clear coach set counts after building the workout so they don't leak into future non-coach sessions
-    window._coachExerciseSetCounts = null;
+        // Preload personal bests and exercise notes for all exercises in this workout
+        if (user) {
+            try {
+                window.personalBestsCache = await dbHelpers.personalBests.getForExercises(user.id, customWorkoutSelection);
+            } catch(e) { console.error("Failed to load personal bests", e); window.personalBestsCache = {}; }
+            await preloadExerciseNotes(customWorkoutSelection);
+        }
 
-    // Hijack the player
-    document.getElementById('workout-player-title').innerText = customWorkout.title;
-    document.getElementById('workout-player-goal').innerText = customWorkout.description;
-    
-    const list = document.getElementById('workout-exercises-list');
-    list.innerHTML = '';
-    
-    customWorkout.exercises.forEach((ex, idx) => {
-        const card = document.createElement('div');
-        card.className = 'exercise-logger-card'; // Required for addWorkoutSet to find parent
-        card.setAttribute('data-exercise-name', ex.name);
-        card.setAttribute('data-is-user-added', 'false');
-        card.style.cssText = "background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;";
+        // Construct a dynamic workout object
+        const customWorkout = {
+            title: workoutName,
+            name: workoutName,
+            description: 'Your personalized session',
+            exercises: customWorkoutSelection.map(key => ({
+                name: key,
+                sets: (window._coachExerciseSetCounts && window._coachExerciseSetCounts[key]) || 3,
+                reps: '12',
+                videoUrl: '', // Will be looked up
+                desc: ''
+            }))
+        };
 
-        const videoUrl = findVideoMatch(ex.name);
-        const previousSummaryHtml = formatPreviousWorkoutSummary(ex.name);
-        const previousSummary = getPreviousWorkoutSummary(ex.name);
-        const escapedName = ex.name.replace(/'/g, "\\'");
+        // Clear coach set counts after building the workout so they don't leak into future non-coach sessions
+        window._coachExerciseSetCounts = null;
 
-        card.innerHTML = `
+        // Hijack the player
+        document.getElementById('workout-player-title').innerText = customWorkout.title;
+        document.getElementById('workout-player-goal').innerText = customWorkout.description;
+
+        const list = document.getElementById('workout-exercises-list');
+        list.innerHTML = '';
+
+        customWorkout.exercises.forEach((ex, idx) => {
+            const card = document.createElement('div');
+            card.className = 'exercise-logger-card'; // Required for addWorkoutSet to find parent
+            card.setAttribute('data-exercise-name', ex.name);
+            card.setAttribute('data-is-user-added', 'false');
+            card.style.cssText = "background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;";
+
+            const videoUrl = findVideoMatch(ex.name);
+            const previousSummaryHtml = formatPreviousWorkoutSummary(ex.name);
+            const previousSummary = getPreviousWorkoutSummary(ex.name);
+            const escapedName = ex.name.replace(/'/g, "\\'");
+
+            card.innerHTML = `
             <div style="padding: 15px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
                 <h3 style="margin: 0 0 5px 0; font-size: 1.05rem; font-weight: 700; color: var(--text-main);">${ex.name}</h3>
                 <div style="color: var(--text-muted); font-size: 0.85rem;">Custom Exercise</div>
@@ -408,20 +464,23 @@ async function startCustomBuilderWorkout() {
                 <button onclick="addWorkoutSet(this, '${ex.name.replace(/'/g, "\\'")}', false)" style="width:100%; background:transparent; border:2px dashed #e2e8f0; color:#94a3b8; font-weight:700; font-size:0.8rem; padding:12px; border-radius:12px; cursor:pointer;">+ ADD SET</button>
             </div>
         `;
-        list.appendChild(card);
+            list.appendChild(card);
 
-        // Setup volume tracking for this card
-        setupVolumeTracking(card);
-    });
+            // Setup volume tracking for this card
+            setupVolumeTracking(card);
+        });
 
-    hideAllAppViews();
-    document.getElementById('view-active-workout').style.display = 'block';
-    startWorkoutTimer();
+        hideAllAppViews();
+        document.getElementById('view-active-workout').style.display = 'block';
+        startWorkoutTimer();
 
-    // Push navigation state for Android back button
-    pushNavigationState('view-active-workout', () => quitWorkout());
+        // Push navigation state for Android back button
+        pushNavigationState('view-active-workout', () => quitWorkout());
 
-    // Show total volume popup and tracker
-    showLastVolumePopup();
+        // Show total volume popup and tracker
+        showLastVolumePopup();
+    } finally {
+        window._pbbStartingCustomBuilderWorkout = false;
+    }
 
 }

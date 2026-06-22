@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v214'; // v214: remove stale feed challenge banner; v213: community Feed XP merge
+const CACHE_NAME = 'pbb-app-v215'; // v215: custom workout start runtime guard; v214: remove stale feed challenge banner
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -13,11 +13,11 @@ const ASSETS = [
   './exercise_videos.js',
   './workout_library.js',
   './workout_library_extended.js',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=109',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=110',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream',
-  './js/dashboard/pbb-deferred-workoutbuilder.js?v=4',
+  './js/dashboard/pbb-deferred-workoutbuilder.js?v=5',
   './js/dashboard/pbb-deferred-yourworkouts.js',
-  './js/dashboard/pbb-deferred-savedworkouts.js',
+  './js/dashboard/pbb-deferred-savedworkouts.js?v=2',
   './js/dashboard/dashboard-script-12-program_builder_state.js?v=4'
 ];
 
