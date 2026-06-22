@@ -47,6 +47,7 @@ const {
     buildDailyGreetingPolicyBlock,
     shouldAllowDailyGreeting,
     isAlwaysNeedsYouPerson,
+    getAppProblemAutoSendHoldReason,
     buildShannonDmTuningBlock,
     buildOpenAIShannonVoiceBlock,
     loadEditExamples,
@@ -663,8 +664,14 @@ function getBalanceAutoContextBypass({ balanceAutoSendLane, contextReview, draft
     };
 }
 
-function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass }) {
+function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData }) {
     const effectiveContextBypass = contextBypass || cocosContextBypass;
+    const appProblemHold = getAppProblemAutoSendHoldReason({
+        currentMessage,
+        draftText: draft?.joined || '',
+        alertData,
+    });
+    if (appProblemHold) return appProblemHold;
     if (mediaReview?.required) {
         return {
             code: 'media_review',
@@ -1217,7 +1224,10 @@ function buildChallengeNextStepBlock(qualifier, currentMessageText = '') {
 APP SUPPORT NEXT STEP:
 The newest message is about Balance/app/helper reconnection, account access, login, or a tech/workout setup issue. Treat this as support, not a coaching signup moment.
 - Do not send the coaching link in this reply, even if the lead previously accepted the offer.
-- Acknowledge it simply and ask for the practical detail Shannon needs, such as what screen/error they see or which email/account they used.
+- App problems should be fixed, checked, and then confirmed. Do not fob them off with "try later".
+- Do not ask for a screenshot by default. Ask only when the exact problem cannot be identified from their message, app logs, or conversation.
+- Do not claim the app issue is fixed unless the context says Shannon has already fixed and verified it.
+- If no fix evidence is available yet, write as Shannon taking ownership: he will check it properly and get it sorted, then confirm once fixed.
 - Do not mention AI, automation, or an assistant. Keep the wording as Shannon personally helping them get sorted.`;
     }
     const url = challengeUrlForRoute(qualifier.challenge_route || 'generic');
@@ -2132,6 +2142,9 @@ QUICK CLIENT SUPPORT MODE:
 They are already an app or challenge client and this looks like a program, plan, workout, meal, schedule, or app support request.
 - Answer the practical thing first.
 - Do not turn it into onboarding or a qualifier question.
+- If this is an app bug/problem, the real job is fix it, check it, and confirm it. Do not tell them to try again later.
+- Do not ask for a screenshot by default. Only ask for one when the message and app context are not enough to identify what is broken.
+- Do not claim it is fixed unless the context says Shannon has already fixed and verified it.
 - If Shannon needs more info before changing something, ask for the one missing detail.`,
         };
     }
@@ -4218,6 +4231,7 @@ exports.handler = async (event) => {
             linkedUserId: thread.linked_user_id,
             meaningfulLeadReplyCount,
             contextBypass: autoContextBypass,
+            alertData: currentAlertData,
         })
         : null;
     if (!autoHoldReason && autoSendEnabled && blockedStage) {

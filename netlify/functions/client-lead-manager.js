@@ -15,6 +15,7 @@ const {
     normalizeCoachDraftText,
     normalizeLearningReelHistory,
     referencesLearningReelFollowUpText,
+    getAppProblemAutoSendHoldReason,
     truncate,
 } = require('./_lib/client-context');
 const {
@@ -438,6 +439,11 @@ function classifyNeedsYou(alert = {}) {
     const missingLearningReelContext = acquisitionLead && leadReferencesLearningReel(data) && !leadHasLearningReelContext(data);
     const reasons = [];
     const labels = [];
+    const appProblemHold = getAppProblemAutoSendHoldReason({
+        currentMessage: latestLeadText(data),
+        draftText: alert.suggested_message || data.draft_text || '',
+        alertData: data,
+    });
 
     if (missingLearningReelContext) {
         reasons.push('missing_learning_reel_context');
@@ -453,7 +459,11 @@ function classifyNeedsYou(alert = {}) {
     }
     if (!acquisitionLead && isAlwaysNeedsYouPerson(alertIdentity(alert)) && !exerciseLookupFastTrack) {
         reasons.push('always_needs_you_person');
-        labels.push('Shane/Fra/Miranda/Monica permanent Needs You route');
+        labels.push('Shane/Fra/Monica permanent Needs You route');
+    }
+    if (appProblemHold) {
+        reasons.push(appProblemHold.code);
+        labels.push(appProblemHold.label);
     }
     if (mediaReview.required && !exerciseLookupFastTrack && (!acquisitionLead || leadMissingMediaContext)) {
         reasons.push('media_review_required');

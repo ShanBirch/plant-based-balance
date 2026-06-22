@@ -446,15 +446,69 @@ function isAlwaysNeedsYouPerson(record = {}) {
         const tokens = name.split(/\s+/).filter(Boolean);
         return tokens.includes('shane')
             || tokens.includes('fra')
-            || tokens.includes('miranda')
             || tokens.includes('monica')
             || tokens.some(token => /^francesca\b/.test(token))
             || name === 'shane'
             || name === 'fra'
-            || name === 'miranda'
             || name === 'monica'
             || name.startsWith('francesca ');
     });
+}
+
+function isAppProblemSupportRequest(text = '') {
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!t) return false;
+    const appContext = /\b(app|balance|screen|page|tab|button|start|saved|custom workout|workout|exercise|machine|meal|food|nutrition|photo|progress|check[- ]?in|challenge|login|log in|password|account|notification|loading|load|save|saved)\b/i.test(t);
+    const problem = /\b(not working|doesn['\u2019]?t work|isn['\u2019]?t working|broken|bug|glitch|glitched|error|stuck|missing|wrong|can['\u2019]?t access|cant access|won['\u2019]?t let me|won['\u2019]?t go|won['\u2019]?t load|will not load|won['\u2019]?t open|cannot|can['\u2019]?t log|cant log|login|log in|fix|help me fix|sort this|issue|problem|crash|crashed|frozen|freeze|upload failed|didn['\u2019]?t save|not showing|won['\u2019]?t show|keeps spinning|blank page)\b/i.test(t);
+    return appContext && problem;
+}
+
+function hasAppProblemResolutionEvidence(data = {}) {
+    if (!data || typeof data !== 'object') return false;
+    return !!(
+        data.app_problem_fixed_at
+        || data.app_problem_fix_verified_at
+        || data.support_fix_confirmed_at
+        || data.codex_app_fix_confirmed_at
+        || data.app_support_resolution?.fixed_at
+        || data.app_support_resolution?.verified_at
+    );
+}
+
+function draftDeflectsAppProblem(draftText = '') {
+    const t = String(draftText || '').replace(/\s+/g, ' ').trim();
+    if (!t) return true;
+    return /\b(send (?:me )?(?:a )?(?:screen ?shot|screenshot)|try again later|try it later|if it still|if it keeps|let me know if it|when it won['\u2019]?t|hopefully|should be fine|maybe it['\u2019]?s just|probably just)\b/i.test(t);
+}
+
+function draftClaimsAppProblemResolved(draftText = '') {
+    const t = String(draftText || '').replace(/\s+/g, ' ').trim();
+    if (!t) return false;
+    return /\b(fixed it|fixed now|sorted it|sorted now|checked it|checked and fixed|should be fixed|all fixed|cleaned up|working now|ready now)\b/i.test(t);
+}
+
+function getAppProblemAutoSendHoldReason({ currentMessage = '', draftText = '', alertData = {} } = {}) {
+    if (!isAppProblemSupportRequest(currentMessage)) return null;
+    const hasResolutionEvidence = hasAppProblemResolutionEvidence(alertData);
+    if (draftDeflectsAppProblem(draftText)) {
+        return {
+            code: 'app_problem_needs_fix_check',
+            label: 'app problem needs fix/check/confirm, not a screenshot deflection',
+        };
+    }
+    if (draftClaimsAppProblemResolved(draftText) && !hasResolutionEvidence) {
+        return {
+            code: 'app_problem_unverified_fix_claim',
+            label: 'draft claims the app problem is fixed without stored verification',
+        };
+    }
+    if (!hasResolutionEvidence) {
+        return {
+            code: 'app_problem_needs_fix_check',
+            label: 'app problem needs fix/check/confirm before auto-send',
+        };
+    }
+    return null;
 }
 
 async function loadClientMemory(coachId, clientId) {
@@ -6839,6 +6893,8 @@ module.exports = {
     softenMediaOnlyDraftReview,
     softenRecentInboundBurstDraftReview,
     applyLeadStoryReplyQuestionGuard,
+    isAppProblemSupportRequest,
+    getAppProblemAutoSendHoldReason,
     mergeDraftReviewContextReview,
     mergeLateDraftReviewData,
     isDraftReviewAutoSendSafe,

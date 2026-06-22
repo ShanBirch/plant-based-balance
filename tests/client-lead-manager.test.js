@@ -38,8 +38,8 @@ function makeAlert(overrides = {}) {
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Shane' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ profile_name: 'Fra' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'francesca_balance' }), true);
-assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Miranda' }), true);
-assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'miranda_balance' }), true);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Miranda' }), false);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'miranda_balance' }), false);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Monica' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'monica_balance' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Frank' }), false);
@@ -60,16 +60,59 @@ const shane = manager.classifyNeedsYou(makeAlert({
 }));
 assert.strictEqual(shane.shouldRoute, true);
 assert.ok(shane.reasons.includes('always_needs_you_person'));
-assert.match(shane.label, /Miranda/);
+assert.doesNotMatch(shane.label, /Miranda/);
 assert.match(shane.label, /Monica/);
 
 const miranda = manager.classifyNeedsYou(makeAlert({
+    alert_type: 'incoming_dm',
     client_id: 'client-miranda',
     client_name: 'Miranda',
-    data: { lead_stage: 'paying' },
+    data: { channel: 'in_app', lead_stage: 'paying' },
 }));
-assert.strictEqual(miranda.shouldRoute, true);
-assert.ok(miranda.reasons.includes('always_needs_you_person'));
+assert.strictEqual(miranda.shouldRoute, false);
+assert.ok(!miranda.reasons.includes('always_needs_you_person'));
+
+const mirandaAppDeflection = manager.classifyNeedsYou(makeAlert({
+    alert_type: 'incoming_dm',
+    client_id: 'client-miranda',
+    client_name: 'Miranda',
+    suggested_message: 'Try again later, but if it still sticks send me a screenshot.',
+    data: {
+        channel: 'in_app',
+        lead_stage: 'in_app',
+        message_preview: 'The custom workout start button won’t load the next page.',
+    },
+}));
+assert.strictEqual(mirandaAppDeflection.shouldRoute, true);
+assert.ok(mirandaAppDeflection.reasons.includes('app_problem_needs_fix_check'));
+
+const mirandaUnverifiedFixClaim = manager.classifyNeedsYou(makeAlert({
+    alert_type: 'incoming_dm',
+    client_id: 'client-miranda',
+    client_name: 'Miranda',
+    suggested_message: 'Fixed it now, try again.',
+    data: {
+        channel: 'in_app',
+        lead_stage: 'in_app',
+        message_preview: 'The custom workout start button won’t load the next page.',
+    },
+}));
+assert.strictEqual(mirandaUnverifiedFixClaim.shouldRoute, true);
+assert.ok(mirandaUnverifiedFixClaim.reasons.includes('app_problem_unverified_fix_claim'));
+
+const mirandaVerifiedFix = manager.classifyNeedsYou(makeAlert({
+    alert_type: 'incoming_dm',
+    client_id: 'client-miranda',
+    client_name: 'Miranda',
+    suggested_message: 'Fixed it now, close/reopen Balance and try the saved workout again.',
+    data: {
+        channel: 'in_app',
+        lead_stage: 'in_app',
+        message_preview: 'The custom workout start button won’t load the next page.',
+        app_problem_fix_verified_at: '2026-06-22T21:28:00.000Z',
+    },
+}));
+assert.strictEqual(mirandaVerifiedFix.shouldRoute, false);
 
 const monica = manager.classifyNeedsYou(makeAlert({
     client_id: 'client-monica',
