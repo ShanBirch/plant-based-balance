@@ -2,6 +2,9 @@ import assert from 'node:assert';
 
 const { _test } = await import('../netlify/functions/learning-reel-drip.mjs');
 
+delete process.env.LEARNING_REEL_DRIP_FORCE_ACTIVE;
+delete process.env.LEARNING_REEL_DRIP_AUTOSTART_UNTIL;
+
 const nowMs = Date.parse('2026-06-02T02:00:00.000Z');
 const plan = _test.buildInitialPlan(nowMs);
 assert.strictEqual(plan.length, 168);
@@ -92,6 +95,37 @@ assert.strictEqual(_test.hasCoachRepliedSinceLastInbound({
 }), true);
 assert.strictEqual(_test.isLearningReelOutboundSource('learning_reel_drip_instagram_graph'), true);
 assert.strictEqual(_test.isLearningReelOutboundSource('admin_dashboard_direct_instagram_graph'), false);
+assert.strictEqual(_test.isLinkHandoffOutboundText("Yo @shan_n_sunny, here's that info about using ChatGPT for your Instagram content system: https://plantbased-balance.org/ig-system?ig=shan_n_sunny\n\nWant me to map this version for your business? Reply with what you do and we can sort it out."), true);
+assert.strictEqual(_test.isLearningReelGateEligibleOutbound({
+    source: 'instagram_graph',
+    text: "Yo @shan_n_sunny, here's that info about using ChatGPT for your Instagram content system: https://plantbased-balance.org/ig-system?ig=shan_n_sunny\n\nWant me to map this version for your business? Reply with what you do and we can sort it out.",
+}), false);
+assert.strictEqual(_test.isLearningReelGateEligibleOutbound({
+    source: 'instagram_comment_private_reply',
+    text: 'got you, here is the guide',
+}), false);
+assert.strictEqual(_test.isLearningReelGateEligibleOutbound({
+    source: 'admin_dashboard_direct_instagram_graph',
+    text: 'haha yeah i reckon try the easy one first and see how it feels',
+}), true);
+assert.strictEqual(_test.isLearningReelGateEligibleOutbound({
+    source: 'admin_dashboard_direct_instagram_graph',
+    text: 'save this for later https://www.youtube.com/shorts/test123',
+}), false);
+
+const expiredPrimaryState = _test.normalizeDripState({
+    custom_data: {
+        learning_reel_drip: {
+            ...state,
+            status: 'active',
+            stopped_reason: null,
+            stopped_at: null,
+        },
+    },
+}, Date.parse('2026-06-22T09:00:00.000Z'));
+assert.strictEqual(expiredPrimaryState.status, 'stopped');
+assert.strictEqual(expiredPrimaryState.stopped_reason, 'primary_test_drip_window_closed');
+assert.strictEqual(expiredPrimaryState.next_send_at, null);
 
 const overduePilotState = {
     ...pilotState,

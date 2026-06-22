@@ -36,6 +36,7 @@ const MAX_SEARCH_RESULTS_PER_QUERY = 12;
 const MAX_DETAIL_IDS = 50;
 const RECENT_SOURCE_MIX_WINDOW = 8;
 const MAX_RECENT_SAME_SOURCE = 2;
+const PRIMARY_DRIP_STOPPED_REASON = 'primary_test_drip_window_closed';
 const CLIENT_PILOT_REVISION = 'vegan_food_3_per_week_v1';
 const CLIENT_PILOT_INTERVAL_MS = Math.floor((7 * 24 * 60 * 60 * 1000) / 3);
 const CLIENT_PILOT_TOTAL_SENDS = 12;
@@ -300,13 +301,35 @@ function isLearningReelOutboundSource(source) {
     return /^learning_reel/i.test(cleanString(source, 180));
 }
 
+const LINK_HANDOFF_SOURCE_RE = /\b(comment|private[_\s-]?reply|giveaway|keyword|automation|auto[_\s-]?reply|ig[_\s-]?growth)\b/i;
+const LINK_HANDOFF_URL_RE = /\bhttps?:\/\/(?:future-balance\.netlify\.app|(?:www\.)?plantbased-balance\.org)\/(?:bio(?:\.html)?|ig-system|dms|coaching(?:\.html)?|clients(?:\.html)?|vegan-challenge(?:\.html)?|transform-challenge(?:\.html)?)(?:[?#]\S*)?/i;
+const LINK_HANDOFF_COPY_RE = /\b(here'?s\s+(?:that\s+)?(?:info|link)|using\s+chatgpt\s+for\s+your\s+instagram\s+content\s+system|reply\s+with\s+what\s+you\s+do|map\s+this\s+version\s+for\s+your\s+business|quick\s+challenge\/app\s+info|download\s+the\s+app|come\s+back\s+(?:and\s+)?chat)\b/i;
+
+function isLinkHandoffOutboundText(text = '') {
+    const value = cleanString(text, 4000);
+    if (!value) return false;
+    if (LINK_HANDOFF_URL_RE.test(value)) return true;
+    return LINK_HANDOFF_COPY_RE.test(value) && /\b(?:link|info|reply|download|app|chatgpt|instagram|challenge)\b/i.test(value);
+}
+
+function isLearningReelGateEligibleOutbound(row = {}) {
+    const source = cleanString(row.source, 180);
+    const sourceWords = source.replace(/[_-]+/g, ' ');
+    const text = cleanString(row.text, 4000);
+    if (isLearningReelOutboundSource(source)) return false;
+    if (LINK_HANDOFF_SOURCE_RE.test(sourceWords)) return false;
+    if (isLinkHandoffOutboundText(text)) return false;
+    if (youtubeVideoIdsFromText(text).length) return false;
+    return Boolean(source || text);
+}
+
 async function hasNonLearningReelOutboundAfterLastInbound(thread = {}) {
     if (!hasCoachRepliedSinceLastInbound(thread)) return false;
     try {
         const rows = await supabase(
-            `ig_messages?select=source,created_at&thread_id=eq.${encodeURIComponent(thread.id)}&direction=eq.out&created_at=gt.${encodeURIComponent(thread.last_inbound_at)}&order=created_at.desc&limit=20`
+            `ig_messages?select=source,text,created_at&thread_id=eq.${encodeURIComponent(thread.id)}&direction=eq.out&created_at=gt.${encodeURIComponent(thread.last_inbound_at)}&order=created_at.desc&limit=20`
         );
-        return (Array.isArray(rows) ? rows : []).some(row => !isLearningReelOutboundSource(row.source));
+        return (Array.isArray(rows) ? rows : []).some(isLearningReelGateEligibleOutbound);
     } catch (error) {
         console.warn('[learning-reel-drip] coach reply gate lookup failed:', error?.message || error);
         return false;
@@ -484,10 +507,35 @@ function autostartAllowed(nowMs = Date.now()) {
     return Number.isFinite(until) && nowMs <= until;
 }
 
+function primaryDripWindowOpen(nowMs = Date.now()) {
+    const explicit = getEnv('LEARNING_REEL_DRIP_AUTOSTART');
+    if (explicit && !['1', 'true', 'yes', 'on'].includes(explicit.toLowerCase())) return false;
+    const force = getEnv('LEARNING_REEL_DRIP_FORCE_ACTIVE');
+    if (['1', 'true', 'yes', 'on'].includes(force.toLowerCase())) return true;
+    const until = Date.parse(getEnv('LEARNING_REEL_DRIP_AUTOSTART_UNTIL') || DEFAULT_AUTOSTART_UNTIL);
+    return Number.isFinite(until) && nowMs <= until;
+}
+
+function stopExpiredPrimaryDripState(existing = {}, nowMs = Date.now()) {
+    const stoppedAt = new Date(nowMs).toISOString();
+    return {
+        ...existing,
+        id: existing.id || DRIP_ID,
+        status: 'stopped',
+        stopped_reason: existing.stopped_reason || PRIMARY_DRIP_STOPPED_REASON,
+        stopped_at: existing.stopped_at || stoppedAt,
+        updated_at: stoppedAt,
+        next_send_at: null,
+    };
+}
+
 function normalizeDripState(thread, nowMs = Date.now()) {
     const customData = safeObject(thread.custom_data);
     const existing = safeObject(customData.learning_reel_drip);
     if (existing.id === DRIP_ID && Array.isArray(existing.plan)) {
+        if (!['completed', 'stopped'].includes(existing.status) && !primaryDripWindowOpen(nowMs)) {
+            return stopExpiredPrimaryDripState(existing, nowMs);
+        }
         const totalSends = configuredTotalSends();
         const intervalMs = configuredIntervalMs();
         if (existing.revision !== DRIP_REVISION || existing.plan.length !== totalSends || Number(existing.interval_ms) !== intervalMs) {
@@ -1349,6 +1397,18 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now(), veganSafet
         return { sent: false, blocker: 'standard_24h_messaging_window_closed', state: next };
     }
 
+    if (!await hasNonLearningReelOutboundAfterLastInbound(thread)) {
+        const next = patchState(state, {
+            status: 'paused',
+            paused_reason: 'waiting_for_shannon_reply_after_latest_client_message',
+            next_send_at: new Date(nowMs + PAUSE_RECHECK_MS).toISOString(),
+            last_inbound_at: thread.last_inbound_at || null,
+            last_outbound_at: thread.last_outbound_at || null,
+        });
+        await persistThreadState(thread, next);
+        return { sent: false, blocker: 'waiting_for_shannon_reply_after_latest_client_message', state: next };
+    }
+
     const recentOutboundVideoIds = await loadRecentOutboundLearningReelVideoIds(thread.id);
     const reelResult = await findReelForTopic({
         topicId: item.topic_id,
@@ -2198,7 +2258,9 @@ export const _test = {
     CLIENT_PILOT_INTERVAL_MS,
     CLIENT_PILOT_TARGETS,
     hasCoachRepliedSinceLastInbound,
+    isLearningReelGateEligibleOutbound,
     isLearningReelOutboundSource,
+    isLinkHandoffOutboundText,
     learningReelSourceKey,
     nextDuePlanItem,
     normalizeDripState,
