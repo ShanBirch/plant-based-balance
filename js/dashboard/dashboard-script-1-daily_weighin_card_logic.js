@@ -912,6 +912,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
                 var dismissKey = 'fitnessDiaryDoneDismissed_' + dateKey;
                 doneCard.style.display = localStorage.getItem(dismissKey) ? 'none' : 'flex';
             }
+            updateFitnessDiaryShareButtons(dateKey);
             return;
         }
 
@@ -927,6 +928,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
         if (form) form.style.display = 'none';
         if (success) success.style.display = 'none';
         window._fitnessDiaryData = { day_rating: null, energy_level: null };
+        updateFitnessDiaryShareButtons(dateKey);
     }
 
     // Backwards compatibility alias
@@ -952,6 +954,225 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
         el.style.fontWeight = '700';
     }
 
+    function getFitnessDiaryStorageKey(dateKey) {
+        return 'fitnessDiaryEntry_' + dateKey;
+    }
+
+    function getFitnessDiaryShareKey(dateKey) {
+        return 'pbbFitnessDiarySharedToFeed_' + dateKey;
+    }
+
+    function escapeFitnessDiaryHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function formatFitnessDiaryValue(value) {
+        return String(value || '')
+            .replace(/_/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .replace(/\b\w/g, function(match) { return match.toUpperCase(); });
+    }
+
+    function setFitnessDiaryStoredPayload(dateKey, payload) {
+        try {
+            localStorage.setItem(getFitnessDiaryStorageKey(dateKey), JSON.stringify(payload || {}));
+        } catch (_) {}
+    }
+
+    function getFitnessDiaryStoredPayload(dateKey) {
+        try {
+            var raw = localStorage.getItem(getFitnessDiaryStorageKey(dateKey));
+            return raw ? JSON.parse(raw) : null;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function isFitnessDiaryShared(dateKey) {
+        try {
+            return localStorage.getItem(getFitnessDiaryShareKey(dateKey)) === '1';
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function markFitnessDiaryShared(dateKey) {
+        try {
+            localStorage.setItem(getFitnessDiaryShareKey(dateKey), '1');
+        } catch (_) {}
+    }
+
+    function updateFitnessDiaryShareButtons(dateKey) {
+        var shared = isFitnessDiaryShared(dateKey || getTodayDateKey());
+        [
+            { id: 'fitness-diary-share-feed-btn', label: 'Share to Feed' },
+            { id: 'fitness-diary-success-share-feed-btn', label: 'Share Fitness Diary to Feed' }
+        ].forEach(function(item) {
+            var btn = document.getElementById(item.id);
+            if (!btn) return;
+            btn.dataset.dateKey = dateKey || getTodayDateKey();
+            btn.disabled = shared;
+            btn.textContent = shared ? 'Shared to Feed' : item.label;
+            btn.style.opacity = shared ? '0.72' : '1';
+            btn.style.cursor = shared ? 'default' : 'pointer';
+        });
+    }
+
+    function closeFitnessDiaryFeedSharePrompt() {
+        var prompt = document.getElementById('fitness-diary-feed-share-prompt');
+        if (prompt) prompt.remove();
+    }
+
+    function buildFitnessDiaryFeedPayload(source, dateKey) {
+        source = source || {};
+        return {
+            card_type: 'fitness_diary',
+            diary_date: dateKey || source.date || getTodayDateKey(),
+            title: 'Fitness Diary',
+            day_rating: source.day_rating || null,
+            energy_level: source.energy_level || null,
+            highlight: source.highlight || null,
+            struggle: source.struggle || null,
+            note: source.note || null,
+            timestamp: source.timestamp || new Date().toISOString()
+        };
+    }
+
+    async function loadFitnessDiaryPayloadForDate(dateKey) {
+        var recent = window._lastFitnessDiaryPayload;
+        if (recent && (!recent.date || recent.date === dateKey)) {
+            return buildFitnessDiaryFeedPayload(recent, dateKey);
+        }
+
+        var stored = getFitnessDiaryStoredPayload(dateKey);
+        if (stored) {
+            return buildFitnessDiaryFeedPayload(stored, dateKey);
+        }
+
+        try {
+            if (window.currentUser && window.db && window.db.checkins && typeof window.db.checkins.get === 'function') {
+                var row = await window.db.checkins.get(window.currentUser.id, dateKey);
+                var additional = row && row.additional_data;
+                var diary = additional && (additional.fitness_diary || (additional.type === 'fitness_diary' ? additional : null));
+                if (diary) return buildFitnessDiaryFeedPayload(diary, dateKey);
+            }
+        } catch (_) {}
+
+        return buildFitnessDiaryFeedPayload({}, dateKey);
+    }
+
+    function showFitnessDiaryFeedSharePrompt(payload) {
+        if (!document.body || !payload) return;
+        var dateKey = payload.diary_date || getTodayDateKey();
+        if (isFitnessDiaryShared(dateKey)) return;
+
+        if (typeof closeDailyCheckInFeedSharePrompt === 'function') {
+            closeDailyCheckInFeedSharePrompt();
+        }
+        closeFitnessDiaryFeedSharePrompt();
+
+        var detailBits = [
+            payload.day_rating ? 'Today: ' + formatFitnessDiaryValue(payload.day_rating) : '',
+            payload.energy_level ? 'Energy: ' + formatFitnessDiaryValue(payload.energy_level) : '',
+            payload.highlight ? payload.highlight : ''
+        ].filter(Boolean);
+
+        var prompt = document.createElement('div');
+        prompt.id = 'fitness-diary-feed-share-prompt';
+        prompt.style.cssText = 'position:fixed;left:14px;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:10032;background:#ffffff;border:1px solid #bfdbfe;border-radius:16px;box-shadow:0 18px 42px rgba(15,23,42,0.22);padding:14px;display:flex;align-items:center;gap:12px;font-family:inherit;';
+        prompt.innerHTML = '' +
+            '<div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#0ea5e9,#6366f1);display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0;">' +
+                '<svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg>' +
+            '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:0.86rem;font-weight:900;color:#0f172a;line-height:1.25;">Share your Fitness Diary?</div>' +
+                '<div style="font-size:0.74rem;font-weight:700;color:#64748b;line-height:1.25;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeFitnessDiaryHtml(detailBits.length ? detailBits.join(' - ') : "Post today's diary entry to the Feed.") + '</div>' +
+            '</div>' +
+            '<button type="button" data-date-key="' + escapeFitnessDiaryHtml(dateKey) + '" onclick="shareFitnessDiaryToFeed(this)" style="border:none;background:#046a38;color:white;border-radius:999px;padding:10px 13px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">Share</button>' +
+            '<button type="button" onclick="closeFitnessDiaryFeedSharePrompt()" aria-label="Dismiss diary share prompt" style="border:none;background:#f1f5f9;color:#64748b;border-radius:999px;width:32px;height:32px;font-size:1.1rem;line-height:1;cursor:pointer;flex-shrink:0;">&times;</button>';
+        document.body.appendChild(prompt);
+        setTimeout(function() {
+            if (document.getElementById('fitness-diary-feed-share-prompt') === prompt) closeFitnessDiaryFeedSharePrompt();
+        }, 15000);
+    }
+
+    async function shareFitnessDiaryToFeed(btn) {
+        if (!window.currentUser) {
+            if (typeof showToast === 'function') showToast('You must be logged in to share', 'error');
+            return null;
+        }
+
+        var dateKey = (btn && btn.dataset && btn.dataset.dateKey) || getTodayDateKey();
+        if (isFitnessDiaryShared(dateKey)) {
+            if (typeof showToast === 'function') showToast('Fitness diary already shared to Feed', 'info');
+            closeFitnessDiaryFeedSharePrompt();
+            updateFitnessDiaryShareButtons(dateKey);
+            return null;
+        }
+
+        var helpers = window.dbHelpers || (typeof dbHelpers !== 'undefined' ? dbHelpers : null);
+        if (!helpers || !helpers.stories || typeof helpers.stories.create !== 'function') {
+            if (typeof showToast === 'function') showToast('Feed is still loading. Try again in a moment.', 'info');
+            return null;
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.dataset.originalText = btn.textContent || '';
+            btn.textContent = 'Sharing...';
+            btn.style.opacity = '0.75';
+        }
+
+        try {
+            var payload = await loadFitnessDiaryPayloadForDate(dateKey);
+            var storyData = {
+                media_type: 'checkin_card',
+                media_url: '',
+                thumbnail_url: null,
+                caption: JSON.stringify(payload),
+                duration: 5
+            };
+
+            var story;
+            try {
+                story = await helpers.stories.create(window.currentUser.id, storyData);
+            } catch (storyError) {
+                var message = String(storyError && (storyError.message || storyError.details || storyError.code) || '');
+                if (!/media_type|checkin_card|check constraint|violates/i.test(message)) throw storyError;
+                story = await helpers.stories.create(window.currentUser.id, Object.assign({}, storyData, {
+                    media_type: 'level_up_card'
+                }));
+            }
+
+            markFitnessDiaryShared(dateKey);
+            closeFitnessDiaryFeedSharePrompt();
+            updateFitnessDiaryShareButtons(dateKey);
+            if (typeof loadPhotoFeed === 'function') {
+                loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
+            }
+            if (typeof window.refreshWeeklyGoalsCard === 'function') {
+                window.refreshWeeklyGoalsCard();
+            }
+            if (typeof showToast === 'function') showToast('Fitness diary shared to Feed!', 'success');
+            return story;
+        } catch (error) {
+            console.error('Error sharing fitness diary to feed:', error);
+            if (typeof showToast === 'function') showToast('Failed to share diary. Please try again.', 'error');
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = btn.dataset.originalText || 'Share to Feed';
+                btn.style.opacity = '1';
+            }
+            return null;
+        }
+    }
+
     async function submitFitnessDiary() {
         if (!window.currentUser) return;
 
@@ -971,18 +1192,34 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
         var dateKey = getTodayDateKey();
         var diaryPayload = {
             type: 'fitness_diary',
+            date: dateKey,
             day_rating: window._fitnessDiaryData.day_rating,
             energy_level: window._fitnessDiaryData.energy_level,
             highlight: (highlightInput && highlightInput.value.trim()) || null,
             struggle: (struggleInput && struggleInput.value.trim()) || null,
-            note: (noteInput && noteInput.value.trim()) || null
+            note: (noteInput && noteInput.value.trim()) || null,
+            timestamp: new Date().toISOString()
         };
 
         try {
+            var existingAdditional = {};
+            try {
+                if (window.db && window.db.checkins && typeof window.db.checkins.get === 'function') {
+                    var existingCheckin = await window.db.checkins.get(window.currentUser.id, dateKey);
+                    if (existingCheckin && existingCheckin.additional_data && typeof existingCheckin.additional_data === 'object') {
+                        existingAdditional = existingCheckin.additional_data;
+                    }
+                }
+            } catch (_) {}
+
+            var mergedAdditionalData = Object.assign({}, existingAdditional, diaryPayload, {
+                fitness_diary: diaryPayload
+            });
+
             // Save to daily_checkins using the existing upsert with additional_data
             await db.checkins.upsert(window.currentUser.id, dateKey, {
                 energy: window._fitnessDiaryData.day_rating,
-                additional_data: diaryPayload
+                additional_data: mergedAdditionalData
             });
 
             // Award 1 XP (2x if in any active challenge)
@@ -1017,6 +1254,12 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
 
             // Mark as done in localStorage
             localStorage.setItem('fitnessDiaryDone_' + dateKey, '1');
+            window._lastFitnessDiaryPayload = diaryPayload;
+            setFitnessDiaryStoredPayload(dateKey, diaryPayload);
+            updateFitnessDiaryShareButtons(dateKey);
+            setTimeout(function() {
+                showFitnessDiaryFeedSharePrompt(buildFitnessDiaryFeedPayload(diaryPayload, dateKey));
+            }, 650);
 
             // Transition to done card
             setTimeout(function() {
@@ -1029,7 +1272,10 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
                         card.style.opacity = '1';
                         card.style.transform = 'translateY(0)';
                         var doneCard = document.getElementById('fitness-diary-done-card');
-                        if (doneCard) doneCard.style.display = 'flex';
+                        if (doneCard) {
+                            doneCard.style.display = 'flex';
+                            updateFitnessDiaryShareButtons(dateKey);
+                        }
                     }, 500);
                 }
             }, 2000);
@@ -1052,6 +1298,9 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
     window.expandFitnessDiary = expandFitnessDiary;
     window.selectFitnessDiaryOption = selectFitnessDiaryOption;
     window.submitFitnessDiary = submitFitnessDiary;
+    window.shareFitnessDiaryToFeed = shareFitnessDiaryToFeed;
+    window.showFitnessDiaryFeedSharePrompt = showFitnessDiaryFeedSharePrompt;
+    window.closeFitnessDiaryFeedSharePrompt = closeFitnessDiaryFeedSharePrompt;
     window.dismissFitnessDiaryDoneCard = dismissFitnessDiaryDoneCard;
 
     // ===== MOOD CHECK-IN CARD (3x daily: morning, afternoon, evening) =====

@@ -340,8 +340,6 @@ async function submitDailyCycleSync() {
         if (typeof switchAppTab === 'function') switchAppTab('dashboard');
         if (typeof showCycleSyncBanner === 'function') {
             showCycleSyncBanner();
-        } else {
-            showDailyCheckInFeedSharePrompt();
         }
 
     } catch (err) {

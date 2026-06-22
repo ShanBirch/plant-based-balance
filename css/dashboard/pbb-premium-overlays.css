@@ -5676,6 +5676,30 @@ html[data-pbb-theme="light"] #fitness-diary-collapsed [style*="opacity"] {
     color: #6f6a61 !important;
 }
 
+html[data-pbb-theme="light"] #fitness-diary-submit-btn,
+html[data-pbb-theme="light"] #fitness-diary-share-feed-btn,
+html[data-pbb-theme="light"] #fitness-diary-success-share-feed-btn {
+    background: #151515 !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+    border: 1px solid rgba(21, 21, 21, 0.86) !important;
+}
+
+html[data-pbb-theme="light"] #fitness-diary-card button#fitness-diary-submit-btn,
+html[data-pbb-theme="light"] #fitness-diary-card button#fitness-diary-success-share-feed-btn,
+html[data-pbb-theme="light"] #fitness-diary-done-card button#fitness-diary-share-feed-btn {
+    background: #151515 !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html[data-pbb-theme="light"] #fitness-diary-submit-btn *,
+html[data-pbb-theme="light"] #fitness-diary-share-feed-btn *,
+html[data-pbb-theme="light"] #fitness-diary-success-share-feed-btn * {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
 html[data-pbb-theme="light"] #view-log-activity input,
 html[data-pbb-theme="light"] #view-log-activity textarea,
 html[data-pbb-theme="light"] #view-log-activity select {
