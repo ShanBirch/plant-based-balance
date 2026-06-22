@@ -613,6 +613,16 @@ async function runClientLeadManager({ limit = MAX_PER_RUN, aiDraftReviewLimit = 
 exports.handler = async () => {
     try {
         const result = await runClientLeadManager();
+        console.info('[client-lead-manager] scheduled run complete', JSON.stringify({
+            at: new Date().toISOString(),
+            scanned: result.scanned,
+            routed: result.routed,
+            auto_scheduled: result.auto_scheduled,
+            auto_schedule_failed: result.auto_schedule_failed,
+            ai_draft_reviews_attempted: result.ai_draft_reviews_attempted,
+            ai_draft_review_limit: result.ai_draft_review_limit,
+            ai_draft_reviews_skipped: result.ai_draft_reviews_skipped,
+        }));
         return {
             statusCode: 200,
             body: JSON.stringify({ ok: true, ...result }),
