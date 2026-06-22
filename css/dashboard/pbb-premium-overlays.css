@@ -2635,6 +2635,7 @@ body > div[id*="modal"] [style*="border"][style*="rgba(59,130,246"] {
 .recent-meals-header h3,
 .edit-items-header h3,
 .score-popup-header,
+.recent-meal-name,
 .meal-detail-foods,
 .meal-detail-calories-value,
 .meal-breakdown-total-value,
@@ -2829,6 +2830,10 @@ body > div[id*="modal"] [style*="border"][style*="rgba(59,130,246"] {
     color: rgba(248, 247, 242, 0.68) !important;
     border: 1px solid rgba(245, 217, 138, 0.14) !important;
     box-shadow: none !important;
+}
+
+.recent-meal-item > svg {
+    stroke: rgba(248, 247, 242, 0.64) !important;
 }
 
 /* Quick nutrition logging opens with the phone keyboard, so keep this flow light and readable. */
