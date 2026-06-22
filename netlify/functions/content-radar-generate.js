@@ -271,6 +271,22 @@ async function collectSources(coachId, windowDays) {
         LIMIT 60
     `;
 
+    const growthOutcomeSql = `
+        SELECT
+            COALESCE(goe.content_item_id, cpp.content_item_id) AS content_item_id,
+            COALESCE(SUM(goe.score), 0)::NUMERIC AS outcome_score,
+            COUNT(*) FILTER (WHERE goe.event_family = 'acquisition')::INT AS acquisition_events,
+            COUNT(*) FILTER (WHERE goe.event_family = 'sales')::INT AS sales_events,
+            COUNT(*) FILTER (WHERE goe.event_family = 'revenue')::INT AS revenue_events,
+            COUNT(*) FILTER (WHERE goe.event_type IN ('free_info_unlocked', 'email_captured'))::INT AS free_info_claims,
+            COUNT(*) FILTER (WHERE goe.event_type = 'subscription_started')::INT AS subscriptions
+        FROM public.growth_outcome_events goe
+        LEFT JOIN public.content_platform_posts cpp ON cpp.id = goe.content_platform_post_id
+        WHERE goe.occurred_at >= NOW() - (INTERVAL '1 day' * ${Math.max(days, 45)})
+            AND COALESCE(goe.content_item_id, cpp.content_item_id) IS NOT NULL
+        GROUP BY COALESCE(goe.content_item_id, cpp.content_item_id)
+    `;
+
     const contextualReplySamplesSql = `
         SELECT
             ci.id,
@@ -304,6 +320,7 @@ async function collectSources(coachId, windowDays) {
         igContentInteractions,
         igContentItems,
         igContentPerformance,
+        growthOutcomes,
         contextualReplySamples,
     ] = await Promise.all([
         execSqlJson(igMessagesSql).catch(err => {
@@ -330,11 +347,18 @@ async function collectSources(coachId, windowDays) {
             console.warn('[content-radar] IG content performance query failed:', err.message);
             return [];
         }),
+        execSqlJson(growthOutcomeSql).catch(err => {
+            if (!/42P01|PGRST205|growth_outcome_events|does not exist/i.test(err.message || String(err))) {
+                console.warn('[content-radar] growth outcome query failed:', err.message);
+            }
+            return [];
+        }),
         execSqlJson(contextualReplySamplesSql).catch(err => {
             console.warn('[content-radar] contextual reply samples query failed:', err.message);
             return [];
         }),
     ]);
+    const outcomeByContentId = new Map((growthOutcomes || []).map(row => [row.content_item_id, row]));
 
     const sourceCounts = {
         windowDays: days,
@@ -344,6 +368,7 @@ async function collectSources(coachId, windowDays) {
         igContentInteractions: igContentInteractions.length,
         igContentItems: igContentItems.length,
         igContentPerformance: igContentPerformance.length,
+        growthOutcomes: growthOutcomes.length,
         contextualReplySamples: contextualReplySamples.length,
     };
 
@@ -367,15 +392,21 @@ async function collectSources(coachId, windowDays) {
             const interactionCount = safeCount(row.interaction_count);
             const commentCount = safeCount(row.comment_count);
             const storyReplyCount = safeCount(row.story_reply_count);
+            const outcome = outcomeByContentId.get(row.id) || {};
             const metrics = [
                 `${interactionCount} replies/comments`,
                 commentCount ? `${commentCount} comments` : '',
                 storyReplyCount ? `${storyReplyCount} story replies` : '',
                 row.reach_or_impressions ? `reach/impressions: ${row.reach_or_impressions}` : '',
                 row.plays_or_views ? `plays/views: ${row.plays_or_views}` : '',
+                outcome.outcome_score ? `sales outcome score: ${outcome.outcome_score}` : '',
+                outcome.free_info_claims ? `free-info claims: ${outcome.free_info_claims}` : '',
+                outcome.sales_events ? `sales events: ${outcome.sales_events}` : '',
+                outcome.revenue_events ? `revenue events: ${outcome.revenue_events}` : '',
             ].filter(Boolean).join(', ');
             return {
                 ...row,
+                growth_outcome: outcome,
                 text: cleanText([
                     `${row.content_type || 'content'}${row.media_type ? `/${row.media_type}` : ''}`,
                     row.summary || row.caption,

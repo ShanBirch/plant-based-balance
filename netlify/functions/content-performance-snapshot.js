@@ -60,6 +60,11 @@ function toNumber(value) {
     return Number.isFinite(n) ? Math.max(0, Math.round(n)) : 0;
 }
 
+function toSignedNumber(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.round(n) : 0;
+}
+
 function clampWindowDays(value) {
     const n = Number(value || 90);
     if (!Number.isFinite(n)) return 90;
@@ -187,7 +192,12 @@ function scoreMetrics(metrics = {}) {
         + (toNumber(metrics.reposts) * 3)
         + (toNumber(metrics.quotes) * 4);
     const visibility = (toNumber(metrics.reach) * 0.02) + (toNumber(metrics.views) * 0.01);
-    return Math.round(Math.max(toNumber(metrics.totalInteractions), deep) + visibility + toNumber(metrics.feedbackEvents));
+    return Math.round(
+        Math.max(toNumber(metrics.totalInteractions), deep)
+        + visibility
+        + toNumber(metrics.feedbackEvents)
+        + toSignedNumber(metrics.outcomeScore)
+    );
 }
 
 function standardRow(row) {
@@ -203,6 +213,12 @@ function standardRow(row) {
         quotes: toNumber(row.metrics?.quotes),
         totalInteractions: toNumber(row.metrics?.totalInteractions),
         feedbackEvents: toNumber(row.metrics?.feedbackEvents),
+        outcomeScore: toSignedNumber(row.metrics?.outcomeScore),
+        acquisitionEvents: toNumber(row.metrics?.acquisitionEvents),
+        salesEvents: toNumber(row.metrics?.salesEvents),
+        revenueEvents: toNumber(row.metrics?.revenueEvents),
+        freeInfoClaims: toNumber(row.metrics?.freeInfoClaims),
+        subscriptions: toNumber(row.metrics?.subscriptions),
     };
     const score = row.score == null ? scoreMetrics(metrics) : toNumber(row.score);
     return {
@@ -291,6 +307,7 @@ async function loadInstagramRows(windowDays) {
             ${numericSql('total_interactions_raw')} AS total_interactions
         FROM raw
     `);
+    const outcomeScores = await loadInstagramOutcomeScores(days);
 
     return rows.map(row => standardRow({
         id: row.id,
@@ -325,8 +342,42 @@ async function loadInstagramRows(windowDays) {
             replies: Math.max(toNumber(row.replies), toNumber(row.webhook_story_replies)),
             totalInteractions: row.total_interactions,
             feedbackEvents: row.webhook_interactions,
+            outcomeScore: outcomeScores.get(row.id)?.outcome_score || 0,
+            acquisitionEvents: outcomeScores.get(row.id)?.acquisition_events || 0,
+            salesEvents: outcomeScores.get(row.id)?.sales_events || 0,
+            revenueEvents: outcomeScores.get(row.id)?.revenue_events || 0,
+            freeInfoClaims: outcomeScores.get(row.id)?.free_info_claims || 0,
+            subscriptions: outcomeScores.get(row.id)?.subscriptions || 0,
         },
     }));
+}
+
+async function loadInstagramOutcomeScores(windowDays) {
+    const days = clampWindowDays(windowDays);
+    try {
+        const rows = await execSqlJson(`
+            SELECT
+                COALESCE(goe.content_item_id, cpp.content_item_id) AS content_item_id,
+                COALESCE(SUM(goe.score), 0)::NUMERIC AS outcome_score,
+                COUNT(*) FILTER (WHERE goe.event_family = 'acquisition')::INT AS acquisition_events,
+                COUNT(*) FILTER (WHERE goe.event_family = 'sales')::INT AS sales_events,
+                COUNT(*) FILTER (WHERE goe.event_family = 'revenue')::INT AS revenue_events,
+                COUNT(*) FILTER (WHERE goe.event_type IN ('free_info_unlocked', 'email_captured'))::INT AS free_info_claims,
+                COUNT(*) FILTER (WHERE goe.event_type = 'subscription_started')::INT AS subscriptions
+            FROM public.growth_outcome_events goe
+            LEFT JOIN public.content_platform_posts cpp ON cpp.id = goe.content_platform_post_id
+            WHERE goe.occurred_at >= NOW() - (INTERVAL '1 day' * ${days})
+                AND COALESCE(goe.content_item_id, cpp.content_item_id) IS NOT NULL
+            GROUP BY COALESCE(goe.content_item_id, cpp.content_item_id)
+        `);
+        return new Map((rows || []).map(row => [row.content_item_id, row]));
+    } catch (err) {
+        if (/42P01|PGRST205|growth_outcome_events|does not exist/i.test(err.message || String(err))) {
+            return new Map();
+        }
+        console.warn('[content-performance-snapshot] outcome score fetch failed:', err.message || err);
+        return new Map();
+    }
 }
 
 function insightNumber(item = {}) {
@@ -555,6 +606,9 @@ function summarize(rows, statuses = {}) {
                 comments: 0,
                 replies: 0,
                 shares: 0,
+                outcomeScore: 0,
+                salesEvents: 0,
+                revenueEvents: 0,
             };
         }
         byPlatform[key].posts += 1;
@@ -564,6 +618,9 @@ function summarize(rows, statuses = {}) {
         byPlatform[key].comments += toNumber(row.metrics?.comments);
         byPlatform[key].replies += toNumber(row.metrics?.replies);
         byPlatform[key].shares += toNumber(row.metrics?.shares);
+        byPlatform[key].outcomeScore += toSignedNumber(row.metrics?.outcomeScore);
+        byPlatform[key].salesEvents += toNumber(row.metrics?.salesEvents);
+        byPlatform[key].revenueEvents += toNumber(row.metrics?.revenueEvents);
     });
     return {
         posts: rows.length,
@@ -649,4 +706,5 @@ module.exports._test = {
     scoreMetrics,
     standardRow,
     insightNumber,
+    loadInstagramOutcomeScores,
 };

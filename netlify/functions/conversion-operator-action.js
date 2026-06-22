@@ -10,6 +10,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
+const { recordGrowthOutcome } = require('./_lib/growth-outcomes');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -97,6 +98,15 @@ function resolveSnoozeUntil(action, body) {
         ? Math.min(30, Math.round(requested))
         : config.defaultSnoozeDays;
     return days ? addDaysIso(days) : null;
+}
+
+function outcomeTypeForAction(action) {
+    return {
+        mark_link_sent: 'challenge_invited',
+        mark_pitch_ready: 'dm_qualified',
+        pitch_coaching: 'coaching_pitched',
+        mark_paid: 'subscription_started',
+    }[action] || '';
 }
 
 async function supabase(path, options = {}) {
@@ -321,12 +331,45 @@ exports.handler = async (event) => {
                 },
             }],
         });
+        const conversionEvent = inserted?.[0] || null;
+        const outcomeType = outcomeTypeForAction(action);
+        if (outcomeType && conversionEvent?.id) {
+            try {
+                await recordGrowthOutcome({
+                    eventType: outcomeType,
+                    eventKey: `conversion_operator:${conversionEvent.id}:${action}`,
+                    sourceSystem: 'conversion_operator',
+                    botAccount: thread?.channel === 'instagram' ? 'shan_n_sunny' : null,
+                    fromUsername: thread?.ig_username,
+                    igThreadId: thread?.id,
+                    conversionOperatorEventId: conversionEvent.id,
+                    coachAlertId: pendingAlertId,
+                    clientId,
+                    eventStatus: ACTIONS[action].status,
+                    occurredAt: now,
+                    attribution: {
+                        action,
+                        label: ACTIONS[action].label,
+                        previous_lane: previousLane,
+                        previous_lead_stage: thread?.lead_stage || null,
+                    },
+                    rawPayload: {
+                        display_name: displayName || null,
+                        note,
+                        pending_alert_id: pendingAlertId,
+                        inserted_event: conversionEvent,
+                    },
+                }, supabase);
+            } catch (trackingError) {
+                console.warn('[conversion-operator-action] growth outcome log failed:', trackingError.message || trackingError);
+            }
+        }
 
         return json(200, {
             ok: true,
             action,
             label: ACTIONS[action].label,
-            eventId: inserted?.[0]?.id || null,
+            eventId: conversionEvent?.id || null,
             snoozedUntil,
             threadId: thread?.id || null,
             clientId,
