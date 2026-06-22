@@ -380,6 +380,11 @@
 [functions."meta-ig-reconcile-inbox"]
   schedule = "*/5 * * * *"
 
+# Instagram comment reply worker - polls recent shan_n_sunny media comments,
+# waits a short human-ish delay, then posts one deduped Graph comment reply.
+[functions."meta-ig-comment-reply-worker"]
+  schedule = "* * * * *"
+
 # Content Radar - mines recent DMs and IG feedback into daily post ideas.
 [functions."content-radar-generate"]
   schedule = "45 19 * * *"
