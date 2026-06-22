@@ -64,6 +64,35 @@ const nativeContext = buildNativeStoryOutreachContextBlock({
 assert.ok(nativeContext.block.includes('black and white cat'));
 assert.strictEqual(nativeContext.summary.story_description.includes('cat'), true);
 
+const salesNativeContext = buildNativeStoryOutreachContextBlock({
+    ig_username: 'story_lead',
+    linked_user_id: null,
+    custom_data: {
+        offer_path: 'balance_starter_coaching',
+        last_story_outreach: {
+            story_id: 'story-gym-session',
+            story_description: 'A gym story showing a barbell set up for squats.',
+            story_visible_text: 'leg day',
+            story_content_type: 'own_story',
+            sent_comment: 'how was the sesh?',
+            captured_at: '2026-06-22T01:00:00.000Z',
+            lead_origin: 'native_story_outreach',
+            offer_path: 'balance_starter_coaching',
+            sales_context: {
+                primary_offer: 'balance_starter_coaching',
+            },
+        },
+    },
+}, 'story_lead');
+
+assert.strictEqual(salesNativeContext.summary.lead_origin, 'native_story_outreach');
+assert.strictEqual(salesNativeContext.summary.offer_path, 'balance_starter_coaching');
+assert.match(salesNativeContext.block, /paid Balance Starter Coaching/);
+assert.match(salesNativeContext.block, /Free challenge is fallback/);
+assert.match(salesNativeContext.block, /Voice priority/);
+assert.match(salesNativeContext.block, /no sales script/);
+assert.match(salesNativeContext.block, /Keep Shannon's real texting voice above all sales context/);
+
 const chunks = suppressPetSpeciesGuessingInDraftChunks([
     'morning! nero looks cute',
     'what kinda doggo is that?',

@@ -31,7 +31,7 @@ const { normalizeCoachDraftText } = require('./_lib/client-context');
 // kicking in, it's either a worker outage or someone schedule-bombed the API.
 const MAX_PER_RUN = 25;
 const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
-const DEFAULT_CHALLENGE_BIO_URL = 'https://future-balance.netlify.app/bio.html';
+const DEFAULT_COACHING_URL = 'https://future-balance.netlify.app/coaching.html';
 
 async function supabase(path, options = {}) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -176,7 +176,7 @@ function resolveSignupHandoffUrl(alert) {
     const url = String(data.signup_link_handoff_url || data.signupLinkHandoffUrl || '').trim();
     if (/^https?:\/\//i.test(url)) return url;
     if (data.approved_link_auto_sendable === true || data.signup_link_manual_only === true || data.client_manager_review_required === true) {
-        return DEFAULT_CHALLENGE_BIO_URL;
+        return DEFAULT_COACHING_URL;
     }
     return '';
 }

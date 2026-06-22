@@ -21,8 +21,8 @@ assert.ok(
 );
 
 assert.ok(
-    dashboard.includes("const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'general_idea', 'onboarding_day_30', 'weekly_checkin', 'first_workout'];"),
-    'coach action receipts, month-one milestones, actionable weekly check-ins, and first workouts should be loaded into Needs You'
+    dashboard.includes("const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'general_idea', 'onboarding_day_30', 'weekly_checkin', 'first_workout', 'subscription_sale'];"),
+    'coach action receipts, month-one milestones, actionable weekly check-ins, first workouts, and subscription sales should be loaded into Needs You'
 );
 
 assert.ok(
@@ -78,6 +78,13 @@ assert.ok(
 assert.ok(
     dashboard.includes("if (alert.alert_type === 'first_workout')"),
     'first workout alerts should have explicit Needs You operator-work handling'
+);
+
+assert.ok(
+    dashboard.includes("if (alert.alert_type === 'subscription_sale')") &&
+    dashboard.includes("data.needs_you_reason === 'subscription_sale'") &&
+    dashboard.includes("alert?.alert_type === 'subscription_sale' && needsYouHasOperatorWork(alert)"),
+    'subscription sale alerts should explicitly route to Needs You'
 );
 
 assert.ok(
@@ -147,7 +154,7 @@ assert.strictEqual(
             message_preview: 'a win is a win',
             qualifier: { stage: 'won', warmth_score: 96 },
             ig_thread_id: 'thread-kennedy',
-            signup_link_handoff_url: 'https://future-balance.netlify.app/bio.html',
+            signup_link_handoff_url: 'https://future-balance.netlify.app/coaching.html',
         },
     }),
     false,
@@ -157,12 +164,12 @@ assert.strictEqual(
 assert.strictEqual(
     handoffContext.isLeadOnboardingHandoff({
         alert_type: 'ig_incoming_dm',
-        suggested_message: "yeah sounds good, here's the link: https://future-balance.netlify.app/bio.html",
+        suggested_message: "yeah sounds good, here's the link: https://future-balance.netlify.app/coaching.html",
         data: {
             message_preview: 'send me the link',
             qualifier: { stage: 'won', warmth_score: 96 },
             ig_thread_id: 'thread-ready',
-            signup_link_handoff_url: 'https://future-balance.netlify.app/bio.html',
+            signup_link_handoff_url: 'https://future-balance.netlify.app/coaching.html',
         },
     }),
     true,

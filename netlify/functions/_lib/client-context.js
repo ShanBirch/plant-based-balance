@@ -1527,6 +1527,7 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
             question_moment: questionMoment,
             qualifier_stage: qualifierStage || null,
             accepted_challenge: acceptedChallenge,
+            accepted_coaching: acceptedChallenge,
             offer_thread: offerThread,
             hot_intent: hotIntent,
             fix_support_intent: fixSupportIntent,
@@ -5227,10 +5228,11 @@ async function generateDraftReview({ draftText, alertType, contextBlocks, client
         const leadQualityBlock = isLeadDmReview ? `
 IG/FB LEAD QUALITY CHECK:
 - Judge this as a conversion DM, not only a context-matching task. The reply should keep the conversation moving in Shannon's casual human voice.
+- Current paid offer: Balance Starter Coaching is AUD $29.99/week, no sales call, Balance app access, tailored workout structure, food direction, progress tracking, and one weekly check-in with Shannon. Free challenge/free entry is only a fallback for colder leads who are not ready to pay.
 - Block if it uses a stock intake line such as "what does a normal day look like", a bare "what are your goals", or any name + age + goal + blocker bundle.
 - Block if it asks several discovery questions at once. One natural question max, and it should be tied to the strongest latest detail unless they clearly asked to start.
-- Block if the lead asks how to join, asks for the link, asks price/what is included, says they are keen, or accepts the challenge, but the draft slows them down with more rapport instead of moving them forward.
-- Warn if it pitches the challenge before reciprocal rapport, explicit start/info intent, or the earned lead-only window of roughly 3-6 meaningful lead replies plus relationship and goal/blocker context.
+- Block if the lead asks how to join, asks for the link, asks price/what is included, says they are keen, or accepts Starter Coaching, but the draft slows them down with more rapport instead of moving them forward.
+- Warn if it pitches Starter Coaching before reciprocal rapport, explicit start/info intent, or the earned lead-only window of roughly 3-6 meaningful lead replies plus relationship and goal/blocker context.
 - Warn if an unlinked lead has reached that 3-6 meaningful reply window with a clear blocker/motivation and the draft keeps asking generic discovery instead of using a soft permission bridge.
 - Warn if a shan_n_sunny lead draft is technically contextual but does not progress the conversation: passive mirroring, generic praise, generic empathy, a stock broad question, or a dead-end reaction when the thread has a concrete next handle available.
 - Warn if the draft uses weak generic discovery such as "what kind of difference would that make", "what usually makes it hard", "how are you finding it", "anything in particular", or "what does that look like for you" when the lead already gave a more specific hook.
@@ -5263,7 +5265,7 @@ Block and set notification_required=true when:
 - the draft defends, denies, or explains AI/automation instead of leaving the moment for Shannon to handle manually.
 - the latest inbound is an app exercise-search issue such as "no seated option", "can't find it", or "the exercise isn't in there", and the draft says the exercise is missing or recommends a substitute without APP EXERCISE LIBRARY CHECK evidence in the context.
 
-For unlinked acquisition leads, do not block, notify, or mark manual-only just because they mention old injury, surgery, rehab, hospital, or pain history. That is normal rapport if the draft stays light, non-medical, and does not pitch the challenge off their vulnerability. Also do not mark the approved bio-link handoff manual-only when a lead has accepted the challenge or asked for the link/details/how to start; the approved link is https://future-balance.netlify.app/bio.html. Block or warn only when the latest turn asks for current pain, symptoms, rehab/training/treatment advice, diagnosis, pregnancy, eating/body-image risk, crisis/safety support, or when the draft gives medical/rehab advice.
+For unlinked acquisition leads, do not block, notify, or mark manual-only just because they mention old injury, surgery, rehab, hospital, or pain history. That is normal rapport if the draft stays light, non-medical, and does not pitch coaching off their vulnerability. Also do not mark the approved coaching-link handoff manual-only when a lead has accepted coaching or asked for the link/details/how to start; the approved link is https://future-balance.netlify.app/coaching.html. Block or warn only when the latest turn asks for current pain, symptoms, rehab/training/treatment advice, diagnosis, pregnancy, eating/body-image risk, crisis/safety support, or when the draft gives medical/rehab advice.
 Do not block just because the older timeline contains a different unresolved topic if the clearly labelled latest inbound message is answered naturally. Treat details as grounded when they appear anywhere in the labelled latest message, including near the ending of a long message.
 Do not block just because the draft also answers prior unanswered messages from the same recent inbound burst. If Shannon has not replied between those inbound messages and the draft naturally answers the newest message, treat the burst as one conversational turn.
 

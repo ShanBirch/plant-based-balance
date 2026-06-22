@@ -20,6 +20,7 @@ const {
     normalizeStorySurfaceContext,
     assessStillsOnlyVideoSalvageContext,
     animalWelfareSupportCommentForContext,
+    buildStoryOutreachMemory,
     buildStoryEvidenceAnalysisFallback,
 } = require('../netlify/functions/ig-story-outreach-candidate')._test;
 
@@ -116,6 +117,31 @@ assert.strictEqual(
     'lets go!',
     'gym hype should survive normalization'
 );
+
+assert.strictEqual(
+    normalizeDraftComment('starter coaching would be perfect for this', {
+        storyOwner: 'someone',
+        sharedContent: false,
+    }),
+    '',
+    'native story openers must not pitch Starter Coaching'
+);
+
+const starterSalesMemory = buildStoryOutreachMemory({
+    storyUrl: 'https://www.instagram.com/stories/someone/123456/',
+    storyId: '123456',
+    draftComment: 'how was the sesh?',
+    analysis: {
+        description: 'A gym story showing a squat rack.',
+        visibleText: '',
+    },
+    surfaceContext: { storyContentType: 'own_story' },
+    nowIso: '2026-06-22T01:00:00.000Z',
+    body: { sent: true },
+});
+assert.strictEqual(starterSalesMemory.lead_origin, 'native_story_outreach');
+assert.strictEqual(starterSalesMemory.offer_path, 'balance_starter_coaching');
+assert.match(starterSalesMemory.sales_context.dm_rule, /Starter Coaching/);
 
 const mirrorSelfieSafety = assessStoryCommentSafety({
     storyOwner: 'mirror.selfie',

@@ -26,6 +26,14 @@ const RESERVED_STORY_USERNAMES = new Set(['highlights', 'explore', 'reels', 'sto
 const MAX_COMMENT_CHARS = 160;
 const STORY_COMMENT_PIPELINE_VERSION = 'story-planner-generator-critic-fixer-v1';
 const STORY_COMMENT_FAST_PIPELINE_VERSION = 'story-single-pass-deterministic-safety-v1';
+const STORY_OUTREACH_SALES_CONTEXT = {
+    acquisition_source: 'native_story_outreach',
+    primary_offer: 'balance_starter_coaching',
+    offer_price: 'AUD $29.99/week',
+    offer_check_in: 'one weekly check-in',
+    first_touch_rule: 'story reply is rapport only; no coaching, checkout, or link pitch',
+    dm_rule: 'when they reply and show help, food, training, consistency, or enough relationship context, bridge to Starter Coaching; free challenge is fallback only',
+};
 const STORY_NO_REPLY_COMMENT_LIMIT = 3;
 const STORY_NO_REPLY_COOLDOWN_DAYS = 30;
 const STORY_NO_REPLY_COOLDOWN_MS = STORY_NO_REPLY_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
@@ -323,10 +331,10 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
         return `what are ${colourOnes[1].toLowerCase()} ${colour ? `${colour} ` : ''}ones?`;
     }
 
-    // The native story opener is for rapport. The challenge belongs later in
+    // The native story opener is for rapport. The paid offer belongs later in
     // the lead-only DM qualifier, once they directly ask or there are 3+
     // meaningful lead replies with real context.
-    if (/\b(challenge|app|sign ?up|link|program|meal plan|coaching|client)\b/i.test(text)) {
+    if (/\b(challenge|app|sign ?up|link|program|meal plan|coaching|client|starter|checkout|price|paid|subscription)\b/i.test(text)) {
         return '';
     }
     if (mentionsHandleToken(text, storyOwner) || mentionsHandleToken(text, sharedFromUsername)) {
@@ -1021,7 +1029,7 @@ Return JSON only:
 }
 
 Rules:
-- The final comment must start a light conversation, not pitch Balance/coaching/challenge/app. Product/challenge talk belongs later in the lead-only DM qualifier after a direct help/start signal or 3-6 meaningful lead replies with real context.
+- The final comment must start a light conversation, not pitch Balance/coaching/challenge/app. Product and Starter Coaching talk belongs later in the lead-only DM qualifier after a direct help/start signal or 3-6 meaningful lead replies with real context.
 - If the story is a shared reel/post, tagged story, reshared story, or content from another account, plan a sharer-framed reaction only. Treat @${username} as the person sharing it, not the person in the content.
 - For shared content, avoid "you/your" and avoid commenting on the person in the reel/post. Good angles are the shared idea, text, place, joke, news, or mood.
 - Treat audio transcript as supplemental. If audio/transcript and visible frames point to different subjects, avoid transcript-only details and plan to skip unless a visible-only opener is clearly safe.
@@ -1117,7 +1125,7 @@ Rules:
 - For plain selfie/pose videos, do not invent an occasion. If the only real handle is the visible song or audio, a tiny music comment is okay.
 - Music comments must be non-question reactions. Do not ask what song, track, tune, or audio it is.
 - No name, profile name, username, @handle, or direct address.
-- No Balance/coaching/challenge/app/program/link/meal-plan pitch. Product/challenge talk belongs later in the lead-only DM qualifier after a direct help/start signal or 3-6 meaningful lead replies with real context.
+- No Balance/coaching/challenge/app/program/link/meal-plan pitch. Product and Starter Coaching talk belongs later in the lead-only DM qualifier after a direct help/start signal or 3-6 meaningful lead replies with real context.
 - No unsupported claims. Use only the story context.
 - Normal selfies and nights out only get a simple line when there is a specific hook. Otherwise skip or like-only instead of forcing "looking good" or "looks like a fun night".
 - Bland gym floor, rack, or equipment-only shots with no clear action should usually be like-only instead of fake lift praise.
@@ -2035,6 +2043,9 @@ function buildStoryOutreachMemory({ storyUrl, storyId, draftComment, analysis, s
         story_music_title: surfaceContext?.storyMusicTitle || null,
         relationship_context: analysis?.relationshipContext || null,
         relationship_story_block_reason: analysis?.relationshipStoryBlockReason || null,
+        lead_origin: STORY_OUTREACH_SALES_CONTEXT.acquisition_source,
+        offer_path: STORY_OUTREACH_SALES_CONTEXT.primary_offer,
+        sales_context: STORY_OUTREACH_SALES_CONTEXT,
         evidence_mode: cleanText(body?.evidence_mode || body?.evidenceMode || '', 80) || null,
         video_path: cleanText(body?.video_path || body?.videoPath || '', 500) || null,
         video_evidence_status: cleanText(body?.video_evidence_status || body?.videoEvidenceStatus || '', 80) || null,
@@ -2066,6 +2077,26 @@ async function ensureOutreachThread({ username, coachId, storyUrl, storyId, draf
     const customPatch = {
         ...(existing?.custom_data || {}),
         source: existing?.custom_data?.source || 'instagram',
+        lead_origin: STORY_OUTREACH_SALES_CONTEXT.acquisition_source,
+        acquisition_source: STORY_OUTREACH_SALES_CONTEXT.acquisition_source,
+        offer_path: STORY_OUTREACH_SALES_CONTEXT.primary_offer,
+        sales_context: {
+            ...((existing?.custom_data?.sales_context && typeof existing.custom_data.sales_context === 'object')
+                ? existing.custom_data.sales_context
+                : {}),
+            ...STORY_OUTREACH_SALES_CONTEXT,
+            updated_at: nowIso,
+        },
+        lead_acquisition: {
+            ...((existing?.custom_data?.lead_acquisition && typeof existing.custom_data.lead_acquisition === 'object')
+                ? existing.custom_data.lead_acquisition
+                : {}),
+            source: STORY_OUTREACH_SALES_CONTEXT.acquisition_source,
+            primary_offer: STORY_OUTREACH_SALES_CONTEXT.primary_offer,
+            first_touch_rule: STORY_OUTREACH_SALES_CONTEXT.first_touch_rule,
+            dm_rule: STORY_OUTREACH_SALES_CONTEXT.dm_rule,
+            updated_at: nowIso,
+        },
         last_story_outreach: outreachMemory,
         story_outreach_history: [
             ...((Array.isArray(existing?.custom_data?.story_outreach_history)
@@ -2255,7 +2286,7 @@ Rules:
 - For gym stories, do not ask how a body part feels or imply injury/pain. Comment on the exercise setup, class, object, or effort instead.
 - Do not guess that something is a product, brand deal, collab, or sponsor unless packaging/signage makes that explicit.
 - Do not make teasing or critical jokes about grooming, weight, size, or appearance. Pet comments should feel warm and easy.
-- Do not pitch Balance, the app, coaching, a program, a meal plan, a link, or the challenge. The challenge bridge belongs later in DMs, only for unlinked leads after direct start/help intent or roughly 3-6 meaningful lead replies with real relationship and goal/blocker context.
+- Do not pitch Balance, the app, coaching, a program, a meal plan, a link, or the challenge. The Starter Coaching bridge belongs later in DMs, only for unlinked leads after direct start/help intent or roughly 3-6 meaningful lead replies with real relationship and goal/blocker context.
 - For animal-cruelty, factory-farming, animal-welfare, or vegan-advocacy stories, a supportive reply to the story owner is allowed when it is not graphic gore and the concern is clear. Prefer exactly "i can't believe this happens, so sad. you okay?" for actual distress/cruelty. For advocacy, theory, or opinion text posts, prefer exactly "so true, it just normalises it hey".
 - Do not mention anything you cannot see.
 - Set safe_to_comment=false and comment="" for shared content if the only possible reply would treat the reel/post subject as the story owner, or for anything heavy, sensitive, or inappropriate: war, politics, weapons, violence, death, grief, sadness, low mood, mental health, race/slur/discrimination topics, unclear/blurry content, disasters, medical emergencies, self-harm, sexual/nude content, hate/harassment, vulnerable minors, drugs, legal trouble, or anything where a casual opener could look insensitive. The animal-welfare support exception above is the only exception.
@@ -2570,6 +2601,9 @@ async function upsertCandidateAlert({ existingAlert, coachId, thread, username, 
         story_surface_context: surfaceContext.raw || null,
         relationship_context: analysis.relationshipContext || existingData.relationship_context || null,
         relationship_story_block_reason: analysis.relationshipStoryBlockReason || null,
+        lead_origin: STORY_OUTREACH_SALES_CONTEXT.acquisition_source,
+        offer_path: STORY_OUTREACH_SALES_CONTEXT.primary_offer,
+        sales_context: STORY_OUTREACH_SALES_CONTEXT,
         source: cleanText(body.source || 'selenium_story_bot', 120),
         bot_account: cleanText(body.bot_account || '', 80) || null,
         identity_verified: body.identity_verified !== false,
@@ -2962,6 +2996,7 @@ exports._test = {
     isDryRunQualityJudge,
     shouldRecommendLikeFallback,
     storyAnalysisTranscriptNote,
+    buildStoryOutreachMemory,
     buildStoryEvidenceAnalysisFallback,
     normalizeStoryCommentPlanPayload,
     normalizeStoryCommentReviewPayload,

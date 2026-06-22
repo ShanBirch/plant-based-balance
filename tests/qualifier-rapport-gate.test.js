@@ -5,6 +5,9 @@ const path = require('path');
 const {
     STAGES,
     freshQualifier,
+    inferNativeStoryHookContext,
+    inferHookContext,
+    formatQualifierCustomDataText,
     applyRapportGate,
     hasChallengeInviteReadinessSignal,
     hasEarnedChallengeInviteMoment,
@@ -31,7 +34,7 @@ const vagueWarmth = applyRapportGate({
         stage_label: 'Motivation',
         stage_index: 2,
         is_question_moment: true,
-        next_question: 'want me to send you the challenge link?',
+        next_question: 'want me to send you the coaching link?',
         facts: { ...base.facts },
     },
     currentMessage: 'keen haha yeah that sounds cool',
@@ -124,19 +127,58 @@ const qualifierSource = fs.readFileSync(path.join(__dirname, '../netlify/functio
 const clientContextSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/client-context.js'), 'utf8');
 const codexBriefSource = fs.readFileSync(path.join(__dirname, '../CODEX.md'), 'utf8');
 assert.match(igDraftSource, /If they only ask "what's Balance\?"/);
-assert.match(igDraftSource, /make any challenge mention a casual throwaway/);
-assert.match(qualifierSource, /one casual throwaway line discovered from their own words/);
+assert.match(igDraftSource, /make any coaching mention casual/);
+assert.match(qualifierSource, /one casual line discovered from their own words/);
 assert.match(clientContextSource, /the app is finished, live, and published/);
 assert.match(clientContextSource, /Never imply Balance is unfinished or still being built/);
 assert.match(codexBriefSource, /Balance is already built, live, and published/);
-assert.match(igDraftSource, /https:\/\/future-balance\.netlify\.app\/bio\.html/);
-assert.match(igDraftSource, /The DM offer right now is the free 30-day Balance Challenge/);
-assert.match(igDraftSource, /Paid coaching is the natural follow-up after the 30 days, not the headline/);
-assert.match(igDraftSource, /Shannon built Balance this year/);
-assert.match(igDraftSource, /little character levels up/);
-assert.match(igDraftSource, /quick challenge\/app handoff/);
-assert.match(igDraftSource, /download the app/);
-assert.match(igDraftSource, /Do not call the character FitGotchi in DMs/);
+
+const nativeStoryHook = inferNativeStoryHookContext({
+    last_story_outreach: {
+        sent_comment: 'how was the sesh?',
+        story_description: 'A gym story showing a squat rack.',
+        story_visible_text: 'leg day',
+    },
+});
+assert.match(nativeStoryHook, /native story opener/);
+assert.match(nativeStoryHook, /how was the sesh/);
+
+const inferredHook = inferHookContext({
+    history: [],
+    customData: {
+        ad_name: 'generic lead ad',
+        last_story_outreach: {
+            sent_comment: 'how was the sesh?',
+            story_description: 'A gym story showing a squat rack.',
+        },
+    },
+});
+assert.match(inferredHook, /native story opener/);
+assert.doesNotMatch(inferredHook, /entered via/);
+
+const compactCustomData = formatQualifierCustomDataText({
+    offer_path: 'balance_starter_coaching',
+    sales_context: {
+        primary_offer: 'balance_starter_coaching',
+        dm_rule: 'long sales rule that should not be dumped wholesale into the qualifier prompt',
+    },
+    story_outreach_history: [
+        { sent_comment: 'old one', story_description: 'older bulky story data' },
+    ],
+    last_story_outreach: {
+        sent_comment: 'how was the sesh?',
+        story_description: 'A gym story showing a squat rack.',
+    },
+});
+assert.match(compactCustomData, /native_story_hook/);
+assert.match(compactCustomData, /offer_path: balance_starter_coaching/);
+assert.doesNotMatch(compactCustomData, /story_outreach_history/);
+assert.doesNotMatch(compactCustomData, /long sales rule/);
+assert.match(igDraftSource, /https:\/\/future-balance\.netlify\.app\/coaching\.html/);
+assert.match(igDraftSource, /Balance Starter Coaching: AUD \$29\.99\/week/);
+assert.match(igDraftSource, /one weekly check-in with Shannon/);
+assert.match(igDraftSource, /Free challenge\/free entry is only a fallback/);
+assert.match(igDraftSource, /quick coaching\/app handoff/);
 assert.match(qualifierSource, /not an app explainer/);
 assert.match(igDraftSource, /Earn the next response/);
 assert.match(igDraftSource, /SHANNON FOLLOW-UP QUESTION FINGERPRINT/);
@@ -219,7 +261,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: 'yeah I can get you into the free 30 day challenge if you want',
+        draftText: 'yeah I can send you the starter coaching details if you want',
         currentMessage: 'keen haha yeah that sounds cool',
         qualifier: vagueWarmth,
         leadStage: 'qualifying',
@@ -229,7 +271,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: 'yeah I can get you into the free 30 day challenge if you want',
+        draftText: 'yeah I can send you the starter coaching details if you want',
         currentMessage: "i need help, i dunno what i'm doing",
         qualifier: vagueWarmth,
         leadStage: 'qualifying',
@@ -239,7 +281,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: 'we have a free 30 day challenge that helps cut through the noise. keen to hear more?',
+        draftText: 'starter coaching could help cut through the noise with one check-in a week. keen to hear more?',
         currentMessage: "Yeah, exactly. It feels like I'm constantly trying to piece things together myself, and I just want to feel like my effort is actually paying off.",
         qualifier: vagueWarmth,
         leadStage: 'qualifying',
@@ -249,7 +291,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: 'the challenge is self-paced so you can miss days and jump back in. keen for me to send the link?',
+        draftText: 'starter coaching is flexible, so if a week gets messy we just adjust at the check-in. keen for me to send the link?',
         currentMessage: "What's the commitment level like if someone has to miss a few days or starts a bit later?",
         qualifier: vagueWarmth,
         leadStage: 'qualifying',
@@ -259,7 +301,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: 'yeah I can get you into the free 30 day challenge if you want',
+        draftText: 'yeah I can send you the starter coaching details if you want',
         currentMessage: "Really want to get back into it but feel like I'm starting from scratch again. Send help!",
         qualifier: vagueWarmth,
         leadStage: 'qualifying',
@@ -269,7 +311,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: "given you've tried heaps already, would you be keen to try my free 30 day challenge to shake things up?",
+        draftText: "given you've tried heaps already, would you be keen to try starter coaching to shake things up?",
         currentMessage: "I've tried adding volume, reducing volume, different rep ranges and deloading. Nothing seems to make a difference with my squat plateau.",
         qualifier: vagueWarmth,
         leadStage: 'qualifying',
@@ -279,7 +321,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: 'we can get you into the free 30 day challenge to sort the stale workout plans',
+        draftText: 'we can get you into starter coaching to sort the stale workout plans',
         currentMessage: 'The app glitched and I need a new full-body plan for M/W/F, can you help?',
         qualifier: vagueWarmth,
         leadStage: 'qualifying',
@@ -295,27 +337,27 @@ assert.strictEqual(
         leadStage: 'qualifying',
     }),
     false,
-    '1:1 coaching link should not be treated as a premature free-challenge invite'
+    '1:1 coaching link should not be treated as a premature coaching invite'
 );
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: "yeah the free 30 day challenge would be perfect. here's the link: https://future-balance.netlify.app/bio.html",
+        draftText: "yeah starter coaching would be perfect. here's the link: https://future-balance.netlify.app/coaching.html",
         currentMessage: 'haha yeah sounds good',
         qualifier: vagueWarmth,
         leadStage: 'qualifying',
     }),
     true,
-    'challenge link still needs readiness, it should not fire from vague warmth'
+    'coaching link still needs readiness, it should not fire from vague warmth'
 );
 
 assert.strictEqual(
-    isSignupLinkHandoffText("here's the link: https://future-balance.netlify.app/bio.html"),
+    isSignupLinkHandoffText("here's the link: https://future-balance.netlify.app/coaching.html"),
     true
 );
 
 const approvedBioHandoff = buildLeadOnboardingHandoffData({
-    draftText: "yeah sounds so good, stoked you're keen for the challenge\nhere's the link: https://future-balance.netlify.app/bio.html",
+    draftText: "yeah sounds so good, stoked you're keen\nhere's the link: https://future-balance.netlify.app/coaching.html",
     currentMessage: 'yeah sounds good',
     qualifier: { ...vagueWarmth, stage: 'won' },
     leadStage: 'qualifying',
@@ -330,7 +372,7 @@ assert.strictEqual(approvedBioHandoff.signup_link_manual_only, false);
 assert.strictEqual(approvedBioHandoff.approved_link_auto_sendable, true);
 
 const unreadyBioHandoff = buildLeadOnboardingHandoffData({
-    draftText: "yeah the free 30 day challenge would be perfect. here's the link: https://future-balance.netlify.app/bio.html",
+    draftText: "yeah starter coaching would be perfect. here's the link: https://future-balance.netlify.app/coaching.html",
     currentMessage: 'haha yeah sounds good',
     qualifier: vagueWarmth,
     leadStage: 'qualifying',
@@ -455,7 +497,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: 'honestly this is exactly the kind of thing the free 30 day challenge can help with: simple structure after work without guessing. want me to send the details?',
+        draftText: 'honestly this is exactly the kind of thing starter coaching can help with: simple structure after work without guessing. want me to send the details?',
         currentMessage: 'yeah food and training are the struggle after work, i keep falling off',
         qualifier: midFunnelSpecificNeed,
         leadStage: 'qualifying',
@@ -466,7 +508,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: 'honestly this is pretty much what the free 30 day challenge is for, want me to send you the details?',
+        draftText: 'honestly this is pretty much what starter coaching is for, want me to send you the details?',
         currentMessage: 'yeah exactly, it is mainly after work that i fall off',
         qualifier: earnedInviteDeferral,
         leadStage: 'qualifying',
@@ -477,7 +519,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: "honestly, that's exactly why i put together the 30-day plant-based challenge. want me to send you the details?",
+        draftText: "honestly, that's exactly where starter coaching can help. want me to send you the details?",
         currentMessage: "I'd love to hear some of your go-to minimal effort meals, especially when my energy is super low.",
         qualifier: earnedInviteDeferral,
         leadStage: 'qualifying',
@@ -488,7 +530,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: "two easy ones are one-pot pasta with canned tomatoes and cannellini beans, or ramen with frozen veg and tofu. after that, the free 30 day challenge might help you build a few of these into a no-thinking rotation. want me to send the details?",
+        draftText: "two easy ones are one-pot pasta with canned tomatoes and cannellini beans, or ramen with frozen veg and tofu. after that, starter coaching might help you build a few of these into a no-thinking rotation. want me to send the details?",
         currentMessage: "I'd love to hear some of your go-to minimal effort meals, especially when my energy is super low.",
         qualifier: earnedInviteDeferral,
         leadStage: 'qualifying',
@@ -499,7 +541,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: 'honestly this is pretty much what the free 30 day challenge is for, want me to send you the details?',
+        draftText: 'honestly this is pretty much what starter coaching is for, want me to send you the details?',
         currentMessage: 'maybe later, not ready yet',
         qualifier: earnedInviteDeferral,
         leadStage: 'qualifying',
@@ -510,7 +552,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: 'want me to send you the challenge link?',
+        draftText: 'want me to send you the coaching link?',
         currentMessage: 'yeah sounds good',
         qualifier: { ...vagueWarmth, stage: 'pitched' },
         leadStage: 'qualifying',
@@ -538,7 +580,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: 'honestly this is pretty much what the free 30 day challenge is for, want me to send you the details?',
+        draftText: 'honestly this is pretty much what starter coaching is for, want me to send you the details?',
         currentMessage: 'yeah exactly, it is mainly after work that i fall off',
         qualifier: earnedInviteDeferral,
         leadStage: 'qualifying',
@@ -558,7 +600,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: 'honestly this is pretty much what the free 30 day challenge is for, want me to send you the details?',
+        draftText: 'honestly this is pretty much what starter coaching is for, want me to send you the details?',
         currentMessage: 'maybe later, not ready yet',
         qualifier: earnedInviteDeferral,
         leadStage: 'qualifying',
@@ -568,7 +610,7 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
-    isChallengeOfferWarningText('yeah I can get you into the free 30 day challenge if you want'),
+    isChallengeOfferWarningText('yeah I can send you the starter coaching details if you want'),
     true
 );
 

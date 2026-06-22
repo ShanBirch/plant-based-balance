@@ -5,6 +5,12 @@ const path = require('path');
 const clientContext = require('../netlify/functions/_lib/client-context');
 const manager = require('../netlify/functions/client-lead-manager')._test;
 
+assert.strictEqual(manager.resolveAiDraftReviewLimit(undefined), 8);
+assert.strictEqual(manager.resolveAiDraftReviewLimit('0'), 0);
+assert.strictEqual(manager.resolveAiDraftReviewLimit('3'), 3);
+assert.strictEqual(manager.resolveAiDraftReviewLimit('200'), 80);
+assert.strictEqual(manager.resolveAiDraftReviewLimit('bad'), 8);
+
 function makeAlert(overrides = {}) {
     return {
         id: 'alert-1',
@@ -16,11 +22,13 @@ function makeAlert(overrides = {}) {
         suggested_message: 'hey, how are you going?',
         data: {
             channel: 'instagram',
+            lead_stage: 'new',
             message_preview: 'hey',
         },
         ...overrides,
         data: {
             channel: 'instagram',
+            lead_stage: 'new',
             message_preview: 'hey',
             ...(overrides.data || {}),
         },
@@ -36,24 +44,47 @@ assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Monica' 
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'monica_balance' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Frank' }), false);
 
-const shane = manager.classifyNeedsYou(makeAlert({ client_name: 'Shane' }));
+assert.strictEqual(manager.isAcquisitionLeadAlert(makeAlert()), true);
+assert.strictEqual(manager.isAcquisitionLeadAlert(makeAlert({
+    client_id: 'client-1',
+    data: { lead_stage: 'paying' },
+})), false);
+
+const coldLeadNamedShane = manager.classifyNeedsYou(makeAlert({ client_name: 'Shane' }));
+assert.strictEqual(coldLeadNamedShane.shouldRoute, false, 'cold leads should not be routed only because their name matches a permanent client');
+
+const shane = manager.classifyNeedsYou(makeAlert({
+    client_id: 'client-shane',
+    client_name: 'Shane',
+    data: { lead_stage: 'paying' },
+}));
 assert.strictEqual(shane.shouldRoute, true);
 assert.ok(shane.reasons.includes('always_needs_you_person'));
 assert.match(shane.label, /Miranda/);
 assert.match(shane.label, /Monica/);
 
-const miranda = manager.classifyNeedsYou(makeAlert({ client_name: 'Miranda' }));
+const miranda = manager.classifyNeedsYou(makeAlert({
+    client_id: 'client-miranda',
+    client_name: 'Miranda',
+    data: { lead_stage: 'paying' },
+}));
 assert.strictEqual(miranda.shouldRoute, true);
 assert.ok(miranda.reasons.includes('always_needs_you_person'));
 
-const monica = manager.classifyNeedsYou(makeAlert({ client_name: 'Monica' }));
+const monica = manager.classifyNeedsYou(makeAlert({
+    client_id: 'client-monica',
+    client_name: 'Monica',
+    data: { lead_stage: 'paying' },
+}));
 assert.strictEqual(monica.shouldRoute, true);
 assert.ok(monica.reasons.includes('always_needs_you_person'));
 
 const mirandaExerciseLookup = manager.classifyNeedsYou(makeAlert({
+    client_id: 'client-miranda',
     client_name: 'Miranda',
     data: {
         channel: 'instagram',
+        lead_stage: 'paying',
         message_preview: 'What should I put torso rotation machine in as?',
         image_url_count: 1,
         draft_evidence: {
@@ -86,6 +117,65 @@ const media = manager.classifyNeedsYou(makeAlert({
 }));
 assert.strictEqual(media.shouldRoute, true);
 assert.ok(media.reasons.includes('media_review_required'));
+
+const decodedLeadPhoto = manager.classifyNeedsYou(makeAlert({
+    data: {
+        message_preview: '[PHOTO:https://example.com/photo.jpg]',
+        image_url_count: 1,
+        image_inline_count: 1,
+        media_decode: {
+            photo_url_count: 1,
+            photo_inline_count: 1,
+        },
+    },
+}));
+assert.strictEqual(decodedLeadPhoto.shouldRoute, false, 'decoded lead media should not go to Needs You');
+
+const decodedClientPhoto = manager.classifyNeedsYou(makeAlert({
+    client_id: 'client-photo',
+    data: {
+        lead_stage: 'paying',
+        message_preview: '[PHOTO:https://example.com/photo.jpg]',
+        image_url_count: 1,
+        image_inline_count: 1,
+        media_decode: {
+            photo_url_count: 1,
+            photo_inline_count: 1,
+        },
+    },
+}));
+assert.strictEqual(decodedClientPhoto.shouldRoute, true, 'client media review still routes');
+assert.ok(decodedClientPhoto.reasons.includes('media_review_required'));
+
+const visibleLeadReel = manager.classifyNeedsYou(makeAlert({
+    data: {
+        message_preview: '[VIDEO:https://instagram.com/reel/abc123/]',
+        video_url_count: 1,
+        video_inline_count: 0,
+        media_decode: {
+            video_url_count: 1,
+            video_inline_count: 0,
+            reel_context_count: 1,
+        },
+    },
+}));
+assert.strictEqual(visibleLeadReel.shouldRoute, false, 'lead reel with public context should stay out of Needs You');
+
+const unseenLeadReel = manager.classifyNeedsYou(makeAlert({
+    data: {
+        message_preview: '[VIDEO:https://instagram.com/reel/abc123/]',
+        video_url_count: 1,
+        video_inline_count: 0,
+        media_decode: {
+            video_url_count: 1,
+            video_inline_count: 0,
+            reel_context_count: 0,
+            video_failed: true,
+        },
+    },
+}));
+assert.strictEqual(unseenLeadReel.shouldRoute, true, 'lead reel without decoded/context evidence should route');
+assert.ok(unseenLeadReel.reasons.includes('media_review_required'));
 
 const voiceNoteReview = clientContext.buildContextReviewInfo(makeAlert({
     data: {
@@ -195,6 +285,50 @@ const genericVoiceReview = manager.classifyNeedsYou(makeAlert({
     },
 }));
 assert.strictEqual(genericVoiceReview.shouldRoute, false);
+
+const approvedCoachingHandoff = makeAlert({
+    suggested_message: "yeah love that you're keen. here's the link: https://future-balance.netlify.app/coaching.html",
+    data: {
+        message_preview: 'yeah send me the link',
+        approved_link_auto_sendable: true,
+        signup_link_manual_only: false,
+        signup_link_handoff_url: 'https://future-balance.netlify.app/coaching.html',
+        draft_review: {
+            verdict: 'pass',
+            confidence: 0.9,
+            summary: 'Approved coaching link handoff follows the latest message.',
+            notification_reason: 'none',
+            notification_required: false,
+            context_loss_suspected: false,
+        },
+    },
+});
+const approvedCoachingClassification = manager.classifyNeedsYou(approvedCoachingHandoff);
+assert.strictEqual(approvedCoachingClassification.shouldRoute, false);
+assert.strictEqual(manager.shouldAutoScheduleApprovedCoachingHandoff(approvedCoachingHandoff, approvedCoachingClassification), true);
+const schedulePatch = manager.buildApprovedCoachingAutoSchedulePatch(approvedCoachingHandoff, new Date('2026-06-22T00:00:00.000Z'));
+assert.strictEqual(schedulePatch.status, 'scheduled');
+assert.strictEqual(schedulePatch.scheduled_for, '2026-06-22T00:02:00.000Z');
+assert.strictEqual(schedulePatch.data.scheduled_via, 'auto_send');
+assert.strictEqual(schedulePatch.data.auto_send_review_approved_by, 'balance-lead-client-manager');
+assert.strictEqual(schedulePatch.data.client_manager_auto_schedule_reason, 'approved_starter_coaching_link_handoff');
+
+const unsafeCoachingHandoff = makeAlert({
+    suggested_message: "yeah here's the link: https://future-balance.netlify.app/coaching.html",
+    data: {
+        message_preview: 'send the link',
+        approved_link_auto_sendable: true,
+        signup_link_handoff_url: 'https://future-balance.netlify.app/coaching.html',
+        draft_review: {
+            verdict: 'warn',
+            confidence: 0.6,
+            notification_required: true,
+            notification_reason: 'context_loss',
+            context_loss_suspected: true,
+        },
+    },
+});
+assert.strictEqual(manager.shouldAutoScheduleApprovedCoachingHandoff(unsafeCoachingHandoff, { shouldRoute: false }), false);
 
 const passReview = manager.classifyNeedsYou(makeAlert({
     data: {

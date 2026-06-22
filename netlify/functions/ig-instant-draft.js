@@ -391,13 +391,13 @@ function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarnin
         if (draftReview.suggested_fix) issues.push(`Reviewer suggested fix: ${draftReview.suggested_fix}`);
     }
     if (challengeOfferWarning?.required && !challengeOfferAllowed) {
-        issues.push('Draft appears to offer or link the free challenge. Remove the pitch unless the latest message clearly asks how to start or asks for the link.');
+        issues.push('Draft appears to offer or link coaching. Remove the pitch unless the latest message clearly asks how to start or asks for the link.');
     }
     if (isUnsafeStockDiscoveryQuestion(draftText)) {
         issues.push('Draft uses a stock discovery question. Replace it with a specific reply to the latest detail, or no question if a reaction is enough.');
     }
     if (prematureChallengeInvite) {
-        issues.push('Draft invites the challenge before the person has shown enough readiness or 3 meaningful lead replies. Keep rapport moving instead.');
+        issues.push('Draft invites coaching before the person has shown enough readiness or 3 meaningful lead replies. Keep rapport moving instead.');
     }
     return [...new Set(issues.map(issue => truncate(String(issue || '').replace(/\s+/g, ' ').trim(), 220)).filter(Boolean))];
 }
@@ -568,7 +568,7 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
     if (challengeOfferWarning?.required) {
         return {
             code: 'challenge_offer',
-            label: `${challengeOfferWarning.label || 'free challenge invite'} needs timing review`,
+            label: `${challengeOfferWarning.label || 'coaching invite'} needs timing review`,
         };
     }
     if (isUnsafeStockDiscoveryQuestion(draft.joined)) {
@@ -580,7 +580,7 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
     if (isPrematureChallengeInvite({ draftText: draft.joined, currentMessage, qualifier, leadStage, linkedUserId, leadReplyCount: meaningfulLeadReplyCount })) {
         return {
             code: 'premature_challenge_invite',
-            label: 'free challenge invite needs human readiness first',
+            label: 'coaching invite needs human readiness first',
         };
     }
     if (draftReview && !isDraftReviewAutoSendSafe(draftReview) && !effectiveContextBypass?.allowed) {
@@ -678,13 +678,13 @@ async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason =
  */
 const META_AD_FUNNEL_CONTEXT = `
 LEAD ACQUISITION CONTEXT:
-Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, then DMs them first. He initiates the conversation. Some leads also come from Shannon's Meta ads or challenge angles. The DM offer right now is the free 30-day Balance Challenge, starting Monday, 8 June, with free entry for new starters, Shannon check-ins, app structure, and a $500 first-place cash prize. Interested leads should be encouraged to get into Balance and start with coaching immediately so they are set up before the challenge starts. Paid coaching is the natural follow-up after the 30 days, not the headline. The words below trigger offer-inquiry mode:
+Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, then DMs them first. He initiates the conversation. Some leads also come from Shannon's Meta ads or coaching angles. The DM offer right now is Balance Starter Coaching: AUD $29.99/week, no sales call, Balance app access, tailored workout structure, food direction, progress tracking, and one weekly check-in with Shannon. Free challenge/free entry is only a fallback for colder leads who are not ready to pay. The words below trigger offer-inquiry mode:
   1. "What's actually included?"
   2. "Do I need to already be Plant Based?"
   3. "I'm In - save me a spot!"
-Also treat as offer inquiry: "1:1 coaching", "one-on-one coaching", "the challenge", "what's included", "your program" when they clearly mean the offer, "saw your ad", "wanna join", "work with you", "send me the link", "I'm in", or "I need help / I don't know what I'm doing". Do NOT treat vague "keen", "interested", "yeah sounds good", or friendly banter as offer intent unless the same message clearly points at coaching/program/link.
+Also treat as offer inquiry: "1:1 coaching", "one-on-one coaching", "starter coaching", "online coaching", "what's included", "your program" when they clearly mean the offer, "saw your ad", "wanna join", "work with you", "send me the link", "I'm in", or "I need help / I don't know what I'm doing". Do NOT treat vague "keen", "interested", "yeah sounds good", or friendly banter as offer intent unless the same message clearly points at coaching/program/link.
 
-Important: when there is no prior tracked conversation, do NOT assume the lead started the DM. Most first captured lead messages happen because Shannon commented on or replied to their story/post natively, and that opener is not visible in ManyChat. Their reply may be tiny or ambiguous because they are answering that unseen opener. Treat it as an open door, build rapport from whatever signal exists, and ask one light human question unless they are clearly asking about the challenge/link or clearly asking Shannon for help because they feel stuck.
+Important: when there is no prior tracked conversation, do NOT assume the lead started the DM. Most first captured lead messages happen because Shannon commented on or replied to their story/post natively, and that opener is not visible in ManyChat. Their reply may be tiny or ambiguous because they are answering that unseen opener. Treat it as an open door, build rapport from whatever signal exists, and ask one light human question unless they are clearly asking about coaching/link or clearly asking Shannon for help because they feel stuck.
 
 SHANNON FOLLOW-UP QUESTION FINGERPRINT:
 - Shannon's real IG follow-ups are usually tiny: a quick acknowledgement, then one concrete question from the exact detail they just gave.
@@ -695,25 +695,23 @@ SHANNON FOLLOW-UP QUESTION FINGERPRINT:
 - Do not jump from a normal-life answer straight to the challenge. Use the follow-up to understand the blocker, preference, or context first.
 
 THE OFFERING (for context — never list as a brochure; speak like a friend):
-- The FIRST offer is the free 30-day Balance Challenge, not paid coaching, a standalone custom meal plan, workout program, or generic app trial.
-- If they are plant-based / vegan / vegetarian-curious, tailor the challenge explanation around plant-based food support.
-- If they just want fitness, muscle, weight loss, energy, or consistency with no plant-based signal, tailor the challenge explanation around training, food structure, and consistency.
-- When the offer is opened by a direct details/link/"what's included" ask, explain how the app works before sending the next step: Shannon built Balance this year, the app helps set up workouts/meals, their little character levels up as they log, and workouts, meals, weigh-ins, lessons, check-ins, and progress actions earn XP.
-- If they only ask "what's Balance?" or "what's your app?" while also saying they are already training hard or feeling good, answer in one plain beat and make any challenge mention a casual throwaway. No feature list, prize, leaderboard, or link unless they ask for details.
-- The challenge is 30 days of stacking consistent actions, building XP, and climbing the leaderboard with Shannon checking in. Do not call the character FitGotchi in DMs. Say "little character" or "game-style character".
-- Once they start, the Balance app helps set up their workout program and meal plan. Shannon can edit it if needed after they sign up.
-- Shannon checks in Monday, Wednesday, Friday. Friday is a weekly review and adjustment check-in.
-- The challenge has a $500 cash prize for first place, confirmed after the final leaderboard review and fair-play checks.
-- Keep it free/no pressure. The paid coaching choice comes later, after they have felt the support.
+- The FIRST offer for warm leads is paid Balance Starter Coaching, not a free challenge, standalone custom meal plan, workout program, or generic app trial.
+- If they are plant-based / vegan / vegetarian-curious, tailor the coaching explanation around plant-based food support.
+- If they just want fitness, muscle, weight loss, energy, or consistency with no plant-based signal, tailor the coaching explanation around training, food structure, and accountability.
+- When the offer is opened by a direct details/link/"what's included" ask, explain the setup before sending the next step: $29.99/week, no sales call, Balance app access, tailored workouts, food direction, progress tracking, and one weekly check-in with Shannon.
+- If they only ask "what's Balance?" or "what's your app?" while also saying they are already training hard or feeling good, answer in one plain beat and make any coaching mention casual. No feature list or link unless they ask for details.
+- Once they start, the Balance app helps set up their workout program and food direction. Shannon can edit it after they sign up.
+- Shannon checks in once a week in Starter Coaching.
+- Keep it low-pressure. If they are hesitant or too cold to pay, offer the free challenge as the lighter fallback.
 
 RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
-- "What's actually included?" -> explain the free challenge casually: Shannon built Balance this year, the app sets up workouts/meals, their little character levels up as they log, XP builds the leaderboard, Shannon checks in Mon/Wed/Fri, and first place wins the cash prize after review. Don't dump a brochure.
-- "What's Balance?" / "what's your app?" -> answer plainly: it is Shannon's fitness app/coaching setup. If their latest training detail gives a natural opening, one casual line is enough: "sounds like you're smashing training tbh, i'm about to start a fitness challenge if you'd be keen?" Do not hardcode that wording, but keep that size and feel. No app feature list or signup link unless they ask what is included or ask for details.
-- "Is it in person?" / "I'm looking for a local trainer" / "I already have a PT" -> treat this as a preference or compatibility objection. Answer plainly first: the challenge support is online through Balance. Do not push the link yet. Ask whether online check-ins/accountability would still be useful, or how it would need to fit around their current trainer.
+- "What's actually included?" -> explain Starter Coaching casually: Balance app access, tailored workouts, food direction, progress tracking, and one weekly check-in with Shannon for $29.99/week. Don't dump a brochure.
+- "What's Balance?" / "what's your app?" -> answer plainly: it is Shannon's fitness app/coaching setup. If their latest training detail gives a natural opening, one casual line is enough: "honestly one weekly check-in would probably help keep that simple if you wanted the coaching details". Do not hardcode that wording, but keep that size and feel. No app feature list or signup link unless they ask what is included or ask for details.
+- "Is it in person?" / "I'm looking for a local trainer" / "I already have a PT" -> treat this as a preference or compatibility objection. Answer plainly first: Starter Coaching is online through Balance with one weekly check-in. Do not push the link yet. Ask whether online check-ins/accountability would still be useful, or how it would need to fit around their current trainer.
 - "Do I need to already be Plant Based?" -> warm reassurance ("not at all, lots of my crew start curious"), then ask their current eating situation, ever cooked plant-based before.
-- "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, send https://future-balance.netlify.app/bio.html with the quick challenge/app handoff. Do NOT ask a Name + Age + Main goal intake bundle.
-- "I need help" / "I don't know what I'm doing" / "where do I start?" -> human first: validate the stuck feeling, ask one grounded context question if needed, then softly explain that the free challenge is the easiest starting point because the app gives structure, the character/XP makes consistency visible, and Shannon checks in. Do not sound like a canned invite.
-- Warm lead with enough context already shared -> use a low-key bridge instead of endless discovery. Do not write stock lines that say the offer is made for this exact situation. Anchor it to their actual situation in one casual sentence, for example "if a bit of challenge structure would help when you're back, i'm starting one soon". End by asking if they want the details only when they have not already asked. Do not send the link or app feature rundown until they say yes or ask what is included.
+- "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, send https://future-balance.netlify.app/coaching.html with the quick coaching/app handoff. Do NOT ask a Name + Age + Main goal intake bundle.
+- "I need help" / "I don't know what I'm doing" / "where do I start?" -> human first: validate the stuck feeling, ask one grounded context question if needed, then softly explain that Starter Coaching is the easiest starting point because the app gives structure and Shannon checks in weekly. Do not sound like a canned invite.
+- Warm lead with enough context already shared -> use a low-key bridge instead of endless discovery. Do not write stock lines that say the offer is made for this exact situation. Anchor it to their actual situation in one casual sentence, for example "if having one check-in a week would keep that from drifting again, starter coaching would probably fit". End by asking if they want the details only when they have not already asked. Do not send the link or app feature rundown until they say yes or ask what is included.
 
 When the conversation has clearly moved past intake (qualifier answers received, or they're chatting about something else), drop this context and just chat naturally.`;
 
@@ -1054,9 +1052,9 @@ function pitchHintForStage(stage) {
     }
     switch (stage) {
         case 'qualifying':
-            return "Conversation is warming up. Keep rapport natural, but make it create momentum. Ask one useful follow-up only when it moves the exact blocker forward. If the current message is simple banter, just banter. If they have already shared a clear food/training/energy/consistency blocker, do not ask another unrelated human-context question. Mention the free 30-day Balance Challenge when they ask how to start, ask for the link/details, clearly ask Shannon for help because they feel stuck, or the qualifier context shows Shannon already has a relationship anchor plus enough goal/blocker context for a soft bridge. When bridging, anchor it to their exact situation and ask if they want details instead of using a stock invite line. A vague warm reply is not a challenge opening by itself. Do not offer to write a standalone meal plan or workout program in DMs. The app helps set those up after they start.";
+            return "Conversation is warming up. Keep rapport natural, but make it create momentum. Ask one useful follow-up only when it moves the exact blocker forward. If the current message is simple banter, just banter. If they have already shared a clear food/training/energy/consistency blocker, do not ask another unrelated human-context question. Mention Balance Starter Coaching when they ask how to start, ask for the link/details, ask about coaching, clearly ask Shannon for help because they feel stuck, or the qualifier context shows Shannon already has a relationship anchor plus enough goal/blocker context for a soft bridge. When bridging, anchor it to their exact situation and ask if they want details instead of using a stock invite line. A vague warm reply is not a coaching opening by itself. Do not offer to write a standalone meal plan or workout program in DMs. The app helps set those up after they start.";
         case 'invited':
-            return "You've already mentioned the free challenge. DON'T re-pitch. Answer their questions plainly. If they're close to signing up, help them across the line. If they are not ready yet, ask one useful question only if it helps the next step.";
+            return "You've already mentioned Starter Coaching. DON'T re-pitch. Answer their questions plainly. If they're close to signing up, help them across the line. If they are not ready yet, ask one useful question only if it helps the next step.";
         case 'in_app':
             return "They're already in the app. Coach them like a normal client. The IG thread is just a parallel channel — same voice, same memory. Keep it short unless they ask for more. Ask a specific question only when it is actually useful.";
         case 'churned':
@@ -1071,21 +1069,20 @@ function challengeUrlForRoute(route) {
     return ONE_ON_ONE_COACHING_URL;
 }
 
-const ONE_ON_ONE_COACHING_URL = 'https://future-balance.netlify.app/bio.html';
+const ONE_ON_ONE_COACHING_URL = 'https://future-balance.netlify.app/coaching.html';
 
 function buildOneOnOneCoachingBlock() {
     return `
 
-BALANCE CHALLENGE LINK:
-- The DM offer right now is the free 30-day Balance Challenge, starting Monday, 8 June.
-- Interested leads can get into Balance and start with coaching immediately so they are ready before the challenge cohort starts.
-- Approved challenge link: ${ONE_ON_ONE_COACHING_URL}
-- When the latest message asks for the challenge link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct challenge/details invite, send the approved bio link in the draft.
-- If the latest message asks to reconnect with Balance, the app/helper, login, password, account access, or any app bug, treat it as support first and do not send the challenge bio link.
-- Keep the link handoff light, not a brochure: stoked they are keen, here's the link, it has the quick info on the challenge and how the app works, check it out and download the app, then come back to Shannon here to chat through it.
-- Frame it as a free challenge with Shannon check-ins and app structure. Mention XP, leaderboard, or the $500 first-place cash prize only when they ask what is included or need the fuller rundown. Paid coaching comes later if the 30 days help.
-- If they only ask a general help question and have not asked for challenge details/link, do not send the link yet. Reply to the question and ask a low-pressure permission question if the challenge might fit.
-- If they ask whether it is local/in-person or mention they already have a PT/trainer, do not send the link yet. Answer that the challenge support is online through Balance and check whether that would still suit them.`;
+BALANCE STARTER COACHING LINK:
+- The DM offer right now is Balance Starter Coaching: AUD $29.99/week, no sales call, app structure, tailored workouts, food direction, progress tracking, and one weekly check-in with Shannon.
+- Approved coaching link: ${ONE_ON_ONE_COACHING_URL}
+- When the latest message asks for the coaching link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct coaching/details invite, send the approved coaching link in the draft.
+- If the latest message asks to reconnect with Balance, the app/helper, login, password, account access, or any app bug, treat it as support first and do not send the coaching link.
+- Keep the link handoff light, not a brochure: stoked they are keen, here's the link, it has the quick info on coaching and how Balance works, check it out, then come back to Shannon here to chat through it.
+- Frame it as low-ticket online coaching with one weekly check-in. Mention XP or app details only when they ask what is included or need the fuller rundown.
+- If they only ask a general help question and have not asked for coaching details/link, do not send the link yet. Reply to the question and ask a low-pressure permission question if Starter Coaching might fit.
+- If they ask whether it is local/in-person or mention they already have a PT/trainer, do not send the link yet. Answer that Starter Coaching is online through Balance with one weekly check-in and check whether that would still suit them.`;
 }
 
 function buildChallengeNextStepBlock(qualifier, currentMessageText = '') {
@@ -1094,8 +1091,8 @@ function buildChallengeNextStepBlock(qualifier, currentMessageText = '') {
         return `
 
 APP SUPPORT NEXT STEP:
-The newest message is about Balance/app/helper reconnection, account access, login, or a tech/workout setup issue. Treat this as support, not a challenge signup moment.
-- Do not send the challenge bio link in this reply, even if the lead previously accepted the challenge.
+The newest message is about Balance/app/helper reconnection, account access, login, or a tech/workout setup issue. Treat this as support, not a coaching signup moment.
+- Do not send the coaching link in this reply, even if the lead previously accepted the offer.
 - Acknowledge it simply and ask for the practical detail Shannon needs, such as what screen/error they see or which email/account they used.
 - Do not mention AI, automation, or an assistant. Keep the wording as Shannon personally helping them get sorted.`;
     }
@@ -1103,34 +1100,34 @@ The newest message is about Balance/app/helper reconnection, account access, log
     if (qualifier.stage === 'won' && isCurrentChallengeHandoffMoment({ qualifier, currentMessage: currentMessageText })) {
         return `
 
-FREE CHALLENGE ACCEPTED NEXT STEP:
-They have accepted the free 30-day Balance Challenge. Do NOT ask more qualifier/intake questions in this reply.
+STARTER COACHING ACCEPTED NEXT STEP:
+They have accepted Balance Starter Coaching. Do NOT ask more qualifier/intake questions in this reply.
 Your reply should:
 - Send this exact URL in the draft: ${url}
 - If you write "here's the link" or "heres the link", the URL must be visible in the same bubble or the next bubble.
-- Keep the explanation tiny: the link has quick info on the challenge and how the Balance app works.
-- Say the app is a little different, so they should check it out, download it, then come back to Shannon here and chat through it.
-- Use the vibe: "yeah sounds so good, stoked you're keen for the challenge" rather than a brochure.
+- Keep the explanation tiny: the link has quick info on coaching and how the Balance app works.
+- Say the app is a little different, so they should check it out, then come back to Shannon here and chat through it.
+- Use the vibe: "yeah sounds so good, stoked you're keen" rather than a brochure.
 - Do it in 2-3 short bubbles, not one paragraph.
 Do not offer to manually write a meal plan or workout program in DMs before signup.`;
     }
     if (qualifier.stage === 'won') {
         return `
 
-FREE CHALLENGE ALREADY ACCEPTED CONTEXT:
-They have accepted the free 30-day Balance Challenge earlier, but the newest message is not asking for the link, details, or next step. Do not resend the signup link from stored stage alone. Reply to the newest message naturally and only bring the link back if they ask how to start, ask for the link/details, or clearly confirm the challenge again.`;
+STARTER COACHING ALREADY ACCEPTED CONTEXT:
+They have accepted Starter Coaching earlier, but the newest message is not asking for the link, details, or next step. Do not resend the signup link from stored stage alone. Reply to the newest message naturally and only bring the link back if they ask how to start, ask for the link/details, or clearly confirm coaching again.`;
     }
     if (qualifier.stage === 'pitched') {
         return `
 
-FREE CHALLENGE OFFER PITCHED:
-The free 30-day Balance Challenge has already been offered. If they sound keen, ask for details/link, ask how to start, or reply positively with "yes / sounds good / keen", send this exact URL in the draft: ${url}. If you write "here's the link" or "heres the link", the URL must be visible in the same bubble or the next bubble. Keep the handoff tight in 2-3 bubbles: stoked they are keen, here's the link, it has the quick challenge/app info, check it out and download the app, then come back here to chat through it. If they are still unsure, answer the concern and keep it easy.`;
+STARTER COACHING OFFER PITCHED:
+Starter Coaching has already been offered. If they sound keen, ask for details/link, ask how to start, or reply positively with "yes / sounds good / keen", send this exact URL in the draft: ${url}. If you write "here's the link" or "heres the link", the URL must be visible in the same bubble or the next bubble. Keep the handoff tight in 2-3 bubbles: stoked they are keen, here's the link, it has the quick coaching/app info, check it out, then come back here to chat through it. If they are still unsure, answer the concern and keep it easy.`;
     }
     if (hasEarnedChallengeInviteMoment({ qualifier })) {
         return `
 
-EARNED FREE CHALLENGE BRIDGE:
-This unlinked lead has enough relationship and goal/blocker context, plus at least 3 meaningful lead replies, for a soft bridge if it fits the newest message. Do not send the link yet. Do not make it a brochure. The move is one casual line anchored to what they just said, with the challenge as a throwaway invite. If they have not asked for the link/details yet, ask if they would be keen or want the details. Save the app feature rundown, XP, leaderboard, and prize for when they ask what is included. If the newest message is a clear no/not-yet signal, hold off and just reply to that.`;
+EARNED STARTER COACHING BRIDGE:
+This unlinked lead has enough relationship and goal/blocker context, plus at least 3 meaningful lead replies, for a soft bridge if it fits the newest message. Do not send the link yet. Do not make it a brochure. The move is one casual line anchored to what they just said, with Starter Coaching as the natural next step. If they have not asked for the link/details yet, ask if they would be keen or want the details. Save the app feature rundown for when they ask what is included. If the newest message is a clear no/not-yet signal, hold off and just reply to that.`;
     }
     return '';
 }
@@ -1140,10 +1137,10 @@ function buildChallengeOfferWarning({ draftText, qualifier, currentMessage } = {
     if (isApprovedChallengeBioHandoffAllowed({ draftText, qualifier, currentMessage })) {
         return {
             required: false,
-            code: 'approved_challenge_bio_link',
+            code: 'approved_coaching_link',
             dot: '🟢',
-            label: 'approved challenge bio link',
-            reason: 'Draft uses the approved bio link after the lead accepted or asked for the challenge next step.',
+            label: 'approved coaching link',
+            reason: 'Draft uses the approved coaching link after the lead accepted or asked for the next step.',
             detected_at: new Date().toISOString(),
         };
     }
@@ -1151,18 +1148,18 @@ function buildChallengeOfferWarning({ draftText, qualifier, currentMessage } = {
         ? qualifier.challenge_route
         : 'undecided';
     const routeLabel = route === 'vegan'
-        ? 'plant-based challenge'
+        ? 'plant-based coaching'
         : route === 'generic'
-            ? 'free challenge'
-            : 'free challenge';
+            ? 'starter coaching'
+            : 'starter coaching';
     return {
         required: true,
         code: 'challenge_offer',
         dot: '🟡',
-        label: 'free 30-day challenge invite',
+        label: 'starter coaching invite',
         route,
         route_label: routeLabel,
-        reason: `Draft appears to offer ${routeLabel} or send the challenge link.`,
+        reason: `Draft appears to offer ${routeLabel} or send the coaching link.`,
         detected_at: new Date().toISOString(),
     };
 }
@@ -1174,7 +1171,7 @@ function isSignupLinkHandoffText(text) {
 }
 
 function isApprovedChallengeBioLinkText(text) {
-    return /https?:\/\/future-balance\.netlify\.app\/bio\.html\b/i.test(String(text || ''));
+    return /https?:\/\/future-balance\.netlify\.app\/coaching\.html\b/i.test(String(text || ''));
 }
 
 function isPositiveChallengeLinkConfirmationText(text) {
@@ -1203,7 +1200,7 @@ function promisesLinkWithoutUrl(text) {
 function isAppReconnectOrAccountSupportRequest(text) {
     const s = String(text || '').toLowerCase();
     if (!s) return false;
-    if (/\b(30\s*day|30-day|free challenge|challenge link|sign ?up|signup|join)\b/i.test(s)) return false;
+    if (/\b(30\s*day|30-day|free challenge|challenge link|coaching link|sign ?up|signup|join)\b/i.test(s)) return false;
     return /\b(reconnect(?:ed|ing)?|connect(?:ed|ing)? back|app helper|balance helper|balance app helper|account access|app access|login|log in|locked out|password|reset link|face id|face recognition|old email|spam|manual(?:ly)? reset|app glitch|glitched|bug)\b/i.test(s);
 }
 
@@ -1265,24 +1262,24 @@ function isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId } = {}) 
 function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linkedUserId, threadId, manychatMessageId, currentMessage }) {
     if (!isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId })) return null;
     const draftHasLinkDrop = isSignupLinkHandoffText(draftText);
-    const acceptedChallenge = isCurrentChallengeHandoffMoment({ qualifier, currentMessage });
-    if (!draftHasLinkDrop && !acceptedChallenge) return null;
+    const acceptedCoaching = isCurrentChallengeHandoffMoment({ qualifier, currentMessage });
+    if (!draftHasLinkDrop && !acceptedCoaching) return null;
 
     if (isApprovedChallengeBioHandoffAllowed({ draftText, qualifier, currentMessage })) {
         return {
             lead_onboarding_handoff: false,
             needs_you_required: false,
             operator_queue: null,
-            style_note: 'Approved bio link handoff can send once the lead has accepted or asked for the challenge next step.',
+            style_note: 'Approved coaching link handoff can send once the lead has accepted or asked for the next step.',
             signup_link_manual_only: false,
             signup_link_handoff_url: ONE_ON_ONE_COACHING_URL,
             approved_link_auto_sendable: true,
             codex_review: {
                 source: 'ig-instant-draft',
-                decision: 'approved_challenge_bio_link_handoff',
+                decision: 'approved_coaching_link_handoff',
                 queue: null,
                 needs_shannon_approval: false,
-                reason: 'Approved bio link handoff is allowed for this accepted/ready lead.',
+                reason: 'Approved coaching link handoff is allowed for this accepted/ready lead.',
                 evidence_ids: [threadId ? `ig_threads:${threadId}` : '', manychatMessageId ? `manychat_message_id:${manychatMessageId}` : ''].filter(Boolean),
                 reviewed_at: new Date().toISOString(),
             },
@@ -1290,8 +1287,8 @@ function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linke
     }
 
     const reason = draftHasLinkDrop
-        ? 'Draft contains a signup/invite link handoff; Shannon must approve or send it manually.'
-        : 'Lead appears ready for the signup/invite link; Shannon must approve the handoff before any URL is sent.';
+        ? 'Draft contains a coaching/signup link handoff; Shannon must approve or send it manually.'
+        : 'Lead appears ready for the coaching/signup link; Shannon must approve the handoff before any URL is sent.';
     const evidenceIds = [threadId ? `ig_threads:${threadId}` : '', manychatMessageId ? `manychat_message_id:${manychatMessageId}` : '']
         .filter(Boolean);
     return {
@@ -1299,7 +1296,7 @@ function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linke
         needs_you_required: false,
         operator_queue: null,
         client_manager_review_required: true,
-        style_note: 'Lead is near a Balance/app link step. Hold automatic sending until the client manager checks readiness and either approves the draft or hands it to Shannon.',
+        style_note: 'Lead is near a Balance coaching link step. Hold automatic sending until the client manager checks readiness and either approves the draft or hands it to Shannon.',
         signup_link_manual_only: true,
         signup_link_handoff_url: ONE_ON_ONE_COACHING_URL,
         codex_review: {
@@ -1362,8 +1359,8 @@ function buildAccountExperimentBlock(botAccount) {
 SHAN_N_SUNNY LEAD LANE:
 This thread belongs to Shannon's personal acquisition account.
 - Use the same Shannon voice, same relationship-first logic, and same lead safety gates as Balance.
-- Lead-only invite timing: do not pitch clients or linked app users. For unlinked leads, the soft free-challenge bridge usually belongs after 3-6 meaningful lead replies, a normal-life anchor, and at least two useful health/fitness facts.
-- Before 3 meaningful lead replies, only move to the free challenge if they directly ask for help, ask how to start, ask what is included, or ask for the link.
+- Lead-only invite timing: do not pitch clients or linked app users. For unlinked leads, the soft Starter Coaching bridge usually belongs after 3-6 meaningful lead replies, a normal-life anchor, and at least two useful health/fitness facts.
+- Before 3 meaningful lead replies, only move to coaching if they directly ask for help, ask how to start, ask what is included, ask about coaching, or ask for the link.
 - Earn the next response: each reply should answer the direct ask, mirror the sharpest hook, add a tiny useful lens, or ask one precise question about the real blocker/preference. Generic validation plus a broad question is not enough.
 - If they want a local/in-person trainer or already have a PT/coach, explore that preference before any invite or link.
 - When the earned window opens, stop drifting into pen-pal mode. Ask one casual permission bridge, do not send the link unless they accept.
@@ -1376,9 +1373,9 @@ COCO'S TEST LANE:
 This thread belongs to Coco's PT Studio, Shannon's contained acquisition test account.
 - Use the same Shannon voice, same relationship-first logic, and same safety review rules as Balance.
 - Do not become more cautious just because this lane may run on auto. Trust the conversation algorithm and keep the next message moving.
-- Shannon's hesitation/fear of rejection is not part of this lane. If the person gives a real help/start/fitness-frustration/coaching-detail signal, bridge confidently toward the free challenge instead of delaying forever.
-- Lead-only invite timing: do not pitch clients or linked app users. For unlinked leads, the soft free-challenge bridge usually belongs after 3-6 meaningful lead replies, a normal-life anchor, and at least two useful health/fitness facts.
-- Before 3 meaningful lead replies, only move to the free challenge if they directly ask for help, ask how to start, ask what is included, or ask for the link. Once the earned window opens, stop drifting into pen-pal mode and ask the simple permission bridge.
+- Shannon's hesitation/fear of rejection is not part of this lane. If the person gives a real help/start/fitness-frustration/coaching-detail signal, bridge confidently toward Starter Coaching instead of delaying forever.
+- Lead-only invite timing: do not pitch clients or linked app users. For unlinked leads, the soft Starter Coaching bridge usually belongs after 3-6 meaningful lead replies, a normal-life anchor, and at least two useful health/fitness facts.
+- Before 3 meaningful lead replies, only move to coaching if they directly ask for help, ask how to start, ask what is included, ask about coaching, or ask for the link. Once the earned window opens, stop drifting into pen-pal mode and ask the simple permission bridge.
 - Earn the next response: each reply should answer the direct ask, mirror the sharpest hook, add a tiny useful lens, or ask one precise question about the real blocker/preference. Generic validation plus a broad question is not enough.
 - If they want a local/in-person trainer or already have a PT/coach, explore that preference before any invite or link.
 - Still do not pitch from empty friendliness alone. Banter can stay banter. The point is natural momentum, not pressure.
@@ -1396,7 +1393,7 @@ function buildAcquisitionMomentumBlock({ botAccount, leadStage, linkedUserId } =
 
 ACQUISITION MOMENTUM (${laneName}):
 - Rapport is the on-ramp, not the destination. Do not keep the thread alive with more pet/work/weekend/hobby questions once the lead has named a food, training, energy, body, confidence, consistency, or time problem.
-- Use this decision order: answer their latest message, notice the strongest blocker or desire, then choose one next move: a tiny useful lens, one precise fit question, a direct free-challenge explanation, or a soft optional challenge bridge.
+- Use this decision order: answer their latest message, notice the strongest blocker or desire, then choose one next move: a tiny useful lens, one precise fit question, a direct Starter Coaching explanation, or a soft optional coaching bridge.
 - No-progression fix: before writing, label the lead's latest signal as one of direct ask, blocker/objection, reciprocal curiosity, early program start, exit/low bandwidth, or pure rapport. The reply must move that exact signal one notch forward.
 - Too-generic fix: build the reply from the lead's exact noun plus their constraint plus the consequence. Example: "two little ones + exhausted after work + dinner stress", "new city move + bookstore shifts + quiet/coffee shop", "conflicting info + meal prep time + overwhelm".
 - If they ask about Shannon, the app, work, a bug, weekend plans, or another reciprocal personal detail, answer in one short clause, then return the spotlight to their strongest life/health signal. Do not let Shannon's side become the main topic for a second consecutive reply.
@@ -1406,7 +1403,7 @@ ACQUISITION MOMENTUM (${laneName}):
 - Earn the next response. The reply needs a handle worth answering: a direct answer, their sharpest hook reflected back, a tiny useful lens, or one precise question about their blocker/preference/objection.
 - Avoid statement-only dead ends. Unless they are clearly closing the thread, do not finish with only agreement, a personal aside, or "hope it goes well". Give them one specific thing to answer from their exact topic.
 - One or two normal-life beats is usually enough. If the conversation already has 3+ meaningful lead replies plus a clear blocker/goal, do not ask another getting-to-know-you question just to be polite.
-- Good soft bridge shape: "honestly this is the kind of thing the free challenge can help with: [their exact blocker] without [their exact pain]. want me to send the details?"
+- Good soft bridge shape: "honestly this is the kind of thing starter coaching can help with: [their exact blocker] without [their exact pain]. want me to send the details?"
 - If they ask for practical advice, give the practical answer first. Then bridge only if it still feels natural.
 - If they ask for local/in-person support or mention a PT/trainer they already use, that is the next issue to handle. Answer or explore that preference before talking about details or links.
 - If there is no real blocker yet, stay human and light, but make the next handle sharper. Let the convo breathe only when they are clearly closing or low-bandwidth. Do not become a pen pal for its own sake.`;
@@ -1432,10 +1429,10 @@ ACQUISITION STYLE:
 - A relationship question does not have to be the last bubble. If it is sparked by a specific thing they said, ask it while talking about that thing, then continue the reply.
 - Do not bundle questions. Never ask name + age + goal + blocker together.
 - If the discovery question is about relationship context, ask one light version and stop. Do not tack on a fitness goal in the same reply.
-- If they are already asking how to join, accepted the challenge, or clearly want the link, move them forward with the short Balance-app explanation plus the next step instead of slowing them down with more questions.
+- If they are already asking how to join, accepted coaching, or clearly want the link, move them forward with the short Balance-app explanation plus the next step instead of slowing them down with more questions.
 - If they say they want local/in-person coaching, ask if Shannon's online 1:1 check-ins would still be useful before any invite or link. If they already have a PT/trainer/coach, answer how support could fit around that before pitching.
-- Do not drop a free challenge invite just because they are friendly, vaguely interested, or mention fitness/food. This timing rule is for unlinked leads only, not clients/app users. Wait for either a human signal ("I need help", "I dunno what I'm doing", "where do I start?", "what's included?", "send the link", or an obvious join/start request) or enough earned context for a soft bridge. Earned context means Shannon already has a normal-life anchor, useful goal/blocker context, and usually 3-6 meaningful lead replies. In that case explain the app setup first, ask if they want details only if they have not already asked, and do not send the link unless they accept.
-- When the soft bridge is right, make it fluid and specific. Avoid generic lines that say the offer is made for this exact situation. Use their words as the entry point: "since you're already [making this change], the challenge gives you the plan in Balance, XP for the daily bits, and me checking in..." or "if a bit of [structure/check-ins] would help, the app makes it a 30-day XP/leaderboard thing instead of a boring spreadsheet...". It should feel like Shannon noticed the opening, not like the funnel fired.
+- Do not drop a coaching invite just because they are friendly, vaguely interested, or mention fitness/food. This timing rule is for unlinked leads only, not clients/app users. Wait for either a human signal ("I need help", "I dunno what I'm doing", "where do I start?", "what's included?", "send the link", "coaching details", or an obvious join/start request) or enough earned context for a soft bridge. Earned context means Shannon already has a normal-life anchor, useful goal/blocker context, and usually 3-6 meaningful lead replies. In that case explain the app setup first, ask if they want details only if they have not already asked, and do not send the link unless they accept.
+- When the soft bridge is right, make it fluid and specific. Avoid generic lines that say the offer is made for this exact situation. Use their words as the entry point: "since you're already [making this change], starter coaching gives you the plan in Balance and me checking in once a week..." or "if a bit of structure would help, one weekly check-in keeps it from becoming another spreadsheet...". It should feel like Shannon noticed the opening, not like the funnel fired.
 - Once they have shared enough real context plus a clear blocker/goal, do not keep asking getting-to-know-you questions. Use a specific, optional bridge or useful next lens.`;
 }
 
@@ -1532,6 +1529,9 @@ function latestNativeStoryOutreachMemory(thread) {
 function buildNativeStoryOutreachContextBlock(thread, leadName) {
     const latest = latestNativeStoryOutreachMemory(thread);
     if (!latest) return { block: '', summary: null };
+    const customData = thread?.custom_data && typeof thread.custom_data === 'object'
+        ? thread.custom_data
+        : {};
 
     const handle = compactStoryMemoryText(thread?.ig_username || leadName || latest.ig_username || '', 80);
     const description = compactStoryMemoryText(latest.story_description, 700);
@@ -1541,6 +1541,16 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
     const sharedFrom = compactStoryMemoryText(latest.shared_from_username, 80);
     const storyUrl = compactStoryMemoryText(latest.story_url, 300);
     const capturedAt = compactStoryMemoryText(latest.captured_at || latest.updated_at, 80);
+    const salesContext = (latest.sales_context && typeof latest.sales_context === 'object')
+        ? latest.sales_context
+        : ((customData.sales_context && typeof customData.sales_context === 'object') ? customData.sales_context : null);
+    const leadAcquisition = (customData.lead_acquisition && typeof customData.lead_acquisition === 'object')
+        ? customData.lead_acquisition
+        : null;
+    const primaryOffer = compactStoryMemoryText(
+        salesContext?.primary_offer || leadAcquisition?.primary_offer || customData.offer_path || latest.offer_path || '',
+        100
+    );
 
     const summary = {
         story_url: storyUrl || null,
@@ -1551,6 +1561,8 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
         shared_from_username: sharedFrom || null,
         sent_comment: sentComment || null,
         captured_at: capturedAt || null,
+        lead_origin: compactStoryMemoryText(latest.lead_origin || customData.lead_origin || leadAcquisition?.source || '', 120) || null,
+        offer_path: primaryOffer || null,
     };
     if (!description && !visibleText && !sentComment) return { block: '', summary };
 
@@ -1567,6 +1579,9 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
     }
     if (sentComment) lines.push(`Shannon's native story reply/comment: "${sentComment}"`);
     if (storyUrl) lines.push(`Story URL: ${storyUrl}`);
+    if (!thread?.linked_user_id && primaryOffer === 'balance_starter_coaching') {
+        lines.push('Sales context: story outreach lead. Voice priority: no sales script, brochure, or urgency. If real help/food/training/consistency signal appears, bridge to paid Balance Starter Coaching ($29.99/wk, no call, weekly check-in). Free challenge is fallback only.');
+    }
 
     return {
         summary,
@@ -1575,7 +1590,7 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
 NATIVE STORY OPENER CONTEXT:
 ${lines.join('\n')}
 
-Use this if the new message is replying to Shannon's native story opener. Do not pretend ${leadName || 'the lead'} said the story context themselves. If the story context identifies an animal as a cat, dog, rabbit, horse, or another species, keep that species exactly. If the species is unknown, stay neutral and never guess dog, cat, breed, or type from a pet name alone. If visible story text or a location sticker already names a place, treat that place as known and do not ask where it is or where they are watching from. If the visual story context already shows beach, ocean, sand, coast, or waterfront, do not ask whether they were on/at the beach.`,
+Use this if the new message is replying to Shannon's native story opener. Do not pretend ${leadName || 'the lead'} said the story context themselves. Preserve the free-offer feel on the first reply: rapport, one useful hook, no hard pitch from empty friendliness. Keep Shannon's real texting voice above all sales context: short, specific, casual, built from their newest detail. For unlinked leads, bridge to paid Starter Coaching only after real help/fitness/food/consistency signal or enough earned context; free challenge is fallback. If the story context identifies an animal as a cat, dog, rabbit, horse, or another species, keep that species exactly. If the species is unknown, stay neutral and never guess dog, cat, breed, or type from a pet name alone. If visible story text or a location sticker already names a place, treat that place as known and do not ask where it is or where they are watching from. If the visual story context already shows beach, ocean, sand, coast, or waterfront, do not ask whether they were on/at the beach.`,
     };
 }
 
@@ -2418,7 +2433,7 @@ CONVERSATION RESPONSIBILITY:
 - If they admit they have been "slacking", off track, missed training, or had a rough week, don't reply with filler like "ahh yeah man" on its own, don't ask "wby"/"what about you", and don't repeat the same broad question. Validate lightly, then ask one concrete follow-up about what got in the way or what small session they can lock in next.
 - The funnel should feel invisible. It can take hours or months. One smooth human question beats a forced qualifier or pitch.
 - Do not default to a question. Use a question only when it is the most natural next text. If they are bantering, answering a previous question, or sending a quick update, a short reaction can be the whole reply.
-- If Shannon asked whether someone was okay after a sad animal/pet story and they reply that they are okay but the animals are not, treat that as the answer. Do not ask "what happened to them" or mine the sad story for details. Acknowledge the cruelty/heartbreak, then if a question is useful bridge through values instead: how long they have been vegan/plant-based, what got them into it, or later how they go with fitness. Once vegan values plus fitness context are warm, a soft free-challenge invite can be earned.
+- If Shannon asked whether someone was okay after a sad animal/pet story and they reply that they are okay but the animals are not, treat that as the answer. Do not ask "what happened to them" or mine the sad story for details. Acknowledge the cruelty/heartbreak, then if a question is useful bridge through values instead: how long they have been vegan/plant-based, what got them into it, or later how they go with fitness. Once vegan values plus fitness context are warm, a soft Starter Coaching invite can be earned.
 - If they answer a pet-name question with just a name, use the native story context and/or known memory for the species. Do not ask what kind of dog/cat/breed it is unless the species is explicit and that question is genuinely needed. A short reaction like "nero is cute" is enough.
 - If dog/pet names, ownership, house-sitting status, or house-sitting timing are already in the timeline, do not ask for them again. Acknowledge the known names or give a clean reaction, then stop or move to a more useful thread.
 - Do not comment on their emoji usage as a topic. Emojis are tone only.
@@ -2777,11 +2792,11 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
             : '';
         const autoHoldWarning = autoHoldReason
             ? (autoHoldReason.code === 'challenge_offer'
-                ? `${challengeOfferWarning?.label || 'free challenge invite'} in this draft. Review before sending.`
+                ? `${challengeOfferWarning?.label || 'coaching invite'} in this draft. Review before sending.`
                 : `🔴 AI stopped auto-send: ${autoHoldReason.label}. Review before sending.`)
             : '';
         const challengeOfferPushWarning = challengeOfferActive
-            ? `${challengeOfferWarning.dot || '🟡'} ${challengeOfferWarning.label || 'free challenge invite'} in this draft. Review before sending.`
+            ? `${challengeOfferWarning.dot || '🟡'} ${challengeOfferWarning.label || 'coaching invite'} in this draft. Review before sending.`
             : '';
         const body = autoHoldWarning || mediaWarning || contextWarning || challengeOfferPushWarning || (hasDraft
             ? formatPushBody({ qualifier, draftText: truncate(draftText, 220), eligible: qualifierEligible })
@@ -3031,13 +3046,14 @@ exports.handler = async (event) => {
         ? linkedClientProfile.name
         : '';
     const leadName = linkedClientName || threadDisplayName;
-    const permanentNeedsYouClient = isAlwaysNeedsYouPerson({
-        name: leadName,
-        client_name: leadName,
-        profile_name: thread.profile_name,
-        ig_username: thread.ig_username,
-        username: thread.ig_username,
-    });
+    const permanentNeedsYouClient = (!!thread.linked_user_id || ['in_app', 'paying'].includes(String(thread.lead_stage || '').toLowerCase()))
+        && isAlwaysNeedsYouPerson({
+            name: leadName,
+            client_name: leadName,
+            profile_name: thread.profile_name,
+            ig_username: thread.ig_username,
+            username: thread.ig_username,
+        });
     const history = await loadIgHistory(threadId, messageText);
 
     let memoryBlock = '';
@@ -3423,6 +3439,7 @@ exports.handler = async (event) => {
         manychatMessageId,
         currentMessage: displayMessage,
     });
+    const approvedCoachingLinkHandoff = leadOnboardingHandoffData?.approved_link_auto_sendable === true;
     if (leadOnboardingHandoffData?.client_manager_review_required) {
         challengeOfferWarning = {
             ...(challengeOfferWarning || {}),
@@ -3506,7 +3523,7 @@ exports.handler = async (event) => {
             lead_stage: effectiveLeadStage || thread.lead_stage || 'new',
             auto_send_enabled_at_draft: autoSendEnabled,
             auto_send_default_reason: cocosAutoSendLane ? 'cocos_auto_lane' : undefined,
-            auto_send_allow_immediate: voiceReplyTestLane || undefined,
+            auto_send_allow_immediate: voiceReplyTestLane || approvedCoachingLinkHandoff || undefined,
             outbound_voice_message: voiceReplyTestLane || undefined,
             outbound_voice_message_reason: voiceReplyTestReason || undefined,
             elevenlabs_voice_id: voiceReplyTestLane ? 'UHnJrglEof8vTMenwnVm' : undefined,
@@ -3657,7 +3674,7 @@ exports.handler = async (event) => {
             algorithm_fork: algorithmFork,
             auto_send_enabled_at_draft: autoSendEnabled,
             auto_send_default_reason: cocosAutoSendLane ? 'cocos_auto_lane' : existingPending.data?.auto_send_default_reason,
-            auto_send_allow_immediate: voiceReplyTestLane || existingPending.data?.auto_send_allow_immediate || undefined,
+            auto_send_allow_immediate: voiceReplyTestLane || approvedCoachingLinkHandoff || existingPending.data?.auto_send_allow_immediate || undefined,
             outbound_voice_message: voiceReplyTestLane || existingPending.data?.outbound_voice_message || undefined,
             outbound_voice_message_reason: voiceReplyTestLane
                 ? voiceReplyTestReason

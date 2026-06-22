@@ -268,7 +268,7 @@
             if (isAlreadyInstalled) {
                 // Already installed — show message and redirect
                 if (btn) btn.innerHTML = '&#10003; Already Installed!';
-                setTimeout(() => { window.location.href = 'plantbasedswitch.html'; }, 1200);
+                setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
                 return;
             }
 
@@ -283,7 +283,7 @@
                     if (result.outcome === 'accepted' && btn) {
                         btn.innerHTML = '&#10003; Installed!';
                     }
-                    setTimeout(() => { window.location.href = 'plantbasedswitch.html'; }, 800);
+                    setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
                 });
             } else {
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -292,7 +292,7 @@
                         btn.innerHTML = 'Use Share → Add to Home Screen';
                         btn.style.fontSize = '0.85rem';
                     }
-                    setTimeout(() => { window.location.href = 'plantbasedswitch.html'; }, 3000);
+                    setTimeout(() => { window.location.href = 'dashboard.html'; }, 3000);
                 } else {
                     // Show installing feedback, wait for prompt
                     if (btn) {
@@ -307,7 +307,7 @@
                                 btn.innerHTML = 'Use browser menu → Install App';
                                 btn.style.fontSize = '0.85rem';
                             }
-                            setTimeout(() => { window.location.href = 'plantbasedswitch.html'; }, 2500);
+                            setTimeout(() => { window.location.href = 'dashboard.html'; }, 2500);
                         }
                     }, 1500);
                 }
@@ -315,7 +315,7 @@
         }
 
         function skipDownloadPrompt() {
-            window.location.href = 'plantbasedswitch.html';
+            window.location.href = 'dashboard.html';
         }
     </script>
 </body>

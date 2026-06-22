@@ -18,6 +18,6 @@ ALTER TABLE public.ig_threads
         'qualifying',    -- a few back-and-forth, gauging fit
         'invited',       -- pitched the wellness challenge / app invite
         'in_app',        -- signed up to the free app
-        'paying',        -- converted to paying subscriber ($29/wk)
+    'paying',        -- converted to paying subscriber ($29.99/wk)
         'churned'        -- went cold / explicitly opted out
     ));

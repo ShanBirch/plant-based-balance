@@ -212,7 +212,7 @@ assert.ok(repairIssues.some(issue => /stock discovery/i.test(issue)), 'stock que
 
 const earnedChallengeBridgeIssues = instantDraft.collectCocosAutoRepairIssues({
     draft: {
-        joined: 'honestly this is the kind of thing the free 30 day challenge can help with: simple structure after work without having to think it all through. want me to send the details?',
+        joined: 'honestly this is the kind of thing starter coaching can help with: simple structure after work without having to think it all through. want me to send the details?',
     },
     draftReview: null,
     challengeOfferWarning: { required: true },

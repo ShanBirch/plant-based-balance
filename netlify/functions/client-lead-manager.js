@@ -2,8 +2,8 @@
  * client-lead-manager - scheduled Needs You router.
  *
  * Runs over pending DM alerts and stamps the cases Shannon explicitly needs
- * to inspect: permanent people, inbound media, AI/authenticity suspicion,
- * confused replies, and missing tracked context.
+ * to inspect. For cold leads, keep Needs You narrow: confusion, AI/authenticity
+ * suspicion, or missing source/media/thread context.
  */
 
 const {
@@ -12,6 +12,9 @@ const {
     buildContextReviewInfo,
     isAlwaysNeedsYouPerson,
     reviewDraftAndUpdateAlert,
+    normalizeCoachDraftText,
+    normalizeLearningReelHistory,
+    referencesLearningReelFollowUpText,
     truncate,
 } = require('./_lib/client-context');
 const {
@@ -21,7 +24,20 @@ const {
 
 const MANAGER_SOURCE = 'balance-lead-client-manager';
 const MAX_PER_RUN = 80;
+const DEFAULT_AI_DRAFT_REVIEWS_PER_RUN = 8;
 const DM_ALERT_TYPES = ['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm'];
+const APPROVED_COACHING_URL = 'https://future-balance.netlify.app/coaching.html';
+const APPROVED_COACHING_LINK_SEND_DELAY_MS = 2 * 60 * 1000;
+
+function parseNonNegativeInteger(value, fallback) {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n < 0) return fallback;
+    return Math.floor(n);
+}
+
+function resolveAiDraftReviewLimit(value = process.env.CLIENT_LEAD_MANAGER_AI_REVIEW_LIMIT) {
+    return Math.min(MAX_PER_RUN, parseNonNegativeInteger(value, DEFAULT_AI_DRAFT_REVIEWS_PER_RUN));
+}
 
 function normalizeDraftReview(data = {}) {
     const review = data.draft_review || data.draftReview || {};
@@ -40,6 +56,131 @@ function alertIdentity(alert = {}) {
     };
 }
 
+function isAcquisitionLeadAlert(alert = {}) {
+    const data = alert.data || {};
+    const alertType = String(alert.alert_type || data.alert_type || '').toLowerCase();
+    const channel = String(data.channel || data.delivery_channel || '').toLowerCase();
+    const lifecycleStage = String(data.lifecycle?.stage || '').toLowerCase();
+    const leadStage = String(data.lead_stage || lifecycleStage || 'new').toLowerCase();
+    const isIgOrFbLeadChannel = ['ig_incoming_dm', 'fb_incoming_dm'].includes(alertType)
+        || ['instagram', 'messenger', 'facebook'].includes(channel)
+        || !!data.ig_thread_id;
+    if (!isIgOrFbLeadChannel) return false;
+    if (alert.client_id || data.linked_user_id || data.linked_client_name) return false;
+    return !['in_app', 'paying', 'paid', 'client', 'trial', 'churned'].includes(leadStage);
+}
+
+function numberFromAny(...values) {
+    for (const value of values) {
+        const n = Number(value);
+        if (Number.isFinite(n) && n > 0) return n;
+    }
+    return 0;
+}
+
+function getMediaContextCounts(data = {}) {
+    const decode = data.media_decode || data.mediaDecode || {};
+    return {
+        photoUrl: numberFromAny(data.photo_url_count, data.image_url_count, decode.photo_url_count, decode.image_url_count),
+        photoInline: numberFromAny(data.photo_inline_count, data.image_inline_count, decode.photo_inline_count, decode.image_inline_count),
+        audioUrl: numberFromAny(data.audio_url_count, decode.audio_url_count),
+        audioInline: numberFromAny(data.audio_inline_count, decode.audio_inline_count),
+        videoUrl: numberFromAny(data.video_url_count, decode.video_url_count),
+        videoInline: numberFromAny(data.video_inline_count, decode.video_inline_count),
+        reelContext: numberFromAny(data.reel_context_count, decode.reel_context_count),
+        photoFailed: decode.photo_failed === true,
+        audioFailed: decode.audio_failed === true,
+        videoFailed: decode.video_failed === true,
+    };
+}
+
+function leadMediaContextMissing(data = {}, mediaReview = {}) {
+    if (!mediaReview?.hasMedia) return false;
+    const counts = getMediaContextCounts(data);
+    if (counts.photoFailed || counts.audioFailed || counts.videoFailed) return true;
+    if (counts.photoUrl > 0 && counts.photoInline <= 0) return true;
+    if (counts.audioUrl > 0 && counts.audioInline <= 0) return true;
+    if (counts.videoUrl > 0 && counts.videoInline <= 0 && counts.reelContext <= 0) return true;
+    return false;
+}
+
+function leadLatestClearlyNeedsPriorContext(data = {}, contextReview = {}) {
+    const latest = String(
+        contextReview.latest_text
+        || data.message_preview
+        || data.draft_evidence?.current_message
+        || ''
+    ).toLowerCase().replace(/\s+/g, ' ').trim();
+    if (!latest) return false;
+    return /\b(that|this|it|they|them|those|there|one|same|again|earlier|previous|last one|which one|what do you mean|wat do u mean|wdym|reel|clip|video|story|post)\b/i.test(latest)
+        || /^(yes|yeah|yep|yup|nah|no|nope|ok|okay|cool|sure|haha|lol|same|me too|exactly|true|fair|maybe|sounds good|all good)\b/i.test(latest);
+}
+
+function latestLeadText(data = {}) {
+    return String(
+        data.message_preview
+        || data.draft_evidence?.current_message
+        || data.client_message
+        || ''
+    ).trim();
+}
+
+function leadReferencesLearningReel(data = {}) {
+    return referencesLearningReelFollowUpText(latestLeadText(data));
+}
+
+function leadHasLearningReelContext(data = {}) {
+    return normalizeLearningReelHistory(data).length > 0;
+}
+
+function draftMentionsLearningReelAnchor(draftText = '', data = {}) {
+    const text = String(draftText || '').toLowerCase();
+    if (!text) return false;
+    const latest = normalizeLearningReelHistory(data)[0] || {};
+    const anchors = [
+        latest.title,
+        latest.channel_title,
+        latest.topic_label,
+        latest.topic_id,
+        ...(String(latest.title || '').match(/[a-z0-9]{5,}/gi) || []),
+        ...(String(latest.channel_title || '').match(/[a-z0-9]{5,}/gi) || []),
+    ]
+        .map(value => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim())
+        .filter(value => value.length >= 4);
+    return anchors.some(anchor => text.includes(anchor));
+}
+
+function draftIgnoredLearningReelContext(alert = {}) {
+    const data = alert.data || {};
+    if (!leadReferencesLearningReel(data) || !leadHasLearningReelContext(data)) return false;
+    const draftText = normalizeCoachDraftText(alert.suggested_message || data.draft_text || '').trim();
+    if (!draftText) return false;
+    if (draftMentionsLearningReelAnchor(draftText, data)) return false;
+    return /\bwhat (?:was|is)(?: it| that| this| the reel| the video| the clip)|what'?s (?:it|that|this)|which (?:one|reel|video|clip)|not sure what|send it again\b/i.test(draftText);
+}
+
+function contextReviewShouldRouteForLead(data = {}, contextReview = {}, mediaReview = {}) {
+    const reasons = new Set(Array.isArray(contextReview.reasons) ? contextReview.reasons : []);
+    if (reasons.has('ai_suspicion_or_authenticity_question')) return true;
+    if (reasons.has('client_does_not_understand_context')) return true;
+
+    const missingMedia = leadMediaContextMissing(data, mediaReview);
+    if (missingMedia) return true;
+
+    const missingThreadReasons = [
+        'manychat_reconcile_latest_only',
+        'first_captured_reply_with_hidden_context',
+        'reference_heavy_reply_without_tracked_context',
+    ];
+    if (!mediaReview?.hasMedia
+        && missingThreadReasons.some(reason => reasons.has(reason))
+        && leadLatestClearlyNeedsPriorContext(data, contextReview)) {
+        return true;
+    }
+
+    return false;
+}
+
 function draftReviewNeedsContext(data = {}) {
     const review = normalizeDraftReview(data);
     const text = [
@@ -49,6 +190,18 @@ function draftReviewNeedsContext(data = {}) {
     ].map(v => String(v || '').toLowerCase()).join(' ');
     return review.context_loss_suspected === true
         || /\b(context_loss|missing_context|missing thread|missing conversation|unclear context|lost context|understand total)\b/i.test(text);
+}
+
+function draftReviewText(data = {}) {
+    const review = normalizeDraftReview(data);
+    return [
+        review.verdict,
+        review.notification_reason,
+        review.summary,
+        review.suggested_fix,
+        review.suggestedFix,
+        ...(Array.isArray(review.issues) ? review.issues : []),
+    ].map(v => String(v || '').toLowerCase()).join(' ');
 }
 
 function draftReviewNeedsManualCheck(data = {}) {
@@ -75,6 +228,15 @@ function draftReviewNeedsManualCheck(data = {}) {
     return hardManualSignal.test(text);
 }
 
+function draftReviewNeedsLeadManualCheck(data = {}, mediaReview = {}) {
+    if (draftReviewNeedsContext(data)) return true;
+    const text = draftReviewText(data);
+    if (/\b(ai|a\.?i\.?|bot|robot|automation|automated|authenticity|real person|not really shannon)\b/i.test(text)) return true;
+    if (/\b(confus(?:ed|ing)|what do you mean|wdym|does(?:n'?t| not) follow|ignored[_ -]?latest(?:[_ -]?message)?|non[-_ ]?sequitur|out of context|missing source|source dm|unseen)\b/i.test(text)) return true;
+    if (leadMediaContextMissing(data, mediaReview) && /\b(media|photo|image|video|reel|audio|voice note|context|open source|manual check)\b/i.test(text)) return true;
+    return false;
+}
+
 function draftReviewNeedsYouLabel(data = {}) {
     const review = normalizeDraftReview(data);
     if (!review || Object.keys(review).length === 0) return 'AI draft needs Shannon review';
@@ -85,6 +247,73 @@ function draftReviewNeedsYouLabel(data = {}) {
 function hasDraftReview(data = {}) {
     const review = normalizeDraftReview(data);
     return !!(review && Object.keys(review).length > 0 && (review.reviewed_at || review.verdict || review.summary));
+}
+
+function draftReviewPassedForAutoSend(data = {}) {
+    const review = normalizeDraftReview(data);
+    return String(review.verdict || '').toLowerCase() === 'pass'
+        && Number(review.confidence || 0) >= 0.72
+        && review.notification_required !== true
+        && review.context_loss_suspected !== true;
+}
+
+function hasApprovedCoachingLinkHandoff(alert = {}) {
+    const data = alert.data || {};
+    const url = String(data.signup_link_handoff_url || data.signupLinkHandoffUrl || '').trim();
+    const replyText = normalizeCoachDraftText(alert.scheduled_reply_text || alert.suggested_message || data.draft_text || '').trim();
+    return data.approved_link_auto_sendable === true
+        && data.signup_link_manual_only !== true
+        && data.client_manager_review_required !== true
+        && data.needs_you_required !== true
+        && url === APPROVED_COACHING_URL
+        && replyText.includes(APPROVED_COACHING_URL);
+}
+
+function shouldAutoScheduleApprovedCoachingHandoff(alert = {}, classification = {}) {
+    if (!alert || alert.status !== 'pending') return false;
+    if (classification?.shouldRoute) return false;
+    if (!hasApprovedCoachingLinkHandoff(alert)) return false;
+    return draftReviewPassedForAutoSend(alert.data || {});
+}
+
+function buildApprovedCoachingAutoSchedulePatch(alert = {}, now = new Date()) {
+    const data = alert.data || {};
+    const nowIso = now.toISOString();
+    const scheduledFor = new Date(now.getTime() + APPROVED_COACHING_LINK_SEND_DELAY_MS).toISOString();
+    const replyText = normalizeCoachDraftText(alert.scheduled_reply_text || alert.suggested_message || data.draft_text || '').trim();
+    return {
+        status: 'scheduled',
+        scheduled_for: scheduledFor,
+        scheduled_reply_text: replyText,
+        scheduled_at: nowIso,
+        data: {
+            ...data,
+            scheduled_via: 'auto_send',
+            scheduled_was_edited: false,
+            scheduled_send_in_ms: APPROVED_COACHING_LINK_SEND_DELAY_MS,
+            schedule_reason: 'Client/lead manager approved the Starter Coaching link handoff; accelerated sales follow-up.',
+            auto_send_review_approved_at: nowIso,
+            auto_send_review_approved_by: MANAGER_SOURCE,
+            client_manager_auto_scheduled_at: nowIso,
+            client_manager_auto_schedule_reason: 'approved_starter_coaching_link_handoff',
+            reply_timing_choice: {
+                action: 'schedule',
+                chosen_delay_ms: APPROVED_COACHING_LINK_SEND_DELAY_MS,
+                chosen_at: nowIso,
+                source: MANAGER_SOURCE,
+            },
+            reply_timing_suggestion: {
+                action: 'schedule',
+                delay_ms: APPROVED_COACHING_LINK_SEND_DELAY_MS,
+                label: '2 min',
+                reason: 'Approved Starter Coaching link handoff; keep the sales moment warm.',
+                confidence: 0.9,
+                signals: {
+                    approved_starter_coaching_link_handoff: true,
+                },
+            },
+        },
+    };
 }
 
 function formatReviewList(items, mapper) {
@@ -204,29 +433,42 @@ function classifyNeedsYou(alert = {}) {
     const contextReview = buildContextReviewInfo(alert);
     const exerciseSupport = buildExerciseSupportClassification(alert);
     const exerciseLookupFastTrack = exerciseSupport.isSupport && exerciseSupport.canFastTrack;
+    const acquisitionLead = isAcquisitionLeadAlert(alert);
+    const leadMissingMediaContext = acquisitionLead && leadMediaContextMissing(data, mediaReview);
+    const missingLearningReelContext = acquisitionLead && leadReferencesLearningReel(data) && !leadHasLearningReelContext(data);
     const reasons = [];
     const labels = [];
 
+    if (missingLearningReelContext) {
+        reasons.push('missing_learning_reel_context');
+        labels.push('lead is asking about a reel but no stored reel context is available');
+    }
+    if (acquisitionLead && draftIgnoredLearningReelContext(alert)) {
+        reasons.push('draft_ignored_learning_reel_context');
+        labels.push('draft ignored the stored reel context');
+    }
     if (exerciseSupport.confusedFollowup) {
         reasons.push('exercise_lookup_confused_followup');
         labels.push('exercise lookup got confusing, send a holding reply and leave it for Shannon');
     }
-    if (isAlwaysNeedsYouPerson(alertIdentity(alert)) && !exerciseLookupFastTrack) {
+    if (!acquisitionLead && isAlwaysNeedsYouPerson(alertIdentity(alert)) && !exerciseLookupFastTrack) {
         reasons.push('always_needs_you_person');
         labels.push('Shane/Fra/Miranda/Monica permanent Needs You route');
     }
-    if (mediaReview.required && !exerciseLookupFastTrack) {
+    if (mediaReview.required && !exerciseLookupFastTrack && (!acquisitionLead || leadMissingMediaContext)) {
         reasons.push('media_review_required');
-        labels.push(mediaReview.label || 'media needs Shannon review');
+        labels.push(acquisitionLead
+            ? `${mediaReview.label || 'media'} context did not come through cleanly`
+            : (mediaReview.label || 'media needs Shannon review'));
     }
-    if (contextReview.required) {
+    if (contextReview.required && (!acquisitionLead || contextReviewShouldRouteForLead(data, contextReview, mediaReview))) {
         reasons.push(...contextReview.reasons);
         labels.push(contextReview.label || 'tracked context may be incomplete');
     }
     if (draftReviewNeedsContext(data)) {
         reasons.push('draft_review_context_loss');
         labels.push(draftReviewNeedsYouLabel(data));
-    } else if (draftReviewNeedsManualCheck(data)) {
+    } else if (acquisitionLead ? draftReviewNeedsLeadManualCheck(data, mediaReview) : draftReviewNeedsManualCheck(data)) {
         reasons.push('draft_review_manual_check');
         labels.push(draftReviewNeedsYouLabel(data));
     }
@@ -303,19 +545,68 @@ async function stampNeedsYouAlert(alert, classification) {
     };
 }
 
-async function runClientLeadManager({ limit = MAX_PER_RUN } = {}) {
+async function scheduleApprovedCoachingHandoff(alert) {
+    const patch = buildApprovedCoachingAutoSchedulePatch(alert);
+    const rows = await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alert.id)}&status=eq.pending`, {
+        method: 'PATCH',
+        body: patch,
+        prefer: 'return=representation',
+    });
+    const scheduled = rows?.[0];
+    if (!scheduled) return null;
+    return {
+        id: alert.id,
+        client_name: alert.client_name || patch.data.profile_name || patch.data.ig_username || null,
+        scheduled_for: patch.scheduled_for,
+        reason: 'approved Starter Coaching link handoff',
+    };
+}
+
+async function runClientLeadManager({ limit = MAX_PER_RUN, aiDraftReviewLimit = resolveAiDraftReviewLimit() } = {}) {
     const alerts = await loadPendingDmAlerts(limit);
     const routed = [];
+    const autoScheduled = [];
+    let autoScheduleFailed = 0;
+    let aiDraftReviewsAttempted = 0;
+    let aiDraftReviewsSkipped = 0;
+    const maxAiDraftReviews = parseNonNegativeInteger(aiDraftReviewLimit, DEFAULT_AI_DRAFT_REVIEWS_PER_RUN);
     for (const alert of alerts) {
-        const reviewedAlert = await ensureDraftReview(alert);
+        const needsDraftReview = shouldRunDraftReview(alert);
+        const approvedSalesHandoff = needsDraftReview && hasApprovedCoachingLinkHandoff(alert);
+        const canRunDraftReview = needsDraftReview
+            && maxAiDraftReviews > 0
+            && (aiDraftReviewsAttempted < maxAiDraftReviews || approvedSalesHandoff);
+        const reviewedAlert = canRunDraftReview ? await ensureDraftReview(alert) : alert;
+        if (canRunDraftReview) {
+            aiDraftReviewsAttempted++;
+        } else if (needsDraftReview) {
+            aiDraftReviewsSkipped++;
+        }
         const classification = classifyNeedsYou(reviewedAlert);
-        if (!classification.shouldRoute) continue;
-        routed.push(await stampNeedsYouAlert(reviewedAlert, classification));
+        if (classification.shouldRoute) {
+            routed.push(await stampNeedsYouAlert(reviewedAlert, classification));
+            continue;
+        }
+        if (shouldAutoScheduleApprovedCoachingHandoff(reviewedAlert, classification)) {
+            try {
+                const scheduled = await scheduleApprovedCoachingHandoff(reviewedAlert);
+                if (scheduled) autoScheduled.push(scheduled);
+            } catch (error) {
+                autoScheduleFailed++;
+                console.warn('[client-lead-manager] approved coaching handoff schedule failed:', error.message);
+            }
+        }
     }
     return {
         scanned: alerts.length,
         routed: routed.length,
+        auto_scheduled: autoScheduled.length,
+        auto_schedule_failed: autoScheduleFailed,
+        ai_draft_reviews_attempted: aiDraftReviewsAttempted,
+        ai_draft_review_limit: maxAiDraftReviews,
+        ai_draft_reviews_skipped: aiDraftReviewsSkipped,
         routed_alerts: routed,
+        auto_scheduled_alerts: autoScheduled,
     };
 }
 
@@ -340,6 +631,14 @@ exports._test = {
     buildNeedsYouData,
     draftReviewNeedsContext,
     draftReviewNeedsManualCheck,
+    draftReviewNeedsLeadManualCheck,
     buildDraftReviewContextBlocks,
     shouldRunDraftReview,
+    resolveAiDraftReviewLimit,
+    isAcquisitionLeadAlert,
+    leadMediaContextMissing,
+    draftReviewPassedForAutoSend,
+    hasApprovedCoachingLinkHandoff,
+    shouldAutoScheduleApprovedCoachingHandoff,
+    buildApprovedCoachingAutoSchedulePatch,
 };

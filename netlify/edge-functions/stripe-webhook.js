@@ -3,6 +3,9 @@ import { sendCAPIEvent } from "./lib/capi-utils.js";
 
 const STRIPE_API_VERSION = "2026-02-25.clover";
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing"]);
+const BALANCE_ADMIN_EMAIL = "shannonbirch@cocospersonaltraining.com";
+const SITE_URL = Deno.env.get("URL") || "https://plantbased-balance.org";
+const STARTER_COACHING_PRODUCT = "Balance Starter Coaching";
 
 function cleanEmail(email) {
     return String(email || "").trim();
@@ -29,6 +32,41 @@ function inferSubscriptionPlan(metadata = {}, priceId = "") {
         || metadata.subscription_plan
         || metadata.product_type
         || (priceId ? `stripe_price:${priceId}` : "stripe_subscription");
+}
+
+function firstSubscriptionPrice(subscription) {
+    return subscription?.items?.data?.[0]?.price || null;
+}
+
+function cleanCurrency(value) {
+    return String(value || "aud").trim().toUpperCase();
+}
+
+function amountMinorFromSale({ subscription, invoice, session } = {}) {
+    const price = firstSubscriptionPrice(subscription);
+    const candidates = [
+        session?.amount_total,
+        invoice?.amount_paid,
+        price?.unit_amount,
+    ];
+    const amount = candidates.map(Number).find(Number.isFinite);
+    return Number.isFinite(amount) ? Math.max(0, Math.round(amount)) : 0;
+}
+
+function currencyFromSale({ subscription, invoice, session } = {}) {
+    return cleanCurrency(session?.currency || invoice?.currency || firstSubscriptionPrice(subscription)?.currency || "aud");
+}
+
+function formatMoney(amountMinor, currency = "AUD") {
+    const amount = Number(amountMinor || 0) / 100;
+    return `${currency.toUpperCase()} $${amount.toFixed(2)}`;
+}
+
+function isInitialPaidSubscriptionSale({ subscription, invoice, session } = {}) {
+    if (!subscription?.id) return false;
+    if (!ACTIVE_SUBSCRIPTION_STATUSES.has(subscription.status || "")) return false;
+    if (invoice?.billing_reason === "subscription_cycle") return false;
+    return amountMinorFromSale({ subscription, invoice, session }) > 0;
 }
 
 function supabaseConfig() {
@@ -128,6 +166,13 @@ async function patchUsersForSubscription(payload) {
     return [...rowsById.values()];
 }
 
+async function findBalanceAdminId() {
+    const rows = await supabaseRequest(
+        `users?select=id&email=eq.${encodeURIComponent(BALANCE_ADMIN_EMAIL)}&limit=1`
+    );
+    return Array.isArray(rows) ? rows[0]?.id || null : null;
+}
+
 async function mirrorStripeSubscription(payload) {
     const rows = await supabaseRequest(
         "stripe_subscription_links?on_conflict=stripe_subscription_id",
@@ -157,7 +202,7 @@ async function syncLinkedLeadStages(userIds, status) {
 }
 
 async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscription, invoice, session } = {}) {
-    if (!subscription) return;
+    if (!subscription) return null;
 
     const customerId = normalizeStripeId(subscription.customer || invoice?.customer || session?.customer);
     const customer = await retrieveCustomer(stripe, customerId);
@@ -202,7 +247,7 @@ async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscripti
         },
     };
 
-    if (!payload.stripe_customer_id || !payload.stripe_subscription_id) return;
+    if (!payload.stripe_customer_id || !payload.stripe_subscription_id) return null;
 
     const mirrorRow = await mirrorStripeSubscription(payload);
     const patchedUsers = await patchUsersForSubscription(payload);
@@ -221,6 +266,175 @@ async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscripti
 
     await syncLinkedLeadStages(userIds, status);
     console.log(`[stripe-sync] ${stripeEvent.type} subscription ${subscription.id} -> ${patchedUsers.length} user row(s)`);
+    return {
+        payload,
+        mirrorRow,
+        patchedUsers,
+        userIds,
+        customer,
+        metadata,
+    };
+}
+
+function saleCustomerName({ syncResult, session } = {}) {
+    const user = syncResult?.patchedUsers?.[0] || {};
+    const metadata = syncResult?.metadata || {};
+    const email = cleanEmail(syncResult?.payload?.email || "");
+    return user.name
+        || metadata.name
+        || metadata.client_name
+        || metadata.profile_name
+        || session?.customer_details?.name
+        || syncResult?.customer?.name
+        || (email ? email.split("@")[0] : "New client");
+}
+
+function buildSubscriptionSaleAlert({ adminId, syncResult, stripeEvent, subscription, invoice, session } = {}) {
+    const payload = syncResult?.payload || {};
+    const amountMinor = amountMinorFromSale({ subscription, invoice, session });
+    const currency = currencyFromSale({ subscription, invoice, session });
+    const amountDisplay = formatMoney(amountMinor, currency);
+    const client = syncResult?.patchedUsers?.[0] || {};
+    const clientId = payload.user_id || client.id || null;
+    const clientName = saleCustomerName({ syncResult, session });
+    const email = cleanEmail(payload.email || session?.customer_details?.email || session?.customer_email || invoice?.customer_email || "");
+    const idempotencyKey = `subscription_sale:${subscription.id}`;
+    const plan = payload.subscription_plan || "starter_weekly";
+    const createdAt = new Date().toISOString();
+
+    return {
+        idempotency_key: idempotencyKey,
+        client_id: clientId,
+        client_name: clientName,
+        coach_id: adminId,
+        alert_type: "subscription_sale",
+        priority: "urgent",
+        title: `New sale: ${clientName}`,
+        description: `${clientName} bought ${STARTER_COACHING_PRODUCT} (${amountDisplay}/week).`,
+        suggested_message: null,
+        status: "pending",
+        data: {
+            subtype: "starter_coaching_sale",
+            sale_made: true,
+            product_name: STARTER_COACHING_PRODUCT,
+            amount_minor: amountMinor,
+            amount_display: amountDisplay,
+            currency,
+            recurring_interval: "week",
+            checkins_per_week: "1",
+            email: email || null,
+            user_id: clientId,
+            lifecycle: { stage: "paying" },
+            subscription_status: payload.subscription_status || subscription.status || null,
+            subscription_plan: plan,
+            stripe_customer_id: payload.stripe_customer_id || normalizeStripeId(subscription.customer),
+            stripe_subscription_id: subscription.id,
+            stripe_price_id: payload.stripe_price_id || firstSubscriptionPriceId(subscription) || null,
+            stripe_event_id: stripeEvent.id,
+            stripe_event_type: stripeEvent.type,
+            checkout_session_id: session?.id || null,
+            invoice_id: invoice?.id || null,
+            payment_intent_id: payload.latest_payment_intent_id || normalizeStripeId(invoice?.payment_intent || session?.payment_intent),
+            needs_you_required: true,
+            needs_you_reason: "subscription_sale",
+            needs_you_reasons: ["subscription_sale", "starter_coaching_sale"],
+            operator_queue: "needs_you",
+            codex_review: {
+                decision: "needs_you_subscription_sale",
+                queue: "needs_you",
+                reason: "Stripe confirmed a new paid Starter Coaching subscription.",
+                needs_shannon_approval: true,
+                source: "stripe-webhook",
+                reviewed_at: createdAt,
+            },
+        },
+    };
+}
+
+async function findCoachAlertByIdempotencyKey(idempotencyKey) {
+    if (!idempotencyKey) return null;
+    const rows = await supabaseRequest(
+        `coach_alerts?select=id&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
+    );
+    return Array.isArray(rows) ? rows[0] || null : null;
+}
+
+function isUniqueViolation(error) {
+    return /23505|duplicate key value violates unique|coach_alerts_idempotency_key_unique/i.test(error?.message || "");
+}
+
+async function insertSubscriptionSaleAlert(row) {
+    const existing = await findCoachAlertByIdempotencyKey(row.idempotency_key).catch(() => null);
+    if (existing?.id) return { alert: existing, deduped: true };
+
+    try {
+        const rows = await supabaseRequest("coach_alerts", {
+            method: "POST",
+            prefer: "return=representation",
+            body: row,
+        });
+        const inserted = Array.isArray(rows) ? rows[0] : null;
+        return { alert: inserted, deduped: false };
+    } catch (error) {
+        if (!isUniqueViolation(error)) throw error;
+        const raced = await findCoachAlertByIdempotencyKey(row.idempotency_key).catch(() => null);
+        return { alert: raced, deduped: true };
+    }
+}
+
+async function createSubscriptionSaleNeedsYouAlert({ syncResult, stripeEvent, subscription, invoice, session } = {}) {
+    if (!isInitialPaidSubscriptionSale({ subscription, invoice, session })) {
+        return { skipped: "not_initial_paid_subscription_sale" };
+    }
+
+    const adminId = await findBalanceAdminId();
+    if (!adminId) return { skipped: "no_balance_admin" };
+
+    const row = buildSubscriptionSaleAlert({ adminId, syncResult, stripeEvent, subscription, invoice, session });
+    const result = await insertSubscriptionSaleAlert(row);
+    return { ...result, row };
+}
+
+async function sendSaleNeedsYouNotification({ alert, row } = {}) {
+    if (!alert?.id || !row?.coach_id) return;
+    await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            recipientId: row.coach_id,
+            senderId: row.client_id || row.data?.stripe_customer_id || row.idempotency_key,
+            senderName: row.title,
+            messageText: row.description,
+            type: "sale_made",
+            alertId: alert.id,
+            clientId: row.client_id || "",
+            clientName: row.client_name || "",
+            lifecycleStage: "paying",
+            actionRequired: true,
+            actionType: "subscription_sale",
+            actionLabel: "New sale",
+            actionReason: "Stripe confirmed a paid coaching subscription.",
+            collapseKey: row.idempotency_key,
+        }),
+    }).catch(error => console.warn("[stripe-sync] sale push failed:", error.message));
+}
+
+async function createSaleAlertAndNotify(context, args) {
+    try {
+        const result = await createSubscriptionSaleNeedsYouAlert(args);
+        if (result?.alert?.id && !result.deduped) {
+            console.log(`[stripe-sync] sale alert ${result.alert.id} for subscription ${args.subscription?.id}`);
+            if (context?.waitUntil) {
+                context.waitUntil(sendSaleNeedsYouNotification(result));
+            } else {
+                await sendSaleNeedsYouNotification(result);
+            }
+        }
+        return result;
+    } catch (error) {
+        console.error("[stripe-sync] sale alert failed:", error.message);
+        return { skipped: "sale_alert_failed", error: error.message };
+    }
 }
 
 export default async (request, context) => {
@@ -263,7 +477,8 @@ export default async (request, context) => {
         if (stripeEvent.type === 'invoice.paid') {
             const invoice = stripeEvent.data.object;
             const subscription = await retrieveSubscriptionForInvoice(stripe, invoice);
-            await syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscription, invoice });
+            const syncResult = await syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscription, invoice });
+            await createSaleAlertAndNotify(context, { syncResult, stripeEvent, subscription, invoice });
 
             const amount = invoice.amount_paid / 100;
             const customerEmail = invoice.customer_email;
@@ -307,7 +522,8 @@ export default async (request, context) => {
 
             if (session.mode === "subscription" || session.subscription) {
                 const subscription = await retrieveSubscriptionForSession(stripe, session);
-                await syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscription, session });
+                const syncResult = await syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscription, session });
+                await createSaleAlertAndNotify(context, { syncResult, stripeEvent, subscription, session });
             }
 
             // Handle Challenge Pass purchase

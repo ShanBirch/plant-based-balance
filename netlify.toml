@@ -393,9 +393,10 @@
   schedule = "*/5 * * * *"
 
 # Client/lead manager - routes permanent people, media, AI suspicion,
-# confused replies, and missing context into Needs You.
+# confused replies, and missing context into Needs You. Runs every 5 minutes
+# so hot Starter Coaching handoffs do not sit for the old 30-minute window.
 [functions."client-lead-manager"]
-  schedule = "*/30 * * * *"
+  schedule = "*/5 * * * *"
 
 # Support Radar - daily human-support pass across app activity + chats.
 # Creates only high-signal Needs You check-ins, capped and deduped.
@@ -475,8 +476,15 @@
 
 [[redirects]]
   from = "/plantbasedswitch"
-  to = "/plantbasedswitch.html"
-  status = 200
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/plantbasedswitch.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
 
 [[redirects]]
   from = "/bio"
@@ -510,18 +518,151 @@
 
 [[redirects]]
   from = "/free-challenge"
-  to = "/transform-challenge.html"
-  status = 200
+  to = "/coaching.html"
+  status = 301
+  force = true
 
 [[redirects]]
   from = "/vegan-challenge"
-  to = "/transform-challenge.html"
+  to = "/coaching.html"
   status = 301
   force = true
 
 [[redirects]]
   from = "/vegan-challenge.html"
-  to = "/transform-challenge.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/transform-challenge"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/transform-challenge.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/switch28"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/switch28.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/access-cortisol"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/access-cortisol.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/access-estrogen"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/access-estrogen.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-bands"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-bands.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-bodyweight"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-bodyweight.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-gym"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-gym.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-pilates"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-pilates.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-recovery"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-recovery.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-strength"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-strength.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-yoga"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-yoga.html"
+  to = "/coaching.html"
   status = 301
   force = true
 

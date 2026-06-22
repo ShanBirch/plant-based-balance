@@ -7351,7 +7351,7 @@
             new: { label: 'New', color: '#94a3b8', hint: 'cold lead' },
             qualifying: { label: 'Qualifying', color: '#3b82f6', hint: 'learning fit' },
             invited: { label: 'Invited', color: '#f59e0b', hint: 'offer made' },
-            in_app: { label: 'In app', color: '#10b981', hint: 'free challenge' },
+            in_app: { label: 'In app', color: '#10b981', hint: 'app/coaching' },
             paying: { label: 'Paying', color: '#16a34a', hint: 'customer' },
             churned: { label: 'Churned', color: '#ef4444', hint: 'opted out' },
         };
@@ -7446,7 +7446,7 @@
                 return { label: 'Invite sent', detail: 'watch for signup or objection', bg: '#eff6ff', color: '#1d4ed8' };
             }
             if (effectiveStage === 'in_app') {
-                return { label: 'In app', detail: 'free challenge, build day 30 pitch', bg: '#ecfdf5', color: '#047857' };
+            return { label: 'In app', detail: 'app/coaching active', bg: '#ecfdf5', color: '#047857' };
             }
             if (effectiveStage === 'paying') {
                 return { label: 'Paying', detail: 'coach and retain', bg: '#dcfce7', color: '#166534' };
@@ -10671,7 +10671,7 @@
         let currentNeedsYouView = 'all';
         let needsYouCounts = { all: 0 };
         const NEEDS_YOU_TABS = ['all'];
-        const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'general_idea', 'onboarding_day_30', 'weekly_checkin', 'first_workout'];
+        const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'general_idea', 'onboarding_day_30', 'weekly_checkin', 'first_workout', 'subscription_sale'];
         const CLIENT_MANAGER_REVIEW_MARKERS = [
             'balance-combined-dm-manager',
             'balance-lead-client-manager',
@@ -12334,6 +12334,12 @@
             if (!alert || alert.status !== 'pending') return false;
             if (!NEEDS_YOU_ALERT_TYPES.includes(alert.alert_type)) return false;
             if (isCoachActionReceipt(alert)) return true;
+            if (alert.alert_type === 'subscription_sale') {
+                const data = alert.data || {};
+                return data.sale_made === true
+                    || data.needs_you_reason === 'subscription_sale'
+                    || data.operator_queue === 'needs_you';
+            }
             if (alert.alert_type === 'weekly_checkin') return isCoachCheckinApprovalDraft(alert) || isOverdueManualIgCheckin(alert);
             if (alert.alert_type === 'first_workout') {
                 return needsYouHasSuggestedDraft(alert);
@@ -12462,6 +12468,10 @@
                 return;
             }
             if (alert?.alert_type === 'first_workout' && needsYouHasOperatorWork(alert)) {
+                openNeedsYouForAlert(alert, 'all');
+                return;
+            }
+            if (alert?.alert_type === 'subscription_sale' && needsYouHasOperatorWork(alert)) {
                 openNeedsYouForAlert(alert, 'all');
                 return;
             }
@@ -15110,7 +15120,8 @@
             onboarding_day_7: 'Week 1', onboarding_day_14: 'Week 2', onboarding_day_30: 'Month 1',
             morning_pulse: 'Morning',
             first_workout: 'First Workout', weekly_checkin: 'Weekly', weekly_digest: 'Digest',
-            plateau_reassess: 'Plateau', badge_earned: 'Badge', follow_up_review: 'Needs Attention'
+            plateau_reassess: 'Plateau', badge_earned: 'Badge', follow_up_review: 'Needs Attention',
+            subscription_sale: 'Sale'
         };
         const ALERT_TYPE_ICONS = {
             inactive_client: '😴', unread_message: '💬', incoming_dm: '📨',
@@ -15126,6 +15137,7 @@
             first_workout: '🏁', weekly_checkin: '📬', weekly_digest: '📰',
             plateau_reassess: '🚧', badge_earned: '🏅'
         };
+        ALERT_TYPE_ICONS.subscription_sale = '$';
         const PRIORITY_ORDER = ['urgent', 'high', 'medium', 'low'];
         const PRIORITY_LABELS = { urgent: 'Urgent', high: 'High priority', medium: 'Medium priority', low: 'Low priority' };
 
@@ -15136,6 +15148,7 @@
         //   20-30  — watch-signals and proactive ideas that can wait
         //   40     — coach-facing planning artifacts (weekly_digest)
         const ALERT_TYPE_URGENCY = {
+            subscription_sale:    2,
             incoming_dm:         1,   // real client message waiting — highest of all
             win_to_celebrate:    9,   // Bigger win moments, not routine PBs
             first_workout:       3,
@@ -18416,7 +18429,7 @@
             const warning = getChallengeOfferWarningInfo(alert);
             if (!warning) return '';
             const route = warning.routeLabel ? ` (${warning.routeLabel})` : '';
-            const detail = warning.reason || 'This draft appears to offer the free 30-day challenge or send a challenge link.';
+                const detail = warning.reason || 'This draft appears to offer coaching or send a coaching link.';
             return `<div class="challenge-offer-warning">
                 <span class="challenge-offer-warning-dot" aria-hidden="true"></span>
                 <div>
