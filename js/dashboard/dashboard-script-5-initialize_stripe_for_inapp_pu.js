@@ -13255,6 +13255,8 @@ async function renderMovementView() {
     const gridContainer = document.getElementById('movement-grid-container');
     gridContainer.innerHTML = '';
 
+    // Workout Duel is retired and should not render in Movement.
+    if (false) {
     // Add 'Workout Duel' Card - challenge a friend (top of grid, purple)
     const duelDiv = document.createElement('div');
     duelDiv.onclick = () => { window.location.href = '/workout-duel.html'; };
@@ -13289,6 +13291,7 @@ async function renderMovementView() {
             }
         } catch(e) { /* silent - badge is enhancement only */ }
     })();
+    }
 
     // Add 'Coach's Workouts This Week' Card - everyone sees Coach Shan's sessions and can repeat one
     const weekDiv = document.createElement('div');
@@ -13415,8 +13418,6 @@ async function renderMovementView() {
     gridContainer.appendChild(timerDiv);
 
     // 'Your Progress' card removed - now on home page
-
-    // Removed - Workout Duel card moved to top of grid
 
     // Removed other workout cards - users now browse via Workout Library
     // Object.keys(WORKOUT_DB).forEach(key => {
