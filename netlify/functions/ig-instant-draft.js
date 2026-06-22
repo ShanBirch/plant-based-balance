@@ -200,6 +200,130 @@ function hoursSinceIso(value, nowMs = Date.now()) {
     return (nowMs - ts) / (60 * 60 * 1000);
 }
 
+function cleanPromptString(value, max = 1000) {
+    return String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
+}
+
+function normalizeIgHandle(value) {
+    return cleanPromptString(value, 160).replace(/^@+/, '').replace(/\s+/g, '').toLowerCase();
+}
+
+function isExerciseCommentContext(context = {}) {
+    return /exercise|form|workout/i.test(String(context.source_lane || context.funnel || context.content_type || ''))
+        || Boolean(context.exercise);
+}
+
+function isScienceCommentContext(context = {}) {
+    return /science|study|paper|research/i.test(String(context.source_lane || context.funnel || context.topic || context.paper_title || ''));
+}
+
+function buildCommentResourceContextFromFulfillment(row = {}) {
+    const rawPayload = safeObject(row.raw_payload);
+    const leadContext = safeObject(rawPayload.lead_context);
+    const automation = safeObject(rawPayload.automation);
+    const sourcePost = safeObject(rawPayload.source_post);
+    const sourceLane = cleanPromptString(
+        leadContext.source_lane
+        || sourcePost.source_lane
+        || (sourcePost.exercise ? 'exercise_comment_flow' : '')
+        || (sourcePost.paper_title || sourcePost.paper_authors ? 'science_comment_resource' : 'comment_resource'),
+        120
+    );
+    const funnel = cleanPromptString(
+        leadContext.funnel
+        || sourcePost.funnel
+        || (/exercise/i.test(sourceLane) ? 'exercise_form_fix' : '')
+        || (/science|study|paper/i.test(sourceLane) ? 'free_challenge' : '')
+        || 'comment_resource',
+        120
+    );
+    const status = cleanPromptString(row.status || leadContext.status, 40);
+    return {
+        source_lane: sourceLane,
+        funnel,
+        link_sent: leadContext.link_sent === true || ['sent', 'dry_run'].includes(status) || Boolean(row.private_reply_id),
+        link_sent_via: leadContext.link_sent_via || 'instagram_private_reply',
+        status,
+        fulfillment_id: row.id || leadContext.fulfillment_id || null,
+        automation_id: row.automation_id || leadContext.automation_id || automation.id || null,
+        post_slug: cleanPromptString(leadContext.post_slug || automation.post_slug || sourcePost.slug, 180) || null,
+        post_title: cleanPromptString(leadContext.post_title || sourcePost.title, 240) || null,
+        topic: cleanPromptString(leadContext.topic || sourcePost.topic, 240) || null,
+        headline: cleanPromptString(leadContext.headline || sourcePost.headline, 240) || null,
+        content_type: cleanPromptString(leadContext.content_type || sourcePost.content_type, 120) || null,
+        exercise: cleanPromptString(leadContext.exercise || sourcePost.exercise, 180) || null,
+        main_mistake: cleanPromptString(leadContext.main_mistake || sourcePost.main_mistake, 500) || null,
+        context_summary: cleanPromptString(leadContext.context_summary || sourcePost.context_summary, 900) || null,
+        reply_guidance: cleanPromptString(leadContext.reply_guidance || sourcePost.reply_guidance, 1200) || null,
+        suggested_next_question: cleanPromptString(leadContext.suggested_next_question || sourcePost.suggested_next_question, 300) || null,
+        full_script: cleanPromptString(leadContext.full_script || sourcePost.full_script, 3000) || null,
+        coaching_points: Array.isArray(leadContext.coaching_points)
+            ? leadContext.coaching_points
+            : (Array.isArray(sourcePost.coaching_points) ? sourcePost.coaching_points : []),
+        paper_title: cleanPromptString(leadContext.paper_title || sourcePost.paper_title, 300) || null,
+        paper_authors: cleanPromptString(leadContext.paper_authors || sourcePost.paper_authors, 240) || null,
+        paper_year: leadContext.paper_year || sourcePost.paper_year || null,
+        keyword: cleanPromptString(row.matched_keyword || leadContext.keyword || automation.keyword, 120) || null,
+        landing_url: cleanPromptString(row.landing_url || leadContext.landing_url, 800) || null,
+        private_reply_id: cleanPromptString(row.private_reply_id || leadContext.private_reply_id, 180) || null,
+        private_reply_message: cleanPromptString(row.private_reply_message || leadContext.private_reply_message, 900) || null,
+        ig_media_id: cleanPromptString(row.ig_media_id || leadContext.ig_media_id, 180) || null,
+        comment_id: cleanPromptString(row.comment_id || leadContext.comment_id, 180) || null,
+        from_ig_user_id: cleanPromptString(row.from_ig_user_id || leadContext.from_ig_user_id, 180) || null,
+        from_username: normalizeIgHandle(row.from_username || leadContext.from_username),
+        sent_at: row.sent_at || leadContext.sent_at || null,
+        created_at: row.created_at || leadContext.recorded_at || null,
+        next_step: cleanPromptString(leadContext.next_step || sourcePost.next_step, 600) || null,
+    };
+}
+
+function buildCommentResourceHandoffBlock(context = {}) {
+    if (!context || typeof context !== 'object' || !context.link_sent) return '';
+    const topic = context.exercise || context.topic || context.headline || context.post_title || context.post_slug || 'the reel';
+    const cueList = Array.isArray(context.coaching_points) && context.coaching_points.length
+        ? context.coaching_points.map(point => `  - ${point}`).join('\n')
+        : '';
+    if (isExerciseCommentContext(context)) {
+        return `
+
+EXERCISE COMMENT-TO-DM HANDOFF:
+- ${context.from_username ? `@${context.from_username}` : 'This lead'} recently commented "${context.keyword || 'the keyword'}" on Shannon's exercise reel about ${topic}.
+- They have already been sent the private reply/checklist by IG private reply${context.sent_at ? ` at ${context.sent_at}` : ''}${context.landing_url ? `: ${context.landing_url}` : '.'}
+- Do not ask what this is about if their reply is short or vague. Treat replies like "yes", "send it", "back", "hams", "balance", "form", or "what do you mean" as replies to this exercise comment flow.
+- Continue the conversation from the reel topic. Do not reveal automation, tracking, source payloads, or that a comment-flow handoff exists.
+${context.context_summary ? `- Reel context: ${context.context_summary}` : ''}
+${context.main_mistake ? `- Main mistake Shannon was fixing: ${context.main_mistake}` : ''}
+${cueList ? `- Coaching cues from the reel:\n${cueList}` : ''}
+${context.reply_guidance ? `- Reply guidance: ${context.reply_guidance}` : ''}
+${context.suggested_next_question ? `- Useful next question if they need help: ${context.suggested_next_question}` : ''}
+${context.full_script ? `- Reel script context: ${truncate(context.full_script, 900)}` : ''}`;
+    }
+    if (!isScienceCommentContext(context)) {
+        return `
+
+COMMENT-TO-DM HANDOFF:
+- ${context.from_username ? `@${context.from_username}` : 'This lead'} recently commented "${context.keyword || 'the keyword'}" on Shannon's reel about ${topic}.
+- They have already been sent the private reply${context.sent_at ? ` at ${context.sent_at}` : ''}${context.landing_url ? `: ${context.landing_url}` : '.'}
+- Do not ask what this is about if their reply is short or vague. Continue from this comment-flow context.
+- Do not reveal automation, tracking, source payloads, or that a comment-flow handoff exists.
+${context.context_summary ? `- Context: ${context.context_summary}` : ''}
+${context.reply_guidance ? `- Reply guidance: ${context.reply_guidance}` : ''}
+- Next step: ${context.next_step || 'Use the comment-flow context first, then continue naturally.'}`;
+    }
+    const paper = [context.paper_title, context.paper_year].filter(Boolean).join(', ');
+    return `
+
+SCIENCE COMMENT RESOURCE HANDOFF:
+- ${context.from_username ? `@${context.from_username}` : 'This lead'} recently commented "${context.keyword || 'the keyword'}" on Shannon's science reel about ${topic}.
+- They have already been sent the resource/study link by IG private reply${context.sent_at ? ` at ${context.sent_at}` : ''}: ${context.landing_url || '(link not stored)'}.
+- Do not ask if they want the resource link again unless they say they did not get it. If they ask for the study/resource, acknowledge it was sent and resend the same link only if useful.
+- Treat this as a normal free challenge lead path now, but their first intent was education/trust, not automatic signup.
+- If they reply with thanks, curiosity, or a question about the paper, answer the science point briefly and ask one practical bridge question about training, food, weight loss, consistency, or the behaviour the reel discussed.
+${paper ? `- Paper/resource: ${paper}.` : ''}
+${context.context_summary ? `- Context: ${context.context_summary}` : ''}
+- Next step: ${context.next_step || 'Use the resource topic as context, then continue the normal free challenge lead path when they show help/start intent.'}`;
+}
+
 function isHumanAgentWindow(value) {
     const hours = hoursSinceIso(value);
     return hours !== null && hours > 24 && hours <= 24 * 7;
@@ -4338,6 +4462,8 @@ exports._test = {
     suppressExistingClientSignupLinkHandoffInDraftChunks,
     isExistingClientThread,
     buildChallengeNextStepBlock,
+    buildCommentResourceContextFromFulfillment,
+    buildCommentResourceHandoffBlock,
     buildEmptyMediaDraftFallbackChunks,
     buildCurrentTurnAnchorBlock,
     isStoryOpenerConfusionMessage,

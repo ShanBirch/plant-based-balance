@@ -35,6 +35,9 @@ const {
     buildGraphSubscriberId,
     legacyGraphSubscriberIds,
 } = require('./_lib/meta-ig-accounts');
+const {
+    maybeFulfillCommentAutomation,
+} = require('./_lib/meta-ig-comment-automation');
 
 const VERIFY_TOKEN = process.env.META_IG_WEBHOOK_VERIFY_TOKEN || process.env.META_WEBHOOK_VERIFY_TOKEN || '';
 const APP_SECRET = process.env.META_IG_APP_SECRET || process.env.META_APP_SECRET || '';
@@ -505,6 +508,14 @@ exports.handler = async (event = {}) => {
             const interaction = isContentInteraction ? await upsertInteraction(igEvent, contentItem) : null;
             let threadResult = { thread: null, message: null };
             let draft = { dispatched: false };
+            let commentFulfillment = { attempted: false };
+            if (igEvent.type === 'comment') {
+                commentFulfillment = await maybeFulfillCommentAutomation({
+                    event: igEvent,
+                    contentItem,
+                    interaction,
+                });
+            }
             if (igEvent.type === 'story_reply' || igEvent.type === 'message') {
                 threadResult = await upsertGraphThread(igEvent, contentItem);
                 if (threadResult.message) {
@@ -535,6 +546,7 @@ exports.handler = async (event = {}) => {
                 message_id: threadResult.message?.id || null,
                 message_deduped: !!threadResult.message?.deduped,
                 draft_dispatched: !!draft.dispatched,
+                comment_fulfillment: commentFulfillment,
             });
         } catch (err) {
             console.error('[meta-ig-webhook] event failed:', err);
