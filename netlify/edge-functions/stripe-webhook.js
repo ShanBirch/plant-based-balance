@@ -8,6 +8,10 @@ function cleanEmail(email) {
     return String(email || "").trim();
 }
 
+function cleanString(value, max = 1000) {
+    return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
 function normalizeStripeId(value) {
     if (!value) return "";
     if (typeof value === "string") return value;
@@ -156,6 +160,53 @@ async function syncLinkedLeadStages(userIds, status) {
     });
 }
 
+async function recordStripeGrowthOutcome({ payload, mirrorRow, userIds, stripeEvent, status }) {
+    const isActive = ACTIVE_SUBSCRIPTION_STATUSES.has(status);
+    const eventType = isActive ? "subscription_started" : "subscription_canceled";
+    const eventKey = isActive
+        ? `stripe_subscription:${payload.stripe_subscription_id}:subscription_started`
+        : `stripe_subscription:${payload.stripe_subscription_id}:subscription_canceled:${stripeEvent.id || status}`;
+    const now = new Date().toISOString();
+    try {
+        await supabaseRequest("growth_outcome_events?on_conflict=event_key", {
+            method: "POST",
+            prefer: "resolution=merge-duplicates,return=minimal",
+            body: [{
+                event_key: eventKey,
+                event_type: eventType,
+                event_family: "revenue",
+                event_status: cleanString(status, 80) || "unknown",
+                source_system: "stripe_webhook",
+                email: payload.email || null,
+                email_key: payload.email_key || null,
+                client_id: userIds?.[0] || payload.user_id || null,
+                stripe_subscription_link_id: mirrorRow?.id || null,
+                score: isActive ? 100 : -30,
+                score_breakdown: {
+                    default_score: isActive ? 100 : -30,
+                    score: isActive ? 100 : -30,
+                    reason: status,
+                },
+                attribution: {
+                    stripe_customer_id: payload.stripe_customer_id || null,
+                    stripe_subscription_id: payload.stripe_subscription_id || null,
+                    stripe_price_id: payload.stripe_price_id || null,
+                    subscription_plan: payload.subscription_plan || null,
+                    last_event_type: payload.last_event_type || stripeEvent.type || null,
+                },
+                raw_payload: {
+                    stripe_event_id: stripeEvent.id || null,
+                    raw_summary: payload.raw_summary || {},
+                    patched_user_ids: userIds || [],
+                },
+                occurred_at: now,
+            }],
+        });
+    } catch (error) {
+        console.warn("[stripe-sync] growth outcome log failed:", error.message || error);
+    }
+}
+
 async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscription, invoice, session } = {}) {
     if (!subscription) return;
 
@@ -220,6 +271,7 @@ async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscripti
     }
 
     await syncLinkedLeadStages(userIds, status);
+    await recordStripeGrowthOutcome({ payload, mirrorRow, userIds, stripeEvent, status });
     console.log(`[stripe-sync] ${stripeEvent.type} subscription ${subscription.id} -> ${patchedUsers.length} user row(s)`);
 }
 
