@@ -28,6 +28,7 @@ const {
     normalizeCoachDraftText,
     sanitizeVisibleOutboundDmText,
     fireCoachEditAnalysis,
+    isAlwaysNeedsYouPerson,
 } = require('./_lib/client-context');
 
 async function supabase(path, options = {}) {
@@ -177,6 +178,77 @@ function normalizeTimingSuggestion(value) {
 }
 
 const IN_APP_DM_ALERT_TYPES = ['incoming_dm', 'unread_message'];
+const PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE = 'Permanent Needs You contacts require Shannon approval before sending.';
+const AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES = new Set([
+    'auto_send',
+    'scheduled_worker',
+    'send_later',
+    'balance_lead_client_manager_cron',
+]);
+
+function isAutomatedPermanentNeedsYouSendSource(source, data = {}) {
+    const normalized = String(source || '').trim().toLowerCase();
+    const scheduledVia = String(data.scheduled_via || '').trim().toLowerCase();
+    const timingChoiceSource = String(data.reply_timing_choice?.source || '').trim().toLowerCase();
+    const timingSuggestionSource = String(data.reply_timing_suggestion?.source || '').trim().toLowerCase();
+    return AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES.has(normalized)
+        || scheduledVia === 'auto_send'
+        || timingChoiceSource === 'auto_send'
+        || timingSuggestionSource === 'auto_send';
+}
+
+function isPermanentNeedsYouAlert(alert = {}) {
+    const data = alert.data || {};
+    const needsYouReasons = Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : [];
+    if (data.permanent_needs_you_draft_only === true) return true;
+    if (data.needs_you_reason === 'always_needs_you_person') return true;
+    if (needsYouReasons.includes('always_needs_you_person')) return true;
+    return isAlwaysNeedsYouPerson({
+        name: alert.client_name || data.client_name,
+        client_name: alert.client_name || data.client_name,
+        profile_name: data.profile_name || data.ig_profile_name,
+        ig_username: data.ig_username,
+        username: data.username,
+        handle: data.handle,
+        custom_data: data.custom_data || data.instagram_graph || {},
+    });
+}
+
+function shouldBlockPermanentNeedsYouAutomatedSend(alert = {}, source = '') {
+    return isAutomatedPermanentNeedsYouSendSource(source, alert.data || {})
+        && isPermanentNeedsYouAlert(alert);
+}
+
+async function stampPermanentNeedsYouAutomatedSendBlock(alert = {}) {
+    if (!alert.id) return;
+    const blockedAt = new Date().toISOString();
+    const data = {
+        ...(alert.data || {}),
+        client_manager_review_required: true,
+        needs_you_required: true,
+        operator_queue: 'needs_you',
+        needs_you_reason: 'always_needs_you_person',
+        needs_you_reasons: [
+            ...new Set([
+                ...(Array.isArray(alert.data?.needs_you_reasons) ? alert.data.needs_you_reasons : []),
+                'always_needs_you_person',
+            ]),
+        ],
+        permanent_needs_you_draft_only: true,
+        last_send_error: PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE,
+        last_send_error_code: 'permanent_needs_you_automated_send_blocked',
+        last_send_error_at: blockedAt,
+    };
+    try {
+        await supabase(`coach_alerts?id=eq.${encodeURIComponent(alert.id)}`, {
+            method: 'PATCH',
+            body: { data },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[send-coach-reply] permanent Needs You block stamp failed:', err.message);
+    }
+}
 
 async function clearInAppHomeNotifications({ alertId, coachId, clientId, sentAt, source }) {
     if (!coachId || !clientId) return { nudgesRead: 0, siblingAlertsCleared: 0 };
@@ -259,7 +331,7 @@ exports.handler = async (event) => {
     let alert;
     try {
         const rows = await supabase(
-            `coach_alerts?select=id,client_id,coach_id,status,data,alert_type&id=eq.${alertId}&limit=1`
+            `coach_alerts?select=id,client_id,client_name,coach_id,status,data,alert_type&id=eq.${alertId}&limit=1`
         );
         alert = rows[0];
     } catch (e) {
@@ -277,6 +349,14 @@ exports.handler = async (event) => {
         return { statusCode: 409, body: JSON.stringify({
             error: 'Alert already actioned',
             status: alert.status,
+        }) };
+    }
+    if (shouldBlockPermanentNeedsYouAutomatedSend(alert, source)) {
+        await stampPermanentNeedsYouAutomatedSendBlock(alert);
+        return { statusCode: 409, body: JSON.stringify({
+            error: PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE,
+            code: 'permanent_needs_you_automated_send_blocked',
+            source,
         }) };
     }
 
@@ -433,4 +513,10 @@ exports.handler = async (event) => {
             ...cleanup,
         }),
     };
+};
+
+exports._test = {
+    isAutomatedPermanentNeedsYouSendSource,
+    isPermanentNeedsYouAlert,
+    shouldBlockPermanentNeedsYouAutomatedSend,
 };

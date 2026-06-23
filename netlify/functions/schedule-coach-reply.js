@@ -25,7 +25,11 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-const { normalizeCoachDraftText, sanitizeVisibleOutboundDmText } = require('./_lib/client-context');
+const {
+    normalizeCoachDraftText,
+    sanitizeVisibleOutboundDmText,
+    isAlwaysNeedsYouPerson,
+} = require('./_lib/client-context');
 
 // Hard floor so the worker has a fair chance of firing on time, hard ceiling
 // so a typo in the picker UI can't accidentally schedule something a year out.
@@ -35,6 +39,7 @@ const IN_APP_DM_ALERT_TYPES = ['incoming_dm', 'unread_message'];
 const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm', 'follow_up_review'];
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const HUMAN_AGENT_MANUAL_ONLY_MESSAGE = 'Meta Human Agent 7-day replies must be sent by a human agent, so Send Later is disabled for this draft.';
+const PERMANENT_NEEDS_YOU_SEND_LATER_MESSAGE = 'Permanent Needs You contacts require Shannon approval, so Send Later is disabled for this draft.';
 
 async function supabase(path, options = {}) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -116,6 +121,63 @@ function requiresHumanAgentManualSend(alert) {
         || data.last_inbound_at
         || graph.last_inbound_at;
     return isHumanAgentWindow(lastInboundAt);
+}
+
+function isPermanentNeedsYouAlert(alert = {}) {
+    const data = safeObject(alert.data);
+    const graph = safeObject(data.instagram_graph);
+    const customData = safeObject(data.custom_data);
+    const needsYouReasons = Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : [];
+    if (data.permanent_needs_you_draft_only === true) return true;
+    if (data.needs_you_reason === 'always_needs_you_person') return true;
+    if (needsYouReasons.includes('always_needs_you_person')) return true;
+    return isAlwaysNeedsYouPerson({
+        name: alert.client_name || data.client_name || data.profile_name || data.ig_profile_name,
+        client_name: alert.client_name || data.client_name,
+        profile_name: data.profile_name || data.ig_profile_name || graph.profile_name || customData.profile_name,
+        ig_username: data.ig_username || graph.ig_username || graph.username || customData.ig_username,
+        username: data.username || graph.username || customData.username,
+        handle: data.handle || customData.handle,
+        custom_data: {
+            ...customData,
+            instagram_graph: {
+                ...safeObject(customData.instagram_graph),
+                ...graph,
+            },
+        },
+    });
+}
+
+async function stampPermanentNeedsYouScheduleBlock(alert = {}) {
+    if (!alert.id) return;
+    const blockedAt = new Date().toISOString();
+    const data = safeObject(alert.data);
+    const nextData = {
+        ...data,
+        client_manager_review_required: true,
+        needs_you_required: true,
+        operator_queue: 'needs_you',
+        needs_you_reason: 'always_needs_you_person',
+        needs_you_reasons: [
+            ...new Set([
+                ...(Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : []),
+                'always_needs_you_person',
+            ]),
+        ],
+        permanent_needs_you_draft_only: true,
+        last_send_error: PERMANENT_NEEDS_YOU_SEND_LATER_MESSAGE,
+        last_send_error_code: 'permanent_needs_you_send_later_blocked',
+        last_send_error_at: blockedAt,
+    };
+    try {
+        await supabase(`coach_alerts?id=eq.${encodeURIComponent(alert.id)}`, {
+            method: 'PATCH',
+            body: { data: nextData },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[schedule-coach-reply] permanent Needs You block stamp failed:', err.message);
+    }
 }
 
 async function clearInAppPendingSiblingsAfterSchedule({ alertId, coachId, clientId, resolvedAt, source }) {
@@ -265,7 +327,7 @@ exports.handler = async (event) => {
     let alert;
     try {
         const rows = await supabase(
-            `coach_alerts?select=id,status,data,coach_id,client_id,suggested_message&id=eq.${alertId}&limit=1`
+            `coach_alerts?select=id,status,data,coach_id,client_id,client_name,suggested_message&id=eq.${alertId}&limit=1`
         );
         alert = rows[0];
     } catch (e) {
@@ -285,6 +347,13 @@ exports.handler = async (event) => {
         return { statusCode: 409, body: JSON.stringify({
             error: HUMAN_AGENT_MANUAL_ONLY_MESSAGE,
             code: 'human_agent_manual_send_required',
+        }) };
+    }
+    if (isPermanentNeedsYouAlert(alert)) {
+        await stampPermanentNeedsYouScheduleBlock(alert);
+        return { statusCode: 409, body: JSON.stringify({
+            error: PERMANENT_NEEDS_YOU_SEND_LATER_MESSAGE,
+            code: 'permanent_needs_you_send_later_blocked',
         }) };
     }
     const shouldSanitizeVisibleLeadCopy = !alert.client_id;

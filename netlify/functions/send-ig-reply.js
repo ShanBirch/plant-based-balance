@@ -96,6 +96,7 @@ const {
     sanitizeVisibleOutboundDmText,
     splitCoachDraftIntoDmBubbles,
     fireCoachEditAnalysis,
+    isAlwaysNeedsYouPerson,
 } = require('./_lib/client-context');
 const {
     resolveMetaIgAccessToken,
@@ -134,6 +135,13 @@ const EDIT_ANALYSIS_ADMIN_BUDGET_MS = 4500;
 const EDIT_ANALYSIS_BACKGROUND_BUDGET_MS = 7000;
 const INSTAGRAM_GRAPH_TYPING_ACTION_TIMEOUT_MS = 1200;
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
+const PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE = 'Permanent Needs You contacts require Shannon approval before sending.';
+const AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES = new Set([
+    'auto_send',
+    'scheduled_worker',
+    'send_later',
+    'balance_lead_client_manager_cron',
+]);
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function safeObject(value) {
@@ -381,6 +389,80 @@ function isHumanApprovedSource(source, alertData = {}) {
     const scheduledVia = String(alertData.scheduled_via || '').trim().toLowerCase();
     const automatedSources = new Set(['auto_send', 'scheduled_worker', 'send_later']);
     return !automatedSources.has(rawSource) && scheduledVia !== 'auto_send';
+}
+
+function isAutomatedPermanentNeedsYouSendSource(source, data = {}) {
+    const normalized = String(source || '').trim().toLowerCase();
+    const scheduledVia = String(data.scheduled_via || '').trim().toLowerCase();
+    const timingChoiceSource = String(data.reply_timing_choice?.source || '').trim().toLowerCase();
+    const timingSuggestionSource = String(data.reply_timing_suggestion?.source || '').trim().toLowerCase();
+    return AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES.has(normalized)
+        || scheduledVia === 'auto_send'
+        || timingChoiceSource === 'auto_send'
+        || timingSuggestionSource === 'auto_send';
+}
+
+function isPermanentNeedsYouIgAlert({ alert = {}, alertData = {}, thread = null } = {}) {
+    const data = alertData || alert.data || {};
+    const graph = safeObject(data.instagram_graph);
+    const customData = safeObject(data.custom_data);
+    const threadCustom = safeObject(thread?.custom_data);
+    const needsYouReasons = Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : [];
+    if (data.permanent_needs_you_draft_only === true) return true;
+    if (data.needs_you_reason === 'always_needs_you_person') return true;
+    if (needsYouReasons.includes('always_needs_you_person')) return true;
+    return isAlwaysNeedsYouPerson({
+        name: alert.client_name || data.client_name || data.profile_name || thread?.profile_name,
+        client_name: alert.client_name || data.client_name,
+        profile_name: data.profile_name || data.ig_profile_name || graph.profile_name || thread?.profile_name,
+        ig_username: data.ig_username || graph.ig_username || graph.username || thread?.ig_username,
+        username: data.username || graph.username || thread?.ig_username,
+        handle: data.handle || thread?.ig_username,
+        custom_data: {
+            ...customData,
+            ...threadCustom,
+            instagram_graph: {
+                ...safeObject(threadCustom.instagram_graph),
+                ...graph,
+            },
+        },
+    });
+}
+
+function shouldBlockPermanentNeedsYouAutomatedIgSend({ alert = {}, alertData = {}, thread = null, source = '' } = {}) {
+    return isAutomatedPermanentNeedsYouSendSource(source, alertData || alert.data || {})
+        && isPermanentNeedsYouIgAlert({ alert, alertData, thread });
+}
+
+async function stampPermanentNeedsYouAutomatedIgSendBlock({ alertId, alertData = {} } = {}) {
+    if (!alertId) return;
+    const blockedAt = new Date().toISOString();
+    const data = {
+        ...(alertData || {}),
+        client_manager_review_required: true,
+        needs_you_required: true,
+        operator_queue: 'needs_you',
+        needs_you_reason: 'always_needs_you_person',
+        needs_you_reasons: [
+            ...new Set([
+                ...(Array.isArray(alertData?.needs_you_reasons) ? alertData.needs_you_reasons : []),
+                'always_needs_you_person',
+            ]),
+        ],
+        permanent_needs_you_draft_only: true,
+        last_send_error: PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE,
+        last_send_error_code: 'permanent_needs_you_automated_send_blocked',
+        last_send_error_at: blockedAt,
+    };
+    try {
+        await supabase(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
+            method: 'PATCH',
+            body: { data },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[send-ig-reply] permanent Needs You block stamp failed:', err.message);
+    }
 }
 
 function resolveGraphMessageTag({ shouldUseGraph, lastInboundAt, source, alertData }) {
@@ -1055,7 +1137,7 @@ exports.handler = async (event) => {
     let rows;
     try {
         rows = await supabase(
-            `coach_alerts?select=id,status,data,client_id,coach_id,alert_type&id=eq.${alertId}&limit=1`
+            `coach_alerts?select=id,status,data,client_id,client_name,coach_id,alert_type&id=eq.${alertId}&limit=1`
         );
     } catch (e) {
         console.error('[send-ig-reply] alert lookup failed:', e.message);
@@ -1092,6 +1174,17 @@ exports.handler = async (event) => {
         } catch (err) {
             console.warn('[send-ig-reply] stale send error cleanup failed:', err.message);
         }
+    }
+    if (shouldBlockPermanentNeedsYouAutomatedIgSend({ alert, alertData, thread: threadForSend, source })) {
+        await stampPermanentNeedsYouAutomatedIgSendBlock({ alertId, alertData });
+        return {
+            statusCode: 409,
+            body: JSON.stringify({
+                error: PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE,
+                code: 'permanent_needs_you_automated_send_blocked',
+                source,
+            }),
+        };
     }
     const channel = alertData.channel;
     const shouldSanitizeVisibleLeadCopy = !alertData.client_id;
@@ -1743,4 +1836,7 @@ exports._test = {
     isCocosAlertData,
     isChallengeOfferSend,
     isSendClaimStale,
+    isAutomatedPermanentNeedsYouSendSource,
+    isPermanentNeedsYouIgAlert,
+    shouldBlockPermanentNeedsYouAutomatedIgSend,
 };

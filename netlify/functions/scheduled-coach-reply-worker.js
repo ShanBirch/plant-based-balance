@@ -29,6 +29,7 @@ const {
     buildContextReviewInfo,
     buildMediaReviewInfo,
     normalizeCoachDraftText,
+    isAlwaysNeedsYouPerson,
 } = require('./_lib/client-context');
 
 // Hard cap per run. Realistic backlog should be 0-3. If we ever see this
@@ -123,6 +124,37 @@ function buildAutoSendReviewHold(alert) {
         return {
             code: 'draft_review',
             label: review.summary || 'AI draft needs Shannon review',
+        };
+    }
+    return null;
+}
+
+function buildPermanentNeedsYouHold(alert) {
+    const data = alert?.data || {};
+    const graph = data.instagram_graph || {};
+    const customData = data.custom_data || {};
+    const needsYouReasons = Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : [];
+    if (data.permanent_needs_you_draft_only === true
+        || data.needs_you_reason === 'always_needs_you_person'
+        || needsYouReasons.includes('always_needs_you_person')
+        || isAlwaysNeedsYouPerson({
+            name: alert?.client_name || data.client_name || data.profile_name || data.ig_profile_name,
+            client_name: alert?.client_name || data.client_name,
+            profile_name: data.profile_name || data.ig_profile_name || graph.profile_name || customData.profile_name,
+            ig_username: data.ig_username || graph.ig_username || graph.username || customData.ig_username,
+            username: data.username || graph.username || customData.username,
+            handle: data.handle || customData.handle,
+            custom_data: {
+                ...customData,
+                instagram_graph: {
+                    ...(customData.instagram_graph || {}),
+                    ...graph,
+                },
+            },
+        })) {
+        return {
+            code: 'always_needs_you_person',
+            label: 'permanent Needs You client',
         };
     }
     return null;
@@ -271,15 +303,29 @@ async function fireAlert(alert) {
         return { ok: false, error: 'empty_scheduled_text' };
     }
 
-    const autoHold = buildAutoSendReviewHold(alert);
+    const autoHold = buildPermanentNeedsYouHold(alert) || buildAutoSendReviewHold(alert);
     if (autoHold) {
         const heldAt = new Date().toISOString();
+        const isPermanentNeedsYouHold = autoHold.code === 'always_needs_you_person';
         try {
             await supabase(`coach_alerts?id=eq.${alert.id}`, {
                 method: 'PATCH',
                 body: {
                     data: {
                         ...(alert.data || {}),
+                        ...(isPermanentNeedsYouHold ? {
+                            client_manager_review_required: true,
+                            needs_you_required: true,
+                            operator_queue: 'needs_you',
+                            needs_you_reason: 'always_needs_you_person',
+                            needs_you_reasons: [
+                                ...new Set([
+                                    ...(Array.isArray(alert.data?.needs_you_reasons) ? alert.data.needs_you_reasons : []),
+                                    'always_needs_you_person',
+                                ]),
+                            ],
+                            permanent_needs_you_draft_only: true,
+                        } : {}),
                         auto_send_review_hold: {
                             ...autoHold,
                             held_at: autoHold.held_at || heldAt,
@@ -401,6 +447,7 @@ exports.handler = async () => {
 
 exports._test = {
     buildAutoSendReviewHold,
+    buildPermanentNeedsYouHold,
     hasCocosAutoContextBypass,
     hasAutoContextBypass,
     repairMissingScheduledLinkHandoff,
