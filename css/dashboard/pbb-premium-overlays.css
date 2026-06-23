@@ -4093,6 +4093,19 @@ html[data-pbb-theme="light"] .feed-meal-card .feed-meal-card-muted {
     opacity: 1 !important;
 }
 
+html[data-pbb-theme="light"] .feed-fitness-diary-card,
+html[data-pbb-theme="light"] .feed-fitness-diary-card [style*="color:white"],
+html[data-pbb-theme="light"] .feed-fitness-diary-card [style*="color: white"],
+html[data-pbb-theme="light"] .feed-fitness-diary-card [style*="color:#fff"],
+html[data-pbb-theme="light"] .feed-fitness-diary-card [style*="color: #fff"],
+html[data-pbb-theme="light"] .feed-fitness-diary-card [style*="color:rgba(255,255,255"],
+html[data-pbb-theme="light"] .feed-fitness-diary-card [style*="color: rgba(255,255,255"],
+html[data-pbb-theme="light"] .feed-fitness-diary-card [style*="color: rgba(255, 255, 255"] {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+    opacity: 1 !important;
+}
+
 html[data-pbb-theme="light"] .coin-header-widget,
 html[data-pbb-theme="light"] .streak-header-widget,
 html[data-pbb-theme="light"] #pwa-install-banner .pwa-install-btn {
