@@ -3267,6 +3267,7 @@ const AUDIO_MARKER_RE = /\[AUDIO:(https?:\/\/[^\s\]]+)\]/gi;
 const AUDIO_MAX_COUNT = 2;
 const AUDIO_MAX_BYTES = 10 * 1024 * 1024;  // 10 MB per voice note/audio clip
 const AUDIO_FETCH_TIMEOUT_MS = 12000;
+const OPENAI_TRANSCRIPTION_MODEL = process.env.OPENAI_TRANSCRIPTION_MODEL || 'gpt-4o-mini-transcribe';
 const VIDEO_MARKER_RE = /\[(?:VIDEO|video):\s*(https?:\/\/[^\s\]]+)\]/gi;
 const GENERIC_ATTACHMENT_MARKER_RE = /\[attachment:\s*(https?:\/\/[^\]\s]+)\]/gi;
 const INSTAGRAM_REEL_URL_RE = /https?:\/\/(?:www\.)?instagram\.com\/(?:reel|tv)\/[A-Za-z0-9._-]+\/?/gi;
@@ -3658,6 +3659,67 @@ async function fetchAudioAsInlineData(url) {
     }
 }
 
+function audioExtensionForMimeType(mimeType = '') {
+    const clean = String(mimeType || '').split(';')[0].trim().toLowerCase();
+    if (clean === 'audio/mpeg' || clean === 'audio/mp3') return 'mp3';
+    if (clean === 'audio/mp4' || clean === 'video/mp4') return 'm4a';
+    if (clean === 'audio/wav' || clean === 'audio/x-wav') return 'wav';
+    if (clean === 'audio/ogg' || clean === 'application/ogg') return 'ogg';
+    if (clean === 'audio/webm' || clean === 'video/webm') return 'webm';
+    if (clean === 'audio/flac') return 'flac';
+    if (clean === 'audio/amr') return 'amr';
+    return 'm4a';
+}
+
+function cleanAudioTranscriptText(value, max = 1200) {
+    return String(value || '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, max);
+}
+
+async function transcribeAudioInlineData(inlineData, index = 0) {
+    if (!OPENAI_API_KEY) {
+        return { text: '', error: 'OPENAI_API_KEY not configured' };
+    }
+    if (!inlineData?.data) {
+        return { text: '', error: 'missing audio inline data' };
+    }
+    const mimeType = inlineData.mimeType || inlineData.mime_type || 'audio/mp4';
+    try {
+        const bytes = Buffer.from(inlineData.data, 'base64');
+        const form = new FormData();
+        form.append('model', OPENAI_TRANSCRIPTION_MODEL);
+        form.append('response_format', 'json');
+        form.append(
+            'file',
+            new Blob([bytes], { type: mimeType }),
+            `voice-note-${index + 1}.${audioExtensionForMimeType(mimeType)}`
+        );
+        const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${OPENAI_API_KEY}`,
+            },
+            body: form,
+        });
+        const bodyText = await res.text();
+        let data = {};
+        try { data = bodyText ? JSON.parse(bodyText) : {}; } catch { data = { text: bodyText }; }
+        if (!res.ok) {
+            const message = data?.error?.message || bodyText || `HTTP ${res.status}`;
+            console.warn(`[audio-transcript] OpenAI failed ${res.status}: ${String(message).slice(0, 180)}`);
+            return { text: '', error: String(message).slice(0, 240), model: OPENAI_TRANSCRIPTION_MODEL };
+        }
+        const text = cleanAudioTranscriptText(data.text);
+        console.log(`[audio-transcript] ok chars=${text.length} model=${OPENAI_TRANSCRIPTION_MODEL}`);
+        return { text, error: '', model: OPENAI_TRANSCRIPTION_MODEL };
+    } catch (err) {
+        console.warn(`[audio-transcript] failed: ${err.message}`);
+        return { text: '', error: String(err.message || err).slice(0, 240), model: OPENAI_TRANSCRIPTION_MODEL };
+    }
+}
+
 function guessVideoMimeType(url, contentType) {
     const ct = String(contentType || '').split(';')[0].trim().toLowerCase();
     if ([
@@ -3930,7 +3992,7 @@ function mediaKindLimit(kind) {
     return 0;
 }
 
-function mediaReferenceLabel(kind, n, selected, url = '') {
+function mediaReferenceLabel(kind, n, selected, url = '', options = {}) {
     const isReel = kind === 'video' && isInstagramReelUrl(url);
     if (!selected) {
         if (kind === 'photo') return '[photo attached but not decoded]';
@@ -3940,7 +4002,11 @@ function mediaReferenceLabel(kind, n, selected, url = '') {
         return '[media attached but not decoded]';
     }
     if (kind === 'photo') return `[attached photo #${n}]`;
-    if (kind === 'audio') return `[voice note #${n}]`;
+    if (kind === 'audio') {
+        const transcript = cleanAudioTranscriptText(options.audioTranscripts?.[n - 1]?.text || '');
+        if (transcript) return `[voice note #${n} transcript: ${transcript}]`;
+        return `[voice note #${n}]`;
+    }
     if (isReel) return `[Instagram reel #${n}]`;
     if (kind === 'video') return `[attached video #${n}]`;
     return `[attached media #${n}]`;
@@ -3979,7 +4045,7 @@ function collectMediaBatchReferences(messages) {
     return { urls, refsByMessage };
 }
 
-function rewriteMediaBatchMessage(message, refs = []) {
+function rewriteMediaBatchMessage(message, refs = [], options = {}) {
     const text = String(message || '');
     if (refs.length === 0) return text;
 
@@ -3987,7 +4053,7 @@ function rewriteMediaBatchMessage(message, refs = []) {
     let cursor = 0;
     refs.forEach(ref => {
         out += text.slice(cursor, ref.start);
-        out += mediaReferenceLabel(ref.kind, ref.number, ref.selected, ref.url);
+        out += mediaReferenceLabel(ref.kind, ref.number, ref.selected, ref.url, options);
         cursor = ref.end;
     });
     out += text.slice(cursor);
@@ -4015,6 +4081,8 @@ async function buildMessageMediaBatchParts(messages) {
             reelContextText: '',
             reelContextCount: 0,
             reelThumbnailCount: 0,
+            audioTranscripts: [],
+            audioTranscriptCount: 0,
         };
     }
 
@@ -4031,6 +4099,9 @@ async function buildMessageMediaBatchParts(messages) {
     const audioParts = fetchedAudio
         .filter(Boolean)
         .map(p => ({ inlineData: p }));
+    const audioTranscripts = await Promise.all(
+        fetchedAudio.map((p, index) => p ? transcribeAudioInlineData(p, index) : Promise.resolve({ text: '', error: 'audio fetch failed' }))
+    );
     const videoParts = fetchedVideos
         .filter(Boolean)
         .map(p => ({ inlineData: p }));
@@ -4039,7 +4110,7 @@ async function buildMessageMediaBatchParts(messages) {
         .map(ctx => ctx.thumbnailInlineData ? { inlineData: ctx.thumbnailInlineData } : null)
         .filter(Boolean);
     const rewrittenMessages = rawMessages.map((message, index) =>
-        rewriteMediaBatchMessage(message, refsByMessage[index])
+        rewriteMediaBatchMessage(message, refsByMessage[index], { audioTranscripts })
     );
 
     return {
@@ -4056,6 +4127,8 @@ async function buildMessageMediaBatchParts(messages) {
         reelContextText: formatInstagramReelContexts(reelContexts),
         reelContextCount: reelContexts.length,
         reelThumbnailCount: reelImageParts.length,
+        audioTranscripts,
+        audioTranscriptCount: audioTranscripts.filter(item => item?.text).length,
     };
 }
 
@@ -4074,6 +4147,8 @@ async function buildMessageMediaParts(message) {
         reelContextText: batch.reelContextText || '',
         reelContextCount: batch.reelContextCount || 0,
         reelThumbnailCount: batch.reelThumbnailCount || 0,
+        audioTranscripts: batch.audioTranscripts || [],
+        audioTranscriptCount: batch.audioTranscriptCount || 0,
     };
 }
 

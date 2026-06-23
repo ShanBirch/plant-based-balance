@@ -996,6 +996,25 @@ function buildEmptyMediaDraftFallbackChunks({ mediaDecode = {}, currentMessageTe
     return [];
 }
 
+function hasAudioDraftContext({ mediaDecode = {}, currentMessageText = '' } = {}) {
+    const current = replaceIgMediaMarkers(String(currentMessageText || ''), { photo: 'photo', audio: 'voice note', video: 'video' }).toLowerCase();
+    return Number(mediaDecode.audio_url_count || mediaDecode.audioUrlCount || 0) > 0
+        || Number(mediaDecode.audio_inline_count || mediaDecode.audioInlineCount || 0) > 0
+        || /\bvoice note|audio\b/.test(current);
+}
+
+function isAudioPuntDraftText(value) {
+    const text = normalizeCoachDraftText(value).toLowerCase();
+    if (!text) return false;
+    return /\b(?:i'?ll|i will|i'?m going to|let me|i need to|i can)\s+(?:listen|play|check|open|go through)\b[\s\S]{0,140}\b(?:properly|later|when|then|get back|come back)\b/i.test(text)
+        || /\b(?:listen|play|check|open|go through)\s+(?:to\s+)?(?:this|it|your voice note|the voice note)\b[\s\S]{0,120}\b(?:get back|come back)\b/i.test(text);
+}
+
+function isAudioPuntDraftChunks(chunks, { mediaDecode = {}, currentMessageText = '' } = {}) {
+    if (!hasAudioDraftContext({ mediaDecode, currentMessageText })) return false;
+    return (Array.isArray(chunks) ? chunks : [chunks]).some(isAudioPuntDraftText);
+}
+
 async function generateMediaRecoveryDraft({
     mediaParts,
     mediaDecode,
@@ -2276,6 +2295,8 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
         photoUrlCount,
         audioUrlCount,
         videoUrlCount,
+        audioTranscriptCount,
+        audioTranscripts,
         reelContextText,
         reelContextCount,
         reelThumbnailCount,
@@ -2313,6 +2334,14 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
         photo_inline_count: imageParts.length,
         audio_url_count: audioUrlCount,
         audio_inline_count: audioParts.length,
+        audio_transcript_count: audioTranscriptCount || 0,
+        audio_transcripts: (audioTranscripts || [])
+            .filter(item => item?.text || item?.error)
+            .map(item => ({
+                text: item.text || '',
+                error: item.error || '',
+                model: item.model || null,
+            })),
         video_url_count: videoUrlCount,
         video_inline_count: videoParts.length,
         reel_context_count: reelContextCount || 0,
@@ -2791,6 +2820,19 @@ Rules:
             };
         }
     }
+    if (isAudioPuntDraftChunks(cleanedChunks, { mediaDecode, currentMessageText })) {
+        const fallbackChunks = buildEmptyMediaDraftFallbackChunks({ mediaDecode, currentMessageText });
+        cleanedChunks = fallbackChunks;
+        model = `${String(model || 'none')}+audio-punt-guard`;
+        emptyDraftRecovery = {
+            recovered: fallbackChunks.length > 0,
+            via: 'audio_punt_guard',
+            model: null,
+            error: 'audio_draft_punted_instead_of_answering',
+            recovered_at: new Date().toISOString(),
+        };
+        lastError = `${lastError ? lastError + ' | ' : ''}audio_draft_punted_instead_of_answering`;
+    }
     if (!cleanedChunks.length) {
         const fallbackChunks = buildEmptyMediaDraftFallbackChunks({ mediaDecode, currentMessageText });
         if (fallbackChunks.length) {
@@ -2827,6 +2869,7 @@ Rules:
         reelThumbnailCount,
         urlCount: photoUrlCount,
         audioUrlCount,
+        audioTranscriptCount,
         videoUrlCount,
         mediaDecode,
         timeline: totalConversationText,
@@ -3694,6 +3737,7 @@ exports.handler = async (event) => {
             image_inline_count: draft.imageCount || 0,
             audio_url_count: draft.audioUrlCount || 0,
             audio_inline_count: draft.audioCount || 0,
+            audio_transcript_count: draft.audioTranscriptCount || 0,
             video_url_count: draft.videoUrlCount || 0,
             video_inline_count: draft.videoCount || 0,
             media_decode: draft.mediaDecode || null,
@@ -3835,6 +3879,7 @@ exports.handler = async (event) => {
             image_inline_count: draft.imageCount || 0,
             audio_url_count: draft.audioUrlCount || 0,
             audio_inline_count: draft.audioCount || 0,
+            audio_transcript_count: draft.audioTranscriptCount || existingPending.data?.audio_transcript_count || 0,
             video_url_count: draft.videoUrlCount || 0,
             video_inline_count: draft.videoCount || 0,
             media_decode: draft.mediaDecode || existingPending.data?.media_decode || null,
@@ -4479,6 +4524,8 @@ exports._test = {
     buildCommentResourceContextFromFulfillment,
     buildCommentResourceHandoffBlock,
     buildEmptyMediaDraftFallbackChunks,
+    isAudioPuntDraftText,
+    isAudioPuntDraftChunks,
     buildCurrentTurnAnchorBlock,
     isStoryOpenerConfusionMessage,
     buildNativeStoryConfusionRepairBlock,
