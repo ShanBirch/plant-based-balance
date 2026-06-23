@@ -2,11 +2,11 @@ let customWorkoutSelection = [];
 
 if (typeof window.pbbEnsureWorkoutRuntimeReady !== 'function') {
     window.pbbEnsureWorkoutRuntimeReady = function(requiredFunctions, options = {}) {
-        const timeoutMs = options.timeoutMs || 8000;
+        const timeoutMs = options.timeoutMs || 20000;
         const startedAt = Date.now();
         const required = Array.isArray(requiredFunctions) ? requiredFunctions : [];
 
-        return new Promise((resolve, reject) => {
+        const waitForFunctions = () => new Promise((resolve, reject) => {
             const check = () => {
                 const missing = required.filter(name => typeof window[name] !== 'function');
                 if (missing.length === 0) {
@@ -24,6 +24,89 @@ if (typeof window.pbbEnsureWorkoutRuntimeReady !== 'function') {
 
             check();
         });
+
+        const loaders = [];
+        if (required.includes('findVideoMatch') && typeof window.findVideoMatch !== 'function' && typeof window.ensureVideoLogicScript === 'function') {
+            loaders.push(window.ensureVideoLogicScript());
+        }
+        if (typeof window.pbbEnsureWorkoutDashboardRuntimeScript === 'function') {
+            loaders.push(window.pbbEnsureWorkoutDashboardRuntimeScript());
+        }
+
+        if (loaders.length === 0) return waitForFunctions();
+        return Promise.all(loaders).then(waitForFunctions);
+    };
+}
+
+if (typeof window.pbbEnsureWorkoutDashboardRuntimeScript !== 'function') {
+    window.pbbEnsureWorkoutDashboardRuntimeScript = function() {
+        const required = [
+            'normalizeHistoryCache',
+            'preloadExerciseNotes',
+            'formatPreviousWorkoutSummary',
+            'getPreviousWorkoutSummary',
+            'getExerciseNotesHtml',
+            'setupVolumeTracking',
+            'startWorkoutTimer',
+            'pushNavigationState',
+            'showLastVolumePopup'
+        ];
+        const isReady = () => required.every(name => typeof window[name] === 'function');
+        if (isReady()) return Promise.resolve(true);
+        if (window._pbbWorkoutDashboardRuntimePromise) return window._pbbWorkoutDashboardRuntimePromise;
+
+        window._pbbWorkoutDashboardRuntimePromise = new Promise((resolve, reject) => {
+            const src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=110';
+            const startedAt = Date.now();
+            let settled = false;
+
+            const finishIfReady = () => {
+                if (settled) return true;
+                if (isReady()) {
+                    settled = true;
+                    resolve(true);
+                    return true;
+                }
+                return false;
+            };
+
+            const poll = () => {
+                if (finishIfReady()) return;
+                if (Date.now() - startedAt > 20000) {
+                    settled = true;
+                    reject(new Error('Workout dashboard runtime script did not become ready'));
+                    return;
+                }
+                setTimeout(poll, 50);
+            };
+
+            const attach = (script) => {
+                script.addEventListener('load', finishIfReady, { once: true });
+                script.addEventListener('error', () => {
+                    if (!settled) {
+                        settled = true;
+                        reject(new Error('Workout dashboard runtime script failed to load'));
+                    }
+                }, { once: true });
+                poll();
+            };
+
+            const existing = Array.from(document.scripts).find(script => (script.src || '').includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js'));
+            if (existing) {
+                attach(existing);
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = src;
+            attach(script);
+            document.head.appendChild(script);
+        }).catch(error => {
+            window._pbbWorkoutDashboardRuntimePromise = null;
+            throw error;
+        });
+
+        return window._pbbWorkoutDashboardRuntimePromise;
     };
 }
 
