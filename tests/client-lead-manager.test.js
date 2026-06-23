@@ -263,6 +263,49 @@ const voiceNoteNeedsYou = manager.classifyNeedsYou(makeAlert({
 assert.strictEqual(voiceNoteNeedsYou.shouldRoute, true);
 assert.ok(voiceNoteNeedsYou.reasons.includes('voice_note_review_required'));
 
+const transcribedVoiceNoteReview = clientContext.buildContextReviewInfo(makeAlert({
+    data: {
+        message_preview: '[AUDIO:https://example.com/voice.m4a]',
+        audio_transcript_count: 1,
+        media_decode: {
+            audio_url_count: 1,
+            audio_inline_count: 1,
+            audio_transcript_count: 1,
+        },
+        audio_transcripts: [{ text: 'Palm Beach already feels way better than the old place.' }],
+        context_review: {
+            required: true,
+            reasons: ['voice_note_review_required'],
+            label: 'voice note needs Shannon review',
+        },
+    },
+}));
+assert.strictEqual(transcribedVoiceNoteReview.required, false, 'transcribed voice note should not need Shannon audio review');
+
+const transcribedVoiceNoteNeedsYou = manager.classifyNeedsYou(makeAlert({
+    data: {
+        message_preview: '[AUDIO:https://example.com/voice.m4a]',
+        audio_transcript_count: 1,
+        media_decode: {
+            audio_url_count: 1,
+            audio_inline_count: 1,
+            audio_transcript_count: 1,
+        },
+        audio_transcripts: [{ text: 'Palm Beach already feels way better than the old place.' }],
+        media_review: {
+            required: true,
+            kinds: ['audio'],
+            label: 'voice note/audio clip',
+        },
+        context_review: {
+            required: true,
+            reasons: ['voice_note_review_required'],
+            label: 'voice note needs Shannon review',
+        },
+    },
+}));
+assert.strictEqual(transcribedVoiceNoteNeedsYou.shouldRoute, false, 'lead manager should let transcribed voice notes use the normal draft/send path');
+
 const aiSuspicion = manager.classifyNeedsYou(makeAlert({
     data: {
         message_preview: 'is this AI?',

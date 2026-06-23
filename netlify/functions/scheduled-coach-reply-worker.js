@@ -25,7 +25,11 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
-const { normalizeCoachDraftText } = require('./_lib/client-context');
+const {
+    buildContextReviewInfo,
+    buildMediaReviewInfo,
+    normalizeCoachDraftText,
+} = require('./_lib/client-context');
 
 // Hard cap per run. Realistic backlog should be 0-3. If we ever see this
 // kicking in, it's either a worker outage or someone schedule-bombed the API.
@@ -86,17 +90,20 @@ function buildAutoSendReviewHold(alert) {
     if (!isManyChatDm) return null;
     const softContextBypass = hasAutoContextBypass(data);
     if (data.auto_send_review_approved_at) return null;
-    if (data.auto_send_review_hold?.code) return data.auto_send_review_hold;
-    if (data.media_review?.required) {
+    const existingHold = data.auto_send_review_hold;
+    const mediaReview = buildMediaReviewInfo(alert);
+    const contextReview = buildContextReviewInfo(alert);
+    if (existingHold?.code && !['media_review', 'context_review'].includes(existingHold.code)) return existingHold;
+    if (mediaReview.required) {
         return {
             code: 'media_review',
-            label: `${data.media_review.label || 'Media'} needs Shannon review`,
+            label: `${mediaReview.label || 'Media'} needs Shannon review`,
         };
     }
-    if (data.context_review?.required && !softContextBypass) {
+    if (contextReview.required && !softContextBypass) {
         return {
             code: 'context_review',
-            label: data.context_review.label || 'tracked DM context may be incomplete',
+            label: contextReview.label || 'tracked DM context may be incomplete',
         };
     }
     const review = data.draft_review;

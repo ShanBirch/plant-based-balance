@@ -4189,6 +4189,68 @@ function addMediaReviewMessageItem(state, item) {
     addMediaReviewMediaArray(state, item.media);
 }
 
+function audioTranscriptCountFromData(data = {}) {
+    const decode = data.media_decode || data.mediaDecode || {};
+    const values = [
+        data.audio_transcript_count,
+        data.audioTranscriptCount,
+        decode.audio_transcript_count,
+        decode.audioTranscriptCount,
+    ];
+    for (const value of values) {
+        const n = Number(value);
+        if (Number.isFinite(n) && n > 0) return Math.floor(n);
+    }
+    const transcriptLists = [
+        data.audio_transcripts,
+        data.audioTranscripts,
+        decode.audio_transcripts,
+        decode.audioTranscripts,
+    ];
+    for (const list of transcriptLists) {
+        if (!Array.isArray(list)) continue;
+        const count = list.filter(item => String(item?.text || item || '').trim()).length;
+        if (count > 0) return count;
+    }
+    return 0;
+}
+
+function hasUsableAudioTranscript(data = {}) {
+    const decode = data.media_decode || data.mediaDecode || {};
+    if (decode.audio_failed) return false;
+    if (Number(data.audio_url_count || data.audioUrlCount || decode.audio_url_count || decode.audioUrlCount) <= 0) return false;
+    return audioTranscriptCountFromData(data) > 0;
+}
+
+function firstUsableAudioTranscriptText(data = {}) {
+    const decode = data.media_decode || data.mediaDecode || {};
+    const transcriptLists = [
+        data.audio_transcripts,
+        data.audioTranscripts,
+        decode.audio_transcripts,
+        decode.audioTranscripts,
+    ];
+    for (const list of transcriptLists) {
+        if (!Array.isArray(list)) continue;
+        for (const item of list) {
+            const text = cleanAudioTranscriptText(item?.text || item);
+            if (text) return text;
+        }
+    }
+    return '';
+}
+
+function isAudioOnlyContextLatestText(value) {
+    const text = normalizeContextText(value)
+        .replace(/[\u{1F399}\u{1F50A}]/gu, ' ')
+        .replace(/[\[\]]/g, ' ')
+        .replace(/#\d+\b/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+    return /^(?:attached\s+)?(?:voice note|audio)(?:\s+\d+)?$/.test(text);
+}
+
 function formatMediaReviewLabel(kinds) {
     const labels = (Array.isArray(kinds) ? kinds : [])
         .map(kind => MEDIA_REVIEW_LABELS[kind])
@@ -4243,6 +4305,10 @@ function buildMediaReviewInfo(alertOrData) {
     if (Array.isArray(stored.kinds)) {
         stored.kinds.forEach(kind => addMediaReviewKind(state, String(kind || '').toLowerCase()));
     }
+    if (hasUsableAudioTranscript(data)) {
+        state.present.audio = false;
+        state.counts.audio = 0;
+    }
 
     const kinds = ['photo', 'audio', 'video'].filter(kind => state.present[kind]);
     const label = formatMediaReviewLabel(kinds);
@@ -4265,6 +4331,7 @@ function isMediaReviewRequired(alertOrData) {
 
 function hasVoiceNoteInspectionSignal(data = {}) {
     const decode = data.media_decode || data.mediaDecode || {};
+    if (hasUsableAudioTranscript(data)) return false;
     if (Number(data.audio_url_count || data.audioUrlCount || decode.audio_url_count || decode.audioUrlCount) > 0) return true;
     if (decode.audio_failed) return true;
 
@@ -4299,6 +4366,15 @@ function buildVoiceNoteReviewInfo(alertOrData) {
     const data = alertOrData?.data && typeof alertOrData.data === 'object'
         ? alertOrData.data
         : (alertOrData && typeof alertOrData === 'object' ? alertOrData : {});
+    if (hasUsableAudioTranscript(data)) {
+        return {
+            required: false,
+            reason: null,
+            label: '',
+            warning: '',
+            latest_text: '',
+        };
+    }
     const latest = getContextReviewLatestText(data);
     const required = hasVoiceNoteInspectionSignal(data);
     if (!required) {
@@ -4355,6 +4431,13 @@ function getContextReviewLatestText(data) {
     const currentFromBatch = Array.isArray(data?.inbound_message_batch)
         ? data.inbound_message_batch.find(m => m && m.is_current)
         : null;
+    const transcript = hasUsableAudioTranscript(data) ? firstUsableAudioTranscriptText(data) : '';
+    const candidates = [
+        currentFromBatch?.text,
+        data?.message_preview,
+        data?.draft_evidence?.current_message,
+    ];
+    if (transcript && candidates.some(value => isAudioOnlyContextLatestText(value))) return transcript;
     return currentFromBatch?.text
         || data?.message_preview
         || data?.draft_evidence?.current_message
@@ -4400,10 +4483,12 @@ function buildContextReviewInfo(alertOrData) {
     const stored = data.context_review || data.contextReview || {};
     const reasons = [];
     const labels = [];
+    const hasAudioTranscript = hasUsableAudioTranscript(data);
 
     if (stored.required) {
         (Array.isArray(stored.reasons) ? stored.reasons : [stored.reason])
             .filter(Boolean)
+            .filter(reason => !(hasAudioTranscript && String(reason) === 'voice_note_review_required'))
             .forEach(reason => reasons.push(String(reason)));
     }
 
@@ -4450,7 +4535,7 @@ function buildContextReviewInfo(alertOrData) {
     }
 
     const uniqueReasons = [...new Set(reasons.filter(Boolean))];
-    const label = stored.label
+    const label = (uniqueReasons.length && !(hasAudioTranscript && stored.label === 'voice note needs Shannon review') ? stored.label : '')
         || (labels.length ? [...new Set(labels)].join(', ') : '')
         || (uniqueReasons.length ? 'tracked thread context may be incomplete' : '');
 
