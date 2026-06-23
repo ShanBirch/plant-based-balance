@@ -1841,6 +1841,16 @@ let workoutCameraStream = null;
 let workoutCameraFacingMode = 'environment';
 let _workoutCameraCallback = null;
 
+function showWorkoutCameraPermissionIssue() {
+    if (typeof showCameraPermissionSettingsDialog === 'function') {
+        showCameraPermissionSettingsDialog();
+    } else if (typeof showToast === 'function') {
+        showToast('Could not access camera. Check permissions.', 'error');
+    } else {
+        alert('Could not access camera. Check permissions.');
+    }
+}
+
 function finishWorkoutCameraCallback(file) {
     const cb = _workoutCameraCallback;
     _workoutCameraCallback = null;
@@ -1864,7 +1874,7 @@ async function openWorkoutCamera(callback, label) {
                 && !window.NativePermissions.hasCameraPermission()) {
                 if (window.NativePermissions.isPermissionPermanentlyDenied
                     && window.NativePermissions.isPermissionPermanentlyDenied()) {
-                    showCameraPermissionSettingsDialog();
+                    showWorkoutCameraPermissionIssue();
                     finishWorkoutCameraCallback(null);
                     return;
                 }
@@ -1882,7 +1892,7 @@ async function openWorkoutCamera(callback, label) {
                     }, 60000);
                 });
                 if (!granted) {
-                    showCameraPermissionSettingsDialog();
+                    showWorkoutCameraPermissionIssue();
                     finishWorkoutCameraCallback(null);
                     return;
                 }
@@ -1968,7 +1978,7 @@ async function startWorkoutCamera() {
         try {
             if (window.NativePermissions.isPermissionPermanentlyDenied &&
                 window.NativePermissions.isPermissionPermanentlyDenied()) {
-                showCameraPermissionSettingsDialog();
+                showWorkoutCameraPermissionIssue();
                 closeWorkoutCamera();
                 finishWorkoutCameraCallback(null);
                 return;
@@ -1988,7 +1998,7 @@ async function startWorkoutCamera() {
                     }, 60000);
                 });
                 if (!granted) {
-                    showCameraPermissionSettingsDialog();
+                    showWorkoutCameraPermissionIssue();
                     closeWorkoutCamera();
                     finishWorkoutCameraCallback(null);
                     return;
@@ -2012,7 +2022,7 @@ async function startWorkoutCamera() {
     } catch (err) {
         console.error('Workout camera failed:', err);
         if (err.name === 'NotAllowedError') {
-            showCameraPermissionSettingsDialog();
+            showWorkoutCameraPermissionIssue();
         } else {
             showToast('Could not access camera. Check permissions.', 'error');
         }
@@ -2445,7 +2455,9 @@ async function handleWorkoutCardPhotoCaptureFromFile(file) {
 
     try {
         // Compress photo first to avoid payload size issues
-        const compressedFile = await compressMealImage(file);
+        const compressedFile = typeof compressMealImage === 'function'
+            ? await compressMealImage(file)
+            : file;
 
         // Convert compressed photo to base64
         const base64Data = await new Promise((resolve, reject) => {
@@ -3450,7 +3462,9 @@ async function uploadStory() {
         // Compress image if needed
         let fileToUpload = window.pendingStoryFile;
         if (window.pendingStoryType === 'image') {
-            fileToUpload = await compressMealImage(window.pendingStoryFile);
+            fileToUpload = typeof compressMealImage === 'function'
+                ? await compressMealImage(window.pendingStoryFile)
+                : window.pendingStoryFile;
         }
 
         // Check file size - if > 5MB, use Backblaze B2, otherwise use Base64
@@ -3570,7 +3584,9 @@ async function handleWorkoutPhotoSelect(event) {
     if (!file) return;
 
     // Compress image first to avoid 502 errors on large photos
-    capturedWorkoutFile = await compressMealImage(file);
+    capturedWorkoutFile = typeof compressMealImage === 'function'
+        ? await compressMealImage(file)
+        : file;
 
     // Convert compressed image to base64 for preview and analysis
     workoutPhotoBase64 = await fileToBase64(capturedWorkoutFile);

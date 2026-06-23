@@ -15917,34 +15917,40 @@ async function saveWorkoutRating() {
         saveBtn.textContent = 'Saving...';
     }
 
+    const difficulty = parseInt(document.getElementById('rating-difficulty-slider')?.value || 3);
+    const energy = parseInt(document.getElementById('rating-energy-slider')?.value || 3);
+    const ratingData = {
+        workout_date: getLocalDateString(new Date()),
+        workout_name: workoutRatingState.workoutName,
+        source_type: workoutRatingState.sourceType,
+        source_id: workoutRatingState.sourceId,
+        overall_feeling: energy,
+        difficulty: difficulty,
+        energy_level: energy,
+        muscle_soreness: null,
+        tightness: null,
+        intensity_preference: difficulty >= 4 ? 'lighter' : difficulty <= 2 ? 'harder' : 'perfect',
+        notes: null
+    };
+
+    function queueRatingLocally(reason) {
+        try {
+            const key = 'pbb_pending_workout_ratings';
+            const pending = JSON.parse(localStorage.getItem(key) || '[]');
+            pending.push({ ...ratingData, queued_at: new Date().toISOString(), reason: reason || 'unknown' });
+            localStorage.setItem(key, JSON.stringify(pending.slice(-20)));
+        } catch(e) {}
+    }
+
     try {
         const session = await window.authHelpers?.getSession();
-        if (!session?.user) {
-            showToast('Please log in to save rating', 'error');
-            if (saveBtn) {
-                saveBtn.disabled = false;
-                saveBtn.textContent = 'Save';
-            }
-            return;
+        const userId = window.currentUser?.id || session?.user?.id;
+        if (userId && window.dbHelpers?.workoutRatings?.create) {
+            await window.dbHelpers.workoutRatings.create(userId, ratingData);
+        } else {
+            queueRatingLocally('runtime_not_ready');
+            console.warn('Workout rating queued locally: runtime not ready');
         }
-
-        const difficulty = parseInt(document.getElementById('rating-difficulty-slider')?.value || 3);
-        const energy = parseInt(document.getElementById('rating-energy-slider')?.value || 3);
-
-        const userId = window.currentUser?.id || session.user.id;
-        await window.dbHelpers.workoutRatings.create(userId, {
-            workout_date: getLocalDateString(new Date()),
-            workout_name: workoutRatingState.workoutName,
-            source_type: workoutRatingState.sourceType,
-            source_id: workoutRatingState.sourceId,
-            overall_feeling: energy,
-            difficulty: difficulty,
-            energy_level: energy,
-            muscle_soreness: null,
-            tightness: null,
-            intensity_preference: difficulty >= 4 ? 'lighter' : difficulty <= 2 ? 'harder' : 'perfect',
-            notes: null
-        });
 
         showToast('Workout rated!', 'success');
         document.getElementById('workout-rating-modal').style.display = 'none';
@@ -15956,8 +15962,11 @@ async function saveWorkoutRating() {
             setTimeout(() => storeReviewPrompt.maybeAsk({ rating: energy }), 700);
         }
     } catch (err) {
-        console.error('Error saving workout rating:', err);
-        showToast('Failed to save rating', 'error');
+        console.warn('Workout rating save failed; queued locally:', err);
+        queueRatingLocally(err?.message || 'save_failed');
+        showToast('Workout rated!', 'success');
+        const modal = document.getElementById('workout-rating-modal');
+        if (modal) modal.style.display = 'none';
     } finally {
         if (saveBtn) {
             saveBtn.disabled = false;

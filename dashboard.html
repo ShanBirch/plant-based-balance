@@ -498,6 +498,57 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
         window[name] = stub;
     });
 
+    var pointsScriptSrc = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=5';
+    window.ensurePointsWidgetScript = function() {
+        if (typeof window.captureWorkoutSharePhoto === 'function' && !window.captureWorkoutSharePhoto._pbbStub) {
+            return Promise.resolve();
+        }
+        if (window._pbbPointsWidgetScriptPromise) return window._pbbPointsWidgetScriptPromise;
+        window._pbbPointsWidgetScriptPromise = loadOnce(pointsScriptSrc).then(function() {
+            if (typeof loadPointsWidget === 'function') {
+                try { loadPointsWidget(); } catch(e) {}
+            }
+        }).catch(function(e) {
+            window._pbbPointsWidgetScriptPromise = null;
+            throw e;
+        });
+        return window._pbbPointsWidgetScriptPromise;
+    };
+    [
+        'captureWorkoutSharePhoto',
+        'retakeWorkoutSharePhoto',
+        'shareWorkoutCardToFeed',
+        'shareWorkoutToStory',
+        'shareWorkoutToGroupChat',
+        'captureAndShareWorkout',
+        'closeWorkoutCamera',
+        'captureWorkoutPhoto',
+        'flipWorkoutCamera',
+        'handleWorkoutPhotoCapture',
+        'handleWorkoutCardPhotoCapture'
+    ].forEach(function(name) {
+        if (typeof window[name] === 'function') return;
+        var stub = function() {
+            var args = arguments;
+            if ((name === 'captureWorkoutSharePhoto' || name === 'shareWorkoutCardToFeed') && typeof showToast === 'function') {
+                showToast('Loading workout photo tools...', 'info');
+            }
+            return window.ensurePointsWidgetScript().then(function() {
+                var fn = window[name];
+                if (typeof fn === 'function' && !fn._pbbStub) {
+                    return fn.apply(window, args);
+                }
+            }).catch(function(e) {
+                console.error('Workout photo tools failed to load:', e);
+                if (typeof showToast === 'function') {
+                    showToast('Workout photo tools are still loading. Try again in a moment.', 'error');
+                }
+            });
+        };
+        stub._pbbStub = true;
+        window[name] = stub;
+    });
+
     window.ensureLearningScript = function() {
         if (typeof window.initLearning === 'function') return Promise.resolve();
         return loadOnce('lib/learning-inline.js?v=6');
@@ -7354,10 +7405,10 @@ if (window._pbbIsIOSSafari) {
 
 <script>
 if(!window._pbbDeferNonCriticalScripts) {
-    document.write('<script src="js/dashboard/pbb-deferred-workoutbuilder.js?v=6"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-workoutbuilder.js?v=7"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-workoutbuilder.js?v=6');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-workoutbuilder.js?v=7');
 }
 </script>
 
@@ -11840,13 +11891,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=110';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=111';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=110"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=111"><\/script>');
 }
 </script>
 
@@ -14729,10 +14780,10 @@ if (!window._pbbDeferNonCriticalScripts) {
 </div>
 <script>
 if(!window._pbbDeferNonCriticalScripts) {
-    document.write('<script src="js/dashboard/pbb-deferred-savedworkouts.js?v=3"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-savedworkouts.js?v=4"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-savedworkouts.js?v=3');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-savedworkouts.js?v=4');
 }
 </script>
 
@@ -15954,20 +16005,22 @@ if (window._pbbDeferNonCriticalScripts) {
 if (window._pbbDeferNonCriticalScripts) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
+            if (typeof window.ensurePointsWidgetScript === 'function') {
+                window.ensurePointsWidgetScript().then(function() {
+                    if(window._crumb)window._crumb('script10_deferred_loaded');
+                }).catch(function(e) {
+                    console.warn('Deferred points widget failed:', e);
+                });
+                return;
+            }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=4';
-            s.onload = function() {
-                if(window._crumb)window._crumb('script10_deferred_loaded');
-                // Run loadPointsWidget now that it's available
-                if (typeof loadPointsWidget === 'function') {
-                    try { loadPointsWidget(); } catch(e) {}
-                }
-            };
+            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=5';
+            s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=4"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=5"><\/script>');
 }
 </script>
 
