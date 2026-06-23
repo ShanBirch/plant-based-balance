@@ -11879,7 +11879,7 @@ if (window._pbbIsIOSSafari) {
         // after Supabase + auth + user data, leaving heap at peak.
         setTimeout(function() {
             if(window._crumb)window._crumb('script5_loading');
-            if (typeof initProgramDate === 'function' && typeof hideAllAppViews === 'function') {
+            if (window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 replayScript5DeferredInit();
                 return;
             }
