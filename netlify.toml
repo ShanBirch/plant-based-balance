@@ -424,6 +424,11 @@
 [functions."recent-workout-touch-scan"]
   schedule = "*/15 * * * *"
 
+# Story comment quality audit - daily soft review of story-comment replies that
+# look confused or mismatched. Netlify cron is UTC: 21:08 UTC = 7:08am Brisbane.
+[functions."story-comment-quality-audit"]
+  schedule = "8 21 * * *"
+
 # ManyChat reconcile is intentionally unscheduled for IG Graph cutover. Keep the
 # function file for manual legacy rescue until the external ManyChat account is
 # fully disconnected.
