@@ -399,7 +399,7 @@
 [functions."cocos-learning-run"]
   schedule = "55 18 * * *"
 
-# Coco's seven-day learning reel drip for Shannon's IG test thread.
+# Learning reel finder. Queues Needs You approvals before sending.
 [functions."learning-reel-drip"]
   schedule = "*/5 * * * *"
 

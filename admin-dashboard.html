@@ -946,6 +946,16 @@
         .alert-suggested-msg { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-size: 0.85rem; line-height: 1.5; color: #374151; white-space: pre-wrap; }
         .media-review-notice { margin: 8px 0; padding: 8px 10px; border-radius: 8px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: 0.76rem; line-height: 1.35; font-weight: 700; }
         .media-review-notice small { display: block; margin-top: 3px; color: #7c2d12; font-weight: 600; }
+        .learning-reel-context { margin: 8px 0; padding: 10px 12px; border-radius: 8px; background: #f0fdfa; border: 1px solid #99f6e4; color: #115e59; font-size: 0.8rem; line-height: 1.42; }
+        .learning-reel-context-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 5px; }
+        .learning-reel-context-label { font-size: 0.66rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; color: #0f766e; }
+        .learning-reel-context-topic { font-size: 0.7rem; font-weight: 900; padding: 2px 7px; border-radius: 999px; border: 1px solid #5eead4; background: rgba(255,255,255,0.7); color: #0f766e; }
+        .learning-reel-context-title { font-weight: 900; color: #134e4a; }
+        .learning-reel-context-body { margin-top: 6px; color: #115e59; font-weight: 700; }
+        .learning-reel-context-reason { margin-top: 5px; color: #0f766e; font-size: 0.74rem; font-weight: 750; }
+        .learning-reel-context-url { display: block; margin-top: 7px; font-family: monospace; font-size: 0.72rem; color: #0f766e; overflow-wrap: anywhere; }
+        .learning-reel-preview { margin-top: 10px; width: min(100%, 260px); aspect-ratio: 9 / 16; background: #020617; border-radius: 8px; overflow: hidden; border: 1px solid rgba(15, 118, 110, 0.24); }
+        .learning-reel-preview iframe { width: 100%; height: 100%; border: 0; display: block; }
         .challenge-offer-warning { margin: 8px 0; padding: 9px 10px; border-radius: 8px; background: #fefce8; border: 1px solid #fde68a; color: #854d0e; font-size: 0.76rem; line-height: 1.35; font-weight: 800; display: flex; align-items: flex-start; gap: 8px; }
         .challenge-offer-warning-dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 999px; background: #facc15; box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.18); margin-top: 3px; }
         .challenge-offer-warning small { display: block; margin-top: 3px; color: #92400e; font-weight: 650; }
@@ -10678,6 +10688,8 @@
             'balance-client-dm-manager',
             'client-dm-manager',
             'codex-client-dm-manager',
+            'learning-reel-drip',
+            'learning-reel-drip-instagram-graph',
         ];
         function normalizeClientManagerMarkerText(value) {
             return String(value || '').toLowerCase().replace(/_/g, '-');
@@ -12190,6 +12202,9 @@
             const contextReview = getAlertContextReviewInfo(alert);
             const isDm = DM_ALERT_TYPES.includes(alert?.alert_type);
             const isClientDm = isDm && !!getAlertClientIdentity(alert) && alertBelongsToDmClients(alert, activeClientIds);
+            if (isLearningReelApprovalAlert(alert) || /\blearning_reel_approval_required\b/i.test(reasonText)) {
+                return { allowed: true, reason: 'learning_reel_approval' };
+            }
             if (isClientDm && mediaReview.required) {
                 return { allowed: true, reason: 'client_media' };
             }
@@ -12206,6 +12221,20 @@
                 return { allowed: true, reason: 'permanent_client' };
             }
             return { allowed: false, reason: '' };
+        }
+
+        function isLearningReelApprovalAlert(alert) {
+            const data = alert?.data || {};
+            const review = data.codex_review || data.codexReview || {};
+            const decision = review && typeof review === 'object' ? String(review.decision || '') : '';
+            return !!(
+                data.learning_reel_approval_required === true
+                || String(data.learning_reel_approval_required || '').toLowerCase() === 'true'
+                || data.learning_reel_preview_required === true
+                || String(data.needs_you_reason || '').toLowerCase() === 'learning_reel_approval_required'
+                || (Array.isArray(data.needs_you_reasons) && data.needs_you_reasons.includes('learning_reel_approval_required'))
+                || /learning[_ -]?reel/.test(decision)
+            );
         }
 
         function needsYouClientDraftInfo(alert, activeClientIds = dmClientIdsCache.ids) {
@@ -12350,6 +12379,7 @@
             if (isCocosDmAlert(alert)) return false;
             if (isLeadOnboardingHandoff(alert) && needsYouHasSuggestedDraft(alert)) return true;
             if (!DM_ALERT_TYPES.includes(alert.alert_type)) return false;
+            if (isLearningReelApprovalAlert(alert)) return needsYouHasSuggestedDraft(alert);
             const reasonInfo = needsYouAllowedReasonInfo(alert, activeClientIds);
             if (isNeedsYouRoutedDmAlert(alert) && reasonInfo.allowed && needsYouHasSuggestedDraft(alert)) return true;
             if (isNeedsYouRoutedDmAlert(alert) && reasonInfo.reason === 'client_media') return true;
@@ -16741,6 +16771,7 @@
             const needsYouApprovalHtml = needsYouApprovalInfo?.ready && !cleanExplanationHtml
                 ? `<div style="margin:8px 0; padding:8px 10px; background:${needsYouApprovalInfo.needsReview ? '#fff7ed' : '#f0fdf4'}; border:1px solid ${needsYouApprovalInfo.needsReview ? '#fed7aa' : '#bbf7d0'}; color:${needsYouApprovalInfo.needsReview ? '#9a3412' : '#166534'}; border-radius:8px; font-size:0.76rem; font-weight:800; line-height:1.35;">Codex checked this client DM draft${needsYouApprovalInfo.reviewer ? ` (${escapeHtml(needsYouApprovalInfo.reviewer)})` : ''}. Shannon can edit or send it from here.</div>`
                 : '';
+            const learningReelContextHtml = renderLearningReelContextStrip(alert);
             const suggestedMessageHtml = hasMessage
                 ? (activeEdit
                     ? `<div class="alert-suggested-msg" id="alert-msg-${alert.id}">${renderAlertEditFields(alert.id, renderedMessageText, activeEdit.reason || '')}</div>`
@@ -16786,6 +16817,7 @@
                 ${autoSendHoldNoticeHtml}
                 ${needsYouApprovalHtml}
                 ${conversationPanelHtml || ''}
+                ${learningReelContextHtml}
                 ${suggestedMessageHtml}
                 ${proposedActionsHtml}
                 ${hasMessage ? renderAiAccuracyStripPlaceholder(alert) : ''}
@@ -18379,6 +18411,207 @@
             return `<div class="media-review-notice">
                 ${escapeHtml(`${reviewLine}${contextLine}${failureLine}`.trim())}
                 <small>Media/context-review sends are tagged in edit history and excluded from prompt learning.</small>
+            </div>`;
+        }
+
+        const ADMIN_LEARNING_REEL_URL_RE = /https?:\/\/(?:www\.)?(?:youtube\.com\/(?:shorts\/|watch\?[^#\s]*v=|embed\/)|youtu\.be\/)[^\s<>"')]+/gi;
+
+        function compactLearningReelContextText(value, max = 220) {
+            const text = String(value || '').replace(/\s+/g, ' ').trim();
+            if (!text) return '';
+            return text.length > max ? `${text.slice(0, Math.max(0, max - 1)).trim()}...` : text;
+        }
+
+        function adminFirstLearningReelString(values = []) {
+            for (const value of values) {
+                const text = String(value || '').trim();
+                if (text) return text;
+            }
+            return '';
+        }
+
+        function adminCleanLearningReelUrl(value) {
+            return String(value || '').trim().replace(/[.,;:!?]+$/g, '');
+        }
+
+        function adminCleanYoutubeVideoId(value) {
+            const text = String(value || '').trim();
+            const match = text.match(/[A-Za-z0-9_-]{6,}/);
+            return match ? match[0] : '';
+        }
+
+        function adminYoutubeVideoIdFromUrl(value) {
+            const raw = adminCleanLearningReelUrl(value);
+            if (!raw) return '';
+            try {
+                const url = new URL(raw);
+                const host = url.hostname.replace(/^www\./i, '').toLowerCase();
+                const parts = url.pathname.split('/').filter(Boolean);
+                if (host === 'youtu.be') return adminCleanYoutubeVideoId(parts[0] || '');
+                if (host.endsWith('youtube.com')) {
+                    if (parts[0] === 'shorts' || parts[0] === 'embed') return adminCleanYoutubeVideoId(parts[1] || '');
+                    if (parts[0] === 'watch') return adminCleanYoutubeVideoId(url.searchParams.get('v') || '');
+                }
+            } catch (_) {
+                // Regex fallback below handles copied text fragments.
+            }
+            const patterns = [
+                /youtube\.com\/shorts\/([A-Za-z0-9_-]{6,})/i,
+                /youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/i,
+                /youtube\.com\/watch\?[^#\s]*v=([A-Za-z0-9_-]{6,})/i,
+                /youtu\.be\/([A-Za-z0-9_-]{6,})/i,
+            ];
+            for (const pattern of patterns) {
+                const match = raw.match(pattern);
+                if (match) return adminCleanYoutubeVideoId(match[1]);
+            }
+            return '';
+        }
+
+        function canonicalAdminLearningReelUrl(value) {
+            const raw = adminCleanLearningReelUrl(value);
+            const id = adminYoutubeVideoIdFromUrl(raw);
+            if (id) return `https://www.youtube.com/shorts/${id}`;
+            const match = raw.match(ADMIN_LEARNING_REEL_URL_RE);
+            return match ? adminCleanLearningReelUrl(match[0]) : raw;
+        }
+
+        function adminLearningReelEmbedUrl(reel) {
+            const id = adminCleanYoutubeVideoId(reel?.video_id || reel?.videoId || '') || adminYoutubeVideoIdFromUrl(reel?.url || '');
+            return id ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?rel=0&modestbranding=1` : '';
+        }
+
+        function listAdminLearningReelValue(value) {
+            if (!value) return [];
+            if (Array.isArray(value)) return value.flatMap(item => listAdminLearningReelValue(item));
+            if (typeof value !== 'object') return [{ url: value }];
+            const keys = ['items', 'recent', 'last_sent_batch', 'lastSentBatch', 'history', 'reels', 'videos'];
+            const nested = keys.flatMap(key => listAdminLearningReelValue(value[key]));
+            const direct = (
+                value.url || value.video_url || value.videoUrl || value.watch_url || value.watchUrl
+                || value.video_id || value.videoId || value.title
+            ) ? [value] : [];
+            const lastSent = value.last_sent || value.lastSent ? listAdminLearningReelValue(value.last_sent || value.lastSent) : [];
+            return [...direct, ...lastSent, ...nested];
+        }
+
+        function normalizeAdminLearningReelItem(value, defaults = {}) {
+            const item = value && typeof value === 'object' ? value : { url: value };
+            const rawUrl = adminFirstLearningReelString([
+                item.url,
+                item.video_url,
+                item.videoUrl,
+                item.watch_url,
+                item.watchUrl,
+                defaults.url,
+            ]);
+            const videoId = adminCleanYoutubeVideoId(item.video_id || item.videoId || defaults.video_id || defaults.videoId || '') || adminYoutubeVideoIdFromUrl(rawUrl);
+            const url = canonicalAdminLearningReelUrl(rawUrl || (videoId ? `https://www.youtube.com/shorts/${videoId}` : ''));
+            const title = adminFirstLearningReelString([item.title, item.video_title, item.videoTitle, defaults.title]);
+            const description = adminFirstLearningReelString([item.description, item.summary, defaults.description]);
+            if (!url && !videoId && !title && !description) return null;
+            return {
+                url,
+                video_id: videoId,
+                title,
+                channel_title: adminFirstLearningReelString([item.channel_title, item.channelTitle, item.creator, item.source_name, item.sourceName, defaults.channel_title, defaults.channelTitle]),
+                topic_id: adminFirstLearningReelString([item.topic_id, item.topicId, defaults.topic_id, defaults.topicId]),
+                topic_label: adminFirstLearningReelString([item.topic_label, item.topicLabel, defaults.topic_label, defaults.topicLabel]),
+                description,
+                reason: adminFirstLearningReelString([item.reason, item.selection_reason, item.selectionReason, defaults.reason]),
+                youtube_query: adminFirstLearningReelString([item.youtube_query, item.youtubeQuery, item.query, defaults.youtube_query, defaults.youtubeQuery]),
+                sent_at: adminFirstLearningReelString([item.sent_at, item.sentAt, item.created_at, item.createdAt, defaults.sent_at, defaults.sentAt]),
+            };
+        }
+
+        function extractAdminLearningReelUrls(text) {
+            const raw = String(text || '');
+            return (raw.match(ADMIN_LEARNING_REEL_URL_RE) || []).map(adminCleanLearningReelUrl).filter(Boolean);
+        }
+
+        function adminLearningReelDedupeKey(item) {
+            const id = adminCleanYoutubeVideoId(item?.video_id || item?.videoId || '') || adminYoutubeVideoIdFromUrl(item?.url || '');
+            if (id) return `id:${id.toLowerCase()}`;
+            const url = canonicalAdminLearningReelUrl(item?.url || '').toLowerCase();
+            if (url) return `url:${url}`;
+            return `title:${String(item?.title || '').toLowerCase().trim()}`;
+        }
+
+        function collectAdminLearningReelItems(alert) {
+            const data = alert?.data || {};
+            const defaults = {
+                topic_id: data.topic_id || data.topicId,
+                topic_label: data.topic_label || data.topicLabel,
+            };
+            const candidates = [
+                data.learning_reel,
+                data.learningReel,
+                data.learning_reel_context,
+                data.learningReelContext,
+                data.learning_reels,
+                data.learningReels,
+                data.learning_reels_sent,
+                data.learningReelsSent,
+                alert?.learning_reels,
+            ].flatMap(value => listAdminLearningReelValue(value));
+            const textValues = [
+                getResolvedAlertMessage(alert),
+                alert?.suggested_message,
+                alert?.description,
+                data.draft_text,
+                data.message_preview,
+                data.suggested_message,
+                data.learning_reel_manual_send?.suggested_message,
+            ];
+            for (const text of textValues) {
+                for (const url of extractAdminLearningReelUrls(text)) candidates.push({ url });
+            }
+            const seen = new Set();
+            const items = [];
+            for (const candidate of candidates) {
+                const normalized = normalizeAdminLearningReelItem(candidate, defaults);
+                if (!normalized) continue;
+                const key = adminLearningReelDedupeKey(normalized);
+                if (!key || seen.has(key)) continue;
+                seen.add(key);
+                items.push(normalized);
+            }
+            return items;
+        }
+
+        function pickAdminLearningReelForAlert(alert) {
+            const items = collectAdminLearningReelItems(alert);
+            if (!items.length) return null;
+            const draftKeys = new Set(extractAdminLearningReelUrls(getResolvedAlertMessage(alert)).map(url => adminLearningReelDedupeKey({ url })));
+            const draftMatch = items.find(item => draftKeys.has(adminLearningReelDedupeKey(item)));
+            return draftMatch || items[0];
+        }
+
+        function renderLearningReelContextStrip(alert) {
+            if (!isLearningReelApprovalAlert(alert)) return '';
+            const reel = pickAdminLearningReelForAlert(alert);
+            if (!reel) return '';
+            const topicLabel = compactLearningReelContextText(reel.topic_label || reel.topic_id || 'YouTube reel', 80);
+            const title = compactLearningReelContextText(reel.title || 'YouTube reel selected for review', 150);
+            const channel = compactLearningReelContextText(reel.channel_title, 90);
+            const description = compactLearningReelContextText(reel.description, 180);
+            const reason = compactLearningReelContextText(reel.reason || reel.youtube_query, 160);
+            const url = canonicalAdminLearningReelUrl(reel.url || '');
+            const embedUrl = currentFeed === 'needs-you' ? adminLearningReelEmbedUrl(reel) : '';
+            const previewHtml = embedUrl
+                ? `<div class="learning-reel-preview"><iframe src="${escapeHtml(embedUrl)}" title="${escapeHtml(title)}" loading="lazy" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`
+                : '';
+            return `<div class="learning-reel-context">
+                <div class="learning-reel-context-head">
+                    <span class="learning-reel-context-label">Watch before sending</span>
+                    ${topicLabel ? `<span class="learning-reel-context-topic">${escapeHtml(topicLabel)}</span>` : ''}
+                </div>
+                <div class="learning-reel-context-title">${escapeHtml(title)}</div>
+                ${channel ? `<div class="learning-reel-context-body">${escapeHtml(channel)}</div>` : ''}
+                ${description ? `<div class="learning-reel-context-body">${escapeHtml(description)}</div>` : ''}
+                ${reason ? `<div class="learning-reel-context-reason">${escapeHtml(reason)}</div>` : ''}
+                ${url ? `<a class="learning-reel-context-url" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>` : ''}
+                ${previewHtml}
             </div>`;
         }
 

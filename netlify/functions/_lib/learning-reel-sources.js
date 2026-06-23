@@ -1,4 +1,5 @@
 const LEARNING_REEL_TOPIC_LABELS = {
+    vegan_panettone: 'Vegan panettone',
     plant_based_cooking: 'Plant-based cooking',
     bunny_reels: 'Bunny reels',
     core_training_technique: 'Core training technique',
@@ -37,6 +38,7 @@ const SUBSCRIBER_TIER_SCORE = {
 };
 
 const TOPIC_KEYWORD_RE = {
+    vegan_panettone: /\b(vegan|plant[-\s]?based|eggless|egg[-\s]?free|dairy[-\s]?free|panettone|italian|christmas|holiday|bread|cake|bake|baking|recipe)\b/i,
     plant_based_cooking: /\b(plant|vegan|vegetarian|recipe|meal|cook|cooking|lentil|tofu|beans?|tempeh|protein)\b/i,
     bunny_reels: /\b(bunny|bunnies|rabbit|rabbits|houserabbit|house rabbit|free roam rabbit|pet rabbit|bink(?:y|ies)|flop|hay|rabbit care|rabbit enrichment|cute rabbit)\b/i,
     core_training_technique: /\b(core|abs?|abdominals?|brace|bracing|trunk|dead bug|plank|anti[-\s]?extension|hollow|pelvic tilt|posterior pelvic tilt|anterior pelvic tilt|rib cage|neutral spine)\b/i,
@@ -58,6 +60,18 @@ const TOPIC_KEYWORD_RE = {
 };
 
 const LEARNING_REEL_BLOCKLIST_RE = /\b(detox|cleanse|miracle|belly fat|fat burner|carnivore|liver king|medical medium|dr\.?\s*berg|gary brecka|alkaline|parasite cleanse|adrenal fatigue|hormone reset|cortisol face|ozempic alternative|ice hack|hack your|age backwards|anti[-\s]?aging secrets?|lose \d+\s*(?:kg|kilos?|pounds?|lbs?)|after 50|fitfixen)\b/i;
+const OPEN_SOURCE_TOPIC_IDS = new Set(['vegan_panettone']);
+const OPEN_TOPIC_QUERIES = {
+    vegan_panettone: [
+        'vegan panettone recipe',
+        'easy vegan panettone',
+        'homemade vegan panettone',
+        'egg free dairy free panettone',
+        'plant based panettone',
+    ],
+};
+const VEGAN_PANETTONE_REQUIRED_RE = /\bpanettone\b/i;
+const VEGAN_PANETTONE_PLANT_RE = /\b(vegan|plant[-\s]?based|eggless|egg[-\s]?free|dairy[-\s]?free)\b/i;
 
 const CURATED_LEARNING_REEL_SOURCES = [
     {
@@ -547,12 +561,14 @@ function buildCuratedLearningReelQueries(topicId, options = {}) {
     const perSource = Math.max(1, Math.min(4, Number(options.perSource || 2)));
     const includeShorts = options.includeShorts !== false;
     const suffix = includeShorts ? ' shorts' : '';
-    return getCuratedLearningReelSources(topicId).flatMap(source => {
+    const sourceQueries = getCuratedLearningReelSources(topicId).flatMap(source => {
         const topicConfig = sourceTopicConfig(source, topicId);
         return (topicConfig?.queries || [])
             .slice(0, perSource)
             .map(query => `${source.channelTitle} ${query}${suffix}`);
     });
+    const openQueries = (OPEN_TOPIC_QUERIES[topicId] || []).map(query => `${query}${suffix}`);
+    return [...sourceQueries, ...openQueries];
 }
 
 function curatedLearningReelSourceNames(topicId) {
@@ -563,7 +579,10 @@ function learningReelCandidateRejectReason(candidate, topicId) {
     const text = `${candidate?.title || ''} ${candidate?.description || ''} ${candidate?.channelTitle || ''}`;
     if (LEARNING_REEL_BLOCKLIST_RE.test(text)) return 'blocked_topic_or_creator';
     const source = findCuratedLearningReelSource(candidate, topicId);
-    if (!source) return 'source_not_curated_for_topic';
+    const openSourceAllowed = OPEN_SOURCE_TOPIC_IDS.has(topicId)
+        && VEGAN_PANETTONE_REQUIRED_RE.test(text)
+        && VEGAN_PANETTONE_PLANT_RE.test(text);
+    if (!source && !openSourceAllowed) return 'source_not_curated_for_topic';
     const topicRe = TOPIC_KEYWORD_RE[topicId];
     if (topicRe && !topicRe.test(text)) return 'topic_mismatch';
     const durationSec = Number(candidate?.durationSec || candidate?.duration_sec || 0);
@@ -575,13 +594,18 @@ function scoreCuratedLearningReelCandidate(candidate, topicId = candidate?.topic
     const rejectReason = learningReelCandidateRejectReason(candidate, topicId);
     if (rejectReason) return -1000;
 
-    const source = findCuratedLearningReelSource(candidate, topicId);
+    const source = findCuratedLearningReelSource(candidate, topicId) || null;
     const text = `${candidate?.title || ''} ${candidate?.description || ''}`;
     const durationSec = Number(candidate?.durationSec || candidate?.duration_sec || 0);
     const views = Number(candidate?.viewCount || candidate?.view_count || 0);
-    let score = scoreSourceForTopic(source, topicId);
+    let score = source ? scoreSourceForTopic(source, topicId) : 62;
 
     if (candidate?.channelId && source?.channelId && candidate.channelId === source.channelId) score += 18;
+    if (topicId === 'vegan_panettone') {
+        if (/\bpanettone\b/i.test(text)) score += 28;
+        if (/\b(vegan|plant[-\s]?based|eggless|egg[-\s]?free|dairy[-\s]?free)\b/i.test(text)) score += 18;
+        if (/\b(recipe|bake|baking|homemade|easy|fluffy|soft)\b/i.test(text)) score += 8;
+    }
     if (durationSec >= 25 && durationSec <= 90) score += 18;
     else if (durationSec > 90 && durationSec <= 150) score += 10;
     if (/\b(shorts?|reels?|clip)\b/i.test(text)) score += 8;

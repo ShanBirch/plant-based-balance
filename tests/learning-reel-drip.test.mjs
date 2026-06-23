@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 
 const { _test } = await import('../netlify/functions/learning-reel-drip.mjs');
+const learningReelSources = (await import('../netlify/functions/_lib/learning-reel-sources.js')).default;
 
 delete process.env.LEARNING_REEL_DRIP_FORCE_ACTIVE;
 delete process.env.LEARNING_REEL_DRIP_AUTOSTART_UNTIL;
@@ -24,6 +25,7 @@ assert.strictEqual(state.plan.length, 168);
 const pilotConfig = _test.CLIENT_PILOT_TARGETS.find(target => target.id === 'mon_vegan_food_pilot');
 assert.ok(pilotConfig);
 assert.strictEqual(pilotConfig.handle, 'monica.l.sheekey');
+assert.strictEqual(pilotConfig.review_before_send, true);
 const pilotPlan = _test.buildClientPilotPlan(pilotConfig, nowMs);
 assert.strictEqual(pilotPlan.length, 12);
 assert.strictEqual(pilotPlan[0].topic_id, 'plant_based_cooking');
@@ -38,7 +40,21 @@ assert.strictEqual(pilotState.id, 'mon_vegan_food_pilot');
 assert.strictEqual(pilotState.vegan_safe_required, true);
 assert.deepStrictEqual(pilotState.topics, ['plant_based_cooking', 'meal_prep_planning']);
 assert.strictEqual(pilotState.require_coach_reply_after_inbound, true);
+assert.strictEqual(pilotState.review_before_send, true);
 assert.strictEqual(pilotState.plan.length, 12);
+
+const fraPilotConfig = _test.CLIENT_PILOT_TARGETS.find(target => target.id === 'francesca_vegan_food_pilot');
+assert.ok(fraPilotConfig);
+assert.strictEqual(fraPilotConfig.handle, 'cavazzanafrancesca');
+assert.deepStrictEqual(fraPilotConfig.topics, ['vegan_panettone', 'plant_based_cooking', 'meal_prep_planning']);
+assert.strictEqual(fraPilotConfig.review_before_send, true);
+assert.strictEqual(fraPilotConfig.review_reason, 'francesca_panettone_reel_review');
+const fraPilotPlan = _test.buildClientPilotPlan(fraPilotConfig, nowMs);
+assert.strictEqual(fraPilotPlan[0].topic_id, 'vegan_panettone');
+const fraPilotState = _test.normalizeClientPilotState({ custom_data: {} }, fraPilotConfig, nowMs);
+assert.strictEqual(fraPilotState.review_before_send, true);
+assert.deepStrictEqual(fraPilotState.topics, ['vegan_panettone', 'plant_based_cooking', 'meal_prep_planning']);
+assert.strictEqual(fraPilotState.plan[0].topic_id, 'vegan_panettone');
 
 const lilPilotConfig = _test.CLIENT_PILOT_TARGETS.find(target => target.id === 'lil_bunny_reel_pilot');
 assert.ok(lilPilotConfig);
@@ -283,6 +299,25 @@ assert.strictEqual(candidate.duration_seconds, 45);
 assert.strictEqual(candidate.view_count, 120000);
 assert.strictEqual(candidate.thumbnail_url, 'https://img.youtube.com/high.jpg');
 
+assert.ok(
+    learningReelSources.buildCuratedLearningReelQueries('vegan_panettone')
+        .some(query => /vegan panettone recipe shorts/i.test(query))
+);
+assert.ok(learningReelSources.scoreCuratedLearningReelCandidate({
+    title: 'Easy Vegan Panettone Recipe #shorts',
+    description: 'Egg free dairy free panettone with soft fluffy dough.',
+    channelTitle: 'Italian Vegan Baker',
+    durationSec: 52,
+    viewCount: 45000,
+}, 'vegan_panettone') > 100);
+assert.strictEqual(learningReelSources.scoreCuratedLearningReelCandidate({
+    title: 'Traditional Panettone Recipe',
+    description: 'Classic Italian panettone with butter and eggs.',
+    channelTitle: 'Italian Baker',
+    durationSec: 52,
+    viewCount: 45000,
+}, 'vegan_panettone'), -1000);
+
 const proteinMessage = _test.buildVisibleMessage(candidate, 0);
 assert.ok(proteinMessage.includes('https://www.youtube.com/shorts/abc123xyz'));
 assert.match(proteinMessage, /protein|nutrition/);
@@ -311,6 +346,17 @@ assert.match(cookingMessage, /looks yum|looks good|would eat|worth trying|yum/);
 assert.ok(cookingMessage.includes('https://www.youtube.com/shorts/xMdz4-AiYA4'));
 assert.ok(!cookingMessage.includes("this is cool, reckon you'll like this one"));
 assert.doesNotMatch(cookingMessage, /cucumber salad|make me this/i);
+
+const panettoneMessage = _test.buildVisibleMessage({
+    topic_id: 'vegan_panettone',
+    topic_label: 'Vegan panettone',
+    title: 'Easy Vegan Panettone Recipe',
+    url: 'https://www.youtube.com/shorts/b20A4MUVDI4',
+    video_id: 'b20A4MUVDI4',
+}, 0);
+assert.match(panettoneMessage, /looks yum|looks good|would eat|worth trying|yum/i);
+assert.match(panettoneMessage, /https:\/\/www\.youtube\.com\/shorts\/b20A4MUVDI4/i);
+assert.doesNotMatch(panettoneMessage, /easy vegan panettone recipe|make me this/i);
 
 const brainMessage = _test.buildVisibleMessage({
     topic_id: 'mindset_neuroscience',
