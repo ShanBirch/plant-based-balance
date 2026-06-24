@@ -406,6 +406,7 @@
 # Client/lead manager - routes permanent people, media, AI suspicion,
 # confused replies, and missing context into Needs You. Runs every 5 minutes
 # so hot Starter Coaching handoffs do not sit for the old 30-minute window.
+# Code gates work to 05:00-02:00 Brisbane; the 02:00-04:59 block is paused.
 [functions."client-lead-manager"]
   schedule = "*/5 * * * *"
 
@@ -439,6 +440,7 @@
 # due (one cheap status=scheduled query, no further work), so per-minute is
 # safe on Netlify's quota. Backed by coach_alerts.scheduled_for + an atomic
 # claim flip ('scheduled' -> 'pending') so concurrent runs don't double-fire.
+# Code gates work to 05:00-02:00 Brisbane; due replies wait through 02:00-04:59.
 [functions."scheduled-coach-reply-worker"]
   schedule = "* * * * *"
 

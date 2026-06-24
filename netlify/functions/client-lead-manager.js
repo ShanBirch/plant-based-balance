@@ -22,6 +22,10 @@ const {
     buildExerciseLibrarySupportBlock,
     classifyExerciseLibrarySupport,
 } = require('./_lib/exercise-library-search');
+const {
+    coachDmManagerWindowLabel,
+    isCoachDmManagerWorkingTime,
+} = require('./_lib/coach-dm-working-hours');
 
 const MANAGER_SOURCE = 'balance-lead-client-manager';
 const MAX_PER_RUN = 80;
@@ -628,6 +632,23 @@ async function runClientLeadManager({ limit = MAX_PER_RUN, aiDraftReviewLimit = 
 
 exports.handler = async () => {
     try {
+        const now = new Date();
+        if (!isCoachDmManagerWorkingTime(now)) {
+            const checkedAt = now.toISOString();
+            console.info('[client-lead-manager] paused outside working window', JSON.stringify({
+                at: checkedAt,
+                working_window: coachDmManagerWindowLabel(),
+            }));
+            return {
+                statusCode: 200,
+                body: JSON.stringify({
+                    ok: true,
+                    paused: true,
+                    checked_at: checkedAt,
+                    working_window: coachDmManagerWindowLabel(),
+                }),
+            };
+        }
         const result = await runClientLeadManager();
         console.info('[client-lead-manager] scheduled run complete', JSON.stringify({
             at: new Date().toISOString(),
@@ -667,4 +688,5 @@ exports._test = {
     hasApprovedCoachingLinkHandoff,
     shouldAutoScheduleApprovedCoachingHandoff,
     buildApprovedCoachingAutoSchedulePatch,
+    isCoachDmManagerWorkingTime,
 };
