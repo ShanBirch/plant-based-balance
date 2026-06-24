@@ -1765,6 +1765,20 @@ function shouldRecommendLikeFallback(analysis = {}, relationshipStoryBlockReason
         || reason === 'specific_visual_hook_required';
 }
 
+function isManualStoryOutreachOnly(thread = {}) {
+    const customData = thread && typeof thread.custom_data === 'object' && !Array.isArray(thread.custom_data)
+        ? thread.custom_data
+        : {};
+    return customData.manual_review_only === true
+        || customData.needs_you_always === true
+        || customData.permanent_person === true
+        || customData.permanent_needs_you_draft_only === true
+        || (
+            customData.needs_you_required === true
+            && String(customData.operator_queue || '').toLowerCase() === 'needs_you'
+        );
+}
+
 function storyOutreachMemoryTime(item = {}) {
     return validDate(item.sent_at || item.updated_at || item.captured_at || item.created_at);
 }
@@ -2732,11 +2746,12 @@ exports.handler = async (event = {}) => {
     const relationshipStoryCooldown = relationship.storyCooldown || null;
     const sentRequest = body.send_status === 'sent' || body.sent === true;
     const threadOptedOut = isAiAutomationOptedOut(existingThread);
+    const manualStoryReviewOnly = isManualStoryOutreachOnly(existingThread);
     const linkedUserExcluded = existingThread?.linked_user_id ? await isTestAccount(existingThread.linked_user_id) : false;
-    if (threadOptedOut || linkedUserExcluded) {
+    if (threadOptedOut || linkedUserExcluded || manualStoryReviewOnly) {
         return json(409, {
-            error: 'ai_automation_opt_out',
-            safety_reason: 'friend_manual_only',
+            error: manualStoryReviewOnly ? 'manual_story_review_only' : 'ai_automation_opt_out',
+            safety_reason: manualStoryReviewOnly ? 'manual_story_review_only' : 'friend_manual_only',
             idempotency_key: idempotencyKey,
             ig_username: username,
             story_id: storyId,
@@ -2744,8 +2759,11 @@ exports.handler = async (event = {}) => {
             ig_thread_id: existingThread?.id || null,
             linked_user_id: existingThread?.linked_user_id || null,
             sent_request: sentRequest,
+            manual_review_only: manualStoryReviewOnly,
+            needs_you_required: existingThread?.custom_data?.needs_you_required === true || false,
+            needs_you_reason: existingThread?.custom_data?.needs_you_reason || null,
             relationship_context: relationshipContext,
-            relationship_story_block_reason: 'friend_manual_only',
+            relationship_story_block_reason: manualStoryReviewOnly ? 'manual_story_review_only' : 'friend_manual_only',
         });
     }
     const analysisRelationshipContext = dryRunQualityJudge ? '' : relationshipContext;
@@ -2767,9 +2785,9 @@ exports.handler = async (event = {}) => {
         analysis.relationshipStoryBlockReason = relationshipStoryBlockReason;
     }
 
-    if (!sentRequest && analysis.safeToComment === false) {
+    if (analysis.safeToComment === false) {
         return json(409, {
-            error: 'unsafe_story_context',
+            error: sentRequest ? 'unsafe_sent_registration_refused' : 'unsafe_story_context',
             safety_reason: analysis.safetyReason || 'unsafe_story_context',
             idempotency_key: idempotencyKey,
             ig_username: username,
@@ -2785,6 +2803,7 @@ exports.handler = async (event = {}) => {
             relationship_story_block_reason: analysis.relationshipStoryBlockReason || relationshipStoryBlockReason || null,
             story_outreach_cooldown: relationshipStoryCooldown,
             like_fallback_recommended: shouldRecommendLikeFallback(analysis, relationshipStoryBlockReason),
+            sent_request: sentRequest,
             analysis_model: analysis.model,
             draft_pipeline: analysis.draftPipeline || null,
             draft_plan: analysis.draftPlan || null,
@@ -2965,6 +2984,9 @@ exports.handler = async (event = {}) => {
         evidence_image_count: evidenceImages.length,
         evidence_video_included: Boolean(evidenceVideo?.clean),
         evidence_video_bytes: evidenceVideo?.bytes || null,
+        manual_review_only: manualStoryReviewOnly,
+        needs_you_required: existingThread?.custom_data?.needs_you_required === true || false,
+        needs_you_reason: existingThread?.custom_data?.needs_you_reason || null,
         status: sentRequest ? 'sent' : 'pending',
     });
 };
@@ -2995,6 +3017,7 @@ exports._test = {
     storyOutreachMemoryWasSent,
     isDryRunQualityJudge,
     shouldRecommendLikeFallback,
+    isManualStoryOutreachOnly,
     storyAnalysisTranscriptNote,
     buildStoryOutreachMemory,
     buildStoryEvidenceAnalysisFallback,

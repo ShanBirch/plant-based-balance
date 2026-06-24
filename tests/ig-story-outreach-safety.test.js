@@ -16,6 +16,7 @@ const {
     isDryRunQualityJudge,
     validateEvidenceVideo,
     shouldRecommendLikeFallback,
+    isManualStoryOutreachOnly,
     storyAnalysisTranscriptNote,
     normalizeStorySurfaceContext,
     assessStillsOnlyVideoSalvageContext,
@@ -889,6 +890,27 @@ assert.strictEqual(
     shouldRecommendLikeFallback({ safetyReason: 'specific_visual_hook_required' }, ''),
     true,
     'broad story puns should fall back to like-only'
+);
+
+assert.strictEqual(
+    isManualStoryOutreachOnly({ custom_data: { manual_review_only: true } }),
+    true,
+    'manual-review IG threads should never get automatic story comments'
+);
+assert.strictEqual(
+    isManualStoryOutreachOnly({ custom_data: { needs_you_always: true } }),
+    true,
+    'permanent Needs You threads should block automatic story comments'
+);
+assert.strictEqual(
+    isManualStoryOutreachOnly({ custom_data: { needs_you_required: true, operator_queue: 'needs_you' } }),
+    true,
+    'active Needs You queues should block automatic story comments'
+);
+assert.strictEqual(
+    isManualStoryOutreachOnly({ custom_data: { needs_you_required: true, operator_queue: 'lead_inbox' } }),
+    false,
+    'a Needs You flag without the Needs You queue is not enough to block by itself'
 );
 
 const noEvidenceFallback = buildStoryEvidenceAnalysisFallback({
