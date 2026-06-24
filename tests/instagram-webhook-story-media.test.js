@@ -58,11 +58,19 @@ assert.strictEqual(
     true
 );
 assert.strictEqual(
-    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-1', profile_name: 'Fra Smith', custom_data: {} }),
+    _test.isPermanentNeedsYouThread({ linked_user_id: 'client-1', profile_name: 'Fra Smith', custom_data: {} }),
     true
 );
 assert.strictEqual(
-    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-2', profile_name: 'Romy', custom_data: {} }),
+    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-1', profile_name: 'Fra Smith', custom_data: {} }),
+    false
+);
+assert.strictEqual(
+    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-2', ig_username: 'cavazzanafrancesca', custom_data: { food_photo_tracking: { enabled: true } } }),
+    false
+);
+assert.strictEqual(
+    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-3', profile_name: 'Romy', custom_data: {} }),
     true
 );
 assert.strictEqual(
@@ -70,15 +78,15 @@ assert.strictEqual(
     false
 );
 assert.strictEqual(
-    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-3', profile_name: 'Someone Else', custom_data: {} }),
+    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-4', profile_name: 'Someone Else', custom_data: {} }),
     false
 );
 assert.strictEqual(
-    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-4', profile_name: 'Someone Else', custom_data: { food_photo_tracking: { enabled: true } } }),
+    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-5', profile_name: 'Someone Else', custom_data: { food_photo_tracking: { enabled: true } } }),
     true
 );
 assert.strictEqual(
-    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-5', profile_name: 'Fra', custom_data: { food_photo_tracking: { enabled: false } } }),
+    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-6', profile_name: 'Fra', custom_data: { food_photo_tracking: { enabled: false } } }),
     false
 );
 assert.strictEqual(

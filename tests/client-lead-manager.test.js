@@ -38,6 +38,7 @@ function makeAlert(overrides = {}) {
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Shane' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ profile_name: 'Fra' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'francesca_balance' }), true);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'cavazzanafrancesca' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Miranda' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'miranda_balance' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Monica' }), true);
@@ -512,6 +513,10 @@ const igDraftSource = fs.readFileSync(path.join(__dirname, '../netlify/functions
 assert.ok(
     igDraftSource.includes("code: 'always_needs_you_person'") && igDraftSource.includes("label: 'permanent Needs You client'"),
     'IG auto-send should be held for permanent Needs You clients'
+);
+assert.ok(
+    igDraftSource.includes('const permanentNeedsYouClient = isAlwaysNeedsYouPerson({'),
+    'IG permanent Needs You routing should not depend on the thread already being linked to an app user'
 );
 
 console.log('client-lead-manager tests passed');

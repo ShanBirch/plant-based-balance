@@ -20,6 +20,7 @@ const {
 const {
     normalizeCoachDraftText,
     fireCoachEditAnalysis,
+    isAlwaysNeedsYouPerson,
 } = require('./_lib/client-context');
 const {
     resolveMetaIgAccountConfig,
@@ -730,6 +731,18 @@ function foodTrackingIdentityTokens(thread = {}) {
     return [...new Set(tokens.filter(Boolean))];
 }
 
+function isPermanentNeedsYouThread(thread = {}) {
+    return isAlwaysNeedsYouPerson({
+        name: thread.profile_name,
+        client_name: thread.profile_name,
+        profile_name: thread.profile_name,
+        ig_username: thread.ig_username,
+        username: thread.ig_username,
+        subscriber_id: thread.subscriber_id,
+        custom_data: thread.custom_data,
+    });
+}
+
 function foodPhotoTrackingFlagFromCustomData(customData = {}) {
     const data = safeObject(customData);
     const trackingData = safeObject(data.food_photo_tracking || data.calorie_photo_tracking);
@@ -749,6 +762,7 @@ function foodPhotoTrackingFlagFromCustomData(customData = {}) {
 
 function isFoodPhotoTrackingAllowed(thread = {}) {
     if (!thread?.linked_user_id) return false;
+    if (isPermanentNeedsYouThread(thread)) return false;
     const explicit = foodPhotoTrackingFlagFromCustomData(thread.custom_data);
     if (explicit === false) return false;
     if (explicit === true) return true;
@@ -2629,6 +2643,7 @@ exports._test = {
     extractFoodPhotoUrls,
     foodPhotoUrlsFromMessaging,
     foodTrackingIdentityTokens,
+    isPermanentNeedsYouThread,
     isFoodPhotoTrackingAllowed,
     isFoodPhotoTrackingOfferText,
     isFoodPhotoTrackingConsentText,

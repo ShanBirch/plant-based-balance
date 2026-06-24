@@ -450,6 +450,8 @@ function isAlwaysNeedsYouPerson(record = {}) {
             || tokens.includes('monica')
             || tokens.includes('dani')
             || tokens.some(token => /^francesca\b/.test(token))
+            || name === 'cavazzanafrancesca'
+            || name === 'francescacavazzana'
             || name === 'shane'
             || name === 'fra'
             || name === 'miranda'

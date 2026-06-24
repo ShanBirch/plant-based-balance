@@ -3226,14 +3226,14 @@ exports.handler = async (event) => {
         ? linkedClientProfile.name
         : '';
     const leadName = linkedClientName || threadDisplayName;
-    const permanentNeedsYouClient = (!!thread.linked_user_id || ['in_app', 'paying'].includes(String(thread.lead_stage || '').toLowerCase()))
-        && isAlwaysNeedsYouPerson({
-            name: leadName,
-            client_name: leadName,
-            profile_name: thread.profile_name,
-            ig_username: thread.ig_username,
-            username: thread.ig_username,
-        });
+    const permanentNeedsYouClient = isAlwaysNeedsYouPerson({
+        name: leadName,
+        client_name: leadName,
+        profile_name: thread.profile_name,
+        ig_username: thread.ig_username,
+        username: thread.ig_username,
+        custom_data: thread.custom_data,
+    });
     const history = await loadIgHistory(threadId, messageText);
 
     let memoryBlock = '';
