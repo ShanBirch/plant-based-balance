@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v217'; // v217: post-workout save and photo runtime guards; v216: load workout runtime before starting sessions
+const CACHE_NAME = 'pbb-app-v218'; // v218: restore eager workout startup after speed deferral rollback; v217: post-workout save and photo runtime guards
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -243,8 +243,8 @@ self.addEventListener('push', (e) => {
   // Build notification options from server payload
   const options = {
     body: data.body,
-    icon: data.icon || './balance_logo_transparent.svg',
-    badge: data.badge || './balance_logo_transparent.svg',
+    icon: data.icon || './assets/balance_logo.png',
+    badge: data.badge || './assets/balance_logo.png',
     vibrate: data.vibrate || [200, 100, 200],
     tag: data.tag || 'dm-message',
     requireInteraction: data.requireInteraction || false,

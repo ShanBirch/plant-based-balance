@@ -61,7 +61,7 @@ if (!(navigator.userAgent.indexOf('FitGotchi-Native') !== -1)) {
     document.head.appendChild(m);
 }
 </script>
-<link rel="icon" type="image/svg+xml" href="balance_logo_transparent.svg">
+<link rel="icon" type="image/png" href="balance_logo.png">
 <script>
 // html5-qrcode (~300KB) is only used for barcode scanning.
 // On iOS, defer to pbbInitComplete to avoid parsing 300KB of JS during the critical window.
@@ -157,7 +157,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 
   // Only register the service worker on web — not inside the Capacitor native shell.
   // On native, FCM handles push notifications directly.
-  // Defer registration until the app is usable so install caching does not compete with startup.
+  // On iOS Safari, defer to pbbInitComplete to reduce memory pressure during init.
   function _pbbRegisterSW() {
     if ('serviceWorker' in navigator &&
         !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
@@ -171,10 +171,8 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
       console.log('[SW] Skipped service worker registration on native (FCM handles push)');
     }
   }
-  if (window._pbbDeferNonCriticalScripts) {
-    window.addEventListener('pbbInitComplete', function() {
-      setTimeout(_pbbRegisterSW, window._pbbIsIOSSafari ? 0 : 2500);
-    }, { once: true });
+  if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', _pbbRegisterSW, { once: true });
   } else {
     _pbbRegisterSW();
   }
@@ -311,11 +309,11 @@ if (!window._pbbIsIOSSafari) {
         });
         if(window._crumb)window._crumb('template_injection_done');
     }
-    if (window._pbbDeferNonCriticalScripts) {
+    if (window._pbbIsIOSSafari) {
         // Defer to after init so the ~2300-element DOM spike doesn't collide with
         // Supabase CDN + auth-guard + script-3 loading during DOMContentLoaded.
         window.addEventListener('pbbInitComplete', injectTemplates, { once: true });
-        if(window._crumb)window._crumb('template_injection_deferred');
+        if(window._crumb)window._crumb('template_injection_deferred_ios');
     } else {
         document.addEventListener('DOMContentLoaded', injectTemplates);
     }
@@ -408,153 +406,6 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script src="js/dashboard/script_part_4.js?v=theme-toggle-shell-v1"></script>
-<script>
-(function() {
-    function loadOnce(src, options) {
-        if (window.pbbLoadScriptOnce) return window.pbbLoadScriptOnce(src, options);
-        return new Promise(function(resolve, reject) {
-            var existing = document.querySelector('script[src="' + src + '"]');
-            if (existing) {
-                existing.addEventListener('load', resolve, { once: true });
-                existing.addEventListener('error', reject, { once: true });
-                return;
-            }
-            var s = document.createElement('script');
-            s.src = src;
-            s.onload = resolve;
-            s.onerror = reject;
-            document.head.appendChild(s);
-        });
-    }
-
-    window.ensureAiCoachScript = function() {
-        if (typeof window.openCoachChatModal === 'function' && !window.openCoachChatModal._pbbStub) {
-            return Promise.resolve();
-        }
-        return loadOnce('js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=24', {
-            onload: function() { if(window._crumb)window._crumb('script6_deferred_loaded'); }
-        });
-    };
-    if (typeof window.openCoachChatModal !== 'function') {
-        window.openCoachChatModal = function() {
-            return window.ensureAiCoachScript().then(function() {
-                if (typeof window.openCoachChatModal === 'function' && !window.openCoachChatModal._pbbStub) {
-                    return window.openCoachChatModal();
-                }
-            });
-        };
-        window.openCoachChatModal._pbbStub = true;
-    }
-    if (typeof window.closeCoachChatModal !== 'function') {
-        window.closeCoachChatModal = function() {
-            var modal = document.getElementById('coach-chat-modal');
-            if (modal) modal.style.display = 'none';
-        };
-    }
-
-    var workoutDataPromise = null;
-    window.ensureWorkoutDataScripts = function() {
-        if (typeof WORKOUT_LIBRARY !== 'undefined' &&
-            typeof WORKOUT_LIBRARY_EXTENDED !== 'undefined' &&
-            typeof EXERCISE_VIDEOS !== 'undefined') {
-            return Promise.resolve();
-        }
-        if (workoutDataPromise) return workoutDataPromise;
-        workoutDataPromise = Promise.all([
-            loadOnce('exercise_videos.js'),
-            loadOnce('workout_library.js'),
-            loadOnce('workout_library_extended.js')
-        ]).then(function() {
-            if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !== 'undefined') {
-                WORKOUT_LIBRARY.yoga = WORKOUT_LIBRARY_EXTENDED.yoga;
-                WORKOUT_LIBRARY.bodyweight = WORKOUT_LIBRARY_EXTENDED.bodyweight;
-                WORKOUT_LIBRARY.home = WORKOUT_LIBRARY_EXTENDED.home;
-            }
-        }).catch(function(e) {
-            workoutDataPromise = null;
-            throw e;
-        });
-        return workoutDataPromise;
-    };
-
-    window.ensureVideoLogicScript = function() {
-        if (typeof window.openExerciseVideo === 'function' && !window.openExerciseVideo._pbbStub) {
-            return Promise.resolve();
-        }
-        return loadOnce('js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream');
-    };
-    ['openExerciseVideo', 'playVideo', 'closeVideoModal', 'openVideoNewTab'].forEach(function(name) {
-        if (typeof window[name] === 'function') return;
-        var stub = function() {
-            var args = arguments;
-            return window.ensureVideoLogicScript().then(function() {
-                var fn = window[name];
-                if (typeof fn === 'function' && !fn._pbbStub) {
-                    return fn.apply(window, args);
-                }
-            });
-        };
-        stub._pbbStub = true;
-        window[name] = stub;
-    });
-
-    var pointsScriptSrc = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=5';
-    window.ensurePointsWidgetScript = function() {
-        if (typeof window.captureWorkoutSharePhoto === 'function' && !window.captureWorkoutSharePhoto._pbbStub) {
-            return Promise.resolve();
-        }
-        if (window._pbbPointsWidgetScriptPromise) return window._pbbPointsWidgetScriptPromise;
-        window._pbbPointsWidgetScriptPromise = loadOnce(pointsScriptSrc).then(function() {
-            if (typeof loadPointsWidget === 'function') {
-                try { loadPointsWidget(); } catch(e) {}
-            }
-        }).catch(function(e) {
-            window._pbbPointsWidgetScriptPromise = null;
-            throw e;
-        });
-        return window._pbbPointsWidgetScriptPromise;
-    };
-    [
-        'captureWorkoutSharePhoto',
-        'retakeWorkoutSharePhoto',
-        'shareWorkoutCardToFeed',
-        'shareWorkoutToStory',
-        'shareWorkoutToGroupChat',
-        'captureAndShareWorkout',
-        'closeWorkoutCamera',
-        'captureWorkoutPhoto',
-        'flipWorkoutCamera',
-        'handleWorkoutPhotoCapture',
-        'handleWorkoutCardPhotoCapture'
-    ].forEach(function(name) {
-        if (typeof window[name] === 'function') return;
-        var stub = function() {
-            var args = arguments;
-            if ((name === 'captureWorkoutSharePhoto' || name === 'shareWorkoutCardToFeed') && typeof showToast === 'function') {
-                showToast('Loading workout photo tools...', 'info');
-            }
-            return window.ensurePointsWidgetScript().then(function() {
-                var fn = window[name];
-                if (typeof fn === 'function' && !fn._pbbStub) {
-                    return fn.apply(window, args);
-                }
-            }).catch(function(e) {
-                console.error('Workout photo tools failed to load:', e);
-                if (typeof showToast === 'function') {
-                    showToast('Workout photo tools are still loading. Try again in a moment.', 'error');
-                }
-            });
-        };
-        stub._pbbStub = true;
-        window[name] = stub;
-    });
-
-    window.ensureLearningScript = function() {
-        if (typeof window.initLearning === 'function') return Promise.resolve();
-        return loadOnce('lib/learning-inline.js?v=6');
-    };
-})();
-</script>
 
 <link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=66">
 
@@ -584,7 +435,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
         <span class="login-loading-pulse-ring" style="animation-delay:0.37s;" aria-hidden="true"></span>
         <span class="login-loading-pulse-ring" style="animation-delay:0.74s;" aria-hidden="true"></span>
         <span class="login-loading-orbit" aria-hidden="true"><span></span><span></span><span></span></span>
-        <img src="balance_logo_transparent.svg" alt="Balance Logo" class="login-loading-logo">
+        <img src="balance_logo.png" alt="Balance Logo" class="login-loading-logo">
     </div>
 
     <div id="login-loading-text" class="login-loading-text" style="color: var(--pbb-loading-heading, var(--primary)); font-weight: 600;">Loading your dashboard...</div>
@@ -1586,10 +1437,10 @@ window.addEventListener('load', function() {
     </div>
 
     <script>
-    // Defer dashboard-script-1 (daily weighin card, 30KB) to reduce
-    // startup work. This script handles the weighin card UI which
+    // On iOS Safari, defer dashboard-script-1 (daily weighin card, 30KB) to reduce
+    // memory pressure during init. This script handles the weighin card UI which
     // isn't needed until the user scrolls to it or interacts with it.
-    if (window._pbbDeferNonCriticalScripts) {
+    if (window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
@@ -1604,7 +1455,7 @@ window.addEventListener('load', function() {
 
 
     <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-fitbit.js"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -1628,7 +1479,7 @@ if(!window._pbbDeferNonCriticalScripts) {
     </div>
 
     <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-spotify.js"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -1682,7 +1533,7 @@ if(!window._pbbDeferNonCriticalScripts) {
     </script>
 
     <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-performance.js"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -1692,10 +1543,10 @@ if(!window._pbbDeferNonCriticalScripts) {
     
 
     <script>
-    // Defer dashboard-script-2 (activity insights, 78KB) to reduce
-    // startup work. This script handles the activity view which
+    // On iOS Safari, defer dashboard-script-2 (activity insights, 78KB) to reduce
+    // memory pressure during init. This script handles the activity view which
     // the user navigates to explicitly — not needed during initial render.
-    if (window._pbbDeferNonCriticalScripts) {
+    if (window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
@@ -1710,7 +1561,7 @@ if(!window._pbbDeferNonCriticalScripts) {
 
 
     <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-dailyquiz.js"><\/script>');
     document.write('<script src="js/dashboard/pbb-home-card-quiz.js?v=3"><\/script>');
 } else {
@@ -1722,7 +1573,7 @@ if(!window._pbbDeferNonCriticalScripts) {
     
 
     <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=7"><\/script>');
     document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=21"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=15"><\/script>');
@@ -1736,7 +1587,7 @@ if(!window._pbbDeferNonCriticalScripts) {
     
 
     <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-mealtip.js"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -1745,6 +1596,14 @@ if(!window._pbbDeferNonCriticalScripts) {
 </script>
     
 
+    <script>
+if(!window._pbbIsIOSSafari) {
+    document.write('<script src="js/dashboard/pbb-deferred-workouttrend.js"><\/script>');
+} else {
+    window._pbbDeferredQueue = window._pbbDeferredQueue || [];
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-workouttrend.js');
+}
+</script>
     <div style="padding: 0 25px;">
         <!-- Avatar Companion Widget - Disabled for now -->
 
@@ -3072,7 +2931,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Ginger Pear Smoothie" src="/assets/ginger_pear_smoothie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Ginger Pear Smoothie" src="/assets/ginger_pear_smoothie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Pear 170g</li><li>Spinach 50g</li><li>Cucumber 80g</li><li>Pea protein powder 30g</li><li>Ground flaxseed 15g</li><li>Aloe vera juice 30ml</li><li>Almond butter 15g</li><li>Water 100ml</li></ul>
 <h4>Preparation</h4>
@@ -3091,7 +2950,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cranberry Chia Pudding" src="/assets/cranberry_chia_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cranberry Chia Pudding" src="/assets/cranberry_chia_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chia seeds 15g</li><li>Pea protein 10g</li><li>Almond milk 100ml</li><li>Cranberries 10g</li><li>Berries 50g</li><li>Brazil nuts 5g</li></ul>
 <h4>Preparation</h4>
@@ -3110,7 +2969,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Stuffed Sweet Potato" src="/assets/stuffed_sweet_potato.jpg" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Stuffed Sweet Potato" src="/assets/stuffed_sweet_potato.jpg" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Sweet potato 200g</li><li>Quinoa 150g</li><li>Black beans 150g</li><li>Kale 50g</li><li>Tahini 15g</li><li>Lemon juice</li><li>Pumpkin seeds 10g</li></ul>
 <h4>Preparation</h4>
@@ -3131,7 +2990,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Fennel Lime Tonic &amp; Nori" src="/assets/fennel_lime_tonic_nori.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Fennel Lime Tonic &amp; Nori" src="/assets/fennel_lime_tonic_nori.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Fennel bulb 100g</li><li>Lime juice 20ml</li><li>Nori 2g</li></ul>
 <h4>Preparation</h4>
@@ -3150,7 +3009,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Miso Glazed Tempeh" src="/assets/miso_glazed_tempeh.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Miso Glazed Tempeh" src="/assets/miso_glazed_tempeh.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tempeh 200g</li><li>Miso 15g</li><li>Tamari 10ml</li><li>Maple 10ml</li><li>Bok choy 150g</li><li>Cauliflower rice 150g</li><li>Sesame oil</li><li>Tahini 20g</li></ul>
 <h4>Preparation</h4>
@@ -3172,7 +3031,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Chamomile Maca Moon Milk" src="/assets/chamomile_maca_moon_milk.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Chamomile Maca Moon Milk" src="/assets/chamomile_maca_moon_milk.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Almond milk 200ml</li><li>Maca 5g</li><li>Cinnamon</li><li>Magnesium</li><li>Chamomile tea</li></ul>
 <h4>Preparation</h4>
@@ -3192,7 +3051,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cucumber Mint Green Juice + Tofu Scramble" src="/assets/cucumber_mint_juice_tofu_scramble.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cucumber Mint Green Juice + Tofu Scramble" src="/assets/cucumber_mint_juice_tofu_scramble.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cucumber 200g</li><li>Fresh mint 10g</li><li>Firm tofu 200g</li><li>Asparagus 100g</li><li>Dill 5g</li><li>Olive oil 10ml</li><li>Turmeric 2g</li><li>Black salt 1g</li></ul>
 <h4>Preparation</h4>
@@ -3214,7 +3073,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Fennel Lime Tonic &amp; Nori" src="/assets/fennel_lime_tonic_nori.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Fennel Lime Tonic &amp; Nori" src="/assets/fennel_lime_tonic_nori.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Fennel bulb 100g</li><li>Lime juice 20ml</li><li>Nori 2g</li></ul>
 <h4>Preparation</h4>
@@ -3233,7 +3092,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Rainbow Collard Wraps" src="/assets/rainbow_collard_wraps.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Rainbow Collard Wraps" src="/assets/rainbow_collard_wraps.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Collard greens 6 leaves</li><li>Carrot 100g</li><li>Red lentils 250g</li><li>Avocado 100g</li><li>Bean sprouts 50g</li><li>Tahini 20g</li><li>Garlic 2g</li></ul>
 <h4>Preparation</h4>
@@ -3255,7 +3114,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Mineral Broth &amp; Edamame" src="/assets/mineral_broth_edamame.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Mineral Broth &amp; Edamame" src="/assets/mineral_broth_edamame.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Edamame 150g</li><li>Miso 15g</li><li>Veg broth 250ml</li><li>Wakame 5g</li><li>Scallions</li></ul>
 <h4>Preparation</h4>
@@ -3274,7 +3133,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Coconut Curry Red Lentil Soup" src="/assets/coconut_curry_red_lentil_soup.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Coconut Curry Red Lentil Soup" src="/assets/coconut_curry_red_lentil_soup.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Red lentils 250g</li><li>Light coconut milk 200ml</li><li>Curry paste 20g</li><li>Delicata squash 150g</li><li>Onion/Garlic/Ginger</li><li>Stock 300ml</li></ul>
 <h4>Preparation</h4>
@@ -3296,7 +3155,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Lemon Balm Tea" src="/assets/lemon_balm_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Lemon Balm Tea" src="/assets/lemon_balm_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Lemon balm tea</li><li>Ground flax 5g</li></ul>
 <h4>Preparation</h4>
@@ -3316,7 +3175,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Ginger Pear Smoothie" src="/assets/ginger_pear_smoothie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Ginger Pear Smoothie" src="/assets/ginger_pear_smoothie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Pear 170g</li><li>Spinach 50g</li><li>Cucumber 80g</li><li>Pea protein powder 30g</li><li>Ground flaxseed 15g</li><li>Aloe vera juice 30ml</li><li>Almond butter 15g</li><li>Water 100ml</li></ul>
 <h4>Preparation</h4>
@@ -3335,7 +3194,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Mineral Broth &amp; Edamame" src="/assets/mineral_broth_edamame.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Mineral Broth &amp; Edamame" src="/assets/mineral_broth_edamame.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Edamame 150g</li><li>Miso 15g</li><li>Veg broth 250ml</li><li>Wakame 5g</li><li>Scallions</li></ul>
 <h4>Preparation</h4>
@@ -3354,7 +3213,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Glow Bowl" src="/assets/glow_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Glow Bowl" src="/assets/glow_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Baby greens 100g</li><li>Fennel bulb 150g</li><li>White beans 200g</li><li>Artichoke hearts 100g</li><li>Pesto 25g</li><li>Lemon/Oil</li></ul>
 <h4>Preparation</h4>
@@ -3373,7 +3232,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cranberry Chia Pudding" src="/assets/cranberry_chia_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cranberry Chia Pudding" src="/assets/cranberry_chia_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chia seeds 15g</li><li>Pea protein 10g</li><li>Almond milk 100ml</li><li>Cranberries 10g</li><li>Berries 50g</li><li>Brazil nuts 5g</li></ul>
 <h4>Preparation</h4>
@@ -3392,7 +3251,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Zucchini Noodle Pho" src="/assets/zucchini_noodle_pho.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Zucchini Noodle Pho" src="/assets/zucchini_noodle_pho.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Zoodles 250g</li><li>Veg broth 300ml</li><li>Star anise/Cinnamon</li><li>Tofu 200g</li><li>Edamame 50g</li><li>Shiitake 100g</li><li>Mung sprouts</li><li>Basil</li></ul>
 <h4>Preparation</h4>
@@ -3414,7 +3273,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Golden Milk" src="/assets/golden_milk.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Golden Milk" src="/assets/golden_milk.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Almond milk 200ml</li><li>Turmeric</li><li>Ginger</li><li>Coconut oil 3g</li><li>Triphala</li><li>Magnesium</li></ul>
 <h4>Preparation</h4>
@@ -3434,7 +3293,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cucumber Mint Green Juice + Tofu Scramble" src="/assets/cucumber_mint_juice_tofu_scramble.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cucumber Mint Green Juice + Tofu Scramble" src="/assets/cucumber_mint_juice_tofu_scramble.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 
 <h4>Ingredients</h4>
 <ul><li>Cucumber 200g</li><li>Fresh mint 10g</li><li>Firm tofu 200g</li><li>Asparagus 100g</li><li>Dill 5g</li><li>Olive oil 10ml</li><li>Turmeric 2g</li><li>Black salt 1g</li></ul>
@@ -3454,7 +3313,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cranberry Chia Pudding" src="/assets/cranberry_chia_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cranberry Chia Pudding" src="/assets/cranberry_chia_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chia seeds 15g</li><li>Pea protein 10g</li><li>Almond milk 100ml</li><li>Cranberries 10g</li><li>Berries 50g</li><li>Brazil nuts 5g</li></ul>
 <h4>Preparation</h4>
@@ -3473,7 +3332,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Lemony Quinoa &amp; Chickpea Bowl" src="/assets/lemony_quinoa_chickpea_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Lemony Quinoa &amp; Chickpea Bowl" src="/assets/lemony_quinoa_chickpea_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chickpeas 100g</li><li>Quinoa 150g</li><li>Pumpkin seeds 20g</li><li>Mint &amp; Parsley 10g</li><li>Lemon juice 15ml</li><li>Plant protein 20g</li></ul>
 <h4>Preparation</h4>
@@ -3492,7 +3351,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Fennel Lime Tonic &amp; Nori" src="/assets/fennel_lime_tonic_nori.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Fennel Lime Tonic &amp; Nori" src="/assets/fennel_lime_tonic_nori.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Fennel bulb 100g</li><li>Lime juice 20ml</li><li>Nori 2g</li></ul>
 <h4>Preparation</h4>
@@ -3511,7 +3370,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Miso Glazed Tempeh" src="/assets/miso_glazed_tempeh.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Miso Glazed Tempeh" src="/assets/miso_glazed_tempeh.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tempeh 200g</li><li>Miso 15g</li><li>Tamari 10ml</li><li>Maple 10ml</li><li>Bok choy 150g</li><li>Cauliflower rice 150g</li><li>Sesame oil</li><li>Tahini 20g</li></ul>
 <h4>Preparation</h4>
@@ -3530,7 +3389,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Chamomile Maca Moon Milk" src="/assets/chamomile_maca_moon_milk.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Chamomile Maca Moon Milk" src="/assets/chamomile_maca_moon_milk.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Almond milk 200ml</li><li>Maca 5g</li><li>Cinnamon</li><li>Magnesium</li><li>Chamomile tea</li></ul>
 <h4>Preparation</h4>
@@ -3550,7 +3409,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Ginger Pear Smoothie" src="/assets/ginger_pear_smoothie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Ginger Pear Smoothie" src="/assets/ginger_pear_smoothie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Pear 170g</li><li>Spinach 50g</li><li>Cucumber 80g</li><li>Pea protein powder 30g</li><li>Ground flaxseed 15g</li><li>Aloe vera juice 30ml</li><li>Almond butter 15g</li><li>Water 100ml</li></ul>
 <h4>Preparation</h4>
@@ -3569,7 +3428,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Fennel Lime Tonic &amp; Nori" src="/assets/fennel_lime_tonic_nori.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Fennel Lime Tonic &amp; Nori" src="/assets/fennel_lime_tonic_nori.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Fennel bulb 100g</li><li>Lime juice 20ml</li><li>Nori 2g</li></ul>
 <h4>Preparation</h4>
@@ -3588,7 +3447,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Rainbow Collard Wraps" src="/assets/rainbow_collard_wraps.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Rainbow Collard Wraps" src="/assets/rainbow_collard_wraps.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Collard greens 6 leaves</li><li>Carrot 100g</li><li>Red lentils 250g</li><li>Avocado 100g</li><li>Bean sprouts 50g</li><li>Tahini 20g</li><li>Garlic 2g</li></ul>
 <h4>Preparation</h4>
@@ -3610,7 +3469,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Mineral Broth &amp; Edamame" src="/assets/mineral_broth_edamame.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Mineral Broth &amp; Edamame" src="/assets/mineral_broth_edamame.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Edamame 150g</li><li>Miso 15g</li><li>Veg broth 250ml</li><li>Wakame 5g</li><li>Scallions</li></ul>
 <h4>Preparation</h4>
@@ -3629,7 +3488,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Coconut Curry Red Lentil Soup" src="/assets/coconut_curry_red_lentil_soup.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Coconut Curry Red Lentil Soup" src="/assets/coconut_curry_red_lentil_soup.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Red lentils 250g</li><li>Light coconut milk 200ml</li><li>Curry paste 20g</li><li>Delicata squash 150g</li><li>Onion/Garlic/Ginger</li><li>Stock 300ml</li></ul>
 <h4>Preparation</h4>
@@ -3651,7 +3510,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Lemon Balm Tea" src="/assets/lemon_balm_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Lemon Balm Tea" src="/assets/lemon_balm_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Lemon balm tea</li><li>Ground flax 5g</li></ul>
 <h4>Preparation</h4>
@@ -3671,7 +3530,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cucumber Mint Green Juice + Tofu Scramble" src="/assets/cucumber_mint_juice_tofu_scramble.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cucumber Mint Green Juice + Tofu Scramble" src="/assets/cucumber_mint_juice_tofu_scramble.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 
 <h4>Ingredients</h4>
 <ul><li>Cucumber 200g</li><li>Fresh mint 10g</li><li>Firm tofu 200g</li><li>Asparagus 100g</li><li>Dill 5g</li><li>Olive oil 10ml</li><li>Turmeric 2g</li><li>Black salt 1g</li></ul>
@@ -3691,7 +3550,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Mineral Broth &amp; Edamame" src="/assets/mineral_broth_edamame.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Mineral Broth &amp; Edamame" src="/assets/mineral_broth_edamame.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Edamame 150g</li><li>Miso 15g</li><li>Veg broth 250ml</li><li>Wakame 5g</li><li>Scallions</li></ul>
 <h4>Preparation</h4>
@@ -3710,7 +3569,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Glow Bowl" src="/assets/glow_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Glow Bowl" src="/assets/glow_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Baby greens 100g</li><li>Fennel bulb 150g</li><li>White beans 200g</li><li>Artichoke hearts 100g</li><li>Pesto 25g</li><li>Lemon/Oil</li></ul>
 <h4>Preparation</h4>
@@ -3729,7 +3588,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cranberry Chia Pudding" src="/assets/cranberry_chia_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cranberry Chia Pudding" src="/assets/cranberry_chia_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chia seeds 15g</li><li>Pea protein 10g</li><li>Almond milk 100ml</li><li>Cranberries 10g</li><li>Berries 50g</li><li>Brazil nuts 5g</li></ul>
 <h4>Preparation</h4>
@@ -3748,7 +3607,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Zucchini Noodle Pho" src="/assets/zucchini_noodle_pho.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Zucchini Noodle Pho" src="/assets/zucchini_noodle_pho.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Zoodles 250g</li><li>Veg broth 300ml</li><li>Star anise/Cinnamon</li><li>Tofu 200g</li><li>Shiitake 100g</li><li>Mung sprouts</li><li>Basil</li></ul>
 <h4>Preparation</h4>
@@ -3770,7 +3629,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Golden Milk" src="/assets/golden_milk.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Golden Milk" src="/assets/golden_milk.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Almond milk 200ml</li><li>Turmeric</li><li>Ginger</li><li>Coconut oil 3g</li><li>Triphala</li><li>Magnesium</li></ul>
 <h4>Preparation</h4>
@@ -3790,7 +3649,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Ginger Pear Smoothie" src="/assets/ginger_pear_smoothie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Ginger Pear Smoothie" src="/assets/ginger_pear_smoothie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Pear 170g</li><li>Spinach 50g</li><li>Cucumber 80g</li><li>Pea protein powder 30g</li><li>Ground flaxseed 15g</li><li>Aloe vera juice 30ml</li><li>Almond butter 15g</li><li>Water 100ml</li></ul>
 <h4>Preparation</h4>
@@ -3809,7 +3668,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cranberry Chia Pudding" src="/assets/cranberry_chia_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cranberry Chia Pudding" src="/assets/cranberry_chia_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chia seeds 15g</li><li>Pea protein 10g</li><li>Almond milk 100ml</li><li>Cranberries 10g</li><li>Berries 50g</li><li>Brazil nuts 5g</li></ul>
 <h4>Preparation</h4>
@@ -3828,7 +3687,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Lemony Quinoa &amp; Chickpea Bowl" src="/assets/lemony_quinoa_chickpea_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Lemony Quinoa &amp; Chickpea Bowl" src="/assets/lemony_quinoa_chickpea_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chickpeas 100g</li><li>Quinoa 150g</li><li>Pumpkin seeds 20g</li><li>Mint &amp; Parsley 10g</li><li>Lemon juice 15ml</li><li>Plant protein 20g</li></ul>
 <h4>Preparation</h4>
@@ -3847,7 +3706,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Fennel Lime Tonic &amp; Nori" src="/assets/fennel_lime_tonic_nori.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Fennel Lime Tonic &amp; Nori" src="/assets/fennel_lime_tonic_nori.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Fennel bulb 100g</li><li>Lime juice 20ml</li><li>Nori 2g</li></ul>
 <h4>Preparation</h4>
@@ -3866,7 +3725,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Miso Glazed Tempeh" src="/assets/miso_glazed_tempeh.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Miso Glazed Tempeh" src="/assets/miso_glazed_tempeh.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tempeh 200g</li><li>Miso 15g</li><li>Tamari 10ml</li><li>Maple 10ml</li><li>Bok choy 150g</li><li>Cauliflower rice 150g</li><li>Sesame oil</li><li>Tahini 20g</li></ul>
 <h4>Preparation</h4>
@@ -3888,7 +3747,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Chamomile Maca Moon Milk" src="/assets/chamomile_maca_moon_milk.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Chamomile Maca Moon Milk" src="/assets/chamomile_maca_moon_milk.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Almond milk 200ml</li><li>Maca 5g</li><li>Cinnamon</li><li>Magnesium</li><li>Chamomile tea</li></ul>
 <h4>Preparation</h4>
@@ -3927,7 +3786,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Warm Apple Pie Oat Bake" src="/assets/warm_apple_pie_oat_bake.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Warm Apple Pie Oat Bake" src="/assets/warm_apple_pie_oat_bake.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Oats 50g</li><li>Apple 120g</li><li>Cardamom</li><li>Hemp yogurt 80g</li><li>Pear 80g</li></ul>
 <h4>Preparation</h4>
@@ -3948,7 +3807,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cinnamon Maca Latte" src="/assets/cinnamon_maca_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cinnamon Maca Latte" src="/assets/cinnamon_maca_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Almond milk 200ml</li><li>Maca</li><li>Cinnamon</li><li>Edamame 50g (side)</li></ul>
 <h4>Preparation</h4>
@@ -3967,7 +3826,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Farro Power Bowl" src="/assets/farro_power_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Farro Power Bowl" src="/assets/farro_power_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Farro 80g</li><li>Tempeh 150g</li><li>Brussels sprouts 100g</li><li>Pomegranate</li><li>Tahini</li></ul>
 <h4>Preparation</h4>
@@ -3989,7 +3848,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cacao Chia Protein Pudding" src="/assets/cacao_chia_protein_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cacao Chia Protein Pudding" src="/assets/cacao_chia_protein_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chia 15g</li><li>Cacao</li><li>Protein powder</li><li>Raspberries</li></ul>
 <h4>Preparation</h4>
@@ -4008,7 +3867,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Walnut Crusted Tofu" src="/assets/walnut_crusted_tofu.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Walnut Crusted Tofu" src="/assets/walnut_crusted_tofu.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tofu 200g</li><li>Walnuts 20g</li><li>Sweet potato 200g</li><li>Green beans</li></ul>
 <h4>Preparation</h4>
@@ -4030,7 +3889,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Reishi Hot Chocolate" src="/assets/reishi_hot_chocolate.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Reishi Hot Chocolate" src="/assets/reishi_hot_chocolate.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Almond milk</li><li>Cacao</li><li>Reishi</li><li>Monk fruit</li></ul>
 <h4>Preparation</h4>
@@ -4050,7 +3909,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Savory Chickpea Scramble" src="/assets/savory_chickpea_scramble.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Savory Chickpea Scramble" src="/assets/savory_chickpea_scramble.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chickpeas 100g</li><li>Tofu 200g</li><li>Spinach 100g</li><li>Pesto 10g</li><li>Tomatoes</li></ul>
 <h4>Preparation</h4>
@@ -4072,7 +3931,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cacao Chia Protein Pudding" src="/assets/cacao_chia_protein_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cacao Chia Protein Pudding" src="/assets/cacao_chia_protein_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chia 15g</li><li>Cacao</li><li>Protein powder</li><li>Raspberries</li></ul>
 <h4>Preparation</h4>
@@ -4091,7 +3950,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Hearty Tempeh Chili" src="/assets/hearty_tempeh_chili.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Hearty Tempeh Chili" src="/assets/hearty_tempeh_chili.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tempeh 200g</li><li>Kidney beans 100g</li><li>Cacao</li><li>Tomatoes 200g</li><li>Chili spices</li></ul>
 <h4>Preparation</h4>
@@ -4112,7 +3971,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Lime Spiced Pepitas &amp; Tea" src="/assets/lime_spiced_pepitas_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Lime Spiced Pepitas &amp; Tea" src="/assets/lime_spiced_pepitas_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Pepitas 40g</li><li>Lime zest/juice</li><li>Chili</li></ul>
 <h4>Preparation</h4>
@@ -4131,7 +3990,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Sheet Pan Lemon Seitan" src="/assets/sheet_pan_lemon_seitan.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Sheet Pan Lemon Seitan" src="/assets/sheet_pan_lemon_seitan.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Seitan 150g</li><li>Asparagus 150g</li><li>Fennel 100g</li><li>Orange</li></ul>
 <h4>Preparation</h4>
@@ -4152,7 +4011,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Tulsi Tea" src="/assets/tulsi_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Tulsi Tea" src="/assets/tulsi_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tulsi tea</li><li>Lemon</li></ul>
 <h4>Preparation</h4>
@@ -4172,7 +4031,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Blue Spirulina Smoothie Bowl" src="/assets/blue_spirulina_smoothie_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Blue Spirulina Smoothie Bowl" src="/assets/blue_spirulina_smoothie_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 
 <h4>Ingredients</h4>
 <ul><li>Cauli rice 100g</li><li>Blueberries 150g</li><li>Pea protein</li><li>Spirulina</li><li>Tahini 20g</li></ul>
@@ -4192,7 +4051,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Lime Spiced Pepitas &amp; Tea" src="/assets/lime_spiced_pepitas_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Lime Spiced Pepitas &amp; Tea" src="/assets/lime_spiced_pepitas_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Pepitas 40g</li><li>Lime zest/juice</li><li>Chili</li></ul>
 <h4>Preparation</h4>
@@ -4211,7 +4070,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Mediterranean Lentil Salad" src="/assets/mediterranean_lentil_salad.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Mediterranean Lentil Salad" src="/assets/mediterranean_lentil_salad.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Lentils 100g</li><li>Eggplant 200g</li><li>Tahini 15g</li><li>Parsley</li><li>Tomatoes</li></ul>
 <h4>Preparation</h4>
@@ -4233,7 +4092,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cinnamon Maca Latte" src="/assets/cinnamon_maca_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cinnamon Maca Latte" src="/assets/cinnamon_maca_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Almond milk 200ml</li><li>Maca</li><li>Cinnamon</li><li>Edamame 50g (side)</li></ul>
 <h4>Preparation</h4>
@@ -4252,7 +4111,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Rainbow Sushi Bowl" src="/assets/rainbow_sushi_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Rainbow Sushi Bowl" src="/assets/rainbow_sushi_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Black rice 150g</li><li>Smoked tofu 150g</li><li>Avocado</li><li>Cucumber</li><li>Nori</li></ul>
 <h4>Preparation</h4>
@@ -4274,7 +4133,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Sage &amp; Lavender Tea" src="/assets/sage_lavender_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Sage &amp; Lavender Tea" src="/assets/sage_lavender_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Sage</li><li>Lavender</li></ul>
 <h4>Preparation</h4>
@@ -4294,7 +4153,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Overnight Buckwheat Groats" src="/assets/overnight_buckwheat_groats.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Overnight Buckwheat Groats" src="/assets/overnight_buckwheat_groats.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Buckwheat 60g</li><li>Almond milk 150ml</li><li>Cacao nibs</li><li>Cherries</li><li>Alhond yogurt</li></ul>
 <h4>Preparation</h4>
@@ -4313,7 +4172,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cinnamon Maca Latte" src="/assets/cinnamon_maca_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cinnamon Maca Latte" src="/assets/cinnamon_maca_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Almond milk 200ml</li><li>Maca</li><li>Cinnamon</li><li>Edamame 50g (side)</li></ul>
 <h4>Preparation</h4>
@@ -4332,7 +4191,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Farro Power Bowl" src="/assets/farro_power_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Farro Power Bowl" src="/assets/farro_power_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Farro 80g</li><li>Tempeh 150g</li><li>Brussels sprouts 100g</li><li>Pomegranate</li><li>Tahini</li></ul>
 <h4>Preparation</h4>
@@ -4354,7 +4213,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cacao Chia Protein Pudding" src="/assets/cacao_chia_protein_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cacao Chia Protein Pudding" src="/assets/cacao_chia_protein_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chia 15g</li><li>Cacao</li><li>Protein powder</li><li>Raspberries</li></ul>
 <h4>Preparation</h4>
@@ -4373,7 +4232,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Walnut Crusted Tofu" src="/assets/walnut_crusted_tofu.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Walnut Crusted Tofu" src="/assets/walnut_crusted_tofu.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tofu 200g</li><li>Walnuts 20g</li><li>Sweet potato 200g</li><li>Green beans</li></ul>
 <h4>Preparation</h4>
@@ -4395,7 +4254,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Reishi Hot Chocolate" src="/assets/reishi_hot_chocolate.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Reishi Hot Chocolate" src="/assets/reishi_hot_chocolate.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Almond milk</li><li>Cacao</li><li>Reishi</li><li>Monk fruit</li></ul>
 <h4>Preparation</h4>
@@ -4415,7 +4274,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Warm Apple Pie Oat Bake" src="/assets/warm_apple_pie_oat_bake.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Warm Apple Pie Oat Bake" src="/assets/warm_apple_pie_oat_bake.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Oats 50g</li><li>Apple 120g</li><li>Cardamom</li><li>Hemp yogurt 80g</li><li>Pear 80g</li></ul>
 <h4>Preparation</h4>
@@ -4436,7 +4295,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cacao Chia Protein Pudding" src="/assets/cacao_chia_protein_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cacao Chia Protein Pudding" src="/assets/cacao_chia_protein_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chia 15g</li><li>Cacao</li><li>Protein powder</li><li>Raspberries</li></ul>
 <h4>Preparation</h4>
@@ -4455,7 +4314,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Hearty Tempeh Chili" src="/assets/hearty_tempeh_chili.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Hearty Tempeh Chili" src="/assets/hearty_tempeh_chili.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tempeh 200g</li><li>Kidney beans 100g</li><li>Cacao</li><li>Tomatoes 200g</li><li>Chili spices</li></ul>
 <h4>Preparation</h4>
@@ -4476,7 +4335,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Lime Spiced Pepitas &amp; Tea" src="/assets/lime_spiced_pepitas_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Lime Spiced Pepitas &amp; Tea" src="/assets/lime_spiced_pepitas_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Pepitas 40g</li><li>Lime zest/juice</li><li>Chili</li></ul>
 <h4>Preparation</h4>
@@ -4495,7 +4354,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Sheet Pan Lemon Seitan" src="/assets/sheet_pan_lemon_seitan.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Sheet Pan Lemon Seitan" src="/assets/sheet_pan_lemon_seitan.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Seitan 150g</li><li>Asparagus 150g</li><li>Fennel 100g</li><li>Orange</li></ul>
 <h4>Preparation</h4>
@@ -4516,7 +4375,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Tulsi Tea" src="/assets/tulsi_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Tulsi Tea" src="/assets/tulsi_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tulsi tea</li><li>Lemon</li></ul>
 <h4>Preparation</h4>
@@ -4536,7 +4395,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Savory Chickpea Scramble" src="/assets/savory_chickpea_scramble.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Savory Chickpea Scramble" src="/assets/savory_chickpea_scramble.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chickpeas 100g</li><li>Tofu 200g</li><li>Spinach 100g</li><li>Pesto 10g</li><li>Tomatoes</li></ul>
 <h4>Preparation</h4>
@@ -4558,7 +4417,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Lime Spiced Pepitas &amp; Tea" src="/assets/lime_spiced_pepitas_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Lime Spiced Pepitas &amp; Tea" src="/assets/lime_spiced_pepitas_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Pepitas 40g</li><li>Lime zest/juice</li><li>Chili</li></ul>
 <h4>Preparation</h4>
@@ -4577,7 +4436,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Mediterranean Lentil Salad" src="/assets/mediterranean_lentil_salad.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Mediterranean Lentil Salad" src="/assets/mediterranean_lentil_salad.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Lentils 100g</li><li>Eggplant 200g</li><li>Tahini 15g</li><li>Parsley</li><li>Tomatoes</li></ul>
 <h4>Preparation</h4>
@@ -4599,7 +4458,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cinnamon Maca Latte" src="/assets/cinnamon_maca_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cinnamon Maca Latte" src="/assets/cinnamon_maca_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Almond milk 200ml</li><li>Maca</li><li>Cinnamon</li><li>Edamame 50g (side)</li></ul>
 <h4>Preparation</h4>
@@ -4618,7 +4477,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Rainbow Sushi Bowl" src="/assets/rainbow_sushi_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Rainbow Sushi Bowl" src="/assets/rainbow_sushi_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Black rice 150g</li><li>Smoked tofu 150g</li><li>Avocado</li><li>Cucumber</li><li>Nori</li></ul>
 <h4>Preparation</h4>
@@ -4640,7 +4499,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Sage &amp; Lavender Tea" src="/assets/sage_lavender_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Sage &amp; Lavender Tea" src="/assets/sage_lavender_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Sage</li><li>Lavender</li></ul>
 <h4>Preparation</h4>
@@ -4660,7 +4519,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Blue Spirulina Smoothie Bowl" src="/assets/blue_spirulina_smoothie_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Blue Spirulina Smoothie Bowl" src="/assets/blue_spirulina_smoothie_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 
 <h4>Ingredients</h4>
 <ul><li>Cauli rice 100g</li><li>Blueberries 150g</li><li>Pea protein</li><li>Spirulina</li><li>Tahini 20g</li></ul>
@@ -4680,7 +4539,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cinnamon Maca Latte" src="/assets/cinnamon_maca_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cinnamon Maca Latte" src="/assets/cinnamon_maca_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Almond milk 200ml</li><li>Maca</li><li>Cinnamon</li><li>Edamame 50g (side)</li></ul>
 <h4>Preparation</h4>
@@ -4699,7 +4558,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Farro Power Bowl" src="/assets/farro_power_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Farro Power Bowl" src="/assets/farro_power_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Farro 80g</li><li>Tempeh 150g</li><li>Brussels sprouts 100g</li><li>Pomegranate</li><li>Tahini</li></ul>
 <h4>Preparation</h4>
@@ -4718,7 +4577,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cacao Chia Protein Pudding" src="/assets/cacao_chia_protein_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cacao Chia Protein Pudding" src="/assets/cacao_chia_protein_pudding.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chia 15g</li><li>Cacao</li><li>Protein powder</li><li>Raspberries</li></ul>
 <h4>Preparation</h4>
@@ -4737,7 +4596,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Walnut Crusted Tofu" src="/assets/walnut_crusted_tofu.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Walnut Crusted Tofu" src="/assets/walnut_crusted_tofu.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tofu 200g</li><li>Walnuts 20g</li><li>Sweet potato 200g</li><li>Green beans</li></ul>
 <h4>Preparation</h4>
@@ -4756,7 +4615,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Reishi Hot Chocolate" src="/assets/reishi_hot_chocolate.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Reishi Hot Chocolate" src="/assets/reishi_hot_chocolate.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Almond milk</li><li>Cacao</li><li>Reishi</li><li>Monk fruit</li></ul>
 <h4>Preparation</h4>
@@ -4795,7 +4654,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Fire Tonic &amp; Lentil Waffles" src="/assets/fire_tonic_lentil_waffles.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Fire Tonic &amp; Lentil Waffles" src="/assets/fire_tonic_lentil_waffles.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tonic: ACV, Ginger, Cayenne</li><li>Lentils 150g</li><li>Chickpea flour 50g</li><li>Kimchi</li><li>Avocado</li></ul>
 <h4>Preparation</h4>
@@ -4816,7 +4675,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Grapefruit &amp; Pumpkin Seed Brittle" src="/assets/grapefruit_pumpkin_seed_brittle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Grapefruit &amp; Pumpkin Seed Brittle" src="/assets/grapefruit_pumpkin_seed_brittle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Grapefruit</li><li>Pumpkin seeds 20g</li><li>Maple</li><li>Chili</li></ul>
 <h4>Preparation</h4>
@@ -4835,7 +4694,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Thai Basil Zucchini Noodles" src="/assets/thai_basil_zucchini_noodles.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Thai Basil Zucchini Noodles" src="/assets/thai_basil_zucchini_noodles.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Zoodles 300g</li><li>Tofu 200g</li><li>Almond butter</li><li>Coconut milk</li><li>Thai basil</li></ul>
 <h4>Preparation</h4>
@@ -4857,7 +4716,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Rosemary Cacao Truffle" src="/assets/rosemary_cacao_truffle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Rosemary Cacao Truffle" src="/assets/rosemary_cacao_truffle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cacao</li><li>Protein</li><li>Coconut oil</li><li>Rosemary</li></ul>
 <h4>Preparation</h4>
@@ -4876,7 +4735,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Turmeric Cauliflower Steaks" src="/assets/turmeric_cauliflower_steaks.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Turmeric Cauliflower Steaks" src="/assets/turmeric_cauliflower_steaks.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cauliflower 300g</li><li>Beluga lentils 150g</li><li>Kale</li><li>Tahini</li></ul>
 <h4>Preparation</h4>
@@ -4898,7 +4757,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Dandelion Root Latte" src="/assets/dandelion_root_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Dandelion Root Latte" src="/assets/dandelion_root_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Dandelion root</li><li>Almond milk</li></ul>
 <h4>Preparation</h4>
@@ -4918,7 +4777,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Carrot Cake Chia Parfait" src="/assets/carrot_cake_chia_parfait.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Carrot Cake Chia Parfait" src="/assets/carrot_cake_chia_parfait.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chia 30g</li><li>Carrot 100g</li><li>Cashew butter</li><li>Coconut cream</li><li>Walnuts</li></ul>
 <h4>Preparation</h4>
@@ -4937,7 +4796,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Rosemary Cacao Truffle" src="/assets/rosemary_cacao_truffle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Rosemary Cacao Truffle" src="/assets/rosemary_cacao_truffle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cacao</li><li>Protein</li><li>Coconut oil</li><li>Rosemary</li></ul>
 <h4>Preparation</h4>
@@ -4956,7 +4815,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Moroccan Chickpea Stew" src="/assets/moroccan_chickpea_stew.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Moroccan Chickpea Stew" src="/assets/moroccan_chickpea_stew.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chickpeas 200g</li><li>Millet 150g</li><li>Apricots</li><li>Tomatoes</li><li>Spinach</li></ul>
 <h4>Preparation</h4>
@@ -4978,7 +4837,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Green Apple &amp; Almond Butter" src="/assets/green_apple_almond_butter.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Green Apple &amp; Almond Butter" src="/assets/green_apple_almond_butter.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Apple</li><li>Almond butter</li></ul>
 <h4>Preparation</h4>
@@ -4997,7 +4856,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Grilled Tofu Tikka" src="/assets/grilled_tofu_tikka.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Grilled Tofu Tikka" src="/assets/grilled_tofu_tikka.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tofu 200g</li><li>Cauli rice 150g</li><li>Cucumber/Mint salad</li><li>Coconut yogurt</li></ul>
 <h4>Preparation</h4>
@@ -5018,7 +4877,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Holy Basil Tea" src="/assets/tulsi_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Holy Basil Tea" src="/assets/tulsi_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Fresh basil</li></ul>
 <h4>Preparation</h4>
@@ -5038,7 +4897,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Metabolic Mocha Smoothie" src="/assets/metabolic_mocha_smoothie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Metabolic Mocha Smoothie" src="/assets/metabolic_mocha_smoothie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cold brew</li><li>Cacao</li><li>Chili</li><li>Pea protein</li><li>Banana</li></ul>
 <h4>Preparation</h4>
@@ -5057,7 +4916,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Green Apple &amp; Almond Butter" src="/assets/green_apple_almond_butter.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Green Apple &amp; Almond Butter" src="/assets/green_apple_almond_butter.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Apple</li><li>Almond butter</li></ul>
 <h4>Preparation</h4>
@@ -5076,7 +4935,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Charred Broccoli &amp; Bean Bowl" src="/assets/charred_broccoli_bean_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Charred Broccoli &amp; Bean Bowl" src="/assets/charred_broccoli_bean_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Broccoli 200g</li><li>Cannellini beans 150g</li><li>Romesco sauce</li></ul>
 <h4>Preparation</h4>
@@ -5097,7 +4956,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Grapefruit &amp; Pumpkin Seed Brittle" src="/assets/grapefruit_pumpkin_seed_brittle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Grapefruit &amp; Pumpkin Seed Brittle" src="/assets/grapefruit_pumpkin_seed_brittle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Grapefruit</li><li>Pumpkin seeds 20g</li><li>Maple</li><li>Chili</li></ul>
 <h4>Preparation</h4>
@@ -5116,7 +4975,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Turmeric Cauliflower Steaks" src="/assets/turmeric_cauliflower_steaks.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Turmeric Cauliflower Steaks" src="/assets/turmeric_cauliflower_steaks.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cauliflower 300g</li><li>Beluga lentils 150g</li><li>Kale</li><li>Tahini</li></ul>
 <h4>Preparation</h4>
@@ -5135,7 +4994,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Fennel Tea" src="/assets/fennel_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Fennel Tea" src="/assets/fennel_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Fennel seeds</li></ul>
 <h4>Preparation</h4>
@@ -5155,7 +5014,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Fire Tonic &amp; Lentil Waffles" src="/assets/fire_tonic_lentil_waffles.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Fire Tonic &amp; Lentil Waffles" src="/assets/fire_tonic_lentil_waffles.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tonic: ACV, Ginger, Cayenne</li><li>Lentils 150g</li><li>Chickpea flour 50g</li><li>Kimchi</li><li>Avocado</li></ul>
 <h4>Preparation</h4>
@@ -5174,7 +5033,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Grapefruit &amp; Pumpkin Seed Brittle" src="/assets/grapefruit_pumpkin_seed_brittle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Grapefruit &amp; Pumpkin Seed Brittle" src="/assets/grapefruit_pumpkin_seed_brittle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Grapefruit</li><li>Pumpkin seeds 20g</li><li>Maple</li><li>Chili</li></ul>
 <h4>Preparation</h4>
@@ -5193,7 +5052,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Sweet Potato Nourish Bowl" src="/assets/sweet_potato_nourish_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Sweet Potato Nourish Bowl" src="/assets/sweet_potato_nourish_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Sweet potato 200g</li><li>Kale</li><li>Quinoa</li><li>Maple Miso dressing</li></ul>
 <h4>Preparation</h4>
@@ -5215,7 +5074,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Rosemary Cacao Truffle" src="/assets/rosemary_cacao_truffle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Rosemary Cacao Truffle" src="/assets/rosemary_cacao_truffle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cacao</li><li>Protein</li><li>Coconut oil</li><li>Rosemary</li></ul>
 <h4>Preparation</h4>
@@ -5234,7 +5093,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Grilled Tofu Tikka" src="/assets/grilled_tofu_tikka.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Grilled Tofu Tikka" src="/assets/grilled_tofu_tikka.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tofu 200g</li><li>Cauli rice 150g</li><li>Cucumber/Mint salad</li><li>Coconut yogurt</li></ul>
 <h4>Preparation</h4>
@@ -5253,7 +5112,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Dandelion Root Latte" src="/assets/dandelion_root_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Dandelion Root Latte" src="/assets/dandelion_root_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Dandelion root</li><li>Almond milk</li></ul>
 <h4>Preparation</h4>
@@ -5273,7 +5132,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Carrot Cake Chia Parfait" src="/assets/carrot_cake_chia_parfait.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Carrot Cake Chia Parfait" src="/assets/carrot_cake_chia_parfait.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chia 30g</li><li>Carrot 100g</li><li>Cashew butter</li><li>Coconut cream</li><li>Walnuts</li></ul>
 <h4>Preparation</h4>
@@ -5292,7 +5151,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Rosemary Cacao Truffle" src="/assets/rosemary_cacao_truffle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Rosemary Cacao Truffle" src="/assets/rosemary_cacao_truffle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cacao</li><li>Protein</li><li>Coconut oil</li><li>Rosemary</li></ul>
 <h4>Preparation</h4>
@@ -5311,7 +5170,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Thai Basil Zucchini Noodles" src="/assets/thai_basil_zucchini_noodles.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Thai Basil Zucchini Noodles" src="/assets/thai_basil_zucchini_noodles.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Zoodles 300g</li><li>Tofu 200g</li><li>Almond butter</li><li>Coconut milk</li><li>Thai basil</li></ul>
 <h4>Preparation</h4>
@@ -5333,7 +5192,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Green Apple &amp; Almond Butter" src="/assets/green_apple_almond_butter.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Green Apple &amp; Almond Butter" src="/assets/green_apple_almond_butter.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Apple</li><li>Almond butter</li></ul>
 <h4>Preparation</h4>
@@ -5352,7 +5211,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Turmeric Cauliflower Steaks" src="/assets/turmeric_cauliflower_steaks.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Turmeric Cauliflower Steaks" src="/assets/turmeric_cauliflower_steaks.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cauliflower 300g</li><li>Beluga lentils 150g</li><li>Kale</li><li>Tahini</li></ul>
 <h4>Preparation</h4>
@@ -5371,7 +5230,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Holy Basil Tea" src="/assets/tulsi_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Holy Basil Tea" src="/assets/tulsi_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Fresh basil</li></ul>
 <h4>Preparation</h4>
@@ -5391,7 +5250,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Metabolic Mocha Smoothie" src="/assets/metabolic_mocha_smoothie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Metabolic Mocha Smoothie" src="/assets/metabolic_mocha_smoothie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cold brew</li><li>Cacao</li><li>Chili</li><li>Pea protein</li><li>Banana</li></ul>
 <h4>Preparation</h4>
@@ -5410,7 +5269,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Green Apple &amp; Almond Butter" src="/assets/green_apple_almond_butter.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Green Apple &amp; Almond Butter" src="/assets/green_apple_almond_butter.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Apple</li><li>Almond butter</li></ul>
 <h4>Preparation</h4>
@@ -5429,7 +5288,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Moroccan Chickpea Stew" src="/assets/moroccan_chickpea_stew.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Moroccan Chickpea Stew" src="/assets/moroccan_chickpea_stew.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Chickpeas 200g</li><li>Millet 150g</li><li>Apricots</li><li>Tomatoes</li><li>Spinach</li></ul>
 <h4>Preparation</h4>
@@ -5451,7 +5310,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Grapefruit &amp; Pumpkin Seed Brittle" src="/assets/grapefruit_pumpkin_seed_brittle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Grapefruit &amp; Pumpkin Seed Brittle" src="/assets/grapefruit_pumpkin_seed_brittle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Grapefruit</li><li>Pumpkin seeds 20g</li><li>Maple</li><li>Chili</li></ul>
 <h4>Preparation</h4>
@@ -5470,7 +5329,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Grilled Tofu Tikka" src="/assets/grilled_tofu_tikka.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Grilled Tofu Tikka" src="/assets/grilled_tofu_tikka.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tofu 200g</li><li>Cauli rice 150g</li><li>Cucumber/Mint salad</li><li>Coconut yogurt</li></ul>
 <h4>Preparation</h4>
@@ -5491,7 +5350,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Fennel Tea" src="/assets/fennel_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Fennel Tea" src="/assets/fennel_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Fennel seeds</li></ul>
 <h4>Preparation</h4>
@@ -5511,7 +5370,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Fire Tonic &amp; Lentil Waffles" src="/assets/fire_tonic_lentil_waffles.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Fire Tonic &amp; Lentil Waffles" src="/assets/fire_tonic_lentil_waffles.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tonic: ACV, Ginger, Cayenne</li><li>Lentils 150g</li><li>Chickpea flour 50g</li><li>Kimchi</li><li>Avocado</li></ul>
 <h4>Preparation</h4>
@@ -5532,7 +5391,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Grapefruit &amp; Pumpkin Seed Brittle" src="/assets/grapefruit_pumpkin_seed_brittle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Grapefruit &amp; Pumpkin Seed Brittle" src="/assets/grapefruit_pumpkin_seed_brittle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Grapefruit</li><li>Pumpkin seeds 20g</li><li>Maple</li><li>Chili</li></ul>
 <h4>Preparation</h4>
@@ -5551,7 +5410,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Charred Broccoli &amp; Bean Bowl" src="/assets/charred_broccoli_bean_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Charred Broccoli &amp; Bean Bowl" src="/assets/charred_broccoli_bean_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Broccoli 200g</li><li>Cannellini beans 150g</li><li>Romesco sauce</li></ul>
 <h4>Preparation</h4>
@@ -5572,7 +5431,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Rosemary Cacao Truffle" src="/assets/rosemary_cacao_truffle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Rosemary Cacao Truffle" src="/assets/rosemary_cacao_truffle.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cacao</li><li>Protein</li><li>Coconut oil</li><li>Rosemary</li></ul>
 <h4>Preparation</h4>
@@ -5591,7 +5450,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Turmeric Cauliflower Steaks" src="/assets/turmeric_cauliflower_steaks.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Turmeric Cauliflower Steaks" src="/assets/turmeric_cauliflower_steaks.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cauliflower 300g</li><li>Beluga lentils 150g</li><li>Kale</li><li>Tahini</li></ul>
 <h4>Preparation</h4>
@@ -5610,7 +5469,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Dandelion Root Latte" src="/assets/dandelion_root_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Dandelion Root Latte" src="/assets/dandelion_root_latte.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Dandelion root</li><li>Almond milk</li></ul>
 <h4>Preparation</h4>
@@ -5649,7 +5508,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Baked Raspberry Almond Oats" src="/assets/baked_raspberry_almond_oats.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Baked Raspberry Almond Oats" src="/assets/baked_raspberry_almond_oats.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Oats 60g</li><li>Almonds</li><li>Raspberries</li><li>Coconut yogurt</li></ul>
 <h4>Preparation</h4>
@@ -5671,7 +5530,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Spiced Cacao &amp; Pepitas" src="/assets/spiced_cacao_pepitas.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Spiced Cacao &amp; Pepitas" src="/assets/spiced_cacao_pepitas.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cacao drink</li><li>Pepitas</li></ul>
 <h4>Preparation</h4>
@@ -5690,7 +5549,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Creamy White Bean Soup" src="/assets/creamy_white_bean_soup.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Creamy White Bean Soup" src="/assets/creamy_white_bean_soup.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>White beans 200g</li><li>Rosemary</li><li>Sourdough side</li></ul>
 <h4>Preparation</h4>
@@ -5712,7 +5571,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Choc Dipped Orange" src="/assets/choc_dipped_orange.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Choc Dipped Orange" src="/assets/choc_dipped_orange.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Orange</li><li>Dark choc</li></ul>
 <h4>Preparation</h4>
@@ -5731,7 +5590,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Smoky Tempeh Pot Pie" src="/assets/smoky_tempeh_pot_pie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Smoky Tempeh Pot Pie" src="/assets/smoky_tempeh_pot_pie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tempeh</li><li>Root veg</li><li>Cassava crust</li></ul>
 <h4>Preparation</h4>
@@ -5752,7 +5611,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Tart Cherry Mocktail" src="/assets/tart_cherry_mocktail.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Tart Cherry Mocktail" src="/assets/tart_cherry_mocktail.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tart cherry</li><li>Magnesium</li></ul>
 <h4>Preparation</h4>
@@ -5772,7 +5631,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Banana Buckwheat Muffins" src="/assets/banana_buckwheat_muffins.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Banana Buckwheat Muffins" src="/assets/banana_buckwheat_muffins.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Buckwheat flour 60g</li><li>Banana</li><li>Walnuts</li><li>Almond milk</li></ul>
 <h4>Preparation</h4>
@@ -5793,7 +5652,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Choc Dipped Orange" src="/assets/choc_dipped_orange.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Choc Dipped Orange" src="/assets/choc_dipped_orange.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Orange</li><li>Dark choc</li></ul>
 <h4>Preparation</h4>
@@ -5812,7 +5671,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cozy Miso Soba Bowl" src="/assets/cozy_miso_soba_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cozy Miso Soba Bowl" src="/assets/cozy_miso_soba_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Soba noodles</li><li>Miso</li><li>Shiitake</li><li>Tofu 200g</li></ul>
 <h4>Preparation</h4>
@@ -5834,7 +5693,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Carrot Cake Energy Balls" src="/assets/carrot_cake_energy_balls.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Carrot Cake Energy Balls" src="/assets/carrot_cake_energy_balls.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Dates</li><li>Carrot</li><li>Walnuts</li><li>Coconut flour</li></ul>
 <h4>Preparation</h4>
@@ -5853,7 +5712,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Gnocchi Sage Butter" src="/assets/gnocchi_sage_butter.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Gnocchi Sage Butter" src="/assets/gnocchi_sage_butter.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Gnocchi</li><li>White beans 150g</li><li>Sage</li><li>Walnuts</li><li>Rocket</li></ul>
 <h4>Preparation</h4>
@@ -5875,7 +5734,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Lemon Balm Valerian" src="/assets/lemon_balm_valerian.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Lemon Balm Valerian" src="/assets/lemon_balm_valerian.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tea</li></ul>
 <h4>Preparation</h4>
@@ -5895,7 +5754,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Berry Chia Jam Toast" src="/assets/berry_chia_jam_toast.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Berry Chia Jam Toast" src="/assets/berry_chia_jam_toast.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Seeded bread</li><li>Chia jam</li><li>Tofu scramble side</li></ul>
 <h4>Preparation</h4>
@@ -5914,7 +5773,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Carrot Cake Energy Balls" src="/assets/carrot_cake_energy_balls.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Carrot Cake Energy Balls" src="/assets/carrot_cake_energy_balls.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Dates</li><li>Carrot</li><li>Walnuts</li><li>Coconut flour</li></ul>
 <h4>Preparation</h4>
@@ -5933,7 +5792,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Lentil Bolognese Squash" src="/assets/lentil_bolognese_squash.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Lentil Bolognese Squash" src="/assets/lentil_bolognese_squash.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Lentils 200g</li><li>Tomato sauce</li><li>Spaghetti squash</li></ul>
 <h4>Preparation</h4>
@@ -5954,7 +5813,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Spiced Cacao &amp; Pepitas" src="/assets/spiced_cacao_pepitas.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Spiced Cacao &amp; Pepitas" src="/assets/spiced_cacao_pepitas.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cacao drink</li><li>Pepitas</li></ul>
 <h4>Preparation</h4>
@@ -5973,7 +5832,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Creamy Mushroom Stroganoff" src="/assets/creamy_mushroom_stroganoff.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Creamy Mushroom Stroganoff" src="/assets/creamy_mushroom_stroganoff.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Mushrooms</li><li>Smoked tofu 200g</li><li>Rice noodles</li><li>Cashew cream</li></ul>
 <h4>Preparation</h4>
@@ -5995,7 +5854,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Kava Tea" src="/assets/kava_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Kava Tea" src="/assets/kava_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Kava</li></ul>
 <h4>Preparation</h4>
@@ -6015,7 +5874,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Baked Raspberry Almond Oats" src="/assets/baked_raspberry_almond_oats.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Baked Raspberry Almond Oats" src="/assets/baked_raspberry_almond_oats.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Oats 60g</li><li>Almonds</li><li>Raspberries</li><li>Coconut yogurt</li></ul>
 <h4>Preparation</h4>
@@ -6037,7 +5896,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Spiced Cacao &amp; Pepitas" src="/assets/spiced_cacao_pepitas.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Spiced Cacao &amp; Pepitas" src="/assets/spiced_cacao_pepitas.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cacao drink</li><li>Pepitas</li></ul>
 <h4>Preparation</h4>
@@ -6056,7 +5915,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Creamy White Bean Soup" src="/assets/creamy_white_bean_soup.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Creamy White Bean Soup" src="/assets/creamy_white_bean_soup.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>White beans 200g</li><li>Rosemary</li><li>Sourdough side</li></ul>
 <h4>Preparation</h4>
@@ -6078,7 +5937,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Choc Dipped Orange" src="/assets/choc_dipped_orange.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Choc Dipped Orange" src="/assets/choc_dipped_orange.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Orange</li><li>Dark choc</li></ul>
 <h4>Preparation</h4>
@@ -6097,7 +5956,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Smoky Tempeh Pot Pie" src="/assets/smoky_tempeh_pot_pie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Smoky Tempeh Pot Pie" src="/assets/smoky_tempeh_pot_pie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tempeh</li><li>Root veg</li><li>Cassava crust</li></ul>
 <h4>Preparation</h4>
@@ -6118,7 +5977,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Tart Cherry Mocktail" src="/assets/tart_cherry_mocktail.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Tart Cherry Mocktail" src="/assets/tart_cherry_mocktail.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tart cherry</li><li>Magnesium</li></ul>
 <h4>Preparation</h4>
@@ -6138,7 +5997,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Banana Buckwheat Muffins" src="/assets/banana_buckwheat_muffins.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Banana Buckwheat Muffins" src="/assets/banana_buckwheat_muffins.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Buckwheat flour 60g</li><li>Banana</li><li>Walnuts</li><li>Almond milk</li></ul>
 <h4>Preparation</h4>
@@ -6159,7 +6018,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Choc Dipped Orange" src="/assets/choc_dipped_orange.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Choc Dipped Orange" src="/assets/choc_dipped_orange.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Orange</li><li>Dark choc</li></ul>
 <h4>Preparation</h4>
@@ -6178,7 +6037,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Cozy Miso Soba Bowl" src="/assets/cozy_miso_soba_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Cozy Miso Soba Bowl" src="/assets/cozy_miso_soba_bowl.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Soba noodles</li><li>Miso</li><li>Shiitake</li><li>Tofu 200g</li></ul>
 <h4>Preparation</h4>
@@ -6200,7 +6059,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Carrot Cake Energy Balls" src="/assets/carrot_cake_energy_balls.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Carrot Cake Energy Balls" src="/assets/carrot_cake_energy_balls.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Dates</li><li>Carrot</li><li>Walnuts</li><li>Coconut flour</li></ul>
 <h4>Preparation</h4>
@@ -6219,7 +6078,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Gnocchi Sage Butter" src="/assets/gnocchi_sage_butter.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Gnocchi Sage Butter" src="/assets/gnocchi_sage_butter.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Gnocchi</li><li>White beans 150g</li><li>Sage</li><li>Walnuts</li><li>Rocket</li></ul>
 <h4>Preparation</h4>
@@ -6241,7 +6100,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Lemon Balm Valerian" src="/assets/lemon_balm_valerian.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Lemon Balm Valerian" src="/assets/lemon_balm_valerian.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tea</li></ul>
 <h4>Preparation</h4>
@@ -6261,7 +6120,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Berry Chia Jam Toast" src="/assets/berry_chia_jam_toast.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Berry Chia Jam Toast" src="/assets/berry_chia_jam_toast.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Seeded bread</li><li>Chia jam</li><li>Tofu scramble side</li></ul>
 <h4>Preparation</h4>
@@ -6280,7 +6139,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Carrot Cake Energy Balls" src="/assets/carrot_cake_energy_balls.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Carrot Cake Energy Balls" src="/assets/carrot_cake_energy_balls.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Dates</li><li>Carrot</li><li>Walnuts</li><li>Coconut flour</li></ul>
 <h4>Preparation</h4>
@@ -6299,7 +6158,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Lentil Bolognese Squash" src="/assets/lentil_bolognese_squash.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Lentil Bolognese Squash" src="/assets/lentil_bolognese_squash.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Lentils 200g</li><li>Tomato sauce</li><li>Spaghetti squash</li></ul>
 <h4>Preparation</h4>
@@ -6320,7 +6179,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Spiced Cacao &amp; Pepitas" src="/assets/spiced_cacao_pepitas.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Spiced Cacao &amp; Pepitas" src="/assets/spiced_cacao_pepitas.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cacao drink</li><li>Pepitas</li></ul>
 <h4>Preparation</h4>
@@ -6339,7 +6198,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Creamy Mushroom Stroganoff" src="/assets/creamy_mushroom_stroganoff.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Creamy Mushroom Stroganoff" src="/assets/creamy_mushroom_stroganoff.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Mushrooms</li><li>Smoked tofu 200g</li><li>Rice noodles</li><li>Cashew cream</li></ul>
 <h4>Preparation</h4>
@@ -6361,7 +6220,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Kava Tea" src="/assets/kava_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Kava Tea" src="/assets/kava_tea.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Kava</li></ul>
 <h4>Preparation</h4>
@@ -6381,7 +6240,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Baked Raspberry Almond Oats" src="/assets/baked_raspberry_almond_oats.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Baked Raspberry Almond Oats" src="/assets/baked_raspberry_almond_oats.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Oats 60g</li><li>Almonds</li><li>Raspberries</li><li>Coconut yogurt</li></ul>
 <h4>Preparation</h4>
@@ -6403,7 +6262,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Spiced Cacao &amp; Pepitas" src="/assets/spiced_cacao_pepitas.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Spiced Cacao &amp; Pepitas" src="/assets/spiced_cacao_pepitas.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Cacao drink</li><li>Pepitas</li></ul>
 <h4>Preparation</h4>
@@ -6422,7 +6281,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Creamy White Bean Soup" src="/assets/creamy_white_bean_soup.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Creamy White Bean Soup" src="/assets/creamy_white_bean_soup.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>White beans 200g</li><li>Rosemary</li><li>Sourdough side</li></ul>
 <h4>Preparation</h4>
@@ -6444,7 +6303,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Choc Dipped Orange" src="/assets/choc_dipped_orange.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Choc Dipped Orange" src="/assets/choc_dipped_orange.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Orange</li><li>Dark choc</li></ul>
 <h4>Preparation</h4>
@@ -6463,7 +6322,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Smoky Tempeh Pot Pie" src="/assets/smoky_tempeh_pot_pie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Smoky Tempeh Pot Pie" src="/assets/smoky_tempeh_pot_pie.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tempeh</li><li>Root veg</li><li>Cassava crust</li></ul>
 <h4>Preparation</h4>
@@ -6484,7 +6343,7 @@ if (window._pbbIsIOSSafari) {
 <div class="expand-icon">+</div>
 </div>
 <div class="card-body">
-<img loading="lazy" alt="Tart Cherry Mocktail" src="/assets/tart_cherry_mocktail.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
+<img alt="Tart Cherry Mocktail" src="/assets/tart_cherry_mocktail.png" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;"/>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;"><h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4></div>
 <ul><li>Tart cherry</li><li>Magnesium</li></ul>
 <h4>Preparation</h4>
@@ -6504,7 +6363,7 @@ if (window._pbbIsIOSSafari) {
     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-bottom: 50px;">
         <!-- Ashwagandha -->
         <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
-            <div style="height: 180px; overflow: hidden; position: relative;"><img loading="lazy" alt="Ashwagandha" src="/assets/ashwagandha_spp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
+            <div style="height: 180px; overflow: hidden; position: relative;"><img alt="Ashwagandha" src="/assets/ashwagandha_spp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
             <div class="card-body" style="padding: 20px; opacity: 1; max-height: none; flex-grow: 1; display: flex; flex-direction: column;">
                 <span style="background: #f0f4f8; color: var(--primary-light); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; margin-bottom: 10px; text-transform: uppercase;">Stress</span>
                 <h4 style="margin-bottom: 10px; color: var(--primary); font-size: 1.1rem;">Ashwagandha</h4>
@@ -6513,7 +6372,7 @@ if (window._pbbIsIOSSafari) {
         </div>
         <!-- Magnesium -->
         <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
-            <div style="height: 180px; overflow: hidden; position: relative;"><img loading="lazy" alt="Magnesium Glycinate" src="/assets/magnesium_glycinate_supp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
+            <div style="height: 180px; overflow: hidden; position: relative;"><img alt="Magnesium Glycinate" src="/assets/magnesium_glycinate_supp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
             <div class="card-body" style="padding: 20px; opacity: 1; max-height: none; flex-grow: 1; display: flex; flex-direction: column;">
                 <span style="background: #f0f4f8; color: var(--primary-light); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; margin-bottom: 10px; text-transform: uppercase;">Sleep</span>
                 <h4 style="margin-bottom: 10px; color: var(--primary); font-size: 1.1rem;">Magnesium Glycinate</h4>
@@ -6522,7 +6381,7 @@ if (window._pbbIsIOSSafari) {
         </div>
         <!-- Omega 3 -->
         <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
-            <div style="height: 180px; overflow: hidden; position: relative;"><img loading="lazy" alt="Omega 3 DHA/EPA" src="/assets/omega_3_algae_supp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
+            <div style="height: 180px; overflow: hidden; position: relative;"><img alt="Omega 3 DHA/EPA" src="/assets/omega_3_algae_supp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
             <div class="card-body" style="padding: 20px; opacity: 1; max-height: none; flex-grow: 1; display: flex; flex-direction: column;">
                 <span style="background: #f0f4f8; color: var(--primary-light); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; margin-bottom: 10px; text-transform: uppercase;">Inflammation</span>
                 <h4 style="margin-bottom: 10px; color: var(--primary); font-size: 1.1rem;">Omega 3 DHA/EPA</h4>
@@ -6531,7 +6390,7 @@ if (window._pbbIsIOSSafari) {
         </div>
         <!-- B12 -->
         <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
-            <div style="height: 180px; overflow: hidden; position: relative;"><img loading="lazy" alt="Vitamin B12" src="/assets/vitamin_b12_supp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
+            <div style="height: 180px; overflow: hidden; position: relative;"><img alt="Vitamin B12" src="/assets/vitamin_b12_supp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
             <div class="card-body" style="padding: 20px; opacity: 1; max-height: none; flex-grow: 1; display: flex; flex-direction: column;">
                 <span style="background: #f0f4f8; color: var(--primary-light); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; margin-bottom: 10px; text-transform: uppercase;">Essentials</span>
                 <h4 style="margin-bottom: 10px; color: var(--primary); font-size: 1.1rem;">Vitamin B12</h4>
@@ -6545,7 +6404,7 @@ if (window._pbbIsIOSSafari) {
     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px;">
         <!-- Iron -->
         <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
-            <div style="height: 180px; overflow: hidden; position: relative;"><img loading="lazy" alt="Iron Bisglycinate" src="/assets/iron_bisglycinate_supp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
+            <div style="height: 180px; overflow: hidden; position: relative;"><img alt="Iron Bisglycinate" src="/assets/iron_bisglycinate_supp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
             <div class="card-body" style="padding: 20px; opacity: 1; max-height: none; flex-grow: 1; display: flex; flex-direction: column;">
                 <span style="background: #f0f4f8; color: var(--primary-light); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; margin-bottom: 10px; text-transform: uppercase;">Deficiency Only</span>
                 <h4 style="margin-bottom: 10px; color: var(--primary); font-size: 1.1rem;">Iron Bisglycinate</h4>
@@ -6554,7 +6413,7 @@ if (window._pbbIsIOSSafari) {
         </div>
         <!-- Calcium -->
         <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
-            <div style="height: 180px; overflow: hidden; position: relative;"><img loading="lazy" alt="Calcium Citrate" src="/assets/calcium_citrate_supp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
+            <div style="height: 180px; overflow: hidden; position: relative;"><img alt="Calcium Citrate" src="/assets/calcium_citrate_supp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
             <div class="card-body" style="padding: 20px; opacity: 1; max-height: none; flex-grow: 1; display: flex; flex-direction: column;">
                 <span style="background: #f0f4f8; color: var(--primary-light); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; margin-bottom: 10px; text-transform: uppercase;">Bone Health</span>
                 <h4 style="margin-bottom: 10px; color: var(--primary); font-size: 1.1rem;">Calcium Citrate</h4>
@@ -6563,7 +6422,7 @@ if (window._pbbIsIOSSafari) {
         </div>
         <!-- Zinc -->
         <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
-            <div style="height: 180px; overflow: hidden; position: relative;"><img loading="lazy" alt="Zinc" src="/assets/zinc_supp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
+            <div style="height: 180px; overflow: hidden; position: relative;"><img alt="Zinc" src="/assets/zinc_supp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
             <div class="card-body" style="padding: 20px; opacity: 1; max-height: none; flex-grow: 1; display: flex; flex-direction: column;">
                 <span style="background: #f0f4f8; color: var(--primary-light); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; margin-bottom: 10px; text-transform: uppercase;">Immunity</span>
                 <h4 style="margin-bottom: 10px; color: var(--primary); font-size: 1.1rem;">Zinc</h4>
@@ -6572,7 +6431,7 @@ if (window._pbbIsIOSSafari) {
         </div>
         <!-- Selenium -->
         <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
-            <div style="height: 180px; overflow: hidden; position: relative;"><img loading="lazy" alt="Selenium" src="/assets/selenium_brazil_nut.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
+            <div style="height: 180px; overflow: hidden; position: relative;"><img alt="Selenium" src="/assets/selenium_brazil_nut.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
             <div class="card-body" style="padding: 20px; opacity: 1; max-height: none; flex-grow: 1; display: flex; flex-direction: column;">
                 <span style="background: #f0f4f8; color: var(--primary-light); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; margin-bottom: 10px; text-transform: uppercase;">Thyroid</span>
                 <h4 style="margin-bottom: 10px; color: var(--primary); font-size: 1.1rem;">Selenium</h4>
@@ -6581,7 +6440,7 @@ if (window._pbbIsIOSSafari) {
         </div>
         <!-- Iodine -->
         <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
-            <div style="height: 180px; overflow: hidden; position: relative;"><img loading="lazy" alt="Iodine (Kelp)" src="/assets/iodine_kelp_granules.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
+            <div style="height: 180px; overflow: hidden; position: relative;"><img alt="Iodine (Kelp)" src="/assets/iodine_kelp_granules.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
             <div class="card-body" style="padding: 20px; opacity: 1; max-height: none; flex-grow: 1; display: flex; flex-direction: column;">
                 <span style="background: #f0f4f8; color: var(--primary-light); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; margin-bottom: 10px; text-transform: uppercase;">Thyroid</span>
                 <h4 style="margin-bottom: 10px; color: var(--primary); font-size: 1.1rem;">Iodine (Kelp)</h4>
@@ -6590,7 +6449,7 @@ if (window._pbbIsIOSSafari) {
         </div>
         <!-- Maca -->
         <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
-            <div style="height: 180px; overflow: hidden; position: relative;"><img loading="lazy" alt="Maca" src="/assets/maca_powder.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
+            <div style="height: 180px; overflow: hidden; position: relative;"><img alt="Maca" src="/assets/maca_powder.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
             <div class="card-body" style="padding: 20px; opacity: 1; max-height: none; flex-grow: 1; display: flex; flex-direction: column;">
                 <span style="background: #f0f4f8; color: var(--primary-light); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; margin-bottom: 10px; text-transform: uppercase;">Hormone Balance</span>
                 <h4 style="margin-bottom: 10px; color: var(--primary); font-size: 1.1rem;">Maca</h4>
@@ -6599,7 +6458,7 @@ if (window._pbbIsIOSSafari) {
         </div>
         <!-- Flax -->
         <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
-            <div style="height: 180px; overflow: hidden; position: relative;"><img loading="lazy" alt="Ground Flax" src="/assets/ground_flax_seeds.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
+            <div style="height: 180px; overflow: hidden; position: relative;"><img alt="Ground Flax" src="/assets/ground_flax_seeds.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
             <div class="card-body" style="padding: 20px; opacity: 1; max-height: none; flex-grow: 1; display: flex; flex-direction: column;">
                 <span style="background: #f0f4f8; color: var(--primary-light); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; margin-bottom: 10px; text-transform: uppercase;">Daily Essential</span>
                 <h4 style="margin-bottom: 10px; color: var(--primary); font-size: 1.1rem;">Ground Flax</h4>
@@ -6608,7 +6467,7 @@ if (window._pbbIsIOSSafari) {
         </div>
         <!-- Creatine -->
         <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 100%; transition: transform 0.2s;">
-            <div style="height: 180px; overflow: hidden; position: relative;"><img loading="lazy" alt="Creatine Monohydrate" src="/assets/creatine_monohydrate_supp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
+            <div style="height: 180px; overflow: hidden; position: relative;"><img alt="Creatine Monohydrate" src="/assets/creatine_monohydrate_supp.png" style="width: 100%; height: 100%; object-fit: cover;"/></div>
             <div class="card-body" style="padding: 20px; opacity: 1; max-height: none; flex-grow: 1; display: flex; flex-direction: column;">
                 <span style="background: #f0f4f8; color: var(--primary-light); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; margin-bottom: 10px; text-transform: uppercase;">Muscle & Brain</span>
                 <h4 style="margin-bottom: 10px; color: var(--primary); font-size: 1.1rem;">Creatine Monohydrate</h4>
@@ -7404,7 +7263,7 @@ if (window._pbbIsIOSSafari) {
 
 
 <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-workoutbuilder.js?v=7"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -7466,7 +7325,7 @@ if(!window._pbbDeferNonCriticalScripts) {
 </div>
 
 <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-yourworkouts.js"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -11835,8 +11694,8 @@ if(!window._pbbDeferNonCriticalScripts) {
     <!-- EDIT PROFILE MODAL -->
 
     <script>
-    // Script-4 (32KB) - symptoms list. Defer after init to reduce startup work.
-    if (window._pbbDeferNonCriticalScripts) {
+    // Script-4 (32KB) - symptoms list. Defer on iOS to reduce memory pressure.
+    if (window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
@@ -12011,7 +11870,7 @@ if (window._pbbIsIOSSafari) {
 
 
 <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-coachmode.js"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -14627,9 +14486,18 @@ if (window._pbbIsIOSSafari) {
 <script src="js/dashboard/script_part_25.js"></script>
 
 <script>
-// Script-6 (324KB) - AI coach/chat. Defer after init to reduce startup work.
-// Not needed during init — coach opens on user interaction.
-if (!window._pbbDeferNonCriticalScripts) {
+// Script-6 (324KB) - AI coach/chat. On iOS, defer to reduce memory pressure.
+// Not needed during init - coach opens on user interaction.
+if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(function() {
+            var s = document.createElement('script');
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=24';
+            s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
+            document.head.appendChild(s);
+        }, 2000);
+    }, { once: true });
+} else {
     document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=24"><\/script>');
 }
 </script>
@@ -14692,9 +14560,29 @@ if (!window._pbbDeferNonCriticalScripts) {
 </div>
 
 <script>
-// Defer workout data files (~747KB combined) to reduce startup work.
+// On iOS Safari, defer workout data files (~747KB combined) to reduce memory pressure.
 // These are data objects not needed until user opens Movement tab.
-if (!window._pbbDeferNonCriticalScripts) {
+if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(function() {
+            var scripts = ['exercise_videos.js', 'workout_library.js', 'workout_library_extended.js'];
+            var loaded = 0;
+            scripts.forEach(function(src) {
+                var s = document.createElement('script');
+                s.src = src;
+                s.onload = function() {
+                    loaded++;
+                    if (loaded === 3 && typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !== 'undefined') {
+                        WORKOUT_LIBRARY.yoga = WORKOUT_LIBRARY_EXTENDED.yoga;
+                        WORKOUT_LIBRARY.bodyweight = WORKOUT_LIBRARY_EXTENDED.bodyweight;
+                        WORKOUT_LIBRARY.home = WORKOUT_LIBRARY_EXTENDED.home;
+                    }
+                };
+                document.head.appendChild(s);
+            });
+        }, 2000);
+    }, { once: true });
+} else {
     document.write('<script src="exercise_videos.js"><\/script>');
     document.write('<script src="workout_library.js"><\/script>');
     document.write('<script src="workout_library_extended.js"><\/script>');
@@ -14708,9 +14596,17 @@ if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !=
 }
 </script>
 <script>
-// Script-7 (29KB) - video logic. Defer after init to reduce startup work.
+// Script-7 (29KB) - video logic. Defer on iOS to reduce memory pressure.
 var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream';
-if (!window._pbbDeferNonCriticalScripts) {
+if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(function() {
+            var s = document.createElement('script');
+            s.src = pbbVideoLogicSrc;
+            document.head.appendChild(s);
+        }, 1000);
+    }, { once: true });
+} else {
     document.write('<script src="' + pbbVideoLogicSrc + '"><\/script>');
 }
 </script>
@@ -14779,7 +14675,7 @@ if (!window._pbbDeferNonCriticalScripts) {
     </script>
 </div>
 <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-savedworkouts.js?v=4"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -14796,7 +14692,7 @@ if (typeof window.checkInProgress === 'undefined') {
 }
 </script>
 <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-checkin.js"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -14978,7 +14874,7 @@ if(!window._pbbDeferNonCriticalScripts) {
 </script><!-- end tmpl-weighin-modal -->
 
 <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-weighin.js?v=57"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -15969,8 +15865,8 @@ if(!window._pbbDeferNonCriticalScripts) {
 </script><!-- end tmpl-post-weighin-modals -->
 
 <script>
-// Script-8 (62KB) - progress analytics. Defer after init.
-if (window._pbbDeferNonCriticalScripts) {
+// Script-8 (62KB) - progress analytics. Defer on iOS.
+if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
@@ -15984,8 +15880,8 @@ if (window._pbbDeferNonCriticalScripts) {
 </script>
 
 <script>
-// Script-9 (31KB) - hormone hub. Defer after init.
-if (window._pbbDeferNonCriticalScripts) {
+// Script-9 (31KB) - hormone hub. Defer on iOS.
+if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
@@ -16000,9 +15896,9 @@ if (window._pbbDeferNonCriticalScripts) {
 
 
 <script>
-// Script-10 (130KB) - Points widget. Defer after init to reduce startup work.
+// Script-10 (130KB) - Points widget. On iOS, defer to reduce memory pressure.
 // loadPointsWidget is guarded with typeof in init, so safe to defer.
-if (window._pbbDeferNonCriticalScripts) {
+if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             if (typeof window.ensurePointsWidgetScript === 'function') {
@@ -16140,16 +16036,14 @@ if (window._pbbDeferNonCriticalScripts) {
     ].forEach(function(name) { installMealStub(name); });
     installMealStub('openMealBuilder', { withBuilder: true });
 
-    if (window._pbbDeferNonCriticalScripts) {
-        if (window._pbbIsMealShortcutLaunch) {
-            window.addEventListener('pbbInitComplete', function() {
-                setTimeout(function() {
-                    window.ensureMealTrackerScripts().catch(function(e) {
-                        console.warn('Deferred meal tracker load failed:', e);
-                    });
-                }, 250);
-            }, { once: true });
-        }
+    if (window._pbbIsIOSSafari) {
+        window.addEventListener('pbbInitComplete', function() {
+            setTimeout(function() {
+                window.ensureMealTrackerScripts().catch(function(e) {
+                    console.warn('Deferred meal tracker load failed:', e);
+                });
+            }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
+        }, { once: true });
     } else {
         document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=8" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js" data-pbb-meal-builder="1"><\/script>');
@@ -16243,7 +16137,7 @@ if (window._pbbDeferNonCriticalScripts) {
 </div>
 
 <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-prefwizard.js"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -16655,8 +16549,8 @@ if(!window._pbbDeferNonCriticalScripts) {
 </div>
 
 <script>
-// Script-12 (40KB) - program builder. Defer after init.
-if (window._pbbDeferNonCriticalScripts) {
+// Script-12 (40KB) - program builder. Defer on iOS.
+if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
@@ -16673,7 +16567,7 @@ if (window._pbbDeferNonCriticalScripts) {
     <!-- Tamagotchi Initialization Logic -->
     <script>
     // Script-13 (80KB) - FitGotchi/tamagotchi logic. Defer on iOS.
-    if (window._pbbDeferNonCriticalScripts) {
+    if (window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
@@ -16698,15 +16592,21 @@ if (window._pbbDeferNonCriticalScripts) {
 
     <!-- Learning System Script -->
     <script>
-    // Defer learning-inline.js (888KB) to reduce startup work.
+    // On iOS Safari, defer learning-inline.js (888KB) to reduce memory pressure.
     // It's not needed until the user opens the Learn tab.
-    if (!window._pbbDeferNonCriticalScripts) {
+    if (window._pbbIsIOSSafari) {
+        window.addEventListener('appCriticalContentReady', function() {
+            var s = document.createElement('script');
+            s.src = 'lib/learning-inline.js?v=6';
+            document.head.appendChild(s);
+        }, { once: true });
+    } else {
         document.write('<script src="lib/learning-inline.js?v=6"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
     <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-battle.js?v=18"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -16719,7 +16619,7 @@ if(!window._pbbDeferNonCriticalScripts) {
          BACKGROUND INITIALIZATION (separate script to avoid battle errors blocking it)
          ============================================================ -->
     <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-bginit.js"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -16734,9 +16634,9 @@ if(!window._pbbDeferNonCriticalScripts) {
          Backgrounds, Move Picker
          ============================================================ -->
     <script>
-    // Script-14 (124KB) - Stat system. Defer after init to reduce startup work.
+    // Script-14 (124KB) - Stat system. On iOS, defer to reduce memory pressure.
     // Not needed during init — stat system is loaded on demand.
-    if (window._pbbDeferNonCriticalScripts) {
+    if (window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
@@ -16752,7 +16652,7 @@ if(!window._pbbDeferNonCriticalScripts) {
 
     <script>
     // Script-15 (54KB) - evolution/rare skin system. Defer on iOS.
-    if (window._pbbDeferNonCriticalScripts) {
+    if (window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
@@ -16769,7 +16669,7 @@ if(!window._pbbDeferNonCriticalScripts) {
     <!-- User Profile Page Script (427 lines) — defer on iOS to reduce parse-time compilation -->
     <script>var _userProfilePreviousView = 'friends';</script>
     <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-userprofile.js?v=3"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -16780,8 +16680,8 @@ if(!window._pbbDeferNonCriticalScripts) {
 
 <!-- AI Assistant Logic -->
 <script>
-// Script-16 (54KB) - chat state. Defer after init.
-if (window._pbbDeferNonCriticalScripts) {
+// Script-16 (54KB) - chat state. Defer on iOS.
+if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
@@ -16798,7 +16698,7 @@ if (window._pbbDeferNonCriticalScripts) {
 
 <!-- Custom Cards System (277 lines) — defer compilation on iOS -->
 <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-customcards.js"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -17094,7 +16994,7 @@ if(!window._pbbDeferNonCriticalScripts) {
 </style>
 
 <script>
-if(!window._pbbDeferNonCriticalScripts) {
+if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-pickers.js"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];

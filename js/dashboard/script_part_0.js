@@ -230,84 +230,32 @@
     }
 
     // ── Deferred-JS injection system ──────────────────────────────────
-    // Feature scripts queued in window._pbbDeferredQueue load after the core
-    // dashboard init. This keeps heavy optional modules out of the startup path.
+    // Large inline <script> blocks in the body use type="text/pbb-deferred-js"
+    // to prevent the JS engine from compiling them during HTML parsing.
+    // On non-iOS: a tiny inline script after each block injects it immediately
+    //             (same timing as a regular <script>, no user-visible difference).
+    // On iOS:     blocks stay dormant until pbbInitComplete fires, keeping
+    //             ~1400 lines of JS out of the critical parsing window.
     
-    var pbbScriptLoadPromises = {};
-    window.pbbLoadScriptOnce = function(src, options) {
-        options = options || {};
-        if (!src) return Promise.resolve();
-        if (pbbScriptLoadPromises[src]) return pbbScriptLoadPromises[src];
-
-        pbbScriptLoadPromises[src] = new Promise(function(resolve, reject) {
-            var scripts = document.getElementsByTagName('script');
-            for (var si = 0; si < scripts.length; si++) {
-                if (scripts[si].getAttribute('src') === src) {
-                    if (scripts[si].dataset && scripts[si].dataset.pbbLoaded === '1') {
-                        resolve();
-                    } else {
-                        scripts[si].addEventListener('load', resolve, { once: true });
-                        scripts[si].addEventListener('error', reject, { once: true });
-                    }
-                    return;
-                }
+    if (isIOS) {
+        window.addEventListener('pbbInitComplete', function() {
+            if(window._crumb)window._crumb('deferred_js_inject_start');
+            var queue = window._pbbDeferredQueue || [];
+            for (var i = 0; i < queue.length; i++) {
+                (function(src, idx) {
+                    setTimeout(function() {
+                        var s = document.createElement('script');
+                        s.src = src;
+                        s.async = false; // ensure ordered execution
+                        document.body.appendChild(s);
+                    }, idx * 100);
+                })(queue[i], i);
             }
-
-            var s = document.createElement('script');
-            s.src = src;
-            if (options.async === false) s.async = false;
-            if (options.dataset) {
-                for (var key in options.dataset) {
-                    if (Object.prototype.hasOwnProperty.call(options.dataset, key)) {
-                        s.dataset[key] = options.dataset[key];
-                    }
-                }
-            }
-            s.onload = function() {
-                if (s.dataset) s.dataset.pbbLoaded = '1';
-                if (typeof options.onload === 'function') {
-                    try { options.onload(); } catch(e) {}
-                }
-                resolve();
-            };
-            s.onerror = function(e) {
-                pbbScriptLoadPromises[src] = null;
-                reject(e);
-            };
-            (options.target || document.head || document.body || document.documentElement).appendChild(s);
-        });
-
-        return pbbScriptLoadPromises[src];
-    };
-
-    window._pbbDeferNonCriticalScripts = true;
-    window.addEventListener('pbbInitComplete', function() {
-        window._pbbInitComplete = true;
-        if(window._crumb)window._crumb('deferred_js_inject_start');
-        var queue = window._pbbDeferredQueue || [];
-        var seen = {};
-        var uniqueQueue = [];
-        for (var q = 0; q < queue.length; q++) {
-            if (!queue[q] || seen[queue[q]]) continue;
-            seen[queue[q]] = true;
-            uniqueQueue.push(queue[q]);
-        }
-        var stepMs = isIOS ? 100 : 50;
-        for (var i = 0; i < uniqueQueue.length; i++) {
-            (function(src, idx) {
-                setTimeout(function() {
-                    window.pbbLoadScriptOnce(src, { async: false, target: document.body })
-                        .catch(function(e) {
-                            if (window._crumb) window._crumb('deferred_js_load_error:' + src);
-                            console.warn('Deferred script failed:', src, e);
-                        });
-                }, idx * stepMs);
-            })(uniqueQueue[i], i);
-        }
-        setTimeout(function() {
-            if(window._crumb)window._crumb('deferred_js_inject_done');
-        }, uniqueQueue.length * stepMs + 50);
-    }, { once: true });
+            setTimeout(function() {
+                if(window._crumb)window._crumb('deferred_js_inject_done');
+            }, queue.length * 100 + 50);
+        }, { once: true });
+    }
 
 
     // _dbg is a no-op — debug overlay removed for production.

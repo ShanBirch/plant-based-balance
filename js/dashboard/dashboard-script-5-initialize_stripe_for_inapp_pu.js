@@ -1173,17 +1173,7 @@ function _switchAppTabReal(tabName, btn) {
         if(el) {
             el.classList.add('active');
             el.style.display='block';
-            const renderMovement = function() {
-                renderMovementView().catch(function(e) { console.error('renderMovementView error:', e); });
-            };
-            if (typeof window.ensureWorkoutDataScripts === 'function') {
-                window.ensureWorkoutDataScripts().then(renderMovement).catch(function(e) {
-                    console.warn('Workout data load failed before Movement render:', e);
-                    renderMovement();
-                });
-            } else {
-                renderMovement();
-            }
+            renderMovementView().catch(function(e) { console.error('renderMovementView error:', e); });
 
             // Auto-Check-in Logic (Once per day)
             const todayStr = new Date().toDateString();
@@ -1221,12 +1211,7 @@ function _switchAppTabReal(tabName, btn) {
         if(movEl) {
             movEl.classList.add('active');
             movEl.style.display='block';
-            const renderProgressMovement = function() { renderMovementView(); };
-            if (typeof window.ensureWorkoutDataScripts === 'function') {
-                window.ensureWorkoutDataScripts().then(renderProgressMovement).catch(renderProgressMovement);
-            } else {
-                renderProgressMovement();
-            }
+            renderMovementView();
         }
         // Auto-open progress view from movement
         setTimeout(() => { if(typeof openProgressFromMovement === 'function') openProgressFromMovement(); }, 100);
@@ -1234,15 +1219,7 @@ function _switchAppTabReal(tabName, btn) {
         const el = document.getElementById('view-learning');
         if(el) {
             el.style.display = 'block';
-            if(typeof initLearning === 'function') {
-                initLearning();
-            } else if (typeof window.ensureLearningScript === 'function') {
-                window.ensureLearningScript().then(function() {
-                    if (typeof initLearning === 'function') initLearning();
-                }).catch(function(e) {
-                    console.warn('Learning script load failed:', e);
-                });
-            }
+            if(typeof initLearning === 'function') initLearning();
         }
     } else if (tabName === 'ask-balance') {
         const el = document.getElementById('view-ask-balance');
@@ -18456,18 +18433,7 @@ function queueWorkoutExerciseVideosForOffline(exercises) {
 }
 
 async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
-    if (typeof WORKOUT_LIBRARY === 'undefined' && typeof window.ensureWorkoutDataScripts === 'function') {
-        try { await window.ensureWorkoutDataScripts(); } catch(e) { console.warn('Workout library load failed:', e); }
-    }
-    if (typeof WORKOUT_LIBRARY === 'undefined') {
-        console.error('Workout library not loaded');
-        return;
-    }
     const category = WORKOUT_LIBRARY[categoryKey];
-    if (!category || !category.subcategories || !category.subcategories[subcategoryKey]) {
-        console.error('Workout category not found:', categoryKey, subcategoryKey);
-        return;
-    }
     const subcategory = category.subcategories[subcategoryKey];
     const workout = subcategory.workouts.find(w => w.id === workoutId);
 
@@ -19692,21 +19658,9 @@ function searchExercisesForAdd(query) {
     if (typeof EXERCISE_VIDEOS === 'undefined') {
         resultsContainer.innerHTML = `
             <div style="text-align: center; padding: 40px; color: #ef4444;">
-                Loading exercise library...
+                Exercise library not loaded
             </div>
         `;
-        if (typeof window.ensureWorkoutDataScripts === 'function') {
-            window.ensureWorkoutDataScripts().then(function() {
-                searchExercisesForAdd(query);
-            }).catch(function(e) {
-                console.warn('Exercise library load failed:', e);
-                resultsContainer.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #ef4444;">
-                        Exercise library failed to load
-                    </div>
-                `;
-            });
-        }
         return;
     }
 
