@@ -138,8 +138,6 @@ const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
 const PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE = 'Permanent Needs You contacts require Shannon approval before sending.';
 const AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES = new Set([
     'auto_send',
-    'scheduled_worker',
-    'send_later',
     'balance_lead_client_manager_cron',
 ]);
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -391,15 +389,29 @@ function isHumanApprovedSource(source, alertData = {}) {
     return !automatedSources.has(rawSource) && scheduledVia !== 'auto_send';
 }
 
+function isHumanApprovedPermanentNeedsYouSendSource(source) {
+    const normalized = String(source || '').trim().toLowerCase();
+    return normalized.startsWith('admin_dashboard')
+        || normalized === 'android_inline_reply_worker'
+        || normalized === 'manual_instagram';
+}
+
 function isAutomatedPermanentNeedsYouSendSource(source, data = {}) {
     const normalized = String(source || '').trim().toLowerCase();
     const scheduledVia = String(data.scheduled_via || '').trim().toLowerCase();
     const timingChoiceSource = String(data.reply_timing_choice?.source || '').trim().toLowerCase();
     const timingSuggestionSource = String(data.reply_timing_suggestion?.source || '').trim().toLowerCase();
-    return AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES.has(normalized)
-        || scheduledVia === 'auto_send'
+    const hasAutoSendMetadata = scheduledVia === 'auto_send'
         || timingChoiceSource === 'auto_send'
         || timingSuggestionSource === 'auto_send';
+    if (isHumanApprovedPermanentNeedsYouSendSource(normalized) && !hasAutoSendMetadata) {
+        return false;
+    }
+    if (normalized === 'scheduled_worker') {
+        return hasAutoSendMetadata;
+    }
+    return AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES.has(normalized)
+        || hasAutoSendMetadata;
 }
 
 function isPermanentNeedsYouIgAlert({ alert = {}, alertData = {}, thread = null } = {}) {
@@ -1836,6 +1848,7 @@ exports._test = {
     isCocosAlertData,
     isChallengeOfferSend,
     isSendClaimStale,
+    isHumanApprovedPermanentNeedsYouSendSource,
     isAutomatedPermanentNeedsYouSendSource,
     isPermanentNeedsYouIgAlert,
     shouldBlockPermanentNeedsYouAutomatedIgSend,

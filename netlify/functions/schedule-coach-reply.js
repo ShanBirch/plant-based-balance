@@ -40,6 +40,10 @@ const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm', 'follow_up_
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const HUMAN_AGENT_MANUAL_ONLY_MESSAGE = 'Meta Human Agent 7-day replies must be sent by a human agent, so Send Later is disabled for this draft.';
 const PERMANENT_NEEDS_YOU_SEND_LATER_MESSAGE = 'Permanent Needs You contacts require Shannon approval, so Send Later is disabled for this draft.';
+const AUTOMATED_PERMANENT_NEEDS_YOU_SCHEDULE_SOURCES = new Set([
+    'auto_send',
+    'balance_lead_client_manager_cron',
+]);
 
 async function supabase(path, options = {}) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -146,6 +150,16 @@ function isPermanentNeedsYouAlert(alert = {}) {
             },
         },
     });
+}
+
+function isAutomatedPermanentNeedsYouScheduleSource(source) {
+    const normalized = String(source || '').trim().toLowerCase();
+    return AUTOMATED_PERMANENT_NEEDS_YOU_SCHEDULE_SOURCES.has(normalized);
+}
+
+function shouldBlockPermanentNeedsYouSchedule(alert = {}, source = '') {
+    return isAutomatedPermanentNeedsYouScheduleSource(source)
+        && isPermanentNeedsYouAlert(alert);
 }
 
 async function stampPermanentNeedsYouScheduleBlock(alert = {}) {
@@ -349,7 +363,7 @@ exports.handler = async (event) => {
             code: 'human_agent_manual_send_required',
         }) };
     }
-    if (isPermanentNeedsYouAlert(alert)) {
+    if (shouldBlockPermanentNeedsYouSchedule(alert, source)) {
         await stampPermanentNeedsYouScheduleBlock(alert);
         return { statusCode: 409, body: JSON.stringify({
             error: PERMANENT_NEEDS_YOU_SEND_LATER_MESSAGE,
@@ -436,4 +450,10 @@ exports.handler = async (event) => {
             ...cleanup,
         }),
     };
+};
+
+exports._test = {
+    isPermanentNeedsYouAlert,
+    isAutomatedPermanentNeedsYouScheduleSource,
+    shouldBlockPermanentNeedsYouSchedule,
 };

@@ -41,6 +41,10 @@ const {
 const MAX_PER_RUN = 25;
 const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
 const DEFAULT_COACHING_URL = 'https://future-balance.netlify.app/coaching.html';
+const AUTOMATED_PERMANENT_NEEDS_YOU_SCHEDULE_SOURCES = new Set([
+    'auto_send',
+    'balance_lead_client_manager_cron',
+]);
 
 async function supabase(path, options = {}) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -133,7 +137,18 @@ function buildAutoSendReviewHold(alert) {
     return null;
 }
 
+function isAutomatedPermanentNeedsYouScheduledAlert(alert = {}) {
+    const data = alert?.data || {};
+    const scheduledVia = String(data.scheduled_via || '').trim().toLowerCase();
+    const timingChoiceSource = String(data.reply_timing_choice?.source || '').trim().toLowerCase();
+    const timingSuggestionSource = String(data.reply_timing_suggestion?.source || '').trim().toLowerCase();
+    return AUTOMATED_PERMANENT_NEEDS_YOU_SCHEDULE_SOURCES.has(scheduledVia)
+        || timingChoiceSource === 'auto_send'
+        || timingSuggestionSource === 'auto_send';
+}
+
 function buildPermanentNeedsYouHold(alert) {
+    if (!isAutomatedPermanentNeedsYouScheduledAlert(alert)) return null;
     const data = alert?.data || {};
     const graph = data.instagram_graph || {};
     const customData = data.custom_data || {};
@@ -468,6 +483,7 @@ exports.handler = async () => {
 
 exports._test = {
     buildAutoSendReviewHold,
+    isAutomatedPermanentNeedsYouScheduledAlert,
     buildPermanentNeedsYouHold,
     hasCocosAutoContextBypass,
     hasAutoContextBypass,
