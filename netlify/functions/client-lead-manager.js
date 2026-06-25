@@ -463,7 +463,7 @@ function classifyNeedsYou(alert = {}) {
     }
     if (isAlwaysNeedsYouPerson(alertIdentity(alert))) {
         reasons.push('always_needs_you_person');
-        labels.push('Shane/Fra/Miranda/Monica/Dani draft-only Needs You route');
+        labels.push('Shane/Fra/Nat/Miranda/Monica/Dani draft-only Needs You route');
     }
     if (appProblemHold) {
         reasons.push(appProblemHold.code);
