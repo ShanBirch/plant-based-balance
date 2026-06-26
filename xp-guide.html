@@ -277,32 +277,33 @@
             <div class="panel">
                 <h1 id="page-title">How to Earn XP</h1>
                 <p>XP levels your character and counts toward XP challenges. Coins are separate and are used for shop and challenge entry systems.</p>
+                <p>Challenge leaderboards track the XP you earn after joining. Amounts below are base amounts; if a 2x boost is active, Balance shows the doubled amount when the XP is awarded.</p>
             </div>
 
             <aside class="panel route" aria-labelledby="daily-route-title">
                 <h2 id="daily-route-title">Fast daily route</h2>
                 <ol class="route-list">
-                    <li><span class="step">1</span><span>Log meals and hit nutrition targets.</span><span class="points">+1 to +2</span></li>
-                    <li><span class="step">2</span><span>Share one daily check-in to Feed.</span><span class="points">+2</span></li>
-                    <li><span class="step">3</span><span>Comment on someone else's Feed post.</span><span class="points">+2</span></li>
-                    <li><span class="step">4</span><span>Share a logged meal to Feed.</span><span class="points">+1</span></li>
+                    <li><span class="step">1</span><span>Log meals, hit nutrition targets, and share one logged meal.</span><span class="points">+4</span></li>
+                    <li><span class="step">2</span><span>Log a workout, then share the workout card.</span><span class="points">+2</span></li>
+                    <li><span class="step">3</span><span>Post one regular Feed check-in and comment on someone else's post.</span><span class="points">+4</span></li>
+                    <li><span class="step">4</span><span>Finish a daily quiz at 100% and hit 10,000 synced Fitbit steps.</span><span class="points">+7</span></li>
                 </ol>
             </aside>
         </section>
 
         <div class="section-heading">
             <h2>XP Actions</h2>
-            <p>Rewards can change during special events, but these are the core ways to earn.</p>
+            <p>These are the current Balance XP sources and their normal caps.</p>
         </div>
 
         <section class="grid" aria-label="XP earning actions">
             <article class="rule-card">
                 <h3>Meals and Nutrition</h3>
                 <ul class="rule-list">
-                    <li><span class="tag green">+1</span><span><strong>Accepted meal log.</strong> Photo or AI meal logs are the safest path.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>Accepted meal log.</strong> Verified photo, AI, or accepted meal-log routes can award this.</span></li>
                     <li><span class="tag green">+1</span><span><strong>On-time meal.</strong> Log within 30 minutes of a scheduled meal reminder.</span></li>
                     <li><span class="tag amber">+2</span><span><strong>Daily nutrition target.</strong> Log at least one meal and finish within 20% of calories, protein, carbs, and fat.</span></li>
-                    <li><span class="tag green">+1</span><span><strong>Meal Feed share.</strong> Share a logged meal card to Feed.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>Meal Feed share.</strong> Share a logged meal card to Feed; Balance dedupes this by meal when it can identify the meal.</span></li>
                 </ul>
             </article>
 
@@ -310,37 +311,71 @@
                 <h3>Feed and Community</h3>
                 <ul class="rule-list">
                     <li><span class="tag amber">+2</span><span><strong>Daily Feed check-in.</strong> One regular Feed post can earn this each day.</span></li>
-                    <li><span class="tag amber">+2</span><span><strong>Comment on someone else's post.</strong> Your own posts do not count for this reward.</span></li>
-                    <li><span class="tag amber">+2</span><span><strong>Workout image post.</strong> Balance can award this when the workout content is verified.</span></li>
-                    <li><span class="tag green">+1</span><span><strong>Activity card share.</strong> Eligible verified activity cards can add XP when shared to Feed.</span></li>
-                </ul>
-            </article>
-
-            <article class="rule-card">
-                <h3>Progress and Check-ins</h3>
-                <ul class="rule-list">
-                    <li><span class="tag dark">+10</span><span><strong>Weekly progress photo.</strong> Earn this once when the weekly progress photo is accepted.</span></li>
-                    <li><span class="tag dark">+10</span><span><strong>Share weekly progress.</strong> Share that weekly progress photo to Feed once.</span></li>
-                    <li><span class="tag green">+1</span><span><strong>Daily weigh-in.</strong> Add your weigh-in for the day.</span></li>
-                    <li><span class="tag dark">+10</span><span><strong>Friday challenge weigh-in.</strong> Earn when Friday weight is down from the prior Friday.</span></li>
+                    <li><span class="tag amber">+2</span><span><strong>Comment on someone else's post.</strong> Comments on your own post do not count.</span></li>
+                    <li><span class="tag amber">+2</span><span><strong>AI-verified workout image post.</strong> A regular Feed photo can earn this when Balance verifies workout content.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>Nudge an inactive friend.</strong> Capped at once per friend per week when they have been inactive long enough.</span></li>
                 </ul>
             </article>
 
             <article class="rule-card">
                 <h3>Training</h3>
                 <ul class="rule-list">
-                    <li><span class="tag green">+1</span><span><strong>Verified workout log.</strong> Eligible workout photo or log routes can earn XP.</span></li>
-                    <li><span class="tag green">+1</span><span><strong>Personal best.</strong> New PBs and volume PRs can add XP.</span></li>
-                    <li><span class="tag blue">Score</span><span><strong>Workout challenges.</strong> Some challenges score workouts, kilos, or reps instead of XP.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>Workout logged.</strong> Eligible workout log routes award XP.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>Workout card share.</strong> Share the workout card to Feed; eligible group-chat shares can also award once per workout session.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>New personal best.</strong> New PBs and volume PRs can add XP.</span></li>
+                    <li><span class="tag blue">Score</span><span><strong>Workout challenges.</strong> Some challenge types score workouts, weight lifted, reps, or calories instead of direct XP.</span></li>
                 </ul>
             </article>
 
             <article class="rule-card">
-                <h3>Learning</h3>
+                <h3>Progress and Weigh-ins</h3>
                 <ul class="rule-list">
-                    <li><span class="tag green">+1</span><span><strong>New Health IQ lesson.</strong> Lessons need 100% completion to award XP.</span></li>
+                    <li><span class="tag dark">+10</span><span><strong>Weekly progress photos.</strong> Earn once when the weekly progress photo set is accepted.</span></li>
+                    <li><span class="tag dark">+10</span><span><strong>Share weekly progress.</strong> Share that weekly progress photo set to Feed once.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>Daily weigh-in.</strong> Add your weigh-in for the day.</span></li>
+                    <li><span class="tag dark">+10</span><span><strong>Friday weigh-in down.</strong> Earn when Friday weight is down from the previous Friday in a challenge.</span></li>
+                    <li><span class="tag dark">+10</span><span><strong>Friday Feed card.</strong> Post the Friday weigh-in review card to Feed once per Friday weigh-in.</span></li>
+                </ul>
+            </article>
+
+            <article class="rule-card">
+                <h3>Daily Check-ins</h3>
+                <ul class="rule-list">
+                    <li><span class="tag green">+1</span><span><strong>Fitness diary.</strong> Submit the daily fitness diary card.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>All three mood check-ins.</strong> Complete morning, afternoon, and evening mood check-ins in the same day.</span></li>
+                    <li><span class="tag amber">+2</span><span><strong>10,000 Fitbit steps.</strong> Synced Fitbit steps can award once per day.</span></li>
+                </ul>
+            </article>
+
+            <article class="rule-card">
+                <h3>Health IQ</h3>
+                <ul class="rule-list">
+                    <li><span class="tag green">+1</span><span><strong>New lesson complete.</strong> Health IQ lessons need 100% completion to award XP, with a daily lesson limit.</span></li>
                     <li><span class="tag amber">+2</span><span><strong>Unit complete.</strong> Finish all lessons in a unit.</span></li>
-                    <li><span class="tag dark">+5</span><span><strong>Module complete or daily quiz.</strong> Complete a module or score 100% on the daily quiz.</span></li>
+                    <li><span class="tag dark">+5</span><span><strong>Module complete.</strong> Finish a full module.</span></li>
+                    <li><span class="tag dark">+5</span><span><strong>Daily quiz.</strong> Score 100% on the daily quiz, once per day.</span></li>
+                    <li><span class="tag purple">Bonus</span><span><strong>Health IQ level-ups.</strong> Level bonuses are +5, +10, +15, +20, +25, +30, +40, +50, then +100 XP.</span></li>
+                </ul>
+            </article>
+
+            <article class="rule-card">
+                <h3>Weekly Goals</h3>
+                <ul class="rule-list">
+                    <li><span class="tag dark">+10</span><span><strong>Each completed weekly goal.</strong> Paid through Weekly Wrapped after goal progress is calculated.</span></li>
+                    <li><span class="tag amber">+20</span><span><strong>All three goals hit.</strong> Bonus for hitting 3/3 selected weekly goals.</span></li>
+                    <li><span class="tag blue">Cap</span><span><strong>50 XP weekly max.</strong> Weekly goal rewards are capped at 50 XP total.</span></li>
+                </ul>
+            </article>
+
+            <article class="rule-card">
+                <h3>Milestones and Streaks</h3>
+                <ul class="rule-list">
+                    <li><span class="tag amber">+5</span><span><strong>First meal or first workout.</strong> The first accepted meal and first logged workout have milestone bonuses.</span></li>
+                    <li><span class="tag dark">+10</span><span><strong>10 meals.</strong> Meal tracking milestone.</span></li>
+                    <li><span class="tag dark">+25</span><span><strong>50 meals or 50 workouts.</strong> Count milestone.</span></li>
+                    <li><span class="tag dark">+50</span><span><strong>100 meals or 100 workouts.</strong> Count milestone.</span></li>
+                    <li><span class="tag dark">+100</span><span><strong>365 meals or 365 workouts.</strong> One-year count milestone.</span></li>
+                    <li><span class="tag purple">Bonus</span><span><strong>Post streaks.</strong> 7, 14, 30, 60, and 100-day streak bonuses are +5, +10, +25, +50, and +100 XP.</span></li>
                 </ul>
             </article>
 
@@ -349,7 +384,7 @@
                 <ul class="rule-list">
                     <li><span class="tag dark">+200</span><span><strong>Win a challenge.</strong> Challenge wins can award XP and unlock a 30-day 2x XP boost.</span></li>
                     <li><span class="tag purple">2x</span><span><strong>Double XP windows.</strong> Active boosts can multiply eligible rewards when the app shows the boost.</span></li>
-                    <li><span class="tag amber">+2</span><span><strong>Fitbit steps.</strong> 10,000 Fitbit steps can earn XP once per day.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>Walkthrough checkpoints.</strong> Selected onboarding walkthrough checkpoints can award XP until the account reaches the Level 4 starter target.</span></li>
                 </ul>
             </article>
         </section>
@@ -357,10 +392,11 @@
         <section class="panel cap-panel" aria-labelledby="caps-title">
             <h2 id="caps-title">Caps and fairness</h2>
             <ul>
-                <li>Daily Feed check-in XP is capped at one regular Feed post per day.</li>
-                <li>Comment XP only applies when you comment on someone else's post.</li>
-                <li>Meal Feed share XP is deduped by meal when Balance can identify the meal.</li>
-                <li>Progress photo and Feed-share rewards are limited to their weekly or daily windows.</li>
+                <li>Most XP events only pay once per source item, day, workout, week, or challenge window.</li>
+                <li>Photo-based XP can be rejected for low confidence, duplicates, unclear content, or old/future timestamps.</li>
+                <li>Calories challenges require every meal used for the daily nutrition bonus to have a verified photo.</li>
+                <li>Daily Feed check-in XP is capped at one regular Feed post per day, and comment XP only applies to someone else's post.</li>
+                <li>Progress photo, Friday weigh-in, weekly goal, nudge, and Fitbit rewards follow their listed daily or weekly caps.</li>
             </ul>
         </section>
     </main>
