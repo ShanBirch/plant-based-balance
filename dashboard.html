@@ -10121,11 +10121,11 @@ if(!window._pbbIsIOSSafari) {
         </div>
     </div>
 
-    <!-- Cohort Info Modal (shown for the 30 Day Challenge cohort while waiting) -->
+    <!-- Cohort Info Modal (shown for the six-week transformation cohort while waiting) -->
     <div id="cohort-info-modal" style="display: none; position: fixed; inset: 0; background: #050505; z-index: 10009; overflow-y: auto;">
         <div style="background: linear-gradient(135deg, #171717 0%, #080808 100%); padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 0 20px; position: sticky; top: 0; z-index: 10;">
             <div style="display: flex; align-items: center; justify-content: center; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.15);">
-                <h3 id="cohort-info-title" style="margin: 0; font-size: 1.05rem; font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; text-shadow: 0 2px 8px rgba(0,0,0,0.68);">30 Day Challenge</h3>
+                <h3 id="cohort-info-title" style="margin: 0; font-size: 1.05rem; font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; text-shadow: 0 2px 8px rgba(0,0,0,0.68);">6-Week Transformation Challenge</h3>
             </div>
         </div>
 
@@ -10135,7 +10135,7 @@ if(!window._pbbIsIOSSafari) {
                 <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px;">
                     <div style="width: 56px; height: 56px; background: rgba(255,255,255,0.22); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.8rem;">🌱</div>
                     <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 800; color: white; font-size: 1.05rem; margin-bottom: 3px;">30 days, all in together.</div>
+                        <div style="font-weight: 800; color: white; font-size: 1.05rem; margin-bottom: 3px;">6 weeks, all in together.</div>
                         <div id="cohort-info-status-line" style="font-size: 0.82rem; color: rgba(255,255,255,0.92);">Starts when 15 people join.</div>
                     </div>
                 </div>
@@ -10146,6 +10146,7 @@ if(!window._pbbIsIOSSafari) {
                 <div style="background: rgba(245,217,138,0.12); border: 1px solid rgba(245,217,138,0.14); border-radius: 12px; padding: 12px 14px;">
                     <div id="cohort-info-dots" style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;"></div>
                 </div>
+                <button type="button" onclick="openXpGuidePage(event)" style="width: 100%; margin-top: 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(245,217,138,0.7); background: linear-gradient(135deg, #fff7d6 0%, #f5d98a 54%, #d8b25e 100%); color: #101828; font-size: 0.88rem; font-weight: 950; cursor: pointer; box-shadow: 0 10px 24px rgba(245,217,138,0.18);">How to earn XP</button>
             </div>
 
             <!-- Rules section -->
@@ -10155,7 +10156,7 @@ if(!window._pbbIsIOSSafari) {
                     <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(124,58,237,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.05rem;">⚡</div>
                     <div style="flex: 1;">
                         <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 2px;">XP-based competition</div>
-                        <div style="color: rgba(255,255,255,0.65); font-size: 0.8rem; line-height: 1.45;">Every meal, workout, weigh-in, and lesson logs XP. Highest XP after 30 days wins.</div>
+                        <div style="color: rgba(255,255,255,0.65); font-size: 0.8rem; line-height: 1.45;">Every meal, workout, weigh-in, and lesson logs XP. Highest XP after 6 weeks wins.</div>
                     </div>
                 </div>
                 <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
@@ -10194,7 +10195,7 @@ if(!window._pbbIsIOSSafari) {
                                 <span style="color: rgba(255,255,255,0.88); font-size: 0.82rem; line-height: 1.4;"><strong style="color: #5eead4;">Biggest effort</strong> &middot; most improved momentum</span>
                             </div>
                         </div>
-                        <div style="color: rgba(255,255,255,0.55); font-size: 0.75rem; line-height: 1.4; margin-top: 8px;">Everyone who finishes the 30 days earns bonus XP and a finisher's drop.</div>
+                        <div style="color: rgba(255,255,255,0.55); font-size: 0.75rem; line-height: 1.4; margin-top: 8px;">Everyone who finishes the 6 weeks earns bonus XP and a finisher's drop.</div>
                     </div>
                 </div>
             </div>
@@ -14510,13 +14511,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=24';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=25';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=24"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=25"><\/script>');
 }
 </script>
 

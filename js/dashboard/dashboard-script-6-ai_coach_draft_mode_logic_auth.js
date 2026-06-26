@@ -4626,12 +4626,23 @@ async function loadHomeChallenges() {
 }
 
 // ============================================================
-// COHORT CHALLENGE (30 Day Challenge) - enrolled only when an explicit
+// COHORT CHALLENGE - enrolled only when an explicit
 // cohort invitation exists. The next cohort waits for 15 people, then starts.
 // ============================================================
 
 const COHORT_START_TARGET = 15;
 const COHORT_CASH_PRIZE_LABEL = '$500 CASH';
+const TRANSFORM_COHORT_TYPE = 'transform_30';
+const TRANSFORM_COHORT_DISPLAY_NAME = '6-Week Transformation Challenge';
+
+function getCohortDisplayName(cohort) {
+    const rawName = (cohort?.challenge_name || cohort?.name || '').trim();
+    const cohortType = cohort?.cohort_type || '';
+    if (cohortType === TRANSFORM_COHORT_TYPE || /30[-\s]?day transformation/i.test(rawName)) {
+        return TRANSFORM_COHORT_DISPLAY_NAME;
+    }
+    return rawName || '30 Day Challenge';
+}
 
 async function tryAutoEnrollInCohort() {
     if (!window.currentUser?.id) return;
@@ -4658,7 +4669,7 @@ async function tryAutoEnrollInCohort() {
             const enrolled = data && (data.challenge_id || data.just_started);
 
             // Cache the challenge_id so the feature tour can open the
-            // right cohort modal in its 30-Day Challenge intro step.
+            // right cohort modal in its challenge intro step.
             if (cohortType === 'plant_based_30' && data?.challenge_id) {
                 try { window._tourCohortChallengeId = data.challenge_id; } catch (e) {}
             }
@@ -4937,7 +4948,7 @@ function renderCohortWaitingCard(cohort) {
             <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
                 <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem;">🌱</div>
                 <div style="flex: 1; min-width: 0;">
-                    <div class="cohort-card-title" style="font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; font-size: 1.02rem; margin-bottom: 2px;">${cohort.challenge_name || '30 Day Challenge'}</div>
+                    <div class="cohort-card-title" style="font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; font-size: 1.02rem; margin-bottom: 2px;">${getCohortDisplayName(cohort)}</div>
                     <div class="cohort-card-subtitle" style="font-size: 0.78rem; color: rgba(248,247,242,0.86); -webkit-text-fill-color: rgba(248,247,242,0.86);">${subtitle}</div>
                 </div>
                 <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.6); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
@@ -5033,7 +5044,7 @@ function renderCohortActiveCard(cohort) {
         <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
             <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.5rem;">🌱</div>
             <div style="flex: 1; min-width: 0;">
-                <div class="cohort-card-title" style="font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; font-size: 0.98rem; margin-bottom: 3px;">${cohort.challenge_name || '30 Day Challenge'}</div>
+                <div class="cohort-card-title" style="font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; font-size: 0.98rem; margin-bottom: 3px;">${getCohortDisplayName(cohort)}</div>
                 <div style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #22c55e 0%, #84cc16 48%, #facc15 100%); color: #07130b; border: 1px solid rgba(254,240,138,0.85); border-radius: 999px; padding: 4px 8px; font-size: 0.68rem; font-weight: 950; margin-bottom: 6px; box-shadow: 0 6px 18px rgba(34,197,94,0.28);"><span>1st Place</span><span style="color: #ffffff; text-shadow: 0 1px 6px rgba(0,0,0,0.38);">${COHORT_CASH_PRIZE_LABEL}</span></div>
                 <div style="display: flex; gap: 12px; font-size: 0.78rem; color: rgba(255,255,255,0.85);">
                     <span>#${rank}</span>
@@ -5110,7 +5121,7 @@ async function openCohortInfo(challengeId) {
         const remaining = Math.max(0, needed - joined);
 
         const titleEl = document.getElementById('cohort-info-title');
-        if (titleEl && cohort?.challenge_name) titleEl.textContent = cohort.challenge_name;
+        if (titleEl && cohort) titleEl.textContent = getCohortDisplayName(cohort);
 
         const statusLine = document.getElementById('cohort-info-status-line');
         if (statusLine) {
