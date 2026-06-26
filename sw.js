@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v220'; // v220: six-week transform challenge copy and visible XP guide button; v219: refresh exact XP guide content
+const CACHE_NAME = 'pbb-app-v221'; // v221: remove XP guide back-to-app button; v220: six-week transform challenge copy and visible XP guide button
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
