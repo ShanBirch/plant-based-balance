@@ -16254,7 +16254,7 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
                             <div style="font-size: 0.8rem; opacity: 0.9;">${pbText}</div>
                         </div>
                         ${improvement ? `<div style="color: #4ade80; font-weight: 700; font-size: 0.9rem; margin-right:8px;">${improvement}</div>` : ''}
-                        <button id="share-pb-btn-${idx}" onclick="sharePBCardToFeed(completedWorkoutDataForShare.newPBs[${idx}]); this.textContent='Shared!'; this.disabled=true; this.style.opacity='0.6';" style="background:rgba(251,191,36,0.3); border:1px solid rgba(251,191,36,0.5); color:#fbbf24; padding:4px 10px; border-radius:8px; font-size:0.7rem; font-weight:700; cursor:pointer; white-space:nowrap;">Share</button>
+                        <button id="share-pb-btn-${idx}" onclick="openPBShareOptions(completedWorkoutDataForShare.newPBs[${idx}], ${idx});" style="background:rgba(251,191,36,0.3); border:1px solid rgba(251,191,36,0.5); color:#fbbf24; padding:4px 10px; border-radius:8px; font-size:0.7rem; font-weight:700; cursor:pointer; white-space:nowrap;">Share</button>
                     </div>
                 `;
             }).join('')}

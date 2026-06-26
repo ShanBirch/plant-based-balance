@@ -8,6 +8,29 @@ const LEVEL_BASE_XP_PER_LEVEL = 3;
 const LEVEL_CURVE_MULTIPLIER = 0.3;
 const LEVEL_CURVE_EXPONENT = 2.1;
 
+function pbbPointsWeightUnit() {
+    try {
+        return localStorage.getItem('weightUnitPreference') === 'lbs' ? 'lbs' : 'kg';
+    } catch (e) {
+        return 'kg';
+    }
+}
+
+function pbbPointsFormatWeightFromKg(weightKg) {
+    if (typeof formatWorkoutWeightFromKg === 'function') return formatWorkoutWeightFromKg(weightKg);
+    const kg = Number(weightKg);
+    if (!Number.isFinite(kg) || kg <= 0) return '-';
+    if (pbbPointsWeightUnit() === 'lbs') return (kg * 2.20462).toFixed(1).replace(/\.0$/, '') + ' lbs';
+    return kg.toFixed(1).replace(/\.0$/, '') + ' kg';
+}
+
+function pbbPointsFormatVolumeFromKg(volumeKg) {
+    if (typeof formatWorkoutVolumeFromKg === 'function') return formatWorkoutVolumeFromKg(volumeKg);
+    const kg = Number(volumeKg) || 0;
+    if (pbbPointsWeightUnit() === 'lbs') return Math.round(kg * 2.20462).toLocaleString() + ' lbs';
+    return Math.round(kg).toLocaleString() + ' kg';
+}
+
 // Calculate points required for a given level
 function getPointsForLevel(level) {
     if (level <= 1) return 0;
@@ -1822,13 +1845,13 @@ async function awardPointsForWalkthroughStep(step, stepNumber, totalSteps) {
 let capturedWorkoutFile = null;
 let workoutPhotoBase64 = null;
 
-// Capture workout completion screen and share to story
-// Track which share type we're doing (story or groupchat)
+// Capture workout completion screen and share card/photo destinations.
+// Legacy "story" here means the in-app feed story row used for workout-share XP.
 let pendingWorkoutShareType = null;
 let workoutPointsEarnedThisSession = { story: false, groupchat: false };
 
-// Cached workout-share photo — captured once, reused for both the feed share
-// and the group-chat share so the user doesn't have to take it twice.
+// Cached workout-share photo captured once and reused for Balance Feed and
+// Instagram so the user does not have to take it twice.
 let cachedWorkoutShareFile = null;
 let cachedWorkoutShareBase64 = null;
 
@@ -2090,8 +2113,7 @@ function captureWorkoutPhoto() {
 
 // ==========================================
 // WORKOUT SHARE PHOTO CACHING
-// One photo captured up front → reused for both the feed share and the
-// group-chat share, so the user never has to take it twice.
+// One photo captured up front and reused across the selected share destination.
 // ==========================================
 
 // Validate that the workout is long enough to earn share XP.
@@ -2112,9 +2134,6 @@ function validateWorkoutDurationForShare() {
 // Opens the camera, caches the result, and flips the share section UI to the
 // preview + share-buttons state.
 async function captureWorkoutSharePhoto() {
-    // Enforce duration up front so the user doesn't open the camera for nothing
-    if (!validateWorkoutDurationForShare()) return;
-
     // Bounce the button for feedback
     const takeBtn = document.getElementById('share-take-photo-btn');
     if (takeBtn) {
@@ -2157,7 +2176,6 @@ async function onWorkoutSharePhotoReady(file) {
             reader.onerror = reject;
             reader.readAsDataURL(compressedFile);
         });
-
         cachedWorkoutShareFile = compressedFile;
         cachedWorkoutShareBase64 = base64Data;
 
@@ -2173,7 +2191,7 @@ async function onWorkoutSharePhotoReady(file) {
 
         // Update the sub-heading
         const sub = document.getElementById('share-section-sub');
-        if (sub) sub.textContent = 'Nice shot! Share it to earn 1 XP.';
+        if (sub) sub.textContent = 'Nice shot. Choose Balance Feed for XP, or send it to Instagram.';
     } catch (err) {
         console.error('Failed to process workout share photo:', err);
         showToast('Couldn\'t process that photo. Try again.', 'error');
@@ -2192,7 +2210,7 @@ function resetWorkoutShareUI() {
     if (shareStep) shareStep.style.display = 'none';
 
     const sub = document.getElementById('share-section-sub');
-    if (sub) sub.textContent = 'One photo, share it to the feed for 1 XP.';
+    if (sub) sub.textContent = 'One photo, choose Balance Feed, IG Story, or IG Feed.';
 
     const takeBtn = document.getElementById('share-take-photo-btn');
     if (takeBtn) {
@@ -2207,7 +2225,21 @@ function resetWorkoutShareUI() {
         cardBtn.style.opacity = '1';
         cardBtn.style.background = 'linear-gradient(135deg, #ffffff, #f0fdf4)';
         cardBtn.style.border = 'none';
-        cardBtn.innerHTML = '<span style="font-size: 1.3rem;">📢</span><span style="font-size: 0.95rem;">Share to Feed (+1 XP)</span>';
+        cardBtn.innerHTML = '<span style="font-size: 1.3rem;">📢</span><span style="font-size: 0.95rem;">Balance Feed (+1 XP)</span>';
+    }
+
+    const igStoryBtn = document.getElementById('share-workout-ig-story-btn');
+    if (igStoryBtn) {
+        igStoryBtn.disabled = false;
+        igStoryBtn.style.opacity = '1';
+        igStoryBtn.innerHTML = '<span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span><span style="font-size: 0.9rem;">Story</span>';
+    }
+
+    const igFeedBtn = document.getElementById('share-workout-ig-feed-btn');
+    if (igFeedBtn) {
+        igFeedBtn.disabled = false;
+        igFeedBtn.style.opacity = '1';
+        igFeedBtn.innerHTML = '<span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span><span style="font-size: 0.9rem;">Feed</span>';
     }
 }
 window.resetWorkoutShareUI = resetWorkoutShareUI;
@@ -2398,6 +2430,515 @@ async function captureAndShareWorkout() {
     shareWorkoutToStory();
 }
 
+function pbbGetWorkoutShareDurationText() {
+    const successDurationEl = document.getElementById('success-duration');
+    const durationText = successDurationEl ? String(successDurationEl.textContent || '').trim() : '';
+    return durationText || '00:00';
+}
+
+function buildWorkoutShareCardPayload() {
+    if (!completedWorkoutDataForShare) return null;
+
+    const data = completedWorkoutDataForShare;
+    const exerciseMap = {};
+    (data.sets || []).forEach(set => {
+        const name = set.exercise || set.exercise_name || 'Exercise';
+        if (!exerciseMap[name]) {
+            exerciseMap[name] = { name, sets: 0, bestKg: 0, bestReps: 0 };
+        }
+        exerciseMap[name].sets++;
+        const kg = parseFloat(set.kg) || 0;
+        const reps = parseInt(set.reps) || 0;
+        if (kg > exerciseMap[name].bestKg) {
+            exerciseMap[name].bestKg = kg;
+            exerciseMap[name].bestReps = reps;
+        } else if (kg === exerciseMap[name].bestKg && reps > exerciseMap[name].bestReps) {
+            exerciseMap[name].bestReps = reps;
+        }
+    });
+
+    const exercises = Object.values(exerciseMap).map(ex => ({
+        name: ex.name,
+        sets: ex.sets,
+        best: ex.bestKg > 0 ? `${ex.sets}x${ex.bestReps} @ ${pbbPointsFormatWeightFromKg(ex.bestKg)}` : (ex.bestReps > 0 ? `${ex.sets}x${ex.bestReps}` : `${ex.sets} sets`)
+    }));
+
+    let totalVolume = 0;
+    (data.sets || []).forEach(set => {
+        const kg = parseFloat(set.kg) || 0;
+        const reps = parseInt(set.reps) || 0;
+        totalVolume += kg * reps;
+    });
+
+    const pbs = (data.newPBs || []).map(pb => ({
+        exercise: pb.exercise,
+        type: pb.type,
+        value: pb.value,
+        reps: pb.reps,
+        weight: pb.weight,
+        improvement: pb.improvement
+    }));
+
+    return {
+        card_type: 'workout',
+        workout_name: data.workoutName || 'Workout',
+        duration: data.duration || pbbGetWorkoutShareDurationText(),
+        exercises: exercises,
+        total_sets: data.sets ? data.sets.length : 0,
+        total_volume: totalVolume > 0 ? pbbPointsFormatVolumeFromKg(totalVolume) : null,
+        pbs: pbs.length > 0 ? pbs : null
+    };
+}
+
+function buildPBShareCardPayload(pbData) {
+    if (!pbData) return null;
+    return {
+        card_type: 'pb',
+        exercise: pbData.exercise,
+        pb_type: pbData.type,
+        value: pbData.value,
+        reps: pbData.reps,
+        weight: pbData.weight,
+        improvement: pbData.improvement,
+        previous: pbData.previous != null ? pbData.previous : (pbData.improvement ? pbData.value - pbData.improvement : null)
+    };
+}
+
+function pbbFormatPBShareValue(pbData) {
+    if (!pbData) return '';
+    if (pbData.pb_type === 'weight' || pbData.type === 'weight') {
+        const reps = pbData.reps ? ` x ${pbData.reps}` : '';
+        return `${pbbPointsFormatWeightFromKg(pbData.value)}${reps}`;
+    }
+    const weight = pbData.weight ? ` @ ${pbbPointsFormatWeightFromKg(pbData.weight)}` : '';
+    return `${pbData.value || 0} reps${weight}`;
+}
+
+function pbbShareRoundRect(ctx, x, y, w, h, r) {
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + w - radius, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+    ctx.lineTo(x + w, y + h - radius);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+    ctx.lineTo(x + radius, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+}
+
+function pbbShareFillRoundRect(ctx, x, y, w, h, r, fillStyle) {
+    pbbShareRoundRect(ctx, x, y, w, h, r);
+    ctx.fillStyle = fillStyle;
+    ctx.fill();
+}
+
+function pbbShareDrawCoverImage(ctx, img, x, y, w, h) {
+    const scale = Math.max(w / img.width, h / img.height);
+    const sw = w / scale;
+    const sh = h / scale;
+    const sx = (img.width - sw) / 2;
+    const sy = (img.height - sh) / 2;
+    ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
+function pbbShareLoadImage(src) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+    });
+}
+
+function pbbShareWrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+    const words = String(text || '').split(/\s+/).filter(Boolean);
+    const lines = [];
+    let line = '';
+    words.forEach(word => {
+        const test = line ? `${line} ${word}` : word;
+        if (ctx.measureText(test).width > maxWidth && line) {
+            lines.push(line);
+            line = word;
+        } else {
+            line = test;
+        }
+    });
+    if (line) lines.push(line);
+
+    const limit = maxLines || lines.length;
+    lines.slice(0, limit).forEach((lineText, index) => {
+        let output = lineText;
+        if (index === limit - 1 && lines.length > limit) output = output.replace(/\s+\S*$/, '') + '...';
+        ctx.fillText(output, x, y + (index * lineHeight));
+    });
+    return y + (Math.min(lines.length, limit) * lineHeight);
+}
+
+function pbbShareDataUrlToBlob(dataUrl) {
+    const parts = String(dataUrl || '').split(',');
+    const mimeMatch = parts[0].match(/data:(.*?);base64/);
+    const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const binary = atob(parts[1] || '');
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+}
+
+async function renderBalanceShareCardImage(cardPayload, options = {}) {
+    if (!cardPayload) throw new Error('Missing share card payload');
+
+    const target = options.target === 'feed' ? 'feed' : 'story';
+    const width = 1080;
+    const height = target === 'feed' ? 1350 : 1920;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+    bgGradient.addColorStop(0, '#07140f');
+    bgGradient.addColorStop(0.52, '#124734');
+    bgGradient.addColorStop(1, '#f5c45c');
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, 0, width, height);
+
+    if (options.photoDataUrl) {
+        try {
+            const photo = await pbbShareLoadImage(options.photoDataUrl);
+            pbbShareDrawCoverImage(ctx, photo, 0, 0, width, height);
+            ctx.fillStyle = 'rgba(4, 12, 9, 0.56)';
+            ctx.fillRect(0, 0, width, height);
+        } catch (e) {
+            console.warn('Could not draw share background photo:', e);
+        }
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fillRect(0, height - 190, width, 190);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 42px Arial, sans-serif';
+    ctx.fillText('Balance', 76, 110);
+    ctx.font = '700 24px Arial, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.78)';
+    ctx.fillText('plantbased-balance.org/bio', 76, 146);
+
+    const panelX = 70;
+    const panelW = width - 140;
+    const panelY = target === 'feed' ? 214 : 430;
+    const panelH = cardPayload.card_type === 'pb'
+        ? (target === 'feed' ? 790 : 930)
+        : (target === 'feed' ? 870 : 1040);
+    pbbShareFillRoundRect(ctx, panelX, panelY, panelW, panelH, 42, 'rgba(255,255,255,0.94)');
+
+    let y = panelY + 78;
+    ctx.fillStyle = '#0f3d2e';
+    ctx.font = '900 32px Arial, sans-serif';
+    ctx.fillText(cardPayload.card_type === 'pb' ? 'NEW PERSONAL BEST' : 'WORKOUT COMPLETE', panelX + 56, y);
+    y += 76;
+
+    if (cardPayload.card_type === 'pb') {
+        ctx.fillStyle = '#111827';
+        ctx.font = '900 70px Arial, sans-serif';
+        y = pbbShareWrapText(ctx, cardPayload.exercise || 'Personal best', panelX + 56, y, panelW - 112, 78, 2) + 34;
+
+        pbbShareFillRoundRect(ctx, panelX + 56, y, panelW - 112, 188, 30, '#fef3c7');
+        ctx.fillStyle = '#92400e';
+        ctx.font = '900 26px Arial, sans-serif';
+        ctx.fillText('PB RESULT', panelX + 96, y + 56);
+        ctx.fillStyle = '#111827';
+        ctx.font = '900 58px Arial, sans-serif';
+        ctx.fillText(pbbFormatPBShareValue(cardPayload), panelX + 96, y + 132);
+        y += 238;
+
+        if (cardPayload.improvement) {
+            pbbShareFillRoundRect(ctx, panelX + 56, y, panelW - 112, 112, 26, '#dcfce7');
+            ctx.fillStyle = '#166534';
+            ctx.font = '900 38px Arial, sans-serif';
+            const improvementText = cardPayload.pb_type === 'weight'
+                ? `Up ${pbbPointsFormatWeightFromKg(cardPayload.improvement)}`
+                : `Up ${cardPayload.improvement} reps`;
+            ctx.fillText(improvementText, panelX + 96, y + 70);
+            y += 150;
+        }
+
+        ctx.fillStyle = '#475569';
+        ctx.font = '700 32px Arial, sans-serif';
+        pbbShareWrapText(ctx, 'Logged in Balance after showing up and doing the work.', panelX + 56, y, panelW - 112, 42, 3);
+    } else {
+        ctx.fillStyle = '#111827';
+        ctx.font = '900 64px Arial, sans-serif';
+        y = pbbShareWrapText(ctx, cardPayload.workout_name || 'Workout', panelX + 56, y, panelW - 112, 72, 2) + 28;
+
+        const metricY = y;
+        const metricW = (panelW - 136) / 3;
+        const metrics = [
+            ['Duration', cardPayload.duration || '00:00'],
+            ['Sets', String(cardPayload.total_sets || 0)],
+            ['Volume', cardPayload.total_volume || '-']
+        ];
+        metrics.forEach((metric, index) => {
+            const x = panelX + 56 + (index * (metricW + 12));
+            pbbShareFillRoundRect(ctx, x, metricY, metricW, 138, 26, index === 0 ? '#ecfeff' : (index === 1 ? '#f0fdf4' : '#eef2ff'));
+            ctx.fillStyle = '#475569';
+            ctx.font = '800 22px Arial, sans-serif';
+            ctx.fillText(metric[0], x + 26, metricY + 44);
+            ctx.fillStyle = '#111827';
+            ctx.font = '900 32px Arial, sans-serif';
+            pbbShareWrapText(ctx, metric[1], x + 26, metricY + 91, metricW - 52, 35, 1);
+        });
+        y += 190;
+
+        ctx.fillStyle = '#0f3d2e';
+        ctx.font = '900 30px Arial, sans-serif';
+        ctx.fillText('Top sets', panelX + 56, y);
+        y += 42;
+
+        (cardPayload.exercises || []).slice(0, 5).forEach(exercise => {
+            pbbShareFillRoundRect(ctx, panelX + 56, y, panelW - 112, 84, 22, 'rgba(15, 61, 46, 0.08)');
+            ctx.fillStyle = '#111827';
+            ctx.font = '800 27px Arial, sans-serif';
+            pbbShareWrapText(ctx, exercise.name || 'Exercise', panelX + 84, y + 34, panelW - 360, 30, 1);
+            ctx.fillStyle = '#0f766e';
+            ctx.font = '900 25px Arial, sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(exercise.best || `${exercise.sets || 0} sets`, panelX + panelW - 84, y + 52);
+            ctx.textAlign = 'left';
+            y += 98;
+        });
+
+        if (cardPayload.pbs && cardPayload.pbs.length > 0) {
+            pbbShareFillRoundRect(ctx, panelX + 56, panelY + panelH - 146, panelW - 112, 92, 26, '#fef3c7');
+            ctx.fillStyle = '#92400e';
+            ctx.font = '900 32px Arial, sans-serif';
+            ctx.fillText(`${cardPayload.pbs.length} new PB${cardPayload.pbs.length === 1 ? '' : 's'}`, panelX + 92, panelY + panelH - 88);
+        }
+    }
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 46px Arial, sans-serif';
+    ctx.fillText('Train. Track. Level up.', 76, height - 98);
+    ctx.font = '750 27px Arial, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.82)';
+    ctx.fillText('Balance - Fitness Gamified', 76, height - 58);
+
+    return canvas.toDataURL('image/jpeg', 0.92);
+}
+
+async function shareBalanceCardImageExternally(dataUrl, target, text) {
+    const blob = pbbShareDataUrlToBlob(dataUrl);
+    const file = new File([blob], `balance-${target || 'share'}-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
+    const shareData = {
+        title: 'Balance',
+        text: text || 'Shared from Balance',
+        files: [file]
+    };
+
+    if (navigator.share) {
+        try {
+            if (!navigator.canShare || navigator.canShare(shareData)) {
+                await navigator.share(shareData);
+                showToast('Share sheet opened. Choose Instagram to post it.', 'success');
+                return true;
+            }
+        } catch (error) {
+            if (error && error.name === 'AbortError') return false;
+            console.warn('Native web share failed:', error);
+        }
+    }
+
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    showToast('Card saved. Upload it to Instagram from your photos.', 'info');
+    return true;
+}
+
+async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
+    const safeTarget = target === 'feed' ? 'feed' : 'story';
+    const dataUrl = await renderBalanceShareCardImage(cardPayload, {
+        target: safeTarget,
+        photoDataUrl: options.photoDataUrl || null
+    });
+
+    const nativeShare = window.NativePermissions && window.NativePermissions.shareImageToInstagram;
+    if (typeof nativeShare === 'function') {
+        try {
+            const opened = nativeShare.call(window.NativePermissions, dataUrl, safeTarget);
+            if (opened === true || opened === 'true') {
+                showToast(`Opening Instagram ${safeTarget === 'story' ? 'Story' : 'Feed'}...`, 'success');
+                return true;
+            }
+        } catch (nativeError) {
+            console.warn('Native Instagram share failed:', nativeError);
+        }
+    }
+
+    return shareBalanceCardImageExternally(
+        dataUrl,
+        safeTarget,
+        safeTarget === 'story' ? 'Share this to your Instagram Story' : 'Share this to your Instagram Feed'
+    );
+}
+
+async function shareWorkoutCardToInstagram(target) {
+    if (!completedWorkoutDataForShare) {
+        showToast('No workout data to share', 'error');
+        return;
+    }
+
+    const safeTarget = target === 'feed' ? 'feed' : 'story';
+    const btn = document.getElementById(safeTarget === 'story' ? 'share-workout-ig-story-btn' : 'share-workout-ig-feed-btn');
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.72';
+        btn.innerHTML = '<span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span><span style="font-size: 0.9rem;">Preparing...</span>';
+    }
+
+    try {
+        if (!cachedWorkoutShareBase64 && cachedWorkoutShareFile) {
+            cachedWorkoutShareBase64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(cachedWorkoutShareFile);
+            });
+        }
+
+        if (!cachedWorkoutShareBase64) {
+            openWorkoutCamera(async (file) => {
+                if (!file) {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        btn.innerHTML = originalHtml;
+                    }
+                    return;
+                }
+                await onWorkoutSharePhotoReady(file);
+                await shareWorkoutCardToInstagram(safeTarget);
+            }, 'Take a workout photo');
+            return;
+        }
+
+        const cardPayload = buildWorkoutShareCardPayload();
+        await shareBalanceCardToInstagram(cardPayload, safeTarget, { photoDataUrl: cachedWorkoutShareBase64 });
+    } catch (error) {
+        console.error('Error sharing workout card to Instagram:', error);
+        showToast('Could not open Instagram share. Please try again.', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.innerHTML = originalHtml;
+        }
+    }
+}
+
+let pendingPBShareData = null;
+let pendingPBShareButtonIndex = null;
+
+function ensurePBShareOptionsModal() {
+    let modal = document.getElementById('pb-share-options-modal');
+    if (modal) return modal;
+
+    modal = document.createElement('div');
+    modal.id = 'pb-share-options-modal';
+    modal.style.cssText = 'display:none; position:fixed; inset:0; z-index:10095; background:rgba(15,23,42,0.72); align-items:flex-end; justify-content:center; padding:calc(16px + env(safe-area-inset-top, 0px)) 14px calc(16px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box;';
+    modal.innerHTML = `
+        <div style="width:100%; max-width:460px; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; background:white; border-radius:18px 18px 14px 14px; box-shadow:0 18px 50px rgba(0,0,0,0.35); padding:16px; box-sizing:border-box;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px;">
+                <div style="min-width:0;">
+                    <div style="font-size:0.72rem; font-weight:900; color:#be123c; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px;">Share PB</div>
+                    <div id="pb-share-options-title" style="font-size:1.05rem; font-weight:950; color:#0f172a; line-height:1.2;"></div>
+                    <div id="pb-share-options-detail" style="font-size:0.82rem; font-weight:750; color:#64748b; margin-top:4px;"></div>
+                </div>
+                <button onclick="closePBShareOptions()" aria-label="Close share options" style="width:34px; height:34px; border:none; border-radius:50%; background:#f1f5f9; color:#334155; font-size:1.15rem; line-height:1; cursor:pointer; flex-shrink:0;">&times;</button>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <button data-pb-share-action="balance-feed" onclick="sharePendingPBToDestination('balance-feed')" style="width:100%; min-height:50px; border:none; border-radius:12px; background:#0f766e; color:white; font-size:0.95rem; font-weight:900; cursor:pointer;">Balance Feed</button>
+                <button data-pb-share-action="instagram-story" onclick="sharePendingPBToDestination('instagram-story')" style="width:100%; min-height:50px; border:none; border-radius:12px; background:#be185d; color:white; font-size:0.95rem; font-weight:900; cursor:pointer;">Instagram Story</button>
+                <button data-pb-share-action="instagram-feed" onclick="sharePendingPBToDestination('instagram-feed')" style="width:100%; min-height:50px; border:none; border-radius:12px; background:#4338ca; color:white; font-size:0.95rem; font-weight:900; cursor:pointer;">Instagram Feed</button>
+            </div>
+        </div>
+    `;
+    modal.addEventListener('click', function(event) {
+        if (event.target === modal) closePBShareOptions();
+    });
+    document.body.appendChild(modal);
+    return modal;
+}
+
+function openPBShareOptions(pbData, index) {
+    if (!pbData) return;
+    pendingPBShareData = pbData;
+    pendingPBShareButtonIndex = typeof index === 'number' ? index : null;
+    const modal = ensurePBShareOptionsModal();
+    const title = document.getElementById('pb-share-options-title');
+    const detail = document.getElementById('pb-share-options-detail');
+    if (title) title.textContent = pbData.exercise || 'Personal best';
+    if (detail) detail.textContent = pbbFormatPBShareValue(pbData);
+    modal.style.display = 'flex';
+}
+
+function closePBShareOptions() {
+    const modal = document.getElementById('pb-share-options-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function markPBFeedShareDone() {
+    if (pendingPBShareButtonIndex == null) return;
+    const btn = document.getElementById(`share-pb-btn-${pendingPBShareButtonIndex}`);
+    if (!btn) return;
+    btn.textContent = 'Shared';
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+}
+
+async function sharePendingPBToDestination(destination) {
+    if (!pendingPBShareData) return;
+    const modal = ensurePBShareOptionsModal();
+    const buttons = Array.from(modal.querySelectorAll('[data-pb-share-action]'));
+    const activeButton = modal.querySelector(`[data-pb-share-action="${destination}"]`);
+    const originalLabels = buttons.map(btn => btn.textContent);
+    buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.72';
+    });
+    if (activeButton) activeButton.textContent = 'Preparing...';
+
+    try {
+        if (destination === 'balance-feed') {
+            const story = await sharePBCardToFeed(pendingPBShareData);
+            if (story) markPBFeedShareDone();
+        } else {
+            const cardPayload = buildPBShareCardPayload(pendingPBShareData);
+            await shareBalanceCardToInstagram(cardPayload, destination === 'instagram-feed' ? 'feed' : 'story');
+        }
+        closePBShareOptions();
+    } catch (error) {
+        console.error('PB share destination failed:', error);
+        showToast('Could not share that PB. Please try again.', 'error');
+    } finally {
+        buttons.forEach((btn, index) => {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.textContent = originalLabels[index];
+        });
+    }
+}
+
+window.shareWorkoutCardToInstagram = shareWorkoutCardToInstagram;
+window.openPBShareOptions = openPBShareOptions;
+window.closePBShareOptions = closePBShareOptions;
+window.sharePendingPBToDestination = sharePendingPBToDestination;
+
 // Share workout as an aesthetic card to feed — uses the cached gym photo
 async function shareWorkoutCardToFeed() {
     // Check if already earned story point this session
@@ -2513,7 +3054,7 @@ async function handleWorkoutCardPhotoCaptureFromFile(file) {
         const cardPayload = {
             card_type: 'workout',
             workout_name: data.workoutName || 'Workout',
-            duration: data.duration || durationText,
+            duration: data.duration || pbbGetWorkoutShareDurationText(),
             exercises: exercises,
             total_sets: data.sets ? data.sets.length : 0,
             total_volume: totalVolume > 0 ? totalVolume.toLocaleString() + ' kg' : null,
@@ -2555,7 +3096,7 @@ async function handleWorkoutCardPhotoCaptureFromFile(file) {
 
         if (btn) {
             btn.disabled = false;
-            btn.querySelector('span:last-child').textContent = 'Share Workout Card (+1 XP)';
+            btn.querySelector('span:last-child').textContent = 'Balance Feed (+1 XP)';
         }
     }
 
@@ -2567,16 +3108,7 @@ async function sharePBCardToFeed(pbData) {
     if (!pbData) return;
 
     try {
-        const cardPayload = {
-            card_type: 'pb',
-            exercise: pbData.exercise,
-            pb_type: pbData.type,
-            value: pbData.value,
-            reps: pbData.reps,
-            weight: pbData.weight,
-            improvement: pbData.improvement,
-            previous: pbData.previous != null ? pbData.previous : (pbData.improvement ? pbData.value - pbData.improvement : null)
-        };
+        const cardPayload = buildPBShareCardPayload(pbData);
 
         const story = await dbHelpers.stories.create(window.currentUser.id, {
             media_type: 'workout_card',
@@ -2594,10 +3126,12 @@ async function sharePBCardToFeed(pbData) {
         }
 
         showToast('PB shared to feed!', 'success');
+        return story;
 
     } catch (error) {
         console.error('Error sharing PB card:', error);
         showToast('Failed to share PB. Please try again.', 'error');
+        return null;
     }
 }
 

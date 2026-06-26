@@ -7930,7 +7930,7 @@ if(!window._pbbIsIOSSafari) {
                 <span style="font-size:1.4rem;">📸</span>
                 <div style="font-size: 1.1rem; font-weight: 700;">Snap a Gym Photo</div>
             </div>
-            <p id="share-section-sub" style="font-size: 0.82rem; opacity: 0.85; margin: 0 0 14px 0; padding-right:30px;">One photo, share it to the feed for 1 XP.</p>
+            <p id="share-section-sub" style="font-size: 0.82rem; opacity: 0.85; margin: 0 0 14px 0; padding-right:30px;">One photo, choose Balance Feed, IG Story, or IG Feed.</p>
 
             <!-- STEP 1: Take photo button (visible initially) -->
             <div id="share-step-capture" style="display:block;">
@@ -7953,12 +7953,22 @@ if(!window._pbbIsIOSSafari) {
                     </div>
                 </div>
 
-                <!-- Share action button -->
+                <!-- Share action buttons -->
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <button id="share-workout-card-btn" onclick="shareWorkoutCardToFeed()" style="width: 100%; background: linear-gradient(135deg, #ffffff, #f0fdf4); color: var(--primary); padding: 14px 15px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                         <span style="font-size: 1.3rem;">📢</span>
-                        <span style="font-size: 0.95rem;">Share to Feed (+1 XP)</span>
+                        <span style="font-size: 0.95rem;">Balance Feed (+1 XP)</span>
                     </button>
+                    <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px;">
+                        <button id="share-workout-ig-story-btn" onclick="shareWorkoutCardToInstagram('story')" style="width: 100%; background: linear-gradient(135deg, #ffffff, #fdf2f8); color: #be185d; padding: 13px 10px; border-radius: 12px; font-weight: 800; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 48px;">
+                            <span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span>
+                            <span style="font-size: 0.9rem;">Story</span>
+                        </button>
+                        <button id="share-workout-ig-feed-btn" onclick="shareWorkoutCardToInstagram('feed')" style="width: 100%; background: linear-gradient(135deg, #ffffff, #eef2ff); color: #4338ca; padding: 13px 10px; border-radius: 12px; font-weight: 800; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 48px;">
+                            <span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span>
+                            <span style="font-size: 0.9rem;">Feed</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -11750,13 +11760,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=111';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=112';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=111"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=112"><\/script>');
 }
 </script>
 
@@ -12296,6 +12306,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
+    { tab:'movement-tab', sel:'#today-workout-card', title:'Share wins to Instagram', body:"Finish a workout or hit a PB, then choose Balance Feed, Instagram Story, or Instagram Feed from the share options." },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#form-check-quick-card', title:'Form Checks', body:"Film a quick exercise clip and send it to Shannon when you want him to check your technique. During a workout, use the form-check button at the top of workout mode." },
@@ -13209,6 +13220,13 @@ if(!window._pbbIsIOSSafari) {
       sel: '#form-check-quick-card',
       title: 'Form Checks',
       body: "Not sure if a movement looks right? Film a quick clip and send it to Shannon for a technique check. Workouts also have an in-session form-check button."
+    },
+    {
+      id: 'ig-workout-pb-share-v1',
+      tab: 'movement-tab',
+      sel: '#today-workout-card',
+      title: 'Share wins to Instagram',
+      body: "Finish a workout or hit a PB, then choose Balance Feed, Instagram Story, or Instagram Feed from the share options."
     },
     {
       id: 'friday-weigh-in-feed-share-v1',
@@ -15910,13 +15928,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=5';
+            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=6';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=5"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=6"><\/script>');
 }
 </script>
 
