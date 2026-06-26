@@ -7959,7 +7959,7 @@ if(!window._pbbIsIOSSafari) {
                         <span style="font-size: 1.3rem;">📢</span>
                         <span style="font-size: 0.95rem;">Balance Feed (+1 XP)</span>
                     </button>
-                    <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px;">
+                    <div id="share-workout-ig-options" style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px;">
                         <button id="share-workout-ig-story-btn" onclick="shareWorkoutCardToInstagram('story')" style="width: 100%; background: linear-gradient(135deg, #ffffff, #fdf2f8); color: #be185d; padding: 13px 10px; border-radius: 12px; font-weight: 800; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 48px;">
                             <span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span>
                             <span style="font-size: 0.9rem;">Story</span>
@@ -15929,13 +15929,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=7';
+            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=8';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=7"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=8"><\/script>');
 }
 </script>
 

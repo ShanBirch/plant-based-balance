@@ -1855,6 +1855,51 @@ let workoutPointsEarnedThisSession = { story: false, groupchat: false };
 let cachedWorkoutShareFile = null;
 let cachedWorkoutShareBase64 = null;
 
+const BALANCE_INSTAGRAM_SHARE_TESTER_EMAILS = [
+    'shannonbirch@cocospersonaltraining.com'
+];
+
+function getBalanceInstagramShareTesterEmail() {
+    const user = window.currentUser || {};
+    const email = user.email
+        || (user.user_metadata && user.user_metadata.email)
+        || (user.app_metadata && user.app_metadata.email)
+        || '';
+    return String(email).trim().toLowerCase();
+}
+
+function canUseBalanceInstagramShareTest() {
+    const email = getBalanceInstagramShareTesterEmail();
+    return BALANCE_INSTAGRAM_SHARE_TESTER_EMAILS.indexOf(email) !== -1;
+}
+
+function updateWorkoutInstagramShareVisibility() {
+    const enabled = canUseBalanceInstagramShareTest();
+    const group = document.getElementById('share-workout-ig-options');
+    if (group) group.style.display = enabled ? 'grid' : 'none';
+
+    ['share-workout-ig-story-btn', 'share-workout-ig-feed-btn'].forEach(function(id) {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.disabled = !enabled;
+        btn.style.display = enabled ? 'flex' : 'none';
+    });
+}
+
+function getWorkoutShareSubheading(hasPhoto) {
+    if (canUseBalanceInstagramShareTest()) {
+        return hasPhoto
+            ? 'Nice shot. Choose Balance Feed for XP, or send it to Instagram.'
+            : 'One photo, choose Balance Feed, IG Story, or IG Feed.';
+    }
+    return hasPhoto
+        ? 'Nice shot. Share it to Balance Feed for XP.'
+        : 'Take one photo and share it to Balance Feed for XP.';
+}
+
+window.canUseBalanceInstagramShareTest = canUseBalanceInstagramShareTest;
+window.updateWorkoutInstagramShareVisibility = updateWorkoutInstagramShareVisibility;
+
 // --- Workout Camera (getUserMedia fallback) ---
 // The primary path on Android is now the native Camera intent exposed via
 // window.NativePermissions.takeWorkoutPhoto(), which opens the system camera
@@ -2190,8 +2235,9 @@ async function onWorkoutSharePhotoReady(file) {
         if (shareStep) shareStep.style.display = 'block';
 
         // Update the sub-heading
+        updateWorkoutInstagramShareVisibility();
         const sub = document.getElementById('share-section-sub');
-        if (sub) sub.textContent = 'Nice shot. Choose Balance Feed for XP, or send it to Instagram.';
+        if (sub) sub.textContent = getWorkoutShareSubheading(true);
     } catch (err) {
         console.error('Failed to process workout share photo:', err);
         showToast('Couldn\'t process that photo. Try again.', 'error');
@@ -2210,7 +2256,7 @@ function resetWorkoutShareUI() {
     if (shareStep) shareStep.style.display = 'none';
 
     const sub = document.getElementById('share-section-sub');
-    if (sub) sub.textContent = 'One photo, choose Balance Feed, IG Story, or IG Feed.';
+    if (sub) sub.textContent = getWorkoutShareSubheading(false);
 
     const takeBtn = document.getElementById('share-take-photo-btn');
     if (takeBtn) {
@@ -2241,6 +2287,7 @@ function resetWorkoutShareUI() {
         igFeedBtn.style.opacity = '1';
         igFeedBtn.innerHTML = '<span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span><span style="font-size: 0.9rem;">Feed</span>';
     }
+    updateWorkoutInstagramShareVisibility();
 }
 window.resetWorkoutShareUI = resetWorkoutShareUI;
 
@@ -2792,6 +2839,11 @@ async function shareBalanceCardWithNativeBridge(dataUrl, safeTarget) {
 }
 
 async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
+    if (!canUseBalanceInstagramShareTest()) {
+        showToast('Instagram sharing is in test mode for now.', 'info');
+        return false;
+    }
+
     const safeTarget = target === 'feed' ? 'feed' : 'story';
     const dataUrl = await renderBalanceShareCardImage(cardPayload, {
         target: safeTarget,
@@ -2811,6 +2863,12 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
 }
 
 async function shareWorkoutCardToInstagram(target) {
+    if (!canUseBalanceInstagramShareTest()) {
+        showToast('Instagram sharing is in test mode for now.', 'info');
+        updateWorkoutInstagramShareVisibility();
+        return;
+    }
+
     if (!completedWorkoutDataForShare) {
         showToast('No workout data to share', 'error');
         return;
@@ -2903,6 +2961,12 @@ function openPBShareOptions(pbData, index) {
     if (!pbData) return;
     pendingPBShareData = pbData;
     pendingPBShareButtonIndex = typeof index === 'number' ? index : null;
+
+    if (!canUseBalanceInstagramShareTest()) {
+        sharePBToBalanceFeedOnly(pbData, pendingPBShareButtonIndex);
+        return;
+    }
+
     const modal = ensurePBShareOptionsModal();
     const title = document.getElementById('pb-share-options-title');
     const detail = document.getElementById('pb-share-options-detail');
@@ -2925,8 +2989,38 @@ function markPBFeedShareDone() {
     btn.style.opacity = '0.6';
 }
 
+async function sharePBToBalanceFeedOnly(pbData, index) {
+    const btn = typeof index === 'number' ? document.getElementById(`share-pb-btn-${index}`) : null;
+    const originalText = btn ? btn.textContent : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.72';
+        btn.textContent = 'Sharing...';
+    }
+
+    try {
+        const story = await sharePBCardToFeed(pbData);
+        if (story) markPBFeedShareDone();
+    } catch (error) {
+        console.error('PB feed share failed:', error);
+        showToast('Could not share that PB. Please try again.', 'error');
+    } finally {
+        if (btn && btn.textContent !== 'Shared') {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.textContent = originalText || 'Share';
+        }
+    }
+}
+
 async function sharePendingPBToDestination(destination) {
     if (!pendingPBShareData) return;
+    if (destination !== 'balance-feed' && !canUseBalanceInstagramShareTest()) {
+        showToast('Instagram sharing is in test mode for now.', 'info');
+        closePBShareOptions();
+        return;
+    }
+
     const modal = ensurePBShareOptionsModal();
     const buttons = Array.from(modal.querySelectorAll('[data-pb-share-action]'));
     const activeButton = modal.querySelector(`[data-pb-share-action="${destination}"]`);
