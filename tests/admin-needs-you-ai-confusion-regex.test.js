@@ -61,6 +61,19 @@ assert.ok(
 );
 
 assert.ok(
+    dashboard.includes("const explicitClientManagerNeedsYou = isDm && isExplicitClientManagerNeedsYou(alert);") &&
+    dashboard.includes("return { allowed: true, reason: 'client_manager_review' };"),
+    'explicit client-manager Needs You handoffs should be trusted by the Needs You reason gate'
+);
+
+assert.ok(
+    dashboard.includes("const reviewRequiredFlag = data.client_manager_review_required === true || String(data.client_manager_review_required || '').toLowerCase() === 'true';") &&
+    dashboard.includes('return needsYouFlag') &&
+    dashboard.includes('|| reviewRequiredFlag'),
+    'client-manager review-required flags should count as explicit Needs You routing'
+);
+
+assert.ok(
     dashboard.includes("reasonInfo.reason === 'client_media'"),
     'linked-client media handoffs should remain visible even when the alert has a draft'
 );

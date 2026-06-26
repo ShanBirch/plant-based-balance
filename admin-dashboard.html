@@ -12164,7 +12164,11 @@
             const queue = String(codexReview.queue || data.operator_queue || '').toLowerCase();
             const decision = String(codexReview.decision || data.decision || '').toLowerCase();
             const reason = String(codexReview.reason || data.needs_you_reason || '').toLowerCase();
-            return queue === 'needs_you'
+            const needsYouFlag = data.needs_you_required === true || String(data.needs_you_required || '').toLowerCase() === 'true';
+            const reviewRequiredFlag = data.client_manager_review_required === true || String(data.client_manager_review_required || '').toLowerCase() === 'true';
+            return needsYouFlag
+                || reviewRequiredFlag
+                || queue === 'needs_you'
                 || codexReview.needs_shannon_approval === true
                 || decision.includes('needs_you')
                 || decision.includes('needs_shannon')
@@ -12202,8 +12206,12 @@
             const contextReview = getAlertContextReviewInfo(alert);
             const isDm = DM_ALERT_TYPES.includes(alert?.alert_type);
             const isClientDm = isDm && !!getAlertClientIdentity(alert) && alertBelongsToDmClients(alert, activeClientIds);
+            const explicitClientManagerNeedsYou = isDm && isExplicitClientManagerNeedsYou(alert);
             if (isLearningReelApprovalAlert(alert) || /\blearning_reel_approval_required\b/i.test(reasonText)) {
                 return { allowed: true, reason: 'learning_reel_approval' };
+            }
+            if (explicitClientManagerNeedsYou) {
+                return { allowed: true, reason: 'client_manager_review' };
             }
             if (isClientDm && mediaReview.required) {
                 return { allowed: true, reason: 'client_media' };
