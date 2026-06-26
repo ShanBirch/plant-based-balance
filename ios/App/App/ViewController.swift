@@ -60,6 +60,8 @@ class ViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(FitGotchiPushPlugin())
         // Share today's calories/macros with the iOS home-screen widget.
         bridge?.registerPluginInstance(BalanceNutritionWidgetPlugin())
+        // Open generated PB/workout cards in Instagram Story or Feed.
+        bridge?.registerPluginInstance(BalanceInstagramSharePlugin())
     }
 
     deinit {

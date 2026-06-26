@@ -2759,6 +2759,38 @@ async function shareBalanceCardImageExternally(dataUrl, target, text) {
     return true;
 }
 
+async function shareBalanceCardWithNativeBridge(dataUrl, safeTarget) {
+    const androidShare = window.NativePermissions && window.NativePermissions.shareImageToInstagram;
+    if (typeof androidShare === 'function') {
+        try {
+            const opened = androidShare.call(window.NativePermissions, dataUrl, safeTarget);
+            if (opened === true || opened === 'true') return true;
+        } catch (androidError) {
+            console.warn('Android Instagram share failed:', androidError);
+        }
+    }
+
+    let iosShare = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BalanceInstagramShare;
+    if (!iosShare && window.Capacitor && typeof window.Capacitor.registerPlugin === 'function') {
+        try {
+            iosShare = window.Capacitor.registerPlugin('BalanceInstagramShare');
+        } catch (registerError) {
+            console.warn('Could not register iOS Instagram share plugin:', registerError);
+        }
+    }
+
+    if (iosShare && typeof iosShare.shareImageToInstagram === 'function') {
+        try {
+            const result = await iosShare.shareImageToInstagram({ dataUrl, target: safeTarget });
+            return !!(result && (result.opened === true || result.success === true));
+        } catch (iosError) {
+            console.warn('iOS Instagram share failed:', iosError);
+        }
+    }
+
+    return false;
+}
+
 async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
     const safeTarget = target === 'feed' ? 'feed' : 'story';
     const dataUrl = await renderBalanceShareCardImage(cardPayload, {
@@ -2766,17 +2798,9 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
         photoDataUrl: options.photoDataUrl || null
     });
 
-    const nativeShare = window.NativePermissions && window.NativePermissions.shareImageToInstagram;
-    if (typeof nativeShare === 'function') {
-        try {
-            const opened = nativeShare.call(window.NativePermissions, dataUrl, safeTarget);
-            if (opened === true || opened === 'true') {
-                showToast(`Opening Instagram ${safeTarget === 'story' ? 'Story' : 'Feed'}...`, 'success');
-                return true;
-            }
-        } catch (nativeError) {
-            console.warn('Native Instagram share failed:', nativeError);
-        }
+    if (await shareBalanceCardWithNativeBridge(dataUrl, safeTarget)) {
+        showToast(`Opening Instagram ${safeTarget === 'story' ? 'Story' : 'Feed'}...`, 'success');
+        return true;
     }
 
     return shareBalanceCardImageExternally(
