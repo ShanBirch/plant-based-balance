@@ -39,9 +39,9 @@ assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Shane' }
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ profile_name: 'Fra' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'francesca_balance' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'cavazzanafrancesca' }), true);
-assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Nat' }), true);
-assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ profile_name: 'Natalie' }), true);
-assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'nat_balance' }), true);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Nat' }), false);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ profile_name: 'Natalie' }), false);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'nat_balance' }), false);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Miranda' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'miranda_balance' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Monica' }), true);
@@ -70,15 +70,14 @@ assert.strictEqual(shane.shouldRoute, true);
 assert.ok(shane.reasons.includes('always_needs_you_person'));
 assert.match(shane.label, /Miranda/);
 assert.match(shane.label, /Monica/);
-assert.match(shane.label, /Nat/);
+assert.doesNotMatch(shane.label, /Nat/);
 
 const nat = manager.classifyNeedsYou(makeAlert({
     client_id: 'client-nat',
     client_name: 'Nat',
     data: { lead_stage: 'paying' },
 }));
-assert.strictEqual(nat.shouldRoute, true);
-assert.ok(nat.reasons.includes('always_needs_you_person'));
+assert.ok(!nat.reasons.includes('always_needs_you_person'));
 
 const miranda = manager.classifyNeedsYou(makeAlert({
     alert_type: 'incoming_dm',
