@@ -2617,13 +2617,24 @@ function renderWeeklyCalendar() {
     // Check for active custom program first
     const activeCustomProgram = window.activeCustomProgramCache;
     if (activeCustomProgram && activeCustomProgram.is_active && activeCustomProgram.start_date) {
-        // Check if program is still within its duration
+        if (customProgramUsesCompletionGating(activeCustomProgram)
+            && window.currentUser
+            && !window._completionGateHistoryRequested
+            && typeof _ensureWorkoutHistoryCache === 'function') {
+            window._completionGateHistoryRequested = true;
+            _ensureWorkoutHistoryCache()
+                .then(() => renderWeeklyCalendar())
+                .catch(e => console.warn('Completion-gated history preload failed:', e));
+        }
+
+        // Check if program is still within its duration. Completion-gated
+        // programs stay active until their scheduled sessions are actually done.
         const startDate = new Date(activeCustomProgram.start_date);
         const msPerWeek = 7 * 24 * 60 * 60 * 1000;
         const weeksElapsed = Math.floor((today - startDate) / msPerWeek);
         const currentWeek = weeksElapsed + 1;
 
-        if (currentWeek <= activeCustomProgram.duration_weeks) {
+        if (customProgramUsesCompletionGating(activeCustomProgram) || currentWeek <= activeCustomProgram.duration_weeks) {
             // Use custom program schedule
             const schedule = activeCustomProgram.weekly_schedule || [];
             WEEKLY_SCHEDULE = schedule.map((item, idx) => {
@@ -2642,6 +2653,7 @@ function renderWeeklyCalendar() {
                     };
                 }
                 if (item.workout.type === 'inline') {
+                    const workoutWeek = getCustomProgramWorkoutWeekNumber(item.workout, activeCustomProgram, currentWeek);
                     return {
                         day: item.day,
                         program: 'inline',
@@ -2650,13 +2662,13 @@ function renderWeeklyCalendar() {
                         muscleGroup: '',
                         inlineWorkout: {
                             ...item.workout,
-                            currentWeek: currentWeek,
+                            currentWeek: workoutWeek,
                             totalWeeks: activeCustomProgram.duration_weeks,
                             programName: activeCustomProgram.program_name
                         },
                         customWorkout: {
                             ...item.workout,
-                            currentWeek: currentWeek,
+                            currentWeek: workoutWeek,
                             totalWeeks: activeCustomProgram.duration_weeks,
                             programName: activeCustomProgram.program_name
                         }
@@ -3432,7 +3444,7 @@ window.openCalendarWorkout = async function(dayIndexFromMonday, replacementDate)
         const weeksElapsed = Math.floor((new Date() - startDate) / msPerWeek);
         const currentWeek = weeksElapsed + 1;
 
-        if (currentWeek <= activeCustomProgram.duration_weeks) {
+        if (customProgramUsesCompletionGating(activeCustomProgram) || currentWeek <= activeCustomProgram.duration_weeks) {
             const scheduleEntry = (activeCustomProgram.weekly_schedule || [])[sourceDayIndexFromMonday];
             const dayWorkout = scheduleEntry?.workout;
             if (dayWorkout) {
@@ -3455,9 +3467,10 @@ window.openCalendarWorkout = async function(dayIndexFromMonday, replacementDate)
                     return;
                 }
                 if (dayWorkout.type === 'inline' && typeof startInlineWorkout === 'function') {
+                    const workoutWeek = getCustomProgramWorkoutWeekNumber(dayWorkout, activeCustomProgram, currentWeek);
                     startInlineWorkout({
                         ...dayWorkout,
-                        currentWeek: currentWeek,
+                        currentWeek: workoutWeek,
                         totalWeeks: activeCustomProgram.duration_weeks,
                         programName: activeCustomProgram.program_name
                     });
@@ -12354,6 +12367,9 @@ async function renderMovementView() {
             window.activeCustomProgramCache = activeProgram;
             if (activeProgram) {
                 console.log('🏋️ Active custom program loaded:', activeProgram.program_name);
+                if (customProgramUsesCompletionGating(activeProgram) && typeof _ensureWorkoutHistoryCache === 'function') {
+                    await _ensureWorkoutHistoryCache();
+                }
             }
         }
     } catch (err) {
@@ -12564,14 +12580,15 @@ async function renderMovementView() {
     // Check for active custom program first
     const activeCustomProgram = window.activeCustomProgramCache;
     if (activeCustomProgram && activeCustomProgram.is_active && activeCustomProgram.start_date) {
-        // Check if program is still within its duration
+        // Check if program is still within its duration. Completion-gated
+        // programs stay active until their scheduled sessions are actually done.
         const today = new Date();
         const startDate = new Date(activeCustomProgram.start_date);
         const msPerWeek = 7 * 24 * 60 * 60 * 1000;
         const weeksElapsed = Math.floor((today - startDate) / msPerWeek);
         const currentWeek = weeksElapsed + 1;
 
-        if (currentWeek <= activeCustomProgram.duration_weeks) {
+        if (customProgramUsesCompletionGating(activeCustomProgram) || currentWeek <= activeCustomProgram.duration_weeks) {
             // Use custom program schedule
             const schedule = activeCustomProgram.weekly_schedule || [];
             WEEKLY_SCHEDULE = schedule.map((item, idx) => {
@@ -12592,6 +12609,7 @@ async function renderMovementView() {
                     };
                 }
                 if (item.workout.type === 'inline') {
+                    const workoutWeek = getCustomProgramWorkoutWeekNumber(item.workout, activeCustomProgram, currentWeek);
                     return {
                         day: item.day,
                         program: 'inline',
@@ -12600,13 +12618,13 @@ async function renderMovementView() {
                         muscleGroup: '',
                         inlineWorkout: {
                             ...item.workout,
-                            currentWeek: currentWeek,
+                            currentWeek: workoutWeek,
                             totalWeeks: activeCustomProgram.duration_weeks,
                             programName: activeCustomProgram.program_name
                         },
                         customWorkout: {
                             ...item.workout,
-                            currentWeek: currentWeek,
+                            currentWeek: workoutWeek,
                             totalWeeks: activeCustomProgram.duration_weeks,
                             programName: activeCustomProgram.program_name
                         },
@@ -13688,12 +13706,15 @@ function normalizeHistoryCache(historyData) {
             isDropSet: h.is_drop_set || false,
             dropSetWeights: h.drop_set_weights || '',
             dropSetReps: h.drop_set_reps || '',
+            workoutName: h.template_name || h.workout_name || '',
+            templateName: h.template_name || '',
             // Keep original fields too for compatibility
             exercise_name: h.exercise_name,
             workout_date: h.workout_date,
             weight_kg: h.weight_kg,
             set_number: h.set_number,
-            time_duration: h.time_duration
+            time_duration: h.time_duration,
+            template_name: h.template_name
         };
     });
 }
@@ -15581,6 +15602,7 @@ async function finishWorkout() {
                         reps: reps,
                         time: time,
                         kg: kg,
+                        workoutName: window.currentWorkoutName || 'Workout',
                         isDropSet: isDropSet,
                         dropSetWeights: dropSetWeights,
                         dropSetReps: dropSetReps
@@ -17248,13 +17270,7 @@ function isTimeBasedExercise(exercise) {
     return /\b(?:sec|secs|second|seconds|min|mins|minute|minutes)\b/.test(repsText);
 }
 
-function getActiveCustomProgramWeekNumber(options = {}) {
-    if (!options.ignoreInlineWorkout) {
-        const explicitWeek = Number(window.currentInlineWorkoutWeek);
-        if (Number.isFinite(explicitWeek) && explicitWeek > 0) return explicitWeek;
-    }
-
-    const program = window.activeCustomProgramCache;
+function getDateBasedCustomProgramWeekNumber(program = window.activeCustomProgramCache) {
     if (!program || !program.start_date) return null;
 
     const startDate = new Date(program.start_date);
@@ -17263,6 +17279,79 @@ function getActiveCustomProgramWeekNumber(options = {}) {
     const msPerWeek = 7 * 24 * 60 * 60 * 1000;
     const weeksElapsed = Math.floor((new Date() - startDate) / msPerWeek);
     return Math.max(1, weeksElapsed + 1);
+}
+
+function workoutUsesCompletionGating(workout, program = window.activeCustomProgramCache) {
+    if (!workout) return false;
+    const mode = String(workout.progressionMode || workout.progression_mode || '').toLowerCase();
+    if (mode === 'completion_gated' || mode === 'completion-gated') return true;
+    if (workout.completionGated === true || workout.completion_gated === true) return true;
+    const programMode = String(program?.progressionMode || program?.progression_mode || '').toLowerCase();
+    return programMode === 'completion_gated' || programMode === 'completion-gated';
+}
+
+function customProgramUsesCompletionGating(program = window.activeCustomProgramCache) {
+    if (!program) return false;
+    const mode = String(program.progressionMode || program.progression_mode || '').toLowerCase();
+    if (mode === 'completion_gated' || mode === 'completion-gated') return true;
+    return (program.weekly_schedule || []).some(item => workoutUsesCompletionGating(item?.workout, program));
+}
+
+function normalizeWorkoutNameForProgress(name) {
+    return String(name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function getHistoryWorkoutName(row) {
+    return row?.workoutName || row?.templateName || row?.template_name || row?.workout_name || null;
+}
+
+function getWorkoutWeeklyPlanLength(workout) {
+    const weeks = (workout?.exercises || [])
+        .flatMap(ex => getExerciseWeeklyPlan(ex))
+        .map((item, idx) => Number(item.week || idx + 1))
+        .filter(n => Number.isFinite(n) && n > 0);
+    return weeks.length ? Math.max(...weeks) : 0;
+}
+
+function getCompletionGatedWorkoutWeekNumber(workout, program = window.activeCustomProgramCache, fallbackWeek = null) {
+    if (!workoutUsesCompletionGating(workout, program)) return fallbackWeek || getDateBasedCustomProgramWeekNumber(program) || 1;
+
+    const workoutName = normalizeWorkoutNameForProgress(workout?.name);
+    if (!workoutName) return fallbackWeek || 1;
+
+    const gateStart = workout.completionGateStartedAt || workout.completion_gate_started_at || program?.start_date || '';
+    const history = Array.isArray(window.workoutHistoryCache) ? window.workoutHistoryCache : [];
+    const completedDates = new Set();
+
+    history.forEach(row => {
+        const rowName = normalizeWorkoutNameForProgress(getHistoryWorkoutName(row));
+        if (rowName !== workoutName) return;
+        const date = row.date || row.workout_date || '';
+        if (!date) return;
+        if (gateStart && date < String(gateStart).slice(0, 10)) return;
+        completedDates.add(date);
+    });
+
+    const planLength = getWorkoutWeeklyPlanLength(workout);
+    const totalWeeks = Number(workout.totalWeeks || workout.durationWeeks || program?.duration_weeks || planLength || fallbackWeek || 1);
+    const nextWeek = completedDates.size + 1;
+    return Math.max(1, Math.min(Number.isFinite(totalWeeks) && totalWeeks > 0 ? totalWeeks : nextWeek, nextWeek));
+}
+
+function getCustomProgramWorkoutWeekNumber(workout, program = window.activeCustomProgramCache, fallbackWeek = null) {
+    if (workoutUsesCompletionGating(workout, program)) {
+        return getCompletionGatedWorkoutWeekNumber(workout, program, fallbackWeek);
+    }
+    return fallbackWeek || getDateBasedCustomProgramWeekNumber(program) || 1;
+}
+
+function getActiveCustomProgramWeekNumber(options = {}) {
+    if (!options.ignoreInlineWorkout) {
+        const explicitWeek = Number(window.currentInlineWorkoutWeek);
+        if (Number.isFinite(explicitWeek) && explicitWeek > 0) return explicitWeek;
+    }
+
+    return getDateBasedCustomProgramWeekNumber(window.activeCustomProgramCache);
 }
 
 function getExerciseWeeklyPlan(exercise) {
@@ -18540,7 +18629,8 @@ async function startInlineWorkout(workout) {
     window.currentWorkoutKey = `inline/${workout.name || 'workout'}`;
     window.currentWorkoutName = workout.name || 'Workout';
     window.currentWorkoutCustomizations = null;
-    window.currentInlineWorkoutWeek = Number(workout.currentWeek || workout.week || '') || getActiveCustomProgramWeekNumber({ ignoreInlineWorkout: true });
+    const fallbackInlineWeek = Number(workout.currentWeek || workout.week || '') || getActiveCustomProgramWeekNumber({ ignoreInlineWorkout: true });
+    window.currentInlineWorkoutWeek = fallbackInlineWeek;
     window.currentInlineWorkoutTotalWeeks = Number(workout.totalWeeks || workout.durationWeeks || window.activeCustomProgramCache?.duration_weeks || '') || null;
 
     const exercises = [...workout.exercises];
@@ -18551,6 +18641,7 @@ async function startInlineWorkout(workout) {
             const rawHistory = await dbHelpers.workouts.getHistory(user.id);
             window.workoutHistoryCache = normalizeHistoryCache(rawHistory);
         } catch (e) { console.error('Failed to load history', e); }
+        window.currentInlineWorkoutWeek = getCustomProgramWorkoutWeekNumber(workout, window.activeCustomProgramCache, fallbackInlineWeek);
         try {
             const exerciseNames = exercises.map(ex => ex.name);
             window.personalBestsCache = await dbHelpers.personalBests.getForExercises(user.id, exerciseNames);
