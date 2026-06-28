@@ -4807,6 +4807,464 @@ html[data-pbb-theme="light"] #calendar-workout-action-modal button:not(#action-m
     stroke: #6f6a61 !important;
 }
 
+/* Cross-theme modal readability guard.
+   This final pass catches older inline modal styles after the light/dark theme merge. */
+:root,
+html[data-pbb-theme="dark"] {
+    --pbb-readable-overlay: rgba(0, 0, 0, 0.74);
+    --pbb-readable-sheet: #090909;
+    --pbb-readable-surface: #141414;
+    --pbb-readable-surface-soft: rgba(255, 255, 255, 0.075);
+    --pbb-readable-surface-strong: rgba(255, 255, 255, 0.12);
+    --pbb-readable-text: #fffaf2;
+    --pbb-readable-muted: rgba(248, 247, 242, 0.72);
+    --pbb-readable-faint: rgba(248, 247, 242, 0.52);
+    --pbb-readable-border: rgba(245, 217, 138, 0.18);
+    --pbb-readable-border-soft: rgba(255, 255, 255, 0.12);
+    --pbb-readable-input: rgba(255, 255, 255, 0.09);
+    --pbb-readable-action-bg: linear-gradient(135deg, #f5d98a 0%, #d8b25e 58%, #b8892b 100%);
+    --pbb-readable-action-text: #111111;
+    --pbb-readable-danger: #fca5a5;
+    --pbb-readable-success: #8fe7b4;
+    --pbb-readable-shadow: 0 24px 58px rgba(0, 0, 0, 0.48);
+}
+
+html[data-pbb-theme="light"] {
+    --pbb-readable-overlay: rgba(21, 21, 21, 0.26);
+    --pbb-readable-sheet: #fffdf7;
+    --pbb-readable-surface: #ffffff;
+    --pbb-readable-surface-soft: rgba(21, 21, 21, 0.045);
+    --pbb-readable-surface-strong: rgba(245, 217, 138, 0.22);
+    --pbb-readable-text: #151515;
+    --pbb-readable-muted: #6f6a61;
+    --pbb-readable-faint: rgba(21, 21, 21, 0.44);
+    --pbb-readable-border: rgba(184, 137, 43, 0.18);
+    --pbb-readable-border-soft: rgba(21, 21, 21, 0.08);
+    --pbb-readable-input: #ffffff;
+    --pbb-readable-action-bg: linear-gradient(135deg, #151515 0%, #34302a 58%, #b8892b 100%);
+    --pbb-readable-action-text: #ffffff;
+    --pbb-readable-danger: #b91c1c;
+    --pbb-readable-success: #047857;
+    --pbb-readable-shadow: 0 24px 58px rgba(57, 47, 31, 0.16);
+}
+
+html[data-pbb-theme] :where(
+    .modal-overlay,
+    .adaptive-modal-overlay,
+    .completion-modal-overlay,
+    .score-popup-overlay,
+    .meal-detail-popup,
+    .meal-breakdown-popup,
+    .edit-items-modal,
+    .meal-input-modal,
+    .meal-text-modal,
+    .recent-meals-modal,
+    .meal-builder-modal,
+    .meal-builder-text-modal,
+    .pref-wizard-overlay,
+    .stat-alloc-overlay,
+    .image-modal-overlay,
+    .workout-summary-modal,
+    .avatar-customizer-modal,
+    .avatar-customizer-overlay,
+    .animation-selector-backdrop,
+    #guest-signup-modal,
+    #home-friends-modal,
+    #direct-message-modal,
+    #coach-chat-modal,
+    #message-selector-modal,
+    #group-chat-modal,
+    #create-group-chat-modal,
+    #create-challenge-modal,
+    #challenge-results-modal,
+    #challenge-pass-modal,
+    #coin-shop-modal,
+    #rare-rewards-modal,
+    #badge-collection-modal,
+    #share-win-modal,
+    #store-review-modal,
+    #workout-rating-modal,
+    #quick-share-modal,
+    #checkin-modal,
+    #cycle-tracking-modal,
+    #weigh-in-modal,
+    #friday-weigh-share-modal,
+    #weigh-in-editor-modal,
+    #shared-weigh-trend-modal,
+    #calories-macro-actions-overlay,
+    #macro-settings-modal-overlay,
+    #low-energy-popup,
+    #game-challenge-modal,
+    #game-result-overlay,
+    #quiz-battle-invite-overlay,
+    #battle-invite-overlay,
+    #arena-invite-overlay,
+    #pb-share-options-modal,
+    #reflection-modal,
+    #progress-photo-modal,
+    #pb-picker-overlay,
+    #weekly-goals-modal,
+    #weekly-checkin-preview-overlay,
+    #custom-quiz-modal,
+    #custom-checklist-modal,
+    #custom-tracker-modal,
+    #custom-challenge-modal,
+    #camera-permission-dialog-overlay,
+    #workout-picker-modal,
+    #calendar-workout-action-modal,
+    #replacement-picker-modal,
+    #calendar-activity-modal,
+    #replacement-subcategory-modal,
+    #replacement-duration-modal,
+    #workout-variations-modal,
+    #workout-exercises-modal,
+    #equipment-picker-overlay,
+    #dietary-picker-overlay,
+    #health-connect-modal,
+    #change-password-modal-overlay,
+    #water-entry-overlay,
+    #bulk-entry-modal,
+    #quick-entry-tutorial-modal,
+    #exercise-chart-modal,
+    #weight-goal-picker-modal,
+    #add-exercise-modal,
+    #create-custom-exercise-modal
+) {
+    color: var(--pbb-readable-text) !important;
+}
+
+html[data-pbb-theme] :where(
+    .modal-content,
+    .onboarding-modal,
+    .adaptive-modal,
+    .adaptive-modal-card,
+    .completion-modal-content,
+    .score-popup-modal,
+    .meal-detail-container,
+    .meal-detail-content,
+    .meal-breakdown-card,
+    .edit-items-container,
+    .meal-input-container,
+    .meal-text-modal-container,
+    .recent-meals-container,
+    .meal-builder-container,
+    .meal-builder-text-container,
+    .pref-wizard-modal,
+    .stat-alloc-modal,
+    .weekly-goal-sheet,
+    .battle-invite-modal,
+    .game-result-card,
+    .workout-summary-modal > div,
+    .avatar-customizer-content,
+    .animation-selector-modal,
+    #guest-signup-modal > div,
+    #home-friends-modal > div,
+    #direct-message-modal > div,
+    #coach-chat-modal > div,
+    #message-selector-modal > div,
+    #group-chat-modal > div,
+    #create-group-chat-modal > div,
+    #create-challenge-modal > div,
+    #challenge-results-modal > div,
+    #challenge-pass-modal > div,
+    #coin-shop-modal > div,
+    #rare-rewards-modal > div,
+    #badge-collection-modal > div,
+    #share-win-modal > div,
+    #store-review-modal > div,
+    #workout-rating-modal > div,
+    #quick-share-modal > div,
+    #checkin-modal > div,
+    #cycle-tracking-modal > div,
+    #weigh-in-modal > div,
+    #friday-weigh-share-modal > div,
+    #weigh-in-editor-modal > div,
+    #shared-weigh-trend-modal > div,
+    #calories-macro-actions-overlay > div,
+    #macro-settings-modal-overlay > div,
+    #low-energy-popup > div,
+    #game-challenge-modal > div,
+    #game-result-overlay > div,
+    #battle-invite-overlay > div,
+    #arena-invite-overlay > div,
+    #pb-share-options-modal > div,
+    #reflection-modal > div,
+    #progress-photo-modal > div,
+    #pb-picker-overlay > div,
+    #weekly-goals-modal > div,
+    #weekly-checkin-preview-overlay > div,
+    #custom-quiz-modal > div,
+    #custom-checklist-modal > div,
+    #custom-tracker-modal > div,
+    #custom-challenge-modal > div,
+    #camera-permission-dialog-overlay > div,
+    #workout-picker-modal > div,
+    #calendar-workout-action-modal > div,
+    #replacement-picker-modal > div,
+    #calendar-activity-modal > div,
+    #replacement-subcategory-modal > div,
+    #replacement-duration-modal > div,
+    #workout-variations-modal > div,
+    #workout-exercises-modal > div,
+    #equipment-picker-overlay > div,
+    #dietary-picker-overlay > div,
+    #health-connect-modal > div,
+    #change-password-modal-overlay > div,
+    #water-entry-sheet,
+    #bulk-entry-modal > div,
+    #quick-entry-tutorial-modal > div,
+    #exercise-chart-modal > div,
+    #weight-goal-picker-modal > div,
+    #add-exercise-modal > div,
+    #create-custom-exercise-modal > div
+) {
+    background:
+        radial-gradient(circle at 88% 0%, var(--pbb-readable-surface-strong), transparent 32%),
+        linear-gradient(180deg, var(--pbb-readable-surface), var(--pbb-readable-sheet)) !important;
+    border-color: var(--pbb-readable-border) !important;
+    color: var(--pbb-readable-text) !important;
+    box-shadow: var(--pbb-readable-shadow) !important;
+}
+
+html[data-pbb-theme] :where(
+    .modal-content,
+    .onboarding-modal,
+    .adaptive-modal,
+    .completion-modal-content,
+    .score-popup-modal,
+    .meal-detail-container,
+    .meal-breakdown-card,
+    .edit-items-container,
+    .meal-input-container,
+    .meal-text-modal-container,
+    .recent-meals-container,
+    .meal-builder-container,
+    .meal-builder-text-container,
+    .pref-wizard-modal,
+    .weekly-goal-sheet,
+    .workout-summary-modal > div,
+    .avatar-customizer-content,
+    .animation-selector-modal,
+    #bulk-entry-modal > div,
+    #quick-entry-tutorial-modal > div,
+    #exercise-chart-modal > div,
+    #weight-goal-picker-modal > div,
+    #add-exercise-modal > div,
+    #create-custom-exercise-modal > div,
+    #water-entry-sheet
+) :where(
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    strong,
+    label,
+    legend,
+    th,
+    [style*="color:var(--text-main)"],
+    [style*="color: var(--text-main)"],
+    [style*="color:#0f172a"],
+    [style*="color: #0f172a"],
+    [style*="color:#111827"],
+    [style*="color: #111827"],
+    [style*="color:#1f2937"],
+    [style*="color: #1f2937"],
+    [style*="color:#334155"],
+    [style*="color: #334155"]
+) {
+    color: var(--pbb-readable-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-text) !important;
+}
+
+html[data-pbb-theme] :where(
+    .modal-content,
+    .onboarding-modal,
+    .adaptive-modal,
+    .completion-modal-content,
+    .score-popup-modal,
+    .meal-detail-container,
+    .meal-breakdown-card,
+    .edit-items-container,
+    .meal-input-container,
+    .meal-text-modal-container,
+    .recent-meals-container,
+    .meal-builder-container,
+    .meal-builder-text-container,
+    .pref-wizard-modal,
+    .weekly-goal-sheet,
+    .workout-summary-modal > div,
+    .avatar-customizer-content,
+    .animation-selector-modal,
+    #bulk-entry-modal > div,
+    #quick-entry-tutorial-modal > div,
+    #exercise-chart-modal > div,
+    #weight-goal-picker-modal > div,
+    #add-exercise-modal > div,
+    #create-custom-exercise-modal > div,
+    #water-entry-sheet
+) :where(
+    p,
+    small,
+    td,
+    li,
+    [style*="color:var(--text-muted)"],
+    [style*="color: var(--text-muted)"],
+    [style*="color:#475569"],
+    [style*="color: #475569"],
+    [style*="color:#64748b"],
+    [style*="color: #64748b"],
+    [style*="color:#6b7280"],
+    [style*="color: #6b7280"],
+    [style*="color:#718096"],
+    [style*="color: #718096"],
+    [style*="color:#94a3b8"],
+    [style*="color: #94a3b8"],
+    [style*="color:#999"],
+    [style*="color: #999"],
+    [style*="color:#666"],
+    [style*="color: #666"],
+    [style*="rgba(255,255,255,0.4)"],
+    [style*="rgba(255, 255, 255, 0.4)"],
+    [style*="rgba(255,255,255,.4)"],
+    [style*="rgba(255, 255, 255, .4)"],
+    [style*="rgba(255,255,255,0.5)"],
+    [style*="rgba(255, 255, 255, 0.5)"],
+    [style*="rgba(255,255,255,.5)"],
+    [style*="rgba(255, 255, 255, .5)"],
+    [style*="rgba(255,255,255,0.6)"],
+    [style*="rgba(255, 255, 255, 0.6)"],
+    [style*="rgba(255,255,255,.6)"],
+    [style*="rgba(255, 255, 255, .6)"],
+    [style*="rgba(255,255,255,0.7)"],
+    [style*="rgba(255, 255, 255, 0.7)"],
+    [style*="rgba(255,255,255,.7)"],
+    [style*="rgba(255, 255, 255, .7)"]
+) {
+    color: var(--pbb-readable-muted) !important;
+    -webkit-text-fill-color: var(--pbb-readable-muted) !important;
+}
+
+html[data-pbb-theme] :where(
+    .modal-content,
+    .adaptive-modal,
+    .score-popup-modal,
+    .meal-detail-container,
+    .meal-breakdown-card,
+    .edit-items-container,
+    .meal-input-container,
+    .meal-text-modal-container,
+    .recent-meals-container,
+    .meal-builder-container,
+    .meal-builder-text-container,
+    .pref-wizard-modal,
+    .weekly-goal-sheet,
+    .workout-summary-modal > div,
+    .avatar-customizer-content,
+    .animation-selector-modal,
+    #bulk-entry-modal > div,
+    #quick-entry-tutorial-modal > div,
+    #exercise-chart-modal > div,
+    #weight-goal-picker-modal > div,
+    #add-exercise-modal > div,
+    #create-custom-exercise-modal > div,
+    #water-entry-sheet
+) :where(input, textarea, select) {
+    background: var(--pbb-readable-input) !important;
+    border-color: var(--pbb-readable-border) !important;
+    color: var(--pbb-readable-text) !important;
+    caret-color: var(--pbb-readable-text) !important;
+}
+
+html[data-pbb-theme] :where(
+    .modal-content,
+    .adaptive-modal,
+    .score-popup-modal,
+    .meal-detail-container,
+    .meal-breakdown-card,
+    .edit-items-container,
+    .meal-input-container,
+    .meal-text-modal-container,
+    .recent-meals-container,
+    .meal-builder-container,
+    .meal-builder-text-container,
+    .pref-wizard-modal,
+    .weekly-goal-sheet,
+    .workout-summary-modal > div,
+    .avatar-customizer-content,
+    .animation-selector-modal,
+    #bulk-entry-modal > div,
+    #quick-entry-tutorial-modal > div,
+    #exercise-chart-modal > div,
+    #weight-goal-picker-modal > div,
+    #add-exercise-modal > div,
+    #create-custom-exercise-modal > div,
+    #water-entry-sheet
+) :where(
+    [style*="background: white"],
+    [style*="background:white"],
+    [style*="background: #fff"],
+    [style*="background:#fff"],
+    [style*="background: #ffffff"],
+    [style*="background:#ffffff"],
+    [style*="background: #f8fafc"],
+    [style*="background:#f8fafc"],
+    [style*="background: #f1f5f9"],
+    [style*="background:#f1f5f9"],
+    [style*="background: #e2e8f0"],
+    [style*="background:#e2e8f0"]
+) {
+    background: var(--pbb-readable-surface-soft) !important;
+    border-color: var(--pbb-readable-border-soft) !important;
+}
+
+html[data-pbb-theme="light"] #weight-goal-picker-modal button {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .animation-selector-modal,
+html[data-pbb-theme="light"] .animation-selector-modal * {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .animation-selector-modal :where(.animation-selector-close, .animation-selector-content) {
+    color: var(--pbb-readable-muted) !important;
+    -webkit-text-fill-color: var(--pbb-readable-muted) !important;
+}
+
+html[data-pbb-theme] #quick-entry-tutorial-modal > div > div:first-child h2,
+html[data-pbb-theme] #quick-entry-tutorial-modal > div > div:first-child p {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+html[data-pbb-theme="light"] :where(
+    #monthly-raffle-popup,
+    #monthly-raffle-popup *,
+    #challenge-leaderboard-modal,
+    #challenge-leaderboard-modal *,
+    #cohort-info-modal,
+    #cohort-info-modal *,
+    #challenge-xp-guide-modal,
+    #challenge-xp-guide-modal *,
+    #battle-mode-overlay,
+    #battle-mode-overlay *,
+    #tamagotchi-levelup-overlay,
+    #tamagotchi-levelup-overlay *,
+    #story-viewer-modal,
+    #story-viewer-modal *,
+    #story-camera-modal,
+    #story-camera-modal *,
+    #text-editor-overlay,
+    #text-editor-overlay *
+) {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
 /* Progress photo guide must stay dark and readable in every app theme. */
 #progress-photo-shot-guide {
     background: rgba(5, 5, 10, 0.985) !important;
