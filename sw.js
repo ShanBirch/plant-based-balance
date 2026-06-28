@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v221'; // v221: remove XP guide back-to-app button; v220: six-week transform challenge copy and visible XP guide button
+const CACHE_NAME = 'pbb-app-v222'; // v222: cache-bust exercise video aliases; v221: remove XP guide back-to-app button
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -10,7 +10,7 @@ const ASSETS = [
   './lib/supabase.js',
   './lib/auth-guard.js',
   './login.html',
-  './exercise_videos.js',
+  './exercise_videos.js?v=20260628-pushup-progression',
   './workout_library.js',
   './workout_library_extended.js',
   './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=111',
