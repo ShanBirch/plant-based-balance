@@ -523,12 +523,98 @@ function commentHasSpecificStoryHook(comment = '', contextText = '', surfaceCont
         return true;
     }
     if (/\b(?:food|meal|breakfast|lunch|dinner|coffee|wine|drink|smoothie|cake|dessert|ramen|pasta|pizza|burger|sandwich|toastie|sanga|eggs?|benny|soup|salad|sushi|taco|tacos|wrap|burrito)\b/i.test(context) && /\b(?:food|feed|coffee|wine|combo|hows|what(?:'s|s| is)|whats|meal|recipe|go-to|go to)\b/i.test(draft)) {
+        if (hasUnsupportedSpecificQuestionDetail(draft, context)) return false;
         return true;
     }
     if (/\b(?:gym|workout|training|class|session|lift|squat|deadlift|bench|row|curl|run|walk|hike|match|game|practice|sport|dance|yoga|pilates|spin)\b/i.test(context) && /\b(?:lets? go|so good|good sesh|good session|how was the sesh|how was the session|get it)\b/i.test(draft)) {
         return true;
     }
     if (/\b(?:book|reading|plant|garden|flower|flowers)\b/i.test(context) && /\b(?:book|read|reading|plant|garden|growing|flower)\b/i.test(draft)) {
+        return true;
+    }
+    return false;
+}
+
+const UNSUPPORTED_DETAIL_STOP_WORDS = new Set([
+    'and',
+    'the',
+    'this',
+    'that',
+    'these',
+    'those',
+    'with',
+    'from',
+    'some',
+    'your',
+    'their',
+    'hows',
+    'how',
+    'was',
+    'were',
+    'is',
+    'are',
+    'did',
+    'does',
+    'go',
+    'going',
+    'it',
+    'one',
+]);
+
+const FOOD_PRODUCT_DETAIL_RE = /\b(?:dairy|yogh?urt|milk|cheese|creamery|protein|powder|bar|brewery|distillery|winery|brand|product|collab|sponsor|supplement|pre[-\s]?workout|energy\s+drink)\b/i;
+
+function normalizeEvidencePhrase(value = '') {
+    return cleanText(value, 4000)
+        .toLowerCase()
+        .replace(/&/g, ' and ')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function unsupportedQuestionPhrases(comment = '') {
+    const text = cleanText(comment, MAX_COMMENT_CHARS).toLowerCase();
+    const phrases = [];
+    const leadingQuestion = text.match(/^([a-z0-9][a-z0-9&' -]{2,70})\?\s*(?:hows?|how\s+(?:is|was|did)|any good|worth it)\b/i);
+    if (leadingQuestion) phrases.push(leadingQuestion[1]);
+    const directObjectQuestion = text.match(/\b(?:is|was)\s+(?:that|this)\s+(?:a|an|the\s+)?([a-z0-9][a-z0-9&' -]{2,70})\??$/i);
+    if (directObjectQuestion) phrases.push(directObjectQuestion[1]);
+    const pluralObjectQuestion = text.match(/\b(?:are|were)\s+(?:these|those)\s+(?:the\s+)?([a-z0-9][a-z0-9&' -]{2,70})\??$/i);
+    if (pluralObjectQuestion) phrases.push(pluralObjectQuestion[1]);
+    return phrases
+        .map(phrase => normalizeEvidencePhrase(phrase))
+        .filter(Boolean);
+}
+
+function hasUnsupportedSpecificQuestionDetail(comment = '', contextText = '') {
+    const context = normalizeEvidencePhrase(contextText);
+    const draft = cleanText(comment, MAX_COMMENT_CHARS);
+    if (!draft || !context) return false;
+    if (!/[?]/.test(draft) && !/\bhows?\b/i.test(draft)) return false;
+
+    for (const phrase of unsupportedQuestionPhrases(draft)) {
+        if (!phrase) continue;
+        if (context.includes(phrase)) continue;
+        const words = phrase
+            .split(' ')
+            .filter(word => word.length > 2 && !UNSUPPORTED_DETAIL_STOP_WORDS.has(word));
+        if (!words.length) continue;
+        const missingWords = words.filter(word => !context.includes(word));
+        const looksLikeSpecificGuess = FOOD_PRODUCT_DETAIL_RE.test(phrase) || words.length >= 2;
+        if (looksLikeSpecificGuess && missingWords.length) return true;
+    }
+
+    return false;
+}
+
+function isInstagramUiMisreadStoryContext(text = '') {
+    const value = cleanText(text, 1600).toLowerCase();
+    if (!value) return false;
+    if (/\b(?:other\s+)?unrelated\s+(?:story\s+)?tiles?\b/i.test(value)) return true;
+    if (/\b(?:story\s+tray|story\s+tiles?|story\s+thumbnails?|side\s+stories)\b/i.test(value) && /\b(?:reply\s+screen|reply\s+box|dm\s+screen|message\s+screen|conversation\s+screen|instagram\s+ui)\b/i.test(value)) {
+        return true;
+    }
+    if (/\b(?:reply\s+screen|dm\s+screen|message\s+screen|conversation\s+screen)\b/i.test(value) && /\b(?:tiles?|thumbnails?|other\s+stories|unrelated|instagram\s+ui|browser\s+chrome)\b/i.test(value)) {
         return true;
     }
     return false;
@@ -750,6 +836,12 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
         raw?.story_visible_text,
         raw?.visible_text,
     ].filter(Boolean).join(' '), 4000);
+    if (isInstagramUiMisreadStoryContext(storyContextText)) {
+        return { safeToComment: false, reason: 'instagram_ui_context_misread' };
+    }
+    if (hasUnsupportedSpecificQuestionDetail(comment, storyContextText)) {
+        return { safeToComment: false, reason: 'unsupported_product_or_brand_guess' };
+    }
     const animalWelfareSupport = isAnimalWelfareAdvocacyContext(transcriptAwareText);
     if (animalWelfareSupport && !hasGraphicAnimalWelfareContext(transcriptAwareText)) {
         return { safeToComment: true, reason: 'animal_welfare_support' };
@@ -879,6 +971,12 @@ function assessStillsOnlyVideoSalvageContext({
     }
     if (/\b(dog|puppy|cat|kitten|pet|animal|rabbit|bunny|horse)\b/i.test(lower) && /\b(cute|name)\b/i.test(draft)) {
         return { safeToComment: true, reason: 'pet_handle' };
+    }
+    if (isInstagramUiMisreadStoryContext(text)) {
+        return { safeToComment: false, reason: 'instagram_ui_context_misread' };
+    }
+    if (hasUnsupportedSpecificQuestionDetail(draft, text)) {
+        return { safeToComment: false, reason: 'unsupported_product_or_brand_guess' };
     }
     if (/\b(food|meal|feed|breakfast|lunch|dinner|cake|coffee|wine|drink|ramen|pasta|pizza|burger|sandwich|sanga|toastie|eggs?|benny|chicken)\b/i.test(lower) && /\b(food|feed|coffee|wine|combo|how was|what'?s|whats|eggs?|benny|chicken)\b/i.test(draft)) {
         return { safeToComment: true, reason: 'food_handle' };
