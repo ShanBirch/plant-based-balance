@@ -2632,7 +2632,7 @@ function renderWeeklyCalendar() {
         const startDate = new Date(activeCustomProgram.start_date);
         const msPerWeek = 7 * 24 * 60 * 60 * 1000;
         const weeksElapsed = Math.floor((today - startDate) / msPerWeek);
-        const currentWeek = weeksElapsed + 1;
+        const currentWeek = Math.max(1, weeksElapsed + 1);
 
         if (customProgramUsesCompletionGating(activeCustomProgram) || currentWeek <= activeCustomProgram.duration_weeks) {
             // Use custom program schedule
@@ -3442,7 +3442,7 @@ window.openCalendarWorkout = async function(dayIndexFromMonday, replacementDate)
         const startDate = new Date(activeCustomProgram.start_date);
         const msPerWeek = 7 * 24 * 60 * 60 * 1000;
         const weeksElapsed = Math.floor((new Date() - startDate) / msPerWeek);
-        const currentWeek = weeksElapsed + 1;
+        const currentWeek = Math.max(1, weeksElapsed + 1);
 
         if (customProgramUsesCompletionGating(activeCustomProgram) || currentWeek <= activeCustomProgram.duration_weeks) {
             const scheduleEntry = (activeCustomProgram.weekly_schedule || [])[sourceDayIndexFromMonday];
@@ -12586,7 +12586,7 @@ async function renderMovementView() {
         const startDate = new Date(activeCustomProgram.start_date);
         const msPerWeek = 7 * 24 * 60 * 60 * 1000;
         const weeksElapsed = Math.floor((today - startDate) / msPerWeek);
-        const currentWeek = weeksElapsed + 1;
+        const currentWeek = Math.max(1, weeksElapsed + 1);
 
         if (customProgramUsesCompletionGating(activeCustomProgram) || currentWeek <= activeCustomProgram.duration_weeks) {
             // Use custom program schedule
