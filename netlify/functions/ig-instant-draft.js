@@ -2954,7 +2954,7 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
             : 'https://www.instagram.com/direct/inbox/';
         const hasDraft = !!draftText;
         // Qualifier-aware title/body. When the lead is in the funnel and
-        // the AI thinks now's a question moment, body becomes "ask: <q>"
+        // the qualifier thinks now's a move moment, title carries the MOVE tag.
         // so Shannon sees the strategic move from the lock screen — taps
         // through to send the actual draft. When it's just chatting, body
         // is the draft preview as before.
@@ -3787,10 +3787,10 @@ exports.handler = async (event) => {
                     : '',
             },
             // Per-lead qualifier snapshot at the moment this alert was
-            // produced — stage, warmth, suggested next question, and the
+            // produced — stage, warmth, suggested next move, behavior profile, and the
             // quote-grounded reason for the timing. The admin dashboard
             // alert card reads these to render the strategic strip
-            // (stage badge / warmth / next-question / why-now). Null
+            // (stage badge / warmth / next-move / why-now). Null
             // for paying clients and leads outside the funnel window.
             qualifier: (qualifierEligible && qualifierEvaluated) ? qualifier : null,
             qualifier_evaluated: qualifierEvaluated,
