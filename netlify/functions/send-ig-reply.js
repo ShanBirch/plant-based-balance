@@ -28,6 +28,10 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const MANYCHAT_API_TOKEN = process.env.MANYCHAT_API_TOKEN;
 const MANYCHAT_SEND_URL = process.env.MANYCHAT_SEND_URL || 'https://api.manychat.com/fb/sending/sendContent';
+const {
+    mergeLearningReelContext,
+    normalizeLearningReelItems,
+} = require('./_lib/client-context');
 function normalizeGraphApiVersion(value) {
     const raw = String(value || '').trim();
     if (!raw) return 'v25.0';
@@ -76,6 +80,7 @@ const HUMAN_AGENT_MANUAL_ONLY_MESSAGE = 'Meta Human Agent 7-day replies must be 
 const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
 const COCOS_ALGORITHM_FORK = 'cocos_acquisition_v1';
 const COCOS_OWNER_IDS = new Set(['17841435394720504', '26328183736859579']);
+const IG_THREAD_SEND_SELECT = 'id,subscriber_id,channel,ig_username,profile_name,linked_user_id,lead_stage,last_inbound_at,last_outbound_at,custom_data';
 // Optional. ManyChat rejects most Meta message tags (HUMAN_AGENT, ACCOUNT_UPDATE,
 // etc.) with "Unsupported message tag" — they're only valid when the Page has
 // the corresponding subscription explicitly approved by Meta. Within the 24h
@@ -88,8 +93,10 @@ const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const {
     normalizeCoachDraftChunks,
     normalizeCoachDraftText,
+    sanitizeVisibleOutboundDmText,
     splitCoachDraftIntoDmBubbles,
     fireCoachEditAnalysis,
+    isAlwaysNeedsYouPerson,
 } = require('./_lib/client-context');
 const {
     resolveMetaIgAccessToken,
@@ -97,6 +104,14 @@ const {
 const {
     isChallengeOfferWarningText,
 } = require('./_lib/qualifier-engine');
+const {
+    createVoiceMessageAudio,
+    resolveOutboundVoiceMessageConfig,
+} = require('./_lib/elevenlabs-voice-message');
+const {
+    buildAlternateIgDeliveryData,
+    resolveAlternateIgDeliveryThread,
+} = require('./_lib/ig-thread-routing');
 
 // Inter-chunk delay. Keep multi-bubble IG/Messenger replies paced like a
 // person typing, not a bot dumping a batch. Dashboard-approved big replies use
@@ -120,6 +135,11 @@ const EDIT_ANALYSIS_ADMIN_BUDGET_MS = 4500;
 const EDIT_ANALYSIS_BACKGROUND_BUDGET_MS = 7000;
 const INSTAGRAM_GRAPH_TYPING_ACTION_TIMEOUT_MS = 1200;
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
+const PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE = 'Permanent Needs You contacts require Shannon approval before sending.';
+const AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES = new Set([
+    'auto_send',
+    'balance_lead_client_manager_cron',
+]);
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function safeObject(value) {
@@ -369,6 +389,94 @@ function isHumanApprovedSource(source, alertData = {}) {
     return !automatedSources.has(rawSource) && scheduledVia !== 'auto_send';
 }
 
+function isHumanApprovedPermanentNeedsYouSendSource(source) {
+    const normalized = String(source || '').trim().toLowerCase();
+    return normalized.startsWith('admin_dashboard')
+        || normalized === 'android_inline_reply_worker'
+        || normalized === 'manual_instagram';
+}
+
+function isAutomatedPermanentNeedsYouSendSource(source, data = {}) {
+    const normalized = String(source || '').trim().toLowerCase();
+    const scheduledVia = String(data.scheduled_via || '').trim().toLowerCase();
+    const timingChoiceSource = String(data.reply_timing_choice?.source || '').trim().toLowerCase();
+    const timingSuggestionSource = String(data.reply_timing_suggestion?.source || '').trim().toLowerCase();
+    const hasAutoSendMetadata = scheduledVia === 'auto_send'
+        || timingChoiceSource === 'auto_send'
+        || timingSuggestionSource === 'auto_send';
+    if (isHumanApprovedPermanentNeedsYouSendSource(normalized) && !hasAutoSendMetadata) {
+        return false;
+    }
+    if (normalized === 'scheduled_worker') {
+        return hasAutoSendMetadata;
+    }
+    return AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES.has(normalized)
+        || hasAutoSendMetadata;
+}
+
+function isPermanentNeedsYouIgAlert({ alert = {}, alertData = {}, thread = null } = {}) {
+    const data = alertData || alert.data || {};
+    const graph = safeObject(data.instagram_graph);
+    const customData = safeObject(data.custom_data);
+    const threadCustom = safeObject(thread?.custom_data);
+    const needsYouReasons = Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : [];
+    if (data.permanent_needs_you_draft_only === true) return true;
+    if (data.needs_you_reason === 'always_needs_you_person') return true;
+    if (needsYouReasons.includes('always_needs_you_person')) return true;
+    return isAlwaysNeedsYouPerson({
+        name: alert.client_name || data.client_name || data.profile_name || thread?.profile_name,
+        client_name: alert.client_name || data.client_name,
+        profile_name: data.profile_name || data.ig_profile_name || graph.profile_name || thread?.profile_name,
+        ig_username: data.ig_username || graph.ig_username || graph.username || thread?.ig_username,
+        username: data.username || graph.username || thread?.ig_username,
+        handle: data.handle || thread?.ig_username,
+        custom_data: {
+            ...customData,
+            ...threadCustom,
+            instagram_graph: {
+                ...safeObject(threadCustom.instagram_graph),
+                ...graph,
+            },
+        },
+    });
+}
+
+function shouldBlockPermanentNeedsYouAutomatedIgSend({ alert = {}, alertData = {}, thread = null, source = '' } = {}) {
+    return isAutomatedPermanentNeedsYouSendSource(source, alertData || alert.data || {})
+        && isPermanentNeedsYouIgAlert({ alert, alertData, thread });
+}
+
+async function stampPermanentNeedsYouAutomatedIgSendBlock({ alertId, alertData = {} } = {}) {
+    if (!alertId) return;
+    const blockedAt = new Date().toISOString();
+    const data = {
+        ...(alertData || {}),
+        client_manager_review_required: true,
+        needs_you_required: true,
+        operator_queue: 'needs_you',
+        needs_you_reason: 'always_needs_you_person',
+        needs_you_reasons: [
+            ...new Set([
+                ...(Array.isArray(alertData?.needs_you_reasons) ? alertData.needs_you_reasons : []),
+                'always_needs_you_person',
+            ]),
+        ],
+        permanent_needs_you_draft_only: true,
+        last_send_error: PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE,
+        last_send_error_code: 'permanent_needs_you_automated_send_blocked',
+        last_send_error_at: blockedAt,
+    };
+    try {
+        await supabase(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
+            method: 'PATCH',
+            body: { data },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[send-ig-reply] permanent Needs You block stamp failed:', err.message);
+    }
+}
+
 function resolveGraphMessageTag({ shouldUseGraph, lastInboundAt, source, alertData }) {
     if (!shouldUseGraph || !isHumanApprovedSource(source, alertData)) return '';
     if (!isHumanAgentWindow(lastInboundAt)) return '';
@@ -523,6 +631,44 @@ async function supabase(path, options = {}) {
     try { return JSON.parse(text); } catch { return []; }
 }
 
+function sentTextContainsLearningReel(item = {}, sentText = '') {
+    const text = String(sentText || '');
+    const url = String(item.url || item.youtube_url || '').trim();
+    const videoId = String(item.video_id || item.videoId || '').trim();
+    return (!!url && text.includes(url)) || (!!videoId && text.includes(videoId));
+}
+
+async function mergeSentLearningReelContext({ alertData = {}, messagesToSend = [], sentAtIso }) {
+    const igThreadId = String(alertData.ig_thread_id || '').trim();
+    if (!igThreadId) return null;
+    const sentText = (Array.isArray(messagesToSend) ? messagesToSend : [messagesToSend]).join('\n\n');
+    const incoming = normalizeLearningReelItems(alertData.learning_reels || alertData.learningReels || [], {
+        source: alertData.daily_reel_opportunity_source || 'approved_learning_reel',
+        platform: 'youtube',
+    })
+        .filter(item => sentTextContainsLearningReel(item, sentText))
+        .map(item => ({
+            ...item,
+            sent_at: sentAtIso || item.sent_at || new Date().toISOString(),
+            approved_send: true,
+        }));
+    if (!incoming.length) return null;
+
+    const rows = await supabase(`ig_threads?select=id,custom_data&id=eq.${encodeURIComponent(igThreadId)}&limit=1`);
+    const thread = rows[0] || null;
+    if (!thread) return null;
+    const nextCustomData = mergeLearningReelContext(thread.custom_data || {}, incoming, {
+        source: alertData.daily_reel_opportunity_source || 'approved_learning_reel',
+        platform: 'youtube',
+    });
+    await supabase(`ig_threads?id=eq.${encodeURIComponent(igThreadId)}`, {
+        method: 'PATCH',
+        body: { custom_data: nextCustomData },
+        prefer: 'return=minimal',
+    });
+    return incoming;
+}
+
 function createSendClaim(source) {
     const suffix = Math.random().toString(36).slice(2, 10);
     return {
@@ -639,7 +785,7 @@ async function loadIgThreadForSend(threadId) {
     if (!threadId) return null;
     try {
         const rows = await supabase(
-            `ig_threads?select=id,subscriber_id,channel,ig_username,profile_name,last_inbound_at,last_outbound_at,custom_data&id=eq.${encodeURIComponent(threadId)}&limit=1`
+            `ig_threads?select=${IG_THREAD_SEND_SELECT}&id=eq.${encodeURIComponent(threadId)}&limit=1`
         );
         return rows?.[0] || null;
     } catch (err) {
@@ -769,6 +915,46 @@ async function postToInstagramGraph({ recipientId, accountId, text, tag }) {
         throw new Error(`Instagram Graph ${res.status}: ${String(detail || '').slice(0, 400)}`);
     }
     return parsed;
+}
+
+async function postInstagramGraphAudio({ recipientId, accountId, audioUrl, tag }) {
+    const accessToken = await getInstagramGraphAccessToken(accountId);
+    if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
+    if (!recipientId) throw new Error('Instagram Graph recipient id missing');
+    if (!audioUrl) throw new Error('Instagram Graph audio URL missing');
+
+    const targetAccount = accountId || 'me';
+    const res = await fetch(`https://graph.instagram.com/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(targetAccount)}/messages`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            recipient: { id: recipientId },
+            message: {
+                attachment: {
+                    type: 'audio',
+                    payload: { url: audioUrl },
+                },
+            },
+            ...(tag ? { tag } : {}),
+        }),
+    });
+    const responseText = await res.text();
+    let parsed;
+    try { parsed = responseText ? JSON.parse(responseText) : {}; } catch { parsed = { raw: responseText }; }
+    if (!res.ok) {
+        const detail = parsed?.error?.message || responseText;
+        throw new Error(`Instagram Graph audio ${res.status}: ${String(detail || '').slice(0, 400)}`);
+    }
+    return parsed;
+}
+
+function isInstagramAudioUnsupportedError(errorMessage = '') {
+    const text = String(errorMessage || '').toLowerCase();
+    return text.includes('attachment format is not supported')
+        || (text.includes('audio') && text.includes('not supported'));
 }
 
 async function postInstagramGraphSenderAction({ recipientId, accountId, senderAction, timeoutMs = 0 }) {
@@ -946,8 +1132,8 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const alertId = body.alertId;
-    const replyText = normalizeCoachDraftText(body.replyText || '').trim();
-    const draftText = normalizeCoachDraftText(body.draftText || '').trim();
+    const replyTextInput = normalizeCoachDraftText(body.replyText || '').trim();
+    const draftTextInput = normalizeCoachDraftText(body.draftText || '').trim();
     const source = body.source || 'inline_reply';
     const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
     const timingSuggestion = normalizeTimingSuggestion(body.timingSuggestion || body.reply_timing_suggestion);
@@ -955,7 +1141,7 @@ exports.handler = async (event) => {
     const draftReviewOverride = [body.draftReviewOverride, body.draft_review_override, body.sendAnyway, body.send_anyway]
         .some(value => envFlagEnabled(value));
 
-    if (!alertId || !replyText) {
+    if (!alertId || !replyTextInput) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing alertId or replyText' }) };
     }
 
@@ -963,7 +1149,7 @@ exports.handler = async (event) => {
     let rows;
     try {
         rows = await supabase(
-            `coach_alerts?select=id,status,data,client_id,coach_id,alert_type&id=eq.${alertId}&limit=1`
+            `coach_alerts?select=id,status,data,client_id,client_name,coach_id,alert_type&id=eq.${alertId}&limit=1`
         );
     } catch (e) {
         console.error('[send-ig-reply] alert lookup failed:', e.message);
@@ -977,10 +1163,13 @@ exports.handler = async (event) => {
         return { statusCode: 409, body: JSON.stringify({ error: 'Alert already actioned', status: alert.status }) };
     }
     const rawAlertData = alert.data || {};
-    const threadForSend = rawAlertData.ig_thread_id
+    let threadForSend = rawAlertData.ig_thread_id
         ? await loadIgThreadForSend(rawAlertData.ig_thread_id)
         : null;
-    const alertData = enrichAlertDataWithThreadGraph(rawAlertData, threadForSend);
+    const requestedThreadForSend = threadForSend;
+    const requestedIgThreadId = rawAlertData.ig_thread_id || requestedThreadForSend?.id || '';
+    let alternateDelivery = null;
+    let alertData = enrichAlertDataWithThreadGraph(rawAlertData, threadForSend);
     if (alertData.last_send_error || alertData.last_send_error_code || alertData.last_send_error_at) {
         try {
             const clearedData = {
@@ -998,15 +1187,85 @@ exports.handler = async (event) => {
             console.warn('[send-ig-reply] stale send error cleanup failed:', err.message);
         }
     }
+    if (shouldBlockPermanentNeedsYouAutomatedIgSend({ alert, alertData, thread: threadForSend, source })) {
+        await stampPermanentNeedsYouAutomatedIgSendBlock({ alertId, alertData });
+        return {
+            statusCode: 409,
+            body: JSON.stringify({
+                error: PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE,
+                code: 'permanent_needs_you_automated_send_blocked',
+                source,
+            }),
+        };
+    }
     const channel = alertData.channel;
-    const graphRecipientId = resolveGraphRecipientId(alertData);
-    const graphAccountId = resolveGraphAccountId(alertData);
-    const graphSendAvailable = channel === 'instagram' && !!graphRecipientId;
-    const shouldUseGraph = graphSendAvailable && (
-        alertData.delivery_channel === 'instagram_graph'
-        || graphSendAvailable
-        || String(alertData.subscriber_id || '').startsWith(GRAPH_SUBSCRIBER_PREFIX)
-    );
+    const shouldSanitizeVisibleLeadCopy = !alertData.client_id;
+    let replyText = shouldSanitizeVisibleLeadCopy
+        ? sanitizeVisibleOutboundDmText(replyTextInput)
+        : replyTextInput;
+    let draftText = shouldSanitizeVisibleLeadCopy
+        ? sanitizeVisibleOutboundDmText(draftTextInput)
+        : draftTextInput;
+    if (!replyText) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ error: 'Reply text became empty after visible-copy cleanup' }),
+        };
+    }
+    let graphRecipientId = '';
+    let graphAccountId = '';
+    let graphSendAvailable = false;
+    let shouldUseGraph = false;
+    let graphLastInboundAt = '';
+    let graphNeedsHumanAgent = false;
+    const recomputeGraphRouting = async () => {
+        graphRecipientId = resolveGraphRecipientId(alertData);
+        graphAccountId = resolveGraphAccountId(alertData);
+        graphSendAvailable = channel === 'instagram' && !!graphRecipientId;
+        shouldUseGraph = graphSendAvailable && (
+            alertData.delivery_channel === 'instagram_graph'
+            || graphSendAvailable
+            || String(alertData.subscriber_id || '').startsWith(GRAPH_SUBSCRIBER_PREFIX)
+        );
+        const currentThreadId = alertData.ig_thread_id || threadForSend?.id || '';
+        graphLastInboundAt = shouldUseGraph
+            ? (alertData.ig_last_inbound_at || alertData.last_inbound_at || threadForSend?.last_inbound_at || await loadThreadLastInboundAt(currentThreadId))
+            : '';
+        graphNeedsHumanAgent = shouldUseGraph && isHumanAgentWindow(graphLastInboundAt);
+    };
+    await recomputeGraphRouting();
+    if (channel === 'instagram' && threadForSend?.id && (!shouldUseGraph || graphNeedsHumanAgent)) {
+        const resolution = await resolveAlternateIgDeliveryThread({
+            thread: threadForSend,
+            supabaseQuery: supabase,
+            selectColumns: IG_THREAD_SEND_SELECT,
+            humanAgentEnabled: INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED,
+            loggerPrefix: 'send-ig-reply',
+        });
+        if (resolution?.used && resolution.thread?.id) {
+            threadForSend = resolution.thread;
+            alternateDelivery = resolution;
+            alertData = enrichAlertDataWithThreadGraph({
+                ...rawAlertData,
+                ig_thread_id: threadForSend.id,
+                thread_id: threadForSend.id,
+                subscriber_id: threadForSend.subscriber_id,
+                channel: threadForSend.channel || rawAlertData.channel,
+                ig_username: threadForSend.ig_username || rawAlertData.ig_username,
+                profile_name: threadForSend.profile_name || rawAlertData.profile_name,
+                ig_profile_name: threadForSend.profile_name || rawAlertData.ig_profile_name,
+                ig_last_inbound_at: threadForSend.last_inbound_at || null,
+                last_inbound_at: threadForSend.last_inbound_at || null,
+                ig_last_outbound_at: threadForSend.last_outbound_at || null,
+                last_outbound_at: threadForSend.last_outbound_at || null,
+                linked_user_id: threadForSend.linked_user_id || rawAlertData.linked_user_id,
+                ...buildAlternateIgDeliveryData(resolution),
+            }, threadForSend);
+            await recomputeGraphRouting();
+        } else {
+            alternateDelivery = resolution || null;
+        }
+    }
     if (isManualGraphOnly(alertData)) {
         return {
             statusCode: 400,
@@ -1065,10 +1324,6 @@ exports.handler = async (event) => {
     if (!subscriberId || !igThreadId) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Alert missing subscriber_id or ig_thread_id in data' }) };
     }
-    const graphLastInboundAt = shouldUseGraph
-        ? (alertData.ig_last_inbound_at || alertData.last_inbound_at || threadForSend?.last_inbound_at || await loadThreadLastInboundAt(igThreadId))
-        : '';
-    const graphNeedsHumanAgent = shouldUseGraph && isHumanAgentWindow(graphLastInboundAt);
     if (graphNeedsHumanAgent && !isHumanApprovedSource(source, alertData)) {
         const manualData = markHumanAgentManualFallback(alertData, {
             lastInboundAt: graphLastInboundAt,
@@ -1142,11 +1397,18 @@ exports.handler = async (event) => {
     // will hard-cut overlong text wherever it wants, even mid-word. We want
     // separate bubbles that stop at paragraph/sentence boundaries first.
     const rawDraftMessages = Array.isArray(alertData.draft_messages) ? alertData.draft_messages : [];
-    const draftMessages = normalizeCoachDraftChunks(rawDraftMessages)
+    let draftMessages = normalizeCoachDraftChunks(rawDraftMessages)
         .map(s => String(s || '').trim())
         .filter(Boolean);
-    const draftJoined = normalizeCoachDraftText(alertData.draft_text || draftText || draftMessages.join('\n')).trim();
-    const draftMessagesJoined = normalizeCoachDraftText(draftMessages.join('\n')).trim();
+    if (shouldSanitizeVisibleLeadCopy) {
+        draftMessages = draftMessages.map(chunk => sanitizeVisibleOutboundDmText(chunk)).filter(Boolean);
+    }
+    const draftJoined = shouldSanitizeVisibleLeadCopy
+        ? sanitizeVisibleOutboundDmText(alertData.draft_text || draftText || draftMessages.join('\n'))
+        : normalizeCoachDraftText(alertData.draft_text || draftText || draftMessages.join('\n')).trim();
+    const draftMessagesJoined = shouldSanitizeVisibleLeadCopy
+        ? sanitizeVisibleOutboundDmText(draftMessages.join('\n'))
+        : normalizeCoachDraftText(draftMessages.join('\n')).trim();
     const draftMessagesMatchDraft = !!draftJoined && draftMessagesJoined === draftJoined;
     const useDraftMessageChunks = draftMessages.length > 0
         && draftJoined
@@ -1197,6 +1459,23 @@ exports.handler = async (event) => {
     if (messagesToSend.length === 0) messagesToSend = [replyText];
     const chunkPacing = resolveChunkPacing(messagesToSend.length, deliveryPacing);
     const plannedChunkGapsMs = resolveChunkGaps(messagesToSend, chunkPacing);
+    const voiceMessageConfig = resolveOutboundVoiceMessageConfig(alertData, { shouldUseGraph, channel });
+    if (voiceMessageConfig.enabled && !voiceMessageConfig.available) {
+        return {
+            statusCode: 409,
+            body: JSON.stringify({
+                error: 'Voice message delivery requires Instagram Graph',
+                code: voiceMessageConfig.blockedReason || 'voice_message_unavailable',
+            }),
+        };
+    }
+    const outboundItems = voiceMessageConfig.enabled
+        ? [{
+            kind: 'audio',
+            text: messagesToSend.join('\n\n'),
+            voiceConfig: voiceMessageConfig,
+        }]
+        : messagesToSend.map(text => ({ kind: 'text', text }));
 
     let claimedAlert;
     let sendClaimId = '';
@@ -1230,7 +1509,7 @@ exports.handler = async (event) => {
     const instagramTypingActions = [];
     let firstError = null;
     const deliveryTransport = shouldUseGraph ? 'instagram_graph' : 'manychat';
-    for (let i = 0; i < messagesToSend.length; i++) {
+    for (let i = 0; i < outboundItems.length; i++) {
         let typingStartedForChunk = false;
         if (i > 0) {
             const gapMs = plannedChunkGapsMs[i - 1] || chunkPacing.minMs || CHUNK_GAP_MIN_MS;
@@ -1249,14 +1528,38 @@ exports.handler = async (event) => {
             }
             await sleep(gapMs);
         }
-        const chunkText = messagesToSend[i];
+        const item = outboundItems[i];
+        const chunkText = item.text;
         try {
-            const r = shouldUseGraph
-                ? await postToInstagramGraph({ recipientId: graphRecipientId, accountId: graphAccountId, text: chunkText, tag: graphMessageTag })
-                : await postToManyChat({ subscriberId, text: chunkText, channel });
-            sendResults.push({ ok: true, response: r, text: chunkText, transport: deliveryTransport });
+            if (item.kind === 'audio') {
+                const audio = await createVoiceMessageAudio({
+                    messages: messagesToSend,
+                    alertId,
+                    alertData,
+                    supabaseQuery: supabase,
+                });
+                const r = await postInstagramGraphAudio({
+                    recipientId: graphRecipientId,
+                    accountId: graphAccountId,
+                    audioUrl: audio.url,
+                    tag: graphMessageTag,
+                });
+                sendResults.push({
+                    ok: true,
+                    response: r,
+                    text: audio.text || chunkText,
+                    transport: deliveryTransport,
+                    kind: 'audio',
+                    audio,
+                });
+            } else {
+                const r = shouldUseGraph
+                    ? await postToInstagramGraph({ recipientId: graphRecipientId, accountId: graphAccountId, text: chunkText, tag: graphMessageTag })
+                    : await postToManyChat({ subscriberId, text: chunkText, channel });
+                sendResults.push({ ok: true, response: r, text: chunkText, transport: deliveryTransport, kind: 'text' });
+            }
         } catch (err) {
-            console.error(`[send-ig-reply] chunk ${i + 1}/${messagesToSend.length} failed:`, err.message);
+            console.error(`[send-ig-reply] chunk ${i + 1}/${outboundItems.length} failed:`, err.message);
             if (shouldUseGraph && typingStartedForChunk) {
                 const typingOffAction = await sendInstagramGraphTypingAction({
                     channel,
@@ -1268,14 +1571,29 @@ exports.handler = async (event) => {
                 if (typingOffAction.attempted) instagramTypingActions.push(typingOffAction);
             }
             firstError = err.message;
-            sendResults.push({ ok: false, error: err.message, text: chunkText, transport: deliveryTransport });
+            sendResults.push({ ok: false, error: err.message, text: chunkText, transport: deliveryTransport, kind: item.kind });
             break;
         }
     }
 
     const sentChunks = sendResults.filter(r => r.ok);
-    const allOk = firstError === null && sentChunks.length === messagesToSend.length;
+    const allOk = firstError === null && sentChunks.length === outboundItems.length;
     const sentAtIso = new Date().toISOString();
+    const sentVoiceMessages = sentChunks
+        .filter(r => r.kind === 'audio' && r.audio)
+        .map(r => ({
+            url: r.audio.url,
+            file_name: r.audio.fileName,
+            file_id: r.audio.fileId,
+            size_bytes: r.audio.sizeBytes,
+            content_type: r.audio.contentType,
+            voice_id: r.audio.voiceId,
+            model_id: r.audio.modelId,
+            output_format: r.audio.outputFormat,
+            source_encoding: r.audio.sourceEncoding,
+            sample_rate: r.audio.sampleRate,
+            text: r.audio.text,
+        }));
 
     // 4. Log every successfully-delivered chunk to ig_messages (so the next
     //    AI draft has the conversation history including our outbound).
@@ -1290,7 +1608,9 @@ exports.handler = async (event) => {
                     thread_id: igThreadId,
                     direction: 'out',
                     text: result.text,
-                    source: shouldUseGraph ? 'instagram_graph_send' : source,
+                    source: result.kind === 'audio'
+                        ? 'instagram_graph_voice_send'
+                        : (shouldUseGraph ? 'instagram_graph_send' : source),
                     alert_id: alertId,
                     manychat_message_id: graphMessageId ? `${GRAPH_SUBSCRIBER_PREFIX}${graphMessageId}` : null,
                 }],
@@ -1324,12 +1644,18 @@ exports.handler = async (event) => {
         sent_at: sentAtIso,
         sent_via: source,
         chunks_sent: sentChunks.length,
-        chunks_total: messagesToSend.length,
+        chunks_total: outboundItems.length,
         sent_chunks: sentChunks.map(r => r.text),
         sent_split_strategy: 'paragraph_coalesced_v2',
         sent_delivery_pacing: chunkPacing.strategy,
         delivery_channel: shouldUseGraph ? 'instagram_graph' : (alertData.delivery_channel || channel),
         delivery_transport: deliveryTransport,
+        ...buildAlternateIgDeliveryData(alternateDelivery || {}),
+        delivery_payload_kind: voiceMessageConfig.enabled ? 'audio' : 'text',
+        outbound_voice_message: voiceMessageConfig.enabled ? true : (alertData.outbound_voice_message || undefined),
+        outbound_voice_message_reason: voiceMessageConfig.reason || alertData.outbound_voice_message_reason || undefined,
+        sent_voice_messages: sentVoiceMessages.length ? sentVoiceMessages : undefined,
+        voice_delivery_fallback: null,
         instagram_seen_receipt: seenReceipt,
         sent_graph_message_tag: graphMessageTag || undefined,
         ig_graph_recipient_id: graphRecipientId || alertData.ig_graph_recipient_id || null,
@@ -1417,10 +1743,18 @@ exports.handler = async (event) => {
         console.warn('[send-ig-reply] alert status update failed (non-fatal):', err.message);
     }
 
+    if (allOk && alertMarkedSent) {
+        try {
+            await mergeSentLearningReelContext({ alertData, messagesToSend, sentAtIso });
+        } catch (err) {
+            console.warn('[send-ig-reply] learning reel context merge failed (non-fatal):', err.message);
+        }
+    }
+
     if (!allOk) {
         const clientName = alertData.ig_username || alertData.client_name || 'IG lead';
         const sentSummary = sentChunks.length > 0
-            ? `Sent ${sentChunks.length}/${messagesToSend.length} before error.`
+            ? `Sent ${sentChunks.length}/${outboundItems.length} before error.`
             : 'Send failed before any chunks delivered.';
         try {
             await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
@@ -1443,7 +1777,7 @@ exports.handler = async (event) => {
                 error: shouldUseGraph ? 'Instagram Graph send failed' : 'ManyChat send failed',
                 details: firstError,
                 chunks_sent: sentChunks.length,
-                chunks_total: messagesToSend.length,
+                chunks_total: outboundItems.length,
             }),
         };
     }
@@ -1454,6 +1788,16 @@ exports.handler = async (event) => {
         sentAt: sentAtIso,
         source,
     });
+    if (requestedIgThreadId && requestedIgThreadId !== igThreadId) {
+        const requestedCleanup = await clearManyChatHomeNotifications({
+            alertId,
+            igThreadId: requestedIgThreadId,
+            sentAt: sentAtIso,
+            source,
+        });
+        cleanup.requestedThreadSiblingAlertsCleared = requestedCleanup.siblingAlertsCleared || 0;
+        cleanup.siblingAlertsCleared = (cleanup.siblingAlertsCleared || 0) + (requestedCleanup.siblingAlertsCleared || 0);
+    }
 
     if (alertMarkedSent) {
         await notifyChallengeOfferSent({
@@ -1480,8 +1824,10 @@ exports.handler = async (event) => {
             alertId,
             wasEdited,
             delivery_transport: deliveryTransport,
+            alternate_ig_delivery: alternateDelivery?.used ? buildAlternateIgDeliveryData(alternateDelivery).alternate_ig_delivery : null,
             chunks_sent: sentChunks.length,
-            chunks_total: messagesToSend.length,
+            chunks_total: outboundItems.length,
+            delivery_payload_kind: voiceMessageConfig.enabled ? 'audio' : 'text',
             ...cleanup,
         }),
     };
@@ -1497,7 +1843,13 @@ exports._test = {
     resolveThreadGraphRecipientId,
     resolveChunkPacing,
     resolveChunkGaps,
+    resolveOutboundVoiceMessageConfig,
+    isInstagramAudioUnsupportedError,
     isCocosAlertData,
     isChallengeOfferSend,
     isSendClaimStale,
+    isHumanApprovedPermanentNeedsYouSendSource,
+    isAutomatedPermanentNeedsYouSendSource,
+    isPermanentNeedsYouIgAlert,
+    shouldBlockPermanentNeedsYouAutomatedIgSend,
 };

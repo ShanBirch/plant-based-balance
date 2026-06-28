@@ -1648,6 +1648,195 @@ function normalizeMealTimeForSave(value) {
     return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`;
 }
 
+function getMealFeedSharedSet() {
+    if (!window._pbbMealFeedSharedIds) window._pbbMealFeedSharedIds = new Set();
+    return window._pbbMealFeedSharedIds;
+}
+
+function isMealSharedToFeed(mealId) {
+    if (!mealId) return false;
+    if (getMealFeedSharedSet().has(String(mealId))) return true;
+    try {
+        return localStorage.getItem('pbbMealSharedToFeed_' + mealId) === '1';
+    } catch (_) {
+        return false;
+    }
+}
+
+function markMealSharedToFeed(mealId) {
+    if (!mealId) return;
+    getMealFeedSharedSet().add(String(mealId));
+    try {
+        localStorage.setItem('pbbMealSharedToFeed_' + mealId, '1');
+    } catch (_) {}
+}
+
+function buildMealFeedCardPayload(meal) {
+    const foodItemsText = Array.isArray(meal && meal.food_items) && meal.food_items.length
+        ? meal.food_items.map(item => item && item.name ? item.name : 'Food').join(', ')
+        : ((meal && (meal.meal_description || meal.notes)) || 'Meal');
+    const rawMealType = meal && meal.meal_type ? String(meal.meal_type) : 'meal';
+    const mealType = rawMealType.charAt(0).toUpperCase() + rawMealType.slice(1);
+    const hasPhoto = meal && meal.photo_url && String(meal.photo_url).trim() !== '' && meal.photo_url !== 'text-input';
+    const ingredients = Array.isArray(meal && meal.food_items)
+        ? meal.food_items
+            .map(item => ({
+                name: String(item?.name || item?.food_name || '').trim(),
+                portion: String(item?.portion || item?.serving || item?.amount || '').trim(),
+                calories: Math.round(Number(item?.calories || 0)),
+                protein: Math.round(Number(item?.protein_g || item?.protein || 0)),
+                carbs: Math.round(Number(item?.carbs_g || item?.carbs || 0)),
+                fat: Math.round(Number(item?.fat_g || item?.fat || 0))
+            }))
+            .filter(item => item.name !== '')
+        : [];
+
+    return {
+        card_type: 'meal',
+        meal_id: (meal && meal.id) || null,
+        meal_type: mealType,
+        foods: foodItemsText,
+        ingredients,
+        ingredient_count: ingredients.length,
+        calories: Math.round(Number((meal && meal.calories) || 0)),
+        protein: Math.round(Number((meal && meal.protein_g) || 0)),
+        carbs: Math.round(Number((meal && meal.carbs_g) || 0)),
+        fat: Math.round(Number((meal && meal.fat_g) || 0)),
+        photo_url: hasPhoto ? meal.photo_url : null
+    };
+}
+
+async function shareMealRecordToFeed(meal, btn) {
+    if (!meal || !meal.id) {
+        showToast('Meal is not ready to share yet', 'info');
+        return null;
+    }
+    if (!window.currentUser) {
+        showToast('You must be logged in to share', 'error');
+        return null;
+    }
+    if (String(meal.meal_type || '').toLowerCase() === 'water') {
+        showToast('Water logs do not need a Feed post', 'info');
+        return null;
+    }
+    if (isMealSharedToFeed(meal.id)) {
+        showToast('This meal is already shared to Feed', 'info');
+        return null;
+    }
+
+    const helpers = window.dbHelpers || (typeof dbHelpers !== 'undefined' ? dbHelpers : null);
+    if (!helpers || !helpers.stories || typeof helpers.stories.create !== 'function') {
+        showToast('Feed is still loading. Try again in a moment.', 'info');
+        return null;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.dataset.originalText = btn.textContent || btn.dataset.originalText || '';
+        btn.textContent = 'Sharing...';
+        btn.style.opacity = '0.75';
+    }
+
+    try {
+        const cardPayload = buildMealFeedCardPayload(meal);
+        const hasPhoto = !!cardPayload.photo_url;
+        const storyData = {
+            media_type: 'meal_card',
+            media_url: hasPhoto ? cardPayload.photo_url : '',
+            thumbnail_url: hasPhoto ? cardPayload.photo_url : null,
+            caption: JSON.stringify(cardPayload),
+            duration: 5
+        };
+
+        let story;
+        try {
+            story = await helpers.stories.create(window.currentUser.id, storyData);
+        } catch (storyError) {
+            const message = String(storyError && (storyError.message || storyError.details || storyError.code) || '');
+            if (!/media_type|meal_card|check constraint|violates/i.test(message)) throw storyError;
+            story = await helpers.stories.create(window.currentUser.id, Object.assign({}, storyData, {
+                media_type: 'nutrition_card'
+            }));
+        }
+
+        markMealSharedToFeed(meal.id);
+        if (typeof loadPhotoFeed === 'function') {
+            loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
+        }
+        if (typeof window.refreshWeeklyGoalsCard === 'function') {
+            window.refreshWeeklyGoalsCard();
+        }
+        if (btn) {
+            btn.textContent = 'Shared to Feed';
+            btn.style.opacity = '1';
+        }
+        const pointsAwarded = Number(story?.points_awarded || 0);
+        showToast(pointsAwarded > 0 ? `Meal shared to Feed! +${pointsAwarded} XP` : 'Meal shared to Feed!', 'success');
+        return story;
+    } catch (error) {
+        console.error('Error sharing meal to feed:', error);
+        showToast('Failed to share meal. Please try again.', 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = btn.dataset.originalText || 'Share meal to Feed (+1 XP)';
+            btn.style.opacity = '1';
+        }
+        return null;
+    }
+}
+
+function closeMealFeedSharePrompt() {
+    const prompt = document.getElementById('meal-feed-share-prompt');
+    if (prompt) prompt.remove();
+}
+
+window.closeMealFeedSharePrompt = closeMealFeedSharePrompt;
+
+window.sharePendingMealToFeed = async function(btn) {
+    const meal = window._pbbPendingMealFeedShare;
+    const story = await shareMealRecordToFeed(meal, btn);
+    if (story) closeMealFeedSharePrompt();
+};
+
+function showMealFeedSharePrompt(meal) {
+    if (!meal || !meal.id) return;
+    if (String(meal.meal_type || '').toLowerCase() === 'water') return;
+    if (isMealSharedToFeed(meal.id)) return;
+
+    window._pbbPendingMealFeedShare = meal;
+    closeMealFeedSharePrompt();
+
+    const foodLabel = buildMealFeedCardPayload(meal).foods;
+    const shortLabel = foodLabel.length > 72 ? foodLabel.slice(0, 69) + '...' : foodLabel;
+    const prompt = document.createElement('div');
+    prompt.id = 'meal-feed-share-prompt';
+    prompt.style.cssText = 'position:fixed;left:14px;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:10030;background:#ffffff;border:1px solid #dbeafe;border-radius:16px;box-shadow:0 18px 42px rgba(15,23,42,0.22);padding:14px;display:flex;align-items:center;gap:12px;font-family:inherit;';
+    prompt.innerHTML = `
+        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#0f766e,#2563eb);display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0;">
+            <svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
+        </div>
+        <div style="flex:1;min-width:0;">
+            <div style="font-size:0.86rem;font-weight:900;color:#0f172a;line-height:1.25;">Share this meal to Feed?</div>
+            <div style="font-size:0.74rem;font-weight:700;color:#64748b;line-height:1.25;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(shortLabel)}</div>
+        </div>
+        <button type="button" onclick="sharePendingMealToFeed(this)" style="border:none;background:#046a38;color:white;border-radius:999px;padding:10px 13px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">Share</button>
+        <button type="button" onclick="closeMealFeedSharePrompt()" aria-label="Dismiss meal share prompt" style="border:none;background:#f1f5f9;color:#64748b;border-radius:999px;width:32px;height:32px;font-size:1.1rem;line-height:1;cursor:pointer;flex-shrink:0;">&times;</button>
+    `;
+    document.body.appendChild(prompt);
+    setTimeout(function() {
+        if (document.getElementById('meal-feed-share-prompt') === prompt) closeMealFeedSharePrompt();
+    }, 12000);
+}
+
+function scheduleMealFeedSharePrompt(meal, mealData) {
+    if (!meal || !meal.id || !document.body) return;
+    if (mealData && mealData.suppressSharePrompt) return;
+    if (String((meal && meal.meal_type) || (mealData && mealData.mealType) || '').toLowerCase() === 'water') return;
+    setTimeout(function() {
+        showMealFeedSharePrompt(meal);
+    }, 650);
+}
+
 // Save meal log with meal type and input method
 async function saveMealLogWithType(mealData) {
     // Meal Builder intercept: if the builder is open and set the
@@ -1741,6 +1930,12 @@ async function saveMealLogWithType(mealData) {
         try {
             if (typeof refreshChallengeProgress === 'function') refreshChallengeProgress();
         } catch(e) {}
+    }
+
+    try {
+        scheduleMealFeedSharePrompt(data && data[0], mealData);
+    } catch (promptError) {
+        console.warn('Meal feed share prompt skipped:', promptError);
     }
 
     return data;
@@ -8209,9 +8404,10 @@ function openMealDetailPopup(index) {
     const itemsEl = document.getElementById('mealDetailItems');
     const shareBtn = document.getElementById('mealDetailShareBtn');
     if (shareBtn) {
-        shareBtn.disabled = false;
-        shareBtn.textContent = 'Share meal to Feed';
-        shareBtn.style.opacity = '1';
+        const alreadyShared = isMealSharedToFeed(meal.id);
+        shareBtn.disabled = alreadyShared;
+        shareBtn.textContent = alreadyShared ? 'Shared to Feed' : 'Share meal to Feed (+1 XP)';
+        shareBtn.style.opacity = alreadyShared ? '0.85' : '1';
     }
 
     // Format time
@@ -8307,80 +8503,9 @@ async function shareCurrentMealToFeed() {
         return;
     }
 
-    const helpers = window.dbHelpers || (typeof dbHelpers !== 'undefined' ? dbHelpers : null);
-    if (!helpers || !helpers.stories || typeof helpers.stories.create !== 'function') {
-        showToast('Feed is still loading. Try again in a moment.', 'info');
-        return;
-    }
-
     const meal = currentMealsList[currentEditingMealIndex];
     const btn = document.getElementById('mealDetailShareBtn');
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Sharing...';
-        btn.style.opacity = '0.75';
-    }
-
-    try {
-        const foodItemsText = Array.isArray(meal.food_items) && meal.food_items.length
-            ? meal.food_items.map(item => item && item.name ? item.name : 'Food').join(', ')
-            : (meal.meal_description || 'Meal');
-        const hasPhoto = meal.photo_url && meal.photo_url.trim() !== '' && meal.photo_url !== 'text-input';
-        const mealType = meal.meal_type
-            ? meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)
-            : 'Meal';
-
-        const cardPayload = {
-            card_type: 'meal',
-            meal_id: meal.id || null,
-            meal_type: mealType,
-            foods: foodItemsText,
-            calories: Math.round(Number(meal.calories || 0)),
-            protein: Math.round(Number(meal.protein_g || 0)),
-            carbs: Math.round(Number(meal.carbs_g || 0)),
-            fat: Math.round(Number(meal.fat_g || 0)),
-            photo_url: hasPhoto ? meal.photo_url : null
-        };
-
-        const storyData = {
-            media_type: 'meal_card',
-            media_url: hasPhoto ? meal.photo_url : '',
-            thumbnail_url: hasPhoto ? meal.photo_url : null,
-            caption: JSON.stringify(cardPayload),
-            duration: 5
-        };
-
-        try {
-            await helpers.stories.create(window.currentUser.id, storyData);
-        } catch (storyError) {
-            const message = String(storyError && (storyError.message || storyError.details || storyError.code) || '');
-            if (!/media_type|meal_card|check constraint|violates/i.test(message)) throw storyError;
-            await helpers.stories.create(window.currentUser.id, Object.assign({}, storyData, {
-                media_type: 'nutrition_card'
-            }));
-        }
-
-        if (typeof loadPhotoFeed === 'function') {
-            loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
-        }
-        if (typeof window.refreshWeeklyGoalsCard === 'function') {
-            window.refreshWeeklyGoalsCard();
-        }
-
-        if (btn) {
-            btn.textContent = 'Shared to Feed';
-            btn.style.opacity = '1';
-        }
-        showToast('Meal shared to Feed!', 'success');
-    } catch (error) {
-        console.error('Error sharing meal to feed:', error);
-        showToast('Failed to share meal. Please try again.', 'error');
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = 'Share meal to Feed';
-            btn.style.opacity = '1';
-        }
-    }
+    await shareMealRecordToFeed(meal, btn);
 }
 window.shareCurrentMealToFeed = shareCurrentMealToFeed;
 

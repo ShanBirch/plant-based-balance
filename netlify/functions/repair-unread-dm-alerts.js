@@ -130,6 +130,33 @@ async function requestBlankDraftRepair(row) {
     };
 }
 
+async function requestAppInboxDraft(row) {
+    const dispatch = fetch(`${SITE_URL}/.netlify/functions/instant-coach-draft`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            nudgeId: row.nudge_id,
+            senderId: row.sender_id,
+            receiverId: row.receiver_id,
+            messageText: row.message_text || '',
+        }),
+    });
+    const result = await Promise.race([
+        dispatch,
+        new Promise(resolve => setTimeout(() => resolve(null), 1500)),
+    ]);
+    if (result && !result.ok) {
+        const text = await result.text().catch(() => '');
+        throw new Error(`app inbox draft handoff ${result.status}: ${text.slice(0, 220)}`);
+    }
+    return {
+        nudge_id: row.nudge_id,
+        sender_id: row.sender_id,
+        sender_name: row.sender_name || 'App user',
+        dispatched: true,
+    };
+}
+
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
@@ -344,6 +371,36 @@ SELECT *
 FROM blank_pending
 ORDER BY message_created_at DESC`;
 
+    const appInboxCandidateSql = `
+SELECT
+    n.id::text AS nudge_id,
+    n.sender_id::text AS sender_id,
+    n.receiver_id::text AS receiver_id,
+    n.message AS message_text,
+    n.created_at,
+    COALESCE(NULLIF(u.name, ''), NULLIF(u.email, ''), 'App user') AS sender_name
+FROM public.nudges n
+JOIN public.users u ON u.id = n.sender_id
+WHERE n.receiver_id = '${coachId}'::uuid
+  AND n.sender_id <> '${coachId}'::uuid
+  AND n.read_at IS NULL
+  AND n.created_at >= NOW() - INTERVAL '14 days'
+  AND BTRIM(COALESCE(n.message, '')) <> ''
+  AND COALESCE(n.nudge_type, '') <> 'game_invite'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM public.admin_users au
+      WHERE au.user_id = n.sender_id
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM public.coach_alerts ca
+      WHERE ca.alert_type IN ('incoming_dm', 'unread_message')
+        AND ca.data->>'nudge_id' = n.id::text
+  )
+ORDER BY n.created_at DESC
+LIMIT 20`;
+
     try {
         const staleThreads = await execSqlJson(staleThreadSql);
         const syncedThreads = [];
@@ -445,6 +502,16 @@ ORDER BY message_created_at DESC`;
             }
         }
 
+        const appInboxCandidates = await execSqlJson(appInboxCandidateSql);
+        const appInboxRepairs = [];
+        for (const row of appInboxCandidates) {
+            try {
+                appInboxRepairs.push(await requestAppInboxDraft(row));
+            } catch (e) {
+                console.warn('[repair-unread-dm-alerts] app inbox draft dispatch failed:', row.nudge_id, e.message);
+            }
+        }
+
         return {
             statusCode: 200,
             body: JSON.stringify({
@@ -453,10 +520,12 @@ ORDER BY message_created_at DESC`;
                 resolvedCount: resolved.length,
                 restoredCount: restored.length,
                 blankDraftRepairCount: blankDraftRepairs.length,
+                appInboxRepairCount: appInboxRepairs.length,
                 syncedThreads: syncedThreads.map(t => ({ id: t.id, last_outbound_at: t.last_outbound_at })),
                 resolved,
                 restored,
                 blankDraftRepairs,
+                appInboxRepairs,
             }),
         };
     } catch (e) {

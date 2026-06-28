@@ -4,6 +4,7 @@ const {
     applyPhoneAutocorrectCapitalization,
     formatTimedConversationLine,
     normalizeCoachDraftText,
+    sanitizeVisibleOutboundDmText,
     splitCoachDraftIntoDmBubbles,
     stripLeadingGreeting,
 } = require('../netlify/functions/_lib/client-context');
@@ -38,9 +39,23 @@ assert.strictEqual(
     'line one\nline two'
 );
 
+const sanitizedLeadCopy = sanitizeVisibleOutboundDmText('Haha nah mate,\\n[ephemeral] fuckin hell');
+assert.ok(!sanitizedLeadCopy.includes('\\n'));
+assert.ok(!sanitizedLeadCopy.includes('[ephemeral]'));
+assert.ok(!/fuck/i.test(sanitizedLeadCopy));
+assert.strictEqual(
+    sanitizeVisibleOutboundDmText('yeah sounds good mate'),
+    'yeah sounds good mate'
+);
+
 assert.strictEqual(
     normalizeCoachDraftText('line one\\u000Aline two'),
     'line one\nline two'
+);
+
+assert.strictEqual(
+    normalizeCoachDraftText('sweet — no dramas, will sort it'),
+    'sweet, no dramas, will sort it'
 );
 
 assert.strictEqual(

@@ -6,6 +6,8 @@ const {
     relationshipContextHasKnownPetNames,
     repairDraftCommentWithContext,
     parseStoryUrl,
+    parseStoryCommentUsernameSet,
+    storyCommentUsernameRule,
     assessStoryCommentSafety,
     assessAudioVisualCommentConsistency,
     relationshipStoryBlockReason,
@@ -14,10 +16,12 @@ const {
     isDryRunQualityJudge,
     validateEvidenceVideo,
     shouldRecommendLikeFallback,
+    isManualStoryOutreachOnly,
     storyAnalysisTranscriptNote,
     normalizeStorySurfaceContext,
     assessStillsOnlyVideoSalvageContext,
     animalWelfareSupportCommentForContext,
+    buildStoryOutreachMemory,
     buildStoryEvidenceAnalysisFallback,
 } = require('../netlify/functions/ig-story-outreach-candidate')._test;
 
@@ -25,6 +29,30 @@ assert.strictEqual(
     parseStoryUrl('https://www.instagram.com/stories/highlights/18100654963567629/').username,
     '',
     'Instagram highlights URLs must not be treated as real outreach usernames'
+);
+
+assert.deepStrictEqual(
+    [...parseStoryCommentUsernameSet('@mon_main, mon.alt; mon_third | stories').values()],
+    ['mon_main', 'mon.alt', 'mon_third'],
+    'story username config should normalize handles and ignore reserved story words'
+);
+
+assert.deepStrictEqual(
+    storyCommentUsernameRule('mon_alt', { STORY_COMMENT_BLOCKED_USERNAMES: 'mon_alt' }),
+    { allowed: false, reason: 'story_username_blocked' },
+    'blocked story usernames should be refused before drafting'
+);
+
+assert.deepStrictEqual(
+    storyCommentUsernameRule('mon_alt', { STORY_COMMENT_ALLOWED_USERNAMES: 'mon_main' }),
+    { allowed: false, reason: 'story_username_not_allowlisted' },
+    'story allowlists should narrow a focused run to the selected handle'
+);
+
+assert.deepStrictEqual(
+    storyCommentUsernameRule('mon_main', { STORY_COMMENT_ALLOWED_USERNAMES: '@mon_main, someone_else' }),
+    { allowed: true, reason: '' },
+    'allowlisted story usernames should pass the account gate'
 );
 
 assert.strictEqual(
@@ -90,6 +118,31 @@ assert.strictEqual(
     'lets go!',
     'gym hype should survive normalization'
 );
+
+assert.strictEqual(
+    normalizeDraftComment('starter coaching would be perfect for this', {
+        storyOwner: 'someone',
+        sharedContent: false,
+    }),
+    '',
+    'native story openers must not pitch Starter Coaching'
+);
+
+const starterSalesMemory = buildStoryOutreachMemory({
+    storyUrl: 'https://www.instagram.com/stories/someone/123456/',
+    storyId: '123456',
+    draftComment: 'how was the sesh?',
+    analysis: {
+        description: 'A gym story showing a squat rack.',
+        visibleText: '',
+    },
+    surfaceContext: { storyContentType: 'own_story' },
+    nowIso: '2026-06-22T01:00:00.000Z',
+    body: { sent: true },
+});
+assert.strictEqual(starterSalesMemory.lead_origin, 'native_story_outreach');
+assert.strictEqual(starterSalesMemory.offer_path, 'balance_starter_coaching');
+assert.match(starterSalesMemory.sales_context.dm_rule, /Starter Coaching/);
 
 const mirrorSelfieSafety = assessStoryCommentSafety({
     storyOwner: 'mirror.selfie',
@@ -326,6 +379,33 @@ assert.strictEqual(
     }),
     '',
     'shared class/reel wording should not imply the story owner did the session'
+);
+
+assert.strictEqual(
+    normalizeDraftComment("standing lunge couple? hows that one feel?", {
+        storyOwner: 'strongwithgizem',
+        sharedContent: false,
+    }),
+    'how was the session?',
+    'over-literal OCR exercise wording should become a normal session question'
+);
+
+assert.strictEqual(
+    normalizeDraftComment("wait canada? how was it?", {
+        storyOwner: 'puras_verduras_',
+        sharedContent: false,
+    }),
+    'how was it?',
+    'wait-location story questions should not sound like Shannon is confused by the story'
+);
+
+assert.strictEqual(
+    normalizeDraftComment("wait canada? how was it?", {
+        storyOwner: 'puras_verduras_',
+        sharedContent: true,
+    }),
+    '',
+    'shared location posts should not get direct travel-experience questions'
 );
 
 assert.strictEqual(
@@ -810,6 +890,27 @@ assert.strictEqual(
     shouldRecommendLikeFallback({ safetyReason: 'specific_visual_hook_required' }, ''),
     true,
     'broad story puns should fall back to like-only'
+);
+
+assert.strictEqual(
+    isManualStoryOutreachOnly({ custom_data: { manual_review_only: true } }),
+    true,
+    'manual-review IG threads should never get automatic story comments'
+);
+assert.strictEqual(
+    isManualStoryOutreachOnly({ custom_data: { needs_you_always: true } }),
+    true,
+    'permanent Needs You threads should block automatic story comments'
+);
+assert.strictEqual(
+    isManualStoryOutreachOnly({ custom_data: { needs_you_required: true, operator_queue: 'needs_you' } }),
+    true,
+    'active Needs You queues should block automatic story comments'
+);
+assert.strictEqual(
+    isManualStoryOutreachOnly({ custom_data: { needs_you_required: true, operator_queue: 'lead_inbox' } }),
+    false,
+    'a Needs You flag without the Needs You queue is not enough to block by itself'
 );
 
 const noEvidenceFallback = buildStoryEvidenceAnalysisFallback({

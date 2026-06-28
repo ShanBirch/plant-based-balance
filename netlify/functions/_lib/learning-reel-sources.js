@@ -1,5 +1,9 @@
 const LEARNING_REEL_TOPIC_LABELS = {
+    vegan_panettone: 'Vegan panettone',
     plant_based_cooking: 'Plant-based cooking',
+    bunny_reels: 'Bunny reels',
+    core_training_technique: 'Core training technique',
+    pelvic_tilt_balance: 'Pelvic tilt & balance',
     macronutrient_science: 'Macros',
     micronutrient_science: 'Vitamins & minerals',
     behavior_change_science: 'Behaviour change',
@@ -34,7 +38,11 @@ const SUBSCRIBER_TIER_SCORE = {
 };
 
 const TOPIC_KEYWORD_RE = {
+    vegan_panettone: /\b(vegan|plant[-\s]?based|eggless|egg[-\s]?free|dairy[-\s]?free|panettone|italian|christmas|holiday|bread|cake|bake|baking|recipe)\b/i,
     plant_based_cooking: /\b(plant|vegan|vegetarian|recipe|meal|cook|cooking|lentil|tofu|beans?|tempeh|protein)\b/i,
+    bunny_reels: /\b(bunny|bunnies|rabbit|rabbits|houserabbit|house rabbit|free roam rabbit|pet rabbit|bink(?:y|ies)|flop|hay|rabbit care|rabbit enrichment|cute rabbit)\b/i,
+    core_training_technique: /\b(core|abs?|abdominals?|brace|bracing|trunk|dead bug|plank|anti[-\s]?extension|hollow|pelvic tilt|posterior pelvic tilt|anterior pelvic tilt|rib cage|neutral spine)\b/i,
+    pelvic_tilt_balance: /\b(pelvic tilt|anterior pelvic tilt|posterior pelvic tilt|pelvis|center of gravity|centre of gravity|center of mass|centre of mass|weight shift|posture|stack|rib cage|neutral spine|balance)\b/i,
     macronutrient_science: /\b(macro|macronutrient|calorie|protein|carb|carbs|fat|fats|energy balance|nutrition)\b/i,
     micronutrient_science: /\b(micronutrient|vitamin|mineral|iron|b12|calcium|zinc|iodine|omega|nutrient)\b/i,
     behavior_change_science: /\b(behaviou?r|habit|tiny habit|behavior design|identity|consistency|motivation|discipline|prompt)\b/i,
@@ -52,8 +60,102 @@ const TOPIC_KEYWORD_RE = {
 };
 
 const LEARNING_REEL_BLOCKLIST_RE = /\b(detox|cleanse|miracle|belly fat|fat burner|carnivore|liver king|medical medium|dr\.?\s*berg|gary brecka|alkaline|parasite cleanse|adrenal fatigue|hormone reset|cortisol face|ozempic alternative|ice hack|hack your|age backwards|anti[-\s]?aging secrets?|lose \d+\s*(?:kg|kilos?|pounds?|lbs?)|after 50|fitfixen)\b/i;
+const OPEN_SOURCE_TOPIC_IDS = new Set(['vegan_panettone']);
+const OPEN_TOPIC_QUERIES = {
+    vegan_panettone: [
+        'vegan panettone recipe',
+        'easy vegan panettone',
+        'homemade vegan panettone',
+        'egg free dairy free panettone',
+        'plant based panettone',
+    ],
+};
+const VEGAN_PANETTONE_REQUIRED_RE = /\bpanettone\b/i;
+const VEGAN_PANETTONE_PLANT_RE = /\b(vegan|plant[-\s]?based|eggless|egg[-\s]?free|dairy[-\s]?free)\b/i;
 
 const CURATED_LEARNING_REEL_SOURCES = [
+    {
+        id: 'conor_harris',
+        channelTitle: 'Conor Harris',
+        handle: '@ConorHarris',
+        subscriberTier: '100k+',
+        qualityScore: 89,
+        sourceKind: 'movement_biomechanics',
+        profileUrl: 'https://www.youtube.com/@ConorHarris',
+        aliases: ['conor harris', 'conorharris'],
+        topics: {
+            pelvic_tilt_balance: { queries: ['center of gravity pelvic tilt', 'anterior pelvic tilt center of gravity', 'pelvic tilt posture'], priority: 24 },
+            core_training_technique: { queries: ['core bracing pelvic position', 'dead bug core', 'rib cage pelvis stack'], priority: 14 }
+        }
+    },
+    {
+        id: 'e3_rehab',
+        channelTitle: 'E3 Rehab',
+        channelId: 'UCkb9jgRxR2D5bc1fSDofwtA',
+        handle: '@E3Rehab',
+        subscriberTier: '500k+',
+        qualityScore: 91,
+        sourceKind: 'evidence_rehab',
+        profileUrl: 'https://www.youtube.com/@E3Rehab',
+        aliases: ['e3 rehab', 'e3rehab'],
+        topics: {
+            pelvic_tilt_balance: { queries: ['pelvic tilt posture', 'anterior pelvic tilt', 'posterior pelvic tilt'], priority: 18 },
+            core_training_technique: { queries: ['dead bug core', 'core stability', 'bracing core'], priority: 18 }
+        }
+    },
+    {
+        id: 'zac_cupples',
+        channelTitle: 'Zac Cupples',
+        handle: '@ZacCupplesPT',
+        subscriberTier: '100k+',
+        qualityScore: 87,
+        sourceKind: 'movement_biomechanics',
+        profileUrl: 'https://www.youtube.com/@ZacCupplesPT',
+        aliases: ['zac cupples', 'zaccupples', 'zac cupples pt'],
+        topics: {
+            pelvic_tilt_balance: { queries: ['pelvic tilt center of mass', 'swayback pelvis', 'center of gravity posture'], priority: 16 },
+            core_training_technique: { queries: ['core breathing brace', 'rib cage pelvis stack', 'dead bug core'], priority: 10 }
+        }
+    },
+    {
+        id: 'sincerely_cinnabun',
+        channelTitle: 'Sincerely, Cinnabun',
+        handle: '@SincerelyCinnabun',
+        subscriberTier: '100k+',
+        qualityScore: 88,
+        sourceKind: 'rabbit_care',
+        profileUrl: 'https://www.youtube.com/@SincerelyCinnabun',
+        aliases: ['sincerely cinnabun', 'sincerely, cinnabun', 'cinnabun'],
+        topics: {
+            bunny_reels: { queries: ['bunny rabbit shorts', 'pet rabbit care shorts', 'cute rabbit moments'], priority: 18 }
+        }
+    },
+    {
+        id: 'lennon_the_bunny',
+        channelTitle: 'Lennon The Bunny',
+        handle: '@LennonTheBunny',
+        subscriberTier: '750k+',
+        qualityScore: 86,
+        sourceKind: 'rabbit_care',
+        profileUrl: 'https://www.youtube.com/@LennonTheBunny',
+        aliases: ['lennon the bunny', 'lennonthebunny', 'lennon bunny'],
+        topics: {
+            bunny_reels: { queries: ['bunny rabbit shorts', 'free roam rabbit shorts', 'cute bunny care'], priority: 16 }
+        }
+    },
+    {
+        id: '101rabbits',
+        channelTitle: '101Rabbits',
+        handle: '@101Rabbits',
+        subscriberTier: '100k+',
+        qualityScore: 84,
+        sourceKind: 'rabbit_care',
+        profileUrl: 'https://www.youtube.com/@101Rabbits',
+        aliases: ['101 rabbits', '101rabbits'],
+        topics: {
+            bunny_reels: { queries: ['pet rabbit shorts', 'rabbit care shorts', 'cute bunny moments'], priority: 14 }
+        }
+    },
     {
         id: 'pick_up_limes',
         channelTitle: 'Pick Up Limes',
@@ -225,6 +327,8 @@ const CURATED_LEARNING_REEL_SOURCES = [
         aliases: ['squat university', 'squatuniversity'],
         topics: {
             weight_training_technique: ['squat form', 'deadlift form', 'lifting technique', 'gym form tips'],
+            core_training_technique: ['core bracing', 'dead bug core', 'neutral spine core'],
+            pelvic_tilt_balance: ['pelvic tilt posture', 'butt wink pelvic tilt', 'squat pelvic tilt'],
             recovery_sleep_energy: ['mobility recovery', 'training pain', 'movement fixes']
         }
     },
@@ -240,6 +344,8 @@ const CURATED_LEARNING_REEL_SOURCES = [
         topics: {
             workout_motivation: ['workout excuses', 'training motivation', 'stay consistent workouts'],
             weight_training_technique: ['exercise form', 'shoulder safe lifting', 'athletic strength technique'],
+            core_training_technique: ['core bracing', 'ab training form', 'dead bug core'],
+            pelvic_tilt_balance: ['anterior pelvic tilt', 'pelvic tilt posture', 'fix pelvic tilt'],
             muscle_gain_basics: ['build muscle technique', 'muscle growth exercises']
         }
     },
@@ -455,12 +561,14 @@ function buildCuratedLearningReelQueries(topicId, options = {}) {
     const perSource = Math.max(1, Math.min(4, Number(options.perSource || 2)));
     const includeShorts = options.includeShorts !== false;
     const suffix = includeShorts ? ' shorts' : '';
-    return getCuratedLearningReelSources(topicId).flatMap(source => {
+    const sourceQueries = getCuratedLearningReelSources(topicId).flatMap(source => {
         const topicConfig = sourceTopicConfig(source, topicId);
         return (topicConfig?.queries || [])
             .slice(0, perSource)
             .map(query => `${source.channelTitle} ${query}${suffix}`);
     });
+    const openQueries = (OPEN_TOPIC_QUERIES[topicId] || []).map(query => `${query}${suffix}`);
+    return [...sourceQueries, ...openQueries];
 }
 
 function curatedLearningReelSourceNames(topicId) {
@@ -471,7 +579,10 @@ function learningReelCandidateRejectReason(candidate, topicId) {
     const text = `${candidate?.title || ''} ${candidate?.description || ''} ${candidate?.channelTitle || ''}`;
     if (LEARNING_REEL_BLOCKLIST_RE.test(text)) return 'blocked_topic_or_creator';
     const source = findCuratedLearningReelSource(candidate, topicId);
-    if (!source) return 'source_not_curated_for_topic';
+    const openSourceAllowed = OPEN_SOURCE_TOPIC_IDS.has(topicId)
+        && VEGAN_PANETTONE_REQUIRED_RE.test(text)
+        && VEGAN_PANETTONE_PLANT_RE.test(text);
+    if (!source && !openSourceAllowed) return 'source_not_curated_for_topic';
     const topicRe = TOPIC_KEYWORD_RE[topicId];
     if (topicRe && !topicRe.test(text)) return 'topic_mismatch';
     const durationSec = Number(candidate?.durationSec || candidate?.duration_sec || 0);
@@ -483,13 +594,18 @@ function scoreCuratedLearningReelCandidate(candidate, topicId = candidate?.topic
     const rejectReason = learningReelCandidateRejectReason(candidate, topicId);
     if (rejectReason) return -1000;
 
-    const source = findCuratedLearningReelSource(candidate, topicId);
+    const source = findCuratedLearningReelSource(candidate, topicId) || null;
     const text = `${candidate?.title || ''} ${candidate?.description || ''}`;
     const durationSec = Number(candidate?.durationSec || candidate?.duration_sec || 0);
     const views = Number(candidate?.viewCount || candidate?.view_count || 0);
-    let score = scoreSourceForTopic(source, topicId);
+    let score = source ? scoreSourceForTopic(source, topicId) : 62;
 
     if (candidate?.channelId && source?.channelId && candidate.channelId === source.channelId) score += 18;
+    if (topicId === 'vegan_panettone') {
+        if (/\bpanettone\b/i.test(text)) score += 28;
+        if (/\b(vegan|plant[-\s]?based|eggless|egg[-\s]?free|dairy[-\s]?free)\b/i.test(text)) score += 18;
+        if (/\b(recipe|bake|baking|homemade|easy|fluffy|soft)\b/i.test(text)) score += 8;
+    }
     if (durationSec >= 25 && durationSec <= 90) score += 18;
     else if (durationSec > 90 && durationSec <= 150) score += 10;
     if (/\b(shorts?|reels?|clip)\b/i.test(text)) score += 8;

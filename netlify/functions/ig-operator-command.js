@@ -1109,7 +1109,7 @@ ${assetNotes || 'No upload notes available.'}
             ],
             script: 'Say what is happening in the clip/photo, name the lesson, then ask people what part they want help with.',
             caption: 'Consistency gets easier when the next step is obvious.',
-            cta: 'Reply "balance" if you want the free challenge.',
+            cta: 'Reply "balance" if you want the starter coaching details.',
             asset_ids: assets.map(asset => asset.id).filter(Boolean),
             why_this_works: modelError
                 ? 'The media analysis failed, so this keeps the uploaded asset usable without pretending to see details.'
@@ -1231,7 +1231,7 @@ ${signals || 'No recent lead signals available.'}
                 angle: 'Use repeated DM pain points around protein, consistency and overwhelm.',
                 script: 'Name the common mistake, give one simple fix, then invite replies with the hardest part.',
                 caption: 'Plant-based fat loss usually gets easier when the basics are visible instead of guessed.',
-                cta: 'Reply "balance" and I will send the free challenge.',
+                cta: 'Reply "balance" and I will send the starter coaching details.',
             },
             {
                 type: 'story',

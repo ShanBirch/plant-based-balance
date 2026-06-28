@@ -96,6 +96,8 @@
         .section { display: none; }
         .section.active { display: block; }
         #cohorts.section.active { min-height: calc(100dvh - 48px); overflow: visible; touch-action: pan-y; }
+        #app-stats.section.active,
+        #customer-engagement.section.active { height: calc(100dvh - 48px); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
         .ai-coach-container { display: flex; flex-direction: column; height: calc(100dvh - 48px); max-height: calc(100dvh - 48px); min-height: 0; background: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; overflow: hidden; }
         .ai-coach-user-bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; flex-shrink: 0; }
         .ai-client-select { flex: 1; min-width: 160px; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; font-family: 'Inter', sans-serif; background: white; cursor: pointer; color: #1e293b; }
@@ -291,6 +293,45 @@
         .trend-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
         .trend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
         .trend-bar { display: inline-block; height: 18px; border-radius: 4px; min-width: 2px; vertical-align: middle; }
+        .app-stats-shell { display:flex; flex-direction:column; gap:16px; }
+        .app-stats-header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:16px 20px; border-bottom:1px solid #f1f5f9; }
+        .app-stats-title h2 { margin:0; font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:800; color:#1e293b; letter-spacing:0; }
+        .app-stats-title p { margin:3px 0 0; color:#64748b; font-size:0.78rem; line-height:1.35; }
+        .app-stats-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .app-stats-tabs { display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap; }
+        .app-stats-tab { border:0; background:transparent; color:#475569; border-radius:7px; padding:7px 12px; font:800 0.78rem 'Inter',sans-serif; cursor:pointer; }
+        .app-stats-tab.active { background:#0f172a; color:#fff; box-shadow:0 6px 16px rgba(15,23,42,0.12); }
+        .app-stats-refresh { min-height:34px; border:1px solid #dbe4ef; border-radius:8px; background:#fff; color:#1e293b; font:900 0.76rem 'Inter',sans-serif; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:8px 11px; }
+        .app-stats-refresh i { width:14px; height:14px; }
+        .app-stats-refresh:hover { border-color:#cbd5e1; background:#f8fafc; }
+        .app-stats-note { color:#64748b; font-size:0.74rem; font-weight:700; line-height:1.4; margin-top:8px; }
+        .app-stats-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+        .app-stats-recent-list { display:flex; flex-direction:column; gap:8px; }
+        .app-stats-person-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; border:1px solid #f1f5f9; border-radius:8px; padding:10px 12px; background:#fff; }
+        .app-stats-person-row strong { display:block; font-size:0.86rem; color:#1e293b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .app-stats-person-row span { display:block; margin-top:2px; font-size:0.72rem; color:#64748b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .app-stats-person-time { color:#475569; font-size:0.76rem; font-weight:900; white-space:nowrap; }
+        .app-engagement-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+        .app-engagement-head h2 { margin:0; }
+        .app-engagement-head p { margin:3px 0 0; color:#64748b; font-size:0.78rem; line-height:1.35; }
+        .app-engagement-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:12px; }
+        .app-engagement-mini { border:1px solid #e2e8f0; border-radius:8px; padding:11px 12px; background:#f8fafc; min-width:0; }
+        .app-engagement-mini strong { display:block; font-family:'Montserrat',sans-serif; font-size:1.35rem; font-weight:900; color:#0f172a; line-height:1; }
+        .app-engagement-mini span { display:block; margin-top:5px; font-size:0.7rem; font-weight:900; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; }
+        .app-engagement-mini.today strong { color:#15803d; }
+        .app-engagement-mini.watch strong { color:#b45309; }
+        .app-engagement-mini.drop strong { color:#c2410c; }
+        .app-engagement-mini.quiet strong { color:#dc2626; }
+        .app-engagement-list { display:flex; flex-direction:column; gap:8px; }
+        .app-engagement-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; border:1px solid #f1f5f9; border-radius:8px; padding:10px 12px; background:#fff; cursor:pointer; }
+        .app-engagement-row:hover { background:#f8fafc; border-color:#cbd5e1; }
+        .app-engagement-row strong { display:block; font-size:0.86rem; color:#1e293b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .app-engagement-row span { display:block; margin-top:2px; font-size:0.72rem; color:#64748b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .app-engagement-pill { display:inline-flex; align-items:center; justify-content:center; min-width:86px; border-radius:999px; padding:6px 9px; font-size:0.7rem; font-weight:900; border:1px solid #e2e8f0; color:#475569; background:#f8fafc; white-space:nowrap; }
+        .app-engagement-pill.today { color:#15803d; background:#f0fdf4; border-color:#bbf7d0; }
+        .app-engagement-pill.watch { color:#b45309; background:#fffbeb; border-color:#fde68a; }
+        .app-engagement-pill.drop { color:#c2410c; background:#fff7ed; border-color:#fed7aa; }
+        .app-engagement-pill.quiet { color:#dc2626; background:#fef2f2; border-color:#fecaca; }
         .usage-bar-row { display: flex; align-items: center; margin-bottom: 12px; gap: 12px; }
         .usage-bar-label { width: 110px; font-weight: 600; font-size: 0.8rem; color: #1e293b; flex-shrink: 0; }
         .usage-bar-track { flex: 1; height: 28px; background: #f1f5f9; border-radius: 6px; overflow: hidden; }
@@ -308,7 +349,8 @@
         .conv-card { background: white; border: 1px solid #f1f5f9; border-radius: 12px; padding: 16px 20px; flex: 1; min-width: 160px; }
         .conv-card .conv-val { font-size: 1.6rem; font-weight: 800; font-family: 'Montserrat', sans-serif; }
         .conv-card .conv-lbl { font-size: 0.72rem; color: #64748b; margin-top: 2px; }
-        #content-radar.section.active { height: calc(100dvh - 48px); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+        #content-radar.section.active,
+        #content-performance.section.active { height: calc(100dvh - 48px); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
         .content-radar-shell { display:flex; flex-direction:column; gap:14px; min-height:100%; padding-bottom:calc(72px + env(safe-area-inset-bottom, 0px)); }
         .content-radar-header { padding:16px 20px; display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; }
         .content-radar-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
@@ -347,6 +389,53 @@
         .content-radar-theme:last-child { border-bottom:none; }
         .content-radar-theme-title { font-weight:900; color:#0f172a; font-size:0.86rem; }
         .content-radar-empty { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:34px 20px; text-align:center; color:#64748b; }
+        .content-performance-panel { background:white; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; }
+        .content-performance-head { padding:14px 16px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; border-bottom:1px solid #f1f5f9; flex-wrap:wrap; }
+        .content-performance-head h3 { font-family:'Montserrat',sans-serif; font-size:1rem; color:#0f172a; margin:0 0 3px; }
+        .content-performance-head p { font-size:0.8rem; color:#64748b; line-height:1.35; margin:0; }
+        .content-performance-order { min-height:36px; border:1px solid #dbe4ef; border-radius:8px; background:#fff; color:#0f172a; padding:8px 34px 8px 10px; font-size:0.78rem; font-weight:900; cursor:pointer; }
+        .content-performance-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:14px 16px 0; }
+        .content-performance-platform { border:1px solid #e2e8f0; border-radius:8px; padding:10px; background:#f8fafc; min-width:0; }
+        .content-performance-platform strong { display:block; color:#0f172a; font-size:0.86rem; margin-bottom:5px; }
+        .content-performance-platform span { display:block; color:#64748b; font-size:0.74rem; line-height:1.3; }
+        .content-performance-platform.ok { background:#ecfdf5; border-color:#bbf7d0; }
+        .content-performance-platform.warn { background:#fffbeb; border-color:#fde68a; }
+        .content-performance-platform.muted { background:#f8fafc; border-color:#e2e8f0; }
+        .content-performance-tabs { display:flex; gap:8px; padding:12px 16px 0; flex-wrap:wrap; }
+        .content-performance-tab { border:1px solid #dbe4ef; background:#fff; color:#334155; border-radius:8px; min-height:36px; padding:8px 11px; font-size:0.78rem; font-weight:900; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+        .content-performance-tab:hover { background:#f8fafc; }
+        .content-performance-tab.active { background:#0f172a; color:#fff; border-color:#0f172a; }
+        .content-performance-tab small { font-size:0.7rem; font-weight:900; opacity:0.78; }
+        .content-performance-lanes { display:flex; flex-wrap:wrap; gap:7px; padding:10px 16px 0; }
+        .content-performance-lane { border:1px solid #dbe4ef; background:#fff; color:#334155; border-radius:999px; padding:6px 9px; font-size:0.74rem; font-weight:900; }
+        .content-performance-lane.story { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+        .content-performance-lane.feed { background:#ecfdf5; color:#166534; border-color:#bbf7d0; }
+        .content-performance-lane.video { background:#fef3c7; color:#92400e; border-color:#fde68a; }
+        .content-performance-list { padding:14px 16px 16px; display:flex; flex-direction:column; gap:12px; }
+        .content-performance-post { display:grid; grid-template-columns:minmax(150px,220px) minmax(0,1fr); gap:14px; border:1px solid #e2e8f0; border-radius:8px; padding:12px; background:#fff; }
+        .content-performance-visual { position:relative; min-height:180px; aspect-ratio:4/5; border-radius:8px; overflow:hidden; background:#0f172a; display:flex; align-items:center; justify-content:center; color:#cbd5e1; }
+        .content-performance-visual img { width:100%; height:100%; object-fit:cover; display:block; }
+        .content-performance-visual video { width:100%; height:100%; object-fit:cover; display:block; background:#0f172a; }
+        .content-performance-visual.media-error::after { content:'Preview unavailable'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:14px; text-align:center; color:#cbd5e1; font-weight:900; font-size:0.8rem; }
+        .content-performance-visual-fallback { padding:14px; font-weight:900; font-size:0.84rem; text-align:center; line-height:1.3; }
+        .content-performance-rank-badge { position:absolute; top:9px; left:9px; min-width:34px; height:30px; border-radius:999px; background:rgba(15,23,42,0.86); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:0.78rem; padding:0 9px; }
+        .content-performance-type-badge { position:absolute; top:47px; left:9px; border-radius:999px; background:rgba(255,255,255,0.92); color:#0f172a; padding:5px 8px; font-weight:900; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.03em; }
+        .content-performance-score-badge { position:absolute; right:9px; bottom:9px; border-radius:999px; background:#166534; color:#fff; padding:6px 9px; font-weight:900; font-size:0.72rem; box-shadow:0 8px 20px rgba(0,0,0,0.18); }
+        .content-performance-post-body { min-width:0; display:flex; flex-direction:column; gap:9px; }
+        .content-performance-rank { width:34px; height:34px; border-radius:8px; background:#0f172a; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:0.82rem; }
+        .content-performance-title { font-weight:900; color:#0f172a; font-size:0.88rem; line-height:1.3; overflow-wrap:anywhere; }
+        .content-performance-meta { color:#64748b; font-size:0.74rem; margin-top:3px; display:flex; gap:6px; flex-wrap:wrap; }
+        .content-performance-copy { color:#334155; font-size:0.8rem; line-height:1.38; margin-top:6px; overflow-wrap:anywhere; }
+        .content-performance-platforms { display:grid; grid-template-columns:repeat(4,minmax(120px,1fr)); gap:8px; }
+        .content-performance-platform-card { border:1px solid #e2e8f0; border-radius:8px; padding:9px; background:#f8fafc; min-width:0; }
+        .content-performance-platform-card.present { background:#fff; border-color:#cbd5e1; }
+        .content-performance-platform-card strong { display:flex; align-items:center; justify-content:space-between; gap:6px; color:#0f172a; font-size:0.78rem; margin-bottom:7px; }
+        .content-performance-platform-card small { color:#64748b; font-weight:800; }
+        .content-performance-platform-metrics { display:flex; flex-wrap:wrap; gap:5px; }
+        .content-performance-metrics { display:flex; align-items:flex-start; justify-content:flex-end; gap:6px; flex-wrap:wrap; max-width:390px; }
+        .content-performance-pill { border:1px solid #dbe4ef; background:#f8fafc; border-radius:999px; padding:4px 7px; font-size:0.72rem; font-weight:800; color:#334155; white-space:nowrap; }
+        .content-performance-pill.score { background:#166534; border-color:#166534; color:#fff; }
+        .content-performance-actions { display:flex; gap:7px; flex-wrap:wrap; margin-top:8px; }
         #ig-operator.section.active { height: calc(100dvh - 48px); overflow:hidden; }
         #conversion-operator {
             --conversion-green:#2f7d46;
@@ -596,6 +685,9 @@
             .stat-card { padding: 12px; } .stat-card .value { font-size: 1.4rem; }
             .feature-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
             .feature-card { padding: 12px; } .feature-card .value { font-size: 1.1rem; }
+            .app-engagement-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+            .app-engagement-row { align-items:flex-start; grid-template-columns:minmax(0,1fr); }
+            .app-engagement-pill { justify-content:flex-start; width:max-content; min-width:0; }
             .usage-bar-label { width: 80px; font-size: 0.7rem; }
             .trend-table td,.trend-table th { padding: 6px; font-size: 0.75rem; }
             .funnel-label { width: 72px; font-size: 0.72rem; }
@@ -604,10 +696,17 @@
             .warmth-chip .wc-val { font-size: 1.1rem; }
             .conv-card .conv-val { font-size: 1.2rem; }
             .content-radar-header { padding:14px; }
-            #content-radar.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
+            #app-stats.section.active,
+            #customer-engagement.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
+            #content-radar.section.active,
+            #content-performance.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
             .content-radar-actions { width:100%; justify-content:flex-start; }
-            .content-radar-stats, .content-radar-layout, .content-radar-ops-grid { grid-template-columns:1fr; }
+            .content-radar-stats, .content-radar-layout, .content-radar-ops-grid, .content-performance-grid, .content-performance-platforms { grid-template-columns:1fr; }
             .content-radar-idea-head { flex-direction:column; align-items:stretch; }
+            .content-performance-post { grid-template-columns:1fr; }
+            .content-performance-visual { min-height:220px; max-height:360px; width:100%; }
+            .content-performance-row { grid-template-columns:34px minmax(0,1fr); }
+            .content-performance-metrics { grid-column:1 / -1; justify-content:flex-start; max-width:none; }
             #ig-operator.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
             #conversion-operator.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
             .conversion-operator-shell { padding:14px 12px calc(18px + env(safe-area-inset-bottom,0px)); }
@@ -847,6 +946,16 @@
         .alert-suggested-msg { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-size: 0.85rem; line-height: 1.5; color: #374151; white-space: pre-wrap; }
         .media-review-notice { margin: 8px 0; padding: 8px 10px; border-radius: 8px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: 0.76rem; line-height: 1.35; font-weight: 700; }
         .media-review-notice small { display: block; margin-top: 3px; color: #7c2d12; font-weight: 600; }
+        .learning-reel-context { margin: 8px 0; padding: 10px 12px; border-radius: 8px; background: #f0fdfa; border: 1px solid #99f6e4; color: #115e59; font-size: 0.8rem; line-height: 1.42; }
+        .learning-reel-context-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 5px; }
+        .learning-reel-context-label { font-size: 0.66rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; color: #0f766e; }
+        .learning-reel-context-topic { font-size: 0.7rem; font-weight: 900; padding: 2px 7px; border-radius: 999px; border: 1px solid #5eead4; background: rgba(255,255,255,0.7); color: #0f766e; }
+        .learning-reel-context-title { font-weight: 900; color: #134e4a; }
+        .learning-reel-context-body { margin-top: 6px; color: #115e59; font-weight: 700; }
+        .learning-reel-context-reason { margin-top: 5px; color: #0f766e; font-size: 0.74rem; font-weight: 750; }
+        .learning-reel-context-url { display: block; margin-top: 7px; font-family: monospace; font-size: 0.72rem; color: #0f766e; overflow-wrap: anywhere; }
+        .learning-reel-preview { margin-top: 10px; width: min(100%, 260px); aspect-ratio: 9 / 16; background: #020617; border-radius: 8px; overflow: hidden; border: 1px solid rgba(15, 118, 110, 0.24); }
+        .learning-reel-preview iframe { width: 100%; height: 100%; border: 0; display: block; }
         .challenge-offer-warning { margin: 8px 0; padding: 9px 10px; border-radius: 8px; background: #fefce8; border: 1px solid #fde68a; color: #854d0e; font-size: 0.76rem; line-height: 1.35; font-weight: 800; display: flex; align-items: flex-start; gap: 8px; }
         .challenge-offer-warning-dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 999px; background: #facc15; box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.18); margin-top: 3px; }
         .challenge-offer-warning small { display: block; margin-top: 3px; color: #92400e; font-weight: 650; }
@@ -1314,7 +1423,11 @@
         .ig-operator-lead,
         .ig-operator-draft-bubble,
         .ig-operator-stat,
-        .ig-operator-composer {
+        .ig-operator-composer,
+        .app-stats-person-row,
+        .app-engagement-row,
+        .app-engagement-mini,
+        .app-stats-refresh {
             background: var(--admin-surface) !important;
             border-color: var(--admin-border) !important;
             box-shadow: var(--admin-shadow-soft) !important;
@@ -1340,7 +1453,9 @@
         .ig-leads-list,
         .user-directory-list,
         .auto-dms-list,
-        .auto-dms-detail {
+        .auto-dms-detail,
+        .app-stats-header,
+        .app-stats-tabs {
             background: var(--admin-surface-2) !important;
             border-color: var(--admin-border) !important;
             color: var(--admin-text) !important;
@@ -1374,7 +1489,13 @@
         .ig-operator-empty h3,
         .ig-operator-card h3,
         .ig-operator-lead-name,
-        .ig-operator-stat strong {
+        .ig-operator-stat strong,
+        .app-stats-title h2,
+        .app-stats-person-row strong,
+        .app-engagement-head h2,
+        .app-engagement-mini strong,
+        .app-engagement-row strong,
+        .app-stats-person-time {
             color: var(--admin-text-strong) !important;
         }
 
@@ -1401,6 +1522,12 @@
         .ai-trend-group-count,
         .ai-trend-person small,
         .ai-trend-muted,
+        .app-stats-title p,
+        .app-stats-note,
+        .app-stats-person-row span,
+        .app-engagement-head p,
+        .app-engagement-mini span,
+        .app-engagement-row span,
         .content-radar-status,
         .content-radar-detail,
         .ig-operator-title p,
@@ -1519,6 +1646,8 @@
         .ig-operator-details summary::before,
         .alert-view-chip,
         .ig-leads-tab,
+        .app-stats-tab,
+        .app-engagement-pill,
         .alert-view-count,
         .alert-group-header .alert-group-count {
             background: var(--admin-surface-3) !important;
@@ -1559,7 +1688,9 @@
         .ai-action-edit:hover,
         .ai-action-cancel:hover,
         .ig-operator-chip:hover,
-        .ig-operator-action:hover {
+        .ig-operator-action:hover,
+        .app-engagement-row:hover,
+        .app-stats-refresh:hover {
             background: var(--admin-surface-3) !important;
             border-color: var(--admin-border-strong) !important;
             color: var(--admin-text-strong) !important;
@@ -1586,7 +1717,8 @@
         }
 
         .alert-view-chip.alert-view-chip-on,
-        .ig-leads-tab.active {
+        .ig-leads-tab.active,
+        .app-stats-tab.active {
             background: var(--admin-primary) !important;
             border-color: transparent !important;
             color: var(--admin-on-primary) !important;
@@ -1950,6 +2082,7 @@
                     <i class="nav-chevron" data-lucide="chevron-right"></i>
                 </div>
                 <div class="nav-submenu" id="dm-nav-submenu">
+                    <div class="nav-item nav-subitem" id="dm-nav-all" data-dm-audience="all" onclick="openDmAudience('all', this)"><span>All</span><span id="dm-nav-all-count" class="alert-badge">0</span></div>
                     <div class="nav-item nav-subitem" id="dm-nav-clients" data-dm-audience="clients" onclick="openDmAudience('clients', this)"><span>Clients</span><span id="dm-nav-clients-count" class="alert-badge">0</span></div>
                     <div class="nav-item nav-subitem" id="dm-nav-leads" data-dm-audience="leads" onclick="openDmAudience('leads', this)"><span>Leads</span><span id="dm-nav-leads-count" class="alert-badge">0</span></div>
                 </div>
@@ -1958,11 +2091,13 @@
             <div class="nav-item" hidden data-admin-hidden-entry="cocos" onclick="showSection('cocos', this); loadCocosDms();"><i data-lucide="instagram"></i><span>Coco's</span><span id="cocos-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" hidden data-admin-hidden-entry="auto-dms" onclick="showSection('auto-dms', this); loadAutoDms();"><i data-lucide="bot"></i><span>Auto DMs</span><span id="auto-dms-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('checkins', this); loadChallengeCheckins();"><i data-lucide="clipboard-check"></i><span>Check-ins</span><span id="checkin-badge" class="alert-badge" style="display:none;">0</span></div>
-            <div class="nav-item" onclick="showSection('conversion-operator', this); loadConversionOperator();"><i data-lucide="route"></i><span>Conversion</span></div>
+            <div class="nav-item" onclick="showSection('app-stats', this); loadAppStats();"><i data-lucide="activity"></i><span>App Stats</span></div>
+            <div class="nav-item" onclick="showSection('customer-engagement', this); loadCustomerEngagement();"><i data-lucide="user-check"></i><span>Customer Engagement</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" hidden data-admin-hidden-entry="ig-leads" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
             <div class="nav-item" hidden data-admin-hidden-entry="ig-operator" onclick="showSection('ig-operator', this); focusIgOperatorInput();"><i data-lucide="wand-sparkles"></i><span>IG Operator</span></div>
-            <div class="nav-item" hidden data-admin-hidden-entry="content-radar" onclick="showSection('content-radar', this); loadContentRadar();"><i data-lucide="radar"></i><span>Content Radar</span></div>
+            <div class="nav-item" onclick="showSection('content-performance', this); loadContentPerformance(true);"><i data-lucide="bar-chart-3"></i><span>Post Performance</span></div>
+            <div class="nav-item" onclick="showSection('content-radar', this); loadContentRadar();"><i data-lucide="radar"></i><span>Content Radar</span></div>
             <div class="nav-item" hidden data-admin-hidden-entry="metrics" onclick="showSection('metrics', this); loadMetrics();"><i data-lucide="target"></i><span>Metrics</span></div>
             <div class="sidebar-footer">
                 <button type="button" class="dashboard-btn theme-toggle-btn" id="admin-theme-toggle" onclick="toggleAdminTheme()" aria-label="Switch admin theme"><i data-lucide="moon"></i><span>Dark mode</span></button>
@@ -2318,12 +2453,15 @@
                     <div class="content-card" style="flex-shrink:0;">
                         <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                             <div>
-                                <h2 id="dm-section-title" style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Client DMs</h2>
-                                <p id="dm-section-subtitle" style="font-size:0.8rem; color:#64748b; margin-top:2px;">Active coaching clients first, including clients who are not currently in a challenge.</p>
+                                <h2 id="dm-section-title" style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">All DMs</h2>
+                                <p id="dm-section-subtitle" style="font-size:0.8rem; color:#64748b; margin-top:2px;">One queue for app inbox, Instagram, and Messenger messages waiting on Shannon.</p>
                             </div>
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                                 <div class="dm-audience-tabs" aria-label="DM audience">
-                                    <button type="button" id="dm-audience-clients" data-dm-audience="clients" class="alert-view-chip alert-view-chip-on" onclick="openDmAudience('clients')" title="Only active coaching clients">
+                                    <button type="button" id="dm-audience-all" data-dm-audience="all" class="alert-view-chip alert-view-chip-on" onclick="openDmAudience('all')" title="All incoming app, Instagram, and Messenger messages">
+                                        All <span id="dm-audience-all-count" class="alert-view-count">0</span>
+                                    </button>
+                                    <button type="button" id="dm-audience-clients" data-dm-audience="clients" class="alert-view-chip" onclick="openDmAudience('clients')" title="Only active coaching clients">
                                         Clients <span id="dm-audience-clients-count" class="alert-view-count">0</span>
                                     </button>
                                     <button type="button" id="dm-audience-leads" data-dm-audience="leads" class="alert-view-chip" onclick="openDmAudience('leads')" title="IG, Messenger, and app leads who are not active coaching clients">
@@ -2576,6 +2714,80 @@
                 <div class="analytics-section"><h2>Feature Usage (30d)</h2><div id="usage-bars" class="loading">Loading...</div></div>
             </div>
 
+            <!-- APP STATS -->
+            <div id="app-stats" class="section">
+                <div class="app-stats-shell">
+                    <div class="content-card">
+                        <div class="app-stats-header">
+                            <div class="app-stats-title">
+                                <h2>App Stats</h2>
+                                <p id="app-stats-updated">Log ins by day, week and month.</p>
+                            </div>
+                            <div class="app-stats-actions">
+                                <div class="app-stats-tabs" role="tablist" aria-label="App stats time range">
+                                    <button type="button" id="app-stats-tab-day" class="app-stats-tab active" onclick="setAppStatsView('day')">Day</button>
+                                    <button type="button" id="app-stats-tab-week" class="app-stats-tab" onclick="setAppStatsView('week')">Week</button>
+                                    <button type="button" id="app-stats-tab-month" class="app-stats-tab" onclick="setAppStatsView('month')">Month</button>
+                                </div>
+                                <button type="button" class="app-stats-refresh" id="app-stats-refresh-btn" onclick="loadAppStats(true)" title="Refresh app stats">
+                                    <i data-lucide="refresh-cw"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card green"><h3 id="app-stats-primary-label">People Today</h3><div class="value" id="app-stats-primary">-</div><p class="stat-sub" id="app-stats-primary-sub">unique users</p></div>
+                        <div class="stat-card"><h3>Today</h3><div class="value" id="app-stats-today">-</div><p class="stat-sub">unique people</p></div>
+                        <div class="stat-card"><h3>Week</h3><div class="value" id="app-stats-week">-</div><p class="stat-sub">unique people</p></div>
+                        <div class="stat-card"><h3>Month</h3><div class="value" id="app-stats-month">-</div><p class="stat-sub">unique people</p></div>
+                    </div>
+                    <div class="analytics-section">
+                        <h2 id="app-stats-breakdown-title">Daily log ins</h2>
+                        <div id="app-stats-breakdown"><div class="loading">Loading app stats...</div></div>
+                        <div class="app-stats-note" id="app-stats-source-note"></div>
+                    </div>
+                    <div class="analytics-section">
+                        <h2>Recent log ins</h2>
+                        <div id="app-stats-recent"><div class="loading">Loading recent people...</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CUSTOMER ENGAGEMENT -->
+            <div id="customer-engagement" class="section">
+                <div class="app-stats-shell">
+                    <div class="content-card">
+                        <div class="app-stats-header">
+                            <div class="app-stats-title">
+                                <h2>Customer Engagement</h2>
+                                <p>Active clients only, sorted by who needs attention first.</p>
+                            </div>
+                            <div class="app-stats-actions">
+                                <button type="button" class="app-stats-refresh" id="customer-engagement-refresh-btn" onclick="loadCustomerEngagement(true)" title="Refresh customer engagement">
+                                    <i data-lucide="refresh-cw"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="analytics-section">
+                        <div class="app-engagement-head">
+                            <div>
+                                <h2>App activity risk</h2>
+                                <p>Simple buckets from each active client's latest app open.</p>
+                            </div>
+                            <div class="app-stats-note" id="app-engagement-updated"></div>
+                        </div>
+                        <div class="app-engagement-grid">
+                            <div class="app-engagement-mini today"><strong id="app-engagement-today">-</strong><span>Today</span></div>
+                            <div class="app-engagement-mini watch"><strong id="app-engagement-watch">-</strong><span>Watch</span></div>
+                            <div class="app-engagement-mini drop"><strong id="app-engagement-drop">-</strong><span>Dropping</span></div>
+                            <div class="app-engagement-mini quiet"><strong id="app-engagement-quiet">-</strong><span>Gone quiet</span></div>
+                        </div>
+                        <div id="app-engagement-list"><div class="loading">Loading customer engagement...</div></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- COHORTS -->
             <div id="cohorts" class="section">
                 <div style="display:flex; flex-direction:column; gap:16px;">
@@ -2728,6 +2940,54 @@
                             <i data-lucide="radar" style="width:34px; height:34px; margin-bottom:10px;"></i>
                             <h3 style="font-family:'Montserrat',sans-serif; color:#475569; margin-bottom:6px;">No radar loaded yet</h3>
                             <p style="font-size:0.84rem;">Generate one from recent DMs, client memory and IG content feedback.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- POST PERFORMANCE -->
+            <div id="content-performance" class="section">
+                <div class="content-radar-shell">
+                    <div class="content-card">
+                        <div class="content-radar-header">
+                            <div>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Post Performance</h2>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">See which posts worked across Instagram, Threads, YouTube and TikTok.</p>
+                                <div id="content-performance-status" class="content-radar-status">Open the tab to load post performance.</div>
+                            </div>
+                            <div class="content-radar-actions">
+                                <select id="content-performance-window" class="ai-timeframe-select" aria-label="Post Performance window">
+                                    <option value="14">14 days</option>
+                                    <option value="30">30 days</option>
+                                    <option value="60">60 days</option>
+                                    <option value="90" selected>90 days</option>
+                                    <option value="180">180 days</option>
+                                </select>
+                                <button id="content-performance-refresh-btn" onclick="loadContentPerformance(true)" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
+                                    <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i> Refresh
+                                </button>
+                                <button id="content-performance-ig-sync-btn" onclick="refreshContentPerformanceIg(this, 'media')" class="ai-view-account-btn" style="margin:0; font-size:0.8rem; background:#166534;">
+                                    <i data-lucide="instagram" style="width:14px; height:14px;"></i> Sync Feed/Reels
+                                </button>
+                                <button id="content-performance-story-sync-btn" onclick="refreshContentPerformanceIg(this, 'stories')" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
+                                    <i data-lucide="clock-3" style="width:14px; height:14px;"></i> Sync Stories
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="content-performance-panel" class="content-performance-panel">
+                        <div class="content-performance-head">
+                            <div>
+                                <h3>Ranked Posts</h3>
+                                <p>Feed posts, reels and carousels are separate from short-lived story posts.</p>
+                            </div>
+                            <select id="content-performance-order" class="content-performance-order" aria-label="Post order" onchange="setContentPerformanceOrder(this.value)">
+                                <option value="successful" selected>Most successful</option>
+                                <option value="recent">Most recent</option>
+                            </select>
+                        </div>
+                        <div id="content-performance-body">
+                            <div class="content-radar-empty" style="border:0; border-radius:0;">No post performance loaded yet.</div>
                         </div>
                     </div>
                 </div>
@@ -3272,6 +3532,407 @@
             const mx=Math.max(...f.map(x=>x.c),1); let h='';
             f.forEach(x=>{h+=`<div class="usage-bar-row"><div class="usage-bar-label">${x.l}</div><div class="usage-bar-track"><div class="usage-bar-fill" style="background:${x.cl};width:${Math.max((x.c/mx)*100,2)}%;"></div></div><div class="usage-bar-value">${x.c}</div></div>`;});
             document.getElementById('usage-bars').innerHTML=h;
+        }
+        const APP_STATS_VIEWS = {
+            day: { label: 'Day', days: 1, primaryLabel: 'People Today', breakdownTitle: 'Today log ins' },
+            week: { label: 'Week', days: 7, primaryLabel: 'People This Week', breakdownTitle: 'Daily log ins, last 7 days' },
+            month: { label: 'Month', days: 30, primaryLabel: 'People This Month', breakdownTitle: 'Daily log ins, last 30 days' }
+        };
+        const APP_STATS_DAY_MS = 24 * 60 * 60 * 1000;
+        let appStatsView = 'day', appStatsSnapshot = null, appStatsLoadedAt = 0, appStatsLoading = false;
+
+        function appStatsStartOfDay(value = new Date()) {
+            const d = new Date(value);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+        function appStatsAddDays(value, days) {
+            const d = new Date(value);
+            d.setDate(d.getDate() + days);
+            return d;
+        }
+        function appStatsDateKey(value) {
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '';
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${d.getFullYear()}-${mm}-${dd}`;
+        }
+        function appStatsDateLabel(value, compact = false) {
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '--';
+            return d.toLocaleDateString('en-AU', compact
+                ? { weekday: 'short', day: 'numeric' }
+                : { weekday: 'short', day: 'numeric', month: 'short' });
+        }
+        function appStatsWindowStart(view, now = new Date()) {
+            const config = APP_STATS_VIEWS[view] || APP_STATS_VIEWS.day;
+            return appStatsAddDays(appStatsStartOfDay(now), -(config.days - 1));
+        }
+        function appStatsUserLabel(user) {
+            return user?.name || user?.email || 'Unknown user';
+        }
+        function appStatsIsInternalUser(user, adminIds) {
+            const email = String(user?.email || '').trim().toLowerCase();
+            const adminEmail = String(window.BALANCE_ADMIN_EMAIL || 'shannonbirch@cocospersonaltraining.com').toLowerCase();
+            return Boolean(user?.is_test_account || (user?.id && adminIds.has(user.id)) || email === adminEmail);
+        }
+        async function appStatsFetchUsers() {
+            if (Array.isArray(allUsers) && allUsers.length) return allUsers;
+            const { data, error } = await window.supabaseClient
+                .from('users')
+                .select('id,name,email,last_login,created_at,is_test_account')
+                .order('last_login', { ascending: false, nullsFirst: false })
+                .limit(2000);
+            if (error) throw error;
+            return data || [];
+        }
+        async function appStatsFetchAdminIds() {
+            try {
+                const { data, error } = await window.supabaseClient.from('admin_users').select('user_id');
+                if (error) throw error;
+                return new Set((data || []).map(row => row.user_id).filter(Boolean));
+            } catch (e) {
+                console.warn('Failed to load admin ids for app stats:', e);
+                return new Set();
+            }
+        }
+        async function appStatsFetchActiveClients() {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('coach_clients')
+                    .select('client_id,assigned_at,status,client:client_id(id,name,email,last_login,is_test_account)')
+                    .eq('status', 'active')
+                    .limit(1000);
+                if (error) throw error;
+                return data || [];
+            } catch (e) {
+                console.warn('Failed to load active clients for app stats:', e);
+                return [];
+            }
+        }
+        function appStatsSourceRows(events, users, userMap, maxStart, usingFallback) {
+            if (!usingFallback && events.length) {
+                return events
+                    .map(row => ({
+                        userId: row.user_id,
+                        at: row.occurred_at,
+                        source: row.activity_type || 'page_view'
+                    }))
+                    .filter(row => row.userId && row.at && userMap.has(row.userId) && new Date(row.at) >= maxStart);
+            }
+            return users
+                .filter(user => user.last_login && userMap.has(user.id) && new Date(user.last_login) >= maxStart)
+                .map(user => ({ userId: user.id, at: user.last_login, source: 'last_login' }));
+        }
+        function appStatsSummarizeWindow(rows, userMap, view, now = new Date()) {
+            const config = APP_STATS_VIEWS[view] || APP_STATS_VIEWS.day;
+            const start = appStatsWindowStart(view, now);
+            const bucketMap = new Map();
+            for (let i = 0; i < config.days; i += 1) {
+                const day = appStatsAddDays(start, i);
+                const key = appStatsDateKey(day);
+                bucketMap.set(key, {
+                    key,
+                    label: appStatsDateLabel(day, config.days > 14),
+                    users: new Set(),
+                    opens: 0
+                });
+            }
+            const unique = new Set();
+            let opens = 0;
+            rows.forEach(row => {
+                const at = new Date(row.at);
+                if (Number.isNaN(at.getTime()) || at < start || at > now) return;
+                const bucket = bucketMap.get(appStatsDateKey(at));
+                if (!bucket) return;
+                bucket.users.add(row.userId);
+                bucket.opens += 1;
+                unique.add(row.userId);
+                opens += 1;
+            });
+            const buckets = Array.from(bucketMap.values()).map(bucket => ({
+                key: bucket.key,
+                label: bucket.label,
+                unique: bucket.users.size,
+                opens: bucket.opens
+            }));
+            const recent = rows
+                .filter(row => {
+                    const at = new Date(row.at);
+                    return !Number.isNaN(at.getTime()) && at >= start && at <= now && userMap.has(row.userId);
+                })
+                .sort((a, b) => new Date(b.at) - new Date(a.at))
+                .reduce((acc, row) => {
+                    if (acc.seen.has(row.userId)) return acc;
+                    acc.seen.add(row.userId);
+                    const user = userMap.get(row.userId);
+                    acc.list.push({
+                        userId: row.userId,
+                        name: appStatsUserLabel(user),
+                        email: user?.email || '',
+                        at: row.at,
+                        source: row.source
+                    });
+                    return acc;
+                }, { seen: new Set(), list: [] }).list.slice(0, 12);
+            return { view, label: config.label, start, unique: unique.size, opens, buckets, recent };
+        }
+        function appStatsDaysSince(at, now = new Date()) {
+            if (!at) return null;
+            const d = new Date(at);
+            if (Number.isNaN(d.getTime())) return null;
+            return Math.max(0, Math.floor((appStatsStartOfDay(now) - appStatsStartOfDay(d)) / APP_STATS_DAY_MS));
+        }
+        function appStatsEngagementBucket(daysSince) {
+            if (daysSince === null) return { key: 'quiet', label: 'Never opened', priority: 40 };
+            if (daysSince === 0) return { key: 'today', label: 'Logged today', priority: 10 };
+            if (daysSince <= 3) return { key: 'watch', label: daysSince === 1 ? 'Yesterday' : `${daysSince}d ago`, priority: 20 };
+            if (daysSince <= 6) return { key: 'drop', label: `${daysSince}d ago`, priority: 30 };
+            return { key: 'quiet', label: `${daysSince}d quiet`, priority: 40 };
+        }
+        function buildAppClientEngagement({ rows, activeClients, adminIds, now = new Date() }) {
+            const latestByUser = new Map();
+            (rows || []).forEach(row => {
+                if (!row?.userId || !row?.at) return;
+                const existing = latestByUser.get(row.userId);
+                if (!existing || new Date(row.at) > new Date(existing.at)) latestByUser.set(row.userId, row);
+            });
+            const seenClients = new Set();
+            const items = [];
+            (activeClients || []).forEach(cc => {
+                const client = cc.client || {};
+                const clientId = cc.client_id || client.id;
+                if (!clientId || seenClients.has(clientId) || appStatsIsInternalUser(client, adminIds)) return;
+                seenClients.add(clientId);
+                const latestEvent = latestByUser.get(clientId);
+                const lastSeenAt = latestEvent?.at || client.last_login || '';
+                const daysSince = appStatsDaysSince(lastSeenAt, now);
+                const bucket = appStatsEngagementBucket(daysSince);
+                items.push({
+                    clientId,
+                    name: appStatsUserLabel(client),
+                    email: client.email || '',
+                    assignedAt: cc.assigned_at || '',
+                    lastSeenAt,
+                    source: latestEvent?.source || (client.last_login ? 'last_login' : 'none'),
+                    daysSince,
+                    bucket: bucket.key,
+                    label: bucket.label,
+                    priority: bucket.priority
+                });
+            });
+            const counts = items.reduce((acc, item) => {
+                acc[item.bucket] = (acc[item.bucket] || 0) + 1;
+                return acc;
+            }, { today: 0, watch: 0, drop: 0, quiet: 0 });
+            items.sort((a, b) => {
+                if (b.priority !== a.priority) return b.priority - a.priority;
+                if ((b.daysSince ?? -1) !== (a.daysSince ?? -1)) return (b.daysSince ?? -1) - (a.daysSince ?? -1);
+                return String(b.lastSeenAt || b.assignedAt || '').localeCompare(String(a.lastSeenAt || a.assignedAt || ''));
+            });
+            return {
+                total: items.length,
+                counts,
+                items: items.slice(0, 18)
+            };
+        }
+        function buildAppStatsSnapshot({ events, users, activeClients, adminIds, usingFallback }) {
+            const now = new Date();
+            const userMap = new Map();
+            (users || []).forEach(user => {
+                if (!user?.id || appStatsIsInternalUser(user, adminIds)) return;
+                userMap.set(user.id, user);
+            });
+            const maxStart = appStatsWindowStart('month', now);
+            const rows = appStatsSourceRows(events || [], users || [], userMap, maxStart, usingFallback);
+            const windows = {
+                day: appStatsSummarizeWindow(rows, userMap, 'day', now),
+                week: appStatsSummarizeWindow(rows, userMap, 'week', now),
+                month: appStatsSummarizeWindow(rows, userMap, 'month', now)
+            };
+            return {
+                generatedAt: now.toISOString(),
+                source: usingFallback ? 'last_login' : 'user_activity',
+                totalTrackedUsers: userMap.size,
+                engagement: buildAppClientEngagement({ rows, activeClients, adminIds, now }),
+                windows
+            };
+        }
+        function renderAppStats(snapshot) {
+            if (!snapshot) return;
+            const config = APP_STATS_VIEWS[appStatsView] || APP_STATS_VIEWS.day;
+            const selected = snapshot.windows[appStatsView] || snapshot.windows.day;
+            Object.keys(APP_STATS_VIEWS).forEach(key => {
+                const tab = document.getElementById(`app-stats-tab-${key}`);
+                if (tab) tab.classList.toggle('active', key === appStatsView);
+            });
+            const updated = document.getElementById('app-stats-updated');
+            if (updated) updated.textContent = `Updated ${new Date(snapshot.generatedAt).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}`;
+            document.getElementById('app-stats-primary-label').textContent = config.primaryLabel;
+            document.getElementById('app-stats-primary').textContent = selected.unique;
+            document.getElementById('app-stats-primary-sub').textContent = `${selected.opens} app ${selected.opens === 1 ? 'open' : 'opens'}`;
+            document.getElementById('app-stats-today').textContent = snapshot.windows.day.unique;
+            document.getElementById('app-stats-week').textContent = snapshot.windows.week.unique;
+            document.getElementById('app-stats-month').textContent = snapshot.windows.month.unique;
+            document.getElementById('app-stats-breakdown-title').textContent = config.breakdownTitle;
+
+            const breakdown = document.getElementById('app-stats-breakdown');
+            const max = Math.max(...selected.buckets.map(row => row.unique), 1);
+            breakdown.innerHTML = `
+                <div class="app-stats-table-wrap">
+                    <table class="trend-table">
+                        <thead><tr><th>Day</th><th>People</th><th>App opens</th></tr></thead>
+                        <tbody>
+                            ${selected.buckets.map(row => `
+                                <tr>
+                                    <td style="font-weight:700; white-space:nowrap;">${adminEsc(row.label)}</td>
+                                    <td><span class="trend-bar" style="background:#48864B;width:${Math.max((row.unique / max) * 120, row.unique ? 8 : 2)}px;"></span> <strong>${adminEsc(row.unique)}</strong></td>
+                                    <td><strong>${adminEsc(row.opens)}</strong></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
+
+            const note = document.getElementById('app-stats-source-note');
+            if (note) {
+                note.textContent = snapshot.source === 'user_activity'
+                    ? 'Counting unique non-test, non-admin users with app activity rows. A person only counts once per day or period.'
+                    : 'No recent app activity rows were available, so this is using users.last_login. Daily history can only show each person on their latest login day.';
+            }
+
+            const engagement = snapshot.engagement || { total: 0, counts: {}, items: [] };
+            const engagementUpdated = document.getElementById('app-engagement-updated');
+            if (engagementUpdated) engagementUpdated.textContent = `${engagement.total || 0} active clients`;
+            const engagementIds = {
+                today: 'app-engagement-today',
+                watch: 'app-engagement-watch',
+                drop: 'app-engagement-drop',
+                quiet: 'app-engagement-quiet'
+            };
+            Object.entries(engagementIds).forEach(([key, id]) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = engagement.counts?.[key] || 0;
+            });
+            const engagementList = document.getElementById('app-engagement-list');
+            if (engagementList) {
+                if (!engagement.items?.length) {
+                    engagementList.innerHTML = '<div class="loading">No active clients found.</div>';
+                } else {
+                    engagementList.innerHTML = `<div class="app-engagement-list">${engagement.items.map(item => {
+                        const lastSeen = item.lastSeenAt ? timeAgo(item.lastSeenAt) : 'Never';
+                        const detail = item.lastSeenAt
+                            ? `${lastSeen} · ${item.email || 'No email'}`
+                            : `Never opened · ${item.email || 'No email'}`;
+                        return `
+                            <div class="app-engagement-row" data-app-engagement-client="${adminEsc(item.clientId)}" data-app-engagement-name="${adminEsc(item.name)}" title="Open client details">
+                                <div>
+                                    <strong>${adminEsc(item.name)}</strong>
+                                    <span>${adminEsc(detail)}</span>
+                                </div>
+                                <div class="app-engagement-pill ${adminEsc(item.bucket)}">${adminEsc(item.label)}</div>
+                            </div>`;
+                    }).join('')}</div>`;
+                    engagementList.querySelectorAll('[data-app-engagement-client]').forEach(row => {
+                        row.addEventListener('click', () => {
+                            const clientId = row.getAttribute('data-app-engagement-client');
+                            const clientName = row.getAttribute('data-app-engagement-name') || 'Client';
+                            if (typeof openClientDrillIn === 'function') openClientDrillIn(clientId, clientName);
+                        });
+                    });
+                }
+            }
+
+            const recent = document.getElementById('app-stats-recent');
+            if (!selected.recent.length) {
+                recent.innerHTML = '<div class="loading">No log ins found for this range.</div>';
+            } else {
+                recent.innerHTML = `<div class="app-stats-recent-list">${selected.recent.map(row => `
+                    <div class="app-stats-person-row">
+                        <div>
+                            <strong>${adminEsc(row.name)}</strong>
+                            <span>${adminEsc(row.email || 'No email')}</span>
+                        </div>
+                        <div class="app-stats-person-time" title="${adminEsc(new Date(row.at).toLocaleString('en-AU'))}">${adminEsc(timeAgo(row.at))}</div>
+                    </div>
+                `).join('')}</div>`;
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+        function setAppStatsView(view) {
+            if (!APP_STATS_VIEWS[view]) return;
+            appStatsView = view;
+            if (appStatsSnapshot) renderAppStats(appStatsSnapshot);
+            else loadAppStats();
+        }
+        async function loadCustomerEngagement(force = false) {
+            await loadAppStats(force);
+            if (appStatsSnapshot) renderAppStats(appStatsSnapshot);
+        }
+        async function loadAppStats(force = false) {
+            if (appStatsLoading) return;
+            const isFresh = appStatsSnapshot && (Date.now() - appStatsLoadedAt < 60000);
+            if (isFresh && !force) {
+                renderAppStats(appStatsSnapshot);
+                return;
+            }
+            appStatsLoading = true;
+            const refresh = document.getElementById('app-stats-refresh-btn');
+            const customerRefresh = document.getElementById('customer-engagement-refresh-btn');
+            const breakdown = document.getElementById('app-stats-breakdown');
+            const recent = document.getElementById('app-stats-recent');
+            const engagementList = document.getElementById('app-engagement-list');
+            if (refresh) refresh.disabled = true;
+            if (customerRefresh) customerRefresh.disabled = true;
+            if (breakdown) breakdown.innerHTML = '<div class="loading">Loading app stats...</div>';
+            if (recent) recent.innerHTML = '<div class="loading">Loading recent people...</div>';
+            if (engagementList) engagementList.innerHTML = '<div class="loading">Loading customer engagement...</div>';
+            try {
+                if (!window.supabaseClient) throw new Error('Supabase client not ready');
+                const maxStart = appStatsWindowStart('month').toISOString();
+                const [users, activeClients, adminIds, eventsResult] = await Promise.all([
+                    appStatsFetchUsers(),
+                    appStatsFetchActiveClients(),
+                    appStatsFetchAdminIds(),
+                    window.supabaseClient
+                        .from('user_activity')
+                        .select('user_id,activity_type,occurred_at')
+                        .in('activity_type', ['login', 'page_view'])
+                        .gte('occurred_at', maxStart)
+                        .order('occurred_at', { ascending: false })
+                        .limit(10000)
+                ]);
+                if (eventsResult.error) throw eventsResult.error;
+                const events = eventsResult.data || [];
+                appStatsSnapshot = buildAppStatsSnapshot({
+                    events,
+                    users,
+                    activeClients,
+                    adminIds,
+                    usingFallback: events.length === 0
+                });
+                appStatsLoadedAt = Date.now();
+                renderAppStats(appStatsSnapshot);
+            } catch (e) {
+                console.error('Failed to load app stats:', e);
+                try {
+                    const users = await appStatsFetchUsers();
+                    const activeClients = await appStatsFetchActiveClients();
+                    const adminIds = await appStatsFetchAdminIds();
+                    appStatsSnapshot = buildAppStatsSnapshot({ events: [], users, activeClients, adminIds, usingFallback: true });
+                    appStatsLoadedAt = Date.now();
+                    renderAppStats(appStatsSnapshot);
+                } catch (fallbackError) {
+                    console.error('Failed to load app stats fallback:', fallbackError);
+                    if (breakdown) breakdown.innerHTML = `<div class="loading" style="color:#ef4444;">Failed to load app stats: ${adminEsc(fallbackError.message || e.message || 'Unknown error')}</div>`;
+                    if (recent) recent.innerHTML = '';
+                }
+            } finally {
+                appStatsLoading = false;
+                if (refresh) refresh.disabled = false;
+                if (customerRefresh) customerRefresh.disabled = false;
+            }
         }
         function adminEsc(value) {
             return escapeHtml(String(value ?? ''));
@@ -4471,6 +5132,11 @@
         let contentRadarLoaded = false;
         let contentRadarLoading = false;
         let contentRadarCache = { run: null, items: [], sourceCounts: {} };
+        let contentPerformanceLoaded = false;
+        let contentPerformanceLoading = false;
+        let contentPerformanceCache = { rows: [], summary: null, windowDays: 90 };
+        let contentPerformanceView = 'feed';
+        let contentPerformanceOrder = 'successful';
 
         function contentRadarArray(value) {
             if (Array.isArray(value)) return value;
@@ -4512,6 +5178,11 @@
             if (el) el.textContent = message;
         }
 
+        function setContentPerformanceStatus(message) {
+            const el = document.getElementById('content-performance-status');
+            if (el) el.textContent = message;
+        }
+
         function contentRadarSourceCounts(data) {
             return data?.sourceCounts || data?.run?.source_counts || data?.run?.sourceCounts || {};
         }
@@ -4525,6 +5196,411 @@
             const json = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(json.error || `Content Radar request failed (${res.status})`);
             return json;
+        }
+
+        async function contentPerformanceRequest(payload = {}) {
+            const res = await fetch('/.netlify/functions/content-performance-snapshot', {
+                method: 'POST',
+                headers: await getAdminJsonHeaders(),
+                body: JSON.stringify(payload),
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.error || `Post performance failed (${res.status})`);
+            return json;
+        }
+
+        async function loadContentPerformance(force = false) {
+            if (contentPerformanceLoading) return;
+            if (contentPerformanceLoaded && !force) {
+                renderContentPerformance(contentPerformanceCache);
+                return;
+            }
+            contentPerformanceLoading = true;
+            const body = document.getElementById('content-performance-body');
+            const windowDays = Number(document.getElementById('content-performance-window')?.value || document.getElementById('content-radar-window')?.value || 90);
+            if (body) body.innerHTML = '<div class="content-radar-empty" style="border:0; border-radius:0;"><div class="loading">Loading post performance...</div></div>';
+            setContentPerformanceStatus('Loading post performance...');
+            try {
+                const data = await contentPerformanceRequest({ windowDays });
+                contentPerformanceLoaded = true;
+                contentPerformanceCache = {
+                    rows: Array.isArray(data.rows) ? data.rows : [],
+                    summary: data.summary || null,
+                    windowDays: data.windowDays || windowDays,
+                    generatedAt: data.generatedAt || null,
+                };
+                renderContentPerformance(contentPerformanceCache);
+            } catch (e) {
+                console.error('loadContentPerformance failed:', e);
+                setContentPerformanceStatus('Could not load post performance.');
+                if (body) body.innerHTML = `<div class="content-radar-empty" style="border:0; border-radius:0; color:#b91c1c;">${adminEsc(e.message || 'Failed to load')}</div>`;
+            } finally {
+                contentPerformanceLoading = false;
+            }
+        }
+
+        function contentPerformanceNumber(value) {
+            const n = Number(value || 0);
+            return Number.isFinite(n) ? n.toLocaleString('en-AU') : '0';
+        }
+
+        function contentPerformancePlatformStatus(key, status = {}, aggregate = {}) {
+            const labels = { instagram: 'Instagram', threads: 'Threads', youtube: 'YouTube', tiktok: 'TikTok' };
+            const posts = Number(aggregate.posts || status.count || 0);
+            const configured = status.configured !== false;
+            const className = status.ok ? 'ok' : (configured ? 'warn' : 'muted');
+            const detail = status.ok
+                ? `${contentPerformanceNumber(posts)} posts, score ${contentPerformanceNumber(aggregate.score || 0)}`
+                : (configured ? (status.error || 'Waiting for data') : 'Not connected yet');
+            return `
+                <div class="content-performance-platform ${className}">
+                    <strong>${adminEsc(labels[key] || key)}</strong>
+                    <span>${adminEsc(detail)}</span>
+                </div>`;
+        }
+
+        function renderContentPerformance(data = {}) {
+            const body = document.getElementById('content-performance-body');
+            if (!body) return;
+            const rows = Array.isArray(data.rows) ? data.rows : [];
+            const summary = data.summary || {};
+            const statuses = summary.statuses || {};
+            const byPlatform = summary.byPlatform || {};
+            const groups = contentPerformanceGroups(rows);
+            const laneCounts = contentPerformanceLaneCounts(rows);
+            const activeView = contentPerformanceView === 'stories' ? 'stories' : 'feed';
+            const visibleGroups = contentPerformanceSortGroups(
+                groups.filter(group => contentPerformanceGroupView(group) === activeView)
+            );
+            const activeLabel = activeView === 'stories' ? 'story posts' : 'feed posts';
+            const generated = data.generatedAt ? ` | updated ${timeAgo(data.generatedAt)}` : '';
+            setContentPerformanceStatus(`${visibleGroups.length} ${activeLabel} from ${rows.length} platform rows in the last ${data.windowDays || 90} days${generated}`);
+            if (!rows.length) {
+                body.innerHTML = `
+                    <div class="content-performance-grid">
+                        ${['instagram', 'threads', 'youtube', 'tiktok'].map(key => contentPerformancePlatformStatus(key, statuses[key], byPlatform[key])).join('')}
+                    </div>
+                    ${renderContentPerformanceViewTabs(laneCounts)}
+                    <div class="content-radar-empty" style="border:0; border-radius:0;">No synced post rows yet. Try Sync IG, then reload posts.</div>`;
+                lucide.createIcons();
+                return;
+            }
+            body.innerHTML = `
+                <div class="content-performance-grid">
+                    ${['instagram', 'threads', 'youtube', 'tiktok'].map(key => contentPerformancePlatformStatus(key, statuses[key], byPlatform[key])).join('')}
+                </div>
+                ${renderContentPerformanceViewTabs(laneCounts)}
+                ${renderContentPerformanceLaneCounts(laneCounts)}
+                <div class="content-performance-list">
+                    ${visibleGroups.length
+                        ? visibleGroups.slice(0, 30).map((group, index) => renderContentPerformancePost(group, index + 1, statuses)).join('')
+                        : `<div class="content-radar-empty" style="border:0; border-radius:0;">No ${adminEsc(activeLabel)} in this window yet. Try syncing Instagram ${activeView === 'stories' ? 'Stories' : 'Feed/Reels'} or expand the date window.</div>`}
+                </div>`;
+            lucide.createIcons();
+        }
+
+        function setContentPerformanceView(view = 'feed') {
+            contentPerformanceView = String(view || '').toLowerCase() === 'stories' ? 'stories' : 'feed';
+            renderContentPerformance(contentPerformanceCache);
+        }
+
+        function setContentPerformanceOrder(order = 'successful') {
+            contentPerformanceOrder = String(order || '').toLowerCase() === 'recent' ? 'recent' : 'successful';
+            renderContentPerformance(contentPerformanceCache);
+        }
+
+        function contentPerformanceLane(row = {}) {
+            const raw = `${row.type || ''} ${row.mediaProductType || ''} ${row.mediaType || ''}`.toLowerCase();
+            if (/\bstory\b/.test(raw)) return 'story';
+            if (/\breel|video|short\b/.test(raw)) return 'video';
+            if (/\bcarousel|album\b/.test(raw)) return 'carousel';
+            return 'feed';
+        }
+
+        function contentPerformanceLaneLabel(lane) {
+            return lane === 'story' ? 'Story'
+                : lane === 'video' ? 'Reel/Video'
+                    : lane === 'carousel' ? 'Carousel'
+                        : 'Feed Post';
+        }
+
+        function contentPerformanceLaneView(lane) {
+            return lane === 'story' ? 'stories' : 'feed';
+        }
+
+        function contentPerformanceGroupView(group = {}) {
+            const visual = group.visual || group.rows?.[0] || {};
+            return contentPerformanceLaneView(contentPerformanceLane(visual));
+        }
+
+        function contentPerformanceLaneCounts(rows = []) {
+            return rows.reduce((acc, row) => {
+                const lane = contentPerformanceLane(row);
+                acc[lane] = (acc[lane] || 0) + 1;
+                return acc;
+            }, {});
+        }
+
+        function renderContentPerformanceLaneCounts(counts = {}) {
+            const lanes = [
+                ['feed', 'Feed Posts'],
+                ['video', 'Reels/Videos'],
+                ['carousel', 'Carousels'],
+                ['story', 'Stories'],
+            ];
+            return `<div class="content-performance-lanes">
+                ${lanes.map(([key, label]) => `<span class="content-performance-lane ${key}">${adminEsc(label)}: ${adminEsc(contentPerformanceNumber(counts[key] || 0))}</span>`).join('')}
+            </div>`;
+        }
+
+        function renderContentPerformanceViewTabs(counts = {}) {
+            const feedCount = Number(counts.feed || 0) + Number(counts.video || 0) + Number(counts.carousel || 0);
+            const storyCount = Number(counts.story || 0);
+            const activeView = contentPerformanceView === 'stories' ? 'stories' : 'feed';
+            const tabs = [
+                ['feed', 'Feed Posts', feedCount, 'layout-grid'],
+                ['stories', 'Story Posts', storyCount, 'clock-3'],
+            ];
+            return `<div class="content-performance-tabs" role="tablist" aria-label="Post type">
+                ${tabs.map(([key, label, count, icon]) => `
+                    <button type="button" class="content-performance-tab ${activeView === key ? 'active' : ''}" onclick="setContentPerformanceView('${adminEsc(key)}')" role="tab" aria-selected="${activeView === key ? 'true' : 'false'}">
+                        <i data-lucide="${adminEsc(icon)}" style="width:14px;height:14px;"></i>${adminEsc(label)} <small>${adminEsc(contentPerformanceNumber(count))}</small>
+                    </button>`).join('')}
+            </div>`;
+        }
+
+        function contentPerformanceGroupKey(row = {}) {
+            const view = contentPerformanceLaneView(contentPerformanceLane(row));
+            const source = String(row.caption || row.title || row.summary || row.externalId || row.id || '');
+            const normalized = source
+                .toLowerCase()
+                .replace(/https?:\/\/\S+/g, '')
+                .replace(/[#@][a-z0-9_]+/g, '')
+                .replace(/[^a-z0-9]+/g, ' ')
+                .trim()
+                .slice(0, 120);
+            return normalized.length >= 16 ? `${view}:${normalized}` : `${view}:${row.platform || 'post'}:${row.externalId || row.id || normalized}`;
+        }
+
+        function contentPerformanceDateMs(value) {
+            const ms = Date.parse(value || '');
+            return Number.isFinite(ms) ? ms : 0;
+        }
+
+        function contentPerformanceRowDateMs(row = {}) {
+            return Math.max(
+                contentPerformanceDateMs(row.postedAt),
+                contentPerformanceDateMs(row.createdAt),
+                contentPerformanceDateMs(row.syncedAt)
+            );
+        }
+
+        function contentPerformanceGroups(rows = []) {
+            const map = new Map();
+            rows.forEach(row => {
+                const key = contentPerformanceGroupKey(row);
+                const existing = map.get(key) || { key, rows: [], platformRows: {}, score: 0, metrics: {}, visual: null, headline: '', caption: '', postedAt: '', postedAtMs: 0 };
+                existing.rows.push(row);
+                const platform = row.platform || 'unknown';
+                if (!existing.platformRows[platform] || Number(row.score || 0) > Number(existing.platformRows[platform].score || 0)) {
+                    existing.platformRows[platform] = row;
+                }
+                existing.score += Number(row.score || 0);
+                const rowDateMs = contentPerformanceRowDateMs(row);
+                if (rowDateMs > Number(existing.postedAtMs || 0)) {
+                    existing.postedAtMs = rowDateMs;
+                    existing.postedAt = row.postedAt || row.createdAt || row.syncedAt || '';
+                }
+                existing.headline = existing.headline || row.caption || row.title || row.summary || 'Untitled post';
+                existing.caption = existing.caption || row.caption || row.summary || '';
+                if (!existing.visual || contentPerformanceVisualWeight(row) > contentPerformanceVisualWeight(existing.visual)) existing.visual = row;
+                Object.entries(row.metrics || {}).forEach(([metric, value]) => {
+                    existing.metrics[metric] = Number(existing.metrics[metric] || 0) + Number(value || 0);
+                });
+                map.set(key, existing);
+            });
+            return [...map.values()];
+        }
+
+        function contentPerformanceSortGroups(groups = []) {
+            const order = contentPerformanceOrder === 'recent' ? 'recent' : 'successful';
+            return [...groups].sort((a, b) => {
+                if (order === 'recent') {
+                    return Number(b.postedAtMs || 0) - Number(a.postedAtMs || 0)
+                        || Number(b.score || 0) - Number(a.score || 0);
+                }
+                return Number(b.score || 0) - Number(a.score || 0)
+                    || Number(b.postedAtMs || 0) - Number(a.postedAtMs || 0);
+            });
+        }
+
+        function renderContentPerformancePost(group = {}, rank = 0, statuses = {}) {
+            const visual = group.visual || group.rows?.[0] || {};
+            const headline = group.headline || group.caption || 'Untitled post';
+            const copyPayload = adminEsc(igOperatorEncode({ text: headline }));
+            const bestLink = (group.rows || []).find(row => row.permalink)?.permalink || '';
+            const openPayload = adminEsc(igOperatorEncode({ url: bestLink }));
+            const visualHtml = renderContentPerformanceVisual(visual, headline);
+            const meta = [
+                contentPerformanceLaneLabel(contentPerformanceLane(visual)),
+                `${group.rows?.length || 0} platform row${group.rows?.length === 1 ? '' : 's'}`,
+                visual.postedLabel,
+                visual.type,
+            ].filter(Boolean).join(' / ');
+            return `
+                <div class="content-performance-post">
+                    <div class="content-performance-visual">
+                        ${visualHtml}
+                        <div class="content-performance-rank-badge">#${adminEsc(rank)}</div>
+                        <div class="content-performance-type-badge">${adminEsc(contentPerformanceLaneLabel(contentPerformanceLane(visual)))}</div>
+                        <div class="content-performance-score-badge">${adminEsc(contentPerformanceNumber(group.score))} score</div>
+                    </div>
+                    <div class="content-performance-post-body">
+                        <div class="content-performance-title">${adminEsc(headline || 'Untitled post')}</div>
+                        <div class="content-performance-meta">${adminEsc(meta)}</div>
+                        ${group.caption && group.caption !== headline ? `<div class="content-performance-copy">${adminEsc(group.caption)}</div>` : ''}
+                        <div class="content-performance-platforms">
+                            ${['instagram', 'threads', 'youtube', 'tiktok'].map(platform => renderContentPerformancePlatformCard(platform, group.platformRows?.[platform], statuses?.[platform])).join('')}
+                        </div>
+                        <div class="content-performance-actions">
+                            ${bestLink ? `<button class="content-radar-small-btn" onclick="igOperatorOpenUrl('${openPayload}')"><i data-lucide="external-link" style="width:13px;height:13px;"></i>Open post</button>` : ''}
+                            ${headline ? `<button class="content-radar-small-btn" onclick="copyContentPerformanceEncoded('${copyPayload}', this)"><i data-lucide="copy" style="width:13px;height:13px;"></i>Copy</button>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        function contentPerformanceLooksVideoUrl(url = '') {
+            return /\.(mp4|mov|m4v|webm)(?:$|[?#])/i.test(String(url || ''));
+        }
+
+        function contentPerformanceVisualWeight(row = {}) {
+            if (row.previewUrl && row.previewKind === 'image') return 4;
+            if (row.previewUrl) return 3;
+            if (row.thumbnailUrl && !contentPerformanceLooksVideoUrl(row.thumbnailUrl)) return 3;
+            if (row.mediaUrl || contentPerformanceLooksVideoUrl(row.thumbnailUrl)) return 2;
+            return 1;
+        }
+
+        function renderContentPerformanceVisual(row = {}, headline = '') {
+            const preview = String(row.previewUrl || '');
+            const previewKind = String(row.previewKind || '').toLowerCase();
+            const thumb = String(row.thumbnailUrl || '');
+            const media = String(row.mediaUrl || '');
+            const typeHint = `${row.mediaType || ''} ${row.mediaProductType || ''} ${row.type || ''}`.toLowerCase();
+            if (preview) {
+                if (previewKind === 'video') {
+                    return `<video src="${adminEsc(preview)}" muted playsinline preload="metadata" controls></video>`;
+                }
+                return `<img src="${adminEsc(preview)}" alt="" loading="lazy" onerror="this.closest('.content-performance-visual').classList.add('media-error'); this.remove();">`;
+            }
+            const thumbIsVideo = contentPerformanceLooksVideoUrl(thumb);
+            const mediaIsVideo = contentPerformanceLooksVideoUrl(media) || /\b(video|reel)\b/i.test(typeHint);
+            if (thumb && !thumbIsVideo) {
+                return `<img src="${adminEsc(thumb)}" alt="" loading="lazy" onerror="this.closest('.content-performance-visual').classList.add('media-error'); this.remove();">`;
+            }
+            if (media || thumbIsVideo) {
+                const videoUrl = media || thumb;
+                if (mediaIsVideo || thumbIsVideo) {
+                    return `<video src="${adminEsc(videoUrl)}" muted playsinline preload="metadata" controls></video>`;
+                }
+                return `<img src="${adminEsc(videoUrl)}" alt="" loading="lazy" onerror="this.closest('.content-performance-visual').classList.add('media-error'); this.remove();">`;
+            }
+            return `<div class="content-performance-visual-fallback">${adminEsc(headline)}</div>`;
+        }
+
+        function renderContentPerformancePlatformCard(platform, row, status = {}) {
+            const labels = { instagram: 'Instagram', threads: 'Threads', youtube: 'YouTube', tiktok: 'TikTok' };
+            if (!row) {
+                const message = status?.configured === false ? 'not connected' : 'no row';
+                return `<div class="content-performance-platform-card"><strong>${adminEsc(labels[platform] || platform)}<small>${adminEsc(message)}</small></strong></div>`;
+            }
+            const metrics = row.metrics || {};
+            const metricPills = [
+                ['score', row.score, 'score'],
+                ['views', metrics.views, 'views'],
+                ['reach', metrics.reach, 'reach'],
+                ['likes', metrics.likes, 'likes'],
+                ['comments', metrics.comments, 'comments'],
+                ['replies', metrics.replies, 'replies'],
+                ['saves', metrics.saves, 'saves'],
+                ['shares', metrics.shares, 'shares'],
+                ['reposts', metrics.reposts, 'reposts'],
+                ['quotes', metrics.quotes, 'quotes'],
+            ].filter(([key, value]) => key === 'score' || Number(value || 0) > 0).slice(0, 6);
+            return `
+                <div class="content-performance-platform-card present">
+                    <strong>${adminEsc(labels[platform] || platform)}<small>${row.permalink ? 'openable' : 'synced'}</small></strong>
+                    <div class="content-performance-platform-metrics">
+                        ${metricPills.map(([key, value, label]) => `<span class="content-performance-pill ${key === 'score' ? 'score' : ''}">${adminEsc(contentPerformanceNumber(value))} ${adminEsc(label)}</span>`).join('')}
+                    </div>
+                </div>`;
+        }
+
+        async function copyContentPerformanceEncoded(encoded, btn) {
+            const payload = igOperatorDecode(encoded);
+            return copyContentPerformanceText(payload.text || '', btn);
+        }
+
+        async function copyContentPerformanceText(text, btn) {
+            const original = btn ? btn.innerHTML : '';
+            try {
+                await navigator.clipboard.writeText(String(text || ''));
+                if (btn) {
+                    btn.innerHTML = '<i data-lucide="check" style="width:13px;height:13px;"></i>Copied';
+                    lucide.createIcons();
+                    setTimeout(() => { btn.innerHTML = original; lucide.createIcons(); }, 1200);
+                }
+            } catch {
+                window.prompt('Copy this:', text);
+            }
+        }
+
+        async function refreshContentPerformanceIg(btn, mode = 'media') {
+            const original = btn ? btn.innerHTML : '';
+            const safeMode = String(mode || 'media').toLowerCase() === 'stories' ? 'stories' : 'media';
+            const label = safeMode === 'stories' ? 'Stories' : 'Feed/Reels';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-2" style="width:14px;height:14px;"></i> Syncing';
+                lucide.createIcons();
+            }
+            setContentPerformanceStatus(`Syncing Instagram ${label} from Graph...`);
+            try {
+                let after = '';
+                let total = 0;
+                let page = 0;
+                const limit = safeMode === 'stories' ? 25 : 12;
+                const maxPages = safeMode === 'stories' ? 2 : 8;
+                const headers = await getAdminJsonHeaders();
+                while (page < maxPages) {
+                    page += 1;
+                    const cursor = after ? `&after=${encodeURIComponent(after)}` : '';
+                    const res = await fetch(`/.netlify/functions/meta-ig-sync-content?mode=${safeMode}&limit=${limit}&pages=1&include_insights=false&include_analysis=false${cursor}`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({ manual_admin_refresh: true, page }),
+                    });
+                    const data = await aiReadJsonResponse(res);
+                    total += Number(data.synced_count || 0);
+                    after = data.next_after || '';
+                    if (!data.has_next || !after) break;
+                }
+                contentPerformanceView = safeMode === 'stories' ? 'stories' : 'feed';
+                contentPerformanceLoaded = false;
+                setContentPerformanceStatus(`Synced ${total.toLocaleString('en-AU')} IG ${label} items. Reloading posts...`);
+                await loadContentPerformance(true);
+            } catch (e) {
+                console.error('refreshContentPerformanceIg failed:', e);
+                setContentPerformanceStatus(`Instagram ${label} sync failed.`);
+                window.alert('Could not sync Instagram metrics: ' + (e.message || e));
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = original;
+                    lucide.createIcons();
+                }
+            }
         }
 
         async function loadContentRadar(force = false) {
@@ -6151,6 +7227,7 @@
                 if(group){group.classList.add('expanded');group.classList.add('has-active');}
             }
             currentView=name;
+            if(name==='dms') currentFeed='dms';
             if(name==='dms') updateDmAudienceUi();
             if(name==='follow-ups') updateNeedsAttentionAudienceUi();
             if(window.innerWidth<=768)closeSidebar();
@@ -6284,7 +7361,7 @@
             new: { label: 'New', color: '#94a3b8', hint: 'cold lead' },
             qualifying: { label: 'Qualifying', color: '#3b82f6', hint: 'learning fit' },
             invited: { label: 'Invited', color: '#f59e0b', hint: 'offer made' },
-            in_app: { label: 'In app', color: '#10b981', hint: 'free challenge' },
+            in_app: { label: 'In app', color: '#10b981', hint: 'app/coaching' },
             paying: { label: 'Paying', color: '#16a34a', hint: 'customer' },
             churned: { label: 'Churned', color: '#ef4444', hint: 'opted out' },
         };
@@ -6379,7 +7456,7 @@
                 return { label: 'Invite sent', detail: 'watch for signup or objection', bg: '#eff6ff', color: '#1d4ed8' };
             }
             if (effectiveStage === 'in_app') {
-                return { label: 'In app', detail: 'free challenge, build day 30 pitch', bg: '#ecfdf5', color: '#047857' };
+            return { label: 'In app', detail: 'app/coaching active', bg: '#ecfdf5', color: '#047857' };
             }
             if (effectiveStage === 'paying') {
                 return { label: 'Paying', detail: 'coach and retain', bg: '#dcfce7', color: '#166534' };
@@ -9572,9 +10649,9 @@
         const ALERT_EXCLUDED_TYPES_PG = `(${DM_ALERT_TYPES.concat(FOLLOW_UP_ALERT_TYPES).join(',')})`;
         // DMs tab state — mirrors Alerts but scoped to message-type alerts
         let currentDmView = 'unread';
-        let currentDmAudience = 'clients';
+        let currentDmAudience = 'all';
         let dmLoadSeq = 0;
-        const DM_AUDIENCES = ['clients', 'leads'];
+        const DM_AUDIENCES = ['all', 'clients', 'leads'];
         const DM_TABS = ['unread', 'later', 'waiting', 'streaks', 'sent_today', 'discarded'];
         const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
         const COCOS_OWNER_IDS = new Set(['17841435394720504', '26328183736859579']);
@@ -9604,14 +10681,19 @@
         let currentNeedsYouView = 'all';
         let needsYouCounts = { all: 0 };
         const NEEDS_YOU_TABS = ['all'];
-        const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'onboarding_day_30', 'weekly_checkin'];
+        const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'general_idea', 'onboarding_day_30', 'weekly_checkin', 'first_workout', 'subscription_sale'];
         const CLIENT_MANAGER_REVIEW_MARKERS = [
             'balance-combined-dm-manager',
             'balance-lead-client-manager',
             'balance-client-dm-manager',
             'client-dm-manager',
             'codex-client-dm-manager',
+            'learning-reel-drip',
+            'learning-reel-drip-instagram-graph',
         ];
+        function normalizeClientManagerMarkerText(value) {
+            return String(value || '').toLowerCase().replace(/_/g, '-');
+        }
         const NEEDS_YOU_AI_CONFUSION_RE = /\b(?:is\s+this\s+(?:ai|a\.?i\.?|a\s+bot|automated)|whether\s+(?:this|it)\s+is\s+(?:ai|a\.?i\.?|a\s+bot|automated)|ai\s*\/\s*automated|ai\s+assistant|are\s+you\s+(?:ai|a\.?i\.?|a\s+bot|automated|real)|am\s+i\s+talking\s+to\s+(?:ai|a\s+bot|a\s+person)|chatgpt|robot|automated\s+reply|real\s+person)\b/i;
         const NEEDS_YOU_USER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|this|that|it)|sorry[, ]+\s*i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)|(?:what|wat)\s+(?:do|did)\s+(?:you|u)\s+mean(?:\s+by\s+(?:that|this|it))?|what\s+are\s+you\s+meaning|what\s+you\s+mean|wdym|i'?m\s+confused|that'?s\s+confusing|not\s+sure\s+what\s+you\s+mean)\b/i;
         const NEEDS_YOU_EMPTY_STATES = {
@@ -9620,6 +10702,7 @@
         let currentChallengeCheckinView = 'pending';
         const CHALLENGE_CHECKIN_TABS = ['pending', 'manual', 'later', 'sent_today', 'all'];
         let challengeCheckinCounts = { pending: 0, manual: 0, later: 0, sent_today: 0, all: 0, ig_ready: 0 };
+        const OVERDUE_MANUAL_IG_CHECKIN_HOURS = 12;
         // Cached uncontacted payload — Uncontacted renders differently from
         // the other tabs (two sections, not the standard alert feed) so we
         // store it separately when the tab loads.
@@ -9645,6 +10728,14 @@
                     || data.manual_checkin_roster === true
                     || data.free_trial_checkin === true
                 );
+        }
+
+        function isOverdueManualIgCheckin(alert, now = new Date()) {
+            if (!alert || alert.status !== 'pending' || alert.alert_type !== 'weekly_checkin') return false;
+            if (!isChallengeCheckinAlert(alert) || !isManualIgBlockedAlert(alert)) return false;
+            const createdAt = alert.created_at ? new Date(alert.created_at) : null;
+            if (!createdAt || Number.isNaN(createdAt.getTime())) return false;
+            return (now.getTime() - createdAt.getTime()) > OVERDUE_MANUAL_IG_CHECKIN_HOURS * 60 * 60 * 1000;
         }
 
         function getAlertIgGraphRecipientId(data = {}) {
@@ -9765,7 +10856,10 @@
         }
 
         function isCocosDmAlert(alert) {
-            return !!alert && DM_ALERT_TYPES.includes(alert.alert_type) && isCocosMetaPayload(alert.data || {});
+            return !!alert
+                && DM_ALERT_TYPES.includes(alert.alert_type)
+                && !isNeedsYouRoutedDmAlert(alert)
+                && isCocosMetaPayload(alert.data || {});
         }
 
         function getCocosNeedsAttentionInfo(alert) {
@@ -10594,17 +11688,22 @@
         }
 
         function normalizeDmAudience(audience) {
-            return audience === 'leads' ? 'leads' : 'clients';
+            if (audience === 'clients' || audience === 'leads' || audience === 'all') return audience;
+            return 'all';
         }
 
         function dmAudienceLabel(audience = currentDmAudience) {
-            return normalizeDmAudience(audience) === 'leads' ? 'Lead DMs' : 'Client DMs';
+            const view = normalizeDmAudience(audience);
+            if (view === 'leads') return 'Lead DMs';
+            if (view === 'clients') return 'Client DMs';
+            return 'All DMs';
         }
 
         function dmAudienceSubtitle(audience = currentDmAudience) {
-            return normalizeDmAudience(audience) === 'leads'
-                ? 'IG, Messenger and app leads who are not active coaching clients.'
-                : 'Active coaching clients first, including clients who are not currently in a challenge.';
+            const view = normalizeDmAudience(audience);
+            if (view === 'leads') return 'IG, Messenger and app leads who are not active coaching clients.';
+            if (view === 'clients') return 'Active coaching clients first, including clients who are not currently in a challenge.';
+            return 'One queue for app inbox, Instagram, and Messenger messages waiting on Shannon.';
         }
 
         function setBadgeText(id, value) {
@@ -10631,8 +11730,10 @@
                 all: Number(counts.all ?? ((counts.clients || 0) + (counts.leads || 0))),
             };
             dmUnreadAudienceCounts = next;
+            setBadgeText('dm-nav-all-count', next.all);
             setBadgeText('dm-nav-clients-count', next.clients);
             setBadgeText('dm-nav-leads-count', next.leads);
+            setBadgeText('dm-audience-all-count', next.all);
             setBadgeText('dm-audience-clients-count', next.clients);
             setBadgeText('dm-audience-leads-count', next.leads);
             setDmParentBadge(next.all);
@@ -10670,12 +11771,13 @@
                 return;
             }
             group.classList.add('expanded');
-            openDmAudience('clients', document.getElementById('dm-nav-clients'));
+            openDmAudience('all', document.getElementById('dm-nav-all'));
         }
 
-        function openDmAudience(audience = 'clients', el = null) {
+        function openDmAudience(audience = 'all', el = null) {
             const next = normalizeDmAudience(audience);
             currentDmAudience = next;
+            currentFeed = 'dms';
             const navEl = el || document.getElementById(`dm-nav-${next}`);
             showSection('dms', navEl);
             updateDmAudienceUi();
@@ -10812,8 +11914,7 @@
             const view = normalizeDmAudience(audience);
             return (rows || []).filter(alert => {
                 if (isCocosDmAlert(alert)) return false;
-                if (isNeedsYouRoutedDmAlert(alert)) return false;
-                if (needsYouHasOperatorWork(alert, clientIds)) return false;
+                if (view === 'all') return true;
                 const isClient = alertBelongsToDmClients(alert, clientIds);
                 return view === 'clients' ? isClient : !isClient;
             });
@@ -10841,6 +11942,7 @@
             const view = normalizeDmAudience(audience);
             return (rows || []).filter(row => {
                 if (isCocosDmRow(row)) return false;
+                if (view === 'all') return true;
                 const isClient = dmRowBelongsToClients(row, clientIds);
                 return view === 'clients' ? isClient : !isClient;
             });
@@ -11052,8 +12154,8 @@
                 codexReview.reviewed_by,
                 codexReview.reviewer_model,
                 codexReview.automation_id,
-            ].map(v => String(v || '').toLowerCase()).join(' ');
-            return CLIENT_MANAGER_REVIEW_MARKERS.some(marker => markerText.includes(marker));
+            ].map(normalizeClientManagerMarkerText).join(' ');
+            return CLIENT_MANAGER_REVIEW_MARKERS.some(marker => markerText.includes(normalizeClientManagerMarkerText(marker)));
         }
 
         function isExplicitClientManagerNeedsYou(alert) {
@@ -11062,7 +12164,11 @@
             const queue = String(codexReview.queue || data.operator_queue || '').toLowerCase();
             const decision = String(codexReview.decision || data.decision || '').toLowerCase();
             const reason = String(codexReview.reason || data.needs_you_reason || '').toLowerCase();
-            return queue === 'needs_you'
+            const needsYouFlag = data.needs_you_required === true || String(data.needs_you_required || '').toLowerCase() === 'true';
+            const reviewRequiredFlag = data.client_manager_review_required === true || String(data.client_manager_review_required || '').toLowerCase() === 'true';
+            return needsYouFlag
+                || reviewRequiredFlag
+                || queue === 'needs_you'
                 || codexReview.needs_shannon_approval === true
                 || decision.includes('needs_you')
                 || decision.includes('needs_shannon')
@@ -11100,6 +12206,13 @@
             const contextReview = getAlertContextReviewInfo(alert);
             const isDm = DM_ALERT_TYPES.includes(alert?.alert_type);
             const isClientDm = isDm && !!getAlertClientIdentity(alert) && alertBelongsToDmClients(alert, activeClientIds);
+            const explicitClientManagerNeedsYou = isDm && isExplicitClientManagerNeedsYou(alert);
+            if (isLearningReelApprovalAlert(alert) || /\blearning_reel_approval_required\b/i.test(reasonText)) {
+                return { allowed: true, reason: 'learning_reel_approval' };
+            }
+            if (explicitClientManagerNeedsYou) {
+                return { allowed: true, reason: 'client_manager_review' };
+            }
             if (isClientDm && mediaReview.required) {
                 return { allowed: true, reason: 'client_media' };
             }
@@ -11118,6 +12231,20 @@
             return { allowed: false, reason: '' };
         }
 
+        function isLearningReelApprovalAlert(alert) {
+            const data = alert?.data || {};
+            const review = data.codex_review || data.codexReview || {};
+            const decision = review && typeof review === 'object' ? String(review.decision || '') : '';
+            return !!(
+                data.learning_reel_approval_required === true
+                || String(data.learning_reel_approval_required || '').toLowerCase() === 'true'
+                || data.learning_reel_preview_required === true
+                || String(data.needs_you_reason || '').toLowerCase() === 'learning_reel_approval_required'
+                || (Array.isArray(data.needs_you_reasons) && data.needs_you_reasons.includes('learning_reel_approval_required'))
+                || /learning[_ -]?reel/.test(decision)
+            );
+        }
+
         function needsYouClientDraftInfo(alert, activeClientIds = dmClientIdsCache.ids) {
             const { rawCodexReview, codexReview, draftReview } = needsYouReviewBundle(alert);
             const verdict = String(draftReview.verdict || '').toLowerCase();
@@ -11127,7 +12254,7 @@
                 codexReview.reviewed_by,
                 codexReview.reviewer_model,
                 codexReview.automation_id,
-            ].map(v => String(v || '').toLowerCase()).join(' ');
+            ].map(normalizeClientManagerMarkerText).join(' ');
             const explicitlyQuiet = /dismiss|duplicate|no[_ -]?response|no[_ -]?action|leave[_ -]?untouched|stale|handled/.test(markerText);
             const reviewer = codexReview.reviewed_by || codexReview.reviewer_model || codexReview.source || draftReview.reviewed_by || draftReview.reviewer_model || '';
             const needsReview = verdict === 'warn' || draftReview.notification_required === true || draftReview.safe_to_send === false;
@@ -11183,7 +12310,6 @@
                 data.suggested_message,
                 decisionText,
             ].map(v => String(v || '').toLowerCase()).join(' ');
-            const advancedQualifierStage = ['pitched', 'won'].includes(qualifierStage);
             const linkIntent = /\b(send(?:\s+me)?\s+(?:the\s+)?link|link please|link pls|where do i sign|how do i start|sign\s?up|signup|join(?:ing)?|download(?:\s+the)?\s+app|app link|bio link|challenge link|let['\u2019]?s do|lets do|i['\u2019]?m in|im in|keen(?:\s+to)?\s+(?:join|start|do)|ready to start)\b/i.test(textForIntent);
             const draftHasLinkHandoff = /https?:\/\/|here['\u2019]?s\s+(?:the\s+)?link|here is\s+(?:the\s+)?link|bio\.html|signup|sign up|download(?:\s+the)?\s+app/i.test(draftText);
             const explicitManualHandoffFlag = !!(
@@ -11203,11 +12329,11 @@
             const hasLiveLinkHandoffEvidence = !!(
                 explicitManualHandoffFlag
                 || draftHasLinkHandoff
-                || (linkUrl && (advancedQualifierStage || linkIntent || draftHasLinkHandoff))
+                || (linkUrl && linkIntent)
             );
             const challengeLinkNeedsApproval = !!(
                 warning?.required
-                && advancedQualifierStage
+                && (linkIntent || draftHasLinkHandoff || explicitManualHandoffFlag)
                 && (DM_ALERT_TYPES.includes(alert?.alert_type) || FOLLOW_UP_ALERT_TYPES.includes(alert?.alert_type))
                 && !!(data.ig_thread_id || data.subscriber_id || data.ig_username)
             );
@@ -11231,18 +12357,41 @@
             return isClientManagerReviewedClientMessage(alert);
         }
 
+        function isCoachActionReceipt(alert) {
+            const data = alert?.data || {};
+            return alert?.alert_type === 'general_idea'
+                && (
+                    data.subtype === 'coach_action_receipt'
+                    || data.needs_you_reason === 'coach_action_completed'
+                    || !!data.source_action_id
+                );
+        }
+
         function needsYouHasOperatorWork(alert, activeClientIds = dmClientIdsCache.ids) {
             if (!alert || alert.status !== 'pending') return false;
             if (!NEEDS_YOU_ALERT_TYPES.includes(alert.alert_type)) return false;
-            if (alert.alert_type === 'weekly_checkin') return isCoachCheckinApprovalDraft(alert);
+            if (isCoachActionReceipt(alert)) return true;
+            if (alert.alert_type === 'subscription_sale') {
+                const data = alert.data || {};
+                return data.sale_made === true
+                    || data.needs_you_reason === 'subscription_sale'
+                    || data.operator_queue === 'needs_you';
+            }
+            if (alert.alert_type === 'weekly_checkin') return isCoachCheckinApprovalDraft(alert) || isOverdueManualIgCheckin(alert);
+            if (alert.alert_type === 'first_workout') {
+                return needsYouHasSuggestedDraft(alert);
+            }
             if (alert.alert_type === 'onboarding_day_30') {
                 return isNeedsYouRoutedDmAlert(alert) && needsYouHasSuggestedDraft(alert);
             }
             if (isCocosDmAlert(alert)) return false;
             if (isLeadOnboardingHandoff(alert) && needsYouHasSuggestedDraft(alert)) return true;
             if (!DM_ALERT_TYPES.includes(alert.alert_type)) return false;
+            if (isLearningReelApprovalAlert(alert)) return needsYouHasSuggestedDraft(alert);
+            const reasonInfo = needsYouAllowedReasonInfo(alert, activeClientIds);
+            if (isNeedsYouRoutedDmAlert(alert) && reasonInfo.allowed && needsYouHasSuggestedDraft(alert)) return true;
+            if (isNeedsYouRoutedDmAlert(alert) && reasonInfo.reason === 'client_media') return true;
             if (!needsYouHasSuggestedDraft(alert)) {
-                const reasonInfo = needsYouAllowedReasonInfo(alert, activeClientIds);
                 const mediaReview = getAlertMediaReviewInfo(alert);
                 return isNeedsYouRoutedDmAlert(alert)
                     && reasonInfo.allowed
@@ -11261,12 +12410,14 @@
 
         function collapseNeedsYouRows(rows = []) {
             const dmRows = [];
+            const actionReceiptRows = [];
             const otherRows = [];
             rows.filter(a => a.status === 'pending').forEach(row => {
-                if (DM_ALERT_TYPES.includes(row.alert_type)) dmRows.push(row);
+                if (isCoachActionReceipt(row)) actionReceiptRows.push(row);
+                else if (DM_ALERT_TYPES.includes(row.alert_type)) dmRows.push(row);
                 else otherRows.push(row);
             });
-            return [...collapsePendingByUser(dmRows), ...collapsePendingByUser(otherRows)]
+            return [...collapsePendingByUser(dmRows), ...actionReceiptRows, ...collapsePendingByUser(otherRows)]
                 .sort((a, b) => Date.parse(b.created_at || '') - Date.parse(a.created_at || ''));
         }
 
@@ -11350,11 +12501,19 @@
                 openNeedsYouForAlert(alert, 'all');
                 return;
             }
-            if (isDmAlert && isNeedsYouRoutedDmAlert(alert)) {
+            if (alert?.alert_type === 'onboarding_day_30' && needsYouHasOperatorWork(alert)) {
                 openNeedsYouForAlert(alert, 'all');
                 return;
             }
-            if (alert?.alert_type === 'onboarding_day_30' && needsYouHasOperatorWork(alert)) {
+            if (alert?.alert_type === 'first_workout' && needsYouHasOperatorWork(alert)) {
+                openNeedsYouForAlert(alert, 'all');
+                return;
+            }
+            if (alert?.alert_type === 'subscription_sale' && needsYouHasOperatorWork(alert)) {
+                openNeedsYouForAlert(alert, 'all');
+                return;
+            }
+            if (alert?.alert_type === 'weekly_checkin' && needsYouHasOperatorWork(alert)) {
                 openNeedsYouForAlert(alert, 'all');
                 return;
             }
@@ -11367,11 +12526,7 @@
                     loadCocosDms();
                     return;
                 }
-                if (needsYouHasOperatorWork(alert)) {
-                    openNeedsYouForAlert(alert, 'all');
-                    return;
-                }
-                currentDmAudience = getAlertClientIdentity(alert) ? 'clients' : 'leads';
+                currentDmAudience = 'all';
                 updateDmAudienceUi();
                 activateDmView('unread');
                 if (typeof showSection === 'function') {
@@ -11601,13 +12756,13 @@
         }
 
         function isManualIgCheckin(alert) {
-            return isChallengeCheckinAlert(alert) && isManualIgBlockedAlert(alert);
+            return isChallengeCheckinAlert(alert) && isManualIgBlockedAlert(alert) && !isOverdueManualIgCheckin(alert);
         }
 
         function summarizeChallengeCheckinCounts(rows) {
             const startOfToday = new Date();
             startOfToday.setHours(0, 0, 0, 0);
-            const all = (rows || []).filter(isChallengeCheckinAlert);
+            const all = (rows || []).filter(isChallengeCheckinAlert).filter(a => !isOverdueManualIgCheckin(a));
             return {
                 pending: all.filter(a => a.status === 'pending').length,
                 manual: all.filter(a => a.status === 'pending' && isManualIgCheckin(a)).length,
@@ -11708,7 +12863,7 @@
 
                 const { data, error } = await query.limit(150);
                 if (error) throw error;
-                let rows = (data || []).filter(isChallengeCheckinAlert);
+                let rows = (data || []).filter(isChallengeCheckinAlert).filter(a => !isOverdueManualIgCheckin(a));
                 if (currentChallengeCheckinView === 'manual') rows = rows.filter(isManualIgCheckin);
                 alertsCache = rows;
                 renderAlertFeed(alertsCache, {
@@ -12044,6 +13199,9 @@
                 if (json.blankDraftRepairCount > 0) {
                     console.log('[unread-repair] requested draft repair for ' + json.blankDraftRepairCount + ' blank DM alert(s)');
                 }
+                if (json.appInboxRepairCount > 0) {
+                    console.log('[unread-repair] dispatched ' + json.appInboxRepairCount + ' app inbox message(s) into DMs');
+                }
             } catch (e) {
                 console.warn('[unread-repair] failed:', e.message || e);
             }
@@ -12051,8 +13209,13 @@
 
         function setDmView(view) {
             if (!DM_TABS.includes(view)) return;
-            if (currentDmView === view) return;
+            const shouldReload = currentView !== 'dms' || currentFeed !== 'dms' || currentDmView !== view;
+            if (currentDmView === view && !shouldReload) {
+                loadDms();
+                return;
+            }
             activateDmView(view);
+            currentFeed = 'dms';
             loadDms();
         }
 
@@ -12123,7 +13286,6 @@
                 if (!isCurrentDmLoad(loadSeq, viewAtStart, audienceAtStart)) return;
                 alertsCache = (viewAtStart === 'unread')
                     ? collapsePendingByUser(dedupePendingAlerts(data || []))
-                        .filter(a => !isNeedsYouRoutedDmAlert(a) && !needsYouHasOperatorWork(a, activeClientIds))
                     : (data || []);
                 alertsCache = filterDmAlertsByAudience(alertsCache, audienceAtStart, activeClientIds);
                 renderAlertFeed(alertsCache, {
@@ -12933,7 +14095,7 @@
 
             container.innerHTML = `
                 <div style="font-size:0.78rem; color:#64748b; padding:0 4px 12px;">
-                    ${escapeHtml(opts.intro || `Longest waiting at the top. Showing ${normalizeDmAudience(currentDmAudience) === 'clients' ? 'active client' : 'lead'} threads where Shannon sent the latest message.`)}
+                    ${escapeHtml(opts.intro || `Longest waiting at the top. Showing ${normalizeDmAudience(currentDmAudience) === 'all' ? 'all' : normalizeDmAudience(currentDmAudience) === 'clients' ? 'active client' : 'lead'} threads where Shannon sent the latest message.`)}
                 </div>
                 ${rows.map(renderWaitingForReplyRow).join('')}
             `;
@@ -13401,7 +14563,7 @@
                     if (el) el.textContent = String(n ?? 0);
                 };
                 const collapsedUnread = collapsePendingByUser(dedupePendingAlerts(unreadRes?.data || []))
-                    .filter(a => !isNeedsYouRoutedDmAlert(a) && !needsYouHasOperatorWork(a, activeClientIds));
+                    .filter(a => !isCocosDmAlert(a));
                 const unreadClients = filterDmAlertsByAudience(collapsedUnread, 'clients', activeClientIds).length;
                 const unreadLeads = filterDmAlertsByAudience(collapsedUnread, 'leads', activeClientIds).length;
                 setDmAudienceBadges({ clients: unreadClients, leads: unreadLeads, all: unreadClients + unreadLeads });
@@ -13534,7 +14696,7 @@
             // that so neither shows a number that doesn't match what Shannon
             // can see on screen.
             if (currentDmView !== 'unread') return;
-            const pending = alertsCache.filter(a => a.status === 'pending' && DM_ALERT_TYPES.includes(a.alert_type) && !isNeedsYouRoutedDmAlert(a));
+            const pending = alertsCache.filter(a => a.status === 'pending' && DM_ALERT_TYPES.includes(a.alert_type) && !isCocosDmAlert(a));
             const visibleCount = pending.length;
             const chip = document.getElementById('dm-view-unread-count');
             if (chip) chip.textContent = String(visibleCount);
@@ -13996,7 +15158,8 @@
             onboarding_day_7: 'Week 1', onboarding_day_14: 'Week 2', onboarding_day_30: 'Month 1',
             morning_pulse: 'Morning',
             first_workout: 'First Workout', weekly_checkin: 'Weekly', weekly_digest: 'Digest',
-            plateau_reassess: 'Plateau', badge_earned: 'Badge', follow_up_review: 'Needs Attention'
+            plateau_reassess: 'Plateau', badge_earned: 'Badge', follow_up_review: 'Needs Attention',
+            subscription_sale: 'Sale'
         };
         const ALERT_TYPE_ICONS = {
             inactive_client: '😴', unread_message: '💬', incoming_dm: '📨',
@@ -14012,6 +15175,7 @@
             first_workout: '🏁', weekly_checkin: '📬', weekly_digest: '📰',
             plateau_reassess: '🚧', badge_earned: '🏅'
         };
+        ALERT_TYPE_ICONS.subscription_sale = '$';
         const PRIORITY_ORDER = ['urgent', 'high', 'medium', 'low'];
         const PRIORITY_LABELS = { urgent: 'Urgent', high: 'High priority', medium: 'Medium priority', low: 'Low priority' };
 
@@ -14022,6 +15186,7 @@
         //   20-30  — watch-signals and proactive ideas that can wait
         //   40     — coach-facing planning artifacts (weekly_digest)
         const ALERT_TYPE_URGENCY = {
+            subscription_sale:    2,
             incoming_dm:         1,   // real client message waiting — highest of all
             win_to_celebrate:    9,   // Bigger win moments, not routine PBs
             first_workout:       3,
@@ -14662,7 +15827,7 @@
         }
 
         function isManualDmSendableAlert(alert) {
-            if (!alert || !DM_ALERT_TYPES.includes(alert.alert_type)) return false;
+            if (!alert) return false;
             if (!['pending', 'dismissed', 'canceled'].includes(alert.status)) return false;
             const channel = alert.data?.channel;
             const isManyChatLead = channel === 'instagram'
@@ -14688,6 +15853,31 @@
                     <i data-lucide="check" style="width:12px;height:12px;"></i>Manual sent
                 </button>
                 ${openIg}
+            `;
+        }
+
+        function isManualHandleOnlyAlert(alert) {
+            const data = alert?.data || {};
+            return !!alert
+                && ['pending', 'dismissed', 'canceled'].includes(alert.status)
+                && data.manual_ig_required === true
+                && !data.ig_thread_id
+                && !!(data.manual_ig_handle || data.ig_username);
+        }
+
+        function renderManualHandleActions(alert, hasMessage) {
+            if (!hasMessage || !isManualHandleOnlyAlert(alert)) return '';
+            const handle = (alert.data?.manual_ig_handle || alert.data?.ig_username || '').replace(/^@+/, '');
+            return `
+                <button class="alert-btn alert-btn-send" onclick="copyManualDmDraft('${alert.id}')" title="Copy this draft so you can paste it into Instagram">
+                    <i data-lucide="copy" style="width:12px;height:12px;"></i>Copy
+                </button>
+                <button class="alert-btn alert-btn-send" onclick="markManualHandleSent('${alert.id}')" title="Use after you have pasted and sent this in Instagram">
+                    <i data-lucide="check" style="width:12px;height:12px;"></i>Manual sent
+                </button>
+                <button class="alert-btn alert-btn-view" onclick="openManualIgProfile('${escapeHtml(handle)}')" title="Open Instagram profile">
+                    <i data-lucide="instagram" style="width:12px;height:12px;"></i>Open IG
+                </button>
             `;
         }
 
@@ -15141,6 +16331,64 @@
             }
         }
 
+        async function markManualHandleSent(alertId) {
+            const alertData = alertsCache.find(a => a.id === alertId);
+            if (!alertData) return;
+            const message = normalizeCoachDraftTextForAdmin(getAlertEditMessage(alertId, alertData)).trim();
+            if (!message) {
+                alert('Nothing to mark sent, the message is empty.');
+                return;
+            }
+            const btn = event?.target?.closest?.('.alert-btn');
+            const oldHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader" style="width:12px;height:12px; animation:spin 1s linear infinite;"></i>Saving...';
+                lucide.createIcons();
+            }
+            try {
+                const originalDraft = normalizeCoachDraftTextForAdmin(alertData.suggested_message || alertData.data?.draft_text || '');
+                const editReason = getAlertEditReason(alertId);
+                const sentAt = new Date().toISOString();
+                const wasEdited = !!originalDraft && message !== originalDraft;
+                const mergedData = {
+                    ...(alertData.data || {}),
+                    sent_message: message,
+                    was_edited: wasEdited,
+                    sent_at: sentAt,
+                    sent_via: 'manual_instagram',
+                    manual_ig_marked_sent: true,
+                    manual_ig_history_logged: false,
+                    manual_ig_history_skipped: 'handle_only_no_linked_thread',
+                };
+                if (wasEdited && editReason) mergedData.edit_reason = editReason;
+                const { error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .update({ status: 'sent', actioned_at: sentAt, data: mergedData })
+                    .eq('id', alertId)
+                    .eq('status', alertData.status || 'pending');
+                if (error) throw error;
+                clearAlertEditBuffer(alertId);
+                const card = document.getElementById(`alert-${alertId}`);
+                if (card) {
+                    card.style.animation = 'alertSlideOut 0.45s ease forwards';
+                    setTimeout(() => card.remove(), 450);
+                }
+                alertsCache = alertsCache.filter(a => a.id !== alertId);
+                refreshFeedCounts();
+                updateAlertBadge();
+                updateVoiceMatchRate();
+            } catch (e) {
+                console.error('markManualHandleSent failed:', e);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = oldHtml || '<i data-lucide="check" style="width:12px;height:12px;"></i>Manual sent';
+                    lucide.createIcons();
+                }
+                alert('Could not mark sent: ' + (e.message || e));
+            }
+        }
+
         function getAutoSendTargetFromDmAlert(alert) {
             if (!alert || !DM_ALERT_TYPES.includes(alert.alert_type)) return null;
             const data = alert.data || {};
@@ -15454,14 +16702,17 @@
 
         function renderAlertCard(alert) {
             const isChallengeCheckin = isChallengeCheckinAlert(alert);
+            const isActionReceipt = isCoachActionReceipt(alert);
             const manualIgRequired = isManualIgBlockedAlert(alert);
             const isFollowUp = isFollowUpAlert(alert);
             const followUpBlockedByActiveDm = isFollowUpBlockedByActiveDm(alert);
-            const typeLabel = isChallengeCheckin
-                ? (alert.data?.free_trial_checkin ? 'Trial check-in' : alert.data?.non_challenge_checkin ? 'Check-in' : 'Challenge check-in')
-                : (ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type);
+            const typeLabel = isActionReceipt
+                ? 'Program update'
+                : isChallengeCheckin
+                    ? (alert.data?.free_trial_checkin ? 'Trial check-in' : alert.data?.non_challenge_checkin ? 'Check-in' : 'Challenge check-in')
+                    : (ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type);
             const typeIcon = ALERT_TYPE_ICONS[alert.alert_type] || '📋';
-            const renderedTypeIcon = isFollowUp ? '->' : typeIcon;
+            const renderedTypeIcon = isActionReceipt ? 'OK' : (isFollowUp ? '->' : typeIcon);
             const time = timeAgo(alert.created_at);
             const displayMessage = getResolvedAlertMessage(alert);
             const hasMessage = displayMessage && displayMessage.trim();
@@ -15528,6 +16779,7 @@
             const needsYouApprovalHtml = needsYouApprovalInfo?.ready && !cleanExplanationHtml
                 ? `<div style="margin:8px 0; padding:8px 10px; background:${needsYouApprovalInfo.needsReview ? '#fff7ed' : '#f0fdf4'}; border:1px solid ${needsYouApprovalInfo.needsReview ? '#fed7aa' : '#bbf7d0'}; color:${needsYouApprovalInfo.needsReview ? '#9a3412' : '#166534'}; border-radius:8px; font-size:0.76rem; font-weight:800; line-height:1.35;">Codex checked this client DM draft${needsYouApprovalInfo.reviewer ? ` (${escapeHtml(needsYouApprovalInfo.reviewer)})` : ''}. Shannon can edit or send it from here.</div>`
                 : '';
+            const learningReelContextHtml = renderLearningReelContextStrip(alert);
             const suggestedMessageHtml = hasMessage
                 ? (activeEdit
                     ? `<div class="alert-suggested-msg" id="alert-msg-${alert.id}">${renderAlertEditFields(alert.id, renderedMessageText, activeEdit.reason || '')}</div>`
@@ -15537,6 +16789,7 @@
             const checkinDeliveryHtml = renderChallengeCheckinDeliveryStrip(alert);
             const manualCheckinActionsHtml = renderManualChallengeCheckinActions(alert, hasMessage, canEdit);
             const manualDmActionsHtml = renderManualDmActions(alert, hasMessage);
+            const manualHandleActionsHtml = renderManualHandleActions(alert, hasMessage);
             const dmScreenshotContextActionHtml = renderDmScreenshotContextAction(alert);
             const autoSendDmActionHtml = renderAutoSendDmAction(alert, isDmAlert);
             const instagramGraphDmActionsHtml = renderInstagramGraphDmActions(alert, isDmAlert);
@@ -15572,6 +16825,7 @@
                 ${autoSendHoldNoticeHtml}
                 ${needsYouApprovalHtml}
                 ${conversationPanelHtml || ''}
+                ${learningReelContextHtml}
                 ${suggestedMessageHtml}
                 ${proposedActionsHtml}
                 ${hasMessage ? renderAiAccuracyStripPlaceholder(alert) : ''}
@@ -15643,6 +16897,7 @@
                             </button>
                         ` : ''}
                         ${manualDmActionsHtml}
+                        ${manualHandleActionsHtml}
                         ${instagramGraphDmActionsHtml}
                         ${dmScreenshotContextActionHtml}
                         ${autoSendDmActionHtml}
@@ -17167,6 +18422,207 @@
             </div>`;
         }
 
+        const ADMIN_LEARNING_REEL_URL_RE = /https?:\/\/(?:www\.)?(?:youtube\.com\/(?:shorts\/|watch\?[^#\s]*v=|embed\/)|youtu\.be\/)[^\s<>"')]+/gi;
+
+        function compactLearningReelContextText(value, max = 220) {
+            const text = String(value || '').replace(/\s+/g, ' ').trim();
+            if (!text) return '';
+            return text.length > max ? `${text.slice(0, Math.max(0, max - 1)).trim()}...` : text;
+        }
+
+        function adminFirstLearningReelString(values = []) {
+            for (const value of values) {
+                const text = String(value || '').trim();
+                if (text) return text;
+            }
+            return '';
+        }
+
+        function adminCleanLearningReelUrl(value) {
+            return String(value || '').trim().replace(/[.,;:!?]+$/g, '');
+        }
+
+        function adminCleanYoutubeVideoId(value) {
+            const text = String(value || '').trim();
+            const match = text.match(/[A-Za-z0-9_-]{6,}/);
+            return match ? match[0] : '';
+        }
+
+        function adminYoutubeVideoIdFromUrl(value) {
+            const raw = adminCleanLearningReelUrl(value);
+            if (!raw) return '';
+            try {
+                const url = new URL(raw);
+                const host = url.hostname.replace(/^www\./i, '').toLowerCase();
+                const parts = url.pathname.split('/').filter(Boolean);
+                if (host === 'youtu.be') return adminCleanYoutubeVideoId(parts[0] || '');
+                if (host.endsWith('youtube.com')) {
+                    if (parts[0] === 'shorts' || parts[0] === 'embed') return adminCleanYoutubeVideoId(parts[1] || '');
+                    if (parts[0] === 'watch') return adminCleanYoutubeVideoId(url.searchParams.get('v') || '');
+                }
+            } catch (_) {
+                // Regex fallback below handles copied text fragments.
+            }
+            const patterns = [
+                /youtube\.com\/shorts\/([A-Za-z0-9_-]{6,})/i,
+                /youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/i,
+                /youtube\.com\/watch\?[^#\s]*v=([A-Za-z0-9_-]{6,})/i,
+                /youtu\.be\/([A-Za-z0-9_-]{6,})/i,
+            ];
+            for (const pattern of patterns) {
+                const match = raw.match(pattern);
+                if (match) return adminCleanYoutubeVideoId(match[1]);
+            }
+            return '';
+        }
+
+        function canonicalAdminLearningReelUrl(value) {
+            const raw = adminCleanLearningReelUrl(value);
+            const id = adminYoutubeVideoIdFromUrl(raw);
+            if (id) return `https://www.youtube.com/shorts/${id}`;
+            const match = raw.match(ADMIN_LEARNING_REEL_URL_RE);
+            return match ? adminCleanLearningReelUrl(match[0]) : raw;
+        }
+
+        function adminLearningReelEmbedUrl(reel) {
+            const id = adminCleanYoutubeVideoId(reel?.video_id || reel?.videoId || '') || adminYoutubeVideoIdFromUrl(reel?.url || '');
+            return id ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?rel=0&modestbranding=1` : '';
+        }
+
+        function listAdminLearningReelValue(value) {
+            if (!value) return [];
+            if (Array.isArray(value)) return value.flatMap(item => listAdminLearningReelValue(item));
+            if (typeof value !== 'object') return [{ url: value }];
+            const keys = ['items', 'recent', 'last_sent_batch', 'lastSentBatch', 'history', 'reels', 'videos'];
+            const nested = keys.flatMap(key => listAdminLearningReelValue(value[key]));
+            const direct = (
+                value.url || value.video_url || value.videoUrl || value.watch_url || value.watchUrl
+                || value.video_id || value.videoId || value.title
+            ) ? [value] : [];
+            const lastSent = value.last_sent || value.lastSent ? listAdminLearningReelValue(value.last_sent || value.lastSent) : [];
+            return [...direct, ...lastSent, ...nested];
+        }
+
+        function normalizeAdminLearningReelItem(value, defaults = {}) {
+            const item = value && typeof value === 'object' ? value : { url: value };
+            const rawUrl = adminFirstLearningReelString([
+                item.url,
+                item.video_url,
+                item.videoUrl,
+                item.watch_url,
+                item.watchUrl,
+                defaults.url,
+            ]);
+            const videoId = adminCleanYoutubeVideoId(item.video_id || item.videoId || defaults.video_id || defaults.videoId || '') || adminYoutubeVideoIdFromUrl(rawUrl);
+            const url = canonicalAdminLearningReelUrl(rawUrl || (videoId ? `https://www.youtube.com/shorts/${videoId}` : ''));
+            const title = adminFirstLearningReelString([item.title, item.video_title, item.videoTitle, defaults.title]);
+            const description = adminFirstLearningReelString([item.description, item.summary, defaults.description]);
+            if (!url && !videoId && !title && !description) return null;
+            return {
+                url,
+                video_id: videoId,
+                title,
+                channel_title: adminFirstLearningReelString([item.channel_title, item.channelTitle, item.creator, item.source_name, item.sourceName, defaults.channel_title, defaults.channelTitle]),
+                topic_id: adminFirstLearningReelString([item.topic_id, item.topicId, defaults.topic_id, defaults.topicId]),
+                topic_label: adminFirstLearningReelString([item.topic_label, item.topicLabel, defaults.topic_label, defaults.topicLabel]),
+                description,
+                reason: adminFirstLearningReelString([item.reason, item.selection_reason, item.selectionReason, defaults.reason]),
+                youtube_query: adminFirstLearningReelString([item.youtube_query, item.youtubeQuery, item.query, defaults.youtube_query, defaults.youtubeQuery]),
+                sent_at: adminFirstLearningReelString([item.sent_at, item.sentAt, item.created_at, item.createdAt, defaults.sent_at, defaults.sentAt]),
+            };
+        }
+
+        function extractAdminLearningReelUrls(text) {
+            const raw = String(text || '');
+            return (raw.match(ADMIN_LEARNING_REEL_URL_RE) || []).map(adminCleanLearningReelUrl).filter(Boolean);
+        }
+
+        function adminLearningReelDedupeKey(item) {
+            const id = adminCleanYoutubeVideoId(item?.video_id || item?.videoId || '') || adminYoutubeVideoIdFromUrl(item?.url || '');
+            if (id) return `id:${id.toLowerCase()}`;
+            const url = canonicalAdminLearningReelUrl(item?.url || '').toLowerCase();
+            if (url) return `url:${url}`;
+            return `title:${String(item?.title || '').toLowerCase().trim()}`;
+        }
+
+        function collectAdminLearningReelItems(alert) {
+            const data = alert?.data || {};
+            const defaults = {
+                topic_id: data.topic_id || data.topicId,
+                topic_label: data.topic_label || data.topicLabel,
+            };
+            const candidates = [
+                data.learning_reel,
+                data.learningReel,
+                data.learning_reel_context,
+                data.learningReelContext,
+                data.learning_reels,
+                data.learningReels,
+                data.learning_reels_sent,
+                data.learningReelsSent,
+                alert?.learning_reels,
+            ].flatMap(value => listAdminLearningReelValue(value));
+            const textValues = [
+                getResolvedAlertMessage(alert),
+                alert?.suggested_message,
+                alert?.description,
+                data.draft_text,
+                data.message_preview,
+                data.suggested_message,
+                data.learning_reel_manual_send?.suggested_message,
+            ];
+            for (const text of textValues) {
+                for (const url of extractAdminLearningReelUrls(text)) candidates.push({ url });
+            }
+            const seen = new Set();
+            const items = [];
+            for (const candidate of candidates) {
+                const normalized = normalizeAdminLearningReelItem(candidate, defaults);
+                if (!normalized) continue;
+                const key = adminLearningReelDedupeKey(normalized);
+                if (!key || seen.has(key)) continue;
+                seen.add(key);
+                items.push(normalized);
+            }
+            return items;
+        }
+
+        function pickAdminLearningReelForAlert(alert) {
+            const items = collectAdminLearningReelItems(alert);
+            if (!items.length) return null;
+            const draftKeys = new Set(extractAdminLearningReelUrls(getResolvedAlertMessage(alert)).map(url => adminLearningReelDedupeKey({ url })));
+            const draftMatch = items.find(item => draftKeys.has(adminLearningReelDedupeKey(item)));
+            return draftMatch || items[0];
+        }
+
+        function renderLearningReelContextStrip(alert) {
+            if (!isLearningReelApprovalAlert(alert)) return '';
+            const reel = pickAdminLearningReelForAlert(alert);
+            if (!reel) return '';
+            const topicLabel = compactLearningReelContextText(reel.topic_label || reel.topic_id || 'YouTube reel', 80);
+            const title = compactLearningReelContextText(reel.title || 'YouTube reel selected for review', 150);
+            const channel = compactLearningReelContextText(reel.channel_title, 90);
+            const description = compactLearningReelContextText(reel.description, 180);
+            const reason = compactLearningReelContextText(reel.reason || reel.youtube_query, 160);
+            const url = canonicalAdminLearningReelUrl(reel.url || '');
+            const embedUrl = currentFeed === 'needs-you' ? adminLearningReelEmbedUrl(reel) : '';
+            const previewHtml = embedUrl
+                ? `<div class="learning-reel-preview"><iframe src="${escapeHtml(embedUrl)}" title="${escapeHtml(title)}" loading="lazy" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`
+                : '';
+            return `<div class="learning-reel-context">
+                <div class="learning-reel-context-head">
+                    <span class="learning-reel-context-label">Watch before sending</span>
+                    ${topicLabel ? `<span class="learning-reel-context-topic">${escapeHtml(topicLabel)}</span>` : ''}
+                </div>
+                <div class="learning-reel-context-title">${escapeHtml(title)}</div>
+                ${channel ? `<div class="learning-reel-context-body">${escapeHtml(channel)}</div>` : ''}
+                ${description ? `<div class="learning-reel-context-body">${escapeHtml(description)}</div>` : ''}
+                ${reason ? `<div class="learning-reel-context-reason">${escapeHtml(reason)}</div>` : ''}
+                ${url ? `<a class="learning-reel-context-url" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>` : ''}
+                ${previewHtml}
+            </div>`;
+        }
+
         function humanizeAutoSendHoldCode(code) {
             const normalized = String(code || '').replace(/^auto_send_/, '').replace(/_/g, ' ').trim();
             return normalized || 'review';
@@ -17214,7 +18670,7 @@
             const warning = getChallengeOfferWarningInfo(alert);
             if (!warning) return '';
             const route = warning.routeLabel ? ` (${warning.routeLabel})` : '';
-            const detail = warning.reason || 'This draft appears to offer the free 30-day challenge or send a challenge link.';
+                const detail = warning.reason || 'This draft appears to offer coaching or send a coaching link.';
             return `<div class="challenge-offer-warning">
                 <span class="challenge-offer-warning-dot" aria-hidden="true"></span>
                 <div>
@@ -19012,7 +20468,9 @@
                 case 'cohorts': return loadCohorts(true);
                 case 'ig-leads': return typeof loadIgLeads === 'function' ? loadIgLeads() : null;
                 case 'ig-operator': return typeof focusIgOperatorInput === 'function' ? focusIgOperatorInput() : null;
-                case 'conversion-operator': return loadConversionOperator(true);
+                case 'app-stats': return loadAppStats(true);
+                case 'customer-engagement': return loadCustomerEngagement(true);
+                case 'content-performance': return typeof loadContentPerformance === 'function' ? loadContentPerformance(true) : null;
                 case 'content-radar': return typeof loadContentRadar === 'function' ? loadContentRadar(true) : null;
                 case 'your-day': return loadYourDay(true);
                 case 'ai-coach':
@@ -19199,7 +20657,7 @@
                 loadNeedsYou(true);
             }, 500);
         } else if (window.location.search.includes('tab=dms')) {
-            setTimeout(() => openDmAudience('clients', getNavItemForSection('dms')), 500);
+            setTimeout(() => openDmAudience('all', getNavItemForSection('dms')), 500);
         } else if (window.location.search.includes('tab=alerts')) {
             setTimeout(() => showSection('alerts', getNavItemForSection('alerts')), 500);
         } else if (window.location.search.includes('tab=checkins')) {
@@ -19218,10 +20676,15 @@
                 showSection('ig-operator', getNavItemForSection('ig-operator'));
                 focusIgOperatorInput();
             }, 500);
-        } else if (window.location.search.includes('tab=conversion-operator')) {
+        } else if (window.location.search.includes('tab=app-stats')) {
             setTimeout(() => {
-                showSection('conversion-operator', getNavItemForSection('conversion-operator'));
-                loadConversionOperator(true);
+                showSection('app-stats', getNavItemForSection('app-stats'));
+                loadAppStats(true);
+            }, 500);
+        } else if (window.location.search.includes('tab=customer-engagement')) {
+            setTimeout(() => {
+                showSection('customer-engagement', getNavItemForSection('customer-engagement'));
+                loadCustomerEngagement(true);
             }, 500);
         } else if (window.location.search.includes('tab=cocos')) {
             setTimeout(() => {
@@ -19232,6 +20695,11 @@
             setTimeout(() => {
                 showSection('content-radar', getNavItemForSection('content-radar'));
                 loadContentRadar();
+            }, 500);
+        } else if (window.location.search.includes('tab=content-performance')) {
+            setTimeout(() => {
+                showSection('content-performance', getNavItemForSection('content-performance'));
+                loadContentPerformance();
             }, 500);
         } else if (window.location.search.includes('tab=your-day')) {
             setTimeout(() => {

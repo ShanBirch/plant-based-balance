@@ -2,18 +2,15 @@
 let currentVideoUrl = '';
 
 function cacheWorkoutVideosForOffline(videoUrls) {
-    if (!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
-    const urls = Array.isArray(videoUrls) ? videoUrls : [videoUrls];
-    const uniqueUrls = [...new Set(urls)]
-        .filter(url => typeof url === 'string' && /^https?:\/\//.test(url) && /\.(mp4|mov|webm)(\?|$)/i.test(url));
-    if (uniqueUrls.length === 0) return;
-
-    navigator.serviceWorker.controller.postMessage({
-        type: 'CACHE_WORKOUT_VIDEOS',
-        urls: uniqueUrls
-    });
+    // Exercise videos stream more reliably when the native video element owns
+    // byte-range requests. Do not pre-cache them through the service worker.
 }
 window.cacheWorkoutVideosForOffline = cacheWorkoutVideosForOffline;
+
+if ('caches' in window) {
+    caches.delete('pbb-workout-videos-v1').catch(() => {});
+    caches.delete('pbb-workout-videos-v2').catch(() => {});
+}
 
 function findVideoMatch(name) {
     if(EXERCISE_VIDEOS[name]) return EXERCISE_VIDEOS[name];

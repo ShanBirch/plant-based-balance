@@ -4396,6 +4396,7 @@ async function loadHomeChallenges() {
 
     const container = document.getElementById('home-challenges-list');
     const cohortFeature = document.getElementById('home-cohort-challenge-featured');
+    const cohortInviteFeature = document.getElementById('home-cohort-challenge-invite-top');
     const emptyState = document.getElementById('home-challenges-empty');
     if (!container) return; // Only return if container is missing, currentUser check is already done
 
@@ -4431,7 +4432,9 @@ async function loadHomeChallenges() {
 
         // Cohort challenge (system 30-day challenge cohort) — render separately at
         // the top of the list and exclude from the regular friend-challenge feed below.
-        const cohortChallenge = await loadHomeCohortChallengeData();
+        const transformCohortChallenge = await loadUserCohortChallengeByType('transform_30');
+        const cohortChallenge = transformCohortChallenge || await loadHomeCohortChallengeData(['plant_based_30', 'manual_kayla_30']);
+        const cohortInviteStatus = transformCohortChallenge ? null : await loadNextCohortInviteStatus();
         const cohortChallengeId = cohortChallenge?.challenge_id || null;
 
         // Steps & sleep challenges read their scores from wearable tables via
@@ -4459,7 +4462,7 @@ async function loadHomeChallenges() {
 
         console.log('⚔️ [loadHomeChallenges] Counts - Active:', activeChallenges.length, 'Pending:', pendingChallenges.length, 'Invites:', pendingInvites.length, 'Cohort:', cohortChallenge ? cohortChallenge.status : 'none');
 
-        const hasChallenges = activeChallenges.length > 0 || pendingInvites.length > 0 || pendingChallenges.length > 0 || !!cohortChallenge;
+        const hasChallenges = activeChallenges.length > 0 || pendingInvites.length > 0 || pendingChallenges.length > 0 || !!cohortChallenge || !!cohortFeature || !!cohortInviteFeature;
 
         // Toggle visibility of the "Start a Challenge" empty state card
         // USER REQUEST: "Start a challenge should always stay because then it shows you what challenges you have pending..."
@@ -4469,6 +4472,7 @@ async function loadHomeChallenges() {
         }
         
         if (!hasChallenges) {
+            if (cohortInviteFeature) cohortInviteFeature.innerHTML = renderCohortDashboardInviteCard(cohortInviteStatus);
             if (cohortFeature) cohortFeature.innerHTML = '';
             container.innerHTML = '';
             console.log('⚔️ [loadHomeChallenges] No matching challenges found for user.');
@@ -4533,7 +4537,10 @@ async function loadHomeChallenges() {
                     </div>
                     <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.5); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
                 </div>
-                <div style="padding: 0 20px 14px 20px; text-align: right;">
+                <div style="padding: 0 20px 14px 20px; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+                     <button onclick="openXpGuidePage(event)" style="background: rgba(255,255,255,0.92); color: #92400e; border: 1px solid rgba(255,255,255,0.55); border-radius: 8px; padding: 5px 12px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">
+                         How to earn XP
+                     </button>
                      <button onclick="leaveChallengeFromCard(event, '${challenge.challenge_id}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 5px 12px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.2s;">
                          Cancel Challenge
                      </button>
@@ -4563,7 +4570,10 @@ async function loadHomeChallenges() {
                         <div style="font-size: 1.2rem; font-weight: 800; color: white;">${typeof formatChallengePoints === 'function' ? formatChallengePoints(challenge.user_points, challenge.challenge_type || 'xp', undefined, undefined, challenge.raw_points) : challenge.user_points}</div>
                     </div>
                 </div>
-                <div style="padding: 0 20px 14px 20px; text-align: right;">
+                <div style="padding: 0 20px 14px 20px; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+                     <button onclick="openXpGuidePage(event)" style="background: rgba(255,255,255,0.92); color: #312e81; border: 1px solid rgba(255,255,255,0.55); border-radius: 8px; padding: 5px 12px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">
+                         How to earn XP
+                     </button>
                      <button onclick="leaveChallengeFromCard(event, '${challenge.challenge_id}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 5px 12px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.2s;">
                          Leave Challenge
                      </button>
@@ -4589,14 +4599,16 @@ async function loadHomeChallenges() {
             window._extraChallengesHtml = '';
         }
 
-        // Put the cohort card above the permanent Start a Challenge card so
-        // active challenge clients see their live challenge first.
+        // Invite stays near FitGotchi until joined. Joined/active cohort cards
+        // move back into the normal Challenges section.
         const cohortHtml = cohortChallenge ? renderCohortCard(cohortChallenge) : '';
+        const inviteHtml = transformCohortChallenge ? '' : renderCohortDashboardInviteCard(cohortInviteStatus);
+        if (cohortInviteFeature) cohortInviteFeature.innerHTML = inviteHtml;
         if (cohortFeature) {
             cohortFeature.innerHTML = cohortHtml;
             container.innerHTML = html;
         } else {
-            container.innerHTML = cohortHtml + html;
+            container.innerHTML = (cohortHtml || inviteHtml) + html;
         }
 
         // Inject hidden cards now that the DOM is ready
@@ -4614,10 +4626,23 @@ async function loadHomeChallenges() {
 }
 
 // ============================================================
-// COHORT CHALLENGE (30 Day Challenge) - enrolled only when an explicit
-// cohort invitation exists. The 30-day cohort is live immediately, and
-// invited users can keep joining the active challenge.
+// COHORT CHALLENGE - enrolled only when an explicit
+// cohort invitation exists. The next cohort waits for 15 people, then starts.
 // ============================================================
+
+const COHORT_START_TARGET = 15;
+const COHORT_CASH_PRIZE_LABEL = '$500 CASH';
+const TRANSFORM_COHORT_TYPE = 'transform_30';
+const TRANSFORM_COHORT_DISPLAY_NAME = '6-Week Transformation Challenge';
+
+function getCohortDisplayName(cohort) {
+    const rawName = (cohort?.challenge_name || cohort?.name || '').trim();
+    const cohortType = cohort?.cohort_type || '';
+    if (cohortType === TRANSFORM_COHORT_TYPE || /30[-\s]?day transformation/i.test(rawName)) {
+        return TRANSFORM_COHORT_DISPLAY_NAME;
+    }
+    return rawName || '30 Day Challenge';
+}
 
 async function tryAutoEnrollInCohort() {
     if (!window.currentUser?.id) return;
@@ -4644,7 +4669,7 @@ async function tryAutoEnrollInCohort() {
             const enrolled = data && (data.challenge_id || data.just_started);
 
             // Cache the challenge_id so the feature tour can open the
-            // right cohort modal in its 30-Day Challenge intro step.
+            // right cohort modal in its challenge intro step.
             if (cohortType === 'plant_based_30' && data?.challenge_id) {
                 try { window._tourCohortChallengeId = data.challenge_id; } catch (e) {}
             }
@@ -4707,11 +4732,33 @@ async function tryAutoEnrollInCohort() {
     }
 }
 
-async function loadHomeCohortChallengeData() {
+async function loadUserCohortChallengeByType(cohortType) {
+    if (!window.currentUser?.id) return null;
+    try {
+        const { data, error } = await window.supabaseClient.rpc('get_user_cohort_challenge', {
+            p_user_id: window.currentUser.id,
+            p_cohort_type: cohortType,
+        });
+        if (error) {
+            console.warn(`[cohort] ${cohortType} fetch error:`, error);
+            return null;
+        }
+        const row = Array.isArray(data) ? (data[0] || null) : (data || null);
+        if (row && cohortType === 'plant_based_30' && row.challenge_id) {
+            try { window._tourCohortChallengeId = row.challenge_id; } catch (e) {}
+        }
+        return row;
+    } catch (e) {
+        console.warn(`[cohort] ${cohortType} fetch failed:`, e);
+        return null;
+    }
+}
+
+async function loadHomeCohortChallengeData(cohortTypesOverride) {
     if (!window.currentUser?.id) return null;
     // Whichever active system cohort the user is in, surface it on the home card.
     // Manual cohorts use this display path without participating in LP auto-enrolment.
-    const cohortTypes = ['plant_based_30', 'transform_30', 'manual_kayla_30'];
+    const cohortTypes = cohortTypesOverride || ['transform_30', 'plant_based_30', 'manual_kayla_30'];
     for (const cohortType of cohortTypes) {
         try {
             const { data, error } = await window.supabaseClient.rpc('get_user_cohort_challenge', {
@@ -4737,12 +4784,112 @@ async function loadHomeCohortChallengeData() {
     return null;
 }
 
+async function loadNextCohortInviteStatus() {
+    if (!window.supabaseClient) return null;
+    try {
+        const { data, error } = await window.supabaseClient.rpc('get_next_cohort_status', {
+            p_cohort_type: 'transform_30',
+        });
+        if (error) {
+            console.warn('🌱 [cohort] next invite status error:', error);
+            return null;
+        }
+        return Array.isArray(data) ? (data[0] || null) : (data || null);
+    } catch (e) {
+        console.warn('🌱 [cohort] next invite status failed:', e);
+        return null;
+    }
+}
+
 function renderCohortCard(cohort) {
     if (!cohort) return '';
     if (cohort.status !== 'pending') return renderCohortActiveCard(cohort);
     if (cohort.user_status === 'pending_acceptance') return renderCohortAcceptanceCard(cohort);
     return renderCohortWaitingCard(cohort);
 }
+
+function renderCohortDashboardInviteCard(inviteStatus) {
+    const needed = Number(inviteStatus?.min_participants) || COHORT_START_TARGET;
+    const joined = Math.max(0, Number(inviteStatus?.participant_count) || 0);
+    const remaining = Math.max(0, Number(inviteStatus?.spots_remaining ?? (needed - joined)) || 0);
+    const spotsLabel = remaining === 0
+        ? 'Opening now'
+        : `${remaining} ${remaining === 1 ? 'spot' : 'spots'}`;
+    const joinedLabel = joined > 0
+        ? `${joined} ${joined === 1 ? 'joined' : 'joined'}`
+        : 'Join the next start list';
+    return `
+    <div class="cohort-invite-card" style="border-radius: 20px; overflow: hidden; background: linear-gradient(135deg, #171717 0%, #0a0a0a 58%, #000000 100%); border: 1px solid rgba(245,217,138,0.18); box-shadow: 0 18px 42px rgba(0,0,0,0.42); margin-bottom: 14px; position: relative;">
+        <div style="padding: 18px 20px;">
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+                <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem;">&#127942;</div>
+                <div style="flex: 1; min-width: 0;">
+                    <div class="cohort-card-title" style="font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; font-size: 1.02rem; margin-bottom: 2px;">Next Challenge</div>
+                    <div class="cohort-card-subtitle" style="font-size: 0.78rem; color: rgba(248,247,242,0.86); -webkit-text-fill-color: rgba(248,247,242,0.86);">Starts when ${needed} people join.</div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: linear-gradient(135deg, #22c55e 0%, #84cc16 46%, #facc15 100%); color: #07130b; border: 1px solid rgba(254,240,138,0.95); border-radius: 16px; padding: 10px 12px; font-weight: 950; margin-bottom: 12px; box-shadow: 0 10px 28px rgba(34,197,94,0.35), 0 0 0 1px rgba(255,255,255,0.08) inset;">
+                <span style="font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;">1st Place</span>
+                <span style="font-size: 1.16rem; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.38); white-space: nowrap;">${COHORT_CASH_PRIZE_LABEL}</span>
+            </div>
+            <div style="background: rgba(245,217,138,0.12); border: 1px solid rgba(245,217,138,0.14); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <span style="color: rgba(255,255,255,0.92); font-size: 0.78rem; font-weight: 600;">${joinedLabel}</span>
+                <span style="color: white; font-weight: 800; font-size: 1rem;">${spotsLabel}</span>
+            </div>
+            <button onclick="joinDashboardCohortChallenge('transform_30', this)" style="width: 100%; padding: 14px; border: none; border-radius: 14px; background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 55%, #9f7628 100%); color: #090909; font-weight: 900; font-size: 1rem; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.26);">Join Challenge</button>
+        </div>
+    </div>`;
+}
+
+async function joinDashboardCohortChallenge(cohortType, btnEl) {
+    if (!window.currentUser?.id || !window.supabaseClient) return;
+    const originalText = btnEl ? btnEl.textContent : '';
+    if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.textContent = 'Joining...';
+        btnEl.style.opacity = '0.75';
+    }
+    try {
+        const { data, error } = await window.supabaseClient.rpc('join_cohort_from_app', {
+            p_user_id: window.currentUser.id,
+            p_cohort_type: cohortType || 'transform_30',
+        });
+        if (error || data?.error) {
+            console.warn('ðŸŒ± [cohort] join_cohort_from_app error:', error || data);
+            if (typeof showToast === 'function') showToast("Couldn't join the challenge. Try again.");
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.textContent = originalText || 'Join Challenge';
+                btnEl.style.opacity = '1';
+            }
+            return;
+        }
+        if (data?.just_activated || data?.just_started) {
+            try {
+                await fetch('/.netlify/functions/notify-cohort-start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ challengeId: data.challenge_id, event: 'cohort_activated' }),
+                });
+            } catch (e) {
+                console.warn('ðŸŒ± [cohort] notify-cohort-start (dashboard join) failed:', e);
+            }
+        }
+        if (typeof showToast === 'function') {
+            showToast(data?.just_activated || data?.just_started ? "You're in. Challenge starts now!" : "You're in. Waiting for the rest of the 15.");
+        }
+        if (typeof loadHomeChallenges === 'function') await loadHomeChallenges();
+    } catch (e) {
+        console.warn('ðŸŒ± [cohort] dashboard join failed:', e);
+        if (typeof showToast === 'function') showToast("Couldn't join the challenge. Try again.");
+        if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.textContent = originalText || 'Join Challenge';
+            btnEl.style.opacity = '1';
+        }
+    }
+}
+window.joinDashboardCohortChallenge = joinDashboardCohortChallenge;
 
 function _formatAcceptanceCountdown(deadlineIso) {
     if (!deadlineIso) return '';
@@ -4758,7 +4905,7 @@ function _formatAcceptanceCountdown(deadlineIso) {
 
 function renderCohortAcceptanceCard(cohort) {
     const accepted = cohort.accepted_count || 0;
-    const needed = cohort.min_participants || 6;
+    const needed = cohort.min_participants || COHORT_START_TARGET;
     const countdown = _formatAcceptanceCountdown(cohort.acceptance_deadline);
     const cid = String(cohort.challenge_id || '').replace(/'/g, '');
     return `
@@ -4767,9 +4914,13 @@ function renderCohortAcceptanceCard(cohort) {
             <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
                 <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem;">⏳</div>
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 800; color: white; font-size: 1.02rem; margin-bottom: 2px;">Your cohort is ready!</div>
-                    <div style="font-size: 0.78rem; color: rgba(255,255,255,0.92);">${countdown ? `Accept your spot — ${countdown}.` : 'Accept your spot to start.'}</div>
+                    <div class="cohort-card-title" style="font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; font-size: 1.02rem; margin-bottom: 2px;">Your cohort is ready!</div>
+                    <div class="cohort-card-subtitle" style="font-size: 0.78rem; color: rgba(248,247,242,0.86); -webkit-text-fill-color: rgba(248,247,242,0.86);">${countdown ? `Accept your spot — ${countdown}.` : 'Accept your spot to start.'}</div>
                 </div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: linear-gradient(135deg, #22c55e 0%, #84cc16 46%, #facc15 100%); color: #07130b; border: 1px solid rgba(254,240,138,0.95); border-radius: 16px; padding: 10px 12px; font-weight: 950; margin-bottom: 12px; box-shadow: 0 10px 28px rgba(34,197,94,0.35), 0 0 0 1px rgba(255,255,255,0.08) inset;">
+                <span style="font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;">1st Place</span>
+                <span style="font-size: 1.16rem; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.38); white-space: nowrap;">${COHORT_CASH_PRIZE_LABEL}</span>
             </div>
             <div style="background: rgba(255,255,255,0.18); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                 <span style="color: rgba(255,255,255,0.92); font-size: 0.78rem; font-weight: 600;">${accepted} of ${needed} confirmed</span>
@@ -4782,14 +4933,14 @@ function renderCohortAcceptanceCard(cohort) {
 
 function renderCohortWaitingCard(cohort) {
     const joined = cohort.participant_count || 1;
-    const needed = cohort.min_participants || 6;
+    const needed = cohort.min_participants || COHORT_START_TARGET;
     const remaining = Math.max(0, needed - joined);
     const dots = Array.from({ length: needed }).map((_, i) => `
         <div style="width: 14px; height: 14px; border-radius: 50%; background: ${i < joined ? '#f5d98a' : 'rgba(255,255,255,0.24)'}; ${i < joined ? 'box-shadow: 0 0 12px rgba(245,217,138,0.62);' : ''}"></div>
     `).join('');
     const subtitle = remaining === 0
         ? 'Challenge is opening now.'
-        : 'The challenge is live. Pull down to refresh if this card stays here.';
+        : `${remaining} ${remaining === 1 ? 'spot' : 'spots'} left. Starts when ${needed} people join.`;
 
     return `
     <div class="cohort-waiting-card" onclick="openCohortInfo('${cohort.challenge_id}')" style="cursor: pointer; border-radius: 20px; overflow: hidden; background: linear-gradient(135deg, #171717 0%, #0a0a0a 58%, #000000 100%); border: 1px solid rgba(245,217,138,0.18); box-shadow: 0 18px 42px rgba(0,0,0,0.42); margin-bottom: 14px; position: relative;">
@@ -4797,14 +4948,17 @@ function renderCohortWaitingCard(cohort) {
             <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
                 <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem;">🌱</div>
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 800; color: white; font-size: 1.02rem; margin-bottom: 2px;">${cohort.challenge_name || '30 Day Challenge'}</div>
-                    <div style="font-size: 0.78rem; color: rgba(255,255,255,0.92);">${subtitle}</div>
+                    <div class="cohort-card-title" style="font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; font-size: 1.02rem; margin-bottom: 2px;">${getCohortDisplayName(cohort)}</div>
+                    <div class="cohort-card-subtitle" style="font-size: 0.78rem; color: rgba(248,247,242,0.86); -webkit-text-fill-color: rgba(248,247,242,0.86);">${subtitle}</div>
                 </div>
                 <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.6); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
             </div>
-            <div style="background: rgba(245,217,138,0.12); border: 1px solid rgba(245,217,138,0.14); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; gap: 6px; align-items: center;">${dots}</div>
-                <span style="color: white; font-weight: 800; font-size: 1rem;">${joined} / ${needed}</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: linear-gradient(135deg, #22c55e 0%, #84cc16 46%, #facc15 100%); color: #07130b; border: 1px solid rgba(254,240,138,0.95); border-radius: 16px; padding: 10px 12px; font-weight: 950; margin-bottom: 12px; box-shadow: 0 10px 28px rgba(34,197,94,0.35), 0 0 0 1px rgba(255,255,255,0.08) inset;">
+                <span style="font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;">1st Place</span>
+                <span style="font-size: 1.16rem; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.38); white-space: nowrap;">${COHORT_CASH_PRIZE_LABEL}</span>
+            </div>
+            <div style="background: rgba(245,217,138,0.12); border: 1px solid rgba(245,217,138,0.14); border-radius: 12px; padding: 10px 14px;">
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">${dots}</div>
             </div>
         </div>
     </div>`;
@@ -4890,7 +5044,8 @@ function renderCohortActiveCard(cohort) {
         <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
             <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.5rem;">🌱</div>
             <div style="flex: 1; min-width: 0;">
-                <div style="font-weight: 800; color: white; font-size: 0.98rem; margin-bottom: 3px;">${cohort.challenge_name || '30 Day Challenge'}</div>
+                <div class="cohort-card-title" style="font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; font-size: 0.98rem; margin-bottom: 3px;">${getCohortDisplayName(cohort)}</div>
+                <div style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #22c55e 0%, #84cc16 48%, #facc15 100%); color: #07130b; border: 1px solid rgba(254,240,138,0.85); border-radius: 999px; padding: 4px 8px; font-size: 0.68rem; font-weight: 950; margin-bottom: 6px; box-shadow: 0 6px 18px rgba(34,197,94,0.28);"><span>1st Place</span><span style="color: #ffffff; text-shadow: 0 1px 6px rgba(0,0,0,0.38);">${COHORT_CASH_PRIZE_LABEL}</span></div>
                 <div style="display: flex; gap: 12px; font-size: 0.78rem; color: rgba(255,255,255,0.85);">
                     <span>#${rank}</span>
                     <span>⏱️ ${days}d left</span>
@@ -4901,6 +5056,9 @@ function renderCohortActiveCard(cohort) {
                 <div style="font-size: 1.3rem; font-weight: 800; color: white;">${points}</div>
                 <div style="font-size: 0.65rem; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px;">XP</div>
             </div>
+        </div>
+        <div style="padding: 0 20px 16px 20px; display: flex; justify-content: flex-end;">
+            <button onclick="openXpGuidePage(event)" style="background: rgba(255,255,255,0.92); color: #101828; border: 1px solid rgba(245,217,138,0.45); border-radius: 8px; padding: 6px 12px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">How to earn XP</button>
         </div>
     </div>`;
 }
@@ -4959,11 +5117,11 @@ async function openCohortInfo(challengeId) {
         // Pull the latest cohort status (counts can change while the modal is open).
         const cohort = await loadHomeCohortChallengeData();
         const joined = cohort?.participant_count || 0;
-        const needed = cohort?.min_participants || 6;
+        const needed = cohort?.min_participants || COHORT_START_TARGET;
         const remaining = Math.max(0, needed - joined);
 
         const titleEl = document.getElementById('cohort-info-title');
-        if (titleEl && cohort?.challenge_name) titleEl.textContent = cohort.challenge_name;
+        if (titleEl && cohort) titleEl.textContent = getCohortDisplayName(cohort);
 
         const statusLine = document.getElementById('cohort-info-status-line');
         if (statusLine) {
@@ -4972,14 +5130,14 @@ async function openCohortInfo(challengeId) {
             } else if (remaining === 0) {
                 statusLine.textContent = 'Cohort full — kicking off shortly!';
             } else {
-                statusLine.textContent = `Waiting for ${remaining} more ${remaining === 1 ? 'person' : 'people'} to join.`;
+                statusLine.textContent = `Waiting for ${remaining} more ${remaining === 1 ? 'person' : 'people'} to join. Starts at ${needed}.`;
             }
         }
 
         if (statusLine && cohort?.status !== 'active') {
             statusLine.textContent = remaining === 0
                 ? 'Challenge is opening now.'
-                : 'Challenge is live. Pull down to refresh if this screen stays here.';
+                : `Starts when ${needed} people join. ${remaining} ${remaining === 1 ? 'spot' : 'spots'} left.`;
         }
 
         const dotsEl = document.getElementById('cohort-info-dots');
@@ -4988,9 +5146,6 @@ async function openCohortInfo(challengeId) {
                 <div style="width: 14px; height: 14px; border-radius: 50%; background: ${i < joined ? '#f5d98a' : 'rgba(255,255,255,0.24)'}; ${i < joined ? 'box-shadow: 0 0 12px rgba(245,217,138,0.62);' : ''}"></div>
             `).join('');
         }
-        const countEl = document.getElementById('cohort-info-count');
-        if (countEl) countEl.textContent = `${joined} / ${needed}`;
-
         const summaryEl = document.getElementById('cohort-info-participant-summary');
         if (summaryEl) summaryEl.textContent = `${joined} joined`;
 
@@ -5061,10 +5216,10 @@ function renderCohortInfoParticipants(participants, isActive) {
             ? `<span style="color: rgba(255,255,255,0.85); font-weight: 700; font-size: 0.9rem;">${p.challenge_points || 0} XP</span>`
             : `<span style="color: rgba(245,217,138,0.95); font-weight: 700; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;">Ready</span>`;
         return `
-            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <div class="cohort-info-participant-row" style="display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.05);">
                 <div style="width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: rgba(216,178,94,0.22); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${photo}</div>
                 <div style="flex: 1; min-width: 0;">
-                    <div style="color: white; font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}${isMe ? ' <span style=\"font-size: 0.65rem; font-weight: 800; color: rgba(245,217,138,0.95); letter-spacing: 0.1em; margin-left: 4px;\">YOU</span>' : ''}</div>
+                    <div class="cohort-info-participant-name" style="color: #f8f7f2; -webkit-text-fill-color: #f8f7f2; font-weight: 850; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}${isMe ? ' <span class=\"cohort-info-you-badge\" style=\"font-size: 0.65rem; font-weight: 800; color: rgba(245,217,138,0.95); -webkit-text-fill-color: rgba(245,217,138,0.95); letter-spacing: 0.1em; margin-left: 4px;\">YOU</span>' : ''}</div>
                 </div>
                 ${trailing}
             </div>
@@ -5094,6 +5249,16 @@ window._toggleExtraChallenges = function(toggleEl) {
 
 // Polls every 30s to update cards when opponents join pending challenges
 let _pendingChallengePollerTimer = null;
+
+function openXpGuidePage(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    window.location.href = 'xp-guide.html';
+}
+window.openXpGuidePage = openXpGuidePage;
+
 function _managePendingChallengePoller(hasPending) {
     if (hasPending && !_pendingChallengePollerTimer) {
         _pendingChallengePollerTimer = setInterval(() => {
@@ -5172,12 +5337,13 @@ async function loadChallenges() {
                         </div>
                     </div>
                     ` : ''}
-                    <div style="display: flex; gap: 8px;">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                         ${isInvited ? `
                             <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #7c3aed, #6366f1); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">🪙 Join Challenge</button>
                             <button onclick="declineChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: #f1f5f9; color: var(--text-muted); border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Decline</button>
                         ` : `
                             <button onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #7c3aed, #6366f1); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">View Leaderboard</button>
+                            <button onclick="openXpGuidePage(event)" style="flex: 1; min-width: 130px; padding: 10px; background: #ecfdf3; color: #087443; border: 1px solid #bbf7d0; border-radius: 8px; font-weight: 700; cursor: pointer;">How to earn XP</button>
                         `}
                     </div>
                 </div>
@@ -6368,6 +6534,7 @@ async function openChallengeLeaderboard(challengeId) {
 
         // Update full rankings
         updateFullRankings(leaderboard || []);
+        updateChallengeEffortPrizeWatch(leaderboard || []);
         renderChallengeLeaderboardChatCard(challenge, leaderboard || []);
 
         // Now that leaderboard is loaded, show completion banner using actual rank data
@@ -6479,6 +6646,7 @@ async function refreshLeaderboardAfterCompletion(challengeId) {
         if (lb && lb.length > 0) {
             updatePodium(lb);
             updateFullRankings(lb);
+            updateChallengeEffortPrizeWatch(lb);
             updateCompletionBanner(lb);
         }
 
@@ -6587,6 +6755,48 @@ function updateFullRankings(leaderboard) {
             </div>
         `;
     }).join('');
+}
+
+function updateChallengeEffortPrizeWatch(leaderboard) {
+    const watchEl = document.getElementById('challenge-effort-prize-watch');
+    if (!watchEl) return;
+
+    const rows = Array.isArray(leaderboard) ? leaderboard.slice() : [];
+    const candidates = rows
+        .filter(p => p && Number(p.rank) > 3)
+        .sort((a, b) => (Number(b.challenge_points) || 0) - (Number(a.challenge_points) || 0));
+
+    const candidate = candidates[0] || null;
+    if (!candidate) {
+        watchEl.style.display = 'none';
+        watchEl.innerHTML = '';
+        return;
+    }
+
+    const challengeType = candidate.challenge_type || rows[0]?.challenge_type || 'xp';
+    const scoreText = typeof formatChallengePoints === 'function'
+        ? formatChallengePoints(candidate.challenge_points || 0, challengeType, candidate.milestone_progress, candidate.milestone_criteria, candidate.raw_points)
+        : `${Number(candidate.challenge_points) || 0} pts`;
+    const safeName = escapeChallengeHtml(candidate.user_name || 'Participant');
+    const safePhoto = candidate.user_photo ? escapeChallengeHtml(candidate.user_photo) : '';
+    const initials = safeName.charAt(0).toUpperCase() || '?';
+
+    watchEl.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #14b8a6, #f59e0b); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; overflow: hidden; flex-shrink: 0;">
+                ${safePhoto ? `<img src="${safePhoto}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
+            </div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 7px; min-width: 0;">
+                    <span style="font-size: 0.78rem; color: white; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${safeName}</span>
+                    <span style="font-size: 0.62rem; color: #5eead4; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0;">watch</span>
+                </div>
+                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.55); line-height: 1.35;">Current strongest momentum outside the podium</div>
+            </div>
+            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.82); font-weight: 800; flex-shrink: 0;">${scoreText}</div>
+        </div>
+    `;
+    watchEl.style.display = 'block';
 }
 
 
@@ -7439,6 +7649,7 @@ async function refreshOpenLeaderboardWithWearablePatch(challengeId) {
 
     if (typeof updatePodium === 'function') updatePodium(lb);
     if (typeof updateFullRankings === 'function') updateFullRankings(lb);
+    if (typeof updateChallengeEffortPrizeWatch === 'function') updateChallengeEffortPrizeWatch(lb);
 }
 
 // Sync native HealthKit / Health Connect steps into oura_daily_activity so
@@ -8712,6 +8923,406 @@ async function loadHomeFriendsModal() {
         container.innerHTML = '<div style="text-align: center; padding: 30px; color: #ef4444; font-size: 0.85rem;">Failed to load friends</div>';
     }
 }
+
+const FEED_LEVEL_LEADERBOARD_LIMIT = 10;
+let feedLevelLeaderboardLoaded = false;
+let feedLevelLeaderboardLoading = false;
+let feedLevelLeaderboardLastEventToggleAt = 0;
+
+function getFeedLevelFallbackInfo(lifetimePoints) {
+    const maxLevel = 99;
+    const base = 3;
+    const multiplier = 0.3;
+    const exponent = 2.1;
+    const pointsForLevel = level => {
+        if (level <= 1) return 0;
+        const levelIndex = level - 1;
+        return Math.floor(base * levelIndex + multiplier * Math.pow(levelIndex, exponent));
+    };
+    let level = 1;
+    while (level < maxLevel && Number(lifetimePoints || 0) >= pointsForLevel(level + 1)) level++;
+    return { level };
+}
+
+function getFeedLevelInfo(lifetimePoints) {
+    const safePoints = Math.max(0, Number(lifetimePoints || 0));
+    if (typeof calculateLevel === 'function') return calculateLevel(safePoints);
+    return getFeedLevelFallbackInfo(safePoints);
+}
+
+function getFeedLevelTitleForLevel(level) {
+    if (typeof getLevelTitle === 'function') return getLevelTitle(level);
+    if (level >= 99) return 'Legend';
+    if (level >= 90) return 'Master';
+    if (level >= 80) return 'Champion';
+    if (level >= 70) return 'Expert';
+    if (level >= 60) return 'Veteran';
+    if (level >= 50) return 'Dedicated';
+    if (level >= 40) return 'Committed';
+    if (level >= 30) return 'Consistent';
+    if (level >= 20) return 'Growing';
+    if (level >= 10) return 'Rising';
+    if (level >= 5) return 'Beginner';
+    return 'Newcomer';
+}
+
+function getFeedLevelInitials(name) {
+    const clean = String(name || 'Member').trim();
+    const parts = clean.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return clean.slice(0, 2).toUpperCase();
+}
+
+function getFeedLevelCurrentUserProfile() {
+    const user = window.currentUser || {};
+    const metadata = user.user_metadata || {};
+    const name = metadata.name || metadata.full_name || user.name || user.email?.split('@')[0] || 'You';
+    return {
+        id: user.id,
+        name,
+        photo: metadata.avatar_url || metadata.picture || user.profile_photo || ''
+    };
+}
+
+function getFeedLevelLeaderboardShellHtml() {
+    return `
+        <section id="feed-level-leaderboard-card" class="feed-level-leaderboard is-collapsed" aria-label="Top Levels">
+            <button type="button" class="feed-level-leaderboard-toggle" onclick="window.pbbToggleFeedLevelLeaderboardFromEvent ? window.pbbToggleFeedLevelLeaderboardFromEvent(event) : (window.toggleFeedLevelLeaderboard && window.toggleFeedLevelLeaderboard())" aria-expanded="false" aria-controls="feed-level-leaderboard-body">
+                <span class="feed-level-leaderboard-badge">10</span>
+                <span class="feed-level-leaderboard-copy">
+                    <span class="feed-level-leaderboard-title">Top Levels</span>
+                    <span id="feed-level-leaderboard-summary" class="feed-level-leaderboard-summary">Highest level in Balance so far.</span>
+                </span>
+                <span id="feed-level-leaderboard-top-value" class="feed-level-leaderboard-top-value">--</span>
+                <span class="feed-level-leaderboard-chevron" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+                </span>
+            </button>
+            <div id="feed-level-leaderboard-body" class="feed-level-leaderboard-body" aria-hidden="true">
+                <div class="feed-level-leaderboard-actions">
+                    <span>Highest level in Balance so far.</span>
+                    <button type="button" onclick="refreshFeedLevelLeaderboard(event)">Refresh</button>
+                </div>
+                <div id="feed-level-leaderboard-list" class="feed-level-leaderboard-list">
+                    <div class="feed-level-leaderboard-state">Loading levels...</div>
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function isLegacyFeedChallengeCard(el) {
+    if (!el || el.id || el.closest('#feed-composer-card, #friends-feed-section, #feed-messages-panel, #game-challenge-modal')) return false;
+    const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return text.includes('Challenge a Friend') &&
+        text.includes('Chess, Checkers, Connect 4') &&
+        text.includes('bet FitCoins');
+}
+
+function findLegacyFeedChallengeCards(view) {
+    if (!view) return [];
+    return Array.from(view.querySelectorAll('div')).filter(isLegacyFeedChallengeCard);
+}
+
+function removeLegacyFeedChallengeCards(view) {
+    const cards = findLegacyFeedChallengeCards(view);
+    cards.forEach(card => {
+        if (card.parentNode) card.remove();
+    });
+    return cards.length;
+}
+
+function ensureFeedLevelLeaderboardShell() {
+    const existing = document.getElementById('feed-level-leaderboard-card');
+    const view = document.getElementById('view-friends');
+    if (existing) {
+        removeLegacyFeedChallengeCards(view);
+        return existing;
+    }
+    if (!view) return null;
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = getFeedLevelLeaderboardShellHtml().trim();
+    const card = wrapper.firstElementChild;
+    const legacyCards = findLegacyFeedChallengeCards(view);
+    const legacyCard = legacyCards[0] || null;
+    const composer = document.getElementById('feed-composer-card');
+
+    if (legacyCard && legacyCard.parentNode) {
+        legacyCard.replaceWith(card);
+    } else if (composer && composer.parentNode) {
+        composer.parentNode.insertBefore(card, composer);
+    } else {
+        view.appendChild(card);
+    }
+
+    legacyCards.slice(1).forEach(extraCard => {
+        if (extraCard.parentNode) extraCard.remove();
+    });
+
+    return card;
+}
+
+function observeFeedLevelLeaderboardShell() {
+    const view = document.getElementById('view-friends');
+    if (!view || view.dataset.feedLevelLeaderboardObserver === 'true') return;
+    view.dataset.feedLevelLeaderboardObserver = 'true';
+
+    const observer = new MutationObserver(() => {
+        if (!document.getElementById('feed-level-leaderboard-card')) {
+            ensureFeedLevelLeaderboardShell();
+        } else {
+            removeLegacyFeedChallengeCards(view);
+        }
+        bindFeedLevelLeaderboardTouchEvents();
+    });
+    observer.observe(view, { childList: true, subtree: true });
+}
+
+function bindFeedLevelLeaderboardTouchEvents() {
+    const toggle = document.querySelector('#feed-level-leaderboard-card .feed-level-leaderboard-toggle');
+    if (!toggle || toggle.dataset.pbbTouchBound === 'true') return;
+    toggle.dataset.pbbTouchBound = 'true';
+    toggle.addEventListener('pointerup', event => {
+        if (event.pointerType === 'mouse') return;
+        handleFeedLevelLeaderboardToggleEvent(event);
+    }, { passive: false });
+    toggle.addEventListener('touchend', event => {
+        handleFeedLevelLeaderboardToggleEvent(event);
+    }, { passive: false });
+}
+
+function setFeedLevelLeaderboardOpen(isOpen) {
+    const card = ensureFeedLevelLeaderboardShell();
+    const body = document.getElementById('feed-level-leaderboard-body');
+    const toggle = card?.querySelector('.feed-level-leaderboard-toggle');
+    if (!card) return;
+
+    card.classList.toggle('is-collapsed', !isOpen);
+    card.classList.toggle('is-open', isOpen);
+    if (toggle) toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    if (body) body.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+}
+
+function toggleFeedLevelLeaderboard(forceOpen) {
+    const card = ensureFeedLevelLeaderboardShell();
+    if (!card) return;
+
+    const shouldOpen = typeof forceOpen === 'boolean'
+        ? forceOpen
+        : card.classList.contains('is-collapsed');
+
+    setFeedLevelLeaderboardOpen(shouldOpen);
+    if (shouldOpen && !feedLevelLeaderboardLoaded) {
+        loadFeedLevelLeaderboard();
+    }
+}
+
+function handleFeedLevelLeaderboardToggleEvent(event, forceOpen) {
+    if (event) {
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+        if (typeof event.stopPropagation === 'function') event.stopPropagation();
+        const now = Date.now();
+        if (now - feedLevelLeaderboardLastEventToggleAt < 320) return;
+        feedLevelLeaderboardLastEventToggleAt = now;
+    }
+    toggleFeedLevelLeaderboard(forceOpen);
+}
+
+function refreshFeedLevelLeaderboard(event) {
+    if (event) event.stopPropagation();
+    feedLevelLeaderboardLoaded = false;
+    loadFeedLevelLeaderboard(true);
+}
+
+function addFeedLevelRecord(recordsById, row) {
+    const userId = row?.user_id;
+    if (!userId) return;
+    const lifetimePoints = Math.max(0, Number(row.lifetime_points || 0));
+    const existing = recordsById.get(userId);
+    if (!existing || lifetimePoints > existing.lifetime_points) {
+        recordsById.set(userId, { user_id: userId, lifetime_points: lifetimePoints });
+    }
+}
+
+async function loadFeedLevelLeaderboard(force = false) {
+    if (feedLevelLeaderboardLoading && !force) return;
+
+    ensureFeedLevelLeaderboardShell();
+    const list = document.getElementById('feed-level-leaderboard-list');
+    const topValue = document.getElementById('feed-level-leaderboard-top-value');
+    const summary = document.getElementById('feed-level-leaderboard-summary');
+    if (!list) return;
+
+    if (!window.currentUser || !window.supabaseClient) {
+        list.innerHTML = '<div class="feed-level-leaderboard-state">Levels unavailable.</div>';
+        return;
+    }
+
+    feedLevelLeaderboardLoading = true;
+    list.innerHTML = '<div class="feed-level-leaderboard-state">Loading levels...</div>';
+
+    try {
+        const recordsById = new Map();
+        const friendProfiles = new Map();
+        const currentProfile = getFeedLevelCurrentUserProfile();
+
+        try {
+            const { data, error } = await window.supabaseClient
+                .from('user_points')
+                .select('user_id, lifetime_points')
+                .order('lifetime_points', { ascending: false })
+                .limit(FEED_LEVEL_LEADERBOARD_LIMIT);
+            if (error) throw error;
+            (data || []).forEach(row => addFeedLevelRecord(recordsById, row));
+        } catch (e) {
+            console.warn('Could not load global level leaderboard:', e);
+        }
+
+        let friends = [];
+        try {
+            friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
+            (friends || []).forEach(friend => {
+                if (!friend?.friend_id) return;
+                friendProfiles.set(friend.friend_id, {
+                    id: friend.friend_id,
+                    name: friend.friend_name || 'Friend',
+                    photo: friend.friend_photo || ''
+                });
+            });
+        } catch (e) {
+            console.warn('Could not load friend profiles for level leaderboard:', e);
+        }
+
+        const candidateIds = [window.currentUser.id]
+            .concat((friends || []).map(friend => friend.friend_id).filter(Boolean));
+        const uniqueCandidateIds = Array.from(new Set(candidateIds));
+
+        if (uniqueCandidateIds.length) {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('user_points')
+                    .select('user_id, lifetime_points')
+                    .in('user_id', uniqueCandidateIds);
+                if (error) throw error;
+                (data || []).forEach(row => addFeedLevelRecord(recordsById, row));
+            } catch (e) {
+                console.warn('Could not load friend level rows:', e);
+            }
+        }
+
+        if (!recordsById.has(window.currentUser.id) && window.db?.points?.getPoints) {
+            try {
+                const ownPoints = await window.db.points.getPoints(window.currentUser.id);
+                addFeedLevelRecord(recordsById, {
+                    user_id: window.currentUser.id,
+                    lifetime_points: ownPoints?.lifetime_points || 0
+                });
+            } catch (e) {
+                console.warn('Could not load current user level row:', e);
+            }
+        }
+
+        const ids = Array.from(recordsById.keys());
+        const profilesById = new Map();
+        if (currentProfile.id) profilesById.set(currentProfile.id, currentProfile);
+        friendProfiles.forEach((profile, id) => profilesById.set(id, profile));
+
+        if (ids.length) {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('users')
+                    .select('id, name, email, profile_photo')
+                    .in('id', ids);
+                if (error) throw error;
+                (data || []).forEach(user => {
+                    profilesById.set(user.id, {
+                        id: user.id,
+                        name: user.name || user.email?.split('@')[0] || 'Member',
+                        photo: user.profile_photo || ''
+                    });
+                });
+            } catch (e) {
+                console.warn('Could not load level leaderboard profile names:', e);
+            }
+        }
+
+        const ranked = ids.map((id, index) => {
+            const record = recordsById.get(id);
+            const profile = profilesById.get(id) || { id, name: `Member ${index + 1}`, photo: '' };
+            const levelInfo = getFeedLevelInfo(record.lifetime_points);
+            return {
+                id,
+                name: profile.name || 'Member',
+                photo: profile.photo || '',
+                lifetimePoints: record.lifetime_points,
+                level: levelInfo.level || 1,
+                title: getFeedLevelTitleForLevel(levelInfo.level || 1),
+                isCurrentUser: id === window.currentUser.id
+            };
+        }).sort((a, b) => {
+            if (b.level !== a.level) return b.level - a.level;
+            if (b.lifetimePoints !== a.lifetimePoints) return b.lifetimePoints - a.lifetimePoints;
+            return a.name.localeCompare(b.name);
+        }).slice(0, FEED_LEVEL_LEADERBOARD_LIMIT);
+
+        if (!ranked.length) {
+            list.innerHTML = '<div class="feed-level-leaderboard-state">No levels yet.</div>';
+            if (topValue) topValue.textContent = '--';
+            if (summary) summary.textContent = 'Highest level in Balance so far.';
+            feedLevelLeaderboardLoaded = true;
+            return;
+        }
+
+        const topEntry = ranked[0];
+        if (topValue) topValue.textContent = `Lv ${topEntry.level}`;
+        if (summary) summary.textContent = `${ranked.length} ranked so far`;
+
+        list.innerHTML = ranked.map((entry, index) => {
+            const rank = index + 1;
+            const safeName = escapeHtml(entry.name);
+            const initials = getFeedLevelInitials(entry.name);
+            const avatar = entry.photo
+                ? `<img src="${escapeHtml(entry.photo)}" alt="" onerror="this.parentElement.textContent='${initials}'">`
+                : initials;
+            return `
+                <div class="feed-level-row ${entry.isCurrentUser ? 'is-current-user' : ''}">
+                    <div class="feed-level-rank rank-${rank <= 3 ? rank : 'default'}">${rank}</div>
+                    <div class="feed-level-avatar">${avatar}</div>
+                    <div class="feed-level-person">
+                        <div class="feed-level-name">${safeName}${entry.isCurrentUser ? '<span>You</span>' : ''}</div>
+                        <div class="feed-level-meta">Level ${entry.level} / ${escapeHtml(entry.title)}</div>
+                    </div>
+                    <div class="feed-level-points">
+                        <strong>${entry.lifetimePoints.toLocaleString()}</strong>
+                        <small>XP</small>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        feedLevelLeaderboardLoaded = true;
+    } catch (error) {
+        console.error('Error loading level leaderboard:', error);
+        list.innerHTML = '<div class="feed-level-leaderboard-state">Could not load levels.</div>';
+    } finally {
+        feedLevelLeaderboardLoading = false;
+    }
+}
+
+window.toggleFeedLevelLeaderboard = toggleFeedLevelLeaderboard;
+window.pbbToggleFeedLevelLeaderboardFromEvent = handleFeedLevelLeaderboardToggleEvent;
+window.refreshFeedLevelLeaderboard = refreshFeedLevelLeaderboard;
+window.loadFeedLevelLeaderboard = loadFeedLevelLeaderboard;
+window.ensureFeedLevelLeaderboardShell = ensureFeedLevelLeaderboardShell;
+_runWhenDomReady(function() {
+    const card = ensureFeedLevelLeaderboardShell();
+    observeFeedLevelLeaderboardShell();
+    bindFeedLevelLeaderboardTouchEvents();
+    if (card && card.classList.contains('is-open') && !feedLevelLeaderboardLoaded) {
+        loadFeedLevelLeaderboard();
+    }
+});
 
 // Load group chats into the messages panel
 async function loadPanelGroupChats() {

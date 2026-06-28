@@ -1,5 +1,4 @@
 export default async (request, context) => {
-    // Enable CORS
     const corsHeaders = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
@@ -19,8 +18,7 @@ export default async (request, context) => {
         const userMessage = body.message || "";
         const history = body.history || [];
 
-        // 1. Get API Key
-        const API_KEY = Deno.env.get("GEMINI_API_KEY");
+        const API_KEY = globalThis.Netlify?.env?.get?.("GEMINI_API_KEY") || Deno.env.get("GEMINI_API_KEY");
         if (!API_KEY) {
             console.error("Missing GEMINI_API_KEY");
             return new Response(JSON.stringify({ error: "Server configuration error" }), {
@@ -28,54 +26,48 @@ export default async (request, context) => {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
-        
-        // 2. Sales Context (The "Brain")
-        const systemInstruction = `
-        You are "BalanceBot" (aka "Shanbot"), the friendly, empathetic sales assistant for "Balance" on Instagram.
-        
-        **Your Goal:** Answer user questions, build trust, and guide them to join the "Balance Membership".
-        
-        **Tone & Style (Instagram DM Mode):**
-        - **Casual & Warm:** Use emojis naturally (🌿, ✨, 💛). Think "texting a friend", not writing a formal email.
-        - **Short & Punchy:** Split long thoughts into short sentences. NO big blocks of text.
-        - **Empathetic:** Acknowledge their struggles (e.g., "That sounds so exhausting 😔").
-        
-        **CRITICAL - PRICING & MEMBERSHIP:**
-        - **1-Month:** $46 AUD/month.
-        - **3-Month:** $93 AUD total (Save 47%).
-        - **6-Month:** $108 AUD total (Save 74% - Best Value).
-        
-        **KEY SELLING POINTS:**
-        - **Guarantee:** 365-Day Money-Back Guarantee.
-        - **Access:** Instant access via Private Member App.
-        - **Support:** Direct access to dietitians.
-        
-        **THE TWO PATHWAYS:**
-        1. **Cortisol Track:** For belly fat, sleep issues (3am waking), anxiety. -> Focus: Adrenal Rescue.
-        2. **Estrogen Track:** For hip/thigh weight, painful cycles. -> Focus: Liver Detox.
-        
-        **Handling Objections (Shortform):**
-        - "Is it vegan?" -> "Yes! 100% plant-based and delicious. 🌱"
-        - "Will I lose muscle?" -> "Nope! We use protein pacing to keep you leaned out and strong. 💪"
-        - "I have injuries." -> "No stress! Our Somatic Yoga is super gentle and low impact."
-        - "Price?" -> "It starts at just $46 AUD for the month! Less than a coffee a day. ☕"
-        
-        **Strict Rules:**
-        1. **Length:** Keep valid responses under 280 characters ideally, max 2-3 short sentences.
-        2. **No Medical Advice:** If they mention serious medical issues, say "I'd recommend checking with your doc first just to be safe! 💛"
-        3. **Call to Action:** End answers with a soft question to keep the chat going (e.g., "Does that sound like something you need?")
-        `;
 
-        // 3. Construct Payload for Gemini API (REST)
-        // We use the REST API directly to avoid 'esm.sh' dependency issues in Edge
-        // Model: gemini-flash-latest (points to Gemini 2.5 Flash)
+        const systemInstruction = `
+You are "BalanceBot" (aka "Shanbot"), the friendly sales assistant for Balance on Instagram.
+
+GOAL:
+Answer questions, qualify lightly, and guide warm leads to Balance Starter Coaching without needing a phone call.
+
+CURRENT PRIMARY OFFER:
+- Balance Starter Coaching is AUD $29.99/week.
+- It includes Balance app access, tailored workout structure, food direction, progress tracking, and one weekly check-in with Shannon.
+- No sales call is needed. They can start from the coaching page: https://future-balance.netlify.app/coaching.html
+- Cancel any time. No hidden fees.
+- Free challenge/free entry is only a fallback for colder leads who are not ready to pay yet.
+
+TONE:
+- Casual, warm, and short. Think helpful DM, not landing-page copy.
+- Max 2-3 short sentences.
+- Ask one soft next-step question when useful.
+
+GOOD FIT SIGNALS:
+- They want help getting consistent.
+- They are stuck with food, training, energy, or accountability.
+- They ask about coaching, price, what is included, or how to start.
+- They want Shannon in their week but do not want a phone call.
+
+HANDLING OBJECTIONS:
+- "Price?" -> "Starter coaching is $29.99/week. That includes the app setup, your plan, and one weekly check-in with Shannon."
+- "Do I need a call?" -> "No, the starter option is built without calls. You start through the page, then Shannon checks in weekly."
+- "What's included?" -> "App access, tailored workouts, food direction, progress tracking, and one weekly check-in."
+- "Is it vegan/plant based?" -> "It can be. Shannon is plant-based himself, so food support can fit that easily."
+- "I have injuries/medical issues." -> "Best to check with your doctor or physio first. Shannon can keep the coaching general and work around what you are cleared to do."
+
+STRICT RULES:
+1. Do not mention old prices, free trials, dietitians, 365-day guarantees, cortisol/estrogen/insulin tracks, hormone resets, detoxes, or guaranteed results.
+2. Do not diagnose, prescribe, or make medical claims.
+3. Do not pressure. If they are hesitant, offer the free challenge as the lighter fallback.
+4. If they are ready, ask permission to send the coaching link or send it when they request the link.
+`;
+
         const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`;
-        
-        // Format history for API
+
         const contents = [];
-        
-        // Add System Instruction (passed as 'user' message with instruction, or specific 'system_instruction' field if supported by beta, 
-        // but simple prompting works well for Flash)
         contents.push({
             role: "user",
             parts: [{ text: "SYSTEM_INSTRUCTION: " + systemInstruction }]
@@ -85,7 +77,6 @@ export default async (request, context) => {
             parts: [{ text: "Understood." }]
         });
 
-        // Add Chat History
         history.forEach(h => {
             contents.push({
                 role: h.role === 'bot' ? 'model' : 'user',
@@ -93,14 +84,13 @@ export default async (request, context) => {
             });
         });
 
-        // Add Current Message
         contents.push({
             role: "user",
             parts: [{ text: userMessage }]
         });
 
         const payload = {
-            contents: contents,
+            contents,
             generationConfig: {
                 maxOutputTokens: 300,
                 temperature: 0.7
@@ -120,8 +110,6 @@ export default async (request, context) => {
         }
 
         const data = await response.json();
-        
-        // Extract text — concatenate all parts so multi-part responses are not truncated
         const candidate = data.candidates?.[0];
         const parts = candidate?.content?.parts || [];
         const reply = parts.map(p => p?.text || '').join('') || "Thinking...";
@@ -129,7 +117,7 @@ export default async (request, context) => {
             console.warn(`[sales-bot] finishReason=${candidate.finishReason} partCount=${parts.length} textLen=${reply.length}`);
         }
 
-        return new Response(JSON.stringify({ reply: reply }), {
+        return new Response(JSON.stringify({ reply }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
 

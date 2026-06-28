@@ -45,6 +45,7 @@ const {
     buildDailyGreetingPolicyBlock,
     shouldAllowDailyGreeting,
     isAlwaysNeedsYouPerson,
+    getAppProblemAutoSendHoldReason,
     buildShannonDmTuningBlock,
     buildOpenAIShannonVoiceBlock,
     loadEditExamples,
@@ -69,6 +70,7 @@ const {
 } = require('./_lib/client-context');
 const { buildQualifierRelationshipBlock } = require('./_lib/qualifier-engine');
 const { detectProposedCoachActions } = require('./_lib/coach-actions');
+const { buildExerciseLibrarySupportBlock } = require('./_lib/exercise-library-search');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
@@ -369,6 +371,11 @@ Use this batch as context, not a checklist. First decide what is still live: dir
         : '(no recent activity snapshot)';
     const workoutEvidenceText = clientSnapshot.recentWorkoutEvidence || '';
     const clientProfileBlock = buildClientProfileBlock({ clientName, profile: clientSnapshot });
+    const exerciseLibrarySupportBlock = buildExerciseLibrarySupportBlock({
+        currentMessage: currentMessageText,
+        conversationText: historyText,
+        recentInboundMessages,
+    });
 
     // Onboarding mode: first 72h with this coach. Shifts the prompt from
     // "answer their question" to "keep the get-to-know-you conversation
@@ -479,6 +486,12 @@ ACTION CLAIMS:
 - If they report a weird food/meal name from the app, correct obvious voice-to-text or typo errors using the conversation and app context instead of repeating the nonsense phrase as a real meal. Example: if the likely plan meal is "Berry Almond Baked Oats", do not call it "very almond mixed oats".
 - If they report a calorie/logging discrepancy, acknowledge it as something Shannon should check. Do not promise to manually adjust or log anything unless the app data below proves it has already been done.
 
+APP PROBLEM PROTOCOL:
+- If they report Balance not loading, not saving, getting stuck, crashing, showing the wrong thing, or blocking a workout/meal/check-in/login flow, treat it as a support problem to fix/check/confirm, not normal banter.
+- Do not default to "try later" or "send me a screenshot". Ask for a screenshot only when the exact problem cannot be identified from their message, app logs, or conversation.
+- Do not claim it is fixed unless the app data or prior conversation below proves Shannon has already fixed and verified it.
+- If there is no proof of a fix yet, write as Shannon taking ownership: he will check it properly and get it sorted, then confirm once fixed.
+
 ${appNavigationGuideBlock}
 
 APP FEATURES (the client is using FITGotchi / Plant Based Balance — DO NOT recommend external apps like MyFitnessPal, Cronometer, Strong, Fitbod, etc. Everything is built in):
@@ -492,6 +505,7 @@ APP FEATURES (the client is using FITGotchi / Plant Based Balance — DO NOT rec
 - Challenges with friends, Health IQ quizzes, custom trackers/checklists, cycle tracking, wearable sync (Fitbit/Oura/WHOOP), all in-app.
 If they ask "how do I X?", point them to the right tab IN THIS APP. Never suggest downloading another tracker.
 ${appXpGuideBlock}
+${exerciseLibrarySupportBlock}
 ${coachBioBlock}
 ${coachDayContextBlock}
 ${unansweredBatchBlock}
@@ -945,13 +959,62 @@ exports.handler = async (event) => {
         formCheckDraftQueued = await queueFormCheckDraft({ alertId });
     }
 
+    const appProblemAutoHold = (!simple && !isFormCheck)
+        ? getAppProblemAutoSendHoldReason({
+            currentMessage: messageText,
+            draftText,
+            alertData: alertRow.data,
+        })
+        : null;
+    if (appProblemAutoHold && alertId) {
+        const nowIso = new Date().toISOString();
+        alertRow.data = {
+            ...alertRow.data,
+            client_manager_review_required: true,
+            needs_you_required: true,
+            operator_queue: 'needs_you',
+            needs_you_reason: appProblemAutoHold.label,
+            needs_you_reasons: [appProblemAutoHold.code],
+            auto_send_review_hold: {
+                ...appProblemAutoHold,
+                held_at: nowIso,
+                source: 'instant-coach-draft',
+            },
+            codex_review: {
+                ...(alertRow.data.codex_review || {}),
+                source: 'instant-coach-draft',
+                decision: 'client_manager_review_required',
+                queue: 'needs_you',
+                needs_shannon_approval: true,
+                reason: appProblemAutoHold.label,
+                reviewed_at: nowIso,
+                automation_id: 'balance-client-dm-manager',
+            },
+        };
+        try {
+            await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending`, {
+                method: 'PATCH',
+                body: { data: alertRow.data },
+                prefer: 'return=minimal',
+            });
+        } catch (err) {
+            console.warn(`[instant-draft] app problem hold patch failed for ${alertId}:`, err.message);
+        }
+    }
+
     // 6. Auto-send for trusted clients, otherwise push the approve-gate
     //    notification. Simple replies never auto-send — no draft exists.
     let autoSent = false;
     if (!simple && !isFormCheck && mediaReview.required) {
         console.log(`[instant-draft] auto-send blocked for media-review alert ${alertId}`);
     }
-    if (!simple && !isFormCheck && !mediaReview.required && draftText && alertId) {
+    if (!simple && !isFormCheck && permanentNeedsYouClient) {
+        console.log(`[instant-draft] auto-send blocked for permanent Needs You client ${clientName}`);
+    }
+    if (!simple && !isFormCheck && appProblemAutoHold) {
+        console.log(`[instant-draft] auto-send blocked for app problem support alert ${alertId}: ${appProblemAutoHold.code}`);
+    }
+    if (!simple && !isFormCheck && !permanentNeedsYouClient && !mediaReview.required && !appProblemAutoHold && draftText && alertId) {
         autoSent = await maybeAutoSendDraft({
             coachId: receiverId,
             clientId: senderId,

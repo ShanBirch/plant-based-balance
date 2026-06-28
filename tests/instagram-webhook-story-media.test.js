@@ -1,6 +1,7 @@
 const assert = require('assert');
 
 const { _test } = require('../netlify/functions/instagram-webhook');
+const { _test: foodTrackTest } = require('../netlify/functions/ig-food-photo-track-background');
 const { normalizeMetaIgWebhookEvents } = require('../netlify/functions/_lib/meta-ig-context');
 
 const text = _test.messageTextForDraft({
@@ -23,6 +24,131 @@ const text = _test.messageTextForDraft({
 assert.ok(text.includes('replied to your story (story media attached)'));
 assert.ok(text.includes('Good tip, I follow less vegan foodies now'));
 assert.ok(!text.includes('[PHOTO:'));
+
+const foodPhotoUrl = 'https://lookaside.fbsbx.com/ig_messaging_cdn/meal.jpg';
+const foodPhotoEvent = {
+    igAccountId: '17841400000000000',
+    item: {
+        sender: { id: '978239761327698', username: 'fra' },
+        recipient: { id: '17841400000000000' },
+        message: {
+            mid: 'meal-photo-in',
+            attachments: [{ type: 'image', payload: { url: foodPhotoUrl } }],
+        },
+    },
+};
+const foodPhotoText = _test.messageTextForDraft(foodPhotoEvent);
+assert.ok(foodPhotoText.includes(`[PHOTO:${foodPhotoUrl}]`));
+assert.deepStrictEqual(_test.extractFoodPhotoUrls(foodPhotoText), [foodPhotoUrl]);
+assert.deepStrictEqual(_test.foodPhotoUrlsFromMessaging(foodPhotoEvent), [foodPhotoUrl]);
+assert.deepStrictEqual(_test.foodPhotoUrlsFromMessaging({
+    igAccountId: '17841400000000000',
+    item: {
+        sender: { id: '978239761327698' },
+        recipient: { id: '17841400000000000' },
+        message: {
+            mid: 'story-mention-in',
+            attachments: [{ type: 'story_mention', payload: { url: foodPhotoUrl } }],
+        },
+    },
+}), []);
+
+assert.strictEqual(
+    _test.foodTrackingIdentityTokens({ linked_user_id: 'client-1', profile_name: 'Fra Smith' }).includes('fra'),
+    true
+);
+assert.strictEqual(
+    _test.isPermanentNeedsYouThread({ linked_user_id: 'client-1', profile_name: 'Fra Smith', custom_data: {} }),
+    true
+);
+assert.strictEqual(
+    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-1', profile_name: 'Fra Smith', custom_data: {} }),
+    false
+);
+assert.strictEqual(
+    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-2', ig_username: 'cavazzanafrancesca', custom_data: { food_photo_tracking: { enabled: true } } }),
+    false
+);
+assert.strictEqual(
+    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-3', profile_name: 'Romy', custom_data: {} }),
+    true
+);
+assert.strictEqual(
+    _test.isFoodPhotoTrackingAllowed({ linked_user_id: null, profile_name: 'Fra', custom_data: {} }),
+    false
+);
+assert.strictEqual(
+    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-4', profile_name: 'Someone Else', custom_data: {} }),
+    false
+);
+assert.strictEqual(
+    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-5', profile_name: 'Someone Else', custom_data: { food_photo_tracking: { enabled: true } } }),
+    true
+);
+assert.strictEqual(
+    _test.isFoodPhotoTrackingAllowed({ linked_user_id: 'client-6', profile_name: 'Fra', custom_data: { food_photo_tracking: { enabled: false } } }),
+    false
+);
+assert.strictEqual(
+    _test.isFoodPhotoTrackingOfferText("hey send me your meals and I'll log it for you"),
+    true
+);
+assert.strictEqual(
+    _test.isFoodPhotoTrackingOfferText("send me a photo if dinner looks good"),
+    false
+);
+assert.strictEqual(_test.isFoodPhotoTrackingConsentText('yeah sounds good'), true);
+assert.strictEqual(_test.isFoodPhotoTrackingConsentText('nah not now'), false);
+assert.strictEqual(
+    _test.foodPhotoTrackingOfferIsActive({
+        food_photo_tracking: {
+            offer_status: 'pending',
+            last_offer_at: '2026-06-22T00:00:00.000Z',
+        },
+    }, '2026-06-23T00:00:00.000Z'),
+    true
+);
+assert.strictEqual(
+    _test.hasPendingFoodPhotoTrackingOffer({
+        linked_user_id: 'client-6',
+        custom_data: {
+            food_photo_tracking: {
+                offer_status: 'pending',
+                last_offer_at: '2026-06-22T00:00:00.000Z',
+            },
+        },
+    }, '2026-06-23T00:00:00.000Z'),
+    true
+);
+assert.strictEqual(
+    _test.hasPendingFoodPhotoTrackingOffer({
+        linked_user_id: 'client-7',
+        custom_data: {
+            food_photo_tracking: {
+                offer_status: 'accepted',
+                last_offer_at: '2026-06-22T00:00:00.000Z',
+            },
+        },
+    }, '2026-06-23T00:00:00.000Z'),
+    false
+);
+
+const brisbaneLunch = foodTrackTest.brisbaneDateParts(new Date('2026-06-22T02:34:56Z'));
+assert.strictEqual(brisbaneLunch.mealDate, '2026-06-22');
+assert.strictEqual(brisbaneLunch.mealTime, '12:34:56');
+assert.strictEqual(foodTrackTest.mealTypeForHour(brisbaneLunch.hour), 'lunch');
+assert.deepStrictEqual(foodTrackTest.nutritionTotals({
+    foodItems: [
+        { calories: 100, protein_g: 10, carbs_g: 5, fat_g: 4, fiber_g: 2 },
+        { calories: 50, protein_g: 3, carbs_g: 8, fat_g: 1, fiber_g: 1 },
+    ],
+}), { calories: 150, protein_g: 13, carbs_g: 13, fat_g: 5, fiber_g: 3 });
+assert.strictEqual(foodTrackTest.jobTokenMatches({
+    custom_data: { food_photo_tracking: { pending_job_tokens: ['queued-token'] } },
+}, 'queued-token'), true);
+assert.strictEqual(foodTrackTest.jobTokenMatches({
+    custom_data: { food_photo_tracking: { pending_job_tokens: ['queued-token'] } },
+}, 'other-token'), false);
 
 const outbound = _test.messageTextForDraft({
     field: 'message_echoes',
@@ -83,5 +209,89 @@ assert.strictEqual(_test.participantUsernameFromMessaging({
         message: { mid: 'direct-out', text: 'hey', is_echo: true },
     },
 }, '978239761327698', 'out'), 'plant_lead');
+
+const websiteComment = {
+    type: 'comment',
+    ownerId: '17841422424052111',
+    fromId: '2420613208444110',
+    commentId: '18103608319999508',
+    username: 'shan_n_sunny',
+    text: ' WEBSITE! ',
+};
+
+assert.strictEqual(_test.commentKeywordForPrivateReply(websiteComment), 'website');
+assert.strictEqual(
+    _test.shouldSendGoldCoastWebsitePrivateReply(websiteComment, { botAccount: 'goldcoast_ai_solutions' }),
+    true
+);
+assert.strictEqual(
+    _test.commentKeywordForPrivateReply({ ...websiteComment, text: 'my website' }),
+    null
+);
+assert.strictEqual(
+    _test.commentPrivateReplyDedupeId(websiteComment.commentId),
+    'ig_graph:private_reply:18103608319999508'
+);
+const websiteReply = _test.buildGoldCoastWebsitePrivateReply(websiteComment);
+assert.match(websiteReply, /gold-coast-ai-solutions\.netlify\.app/);
+assert.match(websiteReply, /utm_campaign=website_keyword/);
+assert.match(websiteReply, /ig=shan_n_sunny/);
+
+const guideComment = {
+    type: 'comment',
+    ownerId: '17841400000000000',
+    fromId: '2420613208444110',
+    commentId: '18103608319999509',
+    username: 'plant_lead',
+    mediaId: 'reel-media-1',
+    text: ' GUIDE! ',
+};
+const guideGiveaway = {
+    keyword: 'guide',
+    account: 'shan_n_sunny',
+    title: 'Core Form Checklist',
+    giveawayUrl: 'https://example.com/core-form-checklist.pdf',
+    replyText: 'Got you {username} - here is {title}: {url}',
+};
+const guideContentItem = {
+    source_key: 'ig_media:reel-media-1',
+    ig_media_id: 'reel-media-1',
+    permalink: 'https://www.instagram.com/reel/example/',
+    raw_payload: { commentGiveaway: guideGiveaway },
+};
+const guideCampaign = _test.resolveCommentGiveawayCampaign({
+    event: guideComment,
+    contentItem: guideContentItem,
+    accountConfig: { botAccount: 'shan_n_sunny' },
+});
+assert.ok(guideCampaign);
+assert.strictEqual(guideCampaign.keyword, 'guide');
+assert.strictEqual(guideCampaign.title, 'Core Form Checklist');
+const guideReply = _test.buildCommentGiveawayPrivateReply({ campaign: guideCampaign, event: guideComment });
+assert.match(guideReply, /Core Form Checklist/);
+assert.match(guideReply, /core-form-checklist\.pdf/);
+assert.match(guideReply, /utm_campaign=shan_n_sunny_guide/);
+assert.match(guideReply, /ig=plant_lead/);
+assert.strictEqual(
+    _test.resolveCommentGiveawayCampaign({
+        event: guideComment,
+        contentItem: guideContentItem,
+        accountConfig: { botAccount: 'goldcoast_ai_solutions' },
+    }),
+    null
+);
+assert.strictEqual(
+    _test.resolveCommentGiveawayCampaign({
+        event: { ...guideComment, mediaId: 'reel-media-2' },
+        contentItem: {
+            ...guideContentItem,
+            source_key: 'ig_media:reel-media-2',
+            ig_media_id: 'reel-media-2',
+            raw_payload: { commentGiveaway: { ...guideGiveaway, mediaId: 'reel-media-1' } },
+        },
+        accountConfig: { botAccount: 'shan_n_sunny' },
+    }),
+    null
+);
 
 console.log('instagram webhook story media tests passed');

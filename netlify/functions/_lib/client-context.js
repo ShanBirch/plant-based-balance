@@ -191,7 +191,7 @@ BALANCE XP GUIDE (use only when relevant, especially if a client asks how to ear
 - Meals: +1 XP per accepted meal log. Photo/AI meal logs are the safest path. If meal reminders are set, logging within 30 minutes of the scheduled meal time can add +1 on-time meal XP.
 - Daily nutrition: +2 XP once per day for completing the nutrition day with at least one meal logged and calories/protein/carbs/fat within 20% of the user's targets. Finishing the day without hitting targets records the day but gives no bonus.
 - Workout wins: +1 XP for each new personal best, including volume PRs. Verified workout photo/log routes can earn +1 XP. Do not tell clients to wait for a post-workout share/photo popup, that prompt has been removed.
-- Feed and social: workout-related image posts/stories can earn +2 XP when Balance verifies the content. Eligible verified activity cards can show +1 XP when shared to the feed. Nudging an inactive friend from Home earns +1 XP, capped once per friend per week.
+- Feed and social: one regular daily check-in post to Feed can earn +2 XP per Brisbane day. Commenting on someone else's Feed post earns +2 XP. Sharing a logged meal to Feed earns +1 XP. Workout-related image posts/stories can earn +2 XP when Balance verifies the content. Eligible verified activity cards can show +1 XP when shared to the feed. Nudging an inactive friend from Home earns +1 XP, capped once per friend per week.
 - Progress and daily cards: weekly progress photo +10 XP, sharing that weekly progress photo to Feed +10 XP once, daily weigh-in +1 XP, Friday challenge weigh-in down from last Friday +10 XP, Friday weigh-in Feed share +10 XP once, fitness diary +1 XP, and completing all three daily mood check-ins (morning / afternoon / evening) +1 XP.
 - Learning: Health IQ lessons require 100% to earn XP. New lesson +1 XP, unit complete +2 XP, module complete +5 XP, daily quiz bonus +5 XP, and Health IQ level-ups add their shown bonus.
 - Wearables: Fitbit 10,000 steps gives +2 XP once per day.
@@ -262,8 +262,10 @@ SHANNON DM TUNING FROM LIVE EDITS:
 - Do not add a random Shannon day/app/Sunshine update just because the person says "by you", "near you", "where you are", or asks about a topic around Shannon. Answer that exact topic briefly, or keep the reply as a normal reaction.
 - Pet guardrail: Sunshine is a rabbit. Do not say Shannon walked Sunshine, took Sunshine on a walk, or did dog-style activities with Sunshine. Use "chills with Sunshine", "Sunshine causing chaos", or another rabbit-safe throwaway.
 - Question discipline: do not end every reply with a question. If the right human reply is a short reaction, joke, direct answer, or acknowledgement, stop there. When a question is useful, ask one question only.
+- Live edit pattern from the last 30 days: Shannon often deletes the optional curiosity question and sends the reaction only. If you are about to write "reaction + extra question", use the reaction-only pattern unless the missing answer changes the coaching plan, support fix, or qualified lead next step.
 - Client question ladders: if the client is answering Shannon's latest question, treat the answer as enough unless there is a genuine coaching reason to ask more. Affirm, steer, or close instead of turning every answer into another question.
-- Do not let "earn the next response" become an interrogation. For clients, the next handle can be direction or reassurance, not just another ask.
+- Do not let "earn the next response" become an interrogation. For clients, the next handle can be a useful direction, reassurance, praise, banter, or clean pause, not just another ask.
+- A reply can feel worth answering because it is specific and human. Do not add a question just because the previous sentence is a statement.
 - Make questions thread-specific. Prefer "is it a big whiteboard?" or "how long have you been running for?" over broad coaching prompts like "what does that look like?" or "what is one thing you can do today?"
 - If the client sends a joke, lyric, odd phrase, or low-stakes banter like "where is my mind", mirror the bit or answer playfully. Do not turn it into a serious injury, location, or coaching question unless the thread clearly asks for that.
 - Keep the conversation open with a natural next handle unless the moment clearly needs closure. It does not always need to be a question; a specific question, soft invite, tiny personal hook, or clear next step can all work.
@@ -446,11 +448,75 @@ function isAlwaysNeedsYouPerson(record = {}) {
         const tokens = name.split(/\s+/).filter(Boolean);
         return tokens.includes('shane')
             || tokens.includes('fra')
+            || tokens.includes('miranda')
+            || tokens.includes('monica')
+            || tokens.includes('dani')
             || tokens.some(token => /^francesca\b/.test(token))
+            || name === 'cavazzanafrancesca'
+            || name === 'francescacavazzana'
             || name === 'shane'
             || name === 'fra'
+            || name === 'miranda'
+            || name === 'monica'
+            || name === 'dani'
             || name.startsWith('francesca ');
     });
+}
+
+function isAppProblemSupportRequest(text = '') {
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!t) return false;
+    const appContext = /\b(app|balance|screen|page|tab|button|start|saved|custom workout|workout|exercise|machine|meal|food|nutrition|photo|progress|check[- ]?in|challenge|login|log in|password|account|notification|loading|load|save|saved)\b/i.test(t);
+    const problem = /\b(not working|doesn['\u2019]?t work|isn['\u2019]?t working|broken|bug|glitch|glitched|error|stuck|missing|wrong|can['\u2019]?t access|cant access|won['\u2019]?t let me|won['\u2019]?t go|won['\u2019]?t load|will not load|won['\u2019]?t open|cannot|can['\u2019]?t log|cant log|login|log in|fix|help me fix|sort this|issue|problem|crash|crashed|frozen|freeze|upload failed|didn['\u2019]?t save|not showing|won['\u2019]?t show|keeps spinning|blank page)\b/i.test(t);
+    return appContext && problem;
+}
+
+function hasAppProblemResolutionEvidence(data = {}) {
+    if (!data || typeof data !== 'object') return false;
+    return !!(
+        data.app_problem_fixed_at
+        || data.app_problem_fix_verified_at
+        || data.support_fix_confirmed_at
+        || data.codex_app_fix_confirmed_at
+        || data.app_support_resolution?.fixed_at
+        || data.app_support_resolution?.verified_at
+    );
+}
+
+function draftDeflectsAppProblem(draftText = '') {
+    const t = String(draftText || '').replace(/\s+/g, ' ').trim();
+    if (!t) return true;
+    return /\b(send (?:me )?(?:a )?(?:screen ?shot|screenshot)|try again later|try it later|if it still|if it keeps|let me know if it|when it won['\u2019]?t|hopefully|should be fine|maybe it['\u2019]?s just|probably just)\b/i.test(t);
+}
+
+function draftClaimsAppProblemResolved(draftText = '') {
+    const t = String(draftText || '').replace(/\s+/g, ' ').trim();
+    if (!t) return false;
+    return /\b(fixed it|fixed now|sorted it|sorted now|checked it|checked and fixed|should be fixed|all fixed|cleaned up|working now|ready now)\b/i.test(t);
+}
+
+function getAppProblemAutoSendHoldReason({ currentMessage = '', draftText = '', alertData = {} } = {}) {
+    if (!isAppProblemSupportRequest(currentMessage)) return null;
+    const hasResolutionEvidence = hasAppProblemResolutionEvidence(alertData);
+    if (draftDeflectsAppProblem(draftText)) {
+        return {
+            code: 'app_problem_needs_fix_check',
+            label: 'app problem needs fix/check/confirm, not a screenshot deflection',
+        };
+    }
+    if (draftClaimsAppProblemResolved(draftText) && !hasResolutionEvidence) {
+        return {
+            code: 'app_problem_unverified_fix_claim',
+            label: 'draft claims the app problem is fixed without stored verification',
+        };
+    }
+    if (!hasResolutionEvidence) {
+        return {
+            code: 'app_problem_needs_fix_check',
+            label: 'app problem needs fix/check/confirm before auto-send',
+        };
+    }
+    return null;
 }
 
 async function loadClientMemory(coachId, clientId) {
@@ -1071,7 +1137,7 @@ async function loadEditExamples({
             return `Example ${i + 1}:\nAI draft: ${e.draft}\nShannon rewrote it to: ${e.final}${reason}`;
         };
 
-        let block = `\n\nRECENT SHANNON EDIT LESSONS TO APPLY BEFORE COPYING ANY EXAMPLE:\n- Do not ask a question every reply. In friendly ongoing banter, sometimes the right reply is only a short reaction or joke.\n- If the draft asks two questions, usually cut it to one or none. A broad coaching question is worse than no question.\n- Make questions specific to the current thread. Do not reset to stock discovery when the conversation already has a clear hook.\n- If the client sends a joke, lyric, odd phrase, or low-stakes banter, mirror the bit or answer playfully instead of forcing a serious coaching question.\n- Keep the conversation open with a natural next handle unless the moment clearly needs closure. The handle can be a specific question, soft invite, tiny personal hook, or clear next step.\n- When they give a past or current detail, use that detail as the next handle. "how did your last ones go?" beats a generic "let me know how they go" when they mention past bloods.\n- If they say they used to have a result or body state and want it back, ask how they got it last time before asking what blocks them now.\n- The next handle may come from a recent previous message if it is still part of the same topic. If they earlier said they were stuck in bed, and now they are talking bloods/results, "have you been stuck in bed today?" beats a generic future update request.\n- In multi-message batches, do not answer every old message like a checklist. Let the newest or emotionally biggest message control the reply, and skip callbacks that now feel stale.\n- If the newest message is about feeling unwell, bloods, injury, mental health, grief, or distress, anchor there first. Older banter can be one light line or omitted.\n- If they name an exercise that is hurting or aggravating something, give the direct useful form/load cue first, then ask only one practical follow-up if needed.\n- For bloods or feeling unwell, a lived-experience question like "have you ever got your bloods done before?" usually sounds more human than a symptom checklist.\n- When they ask about Shannon's day, sleep, training, weekend, work, phone, pets, or plans, answer with one concrete honest detail instead of vague filler like "working away" or "pretty good". Do not repeat "just app work" as the whole answer; if the app is the answer, name the bug, feature, feeling, or current piece.\n- If a learned example says not to share personal updates, read that as "do not volunteer random updates". It does not apply when the client directly asks about Shannon's day, evening, sleep, weekend, work, or plans.\n- Respect the actual reply time. If they asked about last night and it is now morning, answer in past tense instead of writing like bedtime is still ahead.\n- Sunshine is a rabbit. Do not say Shannon walked Sunshine or took Sunshine for a walk. Use rabbit-safe throwaway colour like chilling with Sunshine or Sunshine causing chaos.\n- If no exact low-stakes Shannon detail is known, invent plausible Shannon-coloured flavour so the reply feels descriptive and real. Never invent client facts, medical facts, promises, or anything consequential.\n- Use light personal details as rapport, not as a monologue. Keep it brief, relevant, and then turn the spotlight back to them.\n- When they explain work, study, culture, or a world they know well, a real opinion or observation can be better than another intake question.\n- When they share a niche food, culture, routine, product, place, song, or hobby, ask from genuine curiosity. Concrete context questions beat generic favourite/why questions.\n- Persuade ethically toward health, fitness, and coaching by linking what they already care about to one useful next step or permission question. Never pressure, shame, fake urgency, over-promise, diagnose, or manipulate vulnerability.\n- When they mention another coach, program, or support person, respect it and stay warm. Do not sound like you are assessing or competing with that coach. Ask one human context question if useful.\n- Do not pitch a challenge, program, app signup, or coaching until the person is clearly ready or asking how to start.\n- Do not repeat known facts, names, app instructions, birthdays, pet details, or previous questions from the timeline.\n- If the timeline already proves they have something, use it as known context and suggest the next step instead of asking whether they have it.\n- If the client is replying to a story/post Shannon sent natively and the context is missing, keep it short or ask a tiny clarifier. Do not invent a deep thread.\n- Use names sparingly. IG handles are not always real names.\n- Do not sound like a therapist or a polished brand. Keep empathy casual and proportionate.\n- When Shannon writes an edit reason or redraft hint below, treat that reason as higher priority than the old draft.\n`;
+        let block = `\n\nRECENT SHANNON EDIT LESSONS TO APPLY BEFORE COPYING ANY EXAMPLE:\n- Do not ask a question every reply. In friendly ongoing banter, sometimes the right reply is only a short reaction or joke.\n- If the draft asks two questions, usually cut it to one or none. A broad coaching question is worse than no question.\n- If an edited example shows Shannon sent only the reaction after the AI added an optional question, learn the reaction-only pattern. Do not treat the missing question as a problem to replace.\n- Make questions specific to the current thread. Do not reset to stock discovery when the conversation already has a clear hook.\n- If the client sends a joke, lyric, odd phrase, or low-stakes banter, mirror the bit or answer playfully instead of forcing a serious coaching question.\n- Keep the conversation open with a natural next handle unless the moment clearly needs closure. The handle can be a specific question, soft invite, tiny personal hook, clear next step, or a strong specific reaction.\n- When they give a past or current detail, use that detail as the next handle. "how did your last ones go?" beats a generic "let me know how they go" when they mention past bloods.\n- If they say they used to have a result or body state and want it back, ask how they got it last time before asking what blocks them now.\n- The next handle may come from a recent previous message if it is still part of the same topic. If they earlier said they were stuck in bed, and now they are talking bloods/results, "have you been stuck in bed today?" beats a generic future update request.\n- In multi-message batches, do not answer every old message like a checklist. Let the newest or emotionally biggest message control the reply, and skip callbacks that now feel stale.\n- If the newest message is about feeling unwell, bloods, injury, mental health, grief, or distress, anchor there first. Older banter can be one light line or omitted.\n- If they name an exercise that is hurting or aggravating something, give the direct useful form/load cue first, then ask only one practical follow-up if needed.\n- For bloods or feeling unwell, a lived-experience question like "have you ever got your bloods done before?" usually sounds more human than a symptom checklist.\n- When they ask about Shannon's day, sleep, training, weekend, work, phone, pets, or plans, answer with one concrete honest detail instead of vague filler like "working away" or "pretty good". Do not repeat "just app work" as the whole answer; if the app is the answer, name the bug, feature, feeling, or current piece.\n- If a learned example says not to share personal updates, read that as "do not volunteer random updates". It does not apply when the client directly asks about Shannon's day, evening, sleep, weekend, work, or plans.\n- Respect the actual reply time. If they asked about last night and it is now morning, answer in past tense instead of writing like bedtime is still ahead.\n- Sunshine is a rabbit. Do not say Shannon walked Sunshine or took Sunshine for a walk. Use rabbit-safe throwaway colour like chilling with Sunshine or Sunshine causing chaos.\n- If no exact low-stakes Shannon detail is known, invent plausible Shannon-coloured flavour so the reply feels descriptive and real. Never invent client facts, medical facts, promises, or anything consequential.\n- Use light personal details as rapport, not as a monologue. Keep it brief, relevant, and then turn the spotlight back to them.\n- When they explain work, study, culture, or a world they know well, a real opinion or observation can be better than another intake question.\n- When they share a niche food, culture, routine, product, place, song, or hobby, ask from genuine curiosity only when a question is actually the best next move. Concrete context questions beat generic favourite/why questions.\n- Persuade ethically toward health, fitness, and coaching by linking what they already care about to one useful next step or permission question. Never pressure, shame, fake urgency, over-promise, diagnose, or manipulate vulnerability.\n- When they mention another coach, program, or support person, respect it and stay warm. Do not sound like you are assessing or competing with that coach. Ask one human context question if useful.\n- Do not pitch a challenge, program, app signup, or coaching until the person is clearly ready or asking how to start.\n- Do not repeat known facts, names, app instructions, birthdays, pet details, or previous questions from the timeline.\n- If the timeline already proves they have something, use it as known context and suggest the next step instead of asking whether they have it.\n- If the client is replying to a story/post Shannon sent natively and the context is missing, keep it short or ask a tiny clarifier. Do not invent a deep thread.\n- Use names sparingly. IG handles are not always real names.\n- Do not sound like a therapist or a polished brand. Keep empathy casual and proportionate.\n- When Shannon writes an edit reason or redraft hint below, treat that reason as higher priority than the old draft.\n`;
         if (globalLearningBlock) block = `${globalLearningBlock}${block}`;
         block += '\n- Do not prove you read every clause. Pick the strongest live detail, react to it normally, then stop or move one inch forward.';
         block += "\n- Only add a Shannon day/training/work/pet update when they directly ask about Shannon's current day, sleep, training, weekend, work, phone, pets, or plans.";
@@ -1523,6 +1589,7 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
             question_moment: questionMoment,
             qualifier_stage: qualifierStage || null,
             accepted_challenge: acceptedChallenge,
+            accepted_coaching: acceptedChallenge,
             offer_thread: offerThread,
             hot_intent: hotIntent,
             fix_support_intent: fixSupportIntent,
@@ -2032,8 +2099,12 @@ const DEFAULT_DM_BUBBLE_TARGET_CHARS = 520;
 const DEFAULT_DM_BUBBLE_HARD_MAX_CHARS = 900;
 const DEFAULT_DM_BUBBLE_PREFERRED_MAX = 4;
 
+function stripOutboundDashPunctuation(text) {
+    return String(text || '').replace(/\s*[\u2014\u2013]+\s*/g, ', ');
+}
+
 function cleanOutboundDmBubbleText(text) {
-    return normalizeVisibleEscapedControlChars(text)
+    return stripOutboundDashPunctuation(normalizeVisibleEscapedControlChars(text))
         .replace(/\r\n?/g, '\n')
         .replace(/\u00a0/g, ' ')
         .replace(/[ \t]+/g, ' ')
@@ -2211,6 +2282,28 @@ function normalizeCoachDraftChunks(text) {
  */
 function normalizeCoachDraftText(text) {
     return cleanOutboundDmBubbleText(normalizeCoachDraftChunks(text).join('\n'));
+}
+
+const OUTBOUND_VISIBLE_ARTIFACT_RE = /\[(?:ephemeral|internal|draft|assistant|system|bot|ai|private|hidden|note)\]/ig;
+const OUTBOUND_VISIBLE_STRONG_PROFANITY_RE = /\b(?:fuck(?:in(?:g)?|ing|er|ers|s)?|fucks?|shit(?:ty|ted|ting|s)?|cunt(?:s)?|pussy|bitch(?:es)?|dick(?:head|s)?|cock(?:s)?|wanker|arsehole|bollocks)\b/ig;
+
+function sanitizeVisibleOutboundDmText(text, options = {}) {
+    let out = normalizeCoachDraftText(text || '');
+    if (!out) return '';
+
+    out = out
+        .replace(OUTBOUND_VISIBLE_ARTIFACT_RE, ' ')
+        .replace(/\b(?:ephemeral|internal|draft|assistant|system|bot|ai)\b(?:\s+note)?\s*:?\s*/ig, ' ');
+
+    if (options.stripProfanity !== false) {
+        out = out.replace(OUTBOUND_VISIBLE_STRONG_PROFANITY_RE, ' ');
+    }
+
+    return out
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/[ \t]*\n[ \t]*/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
 }
 
 function applyPhoneAutocorrectCapitalization(text) {
@@ -2563,6 +2656,20 @@ function parseDate(value) {
     return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function parseBrisbaneDateKey(dateKey) {
+    const raw = String(dateKey || '').trim().slice(0, 10);
+    if (!raw) return null;
+    const date = new Date(`${raw}T00:00:00+10:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function daysBetweenBrisbaneDateKeys(startDateKey, endDateKey) {
+    const start = parseBrisbaneDateKey(startDateKey);
+    const end = parseBrisbaneDateKey(endDateKey);
+    if (!start || !end) return null;
+    return Math.floor((end.getTime() - start.getTime()) / 86400000);
+}
+
 function coachLocalParts(value = new Date()) {
     const date = parseDate(value);
     if (!date) return null;
@@ -2877,16 +2984,17 @@ function averageNumeric(rows, key) {
 
 function dayOfChallenge(challenge, now = new Date()) {
     if (!challenge?.start_date) return null;
-    const start = new Date(`${challenge.start_date}T00:00:00Z`);
-    if (!Number.isFinite(start.getTime())) return null;
-    return Math.max(1, Math.floor((now.getTime() - start.getTime()) / 86400000) + 1);
+    const todayKey = coachLocalDateKey(now);
+    const diff = daysBetweenBrisbaneDateKeys(challenge.start_date, todayKey);
+    if (diff == null) return null;
+    return Math.max(1, diff + 1);
 }
 
 function daysUntilDate(dateKey, now = new Date()) {
-    if (!dateKey) return null;
-    const end = new Date(`${dateKey}T23:59:59Z`);
-    if (!Number.isFinite(end.getTime())) return null;
-    return Math.max(0, Math.ceil((end.getTime() - now.getTime()) / 86400000));
+    const todayKey = coachLocalDateKey(now);
+    const diff = daysBetweenBrisbaneDateKeys(todayKey, dateKey);
+    if (diff == null) return null;
+    return Math.max(0, diff);
 }
 
 async function loadChallengeRank(challengeId, userId) {
@@ -3163,6 +3271,7 @@ const AUDIO_MARKER_RE = /\[AUDIO:(https?:\/\/[^\s\]]+)\]/gi;
 const AUDIO_MAX_COUNT = 2;
 const AUDIO_MAX_BYTES = 10 * 1024 * 1024;  // 10 MB per voice note/audio clip
 const AUDIO_FETCH_TIMEOUT_MS = 12000;
+const OPENAI_TRANSCRIPTION_MODEL = process.env.OPENAI_TRANSCRIPTION_MODEL || 'gpt-4o-mini-transcribe';
 const VIDEO_MARKER_RE = /\[(?:VIDEO|video):\s*(https?:\/\/[^\s\]]+)\]/gi;
 const GENERIC_ATTACHMENT_MARKER_RE = /\[attachment:\s*(https?:\/\/[^\]\s]+)\]/gi;
 const INSTAGRAM_REEL_URL_RE = /https?:\/\/(?:www\.)?instagram\.com\/(?:reel|tv)\/[A-Za-z0-9._-]+\/?/gi;
@@ -3554,6 +3663,67 @@ async function fetchAudioAsInlineData(url) {
     }
 }
 
+function audioExtensionForMimeType(mimeType = '') {
+    const clean = String(mimeType || '').split(';')[0].trim().toLowerCase();
+    if (clean === 'audio/mpeg' || clean === 'audio/mp3') return 'mp3';
+    if (clean === 'audio/mp4' || clean === 'video/mp4') return 'm4a';
+    if (clean === 'audio/wav' || clean === 'audio/x-wav') return 'wav';
+    if (clean === 'audio/ogg' || clean === 'application/ogg') return 'ogg';
+    if (clean === 'audio/webm' || clean === 'video/webm') return 'webm';
+    if (clean === 'audio/flac') return 'flac';
+    if (clean === 'audio/amr') return 'amr';
+    return 'm4a';
+}
+
+function cleanAudioTranscriptText(value, max = 1200) {
+    return String(value || '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, max);
+}
+
+async function transcribeAudioInlineData(inlineData, index = 0) {
+    if (!OPENAI_API_KEY) {
+        return { text: '', error: 'OPENAI_API_KEY not configured' };
+    }
+    if (!inlineData?.data) {
+        return { text: '', error: 'missing audio inline data' };
+    }
+    const mimeType = inlineData.mimeType || inlineData.mime_type || 'audio/mp4';
+    try {
+        const bytes = Buffer.from(inlineData.data, 'base64');
+        const form = new FormData();
+        form.append('model', OPENAI_TRANSCRIPTION_MODEL);
+        form.append('response_format', 'json');
+        form.append(
+            'file',
+            new Blob([bytes], { type: mimeType }),
+            `voice-note-${index + 1}.${audioExtensionForMimeType(mimeType)}`
+        );
+        const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${OPENAI_API_KEY}`,
+            },
+            body: form,
+        });
+        const bodyText = await res.text();
+        let data = {};
+        try { data = bodyText ? JSON.parse(bodyText) : {}; } catch { data = { text: bodyText }; }
+        if (!res.ok) {
+            const message = data?.error?.message || bodyText || `HTTP ${res.status}`;
+            console.warn(`[audio-transcript] OpenAI failed ${res.status}: ${String(message).slice(0, 180)}`);
+            return { text: '', error: String(message).slice(0, 240), model: OPENAI_TRANSCRIPTION_MODEL };
+        }
+        const text = cleanAudioTranscriptText(data.text);
+        console.log(`[audio-transcript] ok chars=${text.length} model=${OPENAI_TRANSCRIPTION_MODEL}`);
+        return { text, error: '', model: OPENAI_TRANSCRIPTION_MODEL };
+    } catch (err) {
+        console.warn(`[audio-transcript] failed: ${err.message}`);
+        return { text: '', error: String(err.message || err).slice(0, 240), model: OPENAI_TRANSCRIPTION_MODEL };
+    }
+}
+
 function guessVideoMimeType(url, contentType) {
     const ct = String(contentType || '').split(';')[0].trim().toLowerCase();
     if ([
@@ -3826,7 +3996,7 @@ function mediaKindLimit(kind) {
     return 0;
 }
 
-function mediaReferenceLabel(kind, n, selected, url = '') {
+function mediaReferenceLabel(kind, n, selected, url = '', options = {}) {
     const isReel = kind === 'video' && isInstagramReelUrl(url);
     if (!selected) {
         if (kind === 'photo') return '[photo attached but not decoded]';
@@ -3836,7 +4006,11 @@ function mediaReferenceLabel(kind, n, selected, url = '') {
         return '[media attached but not decoded]';
     }
     if (kind === 'photo') return `[attached photo #${n}]`;
-    if (kind === 'audio') return `[voice note #${n}]`;
+    if (kind === 'audio') {
+        const transcript = cleanAudioTranscriptText(options.audioTranscripts?.[n - 1]?.text || '');
+        if (transcript) return `[voice note #${n} transcript: ${transcript}]`;
+        return `[voice note #${n}]`;
+    }
     if (isReel) return `[Instagram reel #${n}]`;
     if (kind === 'video') return `[attached video #${n}]`;
     return `[attached media #${n}]`;
@@ -3875,7 +4049,7 @@ function collectMediaBatchReferences(messages) {
     return { urls, refsByMessage };
 }
 
-function rewriteMediaBatchMessage(message, refs = []) {
+function rewriteMediaBatchMessage(message, refs = [], options = {}) {
     const text = String(message || '');
     if (refs.length === 0) return text;
 
@@ -3883,7 +4057,7 @@ function rewriteMediaBatchMessage(message, refs = []) {
     let cursor = 0;
     refs.forEach(ref => {
         out += text.slice(cursor, ref.start);
-        out += mediaReferenceLabel(ref.kind, ref.number, ref.selected, ref.url);
+        out += mediaReferenceLabel(ref.kind, ref.number, ref.selected, ref.url, options);
         cursor = ref.end;
     });
     out += text.slice(cursor);
@@ -3911,6 +4085,8 @@ async function buildMessageMediaBatchParts(messages) {
             reelContextText: '',
             reelContextCount: 0,
             reelThumbnailCount: 0,
+            audioTranscripts: [],
+            audioTranscriptCount: 0,
         };
     }
 
@@ -3927,6 +4103,9 @@ async function buildMessageMediaBatchParts(messages) {
     const audioParts = fetchedAudio
         .filter(Boolean)
         .map(p => ({ inlineData: p }));
+    const audioTranscripts = await Promise.all(
+        fetchedAudio.map((p, index) => p ? transcribeAudioInlineData(p, index) : Promise.resolve({ text: '', error: 'audio fetch failed' }))
+    );
     const videoParts = fetchedVideos
         .filter(Boolean)
         .map(p => ({ inlineData: p }));
@@ -3935,7 +4114,7 @@ async function buildMessageMediaBatchParts(messages) {
         .map(ctx => ctx.thumbnailInlineData ? { inlineData: ctx.thumbnailInlineData } : null)
         .filter(Boolean);
     const rewrittenMessages = rawMessages.map((message, index) =>
-        rewriteMediaBatchMessage(message, refsByMessage[index])
+        rewriteMediaBatchMessage(message, refsByMessage[index], { audioTranscripts })
     );
 
     return {
@@ -3952,6 +4131,8 @@ async function buildMessageMediaBatchParts(messages) {
         reelContextText: formatInstagramReelContexts(reelContexts),
         reelContextCount: reelContexts.length,
         reelThumbnailCount: reelImageParts.length,
+        audioTranscripts,
+        audioTranscriptCount: audioTranscripts.filter(item => item?.text).length,
     };
 }
 
@@ -3970,6 +4151,8 @@ async function buildMessageMediaParts(message) {
         reelContextText: batch.reelContextText || '',
         reelContextCount: batch.reelContextCount || 0,
         reelThumbnailCount: batch.reelThumbnailCount || 0,
+        audioTranscripts: batch.audioTranscripts || [],
+        audioTranscriptCount: batch.audioTranscriptCount || 0,
     };
 }
 
@@ -4008,6 +4191,68 @@ function addMediaReviewMessageItem(state, item) {
     if (!item || typeof item !== 'object') return;
     addMediaReviewTextMarkers(state, item.text || item.message || item.body || item.message_text);
     addMediaReviewMediaArray(state, item.media);
+}
+
+function audioTranscriptCountFromData(data = {}) {
+    const decode = data.media_decode || data.mediaDecode || {};
+    const values = [
+        data.audio_transcript_count,
+        data.audioTranscriptCount,
+        decode.audio_transcript_count,
+        decode.audioTranscriptCount,
+    ];
+    for (const value of values) {
+        const n = Number(value);
+        if (Number.isFinite(n) && n > 0) return Math.floor(n);
+    }
+    const transcriptLists = [
+        data.audio_transcripts,
+        data.audioTranscripts,
+        decode.audio_transcripts,
+        decode.audioTranscripts,
+    ];
+    for (const list of transcriptLists) {
+        if (!Array.isArray(list)) continue;
+        const count = list.filter(item => String(item?.text || item || '').trim()).length;
+        if (count > 0) return count;
+    }
+    return 0;
+}
+
+function hasUsableAudioTranscript(data = {}) {
+    const decode = data.media_decode || data.mediaDecode || {};
+    if (decode.audio_failed) return false;
+    if (Number(data.audio_url_count || data.audioUrlCount || decode.audio_url_count || decode.audioUrlCount) <= 0) return false;
+    return audioTranscriptCountFromData(data) > 0;
+}
+
+function firstUsableAudioTranscriptText(data = {}) {
+    const decode = data.media_decode || data.mediaDecode || {};
+    const transcriptLists = [
+        data.audio_transcripts,
+        data.audioTranscripts,
+        decode.audio_transcripts,
+        decode.audioTranscripts,
+    ];
+    for (const list of transcriptLists) {
+        if (!Array.isArray(list)) continue;
+        for (const item of list) {
+            const text = cleanAudioTranscriptText(item?.text || item);
+            if (text) return text;
+        }
+    }
+    return '';
+}
+
+function isAudioOnlyContextLatestText(value) {
+    const text = normalizeContextText(value)
+        .replace(/[\u{1F399}\u{1F50A}]/gu, ' ')
+        .replace(/[\[\]]/g, ' ')
+        .replace(/#\d+\b/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+    return /^(?:attached\s+)?(?:voice note|audio)(?:\s+\d+)?$/.test(text);
 }
 
 function formatMediaReviewLabel(kinds) {
@@ -4064,6 +4309,10 @@ function buildMediaReviewInfo(alertOrData) {
     if (Array.isArray(stored.kinds)) {
         stored.kinds.forEach(kind => addMediaReviewKind(state, String(kind || '').toLowerCase()));
     }
+    if (hasUsableAudioTranscript(data)) {
+        state.present.audio = false;
+        state.counts.audio = 0;
+    }
 
     const kinds = ['photo', 'audio', 'video'].filter(kind => state.present[kind]);
     const label = formatMediaReviewLabel(kinds);
@@ -4084,14 +4333,83 @@ function isMediaReviewRequired(alertOrData) {
     return buildMediaReviewInfo(alertOrData).required;
 }
 
+function hasVoiceNoteInspectionSignal(data = {}) {
+    const decode = data.media_decode || data.mediaDecode || {};
+    if (hasUsableAudioTranscript(data)) return false;
+    if (Number(data.audio_url_count || data.audioUrlCount || decode.audio_url_count || decode.audioUrlCount) > 0) return true;
+    if (decode.audio_failed) return true;
+
+    const mediaSources = [
+        data.message_preview,
+        data.client_message,
+        data.draft_evidence?.current_message,
+        data.draft_evidence?.recent_timeline,
+    ];
+    if (mediaSources.some(value => /\[AUDIO:https?:\/\//i.test(String(normalizeImplicitMediaMarkers(value) || '')))) return true;
+
+    const lists = [
+        data.inbound_message_batch,
+        data.recent_inbound_messages,
+        data.draft_evidence?.prior_unanswered,
+    ];
+    for (const list of lists) {
+        if (!Array.isArray(list)) continue;
+        for (const item of list) {
+            if (!item || typeof item !== 'object') continue;
+            const media = Array.isArray(item.media) ? item.media : [];
+            if (media.some(entry => String(entry?.type || '').toLowerCase() === 'audio')) return true;
+            const text = normalizeImplicitMediaMarkers(item.text || item.message || item.body || item.message_text);
+            if (/\[AUDIO:https?:\/\//i.test(String(text || ''))) return true;
+        }
+    }
+
+    return false;
+}
+
+function buildVoiceNoteReviewInfo(alertOrData) {
+    const data = alertOrData?.data && typeof alertOrData.data === 'object'
+        ? alertOrData.data
+        : (alertOrData && typeof alertOrData === 'object' ? alertOrData : {});
+    if (hasUsableAudioTranscript(data)) {
+        return {
+            required: false,
+            reason: null,
+            label: '',
+            warning: '',
+            latest_text: '',
+        };
+    }
+    const latest = getContextReviewLatestText(data);
+    const required = hasVoiceNoteInspectionSignal(data);
+    if (!required) {
+        return {
+            required: false,
+            reason: null,
+            label: '',
+            warning: '',
+            latest_text: truncate(normalizeContextText(latest), 180),
+        };
+    }
+    return {
+        required: true,
+        reason: 'voice_note_review_required',
+        label: 'voice note needs Shannon review',
+        warning: 'Warning: voice note attached. Open the source DM and inspect the audio before sending.',
+        latest_text: truncate(normalizeContextText(latest), 180),
+    };
+}
+
 const CONTEXT_REFERENCE_RE = /\b(that|this|it|they|them|those|there|one|same|too|also|again|before|after|above|below|earlier|previous|last one|first one|second one|other one|what you mean|what do you mean|wat do u mean|which one|wdym)\b/i;
 const CONTEXT_ACK_RE = /^(yes|yeah|yep|yup|nah|no|nope|ok|okay|cool|sure|haha|lol|lmao|same|me too|exactly|true|fair|definitely|probably|maybe|sounds good|all good|i can|i can't|i dont|i don't|i did|i didn't|i do|i will|i wont|i won't)\b/i;
 const STANDALONE_INTENT_RE = /\b(challenge|app|link|sign ?up|signup|join|price|cost|how much|what is|tell me|interested|keen|i'?m in|im in|workout|meal|calorie|protein|weight|steps|coach|coaching|plant.?based|vegan)\b/i;
 const AI_SUSPICION_RE = /\b(?:is\s+this\s+(?:ai|a\.?i\.?|a\s+bot|automated)|are\s+you\s+(?:ai|a\.?i\.?|a\s+bot|automated|real)|am\s+i\s+talking\s+to\s+(?:ai|a\s+bot|a\s+person)|as\s+(?:a\s+)?(?:bot|robot)|self[-\s]?aware|chatgpt|robot|automated\s+reply|real\s+person)\b/i;
-const USER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|this|that|it)|sorry[, ]+\s*i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)|(?:what|wat)\s+(?:do|did)\s+(?:you|u)\s+mean(?:\s+by\s+(?:that|this|it))?|what\s+are\s+you\s+meaning|what\s+you\s+mean|wdym|i'?m\s+confused|that'?s\s+confusing|not\s+sure\s+what\s+you\s+mean)\b/i;
+const USER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|your\s+question|this|that|it)|sorry[, ]+\s*i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)|(?:what|wat)\s+(?:do|did)\s+(?:you|u)\s+mean(?:\s+by\s+(?:that|this|it))?|what\s+are\s+you\s+meaning|what\s+you\s+mean|wdym|i'?m\s+confused|that'?s\s+confusing|not\s+sure\s+what\s+you\s+mean)\b/i;
+const SHORT_USER_CONFUSION_RE = /^(?:sorry|sorry\?|huh\??|pardon\??|what\??|what sorry\??|sorry what\??)$/i;
 
 function normalizeContextText(value) {
     return String(value || '')
+        .replace(/[‘’]/g, "'")
+        .replace(/[“”]/g, '"')
         .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, 'photo')
         .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, 'voice note')
         .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, 'video')
@@ -4117,6 +4435,13 @@ function getContextReviewLatestText(data) {
     const currentFromBatch = Array.isArray(data?.inbound_message_batch)
         ? data.inbound_message_batch.find(m => m && m.is_current)
         : null;
+    const transcript = hasUsableAudioTranscript(data) ? firstUsableAudioTranscriptText(data) : '';
+    const candidates = [
+        currentFromBatch?.text,
+        data?.message_preview,
+        data?.draft_evidence?.current_message,
+    ];
+    if (transcript && candidates.some(value => isAudioOnlyContextLatestText(value))) return transcript;
     return currentFromBatch?.text
         || data?.message_preview
         || data?.draft_evidence?.current_message
@@ -4162,15 +4487,18 @@ function buildContextReviewInfo(alertOrData) {
     const stored = data.context_review || data.contextReview || {};
     const reasons = [];
     const labels = [];
+    const hasAudioTranscript = hasUsableAudioTranscript(data);
 
     if (stored.required) {
         (Array.isArray(stored.reasons) ? stored.reasons : [stored.reason])
             .filter(Boolean)
+            .filter(reason => !(hasAudioTranscript && String(reason) === 'voice_note_review_required'))
             .forEach(reason => reasons.push(String(reason)));
     }
 
     const latest = getContextReviewLatestText(data);
-    const contextDependent = isContextDependentText(latest);
+    const normalizedLatest = normalizeContextText(latest);
+    const contextDependent = isContextDependentText(normalizedLatest);
     const manyChat = isManyChatContext(data, alertOrData);
     const priorContextCount = countPriorContextMessages(data);
     const trackedOutbound = hasTrackedOutboundContext(data);
@@ -4191,17 +4519,27 @@ function buildContextReviewInfo(alertOrData) {
         reasons.push('reference_heavy_reply_without_tracked_context');
         labels.push('reply refers to missing thread context');
     }
-    if (AI_SUSPICION_RE.test(latest)) {
+    if (AI_SUSPICION_RE.test(normalizedLatest)) {
         reasons.push('ai_suspicion_or_authenticity_question');
         labels.push('client may be questioning whether this is AI');
     }
-    if (USER_CONFUSION_RE.test(latest)) {
+    if (USER_CONFUSION_RE.test(normalizedLatest)) {
+        reasons.push('client_does_not_understand_context');
+        labels.push('client says they do not understand the message/context');
+    }
+    if (manyChat && trackedOutbound && SHORT_USER_CONFUSION_RE.test(normalizedLatest)) {
         reasons.push('client_does_not_understand_context');
         labels.push('client says they do not understand the message/context');
     }
 
+    const voiceNoteReview = buildVoiceNoteReviewInfo(data);
+    if (voiceNoteReview.required) {
+        reasons.push(voiceNoteReview.reason);
+        labels.push(voiceNoteReview.label);
+    }
+
     const uniqueReasons = [...new Set(reasons.filter(Boolean))];
-    const label = stored.label
+    const label = (uniqueReasons.length && !(hasAudioTranscript && stored.label === 'voice note needs Shannon review') ? stored.label : '')
         || (labels.length ? [...new Set(labels)].join(', ') : '')
         || (uniqueReasons.length ? 'tracked thread context may be incomplete' : '');
 
@@ -4209,15 +4547,18 @@ function buildContextReviewInfo(alertOrData) {
         required: uniqueReasons.length > 0,
         reasons: uniqueReasons,
         label,
-        latest_text: truncate(normalizeContextText(latest), 180),
+        latest_text: truncate(normalizedLatest, 180),
         context_dependent: contextDependent,
         first_captured_lead_reply: firstCaptured,
         manychat_message_id: messageId || null,
         prior_context_count: priorContextCount,
         tracked_outbound_context: trackedOutbound,
         warning: uniqueReasons.length
-            ? 'Warning: tracked ManyChat context may be incomplete. Open the source DM before sending.'
+            ? (voiceNoteReview.required
+                ? voiceNoteReview.warning
+                : 'Warning: tracked ManyChat context may be incomplete. Open the source DM before sending.')
             : '',
+        voice_note_review_required: voiceNoteReview.required,
     };
 }
 
@@ -5109,13 +5450,17 @@ async function generateDraftReview({ draftText, alertType, contextBlocks, client
         const leadQualityBlock = isLeadDmReview ? `
 IG/FB LEAD QUALITY CHECK:
 - Judge this as a conversion DM, not only a context-matching task. The reply should keep the conversation moving in Shannon's casual human voice.
+- Current paid offer: Balance Starter Coaching is AUD $29.99/week, no sales call, Balance app access, tailored workout structure, food direction, progress tracking, and one weekly check-in with Shannon. Free challenge/free entry is only a fallback for colder leads who are not ready to pay.
 - Block if it uses a stock intake line such as "what does a normal day look like", a bare "what are your goals", or any name + age + goal + blocker bundle.
 - Block if it asks several discovery questions at once. One natural question max, and it should be tied to the strongest latest detail unless they clearly asked to start.
-- Block if the lead asks how to join, asks for the link, asks price/what is included, says they are keen, or accepts the challenge, but the draft slows them down with more rapport instead of moving them forward.
-- Warn if it pitches the challenge before reciprocal rapport, explicit start/info intent, or the earned lead-only window of roughly 3-6 meaningful lead replies plus relationship and goal/blocker context.
+- Block if the lead asks how to join, asks for the link, asks price/what is included, says they are keen, or accepts Starter Coaching, but the draft slows them down with more rapport instead of moving them forward.
+- Warn if it pitches Starter Coaching before reciprocal rapport, explicit start/info intent, or the earned lead-only window of roughly 3-6 meaningful lead replies plus relationship and goal/blocker context.
 - Warn if an unlinked lead has reached that 3-6 meaningful reply window with a clear blocker/motivation and the draft keeps asking generic discovery instead of using a soft permission bridge.
 - Warn if a shan_n_sunny lead draft is technically contextual but does not progress the conversation: passive mirroring, generic praise, generic empathy, a stock broad question, or a dead-end reaction when the thread has a concrete next handle available.
+- Do not warn just because a lead/client reply is short and reaction-only. Recent Shannon edits show he often removes optional curiosity questions and sends only the specific reaction when the latest turn is banter, a quick update, a food/photo reaction, or an answer to his previous tiny question.
+- Warn if the draft tacks an optional curiosity question onto a strong reaction when the missing answer is not needed for coaching, support, or a qualified lead next step.
 - Warn if the draft uses weak generic discovery such as "what kind of difference would that make", "what usually makes it hard", "how are you finding it", "anything in particular", or "what does that look like for you" when the lead already gave a more specific hook.
+- Keep visible lead copy clean: no raw escape sequences like "\\n", no bracketed system markers like "[ephemeral]", no raw JSON/fences, and no strong profanity unless the thread is clearly a non-lead celebration/support reply.
 - This invite timing rule is only for IG/FB leads. Do not apply it to linked app users, paying clients, check-ins, or support replies.
 - Warn if it is bland or generic while the context has a stronger personal hook Shannon could use.
 - Warn if it comments on emoji usage itself, such as "love the heart emoji", instead of using the emoji as tone and replying to the thing the person sent.
@@ -5142,8 +5487,9 @@ Block and set notification_required=true when:
 - the latest inbound message asks or hints whether Shannon's reply is AI, automated, a bot, generated, fake, copied, scripted, or not really Shannon;
 - the draft contains client-facing AI/automation language such as AI, bot, automated, automation, generated, model, prompt, system, trained voice, or "I am personally replying";
 - the draft defends, denies, or explains AI/automation instead of leaving the moment for Shannon to handle manually.
+- the latest inbound is an app exercise-search issue such as "no seated option", "can't find it", or "the exercise isn't in there", and the draft says the exercise is missing or recommends a substitute without APP EXERCISE LIBRARY CHECK evidence in the context.
 
-For unlinked acquisition leads, do not block, notify, or mark manual-only just because they mention old injury, surgery, rehab, hospital, or pain history. That is normal rapport if the draft stays light, non-medical, and does not pitch the challenge off their vulnerability. Also do not mark the approved bio-link handoff manual-only when a lead has accepted the challenge or asked for the link/details/how to start; the approved link is https://future-balance.netlify.app/bio.html. Block or warn only when the latest turn asks for current pain, symptoms, rehab/training/treatment advice, diagnosis, pregnancy, eating/body-image risk, crisis/safety support, or when the draft gives medical/rehab advice.
+For unlinked acquisition leads, do not block, notify, or mark manual-only just because they mention old injury, surgery, rehab, hospital, or pain history. That is normal rapport if the draft stays light, non-medical, and does not pitch coaching off their vulnerability. Also do not mark the approved coaching-link handoff manual-only when a lead has accepted coaching or asked for the link/details/how to start; the approved link is https://future-balance.netlify.app/coaching.html. Block or warn only when the latest turn asks for current pain, symptoms, rehab/training/treatment advice, diagnosis, pregnancy, eating/body-image risk, crisis/safety support, or when the draft gives medical/rehab advice.
 Do not block just because the older timeline contains a different unresolved topic if the clearly labelled latest inbound message is answered naturally. Treat details as grounded when they appear anywhere in the labelled latest message, including near the ending of a long message.
 Do not block just because the draft also answers prior unanswered messages from the same recent inbound burst. If Shannon has not replied between those inbound messages and the draft naturally answers the newest message, treat the burst as one conversational turn.
 
@@ -5151,6 +5497,7 @@ Warn when the draft is usable but should be checked or softened.
 Warn when the draft adds a Shannon day/app/Sunshine update that was not directly asked for, especially if the lead asked about a specific topic like dating, where Shannon lives, or what something is like near him.
 Do not warn or block just because the draft answers Shannon's day, evening, sleep, weekend, plans, or what he is up to when the latest inbound directly asks about that. In that case, a short personal answer plus one tie-back is context-following rapport, not unsolicited filler.
 Warn when the draft over-covers: it reflects several details, adds praise, and adds a question when one normal reaction or direct answer would do.
+Warn when the draft appears to ask a question only to keep the thread alive after a specific human reaction would be enough. Use the 30-day edit pattern: "reaction + optional question" often should become reaction-only unless the answer changes the next step.
 Warn with notification_reason "generic_voice" when the draft sounds like a generic coach, therapist, brand, or assistant: polished recap, broad encouragement, stock question, "keep me posted", "you've got this", "what does that look like for you", or a reply that could be sent to almost anyone despite a clear specific hook.
 Warn with notification_reason "generic_voice" when the draft starts with generic filler before touching the newest message, unless the newest message is genuinely heavy and needs a soft first line.
 Pass only when the draft is clearly grounded in the context below.
@@ -5586,11 +5933,51 @@ function countQuestionMarks(text) {
     return (String(text || '').match(/\?/g) || []).length;
 }
 
-function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, metrics }) {
+function isShortSocialRewriteLearningSignal({ alert, draftText, sentMessage, metrics }) {
+    const data = alert?.data || {};
+    const alertType = String(alert?.alert_type || '').toLowerCase();
+    const channelText = [
+        data.channel,
+        data.delivery_channel,
+        data.source_channel,
+    ].filter(Boolean).join(' ').toLowerCase();
+    const socialThread = alertType.includes('ig_incoming')
+        || /\b(instagram|messenger|manual_ig|instagram_graph)\b/.test(channelText);
+    if (!socialThread) return false;
+    if (!isAlwaysNeedsYouPerson({
+        client_name: alert?.client_name || data.client_name,
+        profile_name: data.profile_name,
+        ig_username: data.ig_username,
+    })) return false;
+
+    const draft = String(draftText || '');
+    const final = String(sentMessage || '');
+    const shortFinal = final.trim().length > 0 && final.trim().length <= 170;
+    const shortened = metrics?.draft_chars && metrics?.final_chars
+        ? metrics.final_chars < metrics.draft_chars * 0.7
+        : draft.length > final.length + 40;
+    const removedQuestions = countQuestionMarks(draft) > countQuestionMarks(final);
+    const lowRetention = Number(metrics?.draft_kept_pct) <= 20;
+    return shortFinal && shortened && (removedQuestions || lowRetention);
+}
+
+function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, metrics, alert = null }) {
     const reason = String(editReason || '').toLowerCase();
     const draft = String(draftText || '');
     const final = String(sentMessage || '');
     const bullets = [];
+    const shortSocialRewrite = isShortSocialRewriteLearningSignal({
+        alert,
+        draftText: draft,
+        sentMessage: final,
+        metrics,
+    });
+
+    if (shortSocialRewrite) {
+        bullets.push('For this relationship, default to very short social replies: one warm reaction, direct answer, or tiny question is often enough.');
+        bullets.push('Do not turn low-stakes IG banter, food, study, pastry, or casual life updates into coaching or discovery unless they ask for help.');
+        bullets.push('If unsure about a niche food, photo, or topic, admit it lightly or ask one concrete clarifier instead of pretending expertise.');
+    }
 
     if (/question|ask|asking|convo|conversation|rapport|get to know|psychologist|phycologist/.test(reason)) {
         bullets.push('Do not ask a question every reply. If the conversation only needs a reaction, joke, or acknowledgement, stop there.');
@@ -5682,9 +6069,10 @@ function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, 
         bullets.push('Use facts already present in the timeline as known context instead of asking whether they exist.');
         bullets.push('When they already have a tool, toy, app detail, birthday, pet detail, or plan, suggest the next step with that known thing.');
     }
-    if (/praise|easy|under achiever|underachiever|fra/.test(reason)) {
+    if (/praise|easy|under achiever|underachiever|fra|too many questions/.test(reason)) {
         bullets.push('For clients who need reassurance, lead with praise and keep the message easy to receive.');
         bullets.push('Avoid highlighting unfinished tasks when Shannon is trying to build confidence.');
+        bullets.push('Keep it easy to answer: one question max, or no question if a short reaction does the job.');
     }
 
     const draftQuestions = countQuestionMarks(draft);
@@ -5774,7 +6162,7 @@ function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, 
 
 function inferCoachEditLearningFallback({ alert, draftText, sentMessage, metrics, editReason }) {
     const clientName = alert?.client_name || alert?.data?.profile_name || alert?.data?.ig_username || 'this person';
-    const bullets = buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, metrics });
+    const bullets = buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, metrics, alert });
     const hasReason = !!String(editReason || '').trim();
     const summary = hasReason
         ? `Shannon's edit reason was captured and converted into reusable guidance for ${clientName}.`
@@ -5978,9 +6366,16 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
         return { ok: true, promptUpdated: false, editAnalysis };
     }
 
+    const shortSocialRewriteLearning = isShortSocialRewriteLearningSignal({
+        alert,
+        draftText: draft,
+        sentMessage: final,
+        metrics,
+    });
     const completeRewriteWithoutReason = !explicitEditReason
         && metrics.final_ai_generated_pct <= 5
-        && metrics.draft_kept_pct <= 5;
+        && metrics.draft_kept_pct <= 5
+        && !shortSocialRewriteLearning;
     if (completeRewriteWithoutReason) {
         const editAnalysis = {
             ...baseAnalysis,
@@ -6068,13 +6463,18 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
         draftText: draft,
         sentMessage: final,
         metrics,
+        alert,
     });
+    const learnedInstructions = shortSocialRewriteLearning
+        ? normalizeAutoLearnedBullets([...deterministicBullets, ...learning.auto_instructions])
+        : learning.auto_instructions;
+    const shouldUpdateFromLearning = learning.should_update_prompt || (shortSocialRewriteLearning && learnedInstructions.length > 0);
     let globalLearning = { ok: true, candidates: 0, activated: 0, skipped: 'not_enough_signal' };
     const globalCandidateRules = normalizeAutoLearnedBullets(
-        [...deterministicBullets, ...learning.auto_instructions],
+        [...deterministicBullets, ...learnedInstructions],
         GLOBAL_EDIT_LEARNING_ACTIVE_LIMIT
     ).slice(0, explicitEditReason ? 2 : 3);
-    if (learning.should_update_prompt && enoughSignal && globalCandidateRules.length > 0) {
+    if (shouldUpdateFromLearning && enoughSignal && globalCandidateRules.length > 0) {
         globalLearning = await recordGlobalEditLearningRules({
             alert,
             rules: globalCandidateRules,
@@ -6082,8 +6482,8 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
         });
     }
     let promptUpdated = false;
-    if (learning.should_update_prompt && enoughSignal && learning.auto_instructions.length > 0) {
-        const nextInstructions = buildCoachInstructionsWithEditLearning(manual, learning.auto_instructions) || '';
+    if (shouldUpdateFromLearning && enoughSignal && learnedInstructions.length > 0) {
+        const nextInstructions = buildCoachInstructionsWithEditLearning(manual, learnedInstructions) || '';
         if (nextInstructions.trim() !== String(target.existingInstructions || '').trim()) {
             try {
                 promptUpdated = await saveEditLearningInstructions(target, nextInstructions);
@@ -6097,13 +6497,13 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
         ...baseAnalysis,
         summary: learning.summary || 'Shannon edited the draft.',
         change_types: learning.change_types,
-        lessons: learning.lessons,
-        learned_instructions: learning.auto_instructions,
+        lessons: normalizeAutoLearnedBullets([...learning.lessons, ...deterministicBullets]),
+        learned_instructions: learnedInstructions,
         confidence: learning.confidence,
         prompt_updated: promptUpdated,
         global_prompt_updated: !!(globalLearning?.activated > 0),
         global_learning: globalLearning,
-        skipped: promptUpdated ? null : (learning.should_update_prompt ? 'no_instruction_change' : 'one_off_or_low_signal'),
+        skipped: promptUpdated ? null : (shouldUpdateFromLearning ? 'no_instruction_change' : 'one_off_or_low_signal'),
         target: { type: target.type, client_id: target.clientId || null, ig_thread_id: target.igThreadId || null },
     };
     await updateAlertEditAnalysis(alertId, editAnalysis);
@@ -6664,6 +7064,8 @@ module.exports = {
     softenMediaOnlyDraftReview,
     softenRecentInboundBurstDraftReview,
     applyLeadStoryReplyQuestionGuard,
+    isAppProblemSupportRequest,
+    getAppProblemAutoSendHoldReason,
     mergeDraftReviewContextReview,
     mergeLateDraftReviewData,
     isDraftReviewAutoSendSafe,
@@ -6704,6 +7106,7 @@ module.exports = {
     callVertexGeminiMultimodal,
     normalizeCoachDraftChunks,
     normalizeCoachDraftText,
+    sanitizeVisibleOutboundDmText,
     applyPhoneAutocorrectCapitalization,
     splitCoachDraftIntoDmBubbles,
     stripLeadingGreeting,
@@ -6722,6 +7125,7 @@ module.exports = {
     replacePhotoMarkers,
     replaceAudioMarkers,
     replaceVideoMarkers,
+    daysUntilDate,
     buildMessageImageParts,
     buildMessageMediaBatchParts,
     buildMessageMediaParts,

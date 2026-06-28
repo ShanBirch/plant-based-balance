@@ -1,4 +1,6 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 
 const {
     buildMemoryBlock,
@@ -8,6 +10,7 @@ const {
 
 const block = buildShannonDmTuningBlock();
 const bioBlock = buildCoachBioBlock();
+const clientContextSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/client-context.js'), 'utf8');
 
 assert.ok(block.includes('Emotional replies need one true acknowledgement'), 'warns against validation stacks');
 assert.ok(block.includes('support-line closers'), 'names support-line closers as a pattern');
@@ -15,6 +18,11 @@ assert.ok(block.includes('"I\'m here for you"'), 'calls out the repeated here-fo
 assert.ok(block.includes('"if you need to talk about it"'), 'calls out talk-about-it closers');
 assert.ok(block.includes('Use them sparingly'), 'allows support closers only sparingly');
 assert.ok(block.includes('If a similar reassurance already appeared recently, do not repeat it'), 'prevents repeated reassurance loops');
+assert.ok(block.includes('Live edit pattern from the last 30 days'), 'learns from recent edits that remove optional curiosity questions');
+assert.ok(block.includes('reaction + extra question'), 'prevents reaction-plus-question overreach');
+assert.ok(block.includes('reaction-only pattern'), 'teaches examples where Shannon keeps only the reaction');
+assert.ok(clientContextSource.includes('Do not warn just because a lead/client reply is short and reaction-only'), 'draft QA respects reaction-only Shannon sends');
+assert.ok(clientContextSource.includes('Warn if the draft tacks an optional curiosity question'), 'draft QA catches unnecessary curiosity questions');
 assert.ok(block.includes('Vegetarian voice guard'), 'keeps meat praise out of Shannon DM tuning');
 assert.ok(block.includes('do not call meat, bacon, fish, or other animal products yum/elite/delicious'), 'prevents praising meat in Shannon voice');
 assert.ok(bioBlock.includes('Shannon is vegetarian'), 'keeps vegetarian fact in coach bio');

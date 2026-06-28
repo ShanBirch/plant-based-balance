@@ -41,14 +41,29 @@ async function loadProfileData() {
     console.log('loadProfileData: waiting for initialization...');
 }
 
-// Stub for applyAppTheme - safe no-op until real function loads
+// Stub for applyAppTheme - applies the shell theme until the full function loads
 var _applyAppThemeReal = null;
 async function applyAppTheme(themeKey) {
     if (typeof _applyAppThemeReal === 'function') {
         return await _applyAppThemeReal(themeKey);
     }
-    // Real function not loaded yet, silently skip
-    console.log('applyAppTheme: waiting for initialization with theme:', themeKey);
+
+    themeKey = themeKey === 'light' ? 'light' : 'default';
+    var isLightTheme = themeKey === 'light';
+    document.documentElement.setAttribute('data-pbb-theme', isLightTheme ? 'light' : 'dark');
+    document.documentElement.classList.toggle('pbb-theme-light', isLightTheme);
+    document.documentElement.classList.toggle('pbb-theme-dark', !isLightTheme);
+    if (document.body) {
+        document.body.classList.toggle('pbb-theme-light', isLightTheme);
+        document.body.classList.toggle('pbb-theme-dark', !isLightTheme);
+    }
+    if (!window.isAdminViewing) {
+        localStorage.setItem('userThemePreference', themeKey);
+    }
+    var selector = document.getElementById('theme-selector');
+    if (selector) selector.value = themeKey;
+
+    console.log('applyAppTheme: applied shell theme while waiting for full initialization:', themeKey);
 }
 
 // Stub for initProgramDate - safe no-op until script-5 loads (iOS deferred)

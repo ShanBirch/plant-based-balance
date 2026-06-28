@@ -25,13 +25,26 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
-const { normalizeCoachDraftText } = require('./_lib/client-context');
+const {
+    buildContextReviewInfo,
+    buildMediaReviewInfo,
+    normalizeCoachDraftText,
+    isAlwaysNeedsYouPerson,
+} = require('./_lib/client-context');
+const {
+    coachDmManagerWindowLabel,
+    isCoachDmManagerWorkingTime,
+} = require('./_lib/coach-dm-working-hours');
 
 // Hard cap per run. Realistic backlog should be 0-3. If we ever see this
 // kicking in, it's either a worker outage or someone schedule-bombed the API.
 const MAX_PER_RUN = 25;
 const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
-const DEFAULT_CHALLENGE_BIO_URL = 'https://future-balance.netlify.app/bio.html';
+const DEFAULT_COACHING_URL = 'https://future-balance.netlify.app/coaching.html';
+const AUTOMATED_PERMANENT_NEEDS_YOU_SCHEDULE_SOURCES = new Set([
+    'auto_send',
+    'balance_lead_client_manager_cron',
+]);
 
 async function supabase(path, options = {}) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -86,17 +99,20 @@ function buildAutoSendReviewHold(alert) {
     if (!isManyChatDm) return null;
     const softContextBypass = hasAutoContextBypass(data);
     if (data.auto_send_review_approved_at) return null;
-    if (data.auto_send_review_hold?.code) return data.auto_send_review_hold;
-    if (data.media_review?.required) {
+    const existingHold = data.auto_send_review_hold;
+    const mediaReview = buildMediaReviewInfo(alert);
+    const contextReview = buildContextReviewInfo(alert);
+    if (existingHold?.code && !['media_review', 'context_review'].includes(existingHold.code)) return existingHold;
+    if (mediaReview.required) {
         return {
             code: 'media_review',
-            label: `${data.media_review.label || 'Media'} needs Shannon review`,
+            label: `${mediaReview.label || 'Media'} needs Shannon review`,
         };
     }
-    if (data.context_review?.required && !softContextBypass) {
+    if (contextReview.required && !softContextBypass) {
         return {
             code: 'context_review',
-            label: data.context_review.label || 'tracked DM context may be incomplete',
+            label: contextReview.label || 'tracked DM context may be incomplete',
         };
     }
     const review = data.draft_review;
@@ -116,6 +132,48 @@ function buildAutoSendReviewHold(alert) {
         return {
             code: 'draft_review',
             label: review.summary || 'AI draft needs Shannon review',
+        };
+    }
+    return null;
+}
+
+function isAutomatedPermanentNeedsYouScheduledAlert(alert = {}) {
+    const data = alert?.data || {};
+    const scheduledVia = String(data.scheduled_via || '').trim().toLowerCase();
+    const timingChoiceSource = String(data.reply_timing_choice?.source || '').trim().toLowerCase();
+    const timingSuggestionSource = String(data.reply_timing_suggestion?.source || '').trim().toLowerCase();
+    return AUTOMATED_PERMANENT_NEEDS_YOU_SCHEDULE_SOURCES.has(scheduledVia)
+        || timingChoiceSource === 'auto_send'
+        || timingSuggestionSource === 'auto_send';
+}
+
+function buildPermanentNeedsYouHold(alert) {
+    if (!isAutomatedPermanentNeedsYouScheduledAlert(alert)) return null;
+    const data = alert?.data || {};
+    const graph = data.instagram_graph || {};
+    const customData = data.custom_data || {};
+    const needsYouReasons = Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : [];
+    if (data.permanent_needs_you_draft_only === true
+        || data.needs_you_reason === 'always_needs_you_person'
+        || needsYouReasons.includes('always_needs_you_person')
+        || isAlwaysNeedsYouPerson({
+            name: alert?.client_name || data.client_name || data.profile_name || data.ig_profile_name,
+            client_name: alert?.client_name || data.client_name,
+            profile_name: data.profile_name || data.ig_profile_name || graph.profile_name || customData.profile_name,
+            ig_username: data.ig_username || graph.ig_username || graph.username || customData.ig_username,
+            username: data.username || graph.username || customData.username,
+            handle: data.handle || customData.handle,
+            custom_data: {
+                ...customData,
+                instagram_graph: {
+                    ...(customData.instagram_graph || {}),
+                    ...graph,
+                },
+            },
+        })) {
+        return {
+            code: 'always_needs_you_person',
+            label: 'permanent Needs You client',
         };
     }
     return null;
@@ -176,7 +234,7 @@ function resolveSignupHandoffUrl(alert) {
     const url = String(data.signup_link_handoff_url || data.signupLinkHandoffUrl || '').trim();
     if (/^https?:\/\//i.test(url)) return url;
     if (data.approved_link_auto_sendable === true || data.signup_link_manual_only === true || data.client_manager_review_required === true) {
-        return DEFAULT_CHALLENGE_BIO_URL;
+        return DEFAULT_COACHING_URL;
     }
     return '';
 }
@@ -264,15 +322,29 @@ async function fireAlert(alert) {
         return { ok: false, error: 'empty_scheduled_text' };
     }
 
-    const autoHold = buildAutoSendReviewHold(alert);
+    const autoHold = buildPermanentNeedsYouHold(alert) || buildAutoSendReviewHold(alert);
     if (autoHold) {
         const heldAt = new Date().toISOString();
+        const isPermanentNeedsYouHold = autoHold.code === 'always_needs_you_person';
         try {
             await supabase(`coach_alerts?id=eq.${alert.id}`, {
                 method: 'PATCH',
                 body: {
                     data: {
                         ...(alert.data || {}),
+                        ...(isPermanentNeedsYouHold ? {
+                            client_manager_review_required: true,
+                            needs_you_required: true,
+                            operator_queue: 'needs_you',
+                            needs_you_reason: 'always_needs_you_person',
+                            needs_you_reasons: [
+                                ...new Set([
+                                    ...(Array.isArray(alert.data?.needs_you_reasons) ? alert.data.needs_you_reasons : []),
+                                    'always_needs_you_person',
+                                ]),
+                            ],
+                            permanent_needs_you_draft_only: true,
+                        } : {}),
                         auto_send_review_hold: {
                             ...autoHold,
                             held_at: autoHold.held_at || heldAt,
@@ -341,6 +413,23 @@ exports.handler = async () => {
     }
 
     const nowIso = new Date().toISOString();
+    if (!isCoachDmManagerWorkingTime(new Date(nowIso))) {
+        console.info('[scheduled-worker] paused outside working window', JSON.stringify({
+            at: nowIso,
+            working_window: coachDmManagerWindowLabel(),
+        }));
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                checked_at: nowIso,
+                paused: true,
+                working_window: coachDmManagerWindowLabel(),
+                due: 0,
+                fired: 0,
+            }),
+        };
+    }
+
     let due = [];
     try {
         due = await supabase(
@@ -394,7 +483,10 @@ exports.handler = async () => {
 
 exports._test = {
     buildAutoSendReviewHold,
+    isAutomatedPermanentNeedsYouScheduledAlert,
+    buildPermanentNeedsYouHold,
     hasCocosAutoContextBypass,
     hasAutoContextBypass,
     repairMissingScheduledLinkHandoff,
+    isCoachDmManagerWorkingTime,
 };

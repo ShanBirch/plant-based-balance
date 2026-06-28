@@ -21,7 +21,7 @@ assert.strictEqual(isChallengeOfferSend({
 }), true);
 assert.strictEqual(isChallengeOfferSend({
     alertData: {},
-    replyText: 'I can get you into the free 30 day challenge if you want',
+    replyText: 'I can send you the starter coaching details if you want',
 }), true);
 assert.strictEqual(isChallengeOfferSend({
     alertData: {},

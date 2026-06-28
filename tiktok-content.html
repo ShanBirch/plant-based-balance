@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TikTok Content - Balance</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f5f7fb;
+      color: #172033;
+      font-family: Inter, Arial, sans-serif;
+    }
+    header {
+      background: #101827;
+      color: #fff;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 4px solid #34a853;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .brand img {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      background: #fff;
+      border-radius: 8px;
+      padding: 3px;
+    }
+    h1, h2, h3 {
+      font-family: Montserrat, Inter, sans-serif;
+      margin: 0;
+      letter-spacing: 0;
+    }
+    h1 { font-size: 1.2rem; }
+    h2 { font-size: 1.05rem; margin-bottom: 12px; }
+    h3 { font-size: 0.9rem; margin-bottom: 8px; }
+    main {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 18px;
+    }
+    section, .panel {
+      background: #fff;
+      border: 1px solid #dce3ee;
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: 0 14px 38px rgba(15, 23, 42, 0.07);
+    }
+    .stack { display: grid; gap: 14px; }
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #536173;
+      margin-bottom: 7px;
+    }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 11px 12px;
+      font: inherit;
+      color: #172033;
+      background: #fff;
+    }
+    textarea { min-height: 112px; resize: vertical; }
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 11px 14px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 42px;
+    }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .primary { background: #fe2c55; color: #fff; }
+    .secondary { background: #101827; color: #fff; }
+    .light { background: #e8eef7; color: #172033; }
+    .button-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .status {
+      padding: 12px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      border: 1px solid #dce3ee;
+      color: #334155;
+      line-height: 1.45;
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+    }
+    .status.ok { background: #ecfdf3; border-color: #bbf7d0; color: #14532d; }
+    .status.bad { background: #fff1f2; border-color: #fecdd3; color: #9f1239; }
+    .account {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .account img {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #e2e8f0;
+    }
+    .account strong { display: block; }
+    .muted { color: #64748b; font-size: 0.86rem; line-height: 1.45; }
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .mode {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      background: #f8fafc;
+    }
+    .mode input { width: auto; margin-right: 7px; }
+    .mode span { display: block; margin-top: 6px; color: #64748b; font-size: 0.8rem; line-height: 1.35; }
+    .progress-wrap {
+      height: 10px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      display: none;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0;
+      background: #34a853;
+      transition: width 0.2s ease;
+    }
+    code {
+      background: #edf2f7;
+      padding: 2px 5px;
+      border-radius: 5px;
+      font-size: 0.82rem;
+    }
+    @media (max-width: 860px) {
+      header { align-items: flex-start; flex-direction: column; }
+      main { grid-template-columns: 1fr; padding: 16px; }
+      .mode-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="/balance_logo.png" alt="Balance">
+      <div>
+        <h1>Balance TikTok Content</h1>
+        <div class="muted">Owner posting console</div>
+      </div>
+    </div>
+    <a class="muted" href="/admin-dashboard.html" style="color:#dbeafe;text-decoration:none;">Admin Dashboard</a>
+  </header>
+
+  <main>
+    <aside class="stack">
+      <section class="stack">
+        <h2>Access</h2>
+        <div>
+          <label for="secret">Owner secret</label>
+          <input id="secret" type="password" autocomplete="off" placeholder="Balance content secret">
+        </div>
+        <div class="button-row">
+          <button class="secondary" id="saveSecretBtn" type="button"><i data-lucide="key-round"></i>Save</button>
+          <button class="light" id="checkBtn" type="button"><i data-lucide="refresh-cw"></i>Check</button>
+        </div>
+        <div id="status" class="status">Waiting for owner secret.</div>
+      </section>
+
+      <section class="stack">
+        <h2>TikTok Account</h2>
+        <div id="accountBox" class="account">
+          <img id="avatar" alt="">
+          <div>
+            <strong id="displayName">Not connected</strong>
+            <span id="scopeText" class="muted">No scopes yet</span>
+          </div>
+        </div>
+        <button class="primary" id="connectBtn" type="button"><i data-lucide="log-in"></i>Connect TikTok</button>
+        <div class="muted">Redirect URI: <code id="redirectUri">loading</code></div>
+      </section>
+    </aside>
+
+    <section class="stack">
+      <h2>Post Video</h2>
+      <div class="mode-grid">
+        <label class="mode">
+          <input type="radio" name="mode" value="draft" checked>
+          Upload draft
+          <span>Sends the video to TikTok inbox for final edits in TikTok.</span>
+        </label>
+        <label class="mode">
+          <input type="radio" name="mode" value="publish">
+          Direct publish
+          <span>Posts with owner approval. Private is safest before audit approval.</span>
+        </label>
+      </div>
+
+      <div>
+        <label for="video">Video file</label>
+        <input id="video" type="file" accept="video/mp4,video/quicktime,video/webm">
+        <div class="muted">Use a short MP4/MOV/WebM under 50MB. Smaller files are better for the first review demo.</div>
+      </div>
+
+      <div>
+        <label for="caption">Caption</label>
+        <textarea id="caption" maxlength="2200" placeholder="Plant-based challenge content from Balance"></textarea>
+      </div>
+
+      <div id="publishOptions" class="panel stack" style="display:none;">
+        <div class="button-row">
+          <button class="light" id="creatorBtn" type="button"><i data-lucide="user-check"></i>Load TikTok Options</button>
+        </div>
+        <div>
+          <label for="privacyLevel">Privacy</label>
+          <select id="privacyLevel">
+            <option value="SELF_ONLY">SELF_ONLY</option>
+          </select>
+        </div>
+        <div id="creatorInfo" class="muted">Creator options not loaded yet.</div>
+      </div>
+
+      <div class="progress-wrap" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="button-row">
+        <button class="primary" id="uploadBtn" type="button"><i data-lucide="upload-cloud"></i>Send to TikTok</button>
+      </div>
+      <div id="result" class="status">No upload yet.</div>
+    </section>
+  </main>
+
+  <script>
+    const els = {
+      secret: document.getElementById('secret'),
+      status: document.getElementById('status'),
+      result: document.getElementById('result'),
+      saveSecretBtn: document.getElementById('saveSecretBtn'),
+      checkBtn: document.getElementById('checkBtn'),
+      connectBtn: document.getElementById('connectBtn'),
+      creatorBtn: document.getElementById('creatorBtn'),
+      uploadBtn: document.getElementById('uploadBtn'),
+      redirectUri: document.getElementById('redirectUri'),
+      displayName: document.getElementById('displayName'),
+      scopeText: document.getElementById('scopeText'),
+      avatar: document.getElementById('avatar'),
+      video: document.getElementById('video'),
+      caption: document.getElementById('caption'),
+      privacyLevel: document.getElementById('privacyLevel'),
+      publishOptions: document.getElementById('publishOptions'),
+      creatorInfo: document.getElementById('creatorInfo'),
+      progressWrap: document.getElementById('progressWrap'),
+      progressBar: document.getElementById('progressBar'),
+    };
+
+    function secret() {
+      return els.secret.value.trim();
+    }
+
+    function setStatus(el, message, kind) {
+      el.textContent = message;
+      el.classList.toggle('ok', kind === 'ok');
+      el.classList.toggle('bad', kind === 'bad');
+    }
+
+    async function postJson(url, body = {}) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-balance-content-secret': secret(),
+        },
+        body: JSON.stringify({ ...body, secret: secret() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) throw new Error(data.error || `Request failed: ${res.status}`);
+      return data;
+    }
+
+    function updateAccount(data) {
+      els.redirectUri.textContent = data.redirectUri || '/.netlify/functions/tiktok-oauth-callback';
+      const connection = data.connection || {};
+      if (!connection.connected) {
+        els.displayName.textContent = 'Not connected';
+        els.scopeText.textContent = 'No scopes yet';
+        els.avatar.removeAttribute('src');
+        return;
+      }
+      els.displayName.textContent = connection.displayName || 'Connected TikTok account';
+      els.scopeText.textContent = connection.scope || 'Connected';
+      if (connection.avatarUrl) els.avatar.src = connection.avatarUrl;
+      setStatus(els.status, 'TikTok connected. Access token expiry: ' + (connection.expiresAt || 'unknown'), 'ok');
+    }
+
+    async function checkStatus(refresh = false) {
+      if (!secret()) {
+        setStatus(els.status, 'Enter the owner secret first.', 'bad');
+        return;
+      }
+      setStatus(els.status, 'Checking TikTok connection...', '');
+      const data = await postJson('/.netlify/functions/tiktok-content-status', { refresh });
+      updateAccount(data);
+      if (!data.connection?.connected) setStatus(els.status, 'TikTok is not connected yet.', 'bad');
+    }
+
+    async function connectTikTok() {
+      if (!secret()) {
+        setStatus(els.status, 'Enter the owner secret first.', 'bad');
+        return;
+      }
+      els.connectBtn.disabled = true;
+      try {
+        const data = await postJson('/.netlify/functions/tiktok-oauth-start');
+        window.location.href = data.authUrl;
+      } catch (error) {
+        setStatus(els.status, error.message, 'bad');
+        els.connectBtn.disabled = false;
+      }
+    }
+
+    async function loadCreatorInfo() {
+      setStatus(els.result, 'Loading TikTok creator options...', '');
+      const data = await postJson('/.netlify/functions/tiktok-creator-info');
+      const creator = data.creator || {};
+      const options = creator.privacy_level_options || ['SELF_ONLY'];
+      els.privacyLevel.innerHTML = options.map(option => `<option value="${option}">${option}</option>`).join('');
+      if (options.includes('SELF_ONLY')) els.privacyLevel.value = 'SELF_ONLY';
+      els.creatorInfo.textContent = [
+        creator.creator_nickname ? `Account: ${creator.creator_nickname}` : '',
+        creator.max_video_post_duration_sec ? `Max duration: ${creator.max_video_post_duration_sec}s` : '',
+        creator.comment_disabled ? 'Comments disabled by TikTok settings' : '',
+        creator.duet_disabled ? 'Duets disabled by TikTok settings' : '',
+        creator.stitch_disabled ? 'Stitches disabled by TikTok settings' : '',
+      ].filter(Boolean).join('\n') || 'Creator options loaded.';
+      setStatus(els.result, 'Creator options loaded.', 'ok');
+    }
+
+    function mode() {
+      return document.querySelector('input[name="mode"]:checked')?.value || 'draft';
+    }
+
+    function syncMode() {
+      els.publishOptions.style.display = mode() === 'publish' ? 'grid' : 'none';
+    }
+
+    async function uploadVideo() {
+      if (!secret()) {
+        setStatus(els.result, 'Enter the owner secret first.', 'bad');
+        return;
+      }
+      const file = els.video.files?.[0];
+      if (!file) {
+        setStatus(els.result, 'Choose a video file first.', 'bad');
+        return;
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        setStatus(els.result, 'Use a video under 50MB.', 'bad');
+        return;
+      }
+
+      const form = new FormData();
+      form.set('secret', secret());
+      form.set('mode', mode());
+      form.set('caption', els.caption.value.trim());
+      form.set('privacyLevel', els.privacyLevel.value || 'SELF_ONLY');
+      form.set('video', file);
+
+      els.uploadBtn.disabled = true;
+      els.progressWrap.style.display = 'block';
+      els.progressBar.style.width = '30%';
+      setStatus(els.result, 'Sending video to TikTok...', '');
+
+      try {
+        const res = await fetch('/.netlify/functions/tiktok-upload-video', {
+          method: 'POST',
+          headers: { 'x-balance-content-secret': secret() },
+          body: form,
+        });
+        els.progressBar.style.width = '85%';
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || `Upload failed: ${res.status}`);
+        els.progressBar.style.width = '100%';
+        const done = data.mode === 'publish'
+          ? `Direct publish sent. Publish ID: ${data.publishId || 'pending'}`
+          : `Draft upload sent. Publish ID: ${data.publishId || 'pending'}\nOpen TikTok inbox to finish the post.`;
+        setStatus(els.result, done, 'ok');
+      } catch (error) {
+        setStatus(els.result, error.message, 'bad');
+      } finally {
+        els.uploadBtn.disabled = false;
+        setTimeout(() => {
+          els.progressWrap.style.display = 'none';
+          els.progressBar.style.width = '0';
+        }, 1200);
+      }
+    }
+
+    els.secret.value = localStorage.getItem('balanceContentSecret') || '';
+    els.saveSecretBtn.addEventListener('click', () => {
+      localStorage.setItem('balanceContentSecret', secret());
+      setStatus(els.status, 'Owner secret saved in this browser.', 'ok');
+    });
+    els.checkBtn.addEventListener('click', () => checkStatus(false).catch(error => setStatus(els.status, error.message, 'bad')));
+    els.connectBtn.addEventListener('click', connectTikTok);
+    els.creatorBtn.addEventListener('click', () => loadCreatorInfo().catch(error => setStatus(els.result, error.message, 'bad')));
+    els.uploadBtn.addEventListener('click', uploadVideo);
+    document.querySelectorAll('input[name="mode"]').forEach(input => input.addEventListener('change', syncMode));
+    syncMode();
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tiktok_connected')) setStatus(els.status, 'TikTok connected. Checking account...', 'ok');
+    if (params.get('tiktok_error')) setStatus(els.status, 'TikTok connection returned an error.', 'bad');
+    if (secret()) checkStatus(false).catch(error => setStatus(els.status, error.message, 'bad'));
+    if (window.lucide) window.lucide.createIcons();
+  </script>
+</body>
+</html>

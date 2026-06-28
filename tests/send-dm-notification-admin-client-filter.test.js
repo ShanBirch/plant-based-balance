@@ -114,3 +114,38 @@ assert.strictEqual(
     }),
     true
 );
+
+assert.strictEqual(
+    isAllowedAdminPhonePush({
+        type: 'sale_made',
+        alert: {
+            alert_type: 'subscription_sale',
+            client_id: 'client-6',
+            data: { sale_made: true, needs_you_reason: 'subscription_sale', lifecycle: { stage: 'paying' } },
+        },
+        payload: { actionType: 'subscription_sale', lifecycleStage: 'paying', clientId: 'client-6', senderName: 'New sale', messageText: 'New sale' },
+    }),
+    true
+);
+
+assert.strictEqual(
+    isAllowedAdminPhonePush({
+        type: 'sale_made',
+        alert: null,
+        payload: { actionType: 'subscription_sale', lifecycleStage: 'paying', clientId: 'client-7', senderName: 'New sale', messageText: 'New sale' },
+    }),
+    false
+);
+
+assert.strictEqual(
+    isAllowedAdminPhonePush({
+        type: 'sale_made',
+        alert: {
+            alert_type: 'general_idea',
+            client_id: 'client-8',
+            data: { sale_made: true, needs_you_reason: 'subscription_sale', lifecycle: { stage: 'paying' } },
+        },
+        payload: { actionType: 'subscription_sale', lifecycleStage: 'paying', clientId: 'client-8', senderName: 'New sale', messageText: 'New sale' },
+    }),
+    false
+);

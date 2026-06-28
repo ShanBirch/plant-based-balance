@@ -9,7 +9,7 @@
  *
  *   event: 'cohort_activated' (default for backwards compat — also fires when
  *                              the omitted/legacy `just_started` path is used)
- *                              → sent when all 6 have accepted and the 30-day
+ *                              → sent when all 6 have accepted and the cohort
  *                              clock has actually started. Pushes the
  *                              "challenge has begun" notification to the 6
  *                              accepted participants.
@@ -116,10 +116,13 @@ exports.handler = async (event) => {
 
     const COHORT_LABELS = {
         plant_based_30: { name: '30 Day Challenge', sender: 'Balance' },
-        transform_30:   { name: '30-Day Transformation Challenge', sender: '🔥 Balance Coach' },
+        transform_30:   { name: '6-Week Transformation Challenge', sender: '🔥 Balance Coach' },
     };
     const cohortLabel = COHORT_LABELS[challenge.cohort_type] || COHORT_LABELS.plant_based_30;
-    const challengeName = challenge.name || cohortLabel.name;
+    const rawChallengeName = challenge.name || cohortLabel.name;
+    const challengeName = challenge.cohort_type === 'transform_30' && /30[-\s]?day transformation/i.test(rawChallengeName)
+        ? cohortLabel.name
+        : rawChallengeName;
     const senderName = cohortLabel.sender;
 
     if (mode === 'cohort_filled') {

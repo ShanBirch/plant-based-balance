@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plant-Based Recovery Window Pack</title>
+  <meta name="description" content="The unlocked plant-based recovery window guide.">
+  <link rel="icon" href="data:,">
+  <script>
+    if (!sessionStorage.getItem('recoverPackUnlocked')) {
+      window.location.replace('index.html' + window.location.search);
+    }
+  </script>
+  <style>
+    :root {
+      --paper: #f7f3ea;
+      --ink: #191817;
+      --muted: #5b554d;
+      --grid: rgba(25, 24, 23, 0.08);
+      --green: #209b5a;
+      --yellow: #f3ca46;
+      --orange: #f25434;
+      --line: #25211d;
+      --panel: #fffaf0;
+      --dark: #171512;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+        var(--paper);
+      background-size: 34px 34px;
+    }
+
+    main {
+      width: min(820px, 100%);
+      margin: 0 auto;
+      padding: 22px 14px 38px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 420px;
+      display: grid;
+      align-content: end;
+      padding: 22px;
+      border: 3px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(23, 21, 18, 0.18), rgba(23, 21, 18, 0.86)),
+        url("assets/plant-based-recovery-meal.png") center / cover;
+      color: #fffaf0;
+      box-shadow: 8px 8px 0 var(--yellow);
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--yellow);
+      font-size: 0.78rem;
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    h1 {
+      max-width: 10ch;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(3.2rem, 14vw, 5.8rem);
+      line-height: 0.96;
+      letter-spacing: 0;
+    }
+
+    .intro {
+      margin-top: 16px;
+      max-width: 36rem;
+      font-size: 1.05rem;
+      line-height: 1.38;
+      font-weight: 780;
+    }
+
+    .section {
+      margin-top: 28px;
+      padding: 18px;
+      border: 2px solid rgba(37, 33, 29, 0.18);
+      border-radius: 8px;
+      background: rgba(255, 250, 240, 0.92);
+    }
+
+    .dark {
+      background: var(--dark);
+      color: #fff7e7;
+      border-color: var(--dark);
+    }
+
+    h2 {
+      font-size: clamp(1.85rem, 8vw, 2.55rem);
+      line-height: 0.96;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .sub {
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 760;
+      line-height: 1.38;
+    }
+
+    .dark .sub { color: #d8cfbf; }
+
+    .formula {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .step, .combo, .rule {
+      display: grid;
+      grid-template-columns: 52px 1fr;
+      gap: 14px;
+      align-items: start;
+      padding: 14px;
+      border: 2px solid rgba(37, 33, 29, 0.16);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .dark .step {
+      border-color: rgba(255, 250, 240, 0.16);
+      background: #221f1a;
+    }
+
+    .num {
+      display: grid;
+      place-items: center;
+      width: 52px;
+      min-width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: var(--green);
+      color: #fffaf0;
+      font-weight: 950;
+      font-size: 1.1rem;
+    }
+
+    h3 {
+      font-size: 1.18rem;
+      line-height: 1.15;
+      font-weight: 950;
+    }
+
+    .step p, .combo p, .rule p {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.97rem;
+      line-height: 1.35;
+      font-weight: 730;
+    }
+
+    .dark .step p { color: #d8cfbf; }
+
+    .personal {
+      margin-top: 14px;
+      padding: 14px;
+      border-left: 8px solid var(--orange);
+      border-radius: 8px;
+      background: #fff2dc;
+      color: #322c25;
+      font-weight: 820;
+      line-height: 1.38;
+    }
+
+    .meal-designer {
+      border: 3px solid var(--line);
+      box-shadow: 8px 8px 0 var(--yellow);
+    }
+
+    .meal-result {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .meal-title-row {
+      display: grid;
+      gap: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      width: fit-content;
+      min-height: 32px;
+      align-items: center;
+      padding: 0 10px;
+      border-radius: 999px;
+      color: #fffaf0;
+      background: var(--green);
+      font-size: 0.78rem;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    .meal-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .meal-box {
+      padding: 14px;
+      border: 2px solid rgba(37, 33, 29, 0.16);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .meal-box h3 {
+      margin-top: 8px;
+      font-size: 1.12rem;
+    }
+
+    .meal-box p {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.96rem;
+      line-height: 1.35;
+      font-weight: 730;
+    }
+
+    .meal-note {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 750;
+      line-height: 1.36;
+    }
+
+    .combo-grid {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .combo {
+      grid-template-columns: 1fr;
+      padding: 16px;
+    }
+
+    .combo .tag {
+      display: inline-flex;
+      width: fit-content;
+      min-height: 32px;
+      align-items: center;
+      padding: 0 10px;
+      border-radius: 999px;
+      color: #fffaf0;
+      background: var(--green);
+      font-size: 0.78rem;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    .combo h3 { margin-top: 10px; }
+
+    .rules {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .rule {
+      grid-template-columns: 44px 1fr;
+      padding: 12px;
+    }
+
+    .rule .num {
+      width: 44px;
+      min-width: 44px;
+      height: 44px;
+      border-radius: 10px;
+    }
+
+    .save {
+      margin-top: 28px;
+      padding: 18px;
+      border: 3px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 8px 8px 0 var(--yellow);
+    }
+
+    .save p {
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 780;
+      line-height: 1.4;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 40px;
+      margin-top: 14px;
+      padding: 0 15px;
+      border-radius: 999px;
+      color: #fffaf0;
+      background: var(--green);
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    .download-panel {
+      display: grid;
+      gap: 14px;
+      margin-top: 28px;
+      padding: 16px;
+      border: 3px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 8px 8px 0 var(--yellow);
+    }
+
+    .download-panel h2 {
+      font-size: clamp(1.75rem, 7vw, 2.35rem);
+    }
+
+    .download-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .download-btn {
+      min-height: 50px;
+      border: 0;
+      border-radius: 8px;
+      padding: 0 16px;
+      background: var(--green);
+      color: #fffaf0;
+      font: inherit;
+      font-size: 0.98rem;
+      font-weight: 950;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .download-btn.secondary {
+      background: var(--dark);
+      color: #fff7e7;
+    }
+
+    .download-btn:disabled {
+      cursor: wait;
+      opacity: 0.72;
+    }
+
+    .download-status {
+      min-height: 20px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    @media (min-width: 740px) {
+      main { padding-top: 36px; }
+      .combo-grid { grid-template-columns: 1fr 1fr; }
+      .formula { grid-template-columns: repeat(3, 1fr); }
+      .step { grid-template-columns: 1fr; }
+      .meal-grid { grid-template-columns: repeat(2, 1fr); }
+      .download-panel {
+        grid-template-columns: 1fr 260px;
+        align-items: center;
+      }
+    }
+
+    @media print {
+      body {
+        background: var(--paper) !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+
+      main {
+        width: 100%;
+        padding: 0;
+      }
+
+      .download-panel {
+        display: none !important;
+      }
+
+      .hero,
+      .section,
+      .save {
+        break-inside: avoid;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <p class="eyebrow">Unlocked recovery pack</p>
+      <h1>The next 1-2 hours.</h1>
+      <p class="intro">This is the window where your first meal decides whether training feels like progress tomorrow or just another flat day.</p>
+    </section>
+
+    <section class="download-panel" aria-label="Download recovery pack">
+      <div>
+        <p class="eyebrow">Keep the pack</p>
+        <h2>Download your guide.</h2>
+        <p class="sub">Save the unlocked version with your questionnaire note included.</p>
+      </div>
+      <div class="download-actions">
+        <button class="download-btn" type="button" id="download-page">Download Page</button>
+        <button class="download-btn secondary" type="button" id="save-pdf">Save As PDF</button>
+        <div class="download-status" id="download-status" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="section meal-designer" aria-label="Personalized recovery meal">
+      <p class="eyebrow">Your recovery meal</p>
+      <div class="meal-title-row">
+        <span class="pill" id="meal-lane">Building</span>
+        <h2 id="meal-title">Your plant-based recovery meal</h2>
+        <p class="sub" id="meal-summary">Built from your session, timing, appetite, food choices, and prep time.</p>
+      </div>
+      <div class="meal-result">
+        <div class="meal-grid">
+          <div class="meal-box">
+            <span class="pill">Protein</span>
+            <h3 id="meal-protein">Protein anchor</h3>
+            <p id="meal-protein-portion">Choose a plant protein you will actually eat.</p>
+          </div>
+          <div class="meal-box">
+            <span class="pill">Carbs</span>
+            <h3 id="meal-carb">Carb base</h3>
+            <p id="meal-carb-portion">Add usable fuel so the meal holds.</p>
+          </div>
+          <div class="meal-box">
+            <span class="pill">Plants</span>
+            <h3 id="meal-plants">Volume and colour</h3>
+            <p id="meal-plants-portion">Use fruit or veg that matches the meal.</p>
+          </div>
+          <div class="meal-box">
+            <span class="pill">Fluid</span>
+            <h3 id="meal-fluid">Water first</h3>
+            <p id="meal-fluid-portion">Add salt or electrolytes if the session was sweaty.</p>
+          </div>
+        </div>
+        <p class="personal" id="meal-reason">Your meal explanation will appear here.</p>
+        <div class="combo-grid">
+          <div class="combo">
+            <span class="tag">Backup</span>
+            <h3 id="backup-title">Backup option</h3>
+            <p id="backup-copy">A second option will appear here.</p>
+          </div>
+          <div class="combo">
+            <span class="tag">No prep</span>
+            <h3 id="grab-title">Grab-and-go option</h3>
+            <p id="grab-copy">A simple backup will appear here.</p>
+          </div>
+        </div>
+        <p class="meal-note">This is practical food guidance, not medical nutrition advice. Adjust for allergies, medical conditions, and your own hunger.</p>
+      </div>
+    </section>
+
+    <section class="section dark">
+      <h2>The non-negotiable stack</h2>
+      <p class="sub">For plant-based recovery, do not chase protein by itself. Pair the repair signal with fuel and fluid.</p>
+      <div class="formula">
+        <div class="step">
+          <div class="num">1</div>
+          <div>
+            <h3>Protein anchor</h3>
+            <p>Tofu, tempeh, beans, lentils, soy yoghurt, seitan, or plant protein.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">2</div>
+          <div>
+            <h3>Carb base</h3>
+            <p>Rice, oats, bread, pasta, potato, fruit, wraps, cereal, or noodles.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">3</div>
+          <div>
+            <h3>Fluid + salt</h3>
+            <p>Water first. Add salt or electrolytes for sweaty, long, or hot sessions.</p>
+          </div>
+        </div>
+      </div>
+      <p class="personal" id="personal-note">Your recovery note will appear here after the questionnaire.</p>
+    </section>
+
+    <section class="section">
+      <h2>If tomorrow feels flat</h2>
+      <p class="sub">Do this quick audit before blaming motivation.</p>
+      <div class="rules">
+        <div class="rule">
+          <div class="num">P</div>
+          <div>
+            <h3>Protein was missing</h3>
+            <p>Add tofu, tempeh, beans, lentils, soy yoghurt, seitan, or plant protein next time.</p>
+          </div>
+        </div>
+        <div class="rule">
+          <div class="num">C</div>
+          <div>
+            <h3>Carbs were too low</h3>
+            <p>If hunger rebounds fast or training feels heavy tomorrow, increase the carb base.</p>
+          </div>
+        </div>
+        <div class="rule">
+          <div class="num">F</div>
+          <div>
+            <h3>Fluids were ignored</h3>
+            <p>Headache, heavy legs, and weird cravings often mean water and salt were too low.</p>
+          </div>
+        </div>
+        <div class="rule">
+          <div class="num">S</div>
+          <div>
+            <h3>Snack was too small</h3>
+            <p>If the next meal is more than two hours away, make the first recovery feed a real meal.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="save">
+      <h2>Save this rule</h2>
+      <p>After training, ask: did I get a protein anchor, a carb base, and fluid? If yes, the recovery window is covered.</p>
+      <div class="badge">Comment RECOVER</div>
+    </section>
+  </main>
+
+  <script>
+    const answers = JSON.parse(sessionStorage.getItem('recoverPackAnswers') || '{}');
+    const labels = {
+      training_type: {
+        strength: 'weights session',
+        run: 'run/cardio session',
+        class: 'class or circuit',
+        walk: 'light session',
+        mixed: 'mixed session'
+      },
+      session_effort: {
+        easy: 'easy',
+        moderate: 'moderate',
+        hard: 'hard',
+        very_hard: 'very hard'
+      },
+      meal_timing: {
+        now: 'eat now',
+        soon: 'eat within 1-2 hours',
+        later: 'next meal is more than two hours away',
+        late: 'late-night light option'
+      },
+      appetite: {
+        low: 'low appetite',
+        normal: 'normal appetite',
+        hungry: 'hungry',
+        ravenous: 'ravenous'
+      },
+      problem: {
+        hungry: 'hunger rebounds quickly',
+        flat: 'tomorrow can feel flat',
+        appetite: 'appetite drops after training',
+        protein: 'protein feels unclear',
+        busy: 'time is tight'
+      }
+    };
+
+    function asArray(value) {
+      if (Array.isArray(value)) return value;
+      if (!value) return [];
+      return [value];
+    }
+
+    function hasChoice(choice) {
+      return asArray(answers.protein_choices).includes(choice);
+    }
+
+    function pickStyle() {
+      const chosen = answers.meal_style || 'bowl';
+      if (answers.prep_time === '0' || answers.problem === 'busy') return 'grab';
+      if (answers.appetite === 'low' || answers.problem === 'appetite') return 'smoothie';
+      if (answers.meal_timing === 'late' && chosen === 'bowl') return 'toast';
+      return chosen;
+    }
+
+    function portionLevel() {
+      const weight = Number.parseFloat(answers.body_weight);
+      let level = 'medium';
+      if (Number.isFinite(weight)) {
+        if (weight < 60) level = 'lighter';
+        else if (weight >= 85) level = 'larger';
+      }
+      if (answers.session_effort === 'very_hard' && level !== 'larger') {
+        level = level === 'lighter' ? 'medium' : 'larger';
+      }
+      return level;
+    }
+
+    function proteinFor(style) {
+      if (style === 'smoothie') {
+        if (hasChoice('powder')) return ['Soy banana protein smoothie', 'Soy milk, banana, oats, plant protein, peanut butter, and a pinch of salt.'];
+        if (hasChoice('soy_yoghurt')) return ['Soy yoghurt smoothie bowl', 'Soy yoghurt, banana, oats, peanut butter, berries, and soy milk to thin it.'];
+        return ['Soy banana smoothie + protein side', 'Soy milk, banana, oats, peanut butter, plus tofu, tempeh, or beans with the next proper meal.'];
+      }
+      if (style === 'wrap') {
+        if (hasChoice('seitan')) return ['Seitan recovery wrap', 'Seitan strips, wrap, salad, avocado or hummus, and fruit on the side.'];
+        if (hasChoice('tofu')) return ['Tofu recovery wrap', 'Tofu or tempeh, wrap, salad, hummus, and fruit on the side.'];
+        return ['Bean recovery wrap', 'Beans or lentils, wrap, salad, hummus, and fruit on the side.'];
+      }
+      if (style === 'toast') {
+        if (hasChoice('soy_yoghurt')) return ['Soy yoghurt recovery plate', 'Soy yoghurt, toast, banana or berries, muesli, and peanut butter.'];
+        if (hasChoice('powder')) return ['Toast + protein shake', 'Peanut butter toast, banana, and a plant protein shake.'];
+        return ['Toast + bean side', 'Peanut butter toast, fruit, and a small bean or lentil side when appetite returns.'];
+      }
+      if (style === 'grab') {
+        if (hasChoice('soy_yoghurt')) return ['No-prep recovery kit', 'Soy yoghurt, banana, muesli bar, salted nuts, and water.'];
+        if (hasChoice('powder')) return ['Shake-and-snack recovery kit', 'Plant protein shake, banana, muesli bar, salted nuts, and water.'];
+        return ['Shelf-stable recovery kit', 'Bean snack pot or roasted chickpeas, banana, muesli bar, salted nuts, and water.'];
+      }
+      if (hasChoice('tofu')) return ['Tofu rice recovery bowl', 'Tofu or tempeh, rice or noodles, veg, beans, and tahini or salsa.'];
+      if (hasChoice('seitan')) return ['Seitan recovery bowl', 'Seitan, rice or noodles, veg, beans, and tahini or salsa.'];
+      if (hasChoice('beans')) return ['Bean and lentil recovery bowl', 'Beans or lentils, rice or potato, veg, avocado or tahini, and salsa.'];
+      return ['Plant protein recovery bowl', 'A clear plant protein anchor, a carb base, veg, and fluid.'];
+    }
+
+    function carbFor(style) {
+      const hard = answers.session_effort === 'hard' || answers.session_effort === 'very_hard';
+      const larger = portionLevel() === 'larger';
+      const amount = larger || hard ? 'Use the larger end: 1.5-2 fists of carbs.' : 'Start with 1-1.5 fists of carbs.';
+      if (style === 'smoothie') return ['Banana + oats', `${amount} Blend banana and oats, then add cereal or toast if hunger comes back fast.`];
+      if (style === 'toast') return ['Toast + fruit', `${amount} Use toast, bagel, cereal, or fruit so it is not protein-only.`];
+      if (style === 'wrap') return ['Wrap + fruit', `${amount} A wrap covers the base; add fruit or a second wrap after hard sessions.`];
+      if (style === 'grab') return ['Banana + bar', `${amount} Pair fruit with a muesli bar, cereal cup, or bread roll.`];
+      if (answers.carb_preference === 'potato') return ['Potato base', `${amount} Potato or sweet potato is the main fuel.`];
+      if (answers.carb_preference === 'toast') return ['Bread or wrap base', `${amount} Bread, wrap, bagel, or sandwich works if that is what you will eat.`];
+      if (answers.carb_preference === 'oats') return ['Oats or cereal base', `${amount} Oats, cereal, and fruit work well when you want something easier.`];
+      return ['Rice, pasta, or noodles', `${amount} Keep the carb base obvious so training does not feel heavy tomorrow.`];
+    }
+
+    function plantsFor(style) {
+      if (style === 'smoothie') return ['Fruit + spinach', 'Banana, berries, spinach, or mango. Keep fibre gentle if appetite is low.'];
+      if (style === 'toast') return ['Fruit on the side', 'Banana, berries, or orange. Add veg later if it feels too heavy now.'];
+      if (style === 'wrap') return ['Crunchy salad', 'Lettuce, cucumber, carrot, tomato, or slaw for volume and crunch.'];
+      if (style === 'grab') return ['Portable fruit', 'Banana, apple, grapes, or dried fruit. Easy beats perfect here.'];
+      return ['Veg and colour', 'Broccoli, greens, carrot, cucumber, tomato, or frozen veg. Add crunch if hunger usually rebounds.'];
+    }
+
+    function fluidFor() {
+      if (answers.session_effort === 'very_hard') {
+        return ['Water + salt', 'Start with 750-1000 ml over the next hour. Add electrolytes or a salty food if you sweated heavily.'];
+      }
+      if (answers.session_effort === 'hard') {
+        return ['Water first', 'Start with 500-750 ml. Add salt or electrolytes if it was hot or sweaty.'];
+      }
+      return ['Water first', 'Start with 400-600 ml. Keep a bottle nearby until your next meal.'];
+    }
+
+    function portionNote() {
+      const level = portionLevel();
+      if (!answers.body_weight) {
+        return 'No body weight given, so use the middle serving and adjust up if hunger rebounds.';
+      }
+      if (level === 'lighter') return 'Your body-weight input points to the lighter serving range, but use more if the session was hard.';
+      if (level === 'larger') return 'Your body-weight/session input points to the larger serving range, especially for carbs.';
+      return 'Your body-weight input points to the middle serving range.';
+    }
+
+    function buildMeal() {
+      const style = pickStyle();
+      const [title, protein] = proteinFor(style);
+      const [carbTitle, carb] = carbFor(style);
+      const [plantsTitle, plants] = plantsFor(style);
+      const [fluidTitle, fluid] = fluidFor();
+      const training = labels.training_type[answers.training_type] || 'session';
+      const effort = labels.session_effort[answers.session_effort] || 'training';
+      const timing = labels.meal_timing[answers.meal_timing] || 'your next meal';
+      const appetite = labels.appetite[answers.appetite] || 'your appetite';
+      const problem = labels.problem[answers.problem] || 'recovery is the goal';
+
+      document.getElementById('meal-lane').textContent = style.replace('_', ' ');
+      document.getElementById('meal-title').textContent = title;
+      document.getElementById('meal-summary').textContent = `For a ${effort} ${training}, ${timing}, and ${appetite}.`;
+      document.getElementById('meal-protein').textContent = protein.split(',')[0];
+      document.getElementById('meal-protein-portion').textContent = protein;
+      document.getElementById('meal-carb').textContent = carbTitle;
+      document.getElementById('meal-carb-portion').textContent = carb;
+      document.getElementById('meal-plants').textContent = plantsTitle;
+      document.getElementById('meal-plants-portion').textContent = plants;
+      document.getElementById('meal-fluid').textContent = fluidTitle;
+      document.getElementById('meal-fluid-portion').textContent = fluid;
+      document.getElementById('meal-reason').textContent = `Why this works: because ${problem}, this keeps the meal anchored with protein, adds enough carbs to refill usable energy, and keeps fluid/salt visible. ${portionNote()}`;
+
+      const backup = style === 'smoothie'
+        ? ['Recovery bowl backup', 'Tofu or beans, rice or potato, veg, salsa or tahini, and water. Use this when appetite returns.']
+        : ['Smoothie backup', 'Soy milk, banana, oats, peanut butter, plant protein or soy yoghurt, and a pinch of salt.'];
+      const grab = hasChoice('soy_yoghurt')
+        ? ['Soy yoghurt kit', 'Soy yoghurt, banana, muesli bar, salted nuts, and water.']
+        : ['Simple car kit', 'Protein shake or roasted chickpeas, banana, muesli bar, salted nuts, and water.'];
+      document.getElementById('backup-title').textContent = backup[0];
+      document.getElementById('backup-copy').textContent = backup[1];
+      document.getElementById('grab-title').textContent = grab[0];
+      document.getElementById('grab-copy').textContent = grab[1];
+
+      return `Your designed meal: ${title}. ${portionNote()} If tomorrow still feels flat, increase the carb base or fluid/salt first before blaming motivation.`;
+    }
+
+    const problemMap = {
+      hungry: 'Because you said hunger comes back quickly, make the carb base obvious and add volume.',
+      flat: 'Because you said tomorrow can feel flat, do not go protein-only. Pair protein with carbs and fluid.',
+      appetite: 'Because appetite is the issue, use a liquid or light option first, then eat more when appetite returns.',
+      protein: 'Because protein feels unclear, choose one anchor first and build the rest of the meal around it.',
+      busy: 'Because time is the bottleneck, keep a no-prep backup ready before training starts.'
+    };
+    const timingMap = {
+      later: 'Your next meal is more than two hours away, so a tiny snack is not enough.',
+      late: 'Because it is late, keep it simple and sleep-friendly.',
+      now: 'If you can eat now, use the full stack while the window is open.',
+      soon: 'You have time, but do not drift. Get fluids now and eat within the next 1-2 hours.'
+    };
+    const mealNote = buildMeal();
+    const note = [problemMap[answers.problem], timingMap[answers.meal_timing], mealNote].filter(Boolean).join(' ');
+    document.getElementById('personal-note').textContent = note || 'Use the stack within the next 1-2 hours: protein anchor, carb base, fluid and salt.';
+
+    const downloadStatus = document.getElementById('download-status');
+    const downloadButton = document.getElementById('download-page');
+    const pdfButton = document.getElementById('save-pdf');
+
+    function setDownloadStatus(message) {
+      downloadStatus.textContent = message || '';
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    async function getHeroImageDataUrl() {
+      try {
+        const imageUrl = new URL('assets/plant-based-recovery-meal.png', window.location.href);
+        const response = await fetch(imageUrl, { cache: 'force-cache' });
+        if (!response.ok) throw new Error('Image unavailable');
+        return await blobToDataUrl(await response.blob());
+      } catch (error) {
+        return '';
+      }
+    }
+
+    async function buildDownloadHtml() {
+      const mainClone = document.querySelector('main').cloneNode(true);
+      mainClone.querySelectorAll('.download-panel').forEach((node) => node.remove());
+
+      let styles = document.querySelector('style').textContent;
+      const heroImage = await getHeroImageDataUrl();
+      if (heroImage) {
+        styles = styles.replace(/url\(["']?assets\/plant-based-recovery-meal\.png["']?\)/g, `url("${heroImage}")`);
+      }
+
+      return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(document.title)}</title>
+  <style>${styles}</style>
+</head>
+<body>
+${mainClone.outerHTML}
+</body>
+</html>`;
+    }
+
+    function triggerDownload(html) {
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'plant-based-recovery-window-pack.html';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    downloadButton.addEventListener('click', async () => {
+      downloadButton.disabled = true;
+      setDownloadStatus('Preparing download...');
+      try {
+        triggerDownload(await buildDownloadHtml());
+        setDownloadStatus('Downloaded. You can open the saved pack anytime.');
+      } catch (error) {
+        setDownloadStatus('Could not download here. Try Save As PDF.');
+      } finally {
+        downloadButton.disabled = false;
+      }
+    });
+
+    pdfButton.addEventListener('click', () => {
+      setDownloadStatus('Choose Save as PDF in the print screen.');
+      window.print();
+    });
+  </script>
+</body>
+</html>

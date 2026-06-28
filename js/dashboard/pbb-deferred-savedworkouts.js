@@ -1,4 +1,146 @@
+if (typeof window.pbbEnsureWorkoutRuntimeReady !== 'function') {
+    window.pbbEnsureWorkoutRuntimeReady = function(requiredFunctions, options = {}) {
+        const timeoutMs = options.timeoutMs || 20000;
+        const startedAt = Date.now();
+        const required = Array.isArray(requiredFunctions) ? requiredFunctions : [];
+
+        const waitForFunctions = () => new Promise((resolve, reject) => {
+            const check = () => {
+                const missing = required.filter(name => typeof window[name] !== 'function');
+                if (missing.length === 0) {
+                    resolve(true);
+                    return;
+                }
+
+                if (Date.now() - startedAt >= timeoutMs) {
+                    reject(new Error(`Workout runtime not ready: ${missing.join(', ')}`));
+                    return;
+                }
+
+                setTimeout(check, 50);
+            };
+
+            check();
+        });
+
+        const loaders = [];
+        if (required.includes('findVideoMatch') && typeof window.findVideoMatch !== 'function' && typeof window.ensureVideoLogicScript === 'function') {
+            loaders.push(window.ensureVideoLogicScript());
+        }
+        if (typeof window.pbbEnsureWorkoutDashboardRuntimeScript === 'function') {
+            loaders.push(window.pbbEnsureWorkoutDashboardRuntimeScript());
+        }
+
+        if (loaders.length === 0) return waitForFunctions();
+        return Promise.all(loaders).then(waitForFunctions);
+    };
+}
+
+if (typeof window.pbbEnsureWorkoutDashboardRuntimeScript !== 'function') {
+    window.pbbEnsureWorkoutDashboardRuntimeScript = function() {
+        const required = [
+            'normalizeHistoryCache',
+            'preloadExerciseNotes',
+            'formatPreviousWorkoutSummary',
+            'getPreviousWorkoutSummary',
+            'getExerciseNotesHtml',
+            'setupVolumeTracking',
+            'startWorkoutTimer',
+            'pushNavigationState',
+            'showLastVolumePopup'
+        ];
+        const isReady = () => required.every(name => typeof window[name] === 'function');
+        if (isReady()) return Promise.resolve(true);
+        if (window._pbbWorkoutDashboardRuntimePromise) return window._pbbWorkoutDashboardRuntimePromise;
+
+        window._pbbWorkoutDashboardRuntimePromise = new Promise((resolve, reject) => {
+            const src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=111';
+            const startedAt = Date.now();
+            let settled = false;
+
+            const finishIfReady = () => {
+                if (settled) return true;
+                if (isReady()) {
+                    settled = true;
+                    resolve(true);
+                    return true;
+                }
+                return false;
+            };
+
+            const poll = () => {
+                if (finishIfReady()) return;
+                if (Date.now() - startedAt > 20000) {
+                    settled = true;
+                    reject(new Error('Workout dashboard runtime script did not become ready'));
+                    return;
+                }
+                setTimeout(poll, 50);
+            };
+
+            const attach = (script) => {
+                script.addEventListener('load', finishIfReady, { once: true });
+                script.addEventListener('error', () => {
+                    if (!settled) {
+                        settled = true;
+                        reject(new Error('Workout dashboard runtime script failed to load'));
+                    }
+                }, { once: true });
+                poll();
+            };
+
+            const existing = Array.from(document.scripts).find(script => (script.src || '').includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js'));
+            if (existing) {
+                attach(existing);
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = src;
+            attach(script);
+            document.head.appendChild(script);
+        }).catch(error => {
+            window._pbbWorkoutDashboardRuntimePromise = null;
+            throw error;
+        });
+
+        return window._pbbWorkoutDashboardRuntimePromise;
+    };
+}
+
+if (typeof window.pbbNotifyWorkoutRuntimeStillLoading !== 'function') {
+    window.pbbNotifyWorkoutRuntimeStillLoading = function(error) {
+        console.error('Workout runtime is still loading:', error);
+        alert('Workout is still loading. Give it a few seconds and tap Start again.');
+    };
+}
+
 async function startSavedWorkout(id) {
+        if (window._pbbStartingSavedWorkoutId === id) return;
+        window._pbbStartingSavedWorkoutId = id;
+
+        try {
+        try {
+            await window.pbbEnsureWorkoutRuntimeReady([
+                'normalizeHistoryCache',
+                'preloadExerciseNotes',
+                'findVideoMatch',
+                'formatPreviousWorkoutSummary',
+                'getPreviousWorkoutSummary',
+                'getExerciseNotesHtml',
+                'getSetRowHtml',
+                'getVolumeDisplayHtml',
+                'setupVolumeTracking',
+                'hideAllAppViews',
+                'startWorkoutTimer',
+                'pushNavigationState',
+                'showLastVolumePopup'
+            ]);
+        } catch (error) {
+            window.pbbNotifyWorkoutRuntimeStillLoading(error);
+            return;
+        }
+
         // Use cache populated by renderMovementView (205 lines — deferred on iOS)
         const saved = window.savedWorkoutsCache || [];
         const workout = saved.find(w => w.id === id);
@@ -119,6 +261,9 @@ async function startSavedWorkout(id) {
 
         // Show total volume popup and tracker
         showLastVolumePopup();
+        } finally {
+            window._pbbStartingSavedWorkoutId = null;
+        }
     }
 
     async function showWorkoutHistoryDetail(dateStr) {

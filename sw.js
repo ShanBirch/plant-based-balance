@@ -1,8 +1,10 @@
-const CACHE_NAME = 'pbb-app-v207'; // v207: offline workout shell/data scripts; v206: meal text logging stays scrollable while analysis runs
+const CACHE_NAME = 'pbb-app-v221'; // v221: remove XP guide back-to-app button; v220: six-week transform challenge copy and visible XP guide button
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
-const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v1';
+const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
   './dashboard.html',
+  './balance_logo_transparent.svg',
+  './xp-guide.html',
   './assets/balance_logo.png',
   './welcome.html',
   './lib/supabase.js',
@@ -11,11 +13,12 @@ const ASSETS = [
   './exercise_videos.js',
   './workout_library.js',
   './workout_library_extended.js',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=109',
-  './js/dashboard/dashboard-script-7-video_logic.js',
-  './js/dashboard/pbb-deferred-workoutbuilder.js?v=3',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=111',
+  './js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream',
+  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=5',
+  './js/dashboard/pbb-deferred-workoutbuilder.js?v=7',
   './js/dashboard/pbb-deferred-yourworkouts.js',
-  './js/dashboard/pbb-deferred-savedworkouts.js',
+  './js/dashboard/pbb-deferred-savedworkouts.js?v=4',
   './js/dashboard/dashboard-script-12-program_builder_state.js?v=4'
 ];
 
@@ -98,8 +101,7 @@ self.addEventListener('message', (e) => {
       .then((cache) => cacheModelsSequentially(cache, ONBOARDING_MODELS));
   }
   if (e.data && e.data.type === 'CACHE_WORKOUT_VIDEOS') {
-    const urls = Array.isArray(e.data.urls) ? e.data.urls : [];
-    e.waitUntil(cacheWorkoutVideos(urls));
+    e.waitUntil(broadcast({ event: 'workout_video_cache_skipped', reason: 'native_streaming' }));
   }
 });
 
@@ -165,22 +167,6 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
   if (url.pathname.match(/\.(mp4|mov|webm)$/i)) {
-    e.respondWith(
-      caches.open(WORKOUT_VIDEO_CACHE_NAME).then(cache => {
-        return cache.match(url.href).then(cached => {
-          if (cached) {
-            return createRangeResponse(e.request, cached.clone());
-          }
-
-          return fetch(e.request).then(response => {
-            if (response && response.ok && response.status === 200 && !e.request.headers.has('range')) {
-              cache.put(url.href, response.clone());
-            }
-            return response;
-          }).catch(() => caches.match(e.request));
-        });
-      })
-    );
     return;
   }
 
@@ -195,15 +181,16 @@ self.addEventListener('fetch', (e) => {
 
   // Network first for HTML, JS, and CSS files (always get latest)
   if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    const fetchOptions = url.pathname.endsWith('.html') ? { cache: 'no-store' } : { cache: 'reload' };
     e.respondWith(
-      fetch(e.request)
+      fetch(e.request, fetchOptions)
         .then(response => {
           // Clone and cache fresh response
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
           return response;
         })
-        .catch(() => caches.match(e.request)) // Fallback to cache if offline
+        .catch(() => caches.match(e.request, { ignoreSearch: true })) // Fallback to cache if offline
     );
     return;
   }

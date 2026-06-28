@@ -1,4 +1,6 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 
 const {
     DEFAULT_PERSONAS,
@@ -15,6 +17,11 @@ const {
     transcriptToText,
     runSparringBatch,
 } = require('../netlify/functions/_lib/dm-sparring-gym');
+
+const sparringSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/dm-sparring-gym.js'), 'utf8');
+assert.ok(sparringSource.includes('Earn the next response without interrogating'), 'sparring coach prompt should avoid question pressure');
+assert.ok(sparringSource.includes('Recent Shannon edits often cut optional curiosity questions'), 'sparring coach prompt should learn reaction-only edits');
+assert.ok(sparringSource.includes('Do not score a strong reaction-only reply as no_progression'), 'sparring judge should not penalize valid reaction-only replies');
 
 const firstPick = choosePersonas({ count: 3, seed: 'same-seed' }).map(p => p.key);
 const secondPick = choosePersonas({ count: 3, seed: 'same-seed' }).map(p => p.key);
@@ -89,7 +96,7 @@ const pitchedOptOut = adjustScorecardForAcceptedNoReply(normalizeScorecard({
     persona: acceptedExitPersona,
     history: [
         { role: 'lead', speaker: 'Casey', text: 'Bye' },
-        { role: 'coach', speaker: 'Shannon', text: 'want me to send the link for the free challenge?' },
+        { role: 'coach', speaker: 'Shannon', text: 'want me to send the link for starter coaching?' },
         { role: 'lead', speaker: 'Casey', text: '[no reply]', no_reply: true },
     ],
 });
@@ -128,7 +135,7 @@ assert.strictEqual(
 );
 
 const premature = detectCoachTurnIssues({
-    coachText: 'yeah i can get you into the free 30 day challenge if you want, want me to send the link?',
+        coachText: 'yeah i can send you the starter coaching details if you want, want me to send the link?',
     leadText: 'haha yeah sounds cool',
     qualifier: null,
     leadStage: 'qualifying',
@@ -136,7 +143,7 @@ const premature = detectCoachTurnIssues({
 assert.ok(premature.includes('possible_premature_challenge_invite'));
 
 const personalChallengePitch = detectCoachTurnIssues({
-    coachText: "i run a free 30-day challenge that's all about building solid habits. keen to hear more about it?",
+        coachText: "starter coaching is all about building solid habits with one weekly check-in. keen to hear more about it?",
     leadText: "What kind of stuff do you usually do for a challenge?",
     qualifier: null,
     leadStage: 'qualifying',
@@ -983,7 +990,7 @@ assert.ok(!veganProProcessQuestion.includes('too_generic'));
 assert.ok(!veganProProcessQuestion.includes('no_progression'));
 
 const familyMealPrematureInvite = detectCoachTurnIssues({
-    coachText: "that struggle to keep things varied and healthy is exactly what our free 30-day plant-based challenge is built to help with. keen to hear a bit more about it?",
+        coachText: "that struggle to keep things varied and healthy is exactly what starter coaching is built to help with. keen to hear a bit more about it?",
     leadText: "We've been plant-based for about two years now, and I still struggle to keep things varied and healthy for the kids.",
     qualifier: null,
     leadStage: 'qualifying',
@@ -1419,7 +1426,7 @@ assert.ok(softMidsectionLoop.includes('ignored_direct_question'));
 assert.ok(softMidsectionLoop.includes('no_progression'));
 
 const programExplanationMiss = detectCoachTurnIssues({
-    coachText: "it's not just another program, it's designed to break through that stuck feeling. want me to send you the link for the free 30-day challenge?",
+        coachText: "it's not just another program, it's designed to break through that stuck feeling. want me to send you the starter coaching link?",
     leadText: "Is it actually intense, or just another program? I need a serious kick in the ass. What's the real deal?",
     qualifier: null,
     leadStage: 'qualifying',
@@ -1437,7 +1444,7 @@ assert.ok(!programExplanationAnswer.includes('ignored_direct_question'));
 
 const plateauLead = "I've tried adding more volume, reducing volume, different rep ranges, more accessory work for quads and glutes. Even deloaded and built back up. Nothing seems to make a difference.";
 const plateauInvite = detectCoachTurnIssues({
-    coachText: "given you've tried so much already and nothing's shifting, would you be keen to try my free 30-day challenge to shake things up?",
+        coachText: "given you've tried so much already and nothing's shifting, would you be keen to try starter coaching to shake things up?",
     leadText: plateauLead,
     qualifier: null,
     leadStage: 'qualifying',
@@ -1455,7 +1462,7 @@ const plateauProbe = detectCoachTurnIssues({
 assert.ok(!plateauProbe.includes('missed_specific_hook'));
 
 const trainerPlateauInvite = detectCoachTurnIssues({
-    coachText: "yeah that good enough but still stuck feeling is exactly why the free 30-day challenge exists. want me to send you the details?",
+        coachText: "yeah that good enough but still stuck feeling is exactly why starter coaching exists. want me to send you the details?",
     leadText: "I try to be consistent. I track macros loosely, aim for enough protein, and usually get 7-8 hours sleep. My trainer reviews it too, but we haven't found a clear issue there either. It just feels like everything is 'good enough' but nothing's changing.",
     qualifier: null,
     leadStage: 'qualifying',
@@ -1572,7 +1579,7 @@ assert.ok(!ethicalPracticalThenEthics.includes('no_progression'));
 
 const workoutSupportLead = "It's just the same exercises and rep schemes. I'm not seeing progress anymore and it's getting boring. I need new challenges to stay motivated, especially when the app is already being a pain.";
 const workoutSupportInvite = detectCoachTurnIssues({
-    coachText: "we've got a free 30-day challenge that gets you out of that rut. want me to send you the link?",
+        coachText: "starter coaching can help get you out of that rut. want me to send you the link?",
     leadText: workoutSupportLead,
     qualifier: null,
     leadStage: 'qualifying',
@@ -1720,7 +1727,7 @@ const personalQuestionBridge = detectCoachTurnIssues({
 assert.ok(!personalQuestionBridge.includes('no_progression'));
 
 const earnedChallengeBridge = detectCoachTurnIssues({
-    coachText: "honestly this is the kind of thing the free 30 day challenge is good for: simple structure after work without having to think it all through. want me to send the details?",
+        coachText: "honestly this is the kind of thing starter coaching is good for: simple structure after work without having to think it all through. want me to send the details?",
     leadText: "yeah exactly, it is mainly after work that i fall off",
     qualifier: {
         stage: 'commitment',
@@ -1838,7 +1845,7 @@ assert.ok(!homeGymMinimumTemplate.includes('too_generic'));
 assert.ok(!homeGymMinimumTemplate.includes('no_progression'));
 
 const quotedWhatsThePointInvite = detectCoachTurnIssues({
-    coachText: "totally get that feeling of 'what's the point?' when the equipment doesn't feel right. the free 30 day challenge could give you a minimum home fallback so you aren't guessing with light dumbbells. want me to send over the details?",
+        coachText: "totally get that feeling of 'what's the point?' when the equipment doesn't feel right. starter coaching could give you a minimum home fallback so you aren't guessing with light dumbbells. want me to send over the details?",
     leadText: "It's usually when I look at my light dumbbells and think 'what's the point?' Or when I start and just feel like I'm not getting anything out of it. Plus, all the distractions at home make it so easy to just stop.",
     qualifier: {
         meaningful_lead_reply_count: 5,

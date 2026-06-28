@@ -6,6 +6,9 @@ const {
     buildAcquisitionStyleBlock,
     buildAcquisitionMomentumBlock,
     suppressPetSpeciesGuessingInDraftChunks,
+    suppressStoryLocationQuestionsInDraftChunks,
+    hasKnownStoryLocationContext,
+    finalizeDraftChunksFromRawText,
 } = require('../netlify/functions/ig-instant-draft')._test;
 
 assert.strictEqual(isSalesAcquisitionThread({ leadStage: 'qualifying', linkedUserId: null }), true);
@@ -14,6 +17,14 @@ assert.strictEqual(isSalesAcquisitionThread({ leadStage: 'qualifying', linkedUse
 assert.match(
     buildAcquisitionStyleBlock({ leadStage: 'qualifying', linkedUserId: null }),
     /Earn the next response/
+);
+assert.match(
+    buildAcquisitionStyleBlock({ leadStage: 'qualifying', linkedUserId: null }),
+    /without interrogating/
+);
+assert.match(
+    buildAcquisitionStyleBlock({ leadStage: 'qualifying', linkedUserId: null }),
+    /strong specific reaction/
 );
 assert.match(
     buildAcquisitionStyleBlock({ leadStage: 'qualifying', linkedUserId: null }),
@@ -34,6 +45,10 @@ assert.match(
 assert.match(
     buildAcquisitionMomentumBlock({ botAccount: 'shan_n_sunny', leadStage: 'qualifying', linkedUserId: null }),
     /Too-generic fix/
+);
+assert.match(
+    buildAcquisitionMomentumBlock({ botAccount: 'shan_n_sunny', leadStage: 'qualifying', linkedUserId: null }),
+    /do not manufacture momentum with another question/
 );
 assert.match(
     buildAcquisitionMomentumBlock({ botAccount: 'shan_n_sunny', leadStage: 'qualifying', linkedUserId: null }),
@@ -60,6 +75,35 @@ const nativeContext = buildNativeStoryOutreachContextBlock({
 
 assert.ok(nativeContext.block.includes('black and white cat'));
 assert.strictEqual(nativeContext.summary.story_description.includes('cat'), true);
+
+const salesNativeContext = buildNativeStoryOutreachContextBlock({
+    ig_username: 'story_lead',
+    linked_user_id: null,
+    custom_data: {
+        offer_path: 'balance_starter_coaching',
+        last_story_outreach: {
+            story_id: 'story-gym-session',
+            story_description: 'A gym story showing a barbell set up for squats.',
+            story_visible_text: 'leg day',
+            story_content_type: 'own_story',
+            sent_comment: 'how was the sesh?',
+            captured_at: '2026-06-22T01:00:00.000Z',
+            lead_origin: 'native_story_outreach',
+            offer_path: 'balance_starter_coaching',
+            sales_context: {
+                primary_offer: 'balance_starter_coaching',
+            },
+        },
+    },
+}, 'story_lead');
+
+assert.strictEqual(salesNativeContext.summary.lead_origin, 'native_story_outreach');
+assert.strictEqual(salesNativeContext.summary.offer_path, 'balance_starter_coaching');
+assert.match(salesNativeContext.block, /paid Balance Starter Coaching/);
+assert.match(salesNativeContext.block, /Free challenge is fallback/);
+assert.match(salesNativeContext.block, /Voice priority/);
+assert.match(salesNativeContext.block, /no sales script/);
+assert.match(salesNativeContext.block, /Keep Shannon's real texting voice above all sales context/);
 
 const chunks = suppressPetSpeciesGuessingInDraftChunks([
     'morning! nero looks cute',
@@ -93,5 +137,67 @@ const neutralChunks = suppressPetSpeciesGuessingInDraftChunks([
 });
 
 assert.deepStrictEqual(neutralChunks, ['nero looks cute']);
+
+const tugunContext = buildNativeStoryOutreachContextBlock({
+    ig_username: 'lealthaisb',
+    custom_data: {
+        last_story_outreach: {
+            story_id: 'story-tugun-beach',
+            story_description: 'A sunrise ocean view from a balcony over the beach.',
+            story_visible_text: 'I just love this site, or maybe just the view Tugun Beach',
+            story_content_type: 'own_story',
+            sent_comment: 'what a view',
+            captured_at: '2026-06-03T09:00:00.000Z',
+        },
+    },
+}, 'lealthaisb');
+
+assert.strictEqual(
+    hasKnownStoryLocationContext({ nativeStoryContextSummary: tugunContext.summary }),
+    true
+);
+
+assert.deepStrictEqual(
+    suppressStoryLocationQuestionsInDraftChunks([
+        'that view is unreal',
+        'where are you watching it from?',
+    ], {
+        nativeStoryContextSummary: tugunContext.summary,
+    }),
+    ['that view is unreal']
+);
+
+assert.deepStrictEqual(
+    finalizeDraftChunksFromRawText('{"messages":["where are you watching it from?"]}', {
+        nativeStoryContextSummary: tugunContext.summary,
+    }),
+    ['That view is unreal']
+);
+
+const goldCoastBeachContext = buildNativeStoryOutreachContextBlock({
+    ig_username: 'vanessa_araujo_girl',
+    custom_data: {
+        last_story_outreach: {
+            story_id: 'story-gold-coast-sunset',
+            story_description: 'A selfie video at sunset with ocean water, waves, and sandy beach visible behind her on the Gold Coast.',
+            story_visible_text: '',
+            story_content_type: 'own_story',
+            sent_comment: 'that sunset looks unreal',
+            captured_at: '2026-06-03T09:58:00.000Z',
+        },
+    },
+}, 'Vanessa');
+
+assert.strictEqual(
+    hasKnownStoryLocationContext({ nativeStoryContextSummary: goldCoastBeachContext.summary }),
+    true
+);
+
+assert.deepStrictEqual(
+    finalizeDraftChunksFromRawText('{"messages":["Yeah that sunset looked unreal. Gold Coast sunsets are a cheat code.","Were you on the beach for it or did you grab a view from somewhere?"]}', {
+        nativeStoryContextSummary: goldCoastBeachContext.summary,
+    }),
+    ['Yeah that sunset looked unreal. Gold Coast sunsets are a cheat code.']
+);
 
 console.log('ig instant draft pet context tests passed');

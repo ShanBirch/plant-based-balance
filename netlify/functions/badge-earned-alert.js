@@ -54,15 +54,12 @@ const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 // ============================================================
 
 const BIG_BADGE_IDS = new Set([
-    // Workouts — first-workout has its own dedicated alert
-    'workout_5', 'workout_25', 'workout_100', 'workout_365',
+    // Workouts/PBs are intentionally not coach-alerted. First workout has
+    // its own approval-first touch; frequent PB/badge comments feel weird.
     // Streaks
     'streak_7', 'streak_30', 'streak_60',
     // Meal milestones
     'meal_10', 'meal_50', 'meal_100', 'meal_365',
-    // PB milestones — individual PBs already fire pb-celebration-draft,
-    // these are the "hit 10 / 25 / 50 PBs total" milestones.
-    'pb_10', 'pb_25', 'pb_50',
     // Rare collection milestones
     'rare_3', 'rare_6', 'rare_11',
     // Challenge milestones

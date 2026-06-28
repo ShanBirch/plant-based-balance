@@ -19,7 +19,7 @@ export default async (request, context) => {
             legal_versions: JSON.stringify(documentVersions).slice(0, 500),
         };
 
-        const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
+        const STRIPE_SECRET_KEY = globalThis.Netlify?.env?.get?.("STRIPE_SECRET_KEY") || Deno.env.get("STRIPE_SECRET_KEY");
         if (!STRIPE_SECRET_KEY) throw new Error("Missing Internal Configuration");
 
         const stripe = new Stripe(STRIPE_SECRET_KEY, {
@@ -27,18 +27,17 @@ export default async (request, context) => {
             apiVersion: "2026-02-25.clover",
         });
 
-        // Use custom price data to control branding and ensure exact $30 price
-        // This avoids "coupon expires" messages and overrides the legacy "28 day" name
+        // Use custom price data to control branding and ensure the current weekly coaching price.
         const lineItems = [{
             price_data: {
                 currency: 'aud',
                 product_data: {
-                    name: 'Balance Membership',
-                    description: '14-Day Free Trial Included',
+                    name: 'Balance Starter Coaching',
+                    description: 'Online coaching with one weekly check-in from Shannon',
                 },
-                unit_amount: 3000, // Exact $30.00 AUD
+                unit_amount: 2999, // AUD $29.99
                 recurring: {
-                    interval: 'month',
+                    interval: 'week',
                 },
             },
             quantity: 1,
@@ -53,18 +52,14 @@ export default async (request, context) => {
         const subscriptionData = {
             metadata: {
                 checkout_email: email || "",
-                balance_product: "balance_membership",
-                balance_plan: "app_monthly",
+                balance_product: "balance_starter_coaching",
+                balance_plan: "starter_weekly",
+                checkins_per_week: "1",
                 ...stripeComplianceMetadata,
             },
         };
-        if (isTrial) {
-            // Default to 14 days as requested
-            subscriptionData.trial_period_days = trialDays || 14;
-        }
 
-        // NOTE: Coupon removed. We set unit_amount to 3000 directly 
-        // to avoid "Until coupon expires" messaging in Stripe Checkout.
+        // No trial on the starter offer: the first weekly coaching payment is due today.
 
         const session = await stripe.checkout.sessions.create({
             mode: 'subscription',
@@ -75,13 +70,15 @@ export default async (request, context) => {
             cancel_url: request.headers.get("origin") + '/plantbasedswitch.html',
             metadata: {
                 checkout_email: email || "",
-                balance_product: "balance_membership",
-                balance_plan: "app_monthly",
+                balance_product: "balance_starter_coaching",
+                balance_plan: "starter_weekly",
+                checkins_per_week: "1",
+                price_token: priceId || "",
                 fbc: fbc || "",
                 fbp: fbp || "",
                 ...utm_data,
-                is_trial: isTrial ? "true" : "false",
-                trial_days: trialDays ? trialDays.toString() : "0",
+                is_trial: "false",
+                trial_days: "0",
                 referral_code: referralCode || "",
                 ...stripeComplianceMetadata
             }

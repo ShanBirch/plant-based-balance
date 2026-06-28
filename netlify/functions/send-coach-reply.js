@@ -26,7 +26,9 @@ const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
 const {
     normalizeCoachDraftText,
+    sanitizeVisibleOutboundDmText,
     fireCoachEditAnalysis,
+    isAlwaysNeedsYouPerson,
 } = require('./_lib/client-context');
 
 async function supabase(path, options = {}) {
@@ -176,6 +178,89 @@ function normalizeTimingSuggestion(value) {
 }
 
 const IN_APP_DM_ALERT_TYPES = ['incoming_dm', 'unread_message'];
+const PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE = 'Permanent Needs You contacts require Shannon approval before sending.';
+const AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES = new Set([
+    'auto_send',
+    'balance_lead_client_manager_cron',
+]);
+
+function isHumanApprovedPermanentNeedsYouSendSource(source) {
+    const normalized = String(source || '').trim().toLowerCase();
+    return normalized.startsWith('admin_dashboard')
+        || normalized === 'android_inline_reply_worker'
+        || normalized === 'manual_instagram';
+}
+
+function isAutomatedPermanentNeedsYouSendSource(source, data = {}) {
+    const normalized = String(source || '').trim().toLowerCase();
+    const scheduledVia = String(data.scheduled_via || '').trim().toLowerCase();
+    const timingChoiceSource = String(data.reply_timing_choice?.source || '').trim().toLowerCase();
+    const timingSuggestionSource = String(data.reply_timing_suggestion?.source || '').trim().toLowerCase();
+    const hasAutoSendMetadata = scheduledVia === 'auto_send'
+        || timingChoiceSource === 'auto_send'
+        || timingSuggestionSource === 'auto_send';
+    if (isHumanApprovedPermanentNeedsYouSendSource(normalized) && !hasAutoSendMetadata) {
+        return false;
+    }
+    if (normalized === 'scheduled_worker') {
+        return hasAutoSendMetadata;
+    }
+    return AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES.has(normalized)
+        || hasAutoSendMetadata;
+}
+
+function isPermanentNeedsYouAlert(alert = {}) {
+    const data = alert.data || {};
+    const needsYouReasons = Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : [];
+    if (data.permanent_needs_you_draft_only === true) return true;
+    if (data.needs_you_reason === 'always_needs_you_person') return true;
+    if (needsYouReasons.includes('always_needs_you_person')) return true;
+    return isAlwaysNeedsYouPerson({
+        name: alert.client_name || data.client_name,
+        client_name: alert.client_name || data.client_name,
+        profile_name: data.profile_name || data.ig_profile_name,
+        ig_username: data.ig_username,
+        username: data.username,
+        handle: data.handle,
+        custom_data: data.custom_data || data.instagram_graph || {},
+    });
+}
+
+function shouldBlockPermanentNeedsYouAutomatedSend(alert = {}, source = '') {
+    return isAutomatedPermanentNeedsYouSendSource(source, alert.data || {})
+        && isPermanentNeedsYouAlert(alert);
+}
+
+async function stampPermanentNeedsYouAutomatedSendBlock(alert = {}) {
+    if (!alert.id) return;
+    const blockedAt = new Date().toISOString();
+    const data = {
+        ...(alert.data || {}),
+        client_manager_review_required: true,
+        needs_you_required: true,
+        operator_queue: 'needs_you',
+        needs_you_reason: 'always_needs_you_person',
+        needs_you_reasons: [
+            ...new Set([
+                ...(Array.isArray(alert.data?.needs_you_reasons) ? alert.data.needs_you_reasons : []),
+                'always_needs_you_person',
+            ]),
+        ],
+        permanent_needs_you_draft_only: true,
+        last_send_error: PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE,
+        last_send_error_code: 'permanent_needs_you_automated_send_blocked',
+        last_send_error_at: blockedAt,
+    };
+    try {
+        await supabase(`coach_alerts?id=eq.${encodeURIComponent(alert.id)}`, {
+            method: 'PATCH',
+            body: { data },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[send-coach-reply] permanent Needs You block stamp failed:', err.message);
+    }
+}
 
 async function clearInAppHomeNotifications({ alertId, coachId, clientId, sentAt, source }) {
     if (!coachId || !clientId) return { nudgesRead: 0, siblingAlertsCleared: 0 };
@@ -241,8 +326,8 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const alertId = body.alertId;
-    const replyText = normalizeCoachDraftText(body.replyText || '').trim();
-    const draftText = normalizeCoachDraftText(body.draftText || '').trim();
+    const replyTextInput = normalizeCoachDraftText(body.replyText || '').trim();
+    const draftTextInput = normalizeCoachDraftText(body.draftText || '').trim();
     const source = body.source || 'unknown';
     // Optional one-line note from Shannon explaining WHY he edited the
     // draft. Stamped into data.edit_reason when the reply differs from
@@ -250,7 +335,7 @@ exports.handler = async (event) => {
     const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
     const timingSuggestion = normalizeTimingSuggestion(body.timingSuggestion || body.reply_timing_suggestion);
 
-    if (!alertId || !replyText) {
+    if (!alertId || !replyTextInput) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing alertId or replyText' }) };
     }
 
@@ -258,7 +343,7 @@ exports.handler = async (event) => {
     let alert;
     try {
         const rows = await supabase(
-            `coach_alerts?select=id,client_id,coach_id,status,data,alert_type&id=eq.${alertId}&limit=1`
+            `coach_alerts?select=id,client_id,client_name,coach_id,status,data,alert_type&id=eq.${alertId}&limit=1`
         );
         alert = rows[0];
     } catch (e) {
@@ -278,11 +363,29 @@ exports.handler = async (event) => {
             status: alert.status,
         }) };
     }
+    if (shouldBlockPermanentNeedsYouAutomatedSend(alert, source)) {
+        await stampPermanentNeedsYouAutomatedSendBlock(alert);
+        return { statusCode: 409, body: JSON.stringify({
+            error: PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE,
+            code: 'permanent_needs_you_automated_send_blocked',
+            source,
+        }) };
+    }
 
     // Channel routing: IG/FB alert rows go through send-ig-reply instead of
     // inserting a nudges row. That function chooses Instagram Graph first for
     // IG and keeps ManyChat only as the Messenger / legacy fallback.
     const alertData = alert.data || {};
+    const shouldSanitizeVisibleLeadCopy = !alert.client_id;
+    const replyText = shouldSanitizeVisibleLeadCopy
+        ? sanitizeVisibleOutboundDmText(replyTextInput)
+        : replyTextInput;
+    const draftText = shouldSanitizeVisibleLeadCopy
+        ? sanitizeVisibleOutboundDmText(draftTextInput)
+        : draftTextInput;
+    if (!replyText) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Reply text became empty after visible-copy cleanup' }) };
+    }
     const hasExternalThread = !!alertData.ig_thread_id;
     const isInstagramOrMessenger = alertData.channel === 'instagram'
         || alertData.channel === 'messenger'
@@ -422,4 +525,11 @@ exports.handler = async (event) => {
             ...cleanup,
         }),
     };
+};
+
+exports._test = {
+    isHumanApprovedPermanentNeedsYouSendSource,
+    isAutomatedPermanentNeedsYouSendSource,
+    isPermanentNeedsYouAlert,
+    shouldBlockPermanentNeedsYouAutomatedSend,
 };

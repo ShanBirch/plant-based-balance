@@ -41,4 +41,51 @@ assert.ok(
     'fallback edit learning rejects narrating the emoji'
 );
 
+const fraLessons = buildFallbackEditLearningBullets({
+    editReason: 'too many questions for Fra',
+    draftText: 'hey Fra, how are you? what are you up to? do you want the details?',
+    sentMessage: 'hey Fra, how are you going?',
+    metrics: {
+        draft_chars: 65,
+        final_chars: 28,
+        final_shannon_authored_pct: 50,
+        character_change_pct: 57,
+    },
+});
+
+assert.ok(
+    fraLessons.some(lesson => lesson.includes('one question max')),
+    'Fra edit learning should collapse question-heavy replies'
+);
+
+const fraSocialRewriteLessons = buildFallbackEditLearningBullets({
+    editReason: '',
+    draftText: 'Oh yesss, vegan panettone is such a good future plan. I reckon it will be a proper project, but worth it if you are into that Italian pastry vibe.\nAre you thinking more fluffy bread-style panettone, or the sweeter dessert-y version?',
+    sentMessage: 'Yeah I love that Fra! What would need to change in it? Eggies?',
+    metrics: {
+        draft_chars: 223,
+        final_chars: 61,
+        draft_kept_pct: 12,
+        final_shannon_authored_pct: 80,
+        character_change_pct: 88,
+    },
+    alert: {
+        client_name: 'Francesca',
+        alert_type: 'ig_incoming_dm',
+        data: {
+            channel: 'instagram',
+            profile_name: 'cavazzanafrancesca',
+        },
+    },
+});
+
+assert.ok(
+    fraSocialRewriteLessons.some(lesson => lesson.includes('very short social replies')),
+    'Fra social rewrites should learn short social reply shape without an edit reason'
+);
+assert.ok(
+    fraSocialRewriteLessons.some(lesson => lesson.includes('food, study, pastry')),
+    'Fra social rewrites should stop turning casual IG topics into coaching/discovery'
+);
+
 console.log('emoji reaction learning tests passed');

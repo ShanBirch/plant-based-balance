@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Earn XP | Balance</title>
+    <link rel="icon" type="image/png" href="balance_logo.png">
+    <style>
+        :root {
+            --bg: #f7f8f4;
+            --surface: #ffffff;
+            --ink: #152018;
+            --muted: #667085;
+            --line: #dfe5d7;
+            --green: #18a058;
+            --green-dark: #087443;
+            --amber: #c77700;
+            --blue: #2563eb;
+            --purple: #7c3aed;
+            --dark: #101828;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.5;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(247, 248, 244, 0.94);
+            border-bottom: 1px solid rgba(223, 229, 215, 0.9);
+            backdrop-filter: blur(14px);
+        }
+
+        .topbar-inner {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            color: var(--ink);
+            text-decoration: none;
+            font-weight: 850;
+        }
+
+        .brand img {
+            width: 34px;
+            height: 34px;
+            object-fit: contain;
+        }
+
+        main {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 26px 20px 44px;
+        }
+
+        .intro {
+            display: grid;
+            grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .panel,
+        .rule-card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: 0 18px 48px rgba(16, 24, 40, 0.08);
+        }
+
+        .panel { padding: 24px; }
+
+        h1 {
+            margin: 0 0 10px;
+            font-size: 3.2rem;
+            line-height: 0.98;
+            letter-spacing: 0;
+        }
+
+        h2,
+        h3 {
+            margin: 0;
+            letter-spacing: 0;
+        }
+
+        p {
+            margin: 8px 0 0;
+            color: var(--muted);
+        }
+
+        .route {
+            background: var(--dark);
+            color: #fff;
+        }
+
+        .route p { color: rgba(255, 255, 255, 0.78); }
+
+        .route-list,
+        .rule-list {
+            list-style: none;
+            margin: 16px 0 0;
+            padding: 0;
+            display: grid;
+            gap: 10px;
+        }
+
+        .route-list li {
+            display: grid;
+            grid-template-columns: 28px 1fr auto;
+            gap: 10px;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.92rem;
+        }
+
+        .step,
+        .points,
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+        }
+
+        .step {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(24, 160, 88, 0.18);
+            color: #9ff2c3;
+            font-size: 0.78rem;
+        }
+
+        .points {
+            min-width: 54px;
+            min-height: 30px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            background: rgba(250, 204, 21, 0.14);
+            color: #fde68a;
+            font-size: 0.84rem;
+            white-space: nowrap;
+        }
+
+        .section-heading {
+            margin: 28px 0 12px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .rule-card {
+            padding: 18px;
+            min-height: 100%;
+        }
+
+        .rule-list li {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 10px;
+            align-items: start;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .rule-list strong {
+            color: var(--ink);
+            font-weight: 850;
+        }
+
+        .tag {
+            min-width: 48px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            color: #fff;
+            font-size: 0.76rem;
+            white-space: nowrap;
+        }
+
+        .tag.green { background: var(--green); }
+        .tag.amber { background: var(--amber); }
+        .tag.blue { background: var(--blue); }
+        .tag.purple { background: var(--purple); }
+        .tag.dark { background: var(--dark); }
+
+        .cap-panel {
+            margin-top: 16px;
+            padding: 20px;
+            background: #fffdf7;
+            border-color: #ead7a0;
+        }
+
+        .cap-panel ul {
+            margin: 10px 0 0;
+            padding-left: 18px;
+            color: #4c5564;
+        }
+
+        @media (max-width: 860px) {
+            .intro,
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 620px) {
+            .topbar-inner { padding: 12px 14px; }
+            main { padding: 18px 14px 34px; }
+            .panel { padding: 20px; }
+            h1 { font-size: 2.35rem; }
+            .route-list li { grid-template-columns: 28px 1fr; }
+            .route-list .points {
+                grid-column: 2;
+                justify-self: start;
+            }
+            .section-heading {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <a class="brand" href="dashboard.html" aria-label="Balance dashboard">
+                <img src="balance_logo.png" alt="">
+                <span>Balance</span>
+            </a>
+        </div>
+    </header>
+
+    <main>
+        <section class="intro" aria-labelledby="page-title">
+            <div class="panel">
+                <h1 id="page-title">How to Earn XP</h1>
+                <p>XP levels your character and counts toward XP challenges. Coins are separate and are used for shop and challenge entry systems.</p>
+                <p>Challenge leaderboards track the XP you earn after joining. Amounts below are base amounts; if a 2x boost is active, Balance shows the doubled amount when the XP is awarded.</p>
+            </div>
+
+            <aside class="panel route" aria-labelledby="daily-route-title">
+                <h2 id="daily-route-title">Fast daily route</h2>
+                <ol class="route-list">
+                    <li><span class="step">1</span><span>Log meals, hit nutrition targets, and share one logged meal.</span><span class="points">+4</span></li>
+                    <li><span class="step">2</span><span>Log a workout, then share the workout card.</span><span class="points">+2</span></li>
+                    <li><span class="step">3</span><span>Post one regular Feed check-in and comment on someone else's post.</span><span class="points">+4</span></li>
+                    <li><span class="step">4</span><span>Finish a daily quiz at 100% and hit 10,000 synced Fitbit steps.</span><span class="points">+7</span></li>
+                </ol>
+            </aside>
+        </section>
+
+        <div class="section-heading">
+            <h2>XP Actions</h2>
+            <p>These are the current Balance XP sources and their normal caps.</p>
+        </div>
+
+        <section class="grid" aria-label="XP earning actions">
+            <article class="rule-card">
+                <h3>Meals and Nutrition</h3>
+                <ul class="rule-list">
+                    <li><span class="tag green">+1</span><span><strong>Accepted meal log.</strong> Verified photo, AI, or accepted meal-log routes can award this.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>On-time meal.</strong> Log within 30 minutes of a scheduled meal reminder.</span></li>
+                    <li><span class="tag amber">+2</span><span><strong>Daily nutrition target.</strong> Log at least one meal and finish within 20% of calories, protein, carbs, and fat.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>Meal Feed share.</strong> Share a logged meal card to Feed; Balance dedupes this by meal when it can identify the meal.</span></li>
+                </ul>
+            </article>
+
+            <article class="rule-card">
+                <h3>Feed and Community</h3>
+                <ul class="rule-list">
+                    <li><span class="tag amber">+2</span><span><strong>Daily Feed check-in.</strong> One regular Feed post can earn this each day.</span></li>
+                    <li><span class="tag amber">+2</span><span><strong>Comment on someone else's post.</strong> Comments on your own post do not count.</span></li>
+                    <li><span class="tag amber">+2</span><span><strong>AI-verified workout image post.</strong> A regular Feed photo can earn this when Balance verifies workout content.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>Nudge an inactive friend.</strong> Capped at once per friend per week when they have been inactive long enough.</span></li>
+                </ul>
+            </article>
+
+            <article class="rule-card">
+                <h3>Training</h3>
+                <ul class="rule-list">
+                    <li><span class="tag green">+1</span><span><strong>Workout logged.</strong> Eligible workout log routes award XP.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>Workout card share.</strong> Share the workout card to Feed; eligible group-chat shares can also award once per workout session.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>New personal best.</strong> New PBs and volume PRs can add XP.</span></li>
+                    <li><span class="tag blue">Score</span><span><strong>Workout challenges.</strong> Some challenge types score workouts, weight lifted, reps, or calories instead of direct XP.</span></li>
+                </ul>
+            </article>
+
+            <article class="rule-card">
+                <h3>Progress and Weigh-ins</h3>
+                <ul class="rule-list">
+                    <li><span class="tag dark">+10</span><span><strong>Weekly progress photos.</strong> Earn once when the weekly progress photo set is accepted.</span></li>
+                    <li><span class="tag dark">+10</span><span><strong>Share weekly progress.</strong> Share that weekly progress photo set to Feed once.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>Daily weigh-in.</strong> Add your weigh-in for the day.</span></li>
+                    <li><span class="tag dark">+10</span><span><strong>Friday weigh-in down.</strong> Earn when Friday weight is down from the previous Friday in a challenge.</span></li>
+                    <li><span class="tag dark">+10</span><span><strong>Friday Feed card.</strong> Post the Friday weigh-in review card to Feed once per Friday weigh-in.</span></li>
+                </ul>
+            </article>
+
+            <article class="rule-card">
+                <h3>Daily Check-ins</h3>
+                <ul class="rule-list">
+                    <li><span class="tag green">+1</span><span><strong>Fitness diary.</strong> Submit the daily fitness diary card.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>All three mood check-ins.</strong> Complete morning, afternoon, and evening mood check-ins in the same day.</span></li>
+                    <li><span class="tag amber">+2</span><span><strong>10,000 Fitbit steps.</strong> Synced Fitbit steps can award once per day.</span></li>
+                </ul>
+            </article>
+
+            <article class="rule-card">
+                <h3>Health IQ</h3>
+                <ul class="rule-list">
+                    <li><span class="tag green">+1</span><span><strong>New lesson complete.</strong> Health IQ lessons need 100% completion to award XP, with a daily lesson limit.</span></li>
+                    <li><span class="tag amber">+2</span><span><strong>Unit complete.</strong> Finish all lessons in a unit.</span></li>
+                    <li><span class="tag dark">+5</span><span><strong>Module complete.</strong> Finish a full module.</span></li>
+                    <li><span class="tag dark">+5</span><span><strong>Daily quiz.</strong> Score 100% on the daily quiz, once per day.</span></li>
+                    <li><span class="tag purple">Bonus</span><span><strong>Health IQ level-ups.</strong> Level bonuses are +5, +10, +15, +20, +25, +30, +40, +50, then +100 XP.</span></li>
+                </ul>
+            </article>
+
+            <article class="rule-card">
+                <h3>Weekly Goals</h3>
+                <ul class="rule-list">
+                    <li><span class="tag dark">+10</span><span><strong>Each completed weekly goal.</strong> Paid through Weekly Wrapped after goal progress is calculated.</span></li>
+                    <li><span class="tag amber">+20</span><span><strong>All three goals hit.</strong> Bonus for hitting 3/3 selected weekly goals.</span></li>
+                    <li><span class="tag blue">Cap</span><span><strong>50 XP weekly max.</strong> Weekly goal rewards are capped at 50 XP total.</span></li>
+                </ul>
+            </article>
+
+            <article class="rule-card">
+                <h3>Milestones and Streaks</h3>
+                <ul class="rule-list">
+                    <li><span class="tag amber">+5</span><span><strong>First meal or first workout.</strong> The first accepted meal and first logged workout have milestone bonuses.</span></li>
+                    <li><span class="tag dark">+10</span><span><strong>10 meals.</strong> Meal tracking milestone.</span></li>
+                    <li><span class="tag dark">+25</span><span><strong>50 meals or 50 workouts.</strong> Count milestone.</span></li>
+                    <li><span class="tag dark">+50</span><span><strong>100 meals or 100 workouts.</strong> Count milestone.</span></li>
+                    <li><span class="tag dark">+100</span><span><strong>365 meals or 365 workouts.</strong> One-year count milestone.</span></li>
+                    <li><span class="tag purple">Bonus</span><span><strong>Post streaks.</strong> 7, 14, 30, 60, and 100-day streak bonuses are +5, +10, +25, +50, and +100 XP.</span></li>
+                </ul>
+            </article>
+
+            <article class="rule-card">
+                <h3>Boosts and Challenges</h3>
+                <ul class="rule-list">
+                    <li><span class="tag dark">+200</span><span><strong>Win a challenge.</strong> Challenge wins can award XP and unlock a 30-day 2x XP boost.</span></li>
+                    <li><span class="tag purple">2x</span><span><strong>Double XP windows.</strong> Active boosts can multiply eligible rewards when the app shows the boost.</span></li>
+                    <li><span class="tag green">+1</span><span><strong>Walkthrough checkpoints.</strong> Selected onboarding walkthrough checkpoints can award XP until the account reaches the Level 4 starter target.</span></li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="panel cap-panel" aria-labelledby="caps-title">
+            <h2 id="caps-title">Caps and fairness</h2>
+            <ul>
+                <li>Most XP events only pay once per source item, day, workout, week, or challenge window.</li>
+                <li>Photo-based XP can be rejected for low confidence, duplicates, unclear content, or old/future timestamps.</li>
+                <li>Calories challenges require every meal used for the daily nutrition bonus to have a verified photo.</li>
+                <li>Daily Feed check-in XP is capped at one regular Feed post per day, and comment XP only applies to someone else's post.</li>
+                <li>Progress photo, Friday weigh-in, weekly goal, nudge, and Fitbit rewards follow their listed daily or weekly caps.</li>
+            </ul>
+        </section>
+    </main>
+</body>
+</html>

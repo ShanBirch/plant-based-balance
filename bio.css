@@ -2710,12 +2710,24 @@ body.bio-page.landing-page[data-bio-theme="light"] .label {
     background: rgba(255, 255, 255, 0.04);
 }
 
+.client-story-image-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 10px;
+}
+
 .client-story-image img {
     object-fit: contain;
     object-position: center;
 }
 
-.client-story-card:nth-child(3) .client-story-image img {
+.client-story-image-grid img {
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.client-story-card:nth-child(4) .client-story-image img {
     object-position: center top;
 }
 
@@ -2736,6 +2748,33 @@ body.bio-page.landing-page[data-bio-theme="light"] .label {
     color: var(--text-muted);
     line-height: 1.72;
     font-size: 1.02rem;
+}
+
+.client-story-quote {
+    margin: 22px 0 0;
+    padding: 18px 20px;
+    border-left: 3px solid var(--secondary);
+    border-radius: 0 16px 16px 0;
+    background: rgba(255, 255, 255, 0.055);
+}
+
+.client-story-quote p {
+    margin: 0;
+    color: var(--text-main);
+    font-family: var(--font-display);
+    font-size: clamp(1.05rem, 2vw, 1.28rem);
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.client-story-quote cite {
+    display: block;
+    margin-top: 10px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-style: normal;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .journey-points {
@@ -2779,8 +2818,7 @@ body.bio-page.landing-page[data-bio-theme="light"] .label {
 }
 
 .client-result-card,
-.client-result-note,
-.review-shot {
+.client-result-note {
     margin: 0;
 }
 
@@ -2823,25 +2861,43 @@ body.bio-page.landing-page[data-bio-theme="light"] .label {
 .review-collage {
     width: min(1080px, 100%);
     margin: 0 auto;
-    columns: 3 260px;
-    column-gap: 16px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
 }
 
-.review-shot {
-    display: inline-block;
-    width: 100%;
-    overflow: hidden;
-    padding: 10px;
-    margin-bottom: 16px;
-    break-inside: avoid;
-    vertical-align: top;
+.review-card {
+    margin: 0;
+    padding: 20px;
+    min-height: 230px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
-.review-shot img {
-    width: 100%;
-    display: block;
-    border-radius: 14px;
-    background: #ffffff;
+.review-stars {
+    color: var(--secondary);
+    font-size: 1.05rem;
+    letter-spacing: 2px;
+}
+
+.review-card p {
+    margin: 16px 0 18px;
+    color: var(--text-main);
+    font-size: 0.98rem;
+    line-height: 1.58;
+}
+
+.review-card span {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.review-card-featured {
+    grid-column: span 2;
 }
 
 @media (max-width: 980px) {
@@ -2862,6 +2918,10 @@ body.bio-page.landing-page[data-bio-theme="light"] .label {
     .landing-page .hero-copy {
         align-items: center;
         text-align: center;
+    }
+
+    .review-collage {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .landing-page .lead {
@@ -3002,6 +3062,15 @@ body.bio-page.landing-page[data-bio-theme="light"] .label {
         aspect-ratio: 1 / 1;
     }
 
+    .client-story-image-grid {
+        aspect-ratio: auto;
+        grid-template-columns: 1fr;
+    }
+
+    .client-story-image-grid img {
+        aspect-ratio: 1 / 1;
+    }
+
     .client-story-content {
         padding: 22px;
     }
@@ -3011,12 +3080,14 @@ body.bio-page.landing-page[data-bio-theme="light"] .label {
     }
 
     .review-collage {
-        columns: 1;
+        grid-template-columns: 1fr;
     }
 
-    .review-shot {
-        padding: 8px;
-        margin-bottom: 14px;
+    .review-card,
+    .review-card-featured {
+        grid-column: auto;
+        min-height: auto;
+        padding: 18px;
     }
 
     .journey-points div {

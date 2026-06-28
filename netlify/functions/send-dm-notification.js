@@ -90,6 +90,14 @@ const ADMIN_WARNING_NOTIFICATION_TYPES = new Set([
     'media_warning',
 ]);
 
+const ADMIN_SALE_NOTIFICATION_TYPES = new Set([
+    'sale_made',
+]);
+
+const ADMIN_SALE_ALERT_TYPES = new Set([
+    'subscription_sale',
+]);
+
 const ADMIN_CLIENT_LIFECYCLE_STAGES = new Set([
     'trial',
     'trial_expiring',
@@ -184,6 +192,17 @@ function isClientScopedAdminPush({ alert, payload = {} }) {
 function isAllowedAdminPhonePush({ type, alert, payload }) {
     if (ADMIN_WARNING_NOTIFICATION_TYPES.has(type)) {
         return isClientScopedAdminPush({ alert, payload });
+    }
+    if (ADMIN_SALE_NOTIFICATION_TYPES.has(type)) {
+        const data = alert?.data || {};
+        return !!alert
+            && ADMIN_SALE_ALERT_TYPES.has(alert.alert_type)
+            && (
+                data.sale_made === true
+                || data.needs_you_reason === 'subscription_sale'
+                || payload?.actionType === 'subscription_sale'
+            )
+            && isClientScopedAdminPush({ alert, payload });
     }
     if (type === 'coach_draft_ready') {
         if (alert) {

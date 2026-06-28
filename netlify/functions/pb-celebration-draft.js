@@ -34,7 +34,7 @@ const {
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 const PB_COACH_PUSH_ENABLED = process.env.PB_COACH_PUSH_ENABLED === 'true';
-const PB_IMMEDIATE_COACH_ALERTS_ENABLED = process.env.PB_IMMEDIATE_COACH_ALERTS_ENABLED === 'true';
+const PB_IMMEDIATE_COACH_ALERTS_ENABLED = false;
 
 // ============================================================
 // Context loading

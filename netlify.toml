@@ -306,8 +306,8 @@
 [functions."weekly-wrapped-push"]
   schedule = "0 23 * * 6"
 
-# Auto feed comments - hourly scanner, code gates to 07:30-21:45 Brisbane.
-# Adds one simple Shannon comment to fresh feed posts after a human-ish delay.
+# Auto feed reactions - hourly scanner, code gates to 07:30-21:45 Brisbane.
+# Adds one Shannon love reaction to fresh feed posts after a human-ish delay.
 [functions."auto-feed-comment"]
   schedule = "37 * * * *"
 
@@ -365,6 +365,12 @@
 [functions."extract-ig-thread-memory"]
   schedule = "29 18 * * *"
 
+# Daily message learning - nightly safety net for sent client/lead DMs.
+# Runs at 23:41 Brisbane (13:41 UTC) and backfills any missed edit-learning
+# or in-app client_memory extraction from the last day of sent coach_alerts.
+[functions."daily-message-learning"]
+  schedule = "41 13 * * *"
+
 # Instagram content memory - keeps active story/post context fresh for IG drafts.
 [functions."meta-ig-sync-content"]
   schedule = "*/15 * * * *"
@@ -374,23 +380,55 @@
 [functions."meta-ig-reconcile-inbox"]
   schedule = "*/5 * * * *"
 
+# Instagram comment reply worker - polls recent shan_n_sunny media comments,
+# waits a short human-ish delay, then posts one deduped Graph comment reply.
+[functions."meta-ig-comment-reply-worker"]
+  schedule = "* * * * *"
+
 # Content Radar - mines recent DMs and IG feedback into daily post ideas.
 [functions."content-radar-generate"]
   schedule = "45 19 * * *"
+
+# Cross-platform content growth loop - snapshots IG/YouTube/TikTok post metrics
+# and writes a compact brief for the content automation to read.
+[functions."content-growth-scan"]
+  schedule = "12 */6 * * *"
 
 # Coco's reward learner - scores the scoped acquisition lane and updates only
 # Coco's active learned rules. Runs daily in lean-cost mode.
 [functions."cocos-learning-run"]
   schedule = "55 18 * * *"
 
-# Coco's seven-day learning reel drip for Shannon's IG test thread.
+# Learning reel finder. Queues Needs You approvals before sending.
 [functions."learning-reel-drip"]
   schedule = "*/5 * * * *"
 
 # Client/lead manager - routes permanent people, media, AI suspicion,
-# confused replies, and missing context into Needs You.
+# confused replies, and missing context into Needs You. Runs every 5 minutes
+# so hot Starter Coaching handoffs do not sit for the old 30-minute window.
+# Code gates work to 05:00-02:00 Brisbane; the 02:00-04:59 block is paused.
 [functions."client-lead-manager"]
-  schedule = "*/30 * * * *"
+  schedule = "*/5 * * * *"
+
+# Support Radar - daily human-support pass across app activity + chats.
+# Creates only high-signal Needs You check-ins, capped and deduped.
+[functions."support-radar-scan"]
+  schedule = "17 20 * * *"
+
+# Daily Reel Opportunity - scans yesterday/recent client conversations for one
+# useful YouTube Short suggestion and puts it in Needs You for approval.
+[functions."daily-reel-opportunity-scan"]
+  schedule = "48 20 * * *"
+
+# Recent Workout Touch - catches fresh completed workouts and creates at most a
+# weekly Needs You message per client, only during Shannon's waking hours.
+[functions."recent-workout-touch-scan"]
+  schedule = "*/15 * * * *"
+
+# Story comment quality audit - daily soft review of story-comment replies that
+# look confused or mismatched. Netlify cron is UTC: 21:08 UTC = 7:08am Brisbane.
+[functions."story-comment-quality-audit"]
+  schedule = "8 21 * * *"
 
 # ManyChat reconcile is intentionally unscheduled for IG Graph cutover. Keep the
 # function file for manual legacy rescue until the external ManyChat account is
@@ -402,6 +440,7 @@
 # due (one cheap status=scheduled query, no further work), so per-minute is
 # safe on Netlify's quota. Backed by coach_alerts.scheduled_for + an atomic
 # claim flip ('scheduled' -> 'pending') so concurrent runs don't double-fire.
+# Code gates work to 05:00-02:00 Brisbane; due replies wait through 02:00-04:59.
 [functions."scheduled-coach-reply-worker"]
   schedule = "* * * * *"
 
@@ -455,8 +494,15 @@
 
 [[redirects]]
   from = "/plantbasedswitch"
-  to = "/plantbasedswitch.html"
-  status = 200
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/plantbasedswitch.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
 
 [[redirects]]
   from = "/bio"
@@ -490,20 +536,213 @@
 
 [[redirects]]
   from = "/free-challenge"
-  to = "/transform-challenge.html"
-  status = 200
+  to = "/coaching.html"
+  status = 301
+  force = true
 
 [[redirects]]
   from = "/vegan-challenge"
-  to = "/transform-challenge.html"
+  to = "/coaching.html"
   status = 301
   force = true
 
 [[redirects]]
   from = "/vegan-challenge.html"
-  to = "/transform-challenge.html"
+  to = "/coaching.html"
   status = 301
   force = true
+
+[[redirects]]
+  from = "/transform-challenge"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/transform-challenge.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/switch28"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/switch28.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/access-cortisol"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/access-cortisol.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/access-estrogen"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/access-estrogen.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-bands"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-bands.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-bodyweight"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-bodyweight.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-gym"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-gym.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-pilates"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-pilates.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-recovery"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-recovery.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-strength"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-strength.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-yoga"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/challenge-yoga.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/tiktok-content"
+  to = "/tiktok-content.html"
+  status = 200
+
+[[redirects]]
+  from = "/tiktok-studio"
+  to = "/tiktok-studio.html"
+  status = 200
+
+[[redirects]]
+  from = "/gold-coast-ai"
+  to = "https://gold-coast-ai-solutions.netlify.app/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/gold-coast-ai-schedule"
+  to = "https://gold-coast-ai-solutions.netlify.app/schedule"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/gold-coast-ai-solutions.html"
+  to = "https://gold-coast-ai-solutions.netlify.app/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/gold-coast-ai-posting-schedule.html"
+  to = "https://gold-coast-ai-solutions.netlify.app/schedule"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/assets/gold-coast-ai/*"
+  to = "https://gold-coast-ai-solutions.netlify.app/assets/gold-coast-ai/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/recover-pack"
+  to = "/recover-pack/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/recover-pack/"
+  to = "/recover-pack/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/recover-pack/guide"
+  to = "/recover-pack/guide.html"
+  status = 200
+
+[[redirects]]
+  from = "/recover-pack/guide/"
+  to = "/recover-pack/guide.html"
+  status = 200
 
 [[redirects]]
   from = "/*"

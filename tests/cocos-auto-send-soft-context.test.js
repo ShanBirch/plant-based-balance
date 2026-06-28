@@ -121,6 +121,50 @@ assert.deepStrictEqual(
     'scheduled worker should honor tracked small-talk review-timeout bypass'
 );
 
+assert.deepStrictEqual(
+    scheduledWorker.buildAutoSendReviewHold({
+        alert_type: 'ig_incoming_dm',
+        suggested_message: 'yeah that makes sense, Palmy sounds way more your speed already haha',
+        data: {
+            channel: 'instagram',
+            scheduled_via: 'auto_send',
+            bot_account: 'cocos_pt_studio',
+            message_preview: '[AUDIO:https://example.com/voice.m4a]',
+            audio_transcript_count: 1,
+            media_decode: {
+                audio_url_count: 1,
+                audio_inline_count: 1,
+                audio_transcript_count: 1,
+            },
+            audio_transcripts: [{ text: 'Palm Beach already feels way better than the old place.' }],
+            auto_send_review_hold: {
+                code: 'media_review',
+                label: 'voice note/audio clip needs Shannon review',
+                held_by: 'scheduled_worker',
+            },
+            media_review: {
+                required: true,
+                kinds: ['audio'],
+                label: 'voice note/audio clip',
+            },
+            context_review: {
+                required: true,
+                reasons: ['voice_note_review_required'],
+                label: 'voice note needs Shannon review',
+            },
+            draft_review: {
+                verdict: 'pass',
+                confidence: 0.92,
+                notification_required: false,
+                notification_reason: 'none',
+                context_loss_suspected: false,
+            },
+        },
+    }),
+    null,
+    'scheduled worker should not block auto-send when the voice note has an OpenAI transcript and draft review passed'
+);
+
 const latePassingReview = {
     verdict: 'pass',
     confidence: 1,
@@ -212,7 +256,7 @@ assert.ok(repairIssues.some(issue => /stock discovery/i.test(issue)), 'stock que
 
 const earnedChallengeBridgeIssues = instantDraft.collectCocosAutoRepairIssues({
     draft: {
-        joined: 'honestly this is the kind of thing the free 30 day challenge can help with: simple structure after work without having to think it all through. want me to send the details?',
+        joined: 'honestly this is the kind of thing starter coaching can help with: simple structure after work without having to think it all through. want me to send the details?',
     },
     draftReview: null,
     challengeOfferWarning: { required: true },

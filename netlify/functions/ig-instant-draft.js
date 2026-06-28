@@ -47,6 +47,7 @@ const {
     buildDailyGreetingPolicyBlock,
     shouldAllowDailyGreeting,
     isAlwaysNeedsYouPerson,
+    getAppProblemAutoSendHoldReason,
     buildShannonDmTuningBlock,
     buildOpenAIShannonVoiceBlock,
     loadEditExamples,
@@ -84,6 +85,7 @@ const {
     isTestAccount,
     isAiAutomationOptedOut,
 } = require('./_lib/client-context');
+const { buildExerciseLibrarySupportBlock } = require('./_lib/exercise-library-search');
 
 const {
     isQualifierEligible,
@@ -105,6 +107,10 @@ const {
     detectProposedCoachActions,
     mergeProposedActions,
 } = require('./_lib/coach-actions');
+const {
+    isCocosToShanSunnyVoiceTest,
+    resolveCocosShanSunnyVoiceTestReason,
+} = require('./_lib/elevenlabs-voice-message');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const HISTORY_LIMIT = 40;
@@ -123,6 +129,8 @@ const IG_AUTO_SEND_MIN_DELAY_MS = 15 * 60 * 1000;
 const IG_AUTO_SEND_MAX_DELAY_MS = 8 * 60 * 60 * 1000;
 const IG_DRAFT_REVIEW_TIMEOUT_MS = 7000;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
+const STORY_OPENER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|your\s+question|this|that|it)|(?:what|wat)\s+(?:do|did)\s+(?:you|u)\s+mean|what\s+you\s+mean|wdym|i'?m\s+confused|not\s+sure\s+what\s+you\s+mean)\b/i;
+const SHORT_STORY_OPENER_CONFUSION_RE = /^(?:sorry|sorry\?|huh\??|pardon\??|what\??|what sorry\??|sorry what\??)$/i;
 
 function graphSubscriberParts(subscriberId = '') {
     const raw = String(subscriberId || '');
@@ -193,6 +201,130 @@ function hoursSinceIso(value, nowMs = Date.now()) {
     return (nowMs - ts) / (60 * 60 * 1000);
 }
 
+function cleanPromptString(value, max = 1000) {
+    return String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
+}
+
+function normalizeIgHandle(value) {
+    return cleanPromptString(value, 160).replace(/^@+/, '').replace(/\s+/g, '').toLowerCase();
+}
+
+function isExerciseCommentContext(context = {}) {
+    return /exercise|form|workout/i.test(String(context.source_lane || context.funnel || context.content_type || ''))
+        || Boolean(context.exercise);
+}
+
+function isScienceCommentContext(context = {}) {
+    return /science|study|paper|research/i.test(String(context.source_lane || context.funnel || context.topic || context.paper_title || ''));
+}
+
+function buildCommentResourceContextFromFulfillment(row = {}) {
+    const rawPayload = safeObject(row.raw_payload);
+    const leadContext = safeObject(rawPayload.lead_context);
+    const automation = safeObject(rawPayload.automation);
+    const sourcePost = safeObject(rawPayload.source_post);
+    const sourceLane = cleanPromptString(
+        leadContext.source_lane
+        || sourcePost.source_lane
+        || (sourcePost.exercise ? 'exercise_comment_flow' : '')
+        || (sourcePost.paper_title || sourcePost.paper_authors ? 'science_comment_resource' : 'comment_resource'),
+        120
+    );
+    const funnel = cleanPromptString(
+        leadContext.funnel
+        || sourcePost.funnel
+        || (/exercise/i.test(sourceLane) ? 'exercise_form_fix' : '')
+        || (/science|study|paper/i.test(sourceLane) ? 'free_challenge' : '')
+        || 'comment_resource',
+        120
+    );
+    const status = cleanPromptString(row.status || leadContext.status, 40);
+    return {
+        source_lane: sourceLane,
+        funnel,
+        link_sent: leadContext.link_sent === true || ['sent', 'dry_run'].includes(status) || Boolean(row.private_reply_id),
+        link_sent_via: leadContext.link_sent_via || 'instagram_private_reply',
+        status,
+        fulfillment_id: row.id || leadContext.fulfillment_id || null,
+        automation_id: row.automation_id || leadContext.automation_id || automation.id || null,
+        post_slug: cleanPromptString(leadContext.post_slug || automation.post_slug || sourcePost.slug, 180) || null,
+        post_title: cleanPromptString(leadContext.post_title || sourcePost.title, 240) || null,
+        topic: cleanPromptString(leadContext.topic || sourcePost.topic, 240) || null,
+        headline: cleanPromptString(leadContext.headline || sourcePost.headline, 240) || null,
+        content_type: cleanPromptString(leadContext.content_type || sourcePost.content_type, 120) || null,
+        exercise: cleanPromptString(leadContext.exercise || sourcePost.exercise, 180) || null,
+        main_mistake: cleanPromptString(leadContext.main_mistake || sourcePost.main_mistake, 500) || null,
+        context_summary: cleanPromptString(leadContext.context_summary || sourcePost.context_summary, 900) || null,
+        reply_guidance: cleanPromptString(leadContext.reply_guidance || sourcePost.reply_guidance, 1200) || null,
+        suggested_next_question: cleanPromptString(leadContext.suggested_next_question || sourcePost.suggested_next_question, 300) || null,
+        full_script: cleanPromptString(leadContext.full_script || sourcePost.full_script, 3000) || null,
+        coaching_points: Array.isArray(leadContext.coaching_points)
+            ? leadContext.coaching_points
+            : (Array.isArray(sourcePost.coaching_points) ? sourcePost.coaching_points : []),
+        paper_title: cleanPromptString(leadContext.paper_title || sourcePost.paper_title, 300) || null,
+        paper_authors: cleanPromptString(leadContext.paper_authors || sourcePost.paper_authors, 240) || null,
+        paper_year: leadContext.paper_year || sourcePost.paper_year || null,
+        keyword: cleanPromptString(row.matched_keyword || leadContext.keyword || automation.keyword, 120) || null,
+        landing_url: cleanPromptString(row.landing_url || leadContext.landing_url, 800) || null,
+        private_reply_id: cleanPromptString(row.private_reply_id || leadContext.private_reply_id, 180) || null,
+        private_reply_message: cleanPromptString(row.private_reply_message || leadContext.private_reply_message, 900) || null,
+        ig_media_id: cleanPromptString(row.ig_media_id || leadContext.ig_media_id, 180) || null,
+        comment_id: cleanPromptString(row.comment_id || leadContext.comment_id, 180) || null,
+        from_ig_user_id: cleanPromptString(row.from_ig_user_id || leadContext.from_ig_user_id, 180) || null,
+        from_username: normalizeIgHandle(row.from_username || leadContext.from_username),
+        sent_at: row.sent_at || leadContext.sent_at || null,
+        created_at: row.created_at || leadContext.recorded_at || null,
+        next_step: cleanPromptString(leadContext.next_step || sourcePost.next_step, 600) || null,
+    };
+}
+
+function buildCommentResourceHandoffBlock(context = {}) {
+    if (!context || typeof context !== 'object' || !context.link_sent) return '';
+    const topic = context.exercise || context.topic || context.headline || context.post_title || context.post_slug || 'the reel';
+    const cueList = Array.isArray(context.coaching_points) && context.coaching_points.length
+        ? context.coaching_points.map(point => `  - ${point}`).join('\n')
+        : '';
+    if (isExerciseCommentContext(context)) {
+        return `
+
+EXERCISE COMMENT-TO-DM HANDOFF:
+- ${context.from_username ? `@${context.from_username}` : 'This lead'} recently commented "${context.keyword || 'the keyword'}" on Shannon's exercise reel about ${topic}.
+- They have already been sent the private reply/checklist by IG private reply${context.sent_at ? ` at ${context.sent_at}` : ''}${context.landing_url ? `: ${context.landing_url}` : '.'}
+- Do not ask what this is about if their reply is short or vague. Treat replies like "yes", "send it", "back", "hams", "balance", "form", or "what do you mean" as replies to this exercise comment flow.
+- Continue the conversation from the reel topic. Do not reveal automation, tracking, source payloads, or that a comment-flow handoff exists.
+${context.context_summary ? `- Reel context: ${context.context_summary}` : ''}
+${context.main_mistake ? `- Main mistake Shannon was fixing: ${context.main_mistake}` : ''}
+${cueList ? `- Coaching cues from the reel:\n${cueList}` : ''}
+${context.reply_guidance ? `- Reply guidance: ${context.reply_guidance}` : ''}
+${context.suggested_next_question ? `- Useful next question if they need help: ${context.suggested_next_question}` : ''}
+${context.full_script ? `- Reel script context: ${truncate(context.full_script, 900)}` : ''}`;
+    }
+    if (!isScienceCommentContext(context)) {
+        return `
+
+COMMENT-TO-DM HANDOFF:
+- ${context.from_username ? `@${context.from_username}` : 'This lead'} recently commented "${context.keyword || 'the keyword'}" on Shannon's reel about ${topic}.
+- They have already been sent the private reply${context.sent_at ? ` at ${context.sent_at}` : ''}${context.landing_url ? `: ${context.landing_url}` : '.'}
+- Do not ask what this is about if their reply is short or vague. Continue from this comment-flow context.
+- Do not reveal automation, tracking, source payloads, or that a comment-flow handoff exists.
+${context.context_summary ? `- Context: ${context.context_summary}` : ''}
+${context.reply_guidance ? `- Reply guidance: ${context.reply_guidance}` : ''}
+- Next step: ${context.next_step || 'Use the comment-flow context first, then continue naturally.'}`;
+    }
+    const paper = [context.paper_title, context.paper_year].filter(Boolean).join(', ');
+    return `
+
+SCIENCE COMMENT RESOURCE HANDOFF:
+- ${context.from_username ? `@${context.from_username}` : 'This lead'} recently commented "${context.keyword || 'the keyword'}" on Shannon's science reel about ${topic}.
+- They have already been sent the resource/study link by IG private reply${context.sent_at ? ` at ${context.sent_at}` : ''}: ${context.landing_url || '(link not stored)'}.
+- Do not ask if they want the resource link again unless they say they did not get it. If they ask for the study/resource, acknowledge it was sent and resend the same link only if useful.
+- Treat this as a normal free challenge lead path now, but their first intent was education/trust, not automatic signup.
+- If they reply with thanks, curiosity, or a question about the paper, answer the science point briefly and ask one practical bridge question about training, food, weight loss, consistency, or the behaviour the reel discussed.
+${paper ? `- Paper/resource: ${paper}.` : ''}
+${context.context_summary ? `- Context: ${context.context_summary}` : ''}
+- Next step: ${context.next_step || 'Use the resource topic as context, then continue the normal free challenge lead path when they show help/start intent.'}`;
+}
+
 function isHumanAgentWindow(value) {
     const hours = hoursSinceIso(value);
     return hours !== null && hours > 24 && hours <= 24 * 7;
@@ -214,10 +346,13 @@ function formatAutoDelayLabel(delayMs) {
     return `${hours}h`;
 }
 
-function normalizeIgAutoTimingSuggestion({ timingSuggestion, delayMs, timingLabel }) {
-    const rawDelay = Number(timingSuggestion?.delay_ms ?? delayMs ?? IG_AUTO_SEND_DEFAULT_DELAY_MS);
+function normalizeIgAutoTimingSuggestion({ timingSuggestion, delayMs, timingLabel, allowImmediate = false }) {
+    const rawDelay = allowImmediate
+        ? 0
+        : Number(timingSuggestion?.delay_ms ?? delayMs ?? IG_AUTO_SEND_DEFAULT_DELAY_MS);
+    const minDelayMs = allowImmediate ? 0 : IG_AUTO_SEND_MIN_DELAY_MS;
     const normalizedDelayMs = Number.isFinite(rawDelay)
-        ? Math.min(IG_AUTO_SEND_MAX_DELAY_MS, Math.max(IG_AUTO_SEND_MIN_DELAY_MS, Math.round(rawDelay)))
+        ? Math.min(IG_AUTO_SEND_MAX_DELAY_MS, Math.max(minDelayMs, Math.round(rawDelay)))
         : IG_AUTO_SEND_DEFAULT_DELAY_MS;
     const adjustedForMinimum = Number.isFinite(rawDelay) && normalizedDelayMs !== Math.round(rawDelay);
     const action = normalizedDelayMs === 0 ? 'send_now' : 'schedule';
@@ -265,7 +400,12 @@ function withTimeout(promise, timeoutMs, label) {
 
 async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayMs, timingLabel, timingSuggestion }) {
     if (!alertId || !replyText) throw new Error('missing alertId or replyText');
-    const normalizedTiming = normalizeIgAutoTimingSuggestion({ timingSuggestion, delayMs, timingLabel });
+    const normalizedTiming = normalizeIgAutoTimingSuggestion({
+        timingSuggestion,
+        delayMs,
+        timingLabel,
+        allowImmediate: alertData?.auto_send_allow_immediate === true,
+    });
     const scheduledAt = new Date();
     const scheduledFor = new Date(scheduledAt.getTime() + normalizedTiming.delay_ms);
     const mergedData = {
@@ -376,13 +516,13 @@ function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarnin
         if (draftReview.suggested_fix) issues.push(`Reviewer suggested fix: ${draftReview.suggested_fix}`);
     }
     if (challengeOfferWarning?.required && !challengeOfferAllowed) {
-        issues.push('Draft appears to offer or link the free challenge. Remove the pitch unless the latest message clearly asks how to start or asks for the link.');
+        issues.push('Draft appears to offer or link coaching. Remove the pitch unless the latest message clearly asks how to start or asks for the link.');
     }
     if (isUnsafeStockDiscoveryQuestion(draftText)) {
         issues.push('Draft uses a stock discovery question. Replace it with a specific reply to the latest detail, or no question if a reaction is enough.');
     }
     if (prematureChallengeInvite) {
-        issues.push('Draft invites the challenge before the person has shown enough readiness or 3 meaningful lead replies. Keep rapport moving instead.');
+        issues.push('Draft invites coaching before the person has shown enough readiness or 3 meaningful lead replies. Keep rapport moving instead.');
     }
     return [...new Set(issues.map(issue => truncate(String(issue || '').replace(/\s+/g, ' ').trim(), 220)).filter(Boolean))];
 }
@@ -418,6 +558,7 @@ Repair rules:
 - Answer the latest inbound message first. If the latest message is simple, a short simple reply is better than a coaching paragraph.
 - Keep Shannon's casual lower-case texting style. No corporate tone, no AI talk, no mention of auto-send, review, rules, or Coco's as a system.
 - One natural question max. Skip the question when a reaction or direct answer is enough.
+- Shannon follow-up shape: tiny acknowledgement plus one concrete question from their exact newest detail, for example "why by April?", "how long for?", "what part first?", "food or training?", or "how did that go?". Avoid broad therapist-style questions.
 - Do not pitch, link, or offer the challenge unless the latest message clearly asks how to join or asks for the link.
 - No em dashes.
 
@@ -523,8 +664,14 @@ function getBalanceAutoContextBypass({ balanceAutoSendLane, contextReview, draft
     };
 }
 
-function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass }) {
+function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData }) {
     const effectiveContextBypass = contextBypass || cocosContextBypass;
+    const appProblemHold = getAppProblemAutoSendHoldReason({
+        currentMessage,
+        draftText: draft?.joined || '',
+        alertData,
+    });
+    if (appProblemHold) return appProblemHold;
     if (mediaReview?.required) {
         return {
             code: 'media_review',
@@ -552,7 +699,7 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
     if (challengeOfferWarning?.required) {
         return {
             code: 'challenge_offer',
-            label: `${challengeOfferWarning.label || 'free challenge invite'} needs timing review`,
+            label: `${challengeOfferWarning.label || 'coaching invite'} needs timing review`,
         };
     }
     if (isUnsafeStockDiscoveryQuestion(draft.joined)) {
@@ -564,7 +711,7 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
     if (isPrematureChallengeInvite({ draftText: draft.joined, currentMessage, qualifier, leadStage, linkedUserId, leadReplyCount: meaningfulLeadReplyCount })) {
         return {
             code: 'premature_challenge_invite',
-            label: 'free challenge invite needs human readiness first',
+            label: 'coaching invite needs human readiness first',
         };
     }
     if (draftReview && !isDraftReviewAutoSendSafe(draftReview) && !effectiveContextBypass?.allowed) {
@@ -662,34 +809,40 @@ async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason =
  */
 const META_AD_FUNNEL_CONTEXT = `
 LEAD ACQUISITION CONTEXT:
-Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, then DMs them first. He initiates the conversation. Some leads also come from Shannon's Meta ads or challenge angles. The DM offer right now is the free 30-day Balance Challenge, starting Monday, 8 June, with free entry for new starters, Shannon check-ins, app structure, and a $1,000 first-place cash prize. Interested leads should be encouraged to get into Balance and start with coaching immediately so they are set up before the challenge starts. Paid coaching is the natural follow-up after the 30 days, not the headline. The words below trigger offer-inquiry mode:
+Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, then DMs them first. He initiates the conversation. Some leads also come from Shannon's Meta ads or coaching angles. The DM offer right now is Balance Starter Coaching: AUD $29.99/week, no sales call, Balance app access, tailored workout structure, food direction, progress tracking, and one weekly check-in with Shannon. Free challenge/free entry is only a fallback for colder leads who are not ready to pay. The words below trigger offer-inquiry mode:
   1. "What's actually included?"
   2. "Do I need to already be Plant Based?"
   3. "I'm In - save me a spot!"
-Also treat as offer inquiry: "1:1 coaching", "one-on-one coaching", "the challenge", "what's included", "your program" when they clearly mean the offer, "saw your ad", "wanna join", "work with you", "send me the link", "I'm in", or "I need help / I don't know what I'm doing". Do NOT treat vague "keen", "interested", "yeah sounds good", or friendly banter as offer intent unless the same message clearly points at coaching/program/link.
+Also treat as offer inquiry: "1:1 coaching", "one-on-one coaching", "starter coaching", "online coaching", "what's included", "your program" when they clearly mean the offer, "saw your ad", "wanna join", "work with you", "send me the link", "I'm in", or "I need help / I don't know what I'm doing". Do NOT treat vague "keen", "interested", "yeah sounds good", or friendly banter as offer intent unless the same message clearly points at coaching/program/link.
 
-Important: when there is no prior tracked conversation, do NOT assume the lead started the DM. Most first captured lead messages happen because Shannon commented on or replied to their story/post natively, and that opener is not visible in ManyChat. Their reply may be tiny or ambiguous because they are answering that unseen opener. Treat it as an open door, build rapport from whatever signal exists, and ask one light human question unless they are clearly asking about the challenge/link or clearly asking Shannon for help because they feel stuck.
+Important: when there is no prior tracked conversation, do NOT assume the lead started the DM. Most first captured lead messages happen because Shannon commented on or replied to their story/post natively, and that opener is not visible in ManyChat. Their reply may be tiny or ambiguous because they are answering that unseen opener. Treat it as an open door, build rapport from whatever signal exists, and ask one light human question unless they are clearly asking about coaching/link or clearly asking Shannon for help because they feel stuck.
+
+SHANNON FOLLOW-UP QUESTION FINGERPRINT:
+- Shannon's real IG follow-ups are usually tiny: a quick acknowledgement, then one concrete question from the exact detail they just gave.
+- Good shape: "yeah okay" / "nice as" / "hell yeah" / "fair" + one short question like "why by April?", "how long for?", "what part first?", "food or training?", "where at?", "how did that go?", or "what gets in the way?".
+- If the lead gives a bare answer to Shannon's last question, do not ask a new intake bundle. Acknowledge the answer and ask the next narrow thing only if it is useful.
+- Shannon rarely stacks questions in normal follow-up. One question is the default. Two questions is only for a clear intake moment. Three or more questions should almost never happen.
+- Avoid polished therapist/coach questions. Replace "what does that look like for you?", "what kind of difference would that make?", "what usually makes it hard?", "anything in particular making it hectic?", and "how are you finding it?" with a question built from their actual nouns.
+- Do not jump from a normal-life answer straight to the challenge. Use the follow-up to understand the blocker, preference, or context first.
 
 THE OFFERING (for context — never list as a brochure; speak like a friend):
-- The FIRST offer is the free 30-day Balance Challenge, not paid coaching, a standalone custom meal plan, workout program, or generic app trial.
-- If they are plant-based / vegan / vegetarian-curious, tailor the challenge explanation around plant-based food support.
-- If they just want fitness, muscle, weight loss, energy, or consistency with no plant-based signal, tailor the challenge explanation around training, food structure, and consistency.
-- When the offer is opened by a direct details/link/"what's included" ask, explain how the app works before sending the next step: Shannon built Balance this year, the app helps set up workouts/meals, their little character levels up as they log, and workouts, meals, weigh-ins, lessons, check-ins, and progress actions earn XP.
-- If they only ask "what's Balance?" or "what's your app?" while also saying they are already training hard or feeling good, answer in one plain beat and make any challenge mention a casual throwaway. No feature list, prize, leaderboard, or link unless they ask for details.
-- The challenge is 30 days of stacking consistent actions, building XP, and climbing the leaderboard with Shannon checking in. Do not call the character FitGotchi in DMs. Say "little character" or "game-style character".
-- Once they start, the Balance app helps set up their workout program and meal plan. Shannon can edit it if needed after they sign up.
-- Shannon checks in Monday, Wednesday, Friday. Friday is a weekly review and adjustment check-in.
-- The challenge has a $1,000 cash prize for first place, confirmed after the final leaderboard review and fair-play checks.
-- Keep it free/no pressure. The paid coaching choice comes later, after they have felt the support.
+- The FIRST offer for warm leads is paid Balance Starter Coaching, not a free challenge, standalone custom meal plan, workout program, or generic app trial.
+- If they are plant-based / vegan / vegetarian-curious, tailor the coaching explanation around plant-based food support.
+- If they just want fitness, muscle, weight loss, energy, or consistency with no plant-based signal, tailor the coaching explanation around training, food structure, and accountability.
+- When the offer is opened by a direct details/link/"what's included" ask, explain the setup before sending the next step: $29.99/week, no sales call, Balance app access, tailored workouts, food direction, progress tracking, and one weekly check-in with Shannon.
+- If they only ask "what's Balance?" or "what's your app?" while also saying they are already training hard or feeling good, answer in one plain beat and make any coaching mention casual. No feature list or link unless they ask for details.
+- Once they start, the Balance app helps set up their workout program and food direction. Shannon can edit it after they sign up.
+- Shannon checks in once a week in Starter Coaching.
+- Keep it low-pressure. If they are hesitant or too cold to pay, offer the free challenge as the lighter fallback.
 
 RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
-- "What's actually included?" -> explain the free challenge casually: Shannon built Balance this year, the app sets up workouts/meals, their little character levels up as they log, XP builds the leaderboard, Shannon checks in Mon/Wed/Fri, and first place wins the cash prize after review. Don't dump a brochure.
-- "What's Balance?" / "what's your app?" -> answer plainly: it is Shannon's fitness app/coaching setup. If their latest training detail gives a natural opening, one casual line is enough: "sounds like you're smashing training tbh, i'm about to start a fitness challenge if you'd be keen?" Do not hardcode that wording, but keep that size and feel. No app feature list or signup link unless they ask what is included or ask for details.
-- "Is it in person?" / "I'm looking for a local trainer" / "I already have a PT" -> treat this as a preference or compatibility objection. Answer plainly first: the challenge support is online through Balance. Do not push the link yet. Ask whether online check-ins/accountability would still be useful, or how it would need to fit around their current trainer.
+- "What's actually included?" -> explain Starter Coaching casually: Balance app access, tailored workouts, food direction, progress tracking, and one weekly check-in with Shannon for $29.99/week. Don't dump a brochure.
+- "What's Balance?" / "what's your app?" -> answer plainly: it is Shannon's fitness app/coaching setup. If their latest training detail gives a natural opening, one casual line is enough: "honestly one weekly check-in would probably help keep that simple if you wanted the coaching details". Do not hardcode that wording, but keep that size and feel. No app feature list or signup link unless they ask what is included or ask for details.
+- "Is it in person?" / "I'm looking for a local trainer" / "I already have a PT" -> treat this as a preference or compatibility objection. Answer plainly first: Starter Coaching is online through Balance with one weekly check-in. Do not push the link yet. Ask whether online check-ins/accountability would still be useful, or how it would need to fit around their current trainer.
 - "Do I need to already be Plant Based?" -> warm reassurance ("not at all, lots of my crew start curious"), then ask their current eating situation, ever cooked plant-based before.
-- "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, send https://future-balance.netlify.app/bio.html with the quick challenge/app handoff. Do NOT ask a Name + Age + Main goal intake bundle.
-- "I need help" / "I don't know what I'm doing" / "where do I start?" -> human first: validate the stuck feeling, ask one grounded context question if needed, then softly explain that the free challenge is the easiest starting point because the app gives structure, the character/XP makes consistency visible, and Shannon checks in. Do not sound like a canned invite.
-- Warm lead with enough context already shared -> use a low-key bridge instead of endless discovery. Do not write stock lines that say the offer is made for this exact situation. Anchor it to their actual situation in one casual sentence, for example "if a bit of challenge structure would help when you're back, i'm starting one soon". End by asking if they want the details only when they have not already asked. Do not send the link or app feature rundown until they say yes or ask what is included.
+- "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, send https://future-balance.netlify.app/coaching.html with the quick coaching/app handoff. Do NOT ask a Name + Age + Main goal intake bundle.
+- "I need help" / "I don't know what I'm doing" / "where do I start?" -> human first: validate the stuck feeling, ask one grounded context question if needed, then softly explain that Starter Coaching is the easiest starting point because the app gives structure and Shannon checks in weekly. Do not sound like a canned invite.
+- Warm lead with enough context already shared -> use a low-key bridge instead of endless discovery. Do not write stock lines that say the offer is made for this exact situation. Anchor it to their actual situation in one casual sentence, for example "if having one check-in a week would keep that from drifting again, starter coaching would probably fit". End by asking if they want the details only when they have not already asked. Do not send the link or app feature rundown until they say yes or ask what is included.
 
 When the conversation has clearly moved past intake (qualifier answers received, or they're chatting about something else), drop this context and just chat naturally.`;
 
@@ -770,6 +923,8 @@ function finalizeDraftChunksFromRawText(rawText, {
     leadName = '',
     currentMessageText = '',
     qualifier = null,
+    leadStage = null,
+    linkedUserId = null,
     nativeStoryContextSummary = null,
     knownContextText = '',
     hasDecodedMedia = false,
@@ -781,22 +936,34 @@ function finalizeDraftChunksFromRawText(rawText, {
         maxChunks,
         currentMessageText,
         qualifier,
+        leadStage,
+        linkedUserId,
+    });
+    const suppressClientLinkHandoff = (chunks) => suppressExistingClientSignupLinkHandoffInDraftChunks(chunks, {
+        leadStage,
+        linkedUserId,
     });
     const cleaned = splitCoachDraftIntoDmBubbles(
-        suppressPetSpeciesGuessingInDraftChunks(suppressAlreadyKnownContextQuestionsInDraftChunks(baseChunks, {
-            contextText: knownContextText,
-        }), {
-            currentMessageText,
-            qualifier,
-            nativeStoryContextSummary,
-        })
+        suppressStoryLocationQuestionsInDraftChunks(
+            suppressPetSpeciesGuessingInDraftChunks(suppressAlreadyKnownContextQuestionsInDraftChunks(baseChunks, {
+                contextText: knownContextText,
+            }), {
+                currentMessageText,
+                qualifier,
+                nativeStoryContextSummary,
+            }),
+            {
+                currentMessageText,
+                nativeStoryContextSummary,
+            }
+        )
             .map(c => stripObviousMediaReceiptPreamble(c, { hasDecodedMedia }))
             .map((c, i) => i === 0
                 ? stripLeadingGreeting(c, leadName, { allowGreeting: allowDailyGreeting })
                 : stripLeadingGreeting(c, leadName))
             .filter(Boolean)
     );
-    if (cleaned.length) return repairMissingLink(cleaned).slice(0, maxChunks);
+    if (cleaned.length) return suppressClientLinkHandoff(repairMissingLink(cleaned)).slice(0, maxChunks);
 
     // Never let a non-empty model response become a blank Needs You card.
     // If a conservative cleaner stripped the whole thing, keep the model's
@@ -809,7 +976,7 @@ function finalizeDraftChunksFromRawText(rawText, {
                 : stripLeadingGreeting(c, leadName))
             .filter(Boolean)
     );
-    return repairMissingLink(unfiltered).slice(0, maxChunks);
+    return suppressClientLinkHandoff(repairMissingLink(unfiltered)).slice(0, maxChunks);
 }
 
 function buildEmptyMediaDraftFallbackChunks({ mediaDecode = {}, currentMessageText = '' } = {}) {
@@ -829,6 +996,25 @@ function buildEmptyMediaDraftFallbackChunks({ mediaDecode = {}, currentMessageTe
     return [];
 }
 
+function hasAudioDraftContext({ mediaDecode = {}, currentMessageText = '' } = {}) {
+    const current = replaceIgMediaMarkers(String(currentMessageText || ''), { photo: 'photo', audio: 'voice note', video: 'video' }).toLowerCase();
+    return Number(mediaDecode.audio_url_count || mediaDecode.audioUrlCount || 0) > 0
+        || Number(mediaDecode.audio_inline_count || mediaDecode.audioInlineCount || 0) > 0
+        || /\bvoice note|audio\b/.test(current);
+}
+
+function isAudioPuntDraftText(value) {
+    const text = normalizeCoachDraftText(value).toLowerCase();
+    if (!text) return false;
+    return /\b(?:i'?ll|i will|i'?m going to|let me|i need to|i can)\s+(?:listen|play|check|open|go through)\b[\s\S]{0,140}\b(?:properly|later|when|then|get back|come back)\b/i.test(text)
+        || /\b(?:listen|play|check|open|go through)\s+(?:to\s+)?(?:this|it|your voice note|the voice note)\b[\s\S]{0,120}\b(?:get back|come back)\b/i.test(text);
+}
+
+function isAudioPuntDraftChunks(chunks, { mediaDecode = {}, currentMessageText = '' } = {}) {
+    if (!hasAudioDraftContext({ mediaDecode, currentMessageText })) return false;
+    return (Array.isArray(chunks) ? chunks : [chunks]).some(isAudioPuntDraftText);
+}
+
 async function generateMediaRecoveryDraft({
     mediaParts,
     mediaDecode,
@@ -840,6 +1026,8 @@ async function generateMediaRecoveryDraft({
     replyMode,
     allowDailyGreeting,
     qualifier,
+    leadStage = null,
+    linkedUserId = null,
     nativeStoryContextSummary,
 } = {}) {
     if (!Array.isArray(mediaParts) || mediaParts.length === 0) return { chunks: [], rawText: '', model: null, error: null };
@@ -853,7 +1041,7 @@ ${truncateTail(totalConversationText || '(no prior tracked context)', 2600)}
 
 Attached media below is from the latest unanswered inbound batch. If a voice note is attached, listen to it and reply to what they said. Do not transcribe it. Do not say you listened to, heard, opened, checked, saw, or watched the media. If the media is genuinely not understandable, write one casual message asking them to resend it or type the gist.
 
-Write in Shannon's casual texting voice with normal phone autocorrect casing. Keep it short unless the audio asks for detailed help. No AI/automation wording. No em-dashes. Never type literal backslash-n escape sequences in the reply text. Use normal punctuation instead.
+Write in Shannon's casual texting voice with normal phone autocorrect casing. Use contractions so the reply sounds spoken: it's, I'd, wouldn't, don't, can't, you're. Keep it short unless the audio asks for detailed help. No AI/automation wording. No em-dashes. Never type literal backslash-n escape sequences in the reply text. Use normal punctuation instead.
 
 JSON only:
 {"messages":["exact DM text"]}`;
@@ -874,6 +1062,8 @@ JSON only:
                 leadName,
                 currentMessageText,
                 qualifier,
+                leadStage,
+                linkedUserId,
                 nativeStoryContextSummary,
                 hasDecodedMedia: true,
                 allowDailyGreeting,
@@ -1012,9 +1202,9 @@ function pitchHintForStage(stage) {
     }
     switch (stage) {
         case 'qualifying':
-            return "Conversation is warming up. Keep rapport natural, but make it create momentum. Ask one useful follow-up only when it moves the exact blocker forward. If the current message is simple banter, just banter. If they have already shared a clear food/training/energy/consistency blocker, do not ask another unrelated human-context question. Mention the free 30-day Balance Challenge when they ask how to start, ask for the link/details, clearly ask Shannon for help because they feel stuck, or the qualifier context shows Shannon already has a relationship anchor plus enough goal/blocker context for a soft bridge. When bridging, anchor it to their exact situation and ask if they want details instead of using a stock invite line. A vague warm reply is not a challenge opening by itself. Do not offer to write a standalone meal plan or workout program in DMs. The app helps set those up after they start.";
+            return "Conversation is warming up. Keep rapport natural, but make it create momentum. Ask one useful follow-up only when it moves the exact blocker forward. If the current message is simple banter, just banter. If they have already shared a clear food/training/energy/consistency blocker, do not ask another unrelated human-context question. Mention Balance Starter Coaching when they ask how to start, ask for the link/details, ask about coaching, clearly ask Shannon for help because they feel stuck, or the qualifier context shows Shannon already has a relationship anchor plus enough goal/blocker context for a soft bridge. When bridging, anchor it to their exact situation and ask if they want details instead of using a stock invite line. A vague warm reply is not a coaching opening by itself. Do not offer to write a standalone meal plan or workout program in DMs. The app helps set those up after they start.";
         case 'invited':
-            return "You've already mentioned the free challenge. DON'T re-pitch. Answer their questions plainly. If they're close to signing up, help them across the line. If they are not ready yet, ask one useful question only if it helps the next step.";
+            return "You've already mentioned Starter Coaching. DON'T re-pitch. Answer their questions plainly. If they're close to signing up, help them across the line. If they are not ready yet, ask one useful question only if it helps the next step.";
         case 'in_app':
             return "They're already in the app. Coach them like a normal client. The IG thread is just a parallel channel — same voice, same memory. Keep it short unless they ask for more. Ask a specific question only when it is actually useful.";
         case 'churned':
@@ -1029,21 +1219,20 @@ function challengeUrlForRoute(route) {
     return ONE_ON_ONE_COACHING_URL;
 }
 
-const ONE_ON_ONE_COACHING_URL = 'https://future-balance.netlify.app/bio.html';
+const ONE_ON_ONE_COACHING_URL = 'https://future-balance.netlify.app/coaching.html';
 
 function buildOneOnOneCoachingBlock() {
     return `
 
-BALANCE CHALLENGE LINK:
-- The DM offer right now is the free 30-day Balance Challenge, starting Monday, 8 June.
-- Interested leads can get into Balance and start with coaching immediately so they are ready before the challenge cohort starts.
-- Approved challenge link: ${ONE_ON_ONE_COACHING_URL}
-- When the latest message asks for the challenge link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct challenge/details invite, send the approved bio link in the draft.
-- If the latest message asks to reconnect with Balance, the app/helper, login, password, account access, or any app bug, treat it as support first and do not send the challenge bio link.
-- Keep the link handoff light, not a brochure: stoked they are keen, here's the link, it has the quick info on the challenge and how the app works, check it out and download the app, then come back to Shannon here to chat through it.
-- Frame it as a free challenge with Shannon check-ins and app structure. Mention XP, leaderboard, or the $1,000 first-place cash prize only when they ask what is included or need the fuller rundown. Paid coaching comes later if the 30 days help.
-- If they only ask a general help question and have not asked for challenge details/link, do not send the link yet. Reply to the question and ask a low-pressure permission question if the challenge might fit.
-- If they ask whether it is local/in-person or mention they already have a PT/trainer, do not send the link yet. Answer that the challenge support is online through Balance and check whether that would still suit them.`;
+BALANCE STARTER COACHING LINK:
+- The DM offer right now is Balance Starter Coaching: AUD $29.99/week, no sales call, app structure, tailored workouts, food direction, progress tracking, and one weekly check-in with Shannon.
+- Approved coaching link: ${ONE_ON_ONE_COACHING_URL}
+- When the latest message asks for the coaching link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct coaching/details invite, send the approved coaching link in the draft.
+- If the latest message asks to reconnect with Balance, the app/helper, login, password, account access, or any app bug, treat it as support first and do not send the coaching link.
+- Keep the link handoff light, not a brochure: stoked they are keen, here's the link, it has the quick info on coaching and how Balance works, check it out, then come back to Shannon here to chat through it.
+- Frame it as low-ticket online coaching with one weekly check-in. Mention XP or app details only when they ask what is included or need the fuller rundown.
+- If they only ask a general help question and have not asked for coaching details/link, do not send the link yet. Reply to the question and ask a low-pressure permission question if Starter Coaching might fit.
+- If they ask whether it is local/in-person or mention they already have a PT/trainer, do not send the link yet. Answer that Starter Coaching is online through Balance with one weekly check-in and check whether that would still suit them.`;
 }
 
 function buildChallengeNextStepBlock(qualifier, currentMessageText = '') {
@@ -1052,37 +1241,46 @@ function buildChallengeNextStepBlock(qualifier, currentMessageText = '') {
         return `
 
 APP SUPPORT NEXT STEP:
-The newest message is about Balance/app/helper reconnection, account access, login, or a tech/workout setup issue. Treat this as support, not a challenge signup moment.
-- Do not send the challenge bio link in this reply, even if the lead previously accepted the challenge.
-- Acknowledge it simply and ask for the practical detail Shannon needs, such as what screen/error they see or which email/account they used.
+The newest message is about Balance/app/helper reconnection, account access, login, or a tech/workout setup issue. Treat this as support, not a coaching signup moment.
+- Do not send the coaching link in this reply, even if the lead previously accepted the offer.
+- App problems should be fixed, checked, and then confirmed. Do not fob them off with "try later".
+- Do not ask for a screenshot by default. Ask only when the exact problem cannot be identified from their message, app logs, or conversation.
+- Do not claim the app issue is fixed unless the context says Shannon has already fixed and verified it.
+- If no fix evidence is available yet, write as Shannon taking ownership: he will check it properly and get it sorted, then confirm once fixed.
 - Do not mention AI, automation, or an assistant. Keep the wording as Shannon personally helping them get sorted.`;
     }
     const url = challengeUrlForRoute(qualifier.challenge_route || 'generic');
-    if (qualifier.stage === 'won') {
+    if (qualifier.stage === 'won' && isCurrentChallengeHandoffMoment({ qualifier, currentMessage: currentMessageText })) {
         return `
 
-FREE CHALLENGE ACCEPTED NEXT STEP:
-They have accepted the free 30-day Balance Challenge. Do NOT ask more qualifier/intake questions in this reply.
+STARTER COACHING ACCEPTED NEXT STEP:
+They have accepted Balance Starter Coaching. Do NOT ask more qualifier/intake questions in this reply.
 Your reply should:
 - Send this exact URL in the draft: ${url}
 - If you write "here's the link" or "heres the link", the URL must be visible in the same bubble or the next bubble.
-- Keep the explanation tiny: the link has quick info on the challenge and how the Balance app works.
-- Say the app is a little different, so they should check it out, download it, then come back to Shannon here and chat through it.
-- Use the vibe: "yeah sounds so good, stoked you're keen for the challenge" rather than a brochure.
+- Keep the explanation tiny: the link has quick info on coaching and how the Balance app works.
+- Say the app is a little different, so they should check it out, then come back to Shannon here and chat through it.
+- Use the vibe: "yeah sounds so good, stoked you're keen" rather than a brochure.
 - Do it in 2-3 short bubbles, not one paragraph.
 Do not offer to manually write a meal plan or workout program in DMs before signup.`;
+    }
+    if (qualifier.stage === 'won') {
+        return `
+
+STARTER COACHING ALREADY ACCEPTED CONTEXT:
+They have accepted Starter Coaching earlier, but the newest message is not asking for the link, details, or next step. Do not resend the signup link from stored stage alone. Reply to the newest message naturally and only bring the link back if they ask how to start, ask for the link/details, or clearly confirm coaching again.`;
     }
     if (qualifier.stage === 'pitched') {
         return `
 
-FREE CHALLENGE OFFER PITCHED:
-The free 30-day Balance Challenge has already been offered. If they sound keen, ask for details/link, ask how to start, or reply positively with "yes / sounds good / keen", send this exact URL in the draft: ${url}. If you write "here's the link" or "heres the link", the URL must be visible in the same bubble or the next bubble. Keep the handoff tight in 2-3 bubbles: stoked they are keen, here's the link, it has the quick challenge/app info, check it out and download the app, then come back here to chat through it. If they are still unsure, answer the concern and keep it easy.`;
+STARTER COACHING OFFER PITCHED:
+Starter Coaching has already been offered. If they sound keen, ask for details/link, ask how to start, or reply positively with "yes / sounds good / keen", send this exact URL in the draft: ${url}. If you write "here's the link" or "heres the link", the URL must be visible in the same bubble or the next bubble. Keep the handoff tight in 2-3 bubbles: stoked they are keen, here's the link, it has the quick coaching/app info, check it out, then come back here to chat through it. If they are still unsure, answer the concern and keep it easy.`;
     }
     if (hasEarnedChallengeInviteMoment({ qualifier })) {
         return `
 
-EARNED FREE CHALLENGE BRIDGE:
-This unlinked lead has enough relationship and goal/blocker context, plus at least 3 meaningful lead replies, for a soft bridge if it fits the newest message. Do not send the link yet. Do not make it a brochure. The move is one casual line anchored to what they just said, with the challenge as a throwaway invite. If they have not asked for the link/details yet, ask if they would be keen or want the details. Save the app feature rundown, XP, leaderboard, and prize for when they ask what is included. If the newest message is a clear no/not-yet signal, hold off and just reply to that.`;
+EARNED STARTER COACHING BRIDGE:
+This unlinked lead has enough relationship and goal/blocker context, plus at least 3 meaningful lead replies, for a soft bridge if it fits the newest message. Do not send the link yet. Do not make it a brochure. The move is one casual line anchored to what they just said, with Starter Coaching as the natural next step. If they have not asked for the link/details yet, ask if they would be keen or want the details. Save the app feature rundown for when they ask what is included. If the newest message is a clear no/not-yet signal, hold off and just reply to that.`;
     }
     return '';
 }
@@ -1092,10 +1290,10 @@ function buildChallengeOfferWarning({ draftText, qualifier, currentMessage } = {
     if (isApprovedChallengeBioHandoffAllowed({ draftText, qualifier, currentMessage })) {
         return {
             required: false,
-            code: 'approved_challenge_bio_link',
+            code: 'approved_coaching_link',
             dot: '🟢',
-            label: 'approved challenge bio link',
-            reason: 'Draft uses the approved bio link after the lead accepted or asked for the challenge next step.',
+            label: 'approved coaching link',
+            reason: 'Draft uses the approved coaching link after the lead accepted or asked for the next step.',
             detected_at: new Date().toISOString(),
         };
     }
@@ -1103,18 +1301,18 @@ function buildChallengeOfferWarning({ draftText, qualifier, currentMessage } = {
         ? qualifier.challenge_route
         : 'undecided';
     const routeLabel = route === 'vegan'
-        ? 'plant-based challenge'
+        ? 'plant-based coaching'
         : route === 'generic'
-            ? 'free challenge'
-            : 'free challenge';
+            ? 'starter coaching'
+            : 'starter coaching';
     return {
         required: true,
         code: 'challenge_offer',
         dot: '🟡',
-        label: 'free 30-day challenge invite',
+        label: 'starter coaching invite',
         route,
         route_label: routeLabel,
-        reason: `Draft appears to offer ${routeLabel} or send the challenge link.`,
+        reason: `Draft appears to offer ${routeLabel} or send the coaching link.`,
         detected_at: new Date().toISOString(),
     };
 }
@@ -1126,11 +1324,18 @@ function isSignupLinkHandoffText(text) {
 }
 
 function isApprovedChallengeBioLinkText(text) {
-    return /https?:\/\/future-balance\.netlify\.app\/bio\.html\b/i.test(String(text || ''));
+    return /https?:\/\/future-balance\.netlify\.app\/coaching\.html\b/i.test(String(text || ''));
 }
 
 function isPositiveChallengeLinkConfirmationText(text) {
     return /\b(?:yes|yeah|yea|yep|sure|please|pls|sounds good|sounds so good|keen|okay|ok|sweet|let'?s do it|lets do it|do it)\b/i.test(String(text || ''));
+}
+
+function isCurrentChallengeHandoffMoment({ qualifier, currentMessage } = {}) {
+    if (isAppReconnectOrAccountSupportRequest(currentMessage)) return false;
+    if (hasChallengeInviteReadinessSignal(currentMessage)) return true;
+    const stage = String(qualifier?.stage || '').toLowerCase();
+    return ['pitched', 'won'].includes(stage) && isPositiveChallengeLinkConfirmationText(currentMessage);
 }
 
 function hasVisibleUrl(text) {
@@ -1148,20 +1353,43 @@ function promisesLinkWithoutUrl(text) {
 function isAppReconnectOrAccountSupportRequest(text) {
     const s = String(text || '').toLowerCase();
     if (!s) return false;
-    if (/\b(30\s*day|30-day|free challenge|challenge link|sign ?up|signup|join)\b/i.test(s)) return false;
+    if (/\b(30\s*day|30-day|free challenge|challenge link|coaching link|sign ?up|signup|join)\b/i.test(s)) return false;
     return /\b(reconnect(?:ed|ing)?|connect(?:ed|ing)? back|app helper|balance helper|balance app helper|account access|app access|login|log in|locked out|password|reset link|face id|face recognition|old email|spam|manual(?:ly)? reset|app glitch|glitched|bug)\b/i.test(s);
 }
 
-function repairMissingChallengeBioLinkChunks(chunks, { maxChunks = MAX_CHUNKS, currentMessageText = '', qualifier = null } = {}) {
+function isExistingClientThread({ leadStage, linkedUserId } = {}) {
+    if (linkedUserId) return true;
+    return ['in_app', 'paying'].includes(String(leadStage || '').toLowerCase());
+}
+
+function suppressExistingClientSignupLinkHandoffInDraftChunks(chunks, { leadStage, linkedUserId } = {}) {
+    const input = Array.isArray(chunks) ? chunks : [];
+    if (!isExistingClientThread({ leadStage, linkedUserId })) return input;
+    const cleaned = input
+        .map(chunk => {
+            const text = String(chunk || '').trim();
+            if (!text) return '';
+            if (!isSignupLinkHandoffText(text)) return text;
+            const sentences = text
+                .split(/(?<=[.!?])\s+|\n+/)
+                .map(part => part.trim())
+                .filter(Boolean)
+                .filter(part => !isSignupLinkHandoffText(part) && !/\b(?:download|grab|check(?:\s+this|\s+it)?|jump in|sign ?up)\b.{0,80}\b(?:app|balance|challenge|link)\b/i.test(part));
+            return sentences.join(' ').trim();
+        })
+        .filter(Boolean);
+    return cleaned;
+}
+
+function repairMissingChallengeBioLinkChunks(chunks, { maxChunks = MAX_CHUNKS, currentMessageText = '', qualifier = null, leadStage = null, linkedUserId = null } = {}) {
     const list = Array.isArray(chunks) ? chunks.map(c => String(c || '').trim()).filter(Boolean) : [];
     if (!list.length) return list;
+    if (isExistingClientThread({ leadStage, linkedUserId })) return list;
     const joined = list.join('\n');
     if (!promisesLinkWithoutUrl(joined)) return list;
     if (isAppReconnectOrAccountSupportRequest(currentMessageText)) return list;
 
-    const allowed = qualifier?.stage === 'won'
-        || hasChallengeInviteReadinessSignal(currentMessageText)
-        || (qualifier?.stage === 'pitched' && isPositiveChallengeLinkConfirmationText(currentMessageText));
+    const allowed = isCurrentChallengeHandoffMoment({ qualifier, currentMessage: currentMessageText });
     if (!allowed) return list;
 
     const url = challengeUrlForRoute(qualifier?.challenge_route || 'generic');
@@ -1175,9 +1403,7 @@ function repairMissingChallengeBioLinkChunks(chunks, { maxChunks = MAX_CHUNKS, c
 function isApprovedChallengeBioHandoffAllowed({ draftText, qualifier, currentMessage } = {}) {
     if (!isApprovedChallengeBioLinkText(draftText)) return false;
     if (isAppReconnectOrAccountSupportRequest(currentMessage)) return false;
-    if (qualifier?.stage === 'won') return true;
-    if (hasChallengeInviteReadinessSignal(currentMessage)) return true;
-    return qualifier?.stage === 'pitched' && isPositiveChallengeLinkConfirmationText(currentMessage);
+    return isCurrentChallengeHandoffMoment({ qualifier, currentMessage });
 }
 
 function isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId } = {}) {
@@ -1189,24 +1415,24 @@ function isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId } = {}) 
 function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linkedUserId, threadId, manychatMessageId, currentMessage }) {
     if (!isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId })) return null;
     const draftHasLinkDrop = isSignupLinkHandoffText(draftText);
-    const acceptedChallenge = qualifier?.stage === 'won';
-    if (!draftHasLinkDrop && !acceptedChallenge) return null;
+    const acceptedCoaching = isCurrentChallengeHandoffMoment({ qualifier, currentMessage });
+    if (!draftHasLinkDrop && !acceptedCoaching) return null;
 
     if (isApprovedChallengeBioHandoffAllowed({ draftText, qualifier, currentMessage })) {
         return {
             lead_onboarding_handoff: false,
             needs_you_required: false,
             operator_queue: null,
-            style_note: 'Approved bio link handoff can send once the lead has accepted or asked for the challenge next step.',
+            style_note: 'Approved coaching link handoff can send once the lead has accepted or asked for the next step.',
             signup_link_manual_only: false,
             signup_link_handoff_url: ONE_ON_ONE_COACHING_URL,
             approved_link_auto_sendable: true,
             codex_review: {
                 source: 'ig-instant-draft',
-                decision: 'approved_challenge_bio_link_handoff',
+                decision: 'approved_coaching_link_handoff',
                 queue: null,
                 needs_shannon_approval: false,
-                reason: 'Approved bio link handoff is allowed for this accepted/ready lead.',
+                reason: 'Approved coaching link handoff is allowed for this accepted/ready lead.',
                 evidence_ids: [threadId ? `ig_threads:${threadId}` : '', manychatMessageId ? `manychat_message_id:${manychatMessageId}` : ''].filter(Boolean),
                 reviewed_at: new Date().toISOString(),
             },
@@ -1214,8 +1440,8 @@ function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linke
     }
 
     const reason = draftHasLinkDrop
-        ? 'Draft contains a signup/invite link handoff; Shannon must approve or send it manually.'
-        : 'Lead appears ready for the signup/invite link; Shannon must approve the handoff before any URL is sent.';
+        ? 'Draft contains a coaching/signup link handoff; Shannon must approve or send it manually.'
+        : 'Lead appears ready for the coaching/signup link; Shannon must approve the handoff before any URL is sent.';
     const evidenceIds = [threadId ? `ig_threads:${threadId}` : '', manychatMessageId ? `manychat_message_id:${manychatMessageId}` : '']
         .filter(Boolean);
     return {
@@ -1223,7 +1449,7 @@ function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linke
         needs_you_required: false,
         operator_queue: null,
         client_manager_review_required: true,
-        style_note: 'Lead is near a Balance/app link step. Hold automatic sending until the client manager checks readiness and either approves the draft or hands it to Shannon.',
+        style_note: 'Lead is near a Balance coaching link step. Hold automatic sending until the client manager checks readiness and either approves the draft or hands it to Shannon.',
         signup_link_manual_only: true,
         signup_link_handoff_url: ONE_ON_ONE_COACHING_URL,
         codex_review: {
@@ -1286,9 +1512,9 @@ function buildAccountExperimentBlock(botAccount) {
 SHAN_N_SUNNY LEAD LANE:
 This thread belongs to Shannon's personal acquisition account.
 - Use the same Shannon voice, same relationship-first logic, and same lead safety gates as Balance.
-- Lead-only invite timing: do not pitch clients or linked app users. For unlinked leads, the soft free-challenge bridge usually belongs after 3-6 meaningful lead replies, a normal-life anchor, and at least two useful health/fitness facts.
-- Before 3 meaningful lead replies, only move to the free challenge if they directly ask for help, ask how to start, ask what is included, or ask for the link.
-- Earn the next response: each reply should answer the direct ask, mirror the sharpest hook, add a tiny useful lens, or ask one precise question about the real blocker/preference. Generic validation plus a broad question is not enough.
+- Lead-only invite timing: do not pitch clients or linked app users. For unlinked leads, the soft Starter Coaching bridge usually belongs after 3-6 meaningful lead replies, a normal-life anchor, and at least two useful health/fitness facts.
+- Before 3 meaningful lead replies, only move to coaching if they directly ask for help, ask how to start, ask what is included, ask about coaching, or ask for the link.
+- Earn the next response without interrogating: each reply should answer the direct ask, mirror the sharpest hook, add a tiny useful lens, give a strong specific reaction, or ask one precise question about the real blocker/preference. Generic validation plus a broad question is not enough, but light banter does not need a question every turn.
 - If they want a local/in-person trainer or already have a PT/coach, explore that preference before any invite or link.
 - When the earned window opens, stop drifting into pen-pal mode. Ask one casual permission bridge, do not send the link unless they accept.
 - Keep everything sounding like Shannon personally texting. Never mention tests, auto-send, algorithms, learning, or system rules.`;
@@ -1300,10 +1526,10 @@ COCO'S TEST LANE:
 This thread belongs to Coco's PT Studio, Shannon's contained acquisition test account.
 - Use the same Shannon voice, same relationship-first logic, and same safety review rules as Balance.
 - Do not become more cautious just because this lane may run on auto. Trust the conversation algorithm and keep the next message moving.
-- Shannon's hesitation/fear of rejection is not part of this lane. If the person gives a real help/start/fitness-frustration/coaching-detail signal, bridge confidently toward the free challenge instead of delaying forever.
-- Lead-only invite timing: do not pitch clients or linked app users. For unlinked leads, the soft free-challenge bridge usually belongs after 3-6 meaningful lead replies, a normal-life anchor, and at least two useful health/fitness facts.
-- Before 3 meaningful lead replies, only move to the free challenge if they directly ask for help, ask how to start, ask what is included, or ask for the link. Once the earned window opens, stop drifting into pen-pal mode and ask the simple permission bridge.
-- Earn the next response: each reply should answer the direct ask, mirror the sharpest hook, add a tiny useful lens, or ask one precise question about the real blocker/preference. Generic validation plus a broad question is not enough.
+- Shannon's hesitation/fear of rejection is not part of this lane. If the person gives a real help/start/fitness-frustration/coaching-detail signal, bridge confidently toward Starter Coaching instead of delaying forever.
+- Lead-only invite timing: do not pitch clients or linked app users. For unlinked leads, the soft Starter Coaching bridge usually belongs after 3-6 meaningful lead replies, a normal-life anchor, and at least two useful health/fitness facts.
+- Before 3 meaningful lead replies, only move to coaching if they directly ask for help, ask how to start, ask what is included, ask about coaching, or ask for the link. Once the earned window opens, stop drifting into pen-pal mode and ask the simple permission bridge.
+- Earn the next response without interrogating: each reply should answer the direct ask, mirror the sharpest hook, add a tiny useful lens, give a strong specific reaction, or ask one precise question about the real blocker/preference. Generic validation plus a broad question is not enough, but light banter does not need a question every turn.
 - If they want a local/in-person trainer or already have a PT/coach, explore that preference before any invite or link.
 - Still do not pitch from empty friendliness alone. Banter can stay banter. The point is natural momentum, not pressure.
 - Keep everything sounding like Shannon personally texting. Never mention tests, auto-send, algorithms, learning, or Coco's as a system.`;
@@ -1320,17 +1546,18 @@ function buildAcquisitionMomentumBlock({ botAccount, leadStage, linkedUserId } =
 
 ACQUISITION MOMENTUM (${laneName}):
 - Rapport is the on-ramp, not the destination. Do not keep the thread alive with more pet/work/weekend/hobby questions once the lead has named a food, training, energy, body, confidence, consistency, or time problem.
-- Use this decision order: answer their latest message, notice the strongest blocker or desire, then choose one next move: a tiny useful lens, one precise fit question, a direct free-challenge explanation, or a soft optional challenge bridge.
+- Apply this block only when there is a real acquisition signal or blocker to move. If the newest turn is pure banter, a food/photo reaction, a quick answer to Shannon's tiny question, or a clean closer, do not manufacture momentum with another question.
+- Use this decision order: answer their latest message, notice the strongest blocker or desire, then choose one next move: a tiny useful lens, one precise fit question, a direct Starter Coaching explanation, or a soft optional coaching bridge.
 - No-progression fix: before writing, label the lead's latest signal as one of direct ask, blocker/objection, reciprocal curiosity, early program start, exit/low bandwidth, or pure rapport. The reply must move that exact signal one notch forward.
 - Too-generic fix: build the reply from the lead's exact noun plus their constraint plus the consequence. Example: "two little ones + exhausted after work + dinner stress", "new city move + bookstore shifts + quiet/coffee shop", "conflicting info + meal prep time + overwhelm".
 - If they ask about Shannon, the app, work, a bug, weekend plans, or another reciprocal personal detail, answer in one short clause, then return the spotlight to their strongest life/health signal. Do not let Shannon's side become the main topic for a second consecutive reply.
 - If they object with chaos, moving, busyness, overwhelm, heat, schedule, or "not sure I can commit", do not loop on "totally fair/no pressure". Give one pressure-lowering reframe, then ask the smallest useful fit question or offer one tiny anchor.
 - If they say they got the program/app/challenge or just started, do not ask "how are you finding it?" Ask one specific first-friction question: what looks hardest to fit in this week, what has been easiest to start, or what will get in the way first.
 - If they are clearly leaving, do not force a question. Close warmly with a soft re-entry handle tied to their topic, like "catch ya, and if the move/work/heat starts messing with food, energy, or training, flick me a message".
-- Earn the next response. The reply needs a handle worth answering: a direct answer, their sharpest hook reflected back, a tiny useful lens, or one precise question about their blocker/preference/objection.
-- Avoid statement-only dead ends. Unless they are clearly closing the thread, do not finish with only agreement, a personal aside, or "hope it goes well". Give them one specific thing to answer from their exact topic.
+- Earn the next response without interrogating. The reply needs a handle worth answering: a direct answer, their sharpest hook reflected back, a tiny useful lens, a strong specific reaction, or one precise question about their blocker/preference/objection.
+- Avoid lazy statement-only dead ends when there is a live help/sales signal. A crisp reaction is not a dead end if they are bantering, celebrating, sending a food/photo update, answering a tiny question, or closing the thread.
 - One or two normal-life beats is usually enough. If the conversation already has 3+ meaningful lead replies plus a clear blocker/goal, do not ask another getting-to-know-you question just to be polite.
-- Good soft bridge shape: "honestly this is the kind of thing the free challenge can help with: [their exact blocker] without [their exact pain]. want me to send the details?"
+- Good soft bridge shape: "honestly this is the kind of thing starter coaching can help with: [their exact blocker] without [their exact pain]. want me to send the details?"
 - If they ask for practical advice, give the practical answer first. Then bridge only if it still feels natural.
 - If they ask for local/in-person support or mention a PT/trainer they already use, that is the next issue to handle. Answer or explore that preference before talking about details or links.
 - If there is no real blocker yet, stay human and light, but make the next handle sharper. Let the convo breathe only when they are clearly closing or low-bandwidth. Do not become a pen pal for its own sake.`;
@@ -1344,21 +1571,22 @@ ACQUISITION STYLE:
 - Human first, coach second, but not pen-pal forever. Learn a normal-life anchor when there is no clear help signal yet: where they're based, kids/family, work/life rhythm, cooking situation, training background, why they replied, what they really love, or what genuinely ticks them off/stresses them.
 - When a clear food, training, energy, body, confidence, consistency, or time blocker is already visible, stop collecting unrelated human context and move that exact blocker forward.
 - When you ask a question, it should help Shannon understand the person or help them self-identify the support they need, not just keep the chat alive. Normal back-and-forth is allowed, but it should create momentum.
-- Earn the next response. Every lead reply from Shannon should contain at least one reason for them to answer: a direct answer, their sharpest hook reflected back, a tiny useful lens, or one precise question about their blocker/preference/objection.
+- Shannon's real follow-up pattern from IG is: tiny acknowledgement, then one specific question from the exact newest detail. Use short concrete handles like "why by April?", "how long for?", "what part first?", "food or training?", "where at?", "how did that go?", or "what gets in the way?".
+- Earn the next response without interrogating. Every lead reply from Shannon should contain at least one reason to continue: a direct answer, their sharpest hook reflected back, a tiny useful lens, a strong specific reaction, or one precise question about their blocker/preference/objection.
 - shan_n_sunny weakness to correct: drafts can be too generic and fail to progress. Before finalising, check whether the reply would still fit 100 other leads. If yes, rewrite it around this person's exact thread and add one specific next handle. Do not settle for passive mirroring, generic praise, or "that makes sense" unless the moment is clearly closing.
 - Avoid weak generic discovery stems: "what kind of difference would that make?", "what usually makes it feel like such a struggle?", "anything in particular making it hectic?", "how are you finding it so far?", "does that actually help?", and "what does that look like for you?". Replace them with a forked, concrete question from their words: "is dinner harder because the kids reject stuff, or because you're cooked after work?", "is the move messing more with food, sleep, or training?", "what part of the program looks hardest to fit in this week?"
 - Do not describe an obvious thing back to them as the whole value. "busy weeks are tough", "sounds like a mission", "that's a tough one to navigate", and "black coffee is a classic" need a specific angle or should be cut.
 - Progression does not mean rushing the challenge offer. It means one useful inch forward: a concrete question, a tiny useful lens, a playful specific hook, or an earned soft permission bridge when their own words justify it.
-- Avoid statement-only dead ends unless they are clearly closing. If the current topic is food, group classes, a project, or skepticism about wellness fads, move that exact topic one notch deeper before switching to unrelated work/day chat.
+- Avoid lazy statement-only dead ends when there is a live help/sales signal. If the current topic is food, group classes, a project, or skepticism about wellness fads and they are clearly engaging, move that exact topic one notch deeper before switching to unrelated work/day chat. If it is just light banter or a quick update, a strong specific reaction can be enough.
 - Avoid validation loops. If the last Shannon reply already said "totally fair", "no stress", "that makes sense", or "hope it goes smoothly", the next reply must add a new angle: a micro-tip, a fit question, a reframe, or a soft future handle.
 - If they reveal something they love or something that annoys/stresses them, stay with that thread for a beat. Relate only if it is honest and light, then bring the spotlight back to them.
 - A relationship question does not have to be the last bubble. If it is sparked by a specific thing they said, ask it while talking about that thing, then continue the reply.
 - Do not bundle questions. Never ask name + age + goal + blocker together.
 - If the discovery question is about relationship context, ask one light version and stop. Do not tack on a fitness goal in the same reply.
-- If they are already asking how to join, accepted the challenge, or clearly want the link, move them forward with the short Balance-app explanation plus the next step instead of slowing them down with more questions.
+- If they are already asking how to join, accepted coaching, or clearly want the link, move them forward with the short Balance-app explanation plus the next step instead of slowing them down with more questions.
 - If they say they want local/in-person coaching, ask if Shannon's online 1:1 check-ins would still be useful before any invite or link. If they already have a PT/trainer/coach, answer how support could fit around that before pitching.
-- Do not drop a free challenge invite just because they are friendly, vaguely interested, or mention fitness/food. This timing rule is for unlinked leads only, not clients/app users. Wait for either a human signal ("I need help", "I dunno what I'm doing", "where do I start?", "what's included?", "send the link", or an obvious join/start request) or enough earned context for a soft bridge. Earned context means Shannon already has a normal-life anchor, useful goal/blocker context, and usually 3-6 meaningful lead replies. In that case explain the app setup first, ask if they want details only if they have not already asked, and do not send the link unless they accept.
-- When the soft bridge is right, make it fluid and specific. Avoid generic lines that say the offer is made for this exact situation. Use their words as the entry point: "since you're already [making this change], the challenge gives you the plan in Balance, XP for the daily bits, and me checking in..." or "if a bit of [structure/check-ins] would help, the app makes it a 30-day XP/leaderboard thing instead of a boring spreadsheet...". It should feel like Shannon noticed the opening, not like the funnel fired.
+- Do not drop a coaching invite just because they are friendly, vaguely interested, or mention fitness/food. This timing rule is for unlinked leads only, not clients/app users. Wait for either a human signal ("I need help", "I dunno what I'm doing", "where do I start?", "what's included?", "send the link", "coaching details", or an obvious join/start request) or enough earned context for a soft bridge. Earned context means Shannon already has a normal-life anchor, useful goal/blocker context, and usually 3-6 meaningful lead replies. In that case explain the app setup first, ask if they want details only if they have not already asked, and do not send the link unless they accept.
+- When the soft bridge is right, make it fluid and specific. Avoid generic lines that say the offer is made for this exact situation. Use their words as the entry point: "since you're already [making this change], starter coaching gives you the plan in Balance and me checking in once a week..." or "if a bit of structure would help, one weekly check-in keeps it from becoming another spreadsheet...". It should feel like Shannon noticed the opening, not like the funnel fired.
 - Once they have shared enough real context plus a clear blocker/goal, do not keep asking getting-to-know-you questions. Use a specific, optional bridge or useful next lens.`;
 }
 
@@ -1431,7 +1659,7 @@ function buildIgStoryReplyPromptContextBlock({ leadName, currentMessage = '', re
 STORY REPLY CONTEXT:
 ${rows.join('\n')}
 
-This is Shannon's story/post context, not ${leadName || 'the lead'}'s own message. Use it only to understand what they replied to. Do not write as if ${leadName || 'the lead'} logged, ate, posted, or said those story details unless their actual reply says so.\nIf this is clearly them replying to Shannon's native story opener or a comment Shannon left on their post, that is a normal send-back path. If the context is unclear, the message suggests confusion or AI suspicion, or the inbound includes media that needs inspection, do not guess a reply. Mark it for Needs You instead.`;
+This is Shannon's story/post context, not ${leadName || 'the lead'}'s own message. Use it only to understand what they replied to. Do not write as if ${leadName || 'the lead'} logged, ate, posted, or said those story details unless their actual reply says so. If visible text or a location sticker already names a place, treat that place as known. Do not ask where it is, where they are watching from, or where they are based from that story. If the visual story context already shows beach, ocean, sand, coast, or waterfront, do not ask whether they were on/at the beach.\nIf this is clearly them replying to Shannon's native story opener or a comment Shannon left on their post, that is a normal send-back path. If the context is unclear, the message suggests confusion or AI suspicion, or the inbound includes media that needs inspection, do not guess a reply. Mark it for Needs You instead.`;
 
 }
 
@@ -1455,6 +1683,9 @@ function latestNativeStoryOutreachMemory(thread) {
 function buildNativeStoryOutreachContextBlock(thread, leadName) {
     const latest = latestNativeStoryOutreachMemory(thread);
     if (!latest) return { block: '', summary: null };
+    const customData = thread?.custom_data && typeof thread.custom_data === 'object'
+        ? thread.custom_data
+        : {};
 
     const handle = compactStoryMemoryText(thread?.ig_username || leadName || latest.ig_username || '', 80);
     const description = compactStoryMemoryText(latest.story_description, 700);
@@ -1464,6 +1695,16 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
     const sharedFrom = compactStoryMemoryText(latest.shared_from_username, 80);
     const storyUrl = compactStoryMemoryText(latest.story_url, 300);
     const capturedAt = compactStoryMemoryText(latest.captured_at || latest.updated_at, 80);
+    const salesContext = (latest.sales_context && typeof latest.sales_context === 'object')
+        ? latest.sales_context
+        : ((customData.sales_context && typeof customData.sales_context === 'object') ? customData.sales_context : null);
+    const leadAcquisition = (customData.lead_acquisition && typeof customData.lead_acquisition === 'object')
+        ? customData.lead_acquisition
+        : null;
+    const primaryOffer = compactStoryMemoryText(
+        salesContext?.primary_offer || leadAcquisition?.primary_offer || customData.offer_path || latest.offer_path || '',
+        100
+    );
 
     const summary = {
         story_url: storyUrl || null,
@@ -1474,6 +1715,8 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
         shared_from_username: sharedFrom || null,
         sent_comment: sentComment || null,
         captured_at: capturedAt || null,
+        lead_origin: compactStoryMemoryText(latest.lead_origin || customData.lead_origin || leadAcquisition?.source || '', 120) || null,
+        offer_path: primaryOffer || null,
     };
     if (!description && !visibleText && !sentComment) return { block: '', summary };
 
@@ -1490,6 +1733,9 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
     }
     if (sentComment) lines.push(`Shannon's native story reply/comment: "${sentComment}"`);
     if (storyUrl) lines.push(`Story URL: ${storyUrl}`);
+    if (!thread?.linked_user_id && primaryOffer === 'balance_starter_coaching') {
+        lines.push('Sales context: story outreach lead. Voice priority: no sales script, brochure, or urgency. If real help/food/training/consistency signal appears, bridge to paid Balance Starter Coaching ($29.99/wk, no call, weekly check-in). Free challenge is fallback only.');
+    }
 
     return {
         summary,
@@ -1498,7 +1744,7 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
 NATIVE STORY OPENER CONTEXT:
 ${lines.join('\n')}
 
-Use this if the new message is replying to Shannon's native story opener. Do not pretend ${leadName || 'the lead'} said the story context themselves. If the story context identifies an animal as a cat, dog, rabbit, horse, or another species, keep that species exactly. If the species is unknown, stay neutral and never guess dog, cat, breed, or type from a pet name alone.`,
+Use this if the new message is replying to Shannon's native story opener. Do not pretend ${leadName || 'the lead'} said the story context themselves. Preserve the free-offer feel on the first reply: rapport, one useful hook, no hard pitch from empty friendliness. Keep Shannon's real texting voice above all sales context: short, specific, casual, built from their newest detail. For unlinked leads, bridge to paid Starter Coaching only after real help/fitness/food/consistency signal or enough earned context; free challenge is fallback. If the story context identifies an animal as a cat, dog, rabbit, horse, or another species, keep that species exactly. If the species is unknown, stay neutral and never guess dog, cat, breed, or type from a pet name alone. If visible story text or a location sticker already names a place, treat that place as known and do not ask where it is or where they are watching from. If the visual story context already shows beach, ocean, sand, coast, or waterfront, do not ask whether they were on/at the beach.`,
     };
 }
 
@@ -1535,6 +1781,50 @@ function suppressPetSpeciesGuessingInDraftChunks(chunks, { currentMessageText = 
             return out;
         })
         .filter(Boolean);
+}
+
+const STORY_LOCATION_TYPE_RE = /\b(?:beach|bay|creek|river|lake|mount|mt|mountain|lookout|point|headland|island|park|national\s+park|falls|waterfall|coast|coastal|harbour|harbor|marina|jetty|pier|hotel|resort|cafe|restaurant|bar|pub|club|stadium|arena|airport|station|suburb|city|town|village)\b/i;
+const STORY_BEACH_SCENE_RE = /\b(?:beach|ocean|sea|sand|sandy|shore|shoreline|coast|coastal|waterfront|surf|waves?)\b/i;
+const STORY_LOCATION_QUESTION_RE = /\b(?:(?:where(?:'s|s| is| was)?\s+(?:this|that|it|the\s+(?:view|beach|spot|place|sunset|sunrise))|where\s+(?:are|were)\s+you(?:\s+(?:watching|seeing|looking\s+at|staying|based))?(?:\s+(?:from|this|that|it))?|where\s+(?:is|was)\s+(?:this|that|it)|what(?:'s|s| is)\s+(?:this|that)\s+(?:place|spot|beach|view)|(?:are|were|was)\s+(?:you|that|this|it)\s+(?:on|at|by|near)\s+(?:the\s+)?(?:beach|ocean|water|waterfront|coast)|did\s+you\s+(?:grab|get|have)\s+(?:a\s+)?view\s+from\s+somewhere))\b[^?!.\n]*\?/i;
+
+function hasKnownStoryLocationContext({ currentMessageText = '', nativeStoryContextSummary = null } = {}) {
+    const rawStoryContext = extractIgStoryContextForPrompt(currentMessageText);
+    const visibleText = [
+        nativeStoryContextSummary?.story_visible_text,
+        rawStoryContext,
+    ].filter(Boolean).join(' ');
+    if (STORY_LOCATION_TYPE_RE.test(visibleText)) return true;
+
+    const broaderContext = [
+        nativeStoryContextSummary?.story_description,
+        nativeStoryContextSummary?.sent_comment,
+    ].filter(Boolean).join(' ');
+    if (STORY_BEACH_SCENE_RE.test(broaderContext)) return true;
+    return /\b(?:location\s+(?:tag|sticker)|tagged|at)\b.{0,80}/i.test(broaderContext)
+        && STORY_LOCATION_TYPE_RE.test(broaderContext);
+}
+
+function suppressStoryLocationQuestionsInDraftChunks(chunks, { currentMessageText = '', nativeStoryContextSummary = null } = {}) {
+    if (!hasKnownStoryLocationContext({ currentMessageText, nativeStoryContextSummary })) {
+        return Array.isArray(chunks) ? chunks : [];
+    }
+    const input = Array.isArray(chunks) ? chunks : [];
+    const cleaned = input
+        .map(chunk => {
+            const out = stripQuestionSentence(chunk, STORY_LOCATION_QUESTION_RE);
+            return out || String(chunk || '').replace(STORY_LOCATION_QUESTION_RE, '').trim();
+        })
+        .filter(Boolean);
+    if (cleaned.length || !input.length) return cleaned;
+
+    const contextText = [
+        currentMessageText,
+        nativeStoryContextSummary?.story_description,
+        nativeStoryContextSummary?.story_visible_text,
+    ].filter(Boolean).join(' ');
+    return [/\b(?:view|beach|sunset|sunrise|ocean|sea|coast|waterfront)\b/i.test(contextText)
+        ? 'that view is unreal'
+        : 'looks like a good spot'];
 }
 
 const PET_NAME_QUESTION_RE = /\b(?:what(?:'s|s| is)|what are)\s+(?:their|the|your|these|those)\s+names?\b/i;
@@ -1717,6 +2007,7 @@ function countWords(text) {
 
 function normalizedShortAnswerText(text) {
     return plainSignalText(text)
+        .replace(/[‘’]/g, "'")
         .toLowerCase()
         .replace(/[^a-z0-9'\s]/g, ' ')
         .replace(/\s+/g, ' ')
@@ -1751,6 +2042,48 @@ function buildCurrentTurnAnchorBlock({ currentMessageText, lastShannonText } = {
         lines.push("- This is a short answer/confirmation. Treat it as answering Shannon's immediately previous message. A one-liner is usually enough; do not reopen older emotions, app issues, or banter unless the short answer clearly points there.");
     }
     return `\n${lines.join('\n')}`;
+}
+
+function normalizeStoryOpenerConfusionText(text) {
+    return plainSignalText(text)
+        .replace(/[‘’]/g, "'")
+        .replace(/[“”]/g, '"')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function isStoryOpenerConfusionMessage(text) {
+    const normalized = normalizeStoryOpenerConfusionText(text);
+    if (!normalized) return false;
+    return STORY_OPENER_CONFUSION_RE.test(normalized)
+        || SHORT_STORY_OPENER_CONFUSION_RE.test(normalized);
+}
+
+function buildNativeStoryConfusionRepairBlock({ currentMessageText = '', nativeStoryOutreachContext = null } = {}) {
+    const summary = nativeStoryOutreachContext?.summary || null;
+    const sentComment = String(summary?.sent_comment || '').trim();
+    if (!summary || !sentComment || !isStoryOpenerConfusionMessage(currentMessageText)) return '';
+
+    const storyDescription = String(summary.story_description || '').trim();
+    const visibleText = String(summary.story_visible_text || '').trim();
+    const sharedFrom = String(summary.shared_from_username || '').trim();
+    const contextLines = [
+        `- Shannon's confusing native story opener was: "${truncate(sentComment, 220)}"`,
+        storyDescription ? `- Story context: ${truncate(storyDescription, 280)}` : '',
+        visibleText ? `- Visible story text: ${truncate(visibleText, 220)}` : '',
+        sharedFrom ? `- It may have been shared/reposted content from @${truncate(sharedFrom, 80)}.` : '',
+    ].filter(Boolean).join('\n');
+
+    return `
+
+NATIVE STORY OPENER CONFUSION REPAIR:
+${contextLines}
+- Their latest message says they do not understand what Shannon meant.
+- First repair the confusion in plain language, for example "ah my bad, I meant..." or "sorry, I meant..."
+- If they mention it was only a repost/share, acknowledge that and do not write as if they personally posted or did the thing.
+- If their same message also answers the opener, briefly acknowledge that answer after the repair.
+- Do not ask a fresh qualifier, goal, age, blocker, challenge, app, or coaching question in this turn.
+- Usually stop after one short repair/acknowledgement bubble. Only add a tiny follow-up if it is needed to clarify the same story opener, not to advance the funnel.`;
 }
 
 function hasProgramSupportIntent(text) {
@@ -1829,6 +2162,9 @@ QUICK CLIENT SUPPORT MODE:
 They are already an app or challenge client and this looks like a program, plan, workout, meal, schedule, or app support request.
 - Answer the practical thing first.
 - Do not turn it into onboarding or a qualifier question.
+- If this is an app bug/problem, the real job is fix it, check it, and confirm it. Do not tell them to try again later.
+- Do not ask for a screenshot by default. Only ask for one when the message and app context are not enough to identify what is broken.
+- Do not claim it is fixed unless the context says Shannon has already fixed and verified it.
 - If Shannon needs more info before changing something, ask for the one missing detail.`,
         };
     }
@@ -1960,6 +2296,8 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
         photoUrlCount,
         audioUrlCount,
         videoUrlCount,
+        audioTranscriptCount,
+        audioTranscripts,
         reelContextText,
         reelContextCount,
         reelThumbnailCount,
@@ -1997,6 +2335,14 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
         photo_inline_count: imageParts.length,
         audio_url_count: audioUrlCount,
         audio_inline_count: audioParts.length,
+        audio_transcript_count: audioTranscriptCount || 0,
+        audio_transcripts: (audioTranscripts || [])
+            .filter(item => item?.text || item?.error)
+            .map(item => ({
+                text: item.text || '',
+                error: item.error || '',
+                model: item.model || null,
+            })),
         video_url_count: videoUrlCount,
         video_inline_count: videoParts.length,
         reel_context_count: reelContextCount || 0,
@@ -2074,7 +2420,7 @@ Use this batch as context, not a checklist. First decide what is still live: dir
     // still 'new' — linked_user_id is the truth, the column lags.
     const isOnboardedOrPostFunnel = !isSalesLeadThread;
     const funnelContext = isOnboardedOrPostFunnel ? '' : META_AD_FUNNEL_CONTEXT;
-    const challengeNextStepBlock = buildChallengeNextStepBlock(qualifier, currentMessageText);
+    const challengeNextStepBlock = isOnboardedOrPostFunnel ? '' : buildChallengeNextStepBlock(qualifier, currentMessageText);
     const oneOnOneCoachingBlock = isOnboardedOrPostFunnel ? '' : buildOneOnOneCoachingBlock();
     const qualifierRelationshipBlock = buildQualifierRelationshipBlock(qualifier);
 
@@ -2157,12 +2503,22 @@ Treat this as the SAME relationship as the ${channelLabel} thread below. Don't a
             previousCreatedAt: mergedConversationEvents[i - 1]?.created_at,
             now: promptNow,
         })).join('\n');
+    const exerciseLibrarySupportBlock = buildExerciseLibrarySupportBlock({
+        currentMessage: currentMessageText,
+        conversationText: totalConversationText,
+        recentInboundMessages,
+    });
     const lastShannonConversationEvent = [...mergedConversationEvents].reverse()
         .find(event => event.speaker === 'Shannon');
     const currentTurnAnchorBlock = buildCurrentTurnAnchorBlock({
         currentMessageText,
         lastShannonText: lastShannonConversationEvent?.text || '',
     });
+    const nativeStoryConfusionRepairBlock = buildNativeStoryConfusionRepairBlock({
+        currentMessageText,
+        nativeStoryOutreachContext,
+    });
+    const effectiveQualifierQuestion = nativeStoryConfusionRepairBlock ? null : qualifierQuestion;
 
     // Prior-draft block: when Shannon had a Send-later draft queued and the
     // lead messaged again before it fired, the main handler canceled the
@@ -2215,7 +2571,7 @@ There is no reliable prior DM context in the system. Usually Shannon has already
 GREETING RULE:
 ${dailyGreetingPolicyBlock}
 
-This is ${channelShort}. ${replyMode.styleRule} No emojis unless they used one first. No links unless absolutely necessary. Sound like a person texting back, not a brand.
+This is ${channelShort}. ${replyMode.styleRule} Use contractions so the reply sounds like Shannon talking: it's, I'd, wouldn't, don't, can't, you're. No emojis unless they used one first. No links unless absolutely necessary. Sound like a person texting back, not a brand.
 ${nameUsePolicy}
 ${relationshipDiscovery}
 ${heardFirstConversation}
@@ -2228,6 +2584,7 @@ ${firstCapturedLeadReplyBlock}
 ${replyMode.extraBlock}
 ${nativeStoryOutreachContext?.block || ''}
 ${currentTurnAnchorBlock}
+${nativeStoryConfusionRepairBlock}
 ${checkinThreadBlock}
 ${learningReelContextBlock}
 
@@ -2243,7 +2600,7 @@ CONVERSATION RESPONSIBILITY:
 - If they admit they have been "slacking", off track, missed training, or had a rough week, don't reply with filler like "ahh yeah man" on its own, don't ask "wby"/"what about you", and don't repeat the same broad question. Validate lightly, then ask one concrete follow-up about what got in the way or what small session they can lock in next.
 - The funnel should feel invisible. It can take hours or months. One smooth human question beats a forced qualifier or pitch.
 - Do not default to a question. Use a question only when it is the most natural next text. If they are bantering, answering a previous question, or sending a quick update, a short reaction can be the whole reply.
-- If Shannon asked whether someone was okay after a sad animal/pet story and they reply that they are okay but the animals are not, treat that as the answer. Do not ask "what happened to them" or mine the sad story for details. Acknowledge the cruelty/heartbreak, then if a question is useful bridge through values instead: how long they have been vegan/plant-based, what got them into it, or later how they go with fitness. Once vegan values plus fitness context are warm, a soft free-challenge invite can be earned.
+- If Shannon asked whether someone was okay after a sad animal/pet story and they reply that they are okay but the animals are not, treat that as the answer. Do not ask "what happened to them" or mine the sad story for details. Acknowledge the cruelty/heartbreak, then if a question is useful bridge through values instead: how long they have been vegan/plant-based, what got them into it, or later how they go with fitness. Once vegan values plus fitness context are warm, a soft Starter Coaching invite can be earned.
 - If they answer a pet-name question with just a name, use the native story context and/or known memory for the species. Do not ask what kind of dog/cat/breed it is unless the species is explicit and that question is genuinely needed. A short reaction like "nero is cute" is enough.
 - If dog/pet names, ownership, house-sitting status, or house-sitting timing are already in the timeline, do not ask for them again. Acknowledge the known names or give a clean reaction, then stop or move to a more useful thread.
 - Do not comment on their emoji usage as a topic. Emojis are tone only.
@@ -2277,6 +2634,7 @@ ${coachBio}
 ${coachDayContextBlock}
 ${appNavigationGuide}
 ${appXpGuide}
+${exerciseLibrarySupportBlock}
 ${funnelContext}
 ${challengeNextStepBlock}
 ${oneOnOneCoachingBlock}
@@ -2301,9 +2659,9 @@ CURRENT TIME (Australia/Brisbane): ${promptNowText}. Use the message timestamps 
 
 THEIR NEW MESSAGE (just arrived around ${promptNowText}):
 ${currentMessageText}${mediaInstruction ? ` ${mediaInstruction}` : ''}${editExamples}
-${qualifierQuestion ? `
+${effectiveQualifierQuestion ? `
 IMPORTANT — CONVERSATIONAL DISCOVERY:
-Use this question only if it naturally fits this exact reply: "${qualifierQuestion}"
+Use this question only if it naturally fits this exact reply: "${effectiveQualifierQuestion}"
 This is guidance, not a command. If the latest message is only thanks/emoji/filler, closing, a genuinely short no-response-needed reply, or a current safety/medical/rehab advice situation, skip it. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is normal rapport when the reply stays non-medical. If it is a first/early story/post reply with anything more than that, use the question or rewrite it around that topic so the reply earns the next response. If you do use it, ask only that one light question. When the reply has several things to answer, weave the question into the reflection that sparked it instead of defaulting to a standalone final bubble. Do not add a goal, age, blocker, or coaching pitch in the same reply.
 If the question sounds generic or ignores a fresher detail from their latest message, rewrite it around that detail or skip the question. Never paste a stock line like "what does a normal day look like", "are you much of a cook or more of a takeaway person", "you training at the moment", or "what are your goals" into an auto-DM draft.
 ` : ''}
@@ -2413,6 +2771,8 @@ Rules:
         leadName,
         currentMessageText,
         qualifier,
+        leadStage,
+        linkedUserId,
         nativeStoryContextSummary: nativeStoryOutreachContext?.summary || null,
         knownContextText: totalConversationText,
         hasDecodedMedia,
@@ -2432,6 +2792,8 @@ Rules:
             replyMode,
             allowDailyGreeting,
             qualifier,
+            leadStage,
+            linkedUserId,
             nativeStoryContextSummary: nativeStoryOutreachContext?.summary || null,
         });
         if (recovery.chunks.length) {
@@ -2458,6 +2820,19 @@ Rules:
                 recovered_at: new Date().toISOString(),
             };
         }
+    }
+    if (isAudioPuntDraftChunks(cleanedChunks, { mediaDecode, currentMessageText })) {
+        const fallbackChunks = buildEmptyMediaDraftFallbackChunks({ mediaDecode, currentMessageText });
+        cleanedChunks = fallbackChunks;
+        model = `${String(model || 'none')}+audio-punt-guard`;
+        emptyDraftRecovery = {
+            recovered: fallbackChunks.length > 0,
+            via: 'audio_punt_guard',
+            model: null,
+            error: 'audio_draft_punted_instead_of_answering',
+            recovered_at: new Date().toISOString(),
+        };
+        lastError = `${lastError ? lastError + ' | ' : ''}audio_draft_punted_instead_of_answering`;
     }
     if (!cleanedChunks.length) {
         const fallbackChunks = buildEmptyMediaDraftFallbackChunks({ mediaDecode, currentMessageText });
@@ -2495,12 +2870,14 @@ Rules:
         reelThumbnailCount,
         urlCount: photoUrlCount,
         audioUrlCount,
+        audioTranscriptCount,
         videoUrlCount,
         mediaDecode,
         timeline: totalConversationText,
         currentTurnAnchorBlock,
         storyReplyPromptContextBlock,
         nativeStoryOutreachContextBlock: nativeStoryOutreachContext?.block || '',
+        nativeStoryConfusionRepairBlock,
         mediaContextPromptBlock,
         learningReelContextBlock,
         learningReelReplyAnchorBlock,
@@ -2596,11 +2973,11 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
             : '';
         const autoHoldWarning = autoHoldReason
             ? (autoHoldReason.code === 'challenge_offer'
-                ? `${challengeOfferWarning?.label || 'free challenge invite'} in this draft. Review before sending.`
+                ? `${challengeOfferWarning?.label || 'coaching invite'} in this draft. Review before sending.`
                 : `🔴 AI stopped auto-send: ${autoHoldReason.label}. Review before sending.`)
             : '';
         const challengeOfferPushWarning = challengeOfferActive
-            ? `${challengeOfferWarning.dot || '🟡'} ${challengeOfferWarning.label || 'free challenge invite'} in this draft. Review before sending.`
+            ? `${challengeOfferWarning.dot || '🟡'} ${challengeOfferWarning.label || 'coaching invite'} in this draft. Review before sending.`
             : '';
         const body = autoHoldWarning || mediaWarning || contextWarning || challengeOfferPushWarning || (hasDraft
             ? formatPushBody({ qualifier, draftText: truncate(draftText, 220), eligible: qualifierEligible })
@@ -2749,8 +3126,20 @@ exports.handler = async (event) => {
     const botAccount = thread.custom_data?.bot_account || thread.custom_data?.instagram_graph?.bot_account || '';
     const algorithmFork = algorithmForkForBotAccount(botAccount);
     const cocosAutoSendLane = isCocosBotAccount(botAccount);
+    const voiceReplyTestLane = isCocosToShanSunnyVoiceTest({
+        botAccount,
+        igUsername: thread.ig_username,
+        customData: thread.custom_data,
+    });
+    const voiceReplyTestReason = voiceReplyTestLane
+        ? resolveCocosShanSunnyVoiceTestReason({
+            botAccount,
+            igUsername: thread.ig_username,
+            customData: thread.custom_data,
+        })
+        : '';
     const balanceAutoSendCandidate = !!thread.auto_send_enabled;
-    const autoSendEnabled = cocosAutoSendLane;
+    const autoSendEnabled = cocosAutoSendLane || voiceReplyTestLane;
 
     // Idempotency — when ManyChat supplied a message_id, reuse it. Otherwise
     // fall back to thread+timestamp (less robust but better than nothing
@@ -2844,6 +3233,7 @@ exports.handler = async (event) => {
         profile_name: thread.profile_name,
         ig_username: thread.ig_username,
         username: thread.ig_username,
+        custom_data: thread.custom_data,
     });
     const history = await loadIgHistory(threadId, messageText);
 
@@ -3128,6 +3518,7 @@ exports.handler = async (event) => {
             currentTurnAnchorBlock: '',
             storyReplyPromptContextBlock: '',
             nativeStoryOutreachContextBlock: nativeStoryOutreachContext?.block || '',
+            nativeStoryConfusionRepairBlock: '',
             learningReelContextBlock,
             learningReelReplyAnchorBlock,
             learningReelEvidenceBlock,
@@ -3229,6 +3620,7 @@ exports.handler = async (event) => {
         manychatMessageId,
         currentMessage: displayMessage,
     });
+    const approvedCoachingLinkHandoff = leadOnboardingHandoffData?.approved_link_auto_sendable === true;
     if (leadOnboardingHandoffData?.client_manager_review_required) {
         challengeOfferWarning = {
             ...(challengeOfferWarning || {}),
@@ -3312,6 +3704,11 @@ exports.handler = async (event) => {
             lead_stage: effectiveLeadStage || thread.lead_stage || 'new',
             auto_send_enabled_at_draft: autoSendEnabled,
             auto_send_default_reason: cocosAutoSendLane ? 'cocos_auto_lane' : undefined,
+            auto_send_allow_immediate: voiceReplyTestLane || approvedCoachingLinkHandoff || undefined,
+            outbound_voice_message: voiceReplyTestLane || undefined,
+            outbound_voice_message_reason: voiceReplyTestReason || undefined,
+            elevenlabs_voice_id: voiceReplyTestLane ? 'UHnJrglEof8vTMenwnVm' : undefined,
+            elevenlabs_voice_name: voiceReplyTestLane ? 'Shannon Balance Professional 20260606' : undefined,
             manychat_message_id: manychatMessageId || null,
             message_preview: truncate(displaySourceMessage, 400),
             last_outbound_message: lastOutboundMessage,
@@ -3341,6 +3738,7 @@ exports.handler = async (event) => {
             image_inline_count: draft.imageCount || 0,
             audio_url_count: draft.audioUrlCount || 0,
             audio_inline_count: draft.audioCount || 0,
+            audio_transcript_count: draft.audioTranscriptCount || 0,
             video_url_count: draft.videoUrlCount || 0,
             video_inline_count: draft.videoCount || 0,
             media_decode: draft.mediaDecode || null,
@@ -3371,6 +3769,7 @@ exports.handler = async (event) => {
                 recent_timeline: truncateTail(draft.timeline || '', 4000),
                 story_context: truncate(String(draft.storyReplyPromptContextBlock || '').trim(), 1400),
                 native_story_context: truncate(String(draft.nativeStoryOutreachContextBlock || '').trim(), 1400),
+                native_story_confusion_repair: truncate(String(draft.nativeStoryConfusionRepairBlock || '').trim(), 1400),
                 media_context: truncate(String(draft.mediaContextPromptBlock || '').trim(), 1800),
                 learning_reel_context: truncate(String(draft.learningReelEvidenceBlock || draft.learningReelContextBlock || '').trim(), 1800),
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
@@ -3457,6 +3856,17 @@ exports.handler = async (event) => {
             algorithm_fork: algorithmFork,
             auto_send_enabled_at_draft: autoSendEnabled,
             auto_send_default_reason: cocosAutoSendLane ? 'cocos_auto_lane' : existingPending.data?.auto_send_default_reason,
+            auto_send_allow_immediate: voiceReplyTestLane || approvedCoachingLinkHandoff || existingPending.data?.auto_send_allow_immediate || undefined,
+            outbound_voice_message: voiceReplyTestLane || existingPending.data?.outbound_voice_message || undefined,
+            outbound_voice_message_reason: voiceReplyTestLane
+                ? voiceReplyTestReason
+                : existingPending.data?.outbound_voice_message_reason || undefined,
+            elevenlabs_voice_id: voiceReplyTestLane
+                ? 'UHnJrglEof8vTMenwnVm'
+                : existingPending.data?.elevenlabs_voice_id || undefined,
+            elevenlabs_voice_name: voiceReplyTestLane
+                ? 'Shannon Balance Professional 20260606'
+                : existingPending.data?.elevenlabs_voice_name || undefined,
             draft_messages: draft.chunks,
             draft_text: draft.joined,
             draft_model: draft.model,
@@ -3470,6 +3880,7 @@ exports.handler = async (event) => {
             image_inline_count: draft.imageCount || 0,
             audio_url_count: draft.audioUrlCount || 0,
             audio_inline_count: draft.audioCount || 0,
+            audio_transcript_count: draft.audioTranscriptCount || existingPending.data?.audio_transcript_count || 0,
             video_url_count: draft.videoUrlCount || 0,
             video_inline_count: draft.videoCount || 0,
             media_decode: draft.mediaDecode || existingPending.data?.media_decode || null,
@@ -3503,6 +3914,10 @@ exports.handler = async (event) => {
                 recent_workouts: truncate(recentWorkoutEvidence || '', 2000),
                 recent_activity: truncate(weeklyAppContext || '', 3000),
                 recent_timeline: truncateTail(draft.timeline || '', 4000),
+                story_context: truncate(String(draft.storyReplyPromptContextBlock || '').trim(), 1400),
+                native_story_context: truncate(String(draft.nativeStoryOutreachContextBlock || '').trim(), 1400),
+                native_story_confusion_repair: truncate(String(draft.nativeStoryConfusionRepairBlock || '').trim(), 1400),
+                media_context: truncate(String(draft.mediaContextPromptBlock || '').trim(), 1800),
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
                 learning_reel_context: truncate(String(draft.learningReelEvidenceBlock || draft.learningReelContextBlock || '').trim(), 1800),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
@@ -3862,12 +4277,19 @@ exports.handler = async (event) => {
             linkedUserId: thread.linked_user_id,
             meaningfulLeadReplyCount,
             contextBypass: autoContextBypass,
+            alertData: currentAlertData,
         })
         : null;
     if (!autoHoldReason && autoSendEnabled && blockedStage) {
         autoHoldReason = {
             code: 'blocked_stage',
             label: 'lead is churned',
+        };
+    }
+    if (!autoHoldReason && autoSendEnabled && permanentNeedsYouClient) {
+        autoHoldReason = {
+            code: 'always_needs_you_person',
+            label: 'permanent Needs You client',
         };
     }
     if (!autoHoldReason && autoSendEnabled && isDirectGraphManual) {
@@ -4084,6 +4506,8 @@ exports._test = {
     buildAcquisitionMomentumBlock,
     suppressAlreadyKnownContextQuestionsInDraftChunks,
     suppressPetSpeciesGuessingInDraftChunks,
+    suppressStoryLocationQuestionsInDraftChunks,
+    hasKnownStoryLocationContext,
     getCocosAutoContextBypass,
     getBalanceAutoContextBypass,
     getAutoDmHoldReason,
@@ -4095,6 +4519,17 @@ exports._test = {
     buildLeadOnboardingHandoffData,
     finalizeDraftChunksFromRawText,
     repairMissingChallengeBioLinkChunks,
+    suppressExistingClientSignupLinkHandoffInDraftChunks,
+    isExistingClientThread,
     buildChallengeNextStepBlock,
+    buildCommentResourceContextFromFulfillment,
+    buildCommentResourceHandoffBlock,
     buildEmptyMediaDraftFallbackChunks,
+    isAudioPuntDraftText,
+    isAudioPuntDraftChunks,
+    buildCurrentTurnAnchorBlock,
+    isStoryOpenerConfusionMessage,
+    buildNativeStoryConfusionRepairBlock,
+    normalizeIgAutoTimingSuggestion,
+    isCocosToShanSunnyVoiceTest,
 };

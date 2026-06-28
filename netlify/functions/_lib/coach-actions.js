@@ -95,6 +95,26 @@ function shortHash(value) {
     return Math.abs(hash).toString(36).slice(0, 7);
 }
 
+function parseWeekNumber(value) {
+    const text = String(value || '').toLowerCase().trim();
+    if (/^\d+$/.test(text)) return Number(text);
+    const words = {
+        one: 1, first: 1,
+        two: 2, second: 2,
+        three: 3, third: 3,
+        four: 4, fourth: 4,
+        five: 5, fifth: 5,
+        six: 6, sixth: 6,
+        seven: 7, seventh: 7,
+        eight: 8, eighth: 8,
+        nine: 9, ninth: 9,
+        ten: 10, tenth: 10,
+        eleven: 11, eleventh: 11,
+        twelve: 12, twelfth: 12,
+    };
+    return words[text] || null;
+}
+
 function titleCaseExercise(value) {
     const keepLower = new Set(['and', 'of', 'to', 'with', 'the', 'a', 'an']);
     return String(value || '')
@@ -231,6 +251,53 @@ function detectRegenerateWorkoutProgramActionFromText(text) {
         label: targetDays.length
             ? `Regenerate program for ${targetDays.join('/')}`
             : 'Regenerate workout program',
+        payload,
+    };
+}
+
+function extractProgramWeekResetRequest(instruction) {
+    const normalized = String(instruction || '').toLowerCase().replace(/[\u2019']/g, "'");
+    if (!normalized.trim()) return null;
+
+    const hasProgramContext = /\b(program|programme|plan|training|workout|workouts?|schedule|block)\b/.test(normalized);
+    const hasResetIntent = /\b(back\s+to|restart|starting?|start|begin|commence|reset|redo|repeat|go\s+back|pick\s+up|jump\s+in)\b/.test(normalized);
+    if (!hasProgramContext || !hasResetIntent) return null;
+
+    const weekPattern = /\bweek\s+(?:#\s*)?(\d{1,2}|one|first|two|second|three|third|four|fourth|five|fifth|six|sixth|seven|seventh|eight|eighth|nine|ninth|ten|tenth|eleven|eleventh|twelve|twelfth)\b/i;
+    const weekMatch = instruction.match(weekPattern);
+    if (!weekMatch) return null;
+    const targetWeek = parseWeekNumber(weekMatch[1]);
+    if (!targetWeek || targetWeek < 1 || targetWeek > 16) return null;
+
+    const dayMentions = extractDayMentions(normalized);
+    const startDayMatch = normalized.match(new RegExp(`\\b(?:start(?:ing)?|begin|from|on)\\b.{0,30}?\\b(${dayPatternSource()})\\b`, 'i'));
+    const targetDay = normalizeDay(startDayMatch?.[1]) || dayMentions[0]?.day || '';
+
+    return {
+        targetWeek,
+        targetDay,
+    };
+}
+
+function detectSetProgramWeekActionFromText(text) {
+    const instruction = cleanInstruction(text);
+    if (!instruction) return null;
+    const request = extractProgramWeekResetRequest(instruction);
+    if (!request) return null;
+
+    const payload = {
+        target_week: request.targetWeek,
+        instruction,
+        ...(request.targetDay ? { target_day: request.targetDay, day: request.targetDay } : {}),
+    };
+    return {
+        id: makeGenericActionId('set_program_week', payload),
+        type: 'set_program_week',
+        status: 'pending',
+        source: 'dm_intent_detector',
+        label: request.targetDay
+            ? `Set program to week ${request.targetWeek} from ${request.targetDay}`
+            : `Set program to week ${request.targetWeek}`,
         payload,
     };
 }
@@ -390,7 +457,10 @@ function detectProposedCoachActions({ messageText, recentInboundMessages = [] } 
         const regenerateAction = (!moveAction && !exerciseAction)
             ? detectRegenerateWorkoutProgramActionFromText(text)
             : null;
-        [moveAction, exerciseAction, regenerateAction].forEach(action => {
+        const setProgramWeekAction = (!moveAction && !exerciseAction && !regenerateAction)
+            ? detectSetProgramWeekActionFromText(text)
+            : null;
+        [moveAction, exerciseAction, regenerateAction, setProgramWeekAction].forEach(action => {
             if (action && !actions.some(a => a.id === action.id)) actions.push(action);
         });
     });

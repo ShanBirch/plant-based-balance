@@ -5,6 +5,9 @@ const {
     buildLeadOnboardingHandoffData,
     finalizeDraftChunksFromRawText,
     buildChallengeNextStepBlock,
+    repairMissingChallengeBioLinkChunks,
+    suppressExistingClientSignupLinkHandoffInDraftChunks,
+    isExistingClientThread,
 } = require('../netlify/functions/ig-instant-draft')._test;
 const scheduledWorker = require('../netlify/functions/scheduled-coach-reply-worker')._test;
 
@@ -16,6 +19,7 @@ assert.strictEqual(isSignupLinkHandoffText('want me to send you the details?'), 
 
 const accepted = buildLeadOnboardingHandoffData({
     draftText: "i'll send the link through for you now",
+    currentMessage: 'yeah sounds good',
     qualifier: { stage: 'won' },
     leadStage: 'qualifying',
     linkedUserId: null,
@@ -53,7 +57,7 @@ const repairedChunks = finalizeDraftChunksFromRawText(
         currentMessageText: 'yeah sounds good',
     }
 );
-assert.match(repairedChunks.join('\n'), /https:\/\/future-balance\.netlify\.app\/bio\.html/);
+assert.match(repairedChunks.join('\n'), /https:\/\/future-balance\.netlify\.app\/coaching\.html/);
 
 const supportChunks = finalizeDraftChunksFromRawText(
     JSON.stringify({ messages: ["sounds good mate", "here's the link, check it out and download the app"] }),
@@ -62,19 +66,92 @@ const supportChunks = finalizeDraftChunksFromRawText(
         currentMessageText: 'Can I be reconnected with the balance app helper?',
     }
 );
-assert.doesNotMatch(supportChunks.join('\n'), /future-balance\.netlify\.app\/bio\.html/);
+assert.doesNotMatch(supportChunks.join('\n'), /future-balance\.netlify\.app\/coaching\.html/);
 
 const supportBlock = buildChallengeNextStepBlock(
     { stage: 'won', challenge_route: 'generic' },
     'Can I be reconnected with balance app helper?'
 );
 assert.match(supportBlock, /APP SUPPORT NEXT STEP/);
-assert.doesNotMatch(supportBlock, /future-balance\.netlify\.app\/bio\.html/);
+assert.doesNotMatch(supportBlock, /future-balance\.netlify\.app\/coaching\.html/);
+
+assert.strictEqual(
+    isExistingClientThread({ leadStage: 'qualifying', linkedUserId: 'client-miranda' }),
+    true,
+    'linked_user_id is the source of truth for existing-client IG threads'
+);
+
+const mirandaClientChunks = finalizeDraftChunksFromRawText(
+    JSON.stringify({
+        messages: [
+            "Hahaha love it. You're basically using the app as a competition tracker now",
+            "Stoked though. Check this for the coaching info + how Balance works, then come back and chat here: https://future-balance.netlify.app/coaching.html",
+        ],
+    }),
+    {
+        qualifier: { stage: 'won' },
+        currentMessageText: 'mentioned you in a story photo',
+        leadStage: 'in_app',
+        linkedUserId: 'client-miranda',
+    }
+);
+assert.match(mirandaClientChunks.join('\n'), /competition tracker/);
+assert.doesNotMatch(mirandaClientChunks.join('\n'), /future-balance\.netlify\.app\/coaching\.html|download it|quick challenge/i);
+
+assert.deepStrictEqual(
+    repairMissingChallengeBioLinkChunks(["love it", "here's the link, download the app"], {
+        qualifier: { stage: 'won' },
+        currentMessageText: 'yeah sounds good',
+        leadStage: 'in_app',
+        linkedUserId: 'client-miranda',
+    }),
+    ["love it", "here's the link, download the app"],
+    'existing-client link repair must not append the coaching URL'
+);
+
+assert.deepStrictEqual(
+    suppressExistingClientSignupLinkHandoffInDraftChunks([
+        "love it. here's the link: https://future-balance.netlify.app/coaching.html",
+    ], {
+        linkedUserId: 'client-miranda',
+    }),
+    ['love it.'],
+    'existing-client cleanup should keep useful banter but strip signup link handoff'
+);
+
+const staleWonBlock = buildChallengeNextStepBlock(
+    { stage: 'won', challenge_route: 'vegan' },
+    'a win is a win'
+);
+assert.match(staleWonBlock, /ALREADY ACCEPTED CONTEXT/);
+assert.doesNotMatch(staleWonBlock, /future-balance\.netlify\.app\/coaching\.html/);
+
+assert.strictEqual(
+    buildLeadOnboardingHandoffData({
+        draftText: 'a win is a win haha',
+        currentMessage: 'a win is a win',
+        qualifier: { stage: 'won' },
+        leadStage: 'qualifying',
+        linkedUserId: null,
+        threadId: 'thread-banter',
+    }),
+    null,
+    'a stale won stage plus banter should not attach signup-link handoff metadata'
+);
+
+const staleRepairChunks = finalizeDraftChunksFromRawText(
+    JSON.stringify({ messages: ["a win is a win haha", "here's the link"] }),
+    {
+        qualifier: { stage: 'won' },
+        currentMessageText: 'a win is a win',
+    }
+);
+assert.doesNotMatch(staleRepairChunks.join('\n'), /future-balance\.netlify\.app\/coaching\.html/);
 
 const scheduledRepair = scheduledWorker.repairMissingScheduledLinkHandoff({
-    data: { signup_link_handoff_url: 'https://future-balance.netlify.app/bio.html' },
+    data: { signup_link_handoff_url: 'https://future-balance.netlify.app/coaching.html' },
 }, "sounds good mate, here's the link");
 assert.strictEqual(scheduledRepair.repaired, true);
-assert.match(scheduledRepair.text, /https:\/\/future-balance\.netlify\.app\/bio\.html/);
+assert.match(scheduledRepair.text, /https:\/\/future-balance\.netlify\.app\/coaching\.html/);
 
 console.log('ig link handoff tests passed');

@@ -180,6 +180,10 @@ function isAlertCapabilityReactionRequest({ admin, action, alertId, body }) {
     return true;
 }
 
+function shouldSendSeenReceiptAfterAction(action) {
+    return action === 'react';
+}
+
 async function postInstagramSenderAction({ accountId, recipientId, action, graphMessageId, reaction }) {
     const accessToken = await getInstagramGraphAccessToken();
     if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
@@ -215,7 +219,17 @@ async function postInstagramSenderAction({ accountId, recipientId, action, graph
     return parsed;
 }
 
-async function patchThreadActionState({ thread, graphMessageId, localMessageId, action, reaction, adminUserId, source, nowIso }) {
+function buildNextThreadActionCustomData({
+    thread,
+    graphMessageId,
+    localMessageId,
+    action,
+    reaction,
+    adminUserId,
+    source,
+    nowIso,
+    seenAtIso,
+}) {
     const customData = safeObject(thread.custom_data);
     const actionData = safeObject(customData.instagram_graph_actions);
     const messages = safeObject(actionData.messages);
@@ -223,12 +237,17 @@ async function patchThreadActionState({ thread, graphMessageId, localMessageId, 
         ...actionData,
         messages: { ...messages },
     };
+    const markSeenAt = action === 'mark_seen' ? nowIso : seenAtIso;
 
-    if (action === 'mark_seen') {
-        nextActionData.last_mark_seen_at = nowIso;
+    if (markSeenAt) {
+        nextActionData.last_mark_seen_at = markSeenAt;
         nextActionData.last_mark_seen_by = adminUserId;
-        nextActionData.last_mark_seen_source = source || actionData.last_mark_seen_source || 'admin_dashboard';
-    } else if (graphMessageId) {
+        nextActionData.last_mark_seen_source = source
+            || actionData.last_mark_seen_source
+            || (action === 'react' ? 'instagram_graph_reaction' : 'admin_dashboard');
+    }
+
+    if (action !== 'mark_seen' && graphMessageId) {
         const current = safeObject(messages[graphMessageId]);
         nextActionData.messages[graphMessageId] = {
             ...current,
@@ -246,11 +265,16 @@ async function patchThreadActionState({ thread, graphMessageId, localMessageId, 
         instagram_graph: {
             ...graph,
             last_action_at: nowIso,
-            ...(action === 'mark_seen' ? { last_mark_seen_at: nowIso } : {}),
+            ...(markSeenAt ? { last_mark_seen_at: markSeenAt } : {}),
         },
         instagram_graph_actions: nextActionData,
     };
+    return nextCustomData;
+}
 
+async function patchThreadActionState(args) {
+    const nextCustomData = buildNextThreadActionCustomData(args);
+    const thread = args.thread;
     await supabaseQuery(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
         method: 'PATCH',
         body: { custom_data: nextCustomData },
@@ -371,6 +395,7 @@ exports.handler = async (event = {}) => {
     const reaction = String(body.reaction || 'love').trim() || 'love';
     const source = String(body.source || '').trim().slice(0, 80);
     let graphResponse;
+    const actionAtIso = new Date().toISOString();
     try {
         graphResponse = await postInstagramSenderAction({
             accountId,
@@ -387,6 +412,31 @@ exports.handler = async (event = {}) => {
         });
     }
 
+    let seenReceipt = { attempted: false, ok: false, reason: 'not_reaction' };
+    if (shouldSendSeenReceiptAfterAction(action)) {
+        const seenAtIso = new Date().toISOString();
+        try {
+            const seenGraphResponse = await postInstagramSenderAction({
+                accountId,
+                recipientId,
+                action: 'mark_seen',
+            });
+            seenReceipt = {
+                attempted: true,
+                ok: true,
+                sent_at: seenAtIso,
+                graph_response: seenGraphResponse,
+            };
+        } catch (err) {
+            seenReceipt = {
+                attempted: true,
+                ok: false,
+                error: err.message || String(err),
+            };
+            console.warn('[send-instagram-graph-action] reaction sent but seen receipt failed:', seenReceipt.error);
+        }
+    }
+
     let customData = thread.custom_data || {};
     let statePersisted = true;
     try {
@@ -398,7 +448,8 @@ exports.handler = async (event = {}) => {
             reaction,
             adminUserId: admin.ok ? admin.userId : 'alert_capability',
             source,
-            nowIso: new Date().toISOString(),
+            nowIso: actionAtIso,
+            seenAtIso: seenReceipt.ok ? seenReceipt.sent_at : '',
         });
     } catch (err) {
         statePersisted = false;
@@ -431,6 +482,7 @@ exports.handler = async (event = {}) => {
         alert_resolved: alertResolved,
         alert_resolve_error: alertResolveError || null,
         reaction: action === 'react' ? reaction : null,
+        seen_receipt: seenReceipt,
         graph_message_id: graphMessageId || null,
         thread_id: thread.id,
         graph_response: graphResponse,
@@ -439,8 +491,10 @@ exports.handler = async (event = {}) => {
 };
 
 exports._test = {
+    buildNextThreadActionCustomData,
     cleanGraphMessageId,
     isAlertCapabilityReactionRequest,
     resolveThreadGraphRecipientId,
     resolveThreadGraphAccountId,
+    shouldSendSeenReceiptAfterAction,
 };

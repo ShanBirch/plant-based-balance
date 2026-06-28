@@ -24,6 +24,7 @@
 		C0DE10000000000000001001 /* BalanceNutritionWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE10000000000000001003 /* BalanceNutritionWidget.swift */; };
 		C0DE10000000000000001002 /* BalanceNutritionWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = C0DE10000000000000001006 /* BalanceNutritionWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C0DE10000000000000002001 /* BalanceNutritionWidgetPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE10000000000000002002 /* BalanceNutritionWidgetPlugin.swift */; };
+		D1E2F3A40000000000001001 /* BalanceInstagramSharePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A40000000000001000 /* BalanceInstagramSharePlugin.swift */; };
 		504EC30D1FED79650016851F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
@@ -72,6 +73,7 @@
 		C0DE10000000000000001005 /* BalanceNutritionWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BalanceNutritionWidget.entitlements; sourceTree = "<group>"; };
 		C0DE10000000000000001006 /* BalanceNutritionWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BalanceNutritionWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C0DE10000000000000002002 /* BalanceNutritionWidgetPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceNutritionWidgetPlugin.swift; sourceTree = "<group>"; };
+		D1E2F3A40000000000001000 /* BalanceInstagramSharePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceInstagramSharePlugin.swift; sourceTree = "<group>"; };
 		504EC30C1FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -135,6 +137,7 @@
 				B4C5D6E70000000000000103 /* BalanceShortcutHandoff.swift */,
 				B4C5D6E70000000000000104 /* BalanceAppShortcuts.swift */,
 				C0DE10000000000000002002 /* BalanceNutritionWidgetPlugin.swift */,
+				D1E2F3A40000000000001000 /* BalanceInstagramSharePlugin.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -283,6 +286,7 @@
 				B4C5D6E70000000000000101 /* BalanceShortcutHandoff.swift in Sources */,
 				B4C5D6E70000000000000102 /* BalanceAppShortcuts.swift in Sources */,
 				C0DE10000000000000002001 /* BalanceNutritionWidgetPlugin.swift in Sources */,
+				D1E2F3A40000000000001001 /* BalanceInstagramSharePlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -440,14 +444,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3;
+				MARKETING_VERSION = 1.4;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -471,14 +475,14 @@
 				DEVELOPMENT_TEAM = BPDFP9M7JU;
 				APP_PROFILE_SPECIFIER = Balance;
 				PROVISIONING_PROFILE_SPECIFIER = "$(APP_PROFILE_SPECIFIER)";
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3;
+				MARKETING_VERSION = 1.4;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -497,7 +501,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = BalanceNutritionWidget/BalanceNutritionWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = BPDFP9M7JU;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BalanceNutritionWidget/Info.plist;
@@ -507,7 +511,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.3;
+				MARKETING_VERSION = 1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fitgotchi.app.BalanceNutritionWidget;
 				PRODUCT_BUNDLE_PACKAGE_TYPE = "XPC!";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -525,7 +529,7 @@
 				CODE_SIGN_ENTITLEMENTS = BalanceNutritionWidget/BalanceNutritionWidget.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = BPDFP9M7JU;
 				PROVISIONING_PROFILE_SPECIFIER = "$(WIDGET_PROFILE_SPECIFIER)";
 				GENERATE_INFOPLIST_FILE = NO;
@@ -536,7 +540,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.3;
+				MARKETING_VERSION = 1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fitgotchi.app.BalanceNutritionWidget;
 				PRODUCT_BUNDLE_PACKAGE_TYPE = "XPC!";
 				PRODUCT_NAME = "$(TARGET_NAME)";

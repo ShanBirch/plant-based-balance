@@ -474,6 +474,7 @@ function acceptYogaRecommendation() {
     banner.innerText = "🧘 Switched to Somatic Yoga for today!";
     banner.style.cssText = "position:fixed; top:80px; left:50%; transform:translateX(-50%); background:var(--accent-green); color:white; padding:12px 24px; border-radius:20px; z-index:2000; font-weight:600; box-shadow:0 4px 12px rgba(0,0,0,0.2);";
     document.body.appendChild(banner);
+
     setTimeout(() => { banner.style.opacity = '0'; setTimeout(() => banner.remove(), 500); }, 3000);
 }
 
@@ -514,7 +515,7 @@ function showCycleSyncBanner() {
     banner.innerText = "✨ Dashboard Updated with your Cycle Sync!";
     banner.style.cssText = "position:fixed; top:80px; left:50%; transform:translateX(-50%); background:var(--primary); color:white; padding:10px 20px; border-radius:20px; z-index:2000; font-weight:600; box-shadow:0 4px 12px rgba(0,0,0,0.2); animation: fadeIn 0.5s;";
     document.body.appendChild(banner);
-    
+
     setTimeout(() => {
         banner.style.opacity = '0';
         setTimeout(() => banner.remove(), 500);

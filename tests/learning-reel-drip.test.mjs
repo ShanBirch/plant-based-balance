@@ -1,6 +1,10 @@
 import assert from 'node:assert';
 
 const { _test } = await import('../netlify/functions/learning-reel-drip.mjs');
+const learningReelSources = (await import('../netlify/functions/_lib/learning-reel-sources.js')).default;
+
+delete process.env.LEARNING_REEL_DRIP_FORCE_ACTIVE;
+delete process.env.LEARNING_REEL_DRIP_AUTOSTART_UNTIL;
 
 const nowMs = Date.parse('2026-06-02T02:00:00.000Z');
 const plan = _test.buildInitialPlan(nowMs);
@@ -17,6 +21,146 @@ assert.strictEqual(state.revision, 'hourly_168_v2');
 assert.strictEqual(state.status, 'active');
 assert.strictEqual(state.total_sends, 168);
 assert.strictEqual(state.plan.length, 168);
+
+const pilotConfig = _test.CLIENT_PILOT_TARGETS.find(target => target.id === 'mon_vegan_food_pilot');
+assert.ok(pilotConfig);
+assert.strictEqual(pilotConfig.handle, 'monica.l.sheekey');
+assert.strictEqual(pilotConfig.review_before_send, true);
+const pilotPlan = _test.buildClientPilotPlan(pilotConfig, nowMs);
+assert.strictEqual(pilotPlan.length, 12);
+assert.strictEqual(pilotPlan[0].topic_id, 'plant_based_cooking');
+assert.strictEqual(pilotPlan[1].topic_id, 'meal_prep_planning');
+assert.strictEqual(pilotPlan[2].topic_id, 'plant_based_cooking');
+assert.strictEqual(Date.parse(pilotPlan[1].due_at) - Date.parse(pilotPlan[0].due_at), _test.CLIENT_PILOT_INTERVAL_MS);
+assert.ok(_test.CLIENT_PILOT_INTERVAL_MS >= 55 * 60 * 60 * 1000);
+assert.ok(_test.CLIENT_PILOT_INTERVAL_MS <= 57 * 60 * 60 * 1000);
+
+const pilotState = _test.normalizeClientPilotState({ custom_data: {} }, pilotConfig, nowMs);
+assert.strictEqual(pilotState.id, 'mon_vegan_food_pilot');
+assert.strictEqual(pilotState.vegan_safe_required, true);
+assert.deepStrictEqual(pilotState.topics, ['plant_based_cooking', 'meal_prep_planning']);
+assert.strictEqual(pilotState.require_coach_reply_after_inbound, true);
+assert.strictEqual(pilotState.review_before_send, true);
+assert.strictEqual(pilotState.plan.length, 12);
+
+const fraPilotConfig = _test.CLIENT_PILOT_TARGETS.find(target => target.id === 'francesca_vegan_food_pilot');
+assert.ok(fraPilotConfig);
+assert.strictEqual(fraPilotConfig.handle, 'cavazzanafrancesca');
+assert.deepStrictEqual(fraPilotConfig.topics, ['vegan_panettone', 'plant_based_cooking', 'meal_prep_planning']);
+assert.strictEqual(fraPilotConfig.review_before_send, true);
+assert.strictEqual(fraPilotConfig.review_reason, 'francesca_panettone_reel_review');
+const fraPilotPlan = _test.buildClientPilotPlan(fraPilotConfig, nowMs);
+assert.strictEqual(fraPilotPlan[0].topic_id, 'vegan_panettone');
+const fraPilotState = _test.normalizeClientPilotState({ custom_data: {} }, fraPilotConfig, nowMs);
+assert.strictEqual(fraPilotState.review_before_send, true);
+assert.deepStrictEqual(fraPilotState.topics, ['vegan_panettone', 'plant_based_cooking', 'meal_prep_planning']);
+assert.strictEqual(fraPilotState.plan[0].topic_id, 'vegan_panettone');
+
+const lilPilotConfig = _test.CLIENT_PILOT_TARGETS.find(target => target.id === 'lil_bunny_reel_pilot');
+assert.ok(lilPilotConfig);
+assert.strictEqual(lilPilotConfig.handle, 'liligrace_h');
+assert.strictEqual(lilPilotConfig.caption_mode, 'url_only');
+assert.deepStrictEqual(lilPilotConfig.topics, ['bunny_reels']);
+assert.strictEqual(lilPilotConfig.vegan_safe_required, false);
+const lilMessage = _test.buildClientPilotVisibleMessage({
+    url: 'https://www.youtube.com/shorts/test-bunny-flop',
+    title: 'Cute bunny flop',
+    topic_id: 'bunny_reels',
+    topic_label: 'Bunny reels',
+}, 0, lilPilotConfig);
+assert.strictEqual(lilMessage, 'https://www.youtube.com/shorts/test-bunny-flop');
+const manualReelPayload = _test.buildClientPilotReelPayload({
+    reel: {
+        video_id: 'test-bunny-flop',
+        url: 'https://www.youtube.com/shorts/test-bunny-flop',
+        title: 'Cute bunny flop',
+        channel_title: 'Rabbit Creator',
+        description: 'A free-roam rabbit does a happy flop.',
+    },
+    item: { topic_id: 'bunny_reels', topic_label: 'Bunny reels' },
+    config: lilPilotConfig,
+    message: lilMessage,
+    nowIso: new Date(nowMs).toISOString(),
+});
+assert.strictEqual(manualReelPayload.pilot_id, 'lil_bunny_reel_pilot');
+assert.strictEqual(manualReelPayload.topic_id, 'bunny_reels');
+assert.strictEqual(manualReelPayload.sent_message, 'https://www.youtube.com/shorts/test-bunny-flop');
+assert.strictEqual(manualReelPayload.vegan_safe_required, undefined);
+
+const mirandaPilotConfig = _test.CLIENT_PILOT_TARGETS.find(target => target.id === 'miranda_core_pelvic_tilt_pilot');
+assert.ok(mirandaPilotConfig);
+assert.strictEqual(mirandaPilotConfig.handle, 'miranda_laree_is_me');
+assert.deepStrictEqual(mirandaPilotConfig.topics, ['pelvic_tilt_balance', 'core_training_technique', 'weight_training_technique']);
+assert.strictEqual(mirandaPilotConfig.vegan_safe_required, false);
+assert.strictEqual(mirandaPilotConfig.review_before_send, true);
+const mirandaState = _test.normalizeClientPilotState({ custom_data: {} }, mirandaPilotConfig, nowMs);
+assert.strictEqual(mirandaState.id, 'miranda_core_pelvic_tilt_pilot');
+assert.strictEqual(mirandaState.review_before_send, true);
+assert.strictEqual(mirandaState.vegan_safe_required, false);
+assert.deepStrictEqual(mirandaState.vegan_safety_reasons, []);
+assert.strictEqual(mirandaState.plan[0].topic_id, 'pelvic_tilt_balance');
+assert.strictEqual(mirandaState.plan[1].topic_id, 'core_training_technique');
+
+assert.strictEqual(_test.hasCoachRepliedSinceLastInbound({
+    last_inbound_at: '2026-06-04T10:00:00.000Z',
+    last_outbound_at: '2026-06-04T09:59:00.000Z',
+}), false);
+assert.strictEqual(_test.hasCoachRepliedSinceLastInbound({
+    last_inbound_at: '2026-06-04T10:00:00.000Z',
+    last_outbound_at: '2026-06-04T10:01:00.000Z',
+}), true);
+assert.strictEqual(_test.isLearningReelOutboundSource('learning_reel_drip_instagram_graph'), true);
+assert.strictEqual(_test.isLearningReelOutboundSource('admin_dashboard_direct_instagram_graph'), false);
+assert.strictEqual(_test.isLinkHandoffOutboundText("Yo @shan_n_sunny, here's that info about using ChatGPT for your Instagram content system: https://plantbased-balance.org/ig-system?ig=shan_n_sunny\n\nWant me to map this version for your business? Reply with what you do and we can sort it out."), true);
+assert.strictEqual(_test.isLearningReelGateEligibleOutbound({
+    source: 'instagram_graph',
+    text: "Yo @shan_n_sunny, here's that info about using ChatGPT for your Instagram content system: https://plantbased-balance.org/ig-system?ig=shan_n_sunny\n\nWant me to map this version for your business? Reply with what you do and we can sort it out.",
+}), false);
+assert.strictEqual(_test.isLearningReelGateEligibleOutbound({
+    source: 'instagram_comment_private_reply',
+    text: 'got you, here is the guide',
+}), false);
+assert.strictEqual(_test.isLearningReelGateEligibleOutbound({
+    source: 'admin_dashboard_direct_instagram_graph',
+    text: 'haha yeah i reckon try the easy one first and see how it feels',
+}), true);
+assert.strictEqual(_test.isLearningReelGateEligibleOutbound({
+    source: 'admin_dashboard_direct_instagram_graph',
+    text: 'save this for later https://www.youtube.com/shorts/test123',
+}), false);
+
+const expiredPrimaryState = _test.normalizeDripState({
+    custom_data: {
+        learning_reel_drip: {
+            ...state,
+            status: 'active',
+            stopped_reason: null,
+            stopped_at: null,
+        },
+    },
+}, Date.parse('2026-06-22T09:00:00.000Z'));
+assert.strictEqual(expiredPrimaryState.status, 'stopped');
+assert.strictEqual(expiredPrimaryState.stopped_reason, 'primary_test_drip_window_closed');
+assert.strictEqual(expiredPrimaryState.next_send_at, null);
+
+const overduePilotState = {
+    ...pilotState,
+    plan: pilotState.plan.map(item => ({
+        ...item,
+        due_at: new Date(nowMs - ((item.index + 1) * 60 * 1000)).toISOString(),
+    })),
+};
+const rolledPilotState = _test.updateClientPilotPlanItem(overduePilotState, 0, {
+    status: 'sent',
+    sent_at: new Date(nowMs).toISOString(),
+    video_id: 'pilot-video-one',
+}, nowMs);
+assert.strictEqual(rolledPilotState.plan[0].status, 'sent');
+assert.strictEqual(Date.parse(rolledPilotState.next_send_at) - nowMs, _test.CLIENT_PILOT_INTERVAL_MS);
+assert.strictEqual(
+    Date.parse(rolledPilotState.plan[2].due_at) - Date.parse(rolledPilotState.plan[1].due_at),
+    _test.CLIENT_PILOT_INTERVAL_MS
+);
 
 const upgraded = _test.normalizeDripState({
     custom_data: {
@@ -155,6 +299,25 @@ assert.strictEqual(candidate.duration_seconds, 45);
 assert.strictEqual(candidate.view_count, 120000);
 assert.strictEqual(candidate.thumbnail_url, 'https://img.youtube.com/high.jpg');
 
+assert.ok(
+    learningReelSources.buildCuratedLearningReelQueries('vegan_panettone')
+        .some(query => /vegan panettone recipe shorts/i.test(query))
+);
+assert.ok(learningReelSources.scoreCuratedLearningReelCandidate({
+    title: 'Easy Vegan Panettone Recipe #shorts',
+    description: 'Egg free dairy free panettone with soft fluffy dough.',
+    channelTitle: 'Italian Vegan Baker',
+    durationSec: 52,
+    viewCount: 45000,
+}, 'vegan_panettone') > 100);
+assert.strictEqual(learningReelSources.scoreCuratedLearningReelCandidate({
+    title: 'Traditional Panettone Recipe',
+    description: 'Classic Italian panettone with butter and eggs.',
+    channelTitle: 'Italian Baker',
+    durationSec: 52,
+    viewCount: 45000,
+}, 'vegan_panettone'), -1000);
+
 const proteinMessage = _test.buildVisibleMessage(candidate, 0);
 assert.ok(proteinMessage.includes('https://www.youtube.com/shorts/abc123xyz'));
 assert.match(proteinMessage, /protein|nutrition/);
@@ -183,6 +346,17 @@ assert.match(cookingMessage, /looks yum|looks good|would eat|worth trying|yum/);
 assert.ok(cookingMessage.includes('https://www.youtube.com/shorts/xMdz4-AiYA4'));
 assert.ok(!cookingMessage.includes("this is cool, reckon you'll like this one"));
 assert.doesNotMatch(cookingMessage, /cucumber salad|make me this/i);
+
+const panettoneMessage = _test.buildVisibleMessage({
+    topic_id: 'vegan_panettone',
+    topic_label: 'Vegan panettone',
+    title: 'Easy Vegan Panettone Recipe',
+    url: 'https://www.youtube.com/shorts/b20A4MUVDI4',
+    video_id: 'b20A4MUVDI4',
+}, 0);
+assert.match(panettoneMessage, /looks yum|looks good|would eat|worth trying|yum/i);
+assert.match(panettoneMessage, /https:\/\/www\.youtube\.com\/shorts\/b20A4MUVDI4/i);
+assert.doesNotMatch(panettoneMessage, /easy vegan panettone recipe|make me this/i);
 
 const brainMessage = _test.buildVisibleMessage({
     topic_id: 'mindset_neuroscience',

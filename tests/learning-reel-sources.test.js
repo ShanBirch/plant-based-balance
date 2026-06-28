@@ -55,6 +55,26 @@ assert.ok(
     curatedLearningReelSourceNames('workout_motivation').some(name => name === 'BJ Fogg'),
     'workout motivation should include habit-science sources'
 );
+assert.ok(
+    curatedLearningReelSourceNames('bunny_reels').some(name => name === 'Sincerely, Cinnabun'),
+    'bunny reels should include rabbit-specific sources'
+);
+assert.ok(
+    curatedLearningReelSourceNames('bunny_reels').some(name => name === 'Lennon The Bunny'),
+    'bunny reels should include Lennon The Bunny'
+);
+assert.ok(
+    curatedLearningReelSourceNames('pelvic_tilt_balance').some(name => name === 'Conor Harris'),
+    'pelvic tilt balance should include Conor Harris'
+);
+assert.ok(
+    curatedLearningReelSourceNames('pelvic_tilt_balance').some(name => name === 'E3 Rehab'),
+    'pelvic tilt balance should include evidence rehab sources'
+);
+assert.ok(
+    curatedLearningReelSourceNames('core_training_technique').some(name => name === 'Squat University'),
+    'core training technique should include Squat University'
+);
 
 const trustedProteinCandidate = {
     topicId: 'protein_science',
@@ -91,6 +111,42 @@ assert.strictEqual(
 assert.strictEqual(
     scoreCuratedLearningReelCandidate(randomViralCandidate),
     -1000
+);
+
+const trustedBunnyCandidate = {
+    topicId: 'bunny_reels',
+    channelTitle: 'Lennon The Bunny',
+    title: 'Cute free roam rabbit binky #shorts',
+    description: 'A pet rabbit does a happy bunny binky and flop.',
+    durationSec: 32,
+    viewCount: 140000
+};
+
+assert.strictEqual(
+    findCuratedLearningReelSource(trustedBunnyCandidate, 'bunny_reels').id,
+    'lennon_the_bunny'
+);
+assert.ok(
+    scoreCuratedLearningReelCandidate(trustedBunnyCandidate) > 100,
+    'trusted bunny candidate should score strongly'
+);
+
+const trustedPelvicTiltCandidate = {
+    topicId: 'pelvic_tilt_balance',
+    channelTitle: 'Conor Harris',
+    title: 'The Secret To Fix Anterior Pelvic Tilt For GOOD',
+    description: 'Pelvic tilt explained through center of gravity and stacked rib cage pelvis posture.',
+    durationSec: 158,
+    viewCount: 120000
+};
+
+assert.strictEqual(
+    findCuratedLearningReelSource(trustedPelvicTiltCandidate, 'pelvic_tilt_balance').id,
+    'conor_harris'
+);
+assert.ok(
+    scoreCuratedLearningReelCandidate(trustedPelvicTiltCandidate) > 100,
+    'trusted pelvic tilt candidate should score strongly'
 );
 
 const wrongTopicCandidate = {

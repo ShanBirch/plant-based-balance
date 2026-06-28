@@ -1,6 +1,7 @@
 package com.fitgotchi.app;
 
 import android.Manifest;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -38,6 +39,7 @@ import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebChromeClient;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -211,6 +213,57 @@ public class MainActivity extends BridgeActivity {
         }
         sb.append('"');
         return sb.toString();
+    }
+
+    private String mimeTypeFromDataUrl(String dataUrl) {
+        if (dataUrl != null && dataUrl.startsWith("data:")) {
+            int semicolon = dataUrl.indexOf(';');
+            if (semicolon > 5) {
+                return dataUrl.substring(5, semicolon);
+            }
+        }
+        return "image/jpeg";
+    }
+
+    private Uri cacheShareImageDataUrl(String dataUrl, String target) throws Exception {
+        if (dataUrl == null || !dataUrl.startsWith("data:image/")) {
+            throw new IllegalArgumentException("Expected image data URL");
+        }
+        int comma = dataUrl.indexOf(',');
+        if (comma < 0) {
+            throw new IllegalArgumentException("Malformed data URL");
+        }
+
+        String mimeType = mimeTypeFromDataUrl(dataUrl);
+        String extension = "image/png".equals(mimeType) ? ".png" : ".jpg";
+        String safeTarget = "story".equals(target) ? "story" : "feed";
+        File tempFile = new File(getCacheDir(), "balance_instagram_" + safeTarget + extension);
+        byte[] bytes = Base64.decode(dataUrl.substring(comma + 1), Base64.DEFAULT);
+        try (FileOutputStream out = new FileOutputStream(tempFile, false)) {
+            out.write(bytes);
+        }
+        return FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", tempFile);
+    }
+
+    private Intent buildInstagramShareIntent(Uri imageUri, String mimeType, String target) {
+        Intent intent;
+        if ("story".equals(target)) {
+            intent = new Intent("com.instagram.share.ADD_TO_STORY");
+            intent.setPackage("com.instagram.android");
+            intent.setDataAndType(imageUri, mimeType);
+            intent.putExtra("top_background_color", "#0f3d2e");
+            intent.putExtra("bottom_background_color", "#f5c45c");
+            intent.putExtra("content_url", "https://plantbased-balance.org/bio");
+        } else {
+            intent = new Intent(Intent.ACTION_SEND);
+            intent.setPackage("com.instagram.android");
+            intent.setType(mimeType);
+            intent.putExtra(Intent.EXTRA_STREAM, imageUri);
+        }
+
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.setClipData(ClipData.newUri(getContentResolver(), "Balance share", imageUri));
+        return intent;
     }
 
     /**
@@ -786,6 +839,34 @@ public class MainActivity extends BridgeActivity {
                         null);
                 }
             });
+        }
+
+        /**
+         * Share a generated Balance card image into Instagram. target is
+         * "story" for the Stories composer, otherwise the Instagram feed
+         * composer is opened. Returns false when the image cannot be prepared
+         * or no Instagram activity can handle the intent.
+         */
+        @JavascriptInterface
+        public boolean shareImageToInstagram(String dataUrl, String target) {
+            String safeTarget = "story".equals(target) ? "story" : "feed";
+            try {
+                String mimeType = mimeTypeFromDataUrl(dataUrl);
+                Uri imageUri = cacheShareImageDataUrl(dataUrl, safeTarget);
+                Intent intent = buildInstagramShareIntent(imageUri, mimeType, safeTarget);
+                if (intent.resolveActivity(getPackageManager()) == null) {
+                    return false;
+                }
+                grantUriPermission("com.instagram.android", imageUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                runOnUiThread(() -> {
+                    try {
+                        startActivity(intent);
+                    } catch (Exception ignored) {}
+                });
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
         }
 
         /**

@@ -64,6 +64,31 @@ async function supabaseQuery(path, options = {}) {
     try { return JSON.parse(text); } catch { return []; }
 }
 
+function safeObject(value) {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+async function markAlertMemoryExtraction(alertId, result) {
+    if (!alertId) return;
+    try {
+        const rows = await supabaseQuery(`coach_alerts?select=data&id=eq.${encodeURIComponent(alertId)}&limit=1`);
+        const current = safeObject(rows[0]?.data);
+        await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
+            method: 'PATCH',
+            body: {
+                data: {
+                    ...current,
+                    client_memory_extracted_at: new Date().toISOString(),
+                    client_memory_extraction_result: result,
+                },
+            },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[extract-memory] alert extraction stamp failed:', err.message);
+    }
+}
+
 // ============================================================
 // Gemini — structured JSON extraction
 // ============================================================
@@ -346,6 +371,9 @@ exports.handler = async (event) => {
     if (!alert) {
         return { statusCode: 404, body: JSON.stringify({ error: 'Alert not found' }) };
     }
+    if (alert.data?.client_memory_extracted_at) {
+        return { statusCode: 200, body: JSON.stringify({ skipped: 'already_extracted' }) };
+    }
     if (!alert.coach_id || !alert.client_id) {
         return { statusCode: 200, body: JSON.stringify({ skipped: 'missing_ids' }) };
     }
@@ -447,7 +475,9 @@ exports.handler = async (event) => {
     const { next, changed } = mergeMemory(existing, extracted);
     if (!changed) {
         console.log(`[extract-memory] nothing to update for alert ${alertId}`);
-        return { statusCode: 200, body: JSON.stringify({ skipped: 'no_new_facts' }) };
+        const result = { skipped: 'no_new_facts' };
+        await markAlertMemoryExtraction(alertId, result);
+        return { statusCode: 200, body: JSON.stringify(result) };
     }
 
     // 6. Upsert client_memory
@@ -471,11 +501,14 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: 'Upsert failed', details: err.message }) };
     }
 
+    const result = {
+        updated: true,
+        fields_changed: Object.entries(next).filter(([k, v]) => v !== existing[k]).map(([k]) => k),
+    };
+    await markAlertMemoryExtraction(alertId, result);
+
     return {
         statusCode: 200,
-        body: JSON.stringify({
-            updated: true,
-            fields_changed: Object.entries(next).filter(([k, v]) => v !== existing[k]).map(([k]) => k),
-        }),
+        body: JSON.stringify(result),
     };
 };

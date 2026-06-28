@@ -161,8 +161,11 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
   function _pbbRegisterSW() {
     if ('serviceWorker' in navigator &&
         !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
-      navigator.serviceWorker.register('sw.js')
-        .then(reg => console.log('SW Registered!', reg))
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+        .then(reg => {
+            reg.update().catch(function() {});
+            console.log('SW Registered!', reg);
+        })
         .catch(err => console.log('SW Failed:', err));
     } else if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
       console.log('[SW] Skipped service worker registration on native (FCM handles push)');
@@ -327,7 +330,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=37',
             'lib/native-iap.js',
-            'lib/stories.js?v=5',
+            'lib/stories.js?v=7',
             'lib/ai-opponents.js',
             'lib/games.js?v=2',
             'lib/nutrition-calculator.js',
@@ -346,7 +349,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=5"><\/script>');
+    document.write('<script src="lib/stories.js?v=7"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=2"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -402,7 +405,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <!-- Outfit font combined into main Google Fonts request in <head> -->
 
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
-<script src="js/dashboard/script_part_4.js"></script>
+<script src="js/dashboard/script_part_4.js?v=theme-toggle-shell-v1"></script>
 
 <link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=66">
 
@@ -978,6 +981,9 @@ window.addEventListener('load', function() {
         </div>
     </div>
 
+    <!-- Challenge invite renders here until the user joins, then moves into Challenges below. -->
+    <div id="home-cohort-challenge-invite-top" style="margin: 0 25px 14px;"></div>
+
     <!-- Duplicate Install Banner Removed -->
 
     <!-- Hidden inputs for camera -->
@@ -1326,7 +1332,7 @@ window.addEventListener('load', function() {
                     <input type="text" id="diary-note" placeholder="Optional — how you're feeling, goals for tomorrow..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
                 </div>
 
-                <button onclick="submitFitnessDiary()" style="width: 100%; background: white; color: #6366f1; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                <button id="fitness-diary-submit-btn" onclick="submitFitnessDiary()" style="width: 100%; background: white; color: #6366f1; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
                     Save Diary Entry
                 </button>
             </div>
@@ -1335,18 +1341,24 @@ window.addEventListener('load', function() {
             <div id="fitness-diary-success" style="display: none; text-align: center; padding: 10px 0;">
                 <div style="font-size: 2rem; margin-bottom: 8px;">+1 XP</div>
                 <p style="margin: 0; font-weight: 600;">Diary entry saved! Nice work today.</p>
+                <button id="fitness-diary-success-share-feed-btn" onclick="shareFitnessDiaryToFeed(this)" style="margin-top: 14px; width: 100%; background: white; color: #6366f1; border: none; padding: 12px 14px; border-radius: 10px; font-weight: 800; font-size: 0.92rem; cursor: pointer; box-shadow: 0 8px 18px rgba(0,0,0,0.12);">
+                    Share Fitness Diary to Feed
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Fitness Diary Completed Card -->
-    <div id="fitness-diary-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative;">
+    <div id="fitness-diary-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative; flex-wrap: wrap;">
         <button onclick="dismissFitnessDiaryDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
         <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; line-height: 1; overflow: hidden; flex-shrink: 0;">&#x2705;</div>
         <div style="flex: 1;">
             <div style="font-weight: 700; font-size: 1rem;">Fitness Diary Done!</div>
             <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+1 XP earned. Come back tomorrow!</div>
         </div>
+        <button id="fitness-diary-share-feed-btn" onclick="event.stopPropagation(); shareFitnessDiaryToFeed(this)" style="margin-left: auto; margin-right: 18px; background: rgba(255,255,255,0.95); color: #6366f1; border: none; padding: 10px 12px; border-radius: 10px; font-weight: 800; font-size: 0.78rem; cursor: pointer; white-space: nowrap; box-shadow: 0 8px 18px rgba(0,0,0,0.12);">
+            Share to Feed
+        </button>
     </div>
 
     <!-- Daily Quiz Card (disappears after completion) -->
@@ -1562,14 +1574,14 @@ if(!window._pbbIsIOSSafari) {
 
     <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=6"><\/script>');
-    document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=18"><\/script>');
-    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=14"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=7"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=21"><\/script>');
+    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=15"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=6');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=18');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=14');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=7');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=21');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=15');
 }
 </script>
     
@@ -1593,131 +1605,6 @@ if(!window._pbbIsIOSSafari) {
 }
 </script>
     <div style="padding: 0 25px;">
-        <!-- Calorie Counter Widget -->
-        <div class="calorie-widget-card" id="calorie-tracker-widget">
-            <div class="calorie-widget-header">
-                <div class="calorie-widget-title">
-                    <h3 id="widget-nutrition-title">Today</h3>
-                    <div class="calorie-widget-meta">
-                        <span><strong id="widget-calories-remaining">2000</strong> <span id="widget-calories-status-label">kcal left</span></span>
-                        <span id="widget-meal-count">0 meals</span>
-                    </div>
-                    <div class="nutrition-period-date" id="widget-period-date">Today</div>
-                </div>
-                <div class="nutrition-range-toggle" role="group" aria-label="Nutrition summary range">
-                    <button type="button" class="active" data-nutrition-range="day" onclick="setNutritionSummaryRange('day')" aria-pressed="true">Day</button>
-                    <button type="button" data-nutrition-range="week" onclick="setNutritionSummaryRange('week')" aria-pressed="false">Week</button>
-                    <button type="button" data-nutrition-range="month" onclick="setNutritionSummaryRange('month')" aria-pressed="false">Month</button>
-                </div>
-                <div class="nutrition-action-buttons">
-                    <button class="camera-btn-widget" onclick="openMealCameraDirect('widget')" title="Take a photo" aria-label="Take a photo">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                            <circle cx="12" cy="13" r="4"></circle>
-                        </svg>
-                    </button>
-                    <button class="camera-btn-widget" onclick="openMealFromGallery('widget')" title="Upload from photos" aria-label="Upload from photos">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                            <polyline points="21 15 16 10 5 21"></polyline>
-                        </svg>
-                    </button>
-                    <button class="camera-btn-widget" onclick="openMealBarcodeScanner('widget')" title="Scan barcode" aria-label="Scan barcode">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 5v-2h4"></path>
-                            <path d="M17 3h4v2"></path>
-                            <path d="M21 19v2h-4"></path>
-                            <path d="M7 21h-4v-2"></path>
-                            <line x1="7" y1="8" x2="7" y2="16"></line>
-                            <line x1="11" y1="8" x2="11" y2="16"></line>
-                            <line x1="15" y1="8" x2="15" y2="16"></line>
-                            <line x1="9" y1="8" x2="9" y2="16" stroke-width="1"></line>
-                            <line x1="13" y1="8" x2="13" y2="16" stroke-width="1"></line>
-                            <line x1="17" y1="8" x2="17" y2="16"></line>
-                        </svg>
-                    </button>
-                    <button class="camera-btn-widget" onclick="openMealTextInput('widget')" title="Type your meal" aria-label="Type your meal">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-                            <path d="M2 2l7.586 7.586"></path>
-                            <circle cx="11" cy="11" r="2"></circle>
-                        </svg>
-                    </button>
-                    <button class="camera-btn-widget" onclick="openQuickManualEntry('widget')" title="Quick log calories & macros" aria-label="Quick log calories and macros">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4 6h16"></path>
-                            <path d="M4 12h16"></path>
-                            <path d="M4 18h10"></path>
-                            <circle cx="18" cy="18" r="3"></circle>
-                            <path d="M18 16.5v3"></path>
-                            <path d="M16.5 18h3"></path>
-                        </svg>
-                    </button>
-                    <button class="camera-btn-widget" onclick="openMealBuilder()" title="Build a meal" aria-label="Build a meal">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 11h18a1 1 0 0 1 1 1 9 9 0 0 1-5 8.05V21a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-.95A9 9 0 0 1 2 12a1 1 0 0 1 1-1z"></path>
-                            <path d="M12 8V3"></path>
-                            <path d="M9 5h6"></path>
-                        </svg>
-                    </button>
-                    <button class="camera-btn-widget" onclick="openRecentMealsModal()" title="Recent & saved meals" aria-label="Recent and saved meals">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            <div id="calorie-widget-content">
-                <!-- Calories Progress -->
-                <div class="calorie-progress-main">
-                    <div class="calorie-numbers">
-                        <span class="calorie-current" id="widget-calories-current">0</span>
-                        <span class="calorie-separator">/</span>
-                        <span class="calorie-goal" id="widget-calories-goal">2000</span>
-                        <span class="calorie-unit">kcal</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="widget-calories-bar" style="width: 0%;"></div>
-                    </div>
-                </div>
-
-                <!-- Macros Grid -->
-                <div class="macros-grid">
-                    <div class="macro-item">
-                        <div class="macro-label">Protein</div>
-                        <div class="macro-value"><span id="widget-protein">0</span>g / <span id="widget-protein-goal">50</span>g</div>
-                        <div class="progress-bar-small">
-                            <div class="progress-fill-protein" id="widget-protein-bar" style="width: 0%;"></div>
-                        </div>
-                    </div>
-                    <div class="macro-item">
-                        <div class="macro-label">Carbs</div>
-                        <div class="macro-value"><span id="widget-carbs">0</span>g / <span id="widget-carbs-goal">250</span>g</div>
-                        <div class="progress-bar-small">
-                            <div class="progress-fill-carbs" id="widget-carbs-bar" style="width: 0%;"></div>
-                        </div>
-                    </div>
-                    <div class="macro-item">
-                        <div class="macro-label">Fat</div>
-                        <div class="macro-value"><span id="widget-fat">0</span>g / <span id="widget-fat-goal">70</span>g</div>
-                        <div class="progress-bar-small">
-                            <div class="progress-fill-fat" id="widget-fat-bar" style="width: 0%;"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="calorie-widget-footer">
-                    <button class="view-details-btn" onclick="switchAppTab('meals', this); setTimeout(() => switchWeek('calorie-tracker', document.querySelector('.pill-btn')), 100)">
-                        View Details →
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <!-- Avatar Companion Widget - Disabled for now -->
 
         <!-- Today's Priority Section - Only shown when user has meal plan -->
@@ -7145,31 +7032,6 @@ if (window._pbbIsIOSSafari) {
             <!-- Button Removed -->
         </div>
 
-        <!-- Weekly Workout Trend Card (Movement Tab) -->
-        <div id="movement-workout-trend-card" style="display: none; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 16px; padding: 18px 20px; color: white; position: relative; overflow: hidden; margin-bottom: 20px;">
-            <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
-            <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
-            <button onclick="dismissMovementTrendCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0; z-index: 2;">&#x2715;</button>
-            <div style="position: relative; z-index: 1;">
-                <div style="font-weight: 700; font-size: 1rem; margin-bottom: 10px;">Your Workout Trend</div>
-                <div id="movement-trend-stats" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                    <div style="background: rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; text-align: center;">
-                        <div id="movement-trend-week-count" style="font-size: 1.4rem; font-weight: 700;">0</div>
-                        <div style="font-size: 0.7rem; opacity: 0.85;">This Week</div>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; text-align: center;">
-                        <div id="movement-trend-total-count" style="font-size: 1.4rem; font-weight: 700;">0</div>
-                        <div style="font-size: 0.7rem; opacity: 0.85;">All Time</div>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; text-align: center;">
-                        <div id="movement-trend-streak" style="font-size: 1.4rem; font-weight: 700;">0</div>
-                        <div style="font-size: 0.7rem; opacity: 0.85;">Week Streak</div>
-                    </div>
-                </div>
-                <div id="movement-trend-insight" style="font-size: 0.82rem; opacity: 0.9; line-height: 1.4;"></div>
-            </div>
-        </div>
-
         <!-- Form Check Quick Access -->
         <button id="form-check-quick-card" type="button" onclick="openFormCheck({ source: 'movement' })" style="width:100%; margin:0 0 16px 0; border:none; border-radius:18px; padding:16px; background:linear-gradient(135deg,#102a1d 0%,#48864B 100%); color:white; text-align:left; display:flex; align-items:center; gap:14px; cursor:pointer; box-shadow:0 10px 24px rgba(16,42,29,0.18);">
             <div style="width:48px; height:48px; border-radius:14px; background:rgba(255,255,255,0.16); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
@@ -7402,10 +7264,10 @@ if (window._pbbIsIOSSafari) {
 
 <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-workoutbuilder.js?v=3"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-workoutbuilder.js?v=7"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-workoutbuilder.js?v=3');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-workoutbuilder.js?v=7');
 }
 </script>
 
@@ -7822,16 +7684,16 @@ if(!window._pbbIsIOSSafari) {
 </div>
 
 <!-- CREATE CUSTOM EXERCISE MODAL -->
-<div id="create-custom-exercise-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 650; overflow-y: auto;">
-    <div style="background: white; min-height: 100%; max-width: 600px; margin: 0 auto; position: relative;">
+<div id="create-custom-exercise-modal" style="display: none; position: fixed; inset: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0,0,0,0.5); z-index: 200200; overflow: hidden; padding: calc(12px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box;">
+    <div style="background: white; width: 100%; max-width: 600px; max-height: 100%; margin: 0 auto; position: relative; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden;">
         <!-- Modal Header -->
-        <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
             <div onclick="closeCreateCustomExerciseModal()" style="font-weight: 600; cursor: pointer; color: var(--text-muted); padding: 10px;">Cancel</div>
             <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Create Exercise</div>
             <div onclick="saveCustomExercise()" id="save-custom-exercise-btn" style="font-weight: 600; cursor: pointer; color: var(--primary); padding: 10px;">Save</div>
         </div>
 
-        <div style="padding: 20px;">
+        <div style="padding: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; flex: 1; box-sizing: border-box;">
             <!-- Exercise Name -->
             <div style="margin-bottom: 20px;">
                 <label style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; display: block; margin-bottom: 8px;">Exercise Name *</label>
@@ -7907,7 +7769,7 @@ if(!window._pbbIsIOSSafari) {
                 <!-- Camera/Recording Area (shown when actively recording) -->
                 <div id="custom-exercise-camera-container" style="display: none; margin-bottom: 15px; border-radius: 12px; overflow: hidden; background: black; position: relative;">
                     <video id="custom-exercise-camera-feed" style="width: 100%; max-height: 400px; object-fit: cover;" autoplay playsinline muted></video>
-                    <div id="custom-exercise-recording-indicator" style="display: none; position: absolute; top: 12px; left: 12px; background: #ef4444; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 5px;">
+                    <div id="custom-exercise-recording-indicator" style="display: none; position: absolute; top: 12px; left: 12px; background: #ef4444; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; align-items: center; gap: 5px;">
                         <div style="width: 8px; height: 8px; background: white; border-radius: 50%; animation: pulse 1s infinite;"></div>
                         REC <span id="custom-exercise-rec-timer">0:00</span>
                     </div>
@@ -7939,9 +7801,11 @@ if(!window._pbbIsIOSSafari) {
                             <path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/>
                         </svg>
                         Upload from Gallery
-                        <input type="file" id="custom-exercise-file-input" accept="video/*" onchange="handleCustomExerciseFileSelect(event)" style="display: none;">
+                        <input type="file" id="custom-exercise-file-input" accept="video/*,.mp4,.mov,.m4v,.webm,.3gp,.3gpp" onchange="handleCustomExerciseFileSelect(event)" style="display: none;">
                     </label>
                 </div>
+
+                <div id="custom-exercise-upload-status" style="display: none; margin: 12px 0 0 0; padding: 10px 12px; border-radius: 10px; background: #ecfdf5; color: #047857; font-size: 0.8rem; font-weight: 700; line-height: 1.35;"></div>
 
                 <p style="color: #94a3b8; font-size: 0.8rem; margin: 12px 0 0 0; line-height: 1.4;">
                     Video is optional. You can always add one later.
@@ -8066,7 +7930,7 @@ if(!window._pbbIsIOSSafari) {
                 <span style="font-size:1.4rem;">📸</span>
                 <div style="font-size: 1.1rem; font-weight: 700;">Snap a Gym Photo</div>
             </div>
-            <p id="share-section-sub" style="font-size: 0.82rem; opacity: 0.85; margin: 0 0 14px 0; padding-right:30px;">One photo → share it to the feed and a group chat to earn up to 2 XP.</p>
+            <p id="share-section-sub" style="font-size: 0.82rem; opacity: 0.85; margin: 0 0 14px 0; padding-right:30px;">One photo, choose Balance Feed, IG Story, or IG Feed.</p>
 
             <!-- STEP 1: Take photo button (visible initially) -->
             <div id="share-step-capture" style="display:block;">
@@ -8089,16 +7953,22 @@ if(!window._pbbIsIOSSafari) {
                     </div>
                 </div>
 
-                <!-- Two share action buttons -->
+                <!-- Share action buttons -->
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <button id="share-workout-card-btn" onclick="shareWorkoutCardToFeed()" style="width: 100%; background: linear-gradient(135deg, #ffffff, #f0fdf4); color: var(--primary); padding: 14px 15px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                         <span style="font-size: 1.3rem;">📢</span>
-                        <span style="font-size: 0.95rem;">Share to Feed (+1 XP)</span>
+                        <span style="font-size: 0.95rem;">Balance Feed (+1 XP)</span>
                     </button>
-                    <button id="share-workout-groupchat-btn" onclick="shareWorkoutToGroupChat()" style="width: 100%; background: linear-gradient(135deg, #ffffff, #eff6ff); color: #2563eb; padding: 14px 15px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                        <span style="font-size: 1.3rem;">💬</span>
-                        <span style="font-size: 0.95rem;">Share to Group Chat (+1 XP)</span>
-                    </button>
+                    <div id="share-workout-ig-options" style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px;">
+                        <button id="share-workout-ig-story-btn" onclick="shareWorkoutCardToInstagram('story')" style="width: 100%; background: linear-gradient(135deg, #ffffff, #fdf2f8); color: #be185d; padding: 13px 10px; border-radius: 12px; font-weight: 800; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 48px;">
+                            <span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span>
+                            <span style="font-size: 0.9rem;">Story</span>
+                        </button>
+                        <button id="share-workout-ig-feed-btn" onclick="shareWorkoutCardToInstagram('feed')" style="width: 100%; background: linear-gradient(135deg, #ffffff, #eef2ff); color: #4338ca; padding: 13px 10px; border-radius: 12px; font-weight: 800; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 48px;">
+                            <span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span>
+                            <span style="font-size: 0.9rem;">Feed</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -9243,22 +9113,110 @@ if(!window._pbbIsIOSSafari) {
             </div>
         </div>
 
-        <!-- Challenge a Friend Banner -->
-        <div style="margin: 0 15px 12px; padding: 14px 16px; background: linear-gradient(135deg, #1a1a2e 0%, #2e1a0e 50%, #3d2e0a 100%); border-radius: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(245,158,11,0.1); cursor: pointer; display: flex; align-items: center; gap: 12px; border: 1px solid rgba(255,255,255,0.08);" onclick="openGameChallengeModal()">
-            <div style="width: 44px; height: 44px; background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">🎮</div>
-            <div style="flex: 1; min-width: 0;">
-                <div style="font-weight: 800; font-size: 0.95rem; color: #fbbf24; margin-bottom: 2px; text-shadow: 0 0 15px rgba(251,191,36,0.3);">Challenge a Friend</div>
-                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">Chess, Checkers, Connect 4 & more - bet FitCoins!</div>
+        <!-- Top Levels Dropdown -->
+        <section id="feed-level-leaderboard-card" class="feed-level-leaderboard is-collapsed" aria-label="Top Levels">
+            <button type="button" class="feed-level-leaderboard-toggle" onclick="window.pbbToggleFeedLevelLeaderboardFromEvent ? window.pbbToggleFeedLevelLeaderboardFromEvent(event) : (window.toggleFeedLevelLeaderboard && window.toggleFeedLevelLeaderboard())" aria-expanded="false" aria-controls="feed-level-leaderboard-body">
+                <span class="feed-level-leaderboard-badge">10</span>
+                <span class="feed-level-leaderboard-copy">
+                    <span class="feed-level-leaderboard-title">Top Levels</span>
+                    <span id="feed-level-leaderboard-summary" class="feed-level-leaderboard-summary">Highest level in Balance so far.</span>
+                </span>
+                <span id="feed-level-leaderboard-top-value" class="feed-level-leaderboard-top-value">--</span>
+                <span class="feed-level-leaderboard-chevron" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+                </span>
+            </button>
+            <div id="feed-level-leaderboard-body" class="feed-level-leaderboard-body" aria-hidden="true">
+                <div class="feed-level-leaderboard-actions">
+                    <span>Highest level in Balance so far.</span>
+                    <button type="button" onclick="refreshFeedLevelLeaderboard(event)">Refresh</button>
+                </div>
+                <div id="feed-level-leaderboard-list" class="feed-level-leaderboard-list">
+                    <div class="feed-level-leaderboard-state">Loading levels...</div>
+                </div>
             </div>
-            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: rgba(251,191,36,0.6); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-        </div>
+        </section>
+        <script>
+        (function() {
+            var lastFeedLevelToggleAt = 0;
+
+            function setFeedLevelLeaderboardOpenState(card, isOpen) {
+                var body = document.getElementById('feed-level-leaderboard-body');
+                var toggle = card ? card.querySelector('.feed-level-leaderboard-toggle') : null;
+                if (!card) return;
+                card.classList.toggle('is-collapsed', !isOpen);
+                card.classList.toggle('is-open', isOpen);
+                if (toggle) toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                if (body) body.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+            }
+
+            function runFeedLevelToggle(forceOpen, event) {
+                if (event) {
+                    if (typeof event.preventDefault === 'function') event.preventDefault();
+                    if (typeof event.stopPropagation === 'function') event.stopPropagation();
+                    var now = Date.now();
+                    if (now - lastFeedLevelToggleAt < 320) return;
+                    lastFeedLevelToggleAt = now;
+                }
+
+                var card = document.getElementById('feed-level-leaderboard-card');
+                if (!card) return;
+                var shouldOpen = typeof forceOpen === 'boolean'
+                    ? forceOpen
+                    : card.classList.contains('is-collapsed');
+                setFeedLevelLeaderboardOpenState(card, shouldOpen);
+                if (shouldOpen && typeof window.loadFeedLevelLeaderboard === 'function') {
+                    window.loadFeedLevelLeaderboard();
+                }
+            }
+
+            window.pbbToggleFeedLevelLeaderboardFromEvent = function(event, forceOpen) {
+                runFeedLevelToggle(forceOpen, event);
+            };
+
+            if (!window.toggleFeedLevelLeaderboard) {
+                window.toggleFeedLevelLeaderboard = function(forceOpen) {
+                    runFeedLevelToggle(forceOpen, null);
+                };
+            }
+
+            if (!window.refreshFeedLevelLeaderboard) {
+                window.refreshFeedLevelLeaderboard = function(event) {
+                    if (event) event.stopPropagation();
+                    window.toggleFeedLevelLeaderboard(true);
+                    if (typeof window.loadFeedLevelLeaderboard === 'function') {
+                        window.loadFeedLevelLeaderboard(true);
+                    }
+                };
+            }
+
+            function bindFeedLevelToggleTouch() {
+                var toggle = document.querySelector('#feed-level-leaderboard-card .feed-level-leaderboard-toggle');
+                if (!toggle || toggle.dataset.pbbTouchBound === 'true') return;
+                toggle.dataset.pbbTouchBound = 'true';
+                toggle.addEventListener('pointerup', function(event) {
+                    if (event.pointerType === 'mouse') return;
+                    window.pbbToggleFeedLevelLeaderboardFromEvent(event);
+                }, { passive: false });
+                toggle.addEventListener('touchend', function(event) {
+                    window.pbbToggleFeedLevelLeaderboardFromEvent(event);
+                }, { passive: false });
+            }
+
+            bindFeedLevelToggleTouch();
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bindFeedLevelToggleTouch, { once: true });
+            }
+        })();
+        </script>
 
         <!-- Feed Composer -->
         <div id="feed-composer-card" style="margin: 0 15px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 14px; box-shadow: 0 2px 10px rgba(15,23,42,0.05); padding: 12px;">
             <div style="display: flex; align-items: flex-start; gap: 10px;">
                 <div id="feed-composer-avatar" style="width: 38px; height: 38px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0; overflow: hidden;">B</div>
-                <textarea id="feed-composer-text" maxlength="1000" rows="2" placeholder="What's happening?" oninput="updateFeedComposerState()" style="flex: 1; min-height: 44px; max-height: 140px; border: none; outline: none; resize: vertical; font-family: inherit; font-size: 0.95rem; line-height: 1.4; color: var(--text-main); background: transparent; padding: 8px 0;"></textarea>
+                <textarea id="feed-composer-text" maxlength="1000" rows="2" placeholder="Daily check-in? Share it to Feed for +2 XP" oninput="updateFeedComposerState()" style="flex: 1; min-height: 44px; max-height: 140px; border: none; outline: none; resize: vertical; font-family: inherit; font-size: 0.95rem; line-height: 1.4; color: var(--text-main); background: transparent; padding: 8px 0;"></textarea>
             </div>
+            <div style="margin: 4px 0 0 48px; color: var(--text-muted); font-size: 0.76rem; font-weight: 700; line-height: 1.3;">Share one daily check-in to Feed for +2 XP.</div>
             <div id="feed-composer-preview" style="display: none; position: relative; margin: 10px 0 0 48px; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #f8fafc;">
                 <button type="button" onclick="clearFeedComposerMedia()" style="position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(15,23,42,0.72); color: white; font-size: 1.1rem; line-height: 1; cursor: pointer; z-index: 2;" aria-label="Remove media">&times;</button>
                 <img id="feed-composer-preview-image" alt="" style="display: none; width: 100%; max-height: 260px; object-fit: cover;">
@@ -9266,10 +9224,23 @@ if(!window._pbbIsIOSSafari) {
                 <div id="feed-composer-file-name" style="display: none; padding: 9px 12px; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid #e5e7eb; word-break: break-word;"></div>
             </div>
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding-left: 48px;">
-                <label for="feed-composer-file-input" style="display: inline-flex; align-items: center; gap: 6px; color: var(--primary); font-weight: 700; font-size: 0.82rem; cursor: pointer; padding: 8px 0;">
-                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
-                    Photo/Video
-                </label>
+                <div style="position: relative; display: inline-flex;">
+                    <button id="feed-composer-media-source-button" type="button" onclick="toggleFeedComposerMediaSourceMenu(event)" aria-haspopup="menu" aria-expanded="false" style="display: inline-flex; align-items: center; gap: 6px; color: var(--primary); background: transparent; border: none; font-family: inherit; font-weight: 700; font-size: 0.82rem; cursor: pointer; padding: 8px 0;">
+                        <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
+                        Photo/Video
+                    </button>
+                    <div id="feed-composer-media-source-menu" role="menu" aria-label="Choose media source" style="display: none; position: absolute; left: 0; top: calc(100% + 8px); min-width: 176px; background: white; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 12px 24px rgba(15,23,42,0.18); z-index: 1000; overflow: hidden;">
+                        <button type="button" role="menuitem" onclick="openFeedComposerMediaSource('camera')" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: none; background: white; color: var(--text-main); font-family: inherit; font-size: 0.88rem; font-weight: 700; text-align: left; cursor: pointer;">
+                            <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
+                            Camera
+                        </button>
+                        <button type="button" role="menuitem" onclick="openFeedComposerMediaSource('library')" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: none; border-top: 1px solid #f1f5f9; background: white; color: var(--text-main); font-family: inherit; font-size: 0.88rem; font-weight: 700; text-align: left; cursor: pointer;">
+                            <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
+                            Photos
+                        </button>
+                    </div>
+                </div>
+                <input type="file" id="feed-composer-camera-input" accept="image/*,video/*" capture="environment" style="display: none;" onchange="handleFeedComposerFileSelect(event)">
                 <input type="file" id="feed-composer-file-input" accept="image/*,video/*" style="display: none;" onchange="handleFeedComposerFileSelect(event)">
                 <button id="feed-composer-post-btn" onclick="submitFeedComposerPost()" disabled style="min-width: 72px; padding: 9px 18px; border: none; border-radius: 999px; background: var(--primary); color: white; font-size: 0.85rem; font-weight: 800; cursor: pointer; opacity: 0.45; transition: opacity 0.2s, transform 0.2s;">Post</button>
             </div>
@@ -10072,6 +10043,18 @@ if(!window._pbbIsIOSSafari) {
                     </div>
                 </div>
             </div>
+            <!-- Biggest Effort Prize -->
+            <div id="challenge-effort-prize-card" style="margin: 0 4px 22px; padding: 14px 16px; border-radius: 16px; background: linear-gradient(135deg, rgba(20,184,166,0.16), rgba(245,158,11,0.13)); border: 1px solid rgba(45,212,191,0.28); box-shadow: 0 4px 20px rgba(20,184,166,0.12);">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="width: 42px; height: 42px; border-radius: 13px; background: rgba(45,212,191,0.16); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.45rem;">&#128170;</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 0.65rem; color: rgba(94,234,212,0.92); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 900; margin-bottom: 3px;">Biggest Effort Prize</div>
+                        <div style="font-size: 0.95rem; font-weight: 800; color: white; margin-bottom: 3px;">Most Improved Momentum</div>
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.64); line-height: 1.45;">For the person who lifts their consistency the most across the challenge. Workouts, check-ins, habit logs, updates, and showing up all count.</div>
+                        <div id="challenge-effort-prize-watch" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);"></div>
+                    </div>
+                </div>
+            </div>
             <!-- Podium -->
             <div id="challenge-podium" style="display: flex; justify-content: center; align-items: flex-end; gap: 10px;">
                 <!-- 2nd Place -->
@@ -10138,11 +10121,11 @@ if(!window._pbbIsIOSSafari) {
         </div>
     </div>
 
-    <!-- Cohort Info Modal (shown for the 30 Day Challenge cohort while waiting) -->
+    <!-- Cohort Info Modal (shown for the six-week transformation cohort while waiting) -->
     <div id="cohort-info-modal" style="display: none; position: fixed; inset: 0; background: #050505; z-index: 10009; overflow-y: auto;">
         <div style="background: linear-gradient(135deg, #171717 0%, #080808 100%); padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 0 20px; position: sticky; top: 0; z-index: 10;">
             <div style="display: flex; align-items: center; justify-content: center; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.15);">
-                <h3 id="cohort-info-title" style="margin: 0; font-size: 1.05rem; font-weight: 800; color: white;">30 Day Challenge</h3>
+                <h3 id="cohort-info-title" style="margin: 0; font-size: 1.05rem; font-weight: 900; color: #fffaf2; -webkit-text-fill-color: #fffaf2; text-shadow: 0 2px 8px rgba(0,0,0,0.68);">6-Week Transformation Challenge</h3>
             </div>
         </div>
 
@@ -10152,14 +10135,18 @@ if(!window._pbbIsIOSSafari) {
                 <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px;">
                     <div style="width: 56px; height: 56px; background: rgba(255,255,255,0.22); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.8rem;">🌱</div>
                     <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 800; color: white; font-size: 1.05rem; margin-bottom: 3px;">30 days, all in together.</div>
-                        <div id="cohort-info-status-line" style="font-size: 0.82rem; color: rgba(255,255,255,0.92);">Challenge is live.</div>
+                        <div style="font-weight: 800; color: white; font-size: 1.05rem; margin-bottom: 3px;">6 weeks, all in together.</div>
+                        <div id="cohort-info-status-line" style="font-size: 0.82rem; color: rgba(255,255,255,0.92);">Starts when 15 people join.</div>
                     </div>
                 </div>
-                <div style="background: rgba(245,217,138,0.12); border: 1px solid rgba(245,217,138,0.14); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
-                    <div id="cohort-info-dots" style="display: flex; gap: 6px; align-items: center;"></div>
-                    <span id="cohort-info-count" style="color: white; font-weight: 800; font-size: 1rem;">— / —</span>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: linear-gradient(135deg, #22c55e 0%, #84cc16 46%, #facc15 100%); color: #07130b; border: 1px solid rgba(254,240,138,0.95); border-radius: 16px; padding: 10px 12px; font-weight: 950; margin-bottom: 12px; box-shadow: 0 10px 28px rgba(34,197,94,0.35), 0 0 0 1px rgba(255,255,255,0.08) inset;">
+                    <span style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em;">1st Place</span>
+                    <span style="font-size: 1.2rem; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.38); white-space: nowrap;">$500 CASH</span>
                 </div>
+                <div style="background: rgba(245,217,138,0.12); border: 1px solid rgba(245,217,138,0.14); border-radius: 12px; padding: 12px 14px;">
+                    <div id="cohort-info-dots" style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;"></div>
+                </div>
+                <button type="button" onclick="openXpGuidePage(event)" style="width: 100%; margin-top: 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(245,217,138,0.7); background: linear-gradient(135deg, #fff7d6 0%, #f5d98a 54%, #d8b25e 100%); color: #101828; font-size: 0.88rem; font-weight: 950; cursor: pointer; box-shadow: 0 10px 24px rgba(245,217,138,0.18);">How to earn XP</button>
             </div>
 
             <!-- Rules section -->
@@ -10169,7 +10156,7 @@ if(!window._pbbIsIOSSafari) {
                     <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(124,58,237,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.05rem;">⚡</div>
                     <div style="flex: 1;">
                         <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 2px;">XP-based competition</div>
-                        <div style="color: rgba(255,255,255,0.65); font-size: 0.8rem; line-height: 1.45;">Every meal, workout, weigh-in, and lesson logs XP. Highest XP after 30 days wins.</div>
+                        <div style="color: rgba(255,255,255,0.65); font-size: 0.8rem; line-height: 1.45;">Every meal, workout, weigh-in, and lesson logs XP. Highest XP after 6 weeks wins.</div>
                     </div>
                 </div>
                 <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
@@ -10182,18 +10169,18 @@ if(!window._pbbIsIOSSafari) {
                 <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
                     <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(59,130,246,0.18); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.05rem;">👥</div>
                     <div style="flex: 1;">
-                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 2px;">Jump in while it is live</div>
-                        <div style="color: rgba(255,255,255,0.65); font-size: 0.8rem; line-height: 1.45;">The challenge starts now. New invitees can still join the same leaderboard while the 30-day clock is running.</div>
+                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 2px;">Starts when 15 join</div>
+                        <div style="color: rgba(255,255,255,0.65); font-size: 0.8rem; line-height: 1.45;">Claim your spot now. Once 15 people are in, the challenge clock begins.</div>
                     </div>
                 </div>
                 <div style="display: flex; align-items: flex-start; gap: 12px;">
                     <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(251,191,36,0.18); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.05rem;">🏆</div>
                     <div style="flex: 1;">
-                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 6px;">Top 3 win free coaching with Shannon</div>
+                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 6px;">1st Place <span style="color: #86efac;">$500 CASH</span></div>
                         <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <span style="font-size: 1rem;">🥇</span>
-                                <span style="color: rgba(255,255,255,0.92); font-size: 0.82rem; line-height: 1.4;"><strong style="color: #fbbf24;">1st place</strong> &middot; 4 weeks free online coaching</span>
+                                <span style="color: rgba(255,255,255,0.92); font-size: 0.82rem; line-height: 1.4;"><strong style="color: #fbbf24;">1st place</strong> &middot; <strong style="color: #86efac;">$500 cash prize</strong></span>
                             </div>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <span style="font-size: 1rem;">🥈</span>
@@ -10203,8 +10190,12 @@ if(!window._pbbIsIOSSafari) {
                                 <span style="font-size: 1rem;">🥉</span>
                                 <span style="color: rgba(255,255,255,0.85); font-size: 0.82rem; line-height: 1.4;"><strong style="color: #d97706;">3rd place</strong> &middot; 1 week free online coaching</span>
                             </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 1rem;">&#128170;</span>
+                                <span style="color: rgba(255,255,255,0.88); font-size: 0.82rem; line-height: 1.4;"><strong style="color: #5eead4;">Biggest effort</strong> &middot; most improved momentum</span>
+                            </div>
                         </div>
-                        <div style="color: rgba(255,255,255,0.55); font-size: 0.75rem; line-height: 1.4; margin-top: 8px;">Everyone who finishes the 30 days earns bonus XP and a finisher's drop.</div>
+                        <div style="color: rgba(255,255,255,0.55); font-size: 0.75rem; line-height: 1.4; margin-top: 8px;">Everyone who finishes the 6 weeks earns bonus XP and a finisher's drop.</div>
                     </div>
                 </div>
             </div>
@@ -11739,32 +11730,44 @@ if(!window._pbbIsIOSSafari) {
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         var script5Delay = window._pendingBalanceShortcutAction || window._pbbShortcutLaunchAction ? 50 : 1500;
+        function replayScript5DeferredInit() {
+            if(window._crumb)window._crumb('script5_deferred_loaded');
+            // Replay deferred init functions
+            if (window._pbbInitProgramDateDeferred && typeof initProgramDate === 'function') {
+                try { initProgramDate(); } catch(e) {}
+            }
+            if (window._pbbCheckOnboardingDeferred && typeof checkAndTriggerOnboarding === 'function') {
+                try { checkAndTriggerOnboarding(); } catch(e) {}
+            }
+            if (window._pbbInitCalendarDeferred && typeof initCalendarView === 'function') {
+                try { initCalendarView(); } catch(e) {}
+            }
+        }
         // Give GC 1.5s to reclaim init temps before parsing 678KB of JS.
         // Widget/shortcut launches skip that wait so the target action can open quickly.
         // Previous 500ms was too aggressive — pbbInitComplete fires right
         // after Supabase + auth + user data, leaving heap at peak.
         setTimeout(function() {
             if(window._crumb)window._crumb('script5_loading');
+            if (window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
+                replayScript5DeferredInit();
+                return;
+            }
+            var existing = Array.from(document.scripts).find(function(script) {
+                return (script.src || '').indexOf('dashboard-script-5-initialize_stripe_for_inapp_pu.js') !== -1;
+            });
+            if (existing) {
+                existing.addEventListener('load', replayScript5DeferredInit, { once: true });
+                return;
+            }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=109';
-            s.onload = function() {
-                if(window._crumb)window._crumb('script5_deferred_loaded');
-                // Replay deferred init functions
-                if (window._pbbInitProgramDateDeferred && typeof initProgramDate === 'function') {
-                    try { initProgramDate(); } catch(e) {}
-                }
-                if (window._pbbCheckOnboardingDeferred && typeof checkAndTriggerOnboarding === 'function') {
-                    try { checkAndTriggerOnboarding(); } catch(e) {}
-                }
-                if (window._pbbInitCalendarDeferred && typeof initCalendarView === 'function') {
-                    try { initCalendarView(); } catch(e) {}
-                }
-            };
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=112';
+            s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=109"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=112"><\/script>');
 }
 </script>
 
@@ -11803,7 +11806,7 @@ if (window._pbbIsIOSSafari) {
             </div>
             <div class="meal-detail-items" id="mealDetailItems"></div>
             <button class="meal-detail-edit-btn" id="mealDetailShareBtn" onclick="shareCurrentMealToFeed()" style="background: linear-gradient(135deg, #0f766e, #2563eb); color: white; margin-bottom: 10px;">
-                Share meal to Feed
+                Share meal to Feed (+1 XP)
             </button>
             <button class="meal-detail-edit-btn" id="mealDetailEditBtn" onclick="openEditItemsModal()">
                 ✏️ Edit Items
@@ -12289,7 +12292,8 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
 
-    { tab:'dashboard', sel:'#calorie-tracker-widget', title:'Calorie tracker widget', body:"Home shows calories and macros, with one-tap logging for photos, barcodes, typed meals, manual macros, Build-a-Meal, and recent meals.", quick: true, xpReward:'nutrition' },
+    { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'Challenge invite', body:"Join the next challenge from Home. 1st Place is $500 cash, and the challenge starts when 15 people are in.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
+
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically.", quick: true },
     { tab:'meals', sel:'[onclick*="openMealFromGallery"]', title:'Upload from your photos', body:"Took a photo of your meal earlier? Tap the gallery icon to pick it from your photo library and log it later." },
     { tab:'meals', sel:'[title="Scan barcode"]', title:'Barcode scanner', body:"Scan any food packaging barcode to instantly pull up its nutrition info and log it." },
@@ -12303,6 +12307,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
+    { tab:'movement-tab', sel:'#today-workout-card', title:'Share wins to Instagram', body:"Finish a workout or hit a PB, then choose Balance Feed, Instagram Story, or Instagram Feed from the share options." },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#form-check-quick-card', title:'Form Checks', body:"Film a quick exercise clip and send it to Shannon when you want him to check your technique. During a workout, use the form-check button at the top of workout mode." },
@@ -12312,7 +12317,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'cycle', sel:'#cycle-hero-card,#view-cycle', title:'Cycle Syncing', body:"Log your period and get workouts synced to your hormonal phases.", condition: function(){ try { return (window.currentUser && (window.currentUser.gender === 'female' || window.currentUser.gender === 'Female')); } catch(e){ return false; } } },
     { tab:'cycle', sel:'#weekly-calendar', title:'Plan your week', body:"Use the weekly calendar to drag workout days around, tap a day, and add walks, classes, Pilates, yoga, or another activity.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
 
-    { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Write a quick update, add a photo or video if you want, then post straight from the top of Feed." },
+    { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Share one daily check-in to Feed for +2 XP. Add a photo or video if you want." },
 
 
     { tab:'dashboard', sel:'#dm-view,#dm-messages-container', title:'Say hi to Coach Shan', body:"Coach Shan built this app and would love your feedback to help make it better. This is his DM — type a message and say hi any time.", action: async function(){
@@ -13113,13 +13118,6 @@ if(!window._pbbIsIOSSafari) {
       condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'ios'); } catch(e){ return false; } }
     },
     {
-      id: 'home-calorie-tracker-widget-v1',
-      tab: 'dashboard',
-      sel: '#calorie-tracker-widget',
-      title: 'Calorie tracker widget',
-      body: "Home now shows today's calories and macros, with one-tap logging for photos, barcodes, typed meals, manual macros, Build-a-Meal, and recent meals."
-    },
-    {
       id: 'train-with-coach-shan-v1',
       tab: 'movement-tab',
       sel: '#mvmt-week-workouts-card',
@@ -13194,7 +13192,7 @@ if(!window._pbbIsIOSSafari) {
       subtab: 'calorie-tracker',
       sel: '#meals-log-list,.meal-log-card',
       title: 'Share meals to Feed',
-      body: "Tap any logged meal, then Share meal to Feed. It counts toward weekly community goals when you pick that goal."
+      body: "Tap any logged meal, then Share meal to Feed for +1 XP. It counts toward weekly community goals when you pick that goal."
     },
     {
       id: 'pull-to-refresh-dashboard-v1',
@@ -13225,6 +13223,13 @@ if(!window._pbbIsIOSSafari) {
       body: "Not sure if a movement looks right? Film a quick clip and send it to Shannon for a technique check. Workouts also have an in-session form-check button."
     },
     {
+      id: 'ig-workout-pb-share-v1',
+      tab: 'movement-tab',
+      sel: '#today-workout-card',
+      title: 'Share wins to Instagram',
+      body: "Finish a workout or hit a PB, then choose Balance Feed, Instagram Story, or Instagram Feed from the share options."
+    },
+    {
       id: 'friday-weigh-in-feed-share-v1',
       tab: 'dashboard',
       sel: '#daily-weigh-in-card,#daily-weigh-in-done-card',
@@ -13239,6 +13244,14 @@ if(!window._pbbIsIOSSafari) {
       body: "Group chats now use a three-dot options menu. Open Members from there, or choose Leave chat when you want out."
     },
     {
+      id: 'cohort-cash-prize-15-start-v1',
+      tab: 'dashboard',
+      sel: '#home-cohort-challenge-invite-top',
+      title: 'Challenge invite',
+      body: "The next challenge invite is on Home. 1st Place is $500 cash, and the challenge starts when 15 people are in.",
+      condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; }
+    },
+    {
       id: 'monthly-raffle-v1',
       tab: 'dashboard',
       sel: '#monthly-raffle-section',
@@ -13251,6 +13264,14 @@ if(!window._pbbIsIOSSafari) {
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({
+    id: 'cohort-biggest-effort-prize-v1',
+    tab: 'dashboard',
+    sel: '#challenge-effort-prize-card',
+    title: 'Biggest Effort Prize',
+    body: "The next challenge now has a Biggest Effort prize for the person who builds the most improved momentum.",
+    condition: function(){ var e = document.getElementById('challenge-effort-prize-card'); return e && e.offsetParent !== null; }
+  });
 
   var revealIdx = 0;
   var revealSteps = [];
@@ -14456,7 +14477,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=71">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=75">
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>
@@ -14485,18 +14506,18 @@ if (window._pbbIsIOSSafari) {
 
 <script>
 // Script-6 (324KB) - AI coach/chat. On iOS, defer to reduce memory pressure.
-// Not needed during init — coach opens on user interaction.
+// Not needed during init - coach opens on user interaction.
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=19';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=25';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=19"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=25"><\/script>');
 }
 </script>
 
@@ -14595,16 +14616,17 @@ if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !=
 </script>
 <script>
 // Script-7 (29KB) - video logic. Defer on iOS to reduce memory pressure.
+var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream';
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-7-video_logic.js';
+            s.src = pbbVideoLogicSrc;
             document.head.appendChild(s);
         }, 1000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-7-video_logic.js"><\/script>');
+    document.write('<script src="' + pbbVideoLogicSrc + '"><\/script>');
 }
 </script>
 
@@ -14617,78 +14639,17 @@ if (window._pbbIsIOSSafari) {
     </div>
 
     <div style="padding: 20px;">
-        <div style="position:relative; margin-bottom: 20px;">
-            <input type="text" id="builder-search" placeholder="Search 1800+ exercises..." onkeyup="filterExerciseLibrary(this.value)"
-                   style="width:100%; padding:15px 15px 15px 45px; border-radius:16px; border:1px solid #e2e8f0; font-size:1rem; background: #f8fafc;">
-            <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#94a3b8; position:absolute; left:15px; top:50%; transform:translateY(-50%);"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-        </div>
-
-        <!-- Exercise Filters -->
-        <div style="margin-bottom: 20px;">
-            <!-- Workout Type Filter -->
-            <div style="margin-bottom: 8px; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
-                <div onclick="toggleFilterSection('workoutType')" style="padding: 12px 16px; background: #f8fafc; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none;">
-                    <div style="font-size: 0.85rem; font-weight: 700; color: #334155;">Workout Type</div>
-                    <svg id="chevron-workoutType" viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #64748b; transition: transform 0.2s;">
-                        <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
-                    </svg>
-                </div>
-                <div id="filter-content-workoutType" style="display: none; padding: 12px; background: white;">
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                        <button onclick="toggleFilter('workoutType', 'yoga')" class="filter-chip" data-category="workoutType" data-value="yoga" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Yoga</button>
-                        <button onclick="toggleFilter('workoutType', 'pilates')" class="filter-chip" data-category="workoutType" data-value="pilates" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Pilates</button>
-                        <button onclick="toggleFilter('workoutType', 'cardio')" class="filter-chip" data-category="workoutType" data-value="cardio" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cardio</button>
-                        <button onclick="toggleFilter('workoutType', 'stretch')" class="filter-chip" data-category="workoutType" data-value="stretch" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Stretch</button>
-                    </div>
-                </div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom: 20px;">
+            <div style="position:relative; flex:1; min-width:0;">
+                <input type="text" id="builder-search" placeholder="Search 1800+ exercises..." onkeyup="filterExerciseLibrary(this.value)"
+                       style="width:100%; box-sizing:border-box; padding:15px 15px 15px 45px; border-radius:16px; border:1px solid #e2e8f0; font-size:1rem; background: #f8fafc;">
+                <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#94a3b8; position:absolute; left:15px; top:50%; transform:translateY(-50%);"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
             </div>
-
-            <!-- Equipment Filter -->
-            <div style="margin-bottom: 8px; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
-                <div onclick="toggleFilterSection('equipment')" style="padding: 12px 16px; background: #f8fafc; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none;">
-                    <div style="font-size: 0.85rem; font-weight: 700; color: #334155;">Equipment</div>
-                    <svg id="chevron-equipment" viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #64748b; transition: transform 0.2s;">
-                        <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
-                    </svg>
-                </div>
-                <div id="filter-content-equipment" style="display: none; padding: 12px; background: white;">
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                        <button onclick="toggleFilter('equipment', 'bodyweight')" class="filter-chip" data-category="equipment" data-value="bodyweight" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Bodyweight</button>
-                        <button onclick="toggleFilter('equipment', 'dumbbell')" class="filter-chip" data-category="equipment" data-value="dumbbell" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Dumbbell</button>
-                        <button onclick="toggleFilter('equipment', 'barbell')" class="filter-chip" data-category="equipment" data-value="barbell" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Barbell</button>
-                        <button onclick="toggleFilter('equipment', 'cable')" class="filter-chip" data-category="equipment" data-value="cable" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cable</button>
-                        <button onclick="toggleFilter('equipment', 'band')" class="filter-chip" data-category="equipment" data-value="band" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Band</button>
-                        <button onclick="toggleFilter('equipment', 'kettlebell')" class="filter-chip" data-category="equipment" data-value="kettlebell" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Kettlebell</button>
-                        <button onclick="toggleFilter('equipment', 'machine')" class="filter-chip" data-category="equipment" data-value="machine" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Machine</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Muscle Group Filter -->
-            <div style="margin-bottom: 8px; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
-                <div onclick="toggleFilterSection('muscle')" style="padding: 12px 16px; background: #f8fafc; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none;">
-                    <div style="font-size: 0.85rem; font-weight: 700; color: #334155;">Muscle Group</div>
-                    <svg id="chevron-muscle" viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #64748b; transition: transform 0.2s;">
-                        <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
-                    </svg>
-                </div>
-                <div id="filter-content-muscle" style="display: none; padding: 12px; background: white;">
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                        <button onclick="toggleFilter('muscle', 'chest')" class="filter-chip" data-category="muscle" data-value="chest" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Chest</button>
-                        <button onclick="toggleFilter('muscle', 'back')" class="filter-chip" data-category="muscle" data-value="back" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Back</button>
-                        <button onclick="toggleFilter('muscle', 'shoulders')" class="filter-chip" data-category="muscle" data-value="shoulders" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Shoulders</button>
-                        <button onclick="toggleFilter('muscle', 'arms')" class="filter-chip" data-category="muscle" data-value="arms" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Arms</button>
-                        <button onclick="toggleFilter('muscle', 'core')" class="filter-chip" data-category="muscle" data-value="core" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Core</button>
-                        <button onclick="toggleFilter('muscle', 'legs')" class="filter-chip" data-category="muscle" data-value="legs" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Legs</button>
-                        <button onclick="toggleFilter('muscle', 'glutes')" class="filter-chip" data-category="muscle" data-value="glutes" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Glutes</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Clear Filters Button -->
-            <div id="clear-filters-btn" style="display: none; margin-top: 12px;">
-                <button onclick="clearAllFilters()" style="width: 100%; padding: 10px; border-radius: 12px; border: 1.5px solid #ef4444; background: #fef2f2; color: #ef4444; font-size: 0.85rem; font-weight: 700; cursor: pointer;">Clear All Filters</button>
-            </div>
+            <button type="button" onclick="openCreateCustomExerciseModal('builder')" aria-label="Create your own exercise" title="Create your own exercise" style="width:52px; height:52px; border-radius:50%; border:1px solid #f3e8c5; background:#fffdf5; color:var(--text-main); display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; box-shadow:0 4px 14px rgba(15,23,42,0.06); touch-action:manipulation;">
+                <svg viewBox="0 0 24 24" style="width:22px; height:22px; fill:currentColor;">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                </svg>
+            </button>
         </div>
 
         <div id="builder-library-list" style="display:flex; flex-direction:column; gap:10px;">
@@ -14734,10 +14695,10 @@ if (window._pbbIsIOSSafari) {
 </div>
 <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-savedworkouts.js"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-savedworkouts.js?v=4"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-savedworkouts.js');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-savedworkouts.js?v=4');
 }
 </script>
 
@@ -15959,20 +15920,22 @@ if (window._pbbIsIOSSafari) {
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
+            if (typeof window.ensurePointsWidgetScript === 'function') {
+                window.ensurePointsWidgetScript().then(function() {
+                    if(window._crumb)window._crumb('script10_deferred_loaded');
+                }).catch(function(e) {
+                    console.warn('Deferred points widget failed:', e);
+                });
+                return;
+            }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=4';
-            s.onload = function() {
-                if(window._crumb)window._crumb('script10_deferred_loaded');
-                // Run loadPointsWidget now that it's available
-                if (typeof loadPointsWidget === 'function') {
-                    try { loadPointsWidget(); } catch(e) {}
-                }
-            };
+            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=8';
+            s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=4"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=8"><\/script>');
 }
 </script>
 
@@ -16041,7 +16004,7 @@ if (window._pbbIsIOSSafari) {
             }
 
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=7';
+            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=8';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -16101,7 +16064,7 @@ if (window._pbbIsIOSSafari) {
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=7" data-pbb-calorie-tracker="1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=8" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js" data-pbb-meal-builder="1"><\/script>');
     }
 })();
@@ -16952,7 +16915,6 @@ if(!window._pbbIsIOSSafari) {
             'checkAndShowDailyQuizCard',
             'checkAndShowMealTipCard',
             'checkAndShowProgressPhotoCard',
-            'checkAndShowWorkoutTrendCard',
             'initPerformanceCard',
             'loadAdaptiveAdjustment',
             'renderFeaturedRareCard'
@@ -17272,4 +17234,3 @@ if (document.readyState === 'complete') {
 </script>
 </body>
 </html>
-

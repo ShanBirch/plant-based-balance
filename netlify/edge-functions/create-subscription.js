@@ -25,7 +25,7 @@ export default async (request, context) => {
         const userAgent = request.headers.get("user-agent");
         const referer = request.headers.get("referer");
 
-        const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
+        const STRIPE_SECRET_KEY = globalThis.Netlify?.env?.get?.("STRIPE_SECRET_KEY") || Deno.env.get("STRIPE_SECRET_KEY");
         if (!STRIPE_SECRET_KEY) throw new Error("Missing Internal Configuration");
 
         const stripe = new Stripe(STRIPE_SECRET_KEY, {
@@ -33,10 +33,8 @@ export default async (request, context) => {
             apiVersion: "2026-02-25.clover",
         });
 
-        // Balance Redesign: Flat $30 AUD Pricing
-        let finalValue = 30; // $30 AUD flat
-        const isTrial = body.isTrial === true;
-        const trialDays = body.trialDays || 14;
+        // Balance Starter Coaching: AUD $29.99/week with one weekly check-in.
+        let finalValue = 29.99;
 
         const externalId = email ? await hash(email) : undefined;
 
@@ -52,7 +50,7 @@ export default async (request, context) => {
                 fbc, fbp,
                 sourceUrl: referer
             }, {
-                content_category: 'Hormone Plan',
+                content_category: 'Starter Coaching',
                 content_ids: [priceId],
                 value: finalValue,
                 currency: 'AUD'
@@ -69,8 +67,9 @@ export default async (request, context) => {
                 fbc,
                 fbp,
                 checkout_email: email || "",
-                balance_product: "balance_membership",
-                balance_plan: "app_monthly",
+                balance_product: "balance_starter_coaching",
+                balance_plan: "starter_weekly",
+                checkins_per_week: "1",
                 ...stripeComplianceMetadata
             }
         });
@@ -78,31 +77,34 @@ export default async (request, context) => {
         // 4. Create Subscription
         const subscriptionData = {
             customer: customer.id,
-            items: [{ price: priceId }],
+            items: [{
+                price_data: {
+                    currency: 'aud',
+                    product_data: {
+                        name: 'Balance Starter Coaching',
+                        description: 'Online coaching with one weekly check-in from Shannon',
+                    },
+                    unit_amount: 2999,
+                    recurring: {
+                        interval: 'week',
+                    },
+                },
+                quantity: 1,
+            }],
             payment_behavior: 'default_incomplete',
             payment_settings: { save_default_payment_method: 'on_subscription' },
             metadata: {
                 checkout_email: email || "",
-                balance_product: "balance_membership",
-                balance_plan: "app_monthly",
+                balance_product: "balance_starter_coaching",
+                balance_plan: "starter_weekly",
+                checkins_per_week: "1",
+                price_token: priceId || "",
                 ...stripeComplianceMetadata,
             },
             expand: ['latest_invoice.payment_intent'],
         };
 
-        // No coupons used anymore - flat $30 price
-
-        // Logic for 7-Day Mobile Wallet Trial
-        // Set 14-Day Trial for Balance Membership
-        if (isTrial) {
-             subscriptionData.trial_period_days = trialDays;
-        }
-        
-        // Ensure we use the correct price ID for $30
-        // If the pass priceId is for $92, we'll swap it to our $30 one 
-        // OR better: use the one passed if it's already $30.
-        // For now, let's assume 'price_1SkDKhCGCyRUsOfKdi44QCWi' is our target.
-        subscriptionData.items = [{ price: priceId }];
+        // No trial on the starter offer: the first weekly coaching payment is due today.
 
         const subscription = await stripe.subscriptions.create(subscriptionData);
 

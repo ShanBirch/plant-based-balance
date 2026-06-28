@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update button label for native
             const plan = btn.getAttribute('data-plan');
             if (plan === '6-month' || plan === '1-month') {
-                btn.innerHTML = `START 14-DAY FREE TRIAL <br/> <span style="font-size:0.8em; font-weight: 700;">Subscribe via ${window.Platform.isIOS() ? 'App Store' : 'Play Store'}</span>`;
+                btn.innerHTML = `START COACHING <br/> <span style="font-size:0.8em; font-weight: 700;">Subscribe via ${window.Platform.isIOS() ? 'App Store' : 'Play Store'}</span>`;
             }
 
             btn.addEventListener('click', async (e) => {
@@ -149,9 +149,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const result = await window.purchaseSubscription();
                     if (result && !result.cancelled) {
-                        window.location.href = '/success.html?amount=30&source=iap';
+                        window.location.href = '/success.html?amount=29.99&source=iap';
                     } else if (result && result.cancelled) {
-                        btn.innerHTML = `START 14-DAY FREE TRIAL <br/> <span style="font-size:0.8em; font-weight: 700;">Subscribe via ${window.Platform.isIOS() ? 'App Store' : 'Play Store'}</span>`;
+                        btn.innerHTML = `START COACHING <br/> <span style="font-size:0.8em; font-weight: 700;">Subscribe via ${window.Platform.isIOS() ? 'App Store' : 'Play Store'}</span>`;
                     }
                 } catch (err) {
                     console.error("IAP Error:", err);
@@ -179,21 +179,22 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 2. Define Product Pricing
-    // Real Price IDs created on User's Stripe Account
+    // Hosted Checkout creates the weekly starter-coaching price server-side.
+    // Keep a truthy plan token here so legacy client-side checks still pass.
     const PRICES = {
-        '1-month': 'price_1SkDKhCGCyRUsOfKdi44QCWi'
+        '1-month': 'balance_starter_coaching_weekly'
     };
 
     // 4. One-Click Payment Logic (Apple Pay / Google Pay)
     // Flat Pricing - no discount complexity
     const PLAN_DETAILS = {
-        '1-month': { amount: 3000, label: 'Balance Membership' }      // $30 AUD
+        '1-month': { amount: 2999, label: 'Balance Starter Coaching' }      // $29.99 AUD weekly
     };
 
     const paymentRequest = stripe.paymentRequest({
         country: 'AU',
         currency: 'aud',
-        total: { label: 'Total', amount: 4600 }, // Use a real amount for the check
+        total: { label: 'Total', amount: 2999 }, // Use a real amount for the check
         requestPayerName: true,
         requestPayerEmail: true,
     });
@@ -211,7 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            const isTrial = (currentSelectedPlan === '6-month');
             const response = await fetch('/.netlify/functions/create-subscription', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     paymentMethodId: ev.paymentMethod.id,
                     priceId: PRICES[currentSelectedPlan],
                     isDiscounted: false, // Flat pricing, no discount
-                    isTrial: isTrial, // Pass Trial Flag
+                    isTrial: false,
                     fbc: getCookie('_fbc'),
                     fbp: getCookie('_fbp'),
                     compliance: window.BalanceCompliance?.getContext('wallet_payment_authorized', {
@@ -275,8 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const btns = document.querySelectorAll('.checkout-btn');
             btns.forEach(btn => {
                 const plan = btn.getAttribute('data-plan');
-                const originalText = plan.replace('-', ' ').toUpperCase();
-
                 let walletLabel = "G-Pay";
                 const ua = navigator.userAgent.toLowerCase();
 
@@ -288,11 +286,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     walletLabel = "G-Pay";
                 }
 
-                // Don't override the "Start 7-Day Trial" text too aggressively
+                // Keep wallet labels aligned with the current paid weekly offer.
                 if (plan === '6-month') {
-                     btn.innerHTML = `START 7-DAY FREE TRIAL <br/> <span style="font-size:0.8em; font-weight: 700;">via ${walletLabel}</span>`;
+                     btn.innerHTML = `START COACHING <br/> <span style="font-size:0.8em; font-weight: 700;">via ${walletLabel}</span>`;
                 } else {
-                     btn.innerHTML = `${originalText} <br/> <span style="font-size:0.8em; font-weight: 700;">Pay with ${walletLabel}</span>`;
+                     btn.innerHTML = `START COACHING <br/> <span style="font-size:0.8em; font-weight: 700;">Pay with ${walletLabel}</span>`;
                 }
             });
         }
@@ -359,13 +357,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         displayLabel += " + Acupressure Series";
                     }
 
-                    // Any new user gets 14-day free trial on the $30 plan
-                    if (!isBumpChecked) {
-                        totalAmount = 0;
-                        displayLabel = "14-Day Free Trial (Then $30/mo)";
-                    } else {
-                        totalAmount = BUMP_AMOUNT;
-                        displayLabel = "Acupressure Series ($30/mo Trial Starts Now)";
+                    if (isBumpChecked) {
+                        displayLabel = "Balance Starter Coaching + Acupressure Series";
                     }
 
                     paymentRequest.update({
@@ -385,21 +378,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const priceId = PRICES[plan];
             if (!priceId) return;
 
-            // Check for referral code - if present, give 14-day trial
+            // Referrals are tracked, but the starter coaching offer charges today.
             const urlParams = new URLSearchParams(window.location.search);
             const referralCode = checkoutReferralCode || urlParams.get('ref') || sessionStorage.getItem('referralCode');
-            const hasReferral = !!referralCode;
-
-            // NEW: All signups get 14-day trial
-            btn.innerText = "Launching 14-Day Trial...";
+            btn.innerText = "Launching Checkout...";
             try {
                 const response = await fetch('/.netlify/functions/create-checkout-session', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         priceId: priceId,
-                        isTrial: true,
-                        trialDays: 14,
+                        isTrial: false,
+                        trialDays: 0,
                         referralCode: referralCode || null,
                         email: sessionStorage.getItem('userEmail'),
                         bump: isBumpChecked,

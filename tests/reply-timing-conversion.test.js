@@ -26,6 +26,7 @@ const accepted = buildReplyTimingSuggestion(makeLeadAlert({
 }));
 assert.strictEqual(accepted.delay_ms, 0);
 assert.strictEqual(accepted.signals.accepted_challenge, true);
+assert.strictEqual(accepted.signals.accepted_coaching, true);
 
 const offerWarm = buildReplyTimingSuggestion(makeLeadAlert({
     inbound: 'that sounds good',

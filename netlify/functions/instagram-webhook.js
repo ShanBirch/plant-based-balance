@@ -20,6 +20,7 @@ const {
 const {
     normalizeCoachDraftText,
     fireCoachEditAnalysis,
+    isAlwaysNeedsYouPerson,
 } = require('./_lib/client-context');
 const {
     resolveMetaIgAccountConfig,
@@ -60,6 +61,30 @@ const INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV = process.env.INSTAGRAM_GRAPH_ACCESS_TOKE
     || process.env.INSTAGRAM_ACCESS_TOKEN
     || '';
 let cachedInstagramGraphAccessToken = INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV || '';
+const GOLD_COAST_AI_IG_ACCOUNT_IDS = new Set([
+    '17841422424052111',
+    ...splitEnvList(process.env.GOLD_COAST_AI_IG_ACCOUNT_IDS || process.env.GOLD_COAST_AI_IG_ACCOUNT_ID || ''),
+]);
+const GOLD_COAST_AI_WEBSITE_URL = process.env.GOLD_COAST_AI_WEBSITE_URL
+    || 'https://gold-coast-ai-solutions.netlify.app/';
+const COMMENT_PRIVATE_REPLY_DISABLED = envFlagEnabled(
+    process.env.IG_COMMENT_PRIVATE_REPLY_DISABLED
+    || process.env.META_IG_COMMENT_PRIVATE_REPLY_DISABLED
+);
+const FOOD_PHOTO_TRACKING_ACK = process.env.IG_FOOD_PHOTO_TRACKING_ACK
+    || "Looks so good. I'll track it for you now.";
+const FOOD_PHOTO_TRACKING_DEFAULTS_DISABLED = envFlagEnabled(
+    process.env.IG_FOOD_PHOTO_TRACKING_DISABLE_DEFAULTS
+    || process.env.FOOD_PHOTO_TRACKING_DISABLE_DEFAULTS
+);
+const FOOD_PHOTO_TRACKING_OFFER_WINDOW_DAYS = Number(process.env.IG_FOOD_PHOTO_TRACKING_OFFER_WINDOW_DAYS || 30);
+const FOOD_PHOTO_TRACKING_OFFER_WINDOW_MS = (Number.isFinite(FOOD_PHOTO_TRACKING_OFFER_WINDOW_DAYS) && FOOD_PHOTO_TRACKING_OFFER_WINDOW_DAYS > 0
+    ? FOOD_PHOTO_TRACKING_OFFER_WINDOW_DAYS
+    : 30) * 24 * 60 * 60 * 1000;
+const FOOD_PHOTO_TRACKING_ALLOWED_TOKENS = new Set([
+    ...(FOOD_PHOTO_TRACKING_DEFAULTS_DISABLED ? [] : ['fra', 'romy']),
+    ...splitEnvList(process.env.IG_FOOD_PHOTO_TRACKING_ALLOWLIST || process.env.FOOD_PHOTO_TRACKING_ALLOWLIST || ''),
+].map(normalizeFoodTrackingToken).filter(Boolean));
 
 const SAFE_AUDIT_HEADERS = [
     'content-type',
@@ -161,6 +186,17 @@ async function getInstagramGraphAccessToken(accountId = '') {
     return cachedInstagramGraphAccessToken;
 }
 
+function envFlagEnabled(value) {
+    return ['1', 'true', 'yes', 'y', 'on', 'enabled'].includes(String(value || '').trim().toLowerCase());
+}
+
+function splitEnvList(value) {
+    return String(value || '')
+        .split(/[,\s]+/)
+        .map(item => item.trim())
+        .filter(Boolean);
+}
+
 function normalizeGraphApiVersion(value) {
     const raw = String(value || '').trim();
     if (!raw) return 'v25.0';
@@ -183,6 +219,845 @@ async function graphGet(path, params = {}, accountId = '') {
         throw new Error(`Graph ${res.status}: ${text.slice(0, 300)}`);
     }
     return text ? JSON.parse(text) : null;
+}
+
+function normalizeHandle(value) {
+    return String(value || '')
+        .replace(/^@+/, '')
+        .trim()
+        .toLowerCase();
+}
+
+function normalizeCommentKeyword(value) {
+    const cleaned = String(value || '')
+        .trim()
+        .replace(/^["'`]+|["'`.,!?]+$/g, '')
+        .trim()
+        .toLowerCase();
+    if (!cleaned || /\s/.test(cleaned)) return null;
+    if (!/^[a-z0-9][a-z0-9_-]{0,40}$/.test(cleaned)) return null;
+    return cleaned;
+}
+
+function commentKeywordForPrivateReply(event = {}) {
+    if (event.type !== 'comment') return null;
+    return normalizeCommentKeyword(event.text);
+}
+
+function isGoldCoastAiAccount(event = {}, accountConfig = {}) {
+    const botAccount = normalizeHandle(accountConfig.botAccount);
+    const ownerId = String(event.ownerId || event.igAccountId || event.recipientId || '').trim();
+    return botAccount === 'goldcoast_ai_solutions' || GOLD_COAST_AI_IG_ACCOUNT_IDS.has(ownerId);
+}
+
+function shouldSendGoldCoastWebsitePrivateReply(event = {}, accountConfig = {}) {
+    if (COMMENT_PRIVATE_REPLY_DISABLED) return false;
+    if (commentKeywordForPrivateReply(event) !== 'website') return false;
+    if (!event.commentId || !event.fromId) return false;
+    return isGoldCoastAiAccount(event, accountConfig);
+}
+
+function firstString(...values) {
+    for (const value of values) {
+        if (value == null) continue;
+        if (Array.isArray(value)) {
+            const nested = firstString(...value);
+            if (nested) return nested;
+            continue;
+        }
+        if (typeof value === 'object') continue;
+        const text = String(value).trim();
+        if (text) return text;
+    }
+    return '';
+}
+
+function listFromValue(value) {
+    if (value == null || value === '') return [];
+    if (Array.isArray(value)) return value.flatMap(listFromValue);
+    if (typeof value === 'object') return [];
+    return splitEnvList(value);
+}
+
+function commentGiveawayConfigRaw() {
+    return process.env.META_IG_COMMENT_GIVEAWAYS_JSON
+        || process.env.IG_COMMENT_GIVEAWAYS_JSON
+        || process.env.COMMENT_GIVEAWAYS_JSON
+        || '';
+}
+
+function looksLikeCommentGiveawayCampaign(value) {
+    const obj = safeObject(value);
+    return [
+        'id',
+        'campaignId',
+        'campaign_id',
+        'keyword',
+        'keywords',
+        'commentKeyword',
+        'comment_keyword',
+        'trigger',
+        'url',
+        'giveawayUrl',
+        'giveaway_url',
+        'deliveryUrl',
+        'delivery_url',
+        'link',
+        'replyText',
+        'reply_text',
+        'privateReplyText',
+        'private_reply_text',
+        'message',
+        'mediaId',
+        'media_id',
+        'mediaIds',
+        'media_ids',
+        'igMediaId',
+        'ig_media_id',
+        'sourceKey',
+        'source_key',
+    ].some(key => Object.prototype.hasOwnProperty.call(obj, key));
+}
+
+function normalizeCommentGiveawayCampaign(raw = {}, defaults = {}) {
+    const campaign = {
+        ...safeObject(defaults),
+        ...safeObject(raw),
+    };
+    const source = campaign._source || defaults._source || 'config';
+    const keywords = [
+        ...listFromValue(campaign.keywords),
+        ...listFromValue(campaign.keyword),
+        ...listFromValue(campaign.commentKeyword),
+        ...listFromValue(campaign.comment_keyword),
+        ...listFromValue(campaign.trigger),
+    ].map(normalizeCommentKeyword).filter(Boolean);
+    const uniqueKeywords = [...new Set(keywords)];
+    const keyword = uniqueKeywords[0] || null;
+    if (!keyword) return null;
+
+    const accountHandles = [
+        ...listFromValue(campaign.account),
+        ...listFromValue(campaign.accountHandle),
+        ...listFromValue(campaign.account_handle),
+        ...listFromValue(campaign.botAccount),
+        ...listFromValue(campaign.bot_account),
+        ...listFromValue(campaign.handle),
+    ].map(normalizeHandle).filter(Boolean);
+    const ownerIds = [
+        ...listFromValue(campaign.ownerId),
+        ...listFromValue(campaign.owner_id),
+        ...listFromValue(campaign.ownerIds),
+        ...listFromValue(campaign.owner_ids),
+        ...listFromValue(campaign.accountId),
+        ...listFromValue(campaign.account_id),
+        ...listFromValue(campaign.accountIds),
+        ...listFromValue(campaign.account_ids),
+        ...listFromValue(campaign.igAccountId),
+        ...listFromValue(campaign.ig_account_id),
+    ];
+    const mediaIds = [
+        ...listFromValue(campaign.mediaId),
+        ...listFromValue(campaign.media_id),
+        ...listFromValue(campaign.mediaIds),
+        ...listFromValue(campaign.media_ids),
+        ...listFromValue(campaign.igMediaId),
+        ...listFromValue(campaign.ig_media_id),
+        ...listFromValue(campaign.postId),
+        ...listFromValue(campaign.post_id),
+    ];
+    const sourceKeys = [
+        ...listFromValue(campaign.sourceKey),
+        ...listFromValue(campaign.source_key),
+        ...listFromValue(campaign.sourceKeys),
+        ...listFromValue(campaign.source_keys),
+    ];
+    const permalinks = [
+        ...listFromValue(campaign.permalink),
+        ...listFromValue(campaign.permalinks),
+    ];
+    const appendUtm = booleanFlagValue(campaign.appendUtm ?? campaign.append_utm);
+    const globalFlag = booleanFlagValue(campaign.global)
+        || booleanFlagValue(campaign.accountWide)
+        || booleanFlagValue(campaign.account_wide)
+        || String(campaign.scope || '').trim().toLowerCase() === 'account';
+    const id = firstString(campaign.id, campaign.campaignId, campaign.campaign_id)
+        || [normalizeHandle(accountHandles[0]), keyword].filter(Boolean).join('_')
+        || `${keyword}_giveaway`;
+    const title = firstString(
+        campaign.title,
+        campaign.giveawayTitle,
+        campaign.giveaway_title,
+        campaign.name,
+        campaign.label
+    ) || `${keyword.toUpperCase()} giveaway`;
+    const url = cleanUrl(firstString(
+        campaign.url,
+        campaign.giveawayUrl,
+        campaign.giveaway_url,
+        campaign.deliveryUrl,
+        campaign.delivery_url,
+        campaign.link
+    ));
+    return {
+        ...campaign,
+        _source: source,
+        id,
+        keyword,
+        keywords: uniqueKeywords,
+        title,
+        url,
+        replyText: firstString(campaign.replyText, campaign.reply_text, campaign.privateReplyText, campaign.private_reply_text, campaign.message),
+        accountHandles: [...new Set(accountHandles)],
+        ownerIds: [...new Set(ownerIds)],
+        mediaIds: [...new Set(mediaIds)],
+        sourceKeys: [...new Set(sourceKeys)],
+        permalinks: [...new Set(permalinks.map(cleanUrl).filter(Boolean))],
+        appendUtm: appendUtm === false ? false : true,
+        global: globalFlag === true,
+        utmCampaign: firstString(campaign.utmCampaign, campaign.utm_campaign) || id || keyword,
+    };
+}
+
+function commentGiveawayCampaignsFromValue(value, defaults = {}) {
+    if (!value) return [];
+    if (Array.isArray(value)) {
+        return value.flatMap(item => commentGiveawayCampaignsFromValue(item, defaults));
+    }
+    const obj = safeObject(value);
+    if (!Object.keys(obj).length) return [];
+    if (Array.isArray(obj.campaigns)) {
+        const { campaigns, ...campaignDefaults } = obj;
+        return campaigns.flatMap(item => commentGiveawayCampaignsFromValue(item, {
+            ...defaults,
+            ...campaignDefaults,
+        }));
+    }
+    if (looksLikeCommentGiveawayCampaign(obj)) {
+        const normalized = normalizeCommentGiveawayCampaign(obj, defaults);
+        return normalized ? [normalized] : [];
+    }
+    return Object.entries(obj).flatMap(([key, child]) => {
+        if (Array.isArray(child) || Array.isArray(safeObject(child).campaigns)) {
+            return commentGiveawayCampaignsFromValue(child, {
+                ...defaults,
+                account: defaults.account || key,
+            });
+        }
+        if (looksLikeCommentGiveawayCampaign(child)) {
+            return commentGiveawayCampaignsFromValue({
+                id: safeObject(child).id || key,
+                ...safeObject(child),
+            }, defaults);
+        }
+        return [];
+    });
+}
+
+function commentGiveawayCampaignsFromConfig(raw = undefined) {
+    const source = raw === undefined ? commentGiveawayConfigRaw() : raw;
+    if (!source) return [];
+    let parsed = source;
+    if (typeof source === 'string') {
+        try {
+            parsed = JSON.parse(source);
+        } catch (err) {
+            console.warn('[instagram-webhook] comment giveaway config JSON invalid:', err.message);
+            return [];
+        }
+    }
+    return commentGiveawayCampaignsFromValue(parsed, { _source: 'env' });
+}
+
+function commentGiveawayCampaignsFromContentItem(contentItem = {}) {
+    const item = safeObject(contentItem);
+    const rawPayload = safeObject(item.raw_payload);
+    const defaults = {
+        _source: 'content_item',
+        mediaId: item.ig_media_id || item.ig_story_id || '',
+        sourceKey: item.source_key || '',
+        permalink: item.permalink || '',
+    };
+    return [
+        rawPayload.commentGiveaway,
+        rawPayload.comment_giveaway,
+        rawPayload.commentGiveaways,
+        rawPayload.comment_giveaways,
+        item.commentGiveaway,
+        item.comment_giveaway,
+    ].flatMap(value => commentGiveawayCampaignsFromValue(value, defaults));
+}
+
+function commentGiveawayCampaignAccountMatches(campaign = {}, event = {}, accountConfig = {}) {
+    if (!campaign.accountHandles?.length && !campaign.ownerIds?.length) return true;
+    const eventOwnerIds = new Set([
+        event.ownerId,
+        event.igAccountId,
+        event.recipientId,
+    ].map(value => String(value || '').trim()).filter(Boolean));
+    if (campaign.ownerIds?.some(id => eventOwnerIds.has(String(id || '').trim()))) return true;
+    const botAccount = normalizeHandle(accountConfig.botAccount);
+    return !!botAccount && campaign.accountHandles?.includes(botAccount);
+}
+
+function commentGiveawayCampaignMediaMatches(campaign = {}, event = {}, contentItem = {}) {
+    const item = safeObject(contentItem);
+    const eventMediaIds = new Set([
+        event.mediaId,
+        event.storyId,
+        item.ig_media_id,
+        item.ig_story_id,
+    ].map(value => String(value || '').trim()).filter(Boolean));
+    const eventSourceKeys = new Set([
+        sourceKeyForEvent(event),
+        item.source_key,
+    ].map(value => String(value || '').trim()).filter(Boolean));
+    const contentPermalink = cleanUrl(item.permalink || '');
+    if (campaign.mediaIds?.length) {
+        return campaign.mediaIds.some(id => eventMediaIds.has(String(id || '').trim()));
+    }
+    if (campaign.sourceKeys?.length) {
+        return campaign.sourceKeys.some(key => eventSourceKeys.has(String(key || '').trim()));
+    }
+    if (campaign.permalinks?.length) {
+        return !!contentPermalink && campaign.permalinks.includes(contentPermalink);
+    }
+    return campaign._source === 'content_item' || campaign.global === true;
+}
+
+function commentGiveawayCampaignMatches(campaign = {}, keyword, event = {}, contentItem = {}, accountConfig = {}) {
+    if (!campaign || !keyword) return false;
+    if (!campaign.keywords?.includes(keyword)) return false;
+    if (!commentGiveawayCampaignAccountMatches(campaign, event, accountConfig)) return false;
+    return commentGiveawayCampaignMediaMatches(campaign, event, contentItem);
+}
+
+function goldCoastWebsiteCampaign(event = {}, accountConfig = {}) {
+    if (!shouldSendGoldCoastWebsitePrivateReply(event, accountConfig)) return null;
+    return normalizeCommentGiveawayCampaign({
+        id: 'gold_coast_ai_website_keyword',
+        keyword: 'website',
+        title: 'Gold Coast AI Solutions website',
+        url: GOLD_COAST_AI_WEBSITE_URL,
+        replyText: [
+            'Got you - here is the Gold Coast AI Solutions website:',
+            '{url}',
+            '',
+            'If you want me to map the first AI setup for your business, reply with your industry.',
+        ].join('\n'),
+        global: true,
+        utmCampaign: 'website_keyword',
+    }, { _source: 'legacy' });
+}
+
+function resolveCommentGiveawayCampaign({ event = {}, contentItem = {}, accountConfig = {} } = {}) {
+    if (COMMENT_PRIVATE_REPLY_DISABLED) return null;
+    if (event.type !== 'comment' || !event.commentId || !event.fromId) return null;
+    const keyword = commentKeywordForPrivateReply(event);
+    if (!keyword) return null;
+    const candidates = [
+        ...commentGiveawayCampaignsFromContentItem(contentItem),
+        ...commentGiveawayCampaignsFromConfig(),
+    ];
+    const configured = candidates.find(campaign => (
+        commentGiveawayCampaignMatches(campaign, keyword, event, contentItem, accountConfig)
+    ));
+    return configured || goldCoastWebsiteCampaign(event, accountConfig);
+}
+
+function appendCommentGiveawayTrackingToUrl(rawUrl, event = {}, campaign = {}) {
+    const cleaned = cleanUrl(rawUrl);
+    if (!cleaned) return '';
+    if (campaign.appendUtm === false) return cleaned;
+    try {
+        const url = new URL(cleaned);
+        url.searchParams.set('utm_source', firstString(campaign.utmSource, campaign.utm_source) || 'instagram');
+        url.searchParams.set('utm_medium', firstString(campaign.utmMedium, campaign.utm_medium) || 'dm_private_reply');
+        url.searchParams.set('utm_campaign', campaign.utmCampaign || campaign.id || campaign.keyword || 'comment_giveaway');
+        const handle = normalizeHandle(event.username);
+        if (handle) url.searchParams.set('ig', handle);
+        return url.toString();
+    } catch {
+        return cleaned;
+    }
+}
+
+function interpolateCommentGiveawayTemplate(template, values = {}) {
+    return String(template || '').replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}|\{\s*([a-zA-Z0-9_]+)\s*\}/g, (_, doubleKey, singleKey) => {
+        const key = doubleKey || singleKey;
+        return values[key] == null ? '' : String(values[key]);
+    });
+}
+
+function buildGoldCoastWebsiteUrl(event = {}) {
+    return appendCommentGiveawayTrackingToUrl(GOLD_COAST_AI_WEBSITE_URL, event, {
+        keyword: 'website',
+        utmCampaign: 'website_keyword',
+    });
+}
+
+function buildCommentGiveawayPrivateReply({ campaign = {}, event = {} } = {}) {
+    const url = appendCommentGiveawayTrackingToUrl(campaign.url, event, campaign);
+    const title = campaign.title || 'your free content';
+    const template = campaign.replyText || [
+        `Got you - here is ${title}:`,
+        url || 'Reply here and I will send it through.',
+        '',
+        'Reply here if you want me to help with the next step.',
+    ].join('\n');
+    return interpolateCommentGiveawayTemplate(template, {
+        url,
+        giveawayUrl: url,
+        giveaway_url: url,
+        deliveryUrl: url,
+        delivery_url: url,
+        title,
+        keyword: campaign.keyword || '',
+        username: event.username || '',
+        handle: normalizeHandle(event.username),
+        campaignId: campaign.id || '',
+        campaign_id: campaign.id || '',
+    }).trim();
+}
+
+function buildGoldCoastWebsitePrivateReply(event = {}) {
+    const campaign = goldCoastWebsiteCampaign(event, { botAccount: 'goldcoast_ai_solutions' });
+    return buildCommentGiveawayPrivateReply({
+        campaign: campaign || {
+            keyword: 'website',
+            title: 'Gold Coast AI Solutions website',
+            url: GOLD_COAST_AI_WEBSITE_URL,
+            replyText: [
+                'Got you - here is the Gold Coast AI Solutions website:',
+                '{url}',
+                '',
+                'If you want me to map the first AI setup for your business, reply with your industry.',
+            ].join('\n'),
+            utmCampaign: 'website_keyword',
+        },
+        event,
+    });
+}
+
+function commentPrivateReplyDedupeId(commentId) {
+    return `${GRAPH_SUBSCRIBER_PREFIX}private_reply:${String(commentId || '').trim()}`;
+}
+
+function graphMessageIdFromResponse(response = {}) {
+    return response.message_id || response.id || null;
+}
+
+function normalizeFoodTrackingToken(value) {
+    return String(value || '')
+        .replace(/^@+/, '')
+        .replace(/^[\s"'`]+|[\s"'`.,!?]+$/g, '')
+        .trim()
+        .toLowerCase();
+}
+
+function booleanFlagValue(value) {
+    if (typeof value === 'boolean') return value;
+    const raw = String(value ?? '').trim().toLowerCase();
+    if (['1', 'true', 'yes', 'y', 'on', 'enabled'].includes(raw)) return true;
+    if (['0', 'false', 'no', 'n', 'off', 'disabled'].includes(raw)) return false;
+    return null;
+}
+
+function extractFoodPhotoUrls(text) {
+    const urls = [];
+    const seen = new Set();
+    const source = String(text || '');
+    const matches = source.matchAll(/\[PHOTO:(https?:\/\/[^\]\s]+)\]/gi);
+    for (const match of matches) {
+        const url = cleanUrl(match[1]);
+        if (url && !seen.has(url)) {
+            seen.add(url);
+            urls.push(url);
+        }
+    }
+    return urls;
+}
+
+function foodPhotoUrlsFromMessaging(event) {
+    const message = messageFromMessaging(event);
+    const attachments = Array.isArray(message.attachments) ? message.attachments : [];
+    const urls = [];
+    const seen = new Set();
+    for (const attachment of attachments) {
+        const payload = safeObject(attachment?.payload);
+        const type = String(attachment?.type || payload.type || '').toLowerCase();
+        const mimeType = String(payload.mime_type || payload.content_type || attachment?.mime_type || '').toLowerCase();
+        if (type === 'story_mention' || type === 'share' || type.includes('audio') || type.includes('video')) {
+            continue;
+        }
+        if (!type.includes('image') && !type.includes('photo') && !mimeType.startsWith('image/')) {
+            continue;
+        }
+        const url = cleanUrl(payload.url || payload.media_url || payload.attachment_url || attachment?.url);
+        if (url && !seen.has(url)) {
+            seen.add(url);
+            urls.push(url);
+        }
+    }
+    return urls;
+}
+
+function addFoodTrackingIdentityToken(tokens, value, splitWords = false) {
+    const token = normalizeFoodTrackingToken(value);
+    if (!token) return;
+    tokens.push(token);
+    if (!splitWords) return;
+    token.split(/[\s._-]+/).map(normalizeFoodTrackingToken).filter(Boolean).forEach(part => tokens.push(part));
+}
+
+function foodTrackingIdentityTokens(thread = {}) {
+    const customData = safeObject(thread.custom_data);
+    const graphData = safeObject(customData.instagram_graph);
+    const trackingData = safeObject(customData.food_photo_tracking);
+    const tokens = [];
+    addFoodTrackingIdentityToken(tokens, thread.id);
+    addFoodTrackingIdentityToken(tokens, thread.linked_user_id);
+    addFoodTrackingIdentityToken(tokens, thread.subscriber_id);
+    addFoodTrackingIdentityToken(tokens, thread.ig_username);
+    addFoodTrackingIdentityToken(tokens, thread.profile_name, true);
+    addFoodTrackingIdentityToken(tokens, graphData.ig_username);
+    addFoodTrackingIdentityToken(tokens, graphData.username);
+    addFoodTrackingIdentityToken(tokens, graphData.ig_graph_user_id);
+    addFoodTrackingIdentityToken(tokens, graphData.participant_id);
+    addFoodTrackingIdentityToken(tokens, trackingData.alias);
+    addFoodTrackingIdentityToken(tokens, trackingData.name, true);
+    const aliases = Array.isArray(trackingData.aliases) ? trackingData.aliases : [];
+    aliases.forEach(alias => addFoodTrackingIdentityToken(tokens, alias, true));
+    return [...new Set(tokens.filter(Boolean))];
+}
+
+function isPermanentNeedsYouThread(thread = {}) {
+    return isAlwaysNeedsYouPerson({
+        name: thread.profile_name,
+        client_name: thread.profile_name,
+        profile_name: thread.profile_name,
+        ig_username: thread.ig_username,
+        username: thread.ig_username,
+        subscriber_id: thread.subscriber_id,
+        custom_data: thread.custom_data,
+    });
+}
+
+function foodPhotoTrackingFlagFromCustomData(customData = {}) {
+    const data = safeObject(customData);
+    const trackingData = safeObject(data.food_photo_tracking || data.calorie_photo_tracking);
+    const candidates = [
+        trackingData.enabled,
+        trackingData.allowed,
+        data.food_photo_tracking_enabled,
+        data.calorie_photo_tracking_enabled,
+        data.manual_food_photo_tracking_enabled,
+    ];
+    for (const candidate of candidates) {
+        const parsed = booleanFlagValue(candidate);
+        if (parsed !== null) return parsed;
+    }
+    return null;
+}
+
+function isFoodPhotoTrackingAllowed(thread = {}) {
+    if (!thread?.linked_user_id) return false;
+    if (isPermanentNeedsYouThread(thread)) return false;
+    const explicit = foodPhotoTrackingFlagFromCustomData(thread.custom_data);
+    if (explicit === false) return false;
+    if (explicit === true) return true;
+    if (!FOOD_PHOTO_TRACKING_ALLOWED_TOKENS.size) return false;
+    const identityTokens = foodTrackingIdentityTokens(thread);
+    return identityTokens.some(token => FOOD_PHOTO_TRACKING_ALLOWED_TOKENS.has(token));
+}
+
+function normalizeFoodPhotoTrackingMessageText(value) {
+    return String(value || '')
+        .replace(/[\u2018\u2019]/g, "'")
+        .replace(/\[(?:PHOTO|VIDEO|AUDIO):[^\]]+\]/gi, ' ')
+        .toLowerCase()
+        .replace(/\bi\s*(?:'| )?ll\b/g, 'i will')
+        .replace(/\bi\s*can\b/g, 'i can')
+        .replace(/\bdon\s*t\b/g, 'dont')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function isFoodPhotoTrackingOfferText(text) {
+    const normalized = normalizeFoodPhotoTrackingMessageText(text);
+    if (!normalized) return false;
+    const asksForFoodPhotos = /\bsend (?:me |through |over |across )?(?:your )?(?:meals?|food|meal pics?|food pics?|photos?|pics?|pictures?)\b/.test(normalized)
+        || /\bsend (?:me )?(?:photos?|pics?|pictures?) of (?:your )?(?:meals?|food)\b/.test(normalized)
+        || /\b(?:send|shoot|flick) (?:me )?(?:a )?(?:photo|pic|picture)\b.*\b(?:meal|food)\b/.test(normalized);
+    const offersTracking = /\b(?:i (?:will|can)|ill) (?:log|track|add|put)\b.*\b(?:it|them|meal|meals|food|cals|calories|macros)\b/.test(normalized)
+        || /\b(?:i (?:will|can)|ill)\b.*\b(?:log|track|add|put)\b.*\b(?:meal|meals|food|cals|calories|macros)\b/.test(normalized);
+    const trackingDomain = /\b(?:meal|meals|food|cals|calories|macros)\b/.test(normalized);
+    return asksForFoodPhotos && offersTracking && trackingDomain;
+}
+
+function isFoodPhotoTrackingConsentText(text) {
+    const normalized = normalizeFoodPhotoTrackingMessageText(text);
+    if (!normalized) return false;
+    if (/\b(?:no|nah|nope|dont|stop|cancel|not now|rather not|not yet)\b/.test(normalized)) return false;
+    if (/^(?:yes|yeah|yep|yup|sure|ok|okay|perfect|deal|please|keen|sounds good|that works|love that|will do|done|agreed)\b/.test(normalized)) {
+        return true;
+    }
+    if (/\b(?:i will|ill|will|can|happy to|going to)\b.*\b(?:send|shoot|flick)\b.*\b(?:meal|meals|food|photos|pics|pictures)\b/.test(normalized)) {
+        return true;
+    }
+    if (/\b(?:send|sending|shooting|flicking)\b.*\b(?:meal|meals|food|photos|pics|pictures)\b/.test(normalized)) {
+        return true;
+    }
+    return false;
+}
+
+function foodPhotoTrackingOfferIsActive(customData = {}, nowIso = new Date().toISOString()) {
+    const trackingData = safeObject(safeObject(customData).food_photo_tracking);
+    if (foodPhotoTrackingFlagFromCustomData(customData) === true) return false;
+    if (trackingData.offer_status && trackingData.offer_status !== 'pending') return false;
+    const offeredAtMs = Date.parse(trackingData.last_offer_at || trackingData.offered_at || '');
+    if (!Number.isFinite(offeredAtMs)) return trackingData.offer_status === 'pending';
+    const nowMs = Date.parse(nowIso || '');
+    const referenceMs = Number.isFinite(nowMs) ? nowMs : Date.now();
+    return referenceMs - offeredAtMs <= FOOD_PHOTO_TRACKING_OFFER_WINDOW_MS;
+}
+
+function hasPendingFoodPhotoTrackingOffer(thread = {}, nowIso = new Date().toISOString()) {
+    if (!thread?.linked_user_id) return false;
+    return foodPhotoTrackingOfferIsActive(thread.custom_data, nowIso);
+}
+
+function graphSubscriberParts(subscriberId) {
+    const raw = String(subscriberId || '').trim();
+    if (!raw.startsWith(GRAPH_SUBSCRIBER_PREFIX)) return {};
+    const body = raw.slice(GRAPH_SUBSCRIBER_PREFIX.length);
+    const separatorIndex = body.indexOf(':');
+    if (separatorIndex < 0) return { participantId: body };
+    return {
+        accountId: body.slice(0, separatorIndex),
+        participantId: body.slice(separatorIndex + 1),
+    };
+}
+
+function firstCleanString(candidates = []) {
+    for (const candidate of candidates) {
+        const value = String(candidate || '').trim();
+        if (value) return value;
+    }
+    return '';
+}
+
+function resolveThreadGraphRecipientId(thread = {}) {
+    const customData = safeObject(thread.custom_data);
+    const graphData = safeObject(customData.instagram_graph);
+    const parts = graphSubscriberParts(thread.subscriber_id);
+    return firstCleanString([
+        graphData.ig_graph_user_id,
+        graphData.participant_id,
+        graphData.user_id,
+        customData.ig_graph_user_id,
+        parts.participantId,
+    ]);
+}
+
+function resolveThreadGraphAccountId(thread = {}) {
+    const customData = safeObject(thread.custom_data);
+    const graphData = safeObject(customData.instagram_graph);
+    const parts = graphSubscriberParts(thread.subscriber_id);
+    return firstCleanString([
+        graphData.ig_account_id,
+        graphData.account_id,
+        graphData.owner_id,
+        customData.ig_graph_account_id,
+        customData.ig_account_id,
+        parts.accountId,
+    ]);
+}
+
+async function postInstagramPrivateReply({ accountId, commentId, text }) {
+    const accessToken = await getInstagramGraphAccessToken(accountId);
+    if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
+    if (!accountId) throw new Error('Instagram Graph account id missing');
+    if (!commentId) throw new Error('Instagram comment id missing');
+
+    const res = await fetch(`${GRAPH_BASE}/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(accountId)}/messages`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            recipient: { comment_id: commentId },
+            message: { text },
+        }),
+    });
+    const responseText = await res.text();
+    let parsed;
+    try { parsed = responseText ? JSON.parse(responseText) : {}; } catch { parsed = { raw: responseText }; }
+    if (!res.ok) {
+        const detail = parsed?.error?.message || responseText;
+        throw new Error(`Instagram Graph private reply ${res.status}: ${String(detail || '').slice(0, 400)}`);
+    }
+    return parsed;
+}
+
+async function postInstagramTextMessage({ accountId, recipientId, text }) {
+    const accessToken = await getInstagramGraphAccessToken(accountId);
+    if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
+    if (!accountId) throw new Error('Instagram Graph account id missing');
+    if (!recipientId) throw new Error('Instagram recipient id missing');
+
+    const res = await fetch(`${GRAPH_BASE}/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(accountId)}/messages`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            recipient: { id: recipientId },
+            message: { text },
+        }),
+    });
+    const responseText = await res.text();
+    let parsed;
+    try { parsed = responseText ? JSON.parse(responseText) : {}; } catch { parsed = { raw: responseText }; }
+    if (!res.ok) {
+        const detail = parsed?.error?.message || responseText;
+        throw new Error(`Instagram Graph message ${res.status}: ${String(detail || '').slice(0, 400)}`);
+    }
+    return parsed;
+}
+
+async function insertPrivateReplyMessage({ threadId, text, dedupeId, nowIso }) {
+    const existing = await findGraphMessageByDedupeId(dedupeId);
+    if (existing) return { inserted: false, deduped: true, messageId: existing.id || null, dedupeId };
+    try {
+        const rows = await supabase('ig_messages', {
+            method: 'POST',
+            body: [{
+                thread_id: threadId,
+                direction: 'out',
+                text,
+                manychat_message_id: dedupeId,
+                source: 'instagram_graph_private_reply',
+                created_at: nowIso,
+            }],
+            prefer: 'return=representation',
+        });
+        return { inserted: true, deduped: false, messageId: rows[0]?.id || null, dedupeId };
+    } catch (err) {
+        const duplicate = err.sqlstate === '23505' || /23505|duplicate key/i.test(err.message || '');
+        if (!duplicate) throw err;
+        const existing = await findGraphMessageByDedupeId(dedupeId);
+        return { inserted: false, deduped: true, messageId: existing?.id || null, dedupeId };
+    }
+}
+
+async function patchInteractionPrivateReplyState({ interaction, state }) {
+    if (!interaction?.id) return;
+    try {
+        await supabase(`ig_content_interactions?id=eq.${encodeURIComponent(interaction.id)}`, {
+            method: 'PATCH',
+            body: {
+                raw_payload: {
+                    ...safeObject(interaction.raw_payload),
+                    auto_private_reply: state,
+                },
+                processed_at: state.sent_at || state.failed_at || new Date().toISOString(),
+            },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[instagram-webhook] private reply state patch failed:', err.message);
+    }
+}
+
+async function maybeSendCommentKeywordPrivateReply({ event, interaction, contentItem }) {
+    const accountConfig = resolveMetaIgAccountConfig(event.ownerId || event.igAccountId || '');
+    const campaign = resolveCommentGiveawayCampaign({ event, contentItem, accountConfig });
+    if (!campaign) {
+        return { attempted: false, skipped: 'not_applicable' };
+    }
+
+    const dedupeId = commentPrivateReplyDedupeId(event.commentId);
+    const existing = await findGraphMessageByDedupeId(dedupeId);
+    if (existing) {
+        return { attempted: false, skipped: 'already_sent', messageId: existing.id || null, dedupeId };
+    }
+
+    const accountId = String(event.ownerId || event.igAccountId || event.recipientId || '').trim();
+    const text = buildCommentGiveawayPrivateReply({ campaign, event });
+    if (!text) {
+        return { attempted: false, skipped: 'empty_reply', dedupeId, campaignId: campaign.id || null };
+    }
+    const sentAt = new Date().toISOString();
+    const privateReplyState = {
+        keyword: campaign.keyword || commentKeywordForPrivateReply(event),
+        campaign_id: campaign.id || null,
+        campaign_title: campaign.title || null,
+        giveaway_url: appendCommentGiveawayTrackingToUrl(campaign.url, event, campaign) || null,
+        media_id: event.mediaId || contentItem?.ig_media_id || null,
+        source_key: contentItem?.source_key || sourceKeyForEvent(event) || null,
+        source: campaign._source || 'config',
+    };
+
+    try {
+        const graphResponse = await postInstagramPrivateReply({
+            accountId,
+            commentId: event.commentId,
+            text,
+        });
+        const graphMessageId = graphMessageIdFromResponse(graphResponse) || `private_reply:${event.commentId}`;
+        const defaultCoachId = await findDefaultCoachId();
+        const thread = await upsertGraphThread({
+            participantId: event.fromId,
+            participantUsername: event.username || '',
+            igAccountId: accountId,
+            direction: 'out',
+            nowIso: sentAt,
+            messageId: graphMessageId,
+            messageText: text,
+            defaultCoachId,
+        });
+        const inserted = thread?.id
+            ? await insertPrivateReplyMessage({ threadId: thread.id, text, dedupeId, nowIso: sentAt })
+            : { inserted: false, deduped: false, messageId: null, dedupeId };
+        await patchInteractionPrivateReplyState({
+            interaction,
+            state: {
+                status: 'sent',
+                ...privateReplyState,
+                sent_at: sentAt,
+                dedupe_id: dedupeId,
+                thread_id: thread?.id || null,
+                ig_message_id: inserted.messageId || null,
+                graph_message_id: graphMessageId,
+                graph_response: graphResponse || {},
+            },
+        });
+        return {
+            attempted: true,
+            sent: true,
+            dedupeId,
+            threadId: thread?.id || null,
+            messageId: inserted.messageId || null,
+            graphMessageId,
+            campaignId: campaign.id || null,
+        };
+    } catch (err) {
+        await patchInteractionPrivateReplyState({
+            interaction,
+            state: {
+                status: 'failed',
+                ...privateReplyState,
+                failed_at: new Date().toISOString(),
+                dedupe_id: dedupeId,
+                error: err.message || String(err),
+            },
+        });
+        throw err;
+    }
 }
 
 function eventTypeForMessaging(messaging = {}) {
@@ -682,7 +1557,16 @@ function shouldProcessContentContextEvent(event) {
 async function processContentInteractions(payload) {
     const events = normalizeMetaIgWebhookEvents(payload);
     const byMessageId = new Map();
-    const summary = { processed: 0, comments: 0, storyReplies: 0, outboundStoryRepliesSkipped: 0, failed: 0 };
+    const summary = {
+        processed: 0,
+        comments: 0,
+        storyReplies: 0,
+        outboundStoryRepliesSkipped: 0,
+        privateRepliesSent: 0,
+        privateRepliesSkipped: 0,
+        privateRepliesFailed: 0,
+        failed: 0,
+    };
     for (const event of events) {
         if (!shouldProcessContentContextEvent(event)) {
             summary.outboundStoryRepliesSkipped++;
@@ -690,10 +1574,24 @@ async function processContentInteractions(payload) {
         }
         try {
             const contentItem = await ensureAnalyzedContent(event);
-            await upsertContentInteraction(event, contentItem);
+            const interaction = await upsertContentInteraction(event, contentItem);
             await refreshLinkedStoryReplyMessages(contentItem);
             if (event.messageId && contentItem) {
                 byMessageId.set(event.messageId, buildContextMessage(event, contentItem));
+            }
+            if (event.type === 'comment') {
+                try {
+                    const autoReply = await maybeSendCommentKeywordPrivateReply({ event, interaction, contentItem });
+                    if (autoReply.sent) summary.privateRepliesSent++;
+                    else if (autoReply.skipped && autoReply.skipped !== 'not_applicable') summary.privateRepliesSkipped++;
+                } catch (err) {
+                    summary.privateRepliesFailed++;
+                    console.warn('[instagram-webhook] comment private reply failed:', {
+                        eventId: event.eventId || null,
+                        commentId: event.commentId || null,
+                        error: err.message,
+                    });
+                }
             }
             summary.processed++;
             if (event.type === 'comment') summary.comments++;
@@ -1122,6 +2020,218 @@ async function dispatchDraft({ thread, messageText, dedupeId }) {
     }
 }
 
+function newFoodPhotoJobToken() {
+    if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+    return crypto.randomBytes(16).toString('hex');
+}
+
+async function patchThreadFoodPhotoTrackingState({ thread, state = {}, jobToken = '', nowIso = new Date().toISOString() }) {
+    if (!thread?.id) return;
+    const customData = safeObject(thread.custom_data);
+    const currentTracking = safeObject(customData.food_photo_tracking);
+    const nextTracking = {
+        ...currentTracking,
+        ...state,
+    };
+    if (jobToken) {
+        const pendingTokens = Array.isArray(currentTracking.pending_job_tokens)
+            ? currentTracking.pending_job_tokens.map(token => String(token || '').trim()).filter(Boolean)
+            : [];
+        nextTracking.active_job_token = jobToken;
+        nextTracking.pending_job_tokens = [
+            jobToken,
+            ...pendingTokens.filter(token => token !== jobToken),
+        ].slice(0, 10);
+    }
+    const nextCustomData = {
+        ...customData,
+        food_photo_tracking: nextTracking,
+    };
+    const body = {
+        custom_data: nextCustomData,
+        updated_at: nowIso,
+    };
+    if (state.last_ack_at) body.last_outbound_at = state.last_ack_at;
+    try {
+        await supabase(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
+            method: 'PATCH',
+            body,
+            prefer: 'return=minimal',
+        });
+        thread.custom_data = nextCustomData;
+        if (body.last_outbound_at) thread.last_outbound_at = body.last_outbound_at;
+    } catch (err) {
+        console.warn('[instagram-webhook] food photo tracking state patch failed:', err.message);
+    }
+}
+
+async function maybeMarkFoodPhotoTrackingOffer({ thread, messageText, inserted, graphMessageId, nowIso }) {
+    if (!thread?.linked_user_id) return false;
+    if (!isFoodPhotoTrackingOfferText(messageText)) return false;
+    await patchThreadFoodPhotoTrackingState({
+        thread,
+        nowIso,
+        state: {
+            offer_status: 'pending',
+            last_offer_at: nowIso,
+            last_offer_text: truncate(messageText, 500),
+            last_offer_message_id: inserted.messageId || null,
+            last_offer_graph_message_id: graphMessageId || null,
+            last_error: null,
+        },
+    });
+    return true;
+}
+
+async function maybeEnableFoodPhotoTrackingFromConsent({ thread, messageText, inserted, graphMessageId, nowIso }) {
+    if (!thread?.linked_user_id) return false;
+    if (!hasPendingFoodPhotoTrackingOffer(thread, nowIso)) return false;
+    if (!isFoodPhotoTrackingConsentText(messageText)) return false;
+    await patchThreadFoodPhotoTrackingState({
+        thread,
+        nowIso,
+        state: {
+            enabled: true,
+            allowed: true,
+            offer_status: 'accepted',
+            accepted_at: nowIso,
+            accepted_message_id: inserted.messageId || null,
+            accepted_graph_message_id: graphMessageId || null,
+            last_status: 'enabled_by_dm_consent',
+            last_error: null,
+        },
+    });
+    return true;
+}
+
+async function dispatchFoodPhotoTrackingJob({ thread, event, messageText, photoUrl, graphMessageId, igMessageId, dedupeId, jobToken, nowIso }) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), DRAFT_DISPATCH_TIMEOUT_MS);
+    try {
+        const response = await fetch(`${SITE_URL}/.netlify/functions/ig-food-photo-track-background`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({
+                threadId: thread.id,
+                userId: thread.linked_user_id,
+                photoUrl,
+                messageText,
+                graphMessageId,
+                igMessageId,
+                dedupeId,
+                jobToken,
+                queuedAt: nowIso,
+                igUsername: thread.ig_username || null,
+                profileName: thread.profile_name || null,
+                igAccountId: event?.igAccountId || resolveThreadGraphAccountId(thread) || null,
+            }),
+        });
+        if (!response.ok) {
+            const text = await response.text().catch(() => '');
+            return { queued: false, reason: `background_${response.status}`, details: text.slice(0, 300) };
+        }
+        return { queued: true, reason: 'background_dispatched', status: response.status };
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            return { queued: true, reason: 'background_dispatched_no_ack' };
+        }
+        console.warn('[instagram-webhook] food photo tracking dispatch failed:', err.message);
+        return { queued: false, reason: 'background_dispatch_failed', details: err.message };
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+async function maybeHandleFoodPhotoTracking({ thread, event, rawMessageText, messageText, inserted, graphMessageId, nowIso }) {
+    const directPhotoUrls = foodPhotoUrlsFromMessaging(event);
+    const photoUrls = directPhotoUrls.length ? directPhotoUrls : extractFoodPhotoUrls(rawMessageText);
+    const photoUrl = photoUrls[0] || '';
+    if (!photoUrl) return { handled: false, reason: 'no_photo' };
+    if (!isFoodPhotoTrackingAllowed(thread)) return { handled: false, reason: 'not_allowed' };
+
+    const accountId = resolveThreadGraphAccountId(thread) || normalizeId(event?.igAccountId) || normalizeId(recipientFromMessaging(event).id);
+    const recipientId = resolveThreadGraphRecipientId(thread) || normalizeId(senderFromMessaging(event).id);
+    if (!accountId || !recipientId) {
+        return { handled: false, reason: 'graph_route_missing' };
+    }
+    const jobToken = newFoodPhotoJobToken();
+    await patchThreadFoodPhotoTrackingState({
+        thread,
+        jobToken,
+        nowIso,
+        state: {
+            last_status: 'queued',
+            last_queued_at: nowIso,
+            last_photo_url: photoUrl,
+            last_inbound_message_id: inserted.messageId || null,
+            last_graph_message_id: graphMessageId || null,
+            last_dedupe_id: inserted.dedupeId || null,
+            last_error: null,
+        },
+    });
+
+    const dispatch = await dispatchFoodPhotoTrackingJob({
+        thread,
+        event,
+        messageText,
+        photoUrl,
+        graphMessageId,
+        igMessageId: inserted.messageId || null,
+        dedupeId: inserted.dedupeId || null,
+        jobToken,
+        nowIso,
+    });
+    if (!dispatch.queued) {
+        await patchThreadFoodPhotoTrackingState({
+            thread,
+            nowIso: new Date().toISOString(),
+            state: {
+                last_status: 'dispatch_failed',
+                last_error: dispatch.details || dispatch.reason || 'background dispatch failed',
+            },
+        });
+        return { handled: false, reason: dispatch.reason || 'dispatch_failed' };
+    }
+
+    try {
+        const sentAt = new Date().toISOString();
+        const graphResponse = await postInstagramTextMessage({
+            accountId,
+            recipientId,
+            text: FOOD_PHOTO_TRACKING_ACK,
+        });
+        const ackGraphMessageId = graphMessageIdFromResponse(graphResponse) || `food_photo_ack:${graphMessageId || inserted.messageId || jobToken}`;
+        const ackInserted = await insertGraphMessage({
+            threadId: thread.id,
+            direction: 'out',
+            text: FOOD_PHOTO_TRACKING_ACK,
+            graphMessageId: ackGraphMessageId,
+            nowIso: sentAt,
+        });
+        await patchThreadFoodPhotoTrackingState({
+            thread,
+            nowIso: sentAt,
+            state: {
+                last_ack_at: sentAt,
+                last_ack_message_id: ackInserted.messageId || null,
+                last_ack_graph_message_id: ackGraphMessageId,
+            },
+        });
+        return { handled: true, queued: true, acked: true, reason: dispatch.reason };
+    } catch (err) {
+        await patchThreadFoodPhotoTrackingState({
+            thread,
+            nowIso: new Date().toISOString(),
+            state: {
+                last_ack_error: err.message,
+            },
+        });
+        console.warn('[instagram-webhook] food photo ack failed:', err.message);
+        return { handled: true, queued: true, acked: false, reason: 'ack_failed' };
+    }
+}
+
 async function shouldRecoverMissingDraftForDedupedInbound({ thread, dedupeId, messageCreatedAt }) {
     if (!thread?.id || !dedupeId) return false;
     if (isAtOrAfterTimestamp(thread.last_outbound_at, messageCreatedAt)) return false;
@@ -1304,10 +2414,10 @@ async function markPendingGraphAlertsSent({ thread, threadId, messageText, nowIs
 
 async function processGraphMessages(payload, contentContextByMessageId = new Map(), options = {}) {
     const events = messagingEventsFromPayload(payload);
-    if (!events.length) return { processed: 0, inserted: 0, drafted: 0, skipped: 0, recoveredDrafts: 0 };
+    if (!events.length) return { processed: 0, inserted: 0, drafted: 0, skipped: 0, recoveredDrafts: 0, foodPhotoQueued: 0, foodPhotoAcked: 0, foodPhotoOffers: 0, foodPhotoEnabled: 0 };
 
     const defaultCoachId = await findDefaultCoachId();
-    const summary = { processed: 0, inserted: 0, drafted: 0, skipped: 0, recoveredDrafts: 0, outboundCleared: 0 };
+    const summary = { processed: 0, inserted: 0, drafted: 0, skipped: 0, recoveredDrafts: 0, outboundCleared: 0, foodPhotoQueued: 0, foodPhotoAcked: 0, foodPhotoSkipped: 0, foodPhotoOffers: 0, foodPhotoEnabled: 0 };
 
     for (const item of events) {
         if (!['messages', 'message_echoes'].includes(item.field) && !messageFromMessaging(item).mid) {
@@ -1397,10 +2507,45 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
             summary.inserted++;
 
             if (direction === 'in') {
+                if (await maybeEnableFoodPhotoTrackingFromConsent({
+                    thread,
+                    messageText,
+                    inserted,
+                    graphMessageId,
+                    nowIso,
+                })) {
+                    summary.foodPhotoEnabled++;
+                }
+                const foodTracking = await maybeHandleFoodPhotoTracking({
+                    thread,
+                    event: item,
+                    rawMessageText,
+                    messageText,
+                    inserted,
+                    graphMessageId,
+                    nowIso,
+                });
+                if (foodTracking.handled) {
+                    if (foodTracking.queued) summary.foodPhotoQueued++;
+                    if (foodTracking.acked) summary.foodPhotoAcked++;
+                    continue;
+                }
+                if (foodTracking.reason && foodTracking.reason !== 'no_photo') {
+                    summary.foodPhotoSkipped++;
+                }
                 if (await dispatchDraft({ thread, messageText, dedupeId: inserted.dedupeId })) {
                     summary.drafted++;
                 }
             } else {
+                if (await maybeMarkFoodPhotoTrackingOffer({
+                    thread,
+                    messageText,
+                    inserted,
+                    graphMessageId,
+                    nowIso,
+                })) {
+                    summary.foodPhotoOffers++;
+                }
                 summary.outboundCleared += await markPendingGraphAlertsSent({
                     thread,
                     threadId: thread.id,
@@ -1495,9 +2640,29 @@ async function auditPayload(payload, options) {
 
 exports._test = {
     messageTextForDraft,
+    extractFoodPhotoUrls,
+    foodPhotoUrlsFromMessaging,
+    foodTrackingIdentityTokens,
+    isPermanentNeedsYouThread,
+    isFoodPhotoTrackingAllowed,
+    isFoodPhotoTrackingOfferText,
+    isFoodPhotoTrackingConsentText,
+    foodPhotoTrackingOfferIsActive,
+    hasPendingFoodPhotoTrackingOffer,
     timestampIsoFromMessaging,
     shouldProcessContentContextEvent,
     participantUsernameFromMessaging,
+    normalizeCommentKeyword,
+    commentKeywordForPrivateReply,
+    commentGiveawayCampaignsFromConfig,
+    commentGiveawayCampaignsFromValue,
+    commentGiveawayCampaignsFromContentItem,
+    resolveCommentGiveawayCampaign,
+    buildCommentGiveawayPrivateReply,
+    shouldSendGoldCoastWebsitePrivateReply,
+    buildGoldCoastWebsiteUrl,
+    buildGoldCoastWebsitePrivateReply,
+    commentPrivateReplyDedupeId,
 };
 
 exports._internal = {
