@@ -4937,6 +4937,7 @@ html[data-pbb-theme] :where(
 html[data-pbb-theme] :where(
     .modal-content,
     .onboarding-modal,
+    .completion-modal,
     .adaptive-modal,
     .adaptive-modal-card,
     .completion-modal-content,
@@ -5032,6 +5033,7 @@ html[data-pbb-theme] :where(
     .modal-content,
     .onboarding-modal,
     .adaptive-modal,
+    .completion-modal,
     .completion-modal-content,
     .score-popup-modal,
     .meal-detail-container,
@@ -5086,6 +5088,7 @@ html[data-pbb-theme] :where(
     .modal-content,
     .onboarding-modal,
     .adaptive-modal,
+    .completion-modal,
     .completion-modal-content,
     .score-popup-modal,
     .meal-detail-container,
@@ -5155,6 +5158,7 @@ html[data-pbb-theme] :where(
 html[data-pbb-theme] :where(
     .modal-content,
     .adaptive-modal,
+    .completion-modal,
     .score-popup-modal,
     .meal-detail-container,
     .meal-breakdown-card,
@@ -5188,6 +5192,7 @@ html[data-pbb-theme] :where(
 html[data-pbb-theme] :where(
     .modal-content,
     .adaptive-modal,
+    .completion-modal,
     .score-popup-modal,
     .meal-detail-container,
     .meal-breakdown-card,
@@ -5368,6 +5373,101 @@ html[data-pbb-theme="light"] #rest-timer-card :where(
     color: rgba(248, 247, 242, 0.74) !important;
     -webkit-text-fill-color: rgba(248, 247, 242, 0.74) !important;
     fill: rgba(248, 247, 242, 0.74) !important;
+}
+
+/* Legacy inline overlays that keep their own theme-independent layouts. */
+html[data-pbb-theme="light"] #lp-welcome-overlay,
+html[data-pbb-theme="light"] #lp-welcome-overlay :where(h1, h2, h3, p, div, span, strong) {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html[data-pbb-theme="light"] #lp-welcome-overlay #lp-welcome-start-btn,
+html[data-pbb-theme="light"] #lp-welcome-overlay #lp-welcome-start-btn * {
+    color: #090909 !important;
+    -webkit-text-fill-color: #090909 !important;
+}
+
+html[data-pbb-theme="light"] #water-entry-overlay {
+    background: rgba(21, 21, 21, 0.26) !important;
+}
+
+html[data-pbb-theme="light"] #water-entry-sheet {
+    background:
+        radial-gradient(circle at 88% 0%, rgba(56, 189, 248, 0.12), transparent 32%),
+        linear-gradient(180deg, #ffffff, #fffdf7) !important;
+    border-color: rgba(14, 165, 233, 0.18) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #water-entry-sheet :where(div, label, h3, span) {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #water-entry-sheet :where(
+    h3,
+    [style*="#0284c7"],
+    [style*="#0369a1"],
+    [style*="#38bdf8"]
+) {
+    color: #0369a1 !important;
+    -webkit-text-fill-color: #0369a1 !important;
+}
+
+html[data-pbb-theme="light"] #water-entry-sheet :where(
+    [style*="#374151"],
+    [style*="#6b7280"],
+    [style*="#9ca3af"]
+) {
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #water-entry-sheet input {
+    background: #ffffff !important;
+    border-color: rgba(14, 165, 233, 0.24) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #water-entry-sheet .water-amount-btn {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(14, 165, 233, 0.18) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #water-entry-sheet button[onclick*="confirmWaterEntry"] {
+    background: linear-gradient(135deg, #38bdf8, #0284c7) !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+html[data-pbb-theme="light"] #water-entry-sheet button[onclick*="closeWaterEntrySheet"] {
+    background: transparent !important;
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
+html:not([data-pbb-theme="light"]) #store-review-modal :where(
+    button[style*="background:white"],
+    button[style*="background: white"],
+    textarea[style*="background:white"],
+    textarea[style*="background: white"]
+) {
+    background: #ffffff !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html:not([data-pbb-theme="light"]) #store-review-modal :where(
+    button[style*="background:transparent"],
+    button[style*="background: transparent"]
+) {
+    color: rgba(248, 247, 242, 0.7) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.7) !important;
 }
 
 /* Progress photo guide must stay dark and readable in every app theme. */
