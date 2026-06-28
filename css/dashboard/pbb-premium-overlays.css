@@ -6402,6 +6402,7 @@ html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display {
     background: linear-gradient(135deg, #fff8e8 0%, #f7e4a7 100%) !important;
     border-bottom: 1px solid rgba(184, 137, 43, 0.22) !important;
     color: #4a2e0a !important;
+    -webkit-text-fill-color: #4a2e0a !important;
 }
 
 html:not([data-pbb-theme="light"]) #view-active-workout .volume-display svg,
@@ -6409,9 +6410,16 @@ html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display svg
     fill: #ca8a04 !important;
 }
 
+html:not([data-pbb-theme="light"]) #view-active-workout .volume-display > div:first-child span,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display > div:first-child span {
+    color: #8c5500 !important;
+    -webkit-text-fill-color: #8c5500 !important;
+}
+
 html:not([data-pbb-theme="light"]) #view-active-workout .volume-display .volume-value,
 html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display .volume-value {
     color: #4a2e0a !important;
+    -webkit-text-fill-color: #4a2e0a !important;
 }
 
 html:not([data-pbb-theme="light"]) #view-active-workout .volume-display .volume-comparison,
@@ -6419,6 +6427,7 @@ html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display .vo
 html:not([data-pbb-theme="light"]) #view-active-workout .volume-display .volume-comparison span,
 html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display .volume-comparison span {
     color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
 }
 
 html:not([data-pbb-theme="light"]) #view-active-workout .volume-display .volume-target-label,
@@ -6426,6 +6435,7 @@ html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display .vo
 html:not([data-pbb-theme="light"]) #view-active-workout .volume-display .volume-percentage,
 html:not([data-pbb-theme="light"]) #view-active-workout-stub .volume-display .volume-percentage {
     color: #8c5500 !important;
+    -webkit-text-fill-color: #8c5500 !important;
 }
 
 html:not([data-pbb-theme="light"]) #view-active-workout .volume-display .volume-progress-container > div,
