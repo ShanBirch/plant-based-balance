@@ -4886,6 +4886,7 @@ html[data-pbb-theme] :where(
     #workout-rating-modal,
     #quick-share-modal,
     #checkin-modal,
+    #check-in-modal,
     #cycle-tracking-modal,
     #weigh-in-modal,
     #friday-weigh-share-modal,
@@ -4975,6 +4976,7 @@ html[data-pbb-theme] :where(
     #workout-rating-modal > div,
     #quick-share-modal > div,
     #checkin-modal > div,
+    #check-in-modal > div,
     #cycle-tracking-modal > div,
     #weigh-in-modal > div,
     #friday-weigh-share-modal > div,
@@ -5045,6 +5047,8 @@ html[data-pbb-theme] :where(
     .workout-summary-modal > div,
     .avatar-customizer-content,
     .animation-selector-modal,
+    #checkin-modal > div,
+    #check-in-modal > div,
     #bulk-entry-modal > div,
     #quick-entry-tutorial-modal > div,
     #exercise-chart-modal > div,
@@ -5097,6 +5101,8 @@ html[data-pbb-theme] :where(
     .workout-summary-modal > div,
     .avatar-customizer-content,
     .animation-selector-modal,
+    #checkin-modal > div,
+    #check-in-modal > div,
     #bulk-entry-modal > div,
     #quick-entry-tutorial-modal > div,
     #exercise-chart-modal > div,
@@ -5163,6 +5169,8 @@ html[data-pbb-theme] :where(
     .workout-summary-modal > div,
     .avatar-customizer-content,
     .animation-selector-modal,
+    #checkin-modal > div,
+    #check-in-modal > div,
     #bulk-entry-modal > div,
     #quick-entry-tutorial-modal > div,
     #exercise-chart-modal > div,
@@ -5194,6 +5202,8 @@ html[data-pbb-theme] :where(
     .workout-summary-modal > div,
     .avatar-customizer-content,
     .animation-selector-modal,
+    #checkin-modal > div,
+    #check-in-modal > div,
     #bulk-entry-modal > div,
     #quick-entry-tutorial-modal > div,
     #exercise-chart-modal > div,
@@ -5263,6 +5273,101 @@ html[data-pbb-theme="light"] :where(
 ) {
     color: #fffaf2 !important;
     -webkit-text-fill-color: #fffaf2 !important;
+}
+
+/* Full-screen media and camera flows are intentionally dark in every theme. */
+html[data-pbb-theme="light"] :where(
+    #story-preview-modal,
+    #meal-preview-modal,
+    #workout-preview-modal,
+    #workout-camera-modal,
+    #unified-camera-modal,
+    #exercise-video-modal,
+    #video-modal
+) {
+    background: #000000 !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html[data-pbb-theme="light"] :where(
+    #story-preview-modal,
+    #meal-preview-modal,
+    #workout-preview-modal,
+    #workout-camera-modal,
+    #unified-camera-modal,
+    #exercise-video-modal,
+    #video-modal
+) :where(button, label, span, div, h3, p, input, textarea) {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html[data-pbb-theme="light"] :where(
+    #story-preview-modal,
+    #meal-preview-modal,
+    #workout-preview-modal,
+    #workout-camera-modal,
+    #unified-camera-modal,
+    #exercise-video-modal,
+    #video-modal
+) :where(svg, path) {
+    color: #fffaf2 !important;
+    fill: #fffaf2 !important;
+    stroke: #fffaf2 !important;
+}
+
+html[data-pbb-theme] :where(#checkin-modal, #check-in-modal) .checkin-btn,
+html[data-pbb-theme] :where(#checkin-modal, #check-in-modal) .checkin-btn * {
+    color: var(--pbb-readable-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-text) !important;
+}
+
+html[data-pbb-theme="light"] #meal-preview-modal input,
+html[data-pbb-theme="light"] #meal-preview-modal textarea,
+html[data-pbb-theme="light"] #unified-camera-modal input,
+html[data-pbb-theme="light"] #unified-camera-modal textarea {
+    background: rgba(0, 0, 0, 0.72) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    color: #fffaf2 !important;
+    caret-color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html[data-pbb-theme="light"] #meal-preview-modal input::placeholder,
+html[data-pbb-theme="light"] #meal-preview-modal textarea::placeholder,
+html[data-pbb-theme="light"] #unified-camera-modal input::placeholder,
+html[data-pbb-theme="light"] #unified-camera-modal textarea::placeholder {
+    color: rgba(248, 247, 242, 0.62) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.62) !important;
+}
+
+html[data-pbb-theme="light"] #meal-preview-modal .meal-photo-type-pill:not(.active) {
+    background: rgba(0, 0, 0, 0.56) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    color: rgba(248, 247, 242, 0.78) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.78) !important;
+}
+
+html[data-pbb-theme="light"] #rest-timer-card,
+html[data-pbb-theme="light"] #rest-timer-card * {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html[data-pbb-theme="light"] #rest-timer-card :where(svg, path) {
+    fill: #fffaf2 !important;
+    stroke: #fffaf2 !important;
+}
+
+html[data-pbb-theme="light"] #rest-timer-card :where(
+    [style*="#94a3b8"],
+    [style*="rgba(255,255,255,0.8)"],
+    [style*="rgba(255, 255, 255, 0.8)"]
+) {
+    color: rgba(248, 247, 242, 0.74) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.74) !important;
+    fill: rgba(248, 247, 242, 0.74) !important;
 }
 
 /* Progress photo guide must stay dark and readable in every app theme. */
