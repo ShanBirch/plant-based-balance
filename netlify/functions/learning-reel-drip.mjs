@@ -6,12 +6,15 @@ const {
     buildCuratedLearningReelQueries,
     findCuratedLearningReelSource,
     scoreCuratedLearningReelCandidate,
+    LEARNING_REEL_BLOCKLIST_RE,
     LEARNING_REEL_TOPIC_LABELS,
 } = learningReelSources;
 const {
     findDuplicateLearningReels,
     insertCoachAlert,
+    isAiAutomationOptedOut,
     isAlwaysNeedsYouPerson,
+    isTestAccount,
     mergeLearningReelContext,
     normalizeCoachDraftText,
     normalizeLearningReelItems,
@@ -43,6 +46,17 @@ const CLIENT_PILOT_REVISION = 'vegan_food_3_per_week_v1';
 const CLIENT_PILOT_INTERVAL_MS = Math.floor((7 * 24 * 60 * 60 * 1000) / 3);
 const CLIENT_PILOT_TOTAL_SENDS = 12;
 const CLIENT_PILOT_TOPICS = ['plant_based_cooking', 'meal_prep_planning'];
+const PERSONAL_MUSIC_TOPIC_ID = 'personal_music';
+const PERSONAL_MUSIC_TOPIC_LABEL = 'Music';
+const DYNAMIC_LEAD_DRIP_ID = 'lead_conversation_reels';
+const DYNAMIC_LEAD_DRIP_REVISION = 'conversation_reel_3_per_week_v1';
+const DYNAMIC_LEAD_TOTAL_SENDS = 12;
+const DYNAMIC_LEAD_LOOKBACK_DAYS = 45;
+const DYNAMIC_LEAD_DEFAULT_MAX_THREADS = 12;
+const DYNAMIC_LEAD_DEFAULT_MIN_LAST_INBOUND_HOURS = 18;
+const DYNAMIC_LEAD_DEFAULT_MAX_LAST_INBOUND_HOURS = 23.75;
+const DYNAMIC_LEAD_DEFAULT_MIN_QUIET_HOURS = 10;
+const DYNAMIC_LEAD_WEEKLY_CAP = 3;
 const CLIENT_PILOT_TARGETS = [
     {
         id: 'mon_vegan_food_pilot',
@@ -352,6 +366,418 @@ async function loadTargetThread(handle) {
     return exact || rows[0] || null;
 }
 
+function envNumber(name, fallback, { min = -Infinity, max = Infinity } = {}) {
+    const raw = Number(getEnv(name));
+    const value = Number.isFinite(raw) ? raw : fallback;
+    return Math.max(min, Math.min(max, value));
+}
+
+function dynamicLeadDripsEnabled() {
+    const raw = getEnv('LEARNING_REEL_DYNAMIC_LEADS_ENABLED');
+    if (!raw) return true;
+    return ['1', 'true', 'yes', 'on', 'enabled'].includes(raw.toLowerCase());
+}
+
+function clientPilotDripsEnabled() {
+    const raw = getEnv('LEARNING_REEL_CLIENT_PILOTS_ENABLED');
+    return ['1', 'true', 'yes', 'on', 'enabled'].includes(raw.toLowerCase());
+}
+
+function dynamicLeadMaxThreadsPerRun() {
+    return Math.floor(envNumber('LEARNING_REEL_DYNAMIC_LEAD_MAX_THREADS', DYNAMIC_LEAD_DEFAULT_MAX_THREADS, {
+        min: 1,
+        max: 50,
+    }));
+}
+
+function dynamicLeadMinLastInboundHours() {
+    return envNumber('LEARNING_REEL_DYNAMIC_LEAD_MIN_LAST_INBOUND_HOURS', DYNAMIC_LEAD_DEFAULT_MIN_LAST_INBOUND_HOURS, {
+        min: 0,
+        max: 23.9,
+    });
+}
+
+function dynamicLeadMaxLastInboundHours() {
+    return envNumber('LEARNING_REEL_DYNAMIC_LEAD_MAX_LAST_INBOUND_HOURS', DYNAMIC_LEAD_DEFAULT_MAX_LAST_INBOUND_HOURS, {
+        min: 1,
+        max: 24,
+    });
+}
+
+function dynamicLeadMinQuietHours() {
+    return envNumber('LEARNING_REEL_DYNAMIC_LEAD_MIN_QUIET_HOURS', DYNAMIC_LEAD_DEFAULT_MIN_QUIET_HOURS, {
+        min: 0,
+        max: 24,
+    });
+}
+
+function latestThreadActivityMs(thread = {}) {
+    return Math.max(
+        Date.parse(thread.last_inbound_at || '') || 0,
+        Date.parse(thread.last_outbound_at || '') || 0
+    );
+}
+
+async function loadDynamicLeadThreads(nowMs = Date.now()) {
+    const maxInboundHours = dynamicLeadMaxLastInboundHours();
+    const minInboundHours = dynamicLeadMinLastInboundHours();
+    const fromIso = new Date(nowMs - maxInboundHours * 60 * 60 * 1000).toISOString();
+    const toIso = new Date(nowMs - minInboundHours * 60 * 60 * 1000).toISOString();
+    const select = [
+        'id',
+        'subscriber_id',
+        'coach_id',
+        'channel',
+        'ig_username',
+        'profile_name',
+        'lead_stage',
+        'linked_user_id',
+        'last_inbound_at',
+        'last_outbound_at',
+        'custom_data',
+        'goals',
+        'personal_context',
+        'running_notes',
+        'qualifier',
+        'auto_send_enabled',
+    ].join(',');
+    const limit = dynamicLeadMaxThreadsPerRun();
+    return supabase(
+        `ig_threads?select=${select}&channel=eq.instagram&last_inbound_at=gte.${encodeURIComponent(fromIso)}&last_inbound_at=lte.${encodeURIComponent(toIso)}&order=last_inbound_at.asc&limit=${limit}`
+    );
+}
+
+async function loadRecentThreadMessages(threadId, nowMs = Date.now()) {
+    if (!threadId) return [];
+    const sinceIso = new Date(nowMs - DYNAMIC_LEAD_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    return supabase(
+        `ig_messages?select=id,direction,text,source,created_at&thread_id=eq.${encodeURIComponent(threadId)}&created_at=gte.${encodeURIComponent(sinceIso)}&order=created_at.desc&limit=80`
+    ).catch(error => {
+        console.warn('[learning-reel-drip] dynamic lead message lookup failed:', error?.message || error);
+        return [];
+    });
+}
+
+const DYNAMIC_LEAD_CLIENT_STAGE_RE = /\b(client|coaching|paid|starter|accepted|subscribed|subscription|member|customer)\b/i;
+const DYNAMIC_LEAD_CLOSED_STAGE_RE = /\b(churned|lost|closed|dead|blocked|opted[_\s-]?out|do[_\s-]?not[_\s-]?contact)\b/i;
+
+function isDynamicLeadStage(thread = {}) {
+    const stage = cleanString(thread.lead_stage || '', 120).replace(/[_-]+/g, ' ');
+    if (!stage) return true;
+    if (DYNAMIC_LEAD_CLIENT_STAGE_RE.test(stage)) return false;
+    if (DYNAMIC_LEAD_CLOSED_STAGE_RE.test(stage)) return false;
+    return true;
+}
+
+async function hasActiveCoachClientForThread(thread = {}) {
+    const clientId = cleanString(thread.linked_user_id || '', 120);
+    if (!clientId) return false;
+    try {
+        const rows = await supabase(
+            `coach_clients?select=client_id,status&client_id=eq.${encodeURIComponent(clientId)}&status=eq.active&limit=1`
+        );
+        return Array.isArray(rows) && rows.length > 0;
+    } catch (error) {
+        console.warn('[learning-reel-drip] active client lookup failed:', error?.message || error);
+        return true;
+    }
+}
+
+const LEAD_REEL_TOPIC_RULES = [
+    {
+        topic_id: 'pelvic_tilt_balance',
+        label: 'pelvic tilt / balance',
+        re: /\b(pelvic tilt|anterior pelvic|posterior pelvic|pelvis|rib cage|centre of mass|center of mass|centre of gravity|center of gravity|posture|stacked)\b/i,
+        priority: 96,
+    },
+    {
+        topic_id: 'core_training_technique',
+        label: 'core technique',
+        re: /\b(core|abs?|brace|bracing|dead bug|plank|trunk|anti[-\s]?extension|neutral spine)\b/i,
+        priority: 92,
+    },
+    {
+        topic_id: 'weight_training_technique',
+        label: 'lifting technique',
+        re: /\b(squat|deadlift|rdl|hinge|bench|press|row|lunge|split squat|hip thrust|glute bridge|form|technique|gym)\b/i,
+        priority: 84,
+    },
+    {
+        topic_id: 'plant_based_cooking',
+        label: 'plant-based food',
+        re: /\b(vegan|plant[-\s]?based|tofu|tempeh|lentils?|chickpeas?|beans?|recipe|cook|cooking|meal ideas?)\b/i,
+        priority: 78,
+    },
+    {
+        topic_id: 'meal_prep_planning',
+        label: 'meal prep',
+        re: /\b(meal prep|meal planning|batch cook|weekly meals?|food prep|go[-\s]?to meal|routine eating)\b/i,
+        priority: 76,
+    },
+    {
+        topic_id: 'protein_science',
+        label: 'protein',
+        re: /\b(protein|plant protein|protein powder|amino|leucine|muscle protein)\b/i,
+        priority: 75,
+    },
+    {
+        topic_id: 'workout_motivation',
+        label: 'training consistency',
+        re: /\b(motivation|discipline|consistency|show up|getting back into it|routine|habit|stuck|fell off)\b/i,
+        priority: 68,
+    },
+    {
+        topic_id: 'recovery_sleep_energy',
+        label: 'recovery',
+        re: /\b(sleep|recovery|fatigue|tired|sore|doms|deload|energy|stress)\b/i,
+        priority: 64,
+    },
+    {
+        topic_id: 'fat_loss_basics',
+        label: 'fat loss',
+        re: /\b(fat loss|weight loss|lose weight|calorie deficit|dieting|leaner|drop weight)\b/i,
+        priority: 62,
+    },
+    {
+        topic_id: 'muscle_gain_basics',
+        label: 'muscle growth',
+        re: /\b(build muscle|muscle gain|hypertrophy|strength|stronger|progressive overload)\b/i,
+        priority: 62,
+    },
+    {
+        topic_id: 'bunny_reels',
+        label: 'bunny reels',
+        re: /\b(bunny|bunnies|rabbit|rabbits|free[-\s]?roam|sunshine)\b/i,
+        priority: 50,
+    },
+];
+
+function compactLeadText(value, max = 7000) {
+    return cleanString(value, max).replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, ' video ');
+}
+
+function leadConversationText(thread = {}, messages = []) {
+    const customData = safeObject(thread.custom_data);
+    const inboundText = messages
+        .filter(message => message?.direction === 'in')
+        .map(message => message.text)
+        .join('\n');
+    return compactLeadText([
+        thread.lead_stage,
+        thread.goals,
+        thread.personal_context,
+        thread.running_notes,
+        veganContextText(thread.qualifier),
+        veganContextText(customData.learning_interests),
+        veganContextText(customData.lead_profile),
+        veganContextText(customData.reel_preferences),
+        inboundText,
+    ].filter(Boolean).join('\n'));
+}
+
+function stableShortHash(value = '') {
+    const text = cleanString(value, 8000);
+    let hash = 2166136261;
+    for (let i = 0; i < text.length; i += 1) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
+}
+
+function normalizeSongSignal(value = '') {
+    return cleanString(value, 140)
+        .replace(/\b(original audio|audio original|official audio|official music video|lyrics?|sped up|slowed|remix)\b/gi, ' ')
+        .replace(/[#"*_`]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .replace(/^[-:|•\s]+|[-:|•\s]+$/g, '')
+        .trim();
+}
+
+function collectStoryMusicSignals(value, out = [], depth = 0) {
+    if (!value || depth > 5 || out.length >= 8) return out;
+    if (Array.isArray(value)) {
+        for (const item of value) collectStoryMusicSignals(item, out, depth + 1);
+        return out;
+    }
+    if (typeof value !== 'object') return out;
+    const label = normalizeSongSignal(value.story_music_label || value.storyMusicLabel || '');
+    const title = normalizeSongSignal(value.story_music_title || value.storyMusicTitle || '');
+    const artist = normalizeSongSignal(value.story_music_artist || value.storyMusicArtist || '');
+    const combined = normalizeSongSignal(label || [artist, title].filter(Boolean).join(' '));
+    if (combined && !/^(?:music|audio|song)$/i.test(combined)) {
+        out.push({
+            label: combined,
+            source: 'story_music',
+            evidence: {
+                story_id: value.story_id || value.storyId || null,
+                story_url: value.story_url || value.storyUrl || null,
+                story_music_label: label || null,
+                story_music_artist: artist || null,
+                story_music_title: title || null,
+            },
+        });
+    }
+    for (const [key, item] of Object.entries(value)) {
+        if (/token|secret|password|credential|signature/i.test(key)) continue;
+        collectStoryMusicSignals(item, out, depth + 1);
+    }
+    return out;
+}
+
+function extractSongSignalsFromMessages(messages = []) {
+    const signals = [];
+    const inbound = messages
+        .filter(message => message?.direction === 'in')
+        .sort((a, b) => Date.parse(b.created_at || '') - Date.parse(a.created_at || ''));
+    const patterns = [
+        /\b(?:i\s+)?(?:love|like|liked|am into|i'?m into|obsessed with|favourite|favorite)\s+(?:the\s+)?(?:song|track|tune|audio|music)\s+(?:called\s+|named\s+|is\s+|was\s+)?["']?([^"'\n.!?]{2,90})/i,
+        /\b(?:song|track|tune|audio)\s+(?:called|named|is|was)\s+["']?([^"'\n.!?]{2,90})/i,
+        /\b(?:love|like|liked|obsessed with)\s+["']([^"']{2,90})["']\s+(?:as\s+)?(?:a\s+)?(?:song|track|tune|audio)?/i,
+    ];
+    for (const message of inbound) {
+        const text = cleanString(message.text, 1000);
+        for (const pattern of patterns) {
+            const match = text.match(pattern);
+            const label = normalizeSongSignal(match?.[1] || '');
+            if (!label || /\b(?:song|track|music|audio|this|that|it)\b$/i.test(label)) continue;
+            signals.push({
+                label,
+                source: 'inbound_message',
+                evidence: {
+                    message_id: message.id || null,
+                    created_at: message.created_at || null,
+                    text: truncate(text, 220),
+                },
+            });
+            break;
+        }
+        if (signals.length >= 3) break;
+    }
+    return signals;
+}
+
+function songSearchQueries(songLabel = '') {
+    const song = normalizeSongSignal(songLabel);
+    if (!song) return [];
+    return [
+        `${song} shorts`,
+        `${song} fitness shorts`,
+        `${song} workout shorts`,
+        `${song} reels`,
+    ];
+}
+
+function uniqueSongSignals(signals = []) {
+    const seen = new Set();
+    const out = [];
+    for (const signal of signals) {
+        const label = normalizeSongSignal(signal?.label || '');
+        const key = label.toLowerCase();
+        if (!label || seen.has(key)) continue;
+        seen.add(key);
+        out.push({ ...signal, label });
+    }
+    return out;
+}
+
+function topicEntriesFromLeadText(text = '') {
+    const hits = LEAD_REEL_TOPIC_RULES
+        .map(rule => {
+            const match = compactLeadText(text).match(rule.re);
+            if (!match) return null;
+            return {
+                topic_id: rule.topic_id,
+                topic_label: learningTopicLabel(rule.topic_id),
+                signal_label: rule.label,
+                evidence: { matched_text: truncate(match[0], 120) },
+                score: rule.priority,
+            };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.score - a.score);
+    const seen = new Set();
+    return hits.filter(hit => {
+        if (seen.has(hit.topic_id)) return false;
+        seen.add(hit.topic_id);
+        return true;
+    }).slice(0, 4).map(({ score, ...entry }) => entry);
+}
+
+function buildDynamicLeadReelConfig(thread = {}, messages = [], nowMs = Date.now()) {
+    const customData = safeObject(thread.custom_data);
+    const songSignals = uniqueSongSignals([
+        ...extractSongSignalsFromMessages(messages),
+        ...collectStoryMusicSignals(customData),
+    ]);
+    const text = leadConversationText(thread, messages);
+    const topicEntries = topicEntriesFromLeadText(text);
+    const planTopics = [
+        ...songSignals.slice(0, 2).map(signal => ({
+            topic_id: PERSONAL_MUSIC_TOPIC_ID,
+            topic_label: PERSONAL_MUSIC_TOPIC_LABEL,
+            search_queries: songSearchQueries(signal.label),
+            open_search: true,
+            caption_mode: 'song',
+            intent: 'song',
+            signal_label: `song: ${signal.label}`,
+            evidence: signal.evidence,
+        })),
+        ...topicEntries,
+    ].filter(entry => entry.search_queries?.length || LEARNING_REEL_TOPIC_LABELS[entry.topic_id]);
+
+    if (!planTopics.length) return null;
+
+    const veganSafety = resolveVeganSafetyRequirement(thread);
+    const signature = stableShortHash(JSON.stringify({
+        planTopics: planTopics.map(entry => ({
+            topic_id: entry.topic_id,
+            search_queries: entry.search_queries || [],
+            signal_label: entry.signal_label || '',
+        })),
+        vegan_safe_required: veganSafety.required,
+    }));
+    const label = firstString([thread.profile_name, thread.ig_username, 'Lead']);
+    return {
+        id: DYNAMIC_LEAD_DRIP_ID,
+        label,
+        handle: thread.ig_username || '',
+        revision: `${DYNAMIC_LEAD_DRIP_REVISION}_${signature}`,
+        interval_ms: CLIENT_PILOT_INTERVAL_MS,
+        total_sends: DYNAMIC_LEAD_TOTAL_SENDS,
+        plan_topics: planTopics,
+        vegan_safe_required: veganSafety.required,
+        vegan_safety_reasons: veganSafety.required ? veganSafety.reasons : [],
+        review_before_send: false,
+        dynamic_lead_drip: true,
+        skip_when_window_closed: true,
+        max_sends_per_7_days: DYNAMIC_LEAD_WEEKLY_CAP,
+        min_last_inbound_hours: dynamicLeadMinLastInboundHours(),
+        max_last_inbound_hours: dynamicLeadMaxLastInboundHours(),
+        min_quiet_hours_since_last_activity: dynamicLeadMinQuietHours(),
+        built_from_conversation_at: new Date(nowMs).toISOString(),
+    };
+}
+
+async function dynamicLeadThreadSkipReason(thread = {}, nowMs = Date.now()) {
+    if (!thread?.id) return 'missing_thread';
+    if (isAiAutomationOptedOut(thread)) return 'ai_automation_opt_out';
+    if (thread.linked_user_id && await isTestAccount(thread.linked_user_id)) return 'test_account';
+    if (!isDynamicLeadStage(thread)) return 'not_lead_stage';
+    if (await hasActiveCoachClientForThread(thread)) return 'active_coach_client';
+    const graph = resolveThreadGraph(thread);
+    if (!graph.recipientId || !graph.accountId) return 'graph_recipient_or_account_missing';
+    const lastInboundHours = hoursSinceIso(thread.last_inbound_at, nowMs);
+    if (lastInboundHours === null) return 'no_last_inbound';
+    if (lastInboundHours < dynamicLeadMinLastInboundHours()) return 'too_recent_since_inbound';
+    if (lastInboundHours > dynamicLeadMaxLastInboundHours()) return 'standard_24h_messaging_window_closed';
+    const latestActivity = latestThreadActivityMs(thread);
+    const quietHours = latestActivity ? (nowMs - latestActivity) / (60 * 60 * 1000) : null;
+    if (quietHours !== null && quietHours < dynamicLeadMinQuietHours()) return 'too_recent_since_latest_activity';
+    if (!await hasNonLearningReelOutboundAfterLastInbound(thread)) return 'waiting_for_shannon_reply_after_latest_client_message';
+    return '';
+}
+
 function veganContextText(value, depth = 0) {
     if (value == null || depth > 4) return '';
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
@@ -482,16 +908,67 @@ function buildInitialPlan(nowMs = Date.now()) {
     });
 }
 
+function learningTopicLabel(topicId) {
+    if (topicId === PERSONAL_MUSIC_TOPIC_ID) return PERSONAL_MUSIC_TOPIC_LABEL;
+    return LEARNING_REEL_TOPIC_LABELS[topicId] || topicId;
+}
+
+function normalizePlanTopicEntry(entry) {
+    if (typeof entry === 'string') {
+        const topicId = cleanString(entry, 100);
+        if (!topicId) return null;
+        return {
+            topic_id: topicId,
+            topic_label: learningTopicLabel(topicId),
+        };
+    }
+    const source = safeObject(entry);
+    const topicId = cleanString(source.topic_id || source.topicId || source.id || '', 100);
+    if (!topicId) return null;
+    const searchQueries = cleanStringArray(source.search_queries || source.searchQueries, 6, 180);
+    return {
+        topic_id: topicId,
+        topic_label: cleanString(source.topic_label || source.topicLabel || source.label || learningTopicLabel(topicId), 120),
+        search_queries: searchQueries.length ? searchQueries : undefined,
+        open_search: source.open_search === true || source.openSearch === true || topicId === PERSONAL_MUSIC_TOPIC_ID || undefined,
+        caption_mode: cleanString(source.caption_mode || source.captionMode || '', 80) || undefined,
+        intent: cleanString(source.intent || '', 80) || undefined,
+        signal_label: cleanString(source.signal_label || source.signalLabel || '', 160) || undefined,
+        evidence: source.evidence || undefined,
+    };
+}
+
+function planTopicEntriesForConfig(config = {}) {
+    const raw = Array.isArray(config.plan_topics) && config.plan_topics.length
+        ? config.plan_topics
+        : (Array.isArray(config.topics) && config.topics.length ? config.topics : CLIENT_PILOT_TOPICS);
+    const entries = raw.map(normalizePlanTopicEntry).filter(Boolean);
+    return entries.length ? entries : CLIENT_PILOT_TOPICS.map(normalizePlanTopicEntry).filter(Boolean);
+}
+
+function clientPlanTopicSignature(entries = []) {
+    return JSON.stringify(entries.map(entry => ({
+        topic_id: entry.topic_id,
+        search_queries: entry.search_queries || [],
+        open_search: entry.open_search === true,
+        caption_mode: entry.caption_mode || '',
+        intent: entry.intent || '',
+        signal_label: entry.signal_label || '',
+    })));
+}
+
 function buildClientPilotPlan(config, nowMs = Date.now()) {
-    const topics = Array.isArray(config.topics) && config.topics.length ? config.topics : CLIENT_PILOT_TOPICS;
+    const planTopics = planTopicEntriesForConfig(config);
     const intervalMs = Number(config.interval_ms || CLIENT_PILOT_INTERVAL_MS);
     const totalSends = Number(config.total_sends || CLIENT_PILOT_TOTAL_SENDS);
     return Array.from({ length: totalSends }, (_, index) => {
-        const topicId = topics[index % topics.length];
+        const entry = planTopics[index % planTopics.length];
+        const topicId = entry.topic_id;
         return {
+            ...entry,
             index,
             topic_id: topicId,
-            topic_label: LEARNING_REEL_TOPIC_LABELS[topicId] || topicId,
+            topic_label: entry.topic_label || learningTopicLabel(topicId),
             due_at: new Date(nowMs + (index * intervalMs)).toISOString(),
             status: 'pending',
         };
@@ -503,7 +980,9 @@ function clientPilotRequiresVeganSafety(config = {}) {
 }
 
 function clientPilotVeganSafetyReasons(config = {}) {
-    return clientPilotRequiresVeganSafety(config) ? ['client_pilot_vegan_food_only'] : [];
+    if (!clientPilotRequiresVeganSafety(config)) return [];
+    const configured = cleanStringArray(config.vegan_safety_reasons || config.veganSafetyReasons, 8, 120);
+    return configured.length ? configured : ['client_pilot_vegan_food_only'];
 }
 
 function autostartAllowed(nowMs = Date.now()) {
@@ -602,17 +1081,21 @@ function normalizeClientPilotState(thread, config, nowMs = Date.now()) {
     const existing = safeObject(pilots[config.id]);
     const intervalMs = Number(config.interval_ms || CLIENT_PILOT_INTERVAL_MS);
     const totalSends = Number(config.total_sends || CLIENT_PILOT_TOTAL_SENDS);
-    const topics = Array.isArray(config.topics) && config.topics.length ? config.topics : CLIENT_PILOT_TOPICS;
+    const planTopics = planTopicEntriesForConfig(config);
+    const topics = planTopics.map(entry => entry.topic_id);
+    const planTopicSignature = clientPlanTopicSignature(planTopics);
     const veganSafeRequired = clientPilotRequiresVeganSafety(config);
     const veganSafetyReasons = clientPilotVeganSafetyReasons(config);
     if (existing.id === config.id && Array.isArray(existing.plan)) {
         const existingTopics = Array.isArray(existing.topics) ? existing.topics : [];
         const topicsChanged = existingTopics.join(',') !== topics.join(',');
+        const planTopicsChanged = cleanString(existing.plan_topic_signature || '', 4000) !== planTopicSignature;
         if (
             existing.revision !== config.revision
             || Number(existing.interval_ms) !== intervalMs
             || Number(existing.total_sends) !== totalSends
             || topicsChanged
+            || planTopicsChanged
         ) {
             const replannedAt = new Date(nowMs).toISOString();
             const plan = buildClientPilotPlan(config, nowMs);
@@ -628,6 +1111,7 @@ function normalizeClientPilotState(thread, config, nowMs = Date.now()) {
                 interval_ms: intervalMs,
                 total_sends: totalSends,
                 topics,
+                plan_topic_signature: planTopicSignature,
                 vegan_safe_required: veganSafeRequired,
                 vegan_safety_reasons: veganSafetyReasons,
                 pilot_label: config.label,
@@ -644,6 +1128,7 @@ function normalizeClientPilotState(thread, config, nowMs = Date.now()) {
             interval_ms: Number(existing.interval_ms || intervalMs),
             total_sends: Number(existing.total_sends || totalSends),
             topics: existingTopics.length ? existingTopics : topics,
+            plan_topic_signature: existing.plan_topic_signature || planTopicSignature,
             vegan_safe_required: veganSafeRequired,
             vegan_safety_reasons: veganSafetyReasons,
             pilot_label: existing.pilot_label || config.label,
@@ -670,6 +1155,7 @@ function normalizeClientPilotState(thread, config, nowMs = Date.now()) {
         interval_ms: intervalMs,
         total_sends: totalSends,
         topics,
+        plan_topic_signature: planTopicSignature,
         vegan_safe_required: veganSafeRequired,
         vegan_safety_reasons: veganSafetyReasons,
         require_coach_reply_after_inbound: true,
@@ -998,6 +1484,59 @@ function shouldDeferCandidateForSourceMix(candidate = {}, recentSourceKeys = [])
     return recent.filter(sourceKey => sourceKey === key).length >= MAX_RECENT_SAME_SOURCE;
 }
 
+function recentLearningReelSendCount(thread = {}, state = {}, nowMs = Date.now(), windowMs = 7 * 24 * 60 * 60 * 1000) {
+    const customData = safeObject(thread.custom_data);
+    const pilots = safeObject(customData.learning_reel_pilots);
+    const items = [
+        ...collectLearningReelItems(Array.isArray(state.sent) ? state.sent : []),
+        ...collectLearningReelItems((Array.isArray(state.plan) ? state.plan : []).filter(item => item?.status === 'sent')),
+        ...collectLearningReelItems(customData.learning_reels),
+        ...collectLearningReelItems(customData.learningReels),
+        ...Object.values(pilots).flatMap(pilot => collectLearningReelItems(safeObject(pilot).sent)),
+        ...Object.values(pilots).flatMap(pilot => collectLearningReelItems((Array.isArray(safeObject(pilot).plan) ? safeObject(pilot).plan : []).filter(item => item?.status === 'sent'))),
+    ];
+    const cutoff = nowMs - windowMs;
+    const seen = new Set();
+    return items.filter(item => {
+        const ts = learningReelTimestampMs(item);
+        if (!ts || ts < cutoff || ts > nowMs + 60 * 1000) return false;
+        const identity = normalizeVideoId(item.video_id || item.videoId || item.url || `${learningReelSourceKey(item)}:${ts}`);
+        if (identity && seen.has(identity)) return false;
+        if (identity) seen.add(identity);
+        return true;
+    }).length;
+}
+
+function clientPilotTimingBlocker(thread = {}, config = {}, nowMs = Date.now()) {
+    const lastInboundHours = hoursSinceIso(thread.last_inbound_at, nowMs);
+    if (lastInboundHours === null) {
+        return { blocker: 'no_last_inbound', nextMs: nowMs + PAUSE_RECHECK_MS };
+    }
+    const maxLastInbound = Number(config.max_last_inbound_hours || 0);
+    if (maxLastInbound > 0 && lastInboundHours > maxLastInbound) {
+        return { blocker: 'standard_24h_messaging_window_closed', nextMs: nowMs + PAUSE_RECHECK_MS };
+    }
+    const minLastInbound = Number(config.min_last_inbound_hours || 0);
+    if (minLastInbound > 0 && lastInboundHours < minLastInbound) {
+        return {
+            blocker: 'waiting_for_reel_window',
+            nextMs: Date.parse(thread.last_inbound_at || '') + minLastInbound * 60 * 60 * 1000,
+        };
+    }
+    const minQuietHours = Number(config.min_quiet_hours_since_last_activity || 0);
+    if (minQuietHours > 0) {
+        const latestActivity = latestThreadActivityMs(thread);
+        const quietHours = latestActivity ? (nowMs - latestActivity) / (60 * 60 * 1000) : null;
+        if (quietHours !== null && quietHours < minQuietHours) {
+            return {
+                blocker: 'waiting_for_quiet_window',
+                nextMs: latestActivity + minQuietHours * 60 * 60 * 1000,
+            };
+        }
+    }
+    return null;
+}
+
 function veganSafetyTextForCandidate(candidate = {}) {
     return [
         candidate.title,
@@ -1130,14 +1669,58 @@ function candidateFromResult(raw, detail, topicId, query) {
     };
 }
 
+function scoreOpenSearchLearningReelCandidate(candidate = {}, { item = {}, topicId = '' } = {}) {
+    const text = [
+        candidate.title,
+        candidate.description,
+        candidate.channel_title,
+        candidate.query,
+    ].map(value => cleanString(value, 1000)).join(' ');
+    if (LEARNING_REEL_BLOCKLIST_RE?.test?.(text)) return -1000;
+    const durationSec = Number(candidate.duration_seconds || candidate.durationSec || 0);
+    if (durationSec && (durationSec < 8 || durationSec > 240)) return -1000;
+
+    let score = topicId === PERSONAL_MUSIC_TOPIC_ID ? 62 : 54;
+    const signalLabel = cleanString(item.signal_label || item.signalLabel || '', 180)
+        .replace(/^song:\s*/i, '')
+        .trim();
+    const signalWords = signalLabel
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter(word => word.length >= 3)
+        .slice(0, 8);
+    const lower = text.toLowerCase();
+    if (signalWords.length) {
+        const matchedWords = signalWords.filter(word => lower.includes(word)).length;
+        score += matchedWords * 12;
+        if (matchedWords >= Math.min(2, signalWords.length)) score += 16;
+    }
+    if (/\b(shorts?|reels?|clip|dance|trend|workout|training|fitness)\b/i.test(text)) score += 8;
+    if (durationSec >= 10 && durationSec <= 90) score += 18;
+    else if (durationSec > 90 && durationSec <= 150) score += 8;
+    const views = Number(candidate.view_count || candidate.viewCount || 0);
+    if (views > 1000000) score += 14;
+    else if (views > 100000) score += 10;
+    else if (views > 10000) score += 5;
+    return score;
+}
+
 async function findReelForTopic({
     topicId,
+    item: planItem = {},
     thread,
     state,
     veganSafetyRequirement = { required: false, reasons: [] },
     existingVideoIds = new Set(),
 }) {
-    const queries = buildCuratedLearningReelQueries(topicId, { perSource: 1 }).slice(0, MAX_SEARCH_QUERIES);
+    const customQueries = cleanStringArray(planItem.search_queries || planItem.searchQueries, MAX_SEARCH_QUERIES, 180);
+    const openSearch = planItem.open_search === true || planItem.openSearch === true || topicId === PERSONAL_MUSIC_TOPIC_ID;
+    const queries = (customQueries.length
+        ? customQueries
+        : buildCuratedLearningReelQueries(topicId, { perSource: 1 })
+    )
+        .map(query => (/\bshorts?\b/i.test(query) ? query : `${query} shorts`))
+        .slice(0, MAX_SEARCH_QUERIES);
     const seenIds = new Set();
     const rawCandidates = [];
     for (const query of queries) {
@@ -1160,17 +1743,23 @@ async function findReelForTopic({
     let sourceMixDeferredCount = 0;
     const veganRejectedSamples = [];
     const recentSourceKeys = recentLearningReelSourceKeys(thread, state);
-    const eligibleCandidates = rawCandidates.map(({ query, item }) => {
-        const detail = details.get(item?.id?.videoId) || {};
-        const candidate = candidateFromResult(item, detail, topicId, query);
+    const eligibleCandidates = rawCandidates.map(({ query, item: rawItem }) => {
+        const detail = details.get(rawItem?.id?.videoId) || {};
+        const candidate = candidateFromResult(rawItem, detail, topicId, query);
         const veganSafety = assessCandidateVeganSafety(candidate, {
             required: veganSafetyRequirement.required,
             topicId,
         });
         return {
             ...candidate,
+            caption_mode: planItem.caption_mode || undefined,
+            intent: planItem.intent || undefined,
+            signal_label: planItem.signal_label || undefined,
+            personalization_evidence: planItem.evidence || undefined,
             vegan_safety: veganSafety,
-            score: scoreCuratedLearningReelCandidate(candidate, topicId),
+            score: openSearch
+                ? scoreOpenSearchLearningReelCandidate(candidate, { item: planItem, topicId })
+                : scoreCuratedLearningReelCandidate(candidate, topicId),
         };
     }).filter(candidate => {
         if (!candidate.video_id) return false;
@@ -1263,11 +1852,24 @@ function cookingMessage(reel, itemIndex = 0) {
     return options[messageVariantIndex(reel, itemIndex, options.length)];
 }
 
+function musicMessage(reel, itemIndex = 0) {
+    const options = [
+        'this came up with that song',
+        'this has your song on it',
+        'saw this with that song',
+        'this song made me think of you',
+    ];
+    return options[messageVariantIndex(reel, itemIndex, options.length)];
+}
+
 function buildMessageOpener(reel, itemIndex = 0) {
     const topicId = cleanString(reel?.topic_id || reel?.topicId, 80);
     const topicLabel = cleanString(reel?.topic_label || reel?.topicLabel, 120).toLowerCase();
     const topicText = `${topicId} ${topicLabel} ${reel?.title || ''}`.toLowerCase();
     const optionsByTopic = (() => {
+        if (topicId === PERSONAL_MUSIC_TOPIC_ID || reel?.intent === 'song' || reel?.caption_mode === 'song') {
+            return null;
+        }
         if (isPracticalCookingReel(topicId, topicText)) {
             return null;
         }
@@ -1326,7 +1928,12 @@ function buildMessageOpener(reel, itemIndex = 0) {
             'saved this one for you',
         ];
     })();
-    if (!optionsByTopic) return cookingMessage(reel, itemIndex);
+    if (!optionsByTopic) {
+        if (topicId === PERSONAL_MUSIC_TOPIC_ID || reel?.intent === 'song' || reel?.caption_mode === 'song') {
+            return musicMessage(reel, itemIndex);
+        }
+        return cookingMessage(reel, itemIndex);
+    }
     return optionsByTopic[messageVariantIndex(reel, itemIndex, optionsByTopic.length)];
 }
 
@@ -1335,8 +1942,9 @@ function buildVisibleMessage(reel, itemIndex = 0) {
     return normalizeCoachDraftText(`${opener}\n${reel.url}`).trim();
 }
 
-function buildClientPilotVisibleMessage(reel, itemIndex = 0, config = {}) {
-    if (config.caption_mode === 'url_only') {
+function buildClientPilotVisibleMessage(reel, itemIndex = 0, config = {}, item = {}) {
+    const captionMode = item.caption_mode || item.captionMode || reel?.caption_mode || config.caption_mode;
+    if (captionMode === 'url_only') {
         return normalizeCoachDraftText(reel?.url || '').trim();
     }
     return buildVisibleMessage(reel, itemIndex);
@@ -1420,6 +2028,7 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now(), veganSafet
     const recentOutboundVideoIds = await loadRecentOutboundLearningReelVideoIds(thread.id);
     const reelResult = await findReelForTopic({
         topicId: item.topic_id,
+        item,
         thread,
         state,
         veganSafetyRequirement,
@@ -1726,6 +2335,34 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
         return { sent: false, blocker: 'graph_recipient_or_account_missing', state: next };
     }
 
+    const weeklyCap = Number(config.max_sends_per_7_days || 0);
+    if (weeklyCap > 0 && recentLearningReelSendCount(thread, state, nowMs) >= weeklyCap) {
+        const next = patchState(state, {
+            status: 'paused',
+            paused_reason: 'weekly_learning_reel_cap_reached',
+            next_send_at: new Date(nowMs + PAUSE_RECHECK_MS).toISOString(),
+        });
+        await persistClientPilotState(thread, config, next);
+        return { sent: false, blocker: 'weekly_learning_reel_cap_reached', state: next };
+    }
+
+    if (config.dynamic_lead_drip === true || config.skip_when_window_closed === true) {
+        const timingBlock = clientPilotTimingBlocker(thread, config, nowMs);
+        if (timingBlock) {
+            const nextMs = Number.isFinite(timingBlock.nextMs) && timingBlock.nextMs > nowMs
+                ? timingBlock.nextMs
+                : nowMs + PAUSE_RECHECK_MS;
+            const next = patchState(state, {
+                status: 'paused',
+                paused_reason: timingBlock.blocker,
+                last_inbound_hours: hoursSinceIso(thread.last_inbound_at, nowMs),
+                next_send_at: new Date(nextMs).toISOString(),
+            });
+            await persistClientPilotState(thread, config, next);
+            return { sent: false, blocker: timingBlock.blocker, state: next };
+        }
+    }
+
     const veganSafetyRequirement = {
         required: clientPilotRequiresVeganSafety(config),
         reasons: clientPilotVeganSafetyReasons(config),
@@ -1733,6 +2370,7 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
     const recentOutboundVideoIds = await loadRecentOutboundLearningReelVideoIds(thread.id);
     const reelResult = await findReelForTopic({
         topicId: item.topic_id,
+        item,
         thread,
         state,
         veganSafetyRequirement,
@@ -1804,7 +2442,7 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
         return { sent: false, blocker: 'duplicate_learning_reel', state: next };
     }
 
-    const message = buildClientPilotVisibleMessage(reel, item.index, config);
+    const message = buildClientPilotVisibleMessage(reel, item.index, config, item);
     const lastInboundHours = hoursSinceIso(thread.last_inbound_at, nowMs);
     if (lastInboundHours === null || lastInboundHours > 24) {
         const blocker = 'standard_24h_messaging_window_closed';
@@ -2124,6 +2762,11 @@ async function runClientPilotDrip(config, { sendDue = true, nowMs = Date.now() }
         };
     }
 
+    return runClientPilotDripForThread(thread, config, { sendDue, nowMs });
+}
+
+async function runClientPilotDripForThread(thread, config, { sendDue = true, nowMs = Date.now() } = {}) {
+    const handle = normalizeHandle(config.handle || thread.ig_username || thread.profile_name || '');
     let state = normalizeClientPilotState(thread, config, nowMs);
     const veganSafetyRequirement = {
         required: clientPilotRequiresVeganSafety(config),
@@ -2215,7 +2858,68 @@ async function runClientPilotDrip(config, { sendDue = true, nowMs = Date.now() }
     };
 }
 
+async function runDynamicLeadDrips({ sendDue = true, nowMs = Date.now() } = {}) {
+    if (!dynamicLeadDripsEnabled()) {
+        return { enabled: false, scanned: 0, results: [], skipped: { disabled: 1 } };
+    }
+    const skipped = {};
+    const bumpSkipped = reason => {
+        const key = reason || 'unknown';
+        skipped[key] = (skipped[key] || 0) + 1;
+    };
+    let threads = [];
+    try {
+        threads = await loadDynamicLeadThreads(nowMs);
+    } catch (error) {
+        console.warn('[learning-reel-drip] dynamic lead thread scan failed:', error?.message || error);
+        return {
+            enabled: true,
+            scanned: 0,
+            results: [],
+            skipped: { thread_scan_failed: 1 },
+            error: error?.message || String(error),
+        };
+    }
+
+    const results = [];
+    for (const thread of threads) {
+        const skipReason = await dynamicLeadThreadSkipReason(thread, nowMs);
+        if (skipReason) {
+            bumpSkipped(skipReason);
+            continue;
+        }
+        const messages = await loadRecentThreadMessages(thread.id, nowMs);
+        const config = buildDynamicLeadReelConfig(thread, messages, nowMs);
+        if (!config) {
+            bumpSkipped('no_conversation_reel_profile');
+            continue;
+        }
+        try {
+            results.push(await runClientPilotDripForThread(thread, config, { sendDue, nowMs }));
+        } catch (error) {
+            console.error(`[learning-reel-drip] dynamic lead drip failed for ${thread.ig_username || thread.id}:`, error);
+            results.push({
+                ok: false,
+                pilot_id: DYNAMIC_LEAD_DRIP_ID,
+                pilot_label: thread.profile_name || thread.ig_username || 'Lead',
+                target_handle: thread.ig_username || null,
+                ig_thread_id: thread.id,
+                error: error.message || String(error),
+            });
+        }
+    }
+
+    return {
+        enabled: true,
+        scanned: threads.length,
+        eligible: results.length,
+        results,
+        skipped,
+    };
+}
+
 async function runClientPilotDrips({ sendDue = true, nowMs = Date.now() } = {}) {
+    if (!clientPilotDripsEnabled()) return [];
     const results = [];
     for (const config of CLIENT_PILOT_TARGETS) {
         try {
@@ -2237,10 +2941,14 @@ async function runClientPilotDrips({ sendDue = true, nowMs = Date.now() } = {}) 
 async function runAllDrips({ sendDue = true } = {}) {
     const nowMs = Date.now();
     const primary = await runDrip({ sendDue });
+    const clientPilotsEnabled = clientPilotDripsEnabled();
     const clientPilots = await runClientPilotDrips({ sendDue, nowMs });
+    const dynamicLeads = await runDynamicLeadDrips({ sendDue, nowMs });
     return {
         ...primary,
+        client_pilots_enabled: clientPilotsEnabled,
         client_pilots: clientPilots,
+        dynamic_lead_drips: dynamicLeads,
     };
 }
 
@@ -2277,26 +2985,36 @@ export const _test = {
     buildClientPilotPlan,
     buildClientPilotReelPayload,
     buildClientPilotVisibleMessage,
+    buildDynamicLeadReelConfig,
     buildVisibleMessage,
     candidateFromResult,
+    clientPilotTimingBlocker,
     CLIENT_PILOT_INTERVAL_MS,
     CLIENT_PILOT_TARGETS,
+    DYNAMIC_LEAD_DRIP_ID,
+    extractSongSignalsFromMessages,
     hasCoachRepliedSinceLastInbound,
+    isDynamicLeadStage,
     isLearningReelGateEligibleOutbound,
     isLearningReelOutboundSource,
     isLinkHandoffOutboundText,
     learningReelSourceKey,
     nextDuePlanItem,
+    normalizePlanTopicEntry,
     normalizeDripState,
     normalizeClientPilotState,
     recentLearningReelSourceKeys,
+    recentLearningReelSendCount,
     respacePendingPlanItems,
     resolveVeganSafetyRequirement,
     resolveThreadGraph,
+    scoreOpenSearchLearningReelCandidate,
     sentVideoIdsFromState,
     shouldDeferCandidateForSourceMix,
     shouldHoldPausedState,
+    songSearchQueries,
     sourceDiversityKey,
+    topicEntriesFromLeadText,
     updateClientPilotPlanItem,
     updatePlanItem,
     youtubeVideoIdsFromText,

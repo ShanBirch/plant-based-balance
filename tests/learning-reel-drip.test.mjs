@@ -101,6 +101,109 @@ assert.deepStrictEqual(mirandaState.vegan_safety_reasons, []);
 assert.strictEqual(mirandaState.plan[0].topic_id, 'pelvic_tilt_balance');
 assert.strictEqual(mirandaState.plan[1].topic_id, 'core_training_technique');
 
+const songSignals = _test.extractSongSignalsFromMessages([{
+    id: 'm-song',
+    direction: 'in',
+    text: 'I love the song The Thunder Rolls for training',
+    created_at: new Date(nowMs - 60 * 60 * 1000).toISOString(),
+}]);
+assert.strictEqual(songSignals[0].label, 'The Thunder Rolls for training');
+assert.ok(_test.songSearchQueries(songSignals[0].label).some(query => /The Thunder Rolls/i.test(query)));
+
+const leadTopicEntries = _test.topicEntriesFromLeadText('Miranda said core bracing and pelvic tilt are the main things she is working on.');
+assert.strictEqual(leadTopicEntries[0].topic_id, 'pelvic_tilt_balance');
+assert.ok(leadTopicEntries.some(entry => entry.topic_id === 'core_training_technique'));
+
+const dynamicLeadConfig = _test.buildDynamicLeadReelConfig({
+    id: 'thread-dynamic',
+    ig_username: 'miranda_laree_is_me',
+    profile_name: 'Miranda',
+    channel: 'instagram',
+    lead_stage: 'qualifying',
+    last_inbound_at: new Date(nowMs - 20 * 60 * 60 * 1000).toISOString(),
+    last_outbound_at: new Date(nowMs - 11 * 60 * 60 * 1000).toISOString(),
+    custom_data: {},
+    goals: 'core strength',
+}, [{
+    id: 'm1',
+    direction: 'in',
+    text: 'I love the song The Thunder Rolls. Also keen for core bracing stuff.',
+    created_at: new Date(nowMs - 20 * 60 * 60 * 1000).toISOString(),
+}], nowMs);
+assert.strictEqual(dynamicLeadConfig.id, _test.DYNAMIC_LEAD_DRIP_ID);
+assert.strictEqual(dynamicLeadConfig.review_before_send, false);
+assert.strictEqual(dynamicLeadConfig.max_sends_per_7_days, 3);
+assert.strictEqual(dynamicLeadConfig.plan_topics[0].topic_id, 'personal_music');
+assert.strictEqual(dynamicLeadConfig.plan_topics[0].open_search, true);
+assert.ok(dynamicLeadConfig.plan_topics.some(entry => entry.topic_id === 'core_training_technique'));
+assert.strictEqual(_test.isDynamicLeadStage({ lead_stage: 'qualifying' }), true);
+assert.strictEqual(_test.isDynamicLeadStage({ lead_stage: 'invited' }), true);
+assert.strictEqual(_test.isDynamicLeadStage({ lead_stage: 'paid_client' }), false);
+assert.strictEqual(_test.isDynamicLeadStage({ lead_stage: 'starter_coaching' }), false);
+assert.strictEqual(_test.isDynamicLeadStage({ lead_stage: 'churned' }), false);
+
+const dynamicLeadPlan = _test.buildClientPilotPlan(dynamicLeadConfig, nowMs);
+assert.strictEqual(dynamicLeadPlan[0].topic_id, 'personal_music');
+assert.ok(dynamicLeadPlan[0].search_queries.some(query => /Thunder Rolls/i.test(query)));
+const dynamicLeadState = _test.normalizeClientPilotState({ custom_data: {} }, dynamicLeadConfig, nowMs);
+assert.strictEqual(dynamicLeadState.review_before_send, false);
+assert.strictEqual(dynamicLeadState.plan[0].caption_mode, 'song');
+
+const musicMessage = _test.buildClientPilotVisibleMessage({
+    url: 'https://www.youtube.com/shorts/song123',
+    topic_id: 'personal_music',
+    topic_label: 'Music',
+    intent: 'song',
+    caption_mode: 'song',
+}, 0, dynamicLeadConfig, dynamicLeadPlan[0]);
+assert.ok(musicMessage.includes('https://www.youtube.com/shorts/song123'));
+assert.match(musicMessage, /song|came up|made me think/i);
+
+assert.ok(_test.scoreOpenSearchLearningReelCandidate({
+    title: 'The Thunder Rolls workout edit #shorts',
+    description: 'Training clip using The Thunder Rolls audio.',
+    channel_title: 'Creator',
+    duration_seconds: 32,
+    view_count: 120000,
+}, { item: dynamicLeadPlan[0], topicId: 'personal_music' }) > 80);
+assert.strictEqual(_test.scoreOpenSearchLearningReelCandidate({
+    title: 'Miracle detox belly fat burner',
+    description: 'Cleanse hack.',
+    duration_seconds: 32,
+}, { item: dynamicLeadPlan[0], topicId: 'personal_music' }), -1000);
+
+assert.strictEqual(_test.recentLearningReelSendCount({
+    custom_data: {
+        learning_reels: {
+            history: [
+                { video_id: 'a', sent_at: new Date(nowMs - 1 * 60 * 60 * 1000).toISOString() },
+                { video_id: 'b', sent_at: new Date(nowMs - 2 * 60 * 60 * 1000).toISOString() },
+            ],
+        },
+    },
+}, {
+    sent: [{ video_id: 'c', sent_at: new Date(nowMs - 3 * 60 * 60 * 1000).toISOString() }],
+}, nowMs), 3);
+
+assert.strictEqual(_test.clientPilotTimingBlocker({
+    last_inbound_at: new Date(nowMs - 2 * 60 * 60 * 1000).toISOString(),
+    last_outbound_at: new Date(nowMs - 1 * 60 * 60 * 1000).toISOString(),
+}, {
+    ...dynamicLeadConfig,
+    min_last_inbound_hours: 18,
+    max_last_inbound_hours: 24,
+    min_quiet_hours_since_last_activity: 10,
+}, nowMs).blocker, 'waiting_for_reel_window');
+assert.strictEqual(_test.clientPilotTimingBlocker({
+    last_inbound_at: new Date(nowMs - 20 * 60 * 60 * 1000).toISOString(),
+    last_outbound_at: new Date(nowMs - 11 * 60 * 60 * 1000).toISOString(),
+}, {
+    ...dynamicLeadConfig,
+    min_last_inbound_hours: 18,
+    max_last_inbound_hours: 24,
+    min_quiet_hours_since_last_activity: 10,
+}, nowMs), null);
+
 assert.strictEqual(_test.hasCoachRepliedSinceLastInbound({
     last_inbound_at: '2026-06-04T10:00:00.000Z',
     last_outbound_at: '2026-06-04T09:59:00.000Z',
