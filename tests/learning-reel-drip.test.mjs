@@ -120,19 +120,21 @@ const dynamicLeadConfig = _test.buildDynamicLeadReelConfig({
     profile_name: 'Miranda',
     channel: 'instagram',
     lead_stage: 'qualifying',
-    last_inbound_at: new Date(nowMs - 20 * 60 * 60 * 1000).toISOString(),
-    last_outbound_at: new Date(nowMs - 11 * 60 * 60 * 1000).toISOString(),
+    last_inbound_at: new Date(nowMs - 23 * 60 * 60 * 1000).toISOString(),
+    last_outbound_at: new Date(nowMs - 22.25 * 60 * 60 * 1000).toISOString(),
     custom_data: {},
     goals: 'core strength',
 }, [{
     id: 'm1',
     direction: 'in',
     text: 'I love the song The Thunder Rolls. Also keen for core bracing stuff.',
-    created_at: new Date(nowMs - 20 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date(nowMs - 23 * 60 * 60 * 1000).toISOString(),
 }], nowMs);
 assert.strictEqual(dynamicLeadConfig.id, _test.DYNAMIC_LEAD_DRIP_ID);
 assert.strictEqual(dynamicLeadConfig.review_before_send, false);
 assert.strictEqual(dynamicLeadConfig.max_sends_per_7_days, 3);
+assert.strictEqual(dynamicLeadConfig.min_last_inbound_hours, 22);
+assert.strictEqual(dynamicLeadConfig.min_quiet_hours_since_last_activity, 22);
 assert.strictEqual(dynamicLeadConfig.plan_topics[0].topic_id, 'personal_music');
 assert.strictEqual(dynamicLeadConfig.plan_topics[0].open_search, true);
 assert.ok(dynamicLeadConfig.plan_topics.some(entry => entry.topic_id === 'core_training_technique'));
@@ -190,18 +192,27 @@ assert.strictEqual(_test.clientPilotTimingBlocker({
     last_outbound_at: new Date(nowMs - 1 * 60 * 60 * 1000).toISOString(),
 }, {
     ...dynamicLeadConfig,
-    min_last_inbound_hours: 18,
+    min_last_inbound_hours: 22,
     max_last_inbound_hours: 24,
-    min_quiet_hours_since_last_activity: 10,
+    min_quiet_hours_since_last_activity: 22,
 }, nowMs).blocker, 'waiting_for_reel_window');
 assert.strictEqual(_test.clientPilotTimingBlocker({
-    last_inbound_at: new Date(nowMs - 20 * 60 * 60 * 1000).toISOString(),
+    last_inbound_at: new Date(nowMs - 23 * 60 * 60 * 1000).toISOString(),
     last_outbound_at: new Date(nowMs - 11 * 60 * 60 * 1000).toISOString(),
 }, {
     ...dynamicLeadConfig,
-    min_last_inbound_hours: 18,
+    min_last_inbound_hours: 22,
     max_last_inbound_hours: 24,
-    min_quiet_hours_since_last_activity: 10,
+    min_quiet_hours_since_last_activity: 22,
+}, nowMs).blocker, 'waiting_for_quiet_window');
+assert.strictEqual(_test.clientPilotTimingBlocker({
+    last_inbound_at: new Date(nowMs - 23 * 60 * 60 * 1000).toISOString(),
+    last_outbound_at: new Date(nowMs - 22.25 * 60 * 60 * 1000).toISOString(),
+}, {
+    ...dynamicLeadConfig,
+    min_last_inbound_hours: 22,
+    max_last_inbound_hours: 24,
+    min_quiet_hours_since_last_activity: 22,
 }, nowMs), null);
 
 assert.strictEqual(_test.hasCoachRepliedSinceLastInbound({

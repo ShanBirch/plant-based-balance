@@ -53,9 +53,9 @@ const DYNAMIC_LEAD_DRIP_REVISION = 'conversation_reel_3_per_week_v1';
 const DYNAMIC_LEAD_TOTAL_SENDS = 12;
 const DYNAMIC_LEAD_LOOKBACK_DAYS = 45;
 const DYNAMIC_LEAD_DEFAULT_MAX_THREADS = 12;
-const DYNAMIC_LEAD_DEFAULT_MIN_LAST_INBOUND_HOURS = 18;
+const DYNAMIC_LEAD_DEFAULT_MIN_LAST_INBOUND_HOURS = 22;
 const DYNAMIC_LEAD_DEFAULT_MAX_LAST_INBOUND_HOURS = 23.75;
-const DYNAMIC_LEAD_DEFAULT_MIN_QUIET_HOURS = 10;
+const DYNAMIC_LEAD_DEFAULT_MIN_QUIET_HOURS = 22;
 const DYNAMIC_LEAD_WEEKLY_CAP = 3;
 const CLIENT_PILOT_TARGETS = [
     {
@@ -367,8 +367,9 @@ async function loadTargetThread(handle) {
 }
 
 function envNumber(name, fallback, { min = -Infinity, max = Infinity } = {}) {
-    const raw = Number(getEnv(name));
-    const value = Number.isFinite(raw) ? raw : fallback;
+    const raw = getEnv(name).trim();
+    const parsed = raw ? Number(raw) : NaN;
+    const value = Number.isFinite(parsed) ? parsed : fallback;
     return Math.max(min, Math.min(max, value));
 }
 
