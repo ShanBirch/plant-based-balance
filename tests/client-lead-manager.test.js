@@ -4,6 +4,7 @@ const path = require('path');
 
 const clientContext = require('../netlify/functions/_lib/client-context');
 const manager = require('../netlify/functions/client-lead-manager')._test;
+const clientContextSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/client-context.js'), 'utf8');
 
 assert.strictEqual(manager.resolveAiDraftReviewLimit(undefined), 8);
 assert.strictEqual(manager.resolveAiDraftReviewLimit('0'), 0);
@@ -529,6 +530,14 @@ assert.ok(
 assert.ok(
     igDraftSource.includes('const permanentNeedsYouClient = isAlwaysNeedsYouPerson({'),
     'IG permanent Needs You routing should not depend on the thread already being linked to an app user'
+);
+assert.ok(
+    clientContextSource.includes('Do not warn just because a lead/client reply is short and reaction-only'),
+    'client/lead manager draft QA should not over-penalize reaction-only Shannon replies'
+);
+assert.ok(
+    clientContextSource.includes('Warn if the draft tacks an optional curiosity question'),
+    'client/lead manager draft QA should flag unnecessary curiosity questions'
 );
 
 console.log('client-lead-manager tests passed');

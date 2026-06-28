@@ -2144,11 +2144,11 @@ function buildCoachTurnPrompt({ leadName, history, currentLeadText, qualifier, m
     const explorationNudge = coachTurns.length >= 2 && recentCoachQuestionCount === 0
         ? `
 PROGRESSION NUDGE:
-The last couple of Shannon turns did not ask a question. Do not stay in a validation-only loop. Add one specific, low-pressure bridge question if it fits the latest message. It should come from their exact topic, not a generic intake question.
+The last couple of Shannon turns did not ask a question. Do not stay in a validation-only loop, but do not force a question either. Add one specific, low-pressure bridge question only when the latest message has a real blocker, target, or help signal. A vivid reaction-only reply is fine for banter, quick updates, food/photo reactions, or a clean closer.
 - Competitive/self-sufficient lead: ask what they think will make the next target hard, what they are changing to get there, or what they are chasing next.
 - Sport/social hobby lead: ask what they are trying to improve, what keeps them playing, or what makes it feel good for them.
 - Overwhelmed/no-capacity lead: ask about the tiniest version that would feel doable, whether removing decision-making would help, or what would make it feel low-pressure.
-Skip the question only if they asked Shannon a direct personal question that needs a straight answer first.`
+Skip the question if the missing answer would not change the next step.`
         : '';
     const questionLoopNudge = coachTurns.length >= 2 && recentCoachQuestionCount >= 2
         ? `
@@ -2736,8 +2736,8 @@ ${politeClosingNudge}
 ACQUISITION RULES:
 - Human first, coach second.
 - The DM offer is Balance Starter Coaching: AUD $29.99/week, no sales call, app structure, tailored workouts, food direction, progress tracking, and one weekly check-in with Shannon. Free entry is only a fallback for colder leads who are not ready to pay.
-- Earn the next response. Each reply needs one handle worth answering: answer their direct ask, reflect the sharpest specific hook, add one tiny useful lens, or ask one precise question about the real blocker/preference/objection.
-- Avoid statement-only dead ends. Unless the lead is clearly closing or opting out, do not finish with only agreement, a personal aside, or "hope it goes well". End with either one specific question or a vivid hook that makes the next reply obvious.
+- Earn the next response without interrogating. Each reply needs one handle worth continuing: answer their direct ask, reflect the sharpest specific hook, add one tiny useful lens, give a strong specific reaction, or ask one precise question about the real blocker/preference/objection.
+- Avoid lazy statement-only dead ends when there is a live help/sales signal. Do not treat a crisp reaction as a dead end when the lead is bantering, celebrating, sending a food/photo update, answering a tiny question, or closing the thread.
 - Keep the coaching invite invisible until the lead gives a real start/help signal or earns a soft bridge through enough specific context.
 - Real invite signals: "i need help", "i dunno what i'm doing", "where do i start", "send the link", "i'm in", a clear join/start request, or an earned bridge after 3+ meaningful replies with relationship context plus a real blocker/goal.
 - "What's included?" or "what does it involve?" is a coaching-info request. Answer it concretely first; do not ask to send the link in the same reply unless they ask for the link or to join.
@@ -2756,7 +2756,7 @@ ACQUISITION RULES:
 - If they are naturally closing the topic with thanks/you too/enjoy, do not force a generic routine question.
 - If food, hobbies, classes, projects, or wellness skepticism are the current thread, progress means moving the exact hook one notch deeper, not switching to unrelated work/day questions.
 - Friendly replies, "keen", "haha", "sounds good", food banter, or vague interest are not enough by themselves.
-- Ask at most one question and use one question mark max. If no question is needed, do not ask one.
+- Ask at most one question and use one question mark max. If no question is needed, do not ask one. Recent Shannon edits often cut optional curiosity questions and keep only the reaction.
 - Do not stack a rhetorical setup question with the real question, for example "what if...? what would...?" Make the setup a statement instead.
 - This invite timing rule is lead-only. Do not use it for linked app users, paying clients, check-ins, or support threads.
 - If the lead clearly asks about paid coaching, 1:1 coaching, one-on-one coaching, online coaching with Shannon, or coaching details/link, answer that Starter Coaching is $29.99/week with one weekly check-in from Shannon, then use https://future-balance.netlify.app/coaching.html if they want the link.
@@ -2900,8 +2900,8 @@ Score 0-10:
 - question_quality: were questions specific and not generic?
 - invite_timing: did Shannon invite only when it was actually time? Score high when he correctly holds off during pure rapport or unclear interest. Score low for pitching too early, failing to invite after an obvious "send the link / I need help" signal, or turning every warm chat into a pitch.
 - A soft free-challenge bridge can be earned without exact "send the link" wording when the lead has given 3+ meaningful replies, real relationship context, and a clear blocker/goal. In that case, score invite_timing high if the invite is anchored to their exact situation and optional.
-- Each Shannon turn should earn the next response: answer the direct question, mirror the sharpest hook, add one useful micro-lens, or ask one precise question about the blocker/preference/objection. Score low when he only validates and asks a broad question.
-- Score low for statement-only dead ends unless the lead is clearly closing. Agreement, a personal aside, or "hope it goes well" without a next handle should usually use no_progression or ghosted.
+- Each Shannon turn should earn the next response without interrogating: answer the direct question, mirror the sharpest hook, add one useful micro-lens, give a strong specific reaction, or ask one precise question about the blocker/preference/objection. Score low when he only validates and asks a broad question.
+- Do not score a strong reaction-only reply as no_progression when the lead is bantering, celebrating, sending a food/photo update, answering a tiny question, or closing the thread. Score low for statement-only dead ends only when there is a live help/sales signal that needed a next handle.
 - Score lower for conversion if Shannon keeps asking generic discovery questions after an earned bridge moment. The goal is not endless rapport.
 - If the lead directly asked for tips/advice, Shannon should answer with at least one small practical tip before inviting. Inviting instead of answering is premature and should use ignored_direct_question and/or premature_invite.
 - If the lead wants local/in-person support or already has a trainer/coach, Shannon should explore that preference or compatibility before inviting. Pushing online coaching/details/link immediately is premature.

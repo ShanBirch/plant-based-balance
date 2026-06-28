@@ -20,6 +20,14 @@ assert.match(
 );
 assert.match(
     buildAcquisitionStyleBlock({ leadStage: 'qualifying', linkedUserId: null }),
+    /without interrogating/
+);
+assert.match(
+    buildAcquisitionStyleBlock({ leadStage: 'qualifying', linkedUserId: null }),
+    /strong specific reaction/
+);
+assert.match(
+    buildAcquisitionStyleBlock({ leadStage: 'qualifying', linkedUserId: null }),
     /Avoid validation loops/
 );
 assert.match(
@@ -37,6 +45,10 @@ assert.match(
 assert.match(
     buildAcquisitionMomentumBlock({ botAccount: 'shan_n_sunny', leadStage: 'qualifying', linkedUserId: null }),
     /Too-generic fix/
+);
+assert.match(
+    buildAcquisitionMomentumBlock({ botAccount: 'shan_n_sunny', leadStage: 'qualifying', linkedUserId: null }),
+    /do not manufacture momentum with another question/
 );
 assert.match(
     buildAcquisitionMomentumBlock({ botAccount: 'shan_n_sunny', leadStage: 'qualifying', linkedUserId: null }),

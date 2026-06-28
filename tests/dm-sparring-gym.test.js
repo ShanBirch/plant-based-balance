@@ -1,4 +1,6 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 
 const {
     DEFAULT_PERSONAS,
@@ -15,6 +17,11 @@ const {
     transcriptToText,
     runSparringBatch,
 } = require('../netlify/functions/_lib/dm-sparring-gym');
+
+const sparringSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/dm-sparring-gym.js'), 'utf8');
+assert.ok(sparringSource.includes('Earn the next response without interrogating'), 'sparring coach prompt should avoid question pressure');
+assert.ok(sparringSource.includes('Recent Shannon edits often cut optional curiosity questions'), 'sparring coach prompt should learn reaction-only edits');
+assert.ok(sparringSource.includes('Do not score a strong reaction-only reply as no_progression'), 'sparring judge should not penalize valid reaction-only replies');
 
 const firstPick = choosePersonas({ count: 3, seed: 'same-seed' }).map(p => p.key);
 const secondPick = choosePersonas({ count: 3, seed: 'same-seed' }).map(p => p.key);
