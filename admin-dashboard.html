@@ -10680,6 +10680,10 @@
         let currentFeed = 'needs-you';
         let currentNeedsYouView = 'all';
         let needsYouCounts = { all: 0 };
+        let needsYouLoadSeq = 0;
+        const NEEDS_YOU_FAST_CACHE_MS = 30 * 1000;
+        const NEEDS_YOU_ALERT_SELECT_FIELDS = 'id,coach_id,client_id,client_name,alert_type,status,priority,title,description,suggested_message,scheduled_reply_text,created_at,actioned_at,scheduled_for,data';
+        let needsYouFeedCache = { rows: [], activeClientIds: new Set(), loadedAt: 0 };
         const NEEDS_YOU_TABS = ['all'];
         const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'general_idea', 'onboarding_day_30', 'weekly_checkin', 'first_workout', 'subscription_sale'];
         const CLIENT_MANAGER_REVIEW_MARKERS = [
@@ -12427,6 +12431,42 @@
             setNeedsYouBadge(counts.all || 0);
         }
 
+        function isCurrentNeedsYouLoad(loadSeq) {
+            return loadSeq === needsYouLoadSeq
+                && currentFeed === 'needs-you'
+                && currentView === 'needs-you';
+        }
+
+        function renderNeedsYouSnapshot(rows = [], activeClientIds = dmClientIdsCache.ids) {
+            const baseRows = collapseNeedsYouRows(uniqueAlertRows(rows || []));
+            alertsCache = baseRows.filter(a => needsYouMatchesView(a, currentNeedsYouView, activeClientIds));
+            renderNeedsYouCounts(summarizeNeedsYouCounts(baseRows, activeClientIds));
+            renderAlertFeed(alertsCache, {
+                containerId: 'needs-you-feed',
+                viewKey: currentNeedsYouView,
+                emptyStates: NEEDS_YOU_EMPTY_STATES,
+            });
+            updateAlertBadge();
+            if (typeof updateAllVoiceMatchMinis === 'function') updateAllVoiceMatchMinis();
+        }
+
+        function maybeRenderNeedsYouCache(force = false) {
+            if (force || !needsYouFeedCache.loadedAt) return false;
+            if ((Date.now() - needsYouFeedCache.loadedAt) > NEEDS_YOU_FAST_CACHE_MS) return false;
+            renderNeedsYouSnapshot(needsYouFeedCache.rows, needsYouFeedCache.activeClientIds || dmClientIdsCache.ids);
+            return true;
+        }
+
+        function refreshNeedsYouAfterRepair(loadSeq, repairPromise) {
+            Promise.resolve(repairPromise)
+                .then(result => {
+                    if (!result || (!result.restoredCount && !result.blankDraftRepairCount && !result.appInboxRepairCount)) return;
+                    if (!isCurrentNeedsYouLoad(loadSeq)) return;
+                    loadNeedsYou(true);
+                })
+                .catch(() => {});
+        }
+
         async function refreshNeedsYouCounts() {
             try {
                 const countFields = 'id,client_id,alert_type,status,created_at,scheduled_for,suggested_message,data';
@@ -12447,33 +12487,34 @@
 
         async function loadNeedsYou(force = false) {
             const container = document.getElementById('needs-you-feed');
+            const loadSeq = ++needsYouLoadSeq;
+            let renderedFromCache = false;
             try {
                 currentFeed = 'needs-you';
                 activateNeedsYouView(currentNeedsYouView);
-                await repairUnreadDmAlerts();
-                const activeClientIds = await getActiveDmClientIds();
-                const { data, error } = await window.supabaseClient
+                renderedFromCache = maybeRenderNeedsYouCache(force);
+                const repairPromise = repairUnreadDmAlerts();
+                refreshNeedsYouAfterRepair(loadSeq, repairPromise);
+                const alertsQuery = window.supabaseClient
                     .from('coach_alerts')
-                    .select('*')
+                    .select(NEEDS_YOU_ALERT_SELECT_FIELDS)
                     .eq('status', 'pending')
                     .in('alert_type', NEEDS_YOU_ALERT_TYPES)
                     .order('created_at', { ascending: false })
                     .limit(300);
+                const [activeClientIds, alertsRes] = await Promise.all([
+                    getActiveDmClientIds(),
+                    alertsQuery,
+                ]);
+                if (!isCurrentNeedsYouLoad(loadSeq)) return;
+                const { data, error } = alertsRes || {};
                 if (error) throw error;
                 const rows = uniqueAlertRows(data || []);
-                const baseRows = collapseNeedsYouRows(rows);
-                alertsCache = baseRows.filter(a => needsYouMatchesView(a, currentNeedsYouView, activeClientIds));
-                renderNeedsYouCounts(summarizeNeedsYouCounts(baseRows, activeClientIds));
-                renderAlertFeed(alertsCache, {
-                    containerId: 'needs-you-feed',
-                    viewKey: currentNeedsYouView,
-                    emptyStates: NEEDS_YOU_EMPTY_STATES,
-                });
-                updateAlertBadge();
-                if (typeof updateAllVoiceMatchMinis === 'function') updateAllVoiceMatchMinis();
+                needsYouFeedCache = { rows, activeClientIds, loadedAt: Date.now() };
+                renderNeedsYouSnapshot(rows, activeClientIds);
             } catch (e) {
                 console.error('Failed to load Needs You:', e);
-                if (container) container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Needs You: ${escapeHtml(e.message || e)}</div>`;
+                if (!renderedFromCache && container) container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Needs You: ${escapeHtml(e.message || e)}</div>`;
             }
         }
 
@@ -13177,12 +13218,12 @@
 
         async function repairUnreadDmAlerts() {
             const now = Date.now();
-            if (now - lastUnreadDmRepairAt < 60 * 1000) return;
+            if (now - lastUnreadDmRepairAt < 60 * 1000) return null;
             lastUnreadDmRepairAt = now;
             try {
                 const { data: authData } = await window.supabaseClient.auth.getUser();
                 const coachId = authData?.user?.id;
-                if (!coachId) return;
+                if (!coachId) return null;
                 const res = await fetch('/.netlify/functions/repair-unread-dm-alerts', {
                     method: 'POST',
                     headers: await getAdminJsonHeaders(),
@@ -13202,8 +13243,10 @@
                 if (json.appInboxRepairCount > 0) {
                     console.log('[unread-repair] dispatched ' + json.appInboxRepairCount + ' app inbox message(s) into DMs');
                 }
+                return json;
             } catch (e) {
                 console.warn('[unread-repair] failed:', e.message || e);
+                return null;
             }
         }
 
@@ -20608,14 +20651,21 @@
             });
         })();
 
-        // Warm approval counts when the page loads (after dashboard data).
-        setTimeout(() => {
+        // Warm approval counts as soon as the admin shell is unlocked. This
+        // keeps the default Needs You screen from sitting on its loader while
+        // the broader dashboard stats finish in the background.
+        function warmInitialApprovalCounts(attempt = 0) {
+            if (document.body.classList.contains('admin-locked') && attempt < 30) {
+                setTimeout(() => warmInitialApprovalCounts(attempt + 1), 100);
+                return;
+            }
             if (currentView === 'needs-you') loadNeedsYou(true);
             else if (currentView === 'alerts') loadAlerts();
             else refreshFeedCounts();
-        }, 2000);
-        setTimeout(refreshNeedsYouCounts, 2200);
-        setTimeout(refreshChallengeCheckinCounts, 2400);
+        }
+        setTimeout(() => warmInitialApprovalCounts(), 100);
+        setTimeout(refreshNeedsYouCounts, 1200);
+        setTimeout(refreshChallengeCheckinCounts, 1400);
 
         // Auto-refresh whichever feed Shannon is currently on, every 5 minutes.
         // refreshDmViewCounts also fires inside loadAlerts so the sidebar
