@@ -18,6 +18,8 @@ const EXERCISE_VIDEOS = {
   "Quadruped Hip Abduction Holds": "https://f005.backblazeb2.com/file/shannonsvideos/Quadruped%20Hip%20Abduction%20Holds.mp4",
   "Push Up to T-rotation": "https://f005.backblazeb2.com/file/shannonsvideos/Push%20Up%20to%20T-rotation.mp4",
   "Push Up": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/pushups.mp4",
+  "Pushup Progression": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/pushups.mp4",
+  "Pushup Progression (6-week build)": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/pushups.mp4",
   "Pulse Sumo Squats": "https://f005.backblazeb2.com/file/shannonsvideos/Pulse%20Sumo%20Squats.mp4",
   "Pulse Squat to Curtsy Pulse": "https://f005.backblazeb2.com/file/shannonsvideos/Pulse%20Squat%20to%20Curtsy%20Pulse.mp4",
   "Pulse Lateral Lunge": "https://f005.backblazeb2.com/file/shannonsvideos/Pulse%20Lateral%20Lunge.mp4",
