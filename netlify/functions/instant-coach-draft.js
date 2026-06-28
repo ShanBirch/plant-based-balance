@@ -47,6 +47,7 @@ const {
     isAlwaysNeedsYouPerson,
     getAppProblemAutoSendHoldReason,
     buildShannonDmTuningBlock,
+    buildBalanceIdentityElicitationBlock,
     buildOpenAIShannonVoiceBlock,
     loadEditExamples,
     loadResponseTimingProfile,
@@ -315,6 +316,7 @@ async function generateDraftReply({ clientName, clientSnapshot, conversationHist
     const relationshipDiscoveryBlock = buildRelationshipDiscoveryBlock();
     const heardFirstConversationBlock = buildHeardFirstConversationBlock();
     const shannonDmTuningBlock = buildShannonDmTuningBlock();
+    const identityElicitationBlock = buildBalanceIdentityElicitationBlock();
     const openAiShannonVoiceBlock = buildOpenAIShannonVoiceBlock();
 
     // Inline any photos attached to the CURRENT client message so Gemini can
@@ -457,6 +459,7 @@ ${nameUsePolicyBlock}
 ${relationshipDiscoveryBlock}
 ${heardFirstConversationBlock}
 ${shannonDmTuningBlock}
+${identityElicitationBlock}
 ${openAiShannonVoiceBlock}
 ${checkinThreadBlock}
 
