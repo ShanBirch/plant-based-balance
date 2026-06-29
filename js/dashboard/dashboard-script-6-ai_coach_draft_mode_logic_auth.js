@@ -5250,14 +5250,286 @@ window._toggleExtraChallenges = function(toggleEl) {
 // Polls every 30s to update cards when opponents join pending challenges
 let _pendingChallengePollerTimer = null;
 
+const CHALLENGE_XP_INFO_GROUPS = [
+    {
+        title: 'Meals and Nutrition',
+        rows: [
+            { amount: '+1', title: 'Accepted meal log', body: 'Verified photo, quick log, text log, and accepted meal routes can award this.' },
+            { amount: '+1', title: 'On-time meal', body: 'Log within 30 minutes of a scheduled meal reminder.' },
+            { amount: '+2', title: 'Daily nutrition target', body: 'Log at least one meal and finish within 20% of calories, protein, carbs, and fat.' },
+            { amount: '+1', title: 'Meal Feed share', body: 'Share a logged meal card to Feed. Balance dedupes this by meal when it can identify the meal.' },
+        ],
+    },
+    {
+        title: 'Feed and Community',
+        rows: [
+            { amount: '+2', title: 'Daily Feed check-in', body: 'One regular Feed post can earn this each day.' },
+            { amount: '+2', title: "Comment on someone else's post", body: 'Comments on your own post do not count.' },
+            { amount: '+2', title: 'Verified workout image post', body: 'A regular Feed photo can earn this when Balance verifies workout content.' },
+            { amount: '+1', title: 'Nudge an inactive friend', body: 'Capped at once per friend per week when they have been inactive long enough.' },
+        ],
+    },
+    {
+        title: 'Training',
+        rows: [
+            { amount: '+1', title: 'Workout logged', body: 'Eligible workout log routes award XP.' },
+            { amount: '+1', title: 'Workout card share', body: 'Share the workout card to Feed. Eligible group-chat shares can also award once per workout session.' },
+            { amount: '+1', title: 'New personal best', body: 'New PBs and volume PRs can add XP.' },
+            { amount: 'Score', title: 'Workout challenges', body: 'Some challenge types score workouts, weight lifted, reps, or calories instead of direct XP.' },
+        ],
+    },
+    {
+        title: 'Progress and Weigh-ins',
+        rows: [
+            { amount: '+10', title: 'Weekly progress photos', body: 'Earn once when the weekly progress photo set is accepted.' },
+            { amount: '+10', title: 'Share weekly progress', body: 'Share that weekly progress photo set to Feed once.' },
+            { amount: '+1', title: 'Daily weigh-in', body: 'Add your weigh-in for the day.' },
+            { amount: '+10', title: 'Friday weigh-in down', body: 'Earn when Friday weight is down from the previous Friday in a challenge.' },
+            { amount: '+10', title: 'Friday Feed card', body: 'Post the Friday weigh-in review card to Feed once per Friday weigh-in.' },
+        ],
+    },
+    {
+        title: 'Daily Check-ins',
+        rows: [
+            { amount: '+1', title: 'Fitness diary', body: 'Submit the daily fitness diary card.' },
+            { amount: '+1', title: 'All three mood check-ins', body: 'Complete morning, afternoon, and evening mood check-ins in the same day.' },
+            { amount: '+2', title: '10,000 Fitbit steps', body: 'Synced Fitbit steps can award once per day.' },
+        ],
+    },
+    {
+        title: 'Health IQ',
+        rows: [
+            { amount: '+1', title: 'New lesson complete', body: 'Health IQ lessons need 100% completion to award XP, with a daily lesson limit.' },
+            { amount: '+2', title: 'Unit complete', body: 'Finish all lessons in a unit.' },
+            { amount: '+5', title: 'Module complete', body: 'Finish a full module.' },
+            { amount: '+5', title: 'Daily quiz', body: 'Score 100% on the daily quiz, once per day.' },
+            { amount: 'Bonus', title: 'Health IQ level-ups', body: 'Level bonuses are +5, +10, +15, +20, +25, +30, +40, +50, then +100 XP.' },
+        ],
+    },
+    {
+        title: 'Weekly Goals',
+        rows: [
+            { amount: '+10', title: 'Each completed weekly goal', body: 'Paid through Weekly Wrapped after goal progress is calculated.' },
+            { amount: '+20', title: 'All three goals hit', body: 'Bonus for hitting 3/3 selected weekly goals.' },
+            { amount: 'Cap', title: '50 XP weekly max', body: 'Weekly goal rewards are capped at 50 XP total.' },
+        ],
+    },
+    {
+        title: 'Milestones and Streaks',
+        rows: [
+            { amount: '+5', title: 'First meal or first workout', body: 'The first accepted meal and first logged workout have milestone bonuses.' },
+            { amount: '+10', title: '10 meals', body: 'Meal tracking milestone.' },
+            { amount: '+25', title: '50 meals or 50 workouts', body: 'Count milestone.' },
+            { amount: '+50', title: '100 meals or 100 workouts', body: 'Count milestone.' },
+            { amount: '+100', title: '365 meals or 365 workouts', body: 'One-year count milestone.' },
+            { amount: 'Bonus', title: 'Post streaks', body: '7, 14, 30, 60, and 100-day streak bonuses are +5, +10, +25, +50, and +100 XP.' },
+        ],
+    },
+    {
+        title: 'Boosts and Challenges',
+        rows: [
+            { amount: '+200', title: 'Win a challenge', body: 'Challenge wins can award XP and unlock a 30-day 2x XP boost.' },
+            { amount: '2x', title: 'Double XP windows', body: 'Active boosts can multiply eligible rewards when the app shows the boost.' },
+            { amount: '+1', title: 'Walkthrough checkpoints', body: 'Selected onboarding walkthrough checkpoints can award XP until the account reaches the Level 4 starter target.' },
+        ],
+    },
+];
+
+function getVisibleLeaderboardChallengeDetails() {
+    const modal = document.getElementById('challenge-leaderboard-modal');
+    if (!modal || modal.style.display === 'none' || modal.style.display === '') return null;
+    return window._currentChallengeDetails || null;
+}
+
+function renderChallengeXpInfoPage() {
+    const listEl = document.getElementById('challenge-xp-info-list');
+    const summaryEl = document.getElementById('challenge-xp-info-summary');
+    const challenge = getVisibleLeaderboardChallengeDetails();
+    const challengeType = (challenge && challenge.challenge_type) || 'xp';
+    const cType = CHALLENGE_TYPES[challengeType] || CHALLENGE_TYPES.xp;
+
+    if (summaryEl) {
+        const desc = cType && cType.desc ? cType.desc : 'Highest XP wins';
+        summaryEl.textContent = `${cType.name || 'Level Up'} Challenge: ${desc}. Every XP source below counts after you join. Active 2x boosts can double eligible awards when Balance shows the boost.`;
+    }
+
+    if (!listEl) return;
+    listEl.innerHTML = CHALLENGE_XP_INFO_GROUPS.map(group => `
+        <div style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 11px;">
+            <div style="color: white; -webkit-text-fill-color: white; font-weight: 900; font-size: 0.9rem; margin-bottom: 8px;">${escapeChallengeHtml(group.title)}</div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                ${group.rows.map(renderChallengeXpInfoRow).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderChallengeXpInfoRow(row) {
+    const amount = escapeChallengeHtml(row.amount);
+    const title = escapeChallengeHtml(row.title);
+    const body = escapeChallengeHtml(row.body);
+    return `
+        <div style="display: grid; grid-template-columns: 54px 1fr; gap: 10px; align-items: flex-start;">
+            <span style="min-width: 48px; min-height: 28px; padding: 4px 8px; border-radius: 999px; background: rgba(245,217,138,0.16); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 950; white-space: nowrap;">${amount}</span>
+            <span style="color: rgba(255,255,255,0.66); font-size: 0.8rem; line-height: 1.42;"><strong style="color: rgba(255,255,255,0.92);">${title}.</strong> ${body}</span>
+        </div>
+    `;
+}
+
 function openXpGuidePage(event) {
     if (event) {
         event.preventDefault();
         event.stopPropagation();
     }
-    window.location.href = 'xp-guide.html';
+    const page = document.getElementById('challenge-xp-info-page');
+    if (!page) {
+        window.location.href = 'xp-guide.html';
+        return;
+    }
+    renderChallengeXpInfoPage();
+    const alreadyOpen = page.style.display === 'block';
+    page.style.display = 'block';
+    page.scrollTop = 0;
+    if (!alreadyOpen && typeof pushNavigationState === 'function') {
+        pushNavigationState('challenge-xp-info-page', closeChallengeXpInfoPage);
+    }
 }
 window.openXpGuidePage = openXpGuidePage;
+
+function closeChallengeXpInfoPage() {
+    const page = document.getElementById('challenge-xp-info-page');
+    if (page) page.style.display = 'none';
+}
+window.closeChallengeXpInfoPage = closeChallengeXpInfoPage;
+
+function isCohortCashPrizeChallenge(challenge) {
+    if (!challenge) return false;
+    const cohortType = String(challenge.cohort_type || '').toLowerCase();
+    const name = String(challenge.name || '').toLowerCase();
+    return !!challenge.is_system_cohort ||
+        cohortType === 'transform_30' ||
+        cohortType === 'plant_based_30' ||
+        cohortType === 'manual_kayla_30' ||
+        /transformation challenge|6-week transformation|30-day challenge|30 day challenge/.test(name);
+}
+
+function getCurrentChallengeRareReward() {
+    const rareId = window._currentChallengeRareRewardId || window._currentChallengeDetails?.rare_reward_id || null;
+    if (!rareId) return null;
+    const collection = window.RARE_COLLECTION || [];
+    return collection.find(r => r.id === rareId) || null;
+}
+
+function getChallengeDurationLabel(challenge) {
+    const days = Number(challenge && challenge.duration_days);
+    if (Number.isFinite(days) && days > 0) {
+        if (days >= 40 && days <= 45) return '6 weeks';
+        if (days === 30) return '30 days';
+        return `${days} days`;
+    }
+    return 'the challenge';
+}
+
+function renderChallengePrizeRow(icon, html) {
+    return `
+        <div style="display: flex; align-items: center; gap: 11px;">
+            <span style="font-size: 1.08rem;">${icon}</span>
+            <span style="color: rgba(255,255,255,0.86); font-size: 0.86rem; line-height: 1.4;">${html}</span>
+        </div>
+    `;
+}
+
+function renderChallengePrizesPage() {
+    const challenge = getVisibleLeaderboardChallengeDetails();
+    const challengeType = (challenge && challenge.challenge_type) || 'xp';
+    const cType = CHALLENGE_TYPES[challengeType] || CHALLENGE_TYPES.xp;
+    const isCashCohort = isCohortCashPrizeChallenge(challenge);
+    const rare = getCurrentChallengeRareReward();
+    const durationLabel = getChallengeDurationLabel(challenge);
+
+    const titleEl = document.getElementById('challenge-prizes-title');
+    const topLabelEl = document.getElementById('challenge-prizes-top-label');
+    const summaryEl = document.getElementById('challenge-prizes-summary');
+    const listEl = document.getElementById('challenge-prizes-list');
+    const rareRow = document.getElementById('challenge-prizes-rare-row');
+
+    if (titleEl) titleEl.textContent = 'Prizes';
+
+    if (isCashCohort) {
+        if (topLabelEl) topLabelEl.textContent = COHORT_CASH_PRIZE_LABEL;
+        if (summaryEl) summaryEl.textContent = `${cType.name || 'Level Up'} Challenge: ${cType.desc || 'highest score wins'}. Highest score after ${durationLabel} wins the main prize.`;
+        if (listEl) {
+            listEl.innerHTML = [
+                renderChallengePrizeRow('&#129351;', '<strong style="color: #fbbf24;">1st place</strong> &middot; <strong style="color: #86efac;">$500 cash prize</strong>'),
+                renderChallengePrizeRow('&#129352;', '<strong style="color: #cbd5e1;">2nd place</strong> &middot; 2 weeks free online coaching'),
+                renderChallengePrizeRow('&#129353;', '<strong style="color: #d97706;">3rd place</strong> &middot; 1 week free online coaching'),
+                renderChallengePrizeRow('&#128170;', '<strong style="color: #5eead4;">Biggest effort</strong> &middot; most improved momentum'),
+            ].join('');
+        }
+    } else {
+        if (topLabelEl) topLabelEl.textContent = rare ? (rare.name || 'Rare reward') : 'Winner rewards';
+        if (summaryEl) summaryEl.textContent = `${cType.name || 'Challenge'}: ${cType.desc || 'highest score wins'}. Rank #1 wins when results are finalized.`;
+        if (listEl) {
+            const rareText = rare
+                ? `<strong style="color: #fbbf24;">1st place</strong> &middot; ${escapeChallengeHtml(rare.name || 'Attached rare reward')}`
+                : '<strong style="color: #fbbf24;">1st place</strong> &middot; winner reward if attached';
+            listEl.innerHTML = [
+                renderChallengePrizeRow('&#129351;', rareText),
+                renderChallengePrizeRow('&#9889;', '<strong style="color: #f5d98a;">Challenge win</strong> &middot; can award +200 XP'),
+                renderChallengePrizeRow('2x', '<strong style="color: #c4b5fd;">Boost</strong> &middot; challenge wins can unlock a 30-day 2x XP window'),
+                renderChallengePrizeRow('&#127881;', '<strong style="color: #86efac;">Participants</strong> &middot; all participants can receive a completion reward'),
+            ].join('');
+        }
+    }
+
+    if (rareRow) {
+        if (rare) {
+            const tiers = window.RARE_TIERS || {};
+            const tier = tiers[rare.tier] || {};
+            const tierLabel = tier.label || 'RARE';
+            rareRow.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 2rem; line-height: 1; flex-shrink: 0;">${escapeChallengeHtml(rare.emoji || '\uD83C\uDFC6')}</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 0.68rem; color: rgba(251,191,36,0.9); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 900; margin-bottom: 3px;">Attached rare</div>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <div style="font-size: 0.98rem; font-weight: 900; color: white; -webkit-text-fill-color: white;">${escapeChallengeHtml(rare.name || 'Mystery Rare')}</div>
+                            <span style="padding: 2px 8px; border-radius: 5px; font-size: 0.55rem; font-weight: 900; letter-spacing: 0.1em; color: white; background: ${tier.gradient || 'linear-gradient(135deg, #6b7280, #4b5563)'};">${escapeChallengeHtml(tierLabel)}</span>
+                        </div>
+                        <div style="font-size: 0.76rem; color: rgba(255,255,255,0.62); margin-top: 3px; line-height: 1.4;">${escapeChallengeHtml(rare.desc || 'Winner receives this rare reward when the challenge is finalized.')}</div>
+                    </div>
+                </div>
+            `;
+            rareRow.style.display = 'block';
+        } else {
+            rareRow.style.display = 'none';
+            rareRow.innerHTML = '';
+        }
+    }
+}
+
+function openChallengePrizesPage(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const page = document.getElementById('challenge-prizes-page');
+    if (!page) return;
+    renderChallengePrizesPage();
+    const alreadyOpen = page.style.display === 'block';
+    page.style.display = 'block';
+    page.scrollTop = 0;
+    if (!alreadyOpen && typeof pushNavigationState === 'function') {
+        pushNavigationState('challenge-prizes-page', closeChallengePrizesPage);
+    }
+}
+window.openChallengePrizesPage = openChallengePrizesPage;
+
+function closeChallengePrizesPage() {
+    const page = document.getElementById('challenge-prizes-page');
+    if (page) page.style.display = 'none';
+}
+window.closeChallengePrizesPage = closeChallengePrizesPage;
 
 function _managePendingChallengePoller(hasPending) {
     if (hasPending && !_pendingChallengePollerTimer) {
