@@ -102,6 +102,10 @@
   path = "/api/upload-meal-photo"
 
 [[edge_functions]]
+  function = "upload-story-media"
+  path = "/api/upload-story-media"
+
+[[edge_functions]]
   function = "upload-ig-operator-media"
   path = "/api/upload-ig-operator-media"
 
