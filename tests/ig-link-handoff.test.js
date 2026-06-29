@@ -8,6 +8,9 @@ const {
     repairMissingChallengeBioLinkChunks,
     suppressExistingClientSignupLinkHandoffInDraftChunks,
     isExistingClientThread,
+    isBareStoryMentionNotificationText,
+    suppressBareStoryMentionClarifierInDraftChunks,
+    buildEmptyMediaDraftFallbackChunks,
 } = require('../netlify/functions/ig-instant-draft')._test;
 const scheduledWorker = require('../netlify/functions/scheduled-coach-reply-worker')._test;
 
@@ -97,6 +100,45 @@ const mirandaClientChunks = finalizeDraftChunksFromRawText(
 );
 assert.match(mirandaClientChunks.join('\n'), /competition tracker/);
 assert.doesNotMatch(mirandaClientChunks.join('\n'), /future-balance\.netlify\.app\/coaching\.html|download it|quick challenge/i);
+
+assert.strictEqual(
+    isBareStoryMentionNotificationText('mentioned you in a story [PHOTO:https://lookaside.fbsbx.com/example.jpg]'),
+    true
+);
+assert.strictEqual(isBareStoryMentionNotificationText('mentioned you in a story photo'), true);
+assert.strictEqual(isBareStoryMentionNotificationText('tagged you in their story'), true);
+assert.strictEqual(isBareStoryMentionNotificationText('mentioned you in a story about meal prep'), false);
+
+assert.deepStrictEqual(
+    suppressBareStoryMentionClarifierInDraftChunks([
+        "Fuck yeah. I'm honoured you tagged me in a story. What did you get tagged in, and are you training more or just eating cleaner right now?",
+    ], {
+        currentMessageText: 'mentioned you in a story photo',
+    }),
+    ['oh hell yeah!']
+);
+
+assert.deepStrictEqual(
+    finalizeDraftChunksFromRawText(
+        JSON.stringify({
+            messages: [
+                "Fuck yeah. I'm honoured you tagged me in a story. What did you get tagged in, and are you training more or just eating cleaner right now?",
+            ],
+        }),
+        {
+            currentMessageText: 'mentioned you in a story photo',
+        }
+    ),
+    ['Oh hell yeah!']
+);
+
+assert.deepStrictEqual(
+    buildEmptyMediaDraftFallbackChunks({
+        mediaDecode: { photo_url_count: 1 },
+        currentMessageText: 'mentioned you in a story [PHOTO:https://lookaside.fbsbx.com/example.jpg]',
+    }),
+    ['oh hell yeah!']
+);
 
 assert.deepStrictEqual(
     repairMissingChallengeBioLinkChunks(["love it", "here's the link, download the app"], {

@@ -945,18 +945,21 @@ function finalizeDraftChunksFromRawText(rawText, {
         linkedUserId,
     });
     const cleaned = splitCoachDraftIntoDmBubbles(
-        suppressStoryLocationQuestionsInDraftChunks(
-            suppressPetSpeciesGuessingInDraftChunks(suppressAlreadyKnownContextQuestionsInDraftChunks(baseChunks, {
-                contextText: knownContextText,
-            }), {
-                currentMessageText,
-                qualifier,
-                nativeStoryContextSummary,
-            }),
-            {
-                currentMessageText,
-                nativeStoryContextSummary,
-            }
+        suppressBareStoryMentionClarifierInDraftChunks(
+            suppressStoryLocationQuestionsInDraftChunks(
+                suppressPetSpeciesGuessingInDraftChunks(suppressAlreadyKnownContextQuestionsInDraftChunks(baseChunks, {
+                    contextText: knownContextText,
+                }), {
+                    currentMessageText,
+                    qualifier,
+                    nativeStoryContextSummary,
+                }),
+                {
+                    currentMessageText,
+                    nativeStoryContextSummary,
+                }
+            ),
+            { currentMessageText }
         )
             .map(c => stripObviousMediaReceiptPreamble(c, { hasDecodedMedia }))
             .map((c, i) => i === 0
@@ -981,6 +984,9 @@ function finalizeDraftChunksFromRawText(rawText, {
 }
 
 function buildEmptyMediaDraftFallbackChunks({ mediaDecode = {}, currentMessageText = '' } = {}) {
+    if (isBareStoryMentionNotificationText(currentMessageText)) {
+        return ['oh hell yeah!'];
+    }
     const current = replaceIgMediaMarkers(String(currentMessageText || ''), { photo: 'photo', audio: 'voice note', video: 'video' }).toLowerCase();
     const audioCount = Number(mediaDecode.audio_url_count || mediaDecode.audioUrlCount || 0);
     const photoCount = Number(mediaDecode.photo_url_count || mediaDecode.image_url_count || mediaDecode.photoUrlCount || 0);
@@ -1828,6 +1834,38 @@ function suppressStoryLocationQuestionsInDraftChunks(chunks, { currentMessageTex
         : 'looks like a good spot'];
 }
 
+function normalizeBareStoryMentionText(text) {
+    return replaceIgMediaMarkers(String(text || ''), { photo: 'photo', audio: 'voice note', video: 'video' })
+        .toLowerCase()
+        .replace(/https?:\/\/\S+/g, ' ')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function isBareStoryMentionNotificationText(text) {
+    const normalized = normalizeBareStoryMentionText(text);
+    if (!normalized) return false;
+    const words = normalized.split(' ').filter(Boolean);
+    if (words.length > 10) return false;
+    return /^(?:[a-z0-9]+\s+)?(?:mentioned|tagged)\s+you\s+(?:in|on)\s+(?:(?:a|the|their)\s+)?(?:story|post|photo|picture|image|reel|video)(?:\s+(?:story|post|photo|picture|image|reel|video|mention|attachment))*$/.test(normalized);
+}
+
+const BARE_STORY_MENTION_REDUNDANT_REPLY_RE = /\b(?:tagged|mentioned)\s+me\s+(?:in|on)\s+(?:(?:a|the|their)\s+)?(?:story|post|photo|picture|image|reel|video)\b/i;
+
+function suppressBareStoryMentionClarifierInDraftChunks(chunks, { currentMessageText = '' } = {}) {
+    const input = Array.isArray(chunks) ? chunks : [];
+    if (!isBareStoryMentionNotificationText(currentMessageText)) return input;
+    if (!input.length) return input;
+
+    const joined = input.join(' ').trim();
+    if (!joined) return input;
+    if (joined.includes('?') || BARE_STORY_MENTION_REDUNDANT_REPLY_RE.test(joined) || /\bhonou?red\b/i.test(joined)) {
+        return ['oh hell yeah!'];
+    }
+    return input;
+}
+
 const PET_NAME_QUESTION_RE = /\b(?:what(?:'s|s| is)|what are)\s+(?:their|the|your|these|those)\s+names?\b/i;
 const HOUSE_SITTING_DURATION_QUESTION_RE = /\bhow\s+long\b[^?\n.!]{0,120}\bhouse\s*sitt(?:ing|ed)?\b[^?\n.!]*\?/i;
 
@@ -2316,7 +2354,8 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const hadAudioUrls = audioUrlCount > 0;
     const hadVideoUrls = videoUrlCount > 0;
     const hasReelContext = reelContextCount > 0;
-    const photoFetchFailed = hadPhotoUrls && imageParts.length === 0;
+    const bareStoryMentionNotification = isBareStoryMentionNotificationText(promptCurrentMessage);
+    const photoFetchFailed = hadPhotoUrls && imageParts.length === 0 && !bareStoryMentionNotification;
     const audioFetchFailed = hadAudioUrls && audioParts.length === 0;
     const videoFetchFailed = hadVideoUrls && videoParts.length === 0 && !hasReelContext;
     const mediaFailureNotes = [];
@@ -2351,6 +2390,9 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
         reel_thumbnail_count: reelThumbnailCount || 0,
     };
     const currentMessageNotes = [];
+    if (bareStoryMentionNotification) {
+        currentMessageNotes.push('NOTE: this is only a bare IG story tag/mention notification. Do not ask what they tagged Shannon in or ask them to resend the photo. A tiny reaction like "oh hell yeah!" is enough.');
+    }
     if (mediaFailureNotes.length) {
         currentMessageNotes.push(`NOTE: ${mediaFailureNotes.join('. ')}. Don't pretend you saw or heard it.`);
     }
@@ -2544,6 +2586,7 @@ Treat the canceled draft as Shannon's recent intent. If ${leadName}'s new messag
 FIRST CAPTURED LEAD REPLY:
 There is no reliable prior DM context in the system. Usually Shannon has already commented on or replied to their story/post from Instagram/Facebook, but that native opener was not captured by ManyChat.
 - Do not ask what this is about or say you have no context.
+- If the message is only a bare tag/mention notification like "mentioned you in a story photo", do not ask what they tagged Shannon in or ask them to resend it. A tiny reaction like "oh hell yeah!" is enough.
 - If their message is short or ambiguous, treat it as them replying to unseen story/post context. Match their energy and keep it short. Ask a tiny clarifier only if needed.
 - If they clearly ask about the challenge, what is included, plant-based stuff, a signup link, or ask Shannon for help because they feel stuck, answer that directly and keep it casual.
 - No coaching intake, no pitch, no name/age/goal bundle on this first captured reply.` : '';
@@ -4512,6 +4555,8 @@ exports._test = {
     suppressPetSpeciesGuessingInDraftChunks,
     suppressStoryLocationQuestionsInDraftChunks,
     hasKnownStoryLocationContext,
+    isBareStoryMentionNotificationText,
+    suppressBareStoryMentionClarifierInDraftChunks,
     getCocosAutoContextBypass,
     getBalanceAutoContextBypass,
     getAutoDmHoldReason,
