@@ -130,6 +130,62 @@ function latestLeadText(data = {}) {
     ).trim();
 }
 
+function normalizeStatusText(value = '') {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/[\u2019`]/g, "'")
+        .replace(/[^a-z0-9?'\s]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function latestStatusText(alert = {}) {
+    const data = alert.data || {};
+    return String(
+        data.draft_evidence?.current_message
+        || data.message_preview
+        || data.client_message
+        || alert.description
+        || ''
+    ).trim();
+}
+
+function latestLooksLikeCurrentStatusAnswer(text = '') {
+    const s = normalizeStatusText(text);
+    if (!s) return false;
+    const hasStatusSignal = /\b(?:not great|not good|bad|rough|awful|terrible|shit|crap|sick|unwell|pain|sore|hurt|hurts|hurting|ache|aching|niggle|flare|flaring|playing up)\b/i.test(s);
+    if (!hasStatusSignal) return false;
+    const hasCurrentCue = /\b(?:just|today|now|right now|currently|atm|still|when i|when im|when i'm|walking|walk|standing|stand|moving|move|this morning|this arvo|tonight|today's)\b/i.test(s);
+    const hasPastOnlyCue = /\b(?:used to|last year|last month|last week|years ago|months ago|weeks ago|previously|back in|old injury|had surgery)\b/i.test(s);
+    const isShortStatusAnswer = s.split(/\s+/).length <= 12 && !hasPastOnlyCue;
+    return hasCurrentCue || isShortStatusAnswer;
+}
+
+function draftAsksRedundantCurrentStatusQuestion(draftText = '', latestText = '') {
+    const rawDraft = String(draftText || '');
+    if (!/[?]/.test(rawDraft)) return false;
+    if (!latestLooksLikeCurrentStatusAnswer(latestText)) return false;
+
+    const draft = normalizeStatusText(rawDraft);
+    const latest = normalizeStatusText(latestText);
+    if (!draft || !latest) return false;
+
+    const asksHowItFeels = /\bhow(?:'s| is|s)?\s+(?:it|that|this|the [a-z]+|your [a-z]+)\s+(?:feeling|feel|going|tracking)\b/i.test(draft)
+        || /\bhow\s+(?:are|r)\s+(?:you|ya|u)\s+(?:feeling|going|doing)\b/i.test(draft)
+        || /\bhow\s+(?:does|do|is|are)\s+[^?]{0,40}\b(?:feel|feeling|going)\b/i.test(draft);
+    const asksStillSameStatus = /\b(?:still|is it still|are you still|does it still|do you still)\b[^?]{0,70}\b(?:pain|sore|hurt|hurting|ache|aching|niggle|walk|walking|stand|standing|bad|not great|not good)\b/i.test(draft);
+    const repeatsWalkingPainQuestion = /\b(?:pain|sore|hurt|hurting|ache|aching)\b[^?]{0,50}\b(?:walk|walking|stand|standing)\b/i.test(draft)
+        && /\b(?:pain|sore|hurt|hurting|ache|aching)\b[^?]{0,50}\b(?:walk|walking|stand|standing)\b/i.test(latest);
+
+    return asksHowItFeels || asksStillSameStatus || repeatsWalkingPainQuestion;
+}
+
+function draftRepeatsCurrentStatusQuestion(alert = {}) {
+    const data = alert.data || {};
+    const draftText = alert.suggested_message || data.draft_text || '';
+    return draftAsksRedundantCurrentStatusQuestion(draftText, latestStatusText(alert));
+}
+
 function leadReferencesLearningReel(data = {}) {
     return referencesLearningReelFollowUpText(latestLeadText(data));
 }
@@ -469,6 +525,10 @@ function classifyNeedsYou(alert = {}) {
         reasons.push(appProblemHold.code);
         labels.push(appProblemHold.label);
     }
+    if (draftRepeatsCurrentStatusQuestion(alert)) {
+        reasons.push('redundant_current_status_question');
+        labels.push('draft asks for the status they just gave; use a short acknowledgement or statement instead');
+    }
     if (mediaReview.required && !exerciseLookupFastTrack && (!acquisitionLead || leadMissingMediaContext)) {
         reasons.push('media_review_required');
         labels.push(acquisitionLead
@@ -688,5 +748,7 @@ exports._test = {
     hasApprovedCoachingLinkHandoff,
     shouldAutoScheduleApprovedCoachingHandoff,
     buildApprovedCoachingAutoSchedulePatch,
+    draftAsksRedundantCurrentStatusQuestion,
+    draftRepeatsCurrentStatusQuestion,
     isCoachDmManagerWorkingTime,
 };

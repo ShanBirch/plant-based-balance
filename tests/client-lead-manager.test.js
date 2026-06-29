@@ -147,6 +147,45 @@ const mirandaVerifiedFix = manager.classifyNeedsYou(makeAlert({
 assert.strictEqual(mirandaVerifiedFix.shouldRoute, true);
 assert.ok(mirandaVerifiedFix.reasons.includes('always_needs_you_person'));
 
+assert.strictEqual(
+    manager.draftAsksRedundantCurrentStatusQuestion(
+        "ah fra, that's not great. how's it feeling today, still pain when you walk?",
+        'Just pain when i walk'
+    ),
+    true
+);
+assert.strictEqual(
+    manager.draftAsksRedundantCurrentStatusQuestion(
+        "ah fra, that's not good. keep it easy today",
+        'Just pain when i walk'
+    ),
+    false
+);
+assert.strictEqual(
+    manager.draftAsksRedundantCurrentStatusQuestion(
+        "ah that would be annoying. how's it feeling now?",
+        'I had knee pain last year'
+    ),
+    false
+);
+
+const redundantPainQuestion = manager.classifyNeedsYou(makeAlert({
+    alert_type: 'incoming_dm',
+    client_id: 'client-nat',
+    client_name: 'Nat',
+    suggested_message: "ah nat, that's not great. how's it feeling today, still pain when you walk?",
+    data: {
+        channel: 'in_app',
+        lead_stage: 'in_app',
+        message_preview: 'Just pain when i walk',
+        draft_evidence: {
+            current_message: 'Just pain when i walk',
+        },
+    },
+}));
+assert.strictEqual(redundantPainQuestion.shouldRoute, true);
+assert.ok(redundantPainQuestion.reasons.includes('redundant_current_status_question'));
+
 const monica = manager.classifyNeedsYou(makeAlert({
     client_id: 'client-monica',
     client_name: 'Monica',
