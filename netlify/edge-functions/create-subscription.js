@@ -1,5 +1,13 @@
 import Stripe from "stripe";
 import { sendCAPIEvent, hash } from "./lib/capi-utils.js";
+import {
+    assertAcceptedCheckoutTerms,
+    assertSameSiteCheckoutRequest,
+    assertStarterCoachingPlan,
+    assertStripePaymentMethodId,
+    checkoutErrorResponse,
+    cleanCheckoutEmail,
+} from "./lib/checkout-guard.js";
 
 export default async (request, context) => {
     // Only allow POST
@@ -10,6 +18,11 @@ export default async (request, context) => {
     try {
         const body = await request.json();
         const { email, name, paymentMethodId, priceId, isDiscounted, fbc, fbp, compliance } = body;
+        assertSameSiteCheckoutRequest(request);
+        assertStarterCoachingPlan(priceId);
+        assertAcceptedCheckoutTerms(compliance);
+        assertStripePaymentMethodId(paymentMethodId);
+        const checkoutEmail = cleanCheckoutEmail(email, { required: true });
         const complianceMetadata = compliance?.metadata || {};
         const documentVersions = compliance?.document_versions || {};
         const stripeComplianceMetadata = {
@@ -36,13 +49,13 @@ export default async (request, context) => {
         // Balance Starter Coaching: AUD $29.99/week with one weekly check-in.
         let finalValue = 29.99;
 
-        const externalId = email ? await hash(email) : undefined;
+        const externalId = await hash(checkoutEmail);
 
         // 2. Track InitiateCheckout via CAPI (Background)
         // context.waitUntil runs this without blocking variables
         context.waitUntil(
             sendCAPIEvent('InitiateCheckout', {
-                email,
+                email: checkoutEmail,
                 external_id: externalId,
                 firstName: name ? name.split(' ')[0] : undefined,
                 ip,
@@ -59,14 +72,14 @@ export default async (request, context) => {
 
         // 3. Create Stripe Customer
         const customer = await stripe.customers.create({
-            email,
+            email: checkoutEmail,
             name,
             payment_method: paymentMethodId,
             invoice_settings: { default_payment_method: paymentMethodId },
             metadata: {
                 fbc,
                 fbp,
-                checkout_email: email || "",
+                checkout_email: checkoutEmail,
                 balance_product: "balance_starter_coaching",
                 balance_plan: "starter_weekly",
                 checkins_per_week: "1",
@@ -94,7 +107,7 @@ export default async (request, context) => {
             payment_behavior: 'default_incomplete',
             payment_settings: { save_default_payment_method: 'on_subscription' },
             metadata: {
-                checkout_email: email || "",
+                checkout_email: checkoutEmail,
                 balance_product: "balance_starter_coaching",
                 balance_plan: "starter_weekly",
                 checkins_per_week: "1",
@@ -126,9 +139,6 @@ export default async (request, context) => {
 
     } catch (error) {
         console.error("Subscription Error:", error.message);
-        return new Response(JSON.stringify({ error: { message: error.message } }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" }
-        });
+        return checkoutErrorResponse(error);
     }
 };
