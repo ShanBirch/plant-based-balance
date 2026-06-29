@@ -8931,13 +8931,12 @@ let feedLevelLeaderboardLastEventToggleAt = 0;
 
 function getFeedLevelFallbackInfo(lifetimePoints) {
     const maxLevel = 99;
-    const base = 3;
-    const multiplier = 0.3;
-    const exponent = 2.1;
+    const multiplier = 0.07;
+    const exponent = 2.4;
+    const linearBonus = 0.7;
     const pointsForLevel = level => {
         if (level <= 1) return 0;
-        const levelIndex = level - 1;
-        return Math.floor(base * levelIndex + multiplier * Math.pow(levelIndex, exponent));
+        return Math.floor(multiplier * Math.pow(level, exponent) + linearBonus * level);
     };
     let level = 1;
     while (level < maxLevel && Number(lifetimePoints || 0) >= pointsForLevel(level + 1)) level++;
