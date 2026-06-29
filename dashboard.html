@@ -330,7 +330,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=37',
             'lib/native-iap.js',
-            'lib/stories.js?v=7',
+            'lib/stories.js?v=8',
             'lib/ai-opponents.js',
             'lib/games.js?v=2',
             'lib/nutrition-calculator.js',
@@ -349,7 +349,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=7"><\/script>');
+    document.write('<script src="lib/stories.js?v=8"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=2"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -12301,6 +12301,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openQuickManualEntry"],.camera-btn-widget[onclick*="openQuickManualEntry"],[title="Quick log calories & macros"]', title:'Quick log calories & macros', body:"Already know the numbers? Tap Quick Log to enter calories and macros directly. It is the fastest way to track something when you do not need AI, a photo, or a barcode." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"],[title="Build a meal"]', title:'Build-a-Meal', body:"Use Build-a-Meal when one meal has a few parts. Add items by photo, barcode, text, or manual entry until the whole plate is saved together." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openRecentMealsModal"],.camera-btn-widget[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Use Recent & saved meals to re-log food you have already tracked. Tap the clock, pick the meal, and it drops back into today." },
+    { tab:'meals', sel:'#meals-log-list,.meal-log-card', title:'Share meals to Feed', body:"Tap a logged meal, then Share meal to Feed. Meals with photos post the meal photo and a caption with ingredients, amounts, calories, and macros.", quick: true },
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#browse-plans-pill', title:'Your meal plan', body:"Tap here for your AI-generated meal plan for the week — tap any day to see recipes." },
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Profile settings', body:"Open Profile when you need settings, dietary requirements, password changes, character customisation, or to replay this tour later." },
@@ -13187,12 +13188,12 @@ if(!window._pbbIsIOSSafari) {
       body: "Feed now has a composer at the top. Write a quick update, add a photo or video if you want, and post without leaving the page."
     },
     {
-      id: 'meal-detail-feed-share-v1',
+      id: 'meal-detail-feed-share-caption-v1',
       tab: 'meals',
       subtab: 'calorie-tracker',
       sel: '#meals-log-list,.meal-log-card',
       title: 'Share meals to Feed',
-      body: "Tap any logged meal, then Share meal to Feed for +1 XP. It counts toward weekly community goals when you pick that goal."
+      body: "Tap any logged meal, then Share meal to Feed for +1 XP. Meal posts now include the meal photo when available, plus ingredients, amounts, calories, and macros in the caption."
     },
     {
       id: 'pull-to-refresh-dashboard-v1',
@@ -13271,6 +13272,15 @@ if(!window._pbbIsIOSSafari) {
     title: 'Biggest Effort Prize',
     body: "The next challenge now has a Biggest Effort prize for the person who builds the most improved momentum.",
     condition: function(){ var e = document.getElementById('challenge-effort-prize-card'); return e && e.offsetParent !== null; }
+  });
+  allFeatures.push({
+    id: 'meal-feed-caption-v1',
+    tab: 'meals',
+    subtab: 'calorie-tracker',
+    sel: '#meals-log-list,.meal-log-card',
+    title: 'Meal Feed captions',
+    body: "Meal shares now include the meal photo when available, plus ingredients, amounts, calories, and macros in the caption.",
+    condition: function(){ var e = document.querySelector('#meals-log-list .meal-log-card,.meal-log-card'); return !!(e && e.offsetParent !== null); }
   });
 
   var revealIdx = 0;
@@ -16004,7 +16014,7 @@ if (window._pbbIsIOSSafari) {
             }
 
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=8';
+            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=9';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -16064,7 +16074,7 @@ if (window._pbbIsIOSSafari) {
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=8" data-pbb-calorie-tracker="1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=9" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js" data-pbb-meal-builder="1"><\/script>');
     }
 })();

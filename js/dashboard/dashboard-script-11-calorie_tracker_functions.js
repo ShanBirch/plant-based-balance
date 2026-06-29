@@ -1671,6 +1671,67 @@ function markMealSharedToFeed(mealId) {
     } catch (_) {}
 }
 
+function formatMealFeedAmountValue(value, unit) {
+    if (value === null || value === undefined || value === '') return '';
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric <= 0) return '';
+    const amount = Number.isFinite(numeric)
+        ? (Number.isInteger(numeric) ? String(numeric) : String(Math.round(numeric * 10) / 10))
+        : String(value).trim();
+    if (!amount) return '';
+    return unit ? amount + unit : amount;
+}
+
+function getMealFeedItemAmount(item) {
+    if (!item) return '';
+    const directFields = ['portion', 'serving', 'amount', 'quantity', 'serving_size', 'servingSize'];
+    for (const field of directFields) {
+        const value = item[field];
+        if (value === null || value === undefined || value === '') continue;
+        const trimmed = String(value).trim();
+        if (!trimmed) continue;
+        if (/^0+(\.0+)?$/.test(trimmed)) continue;
+        if (/^\d+(\.\d+)?$/.test(trimmed) && (item.unit || item.amount_unit || item.measurement_unit)) {
+            return formatMealFeedAmountValue(trimmed, String(item.unit || item.amount_unit || item.measurement_unit).trim());
+        }
+        return trimmed;
+    }
+
+    const gramFields = ['grams', 'gram_amount', 'amount_g', 'weight_g', 'weightG', 'servingWeightG', 'serving_weight_g'];
+    for (const field of gramFields) {
+        const amount = formatMealFeedAmountValue(item[field], 'g');
+        if (amount) return amount;
+    }
+
+    const mlFields = ['ml', 'milliliters', 'amount_ml', 'volume_ml'];
+    for (const field of mlFields) {
+        const amount = formatMealFeedAmountValue(item[field], 'ml');
+        if (amount) return amount;
+    }
+
+    return '';
+}
+
+function buildMealRecordShareCaption(cardPayload) {
+    if (!cardPayload) return '';
+    const ingredients = Array.isArray(cardPayload.ingredients) ? cardPayload.ingredients : [];
+    const ingredientText = ingredients.length
+        ? ingredients.map(item => {
+            const name = String(item && item.name ? item.name : '').trim();
+            const portion = String(item && item.portion ? item.portion : '').trim();
+            if (!name) return '';
+            return portion ? `${name} (${portion})` : name;
+        }).filter(Boolean).join(', ')
+        : String(cardPayload.foods || '').trim();
+
+    const lines = [];
+    if (cardPayload.meal_type) lines.push(String(cardPayload.meal_type));
+    if (ingredientText) lines.push('Ingredients: ' + ingredientText);
+    if (Number(cardPayload.calories) > 0) lines.push(Math.round(Number(cardPayload.calories)) + ' kcal');
+    lines.push(`Protein ${Math.round(Number(cardPayload.protein || 0))}g | Carbs ${Math.round(Number(cardPayload.carbs || 0))}g | Fat ${Math.round(Number(cardPayload.fat || 0))}g`);
+    return lines.filter(Boolean).join('\n');
+}
+
 function buildMealFeedCardPayload(meal) {
     const foodItemsText = Array.isArray(meal && meal.food_items) && meal.food_items.length
         ? meal.food_items.map(item => item && item.name ? item.name : 'Food').join(', ')
@@ -1682,7 +1743,7 @@ function buildMealFeedCardPayload(meal) {
         ? meal.food_items
             .map(item => ({
                 name: String(item?.name || item?.food_name || '').trim(),
-                portion: String(item?.portion || item?.serving || item?.amount || '').trim(),
+                portion: getMealFeedItemAmount(item),
                 calories: Math.round(Number(item?.calories || 0)),
                 protein: Math.round(Number(item?.protein_g || item?.protein || 0)),
                 carbs: Math.round(Number(item?.carbs_g || item?.carbs || 0)),
@@ -1691,7 +1752,7 @@ function buildMealFeedCardPayload(meal) {
             .filter(item => item.name !== '')
         : [];
 
-    return {
+    const cardPayload = {
         card_type: 'meal',
         meal_id: (meal && meal.id) || null,
         meal_type: mealType,
@@ -1704,6 +1765,9 @@ function buildMealFeedCardPayload(meal) {
         fat: Math.round(Number((meal && meal.fat_g) || 0)),
         photo_url: hasPhoto ? meal.photo_url : null
     };
+
+    cardPayload.share_caption = buildMealRecordShareCaption(cardPayload);
+    return cardPayload;
 }
 
 async function shareMealRecordToFeed(meal, btn) {
