@@ -6821,19 +6821,134 @@ html[data-pbb-theme="light"] #calendar-workout-action-modal button:not(#action-m
     stroke: #6f6a61 !important;
 }
 
-/* Challenge point breakdown stays on a dark surface in both themes. */
-#challenge-point-breakdown-modal,
-#challenge-point-breakdown-modal > div,
-#challenge-point-breakdown-modal #challenge-point-breakdown-body {
+/* Challenge and battle modals stay dark and readable even when the app is in light mode. */
+html[data-pbb-theme="light"] #challenge-type-picker,
+html[data-pbb-theme="light"] #create-challenge-modal,
+html[data-pbb-theme="light"] #challenge-results-modal,
+html[data-pbb-theme="light"] #challenge-leaderboard-modal,
+html[data-pbb-theme="light"] #challenge-pass-modal,
+html[data-pbb-theme="light"] #challenge-point-breakdown-modal,
+html[data-pbb-theme="light"] #game-challenge-modal,
+html[data-pbb-theme="light"] #quiz-battle-invite-overlay,
+html[data-pbb-theme="light"] #weight-goal-picker-modal,
+html[data-pbb-theme="light"] #cohort-info-modal {
+    background: rgba(2, 6, 23, 0.84) !important;
     color: #f8fafc !important;
+    -webkit-text-fill-color: #f8fafc !important;
 }
 
-#challenge-point-breakdown-modal *,
-#challenge-point-breakdown-modal [style*="color"] {
+html[data-pbb-theme="light"] #challenge-type-picker > div,
+html[data-pbb-theme="light"] #create-challenge-modal > div,
+html[data-pbb-theme="light"] #challenge-results-modal > div,
+html[data-pbb-theme="light"] #challenge-leaderboard-modal,
+html[data-pbb-theme="light"] #challenge-pass-modal > div,
+html[data-pbb-theme="light"] #challenge-point-breakdown-modal > div,
+html[data-pbb-theme="light"] #game-challenge-modal > div,
+html[data-pbb-theme="light"] #quiz-battle-invite-overlay .battle-invite-modal,
+html[data-pbb-theme="light"] #weight-goal-picker-modal > div,
+html[data-pbb-theme="light"] #cohort-info-modal > div {
+    background:
+        radial-gradient(circle at 18% 0%, rgba(245, 217, 138, 0.14), transparent 30%),
+        linear-gradient(180deg, rgba(15, 23, 42, 0.99), rgba(2, 6, 23, 0.99)) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #f8fafc !important;
+    -webkit-text-fill-color: #f8fafc !important;
+}
+
+html[data-pbb-theme="light"] #challenge-type-picker *,
+html[data-pbb-theme="light"] #create-challenge-modal *,
+html[data-pbb-theme="light"] #challenge-results-modal *,
+html[data-pbb-theme="light"] #challenge-leaderboard-modal *,
+html[data-pbb-theme="light"] #challenge-pass-modal *,
+html[data-pbb-theme="light"] #challenge-point-breakdown-modal *,
+html[data-pbb-theme="light"] #game-challenge-modal *,
+html[data-pbb-theme="light"] #quiz-battle-invite-overlay *,
+html[data-pbb-theme="light"] #weight-goal-picker-modal *,
+html[data-pbb-theme="light"] #cohort-info-modal * {
+    color: #f8fafc !important;
     -webkit-text-fill-color: currentColor !important;
 }
 
-#challenge-point-breakdown-modal [style*="color:white"],
-#challenge-point-breakdown-modal [style*="color: white"] {
+html[data-pbb-theme="light"] #challenge-type-picker p,
+html[data-pbb-theme="light"] #create-challenge-modal p,
+html[data-pbb-theme="light"] #challenge-results-modal p,
+html[data-pbb-theme="light"] #challenge-leaderboard-modal p,
+html[data-pbb-theme="light"] #challenge-pass-modal p,
+html[data-pbb-theme="light"] #game-challenge-modal p,
+html[data-pbb-theme="light"] #quiz-battle-invite-overlay p,
+html[data-pbb-theme="light"] #cohort-info-modal p,
+html[data-pbb-theme="light"] #challenge-type-picker [style*="rgba(255,255,255,0."],
+html[data-pbb-theme="light"] #create-challenge-modal [style*="rgba(255,255,255,0."],
+html[data-pbb-theme="light"] #challenge-results-modal [style*="rgba(255,255,255,0."],
+html[data-pbb-theme="light"] #challenge-leaderboard-modal [style*="rgba(255,255,255,0."],
+html[data-pbb-theme="light"] #challenge-pass-modal [style*="rgba(255,255,255,0."],
+html[data-pbb-theme="light"] #challenge-point-breakdown-modal [style*="rgba(255,255,255,0."],
+html[data-pbb-theme="light"] #game-challenge-modal [style*="rgba(255,255,255,0."],
+html[data-pbb-theme="light"] #quiz-battle-invite-overlay [style*="rgba(255,255,255,0."],
+html[data-pbb-theme="light"] #weight-goal-picker-modal [style*="rgba(255,255,255,0."],
+html[data-pbb-theme="light"] #cohort-info-modal [style*="rgba(255,255,255,0."] {
+    color: rgba(248, 250, 252, 0.76) !important;
+    -webkit-text-fill-color: rgba(248, 250, 252, 0.76) !important;
+}
+
+html[data-pbb-theme="light"] #challenge-type-picker .challenge-type-card,
+html[data-pbb-theme="light"] #create-challenge-modal [style*="background: rgba(255,255,255"],
+html[data-pbb-theme="light"] #challenge-leaderboard-modal [style*="background: #1e293b"],
+html[data-pbb-theme="light"] #challenge-leaderboard-modal [style*="background:#1e293b"],
+html[data-pbb-theme="light"] #challenge-pass-modal .challenge-buyin-benefits,
+html[data-pbb-theme="light"] #game-challenge-modal .game-type-card,
+html[data-pbb-theme="light"] #game-challenge-modal .game-friend-card,
+html[data-pbb-theme="light"] #game-challenge-modal .game-bet-btn,
+html[data-pbb-theme="light"] #quiz-battle-invite-overlay .qb-bet-btn,
+html[data-pbb-theme="light"] #quiz-battle-invite-overlay .battle-invite-friend,
+html[data-pbb-theme="light"] #quiz-battle-invite-overlay [onclick*="_startQuizBattleVsAI"],
+html[data-pbb-theme="light"] #cohort-info-modal [style*="background: #1e293b"],
+html[data-pbb-theme="light"] #cohort-info-modal [style*="background:#1e293b"] {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+    color: #f8fafc !important;
+    -webkit-text-fill-color: #f8fafc !important;
+}
+
+html[data-pbb-theme="light"] #create-challenge-modal input,
+html[data-pbb-theme="light"] #challenge-pass-modal input,
+html[data-pbb-theme="light"] #game-challenge-modal input,
+html[data-pbb-theme="light"] #quiz-battle-invite-overlay input,
+html[data-pbb-theme="light"] #weight-goal-picker-modal input {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
     color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    caret-color: #ffffff !important;
+    color-scheme: dark !important;
+}
+
+html[data-pbb-theme="light"] #challenge-type-picker > div *,
+html[data-pbb-theme="light"] #create-challenge-modal > div *,
+html[data-pbb-theme="light"] #challenge-results-modal > div *,
+html[data-pbb-theme="light"] #challenge-leaderboard-modal *,
+html[data-pbb-theme="light"] #challenge-pass-modal > div *,
+html[data-pbb-theme="light"] #challenge-point-breakdown-modal > div *,
+html[data-pbb-theme="light"] #game-challenge-modal > div *,
+html[data-pbb-theme="light"] #game-challenge-modal .game-type-card div,
+html[data-pbb-theme="light"] #game-challenge-modal .game-type-card div:last-child,
+html[data-pbb-theme="light"] #quiz-battle-invite-overlay .battle-invite-modal *,
+html[data-pbb-theme="light"] #quiz-battle-invite-overlay .battle-invite-header h2,
+html[data-pbb-theme="light"] #quiz-battle-invite-overlay .battle-invite-body [onclick*="_startQuizBattleVsAI"] div,
+html[data-pbb-theme="light"] #quiz-battle-invite-overlay .battle-invite-body [onclick*="_startQuizBattleVsAI"] div:last-child,
+html[data-pbb-theme="light"] #weight-goal-picker-modal > div *,
+html[data-pbb-theme="light"] #cohort-info-modal > div * {
+    color: #f8fafc !important;
+    -webkit-text-fill-color: #f8fafc !important;
+}
+
+html[data-pbb-theme="light"] #create-challenge-btn,
+html[data-pbb-theme="light"] #challenge-results-modal button[onclick*="closeChallengeResults"],
+html[data-pbb-theme="light"] #challenge-type-picker button[onclick*="closeChallengeTypePicker"] + button,
+html[data-pbb-theme="light"] #challenge-pass-modal .challenge-buyin-join-btn,
+html[data-pbb-theme="light"] #quiz-battle-invite-overlay .battle-invite-btn,
+html[data-pbb-theme="light"] #game-challenge-modal #send-game-challenge-btn,
+html[data-pbb-theme="light"] #cohort-info-modal button[onclick*="openXpGuidePage"] {
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
 }
