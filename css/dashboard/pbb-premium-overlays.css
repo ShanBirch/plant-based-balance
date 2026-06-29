@@ -6820,3 +6820,20 @@ html[data-pbb-theme="light"] #calendar-workout-action-modal button:not(#action-m
     fill: #6f6a61 !important;
     stroke: #6f6a61 !important;
 }
+
+/* Challenge point breakdown stays on a dark surface in both themes. */
+#challenge-point-breakdown-modal,
+#challenge-point-breakdown-modal > div,
+#challenge-point-breakdown-modal #challenge-point-breakdown-body {
+    color: #f8fafc !important;
+}
+
+#challenge-point-breakdown-modal *,
+#challenge-point-breakdown-modal [style*="color"] {
+    -webkit-text-fill-color: currentColor !important;
+}
+
+#challenge-point-breakdown-modal [style*="color:white"],
+#challenge-point-breakdown-modal [style*="color: white"] {
+    color: #ffffff !important;
+}
