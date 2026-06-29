@@ -614,9 +614,26 @@
         showToast('🎨 ' + title + ' skin equipped!', 'success');
     };
 
+    function getCurrentLevelForRareUnlock() {
+        const panelLevel = typeof window.getCurrentUserLevel === 'function'
+            ? parseInt(window.getCurrentUserLevel(), 10)
+            : 0;
+        let cachedLevel = 0;
+        try { cachedLevel = parseInt(localStorage.getItem('fitgotchi_level'), 10) || 0; } catch(e) {}
+        return Math.max(panelLevel || 0, cachedLevel || 0);
+    }
+
+    function ensureRareUnlockedForCurrentLevel(id, rare) {
+        if (isRareUnlocked(id)) return true;
+        if (window.isAdminViewing || !rare || rare.unlockSource !== 'level' || !rare.unlockLevel) return false;
+        if (getCurrentLevelForRareUnlock() < rare.unlockLevel) return false;
+        unlockRare(id);
+        return true;
+    }
+
     function selectRareSkin(id) {
         const rare = (window.CHARACTER_SKIN_COLLECTION || window.RARE_COLLECTION || []).find(r => r.id === id);
-        if (!rare || !isRareUnlocked(id)) return;
+        if (!rare || !ensureRareUnlockedForCurrentLevel(id, rare)) return;
         localStorage.setItem('active_rare_skin', id);
         localStorage.removeItem('active_evolution_skin');
 
