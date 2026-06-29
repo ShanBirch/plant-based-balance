@@ -1653,6 +1653,45 @@ function getMealFeedSharedSet() {
     return window._pbbMealFeedSharedIds;
 }
 
+const MEAL_FEED_SHARE_XP = 15;
+
+function getMealFeedShareButtonText() {
+    return `Share meal to Feed (+${MEAL_FEED_SHARE_XP} XP)`;
+}
+
+function getMealFeedShareDayKey(date = new Date()) {
+    try {
+        const parts = new Intl.DateTimeFormat('en-AU', {
+            timeZone: 'Australia/Brisbane',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).formatToParts(date);
+        const byType = {};
+        parts.forEach(part => { byType[part.type] = part.value; });
+        if (byType.year && byType.month && byType.day) {
+            return `${byType.year}-${byType.month}-${byType.day}`;
+        }
+    } catch (_) {}
+    return (typeof getLocalDateString === 'function') ? getLocalDateString(date) : new Date(date).toISOString().slice(0, 10);
+}
+
+function isMealFeedShareUsedToday() {
+    const dayKey = getMealFeedShareDayKey();
+    try {
+        return localStorage.getItem('pbbMealSharedToFeedDay_' + dayKey) === '1';
+    } catch (_) {
+        return false;
+    }
+}
+
+function markMealFeedShareUsedToday() {
+    const dayKey = getMealFeedShareDayKey();
+    try {
+        localStorage.setItem('pbbMealSharedToFeedDay_' + dayKey, '1');
+    } catch (_) {}
+}
+
 function isMealSharedToFeed(mealId) {
     if (!mealId) return false;
     if (getMealFeedSharedSet().has(String(mealId))) return true;
@@ -1787,6 +1826,10 @@ async function shareMealRecordToFeed(meal, btn) {
         showToast('This meal is already shared to Feed', 'info');
         return null;
     }
+    if (isMealFeedShareUsedToday()) {
+        showToast('You have already shared a meal to Feed today', 'info');
+        return null;
+    }
 
     const helpers = window.dbHelpers || (typeof dbHelpers !== 'undefined' ? dbHelpers : null);
     if (!helpers || !helpers.stories || typeof helpers.stories.create !== 'function') {
@@ -1824,6 +1867,7 @@ async function shareMealRecordToFeed(meal, btn) {
         }
 
         markMealSharedToFeed(meal.id);
+        markMealFeedShareUsedToday();
         if (typeof loadPhotoFeed === 'function') {
             loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
         }
@@ -1835,14 +1879,14 @@ async function shareMealRecordToFeed(meal, btn) {
             btn.style.opacity = '1';
         }
         const pointsAwarded = Number(story?.points_awarded || 0);
-        showToast(pointsAwarded > 0 ? `Meal shared to Feed! +${pointsAwarded} XP` : 'Meal shared to Feed!', 'success');
+        showToast(pointsAwarded > 0 ? `Meal shared to Feed! +${pointsAwarded} XP` : 'Meal shared to Feed. Daily meal-share XP already used.', 'success');
         return story;
     } catch (error) {
         console.error('Error sharing meal to feed:', error);
         showToast('Failed to share meal. Please try again.', 'error');
         if (btn) {
             btn.disabled = false;
-            btn.textContent = btn.dataset.originalText || 'Share meal to Feed (+1 XP)';
+            btn.textContent = btn.dataset.originalText || getMealFeedShareButtonText();
             btn.style.opacity = '1';
         }
         return null;
@@ -1866,6 +1910,7 @@ function showMealFeedSharePrompt(meal) {
     if (!meal || !meal.id) return;
     if (String(meal.meal_type || '').toLowerCase() === 'water') return;
     if (isMealSharedToFeed(meal.id)) return;
+    if (isMealFeedShareUsedToday()) return;
 
     window._pbbPendingMealFeedShare = meal;
     closeMealFeedSharePrompt();
@@ -8469,9 +8514,10 @@ function openMealDetailPopup(index) {
     const shareBtn = document.getElementById('mealDetailShareBtn');
     if (shareBtn) {
         const alreadyShared = isMealSharedToFeed(meal.id);
-        shareBtn.disabled = alreadyShared;
-        shareBtn.textContent = alreadyShared ? 'Shared to Feed' : 'Share meal to Feed (+1 XP)';
-        shareBtn.style.opacity = alreadyShared ? '0.85' : '1';
+        const dailyUsed = isMealFeedShareUsedToday();
+        shareBtn.disabled = alreadyShared || dailyUsed;
+        shareBtn.textContent = alreadyShared ? 'Shared to Feed' : (dailyUsed ? 'Meal share used today' : getMealFeedShareButtonText());
+        shareBtn.style.opacity = (alreadyShared || dailyUsed) ? '0.85' : '1';
     }
 
     // Format time

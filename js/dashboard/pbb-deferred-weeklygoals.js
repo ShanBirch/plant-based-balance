@@ -97,7 +97,7 @@
       gradient: 'linear-gradient(135deg,#0891b2,#14b8a6)',
       goals: [
         { id: 'share_workout_feed', label: 'Share workout to Feed', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
-        { id: 'share_meal_feed', label: 'Share meal to Feed (+1 XP)', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
+        { id: 'share_meal_feed', label: 'Share meal to Feed (+15 XP)', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
         { id: 'message_coach', label: 'Message your coach', target: 1, unit: 'messages', min: 1, max: 3, step: 1 },
         { id: 'invite_friend', label: 'Invite a friend', target: 1, unit: 'friends', min: 1, max: 3, step: 1 },
         { id: 'complete_game', label: 'Complete a game', target: 1, unit: 'games', min: 1, max: 5, step: 1 }
