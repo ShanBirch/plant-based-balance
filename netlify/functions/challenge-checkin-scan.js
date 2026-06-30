@@ -1,13 +1,12 @@
 /**
  * Challenge Check-In Scan
  *
- * Queues Monday / Wednesday / Sunday challenge check-ins for active cohorts.
+ * Queues Monday / Sunday challenge check-ins for active cohorts.
  * Drafts land in coach_alerts for Shannon to approve, edit, send, or copy
  * manually when no linked IG thread exists.
  *
  * Schedule:
  * - Sun 19:30 UTC -> Mon 05:30 Brisbane: encouragement only.
- * - Tue 20:00 UTC -> Wed 06:00 Brisbane: chill midweek conversation check.
  * - Sat 19:30 UTC -> Sun 05:30 Brisbane: full weekly review.
  */
 
@@ -104,17 +103,10 @@ function cadenceForWeekday(weekday) {
             prompt: 'Encouragement and weekly setup only. No review, no data analysis. If Weekly Goals are not saved yet, nudge them to choose 3 for the week as a bundle. If goals are saved, encourage the 3-goal bundle and keep it light.',
         };
     }
-    if (key === 'wed') {
-        return {
-            key: 'wednesday',
-            label: 'Wednesday morning chill check',
-            lookbackDays: 3,
-            depth: 'quick',
-            priority: 'medium',
-            lengthRule: '1 to 2 short sentences.',
-            prompt: 'Wednesday morning chill check. Default to a simple human check-in like "hey! how\'s your week going?" Use one small piece of context only when it clearly matters, for example if they were sick, stressed, sore, stuck, travelling, busy, waiting on Shannon, or already mid-conversation. Do not stack multiple context hooks just to prove you noticed them. Only mention sessions, an exercise, meals, photos, or weekly goals when it fits the current chat. End with one soft check like "how are you feeling today?", "how\'s your week going?", or "need anything from me?" only if it helps.',
-        };
-    }
+    // Wednesday check-ins were cancelled by Shannon. Keep historical
+    // Wednesday alert metadata in client-context intact, but do not generate
+    // new midweek drafts from scheduled or manual scans.
+    if (key === 'wed') return null;
     if (key === 'sun') {
         return {
             key: 'sunday',
@@ -132,7 +124,7 @@ function cadenceForWeekday(weekday) {
 function cadenceForKey(cadenceKey) {
     const key = String(cadenceKey || '').slice(0, 3).toLowerCase();
     if (key === 'mon') return cadenceForWeekday('Mon');
-    if (key === 'wed') return cadenceForWeekday('Wed');
+    if (key === 'wed') return null;
     if (key === 'fri' || key === 'sat' || key === 'sun') return cadenceForWeekday('Sun');
     return null;
 }
@@ -886,9 +878,7 @@ async function generateDraft({
         : 'Rank: unknown';
     const cadenceRules = cadence.depth === 'encouragement'
         ? '\nMONDAY RULE: do not mention food, workouts, sleep, steps, rank, gaps, or compliance. Keep it to encouragement plus Weekly Goals setup. If Weekly Goals are not saved yet, ask them to choose 3 for the week as a bundle; never ask them to pick one main focus.'
-        : cadence.depth === 'quick'
-            ? '\nWEDNESDAY RULE: this is not a review and not a report card. Treat it like a relaxed 6am check-in from Shannon. Default shape is simple: "hey! how\'s your week going?" If the recent conversation says they were sick, stressed, sore, stuck, busy, travelling, had a blocker, or asked Shannon something that has not clearly been answered yet, make the draft a natural reply to that first. Example direction only: if Sukh said she was sick Monday, ask how she is feeling today before anything else. If the latest conversation line is from the client and Shannon has not replied, do not ignore it or open a new topic; weave the check-in into that reply. Use only one small context hook, not a recap. Do not stack body feel + weekly photos + workout detail in the same opener. Mention workouts, meals, weekly goals, photos, or Sunday only if it fits the conversation. Use at most one soft question, such as "how are you feeling today?", "how\'s your week going?", or "need anything from me?" Do not mention rank, points, weight, mood, energy, sleep, steps, gaps, or overall challenge position unless there are no useful conversation, workout, or meal signals at all.'
-            : '\nSUNDAY RULE: this is the full weekly review. Use food, workouts, sleep, steps and any other available data, but only mention what is actually present.';
+        : '\nSUNDAY RULE: this is the full weekly review. Use food, workouts, sleep, steps and any other available data, but only mention what is actually present.';
     const challengeTimingGuard = cadence.depth === 'encouragement'
         ? ''
         : '\nTIMING GUARD: if you mention challenge end timing, final stretch wording, or whether the challenge is finished, anchor it to Brisbane local date/time only. Do not infer today, tomorrow, or "already complete" from UTC.';
@@ -898,21 +888,19 @@ async function generateDraft({
         ? isFreeTrialCheckin
             ? "This is part of Shannon's 30-day free trial check-in rhythm for a client who is not in a leaderboard challenge. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models."
             : "This is part of Shannon's weekly coaching check-in rhythm for a client who is not in a challenge. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models."
-        : "This is part of Shannon's Monday / Wednesday / Sunday challenge rhythm. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models.";
+        : "This is part of Shannon's Monday / Sunday challenge rhythm. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models.";
     const activityDetailRule = isManualCheckin
         ? '- Reference the actual coaching/activity details below only when that fits the moment.'
         : '- Reference the actual challenge/activity details below only when that fits the moment.';
-    const goalRule = cadence.key === 'wednesday'
-        ? '- For Wednesday, do not force a bigger-goal frame. This should feel like Shannon checking in on the person and the current chat. Mention goals only if the conversation or Weekly Goals context makes that feel natural.'
+    const goalRule = cadence.depth === 'encouragement'
+        ? '- For Monday, keep the bigger goal frame light. Focus on encouragement and Weekly Goals setup.'
         : isManualCheckin
             ? '- For Sunday, frame the message around the bigger goal and the current week. Do not call it a challenge.'
             : '- For Sunday, frame the message around both the bigger 30-day goal and the current challenge week. Sunday/full-review should sound like: "Heya! Week 2 is complete, which means we are halfway through our 30 day challenge. Let\'s wind back and have a look at your bigger goal, so you said X. For week 2, Y is what we are building..."';
     const rankRule = isManualCheckin
         ? '- Do not mention rank, points, leaderboards, or challenge position.'
         : '- Mention rank positively or neutrally. Never shame someone for being lower on the board.';
-    const greetingRule = cadence.key === 'wednesday'
-        ? '- A small no-name greeting like "hey!" or "morning!" is okay for Wednesday if it makes the check-in feel human.'
-        : isManualCheckin
+    const greetingRule = isManualCheckin
         ? '- No greeting like "hey" or "hi". Jump straight in.'
         : '- No greeting like "hey" or "hi" for normal quick replies. For Sunday/full-review challenge goal reviews only, use the "Heya! Week..." opener from the goal frame.';
     const checkinContextBlock = isManualCheckin
@@ -933,7 +921,7 @@ CRITICAL:
 ${greetingRule}
 - Keep it casual Australian, direct, warm, and specific.
 - Length: ${cadence.lengthRule}
-- Follow the check-in moment exactly. Monday is encouragement only, Wednesday is a relaxed morning conversation check, Sunday is the full data review.
+- Follow the check-in moment exactly. Monday is encouragement only, Sunday is the full data review.
 ${activityDetailRule}
 ${goalRule}
 ${challengeTimingGuard}
@@ -1329,6 +1317,7 @@ async function runScan({ force = false, cadenceKey = null, regeneratePending = f
         manual: 0,
         ig_ready: 0,
         skipped_not_checkin_day: 0,
+        skipped_disabled_cadence: 0,
         skipped_self_admin_test: 0,
         skipped_pending_exists: 0,
         skipped_coach_checkins_disabled: 0,
@@ -1338,6 +1327,15 @@ async function runScan({ force = false, cadenceKey = null, regeneratePending = f
         failed: 0,
         ready_notifications: 0,
     };
+
+    const normalizedRequestedCadence = normalizeCadenceKey(cadenceKey);
+    const currentWeekdayKey = String(weekday || '').slice(0, 3).toLowerCase();
+    if (!cadence && (normalizedRequestedCadence === 'wednesday' || currentWeekdayKey === 'wed')) {
+        summary.skipped_disabled_cadence = 1;
+        summary.cadence = 'wednesday';
+        summary.cadence_label = 'Wednesday check-ins cancelled';
+        return summary;
+    }
 
     if (!cadence && !force) {
         summary.skipped_not_checkin_day = 1;

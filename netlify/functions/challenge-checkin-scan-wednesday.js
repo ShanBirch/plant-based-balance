@@ -1,7 +1,9 @@
 /**
- * Wednesday 6am Brisbane schedule wrapper for challenge-checkin-scan.
- * Netlify supports one cron per function entry, so this file reuses the same
- * handler at a second wall-clock time.
+ * Deprecated Wednesday wrapper for challenge-checkin-scan.
+ *
+ * The Wednesday cadence is intentionally unscheduled and disabled in the
+ * shared handler. Keep this file only so old function references fail closed
+ * with the handler's skipped summary instead of recreating midweek drafts.
  */
 
 const { handler } = require('./challenge-checkin-scan');

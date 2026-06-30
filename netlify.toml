@@ -329,18 +329,14 @@
 # Weekly check-in - ongoing weekly drafts for post-onboarding clients (31+ days).
 # Monday 21:23 UTC (≈ Tue 07:23 AEST / 08:23 AEDT) — lands in the morning for
 # Shannon to review. Staggered from the Sunday digest so two scans don't stack.
-# Legacy only now. The M/W/S cohort workflow below replaces this scheduled run.
+# Legacy only now. The Mon/Sun cohort workflow below replaces this scheduled run.
 # [functions."weekly-checkin-scan"]
 #   schedule = "23 21 * * 1"
 
 # Challenge check-ins - active cohort drafts for Shannon to approve/edit/send.
 # Mon/Sun drafts: Sun/Sat 19:30 UTC (Mon/Sun 05:30 Brisbane) so they are ready before 6am.
-# Wednesday drafts: Tue 20:00 UTC (Wed 06:00 Brisbane) so they are ready in the morning.
 [functions."challenge-checkin-scan"]
   schedule = "30 19 * * 0,6"
-
-[functions."challenge-checkin-scan-wednesday"]
-  schedule = "0 20 * * 2"
 
 # Challenge leaderboard refresher - releases future-dated seed/test activity
 # by timestamp and keeps active participant rows current without a page open.

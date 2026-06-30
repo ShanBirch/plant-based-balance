@@ -7,31 +7,31 @@ const toml = fs.readFileSync(path.join(root, 'netlify.toml'), 'utf8');
 const scan = fs.readFileSync(path.join(root, 'netlify/functions/challenge-checkin-scan.js'), 'utf8');
 const wrapper = fs.readFileSync(path.join(root, 'netlify/functions/challenge-checkin-scan-wednesday.js'), 'utf8');
 const admin = fs.readFileSync(path.join(root, 'admin-dashboard.html'), 'utf8');
-const { _private } = require('../netlify/functions/challenge-checkin-scan');
+const { runScan, _private } = require('../netlify/functions/challenge-checkin-scan');
 
-assert.ok(toml.includes('[functions."challenge-checkin-scan-wednesday"]'));
-assert.ok(toml.includes('schedule = "0 20 * * 2"'), 'Wednesday cron should run Tue 20:00 UTC / Wed 06:00 Brisbane');
-assert.ok(wrapper.includes('Wednesday 6am Brisbane'), 'wrapper comment should match the production schedule');
-assert.ok(admin.includes('6am Monday/Wednesday/Sunday'), 'admin timing copy should match the new cadence');
+assert.ok(toml.includes('schedule = "30 19 * * 0,6"'), 'challenge check-ins should stay scheduled for Monday/Sunday Brisbane mornings');
+assert.ok(!toml.includes('[functions."challenge-checkin-scan-wednesday"]'), 'Wednesday cron should remain unscheduled');
+assert.ok(!toml.includes('schedule = "0 20 * * 2"'), 'Wednesday 6am Brisbane cron should not return');
+assert.ok(wrapper.includes('Deprecated Wednesday wrapper'), 'wrapper should be clearly marked as disabled');
+assert.ok(admin.includes('6am Monday/Sunday'), 'admin timing copy should match the active cadence');
+assert.ok(!admin.includes('Monday/Wednesday/Sunday'), 'admin copy should not advertise Wednesday check-ins');
+assert.ok(!admin.includes('Mon/Wed/Sun'), 'admin copy should not advertise the old roster cadence');
+assert.ok(!admin.includes('M/W/S'), 'admin badges should not advertise the old roster cadence');
 
-assert.ok(scan.includes('Wednesday morning chill check'), 'Wednesday cadence should be labelled as a morning chill check');
-assert.ok(scan.includes('If the latest conversation line is from the client and Shannon has not replied'), 'Wednesday prompt should respect open conversations');
-assert.ok(scan.includes('if Sukh said she was sick Monday'), 'Wednesday prompt should prioritize sickness/context follow-up');
-assert.ok(scan.includes("hey! how\\'s your week going?"), 'Wednesday prompt should default to a simple human week check');
-assert.ok(scan.includes('Use only one small context hook, not a recap'), 'Wednesday prompt should avoid AI-ish context stacking');
-assert.ok(scan.includes('Do not stack body feel + weekly photos + workout detail'), 'Wednesday prompt should cover the Miranda-style over-context draft');
+assert.ok(scan.includes('Wednesday check-ins were cancelled by Shannon'), 'generator should explain why Wednesday returns null');
+assert.ok(scan.includes('skipped_disabled_cadence'), 'manual/direct Wednesday calls should fail closed');
 assert.ok(scan.includes('Keep one pending') && scan.includes('client_id=eq.${clientId}'), 'pending check-in lookup should dedupe across Shannon coach identities');
 assert.ok(!scan.includes('Wed 08:00 UTC -> Wed 18:00 Brisbane'), 'old Wednesday evening schedule comment should be gone');
 assert.ok(!scan.includes('Wednesday night halfway check'), 'old Wednesday night label should be gone');
+assert.ok(!scan.includes("label: 'Wednesday morning chill check'"), 'Wednesday generator label should not be active');
 
 const wed = _private.cadenceForWeekday('Wed');
-assert.strictEqual(wed.lengthRule, '1 to 2 short sentences.');
-assert.ok(wed.prompt.includes('Do not stack multiple context hooks'), 'Wednesday cadence should keep context light');
+assert.strictEqual(wed, null, 'Wednesday cadence should be disabled');
 
 assert.strictEqual(
     _private.cleanDraftOutput("hey! how's your week going?", 'Miranda', { allowGreeting: true }),
     "Hey! How's your week going?",
-    'Wednesday cleaner should keep a small no-name greeting'
+    'Cleaner should keep a small no-name greeting when explicitly allowed'
 );
 
 assert.strictEqual(
@@ -40,4 +40,13 @@ assert.strictEqual(
     'Normal cleaner should still strip direct name greetings'
 );
 
-console.log('challenge check-in Wednesday morning cadence ok');
+(async () => {
+    const forced = await runScan({ force: true, cadenceKey: 'wednesday' });
+    assert.strictEqual(forced.skipped_disabled_cadence, 1, 'manual Wednesday scans should skip without hitting Supabase');
+    assert.strictEqual(forced.cadence, 'wednesday');
+    assert.strictEqual(forced.cadence_label, 'Wednesday check-ins cancelled');
+    console.log('challenge check-in Wednesday cancellation ok');
+})().catch(err => {
+    console.error(err);
+    process.exit(1);
+});
