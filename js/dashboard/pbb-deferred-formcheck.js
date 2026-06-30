@@ -1,6 +1,5 @@
 (function () {
     const MAX_FORM_CHECK_VIDEO_BYTES = 180 * 1024 * 1024;
-    const MAX_WORKOUT_FEED_SHARE_VIDEO_BYTES = 180 * 1024 * 1024;
     let formCheckState = {
         file: null,
         objectUrl: null,
@@ -843,11 +842,6 @@
             showWorkoutFeedShareUploadBanner('Please choose a video clip.', 'error');
             return;
         }
-        if (file.size > MAX_WORKOUT_FEED_SHARE_VIDEO_BYTES) {
-            showWorkoutFeedShareUploadBanner('That video is too large. Keep workout shares under 180 MB.', 'error');
-            return;
-        }
-
         clearWorkoutFeedShareVideo();
         workoutFeedShareState.file = file;
         workoutFeedShareState.objectUrl = URL.createObjectURL(file);

@@ -330,7 +330,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=37',
             'lib/native-iap.js',
-            'lib/stories.js?v=10',
+            'lib/stories.js?v=11',
             'lib/ai-opponents.js',
             'lib/games.js?v=2',
             'lib/nutrition-calculator.js',
@@ -349,7 +349,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=10"><\/script>');
+    document.write('<script src="lib/stories.js?v=11"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=2"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -7460,11 +7460,23 @@ if(!window._pbbIsIOSSafari) {
             Film Form Check
         </button>
 
-        <button id="workout-share-set-btn" type="button" onclick="openWorkoutFeedShare({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })" style="width:100%; margin:0 0 14px 0; border:none; border-radius:14px; padding:14px 15px; background:linear-gradient(135deg,#111827 0%,#dc2626 100%); color:white; font-weight:900; font-size:0.9rem; display:flex; align-items:center; justify-content:flex-start; gap:12px; cursor:pointer; box-shadow:0 10px 24px rgba(220,38,38,0.16); text-align:left;">
-            <svg viewBox="0 0 24 24" style="width:19px; height:19px; fill:currentColor; flex-shrink:0;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
-            <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
-                <span style="font-size:0.92rem; line-height:1;">Share a Set</span>
-                <span style="font-size:0.72rem; font-weight:700; opacity:0.82; line-height:1.1;">First share each day earns +10 XP</span>
+        <style>
+            #workout-share-set-btn,
+            #workout-share-set-btn * {
+                color: #fff !important;
+                -webkit-text-fill-color: #fff !important;
+            }
+            #workout-share-set-btn svg,
+            #workout-share-set-btn svg * {
+                fill: #fff !important;
+            }
+        </style>
+
+        <button id="workout-share-set-btn" type="button" onclick="openWorkoutFeedShare({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })" style="width:100%; margin:0 0 14px 0; border:none; border-radius:14px; padding:14px 15px; background:linear-gradient(135deg,#111827 0%,#dc2626 100%); color:#fff; -webkit-text-fill-color:#fff; font-weight:900; font-size:0.9rem; display:flex; align-items:center; justify-content:flex-start; gap:12px; cursor:pointer; box-shadow:0 10px 24px rgba(220,38,38,0.16); text-align:left;">
+            <svg viewBox="0 0 24 24" style="width:19px; height:19px; color:#fff; fill:#fff; -webkit-text-fill-color:#fff; flex-shrink:0;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+            <div style="display:flex; flex-direction:column; gap:2px; min-width:0; color:#fff; -webkit-text-fill-color:#fff;">
+                <span style="font-size:0.92rem; line-height:1; color:#fff; -webkit-text-fill-color:#fff;">Share a Set</span>
+                <span style="font-size:0.72rem; font-weight:700; opacity:0.82; line-height:1.1; color:#fff; -webkit-text-fill-color:#fff;">First share each day earns +10 XP</span>
             </div>
         </button>
 
@@ -14591,7 +14603,7 @@ if (window._pbbIsIOSSafari) {
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>
-<script src="js/dashboard/pbb-deferred-formcheck.js?v=2"></script>
+<script src="js/dashboard/pbb-deferred-formcheck.js?v=3"></script>
 
 
 <script>
