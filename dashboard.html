@@ -9198,15 +9198,8 @@ if(!window._pbbIsIOSSafari) {
 
             function bindFeedLevelToggleTouch() {
                 var card = document.getElementById('feed-level-leaderboard-card');
-                if (!card || card.dataset.pbbTouchBound === 'true') return;
-                card.dataset.pbbTouchBound = 'true';
-                card.addEventListener('pointerup', function(event) {
-                    if (event.pointerType === 'mouse') return;
-                    window.pbbToggleFeedLevelLeaderboardFromEvent(event);
-                }, { passive: false });
-                card.addEventListener('touchend', function(event) {
-                    window.pbbToggleFeedLevelLeaderboardFromEvent(event);
-                }, { passive: false });
+                if (!card) return;
+                delete card.dataset.pbbTouchBound;
             }
 
             bindFeedLevelToggleTouch();
@@ -14566,7 +14559,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=75">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=76">
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>
@@ -14600,13 +14593,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=27';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=28';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=27"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=28"><\/script>');
 }
 </script>
 

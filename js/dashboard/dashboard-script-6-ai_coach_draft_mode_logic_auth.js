@@ -9389,15 +9389,8 @@ function observeFeedLevelLeaderboardShell() {
 
 function bindFeedLevelLeaderboardTouchEvents() {
     const card = document.getElementById('feed-level-leaderboard-card');
-    if (!card || card.dataset.pbbTouchBound === 'true') return;
-    card.dataset.pbbTouchBound = 'true';
-    card.addEventListener('pointerup', event => {
-        if (event.pointerType === 'mouse') return;
-        handleFeedLevelLeaderboardToggleEvent(event);
-    }, { passive: false });
-    card.addEventListener('touchend', event => {
-        handleFeedLevelLeaderboardToggleEvent(event);
-    }, { passive: false });
+    if (!card) return;
+    delete card.dataset.pbbTouchBound;
 }
 
 function setFeedLevelLeaderboardOpen(isOpen) {
