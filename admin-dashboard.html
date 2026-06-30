@@ -10769,7 +10769,7 @@
         const NEEDS_YOU_AI_CONFUSION_RE = /\b(?:is\s+this\s+(?:ai|a\.?i\.?|a\s+bot|automated)|whether\s+(?:this|it)\s+is\s+(?:ai|a\.?i\.?|a\s+bot|automated)|ai\s*\/\s*automated|ai\s+assistant|are\s+you\s+(?:ai|a\.?i\.?|a\s+bot|automated|real)|am\s+i\s+talking\s+to\s+(?:ai|a\s+bot|a\s+person)|chatgpt|robot|automated\s+reply|real\s+person)\b/i;
         const NEEDS_YOU_USER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|this|that|it)|sorry[, ]+\s*i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)|(?:what|wat)\s+(?:do|did)\s+(?:you|u)\s+mean(?:\s+by\s+(?:that|this|it))?|what\s+are\s+you\s+meaning|what\s+you\s+mean|wdym|i'?m\s+confused|that'?s\s+confusing|not\s+sure\s+what\s+you\s+mean)\b/i;
         const NEEDS_YOU_EMPTY_STATES = {
-            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'No client-manager handoffs for client media, missing context, or confused/AI-suspicious replies are waiting right now.' },
+            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'No client-manager handoffs, app suggestions, or manual review items are waiting right now.' },
         };
         let currentChallengeCheckinView = 'pending';
         const CHALLENGE_CHECKIN_TABS = ['pending', 'manual', 'later', 'sent_today', 'all'];
@@ -12439,10 +12439,21 @@
                 );
         }
 
+        function isAppSuggestionAlert(alert) {
+            const data = alert?.data || {};
+            return alert?.alert_type === 'general_idea'
+                && (
+                    data.subtype === 'app_suggestion'
+                    || data.needs_you_reason === 'app_suggestion'
+                    || (data.operator_queue === 'needs_you' && !!data.suggestion)
+                );
+        }
+
         function needsYouHasOperatorWork(alert, activeClientIds = dmClientIdsCache.ids) {
             if (!alert || alert.status !== 'pending') return false;
             if (!NEEDS_YOU_ALERT_TYPES.includes(alert.alert_type)) return false;
             if (isCoachActionReceipt(alert)) return true;
+            if (isAppSuggestionAlert(alert)) return true;
             if (alert.alert_type === 'subscription_sale') {
                 const data = alert.data || {};
                 return data.sale_made === true
@@ -12482,14 +12493,14 @@
 
         function collapseNeedsYouRows(rows = []) {
             const dmRows = [];
-            const actionReceiptRows = [];
+            const directRows = [];
             const otherRows = [];
             rows.filter(a => a.status === 'pending').forEach(row => {
-                if (isCoachActionReceipt(row)) actionReceiptRows.push(row);
+                if (isCoachActionReceipt(row) || isAppSuggestionAlert(row)) directRows.push(row);
                 else if (DM_ALERT_TYPES.includes(row.alert_type)) dmRows.push(row);
                 else otherRows.push(row);
             });
-            return [...collapsePendingByUser(dmRows), ...actionReceiptRows, ...collapsePendingByUser(otherRows)]
+            return [...collapsePendingByUser(dmRows), ...directRows, ...collapsePendingByUser(otherRows)]
                 .sort((a, b) => Date.parse(b.created_at || '') - Date.parse(a.created_at || ''));
         }
 
@@ -16824,16 +16835,19 @@
         function renderAlertCard(alert) {
             const isChallengeCheckin = isChallengeCheckinAlert(alert);
             const isActionReceipt = isCoachActionReceipt(alert);
+            const isAppSuggestion = isAppSuggestionAlert(alert);
             const manualIgRequired = isManualIgBlockedAlert(alert);
             const isFollowUp = isFollowUpAlert(alert);
             const followUpBlockedByActiveDm = isFollowUpBlockedByActiveDm(alert);
-            const typeLabel = isActionReceipt
+            const typeLabel = isAppSuggestion
+                ? 'App suggestion'
+                : isActionReceipt
                 ? 'Program update'
                 : isChallengeCheckin
                     ? (alert.data?.free_trial_checkin ? 'Trial check-in' : alert.data?.non_challenge_checkin ? 'Check-in' : 'Challenge check-in')
                     : (ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type);
             const typeIcon = ALERT_TYPE_ICONS[alert.alert_type] || '📋';
-            const renderedTypeIcon = isActionReceipt ? 'OK' : (isFollowUp ? '->' : typeIcon);
+            const renderedTypeIcon = isAppSuggestion ? 'APP' : (isActionReceipt ? 'OK' : (isFollowUp ? '->' : typeIcon));
             const time = timeAgo(alert.created_at);
             const displayMessage = getResolvedAlertMessage(alert);
             const hasMessage = displayMessage && displayMessage.trim();

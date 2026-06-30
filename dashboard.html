@@ -11495,6 +11495,20 @@ if(!window._pbbIsIOSSafari) {
                          Clear
                      </button>
                  </div>
+                 <div id="settings-app-suggestions" style="padding:15px; border-bottom:1px solid #f1f5f9;">
+                     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:10px;">
+                         <div>
+                             <div style="color:var(--text-main); font-weight:600;">App Suggestions</div>
+                             <div style="font-size:0.75rem; color:var(--text-muted); line-height:1.35;">Send ideas or fixes straight to Shannon</div>
+                         </div>
+                         <span style="font-size:0.7rem; font-weight:800; color:#166534; background:#dcfce7; border:1px solid #bbf7d0; border-radius:999px; padding:4px 8px; white-space:nowrap;">NEW</span>
+                     </div>
+                     <textarea id="app-suggestion-input" maxlength="1200" rows="3" placeholder="What should we add or improve?" style="width:100%; box-sizing:border-box; padding:11px 12px; border:1px solid #cbd5e1; border-radius:10px; resize:vertical; min-height:82px; background:#ffffff; color:#111827; -webkit-text-fill-color:#111827; font-family:inherit; font-size:0.92rem; line-height:1.45; outline:none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='#cbd5e1'"></textarea>
+                     <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+                         <button id="app-suggestion-submit-btn" type="button" onclick="submitAppSuggestion()" style="padding:9px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:700; cursor:pointer; min-width:86px; text-align:center;">Send</button>
+                         <div id="app-suggestion-status" style="display:none; flex:1; min-width:0; font-size:0.78rem; line-height:1.35;"></div>
+                     </div>
+                 </div>
                  <!-- Meal Timing & Reminders Settings -->
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9;">
                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; cursor:pointer;" onclick="toggleMealReminderSection(event)">
@@ -11611,6 +11625,82 @@ if(!window._pbbIsIOSSafari) {
                 </div>
             </div>
         </div>
+
+        <script>
+        (function(){
+            function setAppSuggestionStatus(message, type) {
+                var el = document.getElementById('app-suggestion-status');
+                if (!el) return;
+                el.textContent = message || '';
+                el.style.display = message ? 'block' : 'none';
+                el.style.color = type === 'success' ? '#166534' : '#991b1b';
+            }
+
+            async function getAppSuggestionSession() {
+                if (window.authHelpers && typeof window.authHelpers.getSession === 'function') {
+                    return await window.authHelpers.getSession();
+                }
+                if (window.supabaseClient && window.supabaseClient.auth && typeof window.supabaseClient.auth.getSession === 'function') {
+                    var result = await window.supabaseClient.auth.getSession();
+                    return result && result.data ? result.data.session : null;
+                }
+                return null;
+            }
+
+            window.submitAppSuggestion = async function() {
+                var input = document.getElementById('app-suggestion-input');
+                var btn = document.getElementById('app-suggestion-submit-btn');
+                var suggestion = (input && input.value ? input.value : '').trim();
+                if (window.guestMode) {
+                    if (typeof showGuestSignupPrompt === 'function') showGuestSignupPrompt('send app suggestions');
+                    setAppSuggestionStatus('Log in first so Shannon knows who sent it.', 'error');
+                    return;
+                }
+                if (suggestion.length < 5) {
+                    setAppSuggestionStatus('Add a little more detail first.', 'error');
+                    if (input) input.focus();
+                    return;
+                }
+
+                try {
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.textContent = 'Sending...';
+                    }
+                    setAppSuggestionStatus('', 'success');
+                    var session = await getAppSuggestionSession();
+                    if (!session || !session.access_token) throw new Error('No active session');
+
+                    var response = await fetch('/.netlify/functions/submit-app-suggestion', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + session.access_token
+                        },
+                        body: JSON.stringify({
+                            suggestion: suggestion,
+                            path: window.location.pathname + window.location.search
+                        })
+                    });
+                    var result = await response.json().catch(function(){ return {}; });
+                    if (!response.ok || result.error) throw new Error(result.error || 'Suggestion failed');
+
+                    if (input) input.value = '';
+                    setAppSuggestionStatus(result.deduped ? 'Already sent. Shannon will see it in Needs You.' : 'Sent. Shannon will see it in Needs You.', 'success');
+                    if (typeof showToast === 'function') showToast('Suggestion sent', 'success');
+                } catch (e) {
+                    console.warn('[app-suggestion] submit failed', e);
+                    setAppSuggestionStatus('Could not send. Try again in a sec.', 'error');
+                    if (typeof showToast === 'function') showToast('Could not send suggestion', 'error');
+                } finally {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = 'Send';
+                    }
+                }
+            };
+        })();
+        </script>
 
         <!-- Download App Button (above logout) -->
         <div id="profile-download-app-btn" style="padding: 0 25px; margin-top: 30px;">
@@ -12395,6 +12485,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#browse-plans-pill', title:'Your meal plan', body:"Tap here for your AI-generated meal plan for the week — tap any day to see recipes." },
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Profile settings', body:"Open Profile when you need settings, dietary requirements, password changes, character customisation, or to replay this tour later." },
+    { tab:'profile', sel:'#settings-app-suggestions', title:'App Suggestions', body:"Got an idea for Balance? Send it from Settings and it goes straight to Shannon's Needs You list." },
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
@@ -13083,6 +13174,13 @@ if(!window._pbbIsIOSSafari) {
         } catch(e) { console.warn('[feature-reveal] could not open Ask Balance palette', e); }
         await new Promise(function(r){ setTimeout(r, 260); });
       }
+    },
+    {
+      id: 'settings-app-suggestions-v1',
+      tab: 'profile',
+      sel: '#settings-app-suggestions',
+      title: 'App Suggestions',
+      body: "Got an idea for Balance? Send it from Settings and it goes straight to Shannon's Needs You list."
     },
     {
       id: 'weekly-progress-photos-three-shot-v1',
