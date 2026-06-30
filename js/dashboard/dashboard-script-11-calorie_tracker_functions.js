@@ -666,6 +666,59 @@ async function _processQuickMealFromNative() {
     }
 }
 
+function getNativeQuickMealPhotoDataUrl(data) {
+    if (!data) return '';
+
+    const directUrl = String(data.photoDataUrl || data.photo_data_url || '').trim();
+    if (/^data:image\//i.test(directUrl)) return directUrl;
+
+    const rawBase64 = String(data.photoBase64 || data.photo_base64 || data.imageBase64 || data.base64 || '').trim();
+    if (!rawBase64) return '';
+    if (/^data:image\//i.test(rawBase64)) return rawBase64;
+
+    const mimeType = String(data.photoMimeType || data.mimeType || 'image/jpeg').trim() || 'image/jpeg';
+    return `data:${mimeType};base64,${rawBase64}`;
+}
+
+function getNativeQuickMealPhotoMimeType(data, dataUrl) {
+    const direct = data ? String(data.photoMimeType || data.mimeType || '').trim() : '';
+    if (direct) return direct;
+
+    const match = String(dataUrl || '').match(/^data:([^;,]+)[;,]/i);
+    return match && match[1] ? match[1] : 'image/jpeg';
+}
+
+function getNativeQuickMealPhotoExtension(mimeType) {
+    const clean = String(mimeType || '').toLowerCase();
+    if (clean.includes('png')) return 'png';
+    if (clean.includes('webp')) return 'webp';
+    if (clean.includes('heic')) return 'heic';
+    if (clean.includes('heif')) return 'heif';
+    return 'jpg';
+}
+
+async function nativeQuickMealPhotoDataUrlToFile(dataUrl, timestamp) {
+    const mimeType = getNativeQuickMealPhotoMimeType(null, dataUrl);
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    const extension = getNativeQuickMealPhotoExtension(blob.type || mimeType);
+    return new File([blob], `quick-meal-${Date.now()}.${extension}`, {
+        type: blob.type || mimeType,
+        lastModified: Number(timestamp) || Date.now()
+    });
+}
+
+async function uploadNativeQuickMealPhoto(data) {
+    const existingUrl = getMealSharePhotoUrl(data);
+    if (existingUrl) return existingUrl;
+
+    const dataUrl = getNativeQuickMealPhotoDataUrl(data);
+    if (!dataUrl) return '';
+
+    const file = await nativeQuickMealPhotoDataUrlToFile(dataUrl, data && data.timestamp);
+    return uploadMealPhoto(file);
+}
+
 /** Process a single quick meal entry from the native queue. */
 async function _processSingleQuickMeal(data) {
     const mealType = data.mealType || autoDetectMealType();
@@ -695,11 +748,24 @@ async function _processSingleQuickMeal(data) {
     // If the native analysis timed out, re-analyse in the WebView
     if (data.needsReanalysis && !data.analysisResult) {
         console.log('Quick meal needs re-analysis, calling API...');
-        const response = await fetch('/.netlify/functions/analyze-meal-text', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ description: data.description, mealType: mealType, userId: window.currentUser?.id || null })
-        });
+        const photoDataUrl = getNativeQuickMealPhotoDataUrl(data);
+        const photoBase64 = photoDataUrl ? photoDataUrl.split(',')[1] : '';
+        const response = photoBase64
+            ? await fetch('/.netlify/functions/analyze-food', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    imageBase64: photoBase64,
+                    mimeType: getNativeQuickMealPhotoMimeType(data, photoDataUrl),
+                    description: data.description || '',
+                    only_verify: false
+                })
+            })
+            : await fetch('/.netlify/functions/analyze-meal-text', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description: data.description, mealType: mealType, userId: window.currentUser?.id || null })
+            });
         if (response.ok) {
             const result = await response.json();
             if (result.success && result.data) {
@@ -722,8 +788,17 @@ async function _processSingleQuickMeal(data) {
         const loggedAt = Number.isFinite(loggedAtMs) && loggedAtMs > 0
             ? new Date(loggedAtMs)
             : null;
+        let nativePhotoUrl = '';
+        if (data.hasPhoto || getNativeQuickMealPhotoDataUrl(data) || getMealSharePhotoUrl(data)) {
+            try {
+                nativePhotoUrl = await uploadNativeQuickMealPhoto(data);
+            } catch (photoError) {
+                console.error('Quick meal photo upload failed; saving nutrition without photo URL:', photoError);
+            }
+        }
 
         const savedMeal = await saveMealLogWithType({
+            photoUrl: nativePhotoUrl || undefined,
             foodItems: nutritionData.foodItems || [],
             totals: nutritionData.totals || {},
             micronutrients: nutritionData.micronutrients || {},
@@ -745,7 +820,7 @@ async function _processSingleQuickMeal(data) {
                         savedMeal[0].id,
                         data.timestamp ? new Date(data.timestamp).toISOString() : null,
                         nutritionData.confidence || 'medium',
-                        null, // no photo hash available from native
+                        null,
                         mealType
                     );
                 }
@@ -1825,6 +1900,40 @@ function getMealSharePhotoUrl(meal) {
     return '';
 }
 
+function getMealPhotoUrlForSave(mealData) {
+    if (!mealData) return '';
+    return getMealSharePhotoUrl({
+        photo_url: mealData.photo_url,
+        photoUrl: mealData.photoUrl,
+        image_url: mealData.image_url,
+        imageUrl: mealData.imageUrl,
+        media_url: mealData.media_url,
+        mediaUrl: mealData.mediaUrl,
+        thumbnail_url: mealData.thumbnail_url,
+        thumbnailUrl: mealData.thumbnailUrl,
+        storage_path: mealData.storage_path,
+        storagePath: mealData.storagePath,
+        original_photo_url: mealData.original_photo_url,
+        uploaded_photo_url: mealData.uploaded_photo_url,
+        notes: mealData.notes,
+        meal_description: mealData.mealDescription || mealData.meal_description,
+        description: mealData.description
+    });
+}
+
+function getMealInputMethodForSave(mealData, photoUrl) {
+    const raw = String((mealData && mealData.inputMethod) || '').trim();
+    const lower = raw.toLowerCase();
+
+    if (lower === 'photo' && !photoUrl) {
+        console.warn('saveMealLogWithType: photo input requested but no uploaded photo URL was available; saving as text input.');
+        return 'text';
+    }
+
+    if (raw) return raw;
+    return photoUrl ? 'photo' : 'text';
+}
+
 function buildMealFeedCardPayload(meal) {
     const foodItemsText = Array.isArray(meal && meal.food_items) && meal.food_items.length
         ? meal.food_items.map(item => item && item.name ? item.name : 'Food').join(', ')
@@ -2080,6 +2189,8 @@ async function saveMealLogWithType(mealData) {
     const now = new Date();
     const mealDate = normalizeMealDateForSave(mealData.clientDate) || getLocalDateString(now);
     const mealTime = normalizeMealTimeForSave(mealData.mealTime) || now.toTimeString().split(' ')[0];
+    const photoUrlForSave = getMealPhotoUrlForSave(mealData);
+    const inputMethodForSave = getMealInputMethodForSave(mealData, photoUrlForSave);
 
     const insertData = {
             user_id: userId,
@@ -2095,15 +2206,15 @@ async function saveMealLogWithType(mealData) {
             micronutrients: mealData.micronutrients,
             notes: mealData.notes,
             ai_confidence: mealData.confidence,
-            input_method: mealData.inputMethod || 'photo',
+            input_method: inputMethodForSave,
             meal_description: mealData.mealDescription || null,
             analysis_timestamp: mealData.analysisTimestamp || new Date().toISOString()
     };
 
     // Always include photo fields — use 'text-input' sentinel when no photo
     // to satisfy any NOT NULL constraint and match existing UI checks
-    insertData.photo_url = mealData.photoUrl || 'text-input';
-    insertData.storage_path = mealData.photoUrl || 'text-input';
+    insertData.photo_url = photoUrlForSave || 'text-input';
+    insertData.storage_path = photoUrlForSave || 'text-input';
 
     const { data, error } = await window.supabaseClient
         .from('meal_logs')
@@ -3346,7 +3457,20 @@ async function compressMealImage(file) {
 
 // Upload meal photo to Backblaze B2
 async function uploadMealPhoto(file) {
-    const userId = window.currentUser?.id;
+    let userId = window.currentUser?.id;
+
+    if (!userId) {
+        try {
+            const { data } = await window.supabaseClient.auth.getSession();
+            const sessionUser = data?.session?.user;
+            if (sessionUser) {
+                window.currentUser = sessionUser;
+                userId = sessionUser.id;
+            }
+        } catch (e) {
+            console.error('uploadMealPhoto: failed to recover user from session:', e);
+        }
+    }
 
     if (!userId) {
         throw new Error('User not authenticated');
@@ -3369,7 +3493,11 @@ async function uploadMealPhoto(file) {
     }
 
     const data = await response.json();
-    return data.url;
+    const photoUrl = normalizeMealSharePhotoUrl(data.url || data.publicUrl || data.photoUrl || data.secure_url);
+    if (!photoUrl) {
+        throw new Error('Photo upload did not return a usable URL');
+    }
+    return photoUrl;
 }
 
 // Helper function to get local date in YYYY-MM-DD format
@@ -3408,6 +3536,8 @@ async function saveMealLog(mealData) {
     const now = new Date();
     const mealDate = getLocalDateString(now);
     const mealTime = now.toTimeString().split(' ')[0];
+    const photoUrlForSave = getMealPhotoUrlForSave(mealData);
+    const inputMethodForSave = getMealInputMethodForSave(mealData, photoUrlForSave);
 
     const insertData = {
             user_id: userId,
@@ -3423,13 +3553,14 @@ async function saveMealLog(mealData) {
             micronutrients: mealData.micronutrients,
             notes: mealData.notes,
             ai_confidence: mealData.confidence,
+            input_method: inputMethodForSave,
             analysis_timestamp: new Date().toISOString()
     };
 
     // Always include photo fields — use 'text-input' sentinel when no photo
     // to satisfy any NOT NULL constraint and match existing UI checks
-    insertData.photo_url = mealData.photoUrl || 'text-input';
-    insertData.storage_path = mealData.photoUrl || 'text-input';
+    insertData.photo_url = photoUrlForSave || 'text-input';
+    insertData.storage_path = photoUrlForSave || 'text-input';
 
     const { data, error } = await window.supabaseClient
         .from('meal_logs')

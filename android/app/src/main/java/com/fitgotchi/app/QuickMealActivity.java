@@ -2124,6 +2124,11 @@ public class QuickMealActivity extends AppCompatActivity {
                     pending.put("mealType", mealType);
                     pending.put("hasPhoto", photoB64 != null);
                     pending.put("analysisResult", data.toString());
+                    pending.put("inputMethod", photoB64 != null ? "photo" : "text");
+                    if (photoB64 != null) {
+                        pending.put("photoBase64", photoB64);
+                        pending.put("photoMimeType", "image/jpeg");
+                    }
                     pending.put("timestamp", System.currentTimeMillis());
 
                     appendToQueue(pending);
@@ -2136,7 +2141,7 @@ public class QuickMealActivity extends AppCompatActivity {
                         try { Thread.sleep(2000 * attempt); } catch (InterruptedException ignored) {}
                         continue;
                     }
-                    savePendingForReanalysis(description, mealType, photoB64 != null);
+                    savePendingForReanalysis(description, mealType, photoB64);
                     showNotification("Meal Log",
                         "Analysing your meal took too long. It will be re-analysed when you open the app.");
                 } catch (java.io.IOException e) {
@@ -2144,7 +2149,7 @@ public class QuickMealActivity extends AppCompatActivity {
                         try { Thread.sleep(2000 * attempt); } catch (InterruptedException ignored) {}
                         continue;
                     }
-                    savePendingForReanalysis(description, mealType, photoB64 != null);
+                    savePendingForReanalysis(description, mealType, photoB64);
                     showNotification("Meal Log",
                         "Network error. Your meal will be analysed when you open the app.");
                 } catch (Exception e) {
@@ -2152,7 +2157,7 @@ public class QuickMealActivity extends AppCompatActivity {
                         try { Thread.sleep(2000 * attempt); } catch (InterruptedException ignored) {}
                         continue;
                     }
-                    savePendingForReanalysis(description, mealType, photoB64 != null);
+                    savePendingForReanalysis(description, mealType, photoB64);
                     showNotification("Meal Log",
                         "Could not analyse your meal. It will be re-analysed when you open the app.");
                 }
@@ -2162,13 +2167,19 @@ public class QuickMealActivity extends AppCompatActivity {
     }
 
     /** Save enough info for the WebView to re-analyse the meal on next app open. */
-    private void savePendingForReanalysis(String description, String mealType, boolean hasPhoto) {
+    private void savePendingForReanalysis(String description, String mealType, String photoBase64) {
         try {
+            boolean hasPhoto = photoBase64 != null && !photoBase64.isEmpty();
             JSONObject pending = new JSONObject();
             pending.put("description", description);
             pending.put("mealType", mealType);
             pending.put("hasPhoto", hasPhoto);
             pending.put("needsReanalysis", true);
+            pending.put("inputMethod", hasPhoto ? "photo" : "text");
+            if (hasPhoto) {
+                pending.put("photoBase64", photoBase64);
+                pending.put("photoMimeType", "image/jpeg");
+            }
             pending.put("timestamp", System.currentTimeMillis());
 
             appendToQueue(pending);
