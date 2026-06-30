@@ -8119,20 +8119,19 @@ if(!window._pbbIsIOSSafari) {
 </style>
 
 <!-- STORE REVIEW PROMPT MODAL -->
-<!-- Two-step ask: first gauge sentiment, then route happy users to the native store review. -->
+<!-- Fallback store review prompt. Native apps use the official in-app review sheet directly. -->
 <div id="store-review-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:610; padding:calc(20px + env(safe-area-inset-top, 0px)) 10px calc(20px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box; align-items:center; justify-content:center; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;">
     <div style="background:white; width:100%; max-width:380px; max-height:100%; margin:auto; border-radius:24px; overflow-y:auto; -webkit-overflow-scrolling:touch; box-shadow:0 25px 50px rgba(0,0,0,0.3);">
-        <!-- Step 1: sentiment -->
+        <!-- Fallback: direct users to their store rating screen -->
         <div id="store-review-step-sentiment">
             <div style="padding:28px 24px 12px; text-align:center; background:linear-gradient(135deg, var(--primary), #4ade80); color:white;">
                 <div style="font-size:2.2rem; margin-bottom:6px;">💚</div>
-                <h2 style="margin:0; font-family:'Playfair Display',serif; font-size:1.4rem;">Enjoying Balance?</h2>
-                <p style="margin:6px 0 0; opacity:0.9; font-size:0.85rem;">We'd love your honest take.</p>
+                <h2 style="margin:0; font-family:'Playfair Display',serif; font-size:1.4rem;">Rate Balance</h2>
+                <p style="margin:6px 0 0; opacity:0.9; font-size:0.85rem;">A quick rating helps more people find the app.</p>
             </div>
             <div style="padding:22px 24px 24px;">
                 <div style="display:flex; flex-direction:column; gap:10px;">
-                    <button onclick="storeReviewPrompt.onLoveIt()" style="padding:14px; border-radius:14px; border:none; background:var(--primary); color:white; font-weight:700; font-size:0.95rem; cursor:pointer;">Loving it 🙌</button>
-                    <button onclick="storeReviewPrompt.onCouldBeBetter()" style="padding:14px; border-radius:14px; border:2px solid #e2e8f0; background:white; color:var(--text-main); font-weight:600; font-size:0.95rem; cursor:pointer;">Could be better</button>
+                    <button id="store-review-fallback-primary-btn" onclick="storeReviewPrompt.openStoreReview()" style="padding:14px; border-radius:14px; border:none; background:var(--primary); color:white; font-weight:700; font-size:0.95rem; cursor:pointer;">Open rating screen</button>
                     <button onclick="storeReviewPrompt.onAskLater()" style="padding:10px; border:none; background:transparent; color:var(--text-muted); font-weight:500; font-size:0.85rem; cursor:pointer;">Maybe later</button>
                 </div>
             </div>
@@ -8153,12 +8152,12 @@ if(!window._pbbIsIOSSafari) {
             </div>
         </div>
 
-        <!-- Step 2a: 5-star store review -->
+        <!-- Legacy store review step, kept hidden for compatibility -->
         <div id="store-review-step-rate-stars" style="display:none;">
             <div style="padding:28px 24px 12px; text-align:center; background:linear-gradient(135deg, #f59e0b, #fbbf24); color:white;">
                 <div style="font-size:2.2rem; margin-bottom:6px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                 <h2 style="margin:0; font-family:'Playfair Display',serif; font-size:1.4rem;">Mind sharing the love?</h2>
-                <p style="margin:6px 0 0; opacity:0.95; font-size:0.85rem;">Tap 5 stars, then finish the rating in the store.</p>
+                <p style="margin:6px 0 0; opacity:0.95; font-size:0.85rem;">Finish the rating in the store.</p>
             </div>
             <div style="padding:22px 24px 24px;">
                 <div style="text-align:center; margin-bottom:14px;">
@@ -8169,10 +8168,10 @@ if(!window._pbbIsIOSSafari) {
                         <button type="button" data-review-star="4" onclick="storeReviewPrompt.selectStars(4)" aria-label="4 stars" style="min-width:36px; min-height:40px; padding:3px; border:1px solid rgba(245,158,11,0.22); border-radius:10px; background:rgba(245,158,11,0.1); color:#f59e0b; -webkit-text-fill-color:#f59e0b; font-size:1.75rem; line-height:1; cursor:pointer;">&#9733;</button>
                         <button type="button" data-review-star="5" onclick="storeReviewPrompt.selectStars(5)" aria-label="5 stars" style="min-width:36px; min-height:40px; padding:3px; border:1px solid rgba(245,158,11,0.22); border-radius:10px; background:rgba(245,158,11,0.1); color:#f59e0b; -webkit-text-fill-color:#f59e0b; font-size:1.75rem; line-height:1; cursor:pointer;">&#9733;</button>
                     </div>
-                    <div id="store-review-star-copy" style="font-size:0.82rem; color:var(--text-muted); font-weight:700;">5 stars selected</div>
+                    <div id="store-review-star-copy" style="font-size:0.82rem; color:var(--text-muted); font-weight:700;">Ready to open the store rating screen.</div>
                 </div>
                 <div style="display:flex; flex-direction:column; gap:10px;">
-                    <button id="store-review-primary-btn" onclick="storeReviewPrompt.openStoreReview()" style="padding:14px; border-radius:14px; border:none; background:#f59e0b; color:white; font-weight:700; font-size:0.95rem; cursor:pointer;">Rate 5 stars</button>
+                    <button id="store-review-primary-btn" onclick="storeReviewPrompt.openStoreReview()" style="padding:14px; border-radius:14px; border:none; background:#f59e0b; color:white; font-weight:700; font-size:0.95rem; cursor:pointer;">Open rating screen</button>
                     <div id="store-review-store-options" style="display:none; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;">
                         <button onclick="storeReviewPrompt.openStoreReview('ios')" style="padding:13px 10px; border-radius:14px; border:2px solid #e2e8f0; background:white; color:var(--text-main); font-weight:800; font-size:0.9rem; cursor:pointer;">App Store</button>
                         <button onclick="storeReviewPrompt.openStoreReview('android')" style="padding:13px 10px; border-radius:14px; border:2px solid #e2e8f0; background:white; color:var(--text-main); font-weight:800; font-size:0.9rem; cursor:pointer;">Play Store</button>
@@ -12021,13 +12020,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=117';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=119';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=117"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=119"><\/script>');
 }
 </script>
 

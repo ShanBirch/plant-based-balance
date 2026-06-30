@@ -16295,12 +16295,11 @@ function skipWorkoutRating() {
 
 /* ──────────────────────────────────────────────────────────────────────
    STORE REVIEW PROMPT
-   Two-step ask shown after a positive workout rating. Step 1 gauges
-   sentiment; only the "Loving it" branch opens the native store review.
-   Negative responses are routed to in-app feedback so unhappy users
-   never end up tanking the App/Play Store rating. Throttled to once
-   every 90 days, capped at one successful request per ~6 months, and
-   only fires for users with ≥5 lifetime workouts.
+   Shown after a positive workout rating. Native apps call the official
+   in-app review sheet directly; browser/fallback users see a neutral
+   store link prompt. Throttled to once every 90 days, capped at one
+   successful request per ~6 months, and only fires for users with ≥5
+   lifetime workouts.
    ────────────────────────────────────────────────────────────────────── */
 const storeReviewPrompt = (function () {
     const STORAGE_KEY = 'pbb_store_review_state';
@@ -16377,7 +16376,7 @@ const storeReviewPrompt = (function () {
         if (!primary || !options) return;
         if (selectedStars < 5) {
             primary.style.display = 'block';
-            primary.textContent = 'Tell us what to improve';
+            primary.textContent = 'Open rating screen';
             options.style.display = 'none';
             return;
         }
@@ -16388,7 +16387,7 @@ const storeReviewPrompt = (function () {
             return;
         }
         primary.style.display = 'block';
-        primary.textContent = preferred === 'ios' ? 'Rate 5 stars on App Store' : 'Rate 5 stars on Play Store';
+        primary.textContent = preferred === 'ios' ? 'Rate Balance on App Store' : 'Rate Balance on Play Store';
         options.style.display = 'none';
     }
 
@@ -16409,8 +16408,8 @@ const storeReviewPrompt = (function () {
         const copy = document.getElementById('store-review-star-copy');
         if (copy) {
             copy.textContent = selectedStars >= 5
-                ? '5 stars selected. Thank you!'
-                : 'Thanks, tell us what would make Balance a 5.';
+                ? 'Ready to open the store rating screen.'
+                : 'You can still leave an honest store rating.';
         }
         syncStoreButtons();
     }
@@ -16422,8 +16421,8 @@ const storeReviewPrompt = (function () {
 
     async function maybeAsk({ rating }) {
         try {
-            // Only ask happy users — Apple/Google both prohibit gating reviews
-            // behind ratings, but a sentiment pre-prompt is standard practice.
+            // Ask after a good workout-rating moment, once the user has enough
+            // app experience to give useful feedback.
             if (!rating || rating < 4) return;
 
             const state = readState();
@@ -16438,6 +16437,19 @@ const storeReviewPrompt = (function () {
             if (!workoutCount || workoutCount < MIN_WORKOUTS) return;
 
             writeState({ lastAskedAt: Date.now() });
+            if (isNative() && window.Capacitor?.Plugins?.InAppReview) {
+                try {
+                    await window.Capacitor.Plugins.InAppReview.requestReview();
+                    writeState({
+                        completed: true,
+                        completedAt: Date.now(),
+                        lastStorePlatform: getPreferredStore()
+                    });
+                    return;
+                } catch (err) {
+                    console.warn('[storeReviewPrompt] native review failed, falling back', err);
+                }
+            }
             open();
         } catch (err) {
             console.warn('[storeReviewPrompt] maybeAsk failed', err);
@@ -16469,7 +16481,7 @@ const storeReviewPrompt = (function () {
         if (id === 'store-review-step-rate-stars') renderStars();
     }
 
-    function onLoveIt() { showStep('store-review-step-rate-stars'); }
+    function onLoveIt() { openStoreReviewWithStars(); }
     function onCouldBeBetter() { showStep('store-review-step-feedback'); }
     function onAskLater() { dismiss(false); }
 
@@ -16499,10 +16511,6 @@ const storeReviewPrompt = (function () {
     }
 
     async function openStoreReviewWithStars(platform) {
-        if (selectedStars < 5) {
-            showStep('store-review-step-feedback');
-            return;
-        }
         const preferred = getPreferredStore(platform);
         if (preferred === 'unknown') {
             syncStoreButtons();
