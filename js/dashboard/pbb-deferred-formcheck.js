@@ -1,5 +1,7 @@
 (function () {
     const MAX_FORM_CHECK_VIDEO_BYTES = 180 * 1024 * 1024;
+    const WORKOUT_FEED_SHARE_QUEUE_DB = 'pbb_workout_feed_share_queue_v1';
+    const WORKOUT_FEED_SHARE_QUEUE_STORE = 'uploads';
     let formCheckState = {
         file: null,
         objectUrl: null,
@@ -16,6 +18,8 @@
     };
     let swipeRegistered = false;
     let workoutFeedShareSwipeRegistered = false;
+    let workoutFeedShareRetryInProgress = false;
+    let workoutFeedShareRetryTimer = null;
 
     function ensureFormCheckView() {
         let view = document.getElementById('view-form-check');
@@ -704,6 +708,169 @@
         status.className = 'workout-feed-share-status';
     }
 
+    function getWorkoutFeedShareQueueId() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            return window.crypto.randomUUID();
+        }
+        return 'share-set-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    }
+
+    function openWorkoutFeedShareQueueDb() {
+        return new Promise(function (resolve, reject) {
+            if (!window.indexedDB) {
+                reject(new Error('Retry storage is not available on this phone.'));
+                return;
+            }
+            const request = window.indexedDB.open(WORKOUT_FEED_SHARE_QUEUE_DB, 1);
+            request.onupgradeneeded = function () {
+                const db = request.result;
+                if (!db.objectStoreNames.contains(WORKOUT_FEED_SHARE_QUEUE_STORE)) {
+                    const store = db.createObjectStore(WORKOUT_FEED_SHARE_QUEUE_STORE, { keyPath: 'id' });
+                    store.createIndex('createdAt', 'createdAt', { unique: false });
+                    store.createIndex('userId', 'userId', { unique: false });
+                }
+            };
+            request.onsuccess = function () { resolve(request.result); };
+            request.onerror = function () { reject(request.error || new Error('Could not open retry storage.')); };
+        });
+    }
+
+    async function putWorkoutFeedShareQueueItem(item) {
+        const db = await openWorkoutFeedShareQueueDb();
+        return new Promise(function (resolve, reject) {
+            const tx = db.transaction(WORKOUT_FEED_SHARE_QUEUE_STORE, 'readwrite');
+            tx.objectStore(WORKOUT_FEED_SHARE_QUEUE_STORE).put(item);
+            tx.oncomplete = function () {
+                db.close();
+                resolve(item);
+            };
+            tx.onerror = function () {
+                db.close();
+                reject(tx.error || new Error('Could not save retry upload.'));
+            };
+        });
+    }
+
+    async function getWorkoutFeedShareQueueItems() {
+        const db = await openWorkoutFeedShareQueueDb();
+        return new Promise(function (resolve, reject) {
+            const tx = db.transaction(WORKOUT_FEED_SHARE_QUEUE_STORE, 'readonly');
+            const request = tx.objectStore(WORKOUT_FEED_SHARE_QUEUE_STORE).getAll();
+            request.onsuccess = function () {
+                db.close();
+                resolve((request.result || []).sort(function (a, b) {
+                    return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+                }));
+            };
+            request.onerror = function () {
+                db.close();
+                reject(request.error || new Error('Could not read retry uploads.'));
+            };
+        });
+    }
+
+    async function deleteWorkoutFeedShareQueueItem(id) {
+        const db = await openWorkoutFeedShareQueueDb();
+        return new Promise(function (resolve, reject) {
+            const tx = db.transaction(WORKOUT_FEED_SHARE_QUEUE_STORE, 'readwrite');
+            tx.objectStore(WORKOUT_FEED_SHARE_QUEUE_STORE).delete(id);
+            tx.oncomplete = function () {
+                db.close();
+                resolve();
+            };
+            tx.onerror = function () {
+                db.close();
+                reject(tx.error || new Error('Could not clear retry upload.'));
+            };
+        });
+    }
+
+    function getQueuedWorkoutFeedShareFile(item) {
+        const file = item && item.file;
+        if (!file) return null;
+        if (typeof File !== 'undefined' && file instanceof File) return file;
+        if (typeof Blob !== 'undefined' && file instanceof Blob) {
+            if (typeof File !== 'undefined') {
+                return new File([file], item.fileName || 'share-set-video.mp4', {
+                    type: item.fileType || file.type || 'video/mp4',
+                    lastModified: item.fileLastModified || Date.now()
+                });
+            }
+            return file;
+        }
+        return null;
+    }
+
+    function isRetryableWorkoutFeedShareError(error) {
+        if (navigator && navigator.onLine === false) return true;
+        const message = String(error && (error.message || error.name || error.code) || '').toLowerCase();
+        if (!message) return true;
+        if (/(log in|record or upload|choose a video|could not shrink|trim it|missing media|invalid)/i.test(message)) return false;
+        return /(upload|network|fetch|failed|timeout|offline|abort|server|internal|load failed|failed to fetch)/i.test(message);
+    }
+
+    function getWorkoutFeedShareSuccessMessage(result) {
+        const pointsAwarded = Number(result && result.pointsAwarded ? result.pointsAwarded : 0);
+        const dailyLimitReached = !!(result && result.awardResult && result.awardResult.dailyLimitReached);
+        return pointsAwarded > 0
+            ? `Posted to Feed! +${pointsAwarded} XP`
+            : dailyLimitReached
+                ? 'Posted to Feed! Share a Set XP is once per day.'
+                : 'Posted to Feed!';
+    }
+
+    function refreshWorkoutFeedShareAfterPost() {
+        try {
+            if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
+            if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+        } catch (e) {}
+        if (typeof loadPhotoFeed === 'function') {
+            loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
+        }
+        if (typeof loadStories === 'function') {
+            loadStories();
+        }
+    }
+
+    async function prepareWorkoutFeedShareClip(file, statusTarget) {
+        if (typeof window.prepareUploadableFeedVideo !== 'function') return file;
+        return window.prepareUploadableFeedVideo(file, function (status) {
+            if (statusTarget) statusTarget.textContent = status;
+        });
+    }
+
+    async function queueWorkoutFeedShareUpload(payload) {
+        const file = payload && payload.file;
+        const userId = payload && payload.userId;
+        if (!file || !userId) throw new Error('Could not save that clip for retry.');
+
+        const item = {
+            id: getWorkoutFeedShareQueueId(),
+            userId: userId,
+            file: file,
+            fileName: file.name || 'share-set-video.mp4',
+            fileType: file.type || 'video/mp4',
+            fileSize: file.size || 0,
+            fileLastModified: file.lastModified || Date.now(),
+            caption: payload.caption || '',
+            workoutName: payload.workoutName || '',
+            createdAt: new Date().toISOString(),
+            attempts: 0,
+            lastError: payload.lastError || ''
+        };
+
+        await putWorkoutFeedShareQueueItem(item);
+        scheduleWorkoutFeedShareRetry(30000);
+        return item;
+    }
+
+    function scheduleWorkoutFeedShareRetry(delayMs) {
+        if (workoutFeedShareRetryTimer) clearTimeout(workoutFeedShareRetryTimer);
+        workoutFeedShareRetryTimer = setTimeout(function () {
+            retryWorkoutFeedShareQueue(false);
+        }, Math.max(5000, Number(delayMs || 30000)));
+    }
+
     function ensureWorkoutFeedShareUploadBanner() {
         let banner = document.getElementById('workout-feed-share-upload-banner');
         if (banner) return banner;
@@ -722,64 +889,95 @@
                     50% { transform: translateX(120%); }
                     100% { transform: translateX(-40%); }
                 }
+                #workout-feed-share-upload-banner,
+                #workout-feed-share-upload-banner * {
+                    color: #fff !important;
+                    -webkit-text-fill-color: #fff !important;
+                }
             `;
             document.head.appendChild(style);
         }
 
         banner = document.createElement('div');
         banner.id = 'workout-feed-share-upload-banner';
-        banner.style.cssText = 'display:none; position:fixed; left:16px; right:16px; bottom:calc(16px + env(safe-area-inset-bottom, 0px)); z-index:720; background:rgba(17,24,39,0.96); color:white; border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:12px 14px; box-shadow:0 18px 40px rgba(0,0,0,0.28); backdrop-filter:blur(12px); overflow:hidden;';
+        banner.style.cssText = 'display:none; position:fixed; left:16px; right:16px; bottom:calc(16px + env(safe-area-inset-bottom, 0px)); z-index:720; background:rgba(17,24,39,0.96); color:#fff; -webkit-text-fill-color:#fff; border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:12px 14px; box-shadow:0 18px 40px rgba(0,0,0,0.28); backdrop-filter:blur(12px); overflow:hidden;';
         banner.innerHTML = `
             <div style="display:flex; align-items:center; gap:10px;">
                 <div style="width:34px; height:34px; border-radius:999px; background:rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                     <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor; animation:workoutFeedShareSpin 1s linear infinite;"><path d="M12 4V1L8 5l4 4V6c2.76 0 5 2.24 5 5 0 .86-.22 1.67-.62 2.38l1.47 1.47C18.57 13.17 19 11.64 19 10c0-3.87-3.13-7-7-7zm-5.85.62L4.68 3.15C3.43 4.58 2.67 6.44 2.67 8.5c0 3.87 3.13 7 7 7v3l4-4-4-4v3c-2.76 0-5-2.24-5-5 0-1.36.54-2.59 1.42-3.5z"/></svg>
                 </div>
                 <div style="flex:1; min-width:0;">
-                    <div id="workout-feed-share-upload-text" style="font-size:0.92rem; font-weight:900; line-height:1.2;">Uploading your set...</div>
-                    <div id="workout-feed-share-upload-subtext" style="font-size:0.75rem; opacity:0.78; line-height:1.35; margin-top:3px;">You can keep training.</div>
+                    <div id="workout-feed-share-upload-text" style="font-size:0.92rem; font-weight:900; line-height:1.2; color:#fff; -webkit-text-fill-color:#fff;">Uploading your set...</div>
+                    <div id="workout-feed-share-upload-subtext" style="font-size:0.75rem; opacity:0.78; line-height:1.35; margin-top:3px; color:#fff; -webkit-text-fill-color:#fff;">You can keep training.</div>
                 </div>
             </div>
             <div style="height:4px; background:rgba(255,255,255,0.12); border-radius:999px; margin-top:10px; overflow:hidden;">
                 <div id="workout-feed-share-upload-bar" style="height:100%; width:36%; border-radius:999px; background:linear-gradient(90deg,#f97316,#ef4444); animation:workoutFeedShareSweep 1.15s ease-in-out infinite;"></div>
+            </div>
+            <div id="workout-feed-share-upload-actions" style="display:none; gap:8px; margin-top:10px;">
+                <button type="button" onclick="retryWorkoutFeedShareQueue(true)" style="flex:1; min-height:38px; border:none; border-radius:10px; background:#fff; color:#7f1d1d !important; -webkit-text-fill-color:#7f1d1d !important; font-weight:900; font-size:0.82rem;">Retry now</button>
+                <button type="button" onclick="hideWorkoutFeedShareUploadBanner()" style="min-height:38px; border:1px solid rgba(255,255,255,0.28); border-radius:10px; background:rgba(255,255,255,0.08); color:#fff !important; -webkit-text-fill-color:#fff !important; font-weight:800; font-size:0.82rem; padding:0 13px;">Later</button>
             </div>
         `;
         document.body.appendChild(banner);
         return banner;
     }
 
-    function showWorkoutFeedShareUploadBanner(message, type) {
+    function showWorkoutFeedShareUploadBanner(message, type, options) {
+        options = options || {};
         const banner = ensureWorkoutFeedShareUploadBanner();
         const text = banner.querySelector('#workout-feed-share-upload-text');
         const subtext = banner.querySelector('#workout-feed-share-upload-subtext');
         const bar = banner.querySelector('#workout-feed-share-upload-bar');
+        const actions = banner.querySelector('#workout-feed-share-upload-actions');
         if (text) text.textContent = message || 'Uploading your set...';
+        if (text) {
+            text.style.color = '#fff';
+            text.style.webkitTextFillColor = '#fff';
+        }
         if (subtext) {
             subtext.textContent = type === 'error'
                 ? 'Please try that clip again.'
+                : type === 'queued'
+                    ? 'Saved on this phone. We will retry when reception improves.'
                 : type === 'success'
                     ? 'Shared to Feed.'
                     : 'You can keep training.';
+            subtext.style.color = '#fff';
+            subtext.style.webkitTextFillColor = '#fff';
         }
         if (banner) {
             banner.style.display = 'block';
+            banner.style.color = '#fff';
+            banner.style.webkitTextFillColor = '#fff';
             banner.style.borderColor = type === 'error'
                 ? 'rgba(248,113,113,0.28)'
+                : type === 'queued'
+                    ? 'rgba(251,191,36,0.32)'
                 : type === 'success'
                     ? 'rgba(74,222,128,0.28)'
                     : 'rgba(255,255,255,0.08)';
             banner.style.background = type === 'error'
                 ? 'rgba(127,29,29,0.96)'
+                : type === 'queued'
+                    ? 'rgba(120,53,15,0.96)'
                 : type === 'success'
                     ? 'rgba(3, 78, 52, 0.96)'
                     : 'rgba(17,24,39,0.96)';
         }
         if (bar) {
-            bar.style.animation = type === 'success' ? 'none' : 'workoutFeedShareSweep 1.15s ease-in-out infinite';
+            bar.style.animation = (type === 'success' || type === 'queued') ? 'none' : 'workoutFeedShareSweep 1.15s ease-in-out infinite';
+            bar.style.width = type === 'queued' ? '100%' : '36%';
             bar.style.background = type === 'error'
                 ? 'linear-gradient(90deg,#fb7185,#ef4444)'
+                : type === 'queued'
+                    ? 'linear-gradient(90deg,#facc15,#f97316)'
                 : type === 'success'
                     ? 'linear-gradient(90deg,#4ade80,#16a34a)'
                     : 'linear-gradient(90deg,#f97316,#ef4444)';
+        }
+        if (actions) {
+            actions.style.display = (type === 'queued' || options.retry === true) ? 'flex' : 'none';
         }
         return text || banner;
     }
@@ -884,6 +1082,7 @@
         }
 
         const caption = (options.caption && String(options.caption).trim()) || (captionInput && captionInput.value.trim()) || '';
+        const workoutName = workoutFeedShareState.workoutName || getActiveWorkoutName();
 
         try {
             if (submitBtn && typeof submitBtn === 'object' && 'disabled' in submitBtn) {
@@ -892,39 +1091,56 @@
                 submitBtn.style.opacity = '0.7';
             }
 
+            workoutFeedShareState.file = await prepareWorkoutFeedShareClip(workoutFeedShareState.file, submitBtn);
+
+            if (navigator && navigator.onLine === false) {
+                await queueWorkoutFeedShareUpload({
+                    userId: userId,
+                    file: workoutFeedShareState.file,
+                    caption: caption,
+                    workoutName: workoutName,
+                    lastError: 'offline'
+                });
+                showWorkoutFeedShareUploadBanner('Saved for retry', 'queued', { retry: true });
+                clearWorkoutFeedShareVideo();
+                return;
+            }
+
             const result = await window.createWorkoutFeedSharePost({
                 file: workoutFeedShareState.file,
                 caption: caption,
-                workoutName: workoutFeedShareState.workoutName || getActiveWorkoutName(),
+                workoutName: workoutName,
                 source: 'feed_workout_share',
                 postBtn: submitBtn,
-                pointsType: 'workout_feed_share'
+                pointsType: 'workout_feed_share',
+                skipVideoPreparation: true
             });
 
-            const pointsAwarded = Number(result && result.pointsAwarded ? result.pointsAwarded : 0);
-            const dailyLimitReached = !!(result && result.awardResult && result.awardResult.dailyLimitReached);
-            const successMessage = pointsAwarded > 0
-                ? `Posted to Feed! +${pointsAwarded} XP`
-                : dailyLimitReached
-                    ? 'Posted to Feed! Share a Set XP is once per day.'
-                : 'Posted to Feed!';
+            const successMessage = getWorkoutFeedShareSuccessMessage(result);
             showWorkoutFeedShareUploadBanner(successMessage, 'success');
 
             if (typeof showToast === 'function') showToast(successMessage, 'success');
-            try {
-                if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
-                if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
-            } catch (e) {}
-            if (typeof loadPhotoFeed === 'function') {
-                loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
-            }
-            if (typeof loadStories === 'function') {
-                loadStories();
-            }
+            refreshWorkoutFeedShareAfterPost();
             hideWorkoutFeedShareUploadBanner(1800);
             setTimeout(clearWorkoutFeedShareVideo, 1800);
         } catch (error) {
             console.error('[WorkoutFeedShare] submit failed', error);
+            if (isRetryableWorkoutFeedShareError(error) && workoutFeedShareState.file) {
+                try {
+                    await queueWorkoutFeedShareUpload({
+                        userId: userId,
+                        file: workoutFeedShareState.file,
+                        caption: caption,
+                        workoutName: workoutName,
+                        lastError: error && error.message ? error.message : 'upload failed'
+                    });
+                    showWorkoutFeedShareUploadBanner('Saved for retry', 'queued', { retry: true });
+                    clearWorkoutFeedShareVideo();
+                    return;
+                } catch (queueError) {
+                    console.warn('[WorkoutFeedShare] retry queue failed', queueError);
+                }
+            }
             showWorkoutFeedShareUploadBanner(error.message || 'Could not share that clip. Please try again.', 'error');
         } finally {
             if (submitBtn && typeof submitBtn === 'object' && 'disabled' in submitBtn) {
@@ -932,6 +1148,86 @@
                 submitBtn.textContent = 'Post to Feed';
                 submitBtn.style.opacity = '1';
             }
+        }
+    }
+
+    async function retryWorkoutFeedShareQueue(manual) {
+        if (workoutFeedShareRetryInProgress) {
+            if (manual) showWorkoutFeedShareUploadBanner('Retry already running...', 'info');
+            return;
+        }
+
+        const userId = window.currentUser && window.currentUser.id;
+        if (!userId) {
+            if (manual) showWorkoutFeedShareUploadBanner('Log in before retrying Share a Set.', 'error');
+            else scheduleWorkoutFeedShareRetry(30000);
+            return;
+        }
+
+        if (navigator && navigator.onLine === false) {
+            showWorkoutFeedShareUploadBanner('Waiting for reception', 'queued', { retry: true });
+            scheduleWorkoutFeedShareRetry(45000);
+            return;
+        }
+
+        workoutFeedShareRetryInProgress = true;
+        try {
+            const items = (await getWorkoutFeedShareQueueItems()).filter(function (item) {
+                return item && item.userId === userId;
+            });
+
+            if (!items.length) {
+                if (manual) {
+                    showWorkoutFeedShareUploadBanner('No Share a Set uploads waiting.', 'success');
+                    hideWorkoutFeedShareUploadBanner(1400);
+                }
+                return;
+            }
+
+            for (const item of items) {
+                const queuedFile = getQueuedWorkoutFeedShareFile(item);
+                if (!queuedFile) {
+                    await deleteWorkoutFeedShareQueueItem(item.id);
+                    continue;
+                }
+
+                const bannerLabel = showWorkoutFeedShareUploadBanner('Retrying Share a Set...', 'info');
+                try {
+                    const result = await window.createWorkoutFeedSharePost({
+                        file: queuedFile,
+                        caption: item.caption || '',
+                        workoutName: item.workoutName || '',
+                        source: 'feed_workout_share',
+                        postBtn: bannerLabel,
+                        pointsType: 'workout_feed_share',
+                        skipVideoPreparation: true,
+                        photoTimestamp: item.createdAt || new Date().toISOString()
+                    });
+
+                    await deleteWorkoutFeedShareQueueItem(item.id);
+                    const successMessage = getWorkoutFeedShareSuccessMessage(result);
+                    showWorkoutFeedShareUploadBanner(successMessage, 'success');
+                    if (typeof showToast === 'function') showToast(successMessage, 'success');
+                    refreshWorkoutFeedShareAfterPost();
+                    hideWorkoutFeedShareUploadBanner(1800);
+                } catch (error) {
+                    console.warn('[WorkoutFeedShare] queued retry failed', error);
+                    await putWorkoutFeedShareQueueItem({
+                        ...item,
+                        attempts: Number(item.attempts || 0) + 1,
+                        lastAttemptAt: new Date().toISOString(),
+                        lastError: error && error.message ? error.message : 'retry failed'
+                    });
+                    showWorkoutFeedShareUploadBanner('Saved for retry', 'queued', { retry: true });
+                    scheduleWorkoutFeedShareRetry(Math.min(5 * 60 * 1000, 30000 * Math.max(1, Number(item.attempts || 1))));
+                    break;
+                }
+            }
+        } catch (error) {
+            console.warn('[WorkoutFeedShare] retry queue unavailable', error);
+            if (manual) showWorkoutFeedShareUploadBanner('Could not retry just now.', 'error');
+        } finally {
+            workoutFeedShareRetryInProgress = false;
         }
     }
 
@@ -949,7 +1245,20 @@
     window.handleWorkoutFeedShareFileSelect = handleWorkoutFeedShareFileSelect;
     window.clearWorkoutFeedShareVideo = clearWorkoutFeedShareVideo;
     window.submitWorkoutFeedShare = submitWorkoutFeedShare;
+    window.retryWorkoutFeedShareQueue = retryWorkoutFeedShareQueue;
+    window.hideWorkoutFeedShareUploadBanner = hideWorkoutFeedShareUploadBanner;
 
     document.addEventListener('DOMContentLoaded', ensureFormCheckView);
     document.addEventListener('DOMContentLoaded', ensureWorkoutFeedShareView);
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () { retryWorkoutFeedShareQueue(false); }, 4000);
+    });
+    window.addEventListener('online', function () {
+        setTimeout(function () { retryWorkoutFeedShareQueue(false); }, 1000);
+    });
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) {
+            setTimeout(function () { retryWorkoutFeedShareQueue(false); }, 1500);
+        }
+    });
 })();
