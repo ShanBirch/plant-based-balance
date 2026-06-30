@@ -3601,6 +3601,19 @@ html[data-pbb-theme="light"] .profile-icon {
     box-shadow: 0 10px 24px rgba(57, 47, 31, 0.12) !important;
 }
 
+html[data-pbb-theme="light"] #view-friends [onclick*="openAddFriendModal"][style*="background: #f1f5f9"],
+html[data-pbb-theme="light"] #view-friends [onclick*="openFeedMessagesPanel"][style*="background: #f1f5f9"] {
+    background: linear-gradient(135deg, #fffdf8 0%, #f4ead4 100%) !important;
+    border: 1px solid rgba(184, 137, 43, 0.34) !important;
+    color: #151515 !important;
+    box-shadow: 0 10px 24px rgba(57, 47, 31, 0.12) !important;
+}
+
+html[data-pbb-theme="light"] #view-friends [onclick*="openAddFriendModal"] svg,
+html[data-pbb-theme="light"] #view-friends [onclick*="openFeedMessagesPanel"] svg {
+    fill: #151515 !important;
+}
+
 html[data-pbb-theme="light"] #guest-mode-banner {
     background: linear-gradient(135deg, rgba(17, 17, 17, 0.92), rgba(184, 137, 43, 0.74)) !important;
     color: #ffffff !important;
