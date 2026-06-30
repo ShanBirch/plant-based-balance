@@ -1037,6 +1037,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
             title: 'Fitness Diary',
             day_rating: source.day_rating || null,
             energy_level: source.energy_level || null,
+            goals: source.goals || null,
             highlight: source.highlight || null,
             struggle: source.struggle || null,
             note: source.note || null,
@@ -1080,6 +1081,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
         var detailBits = [
             payload.day_rating ? 'Today: ' + formatFitnessDiaryValue(payload.day_rating) : '',
             payload.energy_level ? 'Energy: ' + formatFitnessDiaryValue(payload.energy_level) : '',
+            payload.goals ? 'Goals: ' + payload.goals : '',
             payload.highlight ? payload.highlight : ''
         ].filter(Boolean);
 
@@ -1185,6 +1187,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
         var success = document.getElementById('fitness-diary-success');
         var card = document.getElementById('fitness-diary-card');
 
+        var goalsInput = document.getElementById('diary-goals');
         var highlightInput = document.getElementById('diary-highlight');
         var struggleInput = document.getElementById('diary-struggle');
         var noteInput = document.getElementById('diary-note');
@@ -1195,6 +1198,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
             date: dateKey,
             day_rating: window._fitnessDiaryData.day_rating,
             energy_level: window._fitnessDiaryData.energy_level,
+            goals: (goalsInput && goalsInput.value.trim()) || null,
             highlight: (highlightInput && highlightInput.value.trim()) || null,
             struggle: (struggleInput && struggleInput.value.trim()) || null,
             note: (noteInput && noteInput.value.trim()) || null,

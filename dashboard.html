@@ -1303,19 +1303,25 @@ window.addEventListener('load', function() {
                     </div>
                 </div>
 
-                <!-- Q2: Today's highlight -->
+                <!-- Q2: Goals -->
+                <div style="margin-bottom: 16px;">
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">What are your goals right now?</div>
+                    <input type="text" id="diary-goals" placeholder="e.g. Build strength, lose 5kg, run 5km..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
+                </div>
+
+                <!-- Q3: Today's highlight -->
                 <div style="margin-bottom: 16px;">
                     <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Best thing you did for your health today?</div>
                     <input type="text" id="diary-highlight" placeholder="e.g. Got my steps in, ate well, trained legs..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
                 </div>
 
-                <!-- Q3: What was hardest -->
+                <!-- Q4: What was hardest -->
                 <div style="margin-bottom: 16px;">
                     <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">What was hardest today?</div>
                     <input type="text" id="diary-struggle" placeholder="e.g. Cravings, low energy, skipped workout..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
                 </div>
 
-                <!-- Q4: Energy level -->
+                <!-- Q5: Energy level -->
                 <div style="margin-bottom: 16px;">
                     <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">How's your energy right now?</div>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -1326,10 +1332,10 @@ window.addEventListener('load', function() {
                     </div>
                 </div>
 
-                <!-- Q5: Anything else? -->
+                <!-- Q6: Anything else? -->
                 <div style="margin-bottom: 16px;">
                     <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Anything else on your mind?</div>
-                    <input type="text" id="diary-note" placeholder="Optional — how you're feeling, goals for tomorrow..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
+                    <input type="text" id="diary-note" placeholder="Optional, anything else about today..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
                 </div>
 
                 <button id="fitness-diary-submit-btn" onclick="submitFitnessDiary()" style="width: 100%; background: white; color: #6366f1; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
@@ -1444,12 +1450,12 @@ window.addEventListener('load', function() {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=65';
+                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=66';
                 document.head.appendChild(s);
             }, 3000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=65"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=66"><\/script>');
     }
     </script>
 
