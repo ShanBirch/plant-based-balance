@@ -5755,6 +5755,7 @@ async function showNativePermissionsModal() {
     if (!isNativeApp()) return;
     if (localStorage.getItem('native_permissions_requested')) return;
     localStorage.setItem('native_permissions_requested', 'true');
+    localStorage.setItem('native_permissions_requested_at', String(Date.now()));
 
     // 1. Notifications — ask first so the FCM token registration in step's
     //    init() runs against an already-resolved permission (no re-prompt).
@@ -5881,6 +5882,8 @@ function updatePushNotifSettingsUI() {
         ? window.NativePermissions.hasNotificationPermission()
         : (window.Notification && Notification.permission === 'granted');
 
+    statusEl.style.display = 'block';
+
     if (granted) {
         statusEl.textContent = 'Enabled: coach messages and reminders';
         statusEl.style.color = '#166534';
@@ -5893,6 +5896,242 @@ function updatePushNotifSettingsUI() {
         btn.style.background = '#dc2626';
     }
 }
+
+const PUSH_PERMISSION_REMINDER_DELAY_MS = 24 * 60 * 60 * 1000;
+const PUSH_PERMISSION_REMINDER_SHORT_CADENCE_MS = 4 * 24 * 60 * 60 * 1000;
+const PUSH_PERMISSION_REMINDER_LONG_CADENCE_MS = 14 * 24 * 60 * 60 * 1000;
+const PUSH_PERMISSION_REMINDER_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
+
+function isNativeAndroidAppForPushReminder() {
+    if (!(typeof isNativeApp === 'function' && isNativeApp())) return false;
+    try {
+        if (window.Capacitor && typeof window.Capacitor.getPlatform === 'function') {
+            return window.Capacitor.getPlatform() === 'android';
+        }
+    } catch (e) {}
+    return !!window._pbbIsNativeAndroid;
+}
+
+function getPushPermissionReminderKey(name) {
+    const userId = window.currentUser && window.currentUser.id ? window.currentUser.id : 'anon';
+    return 'pbb_push_permission_reminder_' + name + ':' + userId;
+}
+
+function getPushPermissionReminderNumber(name) {
+    try {
+        const value = Number(localStorage.getItem(getPushPermissionReminderKey(name)) || '0');
+        return Number.isFinite(value) ? value : 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function setPushPermissionReminderNumber(name, value) {
+    try {
+        localStorage.setItem(getPushPermissionReminderKey(name), String(value));
+    } catch (e) {}
+}
+
+function clearPushPermissionReminderState() {
+    ['lastShownAt', 'snoozedUntil', 'shownCount'].forEach(function(name) {
+        try { localStorage.removeItem(getPushPermissionReminderKey(name)); } catch (e) {}
+    });
+}
+
+function hidePushPermissionReminder() {
+    const existing = document.getElementById('push-permission-reminder');
+    if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+}
+
+function dismissPushPermissionReminder(snoozeMs) {
+    hidePushPermissionReminder();
+    if (snoozeMs) {
+        setPushPermissionReminderNumber('snoozedUntil', Date.now() + snoozeMs);
+    }
+}
+
+function isPushPermissionReminderBlocked() {
+    if (window.guestMode || !window.currentUser || window._onboardingWizardPending) return true;
+    const blockingIds = ['onboarding-wizard', 'native-permissions-modal', 'guest-signup-modal', 'weekly-goals-modal', 'store-review-modal'];
+    return blockingIds.some(function(id) {
+        const el = document.getElementById(id);
+        if (!el) return false;
+        const style = window.getComputedStyle ? window.getComputedStyle(el) : null;
+        return style && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || '1') !== 0;
+    });
+}
+
+async function getCurrentPushPermissionStatus() {
+    try {
+        if (window.NativePush && typeof window.NativePush.checkPermission === 'function') {
+            return await window.NativePush.checkPermission();
+        }
+        if (window.NativePermissions && typeof window.NativePermissions.hasNotificationPermission === 'function') {
+            return window.NativePermissions.hasNotificationPermission() ? 'granted' : 'denied';
+        }
+        if (window.Notification) return Notification.permission;
+    } catch (e) {
+        console.warn('[PushReminder] Could not check notification permission:', e);
+    }
+    return 'error';
+}
+
+function showPushPermissionReminder() {
+    hidePushPermissionReminder();
+
+    const now = Date.now();
+    const shownCount = getPushPermissionReminderNumber('shownCount');
+    setPushPermissionReminderNumber('lastShownAt', now);
+    setPushPermissionReminderNumber('shownCount', shownCount + 1);
+
+    const banner = document.createElement('div');
+    banner.id = 'push-permission-reminder';
+    banner.setAttribute('role', 'status');
+    banner.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom, 0px));z-index:12020;max-width:520px;margin:0 auto;background:#ffffff;color:#172033;border:1px solid #cfe7d4;border-radius:8px;box-shadow:0 10px 30px rgba(15,23,42,0.14);padding:12px;display:flex;gap:12px;align-items:flex-start;box-sizing:border-box;';
+    banner.innerHTML = ''
+        + '<div aria-hidden="true" style="flex:0 0 32px;width:32px;height:32px;border-radius:8px;background:#edf7ef;color:#2f7d46;display:flex;align-items:center;justify-content:center;">'
+        + '<svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>'
+        + '</div>'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:0.95rem;font-weight:800;line-height:1.2;margin:0 0 3px;color:#172033;">Turn on Balance notifications</div>'
+        + '<div style="font-size:0.82rem;line-height:1.35;color:#475569;margin:0 0 10px;">Coach replies, reminders and streak nudges can reach you when the app is closed.</div>'
+        + '<div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;">'
+        + '<button type="button" data-pbb-push-later style="border:1px solid #dbe5dd;background:#ffffff;color:#475569;border-radius:8px;padding:8px 10px;font-size:0.82rem;font-weight:700;">Later</button>'
+        + '<button type="button" data-pbb-push-enable style="border:none;background:var(--primary, #7ba883);color:#ffffff;border-radius:8px;padding:8px 12px;font-size:0.82rem;font-weight:800;">Turn on</button>'
+        + '</div>'
+        + '</div>';
+
+    const laterBtn = banner.querySelector('[data-pbb-push-later]');
+    const enableBtn = banner.querySelector('[data-pbb-push-enable]');
+
+    if (laterBtn) {
+        laterBtn.addEventListener('click', function() {
+            dismissPushPermissionReminder(PUSH_PERMISSION_REMINDER_DISMISS_MS);
+        });
+    }
+
+    if (enableBtn) {
+        enableBtn.addEventListener('click', async function() {
+            enableBtn.disabled = true;
+            enableBtn.textContent = 'Opening';
+            setPushPermissionReminderNumber('snoozedUntil', Date.now() + PUSH_PERMISSION_REMINDER_DISMISS_MS);
+
+            try {
+                const needsSettings = window.NativePermissions
+                    && typeof window.NativePermissions.isNotificationPermPermanentlyDenied === 'function'
+                    && window.NativePermissions.isNotificationPermPermanentlyDenied();
+                let result = needsSettings ? 'denied' : 'error';
+
+                if (!needsSettings && window.NativePush && typeof window.NativePush.requestPermission === 'function') {
+                    result = await window.NativePush.requestPermission();
+                }
+
+                if (result === 'granted') {
+                    clearPushPermissionReminderState();
+                    hidePushPermissionReminder();
+                    updatePushNotifSettingsUI();
+                    if (window.NativePush && typeof window.NativePush.init === 'function') {
+                        try { window.NativePush.init(); } catch (e) {}
+                    }
+                    if (typeof showToast === 'function') showToast('Notifications are on', 'success');
+                    return;
+                }
+
+                if (typeof openAppNotificationSettings === 'function') {
+                    openAppNotificationSettings();
+                }
+            } catch (e) {
+                console.warn('[PushReminder] Enable action failed:', e);
+                if (typeof openAppNotificationSettings === 'function') {
+                    openAppNotificationSettings();
+                }
+            } finally {
+                setTimeout(function() {
+                    if (enableBtn && document.body.contains(enableBtn)) {
+                        enableBtn.disabled = false;
+                        enableBtn.textContent = 'Turn on';
+                    }
+                }, 1200);
+            }
+        });
+    }
+
+    if (document.body) document.body.appendChild(banner);
+}
+
+async function maybeShowPushPermissionReminder() {
+    if (window._pushPermissionReminderChecking) return;
+    if (!isNativeAndroidAppForPushReminder()) return;
+    if (isPushPermissionReminderBlocked()) return;
+    if (!localStorage.getItem('native_permissions_requested')) return;
+
+    const requestedAt = Number(localStorage.getItem('native_permissions_requested_at') || '0');
+    const now = Date.now();
+    if (requestedAt && now - requestedAt < PUSH_PERMISSION_REMINDER_DELAY_MS) return;
+
+    window._pushPermissionReminderChecking = true;
+    try {
+        const status = await getCurrentPushPermissionStatus();
+        if (status === 'granted') {
+            clearPushPermissionReminderState();
+            hidePushPermissionReminder();
+            return;
+        }
+        if (status === 'unsupported' || status === 'error') return;
+
+        const snoozedUntil = getPushPermissionReminderNumber('snoozedUntil');
+        if (snoozedUntil && now < snoozedUntil) return;
+
+        const shownCount = getPushPermissionReminderNumber('shownCount');
+        const cadence = shownCount >= 3 ? PUSH_PERMISSION_REMINDER_LONG_CADENCE_MS : PUSH_PERMISSION_REMINDER_SHORT_CADENCE_MS;
+        const lastShownAt = getPushPermissionReminderNumber('lastShownAt');
+        if (lastShownAt && now - lastShownAt < cadence) return;
+
+        showPushPermissionReminder();
+    } finally {
+        window._pushPermissionReminderChecking = false;
+    }
+}
+
+function initPushPermissionReminder() {
+    if (window._pushPermissionReminderInitialized) return;
+    window._pushPermissionReminderInitialized = true;
+
+    const previousPermissionRecheck = typeof window._onPermissionRecheck === 'function'
+        ? window._onPermissionRecheck
+        : null;
+    window._onPermissionRecheck = function(granted) {
+        if (previousPermissionRecheck) {
+            try { previousPermissionRecheck(granted); } catch (e) {}
+        }
+        updatePushNotifSettingsUI();
+        if (granted) {
+            clearPushPermissionReminderState();
+            hidePushPermissionReminder();
+            if (window.NativePush && typeof window.NativePush.init === 'function') {
+                try { window.NativePush.init(); } catch (e) {}
+            }
+        } else {
+            setTimeout(maybeShowPushPermissionReminder, 1500);
+        }
+    };
+
+    setTimeout(maybeShowPushPermissionReminder, 9000);
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(maybeShowPushPermissionReminder, 3500);
+    });
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+            setTimeout(function() {
+                updatePushNotifSettingsUI();
+                maybeShowPushPermissionReminder();
+            }, 1200);
+        }
+    });
+}
+
+window.maybeShowPushPermissionReminder = maybeShowPushPermissionReminder;
+_onDomReady(initPushPermissionReminder);
 
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;

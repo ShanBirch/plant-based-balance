@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v225'; // v225: cache-bust feed Top Levels tap fix; v224: cache-bust feed media upload fix
+const CACHE_NAME = 'pbb-app-v226'; // v226: cache-bust notification permission reminder; v225: cache-bust feed Top Levels tap fix
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -13,7 +13,7 @@ const ASSETS = [
   './exercise_videos.js?v=20260628-pushup-progression',
   './workout_library.js',
   './workout_library_extended.js',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=111',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=114',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream',
   './js/dashboard/dashboard-script-10-points_widget_functions.js?v=9',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=7',
