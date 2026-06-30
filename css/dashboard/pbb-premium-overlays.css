@@ -5322,6 +5322,73 @@ html[data-pbb-theme="light"] .recent-meals-empty svg {
     stroke: #8a8174 !important;
 }
 
+html[data-pbb-theme="light"] .meal-detail-container,
+html[data-pbb-theme="light"] .meal-detail-content {
+    background:
+        radial-gradient(circle at 86% 0%, rgba(245, 217, 138, 0.18), transparent 30%),
+        linear-gradient(180deg, #fffef9 0%, #ffffff 50%, #fffdf7 100%) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .meal-detail-photo-placeholder {
+    background: linear-gradient(135deg, #fffdf7 0%, #f7f1e2 100%) !important;
+    color: #8a8174 !important;
+    -webkit-text-fill-color: #8a8174 !important;
+}
+
+html[data-pbb-theme="light"] .meal-detail-close {
+    background: rgba(255, 255, 255, 0.94) !important;
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+    border: 1px solid rgba(184, 137, 43, 0.14) !important;
+}
+
+html[data-pbb-theme="light"] .meal-detail-time,
+html[data-pbb-theme="light"] .meal-detail-calories-label,
+html[data-pbb-theme="light"] .meal-detail-macro-label,
+html[data-pbb-theme="light"] .meal-detail-items-title,
+html[data-pbb-theme="light"] .meal-detail-item-cals {
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] .meal-detail-foods,
+html[data-pbb-theme="light"] .meal-detail-calories-value,
+html[data-pbb-theme="light"] .meal-detail-item-name {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .meal-detail-calories,
+html[data-pbb-theme="light"] .meal-detail-macro {
+    background: rgba(255, 255, 255, 0.82) !important;
+    border: 1px solid rgba(184, 137, 43, 0.12) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .meal-detail-macro.protein .meal-detail-macro-value,
+html[data-pbb-theme="light"] .meal-detail-macro.carbs .meal-detail-macro-value,
+html[data-pbb-theme="light"] .meal-detail-macro.fat .meal-detail-macro-value {
+    color: #b8892b !important;
+    -webkit-text-fill-color: #b8892b !important;
+}
+
+html[data-pbb-theme="light"] .meal-detail-items {
+    border-top-color: rgba(21, 21, 21, 0.08) !important;
+}
+
+html[data-pbb-theme="light"] .meal-detail-item {
+    border-bottom-color: rgba(21, 21, 21, 0.08) !important;
+}
+
+html[data-pbb-theme="light"] .meal-detail-edit-btn,
+html[data-pbb-theme="light"] .meal-detail-edit-btn * {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
 html[data-pbb-theme="light"] #weight-goal-picker-modal button {
     color: #151515 !important;
     -webkit-text-fill-color: #151515 !important;
