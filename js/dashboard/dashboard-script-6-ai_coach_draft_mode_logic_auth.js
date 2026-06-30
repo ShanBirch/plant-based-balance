@@ -9291,7 +9291,7 @@ function getFeedLevelCurrentUserProfile() {
 
 function getFeedLevelLeaderboardShellHtml() {
     return `
-        <section id="feed-level-leaderboard-card" class="feed-level-leaderboard is-collapsed" aria-label="Top Levels">
+        <section id="feed-level-leaderboard-card" class="feed-level-leaderboard is-collapsed" aria-label="Top Levels" onclick="window.pbbToggleFeedLevelLeaderboardFromEvent ? window.pbbToggleFeedLevelLeaderboardFromEvent(event) : (window.toggleFeedLevelLeaderboard && window.toggleFeedLevelLeaderboard())">
             <button type="button" class="feed-level-leaderboard-toggle" onclick="window.pbbToggleFeedLevelLeaderboardFromEvent ? window.pbbToggleFeedLevelLeaderboardFromEvent(event) : (window.toggleFeedLevelLeaderboard && window.toggleFeedLevelLeaderboard())" aria-expanded="false" aria-controls="feed-level-leaderboard-body">
                 <span class="feed-level-leaderboard-badge">10</span>
                 <span class="feed-level-leaderboard-copy">
@@ -9385,14 +9385,14 @@ function observeFeedLevelLeaderboardShell() {
 }
 
 function bindFeedLevelLeaderboardTouchEvents() {
-    const toggle = document.querySelector('#feed-level-leaderboard-card .feed-level-leaderboard-toggle');
-    if (!toggle || toggle.dataset.pbbTouchBound === 'true') return;
-    toggle.dataset.pbbTouchBound = 'true';
-    toggle.addEventListener('pointerup', event => {
+    const card = document.getElementById('feed-level-leaderboard-card');
+    if (!card || card.dataset.pbbTouchBound === 'true') return;
+    card.dataset.pbbTouchBound = 'true';
+    card.addEventListener('pointerup', event => {
         if (event.pointerType === 'mouse') return;
         handleFeedLevelLeaderboardToggleEvent(event);
     }, { passive: false });
-    toggle.addEventListener('touchend', event => {
+    card.addEventListener('touchend', event => {
         handleFeedLevelLeaderboardToggleEvent(event);
     }, { passive: false });
 }
@@ -9425,6 +9425,8 @@ function toggleFeedLevelLeaderboard(forceOpen) {
 
 function handleFeedLevelLeaderboardToggleEvent(event, forceOpen) {
     if (event) {
+        const target = event.target;
+        if (target?.closest?.('#feed-level-leaderboard-body')) return;
         if (typeof event.preventDefault === 'function') event.preventDefault();
         if (typeof event.stopPropagation === 'function') event.stopPropagation();
         const now = Date.now();

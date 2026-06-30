@@ -820,6 +820,8 @@ html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body [style*="background:#
     border: 1px solid rgba(122, 255, 190, 0.13);
     box-shadow: 0 14px 30px rgba(5, 16, 12, 0.26);
     color: #f7fff9;
+    cursor: pointer;
+    touch-action: manipulation;
 }
 
 .feed-level-leaderboard-toggle {
@@ -918,6 +920,8 @@ html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body [style*="background:#
 .feed-level-leaderboard-body {
     display: none;
     border-top: 1px solid rgba(180, 255, 210, 0.11);
+    cursor: default;
+    touch-action: auto;
 }
 
 .feed-level-leaderboard:focus-within .feed-level-leaderboard-body,

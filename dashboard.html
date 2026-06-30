@@ -9114,7 +9114,7 @@ if(!window._pbbIsIOSSafari) {
         </div>
 
         <!-- Top Levels Dropdown -->
-        <section id="feed-level-leaderboard-card" class="feed-level-leaderboard is-collapsed" aria-label="Top Levels">
+        <section id="feed-level-leaderboard-card" class="feed-level-leaderboard is-collapsed" aria-label="Top Levels" onclick="window.pbbToggleFeedLevelLeaderboardFromEvent ? window.pbbToggleFeedLevelLeaderboardFromEvent(event) : (window.toggleFeedLevelLeaderboard && window.toggleFeedLevelLeaderboard())">
             <button type="button" class="feed-level-leaderboard-toggle" onclick="window.pbbToggleFeedLevelLeaderboardFromEvent ? window.pbbToggleFeedLevelLeaderboardFromEvent(event) : (window.toggleFeedLevelLeaderboard && window.toggleFeedLevelLeaderboard())" aria-expanded="false" aria-controls="feed-level-leaderboard-body">
                 <span class="feed-level-leaderboard-badge">10</span>
                 <span class="feed-level-leaderboard-copy">
@@ -9150,7 +9150,13 @@ if(!window._pbbIsIOSSafari) {
                 if (body) body.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
             }
 
+            function isFeedLevelLeaderboardHeaderEvent(event) {
+                var target = event && event.target;
+                return !(target && target.closest && target.closest('#feed-level-leaderboard-body'));
+            }
+
             function runFeedLevelToggle(forceOpen, event) {
+                if (event && !isFeedLevelLeaderboardHeaderEvent(event)) return;
                 if (event) {
                     if (typeof event.preventDefault === 'function') event.preventDefault();
                     if (typeof event.stopPropagation === 'function') event.stopPropagation();
@@ -9191,14 +9197,14 @@ if(!window._pbbIsIOSSafari) {
             }
 
             function bindFeedLevelToggleTouch() {
-                var toggle = document.querySelector('#feed-level-leaderboard-card .feed-level-leaderboard-toggle');
-                if (!toggle || toggle.dataset.pbbTouchBound === 'true') return;
-                toggle.dataset.pbbTouchBound = 'true';
-                toggle.addEventListener('pointerup', function(event) {
+                var card = document.getElementById('feed-level-leaderboard-card');
+                if (!card || card.dataset.pbbTouchBound === 'true') return;
+                card.dataset.pbbTouchBound = 'true';
+                card.addEventListener('pointerup', function(event) {
                     if (event.pointerType === 'mouse') return;
                     window.pbbToggleFeedLevelLeaderboardFromEvent(event);
                 }, { passive: false });
-                toggle.addEventListener('touchend', function(event) {
+                card.addEventListener('touchend', function(event) {
                     window.pbbToggleFeedLevelLeaderboardFromEvent(event);
                 }, { passive: false });
             }
