@@ -1,6 +1,14 @@
 (function(){
   'use strict';
 
+  if (window.__pbbWeeklyGoalsModuleLoaded) {
+    if (window.weeklyGoals && typeof window.weeklyGoals.refresh === 'function') {
+      setTimeout(function(){ window.weeklyGoals.refresh(); }, 0);
+    }
+    return;
+  }
+  window.__pbbWeeklyGoalsModuleLoaded = true;
+
   const MAX_GOALS = 3;
   const DAY_MS = 24 * 60 * 60 * 1000;
   const TABLE_NAME = 'weekly_goals';
@@ -89,7 +97,7 @@
       gradient: 'linear-gradient(135deg,#0891b2,#14b8a6)',
       goals: [
         { id: 'share_workout_feed', label: 'Share workout to Feed', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
-        { id: 'share_meal_feed', label: 'Share meal to Feed (+1 XP)', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
+        { id: 'share_meal_feed', label: 'Share meal to Feed (+15 XP)', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
         { id: 'message_coach', label: 'Message your coach', target: 1, unit: 'messages', min: 1, max: 3, step: 1 },
         { id: 'invite_friend', label: 'Invite a friend', target: 1, unit: 'friends', min: 1, max: 3, step: 1 },
         { id: 'complete_game', label: 'Complete a game', target: 1, unit: 'games', min: 1, max: 5, step: 1 }
@@ -121,7 +129,10 @@
     progress: null,
     arc: null,
     tableAvailable: true,
-    loading: false
+    loading: false,
+    saving: false,
+    refreshQueued: false,
+    lastSavedAt: 0
   };
 
   function escapeHtml(value) {
@@ -449,8 +460,10 @@
     return /weekly_goals|does not exist|schema cache|42P01/i.test(msg);
   }
 
-  async function saveWeeklyRow(userId, week, selected, progress, arc) {
-    const payload = {
+  function buildWeeklyPayload(userId, week, selected, progress, arc) {
+    const progressGoals = progress && Array.isArray(progress.goals) ? progress.goals : [];
+    const completedCount = progressGoals.filter(g => g.complete).length;
+    return {
       user_id: userId,
       week_start: week.start,
       week_end: week.end,
@@ -458,15 +471,16 @@
       progress_snapshot: progress || {},
       arc_snapshot: arc || {},
       total_count: selected.length,
-      completed_count: progress && Array.isArray(progress.goals)
-        ? progress.goals.filter(g => g.complete).length
-        : 0,
+      completed_count: progress && Array.isArray(progress.goals) ? completedCount : 0,
       completion_rate: progress && selected.length
-        ? Math.round((progress.goals.filter(g => g.complete).length / selected.length) * 100)
+        ? Math.round((completedCount / selected.length) * 100)
         : 0,
       status: 'active'
     };
+  }
 
+  function saveWeeklyRowLocal(userId, week, selected, progress, arc) {
+    const payload = buildWeeklyPayload(userId, week, selected, progress, arc);
     try {
       localStorage.setItem(localStorageKey(userId, week.start), JSON.stringify(payload));
       localStorage.setItem(lastSavedLocalStorageKey(userId), JSON.stringify({
@@ -474,6 +488,11 @@
         row: payload
       }));
     } catch (_) {}
+    return payload;
+  }
+
+  async function saveWeeklyRow(userId, week, selected, progress, arc) {
+    const payload = saveWeeklyRowLocal(userId, week, selected, progress, arc);
 
     if (!window.supabaseClient || !state.tableAvailable) return payload;
 
@@ -895,6 +914,24 @@
     };
   }
 
+  function buildPendingProgress(week, selected) {
+    return {
+      week_start: week.start,
+      week_end: week.end,
+      updated_at: new Date().toISOString(),
+      completed_count: 0,
+      total_count: selected.length,
+      completion_rate: 0,
+      goals: selected.map(goal => Object.assign({}, goal, {
+        current: 0,
+        target: Number(goal.target || 1),
+        percent: 0,
+        complete: false,
+        helper: 'Stats are updating.'
+      }))
+    };
+  }
+
   async function calculateProgress(userId, week, selected) {
     if (isFutureWeek(week)) {
       return {
@@ -1195,9 +1232,17 @@
   }
 
   async function loadWeekState(userId, week, existingRow) {
+    const previousWeekStart = state.week && state.week.start;
+    const previousSelected = Array.isArray(state.selected) ? state.selected.map(goal => Object.assign({}, goal)) : [];
     state.week = week;
     state.row = existingRow === undefined ? await fetchWeeklyRow(userId, week.start) : existingRow;
-    state.selected = normalizeSelected(state.row && state.row.selected_goals);
+    const loadedSelected = normalizeSelected(state.row && state.row.selected_goals);
+    const keepRecentSavedSelection = !loadedSelected.length
+      && previousSelected.length
+      && previousWeekStart === week.start
+      && Date.now() - state.lastSavedAt < 60000;
+
+    state.selected = keepRecentSavedSelection ? previousSelected : loadedSelected;
 
     if (state.selected.length) {
       const result = await calculateProgress(userId, week, state.selected);
@@ -1289,48 +1334,87 @@
   };
 
   window.saveWeeklyGoalsFromModal = async function() {
-    if (!window.currentUser || !state.week) return;
+    if (!window.currentUser || !window.currentUser.id || !state.week || state.saving) return;
+    const userId = window.currentUser.id;
+    const week = Object.assign({}, state.week);
     const selected = normalizeSelected(state.draftSelected);
     if (!selected.length) return;
+    const pendingProgress = isFutureWeek(week) ? buildWaitingProgress(week, selected) : buildPendingProgress(week, selected);
+    const pendingArc = isFutureWeek(week)
+      ? { headline: 'New stats coming next week.', waiting_for_next_week: true }
+      : { headline: 'Stats are updating.' };
 
     state.selected = selected;
+    state.progress = pendingProgress;
+    state.arc = pendingArc;
+    state.row = saveWeeklyRowLocal(userId, week, selected, pendingProgress, pendingArc);
+    state.lastSavedAt = Date.now();
     state.loading = true;
+    state.saving = true;
     renderCard();
     closeWeeklyGoalsModal();
 
-    const result = await calculateProgress(window.currentUser.id, state.week, selected);
-    state.progress = result.progress;
-    state.arc = result.arc;
-    state.row = await saveWeeklyRow(window.currentUser.id, state.week, selected, result.progress, result.arc);
-    state.loading = false;
-    renderCard();
-    showToastSafe('Weekly goals saved.', 'success');
+    try {
+      const result = await calculateProgress(userId, week, selected);
+      if (!state.week || state.week.start === week.start) {
+        state.progress = result.progress;
+        state.arc = result.arc;
+      }
+      const savedRow = await saveWeeklyRow(userId, week, selected, result.progress, result.arc);
+      if (!state.week || state.week.start === week.start) {
+        state.row = savedRow;
+      }
+      showToastSafe('Weekly goals saved.', 'success');
+    } catch (error) {
+      console.warn('[weekly-goals] save failed after local fallback', error);
+      showToastSafe('Weekly goals saved. Progress will update shortly.', 'success');
+    } finally {
+      state.loading = false;
+      state.saving = false;
+      renderCard();
+      if (state.refreshQueued) {
+        state.refreshQueued = false;
+        setTimeout(loadAndRender, 0);
+      }
+    }
   };
 
   async function loadAndRender() {
     const card = document.getElementById('weekly-goals-card');
     if (!card || !window.currentUser || !window.currentUser.id) return;
-    if (state.loading) return;
+    if (state.loading || state.saving) {
+      state.refreshQueued = true;
+      return;
+    }
 
     state.loading = true;
-    const now = new Date();
-    let week = getPlanningWeek(now);
-    let existingRow;
-    if (now.getDay() === 0 && now.getHours() < 12) {
-      const nextWeek = getNextWeek(now);
-      const nextRow = await fetchWeeklyRow(window.currentUser.id, nextWeek.start);
-      if (normalizeSelected(nextRow && nextRow.selected_goals).length) {
-        week = nextWeek;
-        existingRow = nextRow;
+    try {
+      const now = new Date();
+      let week = getPlanningWeek(now);
+      let existingRow;
+      if (now.getDay() === 0 && now.getHours() < 12) {
+        const nextWeek = getNextWeek(now);
+        const nextRow = await fetchWeeklyRow(window.currentUser.id, nextWeek.start);
+        if (normalizeSelected(nextRow && nextRow.selected_goals).length) {
+          week = nextWeek;
+          existingRow = nextRow;
+        }
+      }
+      state.week = week;
+      renderCard();
+
+      await loadWeekState(window.currentUser.id, week, existingRow);
+    } catch (error) {
+      console.warn('[weekly-goals] refresh failed', error);
+    } finally {
+      state.loading = false;
+      renderCard();
+
+      if (state.refreshQueued) {
+        state.refreshQueued = false;
+        setTimeout(loadAndRender, 0);
       }
     }
-    state.week = week;
-    renderCard();
-
-    await loadWeekState(window.currentUser.id, week, existingRow);
-
-    state.loading = false;
-    renderCard();
   }
 
   function init() {

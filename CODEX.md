@@ -123,6 +123,11 @@ Voice match feedback loop:
 - Dismissed: `status='dismissed'`, optional `data.dismiss_reason`. Counts denominator only.
 - Score is sent-as-drafted divided by sent plus dismissed, rolling 30 days, bucketed overall, per alert type, and per client.
 
+DM question discipline:
+
+- Do not ask for a status the client or lead just gave. If they say "just pain when I walk" or "not great", the better Shannon-style reply is usually a short acknowledgement or statement, such as "ahhh that's not good fra", not "how's it feeling today, still pain when you walk?"
+- Ask fewer questions overall. Ask one precise question only when the missing answer changes the next coaching, support, or qualified lead step. Otherwise use a statement, short reaction, clear next step, or a simple day/week check-in if Shannon has not already asked it.
+
 Auto-send:
 
 - `client_memory.auto_send_enabled BOOLEAN DEFAULT FALSE`.

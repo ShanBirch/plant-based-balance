@@ -1653,6 +1653,45 @@ function getMealFeedSharedSet() {
     return window._pbbMealFeedSharedIds;
 }
 
+const MEAL_FEED_SHARE_XP = 15;
+
+function getMealFeedShareButtonText() {
+    return `Share meal to Feed (+${MEAL_FEED_SHARE_XP} XP)`;
+}
+
+function getMealFeedShareDayKey(date = new Date()) {
+    try {
+        const parts = new Intl.DateTimeFormat('en-AU', {
+            timeZone: 'Australia/Brisbane',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).formatToParts(date);
+        const byType = {};
+        parts.forEach(part => { byType[part.type] = part.value; });
+        if (byType.year && byType.month && byType.day) {
+            return `${byType.year}-${byType.month}-${byType.day}`;
+        }
+    } catch (_) {}
+    return (typeof getLocalDateString === 'function') ? getLocalDateString(date) : new Date(date).toISOString().slice(0, 10);
+}
+
+function isMealFeedShareUsedToday() {
+    const dayKey = getMealFeedShareDayKey();
+    try {
+        return localStorage.getItem('pbbMealSharedToFeedDay_' + dayKey) === '1';
+    } catch (_) {
+        return false;
+    }
+}
+
+function markMealFeedShareUsedToday() {
+    const dayKey = getMealFeedShareDayKey();
+    try {
+        localStorage.setItem('pbbMealSharedToFeedDay_' + dayKey, '1');
+    } catch (_) {}
+}
+
 function isMealSharedToFeed(mealId) {
     if (!mealId) return false;
     if (getMealFeedSharedSet().has(String(mealId))) return true;
@@ -1671,6 +1710,67 @@ function markMealSharedToFeed(mealId) {
     } catch (_) {}
 }
 
+function formatMealFeedAmountValue(value, unit) {
+    if (value === null || value === undefined || value === '') return '';
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric <= 0) return '';
+    const amount = Number.isFinite(numeric)
+        ? (Number.isInteger(numeric) ? String(numeric) : String(Math.round(numeric * 10) / 10))
+        : String(value).trim();
+    if (!amount) return '';
+    return unit ? amount + unit : amount;
+}
+
+function getMealFeedItemAmount(item) {
+    if (!item) return '';
+    const directFields = ['portion', 'serving', 'amount', 'quantity', 'serving_size', 'servingSize'];
+    for (const field of directFields) {
+        const value = item[field];
+        if (value === null || value === undefined || value === '') continue;
+        const trimmed = String(value).trim();
+        if (!trimmed) continue;
+        if (/^0+(\.0+)?$/.test(trimmed)) continue;
+        if (/^\d+(\.\d+)?$/.test(trimmed) && (item.unit || item.amount_unit || item.measurement_unit)) {
+            return formatMealFeedAmountValue(trimmed, String(item.unit || item.amount_unit || item.measurement_unit).trim());
+        }
+        return trimmed;
+    }
+
+    const gramFields = ['grams', 'gram_amount', 'amount_g', 'weight_g', 'weightG', 'servingWeightG', 'serving_weight_g'];
+    for (const field of gramFields) {
+        const amount = formatMealFeedAmountValue(item[field], 'g');
+        if (amount) return amount;
+    }
+
+    const mlFields = ['ml', 'milliliters', 'amount_ml', 'volume_ml'];
+    for (const field of mlFields) {
+        const amount = formatMealFeedAmountValue(item[field], 'ml');
+        if (amount) return amount;
+    }
+
+    return '';
+}
+
+function buildMealRecordShareCaption(cardPayload) {
+    if (!cardPayload) return '';
+    const ingredients = Array.isArray(cardPayload.ingredients) ? cardPayload.ingredients : [];
+    const ingredientText = ingredients.length
+        ? ingredients.map(item => {
+            const name = String(item && item.name ? item.name : '').trim();
+            const portion = String(item && item.portion ? item.portion : '').trim();
+            if (!name) return '';
+            return portion ? `${name} (${portion})` : name;
+        }).filter(Boolean).join(', ')
+        : String(cardPayload.foods || '').trim();
+
+    const lines = [];
+    if (cardPayload.meal_type) lines.push(String(cardPayload.meal_type));
+    if (ingredientText) lines.push('Ingredients: ' + ingredientText);
+    if (Number(cardPayload.calories) > 0) lines.push(Math.round(Number(cardPayload.calories)) + ' kcal');
+    lines.push(`Protein ${Math.round(Number(cardPayload.protein || 0))}g | Carbs ${Math.round(Number(cardPayload.carbs || 0))}g | Fat ${Math.round(Number(cardPayload.fat || 0))}g`);
+    return lines.filter(Boolean).join('\n');
+}
+
 function buildMealFeedCardPayload(meal) {
     const foodItemsText = Array.isArray(meal && meal.food_items) && meal.food_items.length
         ? meal.food_items.map(item => item && item.name ? item.name : 'Food').join(', ')
@@ -1682,7 +1782,7 @@ function buildMealFeedCardPayload(meal) {
         ? meal.food_items
             .map(item => ({
                 name: String(item?.name || item?.food_name || '').trim(),
-                portion: String(item?.portion || item?.serving || item?.amount || '').trim(),
+                portion: getMealFeedItemAmount(item),
                 calories: Math.round(Number(item?.calories || 0)),
                 protein: Math.round(Number(item?.protein_g || item?.protein || 0)),
                 carbs: Math.round(Number(item?.carbs_g || item?.carbs || 0)),
@@ -1691,7 +1791,7 @@ function buildMealFeedCardPayload(meal) {
             .filter(item => item.name !== '')
         : [];
 
-    return {
+    const cardPayload = {
         card_type: 'meal',
         meal_id: (meal && meal.id) || null,
         meal_type: mealType,
@@ -1704,6 +1804,9 @@ function buildMealFeedCardPayload(meal) {
         fat: Math.round(Number((meal && meal.fat_g) || 0)),
         photo_url: hasPhoto ? meal.photo_url : null
     };
+
+    cardPayload.share_caption = buildMealRecordShareCaption(cardPayload);
+    return cardPayload;
 }
 
 async function shareMealRecordToFeed(meal, btn) {
@@ -1721,6 +1824,10 @@ async function shareMealRecordToFeed(meal, btn) {
     }
     if (isMealSharedToFeed(meal.id)) {
         showToast('This meal is already shared to Feed', 'info');
+        return null;
+    }
+    if (isMealFeedShareUsedToday()) {
+        showToast('You have already shared a meal to Feed today', 'info');
         return null;
     }
 
@@ -1760,6 +1867,7 @@ async function shareMealRecordToFeed(meal, btn) {
         }
 
         markMealSharedToFeed(meal.id);
+        markMealFeedShareUsedToday();
         if (typeof loadPhotoFeed === 'function') {
             loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
         }
@@ -1771,14 +1879,14 @@ async function shareMealRecordToFeed(meal, btn) {
             btn.style.opacity = '1';
         }
         const pointsAwarded = Number(story?.points_awarded || 0);
-        showToast(pointsAwarded > 0 ? `Meal shared to Feed! +${pointsAwarded} XP` : 'Meal shared to Feed!', 'success');
+        showToast(pointsAwarded > 0 ? `Meal shared to Feed! +${pointsAwarded} XP` : 'Meal shared to Feed. Daily meal-share XP already used.', 'success');
         return story;
     } catch (error) {
         console.error('Error sharing meal to feed:', error);
         showToast('Failed to share meal. Please try again.', 'error');
         if (btn) {
             btn.disabled = false;
-            btn.textContent = btn.dataset.originalText || 'Share meal to Feed (+1 XP)';
+            btn.textContent = btn.dataset.originalText || getMealFeedShareButtonText();
             btn.style.opacity = '1';
         }
         return null;
@@ -1802,6 +1910,7 @@ function showMealFeedSharePrompt(meal) {
     if (!meal || !meal.id) return;
     if (String(meal.meal_type || '').toLowerCase() === 'water') return;
     if (isMealSharedToFeed(meal.id)) return;
+    if (isMealFeedShareUsedToday()) return;
 
     window._pbbPendingMealFeedShare = meal;
     closeMealFeedSharePrompt();
@@ -8405,9 +8514,10 @@ function openMealDetailPopup(index) {
     const shareBtn = document.getElementById('mealDetailShareBtn');
     if (shareBtn) {
         const alreadyShared = isMealSharedToFeed(meal.id);
-        shareBtn.disabled = alreadyShared;
-        shareBtn.textContent = alreadyShared ? 'Shared to Feed' : 'Share meal to Feed (+1 XP)';
-        shareBtn.style.opacity = alreadyShared ? '0.85' : '1';
+        const dailyUsed = isMealFeedShareUsedToday();
+        shareBtn.disabled = alreadyShared || dailyUsed;
+        shareBtn.textContent = alreadyShared ? 'Shared to Feed' : (dailyUsed ? 'Meal share used today' : getMealFeedShareButtonText());
+        shareBtn.style.opacity = (alreadyShared || dailyUsed) ? '0.85' : '1';
     }
 
     // Format time

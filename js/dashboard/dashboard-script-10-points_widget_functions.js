@@ -4,9 +4,9 @@
 
 const POINTS_FOR_FREE_WEEK = 200;
 const MAX_LEVEL = 99;
-const LEVEL_BASE_XP_PER_LEVEL = 3;
-const LEVEL_CURVE_MULTIPLIER = 0.3;
-const LEVEL_CURVE_EXPONENT = 2.1;
+const LEVEL_CURVE_MULTIPLIER = 0.07;
+const LEVEL_CURVE_EXPONENT = 2.4;
+const LEVEL_LINEAR_BONUS = 0.7;
 
 function pbbPointsWeightUnit() {
     try {
@@ -34,8 +34,7 @@ function pbbPointsFormatVolumeFromKg(volumeKg) {
 // Calculate points required for a given level
 function getPointsForLevel(level) {
     if (level <= 1) return 0;
-    const levelIndex = level - 1;
-    return Math.floor(LEVEL_BASE_XP_PER_LEVEL * levelIndex + LEVEL_CURVE_MULTIPLIER * Math.pow(levelIndex, LEVEL_CURVE_EXPONENT));
+    return Math.floor(LEVEL_CURVE_MULTIPLIER * Math.pow(level, LEVEL_CURVE_EXPONENT) + LEVEL_LINEAR_BONUS * level);
 }
 
 // Calculate user's current level from lifetime points

@@ -47,6 +47,7 @@ const {
     isAlwaysNeedsYouPerson,
     getAppProblemAutoSendHoldReason,
     buildShannonDmTuningBlock,
+    buildBalanceIdentityElicitationBlock,
     buildOpenAIShannonVoiceBlock,
     loadEditExamples,
     loadResponseTimingProfile,
@@ -315,6 +316,7 @@ async function generateDraftReply({ clientName, clientSnapshot, conversationHist
     const relationshipDiscoveryBlock = buildRelationshipDiscoveryBlock();
     const heardFirstConversationBlock = buildHeardFirstConversationBlock();
     const shannonDmTuningBlock = buildShannonDmTuningBlock();
+    const identityElicitationBlock = buildBalanceIdentityElicitationBlock();
     const openAiShannonVoiceBlock = buildOpenAIShannonVoiceBlock();
 
     // Inline any photos attached to the CURRENT client message so Gemini can
@@ -395,7 +397,7 @@ Use this batch as context, not a checklist. First decide what is still live: dir
         if (onboardingPhase.challengeAccepted) {
             challengeLine = `${clientName} has already accepted a wellness challenge with Shannon — DON'T re-pitch. Reference it naturally if relevant ("excited to verse you in the quiz!") but focus on rapport.`;
         } else if (clientReplyCount < 3) {
-            challengeLine = `EARLY conversation (${clientReplyCount} client message${clientReplyCount === 1 ? '' : 's'} so far). DO NOT pitch any challenge, program, or call-to-action yet. Just chat. Ask a genuine follow-up question that builds on what they just said — keep getting to know them. The pitch comes later.`;
+            challengeLine = `EARLY conversation (${clientReplyCount} client message${clientReplyCount === 1 ? '' : 's'} so far). DO NOT pitch any challenge, program, or call-to-action yet. Just chat. Use a short acknowledgement or statement first, then ask one light follow-up only if it naturally builds on what they just said. If no useful detail is missing and Shannon has not asked about their day/week yet, a simple "how's your day going?" is enough. The pitch comes later.`;
         } else {
             challengeLine = `Conversation is warming up (${clientReplyCount} client messages now). If there's a NATURAL opening in this reply, soft-pitch a wellness challenge framed as a favour: "I need someone to verse me in a Health IQ quiz challenge, you keen?" If their goal is activity/weight-loss focused, a step challenge fits too. Only ONE pitch — if they dodge, drop it and keep building rapport. If their current message is heavy/vulnerable (struggle, plateau, doubt), validate first and skip the pitch this turn.`;
         }
@@ -405,7 +407,7 @@ Use this batch as context, not a checklist. First decide what is still live: dir
 ONBOARDING MODE (active — ${onboardingPhase.hoursSinceAssigned}h since ${clientName} signed up, ${clientReplyCount} client message${clientReplyCount === 1 ? '' : 's'} into the convo):
 This is the first 72 hours of the coaching relationship. Shannon is still getting to know them. Your job for these replies:
 - Stay genuinely curious, but do not ask a question every reply. A short reaction, direct answer, or encouragement is fine when that fits. When you do ask, one question per reply, not a quiz.
-- Prefer questions that teach Shannon something useful about their life: work rhythm, household/family, stress, support, food setup, training history, what they love, what ticks them off, what makes consistency hard, or what makes healthy choices easier.
+- When a question is actually needed, prefer one that teaches Shannon something useful about their life: work rhythm, household/family, stress, support, food setup, training history, what they love, what ticks them off, what makes consistency hard, or what makes healthy choices easier.
 - Anchor on what you actually know about them (memory + onboarding facts below) — proves you're paying attention.
 - Match their energy and mirror their interests when they share something (skateboarding, hiking, whatever).
 - Never assume facts that aren't in the data — Shannon got burned assuming a client was vegan when she wasn't.
@@ -457,12 +459,14 @@ ${nameUsePolicyBlock}
 ${relationshipDiscoveryBlock}
 ${heardFirstConversationBlock}
 ${shannonDmTuningBlock}
+${identityElicitationBlock}
 ${openAiShannonVoiceBlock}
 ${checkinThreadBlock}
 
 CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
 - When that answer completes the small thread, do not turn it into another question by default. A practical steer, acknowledgement, or clean pause is often better for active clients.
+- If they just gave their current status, feeling, pain, soreness, or symptom answer, do not ask "how's it feeling today", "how are you feeling", or "still pain?" back at them. Treat it as answered, acknowledge it, then use a statement or practical next step unless a different missing detail changes what Shannon should do.
 - Older messages are not automatically unresolved. Respond to previous statements only when they are still carrying the real ask, emotion, risk, or useful context. Otherwise let them drop.
 - If the newest message is light media/banter attached to a heavier earlier message, decide whether the media is just a softener before writing. Do not let a pet photo or quick joke erase a vulnerable disclosure or practical request.
 - If they admit they have been "slacking", off track, missed training, or had a rough week, don't reply with filler like "ahh yeah man" on its own, don't ask "wby"/"what about you", and don't repeat the same broad question. Validate lightly, then ask one concrete follow-up about what got in the way or what small session they can lock in next.

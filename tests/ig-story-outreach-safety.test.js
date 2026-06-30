@@ -736,6 +736,44 @@ const ambiguousSubstanceSafety = assessStoryCommentSafety({
 assert.strictEqual(ambiguousSubstanceSafety.safeToComment, false);
 assert.strictEqual(ambiguousSubstanceSafety.reason, 'ambiguous_substance_context');
 
+const unsupportedFoodBrandGuessSafety = assessStoryCommentSafety({
+    storyOwner: 'witchy_chickpea',
+    description: 'A close-up photo of a sliced red tamarillo fruit on a plate with a spoonful of yoghurt.',
+    visibleText: '',
+    comment: 'tamar valley dairy? hows it go?',
+});
+assert.strictEqual(unsupportedFoodBrandGuessSafety.safeToComment, false);
+assert.strictEqual(unsupportedFoodBrandGuessSafety.reason, 'unsupported_product_or_brand_guess');
+
+const storyReplyUiMisreadSafety = assessStoryCommentSafety({
+    storyOwner: 'witchy_chickpea',
+    description: 'The story screenshot shows a reply screen with two food-related story tiles (one says tamar valley dairy) and other unrelated tiles.',
+    visibleText: '',
+    comment: 'tamar valley dairy? hows it go?',
+});
+assert.strictEqual(storyReplyUiMisreadSafety.safeToComment, false);
+assert.strictEqual(storyReplyUiMisreadSafety.reason, 'instagram_ui_context_misread');
+
+const groundedFoodComboSafety = assessStoryCommentSafety({
+    storyOwner: 'coffee.wine',
+    description: 'A table with a coffee and a glass of wine side by side.',
+    visibleText: '',
+    comment: 'coffee and wine? hows that combo go?',
+});
+assert.strictEqual(groundedFoodComboSafety.safeToComment, true);
+
+const unsupportedFoodBrandVideoSalvage = assessStillsOnlyVideoSalvageContext({
+    description: 'A still frame shows a sliced red tamarillo fruit on a plate.',
+    visibleText: '',
+    comment: 'tamar valley dairy? hows it go?',
+    surfaceContext: {
+        videoDetected: true,
+        videoEvidenceStatus: 'omitted_after_video_bridge_failure',
+    },
+});
+assert.strictEqual(unsupportedFoodBrandVideoSalvage.safeToComment, false);
+assert.strictEqual(unsupportedFoodBrandVideoSalvage.reason, 'unsupported_product_or_brand_guess');
+
 const babiesSafety = assessStoryCommentSafety({
     storyOwner: 'chelsea_heald18',
     description: 'Two babies are sitting in a blue net swing at a playground.',

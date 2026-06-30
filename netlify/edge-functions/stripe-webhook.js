@@ -138,7 +138,7 @@ async function retrieveSubscriptionForSession(stripe, session) {
     return stripe.subscriptions.retrieve(subscriptionId);
 }
 
-async function patchUsersForSubscription(payload) {
+async function patchUsersForSubscription(payload, { patchByEmail = true } = {}) {
     const update = {
         stripe_customer_id: payload.stripe_customer_id,
         subscription_status: payload.subscription_status,
@@ -163,7 +163,7 @@ async function patchUsersForSubscription(payload) {
         await patch(`users?stripe_customer_id=eq.${encodeURIComponent(payload.stripe_customer_id)}`);
     }
 
-    if (payload.email) {
+    if (patchByEmail && payload.email) {
         await patch(`users?email=ilike.${encodeURIComponent(payload.email)}`);
     }
 
@@ -300,8 +300,9 @@ async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscripti
 
     if (!payload.stripe_customer_id || !payload.stripe_subscription_id) return null;
 
+    const isActive = ACTIVE_SUBSCRIPTION_STATUSES.has(status);
     const mirrorRow = await mirrorStripeSubscription(payload);
-    const patchedUsers = await patchUsersForSubscription(payload);
+    const patchedUsers = await patchUsersForSubscription(payload, { patchByEmail: isActive });
     const userIds = patchedUsers.map(row => row.id);
 
     if (mirrorRow && userIds[0] && mirrorRow.user_id !== userIds[0]) {
@@ -315,8 +316,12 @@ async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscripti
         );
     }
 
-    await syncLinkedLeadStages(userIds, status);
-    await recordStripeGrowthOutcome({ payload, mirrorRow, userIds, stripeEvent, status });
+    if (isActive || userIds.length > 0) {
+        await syncLinkedLeadStages(userIds, status);
+        await recordStripeGrowthOutcome({ payload, mirrorRow, userIds, stripeEvent, status });
+    } else {
+        console.log(`[stripe-sync] ${stripeEvent.type} subscription ${subscription.id} mirrored without user/status side effects`);
+    }
     console.log(`[stripe-sync] ${stripeEvent.type} subscription ${subscription.id} -> ${patchedUsers.length} user row(s)`);
     return {
         payload,

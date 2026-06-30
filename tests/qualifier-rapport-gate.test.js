@@ -5,10 +5,14 @@ const path = require('path');
 const {
     STAGES,
     freshQualifier,
+    normalizeQualifier,
+    normalizeBehaviorProfile,
     inferNativeStoryHookContext,
     inferHookContext,
     formatQualifierCustomDataText,
     applyRapportGate,
+    summarizeForFcmData,
+    buildQualifierRelationshipBlock,
     hasChallengeInviteReadinessSignal,
     hasEarnedChallengeInviteMoment,
     isUnsafeStockDiscoveryQuestion,
@@ -125,6 +129,7 @@ assert.match(commitmentStage.strategy, /exact context|stock invite line/i);
 const igDraftSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/ig-instant-draft.js'), 'utf8');
 const qualifierSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/qualifier-engine.js'), 'utf8');
 const clientContextSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/client-context.js'), 'utf8');
+const adminSource = fs.readFileSync(path.join(__dirname, '../admin-dashboard.html'), 'utf8');
 const codexBriefSource = fs.readFileSync(path.join(__dirname, '../CODEX.md'), 'utf8');
 assert.match(igDraftSource, /If they only ask "what's Balance\?"/);
 assert.match(igDraftSource, /make any coaching mention casual/);
@@ -180,6 +185,12 @@ assert.match(igDraftSource, /one weekly check-in with Shannon/);
 assert.match(igDraftSource, /Free challenge\/free entry is only a fallback/);
 assert.match(igDraftSource, /quick coaching\/app handoff/);
 assert.match(qualifierSource, /not an app explainer/);
+assert.match(qualifierSource, /LEAD BEHAVIOR PROFILE/);
+assert.match(qualifierSource, /hates_being_sold_to/);
+assert.match(qualifierSource, /sales_readiness=identity_confirmed/);
+assert.match(adminSource, /Lead behavior read/);
+assert.match(adminSource, /MOVE NOW/);
+assert.doesNotMatch(adminSource, /ASK NOW/);
 assert.match(igDraftSource, /Earn the next response/);
 assert.match(igDraftSource, /SHANNON FOLLOW-UP QUESTION FINGERPRINT/);
 assert.match(igDraftSource, /why by April\?/);
@@ -200,6 +211,52 @@ assert.strictEqual(
     ], 'training is the other thing i struggle with'),
     3
 );
+
+const normalizedProfile = normalizeBehaviorProfile({
+    primary_need: 'Accountability',
+    protection_pattern: 'fear-of-failing-again',
+    autonomy_sensitivity: 'HIGH',
+    sales_readiness: 'bridge ready',
+    identity_signal: 'does better with structure than winging it',
+    best_next_move: 'lower pressure, label the structure gap, then offer details',
+});
+assert.deepStrictEqual(normalizedProfile, {
+    primary_need: 'accountability',
+    protection_pattern: 'fear_of_failing_again',
+    autonomy_sensitivity: 'high',
+    sales_readiness: 'bridge_ready',
+    identity_signal: 'does better with structure than winging it',
+    best_next_move: 'lower pressure, label the structure gap, then offer details',
+});
+
+const normalizedQualifier = normalizeQualifier({
+    ...base,
+    behavior_profile: {
+        primary_need: 'food_simplicity',
+        protection_pattern: 'hates_being_sold_to',
+        autonomy_sensitivity: 'high',
+        sales_readiness: 'protection_named',
+        identity_signal: 'does not want another random plan',
+        best_next_move: 'protect autonomy before mentioning Starter Coaching',
+    },
+});
+assert.strictEqual(normalizedQualifier.behavior_profile.primary_need, 'food_simplicity');
+assert.strictEqual(normalizedQualifier.behavior_profile.protection_pattern, 'hates_being_sold_to');
+assert.strictEqual(normalizedQualifier.behavior_profile.autonomy_sensitivity, 'high');
+assert.strictEqual(normalizedQualifier.behavior_profile.sales_readiness, 'protection_named');
+
+const qualifierBlock = buildQualifierRelationshipBlock(normalizedQualifier);
+assert.match(qualifierBlock, /Lead behavior profile/);
+assert.match(qualifierBlock, /Primary need: Food Simplicity/);
+assert.match(qualifierBlock, /Protection pattern: Hates Being Sold To/);
+assert.match(qualifierBlock, /Best next move: protect autonomy before mentioning Starter Coaching/);
+
+const qualifierFcm = summarizeForFcmData(normalizedQualifier);
+assert.strictEqual(qualifierFcm.qualifierPrimaryNeed, 'food_simplicity');
+assert.strictEqual(qualifierFcm.qualifierProtectionPattern, 'hates_being_sold_to');
+assert.strictEqual(qualifierFcm.qualifierAutonomySensitivity, 'high');
+assert.strictEqual(qualifierFcm.qualifierSalesReadiness, 'protection_named');
+assert.strictEqual(qualifierFcm.qualifierBestNextMove, 'protect autonomy before mentioning Starter Coaching');
 
 assert.strictEqual(
     hasChallengeInviteReadinessSignal("Yeah, exactly. It feels like I'm constantly trying to piece things together myself, and I just want to feel like my effort is actually paying off."),

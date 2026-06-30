@@ -9122,7 +9122,7 @@ if(!window._pbbIsIOSSafari) {
         </div>
 
         <!-- Top Levels Dropdown -->
-        <section id="feed-level-leaderboard-card" class="feed-level-leaderboard is-collapsed" aria-label="Top Levels">
+        <section id="feed-level-leaderboard-card" class="feed-level-leaderboard is-collapsed" aria-label="Top Levels" onclick="window.pbbToggleFeedLevelLeaderboardFromEvent ? window.pbbToggleFeedLevelLeaderboardFromEvent(event) : (window.toggleFeedLevelLeaderboard && window.toggleFeedLevelLeaderboard())">
             <button type="button" class="feed-level-leaderboard-toggle" onclick="window.pbbToggleFeedLevelLeaderboardFromEvent ? window.pbbToggleFeedLevelLeaderboardFromEvent(event) : (window.toggleFeedLevelLeaderboard && window.toggleFeedLevelLeaderboard())" aria-expanded="false" aria-controls="feed-level-leaderboard-body">
                 <span class="feed-level-leaderboard-badge">10</span>
                 <span class="feed-level-leaderboard-copy">
@@ -9158,7 +9158,13 @@ if(!window._pbbIsIOSSafari) {
                 if (body) body.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
             }
 
+            function isFeedLevelLeaderboardHeaderEvent(event) {
+                var target = event && event.target;
+                return !(target && target.closest && target.closest('#feed-level-leaderboard-body'));
+            }
+
             function runFeedLevelToggle(forceOpen, event) {
+                if (event && !isFeedLevelLeaderboardHeaderEvent(event)) return;
                 if (event) {
                     if (typeof event.preventDefault === 'function') event.preventDefault();
                     if (typeof event.stopPropagation === 'function') event.stopPropagation();
@@ -9199,16 +9205,9 @@ if(!window._pbbIsIOSSafari) {
             }
 
             function bindFeedLevelToggleTouch() {
-                var toggle = document.querySelector('#feed-level-leaderboard-card .feed-level-leaderboard-toggle');
-                if (!toggle || toggle.dataset.pbbTouchBound === 'true') return;
-                toggle.dataset.pbbTouchBound = 'true';
-                toggle.addEventListener('pointerup', function(event) {
-                    if (event.pointerType === 'mouse') return;
-                    window.pbbToggleFeedLevelLeaderboardFromEvent(event);
-                }, { passive: false });
-                toggle.addEventListener('touchend', function(event) {
-                    window.pbbToggleFeedLevelLeaderboardFromEvent(event);
-                }, { passive: false });
+                var card = document.getElementById('feed-level-leaderboard-card');
+                if (!card) return;
+                delete card.dataset.pbbTouchBound;
             }
 
             bindFeedLevelToggleTouch();
@@ -10143,7 +10142,7 @@ if(!window._pbbIsIOSSafari) {
                 <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 15px;">
                     <div style="color: white; -webkit-text-fill-color: white; font-weight: 900; font-size: 0.96rem; margin-bottom: 10px;">Fast daily route</div>
                     <div style="display: flex; flex-direction: column; gap: 9px;">
-                        <div style="display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 50%; background: rgba(245,217,138,0.18); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-weight: 950;">1</span><span style="color: rgba(255,255,255,0.84); font-size: 0.84rem; line-height: 1.35;">Log meals, hit nutrition targets, and share one logged meal.</span><span style="color: #f5d98a; font-weight: 950; font-size: 0.85rem;">+4 XP</span></div>
+                        <div style="display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 50%; background: rgba(245,217,138,0.18); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-weight: 950;">1</span><span style="color: rgba(255,255,255,0.84); font-size: 0.84rem; line-height: 1.35;">Log meals, hit nutrition targets, and share one logged meal.</span><span style="color: #f5d98a; font-weight: 950; font-size: 0.85rem;">+18 XP</span></div>
                         <div style="display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 50%; background: rgba(245,217,138,0.18); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-weight: 950;">2</span><span style="color: rgba(255,255,255,0.84); font-size: 0.84rem; line-height: 1.35;">Log a workout, then share the workout card.</span><span style="color: #f5d98a; font-weight: 950; font-size: 0.85rem;">+2 XP</span></div>
                         <div style="display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 50%; background: rgba(245,217,138,0.18); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-weight: 950;">3</span><span style="color: rgba(255,255,255,0.84); font-size: 0.84rem; line-height: 1.35;">Post one Feed check-in and comment on someone else's post.</span><span style="color: #f5d98a; font-weight: 950; font-size: 0.85rem;">+4 XP</span></div>
                         <div style="display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 50%; background: rgba(245,217,138,0.18); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-weight: 950;">4</span><span style="color: rgba(255,255,255,0.84); font-size: 0.84rem; line-height: 1.35;">Finish a daily quiz at 100% and hit 10,000 synced Fitbit steps.</span><span style="color: #f5d98a; font-weight: 950; font-size: 0.85rem;">+7 XP</span></div>
@@ -11878,7 +11877,7 @@ if (window._pbbIsIOSSafari) {
             </div>
             <div class="meal-detail-items" id="mealDetailItems"></div>
             <button class="meal-detail-edit-btn" id="mealDetailShareBtn" onclick="shareCurrentMealToFeed()" style="background: linear-gradient(135deg, #0f766e, #2563eb); color: white; margin-bottom: 10px;">
-                Share meal to Feed (+1 XP)
+                Share meal to Feed (+15 XP)
             </button>
             <button class="meal-detail-edit-btn" id="mealDetailEditBtn" onclick="openEditItemsModal()">
                 ✏️ Edit Items
@@ -12364,6 +12363,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
+    { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'6-Week Challenge', body:"The 6-week challenge sits under your character on Home. Tap it to open the leaderboard or check how to earn XP.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
     { tab:'dashboard', sel:'#challenge-info-actions', title:'Challenge details', body:"Open How to earn XP or Prizes from the challenge leaderboard to see scoring and rewards.", quick: true, condition: function(){ var c = document.getElementById('challenge-info-actions'); return c && c.offsetParent !== null; } },
 
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically.", quick: true },
@@ -12373,7 +12373,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openQuickManualEntry"],.camera-btn-widget[onclick*="openQuickManualEntry"],[title="Quick log calories & macros"]', title:'Quick log calories & macros', body:"Already know the numbers? Tap Quick Log to enter calories and macros directly. It is the fastest way to track something when you do not need AI, a photo, or a barcode." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"],[title="Build a meal"]', title:'Build-a-Meal', body:"Use Build-a-Meal when one meal has a few parts. Add items by photo, barcode, text, or manual entry until the whole plate is saved together." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openRecentMealsModal"],.camera-btn-widget[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Use Recent & saved meals to re-log food you have already tracked. Tap the clock, pick the meal, and it drops back into today." },
-    { tab:'meals', sel:'#meals-log-list,.meal-log-card', title:'Share meals to Feed', body:"Tap a logged meal, then Share meal to Feed. Meals with photos post the meal photo and a caption with ingredients, amounts, calories, and macros.", quick: true },
+    { tab:'meals', sel:'#meals-log-list,.meal-log-card', title:'Share meals to Feed', body:"Tap one logged meal each day, then Share meal to Feed for +15 XP. Meals with photos post the meal photo and a caption with ingredients, amounts, calories, and macros.", quick: true },
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#browse-plans-pill', title:'Your meal plan', body:"Tap here for your AI-generated meal plan for the week — tap any day to see recipes." },
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Profile settings', body:"Open Profile when you need settings, dietary requirements, password changes, character customisation, or to replay this tour later." },
@@ -13264,12 +13264,12 @@ if(!window._pbbIsIOSSafari) {
       body: "Feed now has a composer at the top. Share a thought or encouragement once a day for +2 XP. Add a photo or video if you want."
     },
     {
-      id: 'meal-detail-feed-share-caption-v1',
+      id: 'meal-detail-feed-share-daily-15xp-v1',
       tab: 'meals',
       subtab: 'calorie-tracker',
       sel: '#meals-log-list,.meal-log-card',
       title: 'Share meals to Feed',
-      body: "Tap any logged meal, then Share meal to Feed for +1 XP. Meal posts now include the meal photo when available, plus ingredients, amounts, calories, and macros in the caption."
+      body: "Tap one logged meal each day, then Share meal to Feed for +15 XP. Meal posts include the meal photo when available, plus ingredients, amounts, calories, and macros in the caption."
     },
     {
       id: 'pull-to-refresh-dashboard-v1',
@@ -13358,12 +13358,12 @@ if(!window._pbbIsIOSSafari) {
     condition: function(){ var e = document.getElementById('challenge-info-actions'); return e && e.offsetParent !== null; }
   });
   allFeatures.push({
-    id: 'meal-feed-caption-v1',
+    id: 'meal-feed-daily-15xp-v1',
     tab: 'meals',
     subtab: 'calorie-tracker',
     sel: '#meals-log-list,.meal-log-card',
-    title: 'Meal Feed captions',
-    body: "Meal shares now include the meal photo when available, plus ingredients, amounts, calories, and macros in the caption.",
+    title: 'Daily meal share XP',
+    body: "Share one logged meal to Feed each day for +15 XP. Meal posts include the photo when available, plus ingredients, amounts, calories, and macros.",
     condition: function(){ var e = document.querySelector('#meals-log-list .meal-log-card,.meal-log-card'); return !!(e && e.offsetParent !== null); }
   });
   allFeatures.push({
@@ -16039,13 +16039,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=8';
+            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=9';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=8"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=9"><\/script>');
 }
 </script>
 
@@ -16700,7 +16700,7 @@ if (window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-13.js?v=7';
+                s.src = 'js/dashboard/dashboard-script-13.js?v=8';
                 s.onload = function() {
                     // updateFitGotchi (tamagotchi visual update) is now defined.
                     // loadPointsWidget ran earlier (at script-10 load, ~1500ms) but
@@ -16714,7 +16714,7 @@ if (window._pbbIsIOSSafari) {
             }, 3000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-13.js?v=7"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-13.js?v=8"><\/script>');
     }
     </script>
 
@@ -16785,12 +16785,12 @@ if(!window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-15.js?v=8';
+                s.src = 'js/dashboard/dashboard-script-15.js?v=9';
                 document.head.appendChild(s);
             }, 3500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-15.js?v=8"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-15.js?v=9"><\/script>');
     }
     </script>
 

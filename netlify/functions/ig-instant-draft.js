@@ -49,6 +49,7 @@ const {
     isAlwaysNeedsYouPerson,
     getAppProblemAutoSendHoldReason,
     buildShannonDmTuningBlock,
+    buildBalanceIdentityElicitationBlock,
     buildOpenAIShannonVoiceBlock,
     loadEditExamples,
     loadResponseTimingProfile,
@@ -815,13 +816,13 @@ Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, th
   3. "I'm In - save me a spot!"
 Also treat as offer inquiry: "1:1 coaching", "one-on-one coaching", "starter coaching", "online coaching", "what's included", "your program" when they clearly mean the offer, "saw your ad", "wanna join", "work with you", "send me the link", "I'm in", or "I need help / I don't know what I'm doing". Do NOT treat vague "keen", "interested", "yeah sounds good", or friendly banter as offer intent unless the same message clearly points at coaching/program/link.
 
-Important: when there is no prior tracked conversation, do NOT assume the lead started the DM. Most first captured lead messages happen because Shannon commented on or replied to their story/post natively, and that opener is not visible in ManyChat. Their reply may be tiny or ambiguous because they are answering that unseen opener. Treat it as an open door, build rapport from whatever signal exists, and ask one light human question unless they are clearly asking about coaching/link or clearly asking Shannon for help because they feel stuck.
+Important: when there is no prior tracked conversation, do NOT assume the lead started the DM. Most first captured lead messages happen because Shannon commented on or replied to their story/post natively, and that opener is not visible in ManyChat. Their reply may be tiny or ambiguous because they are answering that unseen opener. Treat it as an open door and build rapport from whatever signal exists. Use one light human move, which can be a short statement. Ask a question only when that is clearly the best next text, or when there is no better hook and Shannon has not asked a basic day/week opener yet.
 
 SHANNON FOLLOW-UP QUESTION FINGERPRINT:
-- Shannon's real IG follow-ups are usually tiny: a quick acknowledgement, then one concrete question from the exact detail they just gave.
+- Shannon's real IG follow-ups are usually tiny: a quick acknowledgement, then one concrete question or statement from the exact detail they just gave.
 - Good shape: "yeah okay" / "nice as" / "hell yeah" / "fair" + one short question like "why by April?", "how long for?", "what part first?", "food or training?", "where at?", "how did that go?", or "what gets in the way?".
 - If the lead gives a bare answer to Shannon's last question, do not ask a new intake bundle. Acknowledge the answer and ask the next narrow thing only if it is useful.
-- Shannon rarely stacks questions in normal follow-up. One question is the default. Two questions is only for a clear intake moment. Three or more questions should almost never happen.
+- Shannon rarely stacks questions in normal follow-up. One question is the maximum default, not a requirement. Two questions is only for a clear intake moment. Three or more questions should almost never happen.
 - Avoid polished therapist/coach questions. Replace "what does that look like for you?", "what kind of difference would that make?", "what usually makes it hard?", "anything in particular making it hectic?", and "how are you finding it?" with a question built from their actual nouns.
 - Do not jump from a normal-life answer straight to the challenge. Use the follow-up to understand the blocker, preference, or context first.
 
@@ -944,18 +945,21 @@ function finalizeDraftChunksFromRawText(rawText, {
         linkedUserId,
     });
     const cleaned = splitCoachDraftIntoDmBubbles(
-        suppressStoryLocationQuestionsInDraftChunks(
-            suppressPetSpeciesGuessingInDraftChunks(suppressAlreadyKnownContextQuestionsInDraftChunks(baseChunks, {
-                contextText: knownContextText,
-            }), {
-                currentMessageText,
-                qualifier,
-                nativeStoryContextSummary,
-            }),
-            {
-                currentMessageText,
-                nativeStoryContextSummary,
-            }
+        suppressBareStoryMentionClarifierInDraftChunks(
+            suppressStoryLocationQuestionsInDraftChunks(
+                suppressPetSpeciesGuessingInDraftChunks(suppressAlreadyKnownContextQuestionsInDraftChunks(baseChunks, {
+                    contextText: knownContextText,
+                }), {
+                    currentMessageText,
+                    qualifier,
+                    nativeStoryContextSummary,
+                }),
+                {
+                    currentMessageText,
+                    nativeStoryContextSummary,
+                }
+            ),
+            { currentMessageText }
         )
             .map(c => stripObviousMediaReceiptPreamble(c, { hasDecodedMedia }))
             .map((c, i) => i === 0
@@ -980,6 +984,9 @@ function finalizeDraftChunksFromRawText(rawText, {
 }
 
 function buildEmptyMediaDraftFallbackChunks({ mediaDecode = {}, currentMessageText = '' } = {}) {
+    if (isBareStoryMentionNotificationText(currentMessageText)) {
+        return ['oh hell yeah!'];
+    }
     const current = replaceIgMediaMarkers(String(currentMessageText || ''), { photo: 'photo', audio: 'voice note', video: 'video' }).toLowerCase();
     const audioCount = Number(mediaDecode.audio_url_count || mediaDecode.audioUrlCount || 0);
     const photoCount = Number(mediaDecode.photo_url_count || mediaDecode.image_url_count || mediaDecode.photoUrlCount || 0);
@@ -1202,7 +1209,7 @@ function pitchHintForStage(stage) {
     }
     switch (stage) {
         case 'qualifying':
-            return "Conversation is warming up. Keep rapport natural, but make it create momentum. Ask one useful follow-up only when it moves the exact blocker forward. If the current message is simple banter, just banter. If they have already shared a clear food/training/energy/consistency blocker, do not ask another unrelated human-context question. Mention Balance Starter Coaching when they ask how to start, ask for the link/details, ask about coaching, clearly ask Shannon for help because they feel stuck, or the qualifier context shows Shannon already has a relationship anchor plus enough goal/blocker context for a soft bridge. When bridging, anchor it to their exact situation and ask if they want details instead of using a stock invite line. A vague warm reply is not a coaching opening by itself. Do not offer to write a standalone meal plan or workout program in DMs. The app helps set those up after they start.";
+            return "Conversation is warming up. Keep rapport natural, but make it create momentum. Use one useful statement-led follow-up when it moves the exact blocker forward. If the current message is simple banter, just banter. If they have already shared a clear food/training/energy/consistency blocker, do not ask another unrelated human-context question. Mention Balance Starter Coaching when they ask how to start, ask for the link/details, ask about coaching, clearly ask Shannon for help because they feel stuck, or the qualifier context shows Shannon already has a relationship anchor plus enough goal/blocker context for a soft bridge. When bridging, anchor it to their exact situation and leave a low-pressure details handle instead of using a stock invite line. A vague warm reply is not a coaching opening by itself. Do not offer to write a standalone meal plan or workout program in DMs. The app helps set those up after they start.";
         case 'invited':
             return "You've already mentioned Starter Coaching. DON'T re-pitch. Answer their questions plainly. If they're close to signing up, help them across the line. If they are not ready yet, ask one useful question only if it helps the next step.";
         case 'in_app':
@@ -1231,7 +1238,7 @@ BALANCE STARTER COACHING LINK:
 - If the latest message asks to reconnect with Balance, the app/helper, login, password, account access, or any app bug, treat it as support first and do not send the coaching link.
 - Keep the link handoff light, not a brochure: stoked they are keen, here's the link, it has the quick info on coaching and how Balance works, check it out, then come back to Shannon here to chat through it.
 - Frame it as low-ticket online coaching with one weekly check-in. Mention XP or app details only when they ask what is included or need the fuller rundown.
-- If they only ask a general help question and have not asked for coaching details/link, do not send the link yet. Reply to the question and ask a low-pressure permission question if Starter Coaching might fit.
+- If they only ask a general help question and have not asked for coaching details/link, do not send the link yet. Reply to the question and use a low-pressure statement-led bridge if Starter Coaching might fit.
 - If they ask whether it is local/in-person or mention they already have a PT/trainer, do not send the link yet. Answer that Starter Coaching is online through Balance with one weekly check-in and check whether that would still suit them.`;
 }
 
@@ -1280,7 +1287,7 @@ Starter Coaching has already been offered. If they sound keen, ask for details/l
         return `
 
 EARNED STARTER COACHING BRIDGE:
-This unlinked lead has enough relationship and goal/blocker context, plus at least 3 meaningful lead replies, for a soft bridge if it fits the newest message. Do not send the link yet. Do not make it a brochure. The move is one casual line anchored to what they just said, with Starter Coaching as the natural next step. If they have not asked for the link/details yet, ask if they would be keen or want the details. Save the app feature rundown for when they ask what is included. If the newest message is a clear no/not-yet signal, hold off and just reply to that.`;
+This unlinked lead has enough relationship and goal/blocker context, plus at least 3 meaningful lead replies, for a soft bridge if it fits the newest message. Do not send the link yet. Do not make it a brochure. The move is one casual line anchored to what they just said, with Starter Coaching as the natural next step. If they have not asked for the link/details yet, use a statement like "I can send the details through here" rather than a stock yes/no close. Save the app feature rundown for when they ask what is included. If the newest message is a clear no/not-yet signal, hold off and just reply to that.`;
     }
     return '';
 }
@@ -1516,7 +1523,7 @@ This thread belongs to Shannon's personal acquisition account.
 - Before 3 meaningful lead replies, only move to coaching if they directly ask for help, ask how to start, ask what is included, ask about coaching, or ask for the link.
 - Earn the next response without interrogating: each reply should answer the direct ask, mirror the sharpest hook, add a tiny useful lens, give a strong specific reaction, or ask one precise question about the real blocker/preference. Generic validation plus a broad question is not enough, but light banter does not need a question every turn.
 - If they want a local/in-person trainer or already have a PT/coach, explore that preference before any invite or link.
-- When the earned window opens, stop drifting into pen-pal mode. Ask one casual permission bridge, do not send the link unless they accept.
+- When the earned window opens, stop drifting into pen-pal mode. Use one casual statement-led bridge, do not send the link unless they accept.
 - Keep everything sounding like Shannon personally texting. Never mention tests, auto-send, algorithms, learning, or system rules.`;
     }
     if (!isCocosBotAccount(botAccount)) return '';
@@ -1570,7 +1577,7 @@ function buildAcquisitionStyleBlock({ leadStage, linkedUserId } = {}) {
 ACQUISITION STYLE:
 - Human first, coach second, but not pen-pal forever. Learn a normal-life anchor when there is no clear help signal yet: where they're based, kids/family, work/life rhythm, cooking situation, training background, why they replied, what they really love, or what genuinely ticks them off/stresses them.
 - When a clear food, training, energy, body, confidence, consistency, or time blocker is already visible, stop collecting unrelated human context and move that exact blocker forward.
-- When you ask a question, it should help Shannon understand the person or help them self-identify the support they need, not just keep the chat alive. Normal back-and-forth is allowed, but it should create momentum.
+- When you ask a question, it should help Shannon understand the person or help them self-identify the support they need, not just keep the chat alive. Prefer a useful label/statement when it can do the same job. Normal back-and-forth is allowed, but it should create momentum.
 - Shannon's real follow-up pattern from IG is: tiny acknowledgement, then one specific question from the exact newest detail. Use short concrete handles like "why by April?", "how long for?", "what part first?", "food or training?", "where at?", "how did that go?", or "what gets in the way?".
 - Earn the next response without interrogating. Every lead reply from Shannon should contain at least one reason to continue: a direct answer, their sharpest hook reflected back, a tiny useful lens, a strong specific reaction, or one precise question about their blocker/preference/objection.
 - shan_n_sunny weakness to correct: drafts can be too generic and fail to progress. Before finalising, check whether the reply would still fit 100 other leads. If yes, rewrite it around this person's exact thread and add one specific next handle. Do not settle for passive mirroring, generic praise, or "that makes sense" unless the moment is clearly closing.
@@ -1825,6 +1832,38 @@ function suppressStoryLocationQuestionsInDraftChunks(chunks, { currentMessageTex
     return [/\b(?:view|beach|sunset|sunrise|ocean|sea|coast|waterfront)\b/i.test(contextText)
         ? 'that view is unreal'
         : 'looks like a good spot'];
+}
+
+function normalizeBareStoryMentionText(text) {
+    return replaceIgMediaMarkers(String(text || ''), { photo: 'photo', audio: 'voice note', video: 'video' })
+        .toLowerCase()
+        .replace(/https?:\/\/\S+/g, ' ')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function isBareStoryMentionNotificationText(text) {
+    const normalized = normalizeBareStoryMentionText(text);
+    if (!normalized) return false;
+    const words = normalized.split(' ').filter(Boolean);
+    if (words.length > 10) return false;
+    return /^(?:[a-z0-9]+\s+)?(?:mentioned|tagged)\s+you\s+(?:in|on)\s+(?:(?:a|the|their)\s+)?(?:story|post|photo|picture|image|reel|video)(?:\s+(?:story|post|photo|picture|image|reel|video|mention|attachment))*$/.test(normalized);
+}
+
+const BARE_STORY_MENTION_REDUNDANT_REPLY_RE = /\b(?:tagged|mentioned)\s+me\s+(?:in|on)\s+(?:(?:a|the|their)\s+)?(?:story|post|photo|picture|image|reel|video)\b/i;
+
+function suppressBareStoryMentionClarifierInDraftChunks(chunks, { currentMessageText = '' } = {}) {
+    const input = Array.isArray(chunks) ? chunks : [];
+    if (!isBareStoryMentionNotificationText(currentMessageText)) return input;
+    if (!input.length) return input;
+
+    const joined = input.join(' ').trim();
+    if (!joined) return input;
+    if (joined.includes('?') || BARE_STORY_MENTION_REDUNDANT_REPLY_RE.test(joined) || /\bhonou?red\b/i.test(joined)) {
+        return ['oh hell yeah!'];
+    }
+    return input;
 }
 
 const PET_NAME_QUESTION_RE = /\b(?:what(?:'s|s| is)|what are)\s+(?:their|the|your|these|those)\s+names?\b/i;
@@ -2246,6 +2285,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
     const heardFirstConversation = buildHeardFirstConversationBlock();
     const shannonDmTuning = buildShannonDmTuningBlock();
+    const identityElicitation = buildBalanceIdentityElicitationBlock();
     const openAiShannonVoice = buildOpenAIShannonVoiceBlock();
     const isSalesLeadThread = isSalesAcquisitionThread({ leadStage, linkedUserId });
     const accountExperimentBlock = isSalesLeadThread ? buildAccountExperimentBlock(botAccount) : '';
@@ -2314,7 +2354,8 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const hadAudioUrls = audioUrlCount > 0;
     const hadVideoUrls = videoUrlCount > 0;
     const hasReelContext = reelContextCount > 0;
-    const photoFetchFailed = hadPhotoUrls && imageParts.length === 0;
+    const bareStoryMentionNotification = isBareStoryMentionNotificationText(promptCurrentMessage);
+    const photoFetchFailed = hadPhotoUrls && imageParts.length === 0 && !bareStoryMentionNotification;
     const audioFetchFailed = hadAudioUrls && audioParts.length === 0;
     const videoFetchFailed = hadVideoUrls && videoParts.length === 0 && !hasReelContext;
     const mediaFailureNotes = [];
@@ -2349,6 +2390,9 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
         reel_thumbnail_count: reelThumbnailCount || 0,
     };
     const currentMessageNotes = [];
+    if (bareStoryMentionNotification) {
+        currentMessageNotes.push('NOTE: this is only a bare IG story tag/mention notification. Do not ask what they tagged Shannon in or ask them to resend the photo. A tiny reaction like "oh hell yeah!" is enough.');
+    }
     if (mediaFailureNotes.length) {
         currentMessageNotes.push(`NOTE: ${mediaFailureNotes.join('. ')}. Don't pretend you saw or heard it.`);
     }
@@ -2542,6 +2586,7 @@ Treat the canceled draft as Shannon's recent intent. If ${leadName}'s new messag
 FIRST CAPTURED LEAD REPLY:
 There is no reliable prior DM context in the system. Usually Shannon has already commented on or replied to their story/post from Instagram/Facebook, but that native opener was not captured by ManyChat.
 - Do not ask what this is about or say you have no context.
+- If the message is only a bare tag/mention notification like "mentioned you in a story photo", do not ask what they tagged Shannon in or ask them to resend it. A tiny reaction like "oh hell yeah!" is enough.
 - If their message is short or ambiguous, treat it as them replying to unseen story/post context. Match their energy and keep it short. Ask a tiny clarifier only if needed.
 - If they clearly ask about the challenge, what is included, plant-based stuff, a signup link, or ask Shannon for help because they feel stuck, answer that directly and keep it casual.
 - No coaching intake, no pitch, no name/age/goal bundle on this first captured reply.` : '';
@@ -2576,6 +2621,7 @@ ${nameUsePolicy}
 ${relationshipDiscovery}
 ${heardFirstConversation}
 ${shannonDmTuning}
+${identityElicitation}
 ${openAiShannonVoice}
 ${accountExperimentBlock}
 ${acquisitionMomentumBlock}
@@ -2591,6 +2637,7 @@ ${learningReelContextBlock}
 CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
 - When that answer completes the small thread, do not turn it into another question by default. A practical steer, acknowledgement, or clean pause is often better for active clients.
+- If they just gave their current status, feeling, pain, soreness, or symptom answer, do not ask "how's it feeling today", "how are you feeling", or "still pain?" back at them. Treat it as answered, acknowledge it, then use a statement or practical next step unless a different missing detail changes what Shannon should do.
 - Older messages are not automatically unresolved. Respond to previous statements only when they are still carrying the real ask, emotion, risk, or useful context. Otherwise let them drop.
 - If the newest message is light media/banter attached to a heavier earlier message, decide whether the media is just a softener before writing. Do not let a puppy photo or quick joke erase a vulnerable disclosure or practical request.
 - If they send a voice note, photo, or video that was decoded, do not open with a receipt like "just listened to your voice note", "saw your photo", or "watched the video". Reply straight to what it means.
@@ -2623,7 +2670,7 @@ ACTION CLAIMS:
 - If they report a weird food/meal name from the app, correct obvious voice-to-text or typo errors using the conversation and app context instead of repeating the nonsense phrase as a real meal. Example: if the likely plan meal is "Berry Almond Baked Oats", do not call it "very almond mixed oats".
 - If they report a calorie/logging discrepancy, acknowledge it as something Shannon should check. Do not promise to manually adjust or log anything unless the app data below proves it has already been done.
 ${acquisitionStyleBlock}
-- For first/early replies to Shannon's story opener, default to asking one light question about their hook. Only skip when they only said thanks/emoji/filler, it is a genuinely short no-response-needed reply, the topic is a current safety/medical/rehab advice situation, or the thread is clearly closing. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is not sensitive by itself. Keep it as light rapport if you can reply without advice. If the context is unclear, the message suggests confusion or AI suspicion, or media needs inspection, stop and hand it to Needs You instead of guessing. A Shannon-side personal aside cannot be the whole reply in this moment. Example: if they reply about InsightTimer filling your cup, ask whether they use it more for meditations or the little reminders.
+- For first/early replies to Shannon's story opener, default to one tiny move about their hook. That can be a short statement, not always a question. Ask a light question only when it is clearly the best next text, or when there is no better hook and Shannon has not asked a basic day/week opener yet. Skip the move when they only said thanks/emoji/filler, it is a genuinely short no-response-needed reply, the topic is a current safety/medical/rehab advice situation, or the thread is clearly closing. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is not sensitive by itself. Keep it as light rapport if you can reply without advice. If the context is unclear, the message suggests confusion or AI suspicion, or media needs inspection, stop and hand it to Needs You instead of guessing. A Shannon-side personal aside cannot be the whole reply in this moment. Example: if they reply about InsightTimer filling your cup, "that stuff can properly reset a day" may be enough; ask whether they use it for meditations or reminders only if the thread needs a question.
 
 NEVER reveal AI, automation, "trained on Shannon's voice", "24/7", or anything that breaks the personal-coach illusion. Shannon is replying personally.
 
@@ -2660,10 +2707,10 @@ CURRENT TIME (Australia/Brisbane): ${promptNowText}. Use the message timestamps 
 THEIR NEW MESSAGE (just arrived around ${promptNowText}):
 ${currentMessageText}${mediaInstruction ? ` ${mediaInstruction}` : ''}${editExamples}
 ${effectiveQualifierQuestion ? `
-IMPORTANT — CONVERSATIONAL DISCOVERY:
-Use this question only if it naturally fits this exact reply: "${effectiveQualifierQuestion}"
-This is guidance, not a command. If the latest message is only thanks/emoji/filler, closing, a genuinely short no-response-needed reply, or a current safety/medical/rehab advice situation, skip it. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is normal rapport when the reply stays non-medical. If it is a first/early story/post reply with anything more than that, use the question or rewrite it around that topic so the reply earns the next response. If you do use it, ask only that one light question. When the reply has several things to answer, weave the question into the reflection that sparked it instead of defaulting to a standalone final bubble. Do not add a goal, age, blocker, or coaching pitch in the same reply.
-If the question sounds generic or ignores a fresher detail from their latest message, rewrite it around that detail or skip the question. Never paste a stock line like "what does a normal day look like", "are you much of a cook or more of a takeaway person", "you training at the moment", or "what are your goals" into an auto-DM draft.
+IMPORTANT - CONVERSATIONAL ELICITATION:
+Use this suggested next move only if it naturally fits this exact reply: "${effectiveQualifierQuestion}"
+This is guidance, not a command. It may be a statement, label, or question. Prefer a statement they can confirm, correct, or expand unless a direct question is genuinely needed. If the latest message is only thanks/emoji/filler, closing, a genuinely short no-response-needed reply, or a current safety/medical/rehab advice situation, skip it. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is normal rapport when the reply stays non-medical. If it is a first/early story/post reply with anything more than that, use this move or rewrite it around that topic so the reply earns the next response. If you do use it, use only that one light elicitation move. When the reply has several things to answer, weave the move into the reflection that sparked it instead of defaulting to a standalone final bubble. Do not add a goal, age, blocker, or coaching pitch in the same reply.
+If the suggested move sounds generic or ignores a fresher detail from their latest message, rewrite it around that detail or skip it. Never paste a stock line like "what does a normal day look like", "are you much of a cook or more of a takeaway person", "you training at the moment", or "what are your goals" into an auto-DM draft.
 ` : ''}
 OUTPUT FORMAT — JSON only, nothing else:
 ${replyMode.chunkExample}
@@ -2951,7 +2998,7 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
             : 'https://www.instagram.com/direct/inbox/';
         const hasDraft = !!draftText;
         // Qualifier-aware title/body. When the lead is in the funnel and
-        // the AI thinks now's a question moment, body becomes "ask: <q>"
+        // the qualifier thinks now's a move moment, title carries the MOVE tag.
         // so Shannon sees the strategic move from the lock screen — taps
         // through to send the actual draft. When it's just chatting, body
         // is the draft preview as before.
@@ -3784,10 +3831,10 @@ exports.handler = async (event) => {
                     : '',
             },
             // Per-lead qualifier snapshot at the moment this alert was
-            // produced — stage, warmth, suggested next question, and the
+            // produced — stage, warmth, suggested next move, behavior profile, and the
             // quote-grounded reason for the timing. The admin dashboard
             // alert card reads these to render the strategic strip
-            // (stage badge / warmth / next-question / why-now). Null
+            // (stage badge / warmth / next-move / why-now). Null
             // for paying clients and leads outside the funnel window.
             qualifier: (qualifierEligible && qualifierEvaluated) ? qualifier : null,
             qualifier_evaluated: qualifierEvaluated,
@@ -4508,6 +4555,8 @@ exports._test = {
     suppressPetSpeciesGuessingInDraftChunks,
     suppressStoryLocationQuestionsInDraftChunks,
     hasKnownStoryLocationContext,
+    isBareStoryMentionNotificationText,
+    suppressBareStoryMentionClarifierInDraftChunks,
     getCocosAutoContextBypass,
     getBalanceAutoContextBypass,
     getAutoDmHoldReason,

@@ -1003,6 +1003,7 @@
         // lightweight DOM updates (toggling CSS classes) when the active skin changes.
 
         let _animSelectorBuilt = false; // true after first full build
+        let _animSelectorBuiltForLevel = null;
 
         // Lightweight update: flip active classes without rebuilding the whole panel.
         // Called by selectRareSkin instead of a full rebuild.
@@ -1044,8 +1045,21 @@
             }
             if (!container) return;
 
+            const level = getCurrentUserLevel();
+
+            if (typeof window.syncEligibleLevelRareUnlocks === 'function') {
+                try {
+                    const syncedLevelRares = window.syncEligibleLevelRareUnlocks(level, { celebrate: false });
+                    if (Array.isArray(syncedLevelRares) && syncedLevelRares.length) {
+                        forceRebuild = true;
+                    }
+                } catch(e) {
+                    console.warn('[Unlocks] Level character sync failed:', e);
+                }
+            }
+
             // If the panel is already built and we're just re-showing it, skip rebuild
-            if (_animSelectorBuilt && !forceRebuild) {
+            if (_animSelectorBuilt && !forceRebuild && _animSelectorBuiltForLevel === level) {
                 container.style.display = 'block';
                 if (typeof pushNavigationState === 'function') {
                     pushNavigationState('animation-selector', closeAnimationSelector);
@@ -1054,8 +1068,6 @@
                 window._refreshActiveSkin(localStorage.getItem('active_rare_skin') || '');
                 return;
             }
-
-            const level = getCurrentUserLevel();
 
             // ── Animation categories ──────────────────────────────────────────────
             const categories = {};
@@ -1141,7 +1153,9 @@
                 </div>`;
             });
             (window.LEVEL_RARE_COLLECTION || []).forEach(skin => {
-                const skinUnlocked = (window.isRareUnlocked || (() => false))(skin.id);
+                const skinUnlockedBySave = (window.isRareUnlocked || (() => false))(skin.id);
+                const skinUnlockedByLevel = !window.isAdminViewing && skin.unlockLevel && level >= skin.unlockLevel;
+                const skinUnlocked = skinUnlockedBySave || skinUnlockedByLevel;
                 const isActive = activeRareSkinForEvo === skin.id;
                 const tierData = (window.RARE_TIERS || {})[skin.tier] || {};
                 const activeInlineStyle = isActive
@@ -1225,6 +1239,7 @@
                 pushNavigationState('animation-selector', closeAnimationSelector);
             }
             _animSelectorBuilt = true;
+            _animSelectorBuiltForLevel = level;
         };
 
 
@@ -1241,9 +1256,11 @@
             const isVisible = container && container.style.display !== 'none';
             if (isVisible) {
                 _animSelectorBuilt = false;
+                _animSelectorBuiltForLevel = null;
                 window.showAnimationSelector(true);
             } else {
                 _animSelectorBuilt = false; // will rebuild next time it opens
+                _animSelectorBuiltForLevel = null;
             }
         };
 

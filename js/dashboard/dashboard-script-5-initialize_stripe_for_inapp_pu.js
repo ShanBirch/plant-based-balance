@@ -17770,6 +17770,14 @@ function initializeMovementSwipeNavigation() {
         closeChallengeLeaderboard();
     });
 
+    enableSwipeBackNavigation('challenge-xp-info-page', () => {
+        if (typeof closeChallengeXpInfoPage === 'function') closeChallengeXpInfoPage();
+    });
+
+    enableSwipeBackNavigation('challenge-prizes-page', () => {
+        if (typeof closeChallengePrizesPage === 'function') closeChallengePrizesPage();
+    });
+
     enableSwipeBackNavigation('cohort-info-modal', () => {
         if (typeof closeCohortInfo === 'function') closeCohortInfo();
     });

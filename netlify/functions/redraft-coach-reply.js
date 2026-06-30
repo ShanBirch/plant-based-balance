@@ -31,6 +31,7 @@ const {
     buildRelationshipDiscoveryBlock,
     buildHeardFirstConversationBlock,
     buildShannonDmTuningBlock,
+    buildBalanceIdentityElicitationBlock,
     buildOpenAIShannonVoiceBlock,
     loadWeeklyAppContext,
     callVertexAIModel,
@@ -271,6 +272,7 @@ exports.handler = async (event) => {
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
     const heardFirstConversation = buildHeardFirstConversationBlock();
     const shannonDmTuning = buildShannonDmTuningBlock();
+    const identityElicitation = buildBalanceIdentityElicitationBlock();
     const openAiShannonVoice = buildOpenAIShannonVoiceBlock();
     const historyBlock = buildHistoryBlock({ inApp, ig, clientName, coachId, clientId });
     const replyMode = resolveRedraftReplyMode({ data, messagePreview, historyBlock });
@@ -284,6 +286,7 @@ ${nameUsePolicy}
 ${relationshipDiscovery}
 ${heardFirstConversation}
 ${shannonDmTuning}
+${identityElicitation}
 ${openAiShannonVoice}
 ${coachBio}
 ${appNavigationGuide}

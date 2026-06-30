@@ -7444,7 +7444,7 @@
                 const windowText = daysLeft === null ? 'inside reply window' : `${Math.max(0, Math.ceil(daysLeft))}d window left`;
                 return {
                     label: 'Reply owed',
-                    detail: q.next_question ? `Ask: ${q.next_question}` : windowText,
+                    detail: q.next_question ? `Move: ${q.next_question}` : windowText,
                     bg: '#fef3c7',
                     color: '#92400e',
                 };
@@ -7462,7 +7462,10 @@
                 return { label: 'Paying', detail: 'coach and retain', bg: '#dcfce7', color: '#166534' };
             }
             if (q.stage_label) {
-                return { label: q.stage_label, detail: q.warmth_label ? `${q.warmth_label} lead` : 'qualifier active', bg: '#f8fafc', color: '#475569' };
+                const profile = q.behavior_profile && typeof q.behavior_profile === 'object' ? q.behavior_profile : {};
+                const readiness = profile.sales_readiness ? String(profile.sales_readiness).replace(/_/g, ' ') : '';
+                const detailParts = [readiness, q.warmth_label ? `${q.warmth_label} lead` : 'qualifier active'].filter(Boolean);
+                return { label: q.stage_label, detail: detailParts.join(' · '), bg: '#f8fafc', color: '#475569' };
             }
             return { label: _igStageMeta(effectiveStage).label, detail: _igStageMeta(effectiveStage).hint, bg: '#f8fafc', color: '#475569' };
         }
@@ -7950,6 +7953,16 @@
                 { key: 'loves', label: 'What they love' },
                 { key: 'stressors_frustrations', label: 'Stressors/frustrations' },
             ];
+            const profile = q.behavior_profile && typeof q.behavior_profile === 'object' ? q.behavior_profile : {};
+            const humanizeProfileToken = (value) => String(value || '').replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
+            const behaviorItems = [
+                { key: 'primary_need', label: 'Primary need', value: profile.primary_need && profile.primary_need !== 'unknown' ? humanizeProfileToken(profile.primary_need) : '' },
+                { key: 'protection_pattern', label: 'Protection', value: profile.protection_pattern && profile.protection_pattern !== 'unknown' ? humanizeProfileToken(profile.protection_pattern) : '' },
+                { key: 'autonomy_sensitivity', label: 'Autonomy', value: profile.autonomy_sensitivity && profile.autonomy_sensitivity !== 'unknown' ? humanizeProfileToken(profile.autonomy_sensitivity) : '' },
+                { key: 'sales_readiness', label: 'Readiness', value: profile.sales_readiness ? humanizeProfileToken(profile.sales_readiness) : '' },
+                { key: 'identity_signal', label: 'Identity signal', value: profile.identity_signal || '' },
+                { key: 'best_next_move', label: 'Best next move', value: profile.best_next_move || '' },
+            ];
             const relationshipItems = [
                 { key: 'location', label: 'Location' },
                 { key: 'work_study', label: 'Work/study' },
@@ -7973,6 +7986,13 @@
             const relationshipRows = renderQualifierFactRows(relationshipItems);
             const completed = stages.filter(s => hasQualifierFact(facts[s.key])).length;
             const currentStage = q.stage || q.current_stage || 'current_state';
+            const behaviorRows = behaviorItems.map(item => {
+                const value = hasQualifierFact(item.value) ? item.value : '';
+                return `<div style="display:flex; gap:6px; align-items:flex-start; padding:6px 8px; background:${value ? '#fff7ed' : '#f8fafc'}; border:1px solid ${value ? '#fed7aa' : '#e2e8f0'}; border-radius:6px; min-width:0;">
+                    <span style="font-size:0.68rem; color:${value ? '#9a3412' : '#94a3b8'}; font-weight:800; text-transform:uppercase; letter-spacing:0.3px; flex-shrink:0;">${escapeHtml(item.label)}</span>
+                    <span style="font-size:0.72rem; color:#475569; line-height:1.35; min-width:0; overflow:hidden; text-overflow:ellipsis;">${value ? escapeHtml(value) : 'not read yet'}</span>
+                </div>`;
+            }).join('');
             const rows = stages.map((s, i) => {
                 const fact = hasQualifierFact(facts[s.key]) ? facts[s.key] : null;
                 const isCurrent = s.key === currentStage && !fact;
@@ -7992,6 +8012,8 @@
             }).join('');
             el.innerHTML = `<label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Connection anchors <span style="font-weight:400; color:#94a3b8; font-size:0.72rem;">(${connectionDone}/${connectionItems.length} ticked off)</span></label>
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:5px; margin-bottom:10px;">${connectionRows}</div>
+                <label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Lead behavior read <span style="font-weight:400; color:#94a3b8; font-size:0.72rem;">from actual DM text</span></label>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:5px; margin-bottom:10px;">${behaviorRows}</div>
                 <label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Relationship notes <span style="font-weight:400; color:#94a3b8; font-size:0.72rem;">(${relationshipDone}/${relationshipItems.length} known)</span></label>
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:5px; margin-bottom:10px;">${relationshipRows}</div>
                 <label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Qualifier progress <span style="font-weight:400; color:#94a3b8; font-size:0.72rem;">(${completed}/4 stages answered)</span></label>
@@ -15558,7 +15580,7 @@
 
         // Lead-qualifier strip for cold-lead DM alerts. Renders the AI's
         // strategic read on this lead: stage in the 4-step funnel, warmth
-        // score, next question to ask, and the quote-grounded "why now"
+        // score, next move, behavior profile, and the quote-grounded "why now"
         // reasoning. Returns '' when the alert has no qualifier data
         // (paying client, in-app DM, or qualifier evaluation skipped).
         function renderQualifierStrip(alert) {
@@ -15584,8 +15606,10 @@
                 ? `<span style="font-size:0.7rem; padding:2px 8px; border-radius:8px; background:${wc.bg}; color:${wc.fg}; border:1px solid ${wc.border}; font-weight:700; text-transform:uppercase; letter-spacing:0.4px;">${warmth}% ${escapeHtml(warmthLabel)}</span>`
                 : '';
 
+            const profile = q.behavior_profile && typeof q.behavior_profile === 'object' ? q.behavior_profile : {};
+            const humanizeProfileToken = (value) => String(value || '').replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
             const askChip = q.is_question_moment
-                ? `<span class="ig-stage-chip ig-stage-chip-action">ASK NOW</span>`
+                ? `<span class="ig-stage-chip ig-stage-chip-action">MOVE NOW</span>`
                 : `<span class="ig-stage-chip ig-stage-chip-muted">just chatting</span>`;
 
             const routeChip = q.challenge_route && q.challenge_route !== 'undecided'
@@ -15607,6 +15631,12 @@
             const relationshipChip = relDone > 0
                 ? `<span class="ig-stage-chip ig-stage-chip-complete">life ${relDone}/${relKeys.length}</span>`
                 : '';
+            const protectionChip = profile.protection_pattern && profile.protection_pattern !== 'unknown'
+                ? `<span class="ig-stage-chip ig-stage-chip-warning">protect: ${escapeHtml(humanizeProfileToken(profile.protection_pattern))}</span>`
+                : '';
+            const readinessChip = profile.sales_readiness
+                ? `<span class="ig-stage-chip ig-stage-chip-complete">readiness: ${escapeHtml(humanizeProfileToken(profile.sales_readiness))}</span>`
+                : '';
 
             return `
                 <div class="qualifier-strip" style="margin-top:6px; margin-bottom:6px; padding:8px 10px; background:linear-gradient(180deg, #fafbff 0%, #f5f7fb 100%); border-radius:6px; border:1px solid #e2e8f0;">
@@ -15617,6 +15647,8 @@
                         ${routeChip}
                         ${anchorChip}
                         ${relationshipChip}
+                        ${protectionChip}
+                        ${readinessChip}
                     </div>
                 </div>`;
         }
@@ -18796,6 +18828,8 @@
             const linkUrl = getSignupLinkHandoffUrl(alert);
             const warning = getChallengeOfferWarningInfo(alert);
             const q = data.qualifier && typeof data.qualifier === 'object' ? data.qualifier : {};
+            const profile = q.behavior_profile && typeof q.behavior_profile === 'object' ? q.behavior_profile : {};
+            const humanizeProfileToken = (value) => String(value || '').replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
             const linkHandoff = isLeadOnboardingHandoff(alert);
             const isNeedsYou = isNeedsYouRoutedDmAlert(alert)
                 || linkHandoff
@@ -18827,6 +18861,9 @@
                 if (q.next_question && q.is_question_moment) {
                     body = `${body} Suggested next handle: "${String(q.next_question).trim()}".`;
                 }
+                if (profile.best_next_move && !body.includes(profile.best_next_move)) {
+                    body = `${body} Lead read: ${cleanDmExplanationText(profile.best_next_move)}.`;
+                }
             }
 
             if (!body) return null;
@@ -18838,6 +18875,8 @@
             if (timingSuggestion?.label) meta.push(`Timing: ${timingSuggestion.label}`);
             if (q.stage_label || q.stage) meta.push(`Stage: ${q.stage_label || String(q.stage).replace(/_/g, ' ')}`);
             if (Number.isFinite(Number(q.warmth_score))) meta.push(`${Number(q.warmth_score)}% ${q.warmth_label || 'warmth'}`);
+            if (profile.protection_pattern && profile.protection_pattern !== 'unknown') meta.push(`Protect: ${humanizeProfileToken(profile.protection_pattern)}`);
+            if (profile.sales_readiness) meta.push(`Readiness: ${humanizeProfileToken(profile.sales_readiness)}`);
 
             return {
                 tone,

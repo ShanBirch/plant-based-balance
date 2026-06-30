@@ -102,6 +102,10 @@
   path = "/api/upload-meal-photo"
 
 [[edge_functions]]
+  function = "upload-story-media"
+  path = "/api/upload-story-media"
+
+[[edge_functions]]
   function = "upload-ig-operator-media"
   path = "/api/upload-ig-operator-media"
 
@@ -404,11 +408,11 @@
   schedule = "*/5 * * * *"
 
 # Client/lead manager - routes permanent people, media, AI suspicion,
-# confused replies, and missing context into Needs You. Runs every 5 minutes
-# so hot Starter Coaching handoffs do not sit for the old 30-minute window.
+# confused replies, and missing context into Needs You. Runs every 20 minutes
+# to keep hot Starter Coaching handoffs moving without over-polling.
 # Code gates work to 05:00-02:00 Brisbane; the 02:00-04:59 block is paused.
 [functions."client-lead-manager"]
-  schedule = "*/5 * * * *"
+  schedule = "*/20 * * * *"
 
 # Support Radar - daily human-support pass across app activity + chats.
 # Creates only high-signal Needs You check-ins, capped and deduped.

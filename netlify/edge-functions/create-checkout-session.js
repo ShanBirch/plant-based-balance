@@ -1,4 +1,11 @@
 import Stripe from "stripe";
+import {
+    assertAcceptedCheckoutTerms,
+    assertSameSiteCheckoutRequest,
+    assertStarterCoachingPlan,
+    checkoutErrorResponse,
+    cleanCheckoutEmail,
+} from "./lib/checkout-guard.js";
 
 export default async (request, context) => {
     if (request.method !== "POST") {
@@ -8,6 +15,10 @@ export default async (request, context) => {
     try {
         const body = await request.json();
         const { priceId, isTrial, trialDays, referralCode, email, bump, fbc, fbp, utm_data, compliance } = body;
+        const checkoutOrigin = assertSameSiteCheckoutRequest(request);
+        assertStarterCoachingPlan(priceId);
+        assertAcceptedCheckoutTerms(compliance);
+        const checkoutEmail = cleanCheckoutEmail(email, { required: false });
         const complianceMetadata = compliance?.metadata || {};
         const documentVersions = compliance?.document_versions || {};
         const stripeComplianceMetadata = {
@@ -51,7 +62,7 @@ export default async (request, context) => {
 
         const subscriptionData = {
             metadata: {
-                checkout_email: email || "",
+                checkout_email: checkoutEmail,
                 balance_product: "balance_starter_coaching",
                 balance_plan: "starter_weekly",
                 checkins_per_week: "1",
@@ -63,13 +74,13 @@ export default async (request, context) => {
 
         const session = await stripe.checkout.sessions.create({
             mode: 'subscription',
-            customer_email: email,
+            customer_email: checkoutEmail || undefined,
             line_items: lineItems,
             subscription_data: subscriptionData,
-            success_url: request.headers.get("origin") + `/success.html?session_id={CHECKOUT_SESSION_ID}&bump=${bump ? "true" : "false"}`,
-            cancel_url: request.headers.get("origin") + '/plantbasedswitch.html',
+            success_url: checkoutOrigin + `/success.html?session_id={CHECKOUT_SESSION_ID}&bump=${bump ? "true" : "false"}`,
+            cancel_url: checkoutOrigin + '/plantbasedswitch.html',
             metadata: {
-                checkout_email: email || "",
+                checkout_email: checkoutEmail,
                 balance_product: "balance_starter_coaching",
                 balance_plan: "starter_weekly",
                 checkins_per_week: "1",
@@ -90,6 +101,6 @@ export default async (request, context) => {
 
     } catch (error) {
          console.error("Session Error:", error.message);
-         return new Response(JSON.stringify({ error: { message: error.message } }), { status: 400 });
+         return checkoutErrorResponse(error);
     }
 };
