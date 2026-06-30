@@ -5238,6 +5238,90 @@ html[data-pbb-theme] :where(
     border-color: var(--pbb-readable-border-soft) !important;
 }
 
+html[data-pbb-theme="light"] .recent-meals-container {
+    background:
+        radial-gradient(circle at 86% 0%, rgba(245, 217, 138, 0.2), transparent 30%),
+        linear-gradient(180deg, #fffef9 0%, #ffffff 48%, #fffdf7 100%) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .recent-meals-header {
+    background: rgba(255, 253, 247, 0.98) !important;
+    border-color: rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .recent-meals-header h3,
+html[data-pbb-theme="light"] .recent-meal-name,
+html[data-pbb-theme="light"] .recent-meal-confirm-name,
+html[data-pbb-theme="light"] .recent-meal-btn-quick {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .recent-meals-close,
+html[data-pbb-theme="light"] .recent-meals-empty,
+html[data-pbb-theme="light"] .recent-meals-empty span,
+html[data-pbb-theme="light"] .recent-meal-macros,
+html[data-pbb-theme="light"] .recent-meal-confirm-macros,
+html[data-pbb-theme="light"] .recent-meal-confirm-back button {
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] .recent-meal-item,
+html[data-pbb-theme="light"] .recent-meals-tab,
+html[data-pbb-theme="light"] .recent-meal-icon,
+html[data-pbb-theme="light"] .recent-meal-btn-quick {
+    background: rgba(255, 255, 255, 0.82) !important;
+    border-color: rgba(184, 137, 43, 0.14) !important;
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] .recent-meal-item:active,
+html[data-pbb-theme="light"] .recent-meal-item:hover,
+html[data-pbb-theme="light"] .recent-meal-btn-quick:hover {
+    background: rgba(245, 217, 138, 0.16) !important;
+}
+
+html[data-pbb-theme="light"] .recent-meal-btn-quick {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .recent-meals-tab {
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] .recent-meals-tab.active {
+    background: rgba(245, 217, 138, 0.58) !important;
+    border-color: rgba(184, 137, 43, 0.28) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .recent-meal-add,
+html[data-pbb-theme="light"] .recent-meal-btn-photo,
+html[data-pbb-theme="light"] .recent-meal-btn-photo *,
+html[data-pbb-theme="light"] .recent-meal-btn-photo .xp-badge {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .recent-meal-btn-photo .xp-badge {
+    background: rgba(255, 255, 255, 0.46) !important;
+}
+
+html[data-pbb-theme="light"] .recent-meal-item > svg,
+html[data-pbb-theme="light"] .recent-meals-empty svg {
+    color: #8a8174 !important;
+    stroke: #8a8174 !important;
+}
+
 html[data-pbb-theme="light"] #weight-goal-picker-modal button {
     color: #151515 !important;
     -webkit-text-fill-color: #151515 !important;
