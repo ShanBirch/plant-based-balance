@@ -1865,6 +1865,30 @@ function buildMealFeedCardPayload(meal) {
     return cardPayload;
 }
 
+async function getFreshMealRecordForFeedShare(meal) {
+    if (!meal || !meal.id || getMealSharePhotoUrl(meal)) return meal;
+    if (!window.supabaseClient || !window.currentUser?.id) return meal;
+
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('meal_logs')
+            .select('id, meal_date, meal_time, meal_type, food_items, calories, protein_g, carbs_g, fat_g, fiber_g, micronutrients, meal_description, photo_url, storage_path, notes, input_method, ai_confidence')
+            .eq('id', meal.id)
+            .eq('user_id', window.currentUser.id)
+            .maybeSingle();
+
+        if (error || !data) {
+            if (error) console.warn('Could not refresh meal before feed share:', error);
+            return meal;
+        }
+
+        return Object.assign({}, meal, data);
+    } catch (error) {
+        console.warn('Could not refresh meal before feed share:', error);
+        return meal;
+    }
+}
+
 async function shareMealRecordToFeed(meal, btn) {
     if (!meal || !meal.id) {
         showToast('Meal is not ready to share yet', 'info');
@@ -1901,7 +1925,8 @@ async function shareMealRecordToFeed(meal, btn) {
     }
 
     try {
-        const cardPayload = buildMealFeedCardPayload(meal);
+        const mealForShare = await getFreshMealRecordForFeedShare(meal);
+        const cardPayload = buildMealFeedCardPayload(mealForShare);
         const hasPhoto = !!cardPayload.photo_url;
         const storyData = {
             media_type: 'meal_card',
