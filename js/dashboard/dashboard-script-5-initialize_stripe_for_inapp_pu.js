@@ -16238,11 +16238,12 @@ function skipWorkoutRating() {
 const storeReviewPrompt = (function () {
     const STORAGE_KEY = 'pbb_store_review_state';
     const ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.fitgotchi.app';
-    const IOS_STORE_URL = 'https://apps.apple.com/app/balance-fitness-gamified/id6761238161';
+    const IOS_STORE_URL = 'https://apps.apple.com/app/balance-fitness-gamified/id6761238161?action=write-review';
     const MIN_WORKOUTS = 5;
     const COOLDOWN_AFTER_DISMISS_DAYS = 90;
     const COOLDOWN_AFTER_LATER_DAYS = 30;
     const COOLDOWN_AFTER_COMPLETED_DAYS = 180;
+    let selectedStars = 5;
 
     function readState() {
         try {
@@ -16260,7 +16261,96 @@ const storeReviewPrompt = (function () {
     }
 
     function isNative() {
-        return !!(window.Platform && window.Platform.isNative && window.Platform.isNative());
+        return !!(
+            (window.Platform && window.Platform.isNative && window.Platform.isNative()) ||
+            (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
+        );
+    }
+
+    function getPreferredStore(platform) {
+        if (platform === 'ios' || platform === 'android') return platform;
+        try {
+            if (window.Platform?.isIOS && window.Platform.isIOS()) return 'ios';
+            if (window.Platform?.isAndroid && window.Platform.isAndroid()) return 'android';
+            if (window.Capacitor?.getPlatform) {
+                const capPlatform = window.Capacitor.getPlatform();
+                if (capPlatform === 'ios' || capPlatform === 'android') return capPlatform;
+            }
+        } catch {}
+        const ua = navigator.userAgent || '';
+        if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return 'ios';
+        if (/Android/i.test(ua)) return 'android';
+        return 'unknown';
+    }
+
+    function storeUrlFor(platform) {
+        return platform === 'ios' ? IOS_STORE_URL : ANDROID_STORE_URL;
+    }
+
+    async function openExternalUrl(url) {
+        try {
+            if (isNative() && window.Capacitor?.Plugins?.Browser?.open) {
+                await window.Capacitor.Plugins.Browser.open({ url });
+                return;
+            }
+        } catch (err) {
+            console.warn('[storeReviewPrompt] Browser.open failed, falling back', err);
+        }
+        try {
+            const opened = window.open(url, '_blank', 'noopener,noreferrer');
+            if (!opened) window.location.href = url;
+        } catch {
+            try { window.location.href = url; } catch {}
+        }
+    }
+
+    function syncStoreButtons() {
+        const primary = document.getElementById('store-review-primary-btn');
+        const options = document.getElementById('store-review-store-options');
+        if (!primary || !options) return;
+        if (selectedStars < 5) {
+            primary.style.display = 'block';
+            primary.textContent = 'Tell us what to improve';
+            options.style.display = 'none';
+            return;
+        }
+        const preferred = getPreferredStore();
+        if (preferred === 'unknown') {
+            primary.style.display = 'none';
+            options.style.display = 'grid';
+            return;
+        }
+        primary.style.display = 'block';
+        primary.textContent = preferred === 'ios' ? 'Rate 5 stars on App Store' : 'Rate 5 stars on Play Store';
+        options.style.display = 'none';
+    }
+
+    function renderStars() {
+        const row = document.getElementById('store-review-star-row');
+        if (row) {
+            row.querySelectorAll('[data-review-star]').forEach(btn => {
+                const star = parseInt(btn.getAttribute('data-review-star'), 10);
+                const isFilled = star <= selectedStars;
+                btn.innerHTML = isFilled ? '&#9733;' : '&#9734;';
+                btn.setAttribute('aria-pressed', star === selectedStars ? 'true' : 'false');
+                btn.style.color = isFilled ? '#f59e0b' : '#cbd5e1';
+                btn.style.webkitTextFillColor = isFilled ? '#f59e0b' : '#cbd5e1';
+                btn.style.borderColor = isFilled ? 'rgba(245,158,11,0.32)' : 'rgba(203,213,225,0.7)';
+                btn.style.background = isFilled ? 'rgba(245,158,11,0.12)' : 'rgba(148,163,184,0.08)';
+            });
+        }
+        const copy = document.getElementById('store-review-star-copy');
+        if (copy) {
+            copy.textContent = selectedStars >= 5
+                ? '5 stars selected. Thank you!'
+                : 'Thanks, tell us what would make Balance a 5.';
+        }
+        syncStoreButtons();
+    }
+
+    function selectStars(count) {
+        selectedStars = Math.max(1, Math.min(5, parseInt(count, 10) || 5));
+        renderStars();
     }
 
     async function maybeAsk({ rating }) {
@@ -16291,20 +16381,28 @@ const storeReviewPrompt = (function () {
         const modal = document.getElementById('store-review-modal');
         if (!modal) return;
         // Reset to step 1 every time
-        document.getElementById('store-review-step-sentiment').style.display = 'block';
-        document.getElementById('store-review-step-rate').style.display = 'none';
-        document.getElementById('store-review-step-feedback').style.display = 'none';
+        selectedStars = 5;
+        const sentimentStep = document.getElementById('store-review-step-sentiment');
+        if (sentimentStep) sentimentStep.style.display = 'block';
+        const oldRateStep = document.getElementById('store-review-step-rate');
+        if (oldRateStep) oldRateStep.style.display = 'none';
+        const starRateStep = document.getElementById('store-review-step-rate-stars');
+        if (starRateStep) starRateStep.style.display = 'none';
+        const feedbackStep = document.getElementById('store-review-step-feedback');
+        if (feedbackStep) feedbackStep.style.display = 'none';
         const fb = document.getElementById('store-review-feedback-text');
         if (fb) fb.value = '';
+        renderStars();
         modal.style.display = 'flex';
     }
 
     function showStep(id) {
-        ['store-review-step-sentiment', 'store-review-step-rate', 'store-review-step-feedback']
+        ['store-review-step-sentiment', 'store-review-step-rate', 'store-review-step-rate-stars', 'store-review-step-feedback']
             .forEach(s => { const el = document.getElementById(s); if (el) el.style.display = (s === id ? 'block' : 'none'); });
+        if (id === 'store-review-step-rate-stars') renderStars();
     }
 
-    function onLoveIt() { showStep('store-review-step-rate'); }
+    function onLoveIt() { showStep('store-review-step-rate-stars'); }
     function onCouldBeBetter() { showStep('store-review-step-feedback'); }
     function onAskLater() { dismiss(false); }
 
@@ -16333,6 +16431,32 @@ const storeReviewPrompt = (function () {
         dismiss(true);
     }
 
+    async function openStoreReviewWithStars(platform) {
+        if (selectedStars < 5) {
+            showStep('store-review-step-feedback');
+            return;
+        }
+        const preferred = getPreferredStore(platform);
+        if (preferred === 'unknown') {
+            syncStoreButtons();
+            return;
+        }
+        if (!platform && isNative() && window.Capacitor?.Plugins?.InAppReview) {
+            try {
+                await window.Capacitor.Plugins.InAppReview.requestReview();
+                writeState({ selectedStars, lastStorePlatform: preferred });
+                dismiss(true);
+                if (typeof showToast === 'function') showToast('Thanks for the love!', 'success');
+                return;
+            } catch (err) {
+                console.warn('[storeReviewPrompt] native review failed, falling back', err);
+            }
+        }
+        await openExternalUrl(storeUrlFor(preferred));
+        writeState({ selectedStars, lastStorePlatform: preferred });
+        dismiss(true);
+    }
+
     function submitFeedback() {
         const text = (document.getElementById('store-review-feedback-text')?.value || '').trim();
         if (!text) { if (typeof showToast === 'function') showToast('Add a quick note first', 'info'); return; }
@@ -16354,7 +16478,7 @@ const storeReviewPrompt = (function () {
         dismiss(true);
     }
 
-    return { maybeAsk, open, onLoveIt, onCouldBeBetter, onAskLater, openStoreReview, submitFeedback, dismiss };
+    return { maybeAsk, open, onLoveIt, onCouldBeBetter, onAskLater, selectStars, openStoreReview: openStoreReviewWithStars, submitFeedback, dismiss };
 })();
 window.storeReviewPrompt = storeReviewPrompt;
 
