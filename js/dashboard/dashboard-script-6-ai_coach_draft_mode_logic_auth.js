@@ -5059,9 +5059,6 @@ function renderCohortActiveCard(cohort) {
                 <div style="font-size: 0.65rem; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px;">XP</div>
             </div>
         </div>
-        <div style="padding: 0 20px 16px 20px; display: flex; justify-content: flex-end;">
-            <button onclick="openXpGuidePage(event)" style="background: rgba(255,255,255,0.92); color: #101828; border: 1px solid rgba(245,217,138,0.45); border-radius: 8px; padding: 6px 12px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">How to earn XP</button>
-        </div>
     </div>`;
 }
 
