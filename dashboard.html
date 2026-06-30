@@ -9298,42 +9298,42 @@ if(!window._pbbIsIOSSafari) {
     </div>
 
     <!-- USER PROFILE VIEW (View another user's profile from the feed) -->
-    <div id="view-user-profile" class="app-view" style="display:none; padding-bottom: 90px; background: #f8fafc; overflow-x: hidden;">
+    <div id="view-user-profile" class="app-view user-profile-view" style="display:none;">
         <!-- Header -->
-        <div style="padding: 16px 20px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10;">
-            <h2 id="user-profile-header-name" style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.3rem; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Profile</h2>
+        <div class="user-profile-sticky-header">
+            <h2 id="user-profile-header-name" class="user-profile-header-title">Profile</h2>
         </div>
 
         <!-- Profile Top Section: Photo, Name, Level, Strength -->
-        <div id="user-profile-top" style="background: white; padding: 24px 20px 20px; text-align: center; border-bottom: 1px solid #f1f5f9;">
-            <div id="user-profile-avatar" style="width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; overflow: hidden; border: 3px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                <span style="font-size: 2.2rem; color: white; font-weight: 700;">?</span>
+        <div id="user-profile-top" class="user-profile-hero">
+            <div id="user-profile-avatar" class="user-profile-avatar">
+                <span class="user-profile-avatar-initial">?</span>
             </div>
-            <h2 id="user-profile-name" style="margin: 0 0 4px; font-size: 1.3rem; font-weight: 700; color: var(--text-main);"></h2>
-            <div id="user-profile-level-badge" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 5px 14px; border-radius: 20px; margin-bottom: 12px; border: 1px solid #fcd34d;">
-                <span style="font-size: 0.8rem; font-weight: 700; color: #92400e;">Lv. <span id="user-profile-level">1</span></span>
-                <span style="font-size: 0.75rem; color: #a16207; font-weight: 600;" id="user-profile-level-title">Newcomer</span>
+            <h2 id="user-profile-name" class="user-profile-name"></h2>
+            <div id="user-profile-level-badge" class="user-profile-level-badge">
+                <span>Lv. <span id="user-profile-level">1</span></span>
+                <span id="user-profile-level-title">Newcomer</span>
             </div>
             <!-- Stats row: Workouts, Streak, Points -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 12px;">
-                <div style="text-align: center;">
-                    <div id="user-profile-workouts" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">0</div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Workouts</div>
+            <div class="user-profile-stats-row">
+                <div class="user-profile-stat-card">
+                    <div id="user-profile-workouts" class="user-profile-stat-value">0</div>
+                    <div class="user-profile-stat-label">Workouts</div>
                 </div>
-                <div style="text-align: center;">
-                    <div id="user-profile-streak" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">0</div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Day Streak</div>
+                <div class="user-profile-stat-card">
+                    <div id="user-profile-streak" class="user-profile-stat-value">0</div>
+                    <div class="user-profile-stat-label">Day Streak</div>
                 </div>
-                <div style="text-align: center;">
-                    <div id="user-profile-points" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">0</div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">XP</div>
+                <div class="user-profile-stat-card">
+                    <div id="user-profile-points" class="user-profile-stat-value">0</div>
+                    <div class="user-profile-stat-label">XP</div>
                 </div>
             </div>
         </div>
 
         <!-- Tamagotchi / FitGotchi Section -->
-        <div id="user-profile-tamagotchi-section" style="padding: 0 20px 10px; display: none;">
-            <div style="background: #1a1a2e; border-radius: 16px; overflow: hidden; height: 260px; position: relative;">
+        <div id="user-profile-tamagotchi-section" class="user-profile-character-section" style="display: none;">
+            <div class="user-profile-character-card">
                 <model-viewer
                     id="user-profile-tamagotchi-model"
                     loading="lazy"
@@ -9354,44 +9354,44 @@ if(!window._pbbIsIOSSafari) {
                     interaction-prompt="none">
                 </model-viewer>
                 <!-- Fallback -->
-                <div id="user-profile-tamagotchi-fallback" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:4; background:#1a1a2e; justify-content:center; align-items:center; flex-direction:column; text-align:center; color:white; padding:20px;">
+                <div id="user-profile-tamagotchi-fallback" class="user-profile-character-fallback" style="display:none;">
                     <div style="font-size:48px; margin-bottom:8px;">🐣</div>
-                    <div style="font-size:0.9rem; font-weight:600;">FitGotchi</div>
+                    <div class="user-profile-character-fallback-label">Balance avatar</div>
                 </div>
             </div>
         </div>
 
         <!-- Personal Bests Section -->
-        <div id="user-profile-pbs-section" style="padding: 20px; display: none;">
-            <h3 style="margin: 0 0 14px; font-size: 1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+        <div id="user-profile-pbs-section" class="user-profile-section" style="display: none;">
+            <h3 class="user-profile-section-title">
                 <span style="font-size: 1.1rem;">🏋️</span> Personal Bests
             </h3>
-            <div id="user-profile-pbs-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <div id="user-profile-pbs-grid" class="user-profile-pbs-grid">
                 <!-- PB cards rendered dynamically -->
             </div>
         </div>
 
         <!-- Badges / Milestones Section -->
-        <div id="user-profile-badges-section" style="padding: 0 20px 20px; display: none;">
-            <h3 style="margin: 0 0 14px; font-size: 1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+        <div id="user-profile-badges-section" class="user-profile-section" style="display: none;">
+            <h3 class="user-profile-section-title">
                 <span style="font-size: 1.1rem;">🏅</span> Badges
             </h3>
-            <div id="user-profile-badges-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+            <div id="user-profile-badges-grid" class="user-profile-badges-grid">
                 <!-- Badge cards rendered dynamically -->
             </div>
         </div>
 
         <!-- Posts Section -->
-        <div id="user-profile-posts-section" style="padding: 0 20px 20px;">
-            <h3 style="margin: 0 0 14px; font-size: 1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+        <div id="user-profile-posts-section" class="user-profile-section user-profile-posts-section">
+            <h3 class="user-profile-section-title">
                 <span style="font-size: 1.1rem;">📸</span> Posts
             </h3>
-            <div id="user-profile-posts-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; border-radius: 12px; overflow: hidden;">
+            <div id="user-profile-posts-grid" class="user-profile-posts-grid">
                 <!-- Post thumbnails rendered dynamically -->
             </div>
-            <div id="user-profile-posts-empty" style="display: none; text-align: center; padding: 30px 20px; background: white; border-radius: 12px; border: 1px solid #f1f5f9;">
+            <div id="user-profile-posts-empty" class="user-profile-empty-posts" style="display: none;">
                 <div style="font-size: 2rem; margin-bottom: 8px;">📷</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No posts yet</div>
+                <div>No posts yet</div>
             </div>
         </div>
     </div>
@@ -14576,7 +14576,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=76">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=77">
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>
@@ -16788,10 +16788,10 @@ if(!window._pbbIsIOSSafari) {
     <script>var _userProfilePreviousView = 'friends';</script>
     <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-userprofile.js?v=3"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-userprofile.js?v=4"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-userprofile.js?v=3');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-userprofile.js?v=4');
 }
 </script>
     
