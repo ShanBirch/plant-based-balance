@@ -981,8 +981,8 @@ window.addEventListener('load', function() {
         </div>
     </div>
 
-    <!-- Challenge invite renders here until the user joins, then moves into Challenges below. -->
-    <div id="home-cohort-challenge-invite-top" style="margin: 0 25px 14px;"></div>
+    <!-- Six-week challenge card for enrolled participants. -->
+    <div id="home-cohort-challenge-invite-top" style="display: none; margin: 8px 25px 16px;"></div>
 
     <!-- Duplicate Install Banner Removed -->
 
@@ -12356,7 +12356,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
 
-    { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'Challenge invite', body:"Join the next challenge from Home. 1st Place is $500 cash, and the challenge starts when 15 people are in.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
+    { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'6-Week Challenge', body:"The 6-week challenge sits under your character on Home. Tap it to open the leaderboard or check how to earn XP.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
     { tab:'dashboard', sel:'#challenge-info-actions', title:'Challenge details', body:"Open How to earn XP or Prizes from the challenge leaderboard to see scoring and rewards.", quick: true, condition: function(){ var c = document.getElementById('challenge-info-actions'); return c && c.offsetParent !== null; } },
 
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically.", quick: true },
@@ -13313,8 +13313,8 @@ if(!window._pbbIsIOSSafari) {
       id: 'cohort-cash-prize-15-start-v1',
       tab: 'dashboard',
       sel: '#home-cohort-challenge-invite-top',
-      title: 'Challenge invite',
-      body: "The next challenge invite is on Home. 1st Place is $500 cash, and the challenge starts when 15 people are in.",
+      title: '6-Week Challenge',
+      body: "Your active challenge card is on Home with the $500 cash prize and your leaderboard progress.",
       condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; }
     },
     {
@@ -13330,6 +13330,14 @@ if(!window._pbbIsIOSSafari) {
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({
+    id: 'cohort-home-under-character-glow-v1',
+    tab: 'dashboard',
+    sel: '#home-cohort-challenge-invite-top',
+    title: '6-Week Challenge',
+    body: "The 6-week challenge now sits under your character with a stronger glow. It only appears when you are in the challenge.",
+    condition: function(){ var e = document.getElementById('home-cohort-challenge-invite-top'); return e && e.innerHTML.trim() !== ''; }
+  });
   allFeatures.push({
     id: 'challenge-info-actions-v1',
     tab: 'dashboard',
@@ -14586,13 +14594,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=26';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=27';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=26"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=27"><\/script>');
 }
 </script>
 

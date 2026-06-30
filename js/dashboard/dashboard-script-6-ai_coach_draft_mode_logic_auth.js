@@ -4434,7 +4434,6 @@ async function loadHomeChallenges() {
         // the top of the list and exclude from the regular friend-challenge feed below.
         const transformCohortChallenge = await loadUserCohortChallengeByType('transform_30');
         const cohortChallenge = transformCohortChallenge || await loadHomeCohortChallengeData(['plant_based_30', 'manual_kayla_30']);
-        const cohortInviteStatus = transformCohortChallenge ? null : await loadNextCohortInviteStatus();
         const cohortChallengeId = cohortChallenge?.challenge_id || null;
 
         // Steps & sleep challenges read their scores from wearable tables via
@@ -4462,7 +4461,7 @@ async function loadHomeChallenges() {
 
         console.log('⚔️ [loadHomeChallenges] Counts - Active:', activeChallenges.length, 'Pending:', pendingChallenges.length, 'Invites:', pendingInvites.length, 'Cohort:', cohortChallenge ? cohortChallenge.status : 'none');
 
-        const hasChallenges = activeChallenges.length > 0 || pendingInvites.length > 0 || pendingChallenges.length > 0 || !!cohortChallenge || !!cohortFeature || !!cohortInviteFeature;
+        const hasChallenges = activeChallenges.length > 0 || pendingInvites.length > 0 || pendingChallenges.length > 0 || !!cohortChallenge;
 
         // Toggle visibility of the "Start a Challenge" empty state card
         // USER REQUEST: "Start a challenge should always stay because then it shows you what challenges you have pending..."
@@ -4472,7 +4471,10 @@ async function loadHomeChallenges() {
         }
         
         if (!hasChallenges) {
-            if (cohortInviteFeature) cohortInviteFeature.innerHTML = renderCohortDashboardInviteCard(cohortInviteStatus);
+            if (cohortInviteFeature) {
+                cohortInviteFeature.innerHTML = '';
+                cohortInviteFeature.style.display = 'none';
+            }
             if (cohortFeature) cohortFeature.innerHTML = '';
             container.innerHTML = '';
             console.log('⚔️ [loadHomeChallenges] No matching challenges found for user.');
@@ -4599,16 +4601,16 @@ async function loadHomeChallenges() {
             window._extraChallengesHtml = '';
         }
 
-        // Invite stays near FitGotchi until joined. Joined/active cohort cards
-        // move back into the normal Challenges section.
-        const cohortHtml = cohortChallenge ? renderCohortCard(cohortChallenge) : '';
-        const inviteHtml = transformCohortChallenge ? '' : renderCohortDashboardInviteCard(cohortInviteStatus);
-        if (cohortInviteFeature) cohortInviteFeature.innerHTML = inviteHtml;
-        if (cohortFeature) {
-            cohortFeature.innerHTML = cohortHtml;
+        // Keep the six-week cohort pinned at the top of Home for enrolled users only.
+        // The current challenge has started, so non-participants should not see an invite.
+        const cohortTopHtml = cohortChallenge ? renderCohortCard(cohortChallenge) : '';
+        if (cohortFeature) cohortFeature.innerHTML = '';
+        if (cohortInviteFeature) {
+            cohortInviteFeature.innerHTML = cohortTopHtml;
+            cohortInviteFeature.style.display = cohortTopHtml ? 'block' : 'none';
             container.innerHTML = html;
         } else {
-            container.innerHTML = (cohortHtml || inviteHtml) + html;
+            container.innerHTML = (cohortTopHtml || '') + html;
         }
 
         // Inject hidden cards now that the DOM is ready
@@ -5068,23 +5070,58 @@ function _injectCohortChallengeCSS() {
     const style = document.createElement('style');
     style.id = 'cohort-challenge-css';
     style.textContent = `
-        @keyframes cohortPulse {
-            0%, 100% { box-shadow: 0 18px 42px rgba(0,0,0,0.42), 0 0 0 0 rgba(245,217,138,0.22); transform: scale(1); }
-            50% { box-shadow: 0 20px 48px rgba(0,0,0,0.52), 0 0 0 12px rgba(245,217,138,0); transform: scale(1.012); }
+        @keyframes cohortTopPulse {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.008); filter: brightness(1.05); }
         }
-        .cohort-waiting-card {
-            animation: cohortPulse 2.2s ease-in-out infinite;
+        @keyframes cohortSpotlightPulse {
+            0%, 100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 9px rgba(245, 217, 138, 0.32)) brightness(1.02);
+            }
+            50% {
+                transform: scale(1.012);
+                filter: drop-shadow(0 0 22px rgba(245, 217, 138, 0.58)) brightness(1.08);
+            }
+        }
+        .cohort-invite-card,
+        .cohort-waiting-card,
+        .cohort-active-card,
+        .cohort-acceptance-card {
+            animation: cohortTopPulse 3.2s ease-in-out infinite;
+            transform-origin: center;
             transition: transform 0.18s ease;
+            will-change: transform, filter;
         }
+        #home-cohort-challenge-invite-top .cohort-waiting-card,
+        #home-cohort-challenge-invite-top .cohort-active-card,
+        #home-cohort-challenge-invite-top .cohort-acceptance-card {
+            margin-bottom: 0 !important;
+            box-shadow:
+                0 0 0 1px rgba(245, 217, 138, 0.34),
+                0 0 28px rgba(245, 217, 138, 0.42),
+                0 18px 46px rgba(57, 47, 31, 0.28) !important;
+            animation: cohortSpotlightPulse 2.8s ease-in-out infinite;
+        }
+        #home-cohort-challenge-invite-top .cohort-card-title {
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.68), 0 0 16px rgba(245, 217, 138, 0.32) !important;
+        }
+        .cohort-invite-card:active,
         .cohort-waiting-card:active {
             transform: scale(0.98);
         }
-        @keyframes cohortAcceptancePulse {
-            0%, 100% { box-shadow: 0 18px 42px rgba(0,0,0,0.42), 0 0 0 0 rgba(245,217,138,0.22); }
-            50%      { box-shadow: 0 20px 48px rgba(0,0,0,0.52), 0 0 0 12px rgba(245,217,138,0); }
+        .cohort-active-card:active,
+        .cohort-acceptance-card:active {
+            transform: scale(0.985);
         }
-        .cohort-acceptance-card {
-            animation: cohortAcceptancePulse 2s ease-in-out infinite;
+        @media (prefers-reduced-motion: reduce) {
+            .cohort-invite-card,
+            .cohort-waiting-card,
+            .cohort-active-card,
+            .cohort-acceptance-card {
+                animation: none !important;
+                filter: none;
+            }
         }
     `;
     document.head.appendChild(style);
