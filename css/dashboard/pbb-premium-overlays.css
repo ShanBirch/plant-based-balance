@@ -5389,6 +5389,18 @@ html[data-pbb-theme="light"] .meal-detail-edit-btn * {
     -webkit-text-fill-color: #151515 !important;
 }
 
+.edit-items-header h3 {
+    color: #f8f7f2 !important;
+    -webkit-text-fill-color: #f8f7f2 !important;
+}
+
+.edit-items-close {
+    background: rgba(255, 255, 255, 0.94) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+    border: 1px solid rgba(245, 217, 138, 0.16) !important;
+}
+
 html[data-pbb-theme="light"] #weight-goal-picker-modal button {
     color: #151515 !important;
     -webkit-text-fill-color: #151515 !important;
