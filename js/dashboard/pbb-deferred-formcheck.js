@@ -1,5 +1,6 @@
 (function () {
     const MAX_FORM_CHECK_VIDEO_BYTES = 180 * 1024 * 1024;
+    const MAX_WORKOUT_FEED_SHARE_VIDEO_BYTES = 180 * 1024 * 1024;
     let formCheckState = {
         file: null,
         objectUrl: null,
@@ -7,7 +8,15 @@
         workoutName: '',
         previousBottomNavDisplay: ''
     };
+    let workoutFeedShareState = {
+        file: null,
+        objectUrl: null,
+        source: 'workout',
+        workoutName: '',
+        previousBottomNavDisplay: ''
+    };
     let swipeRegistered = false;
+    let workoutFeedShareSwipeRegistered = false;
 
     function ensureFormCheckView() {
         let view = document.getElementById('view-form-check');
@@ -498,6 +507,440 @@
         }
     }
 
+    function ensureWorkoutFeedShareView() {
+        let view = document.getElementById('view-workout-feed-share');
+        if (view) return view;
+
+        view = document.createElement('div');
+        view.id = 'view-workout-feed-share';
+        view.className = 'app-view';
+        view.style.cssText = 'display:none; position:fixed; inset:0; z-index:700; background:#f8fafc; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;';
+        view.innerHTML = `
+            <style>
+                #view-workout-feed-share .workout-feed-share-header {
+                    position: sticky;
+                    top: 0;
+                    z-index: 2;
+                    background: white;
+                    padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 15px 20px;
+                    border-bottom: 1px solid #e2e8f0;
+                    text-align: center;
+                    box-sizing: border-box;
+                }
+                #view-workout-feed-share .workout-feed-share-title {
+                    font-size: 1.1rem;
+                    font-weight: 800;
+                    color: var(--text-main);
+                }
+                #view-workout-feed-share .workout-feed-share-content {
+                    padding: 20px;
+                    padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+                    max-width: 620px;
+                    margin: 0 auto;
+                    box-sizing: border-box;
+                }
+                #view-workout-feed-share .workout-feed-share-panel {
+                    background: white;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 16px;
+                    padding: 18px;
+                    box-shadow: 0 8px 24px rgba(15,23,42,0.06);
+                    margin-bottom: 14px;
+                }
+                #view-workout-feed-share label {
+                    display: block;
+                    font-size: 0.82rem;
+                    font-weight: 800;
+                    color: var(--text-main);
+                    margin-bottom: 8px;
+                }
+                #view-workout-feed-share textarea {
+                    width: 100%;
+                    min-height: 96px;
+                    resize: vertical;
+                    line-height: 1.45;
+                    border: 1.5px solid #e2e8f0;
+                    border-radius: 12px;
+                    padding: 13px 14px;
+                    font: inherit;
+                    color: var(--text-main);
+                    background: #fff;
+                    box-sizing: border-box;
+                    outline: none;
+                }
+                #view-workout-feed-share .workout-feed-share-actions {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 10px;
+                }
+                #view-workout-feed-share .workout-feed-share-btn {
+                    border: none;
+                    border-radius: 14px;
+                    padding: 14px 12px;
+                    min-height: 52px;
+                    font: inherit;
+                    font-size: 0.92rem;
+                    font-weight: 800;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    touch-action: manipulation;
+                }
+                #view-workout-feed-share .workout-feed-share-btn svg {
+                    width: 20px;
+                    height: 20px;
+                    fill: currentColor;
+                    flex-shrink: 0;
+                }
+                #view-workout-feed-share .workout-feed-share-btn-primary {
+                    background: linear-gradient(135deg, #7c2d12 0%, #dc2626 100%);
+                    color: white;
+                    box-shadow: 0 8px 18px rgba(220,38,38,0.22);
+                }
+                #view-workout-feed-share .workout-feed-share-btn-secondary {
+                    background: #eef2ff;
+                    color: #3730a3;
+                }
+                #view-workout-feed-share .workout-feed-share-btn-muted {
+                    background: #f1f5f9;
+                    color: #475569;
+                }
+                #view-workout-feed-share .workout-feed-share-btn-danger {
+                    background: #fef2f2;
+                    color: #dc2626;
+                }
+                #view-workout-feed-share .workout-feed-share-status {
+                    display: none;
+                    padding: 12px 14px;
+                    border-radius: 12px;
+                    font-size: 0.85rem;
+                    font-weight: 700;
+                    line-height: 1.4;
+                    margin-top: 12px;
+                }
+                #view-workout-feed-share .workout-feed-share-status.info { display:block; background:#eff6ff; color:#1d4ed8; }
+                #view-workout-feed-share .workout-feed-share-status.success { display:block; background:#dcfce7; color:#166534; }
+                #view-workout-feed-share .workout-feed-share-status.error { display:block; background:#fee2e2; color:#991b1b; }
+                #workout-feed-share-video-preview {
+                    display: none;
+                    width: 100%;
+                    max-height: 360px;
+                    background: #020617;
+                    border-radius: 14px;
+                    margin-top: 12px;
+                }
+                @media (max-width: 360px) {
+                    #view-workout-feed-share .workout-feed-share-actions { grid-template-columns: 1fr; }
+                }
+            </style>
+            <div class="workout-feed-share-header">
+                <div class="workout-feed-share-title">Share a Set</div>
+            </div>
+            <div class="workout-feed-share-content">
+                <div class="workout-feed-share-panel" style="background:linear-gradient(135deg,#111827 0%,#b91c1c 100%); color:white; border:none;">
+                    <div style="font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; opacity:0.85; margin-bottom:6px;">Stay in workout mode</div>
+                    <div style="font-size:1.25rem; font-weight:900; line-height:1.15; margin-bottom:8px;">Record a set, post it to Feed, and earn +10 XP once a day</div>
+                    <div style="font-size:0.86rem; line-height:1.45; opacity:0.9;">Open the camera, capture the clip, and keep your workout running.</div>
+                </div>
+
+                <div class="workout-feed-share-panel">
+                    <label for="workout-feed-share-caption">Caption</label>
+                    <textarea id="workout-feed-share-caption" placeholder="Add a caption if you want"></textarea>
+                    <div style="height:10px;"></div>
+                    <div style="font-size:0.75rem; color:#64748b; font-weight:700;">The workout stays open while you post.</div>
+                </div>
+
+                <div class="workout-feed-share-panel">
+                    <label>Video</label>
+                    <div class="workout-feed-share-actions">
+                        <button type="button" class="workout-feed-share-btn workout-feed-share-btn-primary" onclick="openWorkoutFeedShareCapture()">
+                            <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                            Record Clip
+                        </button>
+                        <button type="button" class="workout-feed-share-btn workout-feed-share-btn-secondary" onclick="openWorkoutFeedShareGallery()">
+                            <svg viewBox="0 0 24 24"><path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/></svg>
+                            Choose Clip
+                        </button>
+                    </div>
+                    <input type="file" id="workout-feed-share-camera-input" accept="video/*" capture="environment" style="display:none;" onchange="handleWorkoutFeedShareFileSelect(event)">
+                    <input type="file" id="workout-feed-share-gallery-input" accept="video/*" style="display:none;" onchange="handleWorkoutFeedShareFileSelect(event)">
+                    <video id="workout-feed-share-video-preview" controls playsinline></video>
+                    <button type="button" id="workout-feed-share-remove-video" class="workout-feed-share-btn workout-feed-share-btn-danger" style="display:none; width:100%; margin-top:10px;" onclick="clearWorkoutFeedShareVideo()">Remove Clip</button>
+                </div>
+
+                <div class="workout-feed-share-panel">
+                    <button type="button" id="workout-feed-share-submit-btn" class="workout-feed-share-btn workout-feed-share-btn-primary" style="width:100%;" onclick="submitWorkoutFeedShare()">Post to Feed</button>
+                    <div id="workout-feed-share-status" class="workout-feed-share-status"></div>
+                    <button type="button" class="workout-feed-share-btn workout-feed-share-btn-muted" style="width:100%; margin-top:10px;" onclick="closeWorkoutFeedShare()">Cancel</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(view);
+
+        if (!workoutFeedShareSwipeRegistered && typeof enableSwipeBackNavigation === 'function') {
+            try {
+                enableSwipeBackNavigation('view-workout-feed-share', closeWorkoutFeedShare);
+                workoutFeedShareSwipeRegistered = true;
+            } catch (e) {
+                console.warn('[WorkoutFeedShare] swipe registration failed', e);
+            }
+        }
+
+        return view;
+    }
+
+    function setWorkoutFeedShareStatus(message, type) {
+        const status = document.getElementById('workout-feed-share-status');
+        if (!status) return;
+        status.textContent = message || '';
+        status.className = 'workout-feed-share-status ' + (type || 'info');
+    }
+
+    function resetWorkoutFeedShareStatus() {
+        const status = document.getElementById('workout-feed-share-status');
+        if (!status) return;
+        status.textContent = '';
+        status.className = 'workout-feed-share-status';
+    }
+
+    function ensureWorkoutFeedShareUploadBanner() {
+        let banner = document.getElementById('workout-feed-share-upload-banner');
+        if (banner) return banner;
+
+        const styleId = 'workout-feed-share-upload-banner-styles';
+        if (!document.getElementById(styleId)) {
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.textContent = `
+                @keyframes workoutFeedShareSpin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                @keyframes workoutFeedShareSweep {
+                    0% { transform: translateX(-40%); }
+                    50% { transform: translateX(120%); }
+                    100% { transform: translateX(-40%); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        banner = document.createElement('div');
+        banner.id = 'workout-feed-share-upload-banner';
+        banner.style.cssText = 'display:none; position:fixed; left:16px; right:16px; bottom:calc(16px + env(safe-area-inset-bottom, 0px)); z-index:720; background:rgba(17,24,39,0.96); color:white; border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:12px 14px; box-shadow:0 18px 40px rgba(0,0,0,0.28); backdrop-filter:blur(12px); overflow:hidden;';
+        banner.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:34px; height:34px; border-radius:999px; background:rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor; animation:workoutFeedShareSpin 1s linear infinite;"><path d="M12 4V1L8 5l4 4V6c2.76 0 5 2.24 5 5 0 .86-.22 1.67-.62 2.38l1.47 1.47C18.57 13.17 19 11.64 19 10c0-3.87-3.13-7-7-7zm-5.85.62L4.68 3.15C3.43 4.58 2.67 6.44 2.67 8.5c0 3.87 3.13 7 7 7v3l4-4-4-4v3c-2.76 0-5-2.24-5-5 0-1.36.54-2.59 1.42-3.5z"/></svg>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div id="workout-feed-share-upload-text" style="font-size:0.92rem; font-weight:900; line-height:1.2;">Uploading your set...</div>
+                    <div id="workout-feed-share-upload-subtext" style="font-size:0.75rem; opacity:0.78; line-height:1.35; margin-top:3px;">You can keep training.</div>
+                </div>
+            </div>
+            <div style="height:4px; background:rgba(255,255,255,0.12); border-radius:999px; margin-top:10px; overflow:hidden;">
+                <div id="workout-feed-share-upload-bar" style="height:100%; width:36%; border-radius:999px; background:linear-gradient(90deg,#f97316,#ef4444); animation:workoutFeedShareSweep 1.15s ease-in-out infinite;"></div>
+            </div>
+        `;
+        document.body.appendChild(banner);
+        return banner;
+    }
+
+    function showWorkoutFeedShareUploadBanner(message, type) {
+        const banner = ensureWorkoutFeedShareUploadBanner();
+        const text = banner.querySelector('#workout-feed-share-upload-text');
+        const subtext = banner.querySelector('#workout-feed-share-upload-subtext');
+        const bar = banner.querySelector('#workout-feed-share-upload-bar');
+        if (text) text.textContent = message || 'Uploading your set...';
+        if (subtext) {
+            subtext.textContent = type === 'error'
+                ? 'Please try that clip again.'
+                : type === 'success'
+                    ? 'Shared to Feed.'
+                    : 'You can keep training.';
+        }
+        if (banner) {
+            banner.style.display = 'block';
+            banner.style.borderColor = type === 'error'
+                ? 'rgba(248,113,113,0.28)'
+                : type === 'success'
+                    ? 'rgba(74,222,128,0.28)'
+                    : 'rgba(255,255,255,0.08)';
+            banner.style.background = type === 'error'
+                ? 'rgba(127,29,29,0.96)'
+                : type === 'success'
+                    ? 'rgba(3, 78, 52, 0.96)'
+                    : 'rgba(17,24,39,0.96)';
+        }
+        if (bar) {
+            bar.style.animation = type === 'success' ? 'none' : 'workoutFeedShareSweep 1.15s ease-in-out infinite';
+            bar.style.background = type === 'error'
+                ? 'linear-gradient(90deg,#fb7185,#ef4444)'
+                : type === 'success'
+                    ? 'linear-gradient(90deg,#4ade80,#16a34a)'
+                    : 'linear-gradient(90deg,#f97316,#ef4444)';
+        }
+        return text || banner;
+    }
+
+    function hideWorkoutFeedShareUploadBanner(delayMs) {
+        const banner = document.getElementById('workout-feed-share-upload-banner');
+        if (!banner) return;
+        const hide = function () {
+            banner.style.display = 'none';
+        };
+        if (delayMs && delayMs > 0) {
+            setTimeout(hide, delayMs);
+        } else {
+            hide();
+        }
+    }
+
+    function openWorkoutFeedShare(options) {
+        options = options || {};
+        const activeWorkout = document.getElementById('view-active-workout');
+        workoutFeedShareState.source = options.source || (activeWorkout && activeWorkout.style.display !== 'none' ? 'workout' : 'movement');
+        workoutFeedShareState.workoutName = options.workoutName || (workoutFeedShareState.source === 'workout' ? getActiveWorkoutName() : '');
+
+        clearWorkoutFeedShareVideo();
+        resetWorkoutFeedShareStatus();
+        openWorkoutFeedShareCapture();
+    }
+
+    function closeWorkoutFeedShare() {
+        const view = document.getElementById('view-workout-feed-share');
+        if (view) view.style.display = 'none';
+        clearWorkoutFeedShareVideo();
+        resetWorkoutFeedShareStatus();
+
+        const bottomNav = document.querySelector('.bottom-nav');
+        const activeWorkout = document.getElementById('view-active-workout');
+        const isWorkoutOpen = activeWorkout && activeWorkout.style.display !== 'none';
+        if (bottomNav && !isWorkoutOpen) {
+            bottomNav.style.display = workoutFeedShareState.previousBottomNavDisplay || 'flex';
+        }
+    }
+
+    function openWorkoutFeedShareCapture() {
+        const input = document.getElementById('workout-feed-share-camera-input');
+        if (input) input.click();
+    }
+
+    function openWorkoutFeedShareGallery() {
+        const input = document.getElementById('workout-feed-share-gallery-input');
+        if (input) input.click();
+    }
+
+    function handleWorkoutFeedShareFileSelect(event) {
+        const input = event && event.target;
+        const file = input && input.files ? input.files[0] : null;
+        if (input) input.value = '';
+        if (!file) return;
+
+        if (!file.type || !file.type.startsWith('video/')) {
+            showWorkoutFeedShareUploadBanner('Please choose a video clip.', 'error');
+            return;
+        }
+        if (file.size > MAX_WORKOUT_FEED_SHARE_VIDEO_BYTES) {
+            showWorkoutFeedShareUploadBanner('That video is too large. Keep workout shares under 180 MB.', 'error');
+            return;
+        }
+
+        clearWorkoutFeedShareVideo();
+        workoutFeedShareState.file = file;
+        workoutFeedShareState.objectUrl = URL.createObjectURL(file);
+        const bannerLabel = showWorkoutFeedShareUploadBanner('Uploading your set...', 'info');
+        void submitWorkoutFeedShare({
+            postBtn: bannerLabel
+        });
+    }
+
+    function clearWorkoutFeedShareVideo() {
+        if (workoutFeedShareState.objectUrl) {
+            try { URL.revokeObjectURL(workoutFeedShareState.objectUrl); } catch (e) {}
+        }
+        workoutFeedShareState.file = null;
+        workoutFeedShareState.objectUrl = null;
+
+        const preview = document.getElementById('workout-feed-share-video-preview');
+        const removeBtn = document.getElementById('workout-feed-share-remove-video');
+        if (preview) {
+            preview.pause();
+            preview.removeAttribute('src');
+            preview.load();
+            preview.style.display = 'none';
+        }
+        if (removeBtn) removeBtn.style.display = 'none';
+    }
+
+    async function submitWorkoutFeedShare(options = {}) {
+        const submitBtn = options.postBtn || document.getElementById('workout-feed-share-submit-btn');
+        const captionInput = document.getElementById('workout-feed-share-caption');
+        const userId = window.currentUser && window.currentUser.id;
+
+        if (!userId) {
+            showWorkoutFeedShareUploadBanner('Please log in before posting a workout clip.', 'error');
+            return;
+        }
+        if (!workoutFeedShareState.file) {
+            showWorkoutFeedShareUploadBanner('Record or upload a clip first.', 'error');
+            return;
+        }
+
+        const caption = (options.caption && String(options.caption).trim()) || (captionInput && captionInput.value.trim()) || '';
+
+        try {
+            if (submitBtn && typeof submitBtn === 'object' && 'disabled' in submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Posting...';
+                submitBtn.style.opacity = '0.7';
+            }
+
+            const result = await window.createWorkoutFeedSharePost({
+                file: workoutFeedShareState.file,
+                caption: caption,
+                workoutName: workoutFeedShareState.workoutName || getActiveWorkoutName(),
+                source: 'feed_workout_share',
+                postBtn: submitBtn,
+                pointsType: 'workout_feed_share'
+            });
+
+            const pointsAwarded = Number(result && result.pointsAwarded ? result.pointsAwarded : 0);
+            const dailyLimitReached = !!(result && result.awardResult && result.awardResult.dailyLimitReached);
+            const successMessage = pointsAwarded > 0
+                ? `Posted to Feed! +${pointsAwarded} XP`
+                : dailyLimitReached
+                    ? 'Posted to Feed! Share a Set XP is once per day.'
+                : 'Posted to Feed!';
+            showWorkoutFeedShareUploadBanner(successMessage, 'success');
+
+            if (typeof showToast === 'function') showToast(successMessage, 'success');
+            try {
+                if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
+                if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+            } catch (e) {}
+            if (typeof loadPhotoFeed === 'function') {
+                loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
+            }
+            if (typeof loadStories === 'function') {
+                loadStories();
+            }
+            hideWorkoutFeedShareUploadBanner(1800);
+            setTimeout(clearWorkoutFeedShareVideo, 1800);
+        } catch (error) {
+            console.error('[WorkoutFeedShare] submit failed', error);
+            showWorkoutFeedShareUploadBanner(error.message || 'Could not share that clip. Please try again.', 'error');
+        } finally {
+            if (submitBtn && typeof submitBtn === 'object' && 'disabled' in submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Post to Feed';
+                submitBtn.style.opacity = '1';
+            }
+        }
+    }
+
     window.openFormCheck = openFormCheck;
     window.closeFormCheck = closeFormCheck;
     window.openFormCheckCapture = openFormCheckCapture;
@@ -505,6 +948,14 @@
     window.handleFormCheckFileSelect = handleFormCheckFileSelect;
     window.clearFormCheckVideo = clearFormCheckVideo;
     window.submitFormCheck = submitFormCheck;
+    window.openWorkoutFeedShare = openWorkoutFeedShare;
+    window.closeWorkoutFeedShare = closeWorkoutFeedShare;
+    window.openWorkoutFeedShareCapture = openWorkoutFeedShareCapture;
+    window.openWorkoutFeedShareGallery = openWorkoutFeedShareGallery;
+    window.handleWorkoutFeedShareFileSelect = handleWorkoutFeedShareFileSelect;
+    window.clearWorkoutFeedShareVideo = clearWorkoutFeedShareVideo;
+    window.submitWorkoutFeedShare = submitWorkoutFeedShare;
 
     document.addEventListener('DOMContentLoaded', ensureFormCheckView);
+    document.addEventListener('DOMContentLoaded', ensureWorkoutFeedShareView);
 })();

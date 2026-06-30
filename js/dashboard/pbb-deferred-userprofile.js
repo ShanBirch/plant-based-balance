@@ -16,6 +16,34 @@
     }
     window.openStoryUserProfile = openStoryUserProfile;
 
+    function escapeUserProfileHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[char]));
+    }
+
+    function getUserProfileInitial(name) {
+        const trimmed = String(name || '').trim();
+        return trimmed ? trimmed.charAt(0).toUpperCase() : '?';
+    }
+
+    function setUserProfileAvatar(avatarEl, name, photoUrl) {
+        if (!avatarEl) return;
+        const initial = escapeUserProfileHtml(getUserProfileInitial(name));
+        const photo = typeof photoUrl === 'string' ? photoUrl.trim() : '';
+
+        avatarEl.classList.toggle('has-photo', !!photo);
+        avatarEl.classList.remove('is-missing-photo');
+        avatarEl.innerHTML = `
+            <span class="user-profile-avatar-initial">${initial}</span>
+            ${photo ? `<img src="${escapeUserProfileHtml(photo)}" alt="" class="user-profile-avatar-img" loading="lazy" onerror="this.style.display='none'; this.parentElement.classList.remove('has-photo'); this.parentElement.classList.add('is-missing-photo');">` : ''}
+        `;
+    }
+
     /**
      * Open another user's profile from the feed
      * @param {string} userId - The UUID of the user whose profile to view
@@ -37,7 +65,8 @@
         profileView.style.display = 'block';
 
         // Hide bottom nav for immersive feel
-        document.querySelector('.bottom-nav').style.display = 'none';
+        const bottomNav = document.querySelector('.bottom-nav');
+        if (bottomNav) bottomNav.style.display = 'none';
 
         // Set initial data if provided
         const headerName = document.getElementById('user-profile-header-name');
@@ -52,12 +81,7 @@
             nameEl.textContent = 'Loading...';
         }
 
-        if (userPhoto) {
-            avatarEl.innerHTML = `<img src="${userPhoto}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
-        } else {
-            const initial = (userName || '?').charAt(0).toUpperCase();
-            avatarEl.innerHTML = `<span style="font-size:2.2rem; color:white; font-weight:700;">${initial}</span>`;
-        }
+        setUserProfileAvatar(avatarEl, userName, userPhoto);
 
         // Reset sections
         document.getElementById('user-profile-level').textContent = '1';
@@ -88,9 +112,7 @@
             if (userData) {
                 headerName.textContent = userData.name || 'User';
                 nameEl.textContent = userData.name || 'User';
-                if (userData.profile_photo) {
-                    avatarEl.innerHTML = `<img src="${userData.profile_photo}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
-                }
+                setUserProfileAvatar(avatarEl, userData.name || userName, userData.profile_photo || userPhoto);
             }
 
             // Update level & stats
@@ -165,7 +187,8 @@
      */
     function closeUserProfile() {
         document.getElementById('view-user-profile').style.display = 'none';
-        document.querySelector('.bottom-nav').style.display = 'flex';
+        const bottomNav = document.querySelector('.bottom-nav');
+        if (bottomNav) bottomNav.style.display = 'flex';
         // Release the profile tamagotchi model to free its WebGL context
         if (window._pbbClearModelSrc) window._pbbClearModelSrc('user-profile-tamagotchi-model');
 
@@ -259,13 +282,13 @@
         grid.innerHTML = sorted.slice(0, 6).map(pb => {
             const weight = pb.best_weight_kg ? `${Number(pb.best_weight_kg).toFixed(1)}kg` : '-';
             const reps = pb.best_weight_reps ? `${pb.best_weight_reps} reps` : '';
-            const exerciseName = formatExerciseName(pb.exercise_name);
+            const exerciseName = escapeUserProfileHtml(formatExerciseName(pb.exercise_name));
 
             return `
                 <div class="up-pb-card">
                     <div class="up-pb-exercise">${exerciseName}</div>
-                    <div class="up-pb-weight">${weight}</div>
-                    ${reps ? `<div class="up-pb-reps">${reps}</div>` : ''}
+                    <div class="up-pb-weight">${escapeUserProfileHtml(weight)}</div>
+                    ${reps ? `<div class="up-pb-reps">${escapeUserProfileHtml(reps)}</div>` : ''}
                 </div>
             `;
         }).join('');
@@ -352,7 +375,7 @@
         grid.innerHTML = earnedBadges.slice(0, 9).map(b => `
             <div class="up-badge-card earned">
                 <div class="up-badge-emoji">${b.emoji}</div>
-                <div class="up-badge-label">${b.label}</div>
+                <div class="up-badge-label">${escapeUserProfileHtml(b.label)}</div>
             </div>
         `).join('');
     }
@@ -377,6 +400,49 @@
         }
     }
 
+    function parseUserProfileCardData(story) {
+        if (!story || !story.card_data) return {};
+        if (typeof story.card_data === 'object') return story.card_data;
+        try {
+            return JSON.parse(story.card_data);
+        } catch (_) {
+            return {};
+        }
+    }
+
+    function firstUsableProfileUrl(candidates) {
+        return candidates
+            .map(value => (typeof value === 'string' ? value.trim() : ''))
+            .find(value => value.length > 8 && value !== '[object Object]') || '';
+    }
+
+    function getUserProfileStoryThumbnail(story) {
+        const mediaType = String(story?.media_type || '').toLowerCase();
+        const cardData = parseUserProfileCardData(story);
+        const cardThumb = firstUsableProfileUrl([
+            cardData.thumbnail_url,
+            cardData.thumbnailUrl,
+            cardData.image_url,
+            cardData.imageUrl,
+            cardData.media_url,
+            cardData.mediaUrl,
+            cardData.photo_url,
+            cardData.photoUrl
+        ]);
+
+        if (mediaType === 'video') {
+            return firstUsableProfileUrl([story.thumbnail_url, cardThumb]);
+        }
+
+        return firstUsableProfileUrl([
+            story.thumbnail_url,
+            story.media_url,
+            story.image_url,
+            story.photo_url,
+            cardThumb
+        ]);
+    }
+
     /**
      * Render post thumbnails grid (Instagram-style 3-column grid)
      */
@@ -393,17 +459,20 @@
         emptyState.style.display = 'none';
 
         grid.innerHTML = stories.map(story => {
-            const storyId = story.id;
-            const isImage = story.media_type === 'image' || story.media_type === 'video';
-            const isCardType = ['workout_card', 'nutrition_card', 'meal_card', 'level_up_card', 'checkin_card'].includes(story.media_type);
-            const isTextPost = story.media_type === 'text' || (!isCardType && !story.media_url && !story.thumbnail_url);
+            const storyId = String(story.id || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            const mediaType = String(story.media_type || '').toLowerCase();
+            const thumbnail = getUserProfileStoryThumbnail(story);
+            const isImage = Boolean(thumbnail);
+            const isCardType = ['workout_card', 'nutrition_card', 'meal_card', 'level_up_card', 'checkin_card'].includes(mediaType);
+            const isTextPost = mediaType === 'text' || (!isCardType && !story.media_url && !story.thumbnail_url);
 
-            if (isImage && story.media_url) {
-                const thumb = story.thumbnail_url || story.media_url;
+            if (isImage) {
+                const thumb = thumbnail;
                 return `
                     <div class="up-post-thumb" onclick="openFeedPostViewer('${storyId}')">
-                        <img src="${thumb}" loading="lazy" onerror="this.parentElement.style.background='linear-gradient(135deg, var(--primary), var(--secondary))'; this.style.display='none';">
-                        ${story.media_type === 'video' ? '<div style="position:absolute; top:6px; right:6px;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:white; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));"><path d="M8 5v14l11-7z"/></svg></div>' : ''}
+                        <img src="${escapeUserProfileHtml(thumb)}" loading="lazy" onerror="this.parentElement.classList.add('is-missing-media'); this.style.display='none';">
+                        <span class="up-post-missing-label">Photo unavailable</span>
+                        ${mediaType === 'video' ? '<div class="up-post-video-badge"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>' : ''}
                     </div>
                 `;
             } else if (isCardType) {
