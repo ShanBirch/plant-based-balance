@@ -1771,13 +1771,68 @@ function buildMealRecordShareCaption(cardPayload) {
     return lines.filter(Boolean).join('\n');
 }
 
+function normalizeMealSharePhotoUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+
+    const markerMatch = raw.match(/\[(?:photo|image):\s*(https?:\/\/[^\s\]]+)\]/i);
+    if (markerMatch && markerMatch[1]) return markerMatch[1].trim();
+
+    const lower = raw.toLowerCase();
+    if (['text-input', 'photo_captured', 'null', 'undefined', 'none'].includes(lower)) return '';
+    if (/^(https?:\/\/|data:image\/|blob:)/i.test(raw)) return raw;
+
+    return '';
+}
+
+function getMealSharePhotoUrl(meal) {
+    if (!meal) return '';
+
+    const directFields = [
+        'photo_url',
+        'photoUrl',
+        'image_url',
+        'imageUrl',
+        'media_url',
+        'mediaUrl',
+        'thumbnail_url',
+        'thumbnailUrl',
+        'storage_path',
+        'storagePath',
+        'original_photo_url',
+        'uploaded_photo_url'
+    ];
+
+    for (const field of directFields) {
+        const url = normalizeMealSharePhotoUrl(meal[field]);
+        if (url) return url;
+    }
+
+    const nestedObjects = [meal.metadata, meal.data, meal.raw_data, meal.analysis].filter(Boolean);
+    for (const obj of nestedObjects) {
+        for (const field of directFields) {
+            const url = normalizeMealSharePhotoUrl(obj[field]);
+            if (url) return url;
+        }
+    }
+
+    const textFields = [meal.notes, meal.meal_description, meal.description].filter(Boolean);
+    for (const text of textFields) {
+        const url = normalizeMealSharePhotoUrl(text);
+        if (url) return url;
+    }
+
+    return '';
+}
+
 function buildMealFeedCardPayload(meal) {
     const foodItemsText = Array.isArray(meal && meal.food_items) && meal.food_items.length
         ? meal.food_items.map(item => item && item.name ? item.name : 'Food').join(', ')
         : ((meal && (meal.meal_description || meal.notes)) || 'Meal');
     const rawMealType = meal && meal.meal_type ? String(meal.meal_type) : 'meal';
     const mealType = rawMealType.charAt(0).toUpperCase() + rawMealType.slice(1);
-    const hasPhoto = meal && meal.photo_url && String(meal.photo_url).trim() !== '' && meal.photo_url !== 'text-input';
+    const photoUrl = getMealSharePhotoUrl(meal);
+    const hasPhoto = !!photoUrl;
     const ingredients = Array.isArray(meal && meal.food_items)
         ? meal.food_items
             .map(item => ({
@@ -1802,7 +1857,8 @@ function buildMealFeedCardPayload(meal) {
         protein: Math.round(Number((meal && meal.protein_g) || 0)),
         carbs: Math.round(Number((meal && meal.carbs_g) || 0)),
         fat: Math.round(Number((meal && meal.fat_g) || 0)),
-        photo_url: hasPhoto ? meal.photo_url : null
+        photo_url: hasPhoto ? photoUrl : null,
+        photoUrl: hasPhoto ? photoUrl : null
     };
 
     cardPayload.share_caption = buildMealRecordShareCaption(cardPayload);
