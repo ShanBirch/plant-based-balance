@@ -8359,3 +8359,37 @@ html[data-pbb-theme="light"] #cohort-info-modal button[onclick*="openXpGuidePage
     color: #111827 !important;
     -webkit-text-fill-color: #111827 !important;
 }
+
+/* Feed composer media picker must stay readable over the light Feed surface.
+   The global inline-background theme pass otherwise turns this tiny menu pale with white text. */
+#feed-composer-media-source-menu {
+    background: #fffdf7 !important;
+    border-color: rgba(184, 137, 43, 0.18) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+    box-shadow: 0 14px 30px rgba(57, 47, 31, 0.18) !important;
+}
+
+#feed-composer-media-source-menu button[role="menuitem"] {
+    background: #fffdf7 !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+#feed-composer-media-source-menu button[role="menuitem"] + button[role="menuitem"] {
+    border-top-color: rgba(184, 137, 43, 0.14) !important;
+}
+
+#feed-composer-media-source-menu button[role="menuitem"]:hover,
+#feed-composer-media-source-menu button[role="menuitem"]:focus,
+#feed-composer-media-source-menu button[role="menuitem"]:active {
+    background: #f8f3e8 !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+#feed-composer-media-source-menu svg {
+    color: #151515 !important;
+    stroke: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
