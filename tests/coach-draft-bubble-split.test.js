@@ -63,6 +63,33 @@ assert.strictEqual(
     'line one\nline two'
 );
 
+const joyEmoji = String.fromCodePoint(0x1f602);
+
+assert.strictEqual(
+    normalizeCoachDraftText('oh no that is diabolical u{1F602} / 4:30 landing into 7am work is boss level'),
+    `oh no that is diabolical ${joyEmoji} / 4:30 landing into 7am work is boss level`
+);
+
+assert.strictEqual(
+    normalizeCoachDraftText('that emoji had one job \\u{1F602}'),
+    `that emoji had one job ${joyEmoji}`
+);
+
+assert.strictEqual(
+    normalizeCoachDraftText('that emoji had one job \\uD83D\\uDE02'),
+    `that emoji had one job ${joyEmoji}`
+);
+
+assert.strictEqual(
+    normalizeCoachDraftText('that emoji had one job U+1F602'),
+    `that emoji had one job ${joyEmoji}`
+);
+
+assert.strictEqual(
+    normalizeCoachDraftText('that emoji had one job &#x1F602;'),
+    `that emoji had one job ${joyEmoji}`
+);
+
 assert.ok(
     !formatTimedConversationLine({
         speaker: 'Shannon',

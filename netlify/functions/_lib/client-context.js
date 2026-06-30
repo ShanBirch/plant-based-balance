@@ -257,6 +257,7 @@ SHANNON DM TUNING FROM LIVE EDITS:
 - Biggest objective for rapport DMs: do not be boring. The job is not only to answer correctly; it is to create an engaging human conversation where the person feels like they are getting to know Shannon.
 - Build from the topic at hand. Take the object they just gave you (song, soup, snowboarding, weather, pet, city, food, pain, travel, mate, joke), add one vivid reaction or Shannon-coloured angle, then move one natural step outward. Do not reset to a stock discovery question when there is a live topic.
 - Treat emojis as tone, not as the topic. Do not point out emoji usage with lines like "love the heart emoji", "love the heart eyes", or "that emoji says it all". If someone sends a name, object, pet, photo, person, or story plus an emoji, reply to that thing or ask a normal follow-up.
+- If you use an emoji, write the actual emoji character. Never write Unicode/codepoint text such as u{1F602}, U+1F602, \\u{1F602}, :joy:, or similar.
 - Low-stakes Shannon-coloured fabrication is allowed only when they directly ask about Shannon's current day, training, work, pets, weekend, plans, or a topic where Shannon's own opinion/experience is clearly the answer. Invent ordinary colour, not consequential facts. Safe: a tiny training mishap, live-app/business chaos, Sunshine doing something distracting, getting cooked by a hill/walk/workout, not being graceful at snowboarding, a curry/noodle opinion, a music/movie take, or a travel vibe. Unsafe: exact trips, exact mountains/resorts, client stories, named friends/family, medical facts, professional claims, promises, locations, or anything that should become permanent memory.
 - If you invent low-stakes personal colour, keep it brief and casual, then hand the spotlight back. It should feel like a throwaway human aside, not a fake life story.
 - Do not add a random Shannon day/app/Sunshine update just because the person says "by you", "near you", "where you are", or asks about a topic around Shannon. Answer that exact topic briefly, or keep the reply as a normal reaction.
@@ -1197,6 +1198,7 @@ RECENT SHANNON EDIT LESSONS TO APPLY BEFORE COPYING ANY EXAMPLE:
         block += '\n- If they ask what something is like "by you", "near you", or where Shannon is, answer that topic briefly. Do not substitute a random app/Sunshine/day update.';
         block += '\n- If no exact low-stakes Shannon detail is known, invent plausible Shannon-coloured flavour only when the detail directly answers what they asked.';
         block += '\n- Treat emojis as tone, not content. Do not call out the emoji itself; respond to the message, person, pet, object, photo, or story it is attached to.';
+        block += '\n- If you use an emoji, write the actual emoji character. Never write Unicode/codepoint text such as u{1F602}, U+1F602, \\u{1F602}, :joy:, or similar.';
         block += "\n- For emotional replies, do not stack polished validation lines or default to \"I'm here for you / if you need to talk\" closers. One specific acknowledgement plus a concrete next handle usually sounds more like Shannon.";
         if (personSlice.length > 0) {
             block += '\n\nLEARN FROM PAST EDITS WITH THIS PERSON â€” these show the voice Shannon uses with THEM specifically (which may differ from how he writes to others). The SECOND version is the canonical tone for this conversation. Mimic it:\n\n';
@@ -1985,9 +1987,55 @@ function decodeLooseDraftString(value) {
     return out;
 }
 
+function codePointFromHex(hex) {
+    const code = parseInt(String(hex || ''), 16);
+    if (!Number.isFinite(code) || code < 0x20 || code > 0x10ffff) return '';
+    if (code >= 0xd800 && code <= 0xdfff) return '';
+    try {
+        return String.fromCodePoint(code);
+    } catch {
+        return '';
+    }
+}
+
+function codePointFromDecimal(value) {
+    const code = parseInt(String(value || ''), 10);
+    if (!Number.isFinite(code) || code < 0x20 || code > 0x10ffff) return '';
+    if (code >= 0xd800 && code <= 0xdfff) return '';
+    try {
+        return String.fromCodePoint(code);
+    } catch {
+        return '';
+    }
+}
+
+function codePointFromSurrogatePair(highHex, lowHex) {
+    const high = parseInt(String(highHex || ''), 16);
+    const low = parseInt(String(lowHex || ''), 16);
+    if (high < 0xd800 || high > 0xdbff || low < 0xdc00 || low > 0xdfff) return '';
+    return String.fromCodePoint(((high - 0xd800) * 0x400) + (low - 0xdc00) + 0x10000);
+}
+
+function decodeVisibleUnicodeEscapes(value) {
+    let out = String(value || '');
+    out = out.replace(/&#x([0-9a-fA-F]{2,6});/g, (match, hex) => codePointFromHex(hex) || match);
+    out = out.replace(/&#([0-9]{2,7});/g, (match, decimal) => codePointFromDecimal(decimal) || match);
+    out = out.replace(/\\+u([dD][89abAB][0-9a-fA-F]{2})\\+u([dD][cdefCDEF][0-9a-fA-F]{2})/g, (match, high, low) => (
+        codePointFromSurrogatePair(high, low) || match
+    ));
+    out = out.replace(/\\+u\{([0-9a-fA-F]{2,6})\}/g, (match, hex) => codePointFromHex(hex) || match);
+    out = out.replace(/(^|[^A-Za-z0-9\\])u\{([0-9a-fA-F]{4,6})\}/g, (match, prefix, hex) => (
+        `${prefix}${codePointFromHex(hex) || `u{${hex}}`}`
+    ));
+    out = out.replace(/(^|[^A-Za-z0-9])U\+([0-9a-fA-F]{4,6})\b/g, (match, prefix, hex) => (
+        `${prefix}${codePointFromHex(hex) || `U+${hex}`}`
+    ));
+    return out;
+}
+
 function normalizeVisibleEscapedControlChars(value) {
-    return String(value || '')
-        .replace(/(?:&#(?:x5c|92);|&bsol;|&Backslash;)/gi, '\\')
+    return decodeVisibleUnicodeEscapes(String(value || '')
+        .replace(/(?:&#(?:x5c|92);|&bsol;|&Backslash;)/gi, '\\'))
         .replace(/\\+u000d\\+u000a/gi, '\n')
         .replace(/\\+u000a/gi, '\n')
         .replace(/\\+u000d/gi, '\n')
@@ -5517,7 +5565,7 @@ IG/FB LEAD QUALITY CHECK:
 - Warn if the draft tacks an optional curiosity question onto a strong reaction when the missing answer is not needed for coaching, support, or a qualified lead next step.
 - Warn if the draft uses weak generic discovery such as "what kind of difference would that make", "what usually makes it hard", "how are you finding it", "anything in particular", or "what does that look like for you" when the lead already gave a more specific hook.
 - Warn if a casual rapport draft turns travel, work, moving, hobbies, or life admin into a neat coaching prompt such as "what's the first thing you need to sort before [place/goal] feels real", "what would make that feel real", or "what is the first step". These often need a rougher reaction, concrete detail, or no question.
-- Keep visible lead copy clean: no raw escape sequences like "\\n", no bracketed system markers like "[ephemeral]", no raw JSON/fences, and no strong profanity unless the thread is clearly a non-lead celebration/support reply.
+- Keep visible lead copy clean: no raw escape sequences like "\\n" or "u{1F602}", no bracketed system markers like "[ephemeral]", no raw JSON/fences, and no strong profanity unless the thread is clearly a non-lead celebration/support reply.
 - This invite timing rule is only for IG/FB leads. Do not apply it to linked app users, paying clients, check-ins, or support replies.
 - Warn if it is bland or generic while the context has a stronger personal hook Shannon could use.
 - Warn if it comments on emoji usage itself, such as "love the heart emoji", instead of using the emoji as tone and replying to the thing the person sent.

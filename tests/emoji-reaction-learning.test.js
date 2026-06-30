@@ -20,6 +20,10 @@ assert.ok(
     tuningBlock.includes('Do not point out emoji usage'),
     'global DM tuning rejects narrating emoji usage'
 );
+assert.ok(
+    tuningBlock.includes('Never write Unicode/codepoint text such as u{1F602}'),
+    'global DM tuning rejects visible emoji codepoints'
+);
 
 const lessons = buildFallbackEditLearningBullets({
     editReason: "A human wouldn't say, love the heart emoji",
