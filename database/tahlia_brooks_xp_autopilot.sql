@@ -1,6 +1,6 @@
--- Tahlia Brooks seeded XP autopilot
+-- Tahlia seeded XP autopilot
 --
--- Creates a private daily XP plan for the seeded Tahlia Brooks account.
+-- Creates a private daily XP plan for the seeded Tahlia account.
 -- Supabase Cron checks the worker every minute. The worker only applies due
 -- awards, so visible XP changes still happen 5-10 randomized times per
 -- Brisbane day and only enough XP is applied to keep the day inside the
@@ -20,9 +20,9 @@ CREATE TABLE IF NOT EXISTS private.seed_xp_automation_rules (
     max_awards_per_day INTEGER NOT NULL DEFAULT 10 CHECK (max_awards_per_day >= min_awards_per_day),
     active_start TIME NOT NULL DEFAULT '06:10',
     active_end TIME NOT NULL DEFAULT '22:40',
-    transaction_type TEXT NOT NULL DEFAULT 'seeded_challenge_bonus',
+    transaction_type TEXT NOT NULL DEFAULT 'seeded_activity_xp',
     reference_type TEXT NOT NULL DEFAULT 'tahlia_brooks_xp_autopilot',
-    description TEXT NOT NULL DEFAULT '[Seeded challenge] Tahlia Brooks daily XP',
+    description TEXT NOT NULL DEFAULT '[Seeded challenge] Tahlia daily XP',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -297,12 +297,22 @@ BEGIN
         )
         VALUES (
             v_award.user_id,
-            v_award.transaction_type,
+            CASE ((v_award.award_index - 1) % 4)
+                WHEN 0 THEN 'earn_workout'
+                WHEN 1 THEN 'earn_meal'
+                WHEN 2 THEN 'earn_quiz'
+                ELSE 'daily_checkin'
+            END,
             v_award_xp,
             v_award.id,
             v_award.reference_type,
             FALSE,
-            v_award.description,
+            CASE ((v_award.award_index - 1) % 4)
+                WHEN 0 THEN 'Workout logged'
+                WHEN 1 THEN 'Meal logged'
+                WHEN 2 THEN 'Health IQ quiz'
+                ELSE 'Daily check-in'
+            END,
             LEAST(v_award.scheduled_for, p_now)
         )
         RETURNING id INTO v_tx_id;
@@ -368,7 +378,65 @@ ON CONFLICT (rule_key) DO UPDATE SET
     max_awards_per_day = EXCLUDED.max_awards_per_day,
     active_start = EXCLUDED.active_start,
     active_end = EXCLUDED.active_end,
+    transaction_type = 'seeded_activity_xp',
+    description = 'Tahlia seeded activity XP',
     updated_at = NOW();
+
+-- Reclassify existing Tahlia seeded XP in the current challenge so the point
+-- breakdown never shows "Challenge rewards" or "Feed posts" for the seed.
+WITH tahlia AS (
+    SELECT id
+    FROM public.users
+    WHERE email = 'seed.tahlia.brooks+kayla30@plantbased-balance.org'
+),
+current_challenge AS (
+    SELECT c.id, c.start_date, c.end_date
+    FROM public.challenges c
+    JOIN public.challenge_participants cp ON cp.challenge_id = c.id
+    JOIN tahlia u ON u.id = cp.user_id
+    WHERE c.name = '6-Week Transformation Challenge'
+      AND c.is_system_cohort = TRUE
+      AND c.start_date <= CURRENT_DATE
+      AND c.end_date >= CURRENT_DATE
+      AND cp.status = 'accepted'
+    ORDER BY c.start_date DESC
+    LIMIT 1
+),
+seeded_tx AS (
+    SELECT
+        pt.id,
+        ROW_NUMBER() OVER (ORDER BY pt.created_at, pt.id) AS rn
+    FROM public.point_transactions pt
+    JOIN tahlia u ON u.id = pt.user_id
+    JOIN current_challenge c
+      ON pt.created_at >= c.start_date::TIMESTAMPTZ
+     AND pt.created_at < (LEAST(c.end_date, CURRENT_DATE) + 1)::TIMESTAMPTZ
+    WHERE pt.points_amount > 0
+      AND (
+          pt.reference_type = 'tahlia_brooks_xp_autopilot'
+          OR LOWER(COALESCE(pt.transaction_type, '')) LIKE '%challenge%'
+          OR LOWER(COALESCE(pt.description, '')) LIKE '%seeded challenge%'
+      )
+)
+UPDATE public.point_transactions pt
+SET transaction_type = CASE ((seeded_tx.rn - 1) % 4)
+        WHEN 0 THEN 'earn_workout'
+        WHEN 1 THEN 'earn_meal'
+        WHEN 2 THEN 'earn_quiz'
+        ELSE 'daily_checkin'
+    END,
+    description = CASE ((seeded_tx.rn - 1) % 4)
+        WHEN 0 THEN 'Workout logged'
+        WHEN 1 THEN 'Meal logged'
+        WHEN 2 THEN 'Health IQ quiz'
+        ELSE 'Daily check-in'
+    END
+FROM seeded_tx
+WHERE pt.id = seeded_tx.id;
+
+SELECT public.update_challenge_participant_points(id)
+FROM public.users
+WHERE email = 'seed.tahlia.brooks+kayla30@plantbased-balance.org';
 
 SELECT cron.unschedule(jobid)
 FROM cron.job

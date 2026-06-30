@@ -7120,6 +7120,7 @@ function getChallengeBreakdownColor(key, index) {
         nutrition: '#10b981',
         workouts: '#3b82f6',
         weigh_ins: '#06b6d4',
+        check_ins: '#06b6d4',
         learning: '#8b5cf6',
         feed_posts: '#ec4899',
         bonuses: '#f59e0b',
@@ -7138,6 +7139,7 @@ function labelChallengeTransaction(type, description) {
     if (t.indexOf('meal') !== -1) return 'Meal logged';
     if (t.indexOf('workout') !== -1) return 'Workout logged';
     if (t.indexOf('weigh') !== -1) return 'Weigh-in logged';
+    if (t.indexOf('checkin') !== -1 || t.indexOf('check_in') !== -1 || t.indexOf('check-in') !== -1) return 'Daily check-in';
     if (t.indexOf('story') !== -1 || t.indexOf('post') !== -1) return 'Feed post';
     if (t.indexOf('lesson') !== -1 || t.indexOf('learning') !== -1 || t.indexOf('quiz') !== -1) return 'Learning XP';
     if (t.indexOf('streak') !== -1 || t.indexOf('milestone') !== -1 || t.indexOf('bonus') !== -1) return 'Bonus XP';
@@ -7150,6 +7152,7 @@ function categorizeChallengeTransaction(type, description) {
     if (t.indexOf('workout') !== -1 || d.indexOf('workout') !== -1) return { key: 'workouts', label: 'Workouts' };
     if (t.indexOf('daily_log') !== -1 || t.indexOf('meal') !== -1 || d.indexOf('meal') !== -1 || d.indexOf('nutrition') !== -1) return { key: 'nutrition', label: 'Nutrition' };
     if (t.indexOf('weigh') !== -1 || d.indexOf('weigh') !== -1) return { key: 'weigh_ins', label: 'Weigh-ins' };
+    if (t.indexOf('checkin') !== -1 || t.indexOf('check_in') !== -1 || t.indexOf('check-in') !== -1 || d.indexOf('check-in') !== -1 || d.indexOf('check in') !== -1 || d.indexOf('checkin') !== -1) return { key: 'check_ins', label: 'Check-ins' };
     if (t.indexOf('story') !== -1 || t.indexOf('post') !== -1 || d.indexOf('feed') !== -1 || d.indexOf('post') !== -1) return { key: 'feed_posts', label: 'Feed posts' };
     if (t.indexOf('lesson') !== -1 || t.indexOf('learning') !== -1 || t.indexOf('quiz') !== -1) return { key: 'learning', label: 'Learning' };
     if (t.indexOf('streak') !== -1 || t.indexOf('milestone') !== -1 || t.indexOf('bonus') !== -1) return { key: 'bonuses', label: 'Bonuses' };
