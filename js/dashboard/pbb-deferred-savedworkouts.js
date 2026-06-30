@@ -54,7 +54,7 @@ if (typeof window.pbbEnsureWorkoutDashboardRuntimeScript !== 'function') {
         if (window._pbbWorkoutDashboardRuntimePromise) return window._pbbWorkoutDashboardRuntimePromise;
 
         window._pbbWorkoutDashboardRuntimePromise = new Promise((resolve, reject) => {
-            const src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=114';
+            const src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=115';
             const startedAt = Date.now();
             let settled = false;
 

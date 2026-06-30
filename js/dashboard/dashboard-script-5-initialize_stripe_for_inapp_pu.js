@@ -5813,8 +5813,14 @@ async function showNativePermissionsModal() {
 function openAppNotificationSettings() {
     if (window.NativePermissions && typeof window.NativePermissions.openNotificationSettings === 'function') {
         window.NativePermissions.openNotificationSettings();
-    } else if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-        window.Capacitor.Plugins.App.openUrl({ url: 'app-settings:' }).catch(() => {});
+    } else if (window.Capacitor) {
+        let AppPlugin = window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+        if (!AppPlugin && typeof window.Capacitor.registerPlugin === 'function') {
+            try { AppPlugin = window.Capacitor.registerPlugin('App'); } catch (e) {}
+        }
+        if (AppPlugin && typeof AppPlugin.openUrl === 'function') {
+            AppPlugin.openUrl({ url: 'app-settings:' }).catch(() => {});
+        }
     }
     // After returning from settings, refresh the status display
     setTimeout(updatePushNotifSettingsUI, 1500);
@@ -5902,14 +5908,17 @@ const PUSH_PERMISSION_REMINDER_SHORT_CADENCE_MS = 4 * 24 * 60 * 60 * 1000;
 const PUSH_PERMISSION_REMINDER_LONG_CADENCE_MS = 14 * 24 * 60 * 60 * 1000;
 const PUSH_PERMISSION_REMINDER_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
 
-function isNativeAndroidAppForPushReminder() {
+function isNativeMobileAppForPushReminder() {
     if (!(typeof isNativeApp === 'function' && isNativeApp())) return false;
     try {
         if (window.Capacitor && typeof window.Capacitor.getPlatform === 'function') {
-            return window.Capacitor.getPlatform() === 'android';
+            const platform = window.Capacitor.getPlatform();
+            if (platform !== 'android' && platform !== 'ios') return false;
         }
     } catch (e) {}
-    return !!window._pbbIsNativeAndroid;
+    return !!(window.NativePush
+        && typeof window.NativePush.checkPermission === 'function'
+        && typeof window.NativePush.requestPermission === 'function');
 }
 
 function getPushPermissionReminderKey(name) {
@@ -6061,7 +6070,7 @@ function showPushPermissionReminder() {
 
 async function maybeShowPushPermissionReminder() {
     if (window._pushPermissionReminderChecking) return;
-    if (!isNativeAndroidAppForPushReminder()) return;
+    if (!isNativeMobileAppForPushReminder()) return;
     if (isPushPermissionReminderBlocked()) return;
     if (!localStorage.getItem('native_permissions_requested')) return;
 
