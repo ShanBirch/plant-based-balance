@@ -3,6 +3,7 @@ const assert = require('assert');
 const {
     buildFallbackEditLearningBullets,
     buildShannonDmTuningBlock,
+    classifyCoachEditDeltas,
 } = require('../netlify/functions/_lib/client-context');
 
 const tuningBlock = buildShannonDmTuningBlock();
@@ -86,6 +87,45 @@ assert.ok(
 assert.ok(
     fraSocialRewriteLessons.some(lesson => lesson.includes('food, study, pastry')),
     'Fra social rewrites should stop turning casual IG topics into coaching/discovery'
+);
+
+const hawaiiTags = classifyCoachEditDeltas({
+    editReason: 'sounds too ai-ish and too neat',
+    draftText: "yeah that makes sense. sounds like the next few months are work days and getting the pieces lined up.\nwhat's the first thing you need to sort before Hawaii feels real?",
+    sentMessage: "yeah that's the real admin bit haha. once the money plan's sorted, the rest is just choosing the island and moving the pieces around",
+    metrics: {
+        draft_chars: 167,
+        final_chars: 132,
+        final_shannon_authored_pct: 80,
+        character_change_pct: 70,
+    },
+});
+
+assert.ok(hawaiiTags.includes('too_neat'), 'Hawaii-style feels-real prompt should be labelled too_neat');
+assert.ok(hawaiiTags.includes('unneeded_question'), 'removed Hawaii question should be labelled unneeded_question');
+assert.ok(hawaiiTags.includes('too_polished'), 'polished rapport setup should be labelled too_polished');
+assert.ok(hawaiiTags.includes('missed_concrete_hook'), 'final concrete travel/admin hook should be labelled');
+
+const hawaiiLessons = buildFallbackEditLearningBullets({
+    editReason: 'sounds too ai-ish and too neat',
+    draftText: "what's the first thing you need to sort before Hawaii feels real?",
+    sentMessage: "yeah that's the real admin bit haha",
+    metrics: {
+        draft_chars: 65,
+        final_chars: 35,
+        final_shannon_authored_pct: 90,
+        character_change_pct: 90,
+    },
+    editDeltaTags: hawaiiTags,
+});
+
+assert.ok(
+    hawaiiLessons.some(lesson => lesson.includes('Avoid neat life-coach prompts')),
+    'fallback learning should turn too_neat tags into a reusable rule'
+);
+assert.ok(
+    hawaiiLessons.some(lesson => lesson.includes('Do not add a follow-up question')),
+    'fallback learning should convert unneeded_question tags into question discipline'
 );
 
 console.log('emoji reaction learning tests passed');

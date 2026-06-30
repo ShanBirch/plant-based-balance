@@ -264,6 +264,7 @@ SHANNON DM TUNING FROM LIVE EDITS:
 - Question discipline: do not end every reply with a question. If the right human reply is a short reaction, joke, direct answer, or acknowledgement, stop there. When a question is useful, ask one question only.
 - Live edit pattern from the last 30 days: Shannon often deletes the optional curiosity question and sends the reaction only. If you are about to write "reaction + extra question", use the reaction-only pattern unless the missing answer changes the coaching plan, support fix, or qualified lead next step.
 - Client question ladders: if the client is answering Shannon's latest question, treat the answer as enough unless there is a genuine coaching reason to ask more. Affirm, steer, or close instead of turning every answer into another question.
+- Avoid neat life-coach prompts in casual rapport, especially travel, work, moving, hobbies, and life-admin threads. Lines like "what's the first thing you need to sort before Hawaii feels real?", "what would make that feel real?", or "what is the first step?" sound AI-ish unless the person explicitly asked for planning help. Prefer the human handle already in the thread: "yeah that's the real admin bit haha", "once the money plan is sorted the rest is just moving pieces around", or a concrete question like "Oahu or Maui this time?".
 - Current-status answers are answers. If they just said how they are, how something feels, or what is wrong right now, do not ask that same status back. Example: if they say "just pain when i walk", do not write "how's it feeling today, still pain when you walk?" A short acknowledgement like "ahhh that's not good fra" plus a tiny statement or next step is usually better.
 - Do not let "earn the next response" become an interrogation. For clients, the next handle can be a useful direction, reassurance, praise, banter, or clean pause, not just another ask.
 - A reply can feel worth answering because it is specific and human. Do not add a question just because the previous sentence is a statement.
@@ -5515,6 +5516,7 @@ IG/FB LEAD QUALITY CHECK:
 - Do not warn just because a lead/client reply is short and reaction-only. Recent Shannon edits show he often removes optional curiosity questions and sends only the specific reaction when the latest turn is banter, a quick update, a food/photo reaction, or an answer to his previous tiny question.
 - Warn if the draft tacks an optional curiosity question onto a strong reaction when the missing answer is not needed for coaching, support, or a qualified lead next step.
 - Warn if the draft uses weak generic discovery such as "what kind of difference would that make", "what usually makes it hard", "how are you finding it", "anything in particular", or "what does that look like for you" when the lead already gave a more specific hook.
+- Warn if a casual rapport draft turns travel, work, moving, hobbies, or life admin into a neat coaching prompt such as "what's the first thing you need to sort before [place/goal] feels real", "what would make that feel real", or "what is the first step". These often need a rougher reaction, concrete detail, or no question.
 - Keep visible lead copy clean: no raw escape sequences like "\\n", no bracketed system markers like "[ephemeral]", no raw JSON/fences, and no strong profanity unless the thread is clearly a non-lead celebration/support reply.
 - This invite timing rule is only for IG/FB leads. Do not apply it to linked app users, paying clients, check-ins, or support replies.
 - Warn if it is bland or generic while the context has a stronger personal hook Shannon could use.
@@ -5989,6 +5991,117 @@ function countQuestionMarks(text) {
     return (String(text || '').match(/\?/g) || []).length;
 }
 
+const EDIT_DELTA_TAG_DESCRIPTIONS = {
+    too_neat: 'Draft used a tidy life-coach framing instead of staying with the messy concrete thread.',
+    unneeded_question: 'Shannon removed a question that was not needed for the next step.',
+    reaction_only: 'Shannon cut the reply down to a short reaction, direct answer, or clean pause.',
+    too_coachy: 'Draft turned casual rapport into coaching, discovery, or funnel movement too early.',
+    too_polished: 'Draft sounded too polished, therapeutic, branded, or assistant-like.',
+    missed_concrete_hook: 'Draft missed the specific object, place, admin detail, joke, or practical handle Shannon used.',
+    too_long: 'Shannon shortened the draft materially.',
+};
+
+function hasNeatLifeCoachPrompt(text) {
+    const value = String(text || '').toLowerCase();
+    if (!value) return false;
+    return /\bwhat'?s the first thing (?:you )?(?:need to )?(?:sort|sort out|get sorted)\b/i.test(value)
+        || /\bwhat'?s the first step\b/i.test(value)
+        || /\bwhat would make (?:it|that|this).*(?:feel )?real\b/i.test(value)
+        || /\bbefore .* feels real\b/i.test(value)
+        || /\bwhat kind of difference would that make\b/i.test(value)
+        || /\bwhat would that change for you\b/i.test(value)
+        || /\bwhat does that look like for you\b/i.test(value)
+        || /\bwhat would that look like for you\b/i.test(value);
+}
+
+function hasCoachyDiscoveryLanguage(text) {
+    const value = String(text || '').toLowerCase();
+    if (!value) return false;
+    return /\b(goal|goals|blocker|blocks?|motivation|accountability|consistency|structure|coaching|starter coaching|challenge|program|where do you want to be|what gets in the way|what usually makes|what do you need help with)\b/i.test(value)
+        || hasNeatLifeCoachPrompt(value);
+}
+
+function hasPolishedAssistantLanguage(text) {
+    const value = String(text || '').toLowerCase();
+    if (!value) return false;
+    return /\b(i completely understand|thank you for sharing|i appreciate you sharing|that must be|it sounds like you are|it seems like you are|what i'?m hearing|before .* feels real|you'?ve got this|i'?m here for you|keep me posted|let me know how you go)\b/i.test(value)
+        || /\bsounds like\b.{0,90}\b(feels|pieces|journey|process|next few months|lined up|aligned|real)\b/i.test(value);
+}
+
+function concreteTokensForEditDelta(text) {
+    const stop = new Set([
+        'about', 'again', 'also', 'and', 'are', 'because', 'been', 'before', 'bit', 'but',
+        'can', 'could', 'did', 'does', 'dont', 'for', 'from', 'get', 'getting', 'going',
+        'good', 'got', 'had', 'haha', 'have', 'having', 'how', 'just', 'like', 'make',
+        'makes', 'more', 'need', 'not', 'once', 'only', 'really', 'said', 'some',
+        'sounds', 'still', 'that', 'thats', 'the', 'then', 'there', 'thing', 'this',
+        'time', 'too', 'want', 'was', 'what', 'when', 'where', 'with', 'would', 'yeah',
+        'you', 'your',
+    ]);
+    return new Set(
+        String(text || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9\s']/g, ' ')
+            .split(/\s+/)
+            .map(token => token.replace(/^'+|'+$/g, ''))
+            .filter(token => token.length >= 4 && !stop.has(token))
+    );
+}
+
+function classifyCoachEditDeltas({ editReason, draftText, sentMessage, metrics } = {}) {
+    const reason = String(editReason || '').toLowerCase();
+    const draft = normalizeCoachDraftText(draftText || '').trim();
+    const final = normalizeCoachDraftText(sentMessage || '').trim();
+    const tags = new Set();
+    if (!draft || !final || draft === final) return [];
+
+    const draftQuestions = countQuestionMarks(draft);
+    const finalQuestions = countQuestionMarks(final);
+    const finalWords = tokenizeForEditMetrics(final).length;
+    const draftWords = tokenizeForEditMetrics(draft).length;
+    const shortened = metrics?.draft_chars && metrics?.final_chars
+        ? metrics.final_chars < metrics.draft_chars * 0.72
+        : final.length < draft.length * 0.72;
+
+    if (draftQuestions > finalQuestions || /\b(unneeded|unnecessary|too many|remove(?:d)?).{0,35}question/i.test(reason)) {
+        tags.add('unneeded_question');
+    }
+    if ((draftQuestions > finalQuestions && finalQuestions === 0 && finalWords <= 18 && shortened)
+        || /\breaction[- ]?only|reaction only|short reaction|just the reaction|no question/i.test(reason)) {
+        tags.add('reaction_only');
+    }
+    if (hasNeatLifeCoachPrompt(draft) || /\btoo neat|life coach|lifecoach|feels real|first step|first thing/i.test(reason)) {
+        tags.add('too_neat');
+    }
+    if ((hasCoachyDiscoveryLanguage(draft) && !hasCoachyDiscoveryLanguage(final))
+        || /\btoo coachy|coachy|too sales|too funnel|too discovery|too much coaching/i.test(reason)) {
+        tags.add('too_coachy');
+    }
+    if ((hasPolishedAssistantLanguage(draft) && !hasPolishedAssistantLanguage(final))
+        || /\btoo polished|too formal|too ai|ai-ish|robotic|therapist|therapy|assistant|brand/i.test(reason)) {
+        tags.add('too_polished');
+    }
+    if (shortened || (draftWords && finalWords && finalWords < draftWords * 0.65)) {
+        tags.add('too_long');
+    }
+
+    const draftTokens = concreteTokensForEditDelta(draft);
+    const finalTokens = [...concreteTokensForEditDelta(final)].filter(token => !draftTokens.has(token));
+    const addedConcreteCount = finalTokens.length;
+    if (/\b(concrete|specific|hook|detail|actual|missed|object|place|admin|joke|handle)\b/i.test(reason)
+        || (addedConcreteCount >= 2 && (hasNeatLifeCoachPrompt(draft) || hasPolishedAssistantLanguage(draft) || hasCoachyDiscoveryLanguage(draft)))) {
+        tags.add('missed_concrete_hook');
+    }
+
+    return [...tags];
+}
+
+function describeEditDeltaTags(tags) {
+    const list = Array.isArray(tags) ? tags.filter(Boolean) : [];
+    if (!list.length) return '(none)';
+    return list.map(tag => `${tag}: ${EDIT_DELTA_TAG_DESCRIPTIONS[tag] || 'Detected Shannon edit pattern.'}`).join('\n');
+}
+
 function isShortSocialRewriteLearningSignal({ alert, draftText, sentMessage, metrics }) {
     const data = alert?.data || {};
     const alertType = String(alert?.alert_type || '').toLowerCase();
@@ -6017,17 +6130,42 @@ function isShortSocialRewriteLearningSignal({ alert, draftText, sentMessage, met
     return shortFinal && shortened && (removedQuestions || lowRetention);
 }
 
-function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, metrics, alert = null }) {
+function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, metrics, alert = null, editDeltaTags = null }) {
     const reason = String(editReason || '').toLowerCase();
     const draft = String(draftText || '');
     const final = String(sentMessage || '');
     const bullets = [];
+    const deltaTags = Array.isArray(editDeltaTags)
+        ? editDeltaTags
+        : classifyCoachEditDeltas({ editReason, draftText: draft, sentMessage: final, metrics });
     const shortSocialRewrite = isShortSocialRewriteLearningSignal({
         alert,
         draftText: draft,
         sentMessage: final,
         metrics,
     });
+
+    if (deltaTags.includes('too_neat')) {
+        bullets.push('Avoid neat life-coach prompts in casual rapport. Stay with the concrete thread, like the place, admin detail, joke, food, workout, or practical next piece they actually mentioned.');
+    }
+    if (deltaTags.includes('unneeded_question')) {
+        bullets.push('Do not add a follow-up question just to keep the thread alive. Use one question max, and if the missing answer does not change coaching, support, or the lead next step, stop on the reaction or clear statement.');
+    }
+    if (deltaTags.includes('reaction_only')) {
+        bullets.push('When Shannon trims a draft to a short reaction, learn that the reaction can be the whole reply for banter, quick updates, food/photo reactions, or answers to a tiny question.');
+    }
+    if (deltaTags.includes('too_coachy')) {
+        bullets.push('Do not turn travel, work, moving, hobbies, food banter, or casual life admin into coaching/discovery unless they clearly ask for help or the next step depends on it.');
+    }
+    if (deltaTags.includes('too_polished')) {
+        bullets.push('Write rougher and more phone-native when the draft sounds polished: fewer tidy summaries, fewer therapist labels, and more direct Shannon-style reaction.');
+    }
+    if (deltaTags.includes('missed_concrete_hook')) {
+        bullets.push('Use the exact concrete hook Shannon used in the edit instead of abstracting it into a broad question.');
+    }
+    if (deltaTags.includes('too_long')) {
+        bullets.push('Cut filler aggressively when Shannon shortens the draft; one specific sentence often lands better than a polished setup plus question.');
+    }
 
     if (shortSocialRewrite) {
         bullets.push('For this relationship, default to very short social replies: one warm reaction, direct answer, or tiny question is often enough.');
@@ -6216,16 +6354,16 @@ function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, 
     return normalizeAutoLearnedBullets(bullets);
 }
 
-function inferCoachEditLearningFallback({ alert, draftText, sentMessage, metrics, editReason }) {
+function inferCoachEditLearningFallback({ alert, draftText, sentMessage, metrics, editReason, editDeltaTags = null }) {
     const clientName = alert?.client_name || alert?.data?.profile_name || alert?.data?.ig_username || 'this person';
-    const bullets = buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, metrics, alert });
+    const bullets = buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, metrics, alert, editDeltaTags });
     const hasReason = !!String(editReason || '').trim();
     const summary = hasReason
         ? `Shannon's edit reason was captured and converted into reusable guidance for ${clientName}.`
         : `Shannon materially changed the draft for ${clientName}; fallback rules were inferred from the edit shape.`;
     return normalizeCoachEditLearningPayload({
         summary,
-        change_types: hasReason ? ['edit_reason_used'] : ['fallback_diff_inference'],
+        change_types: [...(hasReason ? ['edit_reason_used'] : ['fallback_diff_inference']), ...(editDeltaTags || [])],
         lessons: bullets,
         auto_instructions: bullets,
         should_update_prompt: bullets.length > 0 && (hasReason || metrics.final_shannon_authored_pct >= 30 || metrics.character_change_pct >= 30),
@@ -6310,7 +6448,7 @@ async function saveEditLearningInstructions(target, value) {
     return false;
 }
 
-async function generateCoachEditLearning({ alert, draftText, sentMessage, metrics, existingInstructions, editReason }) {
+async function generateCoachEditLearning({ alert, draftText, sentMessage, metrics, existingInstructions, editReason, editDeltaTags = [] }) {
     const { manual, autoBullets } = splitCoachInstructionSections(existingInstructions);
     const clientName = alert?.client_name || alert?.data?.profile_name || alert?.data?.ig_username || 'this person';
     const prompt = `You are Shannon's private edit-learning analyst.
@@ -6350,6 +6488,9 @@ final_shannon_authored_pct=${metrics.final_shannon_authored_pct}
 draft_kept_pct=${metrics.draft_kept_pct}
 character_change_pct=${metrics.character_change_pct}
 
+DETECTED EDIT DELTA TAGS:
+${describeEditDeltaTags(editDeltaTags)}
+
 SHANNON'S MANUAL INSTRUCTIONS (do not rewrite):
 ${manual || '(none)'}
 
@@ -6373,6 +6514,7 @@ ${sentMessage}`;
             sentMessage,
             metrics,
             editReason,
+            editDeltaTags,
         });
     }
 }
@@ -6391,6 +6533,12 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
     if (!draft || !final) return { ok: false, skipped: 'missing_draft_or_final' };
 
     const metrics = calculateCoachEditMetrics(draft, final);
+    const editDeltaTags = classifyCoachEditDeltas({
+        editReason: data.edit_reason || '',
+        draftText: draft,
+        sentMessage: final,
+        metrics,
+    });
     const mediaReview = buildMediaReviewInfo(alert);
     const contextReview = buildContextReviewInfo(alert);
     const reviewExcluded = mediaReview.required || contextReview.required;
@@ -6400,6 +6548,8 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
         ...metrics,
         source: source || data.sent_via || 'unknown',
         edit_reason: explicitEditReason || null,
+        edit_delta_tags: editDeltaTags,
+        edit_delta_summary: describeEditDeltaTags(editDeltaTags),
         analyzed_at: new Date().toISOString(),
         analyzer_model: EDIT_ANALYSIS_MODEL,
         media_review_required: mediaReview.required,
@@ -6494,6 +6644,7 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
             metrics,
             existingInstructions: target.existingInstructions || '',
             editReason: explicitEditReason,
+            editDeltaTags,
         });
     } catch (err) {
         const editAnalysis = {
@@ -6520,6 +6671,7 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
         sentMessage: final,
         metrics,
         alert,
+        editDeltaTags,
     });
     const learnedInstructions = shortSocialRewriteLearning
         ? normalizeAutoLearnedBullets([...deterministicBullets, ...learning.auto_instructions])
@@ -6552,7 +6704,7 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
     const editAnalysis = {
         ...baseAnalysis,
         summary: learning.summary || 'Shannon edited the draft.',
-        change_types: learning.change_types,
+        change_types: normalizeAutoLearnedBullets([...learning.change_types, ...editDeltaTags]),
         lessons: normalizeAutoLearnedBullets([...learning.lessons, ...deterministicBullets]),
         learned_instructions: learnedInstructions,
         confidence: learning.confidence,
@@ -7145,6 +7297,8 @@ module.exports = {
     buildShannonDmTuningBlock,
     buildBalanceIdentityElicitationBlock,
     buildOpenAIShannonVoiceBlock,
+    classifyCoachEditDeltas,
+    describeEditDeltaTags,
     buildFallbackEditLearningBullets,
     loadEditExamples,
     loadResponseTimingProfile,

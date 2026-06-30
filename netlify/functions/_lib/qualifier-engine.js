@@ -509,7 +509,9 @@ function isPrematureChallengeInvite({ draftText, currentMessage, qualifier, lead
 function isDeepFunnelQuestion(question) {
     const q = String(question || '').toLowerCase();
     if (!q) return false;
-    return /\b(goal|goals|dream scenario|kicked this off|what would change|tried|before|gets? in the way|blocker|challenge|30 days|start|lock it in|program|app|lose weight|muscle|energy)\b/i.test(q);
+    return /\b(goal|goals|dream scenario|kicked this off|what would change|tried|before|gets? in the way|blocker|challenge|30 days|start|lock it in|program|app|lose weight|muscle|energy)\b/i.test(q)
+        || /\b(?:first thing|first step|next step).*\b(?:sort|sorted|make|makes|feel|feels|real)\b/i.test(q)
+        || /\b(?:feel|feels|make|makes).*real\b/i.test(q);
 }
 
 function isUnsafeStockDiscoveryQuestion(text) {
@@ -532,6 +534,10 @@ function isUnsafeStockDiscoveryQuestion(text) {
         || /\bwhat would that look like for you\b/i.test(q)
         || /\bwhat kind of difference would that make\b/i.test(q)
         || /\bwhat would that change for you\b/i.test(q)
+        || /\bwhat'?s the first thing (?:you )?(?:need to )?(?:sort|sort out|get sorted)\b/i.test(q)
+        || /\bwhat'?s the first step\b/i.test(q)
+        || /\bwhat would make (?:it|that|this).*(?:feel )?real\b/i.test(q)
+        || /\bbefore .* feels real\b/i.test(q)
         || /\bwhat usually makes (?:it|that) (?:feel )?(?:so )?(?:hard|difficult|hectic|a struggle)\b/i.test(q)
         || /\banything in particular (?:making|that makes) (?:it|that) (?:feel )?(?:so )?(?:hard|difficult|hectic|a struggle)\b/i.test(q)
         || /\bhow are you finding it(?: so far)?\b/i.test(q)

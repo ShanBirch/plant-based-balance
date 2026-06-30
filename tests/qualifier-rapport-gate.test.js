@@ -77,6 +77,14 @@ assert.strictEqual(
     true
 );
 assert.strictEqual(
+    isUnsafeStockDiscoveryQuestion("what's the first thing you need to sort before Hawaii feels real?"),
+    true
+);
+assert.strictEqual(
+    isUnsafeStockDiscoveryQuestion('what would make that feel real for you?'),
+    true
+);
+assert.strictEqual(
     isUnsafeStockDiscoveryQuestion('why by April?'),
     false
 );
