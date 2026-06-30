@@ -330,7 +330,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=37',
             'lib/native-iap.js',
-            'lib/stories.js?v=7',
+            'lib/stories.js?v=10',
             'lib/ai-opponents.js',
             'lib/games.js?v=2',
             'lib/nutrition-calculator.js',
@@ -349,7 +349,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=7"><\/script>');
+    document.write('<script src="lib/stories.js?v=10"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=2"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -981,8 +981,8 @@ window.addEventListener('load', function() {
         </div>
     </div>
 
-    <!-- Challenge invite renders here until the user joins, then moves into Challenges below. -->
-    <div id="home-cohort-challenge-invite-top" style="margin: 0 25px 14px;"></div>
+    <!-- Six-week challenge card for enrolled participants. -->
+    <div id="home-cohort-challenge-invite-top" style="display: none; margin: 8px 25px 16px;"></div>
 
     <!-- Duplicate Install Banner Removed -->
 
@@ -1342,7 +1342,7 @@ window.addEventListener('load', function() {
                 <div style="font-size: 2rem; margin-bottom: 8px;">+1 XP</div>
                 <p style="margin: 0; font-weight: 600;">Diary entry saved! Nice work today.</p>
                 <button id="fitness-diary-success-share-feed-btn" onclick="shareFitnessDiaryToFeed(this)" style="margin-top: 14px; width: 100%; background: white; color: #6366f1; border: none; padding: 12px 14px; border-radius: 10px; font-weight: 800; font-size: 0.92rem; cursor: pointer; box-shadow: 0 8px 18px rgba(0,0,0,0.12);">
-                    Share Fitness Diary to Feed
+                    Share to Feed +2 XP
                 </button>
             </div>
         </div>
@@ -1357,7 +1357,7 @@ window.addEventListener('load', function() {
             <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+1 XP earned. Come back tomorrow!</div>
         </div>
         <button id="fitness-diary-share-feed-btn" onclick="event.stopPropagation(); shareFitnessDiaryToFeed(this)" style="margin-left: auto; margin-right: 18px; background: rgba(255,255,255,0.95); color: #6366f1; border: none; padding: 10px 12px; border-radius: 10px; font-weight: 800; font-size: 0.78rem; cursor: pointer; white-space: nowrap; box-shadow: 0 8px 18px rgba(0,0,0,0.12);">
-            Share to Feed
+            Share +2 XP
         </button>
     </div>
 
@@ -1444,12 +1444,12 @@ window.addEventListener('load', function() {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=64';
+                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=65';
                 document.head.appendChild(s);
             }, 3000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=64"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=65"><\/script>');
     }
     </script>
 
@@ -1575,12 +1575,12 @@ if(!window._pbbIsIOSSafari) {
     <script>
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=7"><\/script>');
-    document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=21"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=22"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=15"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=7');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=21');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=22');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=15');
 }
 </script>
@@ -7460,6 +7460,14 @@ if(!window._pbbIsIOSSafari) {
             Film Form Check
         </button>
 
+        <button id="workout-share-set-btn" type="button" onclick="openWorkoutFeedShare({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })" style="width:100%; margin:0 0 14px 0; border:none; border-radius:14px; padding:14px 15px; background:linear-gradient(135deg,#111827 0%,#dc2626 100%); color:white; font-weight:900; font-size:0.9rem; display:flex; align-items:center; justify-content:flex-start; gap:12px; cursor:pointer; box-shadow:0 10px 24px rgba(220,38,38,0.16); text-align:left;">
+            <svg viewBox="0 0 24 24" style="width:19px; height:19px; fill:currentColor; flex-shrink:0;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+            <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
+                <span style="font-size:0.92rem; line-height:1;">Share a Set</span>
+                <span style="font-size:0.72rem; font-weight:700; opacity:0.82; line-height:1.1;">First share each day earns +10 XP</span>
+            </div>
+        </button>
+
         <div id="workout-exercises-list">
             <!-- Dynamic Content Injected Here via JS -->
         </div>
@@ -9214,9 +9222,9 @@ if(!window._pbbIsIOSSafari) {
         <div id="feed-composer-card" style="margin: 0 15px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 14px; box-shadow: 0 2px 10px rgba(15,23,42,0.05); padding: 12px;">
             <div style="display: flex; align-items: flex-start; gap: 10px;">
                 <div id="feed-composer-avatar" style="width: 38px; height: 38px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0; overflow: hidden;">B</div>
-                <textarea id="feed-composer-text" maxlength="1000" rows="2" placeholder="Daily check-in? Share it to Feed for +2 XP" oninput="updateFeedComposerState()" style="flex: 1; min-height: 44px; max-height: 140px; border: none; outline: none; resize: vertical; font-family: inherit; font-size: 0.95rem; line-height: 1.4; color: var(--text-main); background: transparent; padding: 8px 0;"></textarea>
+                <textarea id="feed-composer-text" maxlength="1000" rows="2" placeholder="Thoughts or encouragements? Share once a day for +2 XP" oninput="updateFeedComposerState()" style="flex: 1; min-height: 44px; max-height: 140px; border: none; outline: none; resize: vertical; font-family: inherit; font-size: 0.95rem; line-height: 1.4; color: var(--text-main); background: transparent; padding: 8px 0;"></textarea>
             </div>
-            <div style="margin: 4px 0 0 48px; color: var(--text-muted); font-size: 0.76rem; font-weight: 700; line-height: 1.3;">Share one daily check-in to Feed for +2 XP.</div>
+            <div style="margin: 4px 0 0 48px; color: var(--text-muted); font-size: 0.76rem; font-weight: 700; line-height: 1.3;">Share one thought or encouragement to Feed each day for +2 XP.</div>
             <div id="feed-composer-preview" style="display: none; position: relative; margin: 10px 0 0 48px; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #f8fafc;">
                 <button type="button" onclick="clearFeedComposerMedia()" style="position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(15,23,42,0.72); color: white; font-size: 1.1rem; line-height: 1; cursor: pointer; z-index: 2;" aria-label="Remove media">&times;</button>
                 <img id="feed-composer-preview-image" alt="" style="display: none; width: 100%; max-height: 260px; object-fit: cover;">
@@ -9291,42 +9299,42 @@ if(!window._pbbIsIOSSafari) {
     </div>
 
     <!-- USER PROFILE VIEW (View another user's profile from the feed) -->
-    <div id="view-user-profile" class="app-view" style="display:none; padding-bottom: 90px; background: #f8fafc; overflow-x: hidden;">
+    <div id="view-user-profile" class="app-view user-profile-view" style="display:none;">
         <!-- Header -->
-        <div style="padding: 16px 20px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10;">
-            <h2 id="user-profile-header-name" style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.3rem; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Profile</h2>
+        <div class="user-profile-sticky-header">
+            <h2 id="user-profile-header-name" class="user-profile-header-title">Profile</h2>
         </div>
 
         <!-- Profile Top Section: Photo, Name, Level, Strength -->
-        <div id="user-profile-top" style="background: white; padding: 24px 20px 20px; text-align: center; border-bottom: 1px solid #f1f5f9;">
-            <div id="user-profile-avatar" style="width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; overflow: hidden; border: 3px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                <span style="font-size: 2.2rem; color: white; font-weight: 700;">?</span>
+        <div id="user-profile-top" class="user-profile-hero">
+            <div id="user-profile-avatar" class="user-profile-avatar">
+                <span class="user-profile-avatar-initial">?</span>
             </div>
-            <h2 id="user-profile-name" style="margin: 0 0 4px; font-size: 1.3rem; font-weight: 700; color: var(--text-main);"></h2>
-            <div id="user-profile-level-badge" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 5px 14px; border-radius: 20px; margin-bottom: 12px; border: 1px solid #fcd34d;">
-                <span style="font-size: 0.8rem; font-weight: 700; color: #92400e;">Lv. <span id="user-profile-level">1</span></span>
-                <span style="font-size: 0.75rem; color: #a16207; font-weight: 600;" id="user-profile-level-title">Newcomer</span>
+            <h2 id="user-profile-name" class="user-profile-name"></h2>
+            <div id="user-profile-level-badge" class="user-profile-level-badge">
+                <span>Lv. <span id="user-profile-level">1</span></span>
+                <span id="user-profile-level-title">Newcomer</span>
             </div>
             <!-- Stats row: Workouts, Streak, Points -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 12px;">
-                <div style="text-align: center;">
-                    <div id="user-profile-workouts" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">0</div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Workouts</div>
+            <div class="user-profile-stats-row">
+                <div class="user-profile-stat-card">
+                    <div id="user-profile-workouts" class="user-profile-stat-value">0</div>
+                    <div class="user-profile-stat-label">Workouts</div>
                 </div>
-                <div style="text-align: center;">
-                    <div id="user-profile-streak" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">0</div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Day Streak</div>
+                <div class="user-profile-stat-card">
+                    <div id="user-profile-streak" class="user-profile-stat-value">0</div>
+                    <div class="user-profile-stat-label">Day Streak</div>
                 </div>
-                <div style="text-align: center;">
-                    <div id="user-profile-points" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">0</div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">XP</div>
+                <div class="user-profile-stat-card">
+                    <div id="user-profile-points" class="user-profile-stat-value">0</div>
+                    <div class="user-profile-stat-label">XP</div>
                 </div>
             </div>
         </div>
 
         <!-- Tamagotchi / FitGotchi Section -->
-        <div id="user-profile-tamagotchi-section" style="padding: 0 20px 10px; display: none;">
-            <div style="background: #1a1a2e; border-radius: 16px; overflow: hidden; height: 260px; position: relative;">
+        <div id="user-profile-tamagotchi-section" class="user-profile-character-section" style="display: none;">
+            <div class="user-profile-character-card">
                 <model-viewer
                     id="user-profile-tamagotchi-model"
                     loading="lazy"
@@ -9347,44 +9355,44 @@ if(!window._pbbIsIOSSafari) {
                     interaction-prompt="none">
                 </model-viewer>
                 <!-- Fallback -->
-                <div id="user-profile-tamagotchi-fallback" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:4; background:#1a1a2e; justify-content:center; align-items:center; flex-direction:column; text-align:center; color:white; padding:20px;">
+                <div id="user-profile-tamagotchi-fallback" class="user-profile-character-fallback" style="display:none;">
                     <div style="font-size:48px; margin-bottom:8px;">🐣</div>
-                    <div style="font-size:0.9rem; font-weight:600;">FitGotchi</div>
+                    <div class="user-profile-character-fallback-label">Balance avatar</div>
                 </div>
             </div>
         </div>
 
         <!-- Personal Bests Section -->
-        <div id="user-profile-pbs-section" style="padding: 20px; display: none;">
-            <h3 style="margin: 0 0 14px; font-size: 1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+        <div id="user-profile-pbs-section" class="user-profile-section" style="display: none;">
+            <h3 class="user-profile-section-title">
                 <span style="font-size: 1.1rem;">🏋️</span> Personal Bests
             </h3>
-            <div id="user-profile-pbs-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <div id="user-profile-pbs-grid" class="user-profile-pbs-grid">
                 <!-- PB cards rendered dynamically -->
             </div>
         </div>
 
         <!-- Badges / Milestones Section -->
-        <div id="user-profile-badges-section" style="padding: 0 20px 20px; display: none;">
-            <h3 style="margin: 0 0 14px; font-size: 1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+        <div id="user-profile-badges-section" class="user-profile-section" style="display: none;">
+            <h3 class="user-profile-section-title">
                 <span style="font-size: 1.1rem;">🏅</span> Badges
             </h3>
-            <div id="user-profile-badges-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+            <div id="user-profile-badges-grid" class="user-profile-badges-grid">
                 <!-- Badge cards rendered dynamically -->
             </div>
         </div>
 
         <!-- Posts Section -->
-        <div id="user-profile-posts-section" style="padding: 0 20px 20px;">
-            <h3 style="margin: 0 0 14px; font-size: 1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+        <div id="user-profile-posts-section" class="user-profile-section user-profile-posts-section">
+            <h3 class="user-profile-section-title">
                 <span style="font-size: 1.1rem;">📸</span> Posts
             </h3>
-            <div id="user-profile-posts-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; border-radius: 12px; overflow: hidden;">
+            <div id="user-profile-posts-grid" class="user-profile-posts-grid">
                 <!-- Post thumbnails rendered dynamically -->
             </div>
-            <div id="user-profile-posts-empty" style="display: none; text-align: center; padding: 30px 20px; background: white; border-radius: 12px; border: 1px solid #f1f5f9;">
+            <div id="user-profile-posts-empty" class="user-profile-empty-posts" style="display: none;">
                 <div style="font-size: 2rem; margin-bottom: 8px;">📷</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No posts yet</div>
+                <div>No posts yet</div>
             </div>
         </div>
     </div>
@@ -10043,17 +10051,14 @@ if(!window._pbbIsIOSSafari) {
                     </div>
                 </div>
             </div>
-            <!-- Biggest Effort Prize -->
-            <div id="challenge-effort-prize-card" style="margin: 0 4px 22px; padding: 14px 16px; border-radius: 16px; background: linear-gradient(135deg, rgba(20,184,166,0.16), rgba(245,158,11,0.13)); border: 1px solid rgba(45,212,191,0.28); box-shadow: 0 4px 20px rgba(20,184,166,0.12);">
-                <div style="display: flex; align-items: flex-start; gap: 12px;">
-                    <div style="width: 42px; height: 42px; border-radius: 13px; background: rgba(45,212,191,0.16); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.45rem;">&#128170;</div>
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-size: 0.65rem; color: rgba(94,234,212,0.92); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 900; margin-bottom: 3px;">Biggest Effort Prize</div>
-                        <div style="font-size: 0.95rem; font-weight: 800; color: white; margin-bottom: 3px;">Most Improved Momentum</div>
-                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.64); line-height: 1.45;">For the person who lifts their consistency the most across the challenge. Workouts, check-ins, habit logs, updates, and showing up all count.</div>
-                        <div id="challenge-effort-prize-watch" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);"></div>
-                    </div>
-                </div>
+            <!-- Challenge Info Buttons -->
+            <div id="challenge-info-actions" style="margin: 0 4px 22px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+                <button type="button" onclick="openXpGuidePage(event)" style="min-height: 58px; padding: 12px 10px; border-radius: 14px; border: 1px solid rgba(245,217,138,0.62); background: linear-gradient(135deg, #fff7d6 0%, #f5d98a 56%, #d8b25e 100%); color: #101828; font-size: 0.88rem; font-weight: 950; cursor: pointer; box-shadow: 0 10px 24px rgba(245,217,138,0.18);">
+                    How to earn XP
+                </button>
+                <button type="button" onclick="openChallengePrizesPage(event)" style="min-height: 58px; padding: 12px 10px; border-radius: 14px; border: 1px solid rgba(129,140,248,0.44); background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(168,85,247,0.18)); color: #ffffff; font-size: 0.88rem; font-weight: 950; cursor: pointer; box-shadow: 0 10px 24px rgba(99,102,241,0.18);">
+                    Prizes
+                </button>
             </div>
             <!-- Podium -->
             <div id="challenge-podium" style="display: flex; justify-content: center; align-items: flex-end; gap: 10px;">
@@ -10118,6 +10123,73 @@ if(!window._pbbIsIOSSafari) {
             <button onclick="exitCompletedChallenge()" style="width: calc(100% - 30px); padding: 16px; background: linear-gradient(135deg, #3b82f6, #2563eb); border: none; border-radius: 16px; color: white; font-weight: 700; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 20px rgba(59,130,246,0.4);">
                 Exit Challenge
             </button>
+        </div>
+    </div>
+
+    <!-- Challenge XP Guide Page -->
+    <div id="challenge-xp-info-page" style="display: none; position: fixed; inset: 0; background: #0f172a; z-index: 10011; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
+        <div style="background: linear-gradient(135deg, #101828 0%, #1e1b4b 100%); padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 0 20px; position: sticky; top: 0; z-index: 10;">
+            <div style="display: flex; align-items: center; justify-content: center; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <h3 id="challenge-xp-info-title" style="margin: 0; font-size: 1.08rem; font-weight: 900; color: white; -webkit-text-fill-color: white;">How to earn XP</h3>
+            </div>
+        </div>
+        <div style="padding: 18px 16px calc(42px + env(safe-area-inset-bottom, 0px));">
+            <div style="background: linear-gradient(135deg, #fff7d6 0%, #f5d98a 56%, #d8b25e 100%); color: #101828; border: 1px solid rgba(255,255,255,0.52); border-radius: 16px; padding: 16px; margin-bottom: 14px; box-shadow: 0 14px 32px rgba(0,0,0,0.24);">
+                <div style="font-size: 0.72rem; font-weight: 950; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px;">Level Up Challenge</div>
+                <div id="challenge-xp-info-summary" style="font-size: 0.94rem; font-weight: 850; line-height: 1.35;">Every XP source below counts toward the challenge after you join. Active 2x boosts can double eligible awards when Balance shows the boost.</div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 15px;">
+                    <div style="color: white; -webkit-text-fill-color: white; font-weight: 900; font-size: 0.96rem; margin-bottom: 10px;">Fast daily route</div>
+                    <div style="display: flex; flex-direction: column; gap: 9px;">
+                        <div style="display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 50%; background: rgba(245,217,138,0.18); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-weight: 950;">1</span><span style="color: rgba(255,255,255,0.84); font-size: 0.84rem; line-height: 1.35;">Log meals, hit nutrition targets, and share one logged meal.</span><span style="color: #f5d98a; font-weight: 950; font-size: 0.85rem;">+4 XP</span></div>
+                        <div style="display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 50%; background: rgba(245,217,138,0.18); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-weight: 950;">2</span><span style="color: rgba(255,255,255,0.84); font-size: 0.84rem; line-height: 1.35;">Log a workout, then share the workout card.</span><span style="color: #f5d98a; font-weight: 950; font-size: 0.85rem;">+2 XP</span></div>
+                        <div style="display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 50%; background: rgba(245,217,138,0.18); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-weight: 950;">3</span><span style="color: rgba(255,255,255,0.84); font-size: 0.84rem; line-height: 1.35;">Post one Feed check-in and comment on someone else's post.</span><span style="color: #f5d98a; font-weight: 950; font-size: 0.85rem;">+4 XP</span></div>
+                        <div style="display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 50%; background: rgba(245,217,138,0.18); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-weight: 950;">4</span><span style="color: rgba(255,255,255,0.84); font-size: 0.84rem; line-height: 1.35;">Finish a daily quiz at 100% and hit 10,000 synced Fitbit steps.</span><span style="color: #f5d98a; font-weight: 950; font-size: 0.85rem;">+7 XP</span></div>
+                    </div>
+                </div>
+
+                <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 15px;">
+                    <div style="font-size: 0.7rem; color: rgba(165,180,252,0.9); font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 11px;">XP actions</div>
+                    <div id="challenge-xp-info-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                </div>
+
+                <div style="background: #151f31; border: 1px solid rgba(245,217,138,0.16); border-radius: 16px; padding: 15px;">
+                    <div style="color: white; -webkit-text-fill-color: white; font-weight: 900; font-size: 0.92rem; margin-bottom: 7px;">Caps and fairness</div>
+                    <div style="color: rgba(255,255,255,0.67); font-size: 0.8rem; line-height: 1.5;">Most XP only pays once per source item, day, workout, week, or challenge window. Photo XP can be rejected for low confidence, duplicates, unclear content, or old timestamps. Coins are separate from XP and are used for shop and challenge entry systems.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Challenge Prizes Page -->
+    <div id="challenge-prizes-page" style="display: none; position: fixed; inset: 0; background: #0f172a; z-index: 10011; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
+        <div style="background: linear-gradient(135deg, #101828 0%, #312e81 100%); padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 0 20px; position: sticky; top: 0; z-index: 10;">
+            <div style="display: flex; align-items: center; justify-content: center; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <h3 id="challenge-prizes-title" style="margin: 0; font-size: 1.08rem; font-weight: 900; color: white; -webkit-text-fill-color: white;">Prizes</h3>
+            </div>
+        </div>
+        <div style="padding: 18px 16px calc(42px + env(safe-area-inset-bottom, 0px));">
+            <div style="background: linear-gradient(135deg, #22c55e 0%, #84cc16 46%, #facc15 100%); color: #07130b; border: 1px solid rgba(254,240,138,0.95); border-radius: 16px; padding: 15px; margin-bottom: 14px; box-shadow: 0 14px 32px rgba(34,197,94,0.26);">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <span style="font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 950;">1st Place</span>
+                    <span id="challenge-prizes-top-label" style="font-size: 1.22rem; color: #ffffff; -webkit-text-fill-color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.38); white-space: nowrap; font-weight: 950;">$500 CASH</span>
+                </div>
+                <div id="challenge-prizes-summary" style="margin-top: 8px; color: rgba(7,19,11,0.82); font-size: 0.84rem; font-weight: 750; line-height: 1.4;">Highest XP after the challenge wins the top prize.</div>
+            </div>
+
+            <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px 18px; margin-bottom: 14px;">
+                <div style="font-size: 0.7rem; color: rgba(165,180,252,0.9); font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 12px;">Challenge prizes</div>
+                <div id="challenge-prizes-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
+            </div>
+
+            <div id="challenge-prizes-rare-row" style="display: none; background: linear-gradient(135deg, rgba(251,191,36,0.12), rgba(168,85,247,0.12)); border: 1px solid rgba(251,191,36,0.3); border-radius: 16px; padding: 15px; margin-bottom: 14px;"></div>
+
+            <div style="background: #151f31; border: 1px solid rgba(245,217,138,0.16); border-radius: 16px; padding: 15px;">
+                <div style="color: white; -webkit-text-fill-color: white; font-weight: 900; font-size: 0.92rem; margin-bottom: 7px;">Finisher reward</div>
+                <div style="color: rgba(255,255,255,0.67); font-size: 0.8rem; line-height: 1.5;">Everyone who finishes the full challenge earns bonus XP and a finisher's drop.</div>
+            </div>
         </div>
     </div>
 
@@ -11761,13 +11833,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=112';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=113';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=112"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=113"><\/script>');
 }
 </script>
 
@@ -12281,6 +12353,7 @@ if(!window._pbbIsIOSSafari) {
         } catch(e) { console.warn('[tour] could not open Ask Balance palette', e); }
         await new Promise(function(r){ setTimeout(r, 260); });
       } },
+    { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'6-Week Challenge', body:"The 6-week challenge sits under your character on Home. Tap it to open the leaderboard or check how to earn XP.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do.", quick: true },
     { tab:'dashboard', sel:'#weekly-goals-card', title:'Weekly goals', body:"Choose up to 3 goals for the week. Balance tracks the exact signals you picked and carries the results into Weekly Wrapped.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
@@ -12291,8 +12364,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
-
-    { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'Challenge invite', body:"Join the next challenge from Home. 1st Place is $500 cash, and the challenge starts when 15 people are in.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
+    { tab:'dashboard', sel:'#challenge-info-actions', title:'Challenge details', body:"Open How to earn XP or Prizes from the challenge leaderboard to see scoring and rewards.", quick: true, condition: function(){ var c = document.getElementById('challenge-info-actions'); return c && c.offsetParent !== null; } },
 
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically.", quick: true },
     { tab:'meals', sel:'[onclick*="openMealFromGallery"]', title:'Upload from your photos', body:"Took a photo of your meal earlier? Tap the gallery icon to pick it from your photo library and log it later." },
@@ -12301,12 +12373,14 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openQuickManualEntry"],.camera-btn-widget[onclick*="openQuickManualEntry"],[title="Quick log calories & macros"]', title:'Quick log calories & macros', body:"Already know the numbers? Tap Quick Log to enter calories and macros directly. It is the fastest way to track something when you do not need AI, a photo, or a barcode." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"],[title="Build a meal"]', title:'Build-a-Meal', body:"Use Build-a-Meal when one meal has a few parts. Add items by photo, barcode, text, or manual entry until the whole plate is saved together." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openRecentMealsModal"],.camera-btn-widget[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Use Recent & saved meals to re-log food you have already tracked. Tap the clock, pick the meal, and it drops back into today." },
+    { tab:'meals', sel:'#meals-log-list,.meal-log-card', title:'Share meals to Feed', body:"Tap a logged meal, then Share meal to Feed. Meals with photos post the meal photo and a caption with ingredients, amounts, calories, and macros.", quick: true },
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#browse-plans-pill', title:'Your meal plan', body:"Tap here for your AI-generated meal plan for the week — tap any day to see recipes." },
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Profile settings', body:"Open Profile when you need settings, dietary requirements, password changes, character customisation, or to replay this tour later." },
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
+    { tab:'movement-tab', sel:'#workout-share-set-btn', title:'Share a Set', body:"Tap Share a Set under Film Form Check to open the native camera. When you finish filming, the clip uploads in the background while you stay in workout mode. Your first Share a Set each day earns +10 XP.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Share wins to Instagram', body:"Finish a workout or hit a PB, then choose Balance Feed, Instagram Story, or Instagram Feed from the share options." },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
@@ -12317,7 +12391,8 @@ if(!window._pbbIsIOSSafari) {
     { tab:'cycle', sel:'#cycle-hero-card,#view-cycle', title:'Cycle Syncing', body:"Log your period and get workouts synced to your hormonal phases.", condition: function(){ try { return (window.currentUser && (window.currentUser.gender === 'female' || window.currentUser.gender === 'Female')); } catch(e){ return false; } } },
     { tab:'cycle', sel:'#weekly-calendar', title:'Plan your week', body:"Use the weekly calendar to drag workout days around, tap a day, and add walks, classes, Pilates, yoga, or another activity.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
 
-    { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Share one daily check-in to Feed for +2 XP. Add a photo or video if you want." },
+    { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Share a thought or encouragement once a day for +2 XP. Add a photo or video if you want." },
+    { tab:'friends', sel:'.feed-post-actions-btn', title:'Post actions', body:"Tap the three dots on one of your own feed posts to edit or delete it.", quick: true, condition: function(){ return !!document.querySelector('.feed-post-actions-btn'); } },
 
 
     { tab:'dashboard', sel:'#dm-view,#dm-messages-container', title:'Say hi to Coach Shan', body:"Coach Shan built this app and would love your feedback to help make it better. This is his DM — type a message and say hi any time.", action: async function(){
@@ -12353,7 +12428,9 @@ if(!window._pbbIsIOSSafari) {
     'Quick log calories & macros': 'tour-09',
     'Your workout for the day': 'tour-10',
     'Learn & earn XP': 'tour-11',
-    'Say hi to Coach Shan': 'tour-12'
+    'Say hi to Coach Shan': 'tour-12',
+    'Edit your post': 'tour-13',
+    'Post actions': 'tour-13'
   };
   steps.forEach(function(step){
     if (step && walkthroughRewardByTitle[step.title]) {
@@ -13184,15 +13261,15 @@ if(!window._pbbIsIOSSafari) {
       tab: 'friends',
       sel: '#feed-composer-card',
       title: 'Post to Feed',
-      body: "Feed now has a composer at the top. Write a quick update, add a photo or video if you want, and post without leaving the page."
+      body: "Feed now has a composer at the top. Share a thought or encouragement once a day for +2 XP. Add a photo or video if you want."
     },
     {
-      id: 'meal-detail-feed-share-v1',
+      id: 'meal-detail-feed-share-caption-v1',
       tab: 'meals',
       subtab: 'calorie-tracker',
       sel: '#meals-log-list,.meal-log-card',
       title: 'Share meals to Feed',
-      body: "Tap any logged meal, then Share meal to Feed for +1 XP. It counts toward weekly community goals when you pick that goal."
+      body: "Tap any logged meal, then Share meal to Feed for +1 XP. Meal posts now include the meal photo when available, plus ingredients, amounts, calories, and macros in the caption."
     },
     {
       id: 'pull-to-refresh-dashboard-v1',
@@ -13247,8 +13324,8 @@ if(!window._pbbIsIOSSafari) {
       id: 'cohort-cash-prize-15-start-v1',
       tab: 'dashboard',
       sel: '#home-cohort-challenge-invite-top',
-      title: 'Challenge invite',
-      body: "The next challenge invite is on Home. 1st Place is $500 cash, and the challenge starts when 15 people are in.",
+      title: '6-Week Challenge',
+      body: "Your active challenge card is on Home with the $500 cash prize and your leaderboard progress.",
       condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; }
     },
     {
@@ -13265,12 +13342,45 @@ if(!window._pbbIsIOSSafari) {
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
   allFeatures.push({
-    id: 'cohort-biggest-effort-prize-v1',
+    id: 'cohort-home-under-character-glow-v1',
     tab: 'dashboard',
-    sel: '#challenge-effort-prize-card',
-    title: 'Biggest Effort Prize',
-    body: "The next challenge now has a Biggest Effort prize for the person who builds the most improved momentum.",
-    condition: function(){ var e = document.getElementById('challenge-effort-prize-card'); return e && e.offsetParent !== null; }
+    sel: '#home-cohort-challenge-invite-top',
+    title: '6-Week Challenge',
+    body: "The 6-week challenge now sits under your character with a stronger glow. It only appears when you are in the challenge.",
+    condition: function(){ var e = document.getElementById('home-cohort-challenge-invite-top'); return e && e.innerHTML.trim() !== ''; }
+  });
+  allFeatures.push({
+    id: 'challenge-info-actions-v1',
+    tab: 'dashboard',
+    sel: '#challenge-info-actions',
+    title: 'Challenge details',
+    body: "Challenge leaderboards now show quick buttons for How to earn XP and Prizes.",
+    condition: function(){ var e = document.getElementById('challenge-info-actions'); return e && e.offsetParent !== null; }
+  });
+  allFeatures.push({
+    id: 'meal-feed-caption-v1',
+    tab: 'meals',
+    subtab: 'calorie-tracker',
+    sel: '#meals-log-list,.meal-log-card',
+    title: 'Meal Feed captions',
+    body: "Meal shares now include the meal photo when available, plus ingredients, amounts, calories, and macros in the caption.",
+    condition: function(){ var e = document.querySelector('#meals-log-list .meal-log-card,.meal-log-card'); return !!(e && e.offsetParent !== null); }
+  });
+  allFeatures.push({
+    id: 'feed-post-actions-menu-v1',
+    tab: 'friends',
+    sel: '.feed-post-actions-btn',
+    title: 'Post actions',
+    body: "Use the three-dot menu on your own posts to edit or delete them.",
+    condition: function(){ return !!document.querySelector('.feed-post-actions-btn'); }
+  });
+  allFeatures.push({
+    id: 'share-a-set-native-camera-v1',
+    tab: 'movement-tab',
+    sel: '#workout-share-set-btn',
+    title: 'Share a Set',
+    body: "Tap Share a Set under Film Form Check to open the native camera. When you finish filming, the clip uploads in the background while you stay in workout mode. Your first Share a Set each day earns +10 XP.",
+    condition: function(){ return !!document.getElementById('workout-share-set-btn'); }
   });
 
   var revealIdx = 0;
@@ -14477,7 +14587,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=79">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=81">
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>
@@ -14511,13 +14621,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=25';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=28';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=25"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=28"><\/script>');
 }
 </script>
 
@@ -14712,10 +14822,10 @@ if (typeof window.checkInProgress === 'undefined') {
 </script>
 <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-checkin.js"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-checkin.js?v=2"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-checkin.js');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-checkin.js?v=2');
 }
 </script>
 
@@ -16004,7 +16114,7 @@ if (window._pbbIsIOSSafari) {
             }
 
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=8';
+            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=9';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -16064,7 +16174,7 @@ if (window._pbbIsIOSSafari) {
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=8" data-pbb-calorie-tracker="1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=9" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js" data-pbb-meal-builder="1"><\/script>');
     }
 })();
@@ -16616,11 +16726,11 @@ if (window._pbbIsIOSSafari) {
     if (window._pbbIsIOSSafari) {
         window.addEventListener('appCriticalContentReady', function() {
             var s = document.createElement('script');
-            s.src = 'lib/learning-inline.js?v=6';
+            s.src = 'lib/learning-inline.js?v=8';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-        document.write('<script src="lib/learning-inline.js?v=6"><\/script>');
+        document.write('<script src="lib/learning-inline.js?v=8"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
@@ -16689,10 +16799,10 @@ if(!window._pbbIsIOSSafari) {
     <script>var _userProfilePreviousView = 'friends';</script>
     <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-userprofile.js?v=3"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-userprofile.js?v=4"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-userprofile.js?v=3');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-userprofile.js?v=4');
 }
 </script>
     
