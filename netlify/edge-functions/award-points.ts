@@ -12,6 +12,7 @@ const POINTS_CONFIG = {
   POINTS_PER_MEAL: 1,
   POINTS_PER_WORKOUT: 1,
   POINTS_PER_PERSONAL_BEST: 1,
+  POINTS_PER_WORKOUT_FEED_SHARE: 10,
   POINTS_PER_PROGRESS_PHOTO: 10,
   POINTS_PER_DAILY_LOG: 2,
   POINTS_PER_WALKTHROUGH_CHECKPOINT: 1,
@@ -64,7 +65,7 @@ const WALKTHROUGH_REFERENCE_IDS: Record<string, string> = {
 
 interface AwardPointsRequest {
   userId: string;
-  type: 'meal' | 'workout' | 'personal_best' | 'progress_photo' | 'daily_log' | 'walkthrough';
+  type: 'meal' | 'workout' | 'workout_feed_share' | 'personal_best' | 'progress_photo' | 'daily_log' | 'walkthrough';
   referenceId: string;
   photoTimestamp?: string;  // ISO timestamp from EXIF or file
   aiConfidence?: string;    // 'high', 'medium', 'low'
@@ -95,6 +96,8 @@ interface PointsResult {
   canRedeem: boolean;
   error?: string;
   reason?: string;
+  alreadyAwarded?: boolean;
+  dailyLimitReached?: boolean;
 }
 
 /**
@@ -103,6 +106,11 @@ interface PointsResult {
 function timeToMinutes(timeStr: string): number {
   const parts = timeStr.split(':');
   return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+}
+
+function getWorkoutFeedShareDailyReferenceId(clientDate: string): string {
+  const compactDate = clientDate.replace(/-/g, '').padEnd(12, '0').slice(0, 12);
+  return `00000000-0000-4000-8000-${compactDate}`;
 }
 
 export default async (request: Request, context: Context): Promise<Response> => {
@@ -129,6 +137,9 @@ export default async (request: Request, context: Context): Promise<Response> => 
   try {
     const body: AwardPointsRequest = await request.json();
     const { userId, type, referenceId, photoTimestamp, aiConfidence, photoHash } = body;
+    const clientDate = (body.clientDate && /^\d{4}-\d{2}-\d{2}$/.test(body.clientDate))
+      ? body.clientDate
+      : new Date().toISOString().split('T')[0];
 
     // Validate required fields
     if (!userId || !type || !referenceId) {
@@ -141,10 +152,10 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
-    if (type !== 'meal' && type !== 'workout' && type !== 'personal_best' && type !== 'progress_photo' && type !== 'daily_log' && type !== 'walkthrough') {
+    if (type !== 'meal' && type !== 'workout' && type !== 'workout_feed_share' && type !== 'personal_best' && type !== 'progress_photo' && type !== 'daily_log' && type !== 'walkthrough') {
       return new Response(JSON.stringify({
         error: 'Invalid type',
-        message: 'Type must be "meal", "workout", "personal_best", "progress_photo", "daily_log", or "walkthrough"'
+        message: 'Type must be "meal", "workout", "workout_feed_share", "personal_best", "progress_photo", "daily_log", or "walkthrough"'
       }), {
         status: 400,
         headers
@@ -153,6 +164,8 @@ export default async (request: Request, context: Context): Promise<Response> => 
 
     const databaseReferenceId = type === 'walkthrough'
       ? WALKTHROUGH_REFERENCE_IDS[referenceId]
+      : type === 'workout_feed_share'
+        ? getWorkoutFeedShareDailyReferenceId(clientDate)
       : referenceId;
 
     if (!databaseReferenceId) {
@@ -181,6 +194,31 @@ export default async (request: Request, context: Context): Promise<Response> => 
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    if (type === 'workout_feed_share') {
+      const { data: existingDailyShare } = await supabase
+        .from('point_transactions')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('transaction_type', 'earn_workout_feed_share')
+        .eq('reference_id', databaseReferenceId)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingDailyShare) {
+        return new Response(JSON.stringify({
+          success: false,
+          alreadyAwarded: true,
+          dailyLimitReached: true,
+          error: 'Already claimed',
+          reason: 'You already earned Share a Set XP today. You can still share clips, but this bonus is once per day.',
+          pointsAwarded: 0
+        }), {
+          status: 200,
+          headers
+        });
+      }
+    }
 
     // === ANTI-CHEAT CHECKS (skip for personal_best which is data-verified) ===
 
@@ -261,7 +299,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
 
     // === DAILY LOG VALIDATION ===
     if (type === 'daily_log') {
-      const nutritionDate = body.nutritionDate || body.clientDate || new Date().toISOString().split('T')[0];
+      const nutritionDate = body.nutritionDate || clientDate;
       const finishDay = body.finishDay || false;
 
       // Check if day already completed (either via bonus claim or finish-day)
@@ -439,6 +477,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
     const transactionTypeMap: Record<string, string> = {
       meal: 'earn_meal',
       workout: 'earn_workout',
+      workout_feed_share: 'earn_workout_feed_share',
       personal_best: 'earn_personal_best',
       progress_photo: 'earn_progress_photo',
       daily_log: 'earn_daily_log',
@@ -447,6 +486,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
     const referenceTypeMap: Record<string, string> = {
       meal: 'meal_log',
       workout: 'workout',
+      workout_feed_share: 'workout_feed_share',
       personal_best: 'personal_best',
       progress_photo: 'weekly_progress_photo',
       daily_log: 'daily_nutrition',
@@ -469,9 +509,12 @@ export default async (request: Request, context: Context): Promise<Response> => 
         return new Response(JSON.stringify({
           success: false,
           alreadyAwarded: true,
+          dailyLimitReached: type === 'workout_feed_share',
           error: 'Already claimed',
           reason: type === 'walkthrough'
             ? 'You already earned XP for this walkthrough checkpoint.'
+            : type === 'workout_feed_share'
+              ? 'You already earned Share a Set XP today. You can still share clips, but this bonus is once per day.'
             : 'You already earned points for this event.',
           pointsAwarded: 0
         }), {
@@ -499,6 +542,8 @@ export default async (request: Request, context: Context): Promise<Response> => 
       basePoints = POINTS_CONFIG.POINTS_PER_MEAL;
     } else if (type === 'workout') {
       basePoints = POINTS_CONFIG.POINTS_PER_WORKOUT;
+    } else if (type === 'workout_feed_share') {
+      basePoints = POINTS_CONFIG.POINTS_PER_WORKOUT_FEED_SHARE;
     } else if (type === 'progress_photo') {
       basePoints = POINTS_CONFIG.POINTS_PER_PROGRESS_PHOTO;
     } else if (type === 'daily_log') {
@@ -555,9 +600,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
     const pointsToAward = basePoints * xpMultiplier;
 
     // Calculate dates for streak (prefer client's local date for timezone correctness)
-    const today = (body.clientDate && /^\d{4}-\d{2}-\d{2}$/.test(body.clientDate))
-      ? body.clientDate
-      : new Date().toISOString().split('T')[0];
+    const today = clientDate;
     const todayDate = new Date(today + 'T00:00:00');
     const yesterdayDate = new Date(todayDate);
     yesterdayDate.setDate(yesterdayDate.getDate() - 1);
@@ -685,7 +728,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
         updateData.workout_streak as number
       );
     }
-    // personal_best, daily_log, and walkthrough types don't update specific counters.
+    // personal_best, workout_feed_share, daily_log, and walkthrough types don't update specific counters.
 
     // Upsert points record
     const { error: updateError } = await supabase
@@ -709,6 +752,8 @@ export default async (request: Request, context: Context): Promise<Response> => 
         ? `Earned ${pointsToAward} point${pointsToAward === 1 ? '' : 's'} for completing a walkthrough checkpoint`
       : type === 'personal_best'
         ? `Earned ${pointsToAward} point for personal best`
+      : type === 'workout_feed_share'
+        ? `Earned ${pointsToAward} points for sharing a workout video to Feed today`
         : type === 'progress_photo'
           ? `Earned ${pointsToAward} points for progress photo`
           : `Earned ${pointsToAward} point for ${type}`;
@@ -719,7 +764,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
       points_amount: pointsToAward,
       reference_id: databaseReferenceId,
       reference_type: referenceType,
-      photo_verified: type === 'meal' || type === 'workout' || type === 'progress_photo',
+      photo_verified: type === 'meal' || type === 'workout' || type === 'workout_feed_share' || type === 'progress_photo',
       photo_timestamp: photoTimestamp || null,
       verification_method: (type === 'personal_best' || type === 'daily_log' || type === 'walkthrough') ? 'data_verified' : (photoHash ? 'hash_verified' : (photoTimestamp ? 'timestamp_verified' : 'none')),
       ai_confidence: aiConfidence || null,

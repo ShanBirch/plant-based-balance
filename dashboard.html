@@ -7460,6 +7460,14 @@ if(!window._pbbIsIOSSafari) {
             Film Form Check
         </button>
 
+        <button id="workout-share-set-btn" type="button" onclick="openWorkoutFeedShare({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })" style="width:100%; margin:0 0 14px 0; border:none; border-radius:14px; padding:14px 15px; background:linear-gradient(135deg,#111827 0%,#dc2626 100%); color:white; font-weight:900; font-size:0.9rem; display:flex; align-items:center; justify-content:flex-start; gap:12px; cursor:pointer; box-shadow:0 10px 24px rgba(220,38,38,0.16); text-align:left;">
+            <svg viewBox="0 0 24 24" style="width:19px; height:19px; fill:currentColor; flex-shrink:0;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+            <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
+                <span style="font-size:0.92rem; line-height:1;">Share a Set</span>
+                <span style="font-size:0.72rem; font-weight:700; opacity:0.82; line-height:1.1;">First share each day earns +10 XP</span>
+            </div>
+        </button>
+
         <div id="workout-exercises-list">
             <!-- Dynamic Content Injected Here via JS -->
         </div>
@@ -12372,6 +12380,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
+    { tab:'movement-tab', sel:'#workout-share-set-btn', title:'Share a Set', body:"Tap Share a Set under Film Form Check to open the native camera. When you finish filming, the clip uploads in the background while you stay in workout mode. Your first Share a Set each day earns +10 XP.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Share wins to Instagram', body:"Finish a workout or hit a PB, then choose Balance Feed, Instagram Story, or Instagram Feed from the share options." },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
@@ -13353,6 +13362,14 @@ if(!window._pbbIsIOSSafari) {
     title: 'Daily meal share XP',
     body: "Share one logged meal to Feed each day for +15 XP. Meal posts include the photo when available, plus ingredients, amounts, calories, and macros.",
     condition: function(){ var e = document.querySelector('#meals-log-list .meal-log-card,.meal-log-card'); return !!(e && e.offsetParent !== null); }
+  });
+  allFeatures.push({
+    id: 'share-a-set-native-camera-v1',
+    tab: 'movement-tab',
+    sel: '#workout-share-set-btn',
+    title: 'Share a Set',
+    body: "Tap Share a Set under Film Form Check to open the native camera. When you finish filming, the clip uploads in the background while you stay in workout mode. Your first Share a Set each day earns +10 XP.",
+    condition: function(){ return !!document.getElementById('workout-share-set-btn'); }
   });
 
   var revealIdx = 0;
