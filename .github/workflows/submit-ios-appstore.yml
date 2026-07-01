@@ -1,0 +1,50 @@
+name: Submit iOS App Store Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_string:
+        description: App Store version string
+        required: true
+        default: "1.4"
+      build_number:
+        description: Uploaded iOS build number
+        required: true
+        default: "2328"
+      submit_for_review:
+        description: Submit to App Review after attaching the build
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install App Store Connect helper dependency
+        run: npm install jsonwebtoken --no-audit --no-fund --no-save
+
+      - name: Attach build and submit
+        env:
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_APPLE_ID: "6761238161"
+          IOS_BUNDLE_ID: "com.fitgotchi.app"
+          IOS_VERSION_STRING: ${{ inputs.version_string }}
+          IOS_BUILD_NUMBER: ${{ inputs.build_number }}
+          PROCESSING_WAIT_MINUTES: "35"
+          SUBMIT_FOR_REVIEW: ${{ inputs.submit_for_review }}
+          IOS_RELEASE_NOTES: "Share Balance wins straight to Instagram Story. Workouts, PBs, meals, nutrition summaries, and weekly progress photos can now generate Balance share cards ready to post."
+          IOS_REVIEW_NOTES: "This update adds optional Instagram Story sharing. A logged-in user can finish a workout, log a meal, or save weekly progress photos, then tap IG Story. The app generates a local image card and opens Instagram if installed. No Instagram login is required inside Balance."
+        run: node scripts/submit-ios-appstore.mjs
