@@ -3,53 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Deletion - Balance</title>
+    <title>Delete Your Balance Account</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Montserrat', sans-serif; background: #0f0f0f; color: #ccc; line-height: 1.8; }
-        .container { max-width: 860px; margin: 0 auto; padding: 56px 24px 80px; }
-        h1 { font-size: 2rem; color: #00e676; margin-bottom: 0.5rem; }
-        h2 { font-size: 1.05rem; color: #00e676; margin-top: 2.25rem; margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+        .container { max-width: 900px; margin: 0 auto; padding: 56px 24px 80px; }
+        h1 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.12; color: #00e676; margin-bottom: 0.75rem; }
+        h2 { font-size: 1.05rem; color: #00e676; margin-top: 2.4rem; margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
         p { margin-bottom: 1.1rem; color: #bbb; }
         ol, ul { margin-bottom: 1.4rem; padding-left: 1.5rem; color: #bbb; }
-        li { margin-bottom: 0.5rem; }
-        strong { color: #ddd; }
+        li { margin-bottom: 0.55rem; }
+        strong { color: #eee; }
         a { color: #00e676; text-decoration: none; }
+        label { display: block; color: #eee; font-weight: 600; margin-bottom: 0.4rem; }
+        input, select, textarea {
+            width: 100%;
+            min-height: 48px;
+            border: 1px solid #2f4132;
+            border-radius: 8px;
+            background: #171717;
+            color: #f3f3f3;
+            font: inherit;
+            padding: 12px 14px;
+        }
+        textarea { min-height: 120px; resize: vertical; }
+        button {
+            min-height: 50px;
+            border: 0;
+            border-radius: 8px;
+            background: #00e676;
+            color: #061006;
+            font: inherit;
+            font-weight: 700;
+            padding: 12px 18px;
+            cursor: pointer;
+        }
         .last-updated { font-style: italic; color: #777; margin-bottom: 2.25rem; font-size: 0.9rem; }
-        .status { border: 1px solid #253827; background: #132016; border-radius: 8px; padding: 18px; margin: 24px 0; color: #d7f7dc; }
+        .panel { border: 1px solid #253827; background: #132016; border-radius: 8px; padding: 20px; margin: 24px 0; color: #d7f7dc; }
+        .panel p:last-child { margin-bottom: 0; }
+        .form-grid { display: grid; gap: 18px; margin-top: 1.2rem; }
+        .hidden-field { display: none; }
+        .muted { color: #909090; font-size: 0.92rem; }
         footer { text-align: center; padding: 36px 24px; color: #555; font-size: 0.85rem; border-top: 1px solid #222; }
         footer a { margin: 0 10px; color: #777; }
+        @media (max-width: 640px) {
+            .container { padding: 40px 18px 64px; }
+            footer a { display: block; margin: 8px 0; }
+        }
     </style>
 </head>
 <body>
     <main class="container">
-        <h1>Data Deletion</h1>
-        <p class="last-updated">Updated: June 11, 2026</p>
+        <h1>Delete your Balance account</h1>
+        <p class="last-updated">Updated: July 1, 2026</p>
 
-        <p>This page explains how to request deletion of personal information connected with Balance, the Balance website, the Balance - Fitness Gamified app, and related online coaching services operated by Shannon Rhys Birch under the Balance brand.</p>
+        <p>This page is for account and data deletion requests for <strong>Balance - Fitness Gamified</strong>, Android package <strong>com.fitgotchi.app</strong>, iOS app ID <strong>6761238161</strong>, the Balance website, and related online coaching services operated by Shannon Rhys Birch under the Balance brand.</p>
 
-        <section class="status" id="statusBox" hidden>
+        <section class="panel" id="statusBox" hidden>
             <strong>Request received.</strong>
-            <p id="confirmationText"></p>
+            <p>Thanks. We will review your request and contact you at the email address you provided.</p>
         </section>
 
-        <h2>Request Deletion</h2>
-        <p>To request deletion of your Balance account data or related personal information, email <a href="mailto:shannon@plantbased-balance.org">shannon@plantbased-balance.org</a> from the email address connected with your Balance account.</p>
-        <p>If your request relates to Facebook or Instagram data, include the Facebook Page, Instagram account, or email address you used when granting access, so we can identify the relevant record.</p>
+        <section>
+            <h2>Delete your account in the app</h2>
+            <ol>
+                <li>Open Balance and log in to your account.</li>
+                <li>Go to your Profile.</li>
+                <li>Tap <strong>DELETE ACCOUNT</strong>.</li>
+                <li>Confirm the deletion when prompted.</li>
+            </ol>
+            <p>This deletes your Balance account and account-linked app data, subject to the limited retention described below.</p>
+        </section>
 
-        <h2>What We Delete</h2>
-        <ul>
-            <li>Account and contact information no longer needed to provide the service.</li>
-            <li>Connected Meta authorization records, where applicable.</li>
-            <li>Stored coaching, support, or app data that is not required for legal, safety, billing, tax, dispute, or fraud-prevention reasons.</li>
-        </ul>
+        <section>
+            <h2>Request deletion from this page</h2>
+            <p>You can request account deletion from the web without opening the app. Use the form below, or email <a href="mailto:shannon@plantbased-balance.org?subject=Balance%20account%20deletion%20request">shannon@plantbased-balance.org</a> from the email address connected with your Balance account.</p>
+            <p>If your request relates to Facebook or Instagram data, include the Facebook Page, Instagram account, or email address you used when granting access, so we can identify the relevant record.</p>
 
-        <h2>Processing Time</h2>
-        <p>We aim to respond to deletion requests within 30 days. Some records may be retained where required by law, payment records, safety obligations, or legitimate business record keeping.</p>
+            <form name="balance-account-deletion" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/data-deletion.html?request=received" class="form-grid">
+                <input type="hidden" name="form-name" value="balance-account-deletion">
+                <p class="hidden-field">
+                    <label>Do not fill this out: <input name="bot-field"></label>
+                </p>
 
-        <h2>Privacy Policy</h2>
-        <p>For more detail about how Balance collects, uses, stores and protects personal information, read the <a href="/privacy.html">Privacy Policy</a>.</p>
+                <div>
+                    <label for="email">Balance account email</label>
+                    <input id="email" type="email" name="email" autocomplete="email" required>
+                </div>
+
+                <div>
+                    <label for="name">Name</label>
+                    <input id="name" type="text" name="name" autocomplete="name" required>
+                </div>
+
+                <div>
+                    <label for="request-type">Request type</label>
+                    <select id="request-type" name="request_type" required>
+                        <option value="delete-account">Delete my Balance account and associated app data</option>
+                        <option value="delete-app-data-only">Delete app data but keep my coaching contact record where required</option>
+                        <option value="delete-meta-data">Delete Facebook or Instagram connected data</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="details">Extra details</label>
+                    <textarea id="details" name="details" placeholder="Add anything that helps us identify the account or data you want deleted."></textarea>
+                </div>
+
+                <button type="submit">Submit deletion request</button>
+                <p class="muted">We may need to verify that the request came from the account owner before deleting data.</p>
+            </form>
+        </section>
+
+        <section>
+            <h2>Data deleted</h2>
+            <ul>
+                <li>Account profile and contact information that is no longer needed to provide the service.</li>
+                <li>App activity linked to your Balance account, including workouts, habits, check-ins, challenges, messages, progress photos, and support records where deletion is permitted.</li>
+                <li>Connected Facebook, Instagram, or Meta authorization records where applicable.</li>
+                <li>Stored coaching or support data that is not required for legal, safety, billing, tax, dispute, or fraud-prevention reasons.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Data retained</h2>
+            <p>Some records may be retained where required for payment processing, tax and accounting records, fraud prevention, safety, dispute handling, legal compliance, or legitimate business record keeping.</p>
+            <p>Financial and tax records may be retained for up to 7 years where required. Safety, fraud, dispute, and legal records may be retained while the issue is active and for a reasonable period after closure.</p>
+        </section>
+
+        <section>
+            <h2>Processing time</h2>
+            <p>We aim to respond to deletion requests within 30 days. Once your identity is verified, we will delete eligible data and confirm when the request has been completed.</p>
+        </section>
+
+        <section>
+            <h2>Privacy policy</h2>
+            <p>For more detail about how Balance collects, uses, stores, and protects personal information, read the <a href="/privacy.html">Privacy Policy</a>.</p>
+        </section>
     </main>
 
     <footer>
@@ -64,9 +155,7 @@
 
     <script>
         const params = new URLSearchParams(window.location.search);
-        const code = params.get('code');
-        if (code) {
-            document.getElementById('confirmationText').textContent = `Confirmation code: ${code}`;
+        if (params.get('request') === 'received' || params.get('code')) {
             document.getElementById('statusBox').hidden = false;
         }
     </script>
