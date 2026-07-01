@@ -8406,3 +8406,39 @@ html[data-pbb-theme="light"] #cohort-info-modal button[onclick*="openXpGuidePage
     stroke: #151515 !important;
     -webkit-text-fill-color: #151515 !important;
 }
+
+/* Quiz battle is a dark game surface even when Learn is in light mode. */
+#learning-content .pbb-quiz-battle-screen {
+    color-scheme: dark !important;
+    color: #f8fafc !important;
+    -webkit-text-fill-color: #f8fafc !important;
+}
+
+#learning-content .pbb-quiz-battle-screen :where(div, p, span, strong, button) {
+    color: #f8fafc !important;
+    -webkit-text-fill-color: #f8fafc !important;
+}
+
+#learning-content .pbb-quiz-battle-screen :where(
+    [style*="rgba(255,255,255,0.4)"],
+    [style*="rgba(255,255,255,0.5)"],
+    [style*="rgba(255,255,255,0.6)"],
+    [style*="rgba(255,255,255,0.82)"],
+    [style*="rgba(255,255,255,0.85)"],
+    [style*="rgba(255, 255, 255, 0.4)"],
+    [style*="rgba(255, 255, 255, 0.5)"],
+    [style*="rgba(255, 255, 255, 0.6)"],
+    [style*="rgba(255, 255, 255, 0.82)"],
+    [style*="rgba(255, 255, 255, 0.85)"]
+) {
+    color: rgba(248, 250, 252, 0.76) !important;
+    -webkit-text-fill-color: rgba(248, 250, 252, 0.76) !important;
+}
+
+#learning-content .pbb-quiz-battle-screen :where(
+    [style*="#a78bfa"],
+    [style*="#c4b5fd"]
+) {
+    color: #d8ccff !important;
+    -webkit-text-fill-color: #d8ccff !important;
+}
