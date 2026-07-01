@@ -248,15 +248,27 @@
 
         // Wait for Auth before loading user-specific data
         const waitForAuth = () => new Promise(resolve => {
-            if(window.currentUser) return resolve(window.currentUser);
-            const check = setInterval(() => {
-                if(window.currentUser) {
+            const isAuthReady = () => window._pbbAuthGuardReady || !window._pbbAuthGuardPending;
+            if(window.currentUser && isAuthReady()) return resolve(window.currentUser);
+            const finishIfReady = () => {
+                if(window.currentUser && isAuthReady()) {
                     clearInterval(check);
+                    window.removeEventListener('pbbCurrentUserReady', finishIfReady);
                     resolve(window.currentUser);
+                    return true;
                 }
+                return false;
+            };
+            const check = setInterval(() => {
+                finishIfReady();
             }, 100);
-            // Timeout after 5s just in case
-            setTimeout(() => { clearInterval(check); resolve(null); }, 5000);
+            window.addEventListener('pbbCurrentUserReady', finishIfReady);
+            // Timeout after 8s just in case
+            setTimeout(() => {
+                clearInterval(check);
+                window.removeEventListener('pbbCurrentUserReady', finishIfReady);
+                resolve(window.currentUser || null);
+            }, 8000);
         });
 
         await waitForAuth();

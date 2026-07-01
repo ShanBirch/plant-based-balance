@@ -673,19 +673,52 @@ async function _loadProfileDataRealImpl() {
         console.log('Restored water goal from DB:', profile.water_goal_ml, 'ml');
     }
 
-    // Fallback if DB fetch fail
-    if (!profile) {
+    function getProfileFallbackForActiveUser() {
+        const activeUser = window.currentUser || {};
+        const activeUserId = activeUser.id || activeUser.user_id || null;
+        const metadata = activeUser.user_metadata || {};
+        let fallback = {};
+
         try {
-            profile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+            const localProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            const lastUserId = localStorage.getItem('pbb_last_user_id');
+            const localUserId = localProfile.id || localProfile.user_id || lastUserId || null;
+            if (!activeUserId || !localUserId || localUserId === activeUserId || lastUserId === activeUserId) {
+                fallback = { ...fallback, ...localProfile };
+            }
         } catch(e) {}
+
+        try {
+            const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+            fallback = { ...fallback, ...sessionProfile };
+        } catch(e) {}
+
+        const email = fallback.email || activeUser.email || '';
+        const name = fallback.name || metadata.full_name || metadata.name || (email ? email.split('@')[0] : '');
+        return {
+            ...fallback,
+            id: fallback.id || fallback.user_id || activeUserId || null,
+            email,
+            name,
+            profile_photo: fallback.profile_photo || metadata.avatar_url || metadata.picture || activeUser.profile_photo || null,
+            sex: fallback.sex || activeUser.sex || activeUser.user_gender || null,
+            user_gender: fallback.user_gender || activeUser.user_gender || activeUser.sex || null
+        };
+    }
+
+    const profileFallback = getProfileFallbackForActiveUser();
+    if (!profile || Object.keys(profile).length === 0) {
+        profile = profileFallback;
+    } else {
+        profile = { ...profileFallback, ...profile };
     }
 
     const context = {
-        name: profile?.name || window.currentUser?.user_metadata?.full_name || "Shannon",
-        email: profile?.email || window.currentUser?.email || "shannon@example.com",
-        age: profile?.age || "34",
-        weight: profile?.weight || "68 kg",
-        goal: profile?.goal_weight || profile?.goal || "Fat Loss",
+        name: profile?.name || window.currentUser?.user_metadata?.full_name || window.currentUser?.user_metadata?.name || (profile?.email ? profile.email.split('@')[0] : 'Profile'),
+        email: profile?.email || window.currentUser?.email || 'Loading...',
+        age: profile?.age || profile?.age_years || 'Not set',
+        weight: profile?.weight || profile?.weight_kg || profile?.current_weight_kg || '',
+        goal: profile?.goal_weight || profile?.goal || profile?.primary_goal || 'Not set',
         profile: profile?.profile || (sessionStorage.getItem('userResult') || 'Cortisol').toUpperCase(),
         energy_level: profile?.energy_level || 'normal'
     };
@@ -696,12 +729,18 @@ async function _loadProfileDataRealImpl() {
     // NOTE: Symptoms are NO LONGER loaded from profile
     // Symptoms now ONLY come from daily check-ins to prevent stale data from affecting recommendations
 
+    if(document.getElementById('profile-default-initial')) {
+        const initialSource = String(context.name || context.email || '').trim();
+        document.getElementById('profile-default-initial').innerText = initialSource ? initialSource.charAt(0).toUpperCase() : '?';
+    }
     if(document.getElementById('profile-name-display')) document.getElementById('profile-name-display').innerText = context.name;
     if(document.getElementById('profile-email-display')) document.getElementById('profile-email-display').innerText = context.email;
     if(document.getElementById('profile-age-display')) document.getElementById('profile-age-display').innerText = context.age;
     
     const wStr = String(context.weight).toLowerCase();
-    const weightDisplay = wStr.includes('k') || wStr.includes('l') 
+    const weightDisplay = !context.weight
+        ? 'Not set'
+        : wStr.includes('k') || wStr.includes('l')
         ? context.weight 
         : context.weight + " kg";
 
