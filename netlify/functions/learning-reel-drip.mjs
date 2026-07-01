@@ -48,6 +48,8 @@ const CLIENT_PILOT_TOTAL_SENDS = 12;
 const CLIENT_PILOT_TOPICS = ['plant_based_cooking', 'meal_prep_planning'];
 const PERSONAL_MUSIC_TOPIC_ID = 'personal_music';
 const PERSONAL_MUSIC_TOPIC_LABEL = 'Music';
+const CUTE_PET_REELS_TOPIC_ID = 'cute_pet_reels';
+const PET_REEL_TOPIC_IDS = new Set(['bunny_reels', CUTE_PET_REELS_TOPIC_ID]);
 const DYNAMIC_LEAD_DRIP_ID = 'lead_conversation_reels';
 const DYNAMIC_LEAD_DRIP_REVISION = 'conversation_reel_3_per_week_v1';
 const DYNAMIC_LEAD_TOTAL_SENDS = 12;
@@ -548,6 +550,12 @@ const LEAD_REEL_TOPIC_RULES = [
         priority: 62,
     },
     {
+        topic_id: CUTE_PET_REELS_TOPIC_ID,
+        label: 'cute pet reels',
+        re: /\b(dog|dogs|doggo|puppy|puppies|cat|cats|kitten|kittens|pet|pets|animal|animals|cute name|zoomies?|full speed|open field|chill at home|chaos for the open field)\b/i,
+        priority: 66,
+    },
+    {
         topic_id: 'bunny_reels',
         label: 'bunny reels',
         re: /\b(bunny|bunnies|rabbit|rabbits|free[-\s]?roam|sunshine)\b/i,
@@ -638,7 +646,7 @@ function dynamicLeadLatestContextReview({ item = {}, messages = [], nowMs = Date
     const petSocialContext = DYNAMIC_LEAD_PET_SOCIAL_CONTEXT_RE.test(contextText)
         && !DYNAMIC_LEAD_HEALTH_REEL_CONTEXT_RE.test(contextText);
     if (petSocialContext) {
-        if (itemTopic === 'bunny_reels' && topicIds.includes('bunny_reels')) {
+        if (PET_REEL_TOPIC_IDS.has(itemTopic) && topicIds.includes(itemTopic)) {
             return { ok: true, topic_ids: topicIds, context_text: contextText };
         }
         return {
@@ -799,6 +807,68 @@ function topicEntriesFromLeadText(text = '') {
     }).slice(0, 4).map(({ score, ...entry }) => entry);
 }
 
+function mergeLeadTopicEntries(...groups) {
+    const seen = new Set();
+    const out = [];
+    for (const group of groups) {
+        for (const entry of Array.isArray(group) ? group : []) {
+            const topicId = cleanString(entry?.topic_id || entry?.topicId, 80);
+            if (!topicId || seen.has(topicId)) continue;
+            seen.add(topicId);
+            out.push(entry);
+        }
+    }
+    return out.slice(0, 4);
+}
+
+function normalizePetName(value = '') {
+    const name = cleanString(value, 80)
+        .replace(/^[^A-Za-z]+|[^A-Za-z0-9' -]+$/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    if (!/^[A-Za-z][A-Za-z0-9' -]{1,30}$/.test(name)) return '';
+    if (/^(haha|hehe|yep|yeah|nah|no|yes|she|he|they|it|dog|cat|puppy|pet|bunny|rabbit)$/i.test(name)) return '';
+    return name;
+}
+
+function extractPetNameFromMessages(messages = []) {
+    const sorted = [...(Array.isArray(messages) ? messages : [])]
+        .filter(message => cleanString(message?.text, 500))
+        .sort((a, b) => (Date.parse(a?.created_at || '') || 0) - (Date.parse(b?.created_at || '') || 0));
+
+    for (let index = 0; index < sorted.length; index += 1) {
+        const message = sorted[index];
+        if (message?.direction !== 'in') continue;
+        const text = cleanString(message.text, 120);
+        const directName = normalizePetName(text.replace(/[☺😊😉😍🥰❤️💕💖✨!?.]+/g, ' ').trim());
+        if (!directName || directName.split(/\s+/).length > 2) continue;
+        const previous = sorted.slice(Math.max(0, index - 4), index).map(item => item?.text || '').join('\n');
+        if (/\bwhat(?:'s|s| is| are)?\s+(?:their|her|his|your\s+dog'?s|your\s+cat'?s|your\s+pet'?s)?\s*names?\b|\bwhat\s+(?:are\s+they|is\s+(?:she|he|it))\s+called\b/i.test(previous)) {
+            return directName;
+        }
+    }
+
+    const transcript = sorted.map(message => message.text || '').join('\n');
+    const namedMatch = transcript.match(/\b(?:named|called|name is|name's|names? are)\s+([A-Z][A-Za-z0-9' -]{1,30})\b/);
+    return normalizePetName(namedMatch?.[1] || '');
+}
+
+function personalizePetTopicEntries(entries = [], messages = []) {
+    const petName = extractPetNameFromMessages(messages);
+    if (!petName) return entries;
+    return entries.map(entry => {
+        if (!PET_REEL_TOPIC_IDS.has(entry.topic_id)) return entry;
+        return {
+            ...entry,
+            signal_label: `pet:${petName}`,
+            evidence: {
+                ...safeObject(entry.evidence),
+                pet_name: petName,
+            },
+        };
+    });
+}
+
 function buildDynamicLeadReelConfig(thread = {}, messages = [], nowMs = Date.now()) {
     const customData = safeObject(thread.custom_data);
     const songSignals = uniqueSongSignals([
@@ -806,7 +876,11 @@ function buildDynamicLeadReelConfig(thread = {}, messages = [], nowMs = Date.now
         ...collectStoryMusicSignals(customData),
     ]);
     const text = leadConversationText(thread, messages);
-    const topicEntries = topicEntriesFromLeadText(text);
+    const latestText = dynamicLeadLatestContextText(messages, nowMs);
+    const topicEntries = personalizePetTopicEntries(mergeLeadTopicEntries(
+        topicEntriesFromLeadText(latestText),
+        topicEntriesFromLeadText(text)
+    ), messages);
     const planTopics = [
         ...songSignals.slice(0, 2).map(signal => ({
             topic_id: PERSONAL_MUSIC_TOPIC_ID,
@@ -1957,12 +2031,41 @@ function musicMessage(reel, itemIndex = 0) {
     return options[messageVariantIndex(reel, itemIndex, options.length)];
 }
 
+function petNameFromReelSignal(reel = {}) {
+    const signal = cleanString(reel.signal_label || reel.signalLabel || '', 120);
+    const match = signal.match(/^pet:([A-Za-z][A-Za-z0-9' -]{1,30})$/i);
+    return normalizePetName(match?.[1] || '');
+}
+
+function petMessage(reel, itemIndex = 0) {
+    const petName = petNameFromReelSignal(reel);
+    if (petName) {
+        const options = [
+            `this has ${petName} energy haha`,
+            `this made me think of ${petName}`,
+            `${petName} would rate this`,
+            `this is giving ${petName} vibes`,
+        ];
+        return options[messageVariantIndex(reel, itemIndex, options.length)];
+    }
+    const options = [
+        'this has the same energy haha',
+        'cute pet chaos',
+        'this made me laugh',
+        'same energy haha',
+    ];
+    return options[messageVariantIndex(reel, itemIndex, options.length)];
+}
+
 function buildMessageOpener(reel, itemIndex = 0) {
     const topicId = cleanString(reel?.topic_id || reel?.topicId, 80);
     const topicLabel = cleanString(reel?.topic_label || reel?.topicLabel, 120).toLowerCase();
     const topicText = `${topicId} ${topicLabel} ${reel?.title || ''}`.toLowerCase();
     const optionsByTopic = (() => {
         if (topicId === PERSONAL_MUSIC_TOPIC_ID || reel?.intent === 'song' || reel?.caption_mode === 'song') {
+            return null;
+        }
+        if (PET_REEL_TOPIC_IDS.has(topicId)) {
             return null;
         }
         if (isPracticalCookingReel(topicId, topicText)) {
@@ -2026,6 +2129,9 @@ function buildMessageOpener(reel, itemIndex = 0) {
     if (!optionsByTopic) {
         if (topicId === PERSONAL_MUSIC_TOPIC_ID || reel?.intent === 'song' || reel?.caption_mode === 'song') {
             return musicMessage(reel, itemIndex);
+        }
+        if (PET_REEL_TOPIC_IDS.has(topicId)) {
+            return petMessage(reel, itemIndex);
         }
         return cookingMessage(reel, itemIndex);
     }

@@ -64,6 +64,14 @@ assert.ok(
     'bunny reels should include Lennon The Bunny'
 );
 assert.ok(
+    curatedLearningReelSourceNames('cute_pet_reels').some(name => name === 'The Dodo'),
+    'cute pet reels should include The Dodo'
+);
+assert.ok(
+    curatedLearningReelSourceNames('cute_pet_reels').some(name => name === 'Maymo'),
+    'cute pet reels should include dog-specific pet sources'
+);
+assert.ok(
     curatedLearningReelSourceNames('pelvic_tilt_balance').some(name => name === 'Conor Harris'),
     'pelvic tilt balance should include Conor Harris'
 );
@@ -129,6 +137,24 @@ assert.strictEqual(
 assert.ok(
     scoreCuratedLearningReelCandidate(trustedBunnyCandidate) > 100,
     'trusted bunny candidate should score strongly'
+);
+
+const trustedCutePetCandidate = {
+    topicId: 'cute_pet_reels',
+    channelTitle: 'The Dodo',
+    title: 'Dog Has Zoomies In Open Field #shorts',
+    description: 'A cute pet dog gets playful zoomies and then goes chill at home.',
+    durationSec: 28,
+    viewCount: 500000
+};
+
+assert.strictEqual(
+    findCuratedLearningReelSource(trustedCutePetCandidate, 'cute_pet_reels').id,
+    'the_dodo'
+);
+assert.ok(
+    scoreCuratedLearningReelCandidate(trustedCutePetCandidate) > 100,
+    'trusted cute pet candidate should score strongly'
 );
 
 const trustedPelvicTiltCandidate = {
