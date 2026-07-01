@@ -186,9 +186,8 @@ jobs:
           fi
 
       # --- Build signed IPA for real devices ---
-      # Archive unsigned first, then let exportArchive perform App Store
-      # distribution signing. This avoids certificate/profile creation during
-      # archive while still letting export validate the final signed IPA.
+      # Archive with the installed manual App Store profiles so Xcode applies
+      # App.entitlements before export. The exported IPA is checked again below.
       - name: Build iOS app (signed for device)
         env:
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
@@ -200,9 +199,6 @@ jobs:
           mkdir -p ~/.private_keys
           echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
 
-          # NOTE: Archive unsigned so the runner does not try to create
-          # development certificates/profiles. exportArchive performs App Store
-          # signing with the installed distribution certificate.
           xcodebuild \
             -project App.xcodeproj \
             -scheme App \
@@ -214,21 +210,37 @@ jobs:
             -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
             archive
 
           echo ""
           echo "=================================================="
-          echo "=== UNSIGNED ARCHIVE CREATED ==="
+          echo "=== SIGNED ARCHIVE CREATED ==="
           echo "=================================================="
           APP_PATH="$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app"
           if [ ! -d "$APP_PATH" ]; then
             echo "::error::App.app not found at $APP_PATH"
             exit 1
           fi
-          echo "Unsigned archive app exists. Final signed IPA entitlements are checked after export."
+
+          ARCHIVE_ENTITLEMENTS="$RUNNER_TEMP/archive-entitlements.plist"
+          codesign -d --entitlements :- "$APP_PATH" > "$ARCHIVE_ENTITLEMENTS" 2>/dev/null
+          cat "$ARCHIVE_ENTITLEMENTS"
+
+          for entitlement in \
+            "com.apple.developer.healthkit" \
+            "aps-environment" \
+            "com.apple.security.application-groups"
+          do
+            if ! grep -q "$entitlement" "$ARCHIVE_ENTITLEMENTS"; then
+              echo "::error::Missing entitlement in signed archive: $entitlement"
+              exit 1
+            fi
+          done
+
+          if [ ! -f "$APP_PATH/embedded.mobileprovision" ]; then
+            echo "::error::Signed archive is missing embedded.mobileprovision"
+            exit 1
+          fi
 
       - name: Export IPA
         env:
