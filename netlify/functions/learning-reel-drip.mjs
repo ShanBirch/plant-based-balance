@@ -134,7 +134,8 @@ const TOPIC_SEQUENCE = [
 ];
 
 export const config = {
-    schedule: '*/5 * * * *',
+    // TEMP disabled 2026-07-01 during Supabase Auth incident.
+    // schedule: '*/5 * * * *',
 };
 
 function getEnv(name) {

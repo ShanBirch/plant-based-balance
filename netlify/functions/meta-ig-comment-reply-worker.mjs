@@ -33,7 +33,8 @@ const RETRY_BACKOFF_MS = 10 * 60 * 1000;
 const MAX_SEND_ATTEMPTS = 3;
 
 export const config = {
-    schedule: '* * * * *',
+    // TEMP disabled 2026-07-01 during Supabase Auth incident.
+    // schedule: '* * * * *',
 };
 
 function getEnv(name) {
