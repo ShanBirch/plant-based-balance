@@ -8431,8 +8431,14 @@ window.handleQuizBattleMessageClick = async function(senderId) {
             return;
         }
 
+        const currentUserId = window.currentUser.id || window.currentUser.user_id;
+        if (!currentUserId) {
+            console.warn('❌ handleQuizBattleMessageClick: No current user id');
+            return;
+        }
+
         // Fetch active quiz battles
-        const { data: battles, error } = await window.supabaseClient.rpc('get_user_quiz_battles', { p_user_id: window.currentUser.id });
+        const { data: battles, error } = await window.supabaseClient.rpc('get_user_quiz_battles', { p_user_id: currentUserId });
         
         if (error) {
             console.error('❌ Error fetching quiz battles:', error);
@@ -8443,21 +8449,27 @@ window.handleQuizBattleMessageClick = async function(senderId) {
         const battle = (battles || []).find(b => 
             (b.challenger_id === senderId || b.opponent_id === senderId) && 
             (b.status === 'pending' || b.status === 'active') &&
-            (!b.opponent_finished || b.opponent_id !== window.currentUser.id)
+            !(b.challenger_id === currentUserId && b.challenger_finished) &&
+            !(b.opponent_id === currentUserId && b.opponent_finished)
         );
 
         if (battle) {
+            const isChallenger = battle.challenger_id === currentUserId;
+            const isOpponent = battle.opponent_id === currentUserId;
+            const opponentName = isChallenger ? battle.opponent_name : battle.challenger_name;
+
             console.log('⚡ Found battle match:', battle.id);
             // Close modals
             const dmModal = document.getElementById('direct-message-modal');
             if (dmModal) dmModal.style.display = 'none';
 
-            // Call the acceptance function in learning-inline.js
-            if (typeof window.acceptQuizBattle === 'function') {
+            if (battle.status === 'pending' && isOpponent && typeof window.acceptQuizBattle === 'function') {
                 window.acceptQuizBattle(battle.id, battle.challenger_name, battle.coin_bet);
+            } else if ((isChallenger || battle.status === 'active') && typeof window.startExistingQuizBattle === 'function') {
+                window.startExistingQuizBattle(battle.id, opponentName, battle.coin_bet, isChallenger);
             } else {
-                 // Fallback: switch to learning tab
-                 if (typeof window.switchAppTab === 'function') window.switchAppTab('learning');
+                // Fallback: switch to learning tab
+                if (typeof window.switchAppTab === 'function') window.switchAppTab('learning');
             }
         } else {
             console.warn('⚠️ No active quiz battle found with this user.');
