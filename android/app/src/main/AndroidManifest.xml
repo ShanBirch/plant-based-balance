@@ -4,6 +4,9 @@
 
     <queries>
         <package android:name="com.instagram.android" />
+        <intent>
+            <action android:name="android.media.action.VIDEO_CAPTURE" />
+        </intent>
     </queries>
 
     <application
@@ -274,7 +277,7 @@
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Camera access for barcode scanning & food recognition -->
+    <!-- Camera access for barcode scanning, food recognition, and Share a Set video capture. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />

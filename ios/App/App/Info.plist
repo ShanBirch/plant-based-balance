@@ -95,7 +95,7 @@
 	<key>UIStatusBarStyle</key>
 	<string>UIStatusBarStyleDarkContent</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Balance needs camera access to take meal photos, progress photos, and scan barcodes.</string>
+	<string>Balance needs camera access to film sets, take meal photos, progress photos, and scan barcodes.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Balance needs microphone access for voice meal logging and recording custom exercises.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

@@ -13,6 +13,7 @@ import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Base64;
 import android.view.WindowManager;
@@ -80,6 +81,9 @@ public class MainActivity extends BridgeActivity {
 
     /** URI where the workout-share native camera saves its photo. */
     private Uri workoutCameraOutputUri = null;
+    /** URI/file where the Share a Set native video camera saves its clip. */
+    private Uri workoutVideoOutputUri = null;
+    private File workoutVideoOutputFile = null;
 
     /**
      * Launcher for the native Android camera used by the "Log Meal" home-screen shortcut.
@@ -188,6 +192,33 @@ public class MainActivity extends BridgeActivity {
         });
 
     /**
+     * Launcher for Share a Set video capture. Opens the real system video camera
+     * and returns a file:// path JS can pass through Capacitor.convertFileSrc().
+     */
+    private final ActivityResultLauncher<Intent> workoutVideoLauncher =
+        registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            boolean success = result.getResultCode() == RESULT_OK
+                    && workoutVideoOutputFile != null
+                    && workoutVideoOutputFile.exists()
+                    && workoutVideoOutputFile.length() > 0;
+
+            if (!success) {
+                sendNativeWorkoutVideoResult("{\"cancelled\":true}");
+                return;
+            }
+
+            File videoFile = workoutVideoOutputFile;
+            String json = "{"
+                    + "\"cancelled\":false,"
+                    + "\"path\":" + jsonStringQuote(Uri.fromFile(videoFile).toString()) + ","
+                    + "\"name\":" + jsonStringQuote(videoFile.getName()) + ","
+                    + "\"mimeType\":\"video/mp4\","
+                    + "\"size\":" + videoFile.length()
+                    + "}";
+            sendNativeWorkoutVideoResult(json);
+        });
+
+    /**
      * JSON-encode a string so it can be safely injected into evaluateJavascript.
      * Wraps in quotes and escapes special characters. Only used for trusted
      * server-side-generated payloads (base64 data URLs).
@@ -213,6 +244,15 @@ public class MainActivity extends BridgeActivity {
         }
         sb.append('"');
         return sb.toString();
+    }
+
+    private void sendNativeWorkoutVideoResult(String json) {
+        if (webViewRef == null) return;
+        runOnUiThread(() ->
+            webViewRef.evaluateJavascript(
+                "if(window._onNativeWorkoutVideo) window._onNativeWorkoutVideo(" + json + ")",
+                null)
+        );
     }
 
     private String mimeTypeFromDataUrl(String dataUrl) {
@@ -837,6 +877,41 @@ public class MainActivity extends BridgeActivity {
                     webViewRef.evaluateJavascript(
                         "if(window._onNativeWorkoutPhoto) window._onNativeWorkoutPhoto(null)",
                         null);
+                }
+            });
+        }
+
+        /**
+         * Launch the real system video camera for Share a Set.
+         * The result is delivered to JS through:
+         *   window._onNativeWorkoutVideo({ path, name, mimeType, size })
+         * or { cancelled:true } when the user backs out.
+         */
+        @JavascriptInterface
+        public void takeWorkoutVideo(int maxDurationSeconds) {
+            runOnUiThread(() -> {
+                try {
+                    File dir = new File(getCacheDir(), "workout_share_videos");
+                    if (!dir.exists()) dir.mkdirs();
+                    workoutVideoOutputFile = new File(dir, "share-set-" + System.currentTimeMillis() + ".mp4");
+                    workoutVideoOutputUri = FileProvider.getUriForFile(
+                            MainActivity.this, getPackageName() + ".fileprovider", workoutVideoOutputFile);
+
+                    Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+                    intent.putExtra(MediaStore.EXTRA_OUTPUT, workoutVideoOutputUri);
+                    intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 0);
+                    intent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, Math.max(1, Math.min(120, maxDurationSeconds)));
+                    intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    intent.setClipData(ClipData.newRawUri("Share a Set", workoutVideoOutputUri));
+
+                    if (intent.resolveActivity(getPackageManager()) == null) {
+                        sendNativeWorkoutVideoResult("{\"cancelled\":true,\"reason\":\"camera-unavailable\"}");
+                        return;
+                    }
+
+                    workoutVideoLauncher.launch(intent);
+                } catch (Exception e) {
+                    sendNativeWorkoutVideoResult("{\"cancelled\":true,\"reason\":\"camera-error\"}");
                 }
             });
         }

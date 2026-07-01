@@ -62,6 +62,8 @@ class ViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(BalanceNutritionWidgetPlugin())
         // Open generated PB/workout cards in Instagram Story or Feed.
         bridge?.registerPluginInstance(BalanceInstagramSharePlugin())
+        // Open the real phone video camera for Share a Set clips.
+        bridge?.registerPluginInstance(BalanceVideoCapturePlugin())
     }
 
     deinit {

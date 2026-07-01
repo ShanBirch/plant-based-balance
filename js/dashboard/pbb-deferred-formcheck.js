@@ -668,8 +668,6 @@
                             Photos
                         </button>
                     </div>
-                    <input type="file" id="workout-feed-share-camera-input" accept="video/*" capture="environment" style="display:none;" onchange="handleWorkoutFeedShareFileSelect(event)">
-                    <input type="file" id="workout-feed-share-gallery-input" accept="video/*" style="display:none;" onchange="handleWorkoutFeedShareFileSelect(event)">
                     <video id="workout-feed-share-video-preview" controls playsinline></video>
                     <button type="button" id="workout-feed-share-remove-video" class="workout-feed-share-btn workout-feed-share-btn-danger" style="display:none; width:100%; margin-top:10px;" onclick="clearWorkoutFeedShareVideo()">Remove Clip</button>
                 </div>
@@ -1049,11 +1047,137 @@
     }
 
     function openWorkoutFeedShareCapture() {
-        openWorkoutFeedShareFilePicker(true);
+        void openNativeWorkoutFeedShareCamera();
     }
 
     function openWorkoutFeedShareGallery() {
-        openWorkoutFeedShareFilePicker(false);
+        openWorkoutFeedShareFilePicker();
+    }
+
+    function getBalanceVideoCapturePlugin() {
+        let plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BalanceVideoCapture;
+        if (!plugin && window.Capacitor && typeof window.Capacitor.registerPlugin === 'function') {
+            try { plugin = window.Capacitor.registerPlugin('BalanceVideoCapture'); } catch (e) {}
+        }
+        return plugin || null;
+    }
+
+    async function ensureNativeWorkoutVideoCameraPermission() {
+        if (!window.NativePermissions || typeof window.NativePermissions.hasCameraPermission !== 'function') return true;
+        try {
+            if (window.NativePermissions.hasCameraPermission()) return true;
+            if (window.NativePermissions.isPermissionPermanentlyDenied && window.NativePermissions.isPermissionPermanentlyDenied()) {
+                return false;
+            }
+            if (typeof window.NativePermissions.requestCameraPermission !== 'function') return true;
+            return await new Promise(function (resolve) {
+                window._onNativeCameraPermission = function (result) {
+                    delete window._onNativeCameraPermission;
+                    resolve(!!result);
+                };
+                window.NativePermissions.requestCameraPermission();
+                setTimeout(function () {
+                    if (window._onNativeCameraPermission) {
+                        delete window._onNativeCameraPermission;
+                        resolve(false);
+                    }
+                }, 60000);
+            });
+        } catch (error) {
+            console.warn('[WorkoutFeedShare] camera permission check failed', error);
+            return true;
+        }
+    }
+
+    async function captureAndroidWorkoutVideo() {
+        if (!window.NativePermissions || typeof window.NativePermissions.takeWorkoutVideo !== 'function') return null;
+        const granted = await ensureNativeWorkoutVideoCameraPermission();
+        if (!granted) {
+            throw new Error('Camera permission is blocked. Check app permissions.');
+        }
+        return new Promise(function (resolve) {
+            let settled = false;
+            window._onNativeWorkoutVideo = function (result) {
+                if (settled) return;
+                settled = true;
+                delete window._onNativeWorkoutVideo;
+                resolve(result || { cancelled: true });
+            };
+            try {
+                window.NativePermissions.takeWorkoutVideo(75);
+            } catch (error) {
+                if (settled) return;
+                settled = true;
+                delete window._onNativeWorkoutVideo;
+                resolve(null);
+            }
+            setTimeout(function () {
+                if (settled) return;
+                settled = true;
+                delete window._onNativeWorkoutVideo;
+                resolve({ cancelled: true });
+            }, 180000);
+        });
+    }
+
+    async function captureIosWorkoutVideo() {
+        const plugin = getBalanceVideoCapturePlugin();
+        if (!plugin || typeof plugin.captureWorkoutVideo !== 'function') return null;
+        return plugin.captureWorkoutVideo({ maxDurationSeconds: 75 });
+    }
+
+    async function nativeWorkoutVideoResultToFile(result) {
+        if (!result || result.cancelled) return null;
+
+        let source = result.webPath || result.url || '';
+        const rawPath = result.path || result.filePath || '';
+        if (!source && rawPath && window.Capacitor && typeof window.Capacitor.convertFileSrc === 'function') {
+            source = window.Capacitor.convertFileSrc(rawPath);
+        }
+        if (!source) {
+            throw new Error('The camera returned a clip the app could not read.');
+        }
+
+        const response = await fetch(source);
+        if (!response.ok) throw new Error('Could not load the recorded clip.');
+
+        const blob = await response.blob();
+        if (!blob || !blob.size) throw new Error('The recorded clip was empty.');
+
+        const fallbackName = result.name || ('share-set-' + Date.now() + '.mp4');
+        const mimeType = result.mimeType || blob.type || getWorkoutFeedShareVideoMimeType({ name: fallbackName }) || 'video/mp4';
+        return new File([blob], fallbackName, {
+            type: mimeType,
+            lastModified: Date.now()
+        });
+    }
+
+    async function openNativeWorkoutFeedShareCamera() {
+        const bannerLabel = showWorkoutFeedShareUploadBanner('Opening camera...', 'info');
+        try {
+            let result = await captureAndroidWorkoutVideo();
+            if (!result) result = await captureIosWorkoutVideo();
+
+            if (!result) {
+                showWorkoutFeedShareUploadBanner('Native camera needs the latest app update. Use Photos for now.', 'error');
+                return;
+            }
+            if (result.cancelled) {
+                hideWorkoutFeedShareUploadBanner(300);
+                return;
+            }
+
+            if (bannerLabel) bannerLabel.textContent = 'Preparing your set...';
+            const file = await nativeWorkoutVideoResultToFile(result);
+            if (!file) {
+                hideWorkoutFeedShareUploadBanner(300);
+                return;
+            }
+            processWorkoutFeedShareSelectedFile(file);
+        } catch (error) {
+            console.error('[WorkoutFeedShare] native camera failed', error);
+            showWorkoutFeedShareUploadBanner(error.message || 'Could not open the native camera. Use Photos for now.', 'error');
+        }
     }
 
     function clearWorkoutFeedSharePendingInput() {
@@ -1066,13 +1190,12 @@
         workoutFeedSharePendingInput = null;
     }
 
-    function openWorkoutFeedShareFilePicker(useCamera) {
+    function openWorkoutFeedShareFilePicker() {
         clearWorkoutFeedSharePendingInput();
 
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'video/*';
-        if (useCamera) input.setAttribute('capture', 'environment');
         input.setAttribute('aria-hidden', 'true');
         input.style.cssText = 'position:fixed; left:-9999px; top:0; width:1px; height:1px; opacity:0; pointer-events:none;';
 
@@ -1124,12 +1247,7 @@
         return file;
     }
 
-    function handleWorkoutFeedShareFileSelect(event) {
-        const input = event && event.target;
-        const rawFile = input && input.files ? input.files[0] : null;
-        if (input) input.value = '';
-        if (!rawFile) return;
-
+    function processWorkoutFeedShareSelectedFile(rawFile) {
         const file = normalizeWorkoutFeedShareVideoFile(rawFile);
         if (!file) {
             showWorkoutFeedShareUploadBanner('Please choose a video clip.', 'error');
@@ -1143,6 +1261,14 @@
         void submitWorkoutFeedShare({
             postBtn: bannerLabel
         });
+    }
+
+    function handleWorkoutFeedShareFileSelect(event) {
+        const input = event && event.target;
+        const rawFile = input && input.files ? input.files[0] : null;
+        if (input) input.value = '';
+        if (!rawFile) return;
+        processWorkoutFeedShareSelectedFile(rawFile);
     }
 
     function clearWorkoutFeedShareVideo() {
