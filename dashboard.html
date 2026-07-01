@@ -7964,12 +7964,25 @@ if(!window._pbbIsIOSSafari) {
             <!-- Header -->
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px; padding-right:30px;">
                 <span style="font-size:1.4rem;">📸</span>
-                <div style="font-size: 1.1rem; font-weight: 700;">Snap a Gym Photo</div>
+                <div style="font-size: 1.1rem; font-weight: 700;">Share your win</div>
             </div>
-            <p id="share-section-sub" style="font-size: 0.82rem; opacity: 0.85; margin: 0 0 14px 0; padding-right:30px;">One photo, choose Balance Feed, IG Story, or IG Feed.</p>
+            <p id="share-section-sub" style="font-size: 0.82rem; opacity: 0.85; margin: 0 0 14px 0; padding-right:30px;">One button, choose workout, PB, or photo to Feed.</p>
+
+            <div id="post-workout-share-root" style="position:relative;">
+                <button id="post-workout-share-btn" onclick="togglePostWorkoutShareMenu(event)" aria-haspopup="true" aria-expanded="false" style="width: 100%; background: linear-gradient(135deg, #ffffff, #f0fdf4); color: var(--primary); padding: 17px 16px; border-radius: 14px; font-weight: 800; cursor: pointer; border: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.15); transition: transform 0.15s; text-align:left;">
+                    <span style="font-size:1rem;">Share</span>
+                    <span id="post-workout-share-chevron" style="font-size:1rem; line-height:1;">v</span>
+                </button>
+                <div id="post-workout-share-menu" role="menu" style="display:none; position:absolute; left:0; right:0; top:calc(100% + 8px); z-index:6; background:white; color:#0f172a; border-radius:14px; box-shadow:0 18px 36px rgba(0,0,0,0.28); padding:8px; box-sizing:border-box; max-height:min(330px, calc(100vh - 220px)); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;"></div>
+                <div id="post-workout-share-status" style="display:none; margin-top:12px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,0.14); color:white; font-size:0.82rem; font-weight:700; text-align:left;"></div>
+                <div id="post-workout-photo-preview-wrap" style="display:none; position:relative; width:100%; height:132px; border-radius:14px; overflow:hidden; margin-top:12px; background:rgba(0,0,0,0.25); box-shadow:0 4px 12px rgba(0,0,0,0.18);">
+                    <img id="post-workout-photo-preview" alt="Workout photo" style="width:100%; height:100%; object-fit:cover; display:block;" />
+                    <div style="position:absolute; bottom:0; left:0; right:0; padding:10px 12px; background:linear-gradient(transparent, rgba(0,0,0,0.62)); color:white; font-size:0.78rem; font-weight:750;">Photo shared to Feed</div>
+                </div>
+            </div>
 
             <!-- STEP 1: Take photo button (visible initially) -->
-            <div id="share-step-capture" style="display:block;">
+            <div id="share-step-capture" style="display:none;">
                 <button id="share-take-photo-btn" onclick="captureWorkoutSharePhoto()" style="width: 100%; background: linear-gradient(135deg, #ffffff, #f0fdf4); color: var(--primary); padding: 18px 15px; border-radius: 14px; font-weight: 700; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.15); transition: transform 0.15s;">
                     <span style="font-size: 1.5rem;">📷</span>
                     <span style="font-size: 1rem;">Take Gym Photo</span>
@@ -12560,7 +12573,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
     { tab:'movement-tab', sel:'#workout-share-set-btn', title:'Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film with the phone camera or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn'); } },
-    { tab:'movement-tab', sel:'#today-workout-card', title:'Share wins to Instagram', body:"Finish a workout or hit a PB, then choose Balance Feed, Instagram Story, or Instagram Feed from the share options." },
+    { tab:'movement-tab', sel:'#today-workout-card', title:'Post-workout Share', body:"Finish a workout, then tap the single Share button to post the workout, a PB, or a photo to Feed." },
     { tab:'dashboard', sel:'#weekly-progress-photo-card,#weekly-progress-photo-done-card', title:'Progress photos to Instagram', body:"After your weekly progress photos save, tap IG Story to share a Balance progress card straight to Instagram.", condition: function(){ return !!document.querySelector('#weekly-progress-photo-card,#weekly-progress-photo-done-card'); } },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
@@ -13559,9 +13572,9 @@ if(!window._pbbIsIOSSafari) {
     subtab: 'calorie-tracker',
     sel: '#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn',
     title: 'Share to Instagram Story',
-    body: "Workouts, PBs, meals, nutrition summaries, and weekly progress photos can now open straight into Instagram Story as Balance cards.",
+    body: "Meals, nutrition summaries, and weekly progress photos can open straight into Instagram Story as Balance cards.",
     condition: function(){
-      return !!(document.querySelector('#meals-log-list .meal-log-card,.meal-log-card,#share-nutrition-ig-story-btn,#share-workout-ig-story-btn,#progress-photo-share-ig-story-btn'));
+      return !!(document.querySelector('#meals-log-list .meal-log-card,.meal-log-card,#share-nutrition-ig-story-btn,#progress-photo-share-ig-story-btn'));
     }
   });
   allFeatures.push({
@@ -13579,6 +13592,13 @@ if(!window._pbbIsIOSSafari) {
     title: 'Share a Set',
     body: "Tap Share a Set under Film Form Check, then choose Camera to film with the phone camera or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode.",
     condition: function(){ return !!document.getElementById('workout-share-set-btn'); }
+  });
+  allFeatures.push({
+    id: 'post-workout-share-menu-v1',
+    tab: 'movement-tab',
+    sel: '#today-workout-card',
+    title: 'Post-workout Share',
+    body: "After a workout, one Share button lets you choose workout, PB, or photo and post it to Feed."
   });
 
   var revealIdx = 0;

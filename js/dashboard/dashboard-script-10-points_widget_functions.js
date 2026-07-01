@@ -1885,14 +1885,9 @@ function updateWorkoutInstagramShareVisibility() {
 }
 
 function getWorkoutShareSubheading(hasPhoto) {
-    if (canUseBalanceInstagramShareTest()) {
-        return hasPhoto
-            ? 'Nice shot. Choose Balance Feed for XP, or send it to Instagram.'
-            : 'One photo, choose Balance Feed, IG Story, or IG Feed.';
-    }
     return hasPhoto
-        ? 'Nice shot. Share it to Balance Feed for XP.'
-        : 'Take one photo and share it to Balance Feed for XP.';
+        ? 'Photo ready. Share workout, PB, or photo to Feed.'
+        : 'One button, choose workout, PB, or photo to Feed.';
 }
 
 window.canUseBalanceInstagramShareTest = canUseBalanceInstagramShareTest;
@@ -2161,16 +2156,31 @@ function captureWorkoutPhoto() {
 
 // Validate that the workout is long enough to earn share XP.
 // Returns true if valid, false + shows a toast if not.
-function validateWorkoutDurationForShare() {
+function getWorkoutDurationMinutesForShare() {
     const successDurationEl = document.getElementById('success-duration');
     const durationText = successDurationEl ? successDurationEl.textContent : '00:00';
     const [mins, secs] = durationText.split(':').map(Number);
-    const totalMinutes = mins + (secs / 60);
+    return {
+        mins: Number.isFinite(mins) ? mins : 0,
+        secs: Number.isFinite(secs) ? secs : 0,
+        totalMinutes: (Number.isFinite(mins) ? mins : 0) + ((Number.isFinite(secs) ? secs : 0) / 60)
+    };
+}
+
+function isWorkoutDurationEligibleForShareXP(showMessage = true) {
+    const duration = getWorkoutDurationMinutesForShare();
+    const totalMinutes = duration.totalMinutes;
     if (totalMinutes < 15) {
-        showToast(`Workout must be 15+ minutes for XP (yours: ${mins}m ${secs}s)`, 'error');
+        if (showMessage) {
+            showToast(`Workout must be 15+ minutes for XP (yours: ${duration.mins}m ${duration.secs}s)`, 'error');
+        }
         return false;
     }
     return true;
+}
+
+function validateWorkoutDurationForShare() {
+    return isWorkoutDurationEligibleForShareXP(true);
 }
 
 // Called when the user taps "Take Gym Photo" on the post-workout success screen.
@@ -2247,14 +2257,24 @@ async function onWorkoutSharePhotoReady(file) {
 function resetWorkoutShareUI() {
     cachedWorkoutShareFile = null;
     cachedWorkoutShareBase64 = null;
+    postWorkoutShareCompleted = { workout: false, photo: false, pbs: {} };
+    postWorkoutShareBusy = null;
 
     const captureStep = document.getElementById('share-step-capture');
     const shareStep = document.getElementById('share-step-share');
-    if (captureStep) captureStep.style.display = 'block';
+    if (captureStep) captureStep.style.display = 'none';
     if (shareStep) shareStep.style.display = 'none';
 
     const sub = document.getElementById('share-section-sub');
     if (sub) sub.textContent = getWorkoutShareSubheading(false);
+
+    setPostWorkoutShareMenuOpen(false);
+    setPostWorkoutShareStatus('');
+
+    const postWorkoutPreviewWrap = document.getElementById('post-workout-photo-preview-wrap');
+    const postWorkoutPreview = document.getElementById('post-workout-photo-preview');
+    if (postWorkoutPreviewWrap) postWorkoutPreviewWrap.style.display = 'none';
+    if (postWorkoutPreview) postWorkoutPreview.removeAttribute('src');
 
     const takeBtn = document.getElementById('share-take-photo-btn');
     if (takeBtn) {
@@ -2286,8 +2306,331 @@ function resetWorkoutShareUI() {
         igFeedBtn.innerHTML = '<span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span><span style="font-size: 0.9rem;">Feed</span>';
     }
     updateWorkoutInstagramShareVisibility();
+    renderPostWorkoutShareMenu();
 }
 window.resetWorkoutShareUI = resetWorkoutShareUI;
+
+let postWorkoutShareCompleted = { workout: false, photo: false, pbs: {} };
+let postWorkoutShareBusy = null;
+
+function setPostWorkoutShareMenuOpen(open) {
+    const menu = document.getElementById('post-workout-share-menu');
+    const btn = document.getElementById('post-workout-share-btn');
+    const chevron = document.getElementById('post-workout-share-chevron');
+    if (menu) menu.style.display = open ? 'block' : 'none';
+    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (chevron) chevron.textContent = open ? '^' : 'v';
+    if (open) renderPostWorkoutShareMenu();
+}
+
+function togglePostWorkoutShareMenu(event) {
+    if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+    const menu = document.getElementById('post-workout-share-menu');
+    const isOpen = !!(menu && menu.style.display !== 'none');
+    setPostWorkoutShareMenuOpen(!isOpen);
+}
+
+function setPostWorkoutShareStatus(message, type = 'info') {
+    const status = document.getElementById('post-workout-share-status');
+    if (!status) return;
+    if (!message) {
+        status.style.display = 'none';
+        status.textContent = '';
+        return;
+    }
+    status.style.display = 'block';
+    status.textContent = message;
+    status.style.background = type === 'error'
+        ? 'rgba(239,68,68,0.22)'
+        : type === 'success'
+            ? 'rgba(34,197,94,0.22)'
+            : 'rgba(255,255,255,0.14)';
+}
+
+function createPostWorkoutShareOption(config) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('role', 'menuitem');
+    btn.style.cssText = 'width:100%; border:none; border-radius:10px; background:#f8fafc; color:#0f172a; padding:12px; min-height:58px; cursor:pointer; display:flex; flex-direction:column; align-items:flex-start; gap:3px; text-align:left; font-family:inherit; margin:0 0 6px;';
+
+    const title = document.createElement('span');
+    title.textContent = config.title;
+    title.style.cssText = 'font-size:0.95rem; font-weight:900; color:#0f172a; line-height:1.2;';
+    btn.appendChild(title);
+
+    if (config.detail) {
+        const detail = document.createElement('span');
+        detail.textContent = config.detail;
+        detail.style.cssText = 'font-size:0.78rem; font-weight:700; color:#64748b; line-height:1.25;';
+        btn.appendChild(detail);
+    }
+
+    if (config.disabled) {
+        btn.disabled = true;
+        btn.style.opacity = '0.58';
+        btn.style.cursor = 'default';
+    } else if (typeof config.onClick === 'function') {
+        btn.addEventListener('click', function(event) {
+            event.stopPropagation();
+            config.onClick();
+        });
+    }
+
+    return btn;
+}
+
+function renderPostWorkoutShareMenu() {
+    const menu = document.getElementById('post-workout-share-menu');
+    if (!menu) return;
+
+    menu.innerHTML = '';
+    const data = typeof completedWorkoutDataForShare !== 'undefined' ? completedWorkoutDataForShare : null;
+    const pbs = data && Array.isArray(data.newPBs) ? data.newPBs : [];
+    const isBusy = !!postWorkoutShareBusy;
+
+    menu.appendChild(createPostWorkoutShareOption({
+        title: postWorkoutShareCompleted.workout ? 'Workout shared' : (postWorkoutShareBusy === 'workout' ? 'Sharing workout...' : 'Share workout'),
+        detail: data ? 'Post your workout summary to Feed.' : 'No completed workout ready.',
+        disabled: !data || isBusy || postWorkoutShareCompleted.workout,
+        onClick: sharePostWorkoutWorkoutToFeed
+    }));
+
+    if (pbs.length > 0) {
+        pbs.forEach(function(pb, index) {
+            const key = String(index);
+            const value = typeof pbbFormatPBShareValue === 'function' ? pbbFormatPBShareValue(pb) : '';
+            menu.appendChild(createPostWorkoutShareOption({
+                title: postWorkoutShareCompleted.pbs[key] ? 'PB shared' : (postWorkoutShareBusy === 'pb:' + key ? 'Sharing PB...' : 'Share PB: ' + (pb.exercise || 'Personal best')),
+                detail: value || 'Post this personal best to Feed.',
+                disabled: isBusy || !!postWorkoutShareCompleted.pbs[key],
+                onClick: function() { sharePostWorkoutPBToFeed(index); }
+            }));
+        });
+    } else {
+        menu.appendChild(createPostWorkoutShareOption({
+            title: 'Share PB',
+            detail: 'No new PB from this workout.',
+            disabled: true
+        }));
+    }
+
+    menu.appendChild(createPostWorkoutShareOption({
+        title: postWorkoutShareCompleted.photo ? 'Photo shared' : (postWorkoutShareBusy === 'photo' ? 'Posting photo...' : 'Share photo'),
+        detail: data ? 'Take a workout photo and post it to Feed.' : 'No completed workout ready.',
+        disabled: !data || isBusy || postWorkoutShareCompleted.photo,
+        onClick: sharePostWorkoutPhotoToFeed
+    }));
+}
+
+async function awardPostWorkoutFeedShareXP(photoTimestamp, photoHash) {
+    if (workoutPointsEarnedThisSession.story) return null;
+    if (!isWorkoutDurationEligibleForShareXP(false)) return null;
+    return awardWorkoutSharePoint('story', photoTimestamp || new Date().toISOString(), photoHash || null);
+}
+
+async function sharePostWorkoutWorkoutToFeed() {
+    setPostWorkoutShareMenuOpen(false);
+    if (!window.currentUser || !window.currentUser.id) {
+        showToast('Please log in to share', 'error');
+        return;
+    }
+    if (!completedWorkoutDataForShare) {
+        showToast('No workout data to share', 'error');
+        return;
+    }
+
+    postWorkoutShareBusy = 'workout';
+    setPostWorkoutShareStatus('Sharing workout to Feed...');
+    renderPostWorkoutShareMenu();
+
+    try {
+        const cardPayload = buildWorkoutShareCardPayload();
+        if (!cardPayload) throw new Error('Workout card could not be built');
+
+        await dbHelpers.stories.create(window.currentUser.id, {
+            media_type: 'workout_card',
+            media_url: '',
+            thumbnail_url: null,
+            caption: JSON.stringify(cardPayload),
+            duration: 5
+        });
+
+        const xpResult = await awardPostWorkoutFeedShareXP(new Date().toISOString(), null);
+        postWorkoutShareCompleted.workout = true;
+
+        if (typeof loadPhotoFeed === 'function') {
+            loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
+        }
+
+        const message = xpResult?.success ? 'Workout shared to Feed. +1 XP earned.' : 'Workout shared to Feed.';
+        setPostWorkoutShareStatus(message, 'success');
+        showToast(message, 'success');
+    } catch (error) {
+        console.error('Error sharing workout to Feed:', error);
+        setPostWorkoutShareStatus('Could not share workout. Please try again.', 'error');
+        showToast('Could not share workout. Please try again.', 'error');
+    } finally {
+        postWorkoutShareBusy = null;
+        renderPostWorkoutShareMenu();
+    }
+}
+
+async function sharePostWorkoutPBToFeed(index) {
+    const pbs = completedWorkoutDataForShare && Array.isArray(completedWorkoutDataForShare.newPBs)
+        ? completedWorkoutDataForShare.newPBs
+        : [];
+    const pbData = pbs[index];
+    if (!pbData) {
+        showToast('No PB to share', 'error');
+        return;
+    }
+
+    setPostWorkoutShareMenuOpen(false);
+    const key = String(index);
+    postWorkoutShareBusy = 'pb:' + key;
+    setPostWorkoutShareStatus('Sharing PB to Feed...');
+    renderPostWorkoutShareMenu();
+
+    try {
+        const story = await sharePBCardToFeed(pbData);
+        if (story) {
+            postWorkoutShareCompleted.pbs[key] = true;
+            setPostWorkoutShareStatus('PB shared to Feed.', 'success');
+        }
+    } catch (error) {
+        console.error('Error sharing PB to Feed:', error);
+        setPostWorkoutShareStatus('Could not share PB. Please try again.', 'error');
+        showToast('Could not share PB. Please try again.', 'error');
+    } finally {
+        postWorkoutShareBusy = null;
+        renderPostWorkoutShareMenu();
+    }
+}
+
+function sharePostWorkoutPhotoToFeed() {
+    setPostWorkoutShareMenuOpen(false);
+    if (!window.currentUser || !window.currentUser.id) {
+        showToast('Please log in to share', 'error');
+        return;
+    }
+    if (!completedWorkoutDataForShare) {
+        showToast('No workout data to share', 'error');
+        return;
+    }
+
+    postWorkoutShareBusy = 'photo';
+    setPostWorkoutShareStatus('Opening camera...');
+    renderPostWorkoutShareMenu();
+
+    openWorkoutCamera(async function(file) {
+        if (!file) {
+            postWorkoutShareBusy = null;
+            setPostWorkoutShareStatus('');
+            renderPostWorkoutShareMenu();
+            return;
+        }
+        await uploadPostWorkoutPhotoToFeed(file);
+    }, 'Take a workout photo');
+}
+
+async function uploadPostWorkoutPhotoToFeed(file) {
+    postWorkoutShareBusy = 'photo';
+    setPostWorkoutShareStatus('Posting photo to Feed...');
+    renderPostWorkoutShareMenu();
+
+    try {
+        const userId = window.currentUser.id;
+        const compressedFile = typeof compressMealImage === 'function'
+            ? await compressMealImage(file)
+            : file;
+        const base64Data = await new Promise(function(resolve, reject) {
+            const reader = new FileReader();
+            reader.onload = function(event) { resolve(event.target.result); };
+            reader.onerror = reject;
+            reader.readAsDataURL(compressedFile);
+        });
+
+        let photoHash = null;
+        try {
+            if (window.db?.points?.generatePhotoHash) {
+                photoHash = await window.db.points.generatePhotoHash(base64Data);
+            }
+        } catch (hashError) {
+            console.warn('Could not hash workout photo:', hashError);
+        }
+
+        const tempStoryId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
+        const formData = new FormData();
+        formData.append('file', compressedFile);
+        formData.append('userId', userId);
+        formData.append('storyId', tempStoryId);
+        formData.append('source', 'workout_completion_photo');
+
+        const uploadResponse = await fetch('/api/upload-story-media', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!uploadResponse.ok) {
+            let message = 'Upload failed';
+            try {
+                const errorData = await uploadResponse.json();
+                message = errorData.error || message;
+            } catch (e) {}
+            throw new Error(message);
+        }
+
+        const uploadData = await uploadResponse.json();
+        const workoutName = completedWorkoutDataForShare?.workoutName || 'Workout';
+        await dbHelpers.stories.create(userId, {
+            media_type: 'image',
+            media_url: uploadData.url,
+            thumbnail_url: null,
+            caption: `Just finished ${workoutName}!`,
+            duration: 5
+        });
+
+        const photoTimestamp = new Date().toISOString();
+        const xpResult = await awardPostWorkoutFeedShareXP(photoTimestamp, photoHash);
+        postWorkoutShareCompleted.photo = true;
+
+        const preview = document.getElementById('post-workout-photo-preview');
+        const previewWrap = document.getElementById('post-workout-photo-preview-wrap');
+        if (preview) preview.src = base64Data;
+        if (previewWrap) previewWrap.style.display = 'block';
+
+        if (typeof loadPhotoFeed === 'function') {
+            loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
+        }
+        if (typeof loadStories === 'function') {
+            loadStories();
+        }
+
+        const message = xpResult?.success ? 'Photo shared to Feed. +1 XP earned.' : 'Photo shared to Feed.';
+        setPostWorkoutShareStatus(message, 'success');
+        showToast(message, 'success');
+    } catch (error) {
+        console.error('Error sharing workout photo to Feed:', error);
+        setPostWorkoutShareStatus('Could not share photo. Please try again.', 'error');
+        showToast('Could not share photo. Please try again.', 'error');
+    } finally {
+        postWorkoutShareBusy = null;
+        renderPostWorkoutShareMenu();
+    }
+}
+
+document.addEventListener('click', function(event) {
+    const root = document.getElementById('post-workout-share-root');
+    const menu = document.getElementById('post-workout-share-menu');
+    if (!root || !menu || menu.style.display === 'none') return;
+    if (!root.contains(event.target)) setPostWorkoutShareMenuOpen(false);
+});
+
+window.togglePostWorkoutShareMenu = togglePostWorkoutShareMenu;
+window.renderPostWorkoutShareMenu = renderPostWorkoutShareMenu;
+window.sharePostWorkoutWorkoutToFeed = sharePostWorkoutWorkoutToFeed;
+window.sharePostWorkoutPBToFeed = sharePostWorkoutPBToFeed;
+window.sharePostWorkoutPhotoToFeed = sharePostWorkoutPhotoToFeed;
 
 // Share workout to story - requires camera photo
 function shareWorkoutToStory() {

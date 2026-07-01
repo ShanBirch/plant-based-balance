@@ -16714,8 +16714,7 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
                             <div style="font-weight: 600; font-size: 0.9rem; color: white;">${pb.exercise}</div>
                             <div style="font-size: 0.8rem; opacity: 0.9;">${pbText}</div>
                         </div>
-                        ${improvement ? `<div style="color: #4ade80; font-weight: 700; font-size: 0.9rem; margin-right:8px;">${improvement}</div>` : ''}
-                        <button id="share-pb-btn-${idx}" onclick="openPBShareOptions(completedWorkoutDataForShare.newPBs[${idx}], ${idx});" style="background:rgba(251,191,36,0.3); border:1px solid rgba(251,191,36,0.5); color:#fbbf24; padding:4px 10px; border-radius:8px; font-size:0.7rem; font-weight:700; cursor:pointer; white-space:nowrap;">Share</button>
+                        ${improvement ? `<div style="color: #4ade80; font-weight: 700; font-size: 0.9rem; margin-left:8px;">${improvement}</div>` : ''}
                     </div>
                 `;
             }).join('')}
@@ -16764,6 +16763,9 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
     // previous workout's state doesn't carry over into this one.
     if (typeof window.resetWorkoutShareUI === 'function') {
         window.resetWorkoutShareUI();
+    }
+    if (typeof window.renderPostWorkoutShareMenu === 'function') {
+        window.renderPostWorkoutShareMenu();
     }
 
     // Push navigation state for Android back button
