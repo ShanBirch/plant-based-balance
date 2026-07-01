@@ -287,7 +287,7 @@ async function updateReviewNotes(appStoreVersion) {
   }
 }
 
-async function submit(appStoreVersion) {
+async function submit(appStoreVersion, app) {
   if (!submitForReview) {
     console.log('SUBMIT_FOR_REVIEW=false, stopping before App Review submission.');
     return;
@@ -299,32 +299,57 @@ async function submit(appStoreVersion) {
     return;
   }
 
-  try {
-    const submission = await asc('/appStoreVersionSubmissions', {
-      method: 'POST',
-      body: JSON.stringify({
-        data: {
-          type: 'appStoreVersionSubmissions',
-          relationships: {
-            appStoreVersion: {
-              data: { type: 'appStoreVersions', id: appStoreVersion.id },
-            },
+  const reviewSubmission = await asc('/reviewSubmissions', {
+    method: 'POST',
+    body: JSON.stringify({
+      data: {
+        type: 'reviewSubmissions',
+        attributes: {
+          platform: 'IOS',
+        },
+        relationships: {
+          app: {
+            data: { type: 'apps', id: app.id },
           },
         },
-      }),
-    });
-    console.log(`Submitted App Store version ${versionString} for review (${submission.data.id}).`);
-  } catch (error) {
-    console.log(`Could not create App Store version submission: ${error.message}`);
-    const afterState = await getAppStoreVersionState(appStoreVersion);
-    const existingSubmission = await getExistingSubmission(appStoreVersion);
-    if (isSubmittedOrPastSubmissionState(afterState) || existingSubmission) {
-      console.log(`Submission already exists or version is already in ${afterState}; treating as success.`);
-      if (existingSubmission) console.log(`Existing submission id: ${existingSubmission.id}`);
-      return;
-    }
-    throw error;
-  }
+      },
+    }),
+  });
+  console.log(`Created review submission ${reviewSubmission.data.id}.`);
+
+  const reviewItem = await asc('/reviewSubmissionItems', {
+    method: 'POST',
+    body: JSON.stringify({
+      data: {
+        type: 'reviewSubmissionItems',
+        relationships: {
+          reviewSubmission: {
+            data: { type: 'reviewSubmissions', id: reviewSubmission.data.id },
+          },
+          appStoreVersion: {
+            data: { type: 'appStoreVersions', id: appStoreVersion.id },
+          },
+        },
+      },
+    }),
+  });
+  console.log(`Added App Store version ${versionString} to review submission (${reviewItem.data.id}).`);
+
+  const submitted = await asc(`/reviewSubmissions/${reviewSubmission.data.id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      data: {
+        type: 'reviewSubmissions',
+        id: reviewSubmission.data.id,
+        attributes: {
+          submitted: true,
+        },
+      },
+    }),
+  });
+
+  const state = submitted.data?.attributes?.state || 'UNKNOWN';
+  console.log(`Submitted review submission ${reviewSubmission.data.id}; state ${state}.`);
 }
 
 async function stopIfAlreadySubmitted(appStoreVersion) {
@@ -344,5 +369,5 @@ if (!(await stopIfAlreadySubmitted(appStoreVersion))) {
   await attachBuild(appStoreVersion, build);
   await updateReleaseNotes(appStoreVersion, app);
   await updateReviewNotes(appStoreVersion);
-  await submit(appStoreVersion);
+  await submit(appStoreVersion, app);
 }
