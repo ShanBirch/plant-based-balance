@@ -1,5 +1,6 @@
 import type { Context } from "@netlify/edge-functions";
 import { parseModelJsonObject } from "./lib/model-json.mjs";
+import { normalizeNutritionData } from "./lib/nutrition-normalizer.mjs";
 import { callOpenAIGeminiCompat, shouldUseOpenAIPrimary } from "./lib/openai-responses.mjs";
 
 type MealPlanMeal = {
@@ -378,7 +379,8 @@ INSTRUCTIONS:
    b. STANDARD REFERENCES: For whole foods (chicken breast, rice, banana, etc.), use standard USDA/nutritional database values per gram, scaled to the portion
    c. ESTIMATION ONLY as a last resort for vague descriptions where ingredients are unclear
 3. Estimate portion sizes in grams (use the description, packaging info, or common serving sizes)
-4. Provide your confidence level (high/medium/low)
+4. For protein milk, protein shakes, and ready-to-drink protein beverages, treat the entry as one normal serving unless the user clearly says they had a whole large bottle/carton or multiple serves. A single serving is usually 150-450 kcal.
+5. Provide your confidence level (high/medium/low)
 
 RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
 {
@@ -528,21 +530,7 @@ IMPORTANT:
       return new Response(JSON.stringify({ error: "All Gemini models failed", details: lastError }), { status: 503 });
     }
 
-    // Correct calories from macros (protein×4 + carbs×4 + fat×9) since Gemini sometimes miscalculates
-    if (Array.isArray(nutritionData.foodItems)) {
-      for (const item of nutritionData.foodItems) {
-        const p = parseFloat(item.protein_g) || 0;
-        const c = parseFloat(item.carbs_g) || 0;
-        const f = parseFloat(item.fat_g) || 0;
-        item.calories = Math.round(p * 4 + c * 4 + f * 9);
-      }
-    }
-    if (nutritionData.totals) {
-      const p = parseFloat(nutritionData.totals.protein_g) || 0;
-      const c = parseFloat(nutritionData.totals.carbs_g) || 0;
-      const f = parseFloat(nutritionData.totals.fat_g) || 0;
-      nutritionData.totals.calories = Math.round(p * 4 + c * 4 + f * 9);
-    }
+    nutritionData = normalizeNutritionData(nutritionData, { description: cleanDescription });
 
     return new Response(JSON.stringify({ success: true, data: nutritionData }), {
       status: 200,

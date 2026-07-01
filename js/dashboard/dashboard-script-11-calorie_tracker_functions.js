@@ -9761,79 +9761,23 @@ async function onBarcodeDetected(code) {
     document.getElementById('barcode-scan-status').textContent = 'Barcode found! Looking up...';
 
     try {
-        const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`);
-        if (!response.ok) throw new Error('Network error');
-        const data = await response.json();
+        const response = await fetch(`/.netlify/functions/barcode-lookup?code=${encodeURIComponent(code)}`);
+        const data = await response.json().catch(() => ({}));
 
-        if (data.status !== 1 || !data.product) {
+        if (!response.ok || !data.success || !data.product) {
             document.getElementById('barcode-scan-status').textContent = `Barcode ${code} not found in database. Keep scanning or snap a photo.`;
             // Allow re-detection of same barcode after a delay
             setTimeout(() => { lastBarcodeDetected = null; }, 5000);
             return;
         }
 
-        const product = data.product;
-        const nutrients = product.nutriments || {};
+        if (!data.product.hasUsableNutrition) {
+            document.getElementById('barcode-scan-status').textContent = 'Product found, but no nutrition data yet. Use Quick Log or snap the nutrition label.';
+            setTimeout(() => { lastBarcodeDetected = null; }, 5000);
+            return;
+        }
 
-        // Always store per-100g values for custom gram entry
-        const per100g = {
-            calories: parseFloat(nutrients['energy-kcal_100g']) || 0,
-            protein_g: parseFloat(nutrients.proteins_100g) || 0,
-            carbs_g: parseFloat(nutrients.carbohydrates_100g) || 0,
-            fat_g: parseFloat(nutrients.fat_100g) || 0,
-            fiber_g: parseFloat(nutrients.fiber_100g) || 0,
-            sugars_g: parseFloat(nutrients.sugars_100g) || 0,
-            saturated_fat_g: parseFloat(nutrients['saturated-fat_100g']) || 0,
-            sodium_mg: (parseFloat(nutrients.sodium_100g) || 0) * 1000
-        };
-
-        const hasServingData = !!(nutrients['energy-kcal_serving']);
-        const perServing = hasServingData ? {
-            calories: parseFloat(nutrients['energy-kcal_serving']) || 0,
-            protein_g: parseFloat(nutrients.proteins_serving) || 0,
-            carbs_g: parseFloat(nutrients.carbohydrates_serving) || 0,
-            fat_g: parseFloat(nutrients.fat_serving) || 0,
-            fiber_g: parseFloat(nutrients.fiber_serving) || 0,
-            sugars_g: parseFloat(nutrients.sugars_serving) || 0,
-            saturated_fat_g: parseFloat(nutrients['saturated-fat_serving']) || 0,
-            sodium_mg: (parseFloat(nutrients.sodium_serving) || 0) * 1000
-        } : { ...per100g }; // fall back to per-100g
-
-        // Parse serving weight in grams (e.g. "30g", "250 ml")
-        const servingSizeStr = product.serving_size || '';
-        const servingWeightMatch = servingSizeStr.match(/([\d.]+)\s*(g|ml)/i);
-        const servingWeightG = servingWeightMatch ? parseFloat(servingWeightMatch[1]) : null;
-
-        const micro100g = {
-            vitamin_c_mg: parseFloat(nutrients['vitamin-c_100g']) || 0,
-            iron_mg: parseFloat(nutrients['iron_100g']) || 0,
-            calcium_mg: parseFloat(nutrients['calcium_100g']) || 0,
-            potassium_mg: parseFloat(nutrients['potassium_100g']) || 0,
-            vitamin_a_mcg: parseFloat(nutrients['vitamin-a_100g']) || 0,
-            vitamin_d_mcg: parseFloat(nutrients['vitamin-d_100g']) || 0
-        };
-
-        barcodeProductData = {
-            name: product.product_name || product.product_name_en || 'Unknown Product',
-            brand: product.brands || '',
-            quantity: product.quantity || '',
-            image: product.image_front_small_url || product.image_url || '',
-            servingSize: servingSizeStr,
-            servingWeightG: servingWeightG,
-            perServing: perServing,
-            per100g: per100g,
-            micro100g: micro100g,
-            micronutrients: {
-                vitamin_c_mg: parseFloat(nutrients['vitamin-c_serving']) || micro100g.vitamin_c_mg,
-                iron_mg: parseFloat(nutrients['iron_serving']) || micro100g.iron_mg,
-                calcium_mg: parseFloat(nutrients['calcium_serving']) || micro100g.calcium_mg,
-                potassium_mg: parseFloat(nutrients['potassium_serving']) || micro100g.potassium_mg,
-                vitamin_a_mcg: parseFloat(nutrients['vitamin-a_serving']) || micro100g.vitamin_a_mcg,
-                vitamin_d_mcg: parseFloat(nutrients['vitamin-d_serving']) || micro100g.vitamin_d_mcg
-            },
-            isPerServing: hasServingData,
-            barcode: code
-        };
+        barcodeProductData = data.product;
 
         barcodeServings = 1;
         barcodeAmountMode = 'servings'; // reset to servings mode
@@ -9857,7 +9801,7 @@ async function onBarcodeDetected(code) {
         const banner = document.getElementById('barcode-detected-banner');
         document.getElementById('barcode-detected-name').textContent = barcodeProductData.name;
         document.getElementById('barcode-detected-detail').textContent =
-            (barcodeProductData.brand ? barcodeProductData.brand + ' — ' : '') +
+            (barcodeProductData.brand ? barcodeProductData.brand + ' - ' : '') +
             Math.round(barcodeProductData.perServing.calories) + ' kcal per serving';
         banner.style.display = 'block';
         document.getElementById('barcode-scan-status').textContent = 'Product found! Tap banner to log, or snap a photo instead.';

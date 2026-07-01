@@ -1,5 +1,6 @@
 import { Context } from "@netlify/edge-functions";
 import { parseModelJsonObject } from "./lib/model-json.mjs";
+import { normalizeNutritionData } from "./lib/nutrition-normalizer.mjs";
 import { callOpenAIGeminiCompat, shouldUseOpenAIPrimary } from "./lib/openai-responses.mjs";
 
 export default async function (request: Request, context: Context) {
@@ -93,7 +94,9 @@ INSTRUCTIONS:
    b. STANDARD REFERENCES: For whole foods (chicken breast, rice, banana, etc.), use standard USDA/nutritional database values per gram, scaled to the estimated portion
    c. VISUAL ESTIMATION ONLY as a last resort for ambiguous home-cooked dishes where ingredients are unclear
 3. Estimate portion sizes in grams based on visual cues (plate size, item proportions, container size)
-4. Provide your confidence level (high/medium/low)
+4. If the image is mainly a packaged drink, bottle, carton, barcode, or nutrition label, do not assume the user consumed the whole visible package unless the description says so. Use the visible nutrition label if readable. If no label is readable, use one normal serving and mark confidence medium or low.
+5. For protein milk, protein shakes, and ready-to-drink protein beverages, a single serving is usually 150-450 kcal. Only exceed that when the description or a readable label clearly proves a larger amount.
+6. Provide your confidence level (high/medium/low)
 
 RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
 {
@@ -244,23 +247,10 @@ IMPORTANT:
       throw new Error(`Empty AI response (finishReason: ${finishReason ?? "unknown"})`);
     }
 
-    const nutritionData = parseModelJsonObject(aiText, "analyze_food nutrition JSON");
-
-    // Correct calories from macros (protein×4 + carbs×4 + fat×9) since Gemini sometimes miscalculates
-    if (Array.isArray(nutritionData.foodItems)) {
-      for (const item of nutritionData.foodItems) {
-        const p = parseFloat(item.protein_g) || 0;
-        const c = parseFloat(item.carbs_g) || 0;
-        const f = parseFloat(item.fat_g) || 0;
-        item.calories = Math.round(p * 4 + c * 4 + f * 9);
-      }
-    }
-    if (nutritionData.totals) {
-      const p = parseFloat(nutritionData.totals.protein_g) || 0;
-      const c = parseFloat(nutritionData.totals.carbs_g) || 0;
-      const f = parseFloat(nutritionData.totals.fat_g) || 0;
-      nutritionData.totals.calories = Math.round(p * 4 + c * 4 + f * 9);
-    }
+    const nutritionData = normalizeNutritionData(
+      parseModelJsonObject(aiText, "analyze_food nutrition JSON"),
+      { description }
+    );
 
     return new Response(JSON.stringify({ success: true, data: nutritionData }), {
       status: 200,
