@@ -157,7 +157,9 @@ jobs:
           echo "Cleared local provisioning profiles. xcodebuild will manage profiles for this build."
 
       # --- Build signed IPA for real devices ---
-      # Archive signed so the app entitlements are applied before export.
+      # Archive unsigned first, then let exportArchive perform App Store
+      # distribution signing. This avoids certificate/profile creation during
+      # archive while still letting export validate the final signed IPA.
       - name: Build iOS app (signed for device)
         env:
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
@@ -169,11 +171,9 @@ jobs:
           mkdir -p ~/.private_keys
           echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
 
-          # NOTE: We deliberately do NOT pass signing build settings as CLI
-          # overrides. xcodebuild cascades CLI build settings to ALL targets,
-          # including Swift Package dependencies like Firebase which don't
-          # support provisioning profiles. Automatic release signing is
-          # configured on the app and widget targets in project.pbxproj.
+          # NOTE: Archive unsigned so the runner does not try to create
+          # development certificates/profiles. exportArchive performs App Store
+          # signing with the installed distribution certificate.
           xcodebuild \
             -project App.xcodeproj \
             -scheme App \
@@ -184,82 +184,22 @@ jobs:
             -authenticationKeyPath ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8 \
             -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
-            -allowProvisioningUpdates \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
             archive
 
           echo ""
           echo "=================================================="
-          echo "=== SIGNED ARCHIVE CREATED ==="
+          echo "=== UNSIGNED ARCHIVE CREATED ==="
           echo "=================================================="
           APP_PATH="$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app"
-          if [ -d "$APP_PATH" ]; then
-            codesign -d --entitlements :- "$APP_PATH" 2>/dev/null || codesign -d --entitlements - "$APP_PATH" 2>&1 || echo "Unsigned archive; exportArchive will sign in the next step"
-            echo ""
-            echo "=== Checking specifically for HealthKit ==="
-            codesign -d --entitlements :- "$APP_PATH" 2>/dev/null | grep -q "com.apple.developer.healthkit" \
-              && echo "✅ HealthKit entitlement IS in the signed app" \
-              || echo "❌ HealthKit entitlement MISSING from signed app"
-
-            echo ""
-            echo "=== Provisioning profile embedded in .app ==="
-            if [ -f "$APP_PATH/embedded.mobileprovision" ]; then
-              PROFILE_XML=$(security cms -D -i "$APP_PATH/embedded.mobileprovision" 2>/dev/null)
-              echo "$PROFILE_XML" | grep -B1 -A1 "healthkit\|UUID\|Name\b" | head -30
-              echo ""
-              echo "=== Checking embedded provisioning profile for aps-environment ==="
-              if echo "$PROFILE_XML" | grep -q "aps-environment"; then
-                echo "✅ aps-environment IS in the embedded provisioning profile"
-                echo "$PROFILE_XML" | grep -A1 "aps-environment"
-              else
-                echo "❌ FATAL: aps-environment MISSING from embedded provisioning profile"
-                echo "The 'Balance' profile in Apple Developer portal was generated BEFORE"
-                echo "Push Notifications was enabled on the App ID. Even though"
-                echo "-allowProvisioningUpdates was used, Xcode reused the stale profile."
-                echo ""
-                echo "FIX: Go to https://developer.apple.com/account/resources/profiles/list"
-                echo "     Find 'Balance' → Edit → Save (regenerates it with new entitlements) → Download"
-                echo "     Then re-run this workflow."
-              fi
-            fi
-          else
+          if [ ! -d "$APP_PATH" ]; then
             echo "::error::App.app not found at $APP_PATH"
             exit 1
           fi
-
-          ARCHIVE_ENTITLEMENTS="$RUNNER_TEMP/archive-entitlements.plist"
-          codesign -d --entitlements :- "$APP_PATH" > "$ARCHIVE_ENTITLEMENTS" 2>/dev/null
-          cat "$ARCHIVE_ENTITLEMENTS"
-
-          for entitlement in \
-            "com.apple.developer.healthkit" \
-            "aps-environment" \
-            "com.apple.security.application-groups"
-          do
-            if ! grep -q "$entitlement" "$ARCHIVE_ENTITLEMENTS"; then
-              echo "::error::Missing entitlement in signed archive: $entitlement"
-              exit 1
-            fi
-          done
-
-          if [ ! -f "$APP_PATH/embedded.mobileprovision" ]; then
-            echo "::error::Signed archive is missing embedded.mobileprovision"
-            exit 1
-          fi
-
-          PROFILE_XML=$(security cms -D -i "$APP_PATH/embedded.mobileprovision" 2>/dev/null)
-          echo "$PROFILE_XML" | grep -B1 -A2 "healthkit\|application-groups\|aps-environment\|UUID\|Name\b" | head -60 || true
-
-          for entitlement in \
-            "com.apple.developer.healthkit" \
-            "aps-environment" \
-            "com.apple.security.application-groups"
-          do
-            if ! echo "$PROFILE_XML" | grep -q "$entitlement"; then
-              echo "::error::Embedded provisioning profile is missing entitlement: $entitlement"
-              exit 1
-            fi
-          done
+          echo "Unsigned archive app exists. Final signed IPA entitlements are checked after export."
 
       - name: Export IPA
         env:
