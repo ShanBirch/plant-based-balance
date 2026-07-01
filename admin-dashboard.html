@@ -1147,6 +1147,24 @@
         .alert-edit-reason { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.78rem; font-family: 'Inter', sans-serif; margin-top: 6px; color: #475569; background: #f8fafc; }
         .alert-edit-reason:focus { outline: none; border-color: #48864B; background: white; }
         .alert-edit-reason::placeholder { color: #94a3b8; font-style: italic; }
+        .coach-edit-reason-overlay { position: fixed; inset: 0; z-index: 5000; display: flex; align-items: center; justify-content: center; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); background: rgba(15,23,42,0.42); box-sizing: border-box; }
+        .coach-edit-reason-modal { width: min(460px, 100%); max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; background: #ffffff; border: 1px solid #dbe4d9; border-radius: 10px; box-shadow: 0 18px 50px rgba(15,23,42,0.22); padding: 16px; color: #0f172a; box-sizing: border-box; }
+        .coach-edit-reason-title { font-family: 'Montserrat', sans-serif; font-size: 1rem; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+        .coach-edit-reason-copy { font-size: 0.82rem; line-height: 1.45; color: #475569; margin-bottom: 12px; }
+        .coach-edit-reason-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+        .coach-edit-reason-option { border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; border-radius: 8px; padding: 9px 10px; font-size: 0.78rem; font-weight: 800; font-family: inherit; cursor: pointer; text-align: left; line-height: 1.2; }
+        .coach-edit-reason-option:hover, .coach-edit-reason-option.selected { border-color: #48864B; background: #f0fdf4; color: #166534; }
+        .coach-edit-reason-note { width: 100%; min-height: 70px; resize: vertical; border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 10px; font-family: inherit; font-size: 0.82rem; color: #0f172a; background: #ffffff; box-sizing: border-box; }
+        .coach-edit-reason-note:focus { outline: none; border-color: #48864B; box-shadow: 0 0 0 3px rgba(72,134,75,0.14); }
+        .coach-edit-reason-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+        .coach-edit-reason-action { border: none; border-radius: 8px; padding: 9px 12px; font-size: 0.78rem; font-weight: 800; font-family: inherit; cursor: pointer; }
+        .coach-edit-reason-skip { background: #f1f5f9; color: #475569; }
+        .coach-edit-reason-save { background: #48864B; color: #ffffff; }
+        @media (max-width: 520px) {
+            .coach-edit-reason-options { grid-template-columns: 1fr; }
+            .coach-edit-reason-actions { justify-content: stretch; }
+            .coach-edit-reason-action { flex: 1; }
+        }
         .alert-card.sent-anim { animation: alertSent 0.6s ease forwards; }
         .alert-card.sent-anim .alert-sent-overlay { animation: alertCheckPop 0.4s ease 0.05s both; }
         @keyframes alertSent {
@@ -15509,6 +15527,206 @@
             return (activeAlertEdits.get(String(alertId))?.reason || '').trim();
         }
 
+        const COACH_EDIT_REASON_PRESETS = [
+            { id: 'too_formal', label: 'Too formal' },
+            { id: 'too_long', label: 'Too long' },
+            { id: 'too_many_questions', label: 'Too many questions' },
+            { id: 'missed_context', label: 'Missed context' },
+            { id: 'wrong_tone', label: 'Wrong tone' },
+            { id: 'too_pushy', label: 'Too pushy' },
+            { id: 'needed_personal_detail', label: 'Needed personal detail' },
+            { id: 'other', label: 'Other' },
+        ];
+        let activeCoachEditReasonPrompt = null;
+
+        function normalizeCoachEditReasonValue(value, maxLength = 500) {
+            return String(value || '').replace(/\s+/g, ' ').trim().slice(0, maxLength);
+        }
+
+        function buildCoachEditReasonText(selectedPresetId, note) {
+            const preset = COACH_EDIT_REASON_PRESETS.find(item => item.id === selectedPresetId);
+            const label = preset && preset.id !== 'other' ? preset.label : '';
+            const cleanNote = normalizeCoachEditReasonValue(note);
+            if (label && cleanNote) return `${label}: ${cleanNote}`;
+            return label || cleanNote;
+        }
+
+        function showCoachEditReasonPrompt({ title = 'Reply sent', body = 'What did you change?' } = {}) {
+            return new Promise(resolve => {
+                if (activeCoachEditReasonPrompt?.finish) {
+                    activeCoachEditReasonPrompt.finish({ reason: '', tags: [], skipped: true });
+                }
+
+                let finished = false;
+                let selectedPresetId = '';
+                const overlay = document.createElement('div');
+                overlay.className = 'coach-edit-reason-overlay';
+                overlay.id = 'coach-edit-reason-overlay';
+                overlay.innerHTML = `
+                    <div class="coach-edit-reason-modal" role="dialog" aria-modal="true" aria-labelledby="coach-edit-reason-title">
+                        <div class="coach-edit-reason-title" id="coach-edit-reason-title">${escapeHtml(title)}</div>
+                        <div class="coach-edit-reason-copy">${escapeHtml(body)} Pick the closest reason so future drafts learn faster.</div>
+                        <div class="coach-edit-reason-options">
+                            ${COACH_EDIT_REASON_PRESETS.map(option => `
+                                <button type="button" class="coach-edit-reason-option" data-reason-id="${escapeHtml(option.id)}">${escapeHtml(option.label)}</button>
+                            `).join('')}
+                        </div>
+                        <textarea class="coach-edit-reason-note" id="coach-edit-reason-note" maxlength="500" placeholder="Extra note, optional"></textarea>
+                        <div class="coach-edit-reason-actions">
+                            <button type="button" class="coach-edit-reason-action coach-edit-reason-skip" data-action="skip">Skip</button>
+                            <button type="button" class="coach-edit-reason-action coach-edit-reason-save" data-action="save">Save feedback</button>
+                        </div>
+                    </div>
+                `;
+
+                const finish = result => {
+                    if (finished) return;
+                    finished = true;
+                    activeCoachEditReasonPrompt = null;
+                    overlay.remove();
+                    resolve(result || { reason: '', tags: [], skipped: true });
+                };
+                activeCoachEditReasonPrompt = { finish };
+
+                overlay.querySelectorAll('.coach-edit-reason-option').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        selectedPresetId = btn.dataset.reasonId || '';
+                        overlay.querySelectorAll('.coach-edit-reason-option').forEach(node => {
+                            node.classList.toggle('selected', node === btn);
+                        });
+                        if (selectedPresetId !== 'other') {
+                            const note = document.getElementById('coach-edit-reason-note')?.value || '';
+                            finish({
+                                reason: buildCoachEditReasonText(selectedPresetId, note),
+                                tags: [selectedPresetId],
+                                skipped: false,
+                            });
+                        } else {
+                            document.getElementById('coach-edit-reason-note')?.focus();
+                        }
+                    });
+                });
+
+                overlay.addEventListener('click', evt => {
+                    if (evt.target === overlay) finish({ reason: '', tags: [], skipped: true });
+                });
+
+                overlay.addEventListener('keydown', evt => {
+                    if (evt.key === 'Escape') {
+                        evt.preventDefault();
+                        finish({ reason: '', tags: [], skipped: true });
+                    }
+                    if ((evt.ctrlKey || evt.metaKey) && evt.key === 'Enter') {
+                        evt.preventDefault();
+                        const note = document.getElementById('coach-edit-reason-note')?.value || '';
+                        finish({
+                            reason: buildCoachEditReasonText(selectedPresetId, note),
+                            tags: selectedPresetId ? [selectedPresetId] : [],
+                            skipped: false,
+                        });
+                    }
+                });
+
+                overlay.querySelector('[data-action="skip"]').addEventListener('click', () => {
+                    finish({ reason: '', tags: [], skipped: true });
+                });
+                overlay.querySelector('[data-action="save"]').addEventListener('click', () => {
+                    const note = document.getElementById('coach-edit-reason-note')?.value || '';
+                    finish({
+                        reason: buildCoachEditReasonText(selectedPresetId, note),
+                        tags: selectedPresetId ? [selectedPresetId] : [],
+                        skipped: false,
+                    });
+                });
+
+                document.body.appendChild(overlay);
+                setTimeout(() => {
+                    const first = overlay.querySelector('.coach-edit-reason-option');
+                    if (first) first.focus();
+                }, 0);
+            });
+        }
+
+        async function saveCoachEditReasonAfterSend(alertId, alertData, feedback) {
+            const reason = normalizeCoachEditReasonValue(feedback?.reason);
+            if (!reason) return null;
+            let currentData = Object.assign({}, alertData?.data || {});
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .select('data')
+                    .eq('id', alertId)
+                    .maybeSingle();
+                if (error) throw error;
+                currentData = Object.assign(currentData, data?.data || {});
+            } catch (e) {
+                console.warn('[edit-learning] could not refresh alert data before saving reason:', e?.message || e);
+            }
+
+            const mergedData = Object.assign({}, currentData, {
+                edit_reason: reason,
+                edit_reason_tags: Array.isArray(feedback?.tags) ? feedback.tags.filter(Boolean) : [],
+                edit_reason_source: 'admin_post_send_prompt',
+                edit_reason_collected_at: new Date().toISOString(),
+            });
+            const { error: updateError } = await window.supabaseClient
+                .from('coach_alerts')
+                .update({ data: mergedData })
+                .eq('id', alertId);
+            if (updateError) throw updateError;
+            if (alertData) alertData.data = mergedData;
+            return mergedData;
+        }
+
+        async function maybeCollectCoachEditReasonAfterSend({
+            alertId,
+            alertData,
+            draftText,
+            sentMessage,
+            source = 'admin_dashboard',
+            analysisMode = 'always',
+            title = 'Reply sent',
+        } = {}) {
+            const draft = normalizeCoachDraftTextForAdmin(draftText || alertData?.data?.draft_text || alertData?.suggested_message || '').trim();
+            const sent = normalizeCoachDraftTextForAdmin(sentMessage || alertData?.data?.sent_message || '').trim();
+            if (!alertId || !sent) return { prompted: false, saved: false, analyzed: false };
+
+            const wasEdited = !!draft && sent !== draft;
+            if (!wasEdited) {
+                if (analysisMode === 'always') triggerCoachEditAnalysis(alertId, draft, sent, source);
+                return { prompted: false, saved: false, analyzed: analysisMode === 'always' };
+            }
+
+            const existingReason = normalizeCoachEditReasonValue(alertData?.data?.edit_reason);
+            let savedNewReason = false;
+            if (!existingReason) {
+                const feedback = await showCoachEditReasonPrompt({
+                    title,
+                    body: 'What did you change?',
+                });
+                if (feedback?.reason) {
+                    try {
+                        await saveCoachEditReasonAfterSend(alertId, alertData, feedback);
+                        savedNewReason = true;
+                    } catch (e) {
+                        console.warn('[edit-learning] edit reason save failed:', e?.message || e);
+                        window.alert('Reply sent, but the edit feedback could not be saved: ' + (e.message || e));
+                    }
+                }
+            }
+
+            const shouldAnalyze = analysisMode === 'always'
+                || (analysisMode === 'if_saved_reason' && savedNewReason);
+            if (shouldAnalyze) triggerCoachEditAnalysis(alertId, draft, sent, source);
+            return { prompted: !existingReason, saved: savedNewReason, analyzed: shouldAnalyze };
+        }
+
+        function queueCoachEditReasonAfterSend(options) {
+            maybeCollectCoachEditReasonAfterSend(options).catch(e => {
+                console.warn('[edit-learning] post-send reason prompt failed:', e?.message || e);
+            });
+        }
+
         function getProposedCoachActions(alert) {
             const actions = Array.isArray(alert?.data?.proposed_actions) ? alert.data.proposed_actions : [];
             return actions.filter(action => action && action.type);
@@ -16356,6 +16574,20 @@
                     console.warn('[manual-checkin] marked sent without IG history:', json.history_skipped || 'unknown');
                     alert('Marked sent, but there was no linked IG thread to add this into conversation history.');
                 }
+                alertData.data = Object.assign({}, alertData.data || {}, {
+                    sent_message: message,
+                    was_edited: !!originalDraft && message !== originalDraft,
+                });
+                if (editReason) alertData.data.edit_reason = editReason;
+                queueCoachEditReasonAfterSend({
+                    alertId,
+                    alertData,
+                    draftText: originalDraft,
+                    sentMessage: message,
+                    source: 'admin_dashboard_manual_checkin',
+                    analysisMode: 'if_saved_reason',
+                    title: 'Reply marked sent',
+                });
                 clearAlertEditBuffer(alertId);
                 const card = document.getElementById(`alert-${alertId}`);
                 if (card) {
@@ -16433,6 +16665,20 @@
                     console.warn('[manual-dm] marked sent without IG history:', json.history_skipped || 'unknown');
                     alert('Marked sent, but this was not added into conversation history.');
                 }
+                alertData.data = Object.assign({}, alertData.data || {}, {
+                    sent_message: message,
+                    was_edited: !!originalDraft && message !== originalDraft,
+                });
+                if (editReason) alertData.data.edit_reason = editReason;
+                queueCoachEditReasonAfterSend({
+                    alertId,
+                    alertData,
+                    draftText: originalDraft,
+                    sentMessage: message,
+                    source: 'admin_dashboard_manual_dm',
+                    analysisMode: 'if_saved_reason',
+                    title: 'Reply marked sent',
+                });
                 clearAlertEditBuffer(alertId);
                 const card = document.getElementById(`alert-${alertId}`);
                 if (card) {
@@ -16500,6 +16746,18 @@
                     .eq('id', alertId)
                     .eq('status', alertData.status || 'pending');
                 if (error) throw error;
+                alertData.status = 'sent';
+                alertData.actioned_at = sentAt;
+                alertData.data = mergedData;
+                queueCoachEditReasonAfterSend({
+                    alertId,
+                    alertData,
+                    draftText: originalDraft,
+                    sentMessage: message,
+                    source: 'admin_dashboard_manual_ig',
+                    analysisMode: 'always',
+                    title: 'Reply marked sent',
+                });
                 clearAlertEditBuffer(alertId);
                 const card = document.getElementById(`alert-${alertId}`);
                 if (card) {
@@ -16806,6 +17064,16 @@
                         scheduled_send_in_ms: schedulePlan.sendInMs,
                         reply_timing_suggestion: schedulePlan.timingSuggestion,
                     };
+                    if (editReason) alertData.data.edit_reason = editReason;
+                    queueCoachEditReasonAfterSend({
+                        alertId,
+                        alertData,
+                        draftText,
+                        sentMessage: message,
+                        source: 'auto_send',
+                        analysisMode: 'never',
+                        title: 'Auto-send scheduled',
+                    });
                 }
                 alertsCache = alertsCache.filter(a => a.id !== alertId);
                 clearAlertEditBuffer(alertId);
@@ -19626,7 +19894,6 @@
                     .maybeSingle();
                 if (markSentError) throw markSentError;
                 if (!markedSent) throw new Error('This alert was claimed by another send before it could be marked sent.');
-                triggerCoachEditAnalysis(alertId, originalDraft, message, 'admin_dashboard');
                 clearAlertEditBuffer(alertId);
 
                 // Animate: show sent overlay, then slide card away
@@ -19648,6 +19915,15 @@
                 alertData.status = 'sent';
                 alertData.actioned_at = sentAt;
                 alertData.data = mergedData;
+                queueCoachEditReasonAfterSend({
+                    alertId,
+                    alertData,
+                    draftText: originalDraft,
+                    sentMessage: message,
+                    source: 'admin_dashboard',
+                    analysisMode: 'always',
+                    title: 'Reply sent',
+                });
                 removeAlertFromVisibleCache(alertId);
                 updateAlertBadge();
                 if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
@@ -19691,6 +19967,15 @@
             showAlertSentOverlay(alertId);
             alertData.status = 'sent';
             alertData.actioned_at = alertData.actioned_at || alertData.data?.sent_at || new Date().toISOString();
+            queueCoachEditReasonAfterSend({
+                alertId,
+                alertData,
+                draftText,
+                sentMessage: message,
+                source: 'admin_dashboard',
+                analysisMode: 'if_saved_reason',
+                title: 'Reply sent',
+            });
             removeAlertFromVisibleCache(alertId);
             updateAlertBadge();
             if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
@@ -19967,6 +20252,7 @@
             const editReason = getAlertEditReason(alertId);
             // Schedule reason — "why send later?" Feeds the voice-match
             // feedback loop the same way the Android Control Center does.
+            const originalDraft = normalizeCoachDraftTextForAdmin(alertData.suggested_message || alertData.data?.draft_text || '');
             const scheduleReasonInput = document.getElementById(`alert-schedule-reason-${alertId}`);
             const scheduleReason = opts.scheduleReason || (scheduleReasonInput ? scheduleReasonInput.value.trim() : '');
             const timingSuggestion = getReplyTimingSuggestion(alertData, message);
@@ -19979,7 +20265,7 @@
                     body: JSON.stringify({
                         alertId,
                         replyText: message,
-                        draftText: normalizeCoachDraftTextForAdmin(alertData.suggested_message || alertData.data?.draft_text || ''),
+                        draftText: originalDraft,
                         sendInMs,
                         source: opts.source || 'admin_dashboard',
                         editReason,
@@ -20003,6 +20289,16 @@
                     scheduled_reply_text: message,
                     scheduled_for: scheduledFor,
                     schedule_reason: scheduleReason,
+                });
+                if (editReason) alertData.data.edit_reason = editReason;
+                queueCoachEditReasonAfterSend({
+                    alertId,
+                    alertData,
+                    draftText: originalDraft,
+                    sentMessage: message,
+                    source: opts.source || 'admin_dashboard',
+                    analysisMode: 'never',
+                    title: 'Reply scheduled',
                 });
                 alertsCache = alertsCache.filter(a => a.id !== alertId);
                 clearAlertEditBuffer(alertId);
