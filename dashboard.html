@@ -12559,7 +12559,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
-    { tab:'movement-tab', sel:'#workout-share-set-btn', title:'Share a Set', body:"Tap Share a Set under Film Form Check to open the native camera. When you finish filming, the clip uploads in the background while you stay in workout mode. Your first Share a Set each day earns +10 XP.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn'); } },
+    { tab:'movement-tab', sel:'#workout-share-set-btn', title:'Share a Set', body:"Tap Share a Set under Film Form Check to open the camera straight away. When you finish filming, Balance compresses the clip and shares it to Feed while you stay in workout mode. Your first Share a Set each day earns +10 XP.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Share wins to Instagram', body:"Finish a workout or hit a PB, then choose Balance Feed, Instagram Story, or Instagram Feed from the share options." },
     { tab:'dashboard', sel:'#weekly-progress-photo-card,#weekly-progress-photo-done-card', title:'Progress photos to Instagram', body:"After your weekly progress photos save, tap IG Story to share a Balance progress card straight to Instagram.", condition: function(){ return !!document.querySelector('#weekly-progress-photo-card,#weekly-progress-photo-done-card'); } },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
@@ -13573,11 +13573,11 @@ if(!window._pbbIsIOSSafari) {
     condition: function(){ return !!document.querySelector('.feed-post-actions-btn'); }
   });
   allFeatures.push({
-    id: 'share-a-set-native-camera-v1',
+    id: 'share-a-set-direct-camera-v2',
     tab: 'movement-tab',
     sel: '#workout-share-set-btn',
     title: 'Share a Set',
-    body: "Tap Share a Set under Film Form Check to open the native camera. When you finish filming, the clip uploads in the background while you stay in workout mode. Your first Share a Set each day earns +10 XP.",
+    body: "Tap Share a Set under Film Form Check to open the camera straight away. When you finish filming, Balance compresses the clip and shares it to Feed while you stay in workout mode. Your first Share a Set each day earns +10 XP.",
     condition: function(){ return !!document.getElementById('workout-share-set-btn'); }
   });
 
@@ -14789,7 +14789,7 @@ if (window._pbbIsIOSSafari) {
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>
-<script src="js/dashboard/pbb-deferred-formcheck.js?v=4"></script>
+<script src="js/dashboard/pbb-deferred-formcheck.js?v=5"></script>
 
 
 <script>

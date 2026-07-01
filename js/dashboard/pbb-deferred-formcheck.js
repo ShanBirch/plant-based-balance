@@ -20,6 +20,7 @@
     let workoutFeedShareSwipeRegistered = false;
     let workoutFeedShareRetryInProgress = false;
     let workoutFeedShareRetryTimer = null;
+    let workoutFeedSharePendingInput = null;
 
     function ensureFormCheckView() {
         let view = document.getElementById('view-form-check');
@@ -1003,6 +1004,7 @@
 
         clearWorkoutFeedShareVideo();
         resetWorkoutFeedShareStatus();
+        ensureWorkoutFeedShareView();
         openWorkoutFeedShareCapture();
     }
 
@@ -1021,22 +1023,89 @@
     }
 
     function openWorkoutFeedShareCapture() {
-        const input = document.getElementById('workout-feed-share-camera-input');
-        if (input) input.click();
+        openWorkoutFeedShareFilePicker(true);
     }
 
     function openWorkoutFeedShareGallery() {
-        const input = document.getElementById('workout-feed-share-gallery-input');
-        if (input) input.click();
+        openWorkoutFeedShareFilePicker(false);
+    }
+
+    function clearWorkoutFeedSharePendingInput() {
+        if (!workoutFeedSharePendingInput) return;
+        try {
+            if (workoutFeedSharePendingInput.parentNode) {
+                workoutFeedSharePendingInput.parentNode.removeChild(workoutFeedSharePendingInput);
+            }
+        } catch (e) {}
+        workoutFeedSharePendingInput = null;
+    }
+
+    function openWorkoutFeedShareFilePicker(useCamera) {
+        clearWorkoutFeedSharePendingInput();
+
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'video/*';
+        if (useCamera) input.setAttribute('capture', 'environment');
+        input.setAttribute('aria-hidden', 'true');
+        input.style.cssText = 'position:fixed; left:-9999px; top:0; width:1px; height:1px; opacity:0; pointer-events:none;';
+
+        workoutFeedSharePendingInput = input;
+
+        input.addEventListener('change', function (event) {
+            handleWorkoutFeedShareFileSelect(event);
+            setTimeout(clearWorkoutFeedSharePendingInput, 0);
+        }, { once: true });
+
+        input.addEventListener('cancel', function () {
+            clearWorkoutFeedSharePendingInput();
+        }, { once: true });
+
+        document.body.appendChild(input);
+        try {
+            input.click();
+        } catch (error) {
+            console.warn('[WorkoutFeedShare] camera picker failed', error);
+            clearWorkoutFeedSharePendingInput();
+            showWorkoutFeedShareUploadBanner('Could not open the camera. Tap Share a Set again.', 'error');
+        }
+    }
+
+    function getWorkoutFeedShareVideoMimeType(file) {
+        const type = String(file && file.type ? file.type : '').toLowerCase();
+        if (type.startsWith('video/')) return type;
+
+        const name = String(file && file.name ? file.name : '').toLowerCase();
+        if (/\.(mov|qt)$/.test(name)) return 'video/quicktime';
+        if (/\.(m4v)$/.test(name)) return 'video/x-m4v';
+        if (/\.(webm)$/.test(name)) return 'video/webm';
+        if (/\.(3gp|3gpp)$/.test(name)) return 'video/3gpp';
+        if (/\.(mp4|mpeg|mpg)$/.test(name)) return 'video/mp4';
+        return '';
+    }
+
+    function normalizeWorkoutFeedShareVideoFile(file) {
+        const mimeType = getWorkoutFeedShareVideoMimeType(file);
+        if (!mimeType) return null;
+        if (file.type && String(file.type).toLowerCase().startsWith('video/')) return file;
+        if (typeof File !== 'undefined') {
+            const fileName = file.name || 'share-set-video.mp4';
+            return new File([file], fileName, {
+                type: mimeType,
+                lastModified: file.lastModified || Date.now()
+            });
+        }
+        return file;
     }
 
     function handleWorkoutFeedShareFileSelect(event) {
         const input = event && event.target;
-        const file = input && input.files ? input.files[0] : null;
+        const rawFile = input && input.files ? input.files[0] : null;
         if (input) input.value = '';
-        if (!file) return;
+        if (!rawFile) return;
 
-        if (!file.type || !file.type.startsWith('video/')) {
+        const file = normalizeWorkoutFeedShareVideoFile(rawFile);
+        if (!file) {
             showWorkoutFeedShareUploadBanner('Please choose a video clip.', 'error');
             return;
         }
