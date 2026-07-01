@@ -636,6 +636,11 @@
                 #view-workout-feed-share .workout-feed-share-status.info { display:block; background:#eff6ff; color:#1d4ed8; }
                 #view-workout-feed-share .workout-feed-share-status.success { display:block; background:#dcfce7; color:#166534; }
                 #view-workout-feed-share .workout-feed-share-status.error { display:block; background:#fee2e2; color:#991b1b; }
+                #view-workout-feed-share .workout-feed-share-hero,
+                #view-workout-feed-share .workout-feed-share-hero * {
+                    color: #fff !important;
+                    -webkit-text-fill-color: #fff !important;
+                }
                 #workout-feed-share-video-preview {
                     display: none;
                     width: 100%;
@@ -652,10 +657,10 @@
                 <div class="workout-feed-share-title">Share a Set</div>
             </div>
             <div class="workout-feed-share-content">
-                <div class="workout-feed-share-panel" style="background:linear-gradient(135deg,#111827 0%,#b91c1c 100%); color:white; border:none;">
-                    <div style="font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; opacity:0.85; margin-bottom:6px;">Stay in workout mode</div>
-                    <div style="font-size:1.25rem; font-weight:900; line-height:1.15; margin-bottom:8px;">Record a set, post it to Feed, and earn +20 XP once a day</div>
-                    <div style="font-size:0.86rem; line-height:1.45; opacity:0.9;">Open the camera or choose a clip from Photos, then keep your workout running while it uploads.</div>
+                <div class="workout-feed-share-panel workout-feed-share-hero" style="background:linear-gradient(135deg,#111827 0%,#b91c1c 100%); color:#fff !important; -webkit-text-fill-color:#fff !important; border:none;">
+                    <div style="font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; opacity:0.9; margin-bottom:6px; color:#fff !important; -webkit-text-fill-color:#fff !important;">Stay in workout mode</div>
+                    <div style="font-size:1.25rem; font-weight:900; line-height:1.15; margin-bottom:8px; color:#fff !important; -webkit-text-fill-color:#fff !important;">Record a set, post it to Feed, and earn +20 XP once a day</div>
+                    <div style="font-size:0.86rem; line-height:1.45; opacity:0.92; color:#fff !important; -webkit-text-fill-color:#fff !important;">Open the camera or choose a clip from Photos, then keep your workout running while it uploads.</div>
                 </div>
 
                 <div class="workout-feed-share-panel">
@@ -1763,7 +1768,8 @@
                 source: 'feed_workout_share',
                 postBtn: submitBtn,
                 pointsType: 'workout_feed_share',
-                skipVideoPreparation: true
+                skipVideoPreparation: true,
+                uploadTimeoutMs: 45000
             });
 
             const successMessage = getWorkoutFeedShareSuccessMessage(result);
@@ -1851,6 +1857,7 @@
                         postBtn: bannerLabel,
                         pointsType: 'workout_feed_share',
                         skipVideoPreparation: true,
+                        uploadTimeoutMs: 45000,
                         photoTimestamp: item.createdAt || new Date().toISOString()
                     });
 

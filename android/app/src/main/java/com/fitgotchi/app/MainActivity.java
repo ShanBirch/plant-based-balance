@@ -428,6 +428,7 @@ public class MainActivity extends BridgeActivity {
         // Expose a JavaScript interface so the web page can request
         // Android runtime permissions before calling getUserMedia()
         webViewRef = getBridge().getWebView();
+        webViewRef.clearCache(true);
         webViewRef.addJavascriptInterface(new PermissionBridge(), "NativePermissions");
 
         // If the app was cold-started via an OAuth deep link, save the
