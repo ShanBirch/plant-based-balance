@@ -186,6 +186,36 @@ async function getOrCreateAppStoreVersion(app) {
   return created.data;
 }
 
+function isSubmittedOrPastSubmissionState(state) {
+  return [
+    'WAITING_FOR_REVIEW',
+    'IN_REVIEW',
+    'PENDING_DEVELOPER_RELEASE',
+    'PENDING_APPLE_RELEASE',
+    'PROCESSING_FOR_APP_STORE',
+    'READY_FOR_SALE',
+  ].includes(state);
+}
+
+async function getAppStoreVersionState(appStoreVersion) {
+  const body = await asc(`/appStoreVersions/${appStoreVersion.id}?${params({
+    'fields[appStoreVersions]': 'appStoreState,versionString',
+  })}`);
+  const state = body.data?.attributes?.appStoreState || 'UNKNOWN';
+  console.log(`App Store version ${versionString} state: ${state}`);
+  return state;
+}
+
+async function getExistingSubmission(appStoreVersion) {
+  try {
+    const body = await asc(`/appStoreVersions/${appStoreVersion.id}/appStoreVersionSubmission`);
+    return body.data || null;
+  } catch (error) {
+    console.log(`Could not inspect existing App Store version submission: ${error.message}`);
+    return null;
+  }
+}
+
 async function attachBuild(appStoreVersion, build) {
   await asc(`/appStoreVersions/${appStoreVersion.id}/relationships/build`, {
     method: 'PATCH',
@@ -263,27 +293,56 @@ async function submit(appStoreVersion) {
     return;
   }
 
-  const submission = await asc('/appStoreVersionSubmissions', {
-    method: 'POST',
-    body: JSON.stringify({
-      data: {
-        type: 'appStoreVersionSubmissions',
-        relationships: {
-          appStoreVersion: {
-            data: { type: 'appStoreVersions', id: appStoreVersion.id },
+  const beforeState = await getAppStoreVersionState(appStoreVersion);
+  if (isSubmittedOrPastSubmissionState(beforeState)) {
+    console.log(`App Store version ${versionString} is already submitted or past submission (${beforeState}).`);
+    return;
+  }
+
+  try {
+    const submission = await asc('/appStoreVersionSubmissions', {
+      method: 'POST',
+      body: JSON.stringify({
+        data: {
+          type: 'appStoreVersionSubmissions',
+          relationships: {
+            appStoreVersion: {
+              data: { type: 'appStoreVersions', id: appStoreVersion.id },
+            },
           },
         },
-      },
-    }),
-  });
-  console.log(`Submitted App Store version ${versionString} for review (${submission.data.id}).`);
+      }),
+    });
+    console.log(`Submitted App Store version ${versionString} for review (${submission.data.id}).`);
+  } catch (error) {
+    console.log(`Could not create App Store version submission: ${error.message}`);
+    const afterState = await getAppStoreVersionState(appStoreVersion);
+    const existingSubmission = await getExistingSubmission(appStoreVersion);
+    if (isSubmittedOrPastSubmissionState(afterState) || existingSubmission) {
+      console.log(`Submission already exists or version is already in ${afterState}; treating as success.`);
+      if (existingSubmission) console.log(`Existing submission id: ${existingSubmission.id}`);
+      return;
+    }
+    throw error;
+  }
+}
+
+async function stopIfAlreadySubmitted(appStoreVersion) {
+  const state = await getAppStoreVersionState(appStoreVersion);
+  if (isSubmittedOrPastSubmissionState(state)) {
+    console.log(`App Store version ${versionString} is already submitted or past submission (${state}); no metadata changes needed.`);
+    return true;
+  }
+  return false;
 }
 
 const app = await getApp();
 const build = await waitForValidBuild(app.id);
 await setEncryptionCompliance(build);
 const appStoreVersion = await getOrCreateAppStoreVersion(app);
-await attachBuild(appStoreVersion, build);
-await updateReleaseNotes(appStoreVersion, app);
-await updateReviewNotes(appStoreVersion);
-await submit(appStoreVersion);
+if (!(await stopIfAlreadySubmitted(appStoreVersion))) {
+  await attachBuild(appStoreVersion, build);
+  await updateReleaseNotes(appStoreVersion, app);
+  await updateReviewNotes(appStoreVersion);
+  await submit(appStoreVersion);
+}
