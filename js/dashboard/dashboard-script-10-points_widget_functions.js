@@ -3308,19 +3308,6 @@ async function handleWorkoutCardPhotoCaptureFromFile(file) {
     }
 
     try {
-        // Compress photo first to avoid payload size issues
-        const compressedFile = typeof compressMealImage === 'function'
-            ? await compressMealImage(file)
-            : file;
-
-        // Convert compressed photo to base64
-        const base64Data = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(compressedFile);
-        });
-
         // Build workout card data from completedWorkoutDataForShare
         const data = completedWorkoutDataForShare;
         const exerciseMap = {};
@@ -3377,7 +3364,7 @@ async function handleWorkoutCardPhotoCaptureFromFile(file) {
         // Create story with photo + workout card data
         const story = await dbHelpers.stories.create(window.currentUser.id, {
             media_type: 'workout_card',
-            media_url: base64Data,
+            media_url: '',
             thumbnail_url: null,
             caption: JSON.stringify(cardPayload),
             duration: 5
@@ -4181,7 +4168,7 @@ async function shareActivityCardToFeed() {
         // Create story in feed
         const storyData = {
             media_type: 'workout_card',
-            media_url: savedActivityData.photoBase64 ? `data:${savedActivityData.photoMimeType || 'image/jpeg'};base64,${savedActivityData.photoBase64}` : '',
+            media_url: '',
             caption: JSON.stringify(cardPayload),
             duration: 5
         };
@@ -4392,43 +4379,32 @@ async function uploadStory() {
                 : window.pendingStoryFile;
         }
 
-        // Check file size - if > 5MB, use Backblaze B2, otherwise use Base64
         const fileSizeMB = fileToUpload.size / (1024 * 1024);
         let mediaUrl;
 
-        if (fileSizeMB > 5) {
-            // Upload to Backblaze B2 for larger files
-            if (uploadBtn) {
-                uploadBtn.textContent = `Uploading ${Math.round(fileSizeMB)}MB...`;
-            }
-
-            const tempStoryId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
-            const formData = new FormData();
-            formData.append('file', fileToUpload);
-            formData.append('userId', userId);
-            formData.append('storyId', tempStoryId);
-
-            const uploadResponse = await fetch('/api/upload-story-media', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!uploadResponse.ok) {
-                const errorData = await uploadResponse.json();
-                throw new Error(errorData.error || 'Upload failed');
-            }
-
-            const uploadData = await uploadResponse.json();
-            mediaUrl = uploadData.url;
-        } else {
-            // Use Base64 for smaller files (< 5MB)
-            mediaUrl = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(fileToUpload);
-            });
+        if (uploadBtn) {
+            uploadBtn.textContent = `Uploading ${Math.max(1, Math.round(fileSizeMB))}MB...`;
         }
+
+        const tempStoryId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
+        const formData = new FormData();
+        formData.append('file', fileToUpload);
+        formData.append('userId', userId);
+        formData.append('storyId', tempStoryId);
+        formData.append('source', 'feed_capture');
+
+        const uploadResponse = await fetch('/api/upload-story-media', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!uploadResponse.ok) {
+            const errorData = await uploadResponse.json();
+            throw new Error(errorData.error || 'Upload failed');
+        }
+
+        const uploadData = await uploadResponse.json();
+        mediaUrl = uploadData.url;
 
         // Save story to database
         const storyData = await dbHelpers.stories.create(userId, {
