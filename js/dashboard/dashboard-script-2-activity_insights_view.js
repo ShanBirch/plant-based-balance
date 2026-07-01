@@ -43,6 +43,8 @@
         const todayStr = getLocalDateString();
 
         try {
+            await _syncNativeHealthForInsights(userId);
+
             const [exerciseHistoryResult, weighInsResult, sleepResult, nutritionResult, wearableCaloriesResult, quizResult, moodResult, stepsResult] = await Promise.allSettled([
                 supabaseClient
                     .from('workouts')
@@ -51,7 +53,7 @@
                     .eq('workout_type', 'history')
                     .order('workout_date', { ascending: true }),
                 db.weighIns.getRecent(userId, 365),
-                _loadWearableSleepForInsights(userId),
+                _loadWearableSleepForInsights(userId, oneYearAgo),
                 // Nutrition (1 year for 3M/6M/1Y graph timeframes)
                 db.nutrition.getRange(userId, oneYearAgo, todayStr),
                 // Wearable calories burned (try all sources)
@@ -125,6 +127,96 @@
         }
     }
 
+    async function _syncNativeHealthForInsights(userId) {
+        if (!userId || !window.supabaseClient || !window.NativeHealth) return;
+        try {
+            if (window.NativeHealth.isNativeApp && !window.NativeHealth.isNativeApp()) return;
+
+            let ready = !!window._nativeHealthReady;
+            if (!ready && typeof window.NativeHealth.checkPermission === 'function') {
+                ready = await window.NativeHealth.checkPermission();
+            }
+            if (!ready) return;
+
+            const jobs = [];
+            if (typeof window.NativeHealth.syncSleepForChallenge === 'function') {
+                jobs.push(window.NativeHealth.syncSleepForChallenge(window.supabaseClient, userId));
+            }
+            if (typeof window.NativeHealth.syncStepsForInsights === 'function') {
+                jobs.push(window.NativeHealth.syncStepsForInsights(window.supabaseClient, userId, 30));
+            }
+            await Promise.allSettled(jobs);
+        } catch (err) {
+            console.warn('[Insights] Native health sync skipped:', err);
+        }
+    }
+
+    function _takeBestByDate(map, record, valueKey) {
+        if (!record || !record.date) return;
+        const value = Number(record[valueKey] || 0);
+        if (value <= 0) return;
+        const existing = map[record.date];
+        if (!existing || value > Number(existing[valueKey] || 0)) {
+            map[record.date] = record;
+        }
+    }
+
+    function _normalizeSleepRecord(row, source) {
+        if (!row || !row.date) return null;
+        const total = Number(row.duration_minutes ?? row.total_sleep_minutes ?? 0);
+        if (!total || total <= 0) return null;
+        return {
+            date: row.date,
+            duration_minutes: total,
+            total_sleep_minutes: total,
+            deep_minutes: Number(row.deep_minutes ?? row.deep_sleep_minutes ?? 0),
+            light_minutes: Number(row.light_minutes ?? row.light_sleep_minutes ?? 0),
+            rem_minutes: Number(row.rem_minutes ?? row.rem_sleep_minutes ?? 0),
+            wake_minutes: Number(row.wake_minutes ?? 0),
+            source
+        };
+    }
+
+    async function _loadSleepRowsFromTable(table, userId, sinceDate, source, selectCols) {
+        try {
+            const { data, error } = await supabaseClient
+                .from(table)
+                .select(selectCols)
+                .eq('user_id', userId)
+                .gte('date', sinceDate)
+                .order('date', { ascending: false });
+            if (error) throw error;
+            return (data || []).map(row => _normalizeSleepRecord(row, source)).filter(Boolean);
+        } catch (err) {
+            console.warn('[Insights] Sleep table skipped:', table, err);
+            return [];
+        }
+    }
+
+    async function _loadStepRowsFromTable(table, userId, sinceDate, source, selectCols, caloriesKey) {
+        try {
+            const { data, error } = await supabaseClient
+                .from(table)
+                .select(selectCols)
+                .eq('user_id', userId)
+                .gte('date', sinceDate)
+                .order('date', { ascending: true });
+            if (error) throw error;
+            return (data || [])
+                .map(row => ({
+                    date: row.date,
+                    steps: Number(row.steps || 0),
+                    calories_burned: Number(row[caloriesKey] || row.total_calories || row.active_calories || 0),
+                    active_minutes: Number(row.active_minutes || 0),
+                    source
+                }))
+                .filter(row => row.date && row.steps > 0);
+        } catch (err) {
+            console.warn('[Insights] Steps table skipped:', table, err);
+            return [];
+        }
+    }
+
     // Fetch wearable calorie data from all connected sources
     async function _loadWearableCaloriesForInsights(userId, sinceDate) {
         const caloriesByDate = {};
@@ -149,11 +241,43 @@
                 }
             } catch (e) { /* source not connected */ }
         }
+        const directSources = [
+            {
+                table: 'oura_daily_activity',
+                source: 'Health',
+                select: 'date, active_calories, total_calories',
+                calories: row => row.total_calories || row.active_calories
+            },
+            {
+                table: 'fitbit_daily_activity',
+                source: 'Fitbit',
+                select: 'date, calories_burned',
+                calories: row => row.calories_burned
+            }
+        ];
+        for (const src of directSources) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from(src.table)
+                    .select(src.select)
+                    .eq('user_id', userId)
+                    .gte('date', sinceDate)
+                    .order('date', { ascending: true });
+                if (error) throw error;
+                (data || []).forEach(row => {
+                    const calories = Number(src.calories(row) || 0);
+                    if (row.date && calories > 0) caloriesByDate[row.date] = calories;
+                });
+            } catch (err) {
+                console.warn('[Insights] Calorie table skipped:', src.table, err);
+            }
+        }
         return Object.entries(caloriesByDate).map(([date, calories]) => ({ date, calories_burned: calories }));
     }
 
     // Fetch wearable step data from all connected sources
     async function _loadWearableStepsForInsights(userId, sinceDate) {
+        const byDate = {};
         const sources = [
             { url: `/api/fitbit/data?user_id=${userId}`, extract: (d) => (d.activity || []).map(a => ({ date: a.date, steps: a.steps })) },
             { url: `/api/oura/data?user_id=${userId}`, extract: (d) => (d.activity || []).map(a => ({ date: a.date, steps: a.steps })) },
@@ -167,11 +291,18 @@
                     const entries = src.extract(data)
                         .filter(e => e.date && e.steps != null && e.steps > 0 && e.date >= sinceDate)
                         .sort((a, b) => a.date.localeCompare(b.date));
-                    if (entries.length > 0) return entries;
+                    entries.forEach(e => _takeBestByDate(byDate, e, 'steps'));
                 }
             } catch (_) { /* source not connected */ }
         }
-        return [];
+
+        const directRows = [
+            ...(await _loadStepRowsFromTable('oura_daily_activity', userId, sinceDate, 'Health', 'date, steps, active_calories, total_calories, active_minutes', 'total_calories')),
+            ...(await _loadStepRowsFromTable('fitbit_daily_activity', userId, sinceDate, 'Fitbit', 'date, steps, calories_burned, active_minutes', 'calories_burned')),
+        ];
+        directRows.forEach(row => _takeBestByDate(byDate, row, 'steps'));
+
+        return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
     }
 
     // Render Energy Balance section with real BMR calculation
@@ -411,8 +542,9 @@
         return results;
     }
 
-    // Try each connected wearable for recent sleep data (last 7 nights)
-    async function _loadWearableSleepForInsights(userId) {
+    // Try each connected wearable plus saved native Health Connect rows.
+    async function _loadWearableSleepForInsights(userId, sinceDate) {
+        const byDate = {};
         const sources = [
             { name: 'Fitbit',  url: `/api/fitbit/data?user_id=${userId}`,  key: (d) => d.sleep },
             { name: 'WHOOP',   url: `/api/whoop/data?user_id=${userId}`,   key: (d) => d.sleep },
@@ -424,10 +556,26 @@
                 if (!res.ok) continue;
                 const d = await res.json();
                 const sleep = src.key(d);
-                if (sleep && sleep.length > 0) return { source: src.name, records: sleep };
+                (sleep || []).forEach(row => {
+                    const record = _normalizeSleepRecord(row, src.name);
+                    if (record && record.date >= sinceDate) _takeBestByDate(byDate, record, 'total_sleep_minutes');
+                });
             } catch (_) { /* silent */ }
         }
-        return null;
+
+        const directRows = [
+            ...(await _loadSleepRowsFromTable('fitbit_sleep', userId, sinceDate, 'Fitbit', 'date, duration_minutes, deep_minutes, light_minutes, rem_minutes, wake_minutes')),
+            ...(await _loadSleepRowsFromTable('whoop_sleep', userId, sinceDate, 'WHOOP', 'date, duration_minutes, deep_sleep_minutes, light_sleep_minutes, rem_sleep_minutes, wake_minutes')),
+            ...(await _loadSleepRowsFromTable('oura_sleep', userId, sinceDate, 'Health', 'date, total_sleep_minutes, deep_minutes, light_minutes, rem_minutes, wake_minutes')),
+        ];
+        directRows.forEach(row => _takeBestByDate(byDate, row, 'total_sleep_minutes'));
+
+        const records = Object.values(byDate).sort((a, b) => b.date.localeCompare(a.date));
+        if (records.length === 0) return null;
+
+        const sourceSet = new Set(records.map(r => r.source).filter(Boolean));
+        const source = sourceSet.size === 1 ? Array.from(sourceSet)[0] : 'Health';
+        return { source, records };
     }
 
     function renderStrengthProgress(strengthGains) {
@@ -572,7 +720,7 @@
             container.innerHTML = `
                 <div style="text-align: center; padding: 16px 0;">
                     <div style="font-size: 2rem; margin-bottom: 8px; opacity: 0.4;">😴</div>
-                    <div style="font-size: 0.85rem; color: var(--text-muted);">No sleep data yet. Connect a fitness tracker below to start seeing sleep trends and how they affect your workouts.</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">No sleep data yet. Connect Health, Fitbit, Oura or WHOOP to start seeing sleep trends and how they affect your workouts.</div>
                 </div>`;
             if (connectSection) connectSection.style.display = 'block';
             return;
@@ -1887,7 +2035,7 @@
             container.innerHTML = `
                 <div style="text-align: center; padding: 16px 0;">
                     <div style="font-size: 2rem; margin-bottom: 8px; opacity: 0.4;">🦶</div>
-                    <div style="font-size: 0.85rem; color: var(--text-muted);">No step data yet. Connect Fitbit or Oura below to start tracking your daily steps.</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">No step data yet. Connect Health, Fitbit or Oura to start tracking your daily steps.</div>
                 </div>`;
             return;
         }

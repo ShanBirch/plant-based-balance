@@ -505,6 +505,9 @@
                                 if (window.supabaseClient) {
                                     window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser?.id);
                                 }
+                                if (window.supabaseClient && typeof window.NativeHealth.syncStepsForInsights === 'function') {
+                                    window.NativeHealth.syncStepsForInsights(window.supabaseClient, window.currentUser?.id, 30);
+                                }
                                 // Sync native steps into DB so the Steps challenge scores
                                 // correctly.  Same guard as sleep above — Supabase client
                                 // has to exist, and the function handles missing challenges
@@ -530,6 +533,9 @@
                                     document.addEventListener('visibilitychange', () => {
                                         if (document.visibilityState === 'visible' && window.supabaseClient) {
                                             window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser?.id);
+                                            if (typeof window.NativeHealth.syncStepsForInsights === 'function') {
+                                                window.NativeHealth.syncStepsForInsights(window.supabaseClient, window.currentUser?.id, 30);
+                                            }
                                         }
                                     });
                                 }

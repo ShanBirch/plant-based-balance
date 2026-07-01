@@ -17431,6 +17431,9 @@ function onHealthConnectGranted() {
                 if (typeof window.NativeHealth.syncSleepForChallenge === 'function' && window.supabaseClient && window.currentUser) {
                     window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser.id);
                 }
+                if (typeof window.NativeHealth.syncStepsForInsights === 'function' && window.supabaseClient && window.currentUser) {
+                    window.NativeHealth.syncStepsForInsights(window.supabaseClient, window.currentUser.id, 30);
+                }
             }
         });
     }
@@ -17470,6 +17473,23 @@ function updateDashboardWithHealthData(data) {
     if (data.heartRate && data.heartRate.latest) {
         var hrEl = document.getElementById('fitbit-perf-hr');
         if (hrEl) hrEl.textContent = data.heartRate.latest;
+    }
+    if (data.sleep && data.sleep.totalMinutes) {
+        var sleepEl = document.getElementById('perf-sleep-value');
+        if (sleepEl) {
+            var sleepHours = Math.floor(data.sleep.totalMinutes / 60);
+            var sleepMins = Math.round(data.sleep.totalMinutes % 60);
+            sleepEl.innerHTML = sleepHours + '<span style="font-size:0.8rem;font-weight:600;">h</span> ' + sleepMins + '<span style="font-size:0.8rem;font-weight:600;">m</span>';
+        }
+        var sleepSubEl = document.getElementById('perf-sleep-sub');
+        if (sleepSubEl) sleepSubEl.textContent = 'Health Connect';
+    }
+    if (data.workouts && data.workouts.length) {
+        var activeEl = document.getElementById('fitbit-perf-active');
+        if (activeEl) {
+            var totalActive = data.workouts.reduce(function(sum, w) { return sum + (Number(w.duration) || 0); }, 0);
+            activeEl.textContent = totalActive ? totalActive + ' min' : data.workouts.length;
+        }
     }
 }
 
