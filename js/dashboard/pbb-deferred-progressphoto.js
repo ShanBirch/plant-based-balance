@@ -193,6 +193,7 @@ let progressPhotoCaptureState = null;
 
     function setProgressPhotoShareButtonState(state, message) {
         const btn = document.getElementById('progress-photo-share-feed-btn');
+        const igBtn = document.getElementById('progress-photo-share-ig-story-btn');
         const status = document.getElementById('progress-photo-share-feed-status');
         if (!btn) return;
 
@@ -200,6 +201,12 @@ let progressPhotoCaptureState = null;
         btn.style.opacity = '1';
         btn.style.display = 'none';
         btn.textContent = 'Share to Feed +' + PROGRESS_PHOTO_SHARE_POINTS + ' XP';
+        if (igBtn) {
+            igBtn.disabled = false;
+            igBtn.style.opacity = '1';
+            igBtn.style.display = 'none';
+            igBtn.textContent = 'Share to IG Story';
+        }
 
         if (status) {
             status.style.display = 'none';
@@ -208,6 +215,7 @@ let progressPhotoCaptureState = null;
 
         if (state === 'ready') {
             btn.style.display = 'block';
+            if (igBtn) igBtn.style.display = 'block';
             return;
         }
 
@@ -216,6 +224,12 @@ let progressPhotoCaptureState = null;
             btn.disabled = true;
             btn.style.opacity = '0.7';
             btn.textContent = message || 'Checking share bonus...';
+            if (igBtn) {
+                igBtn.style.display = 'block';
+                igBtn.disabled = true;
+                igBtn.style.opacity = '0.7';
+                igBtn.textContent = 'Loading IG Story...';
+            }
             return;
         }
 
@@ -224,16 +238,27 @@ let progressPhotoCaptureState = null;
             btn.disabled = true;
             btn.style.opacity = '0.7';
             btn.textContent = message || 'Sharing...';
+            if (igBtn) {
+                igBtn.style.display = 'block';
+                igBtn.disabled = true;
+                igBtn.style.opacity = '0.7';
+            }
             return;
         }
 
         if (state === 'shared' && status) {
+            btn.style.display = 'block';
+            btn.disabled = true;
+            btn.style.opacity = '0.85';
+            btn.textContent = 'Shared to Feed';
+            if (igBtn) igBtn.style.display = 'block';
             status.style.display = 'block';
             status.textContent = message || 'Shared to Feed.';
         }
 
         if (state === 'error') {
             btn.style.display = 'block';
+            if (igBtn) igBtn.style.display = 'block';
             if (status) {
                 status.style.display = 'block';
                 status.textContent = message || 'Could not share yet. Please try again.';
@@ -265,6 +290,119 @@ let progressPhotoCaptureState = null;
             return false;
         }
         return !!data;
+    }
+
+    function getProgressPhotoInstagramShots(photo) {
+        if (!photo) return [];
+        let parsedNotes = null;
+        try {
+            parsedNotes = typeof photo.notes === 'string' ? JSON.parse(photo.notes) : photo.notes;
+        } catch (e) {
+            parsedNotes = null;
+        }
+
+        const shots = Array.isArray(parsedNotes?.shots)
+            ? parsedNotes.shots.map(function(shot, index) {
+                return {
+                    angle: shot.angle || shot.title || ('Photo ' + (index + 1)),
+                    title: shot.title || shot.angle || ('Photo ' + (index + 1)),
+                    photo_url: shot.photo_url || shot.url || ''
+                };
+            }).filter(function(shot) { return !!shot.photo_url; })
+            : [];
+
+        if (!shots.length && photo.photo_url) {
+            shots.push({
+                angle: 'front',
+                title: 'Progress photo',
+                photo_url: photo.photo_url
+            });
+        }
+
+        return shots;
+    }
+
+    function getProgressPhotoWeekLabel(photo) {
+        const raw = photo?.photo_week || photo?.created_at || '';
+        if (!raw) return 'this week';
+        try {
+            const date = new Date(raw);
+            if (!Number.isNaN(date.getTime())) {
+                return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+            }
+        } catch (e) {}
+        return String(raw).slice(0, 10);
+    }
+
+    async function getProgressPhotoInstagramDataUrls(shots) {
+        const urls = [];
+        for (const shot of shots) {
+            const source = shot && shot.photo_url;
+            if (!source) continue;
+            try {
+                if (typeof window.pbbShareImageUrlToDataUrl === 'function') {
+                    urls.push(await window.pbbShareImageUrlToDataUrl(source));
+                } else {
+                    urls.push(source);
+                }
+            } catch (error) {
+                console.warn('Could not prepare progress photo for Instagram:', error);
+                urls.push(source);
+            }
+        }
+        return urls.filter(Boolean);
+    }
+
+    async function shareProgressPhotoToInstagram(target) {
+        if (!window.currentUser?.id) {
+            alert('Please log in to share your progress photos.');
+            return;
+        }
+        if (typeof window.shareBalanceCardToInstagram !== 'function') {
+            if (typeof showToast === 'function') showToast('Instagram sharing is still loading. Try again in a moment.', 'info');
+            return;
+        }
+
+        const btn = document.getElementById('progress-photo-share-ig-story-btn');
+        const originalText = btn ? btn.textContent : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.style.opacity = '0.72';
+            btn.textContent = 'Preparing...';
+        }
+
+        try {
+            const photo = await getCurrentProgressPhotoForShare();
+            if (!photo?.id) throw new Error('No progress photo found for this week yet.');
+
+            const shots = getProgressPhotoInstagramShots(photo);
+            if (!shots.length) throw new Error('No progress photo image found.');
+
+            const photoDataUrls = await getProgressPhotoInstagramDataUrls(shots);
+            const cardPayload = {
+                card_type: 'progress_photo',
+                title: 'Progress photos logged',
+                subtitle: 'Week of ' + getProgressPhotoWeekLabel(photo),
+                shot_count: shots.length,
+                photo_week: photo.photo_week || null,
+                shots: shots
+            };
+
+            await window.shareBalanceCardToInstagram(cardPayload, target === 'feed' ? 'feed' : 'story', {
+                photoDataUrls,
+                photoDataUrl: photoDataUrls[0] || ''
+            });
+        } catch (error) {
+            console.error('Error sharing progress photos to Instagram:', error);
+            if (typeof showToast === 'function') showToast(error.message || 'Could not open Instagram Story.', 'error');
+            else alert('Could not open Instagram Story. Please try again.');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.textContent = originalText || 'Share to IG Story';
+            }
+        }
     }
 
     async function requestProgressPhotoShareState(photo) {
@@ -756,6 +894,7 @@ let progressPhotoCaptureState = null;
     window.closeProgressPhotoShotGuide = closeProgressPhotoShotGuide;
     window.awardProgressPhotoXP = awardProgressPhotoXP;
     window.shareProgressPhotoToFeed = shareProgressPhotoToFeed;
+    window.shareProgressPhotoToInstagram = shareProgressPhotoToInstagram;
     window.requestProgressPhotoShareState = requestProgressPhotoShareState;
     window.isProgressPhotoPromptWindow = isProgressPhotoPromptWindow;
     window.getNextProgressPhotoPromptBoundary = getNextProgressPhotoPromptBoundary;

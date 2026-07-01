@@ -2083,6 +2083,70 @@ async function shareMealRecordToFeed(meal, btn) {
     }
 }
 
+async function getMealInstagramPhotoDataUrl(cardPayload) {
+    const photoUrl = cardPayload && (cardPayload.photo_url || cardPayload.photoUrl);
+    if (!photoUrl) return '';
+
+    try {
+        if (typeof window.pbbShareImageUrlToDataUrl === 'function') {
+            return await window.pbbShareImageUrlToDataUrl(photoUrl);
+        }
+    } catch (error) {
+        console.warn('Could not prepare meal photo for Instagram card:', error);
+    }
+
+    return photoUrl;
+}
+
+async function shareMealRecordToInstagram(meal, btn, target = 'story') {
+    if (!meal || !meal.id) {
+        showToast('Meal is not ready to share yet', 'info');
+        return false;
+    }
+    if (!window.currentUser) {
+        showToast('You must be logged in to share', 'error');
+        return false;
+    }
+    if (String(meal.meal_type || '').toLowerCase() === 'water') {
+        showToast('Water logs do not need an Instagram card', 'info');
+        return false;
+    }
+    if (typeof window.shareBalanceCardToInstagram !== 'function') {
+        showToast('Instagram sharing is still loading. Try again in a moment.', 'info');
+        return false;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.dataset.originalText = btn.textContent || btn.dataset.originalText || '';
+        btn.textContent = 'Preparing...';
+        btn.style.opacity = '0.75';
+    }
+
+    try {
+        const mealForShare = await getFreshMealRecordForFeedShare(meal);
+        const cardPayload = buildMealFeedCardPayload(mealForShare);
+        const photoDataUrl = await getMealInstagramPhotoDataUrl(cardPayload);
+        await window.shareBalanceCardToInstagram(cardPayload, target === 'feed' ? 'feed' : 'story', {
+            photoDataUrl
+        });
+        if (btn) {
+            btn.textContent = 'Opening IG Story';
+            btn.style.opacity = '1';
+        }
+        return true;
+    } catch (error) {
+        console.error('Error sharing meal to Instagram:', error);
+        showToast('Could not open Instagram Story. Please try again.', 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = btn.dataset.originalText || 'Share to IG Story';
+            btn.style.opacity = '1';
+        }
+        return false;
+    }
+}
+
 function closeMealFeedSharePrompt() {
     const prompt = document.getElementById('meal-feed-share-prompt');
     if (prompt) prompt.remove();
@@ -2096,11 +2160,16 @@ window.sharePendingMealToFeed = async function(btn) {
     if (story) closeMealFeedSharePrompt();
 };
 
+window.sharePendingMealToInstagram = async function(btn) {
+    const meal = window._pbbPendingMealFeedShare;
+    const opened = await shareMealRecordToInstagram(meal, btn, 'story');
+    if (opened) closeMealFeedSharePrompt();
+};
+
 function showMealFeedSharePrompt(meal) {
     if (!meal || !meal.id) return;
     if (String(meal.meal_type || '').toLowerCase() === 'water') return;
-    if (isMealSharedToFeed(meal.id)) return;
-    if (isMealFeedShareUsedToday()) return;
+    const feedAvailable = !isMealSharedToFeed(meal.id) && !isMealFeedShareUsedToday();
 
     window._pbbPendingMealFeedShare = meal;
     closeMealFeedSharePrompt();
@@ -2109,17 +2178,25 @@ function showMealFeedSharePrompt(meal) {
     const shortLabel = foodLabel.length > 72 ? foodLabel.slice(0, 69) + '...' : foodLabel;
     const prompt = document.createElement('div');
     prompt.id = 'meal-feed-share-prompt';
-    prompt.style.cssText = 'position:fixed;left:14px;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:10030;background:#ffffff;border:1px solid #dbeafe;border-radius:16px;box-shadow:0 18px 42px rgba(15,23,42,0.22);padding:14px;display:flex;align-items:center;gap:12px;font-family:inherit;';
+    prompt.style.cssText = 'position:fixed;left:14px;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:10030;background:#ffffff;border:1px solid #dbeafe;border-radius:16px;box-shadow:0 18px 42px rgba(15,23,42,0.22);padding:14px;font-family:inherit;';
+    const feedButtonHtml = feedAvailable
+        ? '<button type="button" onclick="sharePendingMealToFeed(this)" style="border:none;background:#046a38;color:white;border-radius:999px;padding:11px 12px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">Feed +15 XP</button>'
+        : '<button type="button" disabled style="border:none;background:#e2e8f0;color:#64748b;border-radius:999px;padding:11px 12px;font-size:0.78rem;font-weight:900;white-space:nowrap;">Feed used</button>';
     prompt.innerHTML = `
-        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#0f766e,#2563eb);display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0;">
-            <svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#0f766e,#2563eb);display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0;">
+                <svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:0.86rem;font-weight:900;color:#0f172a;line-height:1.25;">Share this meal?</div>
+                <div style="font-size:0.74rem;font-weight:700;color:#64748b;line-height:1.25;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(shortLabel)}</div>
+            </div>
+            <button type="button" onclick="closeMealFeedSharePrompt()" aria-label="Dismiss meal share prompt" style="border:none;background:#f1f5f9;color:#64748b;border-radius:999px;width:32px;height:32px;font-size:1.1rem;line-height:1;cursor:pointer;flex-shrink:0;">&times;</button>
         </div>
-        <div style="flex:1;min-width:0;">
-            <div style="font-size:0.86rem;font-weight:900;color:#0f172a;line-height:1.25;">Share this meal to Feed?</div>
-            <div style="font-size:0.74rem;font-weight:700;color:#64748b;line-height:1.25;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(shortLabel)}</div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:12px;">
+            ${feedButtonHtml}
+            <button type="button" onclick="sharePendingMealToInstagram(this)" style="border:none;background:#be185d;color:white;border-radius:999px;padding:11px 12px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">IG Story</button>
         </div>
-        <button type="button" onclick="sharePendingMealToFeed(this)" style="border:none;background:#046a38;color:white;border-radius:999px;padding:10px 13px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">Share</button>
-        <button type="button" onclick="closeMealFeedSharePrompt()" aria-label="Dismiss meal share prompt" style="border:none;background:#f1f5f9;color:#64748b;border-radius:999px;width:32px;height:32px;font-size:1.1rem;line-height:1;cursor:pointer;flex-shrink:0;">&times;</button>
     `;
     document.body.appendChild(prompt);
     setTimeout(function() {
@@ -8724,12 +8801,19 @@ function openMealDetailPopup(index) {
     const fatEl = document.getElementById('mealDetailFat');
     const itemsEl = document.getElementById('mealDetailItems');
     const shareBtn = document.getElementById('mealDetailShareBtn');
+    const igShareBtn = document.getElementById('mealDetailIgStoryBtn');
     if (shareBtn) {
         const alreadyShared = isMealSharedToFeed(meal.id);
         const dailyUsed = isMealFeedShareUsedToday();
         shareBtn.disabled = alreadyShared || dailyUsed;
         shareBtn.textContent = alreadyShared ? 'Shared to Feed' : (dailyUsed ? 'Meal share used today' : getMealFeedShareButtonText());
         shareBtn.style.opacity = (alreadyShared || dailyUsed) ? '0.85' : '1';
+    }
+    if (igShareBtn) {
+        const isWater = String(meal.meal_type || '').toLowerCase() === 'water';
+        igShareBtn.disabled = isWater;
+        igShareBtn.textContent = isWater ? 'IG Story unavailable' : 'Share to IG Story';
+        igShareBtn.style.opacity = isWater ? '0.85' : '1';
     }
 
     // Format time
@@ -8830,6 +8914,22 @@ async function shareCurrentMealToFeed() {
     await shareMealRecordToFeed(meal, btn);
 }
 window.shareCurrentMealToFeed = shareCurrentMealToFeed;
+
+async function shareCurrentMealToInstagram() {
+    if (currentEditingMealIndex === null || !currentMealsList[currentEditingMealIndex]) {
+        showToast('Open a meal first', 'info');
+        return;
+    }
+    if (!window.currentUser) {
+        showToast('You must be logged in to share', 'error');
+        return;
+    }
+
+    const meal = currentMealsList[currentEditingMealIndex];
+    const btn = document.getElementById('mealDetailIgStoryBtn');
+    await shareMealRecordToInstagram(meal, btn, 'story');
+}
+window.shareCurrentMealToInstagram = shareCurrentMealToInstagram;
 
 // Close popup on escape key
 document.addEventListener('keydown', function(e) {

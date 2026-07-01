@@ -1868,8 +1868,7 @@ function getBalanceInstagramShareTesterEmail() {
 }
 
 function canUseBalanceInstagramShareTest() {
-    const email = getBalanceInstagramShareTesterEmail();
-    return BALANCE_INSTAGRAM_SHARE_TESTER_EMAILS.indexOf(email) !== -1;
+    return true;
 }
 
 function updateWorkoutInstagramShareVisibility() {
@@ -2593,10 +2592,185 @@ function pbbShareDrawCoverImage(ctx, img, x, y, w, h) {
 function pbbShareLoadImage(src) {
     return new Promise((resolve, reject) => {
         const img = new Image();
+        if (/^https?:/i.test(String(src || ''))) img.crossOrigin = 'anonymous';
         img.onload = () => resolve(img);
         img.onerror = reject;
         img.src = src;
     });
+}
+
+function pbbShareImageUrlToDataUrl(url) {
+    if (!url) return Promise.resolve('');
+    if (/^data:image\//i.test(String(url))) return Promise.resolve(url);
+    return fetch(url, { mode: 'cors', credentials: 'omit' })
+        .then(response => {
+            if (!response.ok) throw new Error('Image fetch failed');
+            return response.blob();
+        })
+        .then(blob => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        }));
+}
+
+function pbbShareFormatNumber(value, suffix) {
+    const number = Number(value || 0);
+    const rounded = Number.isFinite(number) ? Math.round(number) : 0;
+    return rounded.toLocaleString() + (suffix || '');
+}
+
+function pbbShareDrawMetricBox(ctx, x, y, w, h, label, value, fill) {
+    pbbShareFillRoundRect(ctx, x, y, w, h, 26, fill || '#f8fafc');
+    ctx.fillStyle = '#475569';
+    ctx.font = '800 22px Arial, sans-serif';
+    pbbShareWrapText(ctx, label, x + 24, y + 42, w - 48, 26, 1);
+    ctx.fillStyle = '#111827';
+    ctx.font = '900 34px Arial, sans-serif';
+    pbbShareWrapText(ctx, value, x + 24, y + 90, w - 48, 36, 1);
+}
+
+function pbbShareDrawNutritionCard(ctx, cardPayload, panelX, panelY, panelW, panelH) {
+    let y = panelY + 154;
+    ctx.fillStyle = '#111827';
+    ctx.font = '900 72px Arial, sans-serif';
+    ctx.fillText(String(Math.round(Number(cardPayload.score || 0))), panelX + 56, y);
+    ctx.font = '900 32px Arial, sans-serif';
+    ctx.fillStyle = '#0f766e';
+    ctx.fillText('Nutrition score', panelX + 178, y - 12);
+    ctx.font = '750 25px Arial, sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText((cardPayload.meal_count || 0) + ' meals logged today', panelX + 178, y + 26);
+    y += 80;
+
+    const metricW = (panelW - 136) / 3;
+    const calorieText = pbbShareFormatNumber(cardPayload.calories) + '/' + pbbShareFormatNumber(cardPayload.calorie_goal);
+    const metrics = [
+        ['Calories', calorieText, '#fef3c7'],
+        ['Protein', pbbShareFormatNumber(cardPayload.protein, 'g') + '/' + pbbShareFormatNumber(cardPayload.protein_goal, 'g'), '#dcfce7'],
+        ['Streak', pbbShareFormatNumber(cardPayload.streak), '#eef2ff']
+    ];
+    metrics.forEach((metric, index) => {
+        const x = panelX + 56 + (index * (metricW + 12));
+        pbbShareDrawMetricBox(ctx, x, y, metricW, 138, metric[0], metric[1], metric[2]);
+    });
+    y += 198;
+
+    const macroRows = [
+        ['Protein', cardPayload.protein, cardPayload.protein_goal, '#16a34a'],
+        ['Carbs', cardPayload.carbs, cardPayload.carbs_goal, '#2563eb'],
+        ['Fat', cardPayload.fat, cardPayload.fat_goal, '#f97316']
+    ];
+    macroRows.forEach(row => {
+        const current = Math.max(0, Number(row[1] || 0));
+        const goal = Math.max(1, Number(row[2] || 0));
+        const pct = Math.min(1, current / goal);
+        ctx.fillStyle = '#334155';
+        ctx.font = '900 28px Arial, sans-serif';
+        ctx.fillText(row[0], panelX + 56, y);
+        ctx.fillStyle = '#64748b';
+        ctx.font = '800 24px Arial, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(pbbShareFormatNumber(current, 'g') + ' / ' + pbbShareFormatNumber(goal, 'g'), panelX + panelW - 56, y);
+        ctx.textAlign = 'left';
+        pbbShareFillRoundRect(ctx, panelX + 56, y + 24, panelW - 112, 30, 15, '#e2e8f0');
+        pbbShareFillRoundRect(ctx, panelX + 56, y + 24, (panelW - 112) * pct, 30, 15, row[3]);
+        y += 96;
+    });
+
+    pbbShareFillRoundRect(ctx, panelX + 56, panelY + panelH - 150, panelW - 112, 94, 26, '#ecfeff');
+    ctx.fillStyle = '#155e75';
+    ctx.font = '900 30px Arial, sans-serif';
+    ctx.fillText('Fuelled and tracked in Balance', panelX + 92, panelY + panelH - 92);
+}
+
+async function pbbShareDrawMealCard(ctx, cardPayload, panelX, panelY, panelW, panelH, photoDataUrl) {
+    let y = panelY + 150;
+    if (photoDataUrl) {
+        try {
+            const mealPhoto = await pbbShareLoadImage(photoDataUrl);
+            pbbShareFillRoundRect(ctx, panelX + 56, y, panelW - 112, 360, 32, '#f1f5f9');
+            ctx.save();
+            pbbShareRoundRect(ctx, panelX + 56, y, panelW - 112, 360, 32);
+            ctx.clip();
+            pbbShareDrawCoverImage(ctx, mealPhoto, panelX + 56, y, panelW - 112, 360);
+            ctx.restore();
+            y += 412;
+        } catch (e) {
+            console.warn('Could not draw meal photo:', e);
+        }
+    }
+
+    ctx.fillStyle = '#111827';
+    ctx.font = '900 58px Arial, sans-serif';
+    y = pbbShareWrapText(ctx, cardPayload.foods || cardPayload.meal_type || 'Meal logged', panelX + 56, y, panelW - 112, 64, 2) + 28;
+
+    const metricW = (panelW - 136) / 3;
+    const metrics = [
+        ['Calories', pbbShareFormatNumber(cardPayload.calories), '#fef3c7'],
+        ['Protein', pbbShareFormatNumber(cardPayload.protein, 'g'), '#dcfce7'],
+        ['Carbs', pbbShareFormatNumber(cardPayload.carbs, 'g'), '#eef2ff']
+    ];
+    metrics.forEach((metric, index) => {
+        const x = panelX + 56 + (index * (metricW + 12));
+        pbbShareDrawMetricBox(ctx, x, y, metricW, 128, metric[0], metric[1], metric[2]);
+    });
+    y += 180;
+
+    const ingredients = Array.isArray(cardPayload.ingredients) ? cardPayload.ingredients.slice(0, 4) : [];
+    if (ingredients.length) {
+        ctx.fillStyle = '#0f3d2e';
+        ctx.font = '900 30px Arial, sans-serif';
+        ctx.fillText('What was in it', panelX + 56, y);
+        y += 42;
+        ingredients.forEach(item => {
+            const portion = item.portion ? ' (' + item.portion + ')' : '';
+            pbbShareFillRoundRect(ctx, panelX + 56, y, panelW - 112, 62, 18, 'rgba(15, 118, 110, 0.08)');
+            ctx.fillStyle = '#111827';
+            ctx.font = '800 25px Arial, sans-serif';
+            pbbShareWrapText(ctx, (item.name || 'Food') + portion, panelX + 82, y + 39, panelW - 164, 28, 1);
+            y += 74;
+        });
+    }
+}
+
+async function pbbShareDrawProgressPhotoCard(ctx, cardPayload, panelX, panelY, panelW, panelH, photoDataUrls) {
+    let y = panelY + 142;
+    const photos = Array.isArray(photoDataUrls) ? photoDataUrls.filter(Boolean).slice(0, 3) : [];
+    if (photos.length) {
+        const gap = 12;
+        const photoW = (panelW - 112 - gap * (photos.length - 1)) / photos.length;
+        const photoH = 520;
+        for (let i = 0; i < photos.length; i++) {
+            try {
+                const img = await pbbShareLoadImage(photos[i]);
+                const x = panelX + 56 + i * (photoW + gap);
+                pbbShareFillRoundRect(ctx, x, y, photoW, photoH, 28, '#f1f5f9');
+                ctx.save();
+                pbbShareRoundRect(ctx, x, y, photoW, photoH, 28);
+                ctx.clip();
+                pbbShareDrawCoverImage(ctx, img, x, y, photoW, photoH);
+                ctx.restore();
+            } catch (e) {
+                console.warn('Could not draw progress photo:', e);
+            }
+        }
+        y += photoH + 48;
+    }
+
+    ctx.fillStyle = '#111827';
+    ctx.font = '900 58px Arial, sans-serif';
+    y = pbbShareWrapText(ctx, cardPayload.title || 'Progress photos logged', panelX + 56, y, panelW - 112, 64, 2) + 24;
+    ctx.fillStyle = '#475569';
+    ctx.font = '750 29px Arial, sans-serif';
+    pbbShareWrapText(ctx, cardPayload.subtitle || 'Showing up, checking in, and keeping the receipts.', panelX + 56, y, panelW - 112, 40, 3);
+
+    const shotCount = Number(cardPayload.shot_count || photos.length || 1);
+    pbbShareFillRoundRect(ctx, panelX + 56, panelY + panelH - 150, panelW - 112, 94, 26, '#fce7f3');
+    ctx.fillStyle = '#9d174d';
+    ctx.font = '900 30px Arial, sans-serif';
+    ctx.fillText(shotCount + ' progress photo' + (shotCount === 1 ? '' : 's') + ' saved this week', panelX + 92, panelY + panelH - 92);
 }
 
 function pbbShareWrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
@@ -2637,6 +2811,7 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
     if (!cardPayload) throw new Error('Missing share card payload');
 
     const target = options.target === 'feed' ? 'feed' : 'story';
+    const cardType = cardPayload.card_type || 'workout';
     const width = 1080;
     const height = target === 'feed' ? 1350 : 1920;
     const canvas = document.createElement('canvas');
@@ -2651,9 +2826,12 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
     ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, width, height);
 
-    if (options.photoDataUrl) {
+    const photoDataUrls = Array.isArray(options.photoDataUrls) ? options.photoDataUrls.filter(Boolean) : [];
+    const primaryPhotoDataUrl = options.photoDataUrl || photoDataUrls[0] || '';
+
+    if (primaryPhotoDataUrl) {
         try {
-            const photo = await pbbShareLoadImage(options.photoDataUrl);
+            const photo = await pbbShareLoadImage(primaryPhotoDataUrl);
             pbbShareDrawCoverImage(ctx, photo, 0, 0, width, height);
             ctx.fillStyle = 'rgba(4, 12, 9, 0.56)';
             ctx.fillRect(0, 0, width, height);
@@ -2674,18 +2852,25 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
     const panelX = 70;
     const panelW = width - 140;
     const panelY = target === 'feed' ? 214 : 430;
-    const panelH = cardPayload.card_type === 'pb'
+    const panelH = cardType === 'pb'
         ? (target === 'feed' ? 790 : 930)
-        : (target === 'feed' ? 870 : 1040);
+        : (cardType === 'progress_photo' ? (target === 'feed' ? 940 : 1120) : (target === 'feed' ? 870 : 1040));
     pbbShareFillRoundRect(ctx, panelX, panelY, panelW, panelH, 42, 'rgba(255,255,255,0.94)');
 
     let y = panelY + 78;
+    const eyebrowByType = {
+        pb: 'NEW PERSONAL BEST',
+        workout: 'WORKOUT COMPLETE',
+        nutrition: 'NUTRITION CHECK-IN',
+        meal: 'MEAL LOGGED',
+        progress_photo: 'PROGRESS PHOTOS'
+    };
     ctx.fillStyle = '#0f3d2e';
     ctx.font = '900 32px Arial, sans-serif';
-    ctx.fillText(cardPayload.card_type === 'pb' ? 'NEW PERSONAL BEST' : 'WORKOUT COMPLETE', panelX + 56, y);
+    ctx.fillText(eyebrowByType[cardType] || 'BALANCE UPDATE', panelX + 56, y);
     y += 76;
 
-    if (cardPayload.card_type === 'pb') {
+    if (cardType === 'pb') {
         ctx.fillStyle = '#111827';
         ctx.font = '900 70px Arial, sans-serif';
         y = pbbShareWrapText(ctx, cardPayload.exercise || 'Personal best', panelX + 56, y, panelW - 112, 78, 2) + 34;
@@ -2713,6 +2898,12 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
         ctx.fillStyle = '#475569';
         ctx.font = '700 32px Arial, sans-serif';
         pbbShareWrapText(ctx, 'Logged in Balance after showing up and doing the work.', panelX + 56, y, panelW - 112, 42, 3);
+    } else if (cardType === 'nutrition') {
+        pbbShareDrawNutritionCard(ctx, cardPayload, panelX, panelY, panelW, panelH);
+    } else if (cardType === 'meal') {
+        await pbbShareDrawMealCard(ctx, cardPayload, panelX, panelY, panelW, panelH, primaryPhotoDataUrl);
+    } else if (cardType === 'progress_photo') {
+        await pbbShareDrawProgressPhotoCard(ctx, cardPayload, panelX, panelY, panelW, panelH, photoDataUrls.length ? photoDataUrls : [primaryPhotoDataUrl]);
     } else {
         ctx.fillStyle = '#111827';
         ctx.font = '900 64px Arial, sans-serif';
@@ -2846,7 +3037,8 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
     const safeTarget = target === 'feed' ? 'feed' : 'story';
     const dataUrl = await renderBalanceShareCardImage(cardPayload, {
         target: safeTarget,
-        photoDataUrl: options.photoDataUrl || null
+        photoDataUrl: options.photoDataUrl || null,
+        photoDataUrls: options.photoDataUrls || null
     });
 
     if (await shareBalanceCardWithNativeBridge(dataUrl, safeTarget)) {
@@ -2860,6 +3052,10 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
         safeTarget === 'story' ? 'Share this to your Instagram Story' : 'Share this to your Instagram Feed'
     );
 }
+
+window.shareBalanceCardToInstagram = shareBalanceCardToInstagram;
+window.renderBalanceShareCardImage = renderBalanceShareCardImage;
+window.pbbShareImageUrlToDataUrl = pbbShareImageUrlToDataUrl;
 
 async function shareWorkoutCardToInstagram(target) {
     if (!canUseBalanceInstagramShareTest()) {
@@ -3357,6 +3553,84 @@ async function shareNutritionToFeed() {
         }
     }
 }
+
+async function buildDailyNutritionInstagramPayload() {
+    if (!window.currentUser) throw new Error('You must be logged in to share');
+
+    const userId = window.currentUser.id;
+    const today = getLocalDateString();
+    const { data: dailyData, error: dailyError } = await window.supabaseClient
+        .from('daily_nutrition')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('nutrition_date', today)
+        .single();
+
+    if (dailyError || !dailyData || !dailyData.total_calories) {
+        throw new Error('Log some meals first before sharing');
+    }
+
+    const scoreData = calculateNutritionScore(dailyData);
+    const { data: mealsData } = await window.supabaseClient
+        .from('meal_logs')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('meal_date', today);
+
+    let streak = 0;
+    try {
+        const pointsData = await window.db?.points?.getPoints(userId);
+        streak = pointsData?.current_streak || 0;
+    } catch (e) {
+        console.log('Could not get streak for nutrition Instagram card');
+    }
+
+    return {
+        card_type: 'nutrition',
+        score: scoreData ? scoreData.total : 0,
+        calories: dailyData.total_calories || 0,
+        calorie_goal: dailyData.calorie_goal || 2000,
+        protein: dailyData.total_protein_g || 0,
+        protein_goal: dailyData.protein_goal_g || 50,
+        carbs: dailyData.total_carbs_g || 0,
+        carbs_goal: dailyData.carbs_goal_g || 250,
+        fat: dailyData.total_fat_g || 0,
+        fat_goal: dailyData.fat_goal_g || 70,
+        meal_count: mealsData ? mealsData.length : 0,
+        streak: streak
+    };
+}
+
+async function shareNutritionToInstagram(target = 'story') {
+    if (!window.currentUser) {
+        showToast('You must be logged in to share', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('share-nutrition-ig-story-btn');
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.72';
+        btn.innerHTML = '<span style="font-size:0.82rem;font-weight:950;">IG</span><span style="font-size:0.85rem;">Preparing...</span>';
+    }
+
+    try {
+        const cardPayload = await buildDailyNutritionInstagramPayload();
+        await shareBalanceCardToInstagram(cardPayload, target === 'feed' ? 'feed' : 'story');
+    } catch (error) {
+        console.error('Error sharing nutrition to Instagram:', error);
+        showToast(error?.message || 'Could not open Instagram share.', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.innerHTML = originalHtml || '<span style="font-size:0.82rem;font-weight:950;">IG</span><span style="font-size:0.85rem;">Story</span>';
+        }
+    }
+}
+
+window.shareNutritionToInstagram = shareNutritionToInstagram;
 
 function getLevelUpShareKey(userId, level) {
     return `level_up_feed_share:${userId}:${level}`;

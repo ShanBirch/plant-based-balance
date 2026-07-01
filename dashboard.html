@@ -616,6 +616,11 @@ window.addEventListener('load', function() {
         'toggleReaction': 'react to posts',
         'addFeedComment': 'comment on posts',
         'shareWorkoutToFeed': 'share to the feed',
+        'shareWorkoutCardToInstagram': 'share to Instagram',
+        'shareProgressPhotoToInstagram': 'share progress photos to Instagram',
+        'shareNutritionToInstagram': 'share nutrition to Instagram',
+        'shareCurrentMealToInstagram': 'share meals to Instagram',
+        'sharePendingMealToInstagram': 'share meals to Instagram',
     };
 
     Object.keys(guestBlockedActions).forEach(function(fnName) {
@@ -1133,6 +1138,7 @@ window.addEventListener('load', function() {
             <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+10 XP earned. See you next Monday!</div>
         </div>
         <button id="progress-photo-share-feed-btn" onclick="event.stopPropagation(); shareProgressPhotoToFeed();" style="display:none; width:100%; border:none; border-radius:12px; background:rgba(255,255,255,0.95); color:#db2777; padding:12px 14px; font-size:0.9rem; font-weight:800; cursor:pointer; box-shadow:0 8px 18px rgba(0,0,0,0.12);">Share to Feed +10 XP</button>
+        <button id="progress-photo-share-ig-story-btn" onclick="event.stopPropagation(); shareProgressPhotoToInstagram('story');" style="display:none; width:100%; border:none; border-radius:12px; background:rgba(255,255,255,0.95); color:#be185d; padding:12px 14px; font-size:0.9rem; font-weight:800; cursor:pointer; box-shadow:0 8px 18px rgba(0,0,0,0.12);">Share to IG Story</button>
         <div id="progress-photo-share-feed-status" style="display:none; width:100%; font-size:0.78rem; font-weight:700; opacity:0.9; text-align:center;"></div>
     </div>
 
@@ -1580,12 +1586,12 @@ if(!window._pbbIsIOSSafari) {
 
     <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=7"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=8"><\/script>');
     document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=22"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=15"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=7');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=8');
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=22');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=15');
 }
@@ -2391,6 +2397,10 @@ if(!window._pbbIsIOSSafari) {
                     <button id="share-nutrition-btn" onclick="shareNutritionToFeed()" style="display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:12px; padding:10px 16px; background:linear-gradient(135deg, rgba(99,102,241,0.15), rgba(129,140,248,0.15)); border:1px solid rgba(99,102,241,0.25); border-radius:10px; color:var(--text-main); font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.2s;">
                         <span style="font-size:1rem;">🥗</span>
                         <span style="font-size:0.85rem;">Share Nutrition</span>
+                    </button>
+                    <button id="share-nutrition-ig-story-btn" onclick="shareNutritionToInstagram('story')" style="display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:8px; padding:10px 16px; background:linear-gradient(135deg, rgba(190,24,93,0.14), rgba(67,56,202,0.12)); border:1px solid rgba(190,24,93,0.22); border-radius:10px; color:var(--text-main); font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.2s;">
+                        <span style="font-size:0.82rem; font-weight:950;">IG</span>
+                        <span style="font-size:0.85rem;">Story</span>
                     </button>
                 </div>
 
@@ -12043,6 +12053,9 @@ if (window._pbbIsIOSSafari) {
             <button class="meal-detail-edit-btn" id="mealDetailShareBtn" onclick="shareCurrentMealToFeed()" style="background: linear-gradient(135deg, #0f766e, #2563eb); color: white; margin-bottom: 10px;">
                 Share meal to Feed (+15 XP)
             </button>
+            <button class="meal-detail-edit-btn" id="mealDetailIgStoryBtn" onclick="shareCurrentMealToInstagram()" style="background: linear-gradient(135deg, #be185d, #4338ca); color: white; margin-bottom: 10px;">
+                Share to IG Story
+            </button>
             <button class="meal-detail-edit-btn" id="mealDetailEditBtn" onclick="openEditItemsModal()">
                 ✏️ Edit Items
             </button>
@@ -12538,6 +12551,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"],[title="Build a meal"]', title:'Build-a-Meal', body:"Use Build-a-Meal when one meal has a few parts. Add items by photo, barcode, text, or manual entry until the whole plate is saved together." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openRecentMealsModal"],.camera-btn-widget[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Use Recent & saved meals to re-log food you have already tracked. Tap the clock, pick the meal, and it drops back into today." },
     { tab:'meals', sel:'#meals-log-list,.meal-log-card', title:'Share meals to Feed', body:"Tap one logged meal each day, then Share meal to Feed for +15 XP. Meals with photos post the meal photo and a caption with ingredients, amounts, calories, and macros.", quick: true },
+    { tab:'meals', sel:'#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn', title:'Share meals to Instagram', body:"Open a logged meal or your daily nutrition summary, then tap IG Story to send a Balance card straight to Instagram.", quick: true },
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#browse-plans-pill', title:'Your meal plan', body:"Tap here for your AI-generated meal plan for the week — tap any day to see recipes." },
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Profile settings', body:"Open Profile when you need settings, dietary requirements, password changes, character customisation, or to replay this tour later." },
@@ -12547,6 +12561,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
     { tab:'movement-tab', sel:'#workout-share-set-btn', title:'Share a Set', body:"Tap Share a Set under Film Form Check to open the native camera. When you finish filming, the clip uploads in the background while you stay in workout mode. Your first Share a Set each day earns +10 XP.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Share wins to Instagram', body:"Finish a workout or hit a PB, then choose Balance Feed, Instagram Story, or Instagram Feed from the share options." },
+    { tab:'dashboard', sel:'#weekly-progress-photo-card,#weekly-progress-photo-done-card', title:'Progress photos to Instagram', body:"After your weekly progress photos save, tap IG Story to share a Balance progress card straight to Instagram.", condition: function(){ return !!document.querySelector('#weekly-progress-photo-card,#weekly-progress-photo-done-card'); } },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#form-check-quick-card', title:'Form Checks', body:"Film a quick exercise clip and send it to Shannon when you want him to check your technique. During a workout, use the form-check button at the top of workout mode." },
@@ -13537,6 +13552,17 @@ if(!window._pbbIsIOSSafari) {
     title: 'Daily meal share XP',
     body: "Share one logged meal to Feed each day for +15 XP. Meal posts include the photo when available, plus ingredients, amounts, calories, and macros.",
     condition: function(){ var e = document.querySelector('#meals-log-list .meal-log-card,.meal-log-card'); return !!(e && e.offsetParent !== null); }
+  });
+  allFeatures.push({
+    id: 'instagram-story-sharing-v2',
+    tab: 'meals',
+    subtab: 'calorie-tracker',
+    sel: '#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn',
+    title: 'Share to Instagram Story',
+    body: "Workouts, PBs, meals, nutrition summaries, and weekly progress photos can now open straight into Instagram Story as Balance cards.",
+    condition: function(){
+      return !!(document.querySelector('#meals-log-list .meal-log-card,.meal-log-card,#share-nutrition-ig-story-btn,#share-workout-ig-story-btn,#progress-photo-share-ig-story-btn'));
+    }
   });
   allFeatures.push({
     id: 'feed-post-actions-menu-v1',
@@ -16211,13 +16237,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=9';
+            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=10';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=9"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=10"><\/script>');
 }
 </script>
 
@@ -16286,7 +16312,7 @@ if (window._pbbIsIOSSafari) {
             }
 
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=12';
+            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=13';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -16346,7 +16372,7 @@ if (window._pbbIsIOSSafari) {
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=12" data-pbb-calorie-tracker="1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=13" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js" data-pbb-meal-builder="1"><\/script>');
     }
 })();
