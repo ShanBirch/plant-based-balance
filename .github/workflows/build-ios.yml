@@ -298,6 +298,7 @@ jobs:
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_APPLE_ID: "6761238161"
         run: |
           IPA_PATH="$RUNNER_TEMP/export/App.ipa"
           if [ ! -f "$IPA_PATH" ]; then
@@ -312,6 +313,7 @@ jobs:
           UPLOAD_OUTPUT=$(API_PRIVATE_KEYS_DIR="$HOME/.private_keys" xcrun altool --upload-app \
             --type ios \
             --file "$IPA_PATH" \
+            --apple-id "$APP_STORE_APPLE_ID" \
             --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
             --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
             --output-format xml 2>&1)
