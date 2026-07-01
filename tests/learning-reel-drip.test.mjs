@@ -192,6 +192,8 @@ const staleFitnessLeadConfig = _test.buildDynamicLeadReelConfig({
     goals: 'build muscle and stay consistent with training',
     custom_data: {},
 }, angelaDogMessages, nowMs);
+assert.strictEqual(staleFitnessLeadConfig.plan_topics[0].topic_id, 'cute_pet_reels');
+assert.strictEqual(staleFitnessLeadConfig.plan_topics[0].signal_label, 'pet:Kali');
 assert.ok(staleFitnessLeadConfig.plan_topics.some(entry => entry.topic_id === 'muscle_gain_basics'));
 const dogContextReview = _test.dynamicLeadLatestContextReview({
     item: { topic_id: 'workout_motivation', topic_label: 'Workout motivation' },
@@ -200,6 +202,21 @@ const dogContextReview = _test.dynamicLeadLatestContextReview({
 });
 assert.strictEqual(dogContextReview.ok, false);
 assert.strictEqual(dogContextReview.blocker, 'latest_context_pet_social_chat');
+const petContextReview = _test.dynamicLeadLatestContextReview({
+    item: { topic_id: 'cute_pet_reels', topic_label: 'Cute pet reels' },
+    messages: angelaDogMessages,
+    nowMs,
+});
+assert.strictEqual(petContextReview.ok, true);
+assert.ok(petContextReview.topic_ids.includes('cute_pet_reels'));
+const petMessage = _test.buildClientPilotVisibleMessage({
+    url: 'https://www.youtube.com/shorts/pet123',
+    topic_id: 'cute_pet_reels',
+    topic_label: 'Cute pet reels',
+    signal_label: 'pet:Kali',
+}, 0, staleFitnessLeadConfig, staleFitnessLeadConfig.plan_topics[0]);
+assert.ok(petMessage.includes('https://www.youtube.com/shorts/pet123'));
+assert.match(petMessage, /Kali/i);
 
 const coreContextReview = _test.dynamicLeadLatestContextReview({
     item: { topic_id: 'core_training_technique', topic_label: 'Core training technique' },

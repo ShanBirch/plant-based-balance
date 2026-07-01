@@ -2,6 +2,7 @@ const LEARNING_REEL_TOPIC_LABELS = {
     vegan_panettone: 'Vegan panettone',
     plant_based_cooking: 'Plant-based cooking',
     bunny_reels: 'Bunny reels',
+    cute_pet_reels: 'Cute pet reels',
     core_training_technique: 'Core training technique',
     pelvic_tilt_balance: 'Pelvic tilt & balance',
     macronutrient_science: 'Macros',
@@ -41,6 +42,7 @@ const TOPIC_KEYWORD_RE = {
     vegan_panettone: /\b(vegan|plant[-\s]?based|eggless|egg[-\s]?free|dairy[-\s]?free|panettone|italian|christmas|holiday|bread|cake|bake|baking|recipe)\b/i,
     plant_based_cooking: /\b(plant|vegan|vegetarian|recipe|meal|cook|cooking|lentil|tofu|beans?|tempeh|protein)\b/i,
     bunny_reels: /\b(bunny|bunnies|rabbit|rabbits|houserabbit|house rabbit|free roam rabbit|pet rabbit|bink(?:y|ies)|flop|hay|rabbit care|rabbit enrichment|cute rabbit)\b/i,
+    cute_pet_reels: /\b(cute pet|pets?|animals?|dogs?|doggo|pupp(?:y|ies)|cats?|kittens?|zoomies?|open field|adorable|playful|chaos|chill at home)\b/i,
     core_training_technique: /\b(core|abs?|abdominals?|brace|bracing|trunk|dead bug|plank|anti[-\s]?extension|hollow|pelvic tilt|posterior pelvic tilt|anterior pelvic tilt|rib cage|neutral spine)\b/i,
     pelvic_tilt_balance: /\b(pelvic tilt|anterior pelvic tilt|posterior pelvic tilt|pelvis|center of gravity|centre of gravity|center of mass|centre of mass|weight shift|posture|stack|rib cage|neutral spine|balance)\b/i,
     macronutrient_science: /\b(macro|macronutrient|calorie|protein|carb|carbs|fat|fats|energy balance|nutrition)\b/i,
@@ -157,6 +159,45 @@ const CURATED_LEARNING_REEL_SOURCES = [
         }
     },
     {
+        id: 'the_dodo',
+        channelTitle: 'The Dodo',
+        handle: '@TheDodo',
+        subscriberTier: '10m+',
+        qualityScore: 88,
+        sourceKind: 'animal_story',
+        profileUrl: 'https://www.youtube.com/@TheDodo',
+        aliases: ['the dodo', 'dodo'],
+        topics: {
+            cute_pet_reels: { queries: ['cute pet shorts', 'dog zoomies shorts', 'cute animal moments'], priority: 18 }
+        }
+    },
+    {
+        id: 'maymo',
+        channelTitle: 'Maymo',
+        handle: '@Maymo',
+        subscriberTier: '10m+',
+        qualityScore: 82,
+        sourceKind: 'cute_dog',
+        profileUrl: 'https://www.youtube.com/@Maymo',
+        aliases: ['maymo'],
+        topics: {
+            cute_pet_reels: { queries: ['cute dog shorts', 'dog zoomies shorts', 'funny puppy moments'], priority: 16 }
+        }
+    },
+    {
+        id: 'cole_and_marmalade',
+        channelTitle: 'Cole and Marmalade',
+        handle: '@ColeAndMarmalade',
+        subscriberTier: '1m+',
+        qualityScore: 82,
+        sourceKind: 'cute_cat',
+        profileUrl: 'https://www.youtube.com/@ColeAndMarmalade',
+        aliases: ['cole and marmalade', 'cole & marmalade', 'coleandmarmalade'],
+        topics: {
+            cute_pet_reels: { queries: ['cute cat shorts', 'kitten shorts', 'funny cat moments'], priority: 14 }
+        }
+    },
+    {
         id: 'pick_up_limes',
         channelTitle: 'Pick Up Limes',
         channelId: 'UCq2E1mIwUKMWzCA4liA_XGQ',
@@ -167,6 +208,7 @@ const CURATED_LEARNING_REEL_SOURCES = [
         profileUrl: 'https://www.youtube.com/@PickUpLimes',
         aliases: ['pick up limes', 'pickuplimes'],
         topics: {
+            vegan_panettone: { queries: ['vegan panettone recipe', 'holiday vegan baking', 'egg free dairy free panettone'], priority: 10 },
             plant_based_cooking: ['high protein vegan meals', 'plant based cooking tips', 'healthy vegan recipes'],
             meal_prep_planning: ['vegan meal prep', 'weekly plant based meals', 'healthy meal planning']
         }
@@ -182,6 +224,7 @@ const CURATED_LEARNING_REEL_SOURCES = [
         profileUrl: 'https://www.youtube.com/@RainbowPlantLife',
         aliases: ['rainbow plant life', 'rainbowplantlife'],
         topics: {
+            vegan_panettone: { queries: ['vegan panettone recipe', 'easy vegan holiday baking', 'egg free dairy free panettone'], priority: 12 },
             plant_based_cooking: ['high protein vegan recipes', 'easy vegan meals', 'lentil tofu beans recipes'],
             meal_prep_planning: ['vegan meal prep', 'batch cooking vegan', 'weekly plant based meals']
         }
@@ -197,6 +240,7 @@ const CURATED_LEARNING_REEL_SOURCES = [
         profileUrl: 'https://www.youtube.com/@SimnettNutrition',
         aliases: ['simnett nutrition', 'simnettnutrition', 'derek simnett'],
         topics: {
+            vegan_panettone: { queries: ['vegan panettone', 'plant based holiday baking', 'dairy free egg free panettone'], priority: 6 },
             plant_based_cooking: ['high protein vegan meals', 'plant based fitness meals'],
             meal_prep_planning: ['easy vegan meal prep', 'high protein vegan prep'],
             protein_science: ['plant based protein tips', 'vegan protein intake'],
