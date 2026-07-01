@@ -40,6 +40,9 @@ assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Shane' }
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ profile_name: 'Fra' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'francesca_balance' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'cavazzanafrancesca' }), true);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Kay' }), true);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'kay_balance' }), true);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Kayla' }), false);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Nat' }), false);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ profile_name: 'Natalie' }), false);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'nat_balance' }), false);
@@ -69,6 +72,7 @@ const shane = manager.classifyNeedsYou(makeAlert({
 }));
 assert.strictEqual(shane.shouldRoute, true);
 assert.ok(shane.reasons.includes('always_needs_you_person'));
+assert.match(shane.label, /Kay/);
 assert.match(shane.label, /Miranda/);
 assert.match(shane.label, /Monica/);
 assert.doesNotMatch(shane.label, /Nat/);

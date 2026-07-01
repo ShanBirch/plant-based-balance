@@ -470,6 +470,7 @@ function isAlwaysNeedsYouPerson(record = {}) {
         const tokens = name.split(/\s+/).filter(Boolean);
         return tokens.includes('shane')
             || tokens.includes('fra')
+            || tokens.includes('kay')
             || tokens.includes('miranda')
             || tokens.includes('monica')
             || tokens.includes('dani')
@@ -478,6 +479,7 @@ function isAlwaysNeedsYouPerson(record = {}) {
             || name === 'francescacavazzana'
             || name === 'shane'
             || name === 'fra'
+            || name === 'kay'
             || name === 'miranda'
             || name === 'monica'
             || name === 'dani'

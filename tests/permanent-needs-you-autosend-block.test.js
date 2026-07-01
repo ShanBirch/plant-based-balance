@@ -15,13 +15,13 @@ const fraAlert = {
     },
 };
 
-const natAlert = {
+const kayAlert = {
     alert_type: 'ig_incoming_dm',
-    client_name: 'Nat',
+    client_name: 'Kay',
     data: {
         channel: 'instagram',
         scheduled_via: 'auto_send',
-        ig_username: 'nat_balance',
+        ig_username: 'kay_balance',
     },
 };
 
@@ -32,9 +32,9 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
-    sendCoach.shouldBlockPermanentNeedsYouAutomatedSend(natAlert, 'scheduled_worker'),
+    sendCoach.shouldBlockPermanentNeedsYouAutomatedSend(kayAlert, 'scheduled_worker'),
     true,
-    'general send endpoint must block Nat from scheduled auto-send'
+    'general send endpoint must block Kay from scheduled auto-send'
 );
 
 assert.strictEqual(
@@ -125,12 +125,12 @@ assert.deepStrictEqual(
 );
 
 assert.deepStrictEqual(
-    scheduledWorker.buildPermanentNeedsYouHold(natAlert),
+    scheduledWorker.buildPermanentNeedsYouHold(kayAlert),
     {
         code: 'always_needs_you_person',
         label: 'permanent Needs You client',
     },
-    'scheduled worker should hold Nat before a queued auto-send reply is sent'
+    'scheduled worker should hold Kay before a queued auto-send reply is sent'
 );
 
 assert.strictEqual(
