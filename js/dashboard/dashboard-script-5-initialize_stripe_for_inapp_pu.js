@@ -15398,7 +15398,8 @@ async function flushPendingWorkoutSaves() {
     const remaining = [];
     for (const item of pending) {
         try {
-            await saveWorkoutWithRetry(item.sets || [], user.id);
+            const savedRows = await saveWorkoutWithRetry(item.sets || [], user.id);
+            await awardWorkoutCompletionPoints(user.id, savedRows);
             console.log('Synced offline workout:', item.id);
         } catch (e) {
             console.error('Failed to sync pending workout:', item.id, e);
@@ -15592,6 +15593,7 @@ function _syncRestPresetButtons() {
 // Retry save with exponential backoff
 async function saveWorkoutWithRetry(setsToSave, userId, maxRetries = 3) {
     let remaining = [...setsToSave];
+    const savedRows = [];
     let lastError = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -15605,10 +15607,12 @@ async function saveWorkoutWithRetry(setsToSave, userId, maxRetries = 3) {
             if (result.status === 'rejected') {
                 failed.push(remaining[idx]);
                 lastError = result.reason;
+            } else if (result.value) {
+                savedRows.push(result.value);
             }
         });
 
-        if (failed.length === 0) return true; // All succeeded
+        if (failed.length === 0) return savedRows; // All succeeded
 
         remaining = failed;
         console.error(`Save attempt ${attempt + 1}: ${failed.length}/${remaining.length + (results.length - failed.length)} sets failed`, lastError);
@@ -15622,6 +15626,28 @@ async function saveWorkoutWithRetry(setsToSave, userId, maxRetries = 3) {
     }
 
     throw lastError || new Error('Failed to save ' + remaining.length + ' sets');
+}
+
+async function awardWorkoutCompletionPoints(userId, savedRows) {
+    try {
+        const workoutRefId = Array.isArray(savedRows)
+            ? savedRows.find(row => row && row.id)?.id
+            : null;
+        if (!userId || !workoutRefId) return null;
+
+        if (typeof awardPointsForWorkout === 'function') {
+            return await awardPointsForWorkout(workoutRefId);
+        }
+
+        return await window.db?.points?.awardPoints(userId, 'workout', workoutRefId, {
+            photoTimestamp: null,
+            aiConfidence: null,
+            photoHash: null
+        });
+    } catch (error) {
+        console.error('Error awarding workout completion points:', error);
+        return null;
+    }
 }
 
 // Check for unsaved workout on page load
@@ -15715,7 +15741,8 @@ async function recoverWorkout() {
     document.body.appendChild(savingDialog);
 
     try {
-        await saveWorkoutWithRetry(backup.sets, user.id);
+        const savedRows = await saveWorkoutWithRetry(backup.sets, user.id);
+        await awardWorkoutCompletionPoints(user.id, savedRows);
         console.log('✅ Recovered workout saved successfully');
 
         // Also check for personal bests and milestones
@@ -15903,7 +15930,8 @@ async function finishWorkout() {
         const user = window.currentUser;
         if(user && setsToSave.length > 0) {
              // Save workout data with retry logic to handle network issues
-             await saveWorkoutWithRetry(setsToSave, user.id);
+             const savedRows = await saveWorkoutWithRetry(setsToSave, user.id);
+             await awardWorkoutCompletionPoints(user.id, savedRows);
              console.log("✅ Workout saved to DB");
 
              // Refresh challenge progress so volume (and other workout-based) challenges
@@ -16728,11 +16756,9 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
 
     document.getElementById('view-workout-success').style.display = 'flex';
 
-    // Hide earn-points card if previously dismissed
-    if (localStorage.getItem('share_section_dismissed') === 'true') {
-        const shareCard = document.getElementById('share-section-combined');
-        if (shareCard) shareCard.style.display = 'none';
-    }
+    const shareCard = document.getElementById('share-section-combined');
+    if (shareCard) shareCard.style.display = 'block';
+    try { localStorage.removeItem('share_section_dismissed'); } catch (e) {}
 
     // Reset the share section UI back to the "take photo" step so a
     // previous workout's state doesn't carry over into this one.
