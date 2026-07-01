@@ -57,6 +57,8 @@ const DYNAMIC_LEAD_DEFAULT_MIN_LAST_INBOUND_HOURS = 22;
 const DYNAMIC_LEAD_DEFAULT_MAX_LAST_INBOUND_HOURS = 23.75;
 const DYNAMIC_LEAD_DEFAULT_MIN_QUIET_HOURS = 22;
 const DYNAMIC_LEAD_WEEKLY_CAP = 3;
+const DYNAMIC_LEAD_LATEST_CONTEXT_HOURS = 36;
+const DYNAMIC_LEAD_LATEST_CONTEXT_MAX_MESSAGES = 8;
 const CLIENT_PILOT_TARGETS = [
     {
         id: 'mon_vegan_food_pilot',
@@ -553,6 +555,9 @@ const LEAD_REEL_TOPIC_RULES = [
     },
 ];
 
+const DYNAMIC_LEAD_PET_SOCIAL_CONTEXT_RE = /\b(dog|dogs|doggo|puppy|puppies|cat|cats|kitten|kittens|pet|pets|animal|animals|rabbit|rabbits|bunny|bunnies|horse|horses|zoomies?|full speed|open field|cute name|what(?:'s| is) (?:their|her|his) name)\b/i;
+const DYNAMIC_LEAD_HEALTH_REEL_CONTEXT_RE = /\b(workout|workouts|gym|lift|lifting|squat|deadlift|bench|rdl|lunge|core|abs?|brace|bracing|protein|meal prep|meal plan|vegan|plant[-\s]?based|recipe|cook|cooking|calorie|fat loss|weight loss|muscle|hypertrophy|strength|sleep|recovery|sore|doms|deload|stress|fatigue|motivation|discipline|consistency|habit|routine)\b/i;
+
 function compactLeadText(value, max = 7000) {
     return cleanString(value, max).replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, ' video ');
 }
@@ -574,6 +579,95 @@ function leadConversationText(thread = {}, messages = []) {
         veganContextText(customData.reel_preferences),
         inboundText,
     ].filter(Boolean).join('\n'));
+}
+
+function recentDynamicLeadContextMessages(messages = [], nowMs = Date.now()) {
+    const maxAgeMs = DYNAMIC_LEAD_LATEST_CONTEXT_HOURS * 60 * 60 * 1000;
+    return [...(Array.isArray(messages) ? messages : [])]
+        .filter(message => cleanString(message?.text, 4000))
+        .filter(message => !isLearningReelOutboundSource(message?.source || ''))
+        .filter(message => !youtubeVideoIdsFromText(message?.text || '').length)
+        .sort((a, b) => {
+            const aMs = Date.parse(a?.created_at || '');
+            const bMs = Date.parse(b?.created_at || '');
+            return (Number.isFinite(bMs) ? bMs : 0) - (Number.isFinite(aMs) ? aMs : 0);
+        })
+        .filter(message => {
+            const ts = Date.parse(message?.created_at || '');
+            return !Number.isFinite(ts) || nowMs - ts <= maxAgeMs;
+        })
+        .slice(0, DYNAMIC_LEAD_LATEST_CONTEXT_MAX_MESSAGES)
+        .reverse();
+}
+
+function dynamicLeadLatestContextText(messages = [], nowMs = Date.now()) {
+    const recentMessages = recentDynamicLeadContextMessages(messages, nowMs);
+    return compactLeadText(recentMessages.map(message => {
+        const speaker = message?.direction === 'in' ? 'Lead' : 'Shannon';
+        return `${speaker}: ${message.text}`;
+    }).join('\n'), 2500);
+}
+
+function dynamicLeadLatestContextReview({ item = {}, messages = [], nowMs = Date.now() } = {}) {
+    const itemTopic = cleanString(item.topic_id || item.topicId, 80);
+    const recentMessages = recentDynamicLeadContextMessages(messages, nowMs);
+    const contextText = dynamicLeadLatestContextText(recentMessages, nowMs);
+    if (!itemTopic) {
+        return { ok: false, blocker: 'latest_context_missing_plan_topic', context_text: contextText };
+    }
+    if (!contextText) {
+        return { ok: false, blocker: 'latest_context_missing_recent_messages', context_text: '' };
+    }
+
+    if (itemTopic === PERSONAL_MUSIC_TOPIC_ID) {
+        const songSignals = uniqueSongSignals(extractSongSignalsFromMessages(recentMessages));
+        if (songSignals.length) {
+            return { ok: true, topic_ids: [PERSONAL_MUSIC_TOPIC_ID], context_text: contextText };
+        }
+        return {
+            ok: false,
+            blocker: 'latest_context_topic_mismatch',
+            topic_ids: [],
+            expected_topic_id: itemTopic,
+            context_text: contextText,
+        };
+    }
+
+    const topicEntries = topicEntriesFromLeadText(contextText);
+    const topicIds = [...new Set(topicEntries.map(entry => entry.topic_id).filter(Boolean))];
+    const petSocialContext = DYNAMIC_LEAD_PET_SOCIAL_CONTEXT_RE.test(contextText)
+        && !DYNAMIC_LEAD_HEALTH_REEL_CONTEXT_RE.test(contextText);
+    if (petSocialContext) {
+        if (itemTopic === 'bunny_reels' && topicIds.includes('bunny_reels')) {
+            return { ok: true, topic_ids: topicIds, context_text: contextText };
+        }
+        return {
+            ok: false,
+            blocker: 'latest_context_pet_social_chat',
+            topic_ids: topicIds,
+            expected_topic_id: itemTopic,
+            context_text: contextText,
+        };
+    }
+    if (!topicIds.length) {
+        return {
+            ok: false,
+            blocker: 'latest_context_no_reel_topic',
+            topic_ids: [],
+            expected_topic_id: itemTopic,
+            context_text: contextText,
+        };
+    }
+    if (!topicIds.includes(itemTopic)) {
+        return {
+            ok: false,
+            blocker: 'latest_context_topic_mismatch',
+            topic_ids: topicIds,
+            expected_topic_id: itemTopic,
+            context_text: contextText,
+        };
+    }
+    return { ok: true, topic_ids: topicIds, context_text: contextText };
 }
 
 function stableShortHash(value = '') {
@@ -2324,7 +2418,7 @@ async function createManualLearningReelNeedsYouAlert({
     }
 }
 
-async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Date.now() }) {
+async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Date.now(), messages = null }) {
     const graph = resolveThreadGraph(thread);
     if (!graph.recipientId || !graph.accountId) {
         const next = patchState(state, {
@@ -2361,6 +2455,27 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
             });
             await persistClientPilotState(thread, config, next);
             return { sent: false, blocker: timingBlock.blocker, state: next };
+        }
+    }
+
+    if (config.dynamic_lead_drip === true) {
+        const contextMessages = Array.isArray(messages) ? messages : await loadRecentThreadMessages(thread.id, nowMs);
+        const contextReview = dynamicLeadLatestContextReview({ item, messages: contextMessages, nowMs });
+        if (!contextReview.ok) {
+            const next = patchState(state, {
+                status: 'paused',
+                paused_reason: contextReview.blocker,
+                latest_context_review: {
+                    blocker: contextReview.blocker,
+                    expected_topic_id: contextReview.expected_topic_id || item.topic_id,
+                    topic_ids: contextReview.topic_ids || [],
+                    context_text: truncate(contextReview.context_text || '', 500),
+                    checked_at: new Date(nowMs).toISOString(),
+                },
+                next_send_at: new Date(nowMs + PAUSE_RECHECK_MS).toISOString(),
+            });
+            await persistClientPilotState(thread, config, next);
+            return { sent: false, blocker: contextReview.blocker, state: next };
         }
     }
 
@@ -2766,7 +2881,7 @@ async function runClientPilotDrip(config, { sendDue = true, nowMs = Date.now() }
     return runClientPilotDripForThread(thread, config, { sendDue, nowMs });
 }
 
-async function runClientPilotDripForThread(thread, config, { sendDue = true, nowMs = Date.now() } = {}) {
+async function runClientPilotDripForThread(thread, config, { sendDue = true, nowMs = Date.now(), messages = null } = {}) {
     const handle = normalizeHandle(config.handle || thread.ig_username || thread.profile_name || '');
     let state = normalizeClientPilotState(thread, config, nowMs);
     const veganSafetyRequirement = {
@@ -2840,7 +2955,7 @@ async function runClientPilotDripForThread(thread, config, { sendDue = true, now
         };
     }
 
-    const result = await sendDueClientPilotReel({ thread, config, state, item: due, nowMs });
+    const result = await sendDueClientPilotReel({ thread, config, state, item: due, nowMs, messages });
     return {
         ok: true,
         pilot_id: config.id,
@@ -2896,7 +3011,7 @@ async function runDynamicLeadDrips({ sendDue = true, nowMs = Date.now() } = {}) 
             continue;
         }
         try {
-            results.push(await runClientPilotDripForThread(thread, config, { sendDue, nowMs }));
+            results.push(await runClientPilotDripForThread(thread, config, { sendDue, nowMs, messages }));
         } catch (error) {
             console.error(`[learning-reel-drip] dynamic lead drip failed for ${thread.ig_username || thread.id}:`, error);
             results.push({
@@ -2993,6 +3108,8 @@ export const _test = {
     CLIENT_PILOT_INTERVAL_MS,
     CLIENT_PILOT_TARGETS,
     DYNAMIC_LEAD_DRIP_ID,
+    dynamicLeadLatestContextReview,
+    dynamicLeadLatestContextText,
     extractSongSignalsFromMessages,
     hasCoachRepliedSinceLastInbound,
     isDynamicLeadStage,

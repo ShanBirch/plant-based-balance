@@ -138,6 +138,81 @@ assert.strictEqual(dynamicLeadConfig.min_quiet_hours_since_last_activity, 22);
 assert.strictEqual(dynamicLeadConfig.plan_topics[0].topic_id, 'personal_music');
 assert.strictEqual(dynamicLeadConfig.plan_topics[0].open_search, true);
 assert.ok(dynamicLeadConfig.plan_topics.some(entry => entry.topic_id === 'core_training_technique'));
+
+const angelaDogMessages = [
+    {
+        id: 'a1',
+        direction: 'out',
+        text: 'oh so cute, whats their name?',
+        created_at: new Date(nowMs - 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+        id: 'a2',
+        direction: 'in',
+        text: 'Kali',
+        created_at: new Date(nowMs - 23.8 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+        id: 'a3',
+        direction: 'out',
+        text: "Kali is such a cute name. is she always that fast? Kali's got serious zoomies energy.",
+        created_at: new Date(nowMs - 23.6 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+        id: 'a4',
+        direction: 'in',
+        text: 'Haha yep',
+        created_at: new Date(nowMs - 23.4 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+        id: 'a5',
+        direction: 'out',
+        text: 'Does she only go full speed like that in the open field, or is she chaotic at home too?',
+        created_at: new Date(nowMs - 23.2 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+        id: 'a6',
+        direction: 'in',
+        text: 'Nah shes super chill at home',
+        created_at: new Date(nowMs - 22.9 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+        id: 'a7',
+        direction: 'out',
+        text: 'haha love that, Kali saves all the chaos for the open field then',
+        created_at: new Date(nowMs - 22.8 * 60 * 60 * 1000).toISOString(),
+    },
+];
+const staleFitnessLeadConfig = _test.buildDynamicLeadReelConfig({
+    id: 'thread-angela',
+    ig_username: 'angela_mylott',
+    profile_name: 'Angela',
+    channel: 'instagram',
+    lead_stage: 'qualifying',
+    goals: 'build muscle and stay consistent with training',
+    custom_data: {},
+}, angelaDogMessages, nowMs);
+assert.ok(staleFitnessLeadConfig.plan_topics.some(entry => entry.topic_id === 'muscle_gain_basics'));
+const dogContextReview = _test.dynamicLeadLatestContextReview({
+    item: { topic_id: 'workout_motivation', topic_label: 'Workout motivation' },
+    messages: angelaDogMessages,
+    nowMs,
+});
+assert.strictEqual(dogContextReview.ok, false);
+assert.strictEqual(dogContextReview.blocker, 'latest_context_pet_social_chat');
+
+const coreContextReview = _test.dynamicLeadLatestContextReview({
+    item: { topic_id: 'core_training_technique', topic_label: 'Core training technique' },
+    messages: [{
+        id: 'core1',
+        direction: 'in',
+        text: 'Core bracing and dead bugs are what I need help with.',
+        created_at: new Date(nowMs - 23 * 60 * 60 * 1000).toISOString(),
+    }],
+    nowMs,
+});
+assert.strictEqual(coreContextReview.ok, true);
+assert.ok(coreContextReview.topic_ids.includes('core_training_technique'));
 assert.strictEqual(_test.isDynamicLeadStage({ lead_stage: 'qualifying' }), true);
 assert.strictEqual(_test.isDynamicLeadStage({ lead_stage: 'invited' }), true);
 assert.strictEqual(_test.isDynamicLeadStage({ lead_stage: 'paid_client' }), false);
