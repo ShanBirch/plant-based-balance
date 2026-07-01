@@ -49,29 +49,23 @@ jobs:
         run: npx cap sync ios
 
       # --- Code Signing Setup ---
-      # Decode the .cer certificate, private key, and provisioning profile from GitHub Secrets,
+      # Decode the .cer certificate and private key from GitHub Secrets,
       # create a .p12 from them, install into a temporary keychain so xcodebuild can sign the app.
-      - name: Install Apple certificate and provisioning profile
+      - name: Install Apple certificate
         env:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
           SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_BASE64 }}
           P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
-          PROVISIONING_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
-          WIDGET_PROVISIONING_PROFILE_BASE64: ${{ secrets.BUILD_WIDGET_PROVISION_PROFILE_BASE64 }}
           KEYCHAIN_PASSWORD: ${{ github.run_id }}
         run: |
           # Decode files from base64 secrets
           CERT_PATH=$RUNNER_TEMP/distribution.cer
           KEY_PATH=$RUNNER_TEMP/signing_key.pem
           P12_PATH=$RUNNER_TEMP/build_certificate.p12
-          PROFILE_PATH=$RUNNER_TEMP/build_profile.mobileprovision
-          WIDGET_PROFILE_PATH=$RUNNER_TEMP/build_widget_profile.mobileprovision
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
           echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERT_PATH
           echo -n "$SIGNING_KEY_BASE64" | base64 --decode -o $KEY_PATH
-          echo -n "$PROVISIONING_PROFILE_BASE64" | base64 --decode -o $PROFILE_PATH
-          echo -n "$WIDGET_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $WIDGET_PROFILE_PATH
 
           # Convert .cer (DER) to .pem
           openssl x509 -inform DER -in $CERT_PATH -out $RUNNER_TEMP/distribution.pem
@@ -154,41 +148,32 @@ jobs:
           echo "=== Checking for valid codesigning identity ==="
           security find-identity -v -p codesigning $KEYCHAIN_PATH | grep "Apple Distribution" && echo "✅ Apple Distribution identity found" || echo "❌ WARNING: No Apple Distribution identity found!"
 
-          # Install the main app and widget provisioning profiles.
+          # Do not install provisioning profiles from secrets here. The app
+          # needs HealthKit, Push, and App Groups in the signed IPA, so
+          # xcodebuild must create or fetch fresh profiles with
+          # -allowProvisioningUpdates.
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          # Clear any leftover profiles so Xcode uses the selected profiles.
           rm -f ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision || true
-          cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/Balance.mobileprovision
-          cp "$WIDGET_PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/BalanceNutritionWidget.mobileprovision
-
-          echo "=== App profile entitlements ==="
-          security cms -D -i $PROFILE_PATH 2>/dev/null | grep -A2 "healthkit\|application-groups\|aps-environment\|Entitlements\|com.apple.developer" || echo "(stale profile: missing current capabilities is expected)"
-          echo "=== Widget profile entitlements ==="
-          security cms -D -i $WIDGET_PROFILE_PATH 2>/dev/null | grep -A2 "application-groups\|Entitlements\|com.apple.developer" || echo "(widget profile entitlements unavailable)"
+          echo "Cleared local provisioning profiles. xcodebuild will manage profiles for this build."
 
       # --- Build signed IPA for real devices ---
-      # Archive unsigned first, then let exportArchive perform App Store
-      # distribution signing. This avoids stale named profiles during archive.
+      # Archive signed so the app entitlements are applied before export.
       - name: Build iOS app (signed for device)
         env:
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          IOS_APP_PROFILE_SPECIFIER: ${{ vars.IOS_APP_PROFILE_SPECIFIER }}
-          IOS_WIDGET_PROFILE_SPECIFIER: ${{ vars.IOS_WIDGET_PROFILE_SPECIFIER }}
         working-directory: ios/App
         run: |
           # Install API key so xcodebuild can talk to App Store Connect
           mkdir -p ~/.private_keys
           echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
-          APP_PROFILE_SPECIFIER="${IOS_APP_PROFILE_SPECIFIER:-Balance}"
-          WIDGET_PROFILE_SPECIFIER="${IOS_WIDGET_PROFILE_SPECIFIER:-BalanceNutritionWidget}"
 
           # NOTE: We deliberately do NOT pass signing build settings as CLI
           # overrides. xcodebuild cascades CLI build settings to ALL targets,
           # including Swift Package dependencies like Firebase which don't
-          # support provisioning profiles. Release signing is configured on
-          # the app and widget targets in project.pbxproj.
+          # support provisioning profiles. Automatic release signing is
+          # configured on the app and widget targets in project.pbxproj.
           xcodebuild \
             -project App.xcodeproj \
             -scheme App \
@@ -199,17 +184,13 @@ jobs:
             -authenticationKeyPath ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8 \
             -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
+            -allowProvisioningUpdates \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
             archive
 
-          # The archive is deliberately unsigned. exportArchive performs the
-          # App Store distribution signing in the next step.
           echo ""
           echo "=================================================="
-          echo "=== UNSIGNED ARCHIVE CREATED ==="
+          echo "=== SIGNED ARCHIVE CREATED ==="
           echo "=================================================="
           APP_PATH="$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app"
           if [ -d "$APP_PATH" ]; then
@@ -242,21 +223,52 @@ jobs:
               fi
             fi
           else
-            echo "App.app not found at $APP_PATH"
+            echo "::error::App.app not found at $APP_PATH"
+            exit 1
           fi
+
+          ARCHIVE_ENTITLEMENTS="$RUNNER_TEMP/archive-entitlements.plist"
+          codesign -d --entitlements :- "$APP_PATH" > "$ARCHIVE_ENTITLEMENTS" 2>/dev/null
+          cat "$ARCHIVE_ENTITLEMENTS"
+
+          for entitlement in \
+            "com.apple.developer.healthkit" \
+            "aps-environment" \
+            "com.apple.security.application-groups"
+          do
+            if ! grep -q "$entitlement" "$ARCHIVE_ENTITLEMENTS"; then
+              echo "::error::Missing entitlement in signed archive: $entitlement"
+              exit 1
+            fi
+          done
+
+          if [ ! -f "$APP_PATH/embedded.mobileprovision" ]; then
+            echo "::error::Signed archive is missing embedded.mobileprovision"
+            exit 1
+          fi
+
+          PROFILE_XML=$(security cms -D -i "$APP_PATH/embedded.mobileprovision" 2>/dev/null)
+          echo "$PROFILE_XML" | grep -B1 -A2 "healthkit\|application-groups\|aps-environment\|UUID\|Name\b" | head -60 || true
+
+          for entitlement in \
+            "com.apple.developer.healthkit" \
+            "aps-environment" \
+            "com.apple.security.application-groups"
+          do
+            if ! echo "$PROFILE_XML" | grep -q "$entitlement"; then
+              echo "::error::Embedded provisioning profile is missing entitlement: $entitlement"
+              exit 1
+            fi
+          done
 
       - name: Export IPA
         env:
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          IOS_APP_PROFILE_SPECIFIER: ${{ vars.IOS_APP_PROFILE_SPECIFIER }}
-          IOS_WIDGET_PROFILE_SPECIFIER: ${{ vars.IOS_WIDGET_PROFILE_SPECIFIER }}
         run: |
           mkdir -p ~/.private_keys
           echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
-          APP_PROFILE_SPECIFIER="${IOS_APP_PROFILE_SPECIFIER:-Balance}"
-          WIDGET_PROFILE_SPECIFIER="${IOS_WIDGET_PROFILE_SPECIFIER:-BalanceNutritionWidget}"
 
           cat > $RUNNER_TEMP/ExportOptions.plist <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
@@ -268,16 +280,9 @@ jobs:
               <key>teamID</key>
               <string>BPDFP9M7JU</string>
               <key>signingStyle</key>
-              <string>manual</string>
+              <string>automatic</string>
               <key>signingCertificate</key>
               <string>Apple Distribution</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>com.fitgotchi.app</key>
-                  <string>${APP_PROFILE_SPECIFIER}</string>
-                  <key>com.fitgotchi.app.BalanceNutritionWidget</key>
-                  <string>${WIDGET_PROFILE_SPECIFIER}</string>
-              </dict>
               <key>destination</key>
               <string>export</string>
           </dict>
@@ -290,7 +295,61 @@ jobs:
             -exportPath $RUNNER_TEMP/export \
             -authenticationKeyPath ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8 \
             -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
+            -allowProvisioningUpdates
+
+      - name: Verify exported IPA entitlements
+        run: |
+          IPA_PATH="$RUNNER_TEMP/export/App.ipa"
+          if [ ! -f "$IPA_PATH" ]; then
+            echo "::error::IPA not found at $IPA_PATH"
+            exit 1
+          fi
+
+          CHECK_DIR="$RUNNER_TEMP/ipa-check"
+          rm -rf "$CHECK_DIR"
+          mkdir -p "$CHECK_DIR"
+          unzip -q "$IPA_PATH" -d "$CHECK_DIR"
+
+          APP_PATH=$(find "$CHECK_DIR/Payload" -maxdepth 1 -name "*.app" -type d | head -n 1)
+          if [ -z "$APP_PATH" ] || [ ! -d "$APP_PATH" ]; then
+            echo "::error::No .app found inside exported IPA"
+            exit 1
+          fi
+
+          EXPORTED_ENTITLEMENTS="$RUNNER_TEMP/exported-entitlements.plist"
+          codesign -d --entitlements :- "$APP_PATH" > "$EXPORTED_ENTITLEMENTS" 2>/dev/null
+          cat "$EXPORTED_ENTITLEMENTS"
+
+          for entitlement in \
+            "com.apple.developer.healthkit" \
+            "aps-environment" \
+            "com.apple.security.application-groups"
+          do
+            if ! grep -q "$entitlement" "$EXPORTED_ENTITLEMENTS"; then
+              echo "::error::Missing entitlement in exported IPA: $entitlement"
+              exit 1
+            fi
+          done
+
+          if [ ! -f "$APP_PATH/embedded.mobileprovision" ]; then
+            echo "::error::Exported IPA is missing embedded.mobileprovision"
+            exit 1
+          fi
+
+          PROFILE_XML=$(security cms -D -i "$APP_PATH/embedded.mobileprovision" 2>/dev/null)
+          echo "$PROFILE_XML" | grep -B1 -A2 "healthkit\|application-groups\|aps-environment\|UUID\|Name\b" | head -60 || true
+
+          for entitlement in \
+            "com.apple.developer.healthkit" \
+            "aps-environment" \
+            "com.apple.security.application-groups"
+          do
+            if ! echo "$PROFILE_XML" | grep -q "$entitlement"; then
+              echo "::error::Exported provisioning profile is missing entitlement: $entitlement"
+              exit 1
+            fi
+          done
 
       - name: Upload IPA to TestFlight
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_to_testflight }}
