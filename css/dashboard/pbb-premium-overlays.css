@@ -8442,3 +8442,34 @@ html[data-pbb-theme="light"] #cohort-info-modal button[onclick*="openXpGuidePage
     color: #d8ccff !important;
     -webkit-text-fill-color: #d8ccff !important;
 }
+
+#learning-content .pbb-quiz-battle-screen :where([style*="#10b981"]) {
+    color: #34d399 !important;
+    -webkit-text-fill-color: #34d399 !important;
+}
+
+#learning-content .pbb-quiz-battle-screen :where([style*="#fbbf24"]) {
+    color: #facc15 !important;
+    -webkit-text-fill-color: #facc15 !important;
+}
+
+#learning-content .pbb-quiz-battle-screen :where([style*="#ef4444"]) {
+    color: #f87171 !important;
+    -webkit-text-fill-color: #f87171 !important;
+}
+
+#learning-content .pbb-quiz-battle-screen button[onclick*="showQuizBattleInviteModal"] {
+    background: linear-gradient(135deg, #7c3aed, #6366f1) !important;
+    border: none !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    box-shadow: 0 12px 28px rgba(99, 102, 241, 0.28) !important;
+}
+
+#learning-content .pbb-quiz-battle-screen button[onclick*="renderLearningHome"] {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 2px solid rgba(255, 255, 255, 0.15) !important;
+    color: #f8fafc !important;
+    -webkit-text-fill-color: #f8fafc !important;
+    box-shadow: none !important;
+}
