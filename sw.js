@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v229'; // v229: cache-bust auth timeout fallback; v228: cache-bust quiz duel and auth startup scripts
+const CACHE_NAME = 'pbb-app-v230'; // v230: lock 6-week cohort leave path; v229: cache-bust auth timeout fallback
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

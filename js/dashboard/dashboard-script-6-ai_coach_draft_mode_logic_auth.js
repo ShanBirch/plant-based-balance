@@ -6601,12 +6601,15 @@ async function openChallengeLeaderboard(challengeId) {
             const exitBtnContainer = document.getElementById('challenge-exit-btn-container');
 
             const isCompleted = challenge.status === 'completed' || (daysRemaining === 0 && endDate < now);
+            const isLockedSystemCohort = (typeof isCohortCashPrizeChallenge === 'function')
+                ? isCohortCashPrizeChallenge(challenge)
+                : !!challenge.is_system_cohort;
 
             if (isCompleted) {
                 // Hide days remaining, show exit button instead of leave
                 if (daysRemainingEl) daysRemainingEl.style.display = 'none';
                 if (leaveBtnContainer) leaveBtnContainer.style.display = 'none';
-                if (exitBtnContainer) exitBtnContainer.style.display = 'block';
+                if (exitBtnContainer) exitBtnContainer.style.display = isLockedSystemCohort ? 'none' : 'block';
 
                 // Defer the completion banner until AFTER leaderboard loads,
                 // so we can use actual rank data instead of potentially-null winner_id.
@@ -6617,7 +6620,7 @@ async function openChallengeLeaderboard(challengeId) {
                 // Active challenge — hide banner, show days remaining & leave button
                 if (completeBanner) completeBanner.style.display = 'none';
                 if (daysRemainingEl) daysRemainingEl.style.display = 'block';
-                if (leaveBtnContainer) leaveBtnContainer.style.display = 'block';
+                if (leaveBtnContainer) leaveBtnContainer.style.display = isLockedSystemCohort ? 'none' : 'block';
                 if (exitBtnContainer) exitBtnContainer.style.display = 'none';
             }
 
@@ -6960,8 +6963,11 @@ async function refreshLeaderboardAfterCompletion(challengeId) {
         const leaveBtnContainer = document.getElementById('challenge-leave-btn-container');
         const exitBtnContainer = document.getElementById('challenge-exit-btn-container');
         const daysRemainingEl = document.getElementById('challenge-days-remaining');
+        const isLockedSystemCohort = (typeof isCohortCashPrizeChallenge === 'function')
+            ? isCohortCashPrizeChallenge(window._currentChallengeDetails)
+            : !!window._currentChallengeDetails?.is_system_cohort;
         if (leaveBtnContainer) leaveBtnContainer.style.display = 'none';
-        if (exitBtnContainer) exitBtnContainer.style.display = 'block';
+        if (exitBtnContainer) exitBtnContainer.style.display = isLockedSystemCohort ? 'none' : 'block';
         if (daysRemainingEl) daysRemainingEl.style.display = 'none';
     } catch (e) {
         console.warn('⚔️ Could not refresh leaderboard after completion:', e);
@@ -7427,6 +7433,17 @@ async function leaveCurrentChallenge() {
         return;
     }
     
+    const challengeDetails = window._currentChallengeDetails || {};
+    const isLockedSystemCohort = (typeof isCohortCashPrizeChallenge === 'function')
+        ? isCohortCashPrizeChallenge(challengeDetails)
+        : !!challengeDetails.is_system_cohort;
+    if (isLockedSystemCohort) {
+        const message = 'This challenge is managed by Balance and cannot be left from the app.';
+        if (typeof showToast === 'function') showToast(message, 'info');
+        else alert(message);
+        return;
+    }
+
     if (!confirm('Are you sure you want to leave this challenge? If you are still pending start, your entry fee will be refunded. If you\'re the last participant, the challenge will be cancelled.')) {
         console.log('⚔️ [leaveCurrentChallenge] User cancelled confirmation');
         return;

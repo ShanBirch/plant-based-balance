@@ -198,13 +198,28 @@ DECLARE
     v_creator_id UUID;
     v_entry_fee INTEGER;
     v_user_paid BOOLEAN;
+    v_is_system_cohort BOOLEAN;
+    v_cohort_type TEXT;
     other_user_id UUID;
 BEGIN
     RAISE NOTICE '[LeaveChallenge] User % leaving %', p_user_id, p_challenge_id;
 
+    IF auth.uid() IS NOT NULL AND auth.uid() <> p_user_id THEN
+        RETURN jsonb_build_object('error', 'not_allowed', 'message', 'You can only leave your own challenge.');
+    END IF;
+
     -- 1. Get challenge context
-    SELECT status, creator_id, entry_fee INTO v_challenge_status, v_creator_id, v_entry_fee
+    SELECT status, creator_id, entry_fee, COALESCE(is_system_cohort, FALSE), cohort_type
+    INTO v_challenge_status, v_creator_id, v_entry_fee, v_is_system_cohort, v_cohort_type
     FROM public.challenges WHERE id = p_challenge_id;
+
+    IF v_challenge_status IS NULL THEN
+        RETURN jsonb_build_object('error', 'not_found', 'message', 'Challenge not found.');
+    END IF;
+
+    IF v_is_system_cohort = TRUE OR v_cohort_type IN ('transform_30', 'plant_based_30', 'manual_kayla_30') THEN
+        RETURN jsonb_build_object('error', 'system_cohort_locked', 'message', 'This challenge is managed by Balance and cannot be left from the app.');
+    END IF;
 
     SELECT has_paid INTO v_user_paid
     FROM public.challenge_participants
@@ -215,9 +230,13 @@ BEGIN
     SET status = 'left', left_at = NOW()
     WHERE challenge_id = p_challenge_id AND user_id = p_user_id;
 
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('error', 'not_participant', 'message', 'You are not in this challenge.');
+    END IF;
+
     -- 3. Refund if the challenge is still pending (didn't start yet)
     IF v_challenge_status = 'pending' AND v_user_paid = TRUE THEN
-        PERFORM public.credit_coins(p_user_id, v_entry_fee, 'refund', 'Refund for cancelled challenge entry');
+        PERFORM public.credit_coins(p_user_id, COALESCE(v_entry_fee, 0), 'refund', 'Refund for cancelled challenge entry');
         RAISE NOTICE '[LeaveChallenge] Refunded % coins to %', v_entry_fee, p_user_id;
     END IF;
 
@@ -235,7 +254,7 @@ BEGIN
         -- Refund everyone else if we just cancelled a pending challenge
         IF v_challenge_status = 'pending' THEN
             FOR other_user_id IN (SELECT user_id FROM public.challenge_participants WHERE challenge_id = p_challenge_id AND status = 'accepted' AND has_paid = TRUE) LOOP
-                PERFORM public.credit_coins(other_user_id, v_entry_fee, 'refund', 'Challenge cancelled - entry fee refunded');
+                PERFORM public.credit_coins(other_user_id, COALESCE(v_entry_fee, 0), 'refund', 'Challenge cancelled - entry fee refunded');
             END LOOP;
         END IF;
 
