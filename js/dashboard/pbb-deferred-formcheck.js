@@ -654,7 +654,7 @@
             <div class="workout-feed-share-content">
                 <div class="workout-feed-share-panel" style="background:linear-gradient(135deg,#111827 0%,#b91c1c 100%); color:white; border:none;">
                     <div style="font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; opacity:0.85; margin-bottom:6px;">Stay in workout mode</div>
-                    <div style="font-size:1.25rem; font-weight:900; line-height:1.15; margin-bottom:8px;">Record a set, post it to Feed, and earn +10 XP once a day</div>
+                    <div style="font-size:1.25rem; font-weight:900; line-height:1.15; margin-bottom:8px;">Record a set, post it to Feed, and earn +20 XP once a day</div>
                     <div style="font-size:0.86rem; line-height:1.45; opacity:0.9;">Open the camera or choose a clip from Photos, then keep your workout running while it uploads.</div>
                 </div>
 

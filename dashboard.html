@@ -7492,7 +7492,7 @@ if(!window._pbbIsIOSSafari) {
             <svg viewBox="0 0 24 24" style="width:19px; height:19px; color:#fff; fill:#fff; -webkit-text-fill-color:#fff; flex-shrink:0;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
             <div style="display:flex; flex-direction:column; gap:2px; min-width:0; color:#fff; -webkit-text-fill-color:#fff;">
                 <span style="font-size:0.92rem; line-height:1; color:#fff; -webkit-text-fill-color:#fff;">Share a Set</span>
-                <span style="font-size:0.72rem; font-weight:700; opacity:0.82; line-height:1.1; color:#fff; -webkit-text-fill-color:#fff;">First share each day earns +10 XP</span>
+                <span style="font-size:0.72rem; font-weight:700; opacity:0.82; line-height:1.1; color:#fff; -webkit-text-fill-color:#fff;">First share each day earns +20 XP</span>
             </div>
         </button>
 
@@ -12572,7 +12572,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
-    { tab:'movement-tab', sel:'#workout-share-set-btn', title:'Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn'); } },
+    { tab:'movement-tab', sel:'#workout-share-set-btn', title:'Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +20 XP.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Post-workout Share', body:"Finish a workout, then tap the single Share button to post the workout, a PB, or a photo to Feed." },
     { tab:'dashboard', sel:'#weekly-progress-photo-card,#weekly-progress-photo-done-card', title:'Progress photos to Instagram', body:"After your weekly progress photos save, tap IG Story to share a Balance progress card straight to Instagram.", condition: function(){ return !!document.querySelector('#weekly-progress-photo-card,#weekly-progress-photo-done-card'); } },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
@@ -13586,11 +13586,11 @@ if(!window._pbbIsIOSSafari) {
     condition: function(){ return !!document.querySelector('.feed-post-actions-btn'); }
   });
   allFeatures.push({
-    id: 'share-a-set-in-app-video-camera-v5',
+    id: 'share-a-set-20-points-v6',
     tab: 'movement-tab',
     sel: '#workout-share-set-btn',
     title: 'Share a Set',
-    body: "Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode.",
+    body: "Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +20 XP.",
     condition: function(){ return !!document.getElementById('workout-share-set-btn'); }
   });
   allFeatures.push({
@@ -14809,7 +14809,7 @@ if (window._pbbIsIOSSafari) {
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>
-<script src="js/dashboard/pbb-deferred-formcheck.js?v=8"></script>
+<script src="js/dashboard/pbb-deferred-formcheck.js?v=9"></script>
 
 
 <script>
