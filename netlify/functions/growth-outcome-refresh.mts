@@ -542,6 +542,5 @@ export default async function handler(req: Request): Promise<Response> {
 }
 
 export const config = {
-    // TEMP disabled 2026-07-01 during Supabase Auth incident.
-    // schedule: "@daily",
+    schedule: "@daily",
 };
