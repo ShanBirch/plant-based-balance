@@ -21,12 +21,16 @@ assert.ok(block.includes('If a similar reassurance already appeared recently, do
 assert.ok(block.includes('Live edit pattern from the last 30 days'), 'learns from recent edits that remove optional curiosity questions');
 assert.ok(block.includes('reaction + extra question'), 'prevents reaction-plus-question overreach');
 assert.ok(block.includes('reaction-only pattern'), 'teaches examples where Shannon keeps only the reaction');
+assert.ok(block.includes('Lead/rapport question ladders'), 'prevents same-topic rapport question ladders');
+assert.ok(block.includes('do not mine the same pocket'), 'teaches reaction before sibling rapport follow-up questions');
 assert.ok(block.includes('Avoid neat life-coach prompts'), 'prevents polished life-coach follow-up prompts in casual rapport');
 assert.ok(block.includes('before Hawaii feels real'), 'captures the Hawaii-style AI-ish question pattern');
 assert.ok(block.includes('Current-status answers are answers'), 'prevents asking for status they just gave');
 assert.ok(block.includes('just pain when i walk'), 'captures Fra-style pain status repeat');
 assert.ok(clientContextSource.includes('Do not warn just because a lead/client reply is short and reaction-only'), 'draft QA respects reaction-only Shannon sends');
 assert.ok(clientContextSource.includes('Warn if the draft tacks an optional curiosity question'), 'draft QA catches unnecessary curiosity questions');
+assert.ok(clientContextSource.includes('near-duplicate same-topic question'), 'draft QA catches same-lane rapport follow-up questions');
+assert.ok(clientContextSource.includes('sibling same-topic follow-up'), 'draft QA treats repeated rapport questions as a warning, not a ban');
 assert.ok(clientContextSource.includes('Warn when the draft asks for a current status'), 'draft QA catches redundant current-status questions');
 assert.ok(block.includes('Vegetarian voice guard'), 'keeps meat praise out of Shannon DM tuning');
 assert.ok(block.includes('do not call meat, bacon, fish, or other animal products yum/elite/delicious'), 'prevents praising meat in Shannon voice');

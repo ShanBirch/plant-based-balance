@@ -21,7 +21,9 @@ const {
 const sparringSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/dm-sparring-gym.js'), 'utf8');
 assert.ok(sparringSource.includes('Earn the next response without interrogating'), 'sparring coach prompt should avoid question pressure');
 assert.ok(sparringSource.includes('Recent Shannon edits often cut optional curiosity questions'), 'sparring coach prompt should learn reaction-only edits');
+assert.ok(sparringSource.includes('do not mine the same small topic'), 'sparring coach prompt should avoid same-topic rapport question ladders');
 assert.ok(sparringSource.includes('Do not score a strong reaction-only reply as no_progression'), 'sparring judge should not penalize valid reaction-only replies');
+assert.ok(sparringSource.includes('sibling same-topic follow-up'), 'sparring judge should score repeated rapport questions lower without banning them');
 
 const firstPick = choosePersonas({ count: 3, seed: 'same-seed' }).map(p => p.key);
 const secondPick = choosePersonas({ count: 3, seed: 'same-seed' }).map(p => p.key);
