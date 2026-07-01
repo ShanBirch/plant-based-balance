@@ -569,8 +569,43 @@
             const SUPABASE_URL = 'https://hzapaorxqboevxnumxkv.supabase.co';
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6YXBhb3J4cWJvZXZ4bnVteGt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NjA3MTYsImV4cCI6MjA4NDIzNjcxNn0.L8ZuxevbB1pNx2nXtIiiQ-6dZSeqfdGuiEvscljOxq0';
 
+            function withAuthTimeout(promise, timeoutMs, label) {
+                let timeoutId;
+                return new Promise((resolve, reject) => {
+                    timeoutId = setTimeout(() => {
+                        const error = new Error((label || 'auth request') + ' timed out');
+                        error.name = 'PbbAuthTimeout';
+                        reject(error);
+                    }, timeoutMs);
+
+                    Promise.resolve(promise).then(
+                        value => {
+                            clearTimeout(timeoutId);
+                            resolve(value);
+                        },
+                        error => {
+                            clearTimeout(timeoutId);
+                            reject(error);
+                        }
+                    );
+                });
+            }
+
+            function normalizeLoginError(error) {
+                if (error && error.name === 'PbbAuthTimeout') {
+                    return new Error('Login is taking too long. Please wait a minute and try again.');
+                }
+                return error;
+            }
+
             // Store as window.supabaseClient so it's accessible from other functions
-            window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true,
+                    detectSessionInUrl: true
+                }
+            });
             const supabase = window.supabaseClient;
 
             // Initialize Stripe (for in-app purchases)
@@ -593,12 +628,16 @@
                 },
 
                 async signIn(email, password) {
-                    const { data, error } = await supabase.auth.signInWithPassword({
-                        email,
-                        password
-                    });
-                    if (error) throw error;
-                    return data;
+                    try {
+                        const { data, error } = await withAuthTimeout(supabase.auth.signInWithPassword({
+                            email,
+                            password
+                        }), 18000, 'Login');
+                        if (error) throw error;
+                        return data;
+                    } catch (error) {
+                        throw normalizeLoginError(error);
+                    }
                 },
 
                 async signOut() {
@@ -607,13 +646,13 @@
                 },
 
                 async getSession() {
-                    const { data, error } = await supabase.auth.getSession();
+                    const { data, error } = await withAuthTimeout(supabase.auth.getSession(), 3000, 'Session check');
                     if (error) throw error;
                     return data.session;
                 },
 
                 async getUser() {
-                    const { data, error } = await supabase.auth.getUser();
+                    const { data, error } = await withAuthTimeout(supabase.auth.getUser(), 3500, 'User check');
                     if (error) throw error;
                     return data.user;
                 },
@@ -763,13 +802,23 @@
     <script>
         async function initializePage() {
             // Check if already logged in
-            const session = await authHelpers.getSession();
+            let session = null;
+            try {
+                session = await authHelpers.getSession();
+            } catch (error) {
+                console.warn('Login startup session check skipped:', error);
+            }
             if (session) {
-                const user = await authHelpers.getUser();
+                let user = session.user || null;
+                try {
+                    user = await authHelpers.getUser();
+                } catch (error) {
+                    console.warn('Login startup user validation skipped, using session user:', error);
+                }
 
                 // Process pending referral code (e.g. Google OAuth returning with a session)
                 const pendingReferral = sessionStorage.getItem('balance_referral_code');
-                if (pendingReferral && user.id) {
+                if (pendingReferral && user && user.id) {
                     try {
                         // Check if user was just created (within last 2 minutes = likely just signed up via OAuth)
                         const createdAt = new Date(user.created_at);

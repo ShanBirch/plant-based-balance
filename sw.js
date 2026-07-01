@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v228'; // v228: cache-bust quiz duel and auth startup scripts; v227: cache-bust iOS notification reminder support
+const CACHE_NAME = 'pbb-app-v229'; // v229: cache-bust auth timeout fallback; v228: cache-bust quiz duel and auth startup scripts
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -7,14 +7,16 @@ const ASSETS = [
   './xp-guide.html',
   './assets/balance_logo.png',
   './welcome.html',
-  './lib/supabase.js',
-  './lib/auth-guard.js',
+  './lib/supabase.js?v=5',
+  './lib/auth-guard.js?v=8',
   './lib/native-push.js?v=38',
   './login.html',
   './exercise_videos.js?v=20260628-pushup-progression',
   './workout_library.js',
   './workout_library_extended.js',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=115',
+  './js/dashboard/script_part_2.js?v=5',
+  './js/dashboard/dashboard-script-3-1_get_user_data.js?v=57',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=117',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream',
   './js/dashboard/dashboard-script-10-points_widget_functions.js?v=9',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=7',
