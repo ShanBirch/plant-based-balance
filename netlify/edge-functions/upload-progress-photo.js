@@ -91,7 +91,7 @@ async function loadProgressPhotoAlertTarget(userId) {
 
 function buildProgressPhotoMessage(clientName) {
     const name = cleanFirstName(clientName);
-    return `hey ${name}, just saw your progress photos come through. awesome job getting them done this week — i'll have a proper look and we can use these to track the changes over the next few weeks 💪`;
+    return `hey ${name}, just saw your progress photos come through. awesome job getting them done this week, i'll have a proper look and we can use these to track the changes over the next few weeks 💪`;
 }
 
 async function insertProgressPhotoNeedsYouAlert({ userId, publicUrl, fileName, contentType, sizeBytes }) {
