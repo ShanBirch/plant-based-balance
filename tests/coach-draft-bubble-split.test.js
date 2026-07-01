@@ -4,6 +4,7 @@ const {
     applyPhoneAutocorrectCapitalization,
     formatTimedConversationLine,
     normalizeCoachDraftText,
+    normalizeGeneratedCoachDraftText,
     sanitizeVisibleOutboundDmText,
     splitCoachDraftIntoDmBubbles,
     stripLeadingGreeting,
@@ -107,6 +108,16 @@ assert.deepStrictEqual(
 assert.strictEqual(
     applyPhoneAutocorrectCapitalization("yeah that makes sense. i'm keen to see how that goes"),
     "Yeah that makes sense. I'm keen to see how that goes"
+);
+
+assert.strictEqual(
+    normalizeGeneratedCoachDraftText("yeah perfect, that's fine. keep using MFP if it helps you.\ni think I set it up"),
+    "Yeah perfect, that's fine. Keep using MFP if it helps you.\nI think I set it up"
+);
+
+assert.strictEqual(
+    normalizeGeneratedCoachDraftText("yeah that works. i\u2019m checking it now"),
+    "Yeah that works. I\u2019m checking it now"
 );
 
 assert.strictEqual(

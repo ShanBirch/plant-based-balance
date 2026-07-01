@@ -9,6 +9,7 @@
 const {
     supabaseQuery,
     callGeminiFallback,
+    normalizeGeneratedCoachDraftText,
     stripLeadingGreeting,
     truncate,
     fetchVideoAsGeminiFileData,
@@ -127,6 +128,7 @@ Reply with just the message text.`;
     if (!draftText.trim()) {
         return response(200, { skipped: 'empty_draft' });
     }
+    draftText = normalizeGeneratedCoachDraftText(draftText);
 
     const nextData = {
         ...data,

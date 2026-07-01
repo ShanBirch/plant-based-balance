@@ -482,7 +482,7 @@ RESPONSE STYLE:
 - Keep responses concise and actionable
 - For follow-up triage, keep the default answer to the top 3-5 people. Shannon gets overwhelmed by giant lists.
 - When a stored outbound only says "Message sent", say the exact text was not captured instead of pretending you know it.
-- For follow-up drafts, preserve Shannon's voice and do not pitch the challenge unless the conversation already supports it.
+- For follow-up drafts, preserve Shannon's voice with normal phone autocorrect casing. Capitalise standalone "I" and the first word after a full stop. Do not pitch the challenge unless the conversation already supports it.
 
 IMPORTANT:
 - You are NOT talking to a client. You are talking to Shannon the coach/admin.
@@ -590,7 +590,7 @@ Shannon: "After New Zealand I'll throw you on a 4 Week Reset Protocol, designed 
 
 SHANNON'S WRITING STYLE RULES (for check-in reviews and client messages):
 - Keep responses punchy and conversational, like texting a mate
-- Use lowercase naturally: "i love that attitude", "hows your week", "its just the begining"
+- Use normal phone autocorrect casing: capitalise standalone "I" and the first word after a full stop. Casual fragments and Shannon-style typos are fine.
 - Natural typos are OK and GOOD: "aweosme", "arnt", "begining", "dam", "cuz"
 - Use "n" instead of "and": "bangers n mash"
 - Use "ya" instead of "you": "Creating something nice for ya!"
@@ -1191,12 +1191,12 @@ function draftFollowUpLine(row: any): string {
     return `**${row.name || row.handle}**: context is missing here. Open the thread before drafting so we don't send a blind bump.`;
   }
   if (hasOpenFollowUpHandle(lastOutbound)) {
-    return `**${row.name || row.handle}**: "Hey ${name}, just checking this didn't get buried. how did you end up going with it?"`;
+    return `**${row.name || row.handle}**: "Hey ${name}, just checking this didn't get buried. How did you end up going with it?"`;
   }
   if (lastInbound) {
-    return `**${row.name || row.handle}**: "Hey ${name}, just thought of this again. how's your day going?"`;
+    return `**${row.name || row.handle}**: "Hey ${name}, just thought of this again. How's your day going?"`;
   }
-  return `**${row.name || row.handle}**: "Hey ${name}, hope your week's been good. how are you travelling?"`;
+  return `**${row.name || row.handle}**: "Hey ${name}, hope your week's been good. How are you travelling?"`;
 }
 
 async function answerFollowUpTarget(query: string, rows: any[], chatHistory?: any[]): Promise<LoopResult | null> {

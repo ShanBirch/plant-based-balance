@@ -65,6 +65,7 @@ const {
     callVertexGeminiMultimodal,
     normalizeCoachDraftChunks,
     normalizeCoachDraftText,
+    normalizeGeneratedCoachDraftText,
     splitCoachDraftIntoDmBubbles,
     stripLeadingGreeting,
     truncate,
@@ -965,6 +966,7 @@ function finalizeDraftChunksFromRawText(rawText, {
             .map((c, i) => i === 0
                 ? stripLeadingGreeting(c, leadName, { allowGreeting: allowDailyGreeting })
                 : stripLeadingGreeting(c, leadName))
+            .map(normalizeGeneratedCoachDraftText)
             .filter(Boolean)
     );
     if (cleaned.length) return suppressClientLinkHandoff(repairMissingLink(cleaned)).slice(0, maxChunks);
@@ -978,6 +980,7 @@ function finalizeDraftChunksFromRawText(rawText, {
             .map((c, i) => i === 0
                 ? stripLeadingGreeting(c, leadName, { allowGreeting: allowDailyGreeting })
                 : stripLeadingGreeting(c, leadName))
+            .map(normalizeGeneratedCoachDraftText)
             .filter(Boolean)
     );
     return suppressClientLinkHandoff(repairMissingLink(unfiltered)).slice(0, maxChunks);
@@ -985,20 +988,20 @@ function finalizeDraftChunksFromRawText(rawText, {
 
 function buildEmptyMediaDraftFallbackChunks({ mediaDecode = {}, currentMessageText = '' } = {}) {
     if (isBareStoryMentionNotificationText(currentMessageText)) {
-        return ['oh hell yeah!'];
+        return [normalizeGeneratedCoachDraftText('oh hell yeah!')];
     }
     const current = replaceIgMediaMarkers(String(currentMessageText || ''), { photo: 'photo', audio: 'voice note', video: 'video' }).toLowerCase();
     const audioCount = Number(mediaDecode.audio_url_count || mediaDecode.audioUrlCount || 0);
     const photoCount = Number(mediaDecode.photo_url_count || mediaDecode.image_url_count || mediaDecode.photoUrlCount || 0);
     const videoCount = Number(mediaDecode.video_url_count || mediaDecode.videoUrlCount || 0);
     if (audioCount > 0 || /\bvoice note|audio\b/.test(current)) {
-        return ['i got your voice note but it didn\'t come through clearly on my end. can you send me the gist quickly?'];
+        return [normalizeGeneratedCoachDraftText('i got your voice note but it didn\'t come through clearly on my end. can you send me the gist quickly?')];
     }
     if (photoCount > 0 || /\bphoto|image|pic|picture\b/.test(current)) {
-        return ['that photo didn\'t come through clearly on my end. can you send it again?'];
+        return [normalizeGeneratedCoachDraftText('that photo didn\'t come through clearly on my end. can you send it again?')];
     }
     if (videoCount > 0 || /\bvideo|reel|clip\b/.test(current)) {
-        return ['that video didn\'t come through clearly on my end. can you send it again or type the gist?'];
+        return [normalizeGeneratedCoachDraftText('that video didn\'t come through clearly on my end. can you send it again or type the gist?')];
     }
     return [];
 }

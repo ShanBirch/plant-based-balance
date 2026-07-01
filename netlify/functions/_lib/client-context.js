@@ -2414,10 +2414,15 @@ function applyPhoneAutocorrectCapitalization(text) {
     if (!text) return text;
     let out = String(text);
     out = out.replace(/\bi(['â€™](?:m|ll|d|ve|re))?\b/g, (_, suffix = '') => `I${suffix}`);
+    out = out.replace(/\bi(\u2019(?:m|ll|d|ve|re))\b/g, (_, suffix = '') => `I${suffix}`);
     out = out.replace(/(^|[.!?]\s+|\n+)(["'([{]*)([a-z])/g, (_, prefix, opener, letter) => (
         `${prefix}${opener}${letter.toUpperCase()}`
     ));
     return out;
+}
+
+function normalizeGeneratedCoachDraftText(text) {
+    return applyPhoneAutocorrectCapitalization(normalizeCoachDraftText(text));
 }
 
 /**
@@ -7371,6 +7376,7 @@ module.exports = {
     callVertexGeminiMultimodal,
     normalizeCoachDraftChunks,
     normalizeCoachDraftText,
+    normalizeGeneratedCoachDraftText,
     sanitizeVisibleOutboundDmText,
     applyPhoneAutocorrectCapitalization,
     splitCoachDraftIntoDmBubbles,

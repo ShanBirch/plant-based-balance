@@ -37,6 +37,7 @@ const {
     callVertexAIModel,
     callGeminiFallback,
     normalizeCoachDraftText,
+    normalizeGeneratedCoachDraftText,
     stripLeadingGreeting,
     truncate,
     replacePhotoMarkers,
@@ -368,6 +369,7 @@ Rewrite the reply. Output ONLY the new reply text — no quotes, no labels, no c
             }
         }
     }
+    newText = normalizeGeneratedCoachDraftText(newText);
 
     // 5. Update alert. Append the prior draft + hint to data.redraft_history
     //    so we can later study which hints land which kinds of corrections.
