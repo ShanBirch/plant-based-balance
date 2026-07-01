@@ -646,7 +646,7 @@
                 <div class="workout-feed-share-panel" style="background:linear-gradient(135deg,#111827 0%,#b91c1c 100%); color:white; border:none;">
                     <div style="font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; opacity:0.85; margin-bottom:6px;">Stay in workout mode</div>
                     <div style="font-size:1.25rem; font-weight:900; line-height:1.15; margin-bottom:8px;">Record a set, post it to Feed, and earn +10 XP once a day</div>
-                    <div style="font-size:0.86rem; line-height:1.45; opacity:0.9;">Open the camera, capture the clip, and keep your workout running.</div>
+                    <div style="font-size:0.86rem; line-height:1.45; opacity:0.9;">Open the camera or choose a clip from Photos, then keep your workout running while it uploads.</div>
                 </div>
 
                 <div class="workout-feed-share-panel">
@@ -661,11 +661,11 @@
                     <div class="workout-feed-share-actions">
                         <button type="button" class="workout-feed-share-btn workout-feed-share-btn-primary" onclick="openWorkoutFeedShareCapture()">
                             <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
-                            Record Clip
+                            Camera
                         </button>
                         <button type="button" class="workout-feed-share-btn workout-feed-share-btn-secondary" onclick="openWorkoutFeedShareGallery()">
                             <svg viewBox="0 0 24 24"><path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/></svg>
-                            Choose Clip
+                            Photos
                         </button>
                     </div>
                     <input type="file" id="workout-feed-share-camera-input" accept="video/*" capture="environment" style="display:none;" onchange="handleWorkoutFeedShareFileSelect(event)">
@@ -998,14 +998,40 @@
 
     function openWorkoutFeedShare(options) {
         options = options || {};
+        const view = ensureWorkoutFeedShareView();
         const activeWorkout = document.getElementById('view-active-workout');
         workoutFeedShareState.source = options.source || (activeWorkout && activeWorkout.style.display !== 'none' ? 'workout' : 'movement');
         workoutFeedShareState.workoutName = options.workoutName || (workoutFeedShareState.source === 'workout' ? getActiveWorkoutName() : '');
 
         clearWorkoutFeedShareVideo();
         resetWorkoutFeedShareStatus();
-        ensureWorkoutFeedShareView();
-        openWorkoutFeedShareCapture();
+
+        const captionInput = document.getElementById('workout-feed-share-caption');
+        if (captionInput) captionInput.value = '';
+
+        const bottomNav = document.querySelector('.bottom-nav');
+        if (bottomNav) {
+            workoutFeedShareState.previousBottomNavDisplay = bottomNav.style.display || '';
+            bottomNav.style.display = 'none';
+        }
+
+        view.scrollTop = 0;
+        view.style.display = 'block';
+        if (typeof pushNavigationState === 'function') {
+            try { pushNavigationState('view-workout-feed-share', closeWorkoutFeedShare); } catch (e) {}
+        }
+    }
+
+    function hideWorkoutFeedShareChooserForUpload() {
+        const view = document.getElementById('view-workout-feed-share');
+        if (view) view.style.display = 'none';
+
+        const bottomNav = document.querySelector('.bottom-nav');
+        const activeWorkout = document.getElementById('view-active-workout');
+        const isWorkoutOpen = activeWorkout && activeWorkout.style.display !== 'none';
+        if (bottomNav && !isWorkoutOpen) {
+            bottomNav.style.display = workoutFeedShareState.previousBottomNavDisplay || 'flex';
+        }
     }
 
     function closeWorkoutFeedShare() {
@@ -1112,6 +1138,7 @@
         clearWorkoutFeedShareVideo();
         workoutFeedShareState.file = file;
         workoutFeedShareState.objectUrl = URL.createObjectURL(file);
+        hideWorkoutFeedShareChooserForUpload();
         const bannerLabel = showWorkoutFeedShareUploadBanner('Uploading your set...', 'info');
         void submitWorkoutFeedShare({
             postBtn: bannerLabel
