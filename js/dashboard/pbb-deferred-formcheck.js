@@ -21,6 +21,15 @@
     let workoutFeedShareRetryInProgress = false;
     let workoutFeedShareRetryTimer = null;
     let workoutFeedSharePendingInput = null;
+    let workoutFeedShareCameraStream = null;
+    let workoutFeedShareCameraFacingMode = 'environment';
+    let workoutFeedShareRecorder = null;
+    let workoutFeedShareRecorderChunks = [];
+    let workoutFeedShareRecorderMimeType = '';
+    let workoutFeedShareRecorderSaveOnStop = false;
+    let workoutFeedShareRecorderStartedAt = 0;
+    let workoutFeedShareRecorderTimer = null;
+    let workoutFeedShareRecorderMaxTimer = null;
 
     function ensureFormCheckView() {
         let view = document.getElementById('view-form-check');
@@ -1047,11 +1056,428 @@
     }
 
     function openWorkoutFeedShareCapture() {
-        void openNativeWorkoutFeedShareCamera();
+        if (hasNativeWorkoutFeedShareVideoCamera()) {
+            void openNativeWorkoutFeedShareCamera();
+            return;
+        }
+        void openWorkoutFeedShareInAppCamera();
     }
 
     function openWorkoutFeedShareGallery() {
         openWorkoutFeedShareFilePicker();
+    }
+
+    function hasNativeWorkoutFeedShareVideoCamera() {
+        if (window.NativePermissions && typeof window.NativePermissions.takeWorkoutVideo === 'function') return true;
+        const plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BalanceVideoCapture;
+        return !!(plugin && typeof plugin.captureWorkoutVideo === 'function');
+    }
+
+    function ensureWorkoutFeedShareInAppCameraView() {
+        let modal = document.getElementById('workout-feed-share-camera-modal');
+        if (modal) return modal;
+
+        const style = document.createElement('style');
+        style.id = 'workout-feed-share-camera-styles';
+        style.textContent = `
+            #workout-feed-share-camera-modal {
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 760;
+                background: #000;
+                color: #fff;
+                -webkit-text-fill-color: #fff;
+                flex-direction: column;
+                overflow: hidden;
+            }
+            #workout-feed-share-camera-video::-webkit-media-controls,
+            #workout-feed-share-camera-video::-webkit-media-controls-start-playback-button,
+            #workout-feed-share-camera-video::-webkit-media-controls-panel,
+            #workout-feed-share-camera-video::-webkit-media-controls-overlay-play-button {
+                display: none !important;
+                -webkit-appearance: none;
+            }
+            .workout-feed-share-camera-top {
+                position: absolute;
+                top: calc(14px + env(safe-area-inset-top, 0px));
+                left: 14px;
+                right: 14px;
+                z-index: 4;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                pointer-events: none;
+            }
+            .workout-feed-share-camera-pill {
+                min-height: 40px;
+                border-radius: 999px;
+                background: rgba(0,0,0,0.52);
+                border: 1px solid rgba(255,255,255,0.12);
+                color: #fff;
+                -webkit-text-fill-color: #fff;
+                backdrop-filter: blur(10px);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0 14px;
+                font-size: 0.86rem;
+                font-weight: 900;
+                pointer-events: auto;
+            }
+            .workout-feed-share-camera-icon-btn {
+                width: 48px;
+                height: 48px;
+                border-radius: 999px;
+                border: 1px solid rgba(255,255,255,0.12);
+                background: rgba(0,0,0,0.52);
+                color: #fff;
+                -webkit-text-fill-color: #fff;
+                backdrop-filter: blur(10px);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+                pointer-events: auto;
+            }
+            .workout-feed-share-camera-bottom {
+                position: absolute;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 4;
+                padding: 72px 20px calc(28px + env(safe-area-inset-bottom, 0px));
+                background: linear-gradient(transparent, rgba(0,0,0,0.82) 42%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 28px;
+            }
+            #workout-feed-share-camera-record-btn {
+                width: 82px;
+                height: 82px;
+                border-radius: 999px;
+                border: 4px solid rgba(255,255,255,0.92);
+                background: transparent;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+            }
+            #workout-feed-share-camera-record-btn span {
+                width: 58px;
+                height: 58px;
+                border-radius: 999px;
+                background: #ef4444;
+                display: block;
+                transition: all 0.16s ease;
+            }
+            #workout-feed-share-camera-record-btn.recording span {
+                width: 34px;
+                height: 34px;
+                border-radius: 9px;
+            }
+            #workout-feed-share-camera-video {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                background: #000;
+                opacity: 0;
+                transition: opacity 0.15s ease;
+            }
+        `;
+        document.head.appendChild(style);
+
+        modal = document.createElement('div');
+        modal.id = 'workout-feed-share-camera-modal';
+        modal.innerHTML = `
+            <video id="workout-feed-share-camera-video" autoplay playsinline webkit-playsinline muted></video>
+            <div class="workout-feed-share-camera-top">
+                <button type="button" class="workout-feed-share-camera-icon-btn" onclick="closeWorkoutFeedShareInAppCamera(true)" aria-label="Close camera">
+                    <svg viewBox="0 0 24 24" style="width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+                <div id="workout-feed-share-camera-status" class="workout-feed-share-camera-pill">Camera</div>
+                <div style="width:48px;height:48px;"></div>
+            </div>
+            <div class="workout-feed-share-camera-bottom">
+                <div style="width:50px;height:50px;"></div>
+                <button type="button" id="workout-feed-share-camera-record-btn" onclick="toggleWorkoutFeedShareInAppRecording()" aria-label="Record set">
+                    <span></span>
+                </button>
+                <button type="button" id="workout-feed-share-camera-flip-btn" class="workout-feed-share-camera-icon-btn" onclick="flipWorkoutFeedShareInAppCamera()" aria-label="Flip camera">
+                    <svg viewBox="0 0 24 24" style="width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M20 16V7a2 2 0 0 0-2-2H6"/><path d="m14 5 6 0 0 6"/><path d="M4 8v9a2 2 0 0 0 2 2h12"/><path d="m10 19-6 0 0-6"/></svg>
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        return modal;
+    }
+
+    function setWorkoutFeedShareCameraStatus(message) {
+        const status = document.getElementById('workout-feed-share-camera-status');
+        if (status) status.textContent = message || 'Camera';
+    }
+
+    function formatWorkoutFeedShareCameraTime(ms) {
+        const total = Math.max(0, Math.floor(ms / 1000));
+        const mins = Math.floor(total / 60);
+        const secs = total % 60;
+        return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+    }
+
+    function updateWorkoutFeedShareCameraRecordingUi(isRecording) {
+        const recordBtn = document.getElementById('workout-feed-share-camera-record-btn');
+        const flipBtn = document.getElementById('workout-feed-share-camera-flip-btn');
+        if (recordBtn) {
+            recordBtn.classList.toggle('recording', !!isRecording);
+            recordBtn.setAttribute('aria-label', isRecording ? 'Stop recording' : 'Record set');
+        }
+        if (flipBtn) {
+            flipBtn.disabled = !!isRecording;
+            flipBtn.style.opacity = isRecording ? '0.4' : '1';
+        }
+    }
+
+    function clearWorkoutFeedShareRecorderTimers() {
+        if (workoutFeedShareRecorderTimer) {
+            clearInterval(workoutFeedShareRecorderTimer);
+            workoutFeedShareRecorderTimer = null;
+        }
+        if (workoutFeedShareRecorderMaxTimer) {
+            clearTimeout(workoutFeedShareRecorderMaxTimer);
+            workoutFeedShareRecorderMaxTimer = null;
+        }
+    }
+
+    function stopWorkoutFeedShareCameraStream() {
+        if (workoutFeedShareCameraStream) {
+            try { workoutFeedShareCameraStream.getTracks().forEach(function (track) { track.stop(); }); } catch (e) {}
+            workoutFeedShareCameraStream = null;
+        }
+        const video = document.getElementById('workout-feed-share-camera-video');
+        if (video) {
+            video.pause();
+            video.srcObject = null;
+            video.style.opacity = '0';
+        }
+    }
+
+    function resetWorkoutFeedShareInAppCameraUi() {
+        clearWorkoutFeedShareRecorderTimers();
+        updateWorkoutFeedShareCameraRecordingUi(false);
+        setWorkoutFeedShareCameraStatus('Camera');
+    }
+
+    async function getWorkoutFeedShareCameraStream() {
+        const videoConstraints = {
+            facingMode: { ideal: workoutFeedShareCameraFacingMode },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { ideal: 30, max: 30 }
+        };
+        try {
+            return await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: true });
+        } catch (firstError) {
+            try {
+                return await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
+            } catch (secondError) {
+                throw firstError || secondError;
+            }
+        }
+    }
+
+    async function openWorkoutFeedShareInAppCamera() {
+        hideWorkoutFeedShareUploadBanner(1);
+        if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function' || typeof window.MediaRecorder === 'undefined') {
+            showWorkoutFeedShareUploadBanner('Camera recording is not available on this phone. Use Photos for now.', 'error');
+            return;
+        }
+
+        const modal = ensureWorkoutFeedShareInAppCameraView();
+        resetWorkoutFeedShareInAppCameraUi();
+        modal.style.display = 'flex';
+
+        if (window.NativePermissions && window.NativePermissions.enterImmersiveMode) {
+            try { window.NativePermissions.enterImmersiveMode(); } catch (e) {}
+        }
+
+        try {
+            stopWorkoutFeedShareCameraStream();
+            setWorkoutFeedShareCameraStatus('Opening...');
+            workoutFeedShareCameraStream = await getWorkoutFeedShareCameraStream();
+            const video = document.getElementById('workout-feed-share-camera-video');
+            if (!video) throw new Error('Camera preview is unavailable.');
+            video.srcObject = workoutFeedShareCameraStream;
+            video.muted = true;
+            video.playsInline = true;
+            await video.play();
+            video.style.opacity = '1';
+            setWorkoutFeedShareCameraStatus('Ready');
+        } catch (error) {
+            console.warn('[WorkoutFeedShare] in-app camera failed', error);
+            closeWorkoutFeedShareInAppCamera(false);
+            showWorkoutFeedShareUploadBanner('Could not open camera. Check camera permissions or use Photos.', 'error');
+        }
+    }
+
+    function closeWorkoutFeedShareInAppCamera(cancelRecording) {
+        if (workoutFeedShareRecorder && workoutFeedShareRecorder.state === 'recording') {
+            stopWorkoutFeedShareInAppRecording(!cancelRecording);
+            return;
+        }
+        const modal = document.getElementById('workout-feed-share-camera-modal');
+        if (modal) modal.style.display = 'none';
+        resetWorkoutFeedShareInAppCameraUi();
+        stopWorkoutFeedShareCameraStream();
+        if (window.NativePermissions && window.NativePermissions.exitImmersiveMode) {
+            try { window.NativePermissions.exitImmersiveMode(); } catch (e) {}
+        }
+    }
+
+    function getWorkoutFeedShareRecorderMimeType(stream) {
+        if (typeof window.MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') return '';
+        const hasAudio = !!(stream && typeof stream.getAudioTracks === 'function' && stream.getAudioTracks().length);
+        const types = hasAudio
+            ? [
+                'video/mp4;codecs=h264,aac',
+                'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+                'video/mp4',
+                'video/webm;codecs=vp8,opus',
+                'video/webm'
+            ]
+            : [
+                'video/mp4;codecs=h264',
+                'video/mp4;codecs=avc1.42E01E',
+                'video/mp4',
+                'video/webm;codecs=vp8',
+                'video/webm'
+            ];
+        for (let i = 0; i < types.length; i += 1) {
+            if (MediaRecorder.isTypeSupported(types[i])) return types[i];
+        }
+        return '';
+    }
+
+    function getWorkoutFeedShareRecorderExtension(mimeType) {
+        const type = String(mimeType || '').toLowerCase();
+        if (type.indexOf('webm') !== -1) return 'webm';
+        if (type.indexOf('quicktime') !== -1) return 'mov';
+        return 'mp4';
+    }
+
+    function startWorkoutFeedShareInAppRecording() {
+        if (!workoutFeedShareCameraStream || workoutFeedShareRecorder) return;
+        workoutFeedShareRecorderChunks = [];
+        workoutFeedShareRecorderMimeType = getWorkoutFeedShareRecorderMimeType(workoutFeedShareCameraStream);
+        workoutFeedShareRecorderSaveOnStop = true;
+
+        try {
+            const options = workoutFeedShareRecorderMimeType ? { mimeType: workoutFeedShareRecorderMimeType } : {};
+            workoutFeedShareRecorder = new MediaRecorder(workoutFeedShareCameraStream, options);
+        } catch (error) {
+            console.warn('[WorkoutFeedShare] MediaRecorder unavailable', error);
+            closeWorkoutFeedShareInAppCamera(false);
+            showWorkoutFeedShareUploadBanner('Camera recording is not available on this phone. Use Photos for now.', 'error');
+            return;
+        }
+
+        workoutFeedShareRecorder.ondataavailable = function (event) {
+            if (event.data && event.data.size > 0) workoutFeedShareRecorderChunks.push(event.data);
+        };
+        workoutFeedShareRecorder.onerror = function (event) {
+            console.warn('[WorkoutFeedShare] recorder error', event && event.error);
+            workoutFeedShareRecorderSaveOnStop = false;
+            setWorkoutFeedShareCameraStatus('Recording failed');
+        };
+        workoutFeedShareRecorder.onstop = handleWorkoutFeedShareInAppRecorderStop;
+
+        workoutFeedShareRecorder.start(1000);
+        workoutFeedShareRecorderStartedAt = Date.now();
+        updateWorkoutFeedShareCameraRecordingUi(true);
+        setWorkoutFeedShareCameraStatus('00:00');
+        workoutFeedShareRecorderTimer = setInterval(function () {
+            setWorkoutFeedShareCameraStatus(formatWorkoutFeedShareCameraTime(Date.now() - workoutFeedShareRecorderStartedAt));
+        }, 500);
+        workoutFeedShareRecorderMaxTimer = setTimeout(function () {
+            stopWorkoutFeedShareInAppRecording(true);
+        }, 75000);
+    }
+
+    function stopWorkoutFeedShareInAppRecording(saveRecording) {
+        if (!workoutFeedShareRecorder) return;
+        workoutFeedShareRecorderSaveOnStop = !!saveRecording;
+        clearWorkoutFeedShareRecorderTimers();
+        updateWorkoutFeedShareCameraRecordingUi(false);
+        setWorkoutFeedShareCameraStatus(saveRecording ? 'Preparing...' : 'Camera');
+        try {
+            if (workoutFeedShareRecorder.state !== 'inactive') {
+                workoutFeedShareRecorder.stop();
+            }
+        } catch (error) {
+            console.warn('[WorkoutFeedShare] recorder stop failed', error);
+            workoutFeedShareRecorder = null;
+            if (saveRecording) showWorkoutFeedShareUploadBanner('Could not save that recording. Try again.', 'error');
+        }
+    }
+
+    function handleWorkoutFeedShareInAppRecorderStop() {
+        const recorder = workoutFeedShareRecorder;
+        const shouldSave = workoutFeedShareRecorderSaveOnStop;
+        const chunks = workoutFeedShareRecorderChunks.slice();
+        const mimeType = workoutFeedShareRecorderMimeType || (recorder && recorder.mimeType) || 'video/mp4';
+
+        workoutFeedShareRecorder = null;
+        workoutFeedShareRecorderChunks = [];
+        workoutFeedShareRecorderSaveOnStop = false;
+        clearWorkoutFeedShareRecorderTimers();
+        updateWorkoutFeedShareCameraRecordingUi(false);
+
+        if (!shouldSave) {
+            closeWorkoutFeedShareInAppCamera(false);
+            return;
+        }
+        if (!chunks.length) {
+            setWorkoutFeedShareCameraStatus('Try again');
+            showWorkoutFeedShareUploadBanner('Could not save that recording. Try again.', 'error');
+            return;
+        }
+
+        const blob = new Blob(chunks, { type: mimeType || 'video/mp4' });
+        if (!blob.size) {
+            setWorkoutFeedShareCameraStatus('Try again');
+            showWorkoutFeedShareUploadBanner('The recorded clip was empty. Try again.', 'error');
+            return;
+        }
+
+        const ext = getWorkoutFeedShareRecorderExtension(blob.type || mimeType);
+        const fileName = 'share-set-' + Date.now() + '.' + ext;
+        let file = blob;
+        if (typeof File !== 'undefined') {
+            file = new File([blob], fileName, {
+                type: blob.type || mimeType || 'video/mp4',
+                lastModified: Date.now()
+            });
+        } else {
+            file.name = fileName;
+            file.lastModified = Date.now();
+        }
+
+        closeWorkoutFeedShareInAppCamera(false);
+        processWorkoutFeedShareSelectedFile(file);
+    }
+
+    function toggleWorkoutFeedShareInAppRecording() {
+        if (workoutFeedShareRecorder && workoutFeedShareRecorder.state === 'recording') {
+            stopWorkoutFeedShareInAppRecording(true);
+            return;
+        }
+        startWorkoutFeedShareInAppRecording();
+    }
+
+    async function flipWorkoutFeedShareInAppCamera() {
+        if (workoutFeedShareRecorder && workoutFeedShareRecorder.state === 'recording') return;
+        workoutFeedShareCameraFacingMode = workoutFeedShareCameraFacingMode === 'environment' ? 'user' : 'environment';
+        await openWorkoutFeedShareInAppCamera();
     }
 
     function getBalanceVideoCapturePlugin() {
@@ -1159,7 +1585,8 @@
             if (!result) result = await captureIosWorkoutVideo();
 
             if (!result) {
-                showWorkoutFeedShareUploadBanner('Native camera needs the latest app update. Use Photos for now.', 'error');
+                hideWorkoutFeedShareUploadBanner(1);
+                await openWorkoutFeedShareInAppCamera();
                 return;
             }
             if (result.cancelled) {
@@ -1176,7 +1603,8 @@
             processWorkoutFeedShareSelectedFile(file);
         } catch (error) {
             console.error('[WorkoutFeedShare] native camera failed', error);
-            showWorkoutFeedShareUploadBanner(error.message || 'Could not open the native camera. Use Photos for now.', 'error');
+            hideWorkoutFeedShareUploadBanner(1);
+            await openWorkoutFeedShareInAppCamera();
         }
     }
 
@@ -1467,6 +1895,9 @@
     window.handleWorkoutFeedShareFileSelect = handleWorkoutFeedShareFileSelect;
     window.clearWorkoutFeedShareVideo = clearWorkoutFeedShareVideo;
     window.submitWorkoutFeedShare = submitWorkoutFeedShare;
+    window.closeWorkoutFeedShareInAppCamera = closeWorkoutFeedShareInAppCamera;
+    window.toggleWorkoutFeedShareInAppRecording = toggleWorkoutFeedShareInAppRecording;
+    window.flipWorkoutFeedShareInAppCamera = flipWorkoutFeedShareInAppCamera;
     window.retryWorkoutFeedShareQueue = retryWorkoutFeedShareQueue;
     window.hideWorkoutFeedShareUploadBanner = hideWorkoutFeedShareUploadBanner;
 
