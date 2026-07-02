@@ -2,6 +2,8 @@
     const MAX_FORM_CHECK_VIDEO_BYTES = 180 * 1024 * 1024;
     const WORKOUT_FEED_SHARE_QUEUE_DB = 'pbb_workout_feed_share_queue_v1';
     const WORKOUT_FEED_SHARE_QUEUE_STORE = 'uploads';
+    const WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS = 45000;
+    const WORKOUT_FEED_SHARE_LATE_RETRY_DELAY_MS = 120000;
     let formCheckState = {
         file: null,
         objectUrl: null,
@@ -857,8 +859,13 @@
         const userId = payload && payload.userId;
         if (!file || !userId) throw new Error('Could not save that clip for retry.');
 
+        const retryDelayMs = Math.max(0, Number(payload.retryDelayMs || 0));
+        const createdAt = payload.createdAt || new Date().toISOString();
+        const nextAttemptAt = payload.nextAttemptAt || (retryDelayMs
+            ? new Date(Date.now() + retryDelayMs).toISOString()
+            : createdAt);
         const item = {
-            id: getWorkoutFeedShareQueueId(),
+            id: payload.id || getWorkoutFeedShareQueueId(),
             userId: userId,
             file: file,
             fileName: file.name || 'share-set-video.mp4',
@@ -867,13 +874,15 @@
             fileLastModified: file.lastModified || Date.now(),
             caption: payload.caption || '',
             workoutName: payload.workoutName || '',
-            createdAt: new Date().toISOString(),
-            attempts: 0,
+            createdAt: createdAt,
+            attempts: Number(payload.attempts || 0),
+            lastAttemptAt: payload.lastAttemptAt || null,
+            nextAttemptAt: nextAttemptAt,
             lastError: payload.lastError || ''
         };
 
         await putWorkoutFeedShareQueueItem(item);
-        scheduleWorkoutFeedShareRetry(30000);
+        scheduleWorkoutFeedShareRetry(retryDelayMs || 30000);
         return item;
     }
 
@@ -882,6 +891,46 @@
         workoutFeedShareRetryTimer = setTimeout(function () {
             retryWorkoutFeedShareQueue(false);
         }, Math.max(5000, Number(delayMs || 30000)));
+    }
+
+    function getWorkoutFeedShareNextRetryDelay(items) {
+        const now = Date.now();
+        let soonest = 0;
+        (items || []).forEach(function (item) {
+            const ts = Date.parse(item && item.nextAttemptAt || '');
+            if (!Number.isFinite(ts) || ts <= now) return;
+            if (!soonest || ts < soonest) soonest = ts;
+        });
+        return soonest ? Math.max(5000, soonest - now) : 30000;
+    }
+
+    function markWorkoutFeedShareTimeoutError(message) {
+        const error = new Error(message || 'Upload timed out. Saved for retry.');
+        error.name = 'WorkoutFeedShareTimeout';
+        error.workoutFeedShareTimeout = true;
+        return error;
+    }
+
+    function waitForWorkoutFeedSharePost(promise, timeoutMs, controller) {
+        let timeoutId = null;
+        const timeout = new Promise(function (_, reject) {
+            timeoutId = setTimeout(function () {
+                if (controller && typeof controller.abort === 'function') {
+                    try { controller.abort(); } catch (e) {}
+                }
+                reject(markWorkoutFeedShareTimeoutError());
+            }, Math.max(15000, Number(timeoutMs || WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS) + 5000));
+        });
+        return Promise.race([promise, timeout]).finally(function () {
+            if (timeoutId) clearTimeout(timeoutId);
+        });
+    }
+
+    function forgetQueuedWorkoutFeedShareOnLateSuccess(postPromise, queueItem) {
+        if (!postPromise || !queueItem || !queueItem.id) return;
+        postPromise.then(function () {
+            deleteWorkoutFeedShareQueueItem(queueItem.id).catch(function () {});
+        }).catch(function () {});
     }
 
     function ensureWorkoutFeedShareUploadBanner() {
@@ -913,7 +962,7 @@
 
         banner = document.createElement('div');
         banner.id = 'workout-feed-share-upload-banner';
-        banner.style.cssText = 'display:none; position:fixed; left:16px; right:16px; bottom:calc(16px + env(safe-area-inset-bottom, 0px)); z-index:720; background:rgba(17,24,39,0.96); color:#fff; -webkit-text-fill-color:#fff; border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:12px 14px; box-shadow:0 18px 40px rgba(0,0,0,0.28); backdrop-filter:blur(12px); overflow:hidden;';
+        banner.style.cssText = 'display:none; position:fixed; left:16px; right:16px; bottom:calc(16px + env(safe-area-inset-bottom, 0px)); z-index:10060; background:rgba(17,24,39,0.96); color:#fff; -webkit-text-fill-color:#fff; border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:12px 14px; box-shadow:0 18px 40px rgba(0,0,0,0.28); backdrop-filter:blur(12px); overflow:hidden;';
         banner.innerHTML = `
             <div style="display:flex; align-items:center; gap:10px;">
                 <div style="width:34px; height:34px; border-radius:999px; background:rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
@@ -934,6 +983,22 @@
         `;
         document.body.appendChild(banner);
         return banner;
+    }
+
+    function updateWorkoutFeedShareUploadBannerPlacement(banner) {
+        if (!banner) return;
+        const bottomNav = document.querySelector('.bottom-nav');
+        let navHeight = 0;
+        if (bottomNav) {
+            const style = window.getComputedStyle ? window.getComputedStyle(bottomNav) : null;
+            const rect = bottomNav.getBoundingClientRect ? bottomNav.getBoundingClientRect() : null;
+            const visible = style && style.display !== 'none' && style.visibility !== 'hidden' && rect && rect.height > 0;
+            if (visible) navHeight = Math.ceil(rect.height);
+        }
+        banner.style.zIndex = '10060';
+        banner.style.bottom = navHeight > 0
+            ? (navHeight + 14) + 'px'
+            : 'calc(16px + env(safe-area-inset-bottom, 0px))';
     }
 
     function showWorkoutFeedShareUploadBanner(message, type, options) {
@@ -963,6 +1028,7 @@
             banner.style.display = 'block';
             banner.style.color = '#fff';
             banner.style.webkitTextFillColor = '#fff';
+            updateWorkoutFeedShareUploadBannerPlacement(banner);
             banner.style.borderColor = type === 'error'
                 ? 'rgba(248,113,113,0.28)'
                 : type === 'queued'
@@ -1738,6 +1804,7 @@
 
         const caption = (options.caption && String(options.caption).trim()) || (captionInput && captionInput.value.trim()) || '';
         const workoutName = workoutFeedShareState.workoutName || getActiveWorkoutName();
+        let postPromise = null;
 
         try {
             if (submitBtn && typeof submitBtn === 'object' && 'disabled' in submitBtn) {
@@ -1761,7 +1828,8 @@
                 return;
             }
 
-            const result = await window.createWorkoutFeedSharePost({
+            const uploadController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            postPromise = window.createWorkoutFeedSharePost({
                 file: workoutFeedShareState.file,
                 caption: caption,
                 workoutName: workoutName,
@@ -1769,8 +1837,10 @@
                 postBtn: submitBtn,
                 pointsType: 'workout_feed_share',
                 skipVideoPreparation: true,
-                uploadTimeoutMs: 45000
+                uploadTimeoutMs: WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS,
+                abortSignal: uploadController ? uploadController.signal : null
             });
+            const result = await waitForWorkoutFeedSharePost(postPromise, WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS, uploadController);
 
             const successMessage = getWorkoutFeedShareSuccessMessage(result);
             showWorkoutFeedShareUploadBanner(successMessage, 'success');
@@ -1783,13 +1853,17 @@
             console.error('[WorkoutFeedShare] submit failed', error);
             if (isRetryableWorkoutFeedShareError(error) && workoutFeedShareState.file) {
                 try {
-                    await queueWorkoutFeedShareUpload({
+                    const queueItem = await queueWorkoutFeedShareUpload({
                         userId: userId,
                         file: workoutFeedShareState.file,
                         caption: caption,
                         workoutName: workoutName,
-                        lastError: error && error.message ? error.message : 'upload failed'
+                        lastError: error && error.message ? error.message : 'upload failed',
+                        retryDelayMs: error && error.workoutFeedShareTimeout ? WORKOUT_FEED_SHARE_LATE_RETRY_DELAY_MS : 30000
                     });
+                    if (error && error.workoutFeedShareTimeout && postPromise) {
+                        forgetQueuedWorkoutFeedShareOnLateSuccess(postPromise, queueItem);
+                    }
                     showWorkoutFeedShareUploadBanner('Saved for retry', 'queued', { retry: true });
                     clearWorkoutFeedShareVideo();
                     return;
@@ -1828,15 +1902,25 @@
 
         workoutFeedShareRetryInProgress = true;
         try {
-            const items = (await getWorkoutFeedShareQueueItems()).filter(function (item) {
+            const queuedItems = (await getWorkoutFeedShareQueueItems()).filter(function (item) {
                 return item && item.userId === userId;
+            });
+            const now = Date.now();
+            const items = queuedItems.filter(function (item) {
+                const nextAttempt = Date.parse(item.nextAttemptAt || item.createdAt || '');
+                return !Number.isFinite(nextAttempt) || nextAttempt <= now;
             });
 
             if (!items.length) {
                 if (manual) {
-                    showWorkoutFeedShareUploadBanner('No Share a Set uploads waiting.', 'success');
-                    hideWorkoutFeedShareUploadBanner(1400);
+                    if (queuedItems.length) {
+                        showWorkoutFeedShareUploadBanner('Upload is saved', 'queued', { retry: true });
+                    } else {
+                        showWorkoutFeedShareUploadBanner('No Share a Set uploads waiting.', 'success');
+                        hideWorkoutFeedShareUploadBanner(1400);
+                    }
                 }
+                if (queuedItems.length) scheduleWorkoutFeedShareRetry(getWorkoutFeedShareNextRetryDelay(queuedItems));
                 return;
             }
 
@@ -1848,8 +1932,10 @@
                 }
 
                 const bannerLabel = showWorkoutFeedShareUploadBanner('Retrying Share a Set...', 'info');
+                let postPromise = null;
                 try {
-                    const result = await window.createWorkoutFeedSharePost({
+                    const uploadController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                    postPromise = window.createWorkoutFeedSharePost({
                         file: queuedFile,
                         caption: item.caption || '',
                         workoutName: item.workoutName || '',
@@ -1857,9 +1943,11 @@
                         postBtn: bannerLabel,
                         pointsType: 'workout_feed_share',
                         skipVideoPreparation: true,
-                        uploadTimeoutMs: 45000,
-                        photoTimestamp: item.createdAt || new Date().toISOString()
+                        uploadTimeoutMs: WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS,
+                        photoTimestamp: item.createdAt || new Date().toISOString(),
+                        abortSignal: uploadController ? uploadController.signal : null
                     });
+                    const result = await waitForWorkoutFeedSharePost(postPromise, WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS, uploadController);
 
                     await deleteWorkoutFeedShareQueueItem(item.id);
                     const successMessage = getWorkoutFeedShareSuccessMessage(result);
@@ -1873,12 +1961,19 @@
                         ...item,
                         attempts: Number(item.attempts || 0) + 1,
                         lastAttemptAt: new Date().toISOString(),
+                        nextAttemptAt: new Date(Date.now() + Math.min(5 * 60 * 1000, 30000 * Math.max(1, Number(item.attempts || 1)))).toISOString(),
                         lastError: error && error.message ? error.message : 'retry failed'
                     });
+                    if (error && error.workoutFeedShareTimeout && postPromise) {
+                        forgetQueuedWorkoutFeedShareOnLateSuccess(postPromise, item);
+                    }
                     showWorkoutFeedShareUploadBanner('Saved for retry', 'queued', { retry: true });
                     scheduleWorkoutFeedShareRetry(Math.min(5 * 60 * 1000, 30000 * Math.max(1, Number(item.attempts || 1))));
                     break;
                 }
+            }
+            if (queuedItems.length > items.length) {
+                scheduleWorkoutFeedShareRetry(getWorkoutFeedShareNextRetryDelay(queuedItems));
             }
         } catch (error) {
             console.warn('[WorkoutFeedShare] retry queue unavailable', error);
