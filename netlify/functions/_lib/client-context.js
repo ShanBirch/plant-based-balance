@@ -443,10 +443,10 @@ function normalizeAlwaysNeedsYouName(value) {
         .toLowerCase();
 }
 
-function isAlwaysNeedsYouPerson(record = {}) {
+function alwaysNeedsYouNameCandidates(record = {}) {
     const source = asPlainObject(record);
     const customData = asPlainObject(source.custom_data || source);
-    const candidates = [
+    return [
         source.name,
         source.client_name,
         source.profile_name,
@@ -466,6 +466,17 @@ function isAlwaysNeedsYouPerson(record = {}) {
     ]
         .map(normalizeAlwaysNeedsYouName)
         .filter(Boolean);
+}
+
+function isKayNeedsYouPerson(record = {}) {
+    return alwaysNeedsYouNameCandidates(record).some(name => {
+        const tokens = name.split(/\s+/).filter(Boolean);
+        return tokens.includes('kay') || name === 'kay';
+    });
+}
+
+function isAlwaysNeedsYouPerson(record = {}) {
+    const candidates = alwaysNeedsYouNameCandidates(record);
     return candidates.some(name => {
         const tokens = name.split(/\s+/).filter(Boolean);
         return tokens.includes('shane')
@@ -541,6 +552,80 @@ function getAppProblemAutoSendHoldReason({ currentMessage = '', draftText = '', 
         };
     }
     return null;
+}
+
+function hasProgramUpdateIntent(text = '') {
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!t) return false;
+    const programThing = '(program|plan|meal plan|workout|training|routine|exercise|calories|macros|protein|schedule)';
+    const changeWord = '(update|change|adjust|tweak|edit|swap|redo|fix|set up|setup|review|make|write)';
+    return new RegExp(`\\b${changeWord}\\b.{0,50}\\b${programThing}\\b`, 'i').test(t)
+        || new RegExp(`\\b${programThing}\\b.{0,50}\\b${changeWord}\\b`, 'i').test(t)
+        || new RegExp(`\\b(can you|could you|please|pls|need you to|i need)\\b.{0,70}\\b${programThing}\\b`, 'i').test(t);
+}
+
+function hasVerifiedAppFixContext({ currentMessage = '', draftText = '', alertData = {} } = {}) {
+    const combined = [currentMessage, draftText].map(v => String(v || '')).join(' ').replace(/\s+/g, ' ').trim();
+    if (!combined) return false;
+    const mentionsApp = /\b(app|balance|screen|page|tab|button|start|saved|custom workout|workout|exercise|machine|meal|food|nutrition|photo|progress|check[- ]?in|challenge|login|log in|password|account|notification|loading|load|save|saved)\b/i.test(combined);
+    const hasFixLanguage = /\b(fix|fixed|fixing|sorted|working now|should be fixed|all fixed|cleaned up|resolved|verified|checked and fixed)\b/i.test(combined);
+    return mentionsApp && hasFixLanguage && hasAppProblemResolutionEvidence(alertData);
+}
+
+function isProgramUpdateOrAppFixContext({ currentMessage = '', draftText = '', alertData = {} } = {}) {
+    const combined = [currentMessage, draftText].map(v => String(v || '')).join(' ');
+    if (hasVerifiedAppFixContext({ currentMessage, draftText, alertData })) return true;
+    if (isAppProblemSupportRequest(currentMessage)) return false;
+    return hasProgramUpdateIntent(combined);
+}
+
+function shouldBypassKayNeedsYouForProgramUpdateOrAppFix({ record = {}, currentMessage = '', draftText = '', alertData = {} } = {}) {
+    return isKayNeedsYouPerson(record)
+        && isProgramUpdateOrAppFixContext({ currentMessage, draftText, alertData });
+}
+
+function shouldBypassKayNeedsYouForAlert({ alert = {}, alertData = null, thread = null, currentMessage = '', draftText = '' } = {}) {
+    const data = asPlainObject(alertData || alert.data);
+    const threadData = asPlainObject(thread);
+    const threadCustomData = asPlainObject(threadData.custom_data);
+    const graph = asPlainObject(data.instagram_graph);
+    const customData = asPlainObject(data.custom_data);
+    const record = {
+        name: alert.client_name || data.client_name || data.profile_name || data.ig_profile_name || threadData.profile_name,
+        client_name: alert.client_name || data.client_name,
+        profile_name: data.profile_name || data.ig_profile_name || graph.profile_name || threadData.profile_name || threadCustomData.profile_name,
+        ig_username: data.ig_username || graph.ig_username || graph.username || threadData.ig_username || threadCustomData.ig_username,
+        username: data.username || graph.username || threadData.ig_username || threadCustomData.username,
+        handle: data.handle || threadData.ig_username || customData.handle || threadCustomData.handle,
+        custom_data: {
+            ...threadCustomData,
+            ...customData,
+            instagram_graph: {
+                ...asPlainObject(threadCustomData.instagram_graph),
+                ...graph,
+            },
+        },
+    };
+    const inferredCurrentMessage = currentMessage
+        || data.message_preview
+        || data.client_message
+        || data.draft_evidence?.current_message
+        || alert.description
+        || '';
+    const inferredDraftText = draftText
+        || alert.suggested_message
+        || alert.scheduled_reply_text
+        || data.draft_text
+        || data.suggested_message
+        || data.scheduled_reply_text
+        || data.sent_message
+        || '';
+    return shouldBypassKayNeedsYouForProgramUpdateOrAppFix({
+        record,
+        currentMessage: inferredCurrentMessage,
+        draftText: inferredDraftText,
+        alertData: data,
+    });
 }
 
 async function loadClientMemory(coachId, clientId) {
@@ -7343,6 +7428,10 @@ module.exports = {
     isTestAccount,
     isAiAutomationOptedOut,
     isAlwaysNeedsYouPerson,
+    isKayNeedsYouPerson,
+    isProgramUpdateOrAppFixContext,
+    shouldBypassKayNeedsYouForProgramUpdateOrAppFix,
+    shouldBypassKayNeedsYouForAlert,
     buildMemoryBlock,
     normalizeSex,
     loadClientProfileFacts,

@@ -54,6 +54,21 @@ assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Dani' })
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Daniela' }), false);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Nate' }), false);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Frank' }), false);
+assert.strictEqual(clientContext.shouldBypassKayNeedsYouForProgramUpdateOrAppFix({
+    record: { client_name: 'Kay' },
+    currentMessage: 'Can you update my program for next week?',
+}), true);
+assert.strictEqual(clientContext.shouldBypassKayNeedsYouForProgramUpdateOrAppFix({
+    record: { client_name: 'Kay' },
+    currentMessage: 'The Balance app login is not working.',
+    draftText: 'Fixed it now, try logging in again.',
+}), false);
+assert.strictEqual(clientContext.shouldBypassKayNeedsYouForProgramUpdateOrAppFix({
+    record: { client_name: 'Kay' },
+    currentMessage: 'The Balance app login is not working.',
+    draftText: 'Fixed it now, try logging in again.',
+    alertData: { app_problem_fix_verified_at: '2026-07-02T08:00:00.000Z' },
+}), true);
 
 assert.strictEqual(manager.isAcquisitionLeadAlert(makeAlert()), true);
 assert.strictEqual(manager.isAcquisitionLeadAlert(makeAlert({
@@ -150,6 +165,60 @@ const mirandaVerifiedFix = manager.classifyNeedsYou(makeAlert({
 }));
 assert.strictEqual(mirandaVerifiedFix.shouldRoute, true);
 assert.ok(mirandaVerifiedFix.reasons.includes('always_needs_you_person'));
+
+const kayNormalDm = manager.classifyNeedsYou(makeAlert({
+    alert_type: 'incoming_dm',
+    client_id: 'client-kay',
+    client_name: 'Kay',
+    data: {
+        channel: 'in_app',
+        lead_stage: 'paying',
+        message_preview: 'Haha how was your weekend?',
+    },
+}));
+assert.strictEqual(kayNormalDm.shouldRoute, true);
+assert.ok(kayNormalDm.reasons.includes('always_needs_you_person'));
+
+const kayProgramUpdate = manager.classifyNeedsYou(makeAlert({
+    alert_type: 'incoming_dm',
+    client_id: 'client-kay',
+    client_name: 'Kay',
+    suggested_message: 'Yep, I can tweak that program for next week.',
+    data: {
+        channel: 'in_app',
+        lead_stage: 'paying',
+        message_preview: 'Can you update my program for next week?',
+    },
+}));
+assert.strictEqual(kayProgramUpdate.shouldRoute, false, 'Kay program updates should bypass the permanent Needs You route');
+
+const kayUnverifiedAppFix = manager.classifyNeedsYou(makeAlert({
+    alert_type: 'incoming_dm',
+    client_id: 'client-kay',
+    client_name: 'Kay',
+    suggested_message: 'Fixed it now, try logging in again.',
+    data: {
+        channel: 'in_app',
+        lead_stage: 'paying',
+        message_preview: 'The Balance app login is not working.',
+    },
+}));
+assert.strictEqual(kayUnverifiedAppFix.shouldRoute, true);
+assert.ok(kayUnverifiedAppFix.reasons.includes('app_problem_unverified_fix_claim'));
+
+const kayVerifiedAppFix = manager.classifyNeedsYou(makeAlert({
+    alert_type: 'incoming_dm',
+    client_id: 'client-kay',
+    client_name: 'Kay',
+    suggested_message: 'Fixed it now, try logging in again.',
+    data: {
+        channel: 'in_app',
+        lead_stage: 'paying',
+        message_preview: 'The Balance app login is not working.',
+        app_problem_fix_verified_at: '2026-07-02T08:00:00.000Z',
+    },
+}));
+assert.strictEqual(kayVerifiedAppFix.shouldRoute, false, 'Kay verified app fixes should bypass the permanent Needs You route');
 
 assert.strictEqual(
     manager.draftAsksRedundantCurrentStatusQuestion(
@@ -564,6 +633,11 @@ assert.ok(
     instantDraftSource.includes('!permanentNeedsYouClient && !mediaReview.required'),
     'in-app client DM auto-send should be blocked for permanent Needs You clients'
 );
+assert.ok(
+    instantDraftSource.includes('shouldBypassKayNeedsYouForProgramUpdateOrAppFix')
+        && instantDraftSource.includes('const permanentNeedsYouIdentity = {'),
+    'in-app client DM routing should know Kay program-update/app-fix bypass'
+);
 
 const igDraftSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/ig-instant-draft.js'), 'utf8');
 assert.ok(
@@ -571,7 +645,8 @@ assert.ok(
     'IG auto-send should be held for permanent Needs You clients'
 );
 assert.ok(
-    igDraftSource.includes('const permanentNeedsYouClient = isAlwaysNeedsYouPerson({'),
+    igDraftSource.includes('const permanentNeedsYouIdentity = {')
+        && igDraftSource.includes('isAlwaysNeedsYouPerson(permanentNeedsYouIdentity)'),
     'IG permanent Needs You routing should not depend on the thread already being linked to an app user'
 );
 assert.ok(

@@ -45,6 +45,7 @@ const {
     buildDailyGreetingPolicyBlock,
     shouldAllowDailyGreeting,
     isAlwaysNeedsYouPerson,
+    shouldBypassKayNeedsYouForProgramUpdateOrAppFix,
     getAppProblemAutoSendHoldReason,
     buildShannonDmTuningBlock,
     buildBalanceIdentityElicitationBlock,
@@ -793,10 +794,15 @@ exports.handler = async (event) => {
     // straight off senderId — no ig_threads lead_stage in this path.
     const lifecycle = await resolveLifecycleStage({ userId: senderId });
 
-    const permanentNeedsYouClient = isAlwaysNeedsYouPerson({
+    const permanentNeedsYouIdentity = {
         name: clientName,
         client_name: clientName,
-    });
+    };
+    const permanentNeedsYouClient = isAlwaysNeedsYouPerson(permanentNeedsYouIdentity)
+        && !shouldBypassKayNeedsYouForProgramUpdateOrAppFix({
+            record: permanentNeedsYouIdentity,
+            currentMessage: messageText,
+        });
 
     if (!simple && !isFormCheck) {
         try {

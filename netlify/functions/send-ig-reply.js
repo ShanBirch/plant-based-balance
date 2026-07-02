@@ -97,6 +97,7 @@ const {
     splitCoachDraftIntoDmBubbles,
     fireCoachEditAnalysis,
     isAlwaysNeedsYouPerson,
+    shouldBypassKayNeedsYouForAlert,
 } = require('./_lib/client-context');
 const {
     resolveMetaIgAccessToken,
@@ -443,6 +444,7 @@ function isPermanentNeedsYouIgAlert({ alert = {}, alertData = {}, thread = null 
 
 function shouldBlockPermanentNeedsYouAutomatedIgSend({ alert = {}, alertData = {}, thread = null, source = '' } = {}) {
     return isAutomatedPermanentNeedsYouSendSource(source, alertData || alert.data || {})
+        && !shouldBypassKayNeedsYouForAlert({ alert, alertData, thread })
         && isPermanentNeedsYouIgAlert({ alert, alertData, thread });
 }
 

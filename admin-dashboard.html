@@ -10888,6 +10888,117 @@
         }
         const NEEDS_YOU_AI_CONFUSION_RE = /\b(?:is\s+this\s+(?:ai|a\.?i\.?|a\s+bot|automated)|whether\s+(?:this|it)\s+is\s+(?:ai|a\.?i\.?|a\s+bot|automated)|ai\s*\/\s*automated|ai\s+assistant|are\s+you\s+(?:ai|a\.?i\.?|a\s+bot|automated|real)|am\s+i\s+talking\s+to\s+(?:ai|a\s+bot|a\s+person)|chatgpt|robot|automated\s+reply|real\s+person)\b/i;
         const NEEDS_YOU_USER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|this|that|it)|sorry[, ]+\s*i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)|(?:what|wat)\s+(?:do|did)\s+(?:you|u)\s+mean(?:\s+by\s+(?:that|this|it))?|what\s+are\s+you\s+meaning|what\s+you\s+mean|wdym|i'?m\s+confused|that'?s\s+confusing|not\s+sure\s+what\s+you\s+mean)\b/i;
+        function normalizeNeedsYouPersonName(value) {
+            return String(value || '')
+                .replace(/^@+/, '')
+                .replace(/[_.'"-]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+        }
+
+        function needsYouIdentityCandidates(alert) {
+            const data = alert?.data || {};
+            const customData = data.custom_data && typeof data.custom_data === 'object' ? data.custom_data : {};
+            const graph = data.instagram_graph && typeof data.instagram_graph === 'object' ? data.instagram_graph : {};
+            return [
+                alert?.client_name,
+                data.client_name,
+                data.profile_name,
+                data.ig_profile_name,
+                data.full_name,
+                data.first_name,
+                data.ig_username,
+                data.username,
+                data.handle,
+                graph.profile_name,
+                graph.ig_username,
+                graph.username,
+                customData.name,
+                customData.client_name,
+                customData.profile_name,
+                customData.full_name,
+                customData.first_name,
+                customData.ig_username,
+                customData.username,
+                customData.handle,
+            ].map(normalizeNeedsYouPersonName).filter(Boolean);
+        }
+
+        function isKayNeedsYouIdentity(alert) {
+            return needsYouIdentityCandidates(alert).some(name => {
+                const tokens = name.split(/\s+/).filter(Boolean);
+                return tokens.includes('kay') || name === 'kay';
+            });
+        }
+
+        function hasVerifiedAppFixData(data = {}) {
+            return !!(
+                data.app_problem_fixed_at
+                || data.app_problem_fix_verified_at
+                || data.support_fix_confirmed_at
+                || data.codex_app_fix_confirmed_at
+                || data.app_support_resolution?.fixed_at
+                || data.app_support_resolution?.verified_at
+            );
+        }
+
+        function isAdminAppProblemSupportRequest(text = '') {
+            const t = String(text || '').replace(/\s+/g, ' ').trim();
+            if (!t) return false;
+            const appContext = /\b(app|balance|screen|page|tab|button|start|saved|custom workout|workout|exercise|machine|meal|food|nutrition|photo|progress|check[- ]?in|challenge|login|log in|password|account|notification|loading|load|save|saved)\b/i.test(t);
+            const problem = /\b(not working|doesn['\u2019]?t work|isn['\u2019]?t working|broken|bug|glitch|glitched|error|stuck|missing|wrong|can['\u2019]?t access|cant access|won['\u2019]?t let me|won['\u2019]?t go|won['\u2019]?t load|will not load|won['\u2019]?t open|cannot|can['\u2019]?t log|cant log|login|log in|fix|help me fix|sort this|issue|problem|crash|crashed|frozen|freeze|upload failed|didn['\u2019]?t save|not showing|won['\u2019]?t show|keeps spinning|blank page)\b/i.test(t);
+            return appContext && problem;
+        }
+
+        function isKayProgramUpdateOrAppFixAlert(alert) {
+            if (!isKayNeedsYouIdentity(alert)) return false;
+            const data = alert?.data || {};
+            const currentText = needsYouLatestText(alert);
+            const draftText = [
+                getResolvedAlertMessage(alert),
+                alert?.suggested_message,
+                alert?.scheduled_reply_text,
+                data.draft_text,
+                data.suggested_message,
+                data.scheduled_reply_text,
+                data.sent_message,
+            ].map(v => String(v || '')).join(' ');
+            const combined = [currentText, draftText].join(' ').replace(/\s+/g, ' ').trim();
+            const programThing = '(program|plan|meal plan|workout|training|routine|exercise|calories|macros|protein|schedule)';
+            const changeWord = '(update|change|adjust|tweak|edit|swap|redo|fix|set up|setup|review|make|write)';
+            const programUpdate = new RegExp(`\\b${changeWord}\\b.{0,50}\\b${programThing}\\b`, 'i').test(combined)
+                || new RegExp(`\\b${programThing}\\b.{0,50}\\b${changeWord}\\b`, 'i').test(combined)
+                || new RegExp(`\\b(can you|could you|please|pls|need you to|i need)\\b.{0,70}\\b${programThing}\\b`, 'i').test(combined);
+            const mentionsApp = /\b(app|balance|screen|page|tab|button|start|saved|custom workout|workout|exercise|machine|meal|food|nutrition|photo|progress|check[- ]?in|challenge|login|log in|password|account|notification|loading|load|save|saved)\b/i.test(combined);
+            const appFix = mentionsApp
+                && /\b(fix|fixed|fixing|sorted|working now|should be fixed|all fixed|cleaned up|resolved|verified|checked and fixed)\b/i.test(combined)
+                && hasVerifiedAppFixData(data);
+            if (appFix) return true;
+            if (isAdminAppProblemSupportRequest(currentText)) return false;
+            return programUpdate;
+        }
+
+        function isOnlyKayPermanentNeedsYouRoute(alert) {
+            if (!isKayProgramUpdateOrAppFixAlert(alert)) return false;
+            const data = alert?.data || {};
+            const review = data.codex_review || data.codexReview || {};
+            const reasons = Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons.map(v => String(v || '').toLowerCase()) : [];
+            const reasonText = [
+                data.needs_you_reason,
+                review?.reason,
+                review?.decision,
+                data.needs_you_label,
+                ...reasons,
+            ].map(v => String(v || '').toLowerCase()).join(' ');
+            const hasPermanentReason = data.permanent_needs_you_draft_only === true
+                || /\b(always_needs_you_person|permanent needs you|permanent_needs_you|always needs you)\b/i.test(reasonText);
+            if (!hasPermanentReason) return false;
+            if (reasons.length) {
+                return reasons.every(reason => /\b(always_needs_you_person|permanent_needs_you|always needs you)\b/i.test(reason));
+            }
+            return !/\b(app_problem|context|media|learning_reel|manual_ig|human_agent|ai_suspicion|user_confused|signup|subscription_sale|first_workout|support_radar|daily_reel|coach_action|draft_review|exercise_lookup|redundant)\b/i.test(reasonText);
+        }
         const NEEDS_YOU_EMPTY_STATES = {
             all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'No client-manager handoffs, app suggestions, or manual review items are waiting right now.' },
         };
@@ -12353,6 +12464,7 @@
         function isExplicitClientManagerNeedsYou(alert) {
             const { data, codexReview } = needsYouReviewBundle(alert);
             if (!isClientManagerReview(alert)) return false;
+            if (isOnlyKayPermanentNeedsYouRoute(alert)) return false;
             const queue = String(codexReview.queue || data.operator_queue || '').toLowerCase();
             const decision = String(codexReview.decision || data.decision || '').toLowerCase();
             const reason = String(codexReview.reason || data.needs_you_reason || '').toLowerCase();
@@ -12399,11 +12511,17 @@
             const isDm = DM_ALERT_TYPES.includes(alert?.alert_type);
             const isClientDm = isDm && !!getAlertClientIdentity(alert) && alertBelongsToDmClients(alert, activeClientIds);
             const explicitClientManagerNeedsYou = isDm && isExplicitClientManagerNeedsYou(alert);
+            if (isOnlyKayPermanentNeedsYouRoute(alert)) {
+                return { allowed: false, reason: '' };
+            }
             if (isLearningReelApprovalAlert(alert) || /\blearning_reel_approval_required\b/i.test(reasonText)) {
                 return { allowed: true, reason: 'learning_reel_approval' };
             }
             if (explicitClientManagerNeedsYou) {
                 return { allowed: true, reason: 'client_manager_review' };
+            }
+            if (isKayNeedsYouIdentity(alert) && !isKayProgramUpdateOrAppFixAlert(alert)) {
+                return { allowed: true, reason: 'permanent_client' };
             }
             if (isClientDm && mediaReview.required) {
                 return { allowed: true, reason: 'client_media' };
@@ -12468,6 +12586,7 @@
 
         function isNeedsYouRoutedDmAlert(alert) {
             const { data, codexReview } = needsYouReviewBundle(alert);
+            if (isOnlyKayPermanentNeedsYouRoute(alert)) return false;
             const queue = String(codexReview.queue || data.operator_queue || '').toLowerCase();
             const decision = String(codexReview.decision || data.decision || '').toLowerCase();
             const reason = String(codexReview.reason || data.needs_you_reason || '').toLowerCase();
@@ -12478,7 +12597,8 @@
                 || decision.includes('needs_you')
                 || decision.includes('needs_shannon')
                 || reason.includes('needs you')
-                || reason.includes('needs shannon');
+                || reason.includes('needs shannon')
+                || (isKayNeedsYouIdentity(alert) && !isKayProgramUpdateOrAppFixAlert(alert));
         }
 
         function isLeadOnboardingHandoff(alert) {
