@@ -109,11 +109,11 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
         style.textContent = `
             @keyframes pbbFridaySilverPulse {
                 0%, 100% {
-                    box-shadow: 0 12px 30px rgba(100,116,139,0.18), 0 0 0 1px rgba(255,255,255,0.88), 0 0 24px rgba(226,232,240,0.64);
+                    box-shadow: 0 14px 34px rgba(71,85,105,0.18), 0 0 0 1px rgba(255,255,255,0.96), 0 0 0 2px rgba(148,163,184,0.34), 0 0 28px rgba(203,213,225,0.98), 0 0 52px rgba(100,116,139,0.34);
                     filter: saturate(1);
                 }
                 50% {
-                    box-shadow: 0 16px 38px rgba(71,85,105,0.22), 0 0 0 1px rgba(255,255,255,0.98), 0 0 34px rgba(241,245,249,0.94);
+                    box-shadow: 0 18px 42px rgba(51,65,85,0.22), 0 0 0 1px rgba(255,255,255,1), 0 0 0 2px rgba(148,163,184,0.48), 0 0 38px rgba(226,232,240,1), 0 0 68px rgba(100,116,139,0.42);
                     filter: saturate(1.03);
                 }
             }
@@ -124,9 +124,9 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
                 100% { transform: translateX(130%) rotate(12deg); opacity: 0; }
             }
             #daily-weigh-in-card.pbb-friday-weigh-card {
-                background: linear-gradient(135deg, #ffffff 0%, #f8fafc 26%, #dbe2ea 54%, #ffffff 78%, #cbd5e1 100%) !important;
+                background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 18%, #cbd5e1 45%, #f8fafc 68%, #94a3b8 100%) !important;
                 animation: pbbFridaySilverPulse 2.9s ease-in-out infinite !important;
-                border: 1px solid rgba(203,213,225,0.82) !important;
+                border: 1px solid rgba(148,163,184,0.86) !important;
                 color: #111827 !important;
                 -webkit-text-fill-color: #111827 !important;
                 text-shadow: none !important;
@@ -146,14 +146,12 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
                 z-index: 0;
             }
             #daily-weigh-in-card.pbb-friday-weigh-card::after {
-                content: 'FRIDAY';
+                content: '';
                 position: absolute;
-                right: 18px;
-                bottom: 14px;
-                font-size: 2.25rem;
-                font-weight: 950;
-                letter-spacing: 0;
-                color: rgba(100,116,139,0.12);
+                inset: 0;
+                border-radius: 16px;
+                background: radial-gradient(circle at 88% 16%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.56) 16%, transparent 32%), linear-gradient(135deg, rgba(255,255,255,0.38), transparent 34%, rgba(15,23,42,0.06) 100%);
+                box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(100,116,139,0.2), inset 0 0 22px rgba(255,255,255,0.56);
                 pointer-events: none;
                 z-index: 0;
             }
@@ -191,11 +189,9 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
                 box-shadow: 0 10px 22px rgba(15,23,42,0.2) !important;
                 text-shadow: none !important;
             }
-            #daily-weigh-in-card.pbb-friday-weigh-card > div:first-child {
-                background: rgba(148,163,184,0.16) !important;
-            }
+            #daily-weigh-in-card.pbb-friday-weigh-card > div:first-child,
             #daily-weigh-in-card.pbb-friday-weigh-card > div:nth-child(2) {
-                background: rgba(255,255,255,0.42) !important;
+                display: none !important;
             }
             #daily-weigh-in-card.pbb-friday-weigh-card > div:nth-child(3) {
                 position: relative;
