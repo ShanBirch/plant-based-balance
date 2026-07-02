@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v230'; // v230: lock 6-week cohort leave path; v229: cache-bust auth timeout fallback
+const CACHE_NAME = 'pbb-app-v231'; // v231: feed comment push tap routing; v230: lock 6-week cohort leave path
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -264,6 +264,27 @@ self.addEventListener('push', (e) => {
   );
 });
 
+function getFeedCommentStoryId(notificationData) {
+  const direct = notificationData.storyId || notificationData.story_id || notificationData.feedPostId || notificationData.feed_post_id;
+  if (direct) return String(direct);
+
+  const rawUrl = notificationData.url || '';
+  try {
+    const parsed = new URL(rawUrl, self.location.origin);
+    return parsed.searchParams.get('story_id') || parsed.searchParams.get('feed_post_id') || '';
+  } catch (_) {
+    const match = String(rawUrl).match(/[?&](?:story_id|feed_post_id)=([^&#]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+}
+
+function getFeedCommentOpenUrl(notificationData) {
+  if (notificationData.url) return notificationData.url;
+  const storyId = getFeedCommentStoryId(notificationData);
+  if (storyId) return `./dashboard.html?action=open_feed_post&story_id=${encodeURIComponent(storyId)}`;
+  return './dashboard.html';
+}
+
 // Handle notification click
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
@@ -298,6 +319,28 @@ self.addEventListener('notificationclick', (e) => {
         }
         if (clients.openWindow) {
           return clients.openWindow('./admin-dashboard.html?tab=needs-you');
+        }
+      }
+      // Handle Feed comment notifications
+      else if (notificationData.type === 'feed_comment') {
+        const storyId = getFeedCommentStoryId(notificationData);
+        const openUrl = getFeedCommentOpenUrl(notificationData);
+
+        for (let client of clientList) {
+          if (client.url.includes('dashboard.html') && 'focus' in client) {
+            return client.focus().then(client => {
+              client.postMessage({
+                type: 'feed_comment_click',
+                storyId: storyId,
+                url: openUrl
+              });
+              return client;
+            });
+          }
+        }
+
+        if (clients.openWindow) {
+          return clients.openWindow(openUrl);
         }
       }
       // Handle DM message notifications

@@ -8585,6 +8585,17 @@ if ('serviceWorker' in navigator) {
                     window.openDirectMessage(senderId, 'Message', '');
                 }
             }
+        } else if (event.data && event.data.type === 'feed_comment_click') {
+            if (typeof window.openFeedPostFromPush === 'function') {
+                window.openFeedPostFromPush(event.data);
+            } else if (event.data.storyId) {
+                if (typeof window.switchAppTab === 'function') window.switchAppTab('friends');
+                setTimeout(() => {
+                    if (typeof window.openFeedPostViewer === 'function') {
+                        window.openFeedPostViewer(event.data.storyId);
+                    }
+                }, 1200);
+            }
         }
     });
 }
@@ -8594,6 +8605,8 @@ _runWhenDomReady(function() {
     const urlParams = new URLSearchParams(window.location.search);
     const action = urlParams.get('action');
     const senderId = urlParams.get('sender_id');
+    const storyId = urlParams.get('story_id') || urlParams.get('feed_post_id');
+    const commentId = urlParams.get('comment_id');
 
     if (action === 'game_invite' && senderId) {
         // Clean up URL
@@ -8609,6 +8622,17 @@ _runWhenDomReady(function() {
         setTimeout(() => {
             if (typeof window.openDirectMessage === 'function') {
                 window.openDirectMessage(senderId, 'Message', '');
+            }
+        }, 1500);
+    } else if (action === 'open_feed_post' && storyId) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setTimeout(() => {
+            const payload = { type: 'feed_comment', storyId, commentId, url: window.location.pathname };
+            if (typeof window.openFeedPostFromPush === 'function') {
+                window.openFeedPostFromPush(payload);
+            } else {
+                if (typeof window.switchAppTab === 'function') window.switchAppTab('friends');
+                if (typeof window.openFeedPostViewer === 'function') window.openFeedPostViewer(storyId);
             }
         }, 1500);
     }

@@ -117,6 +117,24 @@ assert.strictEqual(
 
 assert.strictEqual(
     isAllowedAdminPhonePush({
+        type: 'feed_comment',
+        alert: null,
+        payload: { senderId: 'client-9', senderName: 'Client commented', messageText: 'Nice work', storyId: 'story-1' },
+    }),
+    true
+);
+
+assert.strictEqual(
+    isAllowedAdminPhonePush({
+        type: 'feed_comment',
+        alert: null,
+        payload: { sourceChannel: 'instagram', senderId: 'lead-1', senderName: 'Lead commented', messageText: 'Nice work', storyId: 'story-2' },
+    }),
+    false
+);
+
+assert.strictEqual(
+    isAllowedAdminPhonePush({
         type: 'sale_made',
         alert: {
             alert_type: 'subscription_sale',

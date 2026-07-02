@@ -98,6 +98,10 @@ const ADMIN_SALE_ALERT_TYPES = new Set([
     'subscription_sale',
 ]);
 
+const ADMIN_COMMUNITY_NOTIFICATION_TYPES = new Set([
+    'feed_comment',
+]);
+
 const ADMIN_CLIENT_LIFECYCLE_STAGES = new Set([
     'trial',
     'trial_expiring',
@@ -203,6 +207,9 @@ function isAllowedAdminPhonePush({ type, alert, payload }) {
                 || payload?.actionType === 'subscription_sale'
             )
             && isClientScopedAdminPush({ alert, payload });
+    }
+    if (ADMIN_COMMUNITY_NOTIFICATION_TYPES.has(type)) {
+        return isClientScopedAdminPush({ alert, payload });
     }
     if (type === 'coach_draft_ready') {
         if (alert) {
@@ -461,6 +468,9 @@ exports.handler = async (event) => {
         const challengeOfferDot = payload.challengeOfferDot || (challengeOfferWarning ? '🟡' : '');
         const challengeOfferLabel = payload.challengeOfferLabel || '';
         const challengeOfferReason = payload.challengeOfferReason || '';
+        const storyId = String(payload.storyId || payload.story_id || payload.feedPostId || payload.feed_post_id || '');
+        const commentId = String(payload.commentId || payload.comment_id || '');
+        const customCollapseKey = String(payload.collapseKey || payload.collapse_key || '').slice(0, 64);
 
         if (!recipientId || !messageText) {
             return {
@@ -608,11 +618,13 @@ exports.handler = async (event) => {
         // the visible notification carries every message in the streak as
         // its own bubble plus the draft generated against all of them.
         const isCoachDraft = type === 'coach_draft_ready';
-        const collapseKey = isCoachDraft
-            ? `coach-draft-${recipientId}-${clientId || senderId || ''}`
-            : alertId
-                ? `alert-${alertId}`
-                : `${type}-${recipientId}-${senderId || ''}`;
+        const collapseKey = customCollapseKey || (
+            isCoachDraft
+                ? `coach-draft-${recipientId}-${clientId || senderId || ''}`
+                : alertId
+                    ? `alert-${alertId}`
+                    : `${type}-${recipientId}-${senderId || ''}`
+        );
 
         // Send to all of the recipient's subscriptions
         const results = await Promise.allSettled(
@@ -632,6 +644,8 @@ exports.handler = async (event) => {
                                 senderName: senderName || 'Someone',
                                 senderId: senderId || '',
                                 url: notificationUrl,
+                                storyId,
+                                commentId,
                                 // Coach-draft extras (empty strings for regular DMs, FCM V1 requires strings)
                                 alertId,
                                 clientId,
@@ -697,6 +711,8 @@ exports.handler = async (event) => {
                                 senderName: senderName || 'Someone',
                                 senderId: senderId || '',
                                 url: notificationUrl,
+                                storyId,
+                                commentId,
                                 alertId,
                                 clientId,
                                 clientName,
