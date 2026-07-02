@@ -330,7 +330,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=38',
             'lib/native-iap.js',
-            'lib/stories.js?v=21',
+            'lib/stories.js?v=22',
             'lib/ai-opponents.js',
             'lib/games.js?v=2',
             'lib/nutrition-calculator.js',
@@ -349,7 +349,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=21"><\/script>');
+    document.write('<script src="lib/stories.js?v=22"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=2"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -1291,7 +1291,7 @@ window.addEventListener('load', function() {
                 <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x1F4D3;</div>
                 <div style="flex: 1;">
                     <div style="font-weight: 600; font-size: 0.95rem;">How was your day?</div>
-                    <div style="font-size: 0.8rem; opacity: 0.85; margin-top: 2px;">Tap to write your diary — takes 30 seconds</div>
+                    <div style="font-size: 0.8rem; opacity: 0.85; margin-top: 2px;">Tap to reflect and share if you want</div>
                 </div>
                 <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: rgba(255,255,255,0.7);"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
             </div>
@@ -1338,10 +1338,10 @@ window.addEventListener('load', function() {
                     </div>
                 </div>
 
-                <!-- Q6: Anything else? -->
+                <!-- Q6: Tell me about today -->
                 <div style="margin-bottom: 16px;">
-                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Anything else on your mind?</div>
-                    <input type="text" id="diary-note" placeholder="Optional, anything else about today..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Tell me about your day today</div>
+                    <textarea id="diary-note" maxlength="1200" rows="5" placeholder="Work, training, food, stress, wins, motivation, what clicked, what felt hard..." style="width: 100%; min-height: 126px; padding: 12px 14px; border: none; border-radius: 12px; font-family: inherit; font-size: 0.9rem; line-height: 1.45; background: rgba(255,255,255,0.96); color: #111827; -webkit-text-fill-color: #111827; box-sizing: border-box; resize: vertical;"></textarea>
                 </div>
 
                 <button id="fitness-diary-submit-btn" onclick="submitFitnessDiary()" style="width: 100%; background: white; color: #6366f1; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
@@ -1456,12 +1456,12 @@ window.addEventListener('load', function() {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=66';
+                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=67';
                 document.head.appendChild(s);
             }, 3000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=66"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=67"><\/script>');
     }
     </script>
 
@@ -12551,6 +12551,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#progress-photo-share-feed-btn,#weekly-progress-photo-done-card', title:'Share progress photos', body:"After your Monday progress photos are saved, share them to Feed for an extra 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-done-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#weekly-checkin-card', title:'Weekly Review', body:"A shimmering gold review card shows the person's onboarding goal, weekly progress, check-ins, mood signals, and one clear action to set next week goals.", quick: true, condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
+    { tab:'dashboard', sel:'#fitness-diary-card,#fitness-diary-done-card', title:'Fitness Diary', body:"At night, Fitness Diary asks how your day really went. Use the big box for work stress, wins, motivation, and anything you want to share to Feed.", quick: true, condition: function(){ var c = document.getElementById('fitness-diary-card'); var d = document.getElementById('fitness-diary-done-card'); return (c && c.style.display !== 'none') || (d && d.style.display !== 'none'); } },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
     { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'6-Week Challenge', body:"The 6-week challenge sits under your character on Home. Tap it to open the leaderboard or check how to earn XP.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
@@ -13281,6 +13282,14 @@ if(!window._pbbIsIOSSafari) {
       body: "Got an idea for Balance? Tap this row in Settings and send it straight to Shannon's Needs You list."
     },
     {
+      id: 'fitness-diary-day-story-v1',
+      tab: 'dashboard',
+      sel: '#fitness-diary-card,#fitness-diary-done-card',
+      title: 'Daily diary reflection',
+      body: "The Fitness Diary now has a bigger Tell me about your day box. Use it for work stress, wins, motivation, and the story behind your day before sharing to Feed.",
+      condition: function(){ var c = document.getElementById('fitness-diary-card'); var d = document.getElementById('fitness-diary-done-card'); return (c && c.style.display !== 'none') || (d && d.style.display !== 'none'); }
+    },
+    {
       id: 'weekly-progress-photos-three-shot-v1',
       tab: 'dashboard',
       sel: '#weekly-progress-photo-card',
@@ -13555,6 +13564,14 @@ if(!window._pbbIsIOSSafari) {
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({
+    id: 'fitness-diary-day-story-v1',
+    tab: 'dashboard',
+    sel: '#fitness-diary-card,#fitness-diary-done-card',
+    title: 'Daily diary reflection',
+    body: "The Fitness Diary now has a bigger Tell me about your day box. Use it for work stress, wins, motivation, and the story behind your day before sharing to Feed.",
+    condition: function(){ var e = document.getElementById('fitness-diary-card'); var d = document.getElementById('fitness-diary-done-card'); return (e && e.style.display !== 'none') || (d && d.style.display !== 'none'); }
+  });
   allFeatures.push({
     id: 'cohort-home-under-character-glow-v1',
     tab: 'dashboard',

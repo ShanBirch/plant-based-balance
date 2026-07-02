@@ -979,6 +979,12 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
             .replace(/\b\w/g, function(match) { return match.toUpperCase(); });
     }
 
+    function truncateFitnessDiaryText(value, max) {
+        var text = String(value || '').replace(/\s+/g, ' ').trim();
+        if (!text) return '';
+        return text.length > max ? text.slice(0, max - 3) + '...' : text;
+    }
+
     function setFitnessDiaryStoredPayload(dateKey, payload) {
         try {
             localStorage.setItem(getFitnessDiaryStorageKey(dateKey), JSON.stringify(payload || {}));
@@ -1081,6 +1087,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
         var detailBits = [
             payload.day_rating ? 'Today: ' + formatFitnessDiaryValue(payload.day_rating) : '',
             payload.energy_level ? 'Energy: ' + formatFitnessDiaryValue(payload.energy_level) : '',
+            payload.note ? 'My day: ' + truncateFitnessDiaryText(payload.note, 80) : '',
             payload.goals ? 'Goals: ' + payload.goals : '',
             payload.highlight ? payload.highlight : ''
         ].filter(Boolean);
