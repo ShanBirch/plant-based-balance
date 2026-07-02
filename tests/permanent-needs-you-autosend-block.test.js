@@ -25,6 +25,16 @@ const kayAlert = {
     },
 };
 
+const kayProgramUpdateAlert = {
+    ...kayAlert,
+    suggested_message: 'Yep, I can tweak that program for next week.',
+    data: {
+        ...kayAlert.data,
+        message_preview: 'Can you update my program for next week?',
+        scheduled_reply_text: 'Yep, I can tweak that program for next week.',
+    },
+};
+
 assert.strictEqual(
     sendCoach.shouldBlockPermanentNeedsYouAutomatedSend(fraAlert, 'scheduled_worker'),
     true,
@@ -35,6 +45,12 @@ assert.strictEqual(
     sendCoach.shouldBlockPermanentNeedsYouAutomatedSend(kayAlert, 'scheduled_worker'),
     true,
     'general send endpoint must block Kay from scheduled auto-send'
+);
+
+assert.strictEqual(
+    sendCoach.shouldBlockPermanentNeedsYouAutomatedSend(kayProgramUpdateAlert, 'scheduled_worker'),
+    false,
+    'general send endpoint should allow Kay program updates through auto-send'
 );
 
 assert.strictEqual(
@@ -115,6 +131,16 @@ assert.strictEqual(
     'IG sender must allow Fra replies that Shannon explicitly scheduled later'
 );
 
+assert.strictEqual(
+    sendIg.shouldBlockPermanentNeedsYouAutomatedIgSend({
+        alert: kayProgramUpdateAlert,
+        alertData: kayProgramUpdateAlert.data,
+        source: 'scheduled_worker',
+    }),
+    false,
+    'IG sender should allow Kay program updates through auto-send'
+);
+
 assert.deepStrictEqual(
     scheduledWorker.buildPermanentNeedsYouHold(fraAlert),
     {
@@ -134,6 +160,12 @@ assert.deepStrictEqual(
 );
 
 assert.strictEqual(
+    scheduledWorker.buildPermanentNeedsYouHold(kayProgramUpdateAlert),
+    null,
+    'scheduled worker should allow Kay program updates through auto-send'
+);
+
+assert.strictEqual(
     scheduledWorker.buildPermanentNeedsYouHold({
         ...fraAlert,
         data: {
@@ -150,6 +182,12 @@ assert.strictEqual(
     scheduleReply.shouldBlockPermanentNeedsYouSchedule(fraAlert, 'auto_send'),
     true,
     'auto-send scheduling should still be blocked for Fra'
+);
+
+assert.strictEqual(
+    scheduleReply.shouldBlockPermanentNeedsYouSchedule(kayProgramUpdateAlert, 'auto_send'),
+    false,
+    'auto-send scheduling should allow Kay program updates'
 );
 
 assert.strictEqual(

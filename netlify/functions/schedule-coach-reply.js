@@ -29,6 +29,7 @@ const {
     normalizeCoachDraftText,
     sanitizeVisibleOutboundDmText,
     isAlwaysNeedsYouPerson,
+    shouldBypassKayNeedsYouForAlert,
 } = require('./_lib/client-context');
 
 // Hard floor so the worker has a fair chance of firing on time, hard ceiling
@@ -159,6 +160,7 @@ function isAutomatedPermanentNeedsYouScheduleSource(source) {
 
 function shouldBlockPermanentNeedsYouSchedule(alert = {}, source = '') {
     return isAutomatedPermanentNeedsYouScheduleSource(source)
+        && !shouldBypassKayNeedsYouForAlert({ alert })
         && isPermanentNeedsYouAlert(alert);
 }
 

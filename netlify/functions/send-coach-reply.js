@@ -29,6 +29,7 @@ const {
     sanitizeVisibleOutboundDmText,
     fireCoachEditAnalysis,
     isAlwaysNeedsYouPerson,
+    shouldBypassKayNeedsYouForAlert,
 } = require('./_lib/client-context');
 
 async function supabase(path, options = {}) {
@@ -228,6 +229,7 @@ function isPermanentNeedsYouAlert(alert = {}) {
 
 function shouldBlockPermanentNeedsYouAutomatedSend(alert = {}, source = '') {
     return isAutomatedPermanentNeedsYouSendSource(source, alert.data || {})
+        && !shouldBypassKayNeedsYouForAlert({ alert })
         && isPermanentNeedsYouAlert(alert);
 }
 

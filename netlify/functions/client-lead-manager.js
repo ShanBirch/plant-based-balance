@@ -11,6 +11,7 @@ const {
     buildMediaReviewInfo,
     buildContextReviewInfo,
     isAlwaysNeedsYouPerson,
+    shouldBypassKayNeedsYouForAlert,
     reviewDraftAndUpdateAlert,
     normalizeCoachDraftText,
     normalizeLearningReelHistory,
@@ -517,7 +518,14 @@ function classifyNeedsYou(alert = {}) {
         reasons.push('exercise_lookup_confused_followup');
         labels.push('exercise lookup got confusing, send a holding reply and leave it for Shannon');
     }
-    if (isAlwaysNeedsYouPerson(alertIdentity(alert))) {
+    const alwaysNeedsYouIdentity = alertIdentity(alert);
+    const kayProgramOrFixBypass = shouldBypassKayNeedsYouForAlert({
+        alert,
+        alertData: data,
+        currentMessage: latestLeadText(data),
+        draftText: alert.suggested_message || data.draft_text || '',
+    });
+    if (isAlwaysNeedsYouPerson(alwaysNeedsYouIdentity) && !kayProgramOrFixBypass) {
         reasons.push('always_needs_you_person');
         labels.push('Shane/Fra/Kay/Miranda/Monica/Dani draft-only Needs You route');
     }

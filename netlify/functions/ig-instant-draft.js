@@ -47,6 +47,8 @@ const {
     buildDailyGreetingPolicyBlock,
     shouldAllowDailyGreeting,
     isAlwaysNeedsYouPerson,
+    isKayNeedsYouPerson,
+    isProgramUpdateOrAppFixContext,
     getAppProblemAutoSendHoldReason,
     buildShannonDmTuningBlock,
     buildBalanceIdentityElicitationBlock,
@@ -3277,14 +3279,25 @@ exports.handler = async (event) => {
         ? linkedClientProfile.name
         : '';
     const leadName = linkedClientName || threadDisplayName;
-    const permanentNeedsYouClient = isAlwaysNeedsYouPerson({
+    const permanentNeedsYouIdentity = {
         name: leadName,
         client_name: leadName,
         profile_name: thread.profile_name,
         ig_username: thread.ig_username,
         username: thread.ig_username,
         custom_data: thread.custom_data,
-    });
+    };
+    const kayProgramOrFixBypass = isKayNeedsYouPerson(permanentNeedsYouIdentity)
+        && isProgramUpdateOrAppFixContext({
+            currentMessage: messageText,
+            alertData: {
+                ...(thread.custom_data || {}),
+                lead_stage: thread.lead_stage,
+                linked_user_id: thread.linked_user_id,
+            },
+        });
+    const permanentNeedsYouClient = isAlwaysNeedsYouPerson(permanentNeedsYouIdentity)
+        && !kayProgramOrFixBypass;
     const history = await loadIgHistory(threadId, messageText);
 
     let memoryBlock = '';

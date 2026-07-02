@@ -30,6 +30,7 @@ const {
     buildMediaReviewInfo,
     normalizeCoachDraftText,
     isAlwaysNeedsYouPerson,
+    shouldBypassKayNeedsYouForAlert,
 } = require('./_lib/client-context');
 const {
     coachDmManagerWindowLabel,
@@ -149,6 +150,7 @@ function isAutomatedPermanentNeedsYouScheduledAlert(alert = {}) {
 
 function buildPermanentNeedsYouHold(alert) {
     if (!isAutomatedPermanentNeedsYouScheduledAlert(alert)) return null;
+    if (shouldBypassKayNeedsYouForAlert({ alert })) return null;
     const data = alert?.data || {};
     const graph = data.instagram_graph || {};
     const customData = data.custom_data || {};
