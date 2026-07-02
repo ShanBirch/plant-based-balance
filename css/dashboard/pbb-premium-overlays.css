@@ -5419,6 +5419,43 @@ html[data-pbb-theme="light"] #weight-goal-picker-modal button {
     -webkit-text-fill-color: #151515 !important;
 }
 
+html[data-pbb-theme="light"] .stat-alloc-header h2 {
+    color: #8a641c !important;
+    -webkit-text-fill-color: #8a641c !important;
+    text-shadow: none !important;
+}
+
+html[data-pbb-theme="light"] .stat-alloc-points-left {
+    color: #4b5563 !important;
+    -webkit-text-fill-color: #4b5563 !important;
+}
+
+html[data-pbb-theme="light"] .stat-alloc-points-left span {
+    color: #b8892b !important;
+    -webkit-text-fill-color: #b8892b !important;
+}
+
+html[data-pbb-theme="light"] .stat-alloc-row {
+    background: rgba(21, 21, 21, 0.045) !important;
+    border-color: rgba(21, 21, 21, 0.08) !important;
+}
+
+html[data-pbb-theme="light"] .stat-alloc-name {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .stat-alloc-desc {
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] .stat-alloc-confirm:disabled {
+    background: rgba(21, 21, 21, 0.08) !important;
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
 html[data-pbb-theme="light"] .animation-selector-modal,
 html[data-pbb-theme="light"] .animation-selector-modal * {
     color: #151515 !important;

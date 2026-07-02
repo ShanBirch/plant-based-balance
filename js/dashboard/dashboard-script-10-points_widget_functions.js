@@ -573,6 +573,62 @@ function showWalkthroughXpPulse(points) {
     }
 }
 
+let levelUpStatAllocationRetryTimer = null;
+
+function isRareUnlockCelebrationVisible() {
+    const modal = document.getElementById('rare-unlock-celebration');
+    if (!modal) return false;
+    if (modal.style.display && modal.style.display !== 'none') return true;
+    return modal.classList.contains('active') || modal.classList.contains('show');
+}
+
+function queueLevelUpStatAllocationModal(delayMs = 800) {
+    if (window.isAdminViewing || window.guestMode) return;
+    if (levelUpStatAllocationRetryTimer) {
+        clearTimeout(levelUpStatAllocationRetryTimer);
+        levelUpStatAllocationRetryTimer = null;
+    }
+
+    const startedAt = Date.now();
+    const retryWhileMissingMs = 20000;
+    const rareUnlockGraceMs = 3000;
+    const rareUnlockMaxWaitMs = 90000;
+
+    const tryShow = () => {
+        levelUpStatAllocationRetryTimer = null;
+        if (window.isAdminViewing || window.guestMode) return;
+        if (document.getElementById('stat-alloc-overlay')) return;
+
+        const elapsed = Date.now() - startedAt;
+        const waitingForRareUnlock = isRareUnlockCelebrationVisible()
+            || (window._showStatAllocationAfterRareUnlock && elapsed < rareUnlockGraceMs);
+
+        if (waitingForRareUnlock) {
+            if (elapsed < rareUnlockMaxWaitMs) {
+                levelUpStatAllocationRetryTimer = setTimeout(tryShow, 1200);
+            }
+            return;
+        }
+
+        if (window._showStatAllocationAfterRareUnlock && !isRareUnlockCelebrationVisible()) {
+            window._showStatAllocationAfterRareUnlock = false;
+        }
+
+        if (typeof window.showStatAllocationModal === 'function') {
+            window.showStatAllocationModal();
+            if (document.getElementById('stat-alloc-overlay')) return;
+        }
+
+        if (elapsed < retryWhileMissingMs) {
+            levelUpStatAllocationRetryTimer = setTimeout(tryShow, 1000);
+        }
+    };
+
+    levelUpStatAllocationRetryTimer = setTimeout(tryShow, Math.max(0, Number(delayMs) || 0));
+}
+
+window.queueLevelUpStatAllocationModal = queueLevelUpStatAllocationModal;
+
 /**
  * NEW LEVEL UP CELEBRATION SYSTEM
  * Shows celebration directly in the Tamagotchi widget instead of as a popup toast.
@@ -628,6 +684,7 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
             console.log('Level up overlay elements not found, falling back to toast');
             showLevelUpToast(newLevel, title, previousLevel, lifetimePoints, currentStreak);
             clearPendingCelebration();
+            queueLevelUpStatAllocationModal(5500);
             return;
         }
 
@@ -886,12 +943,9 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
 
             if (levelRareUnlocked) {
                 window._showStatAllocationAfterRareUnlock = true;
+                queueLevelUpStatAllocationModal(1200);
             } else {
-                setTimeout(() => {
-                    if (typeof window.showStatAllocationModal === 'function') {
-                        window.showStatAllocationModal();
-                    }
-                }, 800);
+                queueLevelUpStatAllocationModal(800);
             }
         }, 6500);
     }
