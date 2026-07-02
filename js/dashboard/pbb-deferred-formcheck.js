@@ -4,7 +4,7 @@
     const WORKOUT_FEED_SHARE_QUEUE_STORE = 'uploads';
     const WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS = 45000;
     const WORKOUT_FEED_SHARE_LATE_RETRY_DELAY_MS = 120000;
-    const WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 1536 * 1024;
+    const WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 3 * 1024 * 1024;
     const WORKOUT_FEED_SHARE_RETRY_NOTICE_ID = 'workout-feed-share-retry-notice';
     let formCheckState = {
         file: null,
