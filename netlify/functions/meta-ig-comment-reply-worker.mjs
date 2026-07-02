@@ -33,8 +33,7 @@ const RETRY_BACKOFF_MS = 10 * 60 * 1000;
 const MAX_SEND_ATTEMPTS = 3;
 
 export const config = {
-    // Paused during Supabase incident on 2026-07-02. Restore after API/Auth calls are stable.
-    // schedule: '* * * * *',
+    schedule: '* * * * *',
 };
 
 function getEnv(name) {

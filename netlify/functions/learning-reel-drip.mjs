@@ -138,8 +138,7 @@ const TOPIC_SEQUENCE = [
 ];
 
 export const config = {
-    // Paused during Supabase incident on 2026-07-02. Restore after API/Auth calls are stable.
-    // schedule: '*/5 * * * *',
+    schedule: '*/5 * * * *',
 };
 
 function getEnv(name) {
