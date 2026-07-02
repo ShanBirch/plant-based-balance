@@ -4,6 +4,7 @@
     const WORKOUT_FEED_SHARE_QUEUE_STORE = 'uploads';
     const WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS = 45000;
     const WORKOUT_FEED_SHARE_LATE_RETRY_DELAY_MS = 120000;
+    const WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 1536 * 1024;
     let formCheckState = {
         file: null,
         objectUrl: null,
@@ -851,6 +852,8 @@
         if (typeof window.prepareUploadableFeedVideo !== 'function') return file;
         return window.prepareUploadableFeedVideo(file, function (status) {
             if (statusTarget) statusTarget.textContent = status;
+        }, {
+            maxBytes: WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES
         });
     }
 
@@ -882,7 +885,9 @@
         };
 
         await putWorkoutFeedShareQueueItem(item);
-        scheduleWorkoutFeedShareRetry(retryDelayMs || 30000);
+        if (payload.autoRetry === true) {
+            scheduleWorkoutFeedShareRetry(retryDelayMs || 30000);
+        }
         return item;
     }
 
@@ -1882,6 +1887,8 @@
     }
 
     async function retryWorkoutFeedShareQueue(manual) {
+        if (!manual) return;
+
         if (workoutFeedShareRetryInProgress) {
             if (manual) showWorkoutFeedShareUploadBanner('Retry already running...', 'info');
             return;
@@ -1890,13 +1897,11 @@
         const userId = window.currentUser && window.currentUser.id;
         if (!userId) {
             if (manual) showWorkoutFeedShareUploadBanner('Log in before retrying Share a Set.', 'error');
-            else scheduleWorkoutFeedShareRetry(30000);
             return;
         }
 
         if (navigator && navigator.onLine === false) {
             showWorkoutFeedShareUploadBanner('Waiting for reception', 'queued', { retry: true });
-            scheduleWorkoutFeedShareRetry(45000);
             return;
         }
 
@@ -1906,7 +1911,7 @@
                 return item && item.userId === userId;
             });
             const now = Date.now();
-            const items = queuedItems.filter(function (item) {
+            const items = manual ? queuedItems : queuedItems.filter(function (item) {
                 const nextAttempt = Date.parse(item.nextAttemptAt || item.createdAt || '');
                 return !Number.isFinite(nextAttempt) || nextAttempt <= now;
             });
@@ -1920,7 +1925,6 @@
                         hideWorkoutFeedShareUploadBanner(1400);
                     }
                 }
-                if (queuedItems.length) scheduleWorkoutFeedShareRetry(getWorkoutFeedShareNextRetryDelay(queuedItems));
                 return;
             }
 
@@ -1968,12 +1972,8 @@
                         forgetQueuedWorkoutFeedShareOnLateSuccess(postPromise, item);
                     }
                     showWorkoutFeedShareUploadBanner('Saved for retry', 'queued', { retry: true });
-                    scheduleWorkoutFeedShareRetry(Math.min(5 * 60 * 1000, 30000 * Math.max(1, Number(item.attempts || 1))));
                     break;
                 }
-            }
-            if (queuedItems.length > items.length) {
-                scheduleWorkoutFeedShareRetry(getWorkoutFeedShareNextRetryDelay(queuedItems));
             }
         } catch (error) {
             console.warn('[WorkoutFeedShare] retry queue unavailable', error);
@@ -2005,15 +2005,4 @@
 
     document.addEventListener('DOMContentLoaded', ensureFormCheckView);
     document.addEventListener('DOMContentLoaded', ensureWorkoutFeedShareView);
-    document.addEventListener('DOMContentLoaded', function () {
-        setTimeout(function () { retryWorkoutFeedShareQueue(false); }, 4000);
-    });
-    window.addEventListener('online', function () {
-        setTimeout(function () { retryWorkoutFeedShareQueue(false); }, 1000);
-    });
-    document.addEventListener('visibilitychange', function () {
-        if (!document.hidden) {
-            setTimeout(function () { retryWorkoutFeedShareQueue(false); }, 1500);
-        }
-    });
 })();

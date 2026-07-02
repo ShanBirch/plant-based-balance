@@ -3394,7 +3394,12 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
 
     // Success - save meal to database
     try {
-        const photoUrl = await uploadMealPhoto(originalFile);
+        let photoUrl = '';
+        try {
+            photoUrl = await uploadMealPhoto(originalFile);
+        } catch (photoError) {
+            console.warn('Meal photo upload failed; saving nutrition without stored photo:', photoError);
+        }
 
         // If this was a recent meal verification, use the original macros
         const finalFoodItems = data.pendingRecentMeal ? (data.pendingRecentMeal.food_items || []) : nutritionData.foodItems;
@@ -3420,7 +3425,7 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
         });
 
         // Award points
-        if (savedMeal && savedMeal[0]?.id) {
+        if (photoUrl && savedMeal && savedMeal[0]?.id) {
             try {
                 const photoTimestamp = originalFile.lastModified ? new Date(originalFile.lastModified).toISOString() : null;
                 const photoHash = await window.db?.points?.generatePhotoHash(data.base64);
@@ -3558,11 +3563,27 @@ async function uploadMealPhoto(file) {
     formData.append('file', file);
     formData.append('userId', userId);
 
-    // Upload to B2 via edge function
-    const response = await fetch('/api/upload-meal-photo', {
-        method: 'POST',
-        body: formData
-    });
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = controller
+        ? setTimeout(() => controller.abort(), 20000)
+        : null;
+
+    let response;
+    try {
+        // Upload to B2 via edge function
+        response = await fetch('/api/upload-meal-photo', {
+            method: 'POST',
+            body: formData,
+            signal: controller ? controller.signal : undefined
+        });
+    } catch (error) {
+        if (error && error.name === 'AbortError') {
+            throw new Error('Photo upload timed out');
+        }
+        throw error;
+    } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
         const errorData = await response.json();

@@ -2,7 +2,7 @@
 	"appId": "com.fitgotchi.app",
 	"appName": "Balance",
 	"server": {
-		"url": "https://plantbased-balance.org/dashboard.html?native_rev=share_set_v11",
+		"url": "https://plantbased-balance.org/dashboard.html?native_rev=share_set_v12",
 		"cleartext": false,
 		"allowNavigation": [
 			"plantbased-balance.org",
