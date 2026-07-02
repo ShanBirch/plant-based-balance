@@ -107,65 +107,115 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
         const style = document.createElement('style');
         style.id = 'friday-weigh-in-card-styles';
         style.textContent = `
-            @keyframes pbbFridayWeighBoardShift {
-                0% { background-position: 0% 50%; }
-                45% { background-position: 100% 50%; }
-                100% { background-position: 0% 50%; }
+            @keyframes pbbFridaySilverPulse {
+                0%, 100% {
+                    box-shadow: 0 12px 30px rgba(100,116,139,0.18), 0 0 0 1px rgba(255,255,255,0.88), 0 0 24px rgba(226,232,240,0.64);
+                    filter: saturate(1);
+                }
+                50% {
+                    box-shadow: 0 16px 38px rgba(71,85,105,0.22), 0 0 0 1px rgba(255,255,255,0.98), 0 0 34px rgba(241,245,249,0.94);
+                    filter: saturate(1.03);
+                }
             }
-            @keyframes pbbFridayWeighGlow {
-                0%, 100% { transform: scale(1); opacity: 0.45; }
-                50% { transform: scale(1.08); opacity: 0.78; }
+            @keyframes pbbFridaySilverSheen {
+                0% { transform: translateX(-115%) rotate(12deg); opacity: 0; }
+                18% { opacity: 0.42; }
+                42% { opacity: 0.14; }
+                100% { transform: translateX(130%) rotate(12deg); opacity: 0; }
             }
             #daily-weigh-in-card.pbb-friday-weigh-card {
-                background: linear-gradient(120deg, #0f172a, #0369a1, #14b8a6, #84cc16, #0f172a) !important;
-                background-size: 320% 320% !important;
-                animation: pbbFridayWeighBoardShift 3.8s ease-in-out infinite !important;
-                border: 1px solid rgba(255,255,255,0.28) !important;
-                box-shadow: 0 10px 32px rgba(14,165,233,0.28), inset 0 1px 0 rgba(255,255,255,0.2) !important;
-                color: #ffffff !important;
-                text-shadow: 0 2px 9px rgba(2,6,23,0.62);
+                background: linear-gradient(135deg, #ffffff 0%, #f8fafc 26%, #dbe2ea 54%, #ffffff 78%, #cbd5e1 100%) !important;
+                animation: pbbFridaySilverPulse 2.9s ease-in-out infinite !important;
+                border: 1px solid rgba(203,213,225,0.82) !important;
+                color: #111827 !important;
+                -webkit-text-fill-color: #111827 !important;
+                text-shadow: none !important;
+                isolation: isolate;
+            }
+            #daily-weigh-in-card.pbb-friday-weigh-card::before {
+                content: '';
+                position: absolute;
+                top: -40%;
+                bottom: -40%;
+                left: 0;
+                width: 42%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+                filter: blur(1px);
+                animation: pbbFridaySilverSheen 3.8s ease-in-out infinite;
+                pointer-events: none;
+                z-index: 0;
             }
             #daily-weigh-in-card.pbb-friday-weigh-card::after {
                 content: 'FRIDAY';
                 position: absolute;
                 right: 18px;
                 bottom: 14px;
-                font-size: 2.4rem;
+                font-size: 2.25rem;
                 font-weight: 950;
-                letter-spacing: 0.05em;
-                color: rgba(255,255,255,0.16);
+                letter-spacing: 0;
+                color: rgba(100,116,139,0.12);
                 pointer-events: none;
+                z-index: 0;
             }
             #daily-weigh-in-card.pbb-friday-weigh-card h3,
             #daily-weigh-in-card.pbb-friday-weigh-card p,
             #daily-weigh-in-card.pbb-friday-weigh-card span,
             #daily-weigh-in-card.pbb-friday-weigh-card div {
-                color: #ffffff !important;
+                color: #111827 !important;
+                -webkit-text-fill-color: #111827 !important;
             }
-            #daily-weigh-in-card.pbb-friday-weigh-card input,
-            #daily-weigh-in-card.pbb-friday-weigh-card button,
-            #daily-weigh-in-card.pbb-friday-weigh-card input + span {
+            #daily-weigh-in-card.pbb-friday-weigh-card input {
+                background: rgba(255,255,255,0.98) !important;
+                border: 1px solid rgba(148,163,184,0.45) !important;
+                color: #111827 !important;
+                -webkit-text-fill-color: #111827 !important;
+                box-shadow: inset 0 1px 0 rgba(255,255,255,0.92), 0 8px 18px rgba(15,23,42,0.08) !important;
+                outline-color: #94a3b8;
                 text-shadow: none !important;
+            }
+            #daily-weigh-in-card.pbb-friday-weigh-card input::placeholder {
+                color: #64748b !important;
+                -webkit-text-fill-color: #64748b !important;
+                opacity: 1;
             }
             #daily-weigh-in-card.pbb-friday-weigh-card input + span {
                 color: #334155 !important;
+                -webkit-text-fill-color: #334155 !important;
+                text-shadow: none !important;
+            }
+            #daily-weigh-in-card.pbb-friday-weigh-card button {
+                background: linear-gradient(135deg, #111827 0%, #334155 100%) !important;
+                border: 1px solid rgba(15,23,42,0.16) !important;
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+                box-shadow: 0 10px 22px rgba(15,23,42,0.2) !important;
+                text-shadow: none !important;
             }
             #daily-weigh-in-card.pbb-friday-weigh-card > div:first-child {
-                animation: pbbFridayWeighGlow 2.4s ease-in-out infinite;
+                background: rgba(148,163,184,0.16) !important;
+            }
+            #daily-weigh-in-card.pbb-friday-weigh-card > div:nth-child(2) {
+                background: rgba(255,255,255,0.42) !important;
+            }
+            #daily-weigh-in-card.pbb-friday-weigh-card > div:nth-child(3) {
+                position: relative;
+                z-index: 1;
             }
             #daily-weigh-in-done-card.pbb-friday-share-card {
-                background: linear-gradient(135deg, #0f172a 0%, #075985 48%, #0f766e 100%) !important;
-                border: 1px solid rgba(125,211,252,0.34);
-                box-shadow: 0 10px 30px rgba(14,165,233,0.22);
+                background: linear-gradient(135deg, #ffffff 0%, #f8fafc 36%, #dbe2ea 100%) !important;
+                border: 1px solid rgba(203,213,225,0.82);
+                box-shadow: 0 16px 38px rgba(71,85,105,0.18), 0 0 30px rgba(226,232,240,0.78);
                 align-items: stretch !important;
-                color: #ffffff !important;
-                text-shadow: 0 2px 8px rgba(2,6,23,0.42);
+                color: #111827 !important;
+                -webkit-text-fill-color: #111827 !important;
+                text-shadow: none !important;
             }
             #daily-weigh-in-done-card.pbb-friday-shared-card {
-                background: linear-gradient(135deg, #064e3b 0%, #0f766e 55%, #0f172a 100%) !important;
-                border: 1px solid rgba(134,239,172,0.34);
-                color: #ffffff !important;
-                text-shadow: 0 2px 8px rgba(2,6,23,0.42);
+                background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 48%, #e2e8f0 100%) !important;
+                border: 1px solid rgba(134,239,172,0.46);
+                color: #064e3b !important;
+                -webkit-text-fill-color: #064e3b !important;
+                text-shadow: none !important;
             }
         `;
         document.head.appendChild(style);
@@ -205,9 +255,9 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
         setTextContent('weigh-in-xp-badge', '');
         setTextContent('weigh-in-submit-btn', 'Weigh In');
         setTextContent('weigh-in-success-xp', 'Weigh-in logged');
-        setTextContent('weigh-in-success-copy', 'Now add it to the feed.');
+        setTextContent('weigh-in-success-copy', 'Share to Feed next for +10 XP.');
         const submitBtn = document.getElementById('weigh-in-submit-btn');
-        if (submitBtn) submitBtn.style.color = '#075985';
+        if (submitBtn) submitBtn.style.color = '#ffffff';
     }
 
     function renderStandardWeighInDoneCard() {
@@ -259,22 +309,22 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
             <div style="width:100%;">
                 <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px;">
                     <div>
-                        <div style="font-size:0.66rem; color:#e0f2fe; text-transform:uppercase; letter-spacing:0.12em; font-weight:900; margin-bottom:4px;">Friday weigh-in</div>
-                        <div style="font-size:1.08rem; font-weight:950; color:#ffffff;">Post to feed?</div>
+                        <div style="font-size:0.66rem; color:#64748b; text-transform:uppercase; letter-spacing:0; font-weight:900; margin-bottom:4px;">Friday weigh-in</div>
+                        <div style="font-size:1.08rem; font-weight:950; color:#111827;">Share to Feed?</div>
                     </div>
-                    <div style="background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.18); border-radius:12px; padding:8px 10px; text-align:right; flex-shrink:0;">
-                        <div style="font-size:1.25rem; line-height:1; font-weight:950; color:white;">${escapeWeighInHtml(weight)}</div>
-                        <div style="font-size:0.68rem; color:#f8fafc; font-weight:800; margin-top:3px;">logged</div>
+                    <div style="background:rgba(255,255,255,0.88); border:1px solid rgba(148,163,184,0.38); border-radius:12px; padding:8px 10px; text-align:right; flex-shrink:0; box-shadow:0 8px 18px rgba(15,23,42,0.08);">
+                        <div style="font-size:1.25rem; line-height:1; font-weight:950; color:#0f172a;">${escapeWeighInHtml(weight)}</div>
+                        <div style="font-size:0.68rem; color:#475569; font-weight:800; margin-top:3px;">logged</div>
                     </div>
                 </div>
                 <div style="display:flex; gap:7px; flex-wrap:wrap; margin-bottom:12px;">
-                    <span style="background:${lost ? 'rgba(22,163,74,0.28)' : 'rgba(255,255,255,0.16)'}; color:${lost ? '#dcfce7' : '#ffffff'}; border:1px solid ${lost ? 'rgba(134,239,172,0.48)' : 'rgba(255,255,255,0.24)'}; padding:6px 9px; border-radius:999px; font-size:0.72rem; font-weight:900;">+10 XP if down from last Friday</span>
-                    <span style="background:rgba(59,130,246,0.3); color:#eff6ff; border:1px solid rgba(147,197,253,0.5); padding:6px 9px; border-radius:999px; font-size:0.72rem; font-weight:900;">+${FRIDAY_WEIGH_SHARE_POINTS} XP for feed post</span>
+                    <span style="background:${lost ? 'rgba(22,163,74,0.12)' : 'rgba(255,255,255,0.74)'}; color:${lost ? '#166534' : '#334155'}; border:1px solid ${lost ? 'rgba(22,163,74,0.24)' : 'rgba(148,163,184,0.32)'}; padding:6px 9px; border-radius:999px; font-size:0.72rem; font-weight:900;">+10 XP if down from last Friday</span>
+                    <span style="background:rgba(37,99,235,0.1); color:#1d4ed8; border:1px solid rgba(37,99,235,0.2); padding:6px 9px; border-radius:999px; font-size:0.72rem; font-weight:900;">+${FRIDAY_WEIGH_SHARE_POINTS} XP for feed post</span>
                 </div>
-                <div style="font-size:0.84rem; color:#ffffff; line-height:1.42; font-weight:760; margin-bottom:13px;">${escapeWeighInHtml(changeCopy)} Tap yes to review the feed card before anything posts.</div>
+                <div style="font-size:0.84rem; color:#334155; line-height:1.42; font-weight:760; margin-bottom:13px;">${escapeWeighInHtml(changeCopy)} Review it first, then post to Feed for +${FRIDAY_WEIGH_SHARE_POINTS} XP.</div>
                 <div style="display:grid; grid-template-columns:1fr auto; gap:9px;">
-                    <button onclick="openFridayWeighInShareCard()" style="min-height:42px; border:none; border-radius:12px; background:#ffffff; color:#075985; font-size:0.86rem; font-weight:950; cursor:pointer;">Yes, review card</button>
-                    <button onclick="dismissFridayWeighInShare()" style="min-height:42px; border:1px solid rgba(255,255,255,0.18); border-radius:12px; background:rgba(255,255,255,0.1); color:white; font-size:0.82rem; font-weight:800; cursor:pointer; padding:0 12px;">Not today</button>
+                    <button onclick="openFridayWeighInShareCard()" style="min-height:42px; border:none; border-radius:12px; background:#111827; color:#ffffff; -webkit-text-fill-color:#ffffff; font-size:0.86rem; font-weight:950; cursor:pointer; box-shadow:0 10px 22px rgba(15,23,42,0.18);">Share to Feed +${FRIDAY_WEIGH_SHARE_POINTS} XP</button>
+                    <button onclick="dismissFridayWeighInShare()" style="min-height:42px; border:1px solid rgba(148,163,184,0.38); border-radius:12px; background:rgba(255,255,255,0.72); color:#475569; font-size:0.82rem; font-weight:800; cursor:pointer; padding:0 12px;">Not today</button>
                 </div>
             </div>
         `;
@@ -297,8 +347,8 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
             <button onclick="dismissWeighInDoneCard()" style="position:absolute; top:8px; right:8px; background:rgba(255,255,255,0.18); border:none; color:white; width:24px; height:24px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; line-height:1; padding:0;">&#x2715;</button>
             <div style="width:44px; height:44px; background:rgba(255,255,255,0.18); border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.9rem; font-weight:950;">FRI</div>
             <div style="flex:1; min-width:0; padding-right:18px;">
-                <div style="font-weight:950; font-size:1rem; color:#ffffff;">Posted to feed</div>
-                <div style="font-size:0.84rem; color:#f8fafc; font-weight:750; margin-top:2px;">${Number(data?.share_points_awarded || 0) > 0 ? '+' + Number(data.share_points_awarded || 0) + ' XP for sharing. ' : ''}Friday weigh-in posted.</div>
+                <div style="font-weight:950; font-size:1rem; color:#064e3b;">Posted to Feed</div>
+                <div style="font-size:0.84rem; color:#166534; font-weight:750; margin-top:2px;">${Number(data?.share_points_awarded || 0) > 0 ? '+' + Number(data.share_points_awarded || 0) + ' XP for sharing. ' : ''}Friday weigh-in posted.</div>
             </div>
         `;
     }
@@ -601,8 +651,8 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
                 <div style="width:100%; max-width:390px; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; background:white; border-radius:18px; box-shadow:0 24px 70px rgba(0,0,0,0.35); padding:20px; box-sizing:border-box;">
                     <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px;">
                         <div>
-                            <div style="font-size:0.72rem; font-weight:900; letter-spacing:0; text-transform:uppercase; color:#075985; margin-bottom:4px;">Friday weigh-in</div>
-                            <h3 style="margin:0; color:#111827; font-size:1.25rem; line-height:1.2; font-weight:850;">Put it on the board?</h3>
+                            <div style="font-size:0.72rem; font-weight:900; letter-spacing:0; text-transform:uppercase; color:#64748b; margin-bottom:4px;">Friday weigh-in</div>
+                            <h3 style="margin:0; color:#111827; font-size:1.25rem; line-height:1.2; font-weight:850;">Share to Feed?</h3>
                         </div>
                         <button onclick="closeFridayWeighInShareCard()" title="Close" style="width:34px; height:34px; border:none; border-radius:50%; background:#f1f5f9; color:#334155; font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
                     </div>
@@ -613,10 +663,10 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
                         <span style="background:#dbeafe; color:#1e3a8a; border:1px solid #93c5fd; padding:6px 10px; border-radius:999px; font-size:0.78rem; font-weight:850;">+${FRIDAY_WEIGH_SHARE_POINTS} XP for feed post</span>
                     </div>
                     <div style="font-size:0.88rem; color:#334155; line-height:1.45; font-weight:650; background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:12px; margin-bottom:16px;">
-                        This posts a Friday board-day card to the feed so people can react and keep the challenge moving.
+                        This posts a Friday weigh-in card to the Feed so people can react and keep the challenge moving.
                     </div>
                     <div style="display:grid; grid-template-columns:1fr; gap:10px;">
-                        <button id="friday-weigh-share-post-btn" onclick="postFridayWeighInShare()" style="width:100%; border:none; border-radius:12px; background:#2563eb; color:white; padding:13px 14px; font-weight:900; font-size:0.95rem; cursor:pointer;">Post to feed</button>
+                        <button id="friday-weigh-share-post-btn" onclick="postFridayWeighInShare()" style="width:100%; border:none; border-radius:12px; background:#111827; color:white; -webkit-text-fill-color:white; padding:13px 14px; font-weight:900; font-size:0.95rem; cursor:pointer; box-shadow:0 10px 22px rgba(15,23,42,0.2);">Post to Feed</button>
                         <button onclick="dismissFridayWeighInShare()" style="width:100%; border:1px solid #e2e8f0; border-radius:12px; background:white; color:#475569; padding:12px 14px; font-weight:750; font-size:0.9rem; cursor:pointer;">Not today</button>
                     </div>
                 </div>
@@ -642,14 +692,14 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
 
         const previous = parseFloat(payload.previous_weight_kg);
         const change = parseFloat(payload.change_kg);
-        let detail = 'Post this to the feed and keep Friday weigh-ins moving.';
+        let detail = 'Post this to the Feed for +' + FRIDAY_WEIGH_SHARE_POINTS + ' XP and keep Friday weigh-ins moving.';
         if (isFinite(previous) && isFinite(change)) {
             const abs = Math.abs(change).toFixed(1);
-            if (change < 0) detail = `Down ${abs} kg from last Friday. Post it to the feed?`;
-            else if (change > 0) detail = `Up ${abs} kg from last Friday. Still worth posting.`;
+            if (change < 0) detail = `Down ${abs} kg from last Friday. Post it to the Feed for +${FRIDAY_WEIGH_SHARE_POINTS} XP?`;
+            else if (change > 0) detail = `Up ${abs} kg from last Friday. Still worth posting for +${FRIDAY_WEIGH_SHARE_POINTS} XP.`;
             else detail = `Steady from last Friday. Still counts for showing up.`;
         } else {
-            detail = 'First Friday marker for this run. Post the starting point to the feed?';
+            detail = 'First Friday marker for this run. Post the starting point to the Feed for +' + FRIDAY_WEIGH_SHARE_POINTS + ' XP?';
         }
         if (detailEl) detailEl.textContent = detail;
 
@@ -661,7 +711,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
 
         if (postBtn) {
             postBtn.disabled = false;
-            postBtn.textContent = 'Post to feed (+' + FRIDAY_WEIGH_SHARE_POINTS + ' XP)';
+            postBtn.textContent = 'Post to Feed (+' + FRIDAY_WEIGH_SHARE_POINTS + ' XP)';
         }
 
         modal.style.display = 'flex';
@@ -692,7 +742,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
         const postBtn = document.getElementById('friday-weigh-share-post-btn');
         if (postBtn) {
             postBtn.disabled = true;
-            postBtn.textContent = 'Posting to feed...';
+            postBtn.textContent = 'Posting to Feed...';
         }
 
         try {
@@ -716,7 +766,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
             if (typeof loadPhotoFeed === 'function') loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
             if (typeof refreshWeeklyGoalsCard === 'function') refreshWeeklyGoalsCard();
 
-            showWeighRewardToast(sharePoints > 0 ? `Posted to feed. +${sharePoints} XP` : 'Friday weigh-in already posted to feed', 'success');
+            showWeighRewardToast(sharePoints > 0 ? `Posted to Feed. +${sharePoints} XP` : 'Friday weigh-in already posted to Feed', 'success');
 
             if (typeof switchAppTab === 'function') {
                 switchAppTab('friends');
@@ -726,10 +776,10 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
             }
         } catch (error) {
             console.error('Friday weigh-in share failed:', error);
-            showWeighRewardToast('Could not post Friday weigh-in to feed. Try again.', 'error');
+            showWeighRewardToast('Could not post Friday weigh-in to Feed. Try again.', 'error');
             if (postBtn) {
                 postBtn.disabled = false;
-                postBtn.textContent = 'Post to feed (+' + FRIDAY_WEIGH_SHARE_POINTS + ' XP)';
+                postBtn.textContent = 'Post to Feed (+' + FRIDAY_WEIGH_SHARE_POINTS + ' XP)';
             }
         }
     }
@@ -827,7 +877,12 @@ const FRIDAY_WEIGH_SHARE_POINTS = 10;
                         if (input) input.value = '';
                         // Show the completed card
                         const doneCard = document.getElementById('daily-weigh-in-done-card');
-                        if (doneCard) showDailyWeighInDoneCard(rewardPayload);
+                        if (doneCard) {
+                            showDailyWeighInDoneCard(rewardPayload);
+                            if (shouldShowFridayShareCard(rewardPayload)) {
+                                setTimeout(() => showFridayWeighInSharePrompt(rewardPayload), 450);
+                            }
+                        }
                     }, 500);
                 }
             }, 2000);
