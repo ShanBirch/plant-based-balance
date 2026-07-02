@@ -12572,7 +12572,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
-    { tab:'movement-tab', sel:'#workout-share-set-btn', title:'Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +20 XP.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn'); } },
+    { tab:'movement-tab', sel:'#workout-share-set-btn', fallbackSel:'#today-workout-card', title:'Share a Set', fallbackTitle:'Open a workout to Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +20 XP.", fallbackBody:"Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +20 XP.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn') || !!document.getElementById('today-workout-card'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Post-workout Share', body:"Finish a workout, then tap the single Share button to post the workout, a PB, or a photo to Feed." },
     { tab:'dashboard', sel:'#weekly-progress-photo-card,#weekly-progress-photo-done-card', title:'Progress photos to Instagram', body:"After your weekly progress photos save, tap IG Story to share a Balance progress card straight to Instagram.", condition: function(){ return !!document.querySelector('#weekly-progress-photo-card,#weekly-progress-photo-done-card'); } },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
@@ -12663,6 +12663,14 @@ if(!window._pbbIsIOSSafari) {
       }
       return null;
     } catch(e){ return null; }
+  }
+
+  function resolveStepTarget(step){
+    const primary = q(step && step.sel);
+    if (primary) return { target: primary, usedFallback: false };
+    const fallback = q(step && step.fallbackSel);
+    if (fallback) return { target: fallback, usedFallback: true };
+    return { target: null, usedFallback: false };
   }
 
   function closeTourBlockingSurfaces(){
@@ -12848,12 +12856,15 @@ if(!window._pbbIsIOSSafari) {
       try { await step.action(); } catch(e){ console.warn('[tour] step action failed', e); }
     }
 
-    let target = q(step.sel);
+    let resolved = resolveStepTarget(step);
+    let target = resolved.target;
     if (!target && step.title === 'Customize your character') {
       target = q('#view-dashboard .profile-icon,.profile-icon');
+      resolved = { target: target, usedFallback: false };
     }
     if (!target && step.title === 'Say hi to Coach Shan') {
       target = q('#direct-message-modal #dm-messages-container,#dm-messages-container,#view-dashboard .header-msg-icon,.header-msg-icon');
+      resolved = { target: target, usedFallback: false };
     }
     if (target && typeof target.scrollIntoView === 'function') {
       try { target.scrollIntoView({ block:'center', behavior:'auto' }); } catch(e){}
@@ -12861,15 +12872,15 @@ if(!window._pbbIsIOSSafari) {
     }
 
     document.getElementById('tour-counter').textContent = 'Step ' + (i+1) + ' / ' + activeSteps.length;
-    document.getElementById('tour-title').textContent = step.title;
-    document.getElementById('tour-body').textContent = step.body;
+    document.getElementById('tour-title').textContent = (resolved.usedFallback && step.fallbackTitle) ? step.fallbackTitle : step.title;
+    document.getElementById('tour-body').textContent = (resolved.usedFallback && step.fallbackBody) ? step.fallbackBody : step.body;
     setTourXpNote(false);
     document.getElementById('tour-back-btn').style.visibility = i === 0 ? 'hidden' : 'visible';
     document.getElementById('tour-next-btn').textContent = (i === activeSteps.length - 1) ? 'Finish' : 'Next';
 
     positionBubbleAndSpotlight(target, step);
-    setTimeout(function(){ positionBubbleAndSpotlight(q(step.sel), step); }, 180);
-    setTimeout(function(){ positionBubbleAndSpotlight(q(step.sel), step); }, 520);
+    setTimeout(function(){ positionBubbleAndSpotlight(resolveStepTarget(step).target, step); }, 180);
+    setTimeout(function(){ positionBubbleAndSpotlight(resolveStepTarget(step).target, step); }, 520);
 
     const checkpoint = step.xpReward
       || step.walkthroughReward
@@ -12970,7 +12981,7 @@ if(!window._pbbIsIOSSafari) {
     resizeHandler = function(){
       const step = activeSteps[idx];
       if (!step) return;
-      positionBubbleAndSpotlight(q(step.sel), step);
+      positionBubbleAndSpotlight(resolveStepTarget(step).target, step);
     };
     window.addEventListener('resize', resizeHandler);
     window.addEventListener('scroll', resizeHandler, true);
@@ -13232,8 +13243,11 @@ if(!window._pbbIsIOSSafari) {
   //   1. Add an entry to the `allFeatures` array below.
   //   2. Give it a unique `id` string (never change past ids).
   //   3. Set tab, sel, title, body (same format as tour steps).
-  //   4. Optionally add `action` (async fn run before showing).
-  //   5. Optionally add `condition` (fn → bool, to filter).
+  //   4. For deep features, add `fallbackSel`, `fallbackTitle`, and `fallbackBody`
+  //      so the reveal spotlights a visible entry point when the exact target is
+  //      inside a nested screen or state-dependent view.
+  //   5. Optionally add `action` (async fn run before showing).
+  //   6. Optionally add `condition` (fn -> bool, to filter).
   //
   // localStorage key: pbb_seen_features (JSON array of seen ids)
   // -------------------------------------------------------
@@ -13589,9 +13603,12 @@ if(!window._pbbIsIOSSafari) {
     id: 'share-a-set-20-points-v6',
     tab: 'movement-tab',
     sel: '#workout-share-set-btn',
+    fallbackSel: '#today-workout-card',
     title: 'Share a Set',
+    fallbackTitle: 'Open a workout to Share a Set',
     body: "Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +20 XP.",
-    condition: function(){ return !!document.getElementById('workout-share-set-btn'); }
+    fallbackBody: "Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +20 XP.",
+    condition: function(){ return !!document.getElementById('workout-share-set-btn') || !!document.getElementById('today-workout-card'); }
   });
   allFeatures.push({
     id: 'post-workout-share-menu-v1',
@@ -13736,21 +13753,43 @@ if(!window._pbbIsIOSSafari) {
 
   // ── Spotlight walkthrough (reuses guided tour DOM) ───────
 
+  function isVisible(el) {
+    if (!el) return false;
+    if (!el.getClientRects || !el.getClientRects().length) return false;
+    var r = el.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return false;
+    var node = el;
+    while (node && node.nodeType === 1) {
+      try {
+        var cs = window.getComputedStyle(node);
+        if (cs.display === 'none' || cs.visibility === 'hidden') return false;
+        if (parseFloat(cs.opacity) === 0) return false;
+      } catch(e){}
+      node = node.parentElement;
+    }
+    return true;
+  }
+
   function q(sel) {
+    if (!sel) return null;
     var sels = sel.split(',');
     for (var i = 0; i < sels.length; i++) {
       try {
-        var el = document.querySelector(sels[i].trim());
-        if (el && el.offsetParent !== null) return el;
-      } catch(e){}
-    }
-    for (var i = 0; i < sels.length; i++) {
-      try {
-        var el = document.querySelector(sels[i].trim());
-        if (el) return el;
+        var nodes = document.querySelectorAll(sels[i].trim());
+        for (var j = 0; j < nodes.length; j++) {
+          if (isVisible(nodes[j])) return nodes[j];
+        }
       } catch(e){}
     }
     return null;
+  }
+
+  function resolveRevealTarget(step) {
+    var primary = q(step && step.sel);
+    if (primary) return { target: primary, usedFallback: false };
+    var fallback = q(step && step.fallbackSel);
+    if (fallback) return { target: fallback, usedFallback: true };
+    return { target: null, usedFallback: false };
   }
 
   async function ensureTab(tab, subtab) {
@@ -13837,11 +13876,13 @@ if(!window._pbbIsIOSSafari) {
       try { await step.action(); } catch(e){ console.warn('[feature-reveal] step action failed', e); }
     }
 
-    var target = q(step.sel);
+    var resolved = resolveRevealTarget(step);
+    var target = resolved.target;
     // Retry once if element not found yet (dynamically created elements)
     if (!target) {
       await new Promise(function(r){ setTimeout(r, 800); });
-      target = q(step.sel);
+      resolved = resolveRevealTarget(step);
+      target = resolved.target;
     }
     if (target && typeof target.scrollIntoView === 'function') {
       try { target.scrollIntoView({ block:'center', behavior:'smooth' }); } catch(e){}
@@ -13849,8 +13890,8 @@ if(!window._pbbIsIOSSafari) {
     }
 
     document.getElementById('tour-counter').textContent = 'Feature Drop - ' + (i+1) + ' / ' + revealSteps.length;
-    document.getElementById('tour-title').textContent = step.title;
-    document.getElementById('tour-body').textContent = step.body;
+    document.getElementById('tour-title').textContent = (resolved.usedFallback && step.fallbackTitle) ? step.fallbackTitle : step.title;
+    document.getElementById('tour-body').textContent = (resolved.usedFallback && step.fallbackBody) ? step.fallbackBody : step.body;
     var xpNote = document.getElementById('tour-xp-note');
     if (xpNote) xpNote.style.display = 'none';
     document.getElementById('tour-back-btn').style.visibility = i === 0 ? 'hidden' : 'visible';
@@ -13882,7 +13923,7 @@ if(!window._pbbIsIOSSafari) {
     revealResizeHandler = function(){
       var step = revealSteps[revealIdx];
       if (!step) return;
-      positionReveal(q(step.sel), step);
+      positionReveal(resolveRevealTarget(step).target, step);
     };
     window.addEventListener('resize', revealResizeHandler);
     window.addEventListener('scroll', revealResizeHandler, true);
