@@ -330,7 +330,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=39',
             'lib/native-iap.js',
-            'lib/stories.js?v=25',
+            'lib/stories.js?v=26',
             'lib/ai-opponents.js',
             'lib/games.js?v=2',
             'lib/nutrition-calculator.js',
@@ -349,7 +349,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=25"><\/script>');
+    document.write('<script src="lib/stories.js?v=26"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=2"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -615,6 +615,8 @@ window.addEventListener('load', function() {
         'createFeedPost': 'post to the feed',
         'toggleReaction': 'react to posts',
         'addFeedComment': 'comment on posts',
+        'postFeedComment': 'comment on posts',
+        'toggleFeedCommentLike': 'like comments',
         'shareWorkoutToFeed': 'share to the feed',
         'shareWorkoutCardToInstagram': 'share to Instagram',
         'shareProgressPhotoToInstagram': 'share progress photos to Instagram',
@@ -12587,6 +12589,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Share a thought or encouragement once a day for +2 XP. Add a photo or video if you want." },
     { tab:'friends', sel:'.feed-post-actions-btn', title:'Post actions', body:"Tap the three dots on one of your own feed posts to edit or delete it.", quick: true, condition: function(){ return !!document.querySelector('.feed-post-actions-btn'); } },
+    { tab:'friends', sel:'.feed-comment-like-btn', title:'Like feed comments', body:"Tap the heart beside a feed comment to like it.", quick: true, condition: function(){ return !!document.querySelector('.feed-comment-like-btn'); } },
 
 
     { tab:'dashboard', sel:'#dm-view,#dm-messages-container', title:'Say hi to Coach Shan', body:"Coach Shan built this app and would love your feedback to help make it better. This is his DM — type a message and say hi any time.", action: async function(){
@@ -13615,6 +13618,14 @@ if(!window._pbbIsIOSSafari) {
     title: 'Post actions',
     body: "Use the three-dot menu on your own posts to edit or delete them.",
     condition: function(){ return !!document.querySelector('.feed-post-actions-btn'); }
+  });
+  allFeatures.push({
+    id: 'feed-comment-likes-v1',
+    tab: 'friends',
+    sel: '.feed-comment-like-btn',
+    title: 'Like feed comments',
+    body: "Tap the heart beside a feed comment to like it.",
+    condition: function(){ return !!document.querySelector('.feed-comment-like-btn'); }
   });
   allFeatures.push({
     id: 'share-a-set-20-points-v6',
