@@ -5,6 +5,7 @@
     const WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS = 45000;
     const WORKOUT_FEED_SHARE_LATE_RETRY_DELAY_MS = 120000;
     const WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 1536 * 1024;
+    const WORKOUT_FEED_SHARE_RETRY_NOTICE_ID = 'workout-feed-share-retry-notice';
     let formCheckState = {
         file: null,
         objectUrl: null,
@@ -885,6 +886,7 @@
         };
 
         await putWorkoutFeedShareQueueItem(item);
+        refreshWorkoutFeedShareRetryNotice().catch(function () {});
         if (payload.autoRetry === true) {
             scheduleWorkoutFeedShareRetry(retryDelayMs || 30000);
         }
@@ -934,8 +936,205 @@
     function forgetQueuedWorkoutFeedShareOnLateSuccess(postPromise, queueItem) {
         if (!postPromise || !queueItem || !queueItem.id) return;
         postPromise.then(function () {
-            deleteWorkoutFeedShareQueueItem(queueItem.id).catch(function () {});
+            deleteWorkoutFeedShareQueueItem(queueItem.id)
+                .then(function () { refreshWorkoutFeedShareRetryNotice().catch(function () {}); })
+                .catch(function () {});
         }).catch(function () {});
+    }
+
+    function escapeWorkoutFeedShareHtml(value) {
+        return String(value || '').replace(/[&<>"']/g, function (char) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[char] || char;
+        });
+    }
+
+    function formatWorkoutFeedShareFileSize(bytes) {
+        const size = Number(bytes || 0);
+        if (!Number.isFinite(size) || size <= 0) return '';
+        if (size < 1024 * 1024) return Math.max(1, Math.round(size / 1024)) + 'KB';
+        return (Math.round((size / (1024 * 1024)) * 10) / 10) + 'MB';
+    }
+
+    function formatWorkoutFeedShareQueuedAge(item) {
+        const ts = Date.parse(item && item.createdAt || '');
+        if (!Number.isFinite(ts)) return 'Saved for later';
+        const minutes = Math.max(0, Math.floor((Date.now() - ts) / 60000));
+        if (minutes < 1) return 'Saved just now';
+        if (minutes < 60) return 'Saved ' + minutes + 'm ago';
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return 'Saved ' + hours + 'h ago';
+        return 'Saved ' + Math.floor(hours / 24) + 'd ago';
+    }
+
+    function ensureWorkoutFeedShareRetryNotice() {
+        const feedComposer = document.getElementById('feed-composer-card');
+        const feedSection = document.getElementById('friends-feed-section');
+        const anchor = feedComposer || feedSection;
+        if (!anchor || !anchor.parentNode) return null;
+
+        const styleId = WORKOUT_FEED_SHARE_RETRY_NOTICE_ID + '-styles';
+        if (!document.getElementById(styleId)) {
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.textContent = `
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID},
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} * {
+                    box-sizing: border-box;
+                }
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} {
+                    margin: 0 15px 12px;
+                    background: #fff7ed;
+                    border: 1px solid #fed7aa;
+                    border-radius: 14px;
+                    box-shadow: 0 8px 24px rgba(154, 52, 18, 0.12);
+                    overflow: hidden;
+                }
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-inner {
+                    display: flex;
+                    align-items: center;
+                    gap: 11px;
+                    padding: 12px;
+                }
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-icon {
+                    width: 38px;
+                    height: 38px;
+                    border-radius: 12px;
+                    background: linear-gradient(135deg, #7c2d12, #dc2626);
+                    color: #fff;
+                    -webkit-text-fill-color: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-title {
+                    color: #431407;
+                    -webkit-text-fill-color: #431407;
+                    font-size: 0.92rem;
+                    font-weight: 900;
+                    line-height: 1.2;
+                    margin-bottom: 3px;
+                }
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-body,
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-meta {
+                    color: #7c2d12;
+                    -webkit-text-fill-color: #7c2d12;
+                    font-size: 0.76rem;
+                    font-weight: 700;
+                    line-height: 1.32;
+                }
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    flex-shrink: 0;
+                }
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} button {
+                    min-height: 38px;
+                    border: none;
+                    border-radius: 999px;
+                    padding: 0 15px;
+                    background: #dc2626;
+                    color: #fff;
+                    -webkit-text-fill-color: #fff;
+                    font-size: 0.8rem;
+                    font-weight: 900;
+                    cursor: pointer;
+                    box-shadow: 0 8px 18px rgba(220, 38, 38, 0.2);
+                }
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} button[disabled] {
+                    opacity: 0.62;
+                    cursor: default;
+                }
+                @media (max-width: 430px) {
+                    #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-inner {
+                        align-items: flex-start;
+                    }
+                    #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-actions {
+                        align-self: stretch;
+                    }
+                    #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} button {
+                        padding: 0 12px;
+                        white-space: nowrap;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        let notice = document.getElementById(WORKOUT_FEED_SHARE_RETRY_NOTICE_ID);
+        if (!notice) {
+            notice = document.createElement('div');
+            notice.id = WORKOUT_FEED_SHARE_RETRY_NOTICE_ID;
+            notice.style.display = 'none';
+            anchor.parentNode.insertBefore(notice, anchor);
+        }
+        return notice;
+    }
+
+    async function getCurrentUserWorkoutFeedShareQueueItems() {
+        const userId = window.currentUser && window.currentUser.id;
+        if (!userId) return [];
+        const items = await getWorkoutFeedShareQueueItems();
+        return (items || []).filter(function (item) {
+            return item && item.userId === userId;
+        });
+    }
+
+    async function refreshWorkoutFeedShareRetryNotice() {
+        const notice = ensureWorkoutFeedShareRetryNotice();
+        if (!notice) return;
+
+        let items = [];
+        try {
+            items = await getCurrentUserWorkoutFeedShareQueueItems();
+        } catch (error) {
+            console.warn('[WorkoutFeedShare] retry notice unavailable', error);
+            notice.style.display = 'none';
+            return;
+        }
+
+        if (!items.length) {
+            notice.style.display = 'none';
+            notice.innerHTML = '';
+            return;
+        }
+
+        const firstItem = items[0] || {};
+        const count = items.length;
+        const fileSize = formatWorkoutFeedShareFileSize(firstItem.fileSize);
+        const workoutName = String(firstItem.workoutName || '').trim();
+        const title = count === 1 ? 'Share a Set is saved' : count + ' Share a Set uploads are saved';
+        const body = count === 1
+            ? (workoutName ? workoutName + ' is saved on this phone.' : 'Your set is saved on this phone.')
+            : 'Your saved sets are waiting on this phone.';
+        const metaParts = [formatWorkoutFeedShareQueuedAge(firstItem)];
+        if (fileSize) metaParts.push(fileSize);
+        if (navigator && navigator.onLine === false) metaParts.push('Waiting for reception');
+        const buttonText = workoutFeedShareRetryInProgress ? 'Posting...' : 'Post now';
+
+        notice.innerHTML = `
+            <div class="share-set-retry-inner">
+                <div class="share-set-retry-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="share-set-retry-title">${escapeWorkoutFeedShareHtml(title)}</div>
+                    <div class="share-set-retry-body">${escapeWorkoutFeedShareHtml(body)} Post it when reception is better.</div>
+                    <div class="share-set-retry-meta">${escapeWorkoutFeedShareHtml(metaParts.join(' | '))}</div>
+                </div>
+                <div class="share-set-retry-actions">
+                    <button type="button" onclick="retryWorkoutFeedShareQueue(true)" ${workoutFeedShareRetryInProgress ? 'disabled' : ''}>${escapeWorkoutFeedShareHtml(buttonText)}</button>
+                </div>
+            </div>
+        `;
+        notice.style.display = 'block';
     }
 
     function ensureWorkoutFeedShareUploadBanner() {
@@ -1906,6 +2105,7 @@
         }
 
         workoutFeedShareRetryInProgress = true;
+        refreshWorkoutFeedShareRetryNotice().catch(function () {});
         try {
             const queuedItems = (await getWorkoutFeedShareQueueItems()).filter(function (item) {
                 return item && item.userId === userId;
@@ -1980,6 +2180,7 @@
             if (manual) showWorkoutFeedShareUploadBanner('Could not retry just now.', 'error');
         } finally {
             workoutFeedShareRetryInProgress = false;
+            refreshWorkoutFeedShareRetryNotice().catch(function () {});
         }
     }
 
@@ -2002,7 +2203,20 @@
     window.flipWorkoutFeedShareInAppCamera = flipWorkoutFeedShareInAppCamera;
     window.retryWorkoutFeedShareQueue = retryWorkoutFeedShareQueue;
     window.hideWorkoutFeedShareUploadBanner = hideWorkoutFeedShareUploadBanner;
+    window.refreshWorkoutFeedShareRetryNotice = refreshWorkoutFeedShareRetryNotice;
 
     document.addEventListener('DOMContentLoaded', ensureFormCheckView);
-    document.addEventListener('DOMContentLoaded', ensureWorkoutFeedShareView);
+    document.addEventListener('DOMContentLoaded', function () {
+        ensureWorkoutFeedShareView();
+        refreshWorkoutFeedShareRetryNotice().catch(function () {});
+    });
+    window.addEventListener('online', function () {
+        refreshWorkoutFeedShareRetryNotice().catch(function () {});
+    });
+    window.addEventListener('offline', function () {
+        refreshWorkoutFeedShareRetryNotice().catch(function () {});
+    });
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) refreshWorkoutFeedShareRetryNotice().catch(function () {});
+    });
 })();

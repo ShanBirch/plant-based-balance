@@ -3,7 +3,7 @@
   "appName": "Balance",
   "webDir": "www",
   "server": {
-    "url": "https://plantbased-balance.org/dashboard.html?native_rev=share_set_v12",
+		"url": "https://plantbased-balance.org/dashboard.html?native_rev=share_set_v13",
     "cleartext": false,
     "allowNavigation": [
       "plantbased-balance.org",
