@@ -5318,8 +5318,8 @@ const CHALLENGE_XP_INFO_GROUPS = [
             { amount: '+10', title: 'Weekly progress photos', body: 'Earn once when the weekly progress photo set is accepted.' },
             { amount: '+10', title: 'Share weekly progress', body: 'Share that weekly progress photo set to Feed once.' },
             { amount: '+1', title: 'Daily weigh-in', body: 'Add your weigh-in for the day.' },
-            { amount: '+10', title: 'Friday weigh-in down', body: 'Earn when Friday weight is down from the previous Friday in a challenge.' },
-            { amount: '+10', title: 'Friday Feed card', body: 'Post the Friday weigh-in review card to Feed once per Friday weigh-in.' },
+            { amount: '+5', title: 'Friday weigh-in down', body: 'Earn when Friday weight is down from the previous Friday in a challenge.' },
+            { amount: '+5', title: 'Friday Feed card', body: 'Post the Friday weigh-in review card to Feed once per Friday weigh-in.' },
         ],
     },
     {

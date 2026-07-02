@@ -351,7 +351,7 @@ BEGIN
              AND transaction_type = 'bonus_friday_weigh_loss'
              AND reference_id = p_weigh_in_id
          ) THEN
-        v_loss_points := 10;
+        v_loss_points := 5;
         PERFORM public.increment_user_points(v_user_id, v_loss_points);
 
         INSERT INTO public.point_transactions (
@@ -404,7 +404,7 @@ BEGIN
     'daily_points_awarded', v_daily_points,
     'loss_points_awarded', v_loss_points,
     'total_points_awarded', v_total_awarded,
-    'share_points_available', CASE WHEN v_has_challenge AND v_is_friday THEN 2 ELSE 0 END,
+    'share_points_available', CASE WHEN v_has_challenge AND v_is_friday THEN 5 ELSE 0 END,
     'share_already_posted', v_share_already_posted
   );
 END;
@@ -538,7 +538,7 @@ BEGIN
       AND transaction_type = 'earn_friday_weigh_share'
       AND reference_id = p_weigh_in_id
   ) THEN
-    v_share_points := 2;
+    v_share_points := 5;
     PERFORM public.increment_user_points(v_user_id, v_share_points);
 
     INSERT INTO public.point_transactions (
