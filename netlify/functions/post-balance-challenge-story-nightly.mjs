@@ -47,5 +47,6 @@ export default async (req) => {
 };
 
 export const config = {
-    schedule: '0 9 * * *',
+    // Paused during Supabase incident on 2026-07-02. Restore after API/Auth calls are stable.
+    // schedule: '0 9 * * *',
 };

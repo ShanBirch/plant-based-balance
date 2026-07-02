@@ -267,13 +267,20 @@
   function = "delete-account"
   path = "/api/delete-account"
 
+# Supabase incident pause, 2026-07-02:
+# Background cron jobs are temporarily unscheduled to reduce read/write load while
+# Supabase API/Auth calls are returning gateway timeouts. Keep HTTP functions,
+# edge functions, webhooks, and client app routes available.
+#
+# Restore the schedule values below after Supabase API/Auth calls are stable.
+
 # Fitbit scheduled sync - runs every 2 hours
 [functions."sync-fitbit-data"]
-  schedule = "0 */2 * * *"
+#  schedule = "0 */2 * * *"
 
 # All wearables scheduled sync - runs every 2 hours (offset by 1 hour from Fitbit)
 [functions."sync-wearable-data"]
-  schedule = "0 1-23/2 * * *"
+#  schedule = "0 1-23/2 * * *"
 
 # Meal reminders - schedule is defined inline in send-meal-reminders.mjs via export config
 # Runs every 10 minutes to check if any users need meal reminders
@@ -281,7 +288,7 @@
 # Onboarding sequence scheduled scan - days 3/7/14/30 check-ins
 # Runs every 4 hours at :17 to stagger from the pulse scans and sync jobs.
 [functions."onboarding-scheduled-scan"]
-  schedule = "17 */4 * * *"
+#  schedule = "17 */4 * * *"
 
 # ============================================================
 # Daily pulses. Kept quiet so Shannon only gets phone pushes for overdue DMs
@@ -292,39 +299,39 @@
 # Morning pulse - daily at 19:30 UTC (≈ 5:30 AEST / 6:30 AEDT).
 # No proactive phone pushes.
 [functions."pulse-morning"]
-  schedule = "30 19 * * *"
+#  schedule = "30 19 * * *"
 
 # Lunch pulse - daily at 02:30 UTC (≈ 12:30 AEST / 13:30 AEDT).
 # Overdue in-app DM safety net only.
 [functions."pulse-lunch"]
-  schedule = "30 2 * * *"
+#  schedule = "30 2 * * *"
 
 # Evening pulse - daily at 09:00 UTC (≈ 19:00 AEST / 20:00 AEDT).
 # Overdue in-app DMs plus PB/streak/level-up backup only.
 [functions."pulse-evening"]
-  schedule = "0 9 * * *"
+#  schedule = "0 9 * * *"
 
 # Weekly Wrapped user push - Saturday 23:00 UTC (Sun 09:00 Brisbane).
 # One push per active user linking into the Spotify-Wrapped-style recap.
 # The push is a pinger only — client fetches the week's aggregate on open.
 [functions."weekly-wrapped-push"]
-  schedule = "0 23 * * 6"
+#  schedule = "0 23 * * 6"
 
 # Auto feed reactions - hourly scanner, code gates to 07:30-21:45 Brisbane.
 # Adds one Shannon love reaction to fresh feed posts after a human-ish delay.
 [functions."auto-feed-comment"]
-  schedule = "37 * * * *"
+#  schedule = "37 * * * *"
 
 # Weekly coach digest - Sunday evening 20:37 UTC (≈ Mon 06:37 AEST / 07:37 AEDT).
 # Per-client planning report for Shannon. Not sent to clients.
 [functions."weekly-coach-digest"]
-  schedule = "37 20 * * 0"
+#  schedule = "37 20 * * 0"
 
 # Meal plan nutrition audit - daily at 20:12 UTC (≈ 6:12 AEST / 7:12 AEDT).
 # Internal safety net for active client plans: calories, macro math, row counts,
 # and material gaps against stored/latest quiz targets.
 [functions."meal-plan-nutrition-audit"]
-  schedule = "12 20 * * *"
+#  schedule = "12 20 * * *"
 
 # Weekly check-in - ongoing weekly drafts for post-onboarding clients (31+ days).
 # Monday 21:23 UTC (≈ Tue 07:23 AEST / 08:23 AEDT) — lands in the morning for
@@ -336,24 +343,24 @@
 # Challenge check-ins - active cohort drafts for Shannon to approve/edit/send.
 # Mon/Sun drafts: Sun/Sat 19:30 UTC (Mon/Sun 05:30 Brisbane) so they are ready before 6am.
 [functions."challenge-checkin-scan"]
-  schedule = "30 19 * * 0,6"
+#  schedule = "30 19 * * 0,6"
 
 # Challenge leaderboard refresher - releases future-dated seed/test activity
 # by timestamp and keeps active participant rows current without a page open.
 [functions."challenge-progress-refresh"]
-  schedule = "17,47 * * * *"
+#  schedule = "17,47 * * * *"
 
 # Plateau detection - weekly scan for post-day-30 clients whose weight/strength
 # has stalled. Wed 22:47 UTC (≈ Thu 08:47 AEST) — mid-week, clear of Sun digest
 # and Tue weekly check-in.
 [functions."plateau-detection-scan"]
-  schedule = "47 22 * * 3"
+#  schedule = "47 22 * * 3"
 
 # Cohort acceptance window — expires participants who didn't tap Accept inside
 # their 24-hour confirm window after the cohort filled to 6. Runs hourly at :43
 # (staggered off the other scheduled jobs).
 [functions."expire-cohort-acceptances"]
-  schedule = "43 * * * *"
+#  schedule = "43 * * * *"
 
 # IG/FB lead memory extractor — daily at :29, summarises new
 # conversation context for any ig_thread with inbound activity since its
@@ -363,72 +370,72 @@
 # Extracted memory is injected into the IG-draft prompt for cold leads
 # who haven't yet signed up to the app.
 [functions."extract-ig-thread-memory"]
-  schedule = "29 18 * * *"
+#  schedule = "29 18 * * *"
 
 # Daily message learning - nightly safety net for sent client/lead DMs.
 # Runs at 23:41 Brisbane (13:41 UTC) and backfills any missed edit-learning
 # or in-app client_memory extraction from the last day of sent coach_alerts.
 [functions."daily-message-learning"]
-  schedule = "41 13 * * *"
+#  schedule = "41 13 * * *"
 
 # Instagram content memory - keeps active story/post context fresh for IG drafts.
 [functions."meta-ig-sync-content"]
-  schedule = "*/15 * * * *"
+#  schedule = "*/15 * * * *"
 
 # Instagram Graph inbox reconcile - polls recent Graph conversations so missed
 # webhook events are recovered without ManyChat.
 [functions."meta-ig-reconcile-inbox"]
-  schedule = "*/5 * * * *"
+#  schedule = "*/5 * * * *"
 
 # Instagram comment reply worker - polls recent shan_n_sunny media comments,
 # waits a short human-ish delay, then posts one deduped Graph comment reply.
 [functions."meta-ig-comment-reply-worker"]
-  schedule = "* * * * *"
+#  schedule = "* * * * *"
 
 # Content Radar - mines recent DMs and IG feedback into daily post ideas.
 [functions."content-radar-generate"]
-  schedule = "45 19 * * *"
+#  schedule = "45 19 * * *"
 
 # Cross-platform content growth loop - snapshots IG/YouTube/TikTok post metrics
 # and writes a compact brief for the content automation to read.
 [functions."content-growth-scan"]
-  schedule = "12 */6 * * *"
+#  schedule = "12 */6 * * *"
 
 # Coco's reward learner - scores the scoped acquisition lane and updates only
 # Coco's active learned rules. Runs daily in lean-cost mode.
 [functions."cocos-learning-run"]
-  schedule = "55 18 * * *"
+#  schedule = "55 18 * * *"
 
 # Learning reel finder. Queues Needs You approvals before sending.
 [functions."learning-reel-drip"]
-  schedule = "*/5 * * * *"
+#  schedule = "*/5 * * * *"
 
 # Client/lead manager - routes permanent people, media, AI suspicion,
 # confused replies, and missing context into Needs You. Runs every 20 minutes
 # to keep hot Starter Coaching handoffs moving without over-polling.
 # Code gates work to 05:00-02:00 Brisbane; the 02:00-04:59 block is paused.
 [functions."client-lead-manager"]
-  schedule = "*/20 * * * *"
+#  schedule = "*/20 * * * *"
 
 # Support Radar - daily human-support pass across app activity + chats.
 # Creates only high-signal Needs You check-ins, capped and deduped.
 [functions."support-radar-scan"]
-  schedule = "17 20 * * *"
+#  schedule = "17 20 * * *"
 
 # Daily Reel Opportunity - scans yesterday/recent client conversations for one
 # useful YouTube Short suggestion and puts it in Needs You for approval.
 [functions."daily-reel-opportunity-scan"]
-  schedule = "48 20 * * *"
+#  schedule = "48 20 * * *"
 
 # Recent Workout Touch - catches fresh completed workouts and creates at most a
 # weekly Needs You message per client, only during Shannon's waking hours.
 [functions."recent-workout-touch-scan"]
-  schedule = "*/15 * * * *"
+#  schedule = "*/15 * * * *"
 
 # Story comment quality audit - daily soft review of story-comment replies that
 # look confused or mismatched. Netlify cron is UTC: 21:08 UTC = 7:08am Brisbane.
 [functions."story-comment-quality-audit"]
-  schedule = "8 21 * * *"
+#  schedule = "8 21 * * *"
 
 # ManyChat reconcile is intentionally unscheduled for IG Graph cutover. Keep the
 # function file for manual legacy rescue until the external ManyChat account is
@@ -442,12 +449,12 @@
 # claim flip ('scheduled' -> 'pending') so concurrent runs don't double-fire.
 # Code gates work to 05:00-02:00 Brisbane; due replies wait through 02:00-04:59.
 [functions."scheduled-coach-reply-worker"]
-  schedule = "* * * * *"
+#  schedule = "* * * * *"
 
 # Abbey game autoplayer - schedules and fires delayed Shannon turns in
 # Connect 4 / Tic Tac Toe without touching normal DM auto-send.
 [functions."game-autoplay-worker"]
-  schedule = "* * * * *"
+#  schedule = "* * * * *"
 
 # Prevent caching of service worker so native app always gets latest version
 [[headers]]

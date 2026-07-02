@@ -542,5 +542,6 @@ export default async function handler(req: Request): Promise<Response> {
 }
 
 export const config = {
-    schedule: "@daily",
+    // Paused during Supabase incident on 2026-07-02. Restore after API/Auth calls are stable.
+    // schedule: "@daily",
 };
