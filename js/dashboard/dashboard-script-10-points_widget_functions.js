@@ -2313,6 +2313,46 @@ window.resetWorkoutShareUI = resetWorkoutShareUI;
 let postWorkoutShareCompleted = { workout: false, photo: false, pbs: {} };
 let postWorkoutShareBusy = null;
 
+function getPostWorkoutShareViewportBottom() {
+    const bottomNav = document.querySelector('.bottom-nav');
+    if (!bottomNav) return window.innerHeight;
+
+    const navStyle = window.getComputedStyle(bottomNav);
+    if (navStyle.display === 'none' || navStyle.visibility === 'hidden') {
+        return window.innerHeight;
+    }
+
+    const navRect = bottomNav.getBoundingClientRect();
+    if (navRect.height <= 0 || navRect.top >= window.innerHeight) {
+        return window.innerHeight;
+    }
+
+    return Math.max(0, navRect.top);
+}
+
+function positionPostWorkoutShareMenu() {
+    const menu = document.getElementById('post-workout-share-menu');
+    const btn = document.getElementById('post-workout-share-btn');
+    if (!menu || !btn || menu.style.display === 'none') return;
+
+    const btnRect = btn.getBoundingClientRect();
+    const gap = 8;
+    const cushion = 12;
+    const maxMenuHeight = 330;
+    const minMenuHeight = 120;
+    const viewportBottom = getPostWorkoutShareViewportBottom();
+    const availableBelow = Math.max(minMenuHeight, viewportBottom - btnRect.bottom - gap - cushion);
+    const availableAbove = Math.max(minMenuHeight, btnRect.top - gap - cushion);
+    const preferredHeight = Math.min(menu.scrollHeight || maxMenuHeight, maxMenuHeight);
+    const shouldOpenUp = availableBelow < preferredHeight && availableAbove > availableBelow;
+    const availableHeight = shouldOpenUp ? availableAbove : availableBelow;
+
+    menu.style.top = shouldOpenUp ? 'auto' : 'calc(100% + 8px)';
+    menu.style.bottom = shouldOpenUp ? 'calc(100% + 8px)' : 'auto';
+    menu.style.maxHeight = Math.max(minMenuHeight, Math.min(maxMenuHeight, availableHeight)) + 'px';
+    menu.style.overflowY = 'auto';
+}
+
 function setPostWorkoutShareMenuOpen(open) {
     const menu = document.getElementById('post-workout-share-menu');
     const btn = document.getElementById('post-workout-share-btn');
@@ -2320,7 +2360,10 @@ function setPostWorkoutShareMenuOpen(open) {
     if (menu) menu.style.display = open ? 'block' : 'none';
     if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     if (chevron) chevron.textContent = open ? '^' : 'v';
-    if (open) renderPostWorkoutShareMenu();
+    if (open) {
+        renderPostWorkoutShareMenu();
+        positionPostWorkoutShareMenu();
+    }
 }
 
 function togglePostWorkoutShareMenu(event) {
@@ -2420,6 +2463,8 @@ function renderPostWorkoutShareMenu() {
         disabled: !data || isBusy || postWorkoutShareCompleted.photo,
         onClick: sharePostWorkoutPhotoToFeed
     }));
+
+    if (menu.style.display !== 'none') positionPostWorkoutShareMenu();
 }
 
 async function awardPostWorkoutFeedShareXP(photoTimestamp, photoHash) {
@@ -2625,6 +2670,8 @@ document.addEventListener('click', function(event) {
     if (!root || !menu || menu.style.display === 'none') return;
     if (!root.contains(event.target)) setPostWorkoutShareMenuOpen(false);
 });
+
+window.addEventListener('resize', positionPostWorkoutShareMenu);
 
 window.togglePostWorkoutShareMenu = togglePostWorkoutShareMenu;
 window.renderPostWorkoutShareMenu = renderPostWorkoutShareMenu;
