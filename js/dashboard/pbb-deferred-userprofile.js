@@ -431,7 +431,7 @@
         ]);
 
         if (mediaType === 'video') {
-            return firstUsableProfileUrl([story.thumbnail_url, cardThumb]);
+            return firstUsableProfileUrl([story.media_url, story.thumbnail_url, cardThumb]);
         }
 
         return firstUsableProfileUrl([
@@ -468,9 +468,15 @@
 
             if (isImage) {
                 const thumb = thumbnail;
+                const videoPreviewHtml = mediaType === 'video' && story.media_url && typeof window.renderFeedVideoPreview === 'function'
+                    ? window.renderFeedVideoPreview({ media_url: story.media_url || thumb, thumbnail_url: story.thumbnail_url }, {
+                        className: 'up-post-video',
+                        style: 'width:100%; height:100%; display:block; object-fit:cover; background:#111827; pointer-events:none;'
+                    })
+                    : '';
                 return `
                     <div class="up-post-thumb" onclick="openFeedPostViewer('${storyId}')">
-                        <img src="${escapeUserProfileHtml(thumb)}" loading="lazy" onerror="this.parentElement.classList.add('is-missing-media'); this.style.display='none';">
+                        ${videoPreviewHtml || `<img src="${escapeUserProfileHtml(thumb)}" loading="lazy" onerror="this.parentElement.classList.add('is-missing-media'); this.style.display='none';">`}
                         <span class="up-post-missing-label">Photo unavailable</span>
                         ${mediaType === 'video' ? '<div class="up-post-video-badge"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>' : ''}
                     </div>
