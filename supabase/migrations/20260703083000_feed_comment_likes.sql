@@ -17,17 +17,21 @@ CREATE INDEX IF NOT EXISTS idx_feed_comment_likes_user_id
 
 ALTER TABLE public.feed_comment_likes ENABLE ROW LEVEL SECURITY;
 
+REVOKE ALL ON TABLE public.feed_comment_likes FROM PUBLIC, anon, authenticated;
+
 DROP POLICY IF EXISTS "Users can view feed comment likes" ON public.feed_comment_likes;
 CREATE POLICY "Users can view feed comment likes" ON public.feed_comment_likes
-  FOR SELECT USING (true);
+  FOR SELECT TO authenticated USING (true);
 
 DROP POLICY IF EXISTS "Users can create their own feed comment likes" ON public.feed_comment_likes;
 CREATE POLICY "Users can create their own feed comment likes" ON public.feed_comment_likes
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+  FOR INSERT TO authenticated WITH CHECK ((SELECT auth.uid()) = user_id);
 
 DROP POLICY IF EXISTS "Users can delete their own feed comment likes" ON public.feed_comment_likes;
 CREATE POLICY "Users can delete their own feed comment likes" ON public.feed_comment_likes
-  FOR DELETE USING (auth.uid() = user_id);
+  FOR DELETE TO authenticated USING ((SELECT auth.uid()) = user_id);
+
+GRANT SELECT, INSERT, DELETE ON public.feed_comment_likes TO authenticated;
 
 DROP FUNCTION IF EXISTS public.get_story_comments(UUID, INT);
 CREATE OR REPLACE FUNCTION public.get_story_comments(p_story_id UUID, p_limit INT DEFAULT 20)
