@@ -90,6 +90,8 @@ assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'move_workout_days' 
 
 assert.ok(adminSource.includes('function isTahliaSocialApprovalAlert'));
 assert.ok(adminSource.includes('function renderTahliaSocialContext'));
+assert.ok(adminSource.includes('function hydrateTahliaSocialContexts'));
+assert.ok(adminSource.includes('data-tahlia-story-id'));
 assert.ok(adminSource.includes('Relevant Feed post'));
 assert.ok(adminSource.includes("'Tahlia social'"));
 assert.ok(performSource.includes('publish_tahlia_feed_post'));

@@ -16069,10 +16069,15 @@
             return Number.isFinite(timestamp) ? timeAgo(value) : '';
         }
 
+        const TAHLIA_INLINE_MEDIA_MAX_CHARS = 2500000;
+        const tahliaStoryContextCache = new Map();
+
         function safeTahliaMediaUrl(value) {
             const raw = String(value || '').trim();
             if (!raw) return '';
             if (raw.startsWith('/')) return raw;
+            if (/^data:image\//i.test(raw)) return raw.length <= TAHLIA_INLINE_MEDIA_MAX_CHARS ? raw : '';
+            if (/^blob:/i.test(raw)) return raw;
             try {
                 const url = new URL(raw, window.location.origin);
                 if (url.protocol === 'https:' || url.protocol === 'http:') return url.href;
@@ -16101,6 +16106,26 @@
                 .map(part => `<span class="tahlia-social-pill">${escapeHtml(part)}</span>`)
                 .join('');
             return pills ? `<div class="tahlia-social-meta">${pills}</div>` : '';
+        }
+
+        function tahliaStoryTextFromRow(story = {}) {
+            const caption = String(story.caption || '').trim();
+            if (!caption) return '';
+            if (caption.startsWith('{')) {
+                try {
+                    const parsed = JSON.parse(caption);
+                    if (parsed && typeof parsed === 'object') {
+                        return cleanTahliaContextText([
+                            parsed.share_caption,
+                            parsed.caption,
+                            parsed.meal_name,
+                            parsed.title,
+                            parsed.card_type,
+                        ].filter(Boolean).join(' '), 460);
+                    }
+                } catch (_) {}
+            }
+            return cleanTahliaContextText(caption, 460);
         }
 
         function getTahliaPrimaryAction(alert) {
@@ -16145,12 +16170,12 @@
                     postId ? `Post ${shortTahliaPostId(postId)}` : '',
                 ]);
                 const fallback = 'No caption saved for this Feed post. Check the author and media type before approving.';
-                return `<div class="tahlia-social-context">
+                return `<div class="tahlia-social-context"${postId ? ` data-tahlia-story-id="${escapeHtml(postId)}"` : ''}>
                     ${thumbHtml}
                     <div class="tahlia-social-body">
                         <div class="tahlia-social-label">Relevant Feed post</div>
                         <div class="tahlia-social-title">${escapeHtml(author)}'s post</div>
-                        <div class="tahlia-social-text">${escapeHtml(storyText || fallback)}</div>
+                        <div class="tahlia-social-text" data-tahlia-story-text="${storyText ? 'saved' : 'missing'}">${escapeHtml(storyText || fallback)}</div>
                         ${metaHtml}
                     </div>
                 </div>`;
@@ -16188,6 +16213,63 @@
                     ${metaHtml}
                 </div>
             </div>`;
+        }
+
+        async function hydrateTahliaSocialContexts(root = document) {
+            if (!window.supabaseClient?.from) return;
+            const scope = root && typeof root.querySelectorAll === 'function' ? root : document;
+            const contexts = Array.from(scope.querySelectorAll('.tahlia-social-context[data-tahlia-story-id]'));
+            const storyIds = [...new Set(contexts
+                .filter(ctx => !ctx.querySelector('img.tahlia-social-thumb'))
+                .map(ctx => String(ctx.dataset.tahliaStoryId || '').trim())
+                .filter(Boolean))];
+            if (!storyIds.length) return;
+
+            const missingIds = storyIds.filter(id => !tahliaStoryContextCache.has(id));
+            if (missingIds.length) {
+                try {
+                    const { data, error } = await window.supabaseClient
+                        .from('stories')
+                        .select('id,media_type,media_url,thumbnail_url,background_color,caption,created_at')
+                        .in('id', missingIds);
+                    if (error) throw error;
+                    missingIds.forEach(id => tahliaStoryContextCache.set(id, null));
+                    (data || []).forEach(story => {
+                        if (story?.id) tahliaStoryContextCache.set(String(story.id), story);
+                    });
+                } catch (e) {
+                    console.warn('[tahlia-social] could not load Feed post media:', e?.message || e);
+                    return;
+                }
+            }
+
+            contexts.forEach(ctx => {
+                const story = tahliaStoryContextCache.get(String(ctx.dataset.tahliaStoryId || '').trim());
+                if (!story) return;
+
+                const thumb = ctx.querySelector('.tahlia-social-thumb');
+                const isVideo = /\bvideo\b/i.test(String(story.media_type || ''));
+                const mediaUrl = firstTahliaContextValue(
+                    story.thumbnail_url,
+                    isVideo ? '' : story.media_url
+                );
+                if (thumb && safeTahliaMediaUrl(mediaUrl)) {
+                    const wrapper = document.createElement('div');
+                    wrapper.innerHTML = renderTahliaContextThumb({
+                        mediaUrl,
+                        mediaType: story.media_type,
+                        backgroundColor: story.background_color,
+                    }).trim();
+                    if (wrapper.firstElementChild) thumb.replaceWith(wrapper.firstElementChild);
+                }
+
+                const textEl = ctx.querySelector('[data-tahlia-story-text="missing"]');
+                const storyText = tahliaStoryTextFromRow(story);
+                if (textEl && storyText) {
+                    textEl.textContent = storyText;
+                    textEl.dataset.tahliaStoryText = 'loaded';
+                }
+            });
         }
 
         function renderProposedCoachActions(alert) {
@@ -16301,6 +16383,9 @@
             kbdFocusedIdx = -1;
             container.innerHTML = sorted.map(renderAlertCard).join('');
             lucide.createIcons();
+            hydrateTahliaSocialContexts(container).catch(e => {
+                console.warn('[tahlia-social] context hydration failed:', e?.message || e);
+            });
             autosizeAlertEditAreas();
             scheduleAlertThreadScrollToLatest(container);
             restoreActiveAlertEditFocus(editFocusHint);
