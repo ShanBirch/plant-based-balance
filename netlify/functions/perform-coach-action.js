@@ -13,6 +13,8 @@ const { callGeminiFallback } = require('./_lib/client-context');
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
+const TAHLIA_EMAIL = 'seed.tahlia.brooks+kayla30@plantbased-balance.org';
+const TAHLIA_SOURCE = 'tahlia-social-worker';
 
 const {
     DAY_ORDER,
@@ -51,6 +53,44 @@ function findAction(data, actionId) {
 function updateAction(data, actionId, patch) {
     const actions = Array.isArray(data?.proposed_actions) ? data.proposed_actions : [];
     return actions.map(action => action?.id === actionId ? { ...action, ...patch } : action);
+}
+
+function isTahliaSocialAction(action = {}) {
+    return ['publish_tahlia_feed_post', 'publish_tahlia_feed_comment'].includes(action.type);
+}
+
+function cleanSocialText(value = '', max = 500) {
+    return String(value || '')
+        .replace(/\s+/g, ' ')
+        .replace(/[<>]/g, '')
+        .trim()
+        .slice(0, max);
+}
+
+async function resolveTahliaUserForAction({ alert, action }) {
+    const payload = action.payload || {};
+    const userId = String(payload.user_id || alert.data?.tahlia_user_id || '').trim();
+    if (!userId) throw new Error('Tahlia user id missing from action');
+
+    const rows = await supabase(
+        `users?select=id,name,email&id=eq.${encodeURIComponent(userId)}&limit=1`
+    );
+    const user = rows[0] || null;
+    if (!user?.id || String(user.email || '').toLowerCase() !== TAHLIA_EMAIL) {
+        throw new Error('Tahlia social action can only publish as the seeded Tahlia account');
+    }
+    return user;
+}
+
+function assertTahliaApprovalAlert(alert = {}, action = {}) {
+    const data = alert.data || {};
+    if (!isTahliaSocialAction(action)) return;
+    if (data.subtype !== 'tahlia_social_approval' || data.source !== TAHLIA_SOURCE) {
+        throw new Error('This Tahlia action is not from the approval-only social worker');
+    }
+    if (data.needs_shannon_approval !== true || data.operator_queue !== 'needs_you') {
+        throw new Error('Tahlia social action must be approved from Needs You');
+    }
 }
 
 async function resolveClientId(alert) {
@@ -453,6 +493,93 @@ async function performRegenerateWorkoutProgram({ alert, action }) {
     };
 }
 
+async function performPublishTahliaFeedPost({ alert, action }) {
+    assertTahliaApprovalAlert(alert, action);
+    const tahlia = await resolveTahliaUserForAction({ alert, action });
+    const payload = action.payload || {};
+    const caption = cleanSocialText(payload.caption || alert.data?.draft_text || '', 500);
+    if (caption.length < 3) throw new Error('Tahlia post caption is empty');
+
+    const mediaType = cleanSocialText(payload.media_type || 'text', 40) || 'text';
+    const backgroundColor = cleanSocialText(payload.background_color || '#f8fafc', 24) || '#f8fafc';
+    const recentCutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const existing = await supabase(
+        `stories?select=id,created_at&user_id=eq.${encodeURIComponent(tahlia.id)}&caption=eq.${encodeURIComponent(caption)}&created_at=gte.${encodeURIComponent(recentCutoff)}&limit=1`
+    ).catch(() => []);
+    if (existing[0]?.id) {
+        return {
+            story_id: existing[0].id,
+            duplicate: true,
+            summary: 'Tahlia Feed post already existed, no duplicate published.',
+        };
+    }
+
+    const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+    const rows = await supabase('stories', {
+        method: 'POST',
+        body: [{
+            user_id: tahlia.id,
+            media_type: mediaType,
+            media_url: cleanSocialText(payload.media_url || '', 1000),
+            thumbnail_url: payload.thumbnail_url || null,
+            caption,
+            duration: 5,
+            background_color: backgroundColor,
+            expires_at: expiresAt,
+        }],
+        prefer: 'return=representation',
+    });
+    const story = rows[0] || null;
+    return {
+        story_id: story?.id || null,
+        summary: `Published Tahlia Feed post: ${caption.slice(0, 120)}`,
+    };
+}
+
+async function performPublishTahliaFeedComment({ alert, action }) {
+    assertTahliaApprovalAlert(alert, action);
+    const tahlia = await resolveTahliaUserForAction({ alert, action });
+    const payload = action.payload || {};
+    const storyId = String(payload.story_id || alert.data?.target_story_id || '').trim();
+    const commentText = cleanSocialText(payload.comment_text || alert.data?.draft_text || '', 500);
+    if (!storyId) throw new Error('Target story missing from Tahlia comment action');
+    if (commentText.length < 2) throw new Error('Tahlia comment is empty');
+
+    const stories = await supabase(
+        `stories?select=id,user_id,created_at&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&id=eq.${encodeURIComponent(storyId)}&limit=1`
+    );
+    const story = stories[0] || null;
+    if (!story?.id) throw new Error('Target Feed post no longer exists');
+    if (story.user_id === tahlia.id) throw new Error('Tahlia cannot comment on her own Feed post');
+
+    const existing = await supabase(
+        `feed_comments?select=id&story_id=eq.${encodeURIComponent(storyId)}&user_id=eq.${encodeURIComponent(tahlia.id)}&limit=1`
+    ).catch(() => []);
+    if (existing[0]?.id) {
+        return {
+            comment_id: existing[0].id,
+            duplicate: true,
+            summary: 'Tahlia already commented on this Feed post, no duplicate published.',
+        };
+    }
+
+    const rows = await supabase('feed_comments', {
+        method: 'POST',
+        body: [{
+            story_id: storyId,
+            user_id: tahlia.id,
+            comment_text: commentText,
+        }],
+        prefer: 'return=representation',
+    });
+    const comment = rows[0] || null;
+    return {
+        comment_id: comment?.id || null,
+        story_id: storyId,
+        summary: `Published Tahlia comment: ${commentText.slice(0, 120)}`,
+    };
+}
+
 async function sendDonePush({ alert, result }) {
     if (!alert.coach_id) return;
     try {
@@ -485,6 +612,8 @@ function coachActionReceiptTitle(alert, action) {
 }
 
 async function insertNeedsYouActionReceipt({ alert, action, result, completedAt }) {
+    if (isTahliaSocialAction(action)) return;
+
     const idempotencyKey = `coach_action_receipt:${alert.id}:${action.id}`;
     const existing = await supabase(
         `coach_alerts?select=id&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
@@ -570,6 +699,10 @@ exports.handler = async (event) => {
             result = await performSetProgramWeek({ alert, action });
         } else if (action.type === 'regenerate_workout_program') {
             result = await performRegenerateWorkoutProgram({ alert, action });
+        } else if (action.type === 'publish_tahlia_feed_post') {
+            result = await performPublishTahliaFeedPost({ alert, action });
+        } else if (action.type === 'publish_tahlia_feed_comment') {
+            result = await performPublishTahliaFeedComment({ alert, action });
         } else {
             return json(400, { error: `Unsupported action type: ${action.type}` });
         }
@@ -630,9 +763,14 @@ exports.handler = async (event) => {
     };
 
     try {
+        const alertPatch = { data: nextData };
+        if (isTahliaSocialAction(action)) {
+            alertPatch.status = 'sent';
+            alertPatch.actioned_at = completedAt;
+        }
         await supabase(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
             method: 'PATCH',
-            body: { data: nextData },
+            body: alertPatch,
             prefer: 'return=minimal',
         });
     } catch (e) {
@@ -642,6 +780,13 @@ exports.handler = async (event) => {
     await insertNeedsYouActionReceipt({ alert: { ...alert, data: nextData }, action, result, completedAt })
         .catch(e => console.warn('[perform-coach-action] receipt insert failed:', e.message));
 
-    await sendDonePush({ alert: { ...alert, data: nextData }, result });
+    if (!isTahliaSocialAction(action)) {
+        await sendDonePush({ alert: { ...alert, data: nextData }, result });
+    }
     return json(200, { ok: true, action: findAction(nextData, actionId), data: nextData, result });
+};
+
+exports._test = {
+    cleanSocialText,
+    isTahliaSocialAction,
 };
