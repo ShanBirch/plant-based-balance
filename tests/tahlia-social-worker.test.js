@@ -1,0 +1,91 @@
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+
+const profile = require('../netlify/functions/_lib/tahlia-profile');
+const worker = require('../netlify/functions/tahlia-social-worker')._test;
+const coachAction = require('../netlify/functions/perform-coach-action')._test;
+
+const adminSource = fs.readFileSync(path.join(__dirname, '../admin-dashboard.html'), 'utf8');
+const performSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/perform-coach-action.js'), 'utf8');
+
+assert.strictEqual(profile.TAHLIA_PROFILE.displayName, 'Tahlia Brooks');
+assert.strictEqual(profile.TAHLIA_PROFILE.age, 25);
+assert.strictEqual(profile.TAHLIA_PROFILE.gender, 'female');
+assert.ok(profile.TAHLIA_PROFILE.voice.avoids.includes('mentions of AI, bots, automation, seeded accounts, or testing'));
+
+const workoutTx = {
+    id: 'tx-workout',
+    transaction_type: 'earn_workout',
+    reference_type: 'tahlia_brooks_xp_autopilot',
+    points_amount: 8,
+    description: 'Workout logged',
+    created_at: '2026-07-03T00:00:00.000Z',
+};
+const mealTx = { ...workoutTx, id: 'tx-meal', transaction_type: 'earn_meal', description: 'Meal logged' };
+const checkinTx = { ...workoutTx, id: 'tx-checkin', transaction_type: 'daily_checkin', description: 'Daily check-in' };
+
+assert.strictEqual(worker.pointTransactionActivityType(workoutTx), 'workout');
+assert.strictEqual(worker.pointTransactionActivityType(mealTx), 'meal');
+assert.ok(['weigh_in', 'fitness_diary'].includes(worker.pointTransactionActivityType(checkinTx)));
+
+const tahliaUser = { id: '00000000-0000-4000-8000-000000000001', name: 'Tahlia Brooks' };
+const feedAlert = worker.buildFeedPostAlert({
+    coachId: 'coach-1',
+    tahliaUser,
+    transaction: workoutTx,
+    now: new Date('2026-07-03T01:00:00.000Z'),
+});
+
+assert.strictEqual(feedAlert.alert_type, 'general_idea');
+assert.strictEqual(feedAlert.client_id, null);
+assert.strictEqual(feedAlert.data.subtype, 'tahlia_social_approval');
+assert.strictEqual(feedAlert.data.operator_queue, 'needs_you');
+assert.strictEqual(feedAlert.data.needs_shannon_approval, true);
+assert.strictEqual(feedAlert.data.proposed_actions[0].type, 'publish_tahlia_feed_post');
+assert.strictEqual(feedAlert.data.proposed_actions[0].payload.user_id, tahliaUser.id);
+
+const commentAlert = worker.buildCommentAlert({
+    coachId: 'coach-1',
+    tahliaUser,
+    story: {
+        id: 'story-1',
+        user_id: 'member-1',
+        media_type: 'meal_card',
+        caption: JSON.stringify({ card_type: 'meal', share_caption: 'tofu bowl after training' }),
+        created_at: '2026-07-03T00:20:00.000Z',
+    },
+    author: { name: 'Abbey' },
+    now: new Date('2026-07-03T01:00:00.000Z'),
+});
+
+assert.strictEqual(commentAlert.data.proposed_actions[0].type, 'publish_tahlia_feed_comment');
+assert.strictEqual(commentAlert.data.target_story_author_name, 'Abbey');
+assert.match(commentAlert.data.draft_text, /meal|win|solid|yum|good|love/i);
+assert.doesNotMatch(commentAlert.data.draft_text, /looks/i);
+
+assert.deepStrictEqual(worker.shouldConsiderStory({
+    story: { id: 'story-2', user_id: tahliaUser.id },
+    author: {},
+    tahliaId: tahliaUser.id,
+    shannonId: 'coach-1',
+}), { ok: false, reason: 'own_post' });
+
+assert.deepStrictEqual(worker.shouldConsiderStory({
+    story: { id: 'story-3', user_id: 'member-2', caption: 'hospital and pain update' },
+    author: {},
+    tahliaId: tahliaUser.id,
+    shannonId: 'coach-1',
+}), { ok: false, reason: 'sensitive_post' });
+
+assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'publish_tahlia_feed_post' }), true);
+assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'publish_tahlia_feed_comment' }), true);
+assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'move_workout_days' }), false);
+
+assert.ok(adminSource.includes('function isTahliaSocialApprovalAlert'));
+assert.ok(adminSource.includes("'Tahlia social'"));
+assert.ok(performSource.includes('publish_tahlia_feed_post'));
+assert.ok(performSource.includes('publish_tahlia_feed_comment'));
+assert.ok(performSource.includes('Tahlia social action must be approved from Needs You'));
+
+console.log('tahlia-social-worker tests passed');

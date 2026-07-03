@@ -12705,10 +12705,21 @@
                 );
         }
 
+        function isTahliaSocialApprovalAlert(alert) {
+            const data = alert?.data || {};
+            return alert?.alert_type === 'general_idea'
+                && (
+                    data.subtype === 'tahlia_social_approval'
+                    || data.needs_you_reason === 'tahlia_social_approval'
+                    || data.source === 'tahlia-social-worker'
+                );
+        }
+
         function needsYouHasOperatorWork(alert, activeClientIds = dmClientIdsCache.ids) {
             if (!alert || alert.status !== 'pending') return false;
             if (!NEEDS_YOU_ALERT_TYPES.includes(alert.alert_type)) return false;
             if (isCoachActionReceipt(alert)) return true;
+            if (isTahliaSocialApprovalAlert(alert)) return true;
             if (isAppSuggestionAlert(alert)) return true;
             if (alert.alert_type === 'subscription_sale') {
                 const data = alert.data || {};
@@ -12752,7 +12763,7 @@
             const directRows = [];
             const otherRows = [];
             rows.filter(a => a.status === 'pending').forEach(row => {
-                if (isCoachActionReceipt(row) || isAppSuggestionAlert(row)) directRows.push(row);
+                if (isCoachActionReceipt(row) || isAppSuggestionAlert(row) || isTahliaSocialApprovalAlert(row)) directRows.push(row);
                 else if (DM_ALERT_TYPES.includes(row.alert_type)) dmRows.push(row);
                 else otherRows.push(row);
             });
@@ -16017,11 +16028,12 @@
             const rows = actions.map(action => {
                 const status = action.status || 'pending';
                 const result = action.result?.summary || '';
+                const preview = action.preview ? `Preview: "${action.preview}"` : '';
                 const meta = status === 'completed'
                     ? (result || 'Done')
                     : status === 'failed'
                         ? (action.error || 'Action failed')
-                        : 'Review and run this backend action';
+                        : (preview || action.meta || 'Review and run this backend action');
                 const button = status === 'pending'
                     ? `<button type="button" class="alert-btn alert-btn-action" data-alert-id="${escapeHtml(alert.id)}" data-action-id="${escapeHtml(action.id || '')}" onclick="performCoachAction(event, this.dataset.alertId, this.dataset.actionId)">
                         <i data-lucide="check-circle" style="width:12px;height:12px;"></i>Do it
@@ -17383,10 +17395,13 @@
             const isChallengeCheckin = isChallengeCheckinAlert(alert);
             const isActionReceipt = isCoachActionReceipt(alert);
             const isAppSuggestion = isAppSuggestionAlert(alert);
+            const isTahliaSocial = isTahliaSocialApprovalAlert(alert);
             const manualIgRequired = isManualIgBlockedAlert(alert);
             const isFollowUp = isFollowUpAlert(alert);
             const followUpBlockedByActiveDm = isFollowUpBlockedByActiveDm(alert);
-            const typeLabel = isAppSuggestion
+            const typeLabel = isTahliaSocial
+                ? 'Tahlia social'
+                : isAppSuggestion
                 ? 'App suggestion'
                 : isActionReceipt
                 ? 'Program update'
@@ -17394,7 +17409,7 @@
                     ? (alert.data?.free_trial_checkin ? 'Trial check-in' : alert.data?.non_challenge_checkin ? 'Check-in' : 'Challenge check-in')
                     : (ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type);
             const typeIcon = ALERT_TYPE_ICONS[alert.alert_type] || '📋';
-            const renderedTypeIcon = isAppSuggestion ? 'APP' : (isActionReceipt ? 'OK' : (isFollowUp ? '->' : typeIcon));
+            const renderedTypeIcon = isTahliaSocial ? 'TA' : (isAppSuggestion ? 'APP' : (isActionReceipt ? 'OK' : (isFollowUp ? '->' : typeIcon)));
             const time = timeAgo(alert.created_at);
             const displayMessage = getResolvedAlertMessage(alert);
             const hasMessage = displayMessage && displayMessage.trim();
