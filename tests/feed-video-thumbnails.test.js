@@ -27,8 +27,9 @@ assert.ok(
 assert.ok(
     source.includes('const videoThumbnailSrc = isVideo ? getSafeFeedMediaUrl(story.thumbnail_url) : \'\';') &&
     source.includes('? (videoThumbnailSrc || videoPreviewSrc)') &&
-    source.includes('isVideo && !videoThumbnailSrc && videoPreviewSrc ? renderFeedVideoPreview(story)'),
-    'feed cards should prefer saved video thumbnail images and only fall back to video previews for older posts'
+    source.includes('data-feed-video-poster=') &&
+    source.includes('isVideo && videoPreviewSrc ? renderFeedVideoPreview(story, { storyId })'),
+    'feed cards should prefer saved video thumbnails as inline video posters before playback'
 );
 
 console.log('feed video thumbnail tests passed');

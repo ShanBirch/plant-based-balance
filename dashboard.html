@@ -12591,6 +12591,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'cycle', sel:'#weekly-calendar', title:'Plan your week', body:"Use the weekly calendar to drag workout days around, tap a day, and add walks, classes, Pilates, yoga, or another activity.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
 
     { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Share a thought or encouragement once a day for +2 XP. Add a photo or video if you want." },
+    { tab:'friends', sel:'#friends-photo-feed .feed-post-card,#friends-feed-section', fallbackSel:'#feed-composer-card', title:'Feed media controls', fallbackTitle:'Feed media controls', body:"Tap a video once to play it right in Feed. Double tap any photo or video to open the full view.", fallbackBody:"Post media works like Instagram. Videos play with one tap, and photos or videos open full screen with a double tap once posts are showing.", quick: true, condition: function(){ return !!document.getElementById('friends-feed-section') || !!document.getElementById('feed-composer-card'); } },
     { tab:'friends', sel:'.feed-post-actions-btn', title:'Post actions', body:"Tap the three dots on one of your own feed posts to edit or delete it.", quick: true, condition: function(){ return !!document.querySelector('.feed-post-actions-btn'); } },
     { tab:'friends', sel:'.feed-comment-like-btn', title:'Like feed comments', body:"Tap the heart beside a feed comment to like it.", quick: true, condition: function(){ return !!document.querySelector('.feed-comment-like-btn'); } },
 
@@ -13629,6 +13630,17 @@ if(!window._pbbIsIOSSafari) {
     title: 'Like feed comments',
     body: "Tap the heart beside a feed comment to like it.",
     condition: function(){ return !!document.querySelector('.feed-comment-like-btn'); }
+  });
+  allFeatures.push({
+    id: 'feed-inline-media-controls-v1',
+    tab: 'friends',
+    sel: '#friends-photo-feed .feed-post-card,#friends-feed-section',
+    fallbackSel: '#feed-composer-card',
+    title: 'Feed media controls',
+    fallbackTitle: 'Feed media controls',
+    body: "Tap a video once to play it right in Feed. Double tap any photo or video to open the full view.",
+    fallbackBody: "Post media works like Instagram. Videos play with one tap, and photos or videos open full screen with a double tap once posts are showing.",
+    condition: function(){ return !!document.getElementById('friends-feed-section') || !!document.getElementById('feed-composer-card'); }
   });
   allFeatures.push({
     id: 'share-a-set-20-points-v6',
