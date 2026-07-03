@@ -43,6 +43,7 @@ function hasSupportedVideoSignature(bytes) {
 
 function requiresWorkoutVideo(source) {
     const cleanSource = String(source || '').trim().toLowerCase();
+    if (cleanSource.includes('thumbnail')) return false;
     return cleanSource === 'feed_workout_share' || cleanSource.includes('workout_share') || cleanSource.includes('share_set');
 }
 
