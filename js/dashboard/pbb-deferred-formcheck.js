@@ -2218,9 +2218,10 @@
                 const bannerLabel = showWorkoutFeedShareUploadBanner('Retrying Share a Set...', 'info');
                 let postPromise = null;
                 try {
+                    const preparedQueuedFile = await prepareWorkoutFeedShareClip(queuedFile, bannerLabel);
                     const uploadController = typeof AbortController !== 'undefined' ? new AbortController() : null;
                     postPromise = window.createWorkoutFeedSharePost({
-                        file: queuedFile,
+                        file: preparedQueuedFile,
                         caption: item.caption || '',
                         workoutName: item.workoutName || '',
                         source: 'feed_workout_share',
@@ -2241,6 +2242,11 @@
                     hideWorkoutFeedShareUploadBanner(1800);
                 } catch (error) {
                     console.warn('[WorkoutFeedShare] queued retry failed', error);
+                    if (!isRetryableWorkoutFeedShareError(error)) {
+                        await deleteWorkoutFeedShareQueueItem(item.id);
+                        showWorkoutFeedShareUploadBanner(error.message || WORKOUT_FEED_SHARE_INVALID_VIDEO_MESSAGE, 'error');
+                        break;
+                    }
                     await putWorkoutFeedShareQueueItem({
                         ...item,
                         attempts: Number(item.attempts || 0) + 1,

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v232'; // v232: avoid image compression on prepared Share a Set videos; v231: feed comment push tap routing
+const CACHE_NAME = 'pbb-app-v233'; // v233: re-prepare saved Share a Set retry clips; v232: avoid image compression on prepared Share a Set videos
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
