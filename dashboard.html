@@ -8132,6 +8132,10 @@ if(!window._pbbIsIOSSafari) {
             <div style="padding:22px 24px 24px;">
                 <div style="display:flex; flex-direction:column; gap:10px;">
                     <button id="store-review-fallback-primary-btn" onclick="storeReviewPrompt.openStoreReview()" style="padding:14px; border-radius:14px; border:none; background:var(--primary); color:white; font-weight:700; font-size:0.95rem; cursor:pointer;">Open rating screen</button>
+                    <div id="store-review-fallback-store-options" style="display:none; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;">
+                        <button onclick="storeReviewPrompt.openStoreReview('ios')" style="padding:13px 10px; border-radius:14px; border:2px solid #e2e8f0; background:white; color:var(--text-main); font-weight:800; font-size:0.9rem; cursor:pointer;">App Store</button>
+                        <button onclick="storeReviewPrompt.openStoreReview('android')" style="padding:13px 10px; border-radius:14px; border:2px solid #e2e8f0; background:white; color:var(--text-main); font-weight:800; font-size:0.9rem; cursor:pointer;">Play Store</button>
+                    </div>
                     <button onclick="storeReviewPrompt.onAskLater()" style="padding:10px; border:none; background:transparent; color:var(--text-muted); font-weight:500; font-size:0.85rem; cursor:pointer;">Maybe later</button>
                 </div>
             </div>
@@ -12020,13 +12024,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=119';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=120';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=119"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=120"><\/script>');
 }
 </script>
 

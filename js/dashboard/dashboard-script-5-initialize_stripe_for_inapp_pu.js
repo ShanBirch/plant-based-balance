@@ -16373,22 +16373,37 @@ const storeReviewPrompt = (function () {
     function syncStoreButtons() {
         const primary = document.getElementById('store-review-primary-btn');
         const options = document.getElementById('store-review-store-options');
-        if (!primary || !options) return;
+        const fallbackPrimary = document.getElementById('store-review-fallback-primary-btn');
+        const fallbackOptions = document.getElementById('store-review-fallback-store-options');
+        const setPrimary = (text) => {
+            if (primary) {
+                primary.style.display = 'block';
+                primary.textContent = text;
+            }
+            if (fallbackPrimary) {
+                fallbackPrimary.style.display = 'block';
+                fallbackPrimary.textContent = text;
+            }
+        };
+        const setOptions = (display) => {
+            if (options) options.style.display = display;
+            if (fallbackOptions) fallbackOptions.style.display = display;
+        };
+
         if (selectedStars < 5) {
-            primary.style.display = 'block';
-            primary.textContent = 'Open rating screen';
-            options.style.display = 'none';
+            setPrimary('Open rating screen');
+            setOptions('none');
             return;
         }
         const preferred = getPreferredStore();
         if (preferred === 'unknown') {
-            primary.style.display = 'none';
-            options.style.display = 'grid';
+            if (primary) primary.style.display = 'none';
+            if (fallbackPrimary) fallbackPrimary.style.display = 'none';
+            setOptions('grid');
             return;
         }
-        primary.style.display = 'block';
-        primary.textContent = preferred === 'ios' ? 'Rate Balance on App Store' : 'Rate Balance on Play Store';
-        options.style.display = 'none';
+        setPrimary(preferred === 'ios' ? 'Rate Balance on App Store' : 'Rate Balance on Play Store');
+        setOptions('none');
     }
 
     function renderStars() {
