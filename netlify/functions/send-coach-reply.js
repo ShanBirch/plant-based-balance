@@ -25,7 +25,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.en
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
 const {
-    normalizeCoachDraftText,
+    normalizeGeneratedCoachDraftText,
     sanitizeVisibleOutboundDmText,
     fireCoachEditAnalysis,
     isAlwaysNeedsYouPerson,
@@ -336,8 +336,8 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const alertId = body.alertId;
-    const replyTextInput = normalizeCoachDraftText(body.replyText || '').trim();
-    const draftTextInput = normalizeCoachDraftText(body.draftText || '').trim();
+    const replyTextInput = normalizeGeneratedCoachDraftText(body.replyText || '').trim();
+    const draftTextInput = normalizeGeneratedCoachDraftText(body.draftText || '').trim();
     const source = body.source || 'unknown';
     // Optional one-line note from Shannon explaining WHY he edited the
     // draft. Stamped into data.edit_reason when the reply differs from

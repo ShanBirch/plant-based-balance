@@ -92,8 +92,31 @@ async function supabaseQuery(path, options = {}) {
 // response so the caller skips its push.
 // ============================================================
 
-async function insertCoachAlert(alertRow, idempotencyKey) {
+function normalizeCoachAlertOutboundFields(alertRow = {}) {
     const row = { ...alertRow };
+    if (typeof row.suggested_message === 'string') {
+        row.suggested_message = normalizeGeneratedCoachDraftText(row.suggested_message);
+    }
+    if (typeof row.scheduled_reply_text === 'string') {
+        row.scheduled_reply_text = normalizeGeneratedCoachDraftText(row.scheduled_reply_text);
+    }
+    if (row.data && typeof row.data === 'object' && !Array.isArray(row.data)) {
+        const data = { ...row.data };
+        if (typeof data.draft_text === 'string') {
+            data.draft_text = normalizeGeneratedCoachDraftText(data.draft_text);
+        }
+        if (Array.isArray(data.draft_messages)) {
+            data.draft_messages = data.draft_messages
+                .map(value => typeof value === 'string' ? normalizeGeneratedCoachDraftText(value) : value)
+                .filter(value => typeof value !== 'string' || value.trim());
+        }
+        row.data = data;
+    }
+    return row;
+}
+
+async function insertCoachAlert(alertRow, idempotencyKey) {
+    const row = normalizeCoachAlertOutboundFields(alertRow);
     if (idempotencyKey) row.idempotency_key = idempotencyKey;
     try {
         const inserted = await supabaseQuery('coach_alerts', {
@@ -814,7 +837,7 @@ async function maybeAutoSendDraft({
     pushTitlePrefix = 'ðŸ“¤ Auto-sent',
 }) {
     if (!coachId || !clientId || !alertId) return false;
-    draftText = normalizeCoachDraftText(draftText);
+    draftText = normalizeGeneratedCoachDraftText(draftText);
     if (!draftText || !draftText.trim()) return false;
 
     let enabled = false;
@@ -2487,6 +2510,8 @@ function sanitizeVisibleOutboundDmText(text, options = {}) {
     if (options.stripProfanity !== false) {
         out = out.replace(OUTBOUND_VISIBLE_STRONG_PROFANITY_RE, ' ');
     }
+
+    out = applyPhoneAutocorrectCapitalization(out);
 
     return out
         .replace(/[ \t]{2,}/g, ' ')
@@ -7384,6 +7409,7 @@ module.exports = {
     // utilities
     supabaseQuery,
     insertCoachAlert,
+    normalizeCoachAlertOutboundFields,
     loadClientMemory,
     loadCoachDayContext,
     buildCoachDayContextBlock,

@@ -3,6 +3,7 @@ const assert = require('assert');
 const {
     applyPhoneAutocorrectCapitalization,
     formatTimedConversationLine,
+    normalizeCoachAlertOutboundFields,
     normalizeCoachDraftText,
     normalizeGeneratedCoachDraftText,
     sanitizeVisibleOutboundDmText,
@@ -46,7 +47,7 @@ assert.ok(!sanitizedLeadCopy.includes('[ephemeral]'));
 assert.ok(!/fuck/i.test(sanitizedLeadCopy));
 assert.strictEqual(
     sanitizeVisibleOutboundDmText('yeah sounds good mate'),
-    'yeah sounds good mate'
+    'Yeah sounds good mate'
 );
 
 assert.strictEqual(
@@ -118,6 +119,36 @@ assert.strictEqual(
 assert.strictEqual(
     normalizeGeneratedCoachDraftText("yeah that works. i\u2019m checking it now"),
     "Yeah that works. I\u2019m checking it now"
+);
+
+const screenshotShape = "Yeah i\u2019m with you. it\u2019s not really that different, it\u2019s more like the same dopamine but tied to different cues.\none guy\u2019s brain goes fishing = warm memories. even if it\u2019s preference, i think your point is the key.";
+const screenshotShapeFixed = "Yeah I\u2019m with you. It\u2019s not really that different, it\u2019s more like the same dopamine but tied to different cues.\nOne guy\u2019s brain goes fishing = warm memories. Even if it\u2019s preference, I think your point is the key.";
+
+assert.strictEqual(
+    normalizeGeneratedCoachDraftText(screenshotShape),
+    screenshotShapeFixed
+);
+
+assert.strictEqual(
+    sanitizeVisibleOutboundDmText(screenshotShape),
+    screenshotShapeFixed
+);
+
+assert.deepStrictEqual(
+    normalizeCoachAlertOutboundFields({
+        suggested_message: 'yeah that makes sense. i can see why that felt confusing.',
+        data: {
+            draft_text: 'cool. it should work now.',
+            draft_messages: ['first bit. second bit', 'i\u2019m on it. try now'],
+        },
+    }),
+    {
+        suggested_message: 'Yeah that makes sense. I can see why that felt confusing.',
+        data: {
+            draft_text: 'Cool. It should work now.',
+            draft_messages: ['First bit. Second bit', 'I\u2019m on it. Try now'],
+        },
+    }
 );
 
 assert.strictEqual(

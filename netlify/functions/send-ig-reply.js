@@ -92,7 +92,7 @@ const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const {
     normalizeCoachDraftChunks,
-    normalizeCoachDraftText,
+    normalizeGeneratedCoachDraftText,
     sanitizeVisibleOutboundDmText,
     splitCoachDraftIntoDmBubbles,
     fireCoachEditAnalysis,
@@ -1142,8 +1142,8 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const alertId = body.alertId;
-    const replyTextInput = normalizeCoachDraftText(body.replyText || '').trim();
-    const draftTextInput = normalizeCoachDraftText(body.draftText || '').trim();
+    const replyTextInput = normalizeGeneratedCoachDraftText(body.replyText || '').trim();
+    const draftTextInput = normalizeGeneratedCoachDraftText(body.draftText || '').trim();
     const source = body.source || 'inline_reply';
     const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
     const timingSuggestion = normalizeTimingSuggestion(body.timingSuggestion || body.reply_timing_suggestion);
@@ -1409,16 +1409,17 @@ exports.handler = async (event) => {
     const rawDraftMessages = Array.isArray(alertData.draft_messages) ? alertData.draft_messages : [];
     let draftMessages = normalizeCoachDraftChunks(rawDraftMessages)
         .map(s => String(s || '').trim())
+        .map(normalizeGeneratedCoachDraftText)
         .filter(Boolean);
     if (shouldSanitizeVisibleLeadCopy) {
         draftMessages = draftMessages.map(chunk => sanitizeVisibleOutboundDmText(chunk)).filter(Boolean);
     }
     const draftJoined = shouldSanitizeVisibleLeadCopy
         ? sanitizeVisibleOutboundDmText(alertData.draft_text || draftText || draftMessages.join('\n'))
-        : normalizeCoachDraftText(alertData.draft_text || draftText || draftMessages.join('\n')).trim();
+        : normalizeGeneratedCoachDraftText(alertData.draft_text || draftText || draftMessages.join('\n')).trim();
     const draftMessagesJoined = shouldSanitizeVisibleLeadCopy
         ? sanitizeVisibleOutboundDmText(draftMessages.join('\n'))
-        : normalizeCoachDraftText(draftMessages.join('\n')).trim();
+        : normalizeGeneratedCoachDraftText(draftMessages.join('\n')).trim();
     const draftMessagesMatchDraft = !!draftJoined && draftMessagesJoined === draftJoined;
     const useDraftMessageChunks = draftMessages.length > 0
         && draftJoined

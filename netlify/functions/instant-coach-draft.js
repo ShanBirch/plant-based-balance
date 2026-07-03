@@ -69,6 +69,7 @@ const {
     extractPhotoUrls,
     buildMediaReviewInfo,
     isTestAccount,
+    normalizeGeneratedCoachDraftText,
 } = require('./_lib/client-context');
 const { buildQualifierRelationshipBlock } = require('./_lib/qualifier-engine');
 const { detectProposedCoachActions } = require('./_lib/coach-actions');
@@ -863,7 +864,7 @@ exports.handler = async (event) => {
                 priorScheduledDrafts,
                 coachId: receiverId,
             });
-            draftText = draft.text;
+            draftText = normalizeGeneratedCoachDraftText(draft.text);
             draftBaseModel = draft.model;
             draftModel = onboardingPhase?.inOnboarding ? `${draft.model}+onboarding` : draft.model;
             draftShadowInput = draft.shadowDraftInput || null;

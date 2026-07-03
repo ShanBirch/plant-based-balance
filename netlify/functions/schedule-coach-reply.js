@@ -26,7 +26,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const {
-    normalizeCoachDraftText,
+    normalizeGeneratedCoachDraftText,
     sanitizeVisibleOutboundDmText,
     isAlwaysNeedsYouPerson,
     shouldBypassKayNeedsYouForAlert,
@@ -319,8 +319,8 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const alertId = body.alertId;
-    const replyTextInput = normalizeCoachDraftText(body.replyText || '').trim();
-    const draftTextInput = normalizeCoachDraftText(body.draftText || '').trim();
+    const replyTextInput = normalizeGeneratedCoachDraftText(body.replyText || '').trim();
+    const draftTextInput = normalizeGeneratedCoachDraftText(body.draftText || '').trim();
     const source = body.source || 'send_later';
     const sendInMs = Number(body.sendInMs);
     // Optional one-line note from Shannon explaining WHY he's delaying.

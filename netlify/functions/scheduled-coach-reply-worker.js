@@ -28,7 +28,7 @@ const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const {
     buildContextReviewInfo,
     buildMediaReviewInfo,
-    normalizeCoachDraftText,
+    normalizeGeneratedCoachDraftText,
     isAlwaysNeedsYouPerson,
     shouldBypassKayNeedsYouForAlert,
 } = require('./_lib/client-context');
@@ -249,7 +249,7 @@ function resolveSignupHandoffUrl(alert) {
 }
 
 function repairMissingScheduledLinkHandoff(alert, replyText) {
-    const text = normalizeCoachDraftText(replyText || '');
+    const text = normalizeGeneratedCoachDraftText(replyText || '');
     const url = resolveSignupHandoffUrl(alert);
     if (!text || !url || !promisesLinkWithoutUrl(text)) return { text, repaired: false, url: '' };
     return {
@@ -274,7 +274,7 @@ async function sendAutoSendHoldNotification(alert, autoHold) {
     const openUrl = channel === 'messenger'
         ? 'https://www.messenger.com/'
         : 'https://www.instagram.com/direct/inbox/';
-    const draftText = normalizeCoachDraftText(alert.scheduled_reply_text || alert.suggested_message || data.draft_text || '');
+    const draftText = normalizeGeneratedCoachDraftText(alert.scheduled_reply_text || alert.suggested_message || data.draft_text || '');
     const clientMessage = data.message_preview || alert.description || '';
     try {
         await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
@@ -314,7 +314,7 @@ async function sendAutoSendHoldNotification(alert, autoHold) {
 async function fireAlert(alert) {
     const repairedLink = repairMissingScheduledLinkHandoff(alert, alert.scheduled_reply_text || alert.suggested_message || '');
     const replyText = repairedLink.text;
-    const draftText = normalizeCoachDraftText(alert.suggested_message || '');
+    const draftText = normalizeGeneratedCoachDraftText(alert.suggested_message || '');
     if (!replyText) {
         // Defensive: a scheduled alert with no text shouldn't exist. Mark it
         // canceled so we don't keep retrying.
