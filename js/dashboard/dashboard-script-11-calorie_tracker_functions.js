@@ -2083,6 +2083,60 @@ async function shareMealRecordToFeed(meal, btn) {
     }
 }
 
+function getLatestMealFromRenderedListForFeedShare() {
+    const meals = Array.isArray(currentMealsList) ? currentMealsList : [];
+    return meals
+        .filter(meal => meal && meal.id && String(meal.meal_type || '').toLowerCase() !== 'water')
+        .sort((a, b) => {
+            const aTime = new Date(a.created_at || `${a.meal_date || ''}T${a.meal_time || '00:00:00'}`).getTime();
+            const bTime = new Date(b.created_at || `${b.meal_date || ''}T${b.meal_time || '00:00:00'}`).getTime();
+            return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+        })[0] || null;
+}
+
+async function getLatestMealForFeedShare() {
+    const renderedMeal = getLatestMealFromRenderedListForFeedShare();
+    if (renderedMeal) return renderedMeal;
+
+    if (!window.supabaseClient || !window.currentUser?.id) return null;
+
+    const { data, error } = await window.supabaseClient
+        .from('meal_logs')
+        .select('id, meal_date, meal_time, meal_type, food_items, calories, protein_g, carbs_g, fat_g, fiber_g, micronutrients, meal_description, photo_url, storage_path, notes, input_method, ai_confidence, created_at')
+        .eq('user_id', window.currentUser.id)
+        .neq('meal_type', 'water')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (error) throw error;
+    return data || null;
+}
+
+async function shareLatestMealToFeed(btn) {
+    if (!window.currentUser) {
+        showToast('You must be logged in to share', 'error');
+        return null;
+    }
+
+    try {
+        const meal = await getLatestMealForFeedShare();
+        if (!meal) {
+            showToast('Log a meal first, then share it to Feed', 'info');
+            return null;
+        }
+        return await shareMealRecordToFeed(meal, btn || null);
+    } catch (error) {
+        console.error('Error sharing latest meal to feed:', error);
+        showToast('Failed to share latest meal. Please try again.', 'error');
+        return null;
+    }
+}
+
+window.shareMealRecordToFeed = shareMealRecordToFeed;
+window.shareLatestMealToFeed = shareLatestMealToFeed;
+window.buildMealFeedCardPayload = buildMealFeedCardPayload;
+
 async function getMealInstagramPhotoDataUrl(cardPayload) {
     const photoUrl = cardPayload && (cardPayload.photo_url || cardPayload.photoUrl);
     if (!photoUrl) return '';
