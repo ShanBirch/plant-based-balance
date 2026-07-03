@@ -24,6 +24,7 @@
     let workoutFeedShareSwipeRegistered = false;
     let workoutFeedShareRetryInProgress = false;
     let workoutFeedShareRetryTimer = null;
+    let workoutFeedShareUploadHideTimer = null;
     let workoutFeedSharePendingInput = null;
     let workoutFeedShareCameraStream = null;
     let workoutFeedShareCameraFacingMode = 'environment';
@@ -972,6 +973,110 @@
         }, Math.max(5000, Number(delayMs || 30000)));
     }
 
+    function resetWorkoutFeedShareUploadBannerMotion(banner) {
+        if (!banner) return;
+        banner.style.transition = '';
+        banner.style.transform = '';
+        banner.style.opacity = '1';
+    }
+
+    function installWorkoutFeedShareUploadBannerDismissHandlers(banner) {
+        if (!banner || banner.dataset.dismissHandlersAttached === 'true') return;
+        banner.dataset.dismissHandlersAttached = 'true';
+
+        let startX = 0;
+        let startY = 0;
+        let lastX = 0;
+        let lastY = 0;
+        let tracking = false;
+        let dragging = false;
+
+        const getTouchPoint = function (event) {
+            const touch = event && event.changedTouches && event.changedTouches[0]
+                ? event.changedTouches[0]
+                : event && event.touches && event.touches[0]
+                    ? event.touches[0]
+                    : null;
+            return touch ? { x: touch.clientX, y: touch.clientY } : null;
+        };
+
+        const resetDragState = function () {
+            startX = 0;
+            startY = 0;
+            lastX = 0;
+            lastY = 0;
+            tracking = false;
+            dragging = false;
+        };
+
+        banner.addEventListener('touchstart', function (event) {
+            const target = event && event.target;
+            if (target && typeof target.closest === 'function' && target.closest('button')) return;
+            const point = getTouchPoint(event);
+            if (!point) return;
+            startX = point.x;
+            startY = point.y;
+            lastX = 0;
+            lastY = 0;
+            tracking = true;
+            dragging = false;
+            banner.style.transition = '';
+        }, { passive: true });
+
+        banner.addEventListener('touchmove', function (event) {
+            if (!tracking) return;
+            const point = getTouchPoint(event);
+            if (!point) return;
+
+            lastX = point.x - startX;
+            lastY = point.y - startY;
+            const absX = Math.abs(lastX);
+            const downY = Math.max(0, lastY);
+            const dragDistance = Math.max(absX, downY);
+            if (!dragging && dragDistance < 10) return;
+
+            dragging = true;
+            banner.style.transform = 'translate(' + lastX + 'px, ' + downY + 'px)';
+            banner.style.opacity = String(Math.max(0.35, 1 - (dragDistance / 220)));
+            if (event.cancelable) event.preventDefault();
+        }, { passive: false });
+
+        const finishSwipe = function () {
+            if (!tracking) return;
+
+            const absX = Math.abs(lastX);
+            const downY = Math.max(0, lastY);
+            const shouldDismiss = absX > 80 || downY > 60;
+            if (shouldDismiss) {
+                const exitX = absX >= downY ? (lastX < 0 ? '-120%' : '120%') : lastX + 'px';
+                const exitY = downY > absX ? '140%' : downY + 'px';
+                banner.style.transition = 'transform 0.18s ease-out, opacity 0.18s ease-out';
+                banner.style.transform = 'translate(' + exitX + ', ' + exitY + ')';
+                banner.style.opacity = '0';
+                resetDragState();
+                setTimeout(function () { hideWorkoutFeedShareUploadBanner(); }, 170);
+                return;
+            }
+
+            banner.style.transition = 'transform 0.18s ease-out, opacity 0.18s ease-out';
+            banner.style.transform = 'translate(0, 0)';
+            banner.style.opacity = '1';
+            resetDragState();
+            setTimeout(function () {
+                if (banner.style.display !== 'none') banner.style.transition = '';
+            }, 190);
+        };
+
+        banner.addEventListener('touchend', finishSwipe, { passive: true });
+        banner.addEventListener('touchcancel', function () {
+            if (!tracking) return;
+            banner.style.transition = 'transform 0.18s ease-out, opacity 0.18s ease-out';
+            banner.style.transform = 'translate(0, 0)';
+            banner.style.opacity = '1';
+            resetDragState();
+        }, { passive: true });
+    }
+
     function getWorkoutFeedShareNextRetryDelay(items) {
         const now = Date.now();
         let soonest = 0;
@@ -1232,6 +1337,34 @@
                     color: #fff !important;
                     -webkit-text-fill-color: #fff !important;
                 }
+                #workout-feed-share-upload-dismiss {
+                    width: 34px;
+                    height: 34px;
+                    border: 1px solid rgba(255,255,255,0.22);
+                    border-radius: 999px;
+                    background: rgba(255,255,255,0.1);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 0;
+                    margin-left: 2px;
+                    flex-shrink: 0;
+                    cursor: pointer;
+                    touch-action: manipulation;
+                }
+                #workout-feed-share-upload-dismiss:active {
+                    transform: scale(0.96);
+                }
+                #workout-feed-share-upload-dismiss svg {
+                    width: 18px;
+                    height: 18px;
+                    display: block;
+                    fill: none;
+                    stroke: currentColor;
+                    stroke-width: 2.5;
+                    stroke-linecap: round;
+                    stroke-linejoin: round;
+                }
             `;
             document.head.appendChild(style);
         }
@@ -1240,14 +1373,17 @@
         banner.id = 'workout-feed-share-upload-banner';
         banner.style.cssText = 'display:none; position:fixed; left:16px; right:16px; bottom:calc(16px + env(safe-area-inset-bottom, 0px)); z-index:10060; background:rgba(17,24,39,0.96); color:#fff; -webkit-text-fill-color:#fff; border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:12px 14px; box-shadow:0 18px 40px rgba(0,0,0,0.28); backdrop-filter:blur(12px); overflow:hidden;';
         banner.innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px;">
+            <div style="display:flex; align-items:flex-start; gap:10px;">
                 <div style="width:34px; height:34px; border-radius:999px; background:rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                     <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor; animation:workoutFeedShareSpin 1s linear infinite;"><path d="M12 4V1L8 5l4 4V6c2.76 0 5 2.24 5 5 0 .86-.22 1.67-.62 2.38l1.47 1.47C18.57 13.17 19 11.64 19 10c0-3.87-3.13-7-7-7zm-5.85.62L4.68 3.15C3.43 4.58 2.67 6.44 2.67 8.5c0 3.87 3.13 7 7 7v3l4-4-4-4v3c-2.76 0-5-2.24-5-5 0-1.36.54-2.59 1.42-3.5z"/></svg>
                 </div>
-                <div style="flex:1; min-width:0;">
+                <div style="flex:1; min-width:0; padding-top:1px;">
                     <div id="workout-feed-share-upload-text" style="font-size:0.92rem; font-weight:900; line-height:1.2; color:#fff; -webkit-text-fill-color:#fff;">Uploading your set...</div>
                     <div id="workout-feed-share-upload-subtext" style="font-size:0.75rem; opacity:0.78; line-height:1.35; margin-top:3px; color:#fff; -webkit-text-fill-color:#fff;">You can keep training.</div>
                 </div>
+                <button type="button" id="workout-feed-share-upload-dismiss" onclick="hideWorkoutFeedShareUploadBanner()" aria-label="Dismiss message">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
             </div>
             <div style="height:4px; background:rgba(255,255,255,0.12); border-radius:999px; margin-top:10px; overflow:hidden;">
                 <div id="workout-feed-share-upload-bar" style="height:100%; width:36%; border-radius:999px; background:linear-gradient(90deg,#f97316,#ef4444); animation:workoutFeedShareSweep 1.15s ease-in-out infinite;"></div>
@@ -1258,6 +1394,7 @@
             </div>
         `;
         document.body.appendChild(banner);
+        installWorkoutFeedShareUploadBannerDismissHandlers(banner);
         return banner;
     }
 
@@ -1280,6 +1417,11 @@
     function showWorkoutFeedShareUploadBanner(message, type, options) {
         options = options || {};
         const banner = ensureWorkoutFeedShareUploadBanner();
+        if (workoutFeedShareUploadHideTimer) {
+            clearTimeout(workoutFeedShareUploadHideTimer);
+            workoutFeedShareUploadHideTimer = null;
+        }
+        resetWorkoutFeedShareUploadBannerMotion(banner);
         const text = banner.querySelector('#workout-feed-share-upload-text');
         const subtext = banner.querySelector('#workout-feed-share-upload-subtext');
         const bar = banner.querySelector('#workout-feed-share-upload-bar');
@@ -1340,11 +1482,17 @@
     function hideWorkoutFeedShareUploadBanner(delayMs) {
         const banner = document.getElementById('workout-feed-share-upload-banner');
         if (!banner) return;
+        if (workoutFeedShareUploadHideTimer) {
+            clearTimeout(workoutFeedShareUploadHideTimer);
+            workoutFeedShareUploadHideTimer = null;
+        }
         const hide = function () {
+            resetWorkoutFeedShareUploadBannerMotion(banner);
             banner.style.display = 'none';
+            workoutFeedShareUploadHideTimer = null;
         };
         if (delayMs && delayMs > 0) {
-            setTimeout(hide, delayMs);
+            workoutFeedShareUploadHideTimer = setTimeout(hide, delayMs);
         } else {
             hide();
         }
