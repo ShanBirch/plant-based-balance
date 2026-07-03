@@ -465,6 +465,7 @@
     function renderOrderSequence(game) {
         var items = (game.items || []).map(function(text, i) { return { text: text, correctIdx: i }; });
         items = shuffle(items);
+        var orderHint = getOrderDirectionHint(game);
         var listHtml = '';
         for (var i = 0; i < items.length; i++) {
             listHtml += '<div class="hlq-order-item" draggable="false" data-correct="' + items[i].correctIdx + '" style="padding:11px 12px;background:rgba(255,255,255,0.20);border:2px solid rgba(255,255,255,0.40);border-radius:11px;color:#fff;font-size:0.85rem;display:flex;align-items:center;gap:10px;cursor:grab;font-weight:600;user-select:none;line-height:1.3;touch-action:none;-webkit-user-drag:none;-webkit-tap-highlight-color:transparent;">'
@@ -475,8 +476,73 @@
         }
         return ''
             + questionBox(game.question || 'Drag into the right order')
+            + (orderHint ? '<div style="font-size:0.78rem;color:rgba(255,255,255,0.86);font-weight:700;margin:-6px 0 12px;text-align:center;">' + escapeHtml(orderHint) + '</div>' : '')
             + '<div id="hlq-order-list" style="display:flex;flex-direction:column;gap:7px;">' + listHtml + '</div>'
             + '<button id="hlq-order-check-btn" class="hlq-btn" style="margin-top:12px;width:100%;padding:13px;background:#ffffff;color:#f97316;border:none;border-radius:12px;font-weight:800;font-size:0.98rem;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.18);">Check Order</button>';
+    }
+
+    function getValidOrderSequences(game) {
+        var itemCount = game && game.items ? game.items.length : 0;
+        var defaultOrder = [];
+        for (var i = 0; i < itemCount; i++) defaultOrder.push(i);
+        if (game && Array.isArray(game.acceptableOrders) && game.acceptableOrders.length) return game.acceptableOrders;
+        if (game && Array.isArray(game.correctOrder) && game.correctOrder.length) return [game.correctOrder];
+        return [defaultOrder];
+    }
+
+    function isOrderSequenceCorrect(userOrder, game) {
+        var validOrders = getValidOrderSequences(game);
+        return validOrders.some(function(order) {
+            return order.length === userOrder.length && order.every(function(val, i) {
+                return Number(val) === Number(userOrder[i]);
+            });
+        });
+    }
+
+    function isOrderItemCorrectAtPosition(itemIndex, position, game) {
+        return getValidOrderSequences(game).some(function(order) {
+            return Number(order[position]) === Number(itemIndex);
+        });
+    }
+
+    function getOrderDirectionHint(game) {
+        if (game && game.orderHint) return game.orderHint;
+
+        var question = String((game && game.question) || '').toLowerCase();
+        function appearsBefore(first, second) {
+            var firstIndex = question.indexOf(first);
+            var secondIndex = question.indexOf(second);
+            return firstIndex !== -1 && secondIndex !== -1 && firstIndex < secondIndex;
+        }
+        if (!question) return 'Top = first. Bottom = last.';
+        if (appearsBefore('worst', 'best')) return 'Top = worst choice. Bottom = best choice.';
+        if (appearsBefore('best', 'worst')) return 'Top = best choice. Bottom = worst choice.';
+        if (appearsBefore('least', 'most')) return 'Top = least. Bottom = most.';
+        if (appearsBefore('most', 'least')) return 'Top = most. Bottom = least.';
+        if (appearsBefore('smallest', 'largest')) return 'Top = smallest. Bottom = largest.';
+        if (appearsBefore('largest', 'smallest')) return 'Top = largest. Bottom = smallest.';
+        if (appearsBefore('lowest', 'highest')) return 'Top = lowest. Bottom = highest.';
+        if (appearsBefore('highest', 'lowest')) return 'Top = highest. Bottom = lowest.';
+        if (question.indexOf('easiest') !== -1 && question.indexOf('hardest') !== -1) return 'Top = easiest. Bottom = hardest.';
+        if (question.indexOf('superficial') !== -1 && question.indexOf('deep') !== -1) return 'Top = most visible. Bottom = deepest.';
+        if (question.indexOf('biggest') !== -1 && question.indexOf('hidden') !== -1) return 'Top = biggest or most visible. Bottom = most hidden.';
+        if (question.indexOf('maximum force') !== -1 && question.indexOf('maximum speed') !== -1) return 'Top = maximum force or slowest. Bottom = maximum speed or fastest.';
+        if (question.indexOf('helpful') !== -1 && question.indexOf('harmful') !== -1) return 'Top = most helpful. Bottom = most harmful.';
+        if (question.indexOf('chest-biased') !== -1 && question.indexOf('shoulder-biased') !== -1) return 'Top = most chest-biased. Bottom = most shoulder-biased.';
+        if (question.indexOf('lat-biased') !== -1 && question.indexOf('mid-back-biased') !== -1) return 'Top = most lat-biased. Bottom = most mid-back-biased.';
+        if (question.indexOf('stretched') !== -1 && question.indexOf('shortened') !== -1) return 'Top = most stretched. Bottom = most shortened.';
+        if (question.indexOf('brachialis bias') !== -1 && question.indexOf('bicep bias') !== -1) return 'Top = most brachialis-biased. Bottom = most bicep-biased.';
+        if (question.indexOf('lower body') !== -1 && question.indexOf('upper body') !== -1) return 'Top = lower-body patterns. Bottom = upper-body patterns.';
+        if (question.indexOf('foundation') !== -1 && question.indexOf('fine-tuning') !== -1) return 'Top = foundation. Bottom = fine-tuning.';
+        if (question.indexOf('shortest') !== -1 && question.indexOf('longest') !== -1) return 'Top = shortest. Bottom = longest.';
+        if (question.indexOf('heaviest') !== -1 && question.indexOf('lightest') !== -1) return 'Top = heaviest or slowest. Bottom = lightest or fastest.';
+        if (question.indexOf('beginner') !== -1 && question.indexOf('elite') !== -1) return 'Top = beginner. Bottom = elite.';
+        if (question.indexOf('front') !== -1 && question.indexOf('back') !== -1) return 'Top = front. Bottom = back.';
+        if (question.indexOf('bottom') !== -1 && question.indexOf('top') !== -1) return 'Top = bottom of the body. Bottom = top of the body.';
+        if (question.indexOf('ground') !== -1 && question.indexOf('up') !== -1) return 'Top = ground contact. Bottom = highest point.';
+        if (question.indexOf('morning') !== -1 && question.indexOf('bedtime') !== -1) return 'Top = morning. Bottom = bedtime.';
+        if (question.indexOf('wake') !== -1 && question.indexOf('evening') !== -1) return 'Top = wake-up. Bottom = evening.';
+        return 'Top = first step. Bottom = final result.';
     }
 
     function renderScenario(game) {
@@ -790,12 +856,10 @@
             if (HLQ.attempted) return;
             HLQ.attempted = true;
             var arr = [].slice.call(list.querySelectorAll('.hlq-order-item'));
-            var ok = true;
+            var userOrder = arr.map(function(it) { return parseInt(it.dataset.correct, 10); });
+            var ok = isOrderSequenceCorrect(userOrder, game);
             arr.forEach(function(it, i) {
-                if (parseInt(it.dataset.correct, 10) !== i) ok = false;
-            });
-            arr.forEach(function(it, i) {
-                if (parseInt(it.dataset.correct, 10) === i) it.classList.add('hlq-correct');
+                if (isOrderItemCorrectAtPosition(parseInt(it.dataset.correct, 10), i, game)) it.classList.add('hlq-correct');
                 else it.classList.add('hlq-wrong');
             });
             handleAnswer(ok, game);
