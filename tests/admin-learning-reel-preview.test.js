@@ -38,6 +38,8 @@ vm.createContext(context);
 vm.runInContext(code, context);
 
 const linkHandoffAlert = {
+    id: '00000000-0000-4000-8000-000000000001',
+    status: 'pending',
     alert_type: 'ig_incoming_dm',
     title: 'Reel for Miranda: workout motivation',
     description: 'Miranda was recently chatting about workout motivation. Suggested reel: "Everyone Is Confused About Training To Failure" by Jeff Nippard. Shannon approval required before send.',
@@ -53,7 +55,15 @@ assert.match(html, /learning-reel-preview/, 'Needs You link handoffs with a YouT
 assert.match(html, /youtube-nocookie\.com\/embed\/VsmSkg2h4d8/, 'preview should use the extracted YouTube video ID');
 assert.match(html, /origin=https%3A%2F%2Fplantbased-balance\.org/, 'preview should pass the app origin to YouTube embeds');
 assert.match(html, /Open YouTube/, 'preview should include an external fallback link');
+assert.match(html, /dismissLearningReelAlert\(event, '00000000-0000-4000-8000-000000000001'\)/, 'preview should include a dismiss button beside the YouTube link');
 assert.match(html, /Everyone Is Confused About Training To Failure by Jeff Nippard/, 'preview should infer the reel title from the alert description');
+
+assert.ok(
+    dashboard.includes('function evictAlertFromFastCaches(alertId)') &&
+    dashboard.includes('needsYouFeedCache.rows.filter') &&
+    dashboard.includes('refreshVisibleCountsAfterDismiss();'),
+    'dismissed Needs You rows should be evicted from the fast cache before counts refresh'
+);
 
 context.currentFeed = 'unread';
 assert.strictEqual(
