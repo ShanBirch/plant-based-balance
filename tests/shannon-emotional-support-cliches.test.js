@@ -22,7 +22,8 @@ assert.ok(block.includes('Live edit pattern from the last 30 days'), 'learns fro
 assert.ok(block.includes('reaction + extra question'), 'prevents reaction-plus-question overreach');
 assert.ok(block.includes('reaction-only pattern'), 'teaches examples where Shannon keeps only the reaction');
 assert.ok(block.includes('July 2026 native IG pattern'), 'learns from Shannon native IG replies');
-assert.ok(block.includes('one short line or two tiny bubbles'), 'keeps IG/client drafts much shorter by default');
+assert.ok(block.includes('message length should be proportional'), 'keeps length proportional rather than always short');
+assert.ok(block.includes('If someone sends a long, thoughtful, vulnerable, or detailed message'), 'allows longer replies to longer/deeper inbound messages');
 assert.ok(block.includes('For app/support/client troubleshooting'), 'keeps app support replies practical and rough');
 assert.ok(block.includes('one blunt cue'), 'prevents full technique checklists when a short cue fits');
 assert.ok(block.includes('Lead/rapport question ladders'), 'prevents same-topic rapport question ladders');
@@ -34,6 +35,8 @@ assert.ok(block.includes('just pain when i walk'), 'captures Fra-style pain stat
 assert.ok(clientContextSource.includes('Do not warn just because a lead/client reply is short and reaction-only'), 'draft QA respects reaction-only Shannon sends');
 assert.ok(clientContextSource.includes('Do not warn just because an IG/client reply is a tiny direct answer'), 'draft QA respects tiny direct IG replies');
 assert.ok(clientContextSource.includes('ordinary IG/client draft runs long'), 'draft QA flags overlong normal IG/client drafts');
+assert.ok(clientContextSource.includes('Do not warn just because a draft is medium/long'), 'draft QA allows proportionate longer replies');
+assert.ok(clientContextSource.includes('not "always short"; it is proportional'), 'preserves proportional length logic in edit examples');
 assert.ok(clientContextSource.includes('complete support note instead of a DM'), 'draft QA catches polished support-note replies');
 assert.ok(clientContextSource.includes('longDraftToTinyFinal'), 'edit learning catches long AI drafts cut to tiny native replies');
 assert.ok(clientContextSource.includes('Warn if the draft tacks an optional curiosity question'), 'draft QA catches unnecessary curiosity questions');
