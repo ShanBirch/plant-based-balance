@@ -528,6 +528,29 @@
     }
   }
 
+  async function safePagedQuery(label, queryFactory, pageSize) {
+    const limit = pageSize || 1000;
+    const maxPages = 20;
+    const rows = [];
+
+    for (let page = 0; page < maxPages; page += 1) {
+      const from = page * limit;
+      const to = from + limit - 1;
+      const pageRows = await safeQuery(page === 0 ? label : label + ' page ' + (page + 1), function() {
+        return queryFactory(from, to);
+      });
+
+      rows.push.apply(rows, pageRows);
+      if (pageRows.length < limit) break;
+    }
+
+    if (rows.length >= limit * maxPages) {
+      console.warn('[weekly-goals] paged query hit the safety cap:', label);
+    }
+
+    return rows;
+  }
+
   async function loadProgressData(userId, week) {
     const supabase = window.supabaseClient;
     if (!supabase) return {};
@@ -553,13 +576,14 @@
         .gte('meal_date', week.arcStart)
         .lt('meal_date', week.endExclusive)
         .order('meal_date', { ascending: true })),
-      safeQuery('workouts history', () => supabase.from('workouts')
-        .select('workout_date,workout_type,exercise_name,created_at')
+      safePagedQuery('workouts history', (from, to) => supabase.from('workouts')
+        .select('workout_date')
         .eq('user_id', userId)
         .eq('workout_type', 'history')
         .gte('workout_date', week.arcStart)
         .lt('workout_date', week.endExclusive)
-        .order('workout_date', { ascending: true })),
+        .order('workout_date', { ascending: true })
+        .range(from, to)),
       safeQuery('custom workouts', () => supabase.from('workouts')
         .select('id,workout_name,template_name,created_at,workout_type')
         .eq('user_id', userId)
