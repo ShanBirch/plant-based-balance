@@ -822,7 +822,7 @@
         if (navigator && navigator.onLine === false) return true;
         const message = String(error && (error.message || error.name || error.code) || '').toLowerCase();
         if (!message) return true;
-        if (/(log in|record or upload|choose a video|could not shrink|trim it|missing media|invalid)/i.test(message)) return false;
+        if (/(log in|record or upload|choose a video|photo instead of a video|not a video|could not shrink|trim it|missing media|invalid)/i.test(message)) return false;
         return /(upload|network|fetch|failed|timeout|offline|abort|server|internal|load failed|failed to fetch)/i.test(message);
     }
 
@@ -849,13 +849,85 @@
         }
     }
 
+    const WORKOUT_FEED_SHARE_INVALID_VIDEO_MESSAGE = 'That recording saved as a photo instead of a video. Please record the set again.';
+
+    function getWorkoutFeedShareAscii(bytes, start, length) {
+        if (!bytes || bytes.length < start + length) return '';
+        let text = '';
+        for (let i = start; i < start + length; i += 1) {
+            const code = bytes[i];
+            text += code >= 32 && code <= 126 ? String.fromCharCode(code) : ' ';
+        }
+        return text;
+    }
+
+    function hasWorkoutFeedShareImageSignature(bytes) {
+        if (!bytes || bytes.length < 4) return false;
+        if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return true;
+        if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return true;
+        if (getWorkoutFeedShareAscii(bytes, 0, 4) === 'GIF8') return true;
+        if (getWorkoutFeedShareAscii(bytes, 0, 4) === 'RIFF' && getWorkoutFeedShareAscii(bytes, 8, 4) === 'WEBP') return true;
+        if (getWorkoutFeedShareAscii(bytes, 4, 4) === 'ftyp') {
+            const brandText = getWorkoutFeedShareAscii(bytes, 8, Math.min(24, bytes.length - 8)).toLowerCase();
+            return /\b(heic|heix|heif|mif1|msf1|avif)\b/.test(brandText);
+        }
+        return false;
+    }
+
+    function hasWorkoutFeedShareVideoSignature(bytes) {
+        if (!bytes || bytes.length < 4) return false;
+        if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) return true;
+        if (getWorkoutFeedShareAscii(bytes, 0, 4) === 'OggS') return true;
+        if (getWorkoutFeedShareAscii(bytes, 4, 4) === 'ftyp') {
+            return !hasWorkoutFeedShareImageSignature(bytes);
+        }
+        return false;
+    }
+
+    async function readWorkoutFeedShareHeaderBytes(file) {
+        if (!file || typeof file.slice !== 'function') return null;
+        const blob = file.slice(0, 32);
+        if (!blob || typeof blob.arrayBuffer !== 'function') return null;
+        try {
+            return new Uint8Array(await blob.arrayBuffer());
+        } catch (error) {
+            console.warn('[WorkoutFeedShare] could not inspect clip header', error);
+            return null;
+        }
+    }
+
+    function isWorkoutFeedShareImageMimeType(type) {
+        return /^image\//i.test(String(type || '').trim());
+    }
+
+    function isWorkoutFeedShareDeclaredVideo(file) {
+        const type = String(file && file.type ? file.type : '').toLowerCase();
+        return type.startsWith('video/') || !!getWorkoutFeedShareVideoMimeType(file);
+    }
+
+    async function assertWorkoutFeedShareVideoFile(file) {
+        if (!file) throw new Error('Please choose a video clip.');
+        const headerBytes = await readWorkoutFeedShareHeaderBytes(file);
+
+        if (isWorkoutFeedShareImageMimeType(file.type) || hasWorkoutFeedShareImageSignature(headerBytes)) {
+            throw new Error(WORKOUT_FEED_SHARE_INVALID_VIDEO_MESSAGE);
+        }
+
+        if (headerBytes && headerBytes.length && !hasWorkoutFeedShareVideoSignature(headerBytes) && !isWorkoutFeedShareDeclaredVideo(file)) {
+            throw new Error('Please choose a video clip.');
+        }
+    }
+
     async function prepareWorkoutFeedShareClip(file, statusTarget) {
+        await assertWorkoutFeedShareVideoFile(file);
         if (typeof window.prepareUploadableFeedVideo !== 'function') return file;
-        return window.prepareUploadableFeedVideo(file, function (status) {
+        const preparedFile = await window.prepareUploadableFeedVideo(file, function (status) {
             if (statusTarget) statusTarget.textContent = status;
         }, {
             maxBytes: WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES
         });
+        await assertWorkoutFeedShareVideoFile(preparedFile);
+        return preparedFile;
     }
 
     async function queueWorkoutFeedShareUpload(payload) {
@@ -1738,7 +1810,7 @@
         }
 
         closeWorkoutFeedShareInAppCamera(false);
-        processWorkoutFeedShareSelectedFile(file);
+        void processWorkoutFeedShareSelectedFile(file);
     }
 
     function toggleWorkoutFeedShareInAppRecording() {
@@ -1847,10 +1919,12 @@
 
         const fallbackName = result.name || ('share-set-' + Date.now() + '.mp4');
         const mimeType = result.mimeType || blob.type || getWorkoutFeedShareVideoMimeType({ name: fallbackName }) || 'video/mp4';
-        return new File([blob], fallbackName, {
+        const file = new File([blob], fallbackName, {
             type: mimeType,
             lastModified: Date.now()
         });
+        await assertWorkoutFeedShareVideoFile(file);
+        return file;
     }
 
     async function openNativeWorkoutFeedShareCamera() {
@@ -1875,7 +1949,7 @@
                 hideWorkoutFeedShareUploadBanner(300);
                 return;
             }
-            processWorkoutFeedShareSelectedFile(file);
+            void processWorkoutFeedShareSelectedFile(file);
         } catch (error) {
             console.error('[WorkoutFeedShare] native camera failed', error);
             hideWorkoutFeedShareUploadBanner(1);
@@ -1950,10 +2024,16 @@
         return file;
     }
 
-    function processWorkoutFeedShareSelectedFile(rawFile) {
+    async function processWorkoutFeedShareSelectedFile(rawFile) {
         const file = normalizeWorkoutFeedShareVideoFile(rawFile);
         if (!file) {
             showWorkoutFeedShareUploadBanner('Please choose a video clip.', 'error');
+            return;
+        }
+        try {
+            await assertWorkoutFeedShareVideoFile(file);
+        } catch (error) {
+            showWorkoutFeedShareUploadBanner(error.message || WORKOUT_FEED_SHARE_INVALID_VIDEO_MESSAGE, 'error');
             return;
         }
         clearWorkoutFeedShareVideo();
@@ -1971,7 +2051,7 @@
         const rawFile = input && input.files ? input.files[0] : null;
         if (input) input.value = '';
         if (!rawFile) return;
-        processWorkoutFeedShareSelectedFile(rawFile);
+        void processWorkoutFeedShareSelectedFile(rawFile);
     }
 
     function clearWorkoutFeedShareVideo() {

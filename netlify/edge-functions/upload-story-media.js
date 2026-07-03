@@ -3,6 +3,66 @@
  * Handles both images and videos for the stories feature
  */
 
+function jsonResponse(status, body) {
+    return new Response(JSON.stringify(body), {
+        status,
+        headers: { 'Content-Type': 'application/json' }
+    });
+}
+
+function asciiFromBytes(bytes, start, length) {
+    if (!bytes || bytes.length < start + length) return '';
+    let text = '';
+    for (let i = start; i < start + length; i += 1) {
+        const code = bytes[i];
+        text += code >= 32 && code <= 126 ? String.fromCharCode(code) : ' ';
+    }
+    return text;
+}
+
+function hasImageSignature(bytes) {
+    if (!bytes || bytes.length < 4) return false;
+    if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return true;
+    if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return true;
+    if (asciiFromBytes(bytes, 0, 4) === 'GIF8') return true;
+    if (asciiFromBytes(bytes, 0, 4) === 'RIFF' && asciiFromBytes(bytes, 8, 4) === 'WEBP') return true;
+    if (asciiFromBytes(bytes, 4, 4) === 'ftyp') {
+        const brandText = asciiFromBytes(bytes, 8, Math.min(24, bytes.length - 8)).toLowerCase();
+        return /\b(heic|heix|heif|mif1|msf1|avif)\b/.test(brandText);
+    }
+    return false;
+}
+
+function hasSupportedVideoSignature(bytes) {
+    if (!bytes || bytes.length < 4) return false;
+    if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) return true;
+    if (asciiFromBytes(bytes, 0, 4) === 'OggS') return true;
+    if (asciiFromBytes(bytes, 4, 4) === 'ftyp') return !hasImageSignature(bytes);
+    return false;
+}
+
+function requiresWorkoutVideo(source) {
+    const cleanSource = String(source || '').trim().toLowerCase();
+    return cleanSource === 'feed_workout_share' || cleanSource.includes('workout_share') || cleanSource.includes('share_set');
+}
+
+function validateWorkoutVideoUpload(file, fileBuffer, source) {
+    if (!requiresWorkoutVideo(source)) return null;
+
+    const contentType = String(file?.type || '').trim().toLowerCase();
+    const headerBytes = new Uint8Array(fileBuffer.slice(0, Math.min(fileBuffer.byteLength, 32)));
+
+    if (contentType.startsWith('image/') || hasImageSignature(headerBytes)) {
+        return 'That recording saved as a photo instead of a video. Please record the set again.';
+    }
+
+    if (!contentType.startsWith('video/') && !hasSupportedVideoSignature(headerBytes)) {
+        return 'That recording did not save as a supported video. Please record the set again.';
+    }
+
+    return null;
+}
+
 export default async (request, context) => {
     // Only allow POST
     if (request.method !== "POST") {
@@ -14,13 +74,11 @@ export default async (request, context) => {
         const file = formData.get('file');
         const userId = formData.get('userId');
         const storyId = formData.get('storyId');
+        const source = formData.get('source');
 
         if (!file || !userId || !storyId) {
-            return new Response(JSON.stringify({
+            return jsonResponse(400, {
                 error: 'Missing required fields: file, userId, storyId'
-            }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' }
             });
         }
 
@@ -32,11 +90,8 @@ export default async (request, context) => {
 
         if (!B2_KEY_ID || !B2_APPLICATION_KEY || !B2_BUCKET_ID || !B2_BUCKET_NAME) {
             console.error("Missing B2 configuration");
-            return new Response(JSON.stringify({
+            return jsonResponse(500, {
                 error: 'Server configuration error'
-            }), {
-                status: 500,
-                headers: { 'Content-Type': 'application/json' }
             });
         }
 
@@ -51,11 +106,8 @@ export default async (request, context) => {
         if (!authResponse.ok) {
             const errorText = await authResponse.text();
             console.error('B2 Authorization failed:', errorText);
-            return new Response(JSON.stringify({
+            return jsonResponse(500, {
                 error: 'Failed to authorize with storage service'
-            }), {
-                status: 500,
-                headers: { 'Content-Type': 'application/json' }
             });
         }
 
@@ -75,11 +127,8 @@ export default async (request, context) => {
         if (!uploadUrlResponse.ok) {
             const errorText = await uploadUrlResponse.text();
             console.error('Failed to get upload URL:', errorText);
-            return new Response(JSON.stringify({
+            return jsonResponse(500, {
                 error: 'Failed to get upload URL'
-            }), {
-                status: 500,
-                headers: { 'Content-Type': 'application/json' }
             });
         }
 
@@ -87,6 +136,11 @@ export default async (request, context) => {
 
         // 3. Prepare file for upload
         const fileBuffer = await file.arrayBuffer();
+        const videoValidationError = validateWorkoutVideoUpload(file, fileBuffer, source);
+        if (videoValidationError) {
+            return jsonResponse(400, { error: videoValidationError });
+        }
+
         const fileExtension = file.name.split('.').pop() || 'jpg';
         const fileName = `stories/${userId}/${storyId}.${fileExtension}`;
 
@@ -113,11 +167,8 @@ export default async (request, context) => {
         if (!uploadResponse.ok) {
             const errorText = await uploadResponse.text();
             console.error('Upload to B2 failed:', errorText);
-            return new Response(JSON.stringify({
+            return jsonResponse(500, {
                 error: 'Failed to upload file'
-            }), {
-                status: 500,
-                headers: { 'Content-Type': 'application/json' }
             });
         }
 
@@ -127,25 +178,19 @@ export default async (request, context) => {
         const publicUrl = `${downloadUrl}/file/${B2_BUCKET_NAME}/${fileName}`;
 
         // Return success with public URL
-        return new Response(JSON.stringify({
+        return jsonResponse(200, {
             success: true,
             url: publicUrl,
             fileName: fileName,
             fileId: uploadData.fileId,
             contentType: file.type,
             size: fileBuffer.byteLength
-        }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
         });
 
     } catch (error) {
         console.error('Error in upload-story-media:', error);
-        return new Response(JSON.stringify({
+        return jsonResponse(500, {
             error: error.message || 'Internal server error'
-        }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
         });
     }
 };
