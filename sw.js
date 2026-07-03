@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v231'; // v231: feed comment push tap routing; v230: lock 6-week cohort leave path
+const CACHE_NAME = 'pbb-app-v232'; // v232: avoid image compression on prepared Share a Set videos; v231: feed comment push tap routing
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
