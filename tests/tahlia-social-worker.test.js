@@ -52,6 +52,9 @@ const commentAlert = worker.buildCommentAlert({
         id: 'story-1',
         user_id: 'member-1',
         media_type: 'meal_card',
+        media_url: 'https://cdn.example.com/story-1.jpg',
+        thumbnail_url: 'https://cdn.example.com/story-1-thumb.jpg',
+        background_color: '#fff7ed',
         caption: JSON.stringify({ card_type: 'meal', share_caption: 'tofu bowl after training' }),
         created_at: '2026-07-03T00:20:00.000Z',
     },
@@ -61,6 +64,9 @@ const commentAlert = worker.buildCommentAlert({
 
 assert.strictEqual(commentAlert.data.proposed_actions[0].type, 'publish_tahlia_feed_comment');
 assert.strictEqual(commentAlert.data.target_story_author_name, 'Abbey');
+assert.strictEqual(commentAlert.data.evidence.story_media_url, 'https://cdn.example.com/story-1.jpg');
+assert.strictEqual(commentAlert.data.evidence.story_thumbnail_url, 'https://cdn.example.com/story-1-thumb.jpg');
+assert.strictEqual(commentAlert.data.evidence.story_background_color, '#fff7ed');
 assert.match(commentAlert.data.draft_text, /meal|win|solid|yum|good|love/i);
 assert.doesNotMatch(commentAlert.data.draft_text, /looks/i);
 
@@ -83,6 +89,8 @@ assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'publish_tahlia_feed
 assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'move_workout_days' }), false);
 
 assert.ok(adminSource.includes('function isTahliaSocialApprovalAlert'));
+assert.ok(adminSource.includes('function renderTahliaSocialContext'));
+assert.ok(adminSource.includes('Relevant Feed post'));
 assert.ok(adminSource.includes("'Tahlia social'"));
 assert.ok(performSource.includes('publish_tahlia_feed_post'));
 assert.ok(performSource.includes('publish_tahlia_feed_comment'));

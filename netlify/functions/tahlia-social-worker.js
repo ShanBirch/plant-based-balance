@@ -203,6 +203,9 @@ function buildCommentAlert({ coachId, tahliaUser, story, author = {}, now = new 
         story_author_id: story.user_id || null,
         story_author_name: authorName,
         story_media_type: story.media_type || null,
+        story_media_url: story.media_url || null,
+        story_thumbnail_url: story.thumbnail_url || null,
+        story_background_color: story.background_color || null,
         story_created_at: story.created_at || null,
         story_text: storyText(story),
         inferred_theme: draft.theme,
@@ -257,7 +260,7 @@ async function loadRecentStories(now = new Date(), { lookbackHours = DEFAULT_STO
     const oldest = new Date(now.getTime() - lookbackHours * 60 * 60 * 1000).toISOString();
     const newest = new Date(now.getTime() - minAgeMinutes * 60 * 1000).toISOString();
     return supabaseQuery(
-        `stories?select=id,user_id,media_type,caption,created_at,expires_at&created_at=gte.${encodeURIComponent(oldest)}&created_at=lte.${encodeURIComponent(newest)}&expires_at=gt.${encodeURIComponent(now.toISOString())}&order=created_at.desc&limit=60`
+        `stories?select=id,user_id,media_type,media_url,thumbnail_url,background_color,caption,created_at,expires_at&created_at=gte.${encodeURIComponent(oldest)}&created_at=lte.${encodeURIComponent(newest)}&expires_at=gt.${encodeURIComponent(now.toISOString())}&order=created_at.desc&limit=60`
     ).catch(() => []);
 }
 
