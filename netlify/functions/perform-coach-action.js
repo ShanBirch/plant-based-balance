@@ -59,12 +59,98 @@ function isTahliaSocialAction(action = {}) {
     return ['publish_tahlia_feed_post', 'publish_tahlia_feed_comment'].includes(action.type);
 }
 
+function tahliaSocialActionText(action = {}, data = {}) {
+    const payload = action.payload || {};
+    if (action.type === 'publish_tahlia_feed_post') {
+        return payload.caption || data.draft_text || action.preview || '';
+    }
+    if (action.type === 'publish_tahlia_feed_comment') {
+        return payload.comment_text || data.draft_text || action.preview || '';
+    }
+    return action.preview || data.draft_text || '';
+}
+
+function tahliaSocialActionKind(action = {}, data = {}) {
+    if (action.type === 'publish_tahlia_feed_post') return 'feed_post';
+    if (action.type === 'publish_tahlia_feed_comment') return 'feed_comment';
+    return data.social_action || action.type || 'social_action';
+}
+
 function cleanSocialText(value = '', max = 500) {
     return String(value || '')
         .replace(/\s+/g, ' ')
         .replace(/[<>]/g, '')
         .trim()
         .slice(0, max);
+}
+
+function applyTahliaSocialEditFromRequest({ data = {}, action = {}, actionId = '', body = {}, now = new Date() }) {
+    if (!isTahliaSocialAction(action)) return { data, action, changed: false };
+
+    const hasEditedText = Object.prototype.hasOwnProperty.call(body, 'editedText');
+    if (!hasEditedText) return { data, action, changed: false };
+
+    const editedText = cleanSocialText(body.editedText, 500);
+    if (!editedText) throw new Error('Tahlia post text is empty');
+
+    const originalText = cleanSocialText(
+        body.originalText || tahliaSocialActionText(action, data),
+        500
+    );
+    const editReason = cleanSocialText(body.editReason || '', 240);
+    const editedAt = now.toISOString();
+    const actionKind = tahliaSocialActionKind(action, data);
+    const payload = {
+        ...(action.payload || {}),
+    };
+    if (action.type === 'publish_tahlia_feed_post') {
+        payload.caption = editedText;
+    } else if (action.type === 'publish_tahlia_feed_comment') {
+        payload.comment_text = editedText;
+    }
+
+    const learning = {
+        action_id: actionId || action.id || '',
+        action_type: action.type || '',
+        action_kind: actionKind,
+        original_text: originalText,
+        edited_text: editedText,
+        edit_reason: editReason,
+        edited_at: editedAt,
+        source: cleanSocialText(body.source || 'admin_dashboard_tahlia_social', 80),
+        activity_type: data.activity_type || payload.activity_type || data.evidence?.activity_type || null,
+        story_id: data.target_story_id || payload.story_id || data.evidence?.story_id || null,
+        story_author_name: data.target_story_author_name || payload.story_author_name || data.evidence?.story_author_name || null,
+        inferred_theme: data.evidence?.inferred_theme || null,
+    };
+    const history = Array.isArray(data.tahlia_social_edit_history)
+        ? data.tahlia_social_edit_history.slice(-19)
+        : [];
+    const patchedAction = {
+        ...action,
+        preview: editedText,
+        original_preview: action.original_preview || originalText,
+        edited_preview: editedText,
+        edited_at: editedAt,
+        edited_by: learning.source,
+        edit_reason: editReason,
+        payload,
+    };
+    const patchedData = {
+        ...data,
+        draft_text: editedText,
+        tahlia_social_last_edit: learning,
+        tahlia_social_edit_history: [...history, learning],
+        tahlia_social_learning_updated_at: editedAt,
+        proposed_actions: updateAction(data, actionId || action.id, patchedAction),
+    };
+
+    return {
+        data: patchedData,
+        action: patchedAction,
+        changed: editedText !== originalText || !!editReason,
+        learning,
+    };
 }
 
 async function resolveTahliaUserForAction({ alert, action }) {
@@ -683,11 +769,19 @@ exports.handler = async (event) => {
     }
     if (!alert) return json(404, { error: 'Alert not found' });
 
-    const data = alert.data || {};
-    const action = findAction(data, actionId);
+    let data = alert.data || {};
+    let action = findAction(data, actionId);
     if (!action) return json(404, { error: 'Action not found' });
     if (action.status === 'completed') return json(409, { error: 'Action already completed', action });
     if (action.status && action.status !== 'pending') return json(409, { error: `Action is ${action.status}`, action });
+
+    try {
+        const editResult = applyTahliaSocialEditFromRequest({ data, action, actionId, body });
+        data = editResult.data;
+        action = editResult.action;
+    } catch (e) {
+        return json(400, { error: e.message || 'Tahlia edit could not be applied' });
+    }
 
     let result;
     try {
@@ -787,6 +881,8 @@ exports.handler = async (event) => {
 };
 
 exports._test = {
+    applyTahliaSocialEditFromRequest,
     cleanSocialText,
     isTahliaSocialAction,
+    tahliaSocialActionText,
 };

@@ -12727,6 +12727,11 @@
                 );
         }
 
+        function isTahliaSocialActionType(actionType) {
+            return actionType === 'publish_tahlia_feed_post'
+                || actionType === 'publish_tahlia_feed_comment';
+        }
+
         function needsYouHasOperatorWork(alert, activeClientIds = dmClientIdsCache.ids) {
             if (!alert || alert.status !== 'pending') return false;
             if (!NEEDS_YOU_ALERT_TYPES.includes(alert.alert_type)) return false;
@@ -16130,8 +16135,7 @@
 
         function getTahliaPrimaryAction(alert) {
             return getProposedCoachActions(alert).find(action => (
-                action.type === 'publish_tahlia_feed_post'
-                || action.type === 'publish_tahlia_feed_comment'
+                isTahliaSocialActionType(action.type)
             )) || getProposedCoachActions(alert)[0] || {};
         }
 
@@ -17679,7 +17683,7 @@
             // ManyChat thread are editable from here. Sent / scheduled
             // drafts stay read-only — no Send path for those on this surface.
             const canEdit = hasMessage
-                && (alert.client_id || isManyChatLead || manualIgRequired || humanAgentNeedsManualCopy)
+                && (alert.client_id || isManyChatLead || manualIgRequired || humanAgentNeedsManualCopy || isTahliaSocial)
                 && (alert.status === 'pending' || alert.status === 'dismissed' || alert.status === 'canceled');
             const canSendFromHere = hasMessage
                 && (alert.client_id || isManyChatLead)
@@ -17932,6 +17936,28 @@
         // "in 12 min", "in 2 hr", or "12:34 PM today" once it's < 60s away or
         // already past. The badge updates only when the feed reloads (every
         // 5 minutes via setInterval), which is fine for a coarse hint.
+        function buildCoachActionRequestBody(alertId, actionId) {
+            const body = { alertId, actionId };
+            const alertData = alertsCache.find(a => String(a.id) === String(alertId));
+            const action = getProposedCoachActions(alertData).find(item => String(item.id || '') === String(actionId));
+            if (!isTahliaSocialApprovalAlert(alertData) || !isTahliaSocialActionType(action?.type)) {
+                return body;
+            }
+
+            updateAlertEditBuffer(alertId);
+            const originalText = getResolvedAlertMessage(alertData).trim();
+            const editedText = getAlertEditMessage(alertId, alertData).trim();
+            if (!editedText) throw new Error('Tahlia post text is empty');
+            const editReason = getAlertEditReason(alertId);
+            if (editedText === originalText && !editReason) return body;
+
+            body.editedText = editedText;
+            body.originalText = originalText;
+            body.editReason = editReason;
+            body.source = 'admin_dashboard_tahlia_social';
+            return body;
+        }
+
         async function performCoachAction(evt, alertId, actionId) {
             const btn = evt?.target?.closest?.('.alert-btn-action');
             const oldHtml = btn ? btn.innerHTML : '';
@@ -17944,7 +17970,7 @@
                 const res = await fetch('/.netlify/functions/perform-coach-action', {
                     method: 'POST',
                     headers: await getAdminJsonHeaders(),
-                    body: JSON.stringify({ alertId, actionId }),
+                    body: JSON.stringify(buildCoachActionRequestBody(alertId, actionId)),
                 });
                 const json = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);

@@ -88,7 +88,29 @@ assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'publish_tahlia_feed
 assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'publish_tahlia_feed_comment' }), true);
 assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'move_workout_days' }), false);
 
+const editedComment = coachAction.applyTahliaSocialEditFromRequest({
+    data: commentAlert.data,
+    action: commentAlert.data.proposed_actions[0],
+    actionId: commentAlert.data.proposed_actions[0].id,
+    body: {
+        editedText: 'Love this, proper meal win',
+        originalText: commentAlert.data.draft_text,
+        editReason: 'Less polished',
+        source: 'admin_dashboard_tahlia_social',
+    },
+    now: new Date('2026-07-03T02:00:00.000Z'),
+});
+
+assert.strictEqual(editedComment.action.payload.comment_text, 'Love this, proper meal win');
+assert.strictEqual(editedComment.action.preview, 'Love this, proper meal win');
+assert.strictEqual(editedComment.data.draft_text, 'Love this, proper meal win');
+assert.strictEqual(editedComment.data.tahlia_social_last_edit.edit_reason, 'Less polished');
+assert.strictEqual(editedComment.data.tahlia_social_last_edit.action_kind, 'feed_comment');
+assert.strictEqual(editedComment.data.tahlia_social_edit_history.length, 1);
+
 assert.ok(adminSource.includes('function isTahliaSocialApprovalAlert'));
+assert.ok(adminSource.includes('function buildCoachActionRequestBody'));
+assert.ok(adminSource.includes('body.editedText = editedText'));
 assert.ok(adminSource.includes('function renderTahliaSocialContext'));
 assert.ok(adminSource.includes('function hydrateTahliaSocialContexts'));
 assert.ok(adminSource.includes('data-tahlia-story-id'));
@@ -96,6 +118,7 @@ assert.ok(adminSource.includes('Relevant Feed post'));
 assert.ok(adminSource.includes("'Tahlia social'"));
 assert.ok(performSource.includes('publish_tahlia_feed_post'));
 assert.ok(performSource.includes('publish_tahlia_feed_comment'));
+assert.ok(performSource.includes('tahlia_social_edit_history'));
 assert.ok(performSource.includes('Tahlia social action must be approved from Needs You'));
 
 console.log('tahlia-social-worker tests passed');
