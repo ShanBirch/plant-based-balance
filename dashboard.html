@@ -330,7 +330,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=39',
             'lib/native-iap.js',
-            'lib/stories.js?v=32',
+            'lib/stories.js?v=33',
             'lib/ai-opponents.js',
             'lib/games.js?v=2',
             'lib/nutrition-calculator.js',
@@ -349,7 +349,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=32"><\/script>');
+    document.write('<script src="lib/stories.js?v=33"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=2"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -9339,7 +9339,7 @@ if(!window._pbbIsIOSSafari) {
                             <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"></path><path d="M16 6l-4-4-4 4"></path><path d="M12 2v13"></path></svg>
                             Share
                         </button>
-                        <div id="feed-composer-share-menu" role="menu" aria-label="Choose what to share" style="display: none; position: absolute; left: 0; top: calc(100% + 8px); min-width: 190px; background: white; border: 1px solid #d1fae5; border-radius: 12px; box-shadow: 0 12px 24px rgba(15,23,42,0.18); z-index: 1001; overflow: hidden;">
+                        <div id="feed-composer-share-menu" role="menu" aria-label="Choose what to share" style="display: none; position: absolute; left: 0; top: calc(100% + 8px); min-width: 218px; background: white; border: 1px solid #d1fae5; border-radius: 12px; box-shadow: 0 12px 24px rgba(15,23,42,0.18); z-index: 1001; overflow: hidden;">
                             <button type="button" role="menuitem" data-feed-composer-share-option="set" onclick="openFeedComposerShareSource('set')" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: none; background: white; color: var(--text-main); font-family: inherit; font-size: 0.88rem; font-weight: 800; text-align: left; cursor: pointer;">
                                 <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round;"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2"></rect></svg>
                                 Share a Set
@@ -9350,7 +9350,7 @@ if(!window._pbbIsIOSSafari) {
                             </button>
                             <button type="button" role="menuitem" data-feed-composer-share-option="workout" onclick="openFeedComposerShareSource('workout')" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: none; border-top: 1px solid #ecfdf5; background: white; color: var(--text-main); font-family: inherit; font-size: 0.88rem; font-weight: 800; text-align: left; cursor: pointer;">
                                 <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round;"><path d="M6.5 6.5v11"></path><path d="M17.5 6.5v11"></path><path d="M3 9v6"></path><path d="M21 9v6"></path><path d="M6.5 12h11"></path></svg>
-                                Share a Workout
+                                Share a Workout / PB
                             </button>
                         </div>
                     </div>
@@ -12640,7 +12640,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'cycle', sel:'#weekly-calendar', title:'Plan your week', body:"Use the weekly calendar to drag workout days around, tap a day, and add walks, classes, Pilates, yoga, or another activity.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
 
     { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Share a thought or encouragement once a day for +2 XP. Add a photo or video if you want." },
-    { tab:'friends', sel:'#feed-composer-share-menu-button,#feed-composer-card', title:'Share from Feed', body:"Use Share to post your latest meal, latest workout, or film a set without leaving Feed.", quick: true },
+    { tab:'friends', sel:'#feed-composer-share-menu-button,#feed-composer-card', title:'Share from Feed', body:"Use Share to post a meal, choose a workout or PB, or film a set without leaving Feed.", quick: true },
     { tab:'friends', sel:'#friends-photo-feed .feed-post-card,#friends-feed-section', fallbackSel:'#feed-composer-card', title:'Feed media controls', fallbackTitle:'Feed media controls', body:"Tap a video once to play it right in Feed. Double tap any photo or video to open the full view.", fallbackBody:"Post media works like Instagram. Videos play with one tap, and photos or videos open full screen with a double tap once posts are showing.", quick: true, condition: function(){ return !!document.getElementById('friends-feed-section') || !!document.getElementById('feed-composer-card'); } },
     { tab:'friends', sel:'.feed-post-actions-btn', title:'Post actions', body:"Tap the three dots on one of your own feed posts to edit or delete it.", quick: true, condition: function(){ return !!document.querySelector('.feed-post-actions-btn'); } },
     { tab:'friends', sel:'.feed-comment-like-btn', title:'Like feed comments', body:"Tap the heart beside a feed comment to like it.", quick: true, condition: function(){ return !!document.querySelector('.feed-comment-like-btn'); } },
@@ -13698,7 +13698,14 @@ if(!window._pbbIsIOSSafari) {
     tab: 'friends',
     sel: '#feed-composer-share-menu-button,#feed-composer-card',
     title: 'Share from Feed',
-    body: "Feed now has one Share menu for Share a Set, Share a Meal, and Share a Workout."
+    body: "Feed now has one Share menu for Share a Set, Share a Meal, and Share a Workout / PB."
+  });
+  allFeatures.push({
+    id: 'feed-composer-workout-pb-choice-v1',
+    tab: 'friends',
+    sel: '#feed-composer-share-menu-button,#feed-composer-card',
+    title: 'Choose workout or PB',
+    body: "Tap Share, then Share a Workout / PB to choose the exact workout or personal best before posting."
   });
   allFeatures.push({
     id: 'feed-inline-media-controls-v1',
