@@ -20,6 +20,9 @@ const context = {
     isLearningReelApprovalAlert(alert) {
         return !!alert?.data?.learning_reel_approval_required;
     },
+    isLearningReelVideoDismissed(alert) {
+        return !!alert?.data?.learning_reel_video_dismissed;
+    },
     getResolvedAlertMessage(alert) {
         const data = alert?.data || {};
         return String(alert?.suggested_message || data.suggested_message || data.draft_text || '');
@@ -55,15 +58,37 @@ assert.match(html, /learning-reel-preview/, 'Needs You link handoffs with a YouT
 assert.match(html, /youtube-nocookie\.com\/embed\/VsmSkg2h4d8/, 'preview should use the extracted YouTube video ID');
 assert.match(html, /origin=https%3A%2F%2Fplantbased-balance\.org/, 'preview should pass the app origin to YouTube embeds');
 assert.match(html, /Open YouTube/, 'preview should include an external fallback link');
+assert.match(html, /Dismiss video/, 'preview should include a video-only dismiss action');
 assert.match(html, /dismissLearningReelAlert\(event, '00000000-0000-4000-8000-000000000001'\)/, 'preview should include a dismiss button beside the YouTube link');
 assert.match(html, /Everyone Is Confused About Training To Failure by Jeff Nippard/, 'preview should infer the reel title from the alert description');
 
 assert.ok(
-    dashboard.includes('function evictAlertFromFastCaches(alertId)') &&
-    dashboard.includes('needsYouFeedCache.rows.filter') &&
-    dashboard.includes('refreshVisibleCountsAfterDismiss();'),
-    'dismissed Needs You rows should be evicted from the fast cache before counts refresh'
+    dashboard.includes('function buildLearningReelDismissPatch(alert, reel)') &&
+    dashboard.includes('learning_reel_video_dismissed = true') &&
+    dashboard.includes('removeAdminLearningReelFromText(alert?.suggested_message') &&
+    !dashboard.includes("const ok = await dismissAlert(alertId, 'youtube_reel_dismissed');"),
+    'video dismiss should clear only the learning reel data and must not dismiss the whole generated response'
 );
+
+const dismissedAlert = {
+    ...linkHandoffAlert,
+    data: {
+        ...linkHandoffAlert.data,
+        learning_reel_video_dismissed: true,
+    },
+};
+assert.strictEqual(
+    context.renderLearningReelContextStrip(dismissedAlert),
+    '',
+    'dismissed YouTube videos should stop rendering without requiring the alert itself to be dismissed'
+);
+
+const reel = context.pickAdminLearningReelForAlert(linkHandoffAlert);
+const { update } = context.buildLearningReelDismissPatch(linkHandoffAlert, reel);
+assert.strictEqual(update.status, undefined, 'video dismiss must not mark the whole alert dismissed');
+assert.strictEqual(update.data.learning_reel_approval_required, false, 'video dismiss should clear the learning-reel approval gate');
+assert.ok(!/youtube\.com\/shorts\/VsmSkg2h4d8/.test(update.suggested_message || ''), 'video dismiss should strip the YouTube URL from the draft text');
+assert.match(update.suggested_message, /good one for the training mindset/, 'video dismiss should keep the generated response text');
 
 context.currentFeed = 'unread';
 assert.strictEqual(

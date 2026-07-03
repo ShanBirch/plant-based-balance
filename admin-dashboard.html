@@ -12517,10 +12517,11 @@
             const isDm = DM_ALERT_TYPES.includes(alert?.alert_type);
             const isClientDm = isDm && !!getAlertClientIdentity(alert) && alertBelongsToDmClients(alert, activeClientIds);
             const explicitClientManagerNeedsYou = isDm && isExplicitClientManagerNeedsYou(alert);
+            const learningReelDismissed = isLearningReelVideoDismissed(alert);
             if (isOnlyKayPermanentNeedsYouRoute(alert)) {
                 return { allowed: false, reason: '' };
             }
-            if (isLearningReelApprovalAlert(alert) || /\blearning_reel_approval_required\b/i.test(reasonText)) {
+            if (!learningReelDismissed && (isLearningReelApprovalAlert(alert) || /\blearning_reel_approval_required\b/i.test(reasonText))) {
                 return { allowed: true, reason: 'learning_reel_approval' };
             }
             if (explicitClientManagerNeedsYou) {
@@ -12547,8 +12548,17 @@
             return { allowed: false, reason: '' };
         }
 
+        function isLearningReelVideoDismissed(alert) {
+            const data = alert?.data || {};
+            return data.learning_reel_video_dismissed === true
+                || data.learning_reel_dismissed === true
+                || String(data.learning_reel_video_dismissed || '').toLowerCase() === 'true'
+                || String(data.learning_reel_dismissed || '').toLowerCase() === 'true';
+        }
+
         function isLearningReelApprovalAlert(alert) {
             const data = alert?.data || {};
+            if (isLearningReelVideoDismissed(alert)) return false;
             const review = data.codex_review || data.codexReview || {};
             const decision = review && typeof review === 'object' ? String(review.decision || '') : '';
             return !!(
@@ -13129,6 +13139,24 @@
                 needsYouFeedCache = {
                     ...needsYouFeedCache,
                     rows: needsYouFeedCache.rows.filter(a => String(a?.id || '') !== id),
+                };
+            }
+        }
+
+        function replaceAlertInFastCaches(alert) {
+            const id = String(alert?.id || '');
+            if (!id) return;
+            let replacedVisible = false;
+            alertsCache = alertsCache.map(row => {
+                if (String(row?.id || '') !== id) return row;
+                replacedVisible = true;
+                return alert;
+            });
+            if (!replacedVisible && currentFeed !== 'needs-you') alertsCache.push(alert);
+            if (Array.isArray(needsYouFeedCache?.rows) && needsYouFeedCache.rows.length) {
+                needsYouFeedCache = {
+                    ...needsYouFeedCache,
+                    rows: needsYouFeedCache.rows.map(row => String(row?.id || '') === id ? alert : row),
                 };
             }
         }
@@ -19216,7 +19244,18 @@
             return `title:${String(item?.title || '').toLowerCase().trim()}`;
         }
 
+        function isLearningReelReason(value) {
+            return /^learning[_ -]?reel/i.test(String(value || '').trim());
+        }
+
+        function withoutLearningReelReasons(values = []) {
+            return (Array.isArray(values) ? values : [values])
+                .map(value => String(value || '').trim())
+                .filter(value => value && !isLearningReelReason(value));
+        }
+
         function collectAdminLearningReelItems(alert) {
+            if (isLearningReelVideoDismissed(alert)) return [];
             const data = alert?.data || {};
             const defaults = {
                 topic_id: data.topic_id || data.topicId,
@@ -19258,6 +19297,99 @@
             return items;
         }
 
+        function removeAdminLearningReelFromText(text, reel) {
+            if (text == null) return text;
+            const targetKey = adminLearningReelDedupeKey(reel);
+            if (!targetKey) return text;
+            const cleaned = String(text).split(/\r?\n/).map(line => {
+                const next = line.replace(ADMIN_LEARNING_REEL_URL_RE, url => {
+                    const key = adminLearningReelDedupeKey({ url });
+                    return key && key === targetKey ? '' : url;
+                }).replace(/[ \t]{2,}/g, ' ').trim();
+                return next;
+            }).filter(Boolean).join('\n').trim();
+            return cleaned;
+        }
+
+        function buildLearningReelDismissPatch(alert, reel) {
+            const nowIso = new Date().toISOString();
+            const data = { ...(alert?.data || {}) };
+            const existingReasons = Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : [];
+            const remainingReasons = withoutLearningReelReasons(existingReasons);
+            const selected = {
+                dismissed_at: nowIso,
+                dismissed_via: 'admin_dashboard',
+                url: canonicalAdminLearningReelUrl(reel?.url || ''),
+                video_id: adminCleanYoutubeVideoId(reel?.video_id || reel?.videoId || '') || adminYoutubeVideoIdFromUrl(reel?.url || ''),
+                title: reel?.title || null,
+                channel_title: reel?.channel_title || reel?.channelTitle || null,
+                topic_id: reel?.topic_id || reel?.topicId || null,
+                topic_label: reel?.topic_label || reel?.topicLabel || null,
+            };
+            data.learning_reel_video_dismissed = true;
+            data.learning_reel_dismissed = true;
+            data.learning_reel_dismissed_at = nowIso;
+            data.learning_reel_dismissed_via = 'admin_dashboard';
+            data.learning_reel_dismissed_item = selected;
+            data.learning_reel_approval_required = false;
+            data.learning_reel_preview_required = false;
+            data.needs_you_reasons = remainingReasons;
+            if (isLearningReelReason(data.needs_you_reason)) {
+                data.needs_you_reason = remainingReasons[0] || null;
+            }
+            if (!remainingReasons.length && data.needs_you_required === true) {
+                data.needs_you_required = false;
+            }
+            if (!remainingReasons.length && data.client_manager_review_required === true) {
+                data.client_manager_review_required = false;
+            }
+            if (data.learning_reels && typeof data.learning_reels === 'object') {
+                data.learning_reels = {
+                    ...data.learning_reels,
+                    approval_required: false,
+                    dismissed_at: nowIso,
+                    dismissed_item: selected,
+                };
+            }
+            if (data.learning_reel_manual_send && typeof data.learning_reel_manual_send === 'object') {
+                data.learning_reel_manual_send = {
+                    ...data.learning_reel_manual_send,
+                    dismissed: true,
+                    dismissed_at: nowIso,
+                };
+                data.learning_reel_manual_send.suggested_message = removeAdminLearningReelFromText(data.learning_reel_manual_send.suggested_message || '', reel);
+            }
+            if (data.auto_send_review_hold?.code === 'learning_reel_approval_required') {
+                data.auto_send_review_hold = null;
+                data.auto_send_review_hold_cleared_at = nowIso;
+                data.auto_send_review_hold_cleared_reason = 'learning_reel_video_dismissed';
+            }
+            if (data.codex_review && typeof data.codex_review === 'object' && isLearningReelReason(data.codex_review.reason || data.codex_review.decision)) {
+                data.codex_review = {
+                    ...data.codex_review,
+                    decision: remainingReasons.length ? data.codex_review.decision : 'learning_reel_video_dismissed',
+                    reason: remainingReasons[0] || 'learning_reel_video_dismissed',
+                    needs_shannon_approval: remainingReasons.length ? data.codex_review.needs_shannon_approval : false,
+                };
+            }
+            const suggestedMessage = removeAdminLearningReelFromText(alert?.suggested_message || data.suggested_message || data.draft_text || '', reel);
+            data.suggested_message = removeAdminLearningReelFromText(data.suggested_message || '', reel);
+            data.draft_text = removeAdminLearningReelFromText(data.draft_text || '', reel);
+            data.message_preview = removeAdminLearningReelFromText(data.message_preview || '', reel);
+            if (Array.isArray(data.draft_messages)) {
+                data.draft_messages = data.draft_messages
+                    .map(message => removeAdminLearningReelFromText(message, reel))
+                    .filter(message => String(message || '').trim());
+            }
+            return {
+                update: {
+                    suggested_message: suggestedMessage || null,
+                    data,
+                },
+                selected,
+            };
+        }
+
         function pickAdminLearningReelForAlert(alert) {
             const items = collectAdminLearningReelItems(alert);
             if (!items.length) return null;
@@ -19294,7 +19426,7 @@
                 ? `<div class="learning-reel-preview"><iframe src="${escapeHtml(embedUrl)}" title="${escapeHtml(title)}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>`
                 : '';
             const dismissHtml = currentFeed === 'needs-you' && alert?.status === 'pending' && alert?.id
-                ? `<button type="button" class="learning-reel-dismiss" onclick="dismissLearningReelAlert(event, '${escapeHtml(alert.id)}')" title="Dismiss this YouTube handoff">Dismiss</button>`
+                ? `<button type="button" class="learning-reel-dismiss" onclick="dismissLearningReelAlert(event, '${escapeHtml(alert.id)}')" title="Dismiss only this YouTube video">Dismiss video</button>`
                 : '';
             const actionsHtml = url || dismissHtml
                 ? `<div class="learning-reel-actions">${url ? `<a class="learning-reel-open" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Open YouTube</a>` : ''}${dismissHtml}</div>`
@@ -19318,14 +19450,50 @@
             evt?.preventDefault?.();
             evt?.stopPropagation?.();
             const btn = evt?.target?.closest?.('.learning-reel-dismiss');
+            const originalText = btn?.textContent || 'Dismiss video';
             if (btn) {
                 btn.disabled = true;
                 btn.textContent = 'Dismissing...';
             }
-            const ok = await dismissAlert(alertId, 'youtube_reel_dismissed');
-            if (!ok && btn) {
-                btn.disabled = false;
-                btn.textContent = 'Dismiss';
+            try {
+                const alertItem = alertsCache.find(a => String(a?.id || '') === String(alertId || ''))
+                    || (needsYouFeedCache.rows || []).find(a => String(a?.id || '') === String(alertId || ''));
+                if (!alertItem) throw new Error('Alert not found');
+                const reel = pickAdminLearningReelForAlert(alertItem);
+                if (!reel) throw new Error('YouTube video not found');
+                const { update } = buildLearningReelDismissPatch(alertItem, reel);
+                const { data: updated, error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .update(update)
+                    .eq('id', alertId)
+                    .select(NEEDS_YOU_ALERT_SELECT_FIELDS)
+                    .maybeSingle();
+                if (error) throw error;
+                const nextAlert = updated || { ...alertItem, suggested_message: update.suggested_message, data: update.data };
+                replaceAlertInFastCaches(nextAlert);
+                const activeClientIds = needsYouFeedCache.activeClientIds || dmClientIdsCache.ids;
+                const stillInNeedsYou = currentFeed === 'needs-you' && needsYouMatchesView(nextAlert, currentNeedsYouView, activeClientIds);
+                if (currentFeed === 'needs-you' && !stillInNeedsYou) {
+                    evictAlertFromFastCaches(alertId);
+                    const card = document.getElementById(`alert-${alertId}`);
+                    if (card) {
+                        card.style.animation = 'alertSlideOut 0.4s ease forwards';
+                        setTimeout(() => card.remove(), 400);
+                    }
+                    refreshVisibleCountsAfterDismiss();
+                } else if (currentFeed === 'needs-you') {
+                    renderNeedsYouSnapshot(needsYouFeedCache.rows || [], activeClientIds);
+                } else {
+                    renderAlertFeed(alertsCache);
+                    refreshFeedCounts();
+                }
+                updateVoiceMatchRate();
+            } catch (e) {
+                console.error('Failed to dismiss YouTube video:', e);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                }
             }
         }
 
