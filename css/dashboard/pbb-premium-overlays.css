@@ -8510,3 +8510,30 @@ html[data-pbb-theme="light"] #cohort-info-modal button[onclick*="openXpGuidePage
     -webkit-text-fill-color: #f8fafc !important;
     box-shadow: none !important;
 }
+
+/* Spotify mini player stays dark across light-mode WebViews. */
+#spotify-now-playing {
+    color-scheme: dark !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+#spotify-now-playing :where(div, button) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+#spotify-now-playing #snp-track {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+#spotify-now-playing #snp-artist {
+    color: rgba(255, 255, 255, 0.72) !important;
+    -webkit-text-fill-color: rgba(255, 255, 255, 0.72) !important;
+}
+
+#spotify-now-playing :where(svg, svg *) {
+    color: #ffffff !important;
+    fill: currentColor !important;
+}
