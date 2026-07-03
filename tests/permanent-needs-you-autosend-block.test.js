@@ -35,6 +35,16 @@ const kayProgramUpdateAlert = {
     },
 };
 
+const fraAppSupportFixAlert = {
+    ...fraAlert,
+    data: {
+        ...fraAlert.data,
+        scheduled_via: 'balance_lead_client_manager_cron',
+        support_exception: true,
+        support_exception_reason: 'app_support_fast_fix',
+    },
+};
+
 assert.strictEqual(
     sendCoach.shouldBlockPermanentNeedsYouAutomatedSend(fraAlert, 'scheduled_worker'),
     true,
@@ -57,6 +67,12 @@ assert.strictEqual(
     sendCoach.shouldBlockPermanentNeedsYouAutomatedSend(fraAlert, 'auto_send'),
     true,
     'general send endpoint must block Fra from direct auto-send'
+);
+
+assert.strictEqual(
+    sendCoach.shouldBlockPermanentNeedsYouAutomatedSend(fraAppSupportFixAlert, 'balance_lead_client_manager_cron'),
+    false,
+    'general send endpoint should allow verified app-support fixes for permanent Needs You clients'
 );
 
 assert.strictEqual(
@@ -141,6 +157,16 @@ assert.strictEqual(
     'IG sender should allow Kay program updates through auto-send'
 );
 
+assert.strictEqual(
+    sendIg.shouldBlockPermanentNeedsYouAutomatedIgSend({
+        alert: fraAppSupportFixAlert,
+        alertData: fraAppSupportFixAlert.data,
+        source: 'balance_lead_client_manager_cron',
+    }),
+    false,
+    'IG sender should allow verified app-support fixes for permanent Needs You clients'
+);
+
 assert.deepStrictEqual(
     scheduledWorker.buildPermanentNeedsYouHold(fraAlert),
     {
@@ -166,6 +192,12 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    scheduledWorker.buildPermanentNeedsYouHold(fraAppSupportFixAlert),
+    null,
+    'scheduled worker should allow verified app-support fixes for permanent Needs You clients'
+);
+
+assert.strictEqual(
     scheduledWorker.buildPermanentNeedsYouHold({
         ...fraAlert,
         data: {
@@ -188,6 +220,12 @@ assert.strictEqual(
     scheduleReply.shouldBlockPermanentNeedsYouSchedule(kayProgramUpdateAlert, 'auto_send'),
     false,
     'auto-send scheduling should allow Kay program updates'
+);
+
+assert.strictEqual(
+    scheduleReply.shouldBlockPermanentNeedsYouSchedule(fraAppSupportFixAlert, 'balance_lead_client_manager_cron'),
+    false,
+    'Send Later should allow verified app-support fixes for permanent Needs You clients'
 );
 
 assert.strictEqual(

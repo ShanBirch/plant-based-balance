@@ -210,6 +210,12 @@ function isAutomatedPermanentNeedsYouSendSource(source, data = {}) {
         || hasAutoSendMetadata;
 }
 
+function isAppSupportFastFixException(data = {}) {
+    const supportException = data.support_exception === true || data.support_exception === 'true';
+    const reason = String(data.support_exception_reason || '').trim();
+    return supportException && reason === 'app_support_fast_fix';
+}
+
 function isPermanentNeedsYouAlert(alert = {}) {
     const data = alert.data || {};
     const needsYouReasons = Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : [];
@@ -228,7 +234,9 @@ function isPermanentNeedsYouAlert(alert = {}) {
 }
 
 function shouldBlockPermanentNeedsYouAutomatedSend(alert = {}, source = '') {
-    return isAutomatedPermanentNeedsYouSendSource(source, alert.data || {})
+    const data = alert.data || {};
+    return isAutomatedPermanentNeedsYouSendSource(source, data)
+        && !isAppSupportFastFixException(data)
         && !shouldBypassKayNeedsYouForAlert({ alert })
         && isPermanentNeedsYouAlert(alert);
 }
@@ -532,6 +540,7 @@ exports.handler = async (event) => {
 exports._test = {
     isHumanApprovedPermanentNeedsYouSendSource,
     isAutomatedPermanentNeedsYouSendSource,
+    isAppSupportFastFixException,
     isPermanentNeedsYouAlert,
     shouldBlockPermanentNeedsYouAutomatedSend,
 };

@@ -158,8 +158,16 @@ function isAutomatedPermanentNeedsYouScheduleSource(source) {
     return AUTOMATED_PERMANENT_NEEDS_YOU_SCHEDULE_SOURCES.has(normalized);
 }
 
+function isAppSupportFastFixException(data = {}) {
+    const supportException = data.support_exception === true || data.support_exception === 'true';
+    const reason = String(data.support_exception_reason || '').trim();
+    return supportException && reason === 'app_support_fast_fix';
+}
+
 function shouldBlockPermanentNeedsYouSchedule(alert = {}, source = '') {
+    const data = safeObject(alert.data);
     return isAutomatedPermanentNeedsYouScheduleSource(source)
+        && !isAppSupportFastFixException(data)
         && !shouldBypassKayNeedsYouForAlert({ alert })
         && isPermanentNeedsYouAlert(alert);
 }
@@ -457,5 +465,6 @@ exports.handler = async (event) => {
 exports._test = {
     isPermanentNeedsYouAlert,
     isAutomatedPermanentNeedsYouScheduleSource,
+    isAppSupportFastFixException,
     shouldBlockPermanentNeedsYouSchedule,
 };

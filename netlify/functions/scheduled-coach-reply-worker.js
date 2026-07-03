@@ -148,10 +148,17 @@ function isAutomatedPermanentNeedsYouScheduledAlert(alert = {}) {
         || timingSuggestionSource === 'auto_send';
 }
 
+function isAppSupportFastFixException(data = {}) {
+    const supportException = data.support_exception === true || data.support_exception === 'true';
+    const reason = String(data.support_exception_reason || '').trim();
+    return supportException && reason === 'app_support_fast_fix';
+}
+
 function buildPermanentNeedsYouHold(alert) {
     if (!isAutomatedPermanentNeedsYouScheduledAlert(alert)) return null;
     if (shouldBypassKayNeedsYouForAlert({ alert })) return null;
     const data = alert?.data || {};
+    if (isAppSupportFastFixException(data)) return null;
     const graph = data.instagram_graph || {};
     const customData = data.custom_data || {};
     const needsYouReasons = Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : [];
@@ -486,6 +493,7 @@ exports.handler = async () => {
 exports._test = {
     buildAutoSendReviewHold,
     isAutomatedPermanentNeedsYouScheduledAlert,
+    isAppSupportFastFixException,
     buildPermanentNeedsYouHold,
     hasCocosAutoContextBypass,
     hasAutoContextBypass,

@@ -415,6 +415,12 @@ function isAutomatedPermanentNeedsYouSendSource(source, data = {}) {
         || hasAutoSendMetadata;
 }
 
+function isAppSupportFastFixException(data = {}) {
+    const supportException = data.support_exception === true || data.support_exception === 'true';
+    const reason = String(data.support_exception_reason || '').trim();
+    return supportException && reason === 'app_support_fast_fix';
+}
+
 function isPermanentNeedsYouIgAlert({ alert = {}, alertData = {}, thread = null } = {}) {
     const data = alertData || alert.data || {};
     const graph = safeObject(data.instagram_graph);
@@ -443,7 +449,9 @@ function isPermanentNeedsYouIgAlert({ alert = {}, alertData = {}, thread = null 
 }
 
 function shouldBlockPermanentNeedsYouAutomatedIgSend({ alert = {}, alertData = {}, thread = null, source = '' } = {}) {
-    return isAutomatedPermanentNeedsYouSendSource(source, alertData || alert.data || {})
+    const data = alertData || alert.data || {};
+    return isAutomatedPermanentNeedsYouSendSource(source, data)
+        && !isAppSupportFastFixException(data)
         && !shouldBypassKayNeedsYouForAlert({ alert, alertData, thread })
         && isPermanentNeedsYouIgAlert({ alert, alertData, thread });
 }
@@ -1852,6 +1860,7 @@ exports._test = {
     isSendClaimStale,
     isHumanApprovedPermanentNeedsYouSendSource,
     isAutomatedPermanentNeedsYouSendSource,
+    isAppSupportFastFixException,
     isPermanentNeedsYouIgAlert,
     shouldBlockPermanentNeedsYouAutomatedIgSend,
 };
