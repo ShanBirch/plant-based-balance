@@ -33,4 +33,19 @@ assert.ok(
     'non-append feed refreshes should not replace visible posts with the loading or error states'
 );
 
+assert.ok(
+    source.includes('function captureFeedInlineCommentDrafts(grid)') &&
+    source.includes('function restoreFeedInlineCommentDrafts(grid, drafts)') &&
+    source.includes('const inlineCommentDrafts = append ? null : captureFeedInlineCommentDrafts(grid);') &&
+    source.includes('restoreFeedInlineCommentDrafts(grid, inlineCommentDrafts);'),
+    'feed refreshes should preserve active inline comment drafts while replacing post markup'
+);
+
+assert.ok(
+    source.includes("options.reason === 'auto-refresh'") &&
+    source.includes('hasActiveFeedInlineCommentDraft(grid)') &&
+    source.includes("loadPhotoFeed('friends-photo-feed', 'friends-feed-empty', { reason: 'auto-refresh' })"),
+    'routine feed auto-refresh should defer while someone is typing an inline comment or mention'
+);
+
 console.log('feed loader preserve tests passed');
