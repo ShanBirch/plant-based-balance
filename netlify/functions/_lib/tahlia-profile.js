@@ -7,11 +7,10 @@ const TAHLIA_PROFILE = {
     location: 'Gold Coast',
     role: 'Balance challenge member',
     trainingStyle: 'beginner-to-intermediate strength training, walks, simple gym sessions',
-    foodStyle: 'mostly plant based, practical meals, not preachy',
+    foodStyle: 'mostly plant based in private, no food photo posting',
     goals: [
         'feel stronger and more consistent',
         'build confidence around training',
-        'make simple meals instead of grazing',
         'treat weigh-ins as data, not drama',
     ],
     voice: {
@@ -41,12 +40,6 @@ const POST_TEMPLATES = {
         'got my session finished today and feel so much better for moving',
         'workout ticked off. trying to be the girl who keeps promises to herself',
         'little gym win today. kept it simple and got through it',
-    ],
-    meal: [
-        'made a proper meal instead of grazing. small win but it counts',
-        'quick plant based bowl tonight, nothing fancy, just trying to keep it consistent',
-        'meal sorted. future me is very grateful for past me making the effort',
-        'actually cooked instead of winging it tonight, proud of that',
     ],
     weigh_in: [
         'weigh in done. reminding myself the number is just data, not the whole story',

@@ -30,6 +30,7 @@ const DEFAULT_STORY_LOOKBACK_HOURS = 72;
 const DEFAULT_MIN_STORY_AGE_MINUTES = 30;
 const DEFAULT_MAX_POST_ALERTS_PER_RUN = 2;
 const DEFAULT_MAX_COMMENT_ALERTS_PER_RUN = 3;
+const ALLOWED_TAHLIA_POST_ACTIVITY_TYPES = new Set(['workout', 'weigh_in', 'fitness_diary']);
 
 function json(statusCode, body) {
     return {
@@ -79,12 +80,16 @@ function pointTransactionActivityType(tx = {}) {
     const type = String(tx.transaction_type || '').toLowerCase();
     const desc = String(tx.description || '').toLowerCase();
     if (type.includes('workout') || desc.includes('workout')) return 'workout';
-    if (type.includes('meal') || desc.includes('meal')) return 'meal';
+    if (type.includes('meal') || desc.includes('meal') || desc.includes('food')) return '';
     if (type.includes('weigh') || desc.includes('weigh') || desc.includes('weight')) return 'weigh_in';
     if (type.includes('checkin') || type.includes('check_in') || desc.includes('check-in') || desc.includes('check in')) {
         return (hashString(tx.id || tx.created_at) % 2 === 0) ? 'weigh_in' : 'fitness_diary';
     }
     return '';
+}
+
+function isAllowedTahliaPostActivityType(activityType) {
+    return ALLOWED_TAHLIA_POST_ACTIVITY_TYPES.has(String(activityType || '').trim());
 }
 
 function postActionId(tx = {}) {
@@ -126,8 +131,9 @@ function tahliaNeedsYouReviewData({ actionKind, draftText, evidence = {}, now = 
 
 function buildFeedPostAlert({ coachId, tahliaUser, transaction, now = new Date() }) {
     const activityType = pointTransactionActivityType(transaction);
+    if (!isAllowedTahliaPostActivityType(activityType)) return null;
     const draft = buildTahliaPostDraft({
-        activityType: activityType || 'fitness_diary',
+        activityType,
         seed: transaction.id || transaction.created_at,
     });
     const label = activityLabel(draft.activityType);
@@ -256,7 +262,7 @@ async function loadRecentTahliaTransactions(tahliaId, now = new Date(), lookback
     ).catch(() => []);
     return (rows || []).filter(row => {
         if (String(row.reference_type || '') !== 'tahlia_brooks_xp_autopilot') return false;
-        return !!pointTransactionActivityType(row);
+        return isAllowedTahliaPostActivityType(pointTransactionActivityType(row));
     });
 }
 
@@ -304,6 +310,10 @@ async function queueFeedPostApprovals({ coachId, tahliaUser, now, maxAlerts, loo
         }
         const key = `tahlia_feed_post:${transaction.id}`;
         const alertRow = buildFeedPostAlert({ coachId, tahliaUser, transaction, now });
+        if (!alertRow) {
+            skipped.unsupported = (skipped.unsupported || 0) + 1;
+            continue;
+        }
         const result = await insertCoachAlert(alertRow, key);
         if (result.alertId && !result.deduped) {
             inserted.push({
@@ -448,5 +458,6 @@ exports._test = {
     pointTransactionActivityType,
     runTahliaSocialWorker,
     shouldConsiderStory,
+    isAllowedTahliaPostActivityType,
     tahliaNeedsYouReviewData,
 };

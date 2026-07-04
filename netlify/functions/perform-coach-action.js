@@ -15,6 +15,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.en
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const TAHLIA_EMAIL = 'seed.tahlia.brooks+kayla30@plantbased-balance.org';
 const TAHLIA_SOURCE = 'tahlia-social-worker';
+const ALLOWED_TAHLIA_POST_ACTIVITY_TYPES = new Set(['workout', 'weigh_in', 'fitness_diary']);
 
 const {
     DAY_ORDER,
@@ -57,6 +58,10 @@ function updateAction(data, actionId, patch) {
 
 function isTahliaSocialAction(action = {}) {
     return ['publish_tahlia_feed_post', 'publish_tahlia_feed_comment'].includes(action.type);
+}
+
+function isAllowedTahliaPostActivityType(activityType) {
+    return ALLOWED_TAHLIA_POST_ACTIVITY_TYPES.has(String(activityType || '').trim());
 }
 
 function tahliaSocialActionText(action = {}, data = {}) {
@@ -587,6 +592,13 @@ async function performPublishTahliaFeedPost({ alert, action }) {
     if (caption.length < 3) throw new Error('Tahlia post caption is empty');
 
     const mediaType = cleanSocialText(payload.media_type || 'text', 40) || 'text';
+    const activityType = cleanSocialText(payload.activity_type || alert.data?.activity_type || alert.data?.evidence?.activity_type || '', 40);
+    if (!isAllowedTahliaPostActivityType(activityType)) {
+        throw new Error('Tahlia can only publish workout or check-in text posts');
+    }
+    if (mediaType !== 'text' || payload.media_url || payload.thumbnail_url) {
+        throw new Error('Tahlia Feed posts must be text-only');
+    }
     const backgroundColor = cleanSocialText(payload.background_color || '#f8fafc', 24) || '#f8fafc';
     const recentCutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
     const existing = await supabase(
@@ -605,9 +617,9 @@ async function performPublishTahliaFeedPost({ alert, action }) {
         method: 'POST',
         body: [{
             user_id: tahlia.id,
-            media_type: mediaType,
-            media_url: cleanSocialText(payload.media_url || '', 1000),
-            thumbnail_url: payload.thumbnail_url || null,
+            media_type: 'text',
+            media_url: '',
+            thumbnail_url: null,
             caption,
             duration: 5,
             background_color: backgroundColor,
@@ -883,6 +895,7 @@ exports.handler = async (event) => {
 exports._test = {
     applyTahliaSocialEditFromRequest,
     cleanSocialText,
+    isAllowedTahliaPostActivityType,
     isTahliaSocialAction,
     tahliaSocialActionText,
 };

@@ -37,8 +37,18 @@ const workoutCardPayload = {
 };
 
 assert.strictEqual(worker.pointTransactionActivityType(workoutTx), 'workout');
-assert.strictEqual(worker.pointTransactionActivityType(mealTx), 'meal');
+assert.strictEqual(worker.pointTransactionActivityType(mealTx), '');
 assert.ok(['weigh_in', 'fitness_diary'].includes(worker.pointTransactionActivityType(checkinTx)));
+assert.strictEqual(worker.isAllowedTahliaPostActivityType('workout'), true);
+assert.strictEqual(worker.isAllowedTahliaPostActivityType('weigh_in'), true);
+assert.strictEqual(worker.isAllowedTahliaPostActivityType('fitness_diary'), true);
+assert.strictEqual(worker.isAllowedTahliaPostActivityType('meal'), false);
+assert.strictEqual(worker.buildFeedPostAlert({
+    coachId: 'coach-1',
+    tahliaUser: { id: '00000000-0000-4000-8000-000000000001', name: 'Tahlia Brooks' },
+    transaction: mealTx,
+    now: new Date('2026-07-03T01:00:00.000Z'),
+}), null);
 assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/tahlia-profile.js'), 'utf8'), /session win/i);
 assert.match(profile.storyText({ caption: JSON.stringify(workoutCardPayload) }), /Upper Body/i);
 assert.match(profile.storyText({ caption: JSON.stringify(workoutCardPayload) }), /Lat Pulldown/i);
@@ -120,6 +130,9 @@ assert.deepStrictEqual(worker.shouldConsiderStory({
 assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'publish_tahlia_feed_post' }), true);
 assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'publish_tahlia_feed_comment' }), true);
 assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'move_workout_days' }), false);
+assert.strictEqual(coachAction.isAllowedTahliaPostActivityType('workout'), true);
+assert.strictEqual(coachAction.isAllowedTahliaPostActivityType('fitness_diary'), true);
+assert.strictEqual(coachAction.isAllowedTahliaPostActivityType('meal'), false);
 
 const editedComment = coachAction.applyTahliaSocialEditFromRequest({
     data: commentAlert.data,
@@ -142,6 +155,7 @@ assert.strictEqual(editedComment.data.tahlia_social_last_edit.action_kind, 'feed
 assert.strictEqual(editedComment.data.tahlia_social_edit_history.length, 1);
 
 assert.ok(adminSource.includes('function isTahliaSocialApprovalAlert'));
+assert.ok(adminSource.includes('function isSupportedTahliaSocialApprovalAlert'));
 assert.ok(adminSource.includes('function buildCoachActionRequestBody'));
 assert.ok(adminSource.includes('body.editedText = editedText'));
 assert.ok(adminSource.includes('function renderTahliaSocialContext'));
@@ -153,6 +167,8 @@ assert.ok(adminSource.includes('Relevant Feed post'));
 assert.ok(adminSource.includes("'Tahlia social'"));
 assert.ok(performSource.includes('publish_tahlia_feed_post'));
 assert.ok(performSource.includes('publish_tahlia_feed_comment'));
+assert.ok(performSource.includes('Tahlia can only publish workout or check-in text posts'));
+assert.ok(performSource.includes('Tahlia Feed posts must be text-only'));
 assert.ok(performSource.includes('tahlia_social_edit_history'));
 assert.ok(performSource.includes('Tahlia social action must be approved from Needs You'));
 

@@ -12737,11 +12737,31 @@
                 || actionType === 'publish_tahlia_feed_comment';
         }
 
+        function isAllowedTahliaPostActivityType(activityType) {
+            return ['workout', 'weigh_in', 'fitness_diary'].includes(String(activityType || '').trim());
+        }
+
+        function isSupportedTahliaSocialApprovalAlert(alert) {
+            if (!isTahliaSocialApprovalAlert(alert)) return false;
+            const data = alert?.data || {};
+            const action = getProposedCoachActions(alert).find(item => isTahliaSocialActionType(item.type));
+            if (!action) return false;
+            if (action.type === 'publish_tahlia_feed_comment') return true;
+            if (action.type !== 'publish_tahlia_feed_post') return false;
+            const payload = action.payload && typeof action.payload === 'object' ? action.payload : {};
+            const activityType = payload.activity_type || data.activity_type || data.evidence?.activity_type || '';
+            const mediaType = String(payload.media_type || 'text').trim().toLowerCase();
+            return isAllowedTahliaPostActivityType(activityType)
+                && mediaType === 'text'
+                && !payload.media_url
+                && !payload.thumbnail_url;
+        }
+
         function needsYouHasOperatorWork(alert, activeClientIds = dmClientIdsCache.ids) {
             if (!alert || alert.status !== 'pending') return false;
             if (!NEEDS_YOU_ALERT_TYPES.includes(alert.alert_type)) return false;
             if (isCoachActionReceipt(alert)) return true;
-            if (isTahliaSocialApprovalAlert(alert)) return true;
+            if (isTahliaSocialApprovalAlert(alert)) return isSupportedTahliaSocialApprovalAlert(alert);
             if (isAppSuggestionAlert(alert)) return true;
             if (alert.alert_type === 'subscription_sale') {
                 const data = alert.data || {};
@@ -12785,7 +12805,7 @@
             const directRows = [];
             const otherRows = [];
             rows.filter(a => a.status === 'pending').forEach(row => {
-                if (isCoachActionReceipt(row) || isAppSuggestionAlert(row) || isTahliaSocialApprovalAlert(row)) directRows.push(row);
+                if (isCoachActionReceipt(row) || isAppSuggestionAlert(row) || isSupportedTahliaSocialApprovalAlert(row)) directRows.push(row);
                 else if (DM_ALERT_TYPES.includes(row.alert_type)) dmRows.push(row);
                 else otherRows.push(row);
             });
