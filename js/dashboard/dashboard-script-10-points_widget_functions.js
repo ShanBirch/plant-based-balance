@@ -1916,6 +1916,41 @@ const BALANCE_INSTAGRAM_SHARE_TESTER_EMAILS = [
     'shannonbirch@cocospersonaltraining.com'
 ];
 
+let balanceInstagramSharePlugin = null;
+
+function isBalanceNativeInstagramSurface() {
+    try {
+        return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    } catch (_) {
+        return false;
+    }
+}
+
+function getBalanceInstagramSharePlugin() {
+    if (balanceInstagramSharePlugin) return balanceInstagramSharePlugin;
+
+    if (window.Capacitor && window.Capacitor.Plugins) {
+        balanceInstagramSharePlugin = window.Capacitor.Plugins.BalanceInstagramShare
+            || window.Capacitor.Plugins.BalanceInstagramSharePlugin
+            || null;
+        if (balanceInstagramSharePlugin) return balanceInstagramSharePlugin;
+    }
+
+    if (window.Capacitor && typeof window.Capacitor.registerPlugin === 'function') {
+        try {
+            balanceInstagramSharePlugin = window.Capacitor.registerPlugin('BalanceInstagramShare');
+        } catch (registerError) {
+            console.warn('Could not register BalanceInstagramShare plugin:', registerError);
+        }
+    }
+
+    if (!balanceInstagramSharePlugin && window.Capacitor && window.Capacitor.Plugins) {
+        console.warn('BalanceInstagramShare plugin unavailable. Available plugins:', Object.keys(window.Capacitor.Plugins).join(','));
+    }
+
+    return balanceInstagramSharePlugin;
+}
+
 function getBalanceInstagramShareTesterEmail() {
     const user = window.currentUser || {};
     const email = user.email
@@ -3040,7 +3075,10 @@ function pbbShareDrawCoverImage(ctx, img, x, y, w, h) {
 function pbbShareLoadImage(src) {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        if (/^https?:/i.test(String(src || ''))) img.crossOrigin = 'anonymous';
+        if (/^https?:/i.test(String(src || ''))) {
+            img.crossOrigin = 'anonymous';
+            img.referrerPolicy = 'no-referrer';
+        }
         img.onload = () => resolve(img);
         img.onerror = reject;
         img.src = src;
@@ -3154,11 +3192,12 @@ async function pbbShareDrawMealCard(ctx, cardPayload, panelX, panelY, panelW, pa
     ctx.font = '900 58px Arial, sans-serif';
     y = pbbShareWrapText(ctx, cardPayload.foods || cardPayload.meal_type || 'Meal logged', panelX + 56, y, panelW - 112, 64, 2) + 28;
 
-    const metricW = (panelW - 136) / 3;
+    const metricW = (panelW - 148) / 4;
     const metrics = [
         ['Calories', pbbShareFormatNumber(cardPayload.calories), '#fef3c7'],
         ['Protein', pbbShareFormatNumber(cardPayload.protein, 'g'), '#dcfce7'],
-        ['Carbs', pbbShareFormatNumber(cardPayload.carbs, 'g'), '#eef2ff']
+        ['Carbs', pbbShareFormatNumber(cardPayload.carbs, 'g'), '#eef2ff'],
+        ['Fat', pbbShareFormatNumber(cardPayload.fat, 'g'), '#fdf2f8']
     ];
     metrics.forEach((metric, index) => {
         const x = panelX + 56 + (index * (metricW + 12));
@@ -3449,26 +3488,23 @@ async function shareBalanceCardWithNativeBridge(dataUrl, safeTarget) {
     if (typeof androidShare === 'function') {
         try {
             const opened = androidShare.call(window.NativePermissions, dataUrl, safeTarget);
+            window._balanceInstagramShareLastResult = { platform: 'android', opened };
             if (opened === true || opened === 'true') return true;
         } catch (androidError) {
+            window._balanceInstagramShareLastResult = { platform: 'android', error: String(androidError && androidError.message || androidError) };
             console.warn('Android Instagram share failed:', androidError);
         }
     }
 
-    let iosShare = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BalanceInstagramShare;
-    if (!iosShare && window.Capacitor && typeof window.Capacitor.registerPlugin === 'function') {
-        try {
-            iosShare = window.Capacitor.registerPlugin('BalanceInstagramShare');
-        } catch (registerError) {
-            console.warn('Could not register iOS Instagram share plugin:', registerError);
-        }
-    }
-
+    const iosShare = getBalanceInstagramSharePlugin();
     if (iosShare && typeof iosShare.shareImageToInstagram === 'function') {
         try {
             const result = await iosShare.shareImageToInstagram({ dataUrl, target: safeTarget });
-            return !!(result && (result.opened === true || result.success === true));
+            window._balanceInstagramShareLastResult = { platform: 'ios', result };
+            if (result && (result.opened === true || result.success === true)) return true;
+            console.warn('iOS Instagram share did not open:', result);
         } catch (iosError) {
+            window._balanceInstagramShareLastResult = { platform: 'ios', error: String(iosError && iosError.message || iosError) };
             console.warn('iOS Instagram share failed:', iosError);
         }
     }
@@ -3492,6 +3528,11 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
     if (await shareBalanceCardWithNativeBridge(dataUrl, safeTarget)) {
         showToast(`Opening Instagram ${safeTarget === 'story' ? 'Story' : 'Feed'}...`, 'success');
         return true;
+    }
+
+    if (isBalanceNativeInstagramSurface()) {
+        showToast('Could not open Instagram directly. Make sure Instagram and the latest Balance app are installed.', 'error');
+        return false;
     }
 
     return shareBalanceCardImageExternally(
