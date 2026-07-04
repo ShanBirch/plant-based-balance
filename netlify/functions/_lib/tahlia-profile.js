@@ -65,8 +65,8 @@ const POST_TEMPLATES = {
 const COMMENT_TEMPLATES = {
     workout: [
         'this is solid, love seeing you get it done',
-        'yesss, showing up is the whole thing',
-        'love this, such a good session win',
+        'love this, showing up is the whole thing',
+        'love this, getting it done counts',
     ],
     meal: [
         'love this, a proper meal win always counts',
@@ -126,16 +126,53 @@ function parseCardCaption(caption) {
     }
 }
 
+function formatWorkoutCardText(card = {}) {
+    const exercises = Array.isArray(card.exercises) ? card.exercises : [];
+    const exerciseText = exercises
+        .slice(0, 4)
+        .map(ex => [ex?.name, ex?.best].filter(Boolean).join(' '))
+        .filter(Boolean)
+        .join(', ');
+    const stats = [
+        card.total_sets ? `${card.total_sets} sets` : '',
+        card.duration,
+        card.total_volume ? `${card.total_volume} volume` : '',
+    ].filter(Boolean).join(', ');
+    return cleanPublicText([
+        card.share_caption,
+        card.workout_name,
+        stats,
+        exerciseText,
+    ].filter(Boolean).join(' '), 500);
+}
+
+function storyTextFromCardData(parsed = {}) {
+    const cardType = String(parsed.card_type || '').toLowerCase();
+    if (cardType === 'workout') {
+        return formatWorkoutCardText(parsed) || 'workout';
+    }
+    if (cardType === 'pb') {
+        return cleanPublicText([
+            parsed.exercise,
+            parsed.pb_type,
+            parsed.value,
+            parsed.reps ? `${parsed.reps} reps` : '',
+            parsed.weight ? `${parsed.weight} kg` : '',
+        ].filter(Boolean).join(' '), 500);
+    }
+    return cleanPublicText([
+        parsed.share_caption,
+        parsed.caption,
+        parsed.meal_name,
+        parsed.title,
+        parsed.card_type,
+    ].filter(Boolean).join(' '), 500);
+}
+
 function storyText(story = {}) {
     const parsed = parseCardCaption(story.caption);
     if (parsed) {
-        return cleanPublicText([
-            parsed.share_caption,
-            parsed.caption,
-            parsed.meal_name,
-            parsed.title,
-            parsed.card_type,
-        ].filter(Boolean).join(' '), 500);
+        return storyTextFromCardData(parsed);
     }
     return cleanPublicText(story.caption, 500);
 }
@@ -196,5 +233,6 @@ module.exports = {
     cleanPublicText,
     inferStoryTheme,
     parseCardCaption,
+    storyTextFromCardData,
     storyText,
 };

@@ -17,6 +17,7 @@ const {
     buildTahliaCommentDraft,
     buildTahliaPostDraft,
     cleanPublicText,
+    parseCardCaption,
     storyText,
 } = require('./_lib/tahlia-profile');
 
@@ -183,6 +184,7 @@ function buildCommentAlert({ coachId, tahliaUser, story, author = {}, now = new 
     });
     const comment = cleanPublicText(draft.comment, 500);
     const authorName = author.name || author.email?.split('@')[0] || 'someone';
+    const storyCardData = parseCardCaption(story.caption);
     const action = {
         id: commentActionId(story),
         type: 'publish_tahlia_feed_comment',
@@ -208,6 +210,8 @@ function buildCommentAlert({ coachId, tahliaUser, story, author = {}, now = new 
         story_background_color: story.background_color || null,
         story_created_at: story.created_at || null,
         story_text: storyText(story),
+        story_card_type: storyCardData?.card_type || null,
+        story_card_data: storyCardData || null,
         inferred_theme: draft.theme,
     };
     return {

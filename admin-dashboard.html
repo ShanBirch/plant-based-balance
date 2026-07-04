@@ -1051,6 +1051,11 @@
         .tahlia-social-label { font-size: 0.66rem; font-weight: 900; letter-spacing: 0; text-transform: uppercase; color: #8a5a16; margin-bottom: 3px; }
         .tahlia-social-title { font-size: 0.82rem; font-weight: 800; color: #1e293b; line-height: 1.3; }
         .tahlia-social-text { margin-top: 4px; font-size: 0.78rem; line-height: 1.42; color: #475569; overflow-wrap: anywhere; white-space: pre-wrap; }
+        .tahlia-social-card-details { margin-top: 8px; display: grid; gap: 5px; }
+        .tahlia-social-card-details:empty { display: none; }
+        .tahlia-workout-detail-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 0; border-top: 1px solid rgba(138,90,22,0.18); font-size: 0.72rem; line-height: 1.25; color: #334155; }
+        .tahlia-workout-detail-name { font-weight: 800; min-width: 0; overflow-wrap: anywhere; }
+        .tahlia-workout-detail-best { color: #7c4a03; font-weight: 800; white-space: nowrap; }
         .tahlia-social-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
         .tahlia-social-pill { padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,0.75); border: 1px solid #ead7a3; color: #7c4a03; font-size: 0.68rem; font-weight: 800; line-height: 1.3; }
         @media (max-width: 520px) {
@@ -16113,24 +16118,108 @@
             return pills ? `<div class="tahlia-social-meta">${pills}</div>` : '';
         }
 
+        function parseTahliaCardCaption(caption) {
+            const raw = String(caption || '').trim();
+            if (!raw || !raw.startsWith('{')) return null;
+            try {
+                const parsed = JSON.parse(raw);
+                return parsed && typeof parsed === 'object' ? parsed : null;
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function tahliaStoryTextFromCardData(cardData = {}) {
+            const cardType = String(cardData.card_type || '').toLowerCase();
+            if (cardType === 'workout') {
+                const exercises = Array.isArray(cardData.exercises) ? cardData.exercises : [];
+                const exerciseText = exercises
+                    .slice(0, 4)
+                    .map(ex => [ex?.name, ex?.best].filter(Boolean).join(' '))
+                    .filter(Boolean)
+                    .join(', ');
+                const stats = [
+                    cardData.total_sets ? `${cardData.total_sets} sets` : '',
+                    cardData.duration,
+                    cardData.total_volume ? `${cardData.total_volume} volume` : '',
+                ].filter(Boolean).join(', ');
+                return cleanTahliaContextText([
+                    cardData.share_caption,
+                    cardData.workout_name,
+                    stats,
+                    exerciseText,
+                ].filter(Boolean).join(' '), 460);
+            }
+            if (cardType === 'pb') {
+                return cleanTahliaContextText([
+                    cardData.exercise,
+                    cardData.pb_type,
+                    cardData.value,
+                    cardData.reps ? `${cardData.reps} reps` : '',
+                    cardData.weight ? `${cardData.weight} kg` : '',
+                ].filter(Boolean).join(' '), 460);
+            }
+            return cleanTahliaContextText([
+                cardData.share_caption,
+                cardData.caption,
+                cardData.meal_name,
+                cardData.title,
+                cardData.card_type,
+            ].filter(Boolean).join(' '), 460);
+        }
+
+        function tahliaStoryTextFromCaption(caption) {
+            const parsed = parseTahliaCardCaption(caption);
+            if (parsed) return tahliaStoryTextFromCardData(parsed);
+            return cleanTahliaContextText(caption, 460);
+        }
+
         function tahliaStoryTextFromRow(story = {}) {
             const caption = String(story.caption || '').trim();
             if (!caption) return '';
-            if (caption.startsWith('{')) {
-                try {
-                    const parsed = JSON.parse(caption);
-                    if (parsed && typeof parsed === 'object') {
-                        return cleanTahliaContextText([
-                            parsed.share_caption,
-                            parsed.caption,
-                            parsed.meal_name,
-                            parsed.title,
-                            parsed.card_type,
-                        ].filter(Boolean).join(' '), 460);
-                    }
-                } catch (_) {}
-            }
-            return cleanTahliaContextText(caption, 460);
+            return tahliaStoryTextFromCaption(caption);
+        }
+
+        function isWeakTahliaStoryText(text, mediaType) {
+            const clean = cleanTahliaContextText(text, 80).toLowerCase();
+            const type = cleanTahliaContextText(mediaType, 80).toLowerCase().replace(/[_-]+/g, ' ');
+            if (!clean) return true;
+            return clean === type
+                || clean === 'workout'
+                || clean === 'workout card'
+                || clean === 'feed post'
+                || clean === 'card';
+        }
+
+        function renderTahliaWorkoutCardDetails(cardData = {}) {
+            const rows = [];
+            if (cardData.workout_name) rows.push(['Workout', cardData.workout_name]);
+            const stats = [
+                cardData.total_sets ? `${cardData.total_sets} sets` : '',
+                cardData.duration,
+                cardData.total_volume ? `${cardData.total_volume} volume` : '',
+            ].filter(Boolean).join(' | ');
+            if (stats) rows.push(['Stats', stats]);
+
+            const exercises = Array.isArray(cardData.exercises) ? cardData.exercises : [];
+            exercises.slice(0, 5).forEach(ex => {
+                const name = cleanTahliaContextText(ex?.name || 'Exercise', 80);
+                const best = cleanTahliaContextText(ex?.best || '', 80);
+                if (name) rows.push([name, best]);
+            });
+            if (exercises.length > 5) rows.push([`+${exercises.length - 5} more`, '']);
+
+            return rows.map(([name, best]) => `<div class="tahlia-workout-detail-row">
+                <span class="tahlia-workout-detail-name">${escapeHtml(name)}</span>
+                ${best ? `<span class="tahlia-workout-detail-best">${escapeHtml(best)}</span>` : ''}
+            </div>`).join('');
+        }
+
+        function renderTahliaCardDetails(cardData = {}) {
+            if (!cardData || typeof cardData !== 'object') return '';
+            const cardType = String(cardData.card_type || '').toLowerCase();
+            if (cardType === 'workout') return renderTahliaWorkoutCardDetails(cardData);
+            return '';
         }
 
         function getTahliaPrimaryAction(alert) {
@@ -16149,6 +16238,9 @@
             const isComment = actionType === 'publish_tahlia_feed_comment' || data.social_action === 'feed_comment';
 
             if (isComment) {
+                const cardData = (evidence.story_card_data && typeof evidence.story_card_data === 'object')
+                    ? evidence.story_card_data
+                    : (payload.story_card_data && typeof payload.story_card_data === 'object' ? payload.story_card_data : null);
                 const author = cleanTahliaContextText(firstTahliaContextValue(
                     data.target_story_author_name,
                     evidence.story_author_name,
@@ -16156,10 +16248,12 @@
                 ), 80) || 'member';
                 const mediaType = firstTahliaContextValue(evidence.story_media_type, payload.story_media_type, 'Feed post');
                 const storyText = cleanTahliaContextText(firstTahliaContextValue(
+                    cardData ? tahliaStoryTextFromCardData(cardData) : '',
                     evidence.story_text,
                     data.target_story_text,
                     payload.story_text
                 ), 460);
+                const storyTextState = isWeakTahliaStoryText(storyText, mediaType) ? 'weak' : (storyText ? 'saved' : 'missing');
                 const createdAt = firstTahliaContextValue(evidence.story_created_at, payload.story_created_at);
                 const postId = firstTahliaContextValue(evidence.story_id, data.target_story_id, payload.story_id);
                 const thumbHtml = renderTahliaContextThumb({
@@ -16167,9 +16261,10 @@
                     mediaType,
                     backgroundColor: evidence.story_background_color,
                 });
+                const cardDetailsHtml = renderTahliaCardDetails(cardData);
                 const metaHtml = renderTahliaMetaPills([
                     humanizeTahliaContextValue(mediaType),
-                    evidence.inferred_theme ? `Theme: ${humanizeTahliaContextValue(evidence.inferred_theme)}` : '',
+                    evidence.inferred_theme && evidence.inferred_theme !== 'default' ? `Theme: ${humanizeTahliaContextValue(evidence.inferred_theme)}` : '',
                     tahliaContextTimeAgo(createdAt),
                     postId ? `Post ${shortTahliaPostId(postId)}` : '',
                 ]);
@@ -16179,7 +16274,8 @@
                     <div class="tahlia-social-body">
                         <div class="tahlia-social-label">Relevant Feed post</div>
                         <div class="tahlia-social-title">${escapeHtml(author)}'s post</div>
-                        <div class="tahlia-social-text" data-tahlia-story-text="${storyText ? 'saved' : 'missing'}">${escapeHtml(storyText || fallback)}</div>
+                        <div class="tahlia-social-text" data-tahlia-story-text="${escapeHtml(storyTextState)}">${escapeHtml(storyTextState === 'weak' ? fallback : (storyText || fallback))}</div>
+                        <div class="tahlia-social-card-details" data-tahlia-card-details>${cardDetailsHtml}</div>
                         ${metaHtml}
                     </div>
                 </div>`;
@@ -16224,7 +16320,14 @@
             const scope = root && typeof root.querySelectorAll === 'function' ? root : document;
             const contexts = Array.from(scope.querySelectorAll('.tahlia-social-context[data-tahlia-story-id]'));
             const storyIds = [...new Set(contexts
-                .filter(ctx => !ctx.querySelector('img.tahlia-social-thumb'))
+                .filter(ctx => {
+                    const textState = ctx.querySelector('[data-tahlia-story-text]')?.dataset?.tahliaStoryText || '';
+                    const detailsEl = ctx.querySelector('[data-tahlia-card-details]');
+                    return !ctx.querySelector('img.tahlia-social-thumb')
+                        || textState === 'missing'
+                        || textState === 'weak'
+                        || (detailsEl && !detailsEl.innerHTML.trim());
+                })
                 .map(ctx => String(ctx.dataset.tahliaStoryId || '').trim())
                 .filter(Boolean))];
             if (!storyIds.length) return;
@@ -16268,10 +16371,19 @@
                 }
 
                 const textEl = ctx.querySelector('[data-tahlia-story-text="missing"]');
+                const weakTextEl = ctx.querySelector('[data-tahlia-story-text="weak"]');
+                const targetTextEl = textEl || weakTextEl;
                 const storyText = tahliaStoryTextFromRow(story);
-                if (textEl && storyText) {
-                    textEl.textContent = storyText;
-                    textEl.dataset.tahliaStoryText = 'loaded';
+                if (targetTextEl && storyText && !isWeakTahliaStoryText(storyText, story.media_type)) {
+                    targetTextEl.textContent = storyText;
+                    targetTextEl.dataset.tahliaStoryText = 'loaded';
+                }
+
+                const cardData = parseTahliaCardCaption(story.caption);
+                const detailsHtml = renderTahliaCardDetails(cardData);
+                const detailsEl = ctx.querySelector('[data-tahlia-card-details]');
+                if (detailsEl && detailsHtml && !detailsEl.innerHTML.trim()) {
+                    detailsEl.innerHTML = detailsHtml;
                 }
             });
         }

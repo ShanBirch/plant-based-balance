@@ -24,10 +24,24 @@ const workoutTx = {
 };
 const mealTx = { ...workoutTx, id: 'tx-meal', transaction_type: 'earn_meal', description: 'Meal logged' };
 const checkinTx = { ...workoutTx, id: 'tx-checkin', transaction_type: 'daily_checkin', description: 'Daily check-in' };
+const workoutCardPayload = {
+    card_type: 'workout',
+    workout_name: 'Upper Body',
+    total_sets: 8,
+    total_volume: '3,250 kg',
+    exercises: [
+        { name: 'Lat Pulldown', best: '40kg x 10' },
+        { name: 'Chest Press', best: '25kg x 12' },
+    ],
+    share_caption: 'Shared 8 sets from 2 exercises',
+};
 
 assert.strictEqual(worker.pointTransactionActivityType(workoutTx), 'workout');
 assert.strictEqual(worker.pointTransactionActivityType(mealTx), 'meal');
 assert.ok(['weigh_in', 'fitness_diary'].includes(worker.pointTransactionActivityType(checkinTx)));
+assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/tahlia-profile.js'), 'utf8'), /session win/i);
+assert.match(profile.storyText({ caption: JSON.stringify(workoutCardPayload) }), /Upper Body/i);
+assert.match(profile.storyText({ caption: JSON.stringify(workoutCardPayload) }), /Lat Pulldown/i);
 
 const tahliaUser = { id: '00000000-0000-4000-8000-000000000001', name: 'Tahlia Brooks' };
 const feedAlert = worker.buildFeedPostAlert({
@@ -69,6 +83,25 @@ assert.strictEqual(commentAlert.data.evidence.story_thumbnail_url, 'https://cdn.
 assert.strictEqual(commentAlert.data.evidence.story_background_color, '#fff7ed');
 assert.match(commentAlert.data.draft_text, /meal|win|solid|yum|good|love/i);
 assert.doesNotMatch(commentAlert.data.draft_text, /looks/i);
+
+const workoutCommentAlert = worker.buildCommentAlert({
+    coachId: 'coach-1',
+    tahliaUser,
+    story: {
+        id: 'story-workout-1',
+        user_id: 'member-2',
+        media_type: 'workout_card',
+        caption: JSON.stringify(workoutCardPayload),
+        created_at: '2026-07-03T00:25:00.000Z',
+    },
+    author: { name: 'Miranda' },
+    now: new Date('2026-07-03T01:00:00.000Z'),
+});
+
+assert.strictEqual(workoutCommentAlert.data.evidence.story_card_type, 'workout');
+assert.strictEqual(workoutCommentAlert.data.evidence.story_card_data.workout_name, 'Upper Body');
+assert.match(workoutCommentAlert.data.evidence.story_text, /Lat Pulldown/i);
+assert.doesNotMatch(workoutCommentAlert.data.draft_text, /session win/i);
 
 assert.deepStrictEqual(worker.shouldConsiderStory({
     story: { id: 'story-2', user_id: tahliaUser.id },
@@ -113,6 +146,8 @@ assert.ok(adminSource.includes('function buildCoachActionRequestBody'));
 assert.ok(adminSource.includes('body.editedText = editedText'));
 assert.ok(adminSource.includes('function renderTahliaSocialContext'));
 assert.ok(adminSource.includes('function hydrateTahliaSocialContexts'));
+assert.ok(adminSource.includes('function renderTahliaWorkoutCardDetails'));
+assert.ok(adminSource.includes('data-tahlia-card-details'));
 assert.ok(adminSource.includes('data-tahlia-story-id'));
 assert.ok(adminSource.includes('Relevant Feed post'));
 assert.ok(adminSource.includes("'Tahlia social'"));
