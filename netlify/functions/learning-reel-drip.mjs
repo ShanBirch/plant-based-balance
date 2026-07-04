@@ -1538,6 +1538,65 @@ function youtubeVideoIdsFromText(value) {
     return ids;
 }
 
+function collectLearningReelVideoIds(value, output = new Set(), depth = 0, keyHint = '') {
+    if (value == null || depth > 5) return output;
+    const key = cleanString(keyHint, 120);
+    if (typeof value === 'string' || typeof value === 'number') {
+        const text = cleanString(value, 8000);
+        if (/video[_-]?id|youtube[_-]?id/i.test(key)) {
+            const normalized = normalizeVideoId(text);
+            if (normalized) output.add(normalized);
+            return output;
+        }
+        if (/url|link|message|text|draft|preview|youtube|reel/i.test(key)) {
+            for (const videoId of youtubeVideoIdsFromText(text)) {
+                const normalized = normalizeVideoId(videoId);
+                if (normalized) output.add(normalized);
+            }
+        }
+        return output;
+    }
+    if (Array.isArray(value)) {
+        for (const item of value) collectLearningReelVideoIds(item, output, depth + 1, key);
+        return output;
+    }
+    if (typeof value !== 'object') return output;
+
+    for (const [childKey, childValue] of Object.entries(value)) {
+        collectLearningReelVideoIds(childValue, output, depth + 1, childKey);
+    }
+    return output;
+}
+
+function isLearningReelAlertRow(row = {}) {
+    const data = safeObject(row.data);
+    return data.learning_reel_approval_required === true
+        || data.daily_reel_opportunity === true
+        || data.learning_reel
+        || data.learning_reels
+        || data.learning_reel_context
+        || data.learning_reel_manual_send
+        || /\blearning[_\s-]?reel|youtube\s+reel|youtube\s+short/i.test([
+            row.alert_type,
+            row.title,
+            row.description,
+            row.suggested_message,
+            data.needs_you_reason,
+            data.learning_reel_source,
+            data.subtype,
+        ].map(value => cleanString(value, 300)).join(' '));
+}
+
+function learningReelVideoIdsFromAlertRows(rows = []) {
+    const ids = new Set();
+    for (const row of Array.isArray(rows) ? rows : []) {
+        if (!isLearningReelAlertRow(row)) continue;
+        collectLearningReelVideoIds(row.suggested_message || '', ids, 0, 'suggested_message');
+        collectLearningReelVideoIds(row.data, ids, 0, 'data');
+    }
+    return ids;
+}
+
 async function loadRecentOutboundLearningReelVideoIds(threadId, limit = 100) {
     if (!threadId) return new Set();
     try {
@@ -1552,6 +1611,32 @@ async function loadRecentOutboundLearningReelVideoIds(threadId, limit = 100) {
         console.warn('[learning-reel-drip] could not load recent outbound reel ids:', error?.message || error);
         return new Set();
     }
+}
+
+async function loadRecentLearningReelAlertVideoIds(thread = {}, limit = 120) {
+    const rows = [];
+    const sinceIso = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+    const select = 'id,alert_type,title,description,suggested_message,status,data,created_at';
+    const encodedSince = encodeURIComponent(sinceIso);
+    const load = async (path) => {
+        try {
+            const result = await supabase(path);
+            rows.push(...(Array.isArray(result) ? result : []));
+        } catch (error) {
+            console.warn('[learning-reel-drip] could not load recent reel alert ids:', error?.message || error);
+        }
+    };
+    if (thread.id) {
+        await load(
+            `coach_alerts?select=${select}&data->>ig_thread_id=eq.${encodeURIComponent(thread.id)}&created_at=gte.${encodedSince}&order=created_at.desc&limit=${limit}`
+        );
+    }
+    if (thread.linked_user_id) {
+        await load(
+            `coach_alerts?select=${select}&client_id=eq.${encodeURIComponent(thread.linked_user_id)}&created_at=gte.${encodedSince}&order=created_at.desc&limit=${limit}`
+        );
+    }
+    return learningReelVideoIdsFromAlertRows(rows);
 }
 
 function sourceDiversityKey(value) {
@@ -2227,13 +2312,14 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now(), veganSafet
     }
 
     const recentOutboundVideoIds = await loadRecentOutboundLearningReelVideoIds(thread.id);
+    const recentAlertVideoIds = await loadRecentLearningReelAlertVideoIds(thread);
     const reelResult = await findReelForTopic({
         topicId: item.topic_id,
         item,
         thread,
         state,
         veganSafetyRequirement,
-        existingVideoIds: recentOutboundVideoIds,
+        existingVideoIds: new Set([...recentOutboundVideoIds, ...recentAlertVideoIds]),
     });
     const reel = reelResult.candidate;
     if (!reel) {
@@ -2268,7 +2354,11 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now(), veganSafet
     }
 
     const latestOutboundVideoIds = await loadRecentOutboundLearningReelVideoIds(thread.id);
-    if (latestOutboundVideoIds.has(normalizeVideoId(reel.video_id))) {
+    const latestAlertVideoIds = await loadRecentLearningReelAlertVideoIds(thread);
+    const duplicateSource = latestOutboundVideoIds.has(normalizeVideoId(reel.video_id))
+        ? 'ig_messages_pre_send'
+        : (latestAlertVideoIds.has(normalizeVideoId(reel.video_id)) ? 'coach_alerts_pre_review' : '');
+    if (duplicateSource) {
         const skippedAt = new Date(nowMs).toISOString();
         const next = updatePlanItem(state, item.index, {
             status: 'skipped_duplicate_reel',
@@ -2277,7 +2367,7 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now(), veganSafet
             title: reel.title,
             channel_title: reel.channel_title,
             url: reel.url,
-            duplicate_source: 'ig_messages_pre_send',
+            duplicate_source: duplicateSource,
         });
         next.skipped = [
             ...(Array.isArray(state.skipped) ? state.skipped : []),
@@ -2286,7 +2376,7 @@ async function sendDueReel({ thread, state, item, nowMs = Date.now(), veganSafet
                 topic_label: item.topic_label,
                 skipped_at: skippedAt,
                 reason: 'duplicate_learning_reel',
-                duplicate_source: 'ig_messages_pre_send',
+                duplicate_source: duplicateSource,
                 video_id: reel.video_id,
                 title: reel.title,
                 channel_title: reel.channel_title,
@@ -2412,12 +2502,11 @@ async function createManualLearningReelNeedsYouAlert({
         username: thread.ig_username,
     });
     const reelPayload = buildClientPilotReelPayload({ reel, item, config, message, nowIso });
+    const videoKey = reel.video_id || youtubeVideoIdsFromText(reel.url || '')[0] || reel.url || reel.title || nowIso;
     const idempotencyKey = [
-        manualRequired ? 'learning_reel_manual_needs_you' : 'learning_reel_approval_needs_you',
-        config.id || DRIP_ID,
+        'learning_reel_needs_you',
         thread.id,
-        item.index,
-        reel.video_id || youtubeVideoIdsFromText(reel.url || '')[0] || reel.url || reel.title || nowIso,
+        videoKey,
     ].map(part => cleanString(part, 180).replace(/\s+/g, '_')).join(':');
     const needsYouReasons = [
         approvalReason,
@@ -2590,13 +2679,14 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
         reasons: clientPilotVeganSafetyReasons(config),
     };
     const recentOutboundVideoIds = await loadRecentOutboundLearningReelVideoIds(thread.id);
+    const recentAlertVideoIds = await loadRecentLearningReelAlertVideoIds(thread);
     const reelResult = await findReelForTopic({
         topicId: item.topic_id,
         item,
         thread,
         state,
         veganSafetyRequirement,
-        existingVideoIds: recentOutboundVideoIds,
+        existingVideoIds: new Set([...recentOutboundVideoIds, ...recentAlertVideoIds]),
     });
     const reel = reelResult.candidate;
     if (!reel) {
@@ -2632,7 +2722,11 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
     }
 
     const latestOutboundVideoIds = await loadRecentOutboundLearningReelVideoIds(thread.id);
-    if (latestOutboundVideoIds.has(normalizeVideoId(reel.video_id))) {
+    const latestAlertVideoIds = await loadRecentLearningReelAlertVideoIds(thread);
+    const duplicateSource = latestOutboundVideoIds.has(normalizeVideoId(reel.video_id))
+        ? 'ig_messages_pre_send'
+        : (latestAlertVideoIds.has(normalizeVideoId(reel.video_id)) ? 'coach_alerts_pre_review' : '');
+    if (duplicateSource) {
         const skippedAt = new Date(nowMs).toISOString();
         const next = updateClientPilotPlanItem(state, item.index, {
             status: 'skipped_duplicate_reel',
@@ -2644,7 +2738,7 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
             channel_title: reel.channel_title,
             channel_id: reel.channel_id,
             url: reel.url,
-            duplicate_source: 'ig_messages_pre_send',
+            duplicate_source: duplicateSource,
         }, nowMs);
         next.skipped = [
             ...(Array.isArray(state.skipped) ? state.skipped : []),
@@ -2653,7 +2747,7 @@ async function sendDueClientPilotReel({ thread, config, state, item, nowMs = Dat
                 topic_label: item.topic_label,
                 skipped_at: skippedAt,
                 reason: 'duplicate_learning_reel',
-                duplicate_source: 'ig_messages_pre_send',
+                duplicate_source: duplicateSource,
                 video_id: reel.video_id,
                 title: reel.title,
                 channel_title: reel.channel_title,
@@ -3222,6 +3316,7 @@ export const _test = {
     isLearningReelGateEligibleOutbound,
     isLearningReelOutboundSource,
     isLinkHandoffOutboundText,
+    learningReelVideoIdsFromAlertRows,
     learningReelSourceKey,
     nextDuePlanItem,
     normalizePlanTopicEntry,

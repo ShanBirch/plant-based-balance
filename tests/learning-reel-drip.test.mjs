@@ -402,6 +402,27 @@ assert.deepStrictEqual(_test.youtubeVideoIdsFromText(
 assert.deepStrictEqual(_test.youtubeVideoIdsFromText(
     'watch https://youtu.be/AgPLP9iZnMo?t=1 and https://www.youtube.com/watch?v=F0BkuN8MPtQ'
 ), ['AgPLP9iZnMo', 'F0BkuN8MPtQ']);
+const alertVideoIds = _test.learningReelVideoIdsFromAlertRows([{
+    alert_type: 'ig_incoming_dm',
+    suggested_message: 'Would eat this\nhttps://www.youtube.com/shorts/xMdz4-AiYA4',
+    data: {
+        learning_reel_approval_required: true,
+        ig_thread_id: 'thread-miranda',
+        learning_reels: {
+            recent: [{
+                video_id: 'xMdz4-AiYA4',
+                url: 'https://www.youtube.com/shorts/xMdz4-AiYA4',
+                title: 'The BEST cucumber salad',
+            }],
+        },
+    },
+}, {
+    alert_type: 'ig_incoming_dm',
+    suggested_message: 'normal coaching message with no reel',
+    data: { needs_you_reason: 'regular_checkin' },
+}]);
+assert.ok(alertVideoIds.has('xmdz4-aiya4'));
+assert.strictEqual(alertVideoIds.size, 1);
 const stateVideoIds = _test.sentVideoIdsFromState({
     sent: [{ video_id: 'czkGj5vJEFQ' }],
     plan: [{ video_id: 'AgPLP9iZnMo' }],
