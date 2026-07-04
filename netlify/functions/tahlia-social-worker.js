@@ -49,6 +49,12 @@ function brisbaneDateKey(date = new Date()) {
     return new Date(date.getTime() + BRISBANE_OFFSET_MS).toISOString().slice(0, 10);
 }
 
+function brisbaneHour(value) {
+    const parsed = Date.parse(value || '');
+    if (!Number.isFinite(parsed)) return null;
+    return new Date(parsed + BRISBANE_OFFSET_MS).getUTCHours();
+}
+
 function hashString(value) {
     let hash = 2166136261;
     const s = String(value || '');
@@ -84,6 +90,8 @@ function pointTransactionActivityType(tx = {}) {
     if (type.includes('meal') || desc.includes('meal') || desc.includes('food')) return '';
     if (type.includes('weigh') || desc.includes('weigh') || desc.includes('weight')) return 'weigh_in';
     if (type.includes('checkin') || type.includes('check_in') || desc.includes('check-in') || desc.includes('check in')) {
+        const hour = brisbaneHour(tx.created_at);
+        if (hour !== null && hour < 18) return '';
         return 'fitness_diary';
     }
     return '';

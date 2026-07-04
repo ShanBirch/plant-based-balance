@@ -24,6 +24,7 @@ const workoutTx = {
 };
 const mealTx = { ...workoutTx, id: 'tx-meal', transaction_type: 'earn_meal', description: 'Meal logged' };
 const checkinTx = { ...workoutTx, id: 'tx-checkin', transaction_type: 'daily_checkin', description: 'Daily check-in' };
+const nightCheckinTx = { ...checkinTx, id: 'tx-night-checkin', created_at: '2026-07-03T09:05:00.000Z' };
 const pbTx = { ...workoutTx, id: 'tx-pb', transaction_type: 'personal_best', description: 'Personal best logged' };
 const workoutPbTx = { ...workoutTx, id: 'tx-workout-pb', transaction_type: 'earn_workout', description: 'Workout personal best logged' };
 const workoutCardPayload = {
@@ -40,7 +41,8 @@ const workoutCardPayload = {
 
 assert.strictEqual(worker.pointTransactionActivityType(workoutTx), 'workout');
 assert.strictEqual(worker.pointTransactionActivityType(mealTx), '');
-assert.strictEqual(worker.pointTransactionActivityType(checkinTx), 'fitness_diary');
+assert.strictEqual(worker.pointTransactionActivityType(checkinTx), '');
+assert.strictEqual(worker.pointTransactionActivityType(nightCheckinTx), 'fitness_diary');
 assert.strictEqual(worker.pointTransactionActivityType(pbTx), 'personal_best');
 assert.strictEqual(worker.pointTransactionActivityType(workoutPbTx), 'personal_best');
 assert.strictEqual(worker.isAllowedTahliaPostActivityType('workout'), true);
@@ -93,7 +95,7 @@ assert.strictEqual(JSON.parse(pbAlert.data.proposed_actions[0].payload.caption).
 const fitnessDiaryAlert = worker.buildFeedPostAlert({
     coachId: 'coach-1',
     tahliaUser,
-    transaction: checkinTx,
+    transaction: nightCheckinTx,
     now: new Date('2026-07-03T11:00:00.000Z'),
 });
 assert.strictEqual(fitnessDiaryAlert.data.activity_type, 'fitness_diary');
