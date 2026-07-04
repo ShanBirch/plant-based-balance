@@ -935,7 +935,7 @@
       '.pbb-wci-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}',
       '.pbb-wci-kicker{font-size:.66rem;font-weight:900;letter-spacing:.10em;text-transform:uppercase;color:#f8d98b;}',
       '.pbb-wci-preview-pill{font-size:.64rem;font-weight:900;color:#151008;background:linear-gradient(135deg,#fff4bf,#f5d98a);border-radius:999px;padding:5px 8px;white-space:nowrap;}',
-      '.pbb-wci-card-title{font-size:1.2rem;line-height:1.14;font-weight:950;margin:0 0 7px;color:#fff;}',
+      '.pbb-wci-card-title{font-size:1.2rem;line-height:1.14;font-weight:950;margin:0 0 7px;color:#fff !important;-webkit-text-fill-color:#fff !important;text-shadow:0 1px 10px rgba(0,0,0,.36);}',
       '.pbb-wci-card-sub{font-size:.82rem;line-height:1.35;font-weight:700;color:rgba(255,255,255,.78);margin:0;}',
       '.pbb-wci-card-goal{display:flex;align-items:center;gap:7px;margin-top:11px;border-radius:999px;background:rgba(245,217,138,.11);border:1px solid rgba(245,217,138,.22);padding:7px 10px;font-size:.74rem;line-height:1.2;font-weight:900;color:#f9e6a9;width:max-content;max-width:100%;box-sizing:border-box;}',
       '.pbb-wci-card-goal span{color:rgba(255,255,255,.62);text-transform:uppercase;font-size:.62rem;letter-spacing:.08em;flex:0 0 auto;}',
