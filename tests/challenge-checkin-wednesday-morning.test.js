@@ -20,6 +20,11 @@ assert.ok(!admin.includes('M/W/S'), 'admin badges should not advertise the old r
 
 assert.ok(scan.includes('Wednesday check-ins were cancelled by Shannon'), 'generator should explain why Wednesday returns null');
 assert.ok(scan.includes('skipped_disabled_cadence'), 'manual/direct Wednesday calls should fail closed');
+assert.ok(scan.includes('Sunday morning quick check-in'), 'Sunday should be labelled as a quick check-in');
+assert.ok(scan.includes('this is not the weekly review'), 'Sunday prompt should not duplicate the in-app weekly review');
+assert.ok(scan.includes('Yo smashed it this week'), 'Sunday prompt should include the short celebration shape');
+assert.ok(scan.includes("Hey haven't seen you around much this week! Everything okay?"), 'Sunday fallback should include the quiet-week check-in shape');
+assert.ok(!scan.includes('SUNDAY RULE: this is the full weekly review'), 'old Sunday full-review prompt should not return');
 assert.ok(scan.includes('Keep one pending') && scan.includes('client_id=eq.${clientId}'), 'pending check-in lookup should dedupe across Shannon coach identities');
 assert.ok(!scan.includes('Wed 08:00 UTC -> Wed 18:00 Brisbane'), 'old Wednesday evening schedule comment should be gone');
 assert.ok(!scan.includes('Wednesday night halfway check'), 'old Wednesday night label should be gone');
