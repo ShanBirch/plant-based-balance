@@ -6,6 +6,7 @@ const source = fs.readFileSync(
     path.join(__dirname, '..', 'lib', 'stories.js'),
     'utf8'
 );
+const normalizedSource = source.replace(/\r\n/g, '\n');
 
 assert.ok(
     source.includes("const FEED_PREFETCH_ROOT_MARGIN = '180px 0px';"),
@@ -26,9 +27,9 @@ assert.ok(
 );
 
 assert.ok(
-    source.includes('if (!quietRefresh) {') &&
-    source.includes('Loading feed...') &&
-    source.includes('if (quietRefresh) {\n            renderPhotoFeedPager(state);\n            return;\n        }'),
+    normalizedSource.includes('if (!quietRefresh) {') &&
+    normalizedSource.includes('Loading feed...') &&
+    normalizedSource.includes('if (quietRefresh) {\n            renderPhotoFeedPager(state);\n            return;\n        }'),
     'non-append feed refreshes should not replace visible posts with the loading or error states'
 );
 

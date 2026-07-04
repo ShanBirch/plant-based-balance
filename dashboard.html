@@ -9292,6 +9292,187 @@ if(!window._pbbIsIOSSafari) {
         })();
         </script>
 
+        <!-- Today in Balance Pulse -->
+        <style>
+            .feed-community-pulse-card,
+            .feed-community-pulse-card * {
+                box-sizing: border-box;
+            }
+            .feed-community-pulse-card {
+                margin: 0 15px 12px;
+                background: #ffffff;
+                border: 1px solid #dbe4ee;
+                border-radius: 14px;
+                box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+                padding: 14px;
+                color: #111827;
+                -webkit-text-fill-color: #111827;
+            }
+            .feed-community-pulse-top {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 10px;
+            }
+            .feed-community-pulse-kicker {
+                margin: 0 0 3px;
+                font-size: 0.68rem;
+                font-weight: 900;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: #0f766e;
+                -webkit-text-fill-color: #0f766e;
+            }
+            .feed-community-pulse-headline {
+                margin: 0;
+                font-size: 1rem;
+                line-height: 1.2;
+                font-weight: 900;
+                color: #111827;
+                -webkit-text-fill-color: #111827;
+            }
+            .feed-community-pulse-refresh {
+                width: 34px;
+                height: 34px;
+                min-width: 34px;
+                border: 1px solid #d1fae5;
+                border-radius: 50%;
+                background: #ecfdf5;
+                color: #0f766e;
+                -webkit-text-fill-color: #0f766e;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+            }
+            .feed-community-pulse-refresh svg {
+                width: 17px;
+                height: 17px;
+                stroke: currentColor;
+            }
+            .feed-community-pulse-stats {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 8px;
+                margin-top: 12px;
+            }
+            .feed-community-pulse-stat {
+                min-width: 0;
+                min-height: 54px;
+                padding: 8px 5px;
+                border: 1px solid #e5e7eb;
+                border-radius: 10px;
+                background: #f8fafc;
+                text-align: center;
+            }
+            .feed-community-pulse-stat strong {
+                display: block;
+                font-size: 1.04rem;
+                line-height: 1;
+                color: #111827;
+                -webkit-text-fill-color: #111827;
+            }
+            .feed-community-pulse-stat span {
+                display: block;
+                margin-top: 5px;
+                font-size: 0.62rem;
+                line-height: 1.05;
+                font-weight: 900;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                color: #64748b;
+                -webkit-text-fill-color: #64748b;
+            }
+            .feed-community-pulse-actions {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 8px;
+                margin-top: 12px;
+            }
+            .feed-community-pulse-action {
+                min-width: 0;
+                min-height: 38px;
+                padding: 8px 7px;
+                border: 1px solid #e5e7eb;
+                border-radius: 999px;
+                background: #ffffff;
+                color: #334155;
+                -webkit-text-fill-color: #334155;
+                font-family: inherit;
+                font-size: 0.74rem;
+                line-height: 1.08;
+                font-weight: 900;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 5px;
+                text-align: center;
+            }
+            .feed-community-pulse-action svg {
+                width: 14px;
+                height: 14px;
+                min-width: 14px;
+                stroke: currentColor;
+            }
+            .feed-community-pulse-action.is-primary {
+                background: #0f766e;
+                border-color: #0f766e;
+                color: #ffffff;
+                -webkit-text-fill-color: #ffffff;
+            }
+            .feed-community-pulse-action.is-battle {
+                border-color: #ddd6fe;
+                color: #6d28d9;
+                -webkit-text-fill-color: #6d28d9;
+                background: #f5f3ff;
+            }
+            @media (max-width: 360px) {
+                .feed-community-pulse-card {
+                    padding: 12px;
+                }
+                .feed-community-pulse-stats {
+                    gap: 6px;
+                }
+                .feed-community-pulse-action {
+                    font-size: 0.68rem;
+                    padding-left: 5px;
+                    padding-right: 5px;
+                }
+            }
+        </style>
+        <section id="feed-community-pulse-card" class="feed-community-pulse-card" aria-label="Today in Balance" aria-busy="true">
+            <div class="feed-community-pulse-top">
+                <div style="min-width:0;">
+                    <div class="feed-community-pulse-kicker">Today in Balance</div>
+                    <h3 id="feed-community-pulse-headline" class="feed-community-pulse-headline" aria-live="polite">Loading today's pulse...</h3>
+                </div>
+                <button type="button" class="feed-community-pulse-refresh" onclick="window.loadFeedCommunityPulse && window.loadFeedCommunityPulse({ force: true })" aria-label="Refresh today's pulse">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.4 6.36"></path><path d="M3 12A9 9 0 0 1 18.4 5.64"></path><path d="M18 2v4h-4"></path><path d="M6 22v-4h4"></path></svg>
+                </button>
+            </div>
+            <div class="feed-community-pulse-stats" aria-label="Community activity today">
+                <div class="feed-community-pulse-stat"><strong id="feed-pulse-posts">0</strong><span>Posts</span></div>
+                <div class="feed-community-pulse-stat"><strong id="feed-pulse-cheers">0</strong><span>Cheers</span></div>
+                <div class="feed-community-pulse-stat"><strong id="feed-pulse-comments">0</strong><span>Comments</span></div>
+                <div class="feed-community-pulse-stat"><strong id="feed-pulse-battles">0</strong><span>Battles</span></div>
+            </div>
+            <div class="feed-community-pulse-actions">
+                <button type="button" class="feed-community-pulse-action is-primary" onclick="focusFeedComposer()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+                    <span>Post your win</span>
+                </button>
+                <button type="button" class="feed-community-pulse-action" onclick="window.focusFirstFeedReaction && window.focusFirstFeedReaction()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
+                    <span>Cheer someone</span>
+                </button>
+                <button type="button" class="feed-community-pulse-action is-battle" onclick="window.openFeedPulseBattle && window.openFeedPulseBattle()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 10-13h-7l0-7z"></path></svg>
+                    <span>Join battle</span>
+                </button>
+            </div>
+        </section>
+
         <!-- Feed Composer -->
         <style>
             #feed-composer-share-menu {
@@ -12645,6 +12826,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'cycle', sel:'#weekly-calendar', title:'Plan your week', body:"Use the weekly calendar to drag workout days around, tap a day, and add walks, classes, Pilates, yoga, or another activity.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
 
     { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Share a thought or encouragement once a day for +2 XP. Add a photo or video if you want." },
+    { tab:'friends', sel:'#feed-community-pulse-card', title:'Today in Balance', body:"See how many people posted, cheered, commented, or joined battles today. Use the buttons to post, cheer someone, or start a battle.", quick: true },
     { tab:'friends', sel:'#feed-composer-card', title:'Text post styles', body:"Text-only posts now use big type, smaller notes, and different font styles like a proper social card.", quick: true },
     { tab:'friends', sel:'#feed-composer-share-menu-button,#feed-composer-card', title:'Share from Feed', body:"Use Share to post a meal, choose a workout or PB, or film a set without leaving Feed.", quick: true },
     { tab:'friends', sel:'#friends-photo-feed .feed-post-card,#friends-feed-section', fallbackSel:'#feed-composer-card', title:'Feed media controls', fallbackTitle:'Feed media controls', body:"Tap a video once to play it right in Feed. Double tap any photo or video to open the full view.", fallbackBody:"Post media works like Instagram. Videos play with one tap, and photos or videos open full screen with a double tap once posts are showing.", quick: true, condition: function(){ return !!document.getElementById('friends-feed-section') || !!document.getElementById('feed-composer-card'); } },
@@ -13694,6 +13876,13 @@ if(!window._pbbIsIOSSafari) {
     title: 'Like feed comments',
     body: "Tap the heart beside a feed comment to like it.",
     condition: function(){ return !!document.querySelector('.feed-comment-like-btn'); }
+  });
+  allFeatures.push({
+    id: 'feed-community-pulse-v1',
+    tab: 'friends',
+    sel: '#feed-community-pulse-card',
+    title: 'Today in Balance',
+    body: "See how many people posted, cheered, commented, or joined battles today. Use the buttons to post, cheer someone, or start a battle."
   });
   allFeatures.push({
     id: 'feed-comment-mentions-v1',
