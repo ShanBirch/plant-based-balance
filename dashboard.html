@@ -330,7 +330,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=39',
             'lib/native-iap.js',
-            'lib/stories.js?v=34',
+            'lib/stories.js?v=35',
             'lib/ai-opponents.js',
             'lib/games.js?v=2',
             'lib/nutrition-calculator.js',
@@ -349,7 +349,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=34"><\/script>');
+    document.write('<script src="lib/stories.js?v=35"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=2"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -12640,7 +12640,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'cycle', sel:'#weekly-calendar', title:'Plan your week', body:"Use the weekly calendar to drag workout days around, tap a day, and add walks, classes, Pilates, yoga, or another activity.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
 
     { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Share a thought or encouragement once a day for +2 XP. Add a photo or video if you want." },
-    { tab:'friends', sel:'#feed-composer-card', title:'Text posts look better', body:"Posts without photos now turn your words into a designed card in the Feed.", quick: true },
+    { tab:'friends', sel:'#feed-composer-card', title:'Text post styles', body:"Text-only posts now use big type, smaller notes, and different font styles like a proper social card.", quick: true },
     { tab:'friends', sel:'#feed-composer-share-menu-button,#feed-composer-card', title:'Share from Feed', body:"Use Share to post a meal, choose a workout or PB, or film a set without leaving Feed.", quick: true },
     { tab:'friends', sel:'#friends-photo-feed .feed-post-card,#friends-feed-section', fallbackSel:'#feed-composer-card', title:'Feed media controls', fallbackTitle:'Feed media controls', body:"Tap a video once to play it right in Feed. Double tap any photo or video to open the full view.", fallbackBody:"Post media works like Instagram. Videos play with one tap, and photos or videos open full screen with a double tap once posts are showing.", quick: true, condition: function(){ return !!document.getElementById('friends-feed-section') || !!document.getElementById('feed-composer-card'); } },
     { tab:'friends', sel:'.feed-post-actions-btn', title:'Post actions', body:"Tap the three dots on one of your own feed posts to edit or delete it.", quick: true, condition: function(){ return !!document.querySelector('.feed-post-actions-btn'); } },
@@ -13546,11 +13546,11 @@ if(!window._pbbIsIOSSafari) {
       body: "Feed now has a composer at the top. Share a thought or encouragement once a day for +2 XP. Add a photo or video if you want."
     },
     {
-      id: 'feed-text-post-cards-v1',
+      id: 'feed-text-post-styles-v2',
       tab: 'friends',
       sel: '#feed-composer-card',
-      title: 'Text posts look better',
-      body: "Posts without photos now turn your words into a designed card in the Feed."
+      title: 'Text post styles',
+      body: "Text-only posts now use big type, smaller notes, and different font styles like a proper social card."
     },
     {
       id: 'meal-detail-feed-share-daily-15xp-v1',
