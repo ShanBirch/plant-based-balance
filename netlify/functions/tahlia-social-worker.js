@@ -28,8 +28,11 @@ const BRISBANE_OFFSET_MS = 10 * 60 * 60 * 1000;
 const DEFAULT_POST_TX_LOOKBACK_HOURS = 6;
 const DEFAULT_STORY_LOOKBACK_HOURS = 72;
 const DEFAULT_MIN_STORY_AGE_MINUTES = 30;
-const DEFAULT_MAX_POST_ALERTS_PER_RUN = 2;
-const DEFAULT_MAX_COMMENT_ALERTS_PER_RUN = 3;
+const DEFAULT_MAX_POST_ALERTS_PER_RUN = 1;
+const DEFAULT_MAX_COMMENT_ALERTS_PER_RUN = 1;
+const DEFAULT_DAILY_POST_ALERT_CAP = 3;
+const DEFAULT_DAILY_COMMENT_ALERT_CAP = 6;
+const DEFAULT_RESUME_DATE_KEY = '2026-07-05';
 const ALLOWED_TAHLIA_POST_ACTIVITY_TYPES = new Set(['workout', 'personal_best', 'weigh_in', 'fitness_diary']);
 
 function json(statusCode, body) {
@@ -47,6 +50,24 @@ function asNumber(value, fallback) {
 
 function brisbaneDateKey(date = new Date()) {
     return new Date(date.getTime() + BRISBANE_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+function brisbaneDayBounds(date = new Date()) {
+    const shifted = new Date(date.getTime() + BRISBANE_OFFSET_MS);
+    shifted.setUTCHours(0, 0, 0, 0);
+    const start = new Date(shifted.getTime() - BRISBANE_OFFSET_MS);
+    const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    return {
+        dateKey: brisbaneDateKey(date),
+        startIso: start.toISOString(),
+        endIso: end.toISOString(),
+    };
+}
+
+function isBeforeBrisbaneDateKey(now = new Date(), resumeDateKey = '') {
+    const key = String(resumeDateKey || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return false;
+    return brisbaneDateKey(now) < key;
 }
 
 function brisbaneHour(value) {
@@ -304,6 +325,57 @@ async function hasPendingOrActionedAlert(idempotencyKey) {
     return rows.length > 0;
 }
 
+function parseMaybeJsonObject(value) {
+    if (!value) return {};
+    if (typeof value === 'object') return value;
+    if (typeof value !== 'string') return {};
+    try {
+        const parsed = JSON.parse(value);
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+        return {};
+    }
+}
+
+function isTahliaSocialAlertData(data = {}) {
+    return data.source === SOURCE
+        || data.subtype === 'tahlia_social_approval'
+        || data.tahlia_profile_key === TAHLIA_PROFILE.key;
+}
+
+function summarizeDailyTahliaAlertCounts(rows = []) {
+    const counts = { feed_post: 0, feed_comment: 0, total: 0 };
+    for (const row of rows || []) {
+        const data = parseMaybeJsonObject(row?.data);
+        if (!isTahliaSocialAlertData(data)) continue;
+        counts.total += 1;
+        if (data.social_action === 'feed_post') counts.feed_post += 1;
+        if (data.social_action === 'feed_comment') counts.feed_comment += 1;
+    }
+    return counts;
+}
+
+async function loadDailyTahliaAlertCounts(now = new Date()) {
+    const bounds = brisbaneDayBounds(now);
+    const rows = await supabaseQuery(
+        `coach_alerts?select=id,status,data,created_at&client_name=eq.${encodeURIComponent(TAHLIA_PROFILE.displayName)}&created_at=gte.${encodeURIComponent(bounds.startIso)}&created_at=lt.${encodeURIComponent(bounds.endIso)}&order=created_at.desc&limit=500`
+    ).catch(() => []);
+    return {
+        date_key: bounds.dateKey,
+        ...summarizeDailyTahliaAlertCounts(rows),
+    };
+}
+
+function dailyCappedResult({ dailyCount, dailyCap }) {
+    return {
+        scanned: 0,
+        inserted: [],
+        skipped: { daily_cap: 1 },
+        daily_count: dailyCount,
+        daily_cap: dailyCap,
+    };
+}
+
 function shouldConsiderStory({ story, author, tahliaId, shannonId }) {
     if (!story?.id || !story.user_id) return { ok: false, reason: 'missing_story_fields' };
     if (story.user_id === tahliaId) return { ok: false, reason: 'own_post' };
@@ -404,12 +476,24 @@ async function runTahliaSocialWorker({
     now = new Date(),
     maxPostAlerts = DEFAULT_MAX_POST_ALERTS_PER_RUN,
     maxCommentAlerts = DEFAULT_MAX_COMMENT_ALERTS_PER_RUN,
+    dailyPostCap = DEFAULT_DAILY_POST_ALERT_CAP,
+    dailyCommentCap = DEFAULT_DAILY_COMMENT_ALERT_CAP,
+    resumeDateKey = DEFAULT_RESUME_DATE_KEY,
     postTxLookbackHours = DEFAULT_POST_TX_LOOKBACK_HOURS,
     storyLookbackHours = DEFAULT_STORY_LOOKBACK_HOURS,
     minStoryAgeMinutes = DEFAULT_MIN_STORY_AGE_MINUTES,
 } = {}) {
     if (String(process.env.TAHLIA_SOCIAL_WORKER_DISABLED || '').toLowerCase() === 'true') {
         return { ok: true, skipped: 'disabled' };
+    }
+    if (isBeforeBrisbaneDateKey(now, resumeDateKey)) {
+        return {
+            ok: true,
+            skipped: 'paused_until_resume_date',
+            checked_at: now.toISOString(),
+            brisbane_date_key: brisbaneDateKey(now),
+            resume_date_key: resumeDateKey,
+        };
     }
 
     const [tahliaUser, shannonUser] = await Promise.all([
@@ -419,23 +503,33 @@ async function runTahliaSocialWorker({
     if (!tahliaUser?.id) return { ok: false, error: 'tahlia_user_not_found' };
     if (!shannonUser?.id) return { ok: false, error: 'shannon_user_not_found' };
 
+    const dailyCounts = await loadDailyTahliaAlertCounts(now);
+    const postSlots = Math.min(maxPostAlerts, Math.max(0, dailyPostCap - dailyCounts.feed_post));
+    const commentSlots = Math.min(maxCommentAlerts, Math.max(0, dailyCommentCap - dailyCounts.feed_comment));
+
     const [feedPosts, comments] = await Promise.all([
-        queueFeedPostApprovals({
+        postSlots > 0 ? queueFeedPostApprovals({
             coachId: shannonUser.id,
             tahliaUser,
             now,
-            maxAlerts: maxPostAlerts,
+            maxAlerts: postSlots,
             lookbackHours: postTxLookbackHours,
-        }),
-        queueCommentApprovals({
+        }) : Promise.resolve(dailyCappedResult({
+            dailyCount: dailyCounts.feed_post,
+            dailyCap: dailyPostCap,
+        })),
+        commentSlots > 0 ? queueCommentApprovals({
             coachId: shannonUser.id,
             tahliaUser,
             shannonId: shannonUser.id,
             now,
-            maxAlerts: maxCommentAlerts,
+            maxAlerts: commentSlots,
             storyLookbackHours,
             minStoryAgeMinutes,
-        }),
+        }) : Promise.resolve(dailyCappedResult({
+            dailyCount: dailyCounts.feed_comment,
+            dailyCap: dailyCommentCap,
+        })),
     ]);
 
     return {
@@ -444,6 +538,19 @@ async function runTahliaSocialWorker({
         tahlia_user_id: tahliaUser.id,
         coach_id: shannonUser.id,
         profile: tahliaProfileForAlert(),
+        daily_caps: {
+            date_key: dailyCounts.date_key,
+            comments: {
+                count: dailyCounts.feed_comment,
+                cap: dailyCommentCap,
+                remaining_before_run: Math.max(0, dailyCommentCap - dailyCounts.feed_comment),
+            },
+            feed_posts: {
+                count: dailyCounts.feed_post,
+                cap: dailyPostCap,
+                remaining_before_run: Math.max(0, dailyPostCap - dailyCounts.feed_post),
+            },
+        },
         feed_posts: feedPosts,
         comments,
     };
@@ -455,6 +562,9 @@ exports.handler = async (event = {}) => {
         const result = await runTahliaSocialWorker({
             maxPostAlerts: asNumber(qs.max_posts || process.env.TAHLIA_SOCIAL_MAX_POST_ALERTS, DEFAULT_MAX_POST_ALERTS_PER_RUN),
             maxCommentAlerts: asNumber(qs.max_comments || process.env.TAHLIA_SOCIAL_MAX_COMMENT_ALERTS, DEFAULT_MAX_COMMENT_ALERTS_PER_RUN),
+            dailyPostCap: asNumber(qs.daily_post_cap || process.env.TAHLIA_SOCIAL_DAILY_POST_CAP, DEFAULT_DAILY_POST_ALERT_CAP),
+            dailyCommentCap: asNumber(qs.daily_comment_cap || process.env.TAHLIA_SOCIAL_DAILY_COMMENT_CAP, DEFAULT_DAILY_COMMENT_ALERT_CAP),
+            resumeDateKey: qs.resume_date_key || process.env.TAHLIA_SOCIAL_RESUME_DATE_KEY || DEFAULT_RESUME_DATE_KEY,
             postTxLookbackHours: asNumber(qs.tx_lookback_hours || process.env.TAHLIA_SOCIAL_TX_LOOKBACK_HOURS, DEFAULT_POST_TX_LOOKBACK_HOURS),
             storyLookbackHours: asNumber(qs.story_lookback_hours || process.env.TAHLIA_SOCIAL_STORY_LOOKBACK_HOURS, DEFAULT_STORY_LOOKBACK_HOURS),
             minStoryAgeMinutes: asNumber(qs.min_story_age_minutes || process.env.TAHLIA_SOCIAL_MIN_STORY_AGE_MINUTES, DEFAULT_MIN_STORY_AGE_MINUTES),
@@ -469,11 +579,20 @@ exports.handler = async (event = {}) => {
 exports._test = {
     buildCommentAlert,
     buildFeedPostAlert,
+    brisbaneDayBounds,
     brisbaneDateKey,
+    isBeforeBrisbaneDateKey,
     isSensitiveFeedText,
     pointTransactionActivityType,
     runTahliaSocialWorker,
     shouldConsiderStory,
     isAllowedTahliaPostActivityType,
+    isTahliaSocialAlertData,
+    summarizeDailyTahliaAlertCounts,
     tahliaNeedsYouReviewData,
+    DEFAULT_DAILY_COMMENT_ALERT_CAP,
+    DEFAULT_DAILY_POST_ALERT_CAP,
+    DEFAULT_MAX_COMMENT_ALERTS_PER_RUN,
+    DEFAULT_MAX_POST_ALERTS_PER_RUN,
+    DEFAULT_RESUME_DATE_KEY,
 };

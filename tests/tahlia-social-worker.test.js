@@ -16,6 +16,18 @@ assert.strictEqual(profile.TAHLIA_PROFILE.portfolio.trainingLevel, 'beginner-to-
 assert.strictEqual(profile.TAHLIA_PROFILE.portfolio.estimatedWeightKg, 64);
 assert.strictEqual(profile.TAHLIA_PROFILE.portfolio.calorieTargetRange, '1850-2250 kcal/day');
 assert.ok(profile.TAHLIA_PROFILE.voice.avoids.includes('mentions of AI, bots, automation, seeded accounts, or testing'));
+assert.strictEqual(worker.DEFAULT_MAX_POST_ALERTS_PER_RUN, 1);
+assert.strictEqual(worker.DEFAULT_MAX_COMMENT_ALERTS_PER_RUN, 1);
+assert.strictEqual(worker.DEFAULT_DAILY_POST_ALERT_CAP, 3);
+assert.strictEqual(worker.DEFAULT_DAILY_COMMENT_ALERT_CAP, 6);
+assert.strictEqual(worker.DEFAULT_RESUME_DATE_KEY, '2026-07-05');
+assert.strictEqual(worker.isBeforeBrisbaneDateKey(new Date('2026-07-04T13:59:00.000Z'), '2026-07-05'), true);
+assert.strictEqual(worker.isBeforeBrisbaneDateKey(new Date('2026-07-04T14:00:00.000Z'), '2026-07-05'), false);
+assert.deepStrictEqual(worker.brisbaneDayBounds(new Date('2026-07-04T13:59:00.000Z')), {
+    dateKey: '2026-07-04',
+    startIso: '2026-07-03T14:00:00.000Z',
+    endIso: '2026-07-04T14:00:00.000Z',
+});
 
 function parseCardVolumeKg(value) {
     return Number(String(value || '').replace(/[^0-9.]/g, ''));
@@ -34,6 +46,12 @@ function assertWorkoutVolumeMatches(card) {
 
 assertWorkoutVolumeMatches(profile.buildTahliaPostCardPayload('workout', 'caption', 'tx-upper'));
 assertWorkoutVolumeMatches(profile.buildTahliaPostCardPayload('workout', 'caption', 'tx-workout'));
+assert.deepStrictEqual(worker.summarizeDailyTahliaAlertCounts([
+    { data: { source: 'tahlia-social-worker', social_action: 'feed_comment' } },
+    { data: { subtype: 'tahlia_social_approval', social_action: 'feed_comment' } },
+    { data: { tahlia_profile_key: 'tahlia_brooks', social_action: 'feed_post' } },
+    { data: { source: 'other-worker', social_action: 'feed_comment' } },
+]), { feed_post: 1, feed_comment: 2, total: 3 });
 
 const workoutTx = {
     id: 'tx-workout',
