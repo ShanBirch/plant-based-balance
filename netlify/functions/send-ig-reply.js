@@ -137,6 +137,7 @@ const EDIT_ANALYSIS_BACKGROUND_BUDGET_MS = 7000;
 const INSTAGRAM_GRAPH_TYPING_ACTION_TIMEOUT_MS = 1200;
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
 const PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE = 'Permanent Needs You contacts require Shannon approval before sending.';
+const SEND_TIME_SAFETY_BLOCK_MESSAGE = 'Send-time safety blocked this IG reply. Edit the reply or redraft before sending.';
 const AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES = new Set([
     'auto_send',
     'balance_lead_client_manager_cron',
@@ -145,6 +146,99 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function safeObject(value) {
     return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function hasClientFacingAiSelfReference(text = '') {
+    const normalized = normalizeGeneratedCoachDraftText(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!normalized) return false;
+    return /\bshanbot\b/i.test(normalized)
+        || /\bchat\s*gpt\b|\bchatgpt\b/i.test(normalized)
+        || /\b(?:as an?|i'?m|i am|this is|that was|sounds like|written by|from|using|use|used)\s+(?:an?\s+)?(?:ai|a\.i\.|bot|robot|automation|automated reply|model|generated reply)\b/i.test(normalized)
+        || /\b(?:ai|a\.i\.|bot|robot|automation|automated|generated|model|trained voice)\s+(?:reply|message|draft|text|response|sent|wrote|writing|system)\b/i.test(normalized)
+        || /\b(?:not|isn'?t|wasn'?t)\s+(?:ai|a\.i\.|a bot|bot|automated|automation)\b/i.test(normalized)
+        || /\b(?:real person|actual person|human here|glad (?:you'?re|im|i'?m) human|yes i'?m human)\b/i.test(normalized);
+}
+
+function isGratitudeCloserText(text = '') {
+    const raw = normalizeGeneratedCoachDraftText(text || '').replace(/\s+/g, ' ').trim();
+    if (!raw || raw.length > 90 || /[?]/.test(raw)) return false;
+    const normalized = raw
+        .replace(/[^\p{L}\p{N}'\s]/gu, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+    if (!normalized) return false;
+    return /^(?:thanks|thank you|thankyou|ta|cheers|appreciate it|legend|perfect|sounds good|all good|no worries|awesome|amazing|nice|sweet|okay|ok|cool|got it|love it|haha thanks|lol thanks)\b/.test(normalized)
+        || /\b(?:thanks|thank you|thankyou|appreciate it|legend)\b$/.test(normalized);
+}
+
+function resolveLatestInboundTextForSend({ alertData = {}, alert = {} } = {}) {
+    const data = safeObject(alertData);
+    const evidence = safeObject(data.draft_evidence);
+    return firstString([
+        data.latest_inbound_text,
+        data.latest_inbound_message,
+        data.current_message,
+        data.client_message,
+        data.message_preview,
+        data.inbound_text,
+        data.last_inbound_message,
+        evidence.current_message,
+        evidence.latest_message,
+        evidence.message_preview,
+        alert.description,
+    ]);
+}
+
+function validateSendTimeOutboundSafety({ messagesToSend = [], latestInboundText = '' } = {}) {
+    const combined = (Array.isArray(messagesToSend) ? messagesToSend : [messagesToSend])
+        .map(value => normalizeGeneratedCoachDraftText(value || '').trim())
+        .filter(Boolean)
+        .join('\n\n');
+    if (!combined) return { ok: false, code: 'empty_reply', reason: 'Reply text is empty.' };
+    if (hasClientFacingAiSelfReference(combined)) {
+        return {
+            ok: false,
+            code: 'client_facing_ai_self_reference',
+            reason: 'Reply mentions shanbot, AI, bots, automation, or human-authenticity repair language.',
+        };
+    }
+    if (isGratitudeCloserText(latestInboundText) && /[?]/.test(combined)) {
+        return {
+            ok: false,
+            code: 'gratitude_closer_fresh_question',
+            reason: 'Latest inbound is a gratitude or clean closer, but the reply adds a fresh question.',
+        };
+    }
+    return { ok: true };
+}
+
+async function stampSendTimeSafetyBlock({ alertId, alertData = {}, guard = {}, chunksTotal = 1 } = {}) {
+    if (!alertId) return;
+    const blockedAt = new Date().toISOString();
+    const nextData = {
+        ...safeObject(alertData),
+        last_send_error: `${SEND_TIME_SAFETY_BLOCK_MESSAGE} ${guard.reason || ''}`.trim(),
+        last_send_error_code: guard.code || 'send_time_safety_blocked',
+        last_send_error_at: blockedAt,
+        send_time_safety_blocked_at: blockedAt,
+        send_time_safety_block: {
+            code: guard.code || 'send_time_safety_blocked',
+            reason: guard.reason || null,
+            blocked_at: blockedAt,
+        },
+        chunks_sent: 0,
+        chunks_total: chunksTotal,
+    };
+    try {
+        await supabase(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
+            method: 'PATCH',
+            body: { data: nextData },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[send-ig-reply] send-time safety block stamp failed:', err.message);
+    }
 }
 
 function normalizeAccountKey(value) {
@@ -1468,6 +1562,26 @@ exports.handler = async (event) => {
     }
     messagesToSend = splitCoachDraftIntoDmBubbles(messagesToSend);
     if (messagesToSend.length === 0) messagesToSend = [replyText];
+    const sendTimeSafety = validateSendTimeOutboundSafety({
+        messagesToSend,
+        latestInboundText: resolveLatestInboundTextForSend({ alertData, alert }),
+    });
+    if (!sendTimeSafety.ok) {
+        await stampSendTimeSafetyBlock({
+            alertId,
+            alertData,
+            guard: sendTimeSafety,
+            chunksTotal: messagesToSend.length,
+        });
+        return {
+            statusCode: 409,
+            body: JSON.stringify({
+                error: SEND_TIME_SAFETY_BLOCK_MESSAGE,
+                code: sendTimeSafety.code || 'send_time_safety_blocked',
+                reason: sendTimeSafety.reason || null,
+            }),
+        };
+    }
     const chunkPacing = resolveChunkPacing(messagesToSend.length, deliveryPacing);
     const plannedChunkGapsMs = resolveChunkGaps(messagesToSend, chunkPacing);
     const voiceMessageConfig = resolveOutboundVoiceMessageConfig(alertData, { shouldUseGraph, channel });
@@ -1864,4 +1978,8 @@ exports._test = {
     isAppSupportFastFixException,
     isPermanentNeedsYouIgAlert,
     shouldBlockPermanentNeedsYouAutomatedIgSend,
+    hasClientFacingAiSelfReference,
+    isGratitudeCloserText,
+    resolveLatestInboundTextForSend,
+    validateSendTimeOutboundSafety,
 };

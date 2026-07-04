@@ -3,6 +3,10 @@ const assert = require('assert');
 const {
     isCocosAlertData,
     isChallengeOfferSend,
+    hasClientFacingAiSelfReference,
+    isGratitudeCloserText,
+    resolveLatestInboundTextForSend,
+    validateSendTimeOutboundSafety,
 } = require('../netlify/functions/send-ig-reply')._test;
 
 assert.strictEqual(isCocosAlertData({ bot_account: 'cocos_pt_studio' }), true);
@@ -27,5 +31,34 @@ assert.strictEqual(isChallengeOfferSend({
     alertData: {},
     replyText: 'haha that looked like a good session',
 }), false);
+
+assert.strictEqual(hasClientFacingAiSelfReference('Sorry that was shanbot'), true);
+assert.strictEqual(hasClientFacingAiSelfReference("haha fair call, I'm not AI"), true);
+assert.strictEqual(hasClientFacingAiSelfReference('that weighted pull-up setup is cooked'), false);
+
+assert.strictEqual(isGratitudeCloserText('Thanks!!!'), true);
+assert.strictEqual(isGratitudeCloserText('thanks, can you send the link?'), false);
+assert.strictEqual(resolveLatestInboundTextForSend({
+    alertData: { draft_evidence: { current_message: 'Thanks!!!' } },
+}), 'Thanks!!!');
+
+assert.deepStrictEqual(
+    validateSendTimeOutboundSafety({
+        messagesToSend: ['Sorry that was shanbot'],
+        latestInboundText: 'lol',
+    }).code,
+    'client_facing_ai_self_reference'
+);
+assert.deepStrictEqual(
+    validateSendTimeOutboundSafety({
+        messagesToSend: ["Who's gonna win?"],
+        latestInboundText: 'Thanks!!!',
+    }).code,
+    'gratitude_closer_fresh_question'
+);
+assert.strictEqual(validateSendTimeOutboundSafety({
+    messagesToSend: ['No worries at all'],
+    latestInboundText: 'Thanks!!!',
+}).ok, true);
 
 console.log('send ig challenge offer notification tests passed');
