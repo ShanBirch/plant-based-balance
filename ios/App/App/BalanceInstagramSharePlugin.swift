@@ -38,7 +38,9 @@ public class BalanceInstagramSharePlugin: CAPPlugin, CAPBridgedPlugin, UIDocumen
     }
 
     private func shareToStory(_ imageData: Data, call: CAPPluginCall) {
-        guard let url = URL(string: "instagram-stories://share"), UIApplication.shared.canOpenURL(url) else {
+        let sourceApplication = Bundle.main.bundleIdentifier ?? "com.fitgotchi.app"
+        let encodedSourceApplication = sourceApplication.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? sourceApplication
+        guard let url = URL(string: "instagram-stories://share?source_application=\(encodedSourceApplication)"), UIApplication.shared.canOpenURL(url) else {
             call.resolve(["opened": false, "target": "story", "reason": "instagram-unavailable"])
             return
         }
@@ -48,7 +50,8 @@ public class BalanceInstagramSharePlugin: CAPPlugin, CAPBridgedPlugin, UIDocumen
                 "com.instagram.sharedSticker.backgroundImage": imageData,
                 "com.instagram.sharedSticker.backgroundTopColor": "#0f3d2e",
                 "com.instagram.sharedSticker.backgroundBottomColor": "#f5c45c",
-                "com.instagram.sharedSticker.contentURL": "https://plantbased-balance.org/bio"
+                "com.instagram.sharedSticker.contentURL": "https://plantbased-balance.org/bio",
+                "com.instagram.sharedSticker.appID": sourceApplication
             ]],
             options: [.expirationDate: Date().addingTimeInterval(300)]
         )

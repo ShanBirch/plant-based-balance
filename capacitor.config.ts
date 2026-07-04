@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   // Load from live Netlify site — means you deploy as normal
   // and the app always shows the latest version
   server: {
-    url: 'https://plantbased-balance.org/dashboard.html?native_rev=share_set_v14',
+    url: 'https://plantbased-balance.org/dashboard.html?native_rev=ig_meal_share_v15',
     cleartext: false,
     // Allow same-site navigations (login, oauth-callback, etc.) to stay
     // in the WebView.  Google OAuth intentionally opens the system browser
