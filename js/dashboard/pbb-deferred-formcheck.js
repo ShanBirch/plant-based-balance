@@ -967,6 +967,7 @@
     }
 
     function scheduleWorkoutFeedShareRetry(delayMs) {
+        if (navigator && navigator.onLine === false) return;
         if (workoutFeedShareRetryTimer) clearTimeout(workoutFeedShareRetryTimer);
         workoutFeedShareRetryTimer = setTimeout(function () {
             retryWorkoutFeedShareQueue(false);
@@ -1080,11 +1081,16 @@
     function getWorkoutFeedShareNextRetryDelay(items) {
         const now = Date.now();
         let soonest = 0;
+        let hasDueItem = false;
         (items || []).forEach(function (item) {
             const ts = Date.parse(item && item.nextAttemptAt || '');
-            if (!Number.isFinite(ts) || ts <= now) return;
+            if (!Number.isFinite(ts) || ts <= now) {
+                hasDueItem = true;
+                return;
+            }
             if (!soonest || ts < soonest) soonest = ts;
         });
+        if (hasDueItem) return 5000;
         return soonest ? Math.max(5000, soonest - now) : 30000;
     }
 
@@ -1278,9 +1284,17 @@
         }
 
         if (!items.length) {
+            if (workoutFeedShareRetryTimer) {
+                clearTimeout(workoutFeedShareRetryTimer);
+                workoutFeedShareRetryTimer = null;
+            }
             notice.style.display = 'none';
             notice.innerHTML = '';
             return;
+        }
+
+        if (!workoutFeedShareRetryInProgress && !(navigator && navigator.onLine === false)) {
+            scheduleWorkoutFeedShareRetry(getWorkoutFeedShareNextRetryDelay(items));
         }
 
         const firstItem = items[0] || {};
@@ -2253,7 +2267,8 @@
                     file: workoutFeedShareState.file,
                     caption: caption,
                     workoutName: workoutName,
-                    lastError: 'offline'
+                    lastError: 'offline',
+                    autoRetry: true
                 });
                 showWorkoutFeedShareUploadBanner('Saved for retry', 'queued', { retry: true });
                 clearWorkoutFeedShareVideo();
@@ -2291,7 +2306,8 @@
                         caption: caption,
                         workoutName: workoutName,
                         lastError: error && error.message ? error.message : 'upload failed',
-                        retryDelayMs: error && error.workoutFeedShareTimeout ? WORKOUT_FEED_SHARE_LATE_RETRY_DELAY_MS : 30000
+                        retryDelayMs: error && error.workoutFeedShareTimeout ? WORKOUT_FEED_SHARE_LATE_RETRY_DELAY_MS : 30000,
+                        autoRetry: true
                     });
                     if (error && error.workoutFeedShareTimeout && postPromise) {
                         forgetQueuedWorkoutFeedShareOnLateSuccess(postPromise, queueItem);
@@ -2314,8 +2330,6 @@
     }
 
     async function retryWorkoutFeedShareQueue(manual) {
-        if (!manual) return;
-
         if (workoutFeedShareRetryInProgress) {
             if (manual) showWorkoutFeedShareUploadBanner('Retry already running...', 'info');
             return;
@@ -2328,7 +2342,7 @@
         }
 
         if (navigator && navigator.onLine === false) {
-            showWorkoutFeedShareUploadBanner('Waiting for reception', 'queued', { retry: true });
+            if (manual) showWorkoutFeedShareUploadBanner('Waiting for reception', 'queued', { retry: true });
             return;
         }
 
@@ -2352,6 +2366,8 @@
                         showWorkoutFeedShareUploadBanner('No Share a Set uploads waiting.', 'success');
                         hideWorkoutFeedShareUploadBanner(1400);
                     }
+                } else if (queuedItems.length) {
+                    scheduleWorkoutFeedShareRetry(getWorkoutFeedShareNextRetryDelay(queuedItems));
                 }
                 return;
             }
@@ -2395,17 +2411,19 @@
                         showWorkoutFeedShareUploadBanner(error.message || WORKOUT_FEED_SHARE_INVALID_VIDEO_MESSAGE, 'error');
                         break;
                     }
+                    const nextRetryDelayMs = Math.min(5 * 60 * 1000, 30000 * Math.max(1, Number(item.attempts || 1)));
                     await putWorkoutFeedShareQueueItem({
                         ...item,
                         attempts: Number(item.attempts || 0) + 1,
                         lastAttemptAt: new Date().toISOString(),
-                        nextAttemptAt: new Date(Date.now() + Math.min(5 * 60 * 1000, 30000 * Math.max(1, Number(item.attempts || 1)))).toISOString(),
+                        nextAttemptAt: new Date(Date.now() + nextRetryDelayMs).toISOString(),
                         lastError: error && error.message ? error.message : 'retry failed'
                     });
                     if (error && error.workoutFeedShareTimeout && postPromise) {
                         forgetQueuedWorkoutFeedShareOnLateSuccess(postPromise, item);
                     }
                     showWorkoutFeedShareUploadBanner('Saved for retry', 'queued', { retry: true });
+                    scheduleWorkoutFeedShareRetry(nextRetryDelayMs);
                     break;
                 }
             }
@@ -2443,14 +2461,19 @@
     document.addEventListener('DOMContentLoaded', function () {
         ensureWorkoutFeedShareView();
         refreshWorkoutFeedShareRetryNotice().catch(function () {});
+        setTimeout(function () { retryWorkoutFeedShareQueue(false); }, 3000);
     });
     window.addEventListener('online', function () {
         refreshWorkoutFeedShareRetryNotice().catch(function () {});
+        setTimeout(function () { retryWorkoutFeedShareQueue(false); }, 1200);
     });
     window.addEventListener('offline', function () {
         refreshWorkoutFeedShareRetryNotice().catch(function () {});
     });
     document.addEventListener('visibilitychange', function () {
-        if (!document.hidden) refreshWorkoutFeedShareRetryNotice().catch(function () {});
+        if (!document.hidden) {
+            refreshWorkoutFeedShareRetryNotice().catch(function () {});
+            retryWorkoutFeedShareQueue(false);
+        }
     });
 })();
