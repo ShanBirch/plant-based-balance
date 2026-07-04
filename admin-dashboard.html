@@ -18154,12 +18154,31 @@
                 });
                 const json = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
-                const alertData = alertsCache.find(a => a.id === alertId);
+                const alertData = getVisibleAlertById(alertId) || alertsCache.find(a => String(a.id) === String(alertId));
+                const fallbackAction = getProposedCoachActions(alertData).find(item => String(item.id || '') === String(actionId));
+                const completedAction = json.action || fallbackAction || {};
+                const isTahliaSentAction = isTahliaSocialApprovalAlert(alertData) && isTahliaSocialActionType(completedAction.type);
                 if (alertData && json.data) alertData.data = json.data;
                 if (btn) btn.outerHTML = '<span class="coach-action-done">Done</span>';
                 const row = document.getElementById(`coach-action-${alertId}-${actionId}`);
                 const meta = row?.querySelector?.('.coach-action-meta');
                 if (meta && json.result?.summary) meta.textContent = json.result.summary;
+                if (isTahliaSentAction) {
+                    const completedAt = completedAction.completed_at || new Date().toISOString();
+                    if (alertData) {
+                        alertData.status = 'sent';
+                        alertData.actioned_at = completedAt;
+                    }
+                    const tahliaSentLabel = completedAction.type === 'publish_tahlia_feed_comment'
+                        ? 'Comment sent!'
+                        : 'Post sent!';
+                    clearAlertEditBuffer(alertId);
+                    showAlertSentOverlay(alertId, tahliaSentLabel);
+                    removeAlertFromVisibleCache(alertId);
+                    updateAlertBadge();
+                    if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
+                    routeActionedAlertToStatusTab(alertData, 'sent', 1400);
+                }
                 lucide.createIcons();
             } catch (e) {
                 console.error('performCoachAction failed:', e);

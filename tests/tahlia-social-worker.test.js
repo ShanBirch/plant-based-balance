@@ -164,6 +164,8 @@ assert.ok(adminSource.includes('function renderTahliaWorkoutCardDetails'));
 assert.ok(adminSource.includes('function updateTahliaSocialActionEditState'));
 assert.ok(adminSource.includes('Send edit'));
 assert.ok(adminSource.includes('tahlia-workout-detail-row-stacked'));
+assert.ok(adminSource.includes('const tahliaSentLabel'));
+assert.ok(adminSource.includes('showAlertSentOverlay(alertId, tahliaSentLabel)'));
 assert.ok(adminSource.includes('data-tahlia-card-details'));
 assert.ok(adminSource.includes('data-tahlia-story-id'));
 assert.ok(adminSource.includes('Relevant Feed post'));
