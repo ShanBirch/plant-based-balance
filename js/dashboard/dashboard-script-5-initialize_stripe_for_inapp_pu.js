@@ -15381,7 +15381,13 @@ function queuePendingWorkoutSave(sets, metadata) {
         createdAt: new Date().toISOString(),
         workoutName: metadata?.workoutName || window.currentWorkoutName || 'Workout',
         duration: metadata?.duration || document.getElementById('workout-timer')?.innerText || '00:00',
-        sets
+        sets,
+        progressSets: Array.isArray(metadata?.progressSets) && metadata.progressSets.length
+            ? metadata.progressSets
+            : sets,
+        alreadySavedSetCount: Number.isFinite(metadata?.alreadySavedSetCount)
+            ? metadata.alreadySavedSetCount
+            : 0
     };
     pending.push(item);
     setPendingWorkoutSaves(pending);
@@ -15443,7 +15449,10 @@ async function flushPendingWorkoutSaves() {
         try {
             const savedRows = await saveWorkoutWithRetry(item.sets || [], user.id);
             await awardWorkoutCompletionPoints(user.id, savedRows);
-            const progress = await processSyncedWorkoutProgress(user.id, item.sets || []);
+            const progressSets = Array.isArray(item.progressSets) && item.progressSets.length
+                ? item.progressSets
+                : (item.sets || []);
+            const progress = await processSyncedWorkoutProgress(user.id, progressSets);
             if (progress.newPBs.length) {
                 console.log('Synced offline workout PBs:', progress.newPBs);
             }
@@ -15641,6 +15650,7 @@ function _syncRestPresetButtons() {
 async function saveWorkoutWithRetry(setsToSave, userId, maxRetries = 3) {
     let remaining = [...setsToSave];
     const savedRows = [];
+    const savedSets = [];
     let lastError = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -15656,6 +15666,7 @@ async function saveWorkoutWithRetry(setsToSave, userId, maxRetries = 3) {
                 lastError = result.reason;
             } else if (result.value) {
                 savedRows.push(result.value);
+                savedSets.push(remaining[idx]);
             }
         });
 
@@ -15672,7 +15683,13 @@ async function saveWorkoutWithRetry(setsToSave, userId, maxRetries = 3) {
         }
     }
 
-    throw lastError || new Error('Failed to save ' + remaining.length + ' sets');
+    const finalError = lastError instanceof Error
+        ? lastError
+        : new Error('Failed to save ' + remaining.length + ' sets');
+    finalError.failedSets = remaining;
+    finalError.savedRows = savedRows;
+    finalError.savedSets = savedSets;
+    throw finalError;
 }
 
 async function awardWorkoutCompletionPoints(userId, savedRows) {
@@ -16118,9 +16135,17 @@ async function finishWorkout() {
     } catch(e) {
         console.error("Failed to save workout to DB:", e);
         if (setsToSave.length > 0 && window.currentUser) {
-            queuePendingWorkoutSave(setsToSave, {
+            const failedSets = Array.isArray(e?.failedSets) && e.failedSets.length
+                ? e.failedSets
+                : setsToSave;
+            const alreadySavedSetCount = Array.isArray(e?.savedSets)
+                ? e.savedSets.length
+                : (Array.isArray(e?.savedRows) ? e.savedRows.length : 0);
+            queuePendingWorkoutSave(failedSets, {
                 workoutName: window.currentWorkoutName || 'Workout',
-                duration
+                duration,
+                progressSets: setsToSave,
+                alreadySavedSetCount
             });
             if (window.workoutHistoryCache) {
                 window.workoutHistoryCache.push(...setsToSave);

@@ -16,7 +16,7 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=6',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=57',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=121',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=122',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream',
   './js/dashboard/dashboard-script-10-points_widget_functions.js?v=13',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=7',

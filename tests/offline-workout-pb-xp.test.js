@@ -27,9 +27,18 @@ assert.ok(
 );
 
 assert.ok(
-    script5.includes('const progress = await processSyncedWorkoutProgress(user.id, item.sets || []);') &&
+    script5.includes('const progressSets = Array.isArray(item.progressSets) && item.progressSets.length') &&
+        script5.includes('const progress = await processSyncedWorkoutProgress(user.id, progressSets);') &&
         script5.includes("console.log('Synced offline workout PBs:', progress.newPBs);"),
     'flushPendingWorkoutSaves should process and report PBs after a queued workout syncs'
+);
+
+assert.ok(
+    script5.includes('const savedSets = [];') &&
+        script5.includes('finalError.failedSets = remaining;') &&
+        script5.includes('progressSets: setsToSave,') &&
+        script5.includes('queuePendingWorkoutSave(failedSets, {'),
+    'partial workout saves should queue only failed sets while retaining the full set list for PB processing'
 );
 
 assert.ok(
@@ -48,13 +57,13 @@ assert.ok(
 );
 
 assert.ok(
-    dashboardSource.includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=121') &&
+    dashboardSource.includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=122') &&
         dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=13') &&
         dashboardSource.includes('js/dashboard/script_part_2.js?v=6') &&
         scriptPart2.includes('lib/supabase.js?v=6') &&
         swSource.includes('./lib/supabase.js?v=6') &&
         swSource.includes('./js/dashboard/script_part_2.js?v=6') &&
-        swSource.includes('./js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=121') &&
+        swSource.includes('./js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=122') &&
         swSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=13'),
     'dashboard and service worker cache keys should fetch the PB sync fix'
 );
