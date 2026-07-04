@@ -9523,6 +9523,10 @@ if(!window._pbbIsIOSSafari) {
                                 <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round;"><path d="M6.5 6.5v11"></path><path d="M17.5 6.5v11"></path><path d="M3 9v6"></path><path d="M21 9v6"></path><path d="M6.5 12h11"></path></svg>
                                 Share a Workout / PB
                             </button>
+                            <button type="button" role="menuitem" data-feed-composer-share-option="music" onclick="openFeedComposerShareSource('music')" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: none; border-top: 1px solid #ecfdf5; background: white; color: var(--text-main); font-family: inherit; font-size: 0.88rem; font-weight: 800; text-align: left; cursor: pointer;">
+                                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round;"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                                Share a Song
+                            </button>
                         </div>
                     </div>
                     <div style="position: relative; display: inline-flex;">
@@ -12820,6 +12824,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'friends', sel:'#feed-start-battle-card', title:'Start Battle', body:"Tap Start Battle to choose Quiz Battle, chess, checkers, or another game before challenging a friend or bot.", quick: true },
     { tab:'friends', sel:'#feed-composer-card', title:'Text post styles', body:"Text-only posts now use big type, smaller notes, and different font styles like a proper social card.", quick: true },
     { tab:'friends', sel:'#feed-composer-share-menu-button,#feed-composer-card', title:'Share from Feed', body:"Use Share to post a meal, choose a workout or PB, or film a set without leaving Feed.", quick: true },
+    { tab:'friends', sel:'#feed-composer-share-menu-button,#feed-composer-card', title:'Share a Song', body:"Connect Spotify, play a track, then use Share a Song to post a music vibe card with album art and an Open in Spotify link.", quick: true },
     { tab:'friends', sel:'#friends-photo-feed .feed-post-card,#friends-feed-section', fallbackSel:'#feed-composer-card', title:'Feed media controls', fallbackTitle:'Feed media controls', body:"Tap a video once to play it right in Feed. Double tap any photo or video to open the full view.", fallbackBody:"Post media works like Instagram. Videos play with one tap, and photos or videos open full screen with a double tap once posts are showing.", quick: true, condition: function(){ return !!document.getElementById('friends-feed-section') || !!document.getElementById('feed-composer-card'); } },
     { tab:'friends', sel:'.feed-post-actions-btn', title:'Post actions', body:"Tap the three dots on one of your own feed posts to edit or delete it.", quick: true, condition: function(){ return !!document.querySelector('.feed-post-actions-btn'); } },
     { tab:'friends', sel:'.feed-comment-like-btn', title:'Like feed comments', body:"Tap the heart beside a feed comment to like it.", quick: true, condition: function(){ return !!document.querySelector('.feed-comment-like-btn'); } },
@@ -13899,6 +13904,13 @@ if(!window._pbbIsIOSSafari) {
     sel: '#feed-composer-share-menu-button,#feed-composer-card',
     title: 'Share from Feed',
     body: "Feed now has one Share menu for Share a Set, Share a Meal, and Share a Workout / PB."
+  });
+  allFeatures.push({
+    id: 'spotify-song-feed-card-v1',
+    tab: 'friends',
+    sel: '#feed-composer-share-menu-button,#feed-composer-card',
+    title: 'Share a Song',
+    body: "Connect Spotify, play a track, then use Share a Song to post a music vibe card with album art and an Open in Spotify link."
   });
   allFeatures.push({
     id: 'feed-composer-workout-pb-choice-v1',
