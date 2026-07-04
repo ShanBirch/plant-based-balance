@@ -1253,14 +1253,14 @@
 
     if (reward.earned <= 0) {
       state.reviewRewardClaimed = true;
-      return { success: true, pointsAwarded: 0 };
+      return { success: true, pointsAwarded: 0, expectedPoints: 0 };
     }
 
     var supabase = window.supabaseClient;
     if (!supabase || typeof supabase.rpc !== 'function') {
       state.reviewRewardClaimed = false;
       showToast('XP claim needs connection. This review will stay here.', 'info');
-      return { success: false, pointsAwarded: 0 };
+      return { success: false, pointsAwarded: 0, expectedPoints: reward.earned };
     }
 
     try {
@@ -1271,14 +1271,14 @@
       if (!result || result.error) {
         state.reviewRewardClaimed = false;
         showToast('XP claim did not finish. This review will stay here.', 'info');
-        return { success: false, pointsAwarded: 0 };
+        return { success: false, pointsAwarded: 0, expectedPoints: reward.earned };
       }
 
       var payload = normalizeRpcJson(result.data);
       if (payload && payload.success === false) {
         state.reviewRewardClaimed = false;
         showToast('XP claim is not ready yet. This review will stay here.', 'info');
-        return Object.assign({ pointsAwarded: 0 }, payload);
+        return Object.assign({ pointsAwarded: 0, expectedPoints: reward.earned }, payload);
       }
 
       var pointsAwarded = Number(payload.pointsAwarded || payload.points_awarded || 0);
@@ -1292,12 +1292,12 @@
           window.refreshLevelDisplay();
         }
       }
-      return Object.assign({ success: true, pointsAwarded: pointsAwarded }, payload);
+      return Object.assign({ success: true, pointsAwarded: pointsAwarded, expectedPoints: reward.earned }, payload);
     } catch (error) {
       state.reviewRewardClaimed = false;
       console.warn('[weekly-checkin-preview] weekly goal reward failed', error);
       showToast('XP claim did not finish. This review will stay here.', 'info');
-      return { success: false, pointsAwarded: 0 };
+      return { success: false, pointsAwarded: 0, expectedPoints: reward.earned };
     }
   }
 
@@ -1307,7 +1307,14 @@
       button.disabled = true;
       button.textContent = 'Opening goals...';
     }
-    await claimWeeklyReviewReward();
+    var rewardResult = await claimWeeklyReviewReward();
+    if (!rewardResult || (rewardResult.success === false && Number(rewardResult.expectedPoints || 0) > 0)) {
+      if (button) {
+        button.disabled = false;
+        button.textContent = reviewActionLabel(currentData());
+      }
+      return;
+    }
     closeWeeklyCheckinPreview();
     if (typeof window.openWeeklyGoalsModal === 'function') {
       window.openWeeklyGoalsModal({ week: 'next', source: 'weekly-checkin-review' });
@@ -1420,6 +1427,10 @@
   function handleWeeklyGoalsSaved(event){
     var detail = event && event.detail ? event.detail : {};
     if (detail.source !== 'weekly-checkin-review') return;
+    if (detail.localOnly) {
+      renderCard();
+      return;
+    }
     if (!state.reviewRewardClaimed) {
       renderCard();
       return;

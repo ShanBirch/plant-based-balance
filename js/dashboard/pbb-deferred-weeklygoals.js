@@ -133,6 +133,7 @@
     saving: false,
     refreshQueued: false,
     lastSavedAt: 0,
+    lastSaveWasLocalOnly: false,
     modalSource: ''
   };
 
@@ -291,14 +292,16 @@
     }
   }
 
-  function emitWeeklyGoalsSaved(week, selected, source) {
+  function emitWeeklyGoalsSaved(week, selected, source, meta) {
+    meta = meta || {};
     try {
       window.dispatchEvent(new CustomEvent('pbbWeeklyGoalsSaved', {
         detail: {
           source: source || '',
           weekStart: week && week.start,
           weekEnd: week && week.end,
-          selectedCount: Array.isArray(selected) ? selected.length : 0
+          selectedCount: Array.isArray(selected) ? selected.length : 0,
+          localOnly: !!meta.localOnly
         }
       }));
     } catch (_) {}
@@ -507,8 +510,12 @@
 
   async function saveWeeklyRow(userId, week, selected, progress, arc) {
     const payload = saveWeeklyRowLocal(userId, week, selected, progress, arc);
+    state.lastSaveWasLocalOnly = false;
 
-    if (!window.supabaseClient || !state.tableAvailable) return payload;
+    if (!window.supabaseClient || !state.tableAvailable) {
+      state.lastSaveWasLocalOnly = true;
+      return payload;
+    }
 
     try {
       const { data, error } = await window.supabaseClient
@@ -518,12 +525,16 @@
         .single();
       if (error) {
         state.tableAvailable = !isMissingTableError(error);
-        if (!state.tableAvailable) return payload;
+        if (!state.tableAvailable) {
+          state.lastSaveWasLocalOnly = true;
+          return payload;
+        }
         throw error;
       }
       return data || payload;
     } catch (error) {
       console.warn('[weekly-goals] save failed, local fallback kept', error);
+      state.lastSaveWasLocalOnly = true;
       return payload;
     }
   }
@@ -1389,6 +1400,7 @@
     state.arc = pendingArc;
     state.row = saveWeeklyRowLocal(userId, week, selected, pendingProgress, pendingArc);
     state.lastSavedAt = Date.now();
+    state.lastSaveWasLocalOnly = true;
     state.loading = true;
     state.saving = true;
     renderCard();
@@ -1404,14 +1416,15 @@
       if (!state.week || state.week.start === week.start) {
         state.row = savedRow;
       }
-      showToastSafe('Weekly goals saved.', 'success');
+      showToastSafe(state.lastSaveWasLocalOnly ? 'Goals saved on this device. We will sync them shortly.' : 'Weekly goals saved.', state.lastSaveWasLocalOnly ? 'info' : 'success');
     } catch (error) {
       console.warn('[weekly-goals] save failed after local fallback', error);
-      showToastSafe('Weekly goals saved. Progress will update shortly.', 'success');
+      state.lastSaveWasLocalOnly = true;
+      showToastSafe('Goals saved on this device. We will sync them shortly.', 'info');
     } finally {
       state.loading = false;
       state.saving = false;
-      emitWeeklyGoalsSaved(week, selected, saveSource);
+      emitWeeklyGoalsSaved(week, selected, saveSource, { localOnly: state.lastSaveWasLocalOnly });
       state.modalSource = '';
       renderCard();
       if (state.refreshQueued) {
