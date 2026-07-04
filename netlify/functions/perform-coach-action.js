@@ -15,7 +15,8 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.en
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const TAHLIA_EMAIL = 'seed.tahlia.brooks+kayla30@plantbased-balance.org';
 const TAHLIA_SOURCE = 'tahlia-social-worker';
-const ALLOWED_TAHLIA_POST_ACTIVITY_TYPES = new Set(['workout', 'weigh_in', 'fitness_diary']);
+const ALLOWED_TAHLIA_POST_ACTIVITY_TYPES = new Set(['workout', 'personal_best', 'weigh_in', 'fitness_diary']);
+const TAHLIA_CARD_MEDIA_TYPES = new Set(['workout_card', 'checkin_card']);
 
 const {
     DAY_ORDER,
@@ -67,6 +68,8 @@ function isAllowedTahliaPostActivityType(activityType) {
 function tahliaSocialActionText(action = {}, data = {}) {
     const payload = action.payload || {};
     if (action.type === 'publish_tahlia_feed_post') {
+        const card = parseTahliaCardPayload(payload.card_payload) || parseTahliaCardPayload(payload.caption);
+        if (card) return tahliaCardPublicText(card) || data.draft_text || action.preview || '';
         return payload.caption || data.draft_text || action.preview || '';
     }
     if (action.type === 'publish_tahlia_feed_comment') {
@@ -89,6 +92,64 @@ function cleanSocialText(value = '', max = 500) {
         .slice(0, max);
 }
 
+function parseTahliaCardPayload(value) {
+    if (!value) return null;
+    if (typeof value === 'object' && !Array.isArray(value)) return value;
+    if (typeof value !== 'string') return null;
+    const raw = value.trim();
+    if (!raw.startsWith('{')) return null;
+    try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+    } catch {
+        return null;
+    }
+}
+
+function tahliaCardPublicText(card = {}) {
+    const cardType = String(card.card_type || '').toLowerCase();
+    if (cardType === 'fitness_diary') return cleanSocialText(card.note || card.day_story || card.share_caption || '', 500);
+    return cleanSocialText(card.share_caption || card.caption || '', 500);
+}
+
+function activityAllowsTahliaCardType(activityType, cardType) {
+    if (activityType === 'workout') return cardType === 'workout';
+    if (activityType === 'personal_best') return cardType === 'pb';
+    if (activityType === 'fitness_diary') return cardType === 'fitness_diary';
+    if (activityType === 'weigh_in') return cardType === 'friday_weigh_in';
+    return false;
+}
+
+function applyTahliaCardPublicText(card = {}, editedText = '') {
+    const next = { ...card };
+    if (String(next.card_type || '').toLowerCase() === 'fitness_diary') {
+        next.note = editedText;
+    } else {
+        next.share_caption = editedText;
+    }
+    return next;
+}
+
+function normalizedTahliaCardCaption({ payload = {}, activityType = '' }) {
+    const mediaType = cleanSocialText(payload.media_type || '', 40);
+    if (!TAHLIA_CARD_MEDIA_TYPES.has(mediaType)) return null;
+    const card = parseTahliaCardPayload(payload.card_payload) || parseTahliaCardPayload(payload.caption);
+    if (!card) throw new Error('Tahlia card post is missing card data');
+    const cardType = String(card.card_type || '').toLowerCase();
+    if (!activityAllowsTahliaCardType(activityType, cardType)) {
+        throw new Error('Tahlia card type does not match the approved activity');
+    }
+    if (mediaType === 'workout_card' && !['workout', 'pb', 'friday_weigh_in'].includes(cardType)) {
+        throw new Error('Tahlia workout card payload is not a workout or PB card');
+    }
+    if (mediaType === 'checkin_card' && cardType !== 'fitness_diary') {
+        throw new Error('Tahlia check-in card payload is not a fitness diary card');
+    }
+    const caption = JSON.stringify(card);
+    if (caption.length > 6000) throw new Error('Tahlia card payload is too large');
+    return caption;
+}
+
 function applyTahliaSocialEditFromRequest({ data = {}, action = {}, actionId = '', body = {}, now = new Date() }) {
     if (!isTahliaSocialAction(action)) return { data, action, changed: false };
 
@@ -109,7 +170,16 @@ function applyTahliaSocialEditFromRequest({ data = {}, action = {}, actionId = '
         ...(action.payload || {}),
     };
     if (action.type === 'publish_tahlia_feed_post') {
-        payload.caption = editedText;
+        const mediaType = cleanSocialText(payload.media_type || 'text', 40) || 'text';
+        if (TAHLIA_CARD_MEDIA_TYPES.has(mediaType)) {
+            const currentCard = parseTahliaCardPayload(payload.card_payload) || parseTahliaCardPayload(payload.caption);
+            if (!currentCard) throw new Error('Tahlia card post is missing card data');
+            const nextCard = applyTahliaCardPublicText(currentCard, editedText);
+            payload.card_payload = nextCard;
+            payload.caption = JSON.stringify(nextCard);
+        } else {
+            payload.caption = editedText;
+        }
     } else if (action.type === 'publish_tahlia_feed_comment') {
         payload.comment_text = editedText;
     }
@@ -588,18 +658,26 @@ async function performPublishTahliaFeedPost({ alert, action }) {
     assertTahliaApprovalAlert(alert, action);
     const tahlia = await resolveTahliaUserForAction({ alert, action });
     const payload = action.payload || {};
-    const caption = cleanSocialText(payload.caption || alert.data?.draft_text || '', 500);
-    if (caption.length < 3) throw new Error('Tahlia post caption is empty');
-
     const mediaType = cleanSocialText(payload.media_type || 'text', 40) || 'text';
     const activityType = cleanSocialText(payload.activity_type || alert.data?.activity_type || alert.data?.evidence?.activity_type || '', 40);
     if (!isAllowedTahliaPostActivityType(activityType)) {
-        throw new Error('Tahlia can only publish workout or check-in text posts');
+        throw new Error('Tahlia can only publish workout, PB, or check-in posts');
     }
-    if (mediaType !== 'text' || payload.media_url || payload.thumbnail_url) {
-        throw new Error('Tahlia Feed posts must be text-only');
+    if (payload.media_url || payload.thumbnail_url) {
+        throw new Error('Tahlia Feed posts must not include generated media');
+    }
+
+    let caption = '';
+    if (mediaType === 'text') {
+        caption = cleanSocialText(payload.caption || alert.data?.draft_text || '', 500);
+        if (caption.length < 3) throw new Error('Tahlia post caption is empty');
+    } else if (TAHLIA_CARD_MEDIA_TYPES.has(mediaType)) {
+        caption = normalizedTahliaCardCaption({ payload, activityType });
+    } else {
+        throw new Error('Tahlia Feed post type is not allowed');
     }
     const backgroundColor = cleanSocialText(payload.background_color || '#f8fafc', 24) || '#f8fafc';
+    const summaryText = cleanSocialText(action.preview || alert.data?.draft_text || tahliaCardPublicText(parseTahliaCardPayload(caption)) || caption, 120);
     const recentCutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
     const existing = await supabase(
         `stories?select=id,created_at&user_id=eq.${encodeURIComponent(tahlia.id)}&caption=eq.${encodeURIComponent(caption)}&created_at=gte.${encodeURIComponent(recentCutoff)}&limit=1`
@@ -617,12 +695,12 @@ async function performPublishTahliaFeedPost({ alert, action }) {
         method: 'POST',
         body: [{
             user_id: tahlia.id,
-            media_type: 'text',
+            media_type: mediaType,
             media_url: '',
             thumbnail_url: null,
             caption,
             duration: 5,
-            background_color: backgroundColor,
+            background_color: mediaType === 'text' ? backgroundColor : null,
             expires_at: expiresAt,
         }],
         prefer: 'return=representation',
@@ -630,7 +708,7 @@ async function performPublishTahliaFeedPost({ alert, action }) {
     const story = rows[0] || null;
     return {
         story_id: story?.id || null,
-        summary: `Published Tahlia Feed post: ${caption.slice(0, 120)}`,
+        summary: `Published Tahlia Feed post: ${summaryText}`,
     };
 }
 

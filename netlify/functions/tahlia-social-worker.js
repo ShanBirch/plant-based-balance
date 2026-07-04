@@ -30,7 +30,7 @@ const DEFAULT_STORY_LOOKBACK_HOURS = 72;
 const DEFAULT_MIN_STORY_AGE_MINUTES = 30;
 const DEFAULT_MAX_POST_ALERTS_PER_RUN = 2;
 const DEFAULT_MAX_COMMENT_ALERTS_PER_RUN = 3;
-const ALLOWED_TAHLIA_POST_ACTIVITY_TYPES = new Set(['workout', 'weigh_in', 'fitness_diary']);
+const ALLOWED_TAHLIA_POST_ACTIVITY_TYPES = new Set(['workout', 'personal_best', 'weigh_in', 'fitness_diary']);
 
 function json(statusCode, body) {
     return {
@@ -79,11 +79,12 @@ function tahliaProfileForAlert() {
 function pointTransactionActivityType(tx = {}) {
     const type = String(tx.transaction_type || '').toLowerCase();
     const desc = String(tx.description || '').toLowerCase();
+    if (type.includes('personal_best') || type.includes('pb') || /\b(pb|personal best)\b/.test(desc)) return 'personal_best';
     if (type.includes('workout') || desc.includes('workout')) return 'workout';
     if (type.includes('meal') || desc.includes('meal') || desc.includes('food')) return '';
     if (type.includes('weigh') || desc.includes('weigh') || desc.includes('weight')) return 'weigh_in';
     if (type.includes('checkin') || type.includes('check_in') || desc.includes('check-in') || desc.includes('check in')) {
-        return (hashString(tx.id || tx.created_at) % 2 === 0) ? 'weigh_in' : 'fitness_diary';
+        return 'fitness_diary';
     }
     return '';
 }
@@ -138,6 +139,9 @@ function buildFeedPostAlert({ coachId, tahliaUser, transaction, now = new Date()
     });
     const label = activityLabel(draft.activityType);
     const caption = cleanPublicText(draft.caption, 500);
+    const cardPayload = draft.cardPayload && typeof draft.cardPayload === 'object' ? draft.cardPayload : null;
+    const storyCaption = cardPayload ? JSON.stringify(cardPayload) : caption;
+    const mediaType = draft.mediaType || (cardPayload ? 'workout_card' : 'text');
     const action = {
         id: postActionId(transaction),
         type: 'publish_tahlia_feed_post',
@@ -146,9 +150,10 @@ function buildFeedPostAlert({ coachId, tahliaUser, transaction, now = new Date()
         preview: caption,
         payload: {
             user_id: tahliaUser.id,
-            media_type: 'text',
-            caption,
-            background_color: '#f8fafc',
+            media_type: mediaType,
+            caption: storyCaption,
+            card_payload: cardPayload,
+            background_color: cardPayload ? null : '#f8fafc',
             activity_type: draft.activityType,
             source: SOURCE,
             source_transaction_id: transaction.id || null,
@@ -163,6 +168,9 @@ function buildFeedPostAlert({ coachId, tahliaUser, transaction, now = new Date()
         source_points: transaction.points_amount || null,
         source_created_at: transaction.created_at || null,
         activity_type: draft.activityType,
+        post_media_type: mediaType,
+        post_card_type: cardPayload?.card_type || null,
+        post_card_data: cardPayload,
     };
     return {
         alert_type: 'general_idea',

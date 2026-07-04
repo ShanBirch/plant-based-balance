@@ -24,6 +24,8 @@ const workoutTx = {
 };
 const mealTx = { ...workoutTx, id: 'tx-meal', transaction_type: 'earn_meal', description: 'Meal logged' };
 const checkinTx = { ...workoutTx, id: 'tx-checkin', transaction_type: 'daily_checkin', description: 'Daily check-in' };
+const pbTx = { ...workoutTx, id: 'tx-pb', transaction_type: 'personal_best', description: 'Personal best logged' };
+const workoutPbTx = { ...workoutTx, id: 'tx-workout-pb', transaction_type: 'earn_workout', description: 'Workout personal best logged' };
 const workoutCardPayload = {
     card_type: 'workout',
     workout_name: 'Upper Body',
@@ -38,8 +40,11 @@ const workoutCardPayload = {
 
 assert.strictEqual(worker.pointTransactionActivityType(workoutTx), 'workout');
 assert.strictEqual(worker.pointTransactionActivityType(mealTx), '');
-assert.ok(['weigh_in', 'fitness_diary'].includes(worker.pointTransactionActivityType(checkinTx)));
+assert.strictEqual(worker.pointTransactionActivityType(checkinTx), 'fitness_diary');
+assert.strictEqual(worker.pointTransactionActivityType(pbTx), 'personal_best');
+assert.strictEqual(worker.pointTransactionActivityType(workoutPbTx), 'personal_best');
 assert.strictEqual(worker.isAllowedTahliaPostActivityType('workout'), true);
+assert.strictEqual(worker.isAllowedTahliaPostActivityType('personal_best'), true);
 assert.strictEqual(worker.isAllowedTahliaPostActivityType('weigh_in'), true);
 assert.strictEqual(worker.isAllowedTahliaPostActivityType('fitness_diary'), true);
 assert.strictEqual(worker.isAllowedTahliaPostActivityType('meal'), false);
@@ -68,6 +73,33 @@ assert.strictEqual(feedAlert.data.operator_queue, 'needs_you');
 assert.strictEqual(feedAlert.data.needs_shannon_approval, true);
 assert.strictEqual(feedAlert.data.proposed_actions[0].type, 'publish_tahlia_feed_post');
 assert.strictEqual(feedAlert.data.proposed_actions[0].payload.user_id, tahliaUser.id);
+assert.strictEqual(feedAlert.data.proposed_actions[0].payload.media_type, 'workout_card');
+assert.strictEqual(feedAlert.data.proposed_actions[0].payload.card_payload.card_type, 'workout');
+assert.strictEqual(JSON.parse(feedAlert.data.proposed_actions[0].payload.caption).card_type, 'workout');
+assert.strictEqual(feedAlert.data.evidence.post_card_type, 'workout');
+assert.strictEqual(feedAlert.data.draft_text, feedAlert.data.proposed_actions[0].preview);
+
+const pbAlert = worker.buildFeedPostAlert({
+    coachId: 'coach-1',
+    tahliaUser,
+    transaction: pbTx,
+    now: new Date('2026-07-03T01:00:00.000Z'),
+});
+assert.strictEqual(pbAlert.data.activity_type, 'personal_best');
+assert.strictEqual(pbAlert.data.proposed_actions[0].payload.media_type, 'workout_card');
+assert.strictEqual(pbAlert.data.proposed_actions[0].payload.card_payload.card_type, 'pb');
+assert.strictEqual(JSON.parse(pbAlert.data.proposed_actions[0].payload.caption).card_type, 'pb');
+
+const fitnessDiaryAlert = worker.buildFeedPostAlert({
+    coachId: 'coach-1',
+    tahliaUser,
+    transaction: checkinTx,
+    now: new Date('2026-07-03T11:00:00.000Z'),
+});
+assert.strictEqual(fitnessDiaryAlert.data.activity_type, 'fitness_diary');
+assert.strictEqual(fitnessDiaryAlert.data.proposed_actions[0].payload.media_type, 'checkin_card');
+assert.strictEqual(fitnessDiaryAlert.data.proposed_actions[0].payload.card_payload.card_type, 'fitness_diary');
+assert.strictEqual(JSON.parse(fitnessDiaryAlert.data.proposed_actions[0].payload.caption).card_type, 'fitness_diary');
 
 const commentAlert = worker.buildCommentAlert({
     coachId: 'coach-1',
@@ -131,6 +163,7 @@ assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'publish_tahlia_feed
 assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'publish_tahlia_feed_comment' }), true);
 assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'move_workout_days' }), false);
 assert.strictEqual(coachAction.isAllowedTahliaPostActivityType('workout'), true);
+assert.strictEqual(coachAction.isAllowedTahliaPostActivityType('personal_best'), true);
 assert.strictEqual(coachAction.isAllowedTahliaPostActivityType('fitness_diary'), true);
 assert.strictEqual(coachAction.isAllowedTahliaPostActivityType('meal'), false);
 
@@ -154,6 +187,24 @@ assert.strictEqual(editedComment.data.tahlia_social_last_edit.edit_reason, 'Less
 assert.strictEqual(editedComment.data.tahlia_social_last_edit.action_kind, 'feed_comment');
 assert.strictEqual(editedComment.data.tahlia_social_edit_history.length, 1);
 
+const editedWorkoutPost = coachAction.applyTahliaSocialEditFromRequest({
+    data: feedAlert.data,
+    action: feedAlert.data.proposed_actions[0],
+    actionId: feedAlert.data.proposed_actions[0].id,
+    body: {
+        editedText: 'Love this!',
+        originalText: feedAlert.data.draft_text,
+        editReason: 'Shorter',
+        source: 'admin_dashboard_tahlia_social',
+    },
+    now: new Date('2026-07-03T02:10:00.000Z'),
+});
+const editedWorkoutCard = JSON.parse(editedWorkoutPost.action.payload.caption);
+assert.strictEqual(editedWorkoutPost.action.payload.media_type, 'workout_card');
+assert.strictEqual(editedWorkoutPost.action.payload.card_payload.share_caption, 'Love this!');
+assert.strictEqual(editedWorkoutCard.share_caption, 'Love this!');
+assert.strictEqual(editedWorkoutPost.data.draft_text, 'Love this!');
+
 assert.ok(adminSource.includes('function isTahliaSocialApprovalAlert'));
 assert.ok(adminSource.includes('function isSupportedTahliaSocialApprovalAlert'));
 assert.ok(adminSource.includes('function buildCoachActionRequestBody'));
@@ -169,11 +220,14 @@ assert.ok(adminSource.includes('showAlertSentOverlay(alertId, tahliaSentLabel)')
 assert.ok(adminSource.includes('data-tahlia-card-details'));
 assert.ok(adminSource.includes('data-tahlia-story-id'));
 assert.ok(adminSource.includes('Relevant Feed post'));
+assert.ok(adminSource.includes('function renderTahliaFeedCardPreview'));
+assert.ok(adminSource.includes('tahlia-feed-card-preview'));
 assert.ok(adminSource.includes("'Tahlia social'"));
 assert.ok(performSource.includes('publish_tahlia_feed_post'));
 assert.ok(performSource.includes('publish_tahlia_feed_comment'));
-assert.ok(performSource.includes('Tahlia can only publish workout or check-in text posts'));
-assert.ok(performSource.includes('Tahlia Feed posts must be text-only'));
+assert.ok(performSource.includes('Tahlia can only publish workout, PB, or check-in posts'));
+assert.ok(performSource.includes('Tahlia Feed posts must not include generated media'));
+assert.ok(performSource.includes('TAHLIA_CARD_MEDIA_TYPES'));
 assert.ok(performSource.includes('tahlia_social_edit_history'));
 assert.ok(performSource.includes('Tahlia social action must be approved from Needs You'));
 
