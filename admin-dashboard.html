@@ -1038,6 +1038,7 @@
         .alert-btn-action { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
         .alert-btn-action:hover { background: #d1fae5; }
         .alert-btn-action.active { background: #ffe4e6; color: #be123c; border-color: #fecdd3; }
+        .alert-btn-action.edited { background: #dcfce7; color: #166534; border-color: #86efac; }
         .alert-btn-view.active { background: #ecfdf5; color: #166534; border: 1px solid #bbf7d0; }
         .alert-btn:disabled { opacity: 0.55; cursor: not-allowed; }
         .coach-action-panel { margin-top: 10px; padding: 9px 10px; border: 1px solid #a7f3d0; background: #f0fdf4; border-radius: 8px; display: grid; gap: 7px; }
@@ -1053,14 +1054,18 @@
         .tahlia-social-text { margin-top: 4px; font-size: 0.78rem; line-height: 1.42; color: #475569; overflow-wrap: anywhere; white-space: pre-wrap; }
         .tahlia-social-card-details { margin-top: 8px; display: grid; gap: 5px; }
         .tahlia-social-card-details:empty { display: none; }
-        .tahlia-workout-detail-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 0; border-top: 1px solid rgba(138,90,22,0.18); font-size: 0.72rem; line-height: 1.25; color: #334155; }
+        .tahlia-workout-detail-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto); align-items: start; gap: 6px 10px; padding: 5px 0; border-top: 1px solid rgba(138,90,22,0.18); font-size: 0.72rem; line-height: 1.25; color: #334155; }
+        .tahlia-workout-detail-row-stacked { grid-template-columns: 1fr; gap: 2px; }
         .tahlia-workout-detail-name { font-weight: 800; min-width: 0; overflow-wrap: anywhere; }
-        .tahlia-workout-detail-best { color: #7c4a03; font-weight: 800; white-space: nowrap; }
+        .tahlia-workout-detail-best { color: #7c4a03; font-weight: 800; white-space: normal; text-align: right; overflow-wrap: anywhere; }
+        .tahlia-workout-detail-row-stacked .tahlia-workout-detail-best { text-align: left; }
         .tahlia-social-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
         .tahlia-social-pill { padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,0.75); border: 1px solid #ead7a3; color: #7c4a03; font-size: 0.68rem; font-weight: 800; line-height: 1.3; }
         @media (max-width: 520px) {
             .tahlia-social-context { gap: 8px; padding: 9px; }
             .tahlia-social-thumb { width: 54px; height: 54px; font-size: 0.62rem; }
+            .tahlia-workout-detail-row { grid-template-columns: 1fr; }
+            .tahlia-workout-detail-best { text-align: left; }
         }
         .alert-schedule-select { padding: 7px 10px; border-radius: 8px; border: 2px solid #f59e0b; background: #fffbeb; color: #78350f; font-size: 0.82rem; font-family: 'Inter', sans-serif; font-weight: 600; cursor: pointer; min-width: 160px; }
         .alert-schedule-select:focus { outline: none; border-color: #d97706; }
@@ -15749,6 +15754,17 @@
             if (entry) activeAlertEdits.set(String(alertId), entry);
         }
 
+        function handleAlertEditMessageInput(alertId, textarea) {
+            updateAlertEditBuffer(alertId);
+            autosizeAlertEditArea(textarea);
+            updateTahliaSocialActionEditState(alertId);
+        }
+
+        function handleAlertEditReasonInput(alertId) {
+            updateAlertEditBuffer(alertId);
+            updateTahliaSocialActionEditState(alertId);
+        }
+
         function rememberAlertEdit(alertId, message, reason = '', focusedField = 'message') {
             const text = String(message ?? '');
             activeAlertEdits.set(String(alertId), {
@@ -15840,8 +15856,8 @@
         function renderAlertEditFields(alertId, message, reason = '') {
             const key = String(alertId);
             return `
-                <textarea class="alert-edit-area" id="alert-edit-${key}" oninput="updateAlertEditBuffer('${key}'); autosizeAlertEditArea(this)" onclick="event.stopPropagation()">${escapeHtml(String(message ?? ''))}</textarea>
-                <input type="text" class="alert-edit-reason" id="alert-edit-reason-${key}" value="${escapeHtml(String(reason ?? ''))}" placeholder="Why did you change it? (optional, helps the AI learn)" maxlength="240" oninput="updateAlertEditBuffer('${key}')" onclick="event.stopPropagation()" />
+                <textarea class="alert-edit-area" id="alert-edit-${key}" oninput="handleAlertEditMessageInput('${key}', this)" onclick="event.stopPropagation()">${escapeHtml(String(message ?? ''))}</textarea>
+                <input type="text" class="alert-edit-reason" id="alert-edit-reason-${key}" value="${escapeHtml(String(reason ?? ''))}" placeholder="Why did you change it? (optional, helps the AI learn)" maxlength="240" oninput="handleAlertEditReasonInput('${key}')" onclick="event.stopPropagation()" />
             `;
         }
 
@@ -16152,23 +16168,11 @@
         function tahliaStoryTextFromCardData(cardData = {}) {
             const cardType = String(cardData.card_type || '').toLowerCase();
             if (cardType === 'workout') {
-                const exercises = Array.isArray(cardData.exercises) ? cardData.exercises : [];
-                const exerciseText = exercises
-                    .slice(0, 4)
-                    .map(ex => [ex?.name, ex?.best].filter(Boolean).join(' '))
-                    .filter(Boolean)
-                    .join(', ');
-                const stats = [
-                    cardData.total_sets ? `${cardData.total_sets} sets` : '',
-                    cardData.duration,
-                    cardData.total_volume ? `${cardData.total_volume} volume` : '',
-                ].filter(Boolean).join(', ');
-                return cleanTahliaContextText([
+                return cleanTahliaContextText(firstTahliaContextValue(
                     cardData.share_caption,
                     cardData.workout_name,
-                    stats,
-                    exerciseText,
-                ].filter(Boolean).join(' '), 460);
+                    'Workout card'
+                ), 180);
             }
             if (cardType === 'pb') {
                 return cleanTahliaContextText([
@@ -16213,23 +16217,22 @@
 
         function renderTahliaWorkoutCardDetails(cardData = {}) {
             const rows = [];
-            if (cardData.workout_name) rows.push(['Workout', cardData.workout_name]);
             const stats = [
                 cardData.total_sets ? `${cardData.total_sets} sets` : '',
                 cardData.duration,
                 cardData.total_volume ? `${cardData.total_volume} volume` : '',
             ].filter(Boolean).join(' | ');
-            if (stats) rows.push(['Stats', stats]);
+            if (stats) rows.push({ name: 'Stats', best: stats, stacked: true });
 
             const exercises = Array.isArray(cardData.exercises) ? cardData.exercises : [];
             exercises.slice(0, 5).forEach(ex => {
                 const name = cleanTahliaContextText(ex?.name || 'Exercise', 80);
                 const best = cleanTahliaContextText(ex?.best || '', 80);
-                if (name) rows.push([name, best]);
+                if (name) rows.push({ name, best });
             });
-            if (exercises.length > 5) rows.push([`+${exercises.length - 5} more`, '']);
+            if (exercises.length > 5) rows.push({ name: `+${exercises.length - 5} more`, best: '' });
 
-            return rows.map(([name, best]) => `<div class="tahlia-workout-detail-row">
+            return rows.map(({ name, best, stacked }) => `<div class="tahlia-workout-detail-row${stacked ? ' tahlia-workout-detail-row-stacked' : ''}">
                 <span class="tahlia-workout-detail-name">${escapeHtml(name)}</span>
                 ${best ? `<span class="tahlia-workout-detail-best">${escapeHtml(best)}</span>` : ''}
             </div>`).join('');
@@ -16436,6 +16439,50 @@
             return `<div class="coach-action-panel">${rows}</div>`;
         }
 
+        function getTahliaSocialActionEditState(alertId, alertData = null, action = null) {
+            const alert = alertData || getVisibleAlertById(alertId);
+            const socialAction = action || getTahliaPrimaryAction(alert);
+            if (!isTahliaSocialApprovalAlert(alert) || !isTahliaSocialActionType(socialAction?.type)) {
+                return null;
+            }
+            if ((socialAction.status || 'pending') !== 'pending') return null;
+            const originalText = getResolvedAlertMessage(alert).trim();
+            const editedText = getAlertEditMessage(alertId, alert).trim();
+            return {
+                action: socialAction,
+                edited: editedText !== originalText,
+                text: editedText,
+            };
+        }
+
+        function updateTahliaSocialActionEditState(alertId) {
+            const state = getTahliaSocialActionEditState(alertId);
+            if (!state?.action) return;
+            const row = document.getElementById(`coach-action-${alertId}-${state.action.id || ''}`);
+            if (!row) return;
+
+            const meta = row.querySelector('.coach-action-meta');
+            if (meta) {
+                meta.textContent = `Preview: "${state.text}"`;
+            }
+
+            const btn = row.querySelector('.alert-btn-action');
+            if (!btn || btn.disabled) return;
+            const label = state.edited ? 'Send edit' : 'Do it';
+            const icon = state.edited ? 'send' : 'check-circle';
+            btn.classList.toggle('edited', state.edited);
+            btn.dataset.edited = state.edited ? 'true' : 'false';
+            btn.innerHTML = `<i data-lucide="${icon}" style="width:12px;height:12px;"></i>${label}`;
+            if (window.lucide?.createIcons) lucide.createIcons();
+        }
+
+        function updateTahliaSocialActionEditStates(root = document) {
+            const scope = root && typeof root.querySelectorAll === 'function' ? root : document;
+            scope.querySelectorAll('.alert-card[data-alert-id]').forEach(card => {
+                updateTahliaSocialActionEditState(card.dataset.alertId);
+            });
+        }
+
         function scrollAlertThreadPanelsToLatest(root = document) {
             const scope = root && typeof root.querySelectorAll === 'function' ? root : document;
             scope.querySelectorAll('.alert-thread-scroll').forEach(panel => {
@@ -16523,6 +16570,7 @@
                 console.warn('[tahlia-social] context hydration failed:', e?.message || e);
             });
             autosizeAlertEditAreas();
+            updateTahliaSocialActionEditStates(container);
             scheduleAlertThreadScrollToLatest(container);
             restoreActiveAlertEditFocus(editFocusHint);
             // If edit-rate cache is already loaded, populate the per-client
@@ -21253,6 +21301,7 @@
             msgDiv.innerHTML = renderAlertEditFields(alertId, currentText, bufferedReason);
             const textarea = document.getElementById(`alert-edit-${alertId}`);
             autosizeAlertEditArea(textarea);
+            updateTahliaSocialActionEditState(alertId);
             textarea.focus();
             textarea.setSelectionRange(textarea.value.length, textarea.value.length);
         }
