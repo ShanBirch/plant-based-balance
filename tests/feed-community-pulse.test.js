@@ -47,8 +47,11 @@ assert.ok(
     'const FEED_COMMUNITY_PULSE_CACHE_MS = 60 * 1000;',
     'window.loadFeedCommunityPulse = async function(options = {})',
     "window.dbHelpers.stories.getNetworkStories(userId",
+    'const visibleStoriesById = new Map();',
+    'const pulseStoryIds = Array.from(visibleStoriesById.keys());',
     ".from('feed_reactions')",
     ".from('feed_comments')",
+    ".in('story_id', pulseStoryIds)",
     ".from('quiz_battles')",
     ".in('status', ['pending', 'active'])",
     'setFeedPulseText(\'feed-pulse-reactions\', reactions)',
@@ -61,7 +64,8 @@ assert.ok(
     !storiesSource.includes('window.focusFirstFeedReaction = function()') &&
     !storiesSource.includes('window.openFeedPulseBattle = function()') &&
     !storiesSource.includes('feed-pulse-cheers') &&
-    !storiesSource.includes('people.size'),
+    !storiesSource.includes('people.size') &&
+    !storiesSource.includes('const storyIds = todayStories.map(getFeedPulseStoryId).filter(Boolean);'),
     'trimmed pulse should not keep action handlers, cheers id, or hidden people headline logic'
 );
 
