@@ -13,39 +13,57 @@ const dashboardSource = fs.readFileSync(
 
 [
     'id="feed-community-pulse-card"',
-    'id="feed-community-pulse-headline"',
     'id="feed-pulse-posts"',
-    'id="feed-pulse-cheers"',
+    'id="feed-pulse-reactions"',
     'id="feed-pulse-comments"',
     'id="feed-pulse-battles"',
-    'Post your win',
-    'Cheer someone',
-    'Join battle'
+    'Today in Balance',
+    '<span>Reactions</span>'
 ].forEach(expected => {
     assert.ok(dashboardSource.includes(expected), `dashboard should include ${expected}`);
 });
 
 assert.ok(
     dashboardSource.includes("{ tab:'friends', sel:'#feed-community-pulse-card', title:'Today in Balance'") &&
-    dashboardSource.includes("id: 'feed-community-pulse-v1'"),
+    dashboardSource.includes("id: 'feed-community-pulse-v2'") &&
+    dashboardSource.includes("See today's posts, reactions, comments, and battles at a glance."),
     'new and returning users should discover Today in Balance'
 );
+
+[
+    'id="feed-community-pulse-headline"',
+    'feed-community-pulse-refresh',
+    'feed-community-pulse-actions',
+    'Post your win',
+    'Cheer someone',
+    'Join battle',
+    '<span>Cheers</span>'
+].forEach(unexpected => {
+    assert.ok(!dashboardSource.includes(unexpected), `dashboard should not include ${unexpected}`);
+});
 
 [
     'const FEED_COMMUNITY_PULSE_STORY_LIMIT = 120;',
     'const FEED_COMMUNITY_PULSE_CACHE_MS = 60 * 1000;',
     'window.loadFeedCommunityPulse = async function(options = {})',
-    'window.focusFirstFeedReaction = function()',
-    'window.openFeedPulseBattle = function()',
     "window.dbHelpers.stories.getNetworkStories(userId",
     ".from('feed_reactions')",
     ".from('feed_comments')",
     ".from('quiz_battles')",
     ".in('status', ['pending', 'active'])",
-    'people.size'
+    'setFeedPulseText(\'feed-pulse-reactions\', reactions)',
+    'reactions: reactions.length'
 ].forEach(expected => {
     assert.ok(storiesSource.includes(expected), `stories should include ${expected}`);
 });
+
+assert.ok(
+    !storiesSource.includes('window.focusFirstFeedReaction = function()') &&
+    !storiesSource.includes('window.openFeedPulseBattle = function()') &&
+    !storiesSource.includes('feed-pulse-cheers') &&
+    !storiesSource.includes('people.size'),
+    'trimmed pulse should not keep action handlers, cheers id, or hidden people headline logic'
+);
 
 const forcedRefreshCount = (storiesSource.match(/loadFeedCommunityPulse\(\{ force: true \}\)/g) || []).length;
 assert.ok(
