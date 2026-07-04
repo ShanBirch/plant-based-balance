@@ -132,7 +132,8 @@
     loading: false,
     saving: false,
     refreshQueued: false,
-    lastSavedAt: 0
+    lastSavedAt: 0,
+    modalSource: ''
   };
 
   function escapeHtml(value) {
@@ -288,6 +289,19 @@
     if (typeof window.showToast === 'function') {
       window.showToast(message, type || 'info');
     }
+  }
+
+  function emitWeeklyGoalsSaved(week, selected, source) {
+    try {
+      window.dispatchEvent(new CustomEvent('pbbWeeklyGoalsSaved', {
+        detail: {
+          source: source || '',
+          weekStart: week && week.start,
+          weekEnd: week && week.end,
+          selectedCount: Array.isArray(selected) ? selected.length : 0
+        }
+      }));
+    } catch (_) {}
   }
 
   function resolveGoalDefinition(raw) {
@@ -1280,6 +1294,7 @@
   }
 
   window.openWeeklyGoalsModal = async function(options) {
+    state.modalSource = options && options.source ? String(options.source) : '';
     const now = new Date();
     const shouldOpenNextWeek = (options && options.week === 'next') || now.getDay() === 0;
     const requestedWeek = shouldOpenNextWeek ? getNextWeek(now) : null;
@@ -1361,6 +1376,7 @@
     if (!window.currentUser || !window.currentUser.id || !state.week || state.saving) return;
     const userId = window.currentUser.id;
     const week = Object.assign({}, state.week);
+    const saveSource = state.modalSource || '';
     const selected = normalizeSelected(state.draftSelected);
     if (!selected.length) return;
     const pendingProgress = isFutureWeek(week) ? buildWaitingProgress(week, selected) : buildPendingProgress(week, selected);
@@ -1395,6 +1411,8 @@
     } finally {
       state.loading = false;
       state.saving = false;
+      emitWeeklyGoalsSaved(week, selected, saveSource);
+      state.modalSource = '';
       renderCard();
       if (state.refreshQueued) {
         state.refreshQueued = false;

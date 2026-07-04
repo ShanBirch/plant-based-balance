@@ -67,7 +67,8 @@
     loading: false,
     overlayOpen: false,
     source: 'default',
-    hasLiveData: false
+    hasLiveData: false,
+    reviewRewardClaimed: false
   };
 
   function readPreviewFlagFromQuery(){
@@ -105,6 +106,13 @@
     return 'pbb_weekly_checkin_seen_' + userId + '_' + week.startKey;
   }
 
+  function getReviewCompletedKey(){
+    var userId = getReviewUserId();
+    if (!userId) return null;
+    var week = getWeekWindow();
+    return 'pbb_weekly_checkin_completed_' + userId + '_' + week.startKey;
+  }
+
   function hasViewedReview(){
     if (isExplicitPreviewEnabled()) return false;
     try {
@@ -123,8 +131,26 @@
     } catch (_) {}
   }
 
+  function hasCompletedReviewAction(){
+    if (isExplicitPreviewEnabled()) return false;
+    try {
+      var key = getReviewCompletedKey();
+      return !!(key && localStorage.getItem(key) === '1');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function markReviewCompleted(){
+    if (isExplicitPreviewEnabled()) return;
+    try {
+      var key = getReviewCompletedKey();
+      if (key) localStorage.setItem(key, '1');
+    } catch (_) {}
+  }
+
   function isReviewEnabled(){
-    return isExplicitPreviewEnabled() || (isReviewWindow() && state.hasLiveData && !hasViewedReview());
+    return isExplicitPreviewEnabled() || (isReviewWindow() && state.hasLiveData && !hasCompletedReviewAction());
   }
 
   function cardPillLabel(){
@@ -232,6 +258,30 @@
     var num = Number(value);
     if (!Number.isFinite(num)) return '0';
     return num % 1 === 0 ? String(num) : num.toFixed(1);
+  }
+
+  function clampGoalCount(value){
+    var number = Math.floor(Number(value) || 0);
+    return Math.max(0, Math.min(3, number));
+  }
+
+  function calculateReviewGoalReward(completed, total){
+    var completedCount = clampGoalCount(completed);
+    var totalCount = clampGoalCount(total);
+    var maxPoints = Math.min(50, (totalCount * 10) + (totalCount >= 3 ? 20 : 0));
+    var earnedPoints = Math.min(50, (completedCount * 10) + (completedCount >= 3 && totalCount >= 3 ? 20 : 0));
+    return {
+      earned: Math.min(earnedPoints, maxPoints),
+      max: maxPoints
+    };
+  }
+
+  function reviewActionLabel(data){
+    var goals = data && data.goals ? data.goals : {};
+    var reward = calculateReviewGoalReward(goals.completed, goals.total);
+    return reward.earned > 0
+      ? 'Claim ' + reward.earned + ' XP + set next week goals'
+      : 'Set next week goals';
   }
 
   function buildWeeklyGoalsSummary(row, userId, weekStartKey){
@@ -1143,10 +1193,73 @@
     console.log('[weekly-checkin-preview]', message);
   }
 
-  function openNextGoals(){
+  function normalizeRpcJson(value){
+    if (!value) return {};
+    if (typeof value === 'string') {
+      try { return JSON.parse(value) || {}; } catch (_) { return {}; }
+    }
+    return typeof value === 'object' ? value : {};
+  }
+
+  async function claimWeeklyReviewReward(){
+    var data = currentData();
+    var goals = data && data.goals ? data.goals : {};
+    var reward = calculateReviewGoalReward(goals.completed, goals.total);
+
+    if (reward.earned <= 0) {
+      state.reviewRewardClaimed = true;
+      return { success: true, pointsAwarded: 0 };
+    }
+
+    var supabase = window.supabaseClient;
+    if (!supabase || typeof supabase.rpc !== 'function') {
+      state.reviewRewardClaimed = false;
+      showToast('XP claim needs connection. This review will stay here.', 'info');
+      return { success: false, pointsAwarded: 0 };
+    }
+
+    try {
+      var week = getWeekWindow();
+      var result = await supabase.rpc('award_weekly_goal_points', {
+        p_week_start: week.startKey
+      });
+      if (!result || result.error) {
+        state.reviewRewardClaimed = false;
+        showToast('XP claim did not finish. This review will stay here.', 'info');
+        return { success: false, pointsAwarded: 0 };
+      }
+
+      var payload = normalizeRpcJson(result.data);
+      if (payload && payload.success === false) {
+        state.reviewRewardClaimed = false;
+        showToast('XP claim is not ready yet. This review will stay here.', 'info');
+        return Object.assign({ pointsAwarded: 0 }, payload);
+      }
+
+      var pointsAwarded = Number(payload.pointsAwarded || payload.points_awarded || 0);
+      state.reviewRewardClaimed = true;
+      if (pointsAwarded > 0) {
+        showToast('+' + pointsAwarded + ' XP claimed.', 'success');
+        if (typeof window.loadUserPoints === 'function') {
+          window.loadUserPoints();
+        } else if (typeof window.refreshLevelDisplay === 'function') {
+          window.refreshLevelDisplay();
+        }
+      }
+      return Object.assign({ success: true, pointsAwarded: pointsAwarded }, payload);
+    } catch (error) {
+      state.reviewRewardClaimed = false;
+      console.warn('[weekly-checkin-preview] weekly goal reward failed', error);
+      showToast('XP claim did not finish. This review will stay here.', 'info');
+      return { success: false, pointsAwarded: 0 };
+    }
+  }
+
+  async function openNextGoals(){
+    await claimWeeklyReviewReward();
     closeWeeklyCheckinPreview();
     if (typeof window.openWeeklyGoalsModal === 'function') {
-      window.openWeeklyGoalsModal({ week: 'next' });
+      window.openWeeklyGoalsModal({ week: 'next', source: 'weekly-checkin-review' });
       return;
     }
     showToast('Next week goals would open from here.', 'info');
@@ -1161,6 +1274,7 @@
     if (existing) existing.remove();
 
     var data = currentData();
+    var actionLabel = reviewActionLabel(data);
     var overlay = document.createElement('div');
     overlay.id = 'weekly-checkin-preview-overlay';
     overlay.className = 'pbb-wci-overlay';
@@ -1198,7 +1312,7 @@
       '    <section class="pbb-wci-section"><h3>What we will change next week</h3>' + renderList(data.adjustments) + '</section>',
       '    <section class="pbb-wci-section"><h3>Tracking tip</h3><p>' + escapeHtml(data.tip) + '</p></section>',
       '    <div class="pbb-wci-actions">',
-      '      <button type="button" class="pbb-wci-action primary" data-wci-action="goals">Set next week goals</button>',
+      '      <button type="button" class="pbb-wci-action primary" data-wci-action="goals">' + escapeHtml(actionLabel) + '</button>',
       '    </div>',
       '  </div>',
       '</section>'
@@ -1252,6 +1366,17 @@
     }
   }
 
+  function handleWeeklyGoalsSaved(event){
+    var detail = event && event.detail ? event.detail : {};
+    if (detail.source !== 'weekly-checkin-review') return;
+    if (!state.reviewRewardClaimed) {
+      renderCard();
+      return;
+    }
+    markReviewCompleted();
+    renderCard();
+  }
+
   function boot(){
     readPreviewFlagFromQuery();
     if (window.PBB_WEEKLY_CHECKIN_PREVIEW_DATA) {
@@ -1270,6 +1395,7 @@
   window.openWeeklyCheckinPreview = openWeeklyCheckinPreview;
   window.closeWeeklyCheckinPreview = closeWeeklyCheckinPreview;
   window.refreshWeeklyCheckinPreviewCard = renderCard;
+  window.addEventListener('pbbWeeklyGoalsSaved', handleWeeklyGoalsSaved);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot, { once: true });
