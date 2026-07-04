@@ -59,6 +59,15 @@ assert.ok(
     'Share a Set should keep enough upload budget and timeout for IG-quality clips'
 );
 
+const nativeCameraFunctionStart = formcheckSource.indexOf('async function openNativeWorkoutFeedShareCamera()');
+const nativeCameraFunctionEnd = formcheckSource.indexOf('    function clearWorkoutFeedSharePendingInput()', nativeCameraFunctionStart);
+const nativeCameraFunction = formcheckSource.slice(nativeCameraFunctionStart, nativeCameraFunctionEnd);
+assert.ok(
+    nativeCameraFunction.includes('openWorkoutFeedShareInAppCamera({ silentFallback: true })') &&
+    nativeCameraFunction.indexOf('openWorkoutFeedShareInAppCamera({ silentFallback: true })') < nativeCameraFunction.indexOf('captureAndroidWorkoutVideo()'),
+    'Share a Set should prefer the HD in-app recorder before native camera fallback'
+);
+
 assert.ok(
     storiesSource.includes('FEED_VIDEO_UPLOAD_TARGET_BYTES = 30 * 1024 * 1024') &&
     storiesSource.includes('PHONE_VIDEO_PRIMARY_MAX_DIMENSION = 1080') &&
@@ -94,8 +103,8 @@ assert.match(
 assert.strictEqual(validateWorkoutVideoUpload({ type: 'video/mp4' }, mp4Buffer, 'feed_workout_share'), null);
 
 assert.ok(
-    dashboardSource.includes('lib/stories.js?v=36') &&
-    dashboardSource.includes('pbb-deferred-formcheck.js?v=18'),
+    dashboardSource.includes('lib/stories.js?v=37') &&
+    dashboardSource.includes('pbb-deferred-formcheck.js?v=19'),
     'dashboard should bump feed script versions so patched video validation is fetched'
 );
 

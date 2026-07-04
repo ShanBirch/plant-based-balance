@@ -1812,11 +1812,12 @@
         }
     }
 
-    async function openWorkoutFeedShareInAppCamera() {
+    async function openWorkoutFeedShareInAppCamera(options = {}) {
         hideWorkoutFeedShareUploadBanner(1);
         if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function' || typeof window.MediaRecorder === 'undefined') {
+            if (options.silentFallback) return false;
             showWorkoutFeedShareUploadBanner('Camera recording is not available on this phone. Use Photos for now.', 'error');
-            return;
+            return false;
         }
 
         const modal = ensureWorkoutFeedShareInAppCameraView();
@@ -1839,13 +1840,16 @@
             await video.play();
             video.style.opacity = '1';
             setWorkoutFeedShareCameraStatus('Ready');
+            return true;
         } catch (error) {
             console.warn('[WorkoutFeedShare] in-app camera failed', error);
             closeWorkoutFeedShareInAppCamera(false);
-            showWorkoutFeedShareUploadBanner('Could not open camera. Check camera permissions or use Photos.', 'error');
+            if (!options.silentFallback) {
+                showWorkoutFeedShareUploadBanner('Could not open camera. Check camera permissions or use Photos.', 'error');
+            }
+            return false;
         }
     }
-
     function closeWorkoutFeedShareInAppCamera(cancelRecording) {
         if (workoutFeedShareRecorder && workoutFeedShareRecorder.state === 'recording') {
             stopWorkoutFeedShareInAppRecording(!cancelRecording);
@@ -2117,6 +2121,9 @@
     }
 
     async function openNativeWorkoutFeedShareCamera() {
+        const openedInAppCamera = await openWorkoutFeedShareInAppCamera({ silentFallback: true });
+        if (openedInAppCamera) return;
+
         const bannerLabel = showWorkoutFeedShareUploadBanner('Opening camera...', 'info');
         try {
             let result = await captureAndroidWorkoutVideo();
