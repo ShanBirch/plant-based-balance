@@ -8,6 +8,14 @@ const TAHLIA_PROFILE = {
     role: 'Balance challenge member',
     trainingStyle: 'beginner-to-intermediate strength training, walks, simple gym sessions',
     foodStyle: 'mostly plant based in private, no food photo posting',
+    portfolio: {
+        trainingLevel: 'beginner-to-intermediate',
+        estimatedHeightCm: 164,
+        estimatedWeightKg: 64,
+        calorieTargetRange: '1850-2250 kcal/day',
+        proteinTargetRange: '85-110 g/day',
+        strengthProfile: 'modest machine and cable PBs, not advanced-lifter numbers',
+    },
     goals: [
         'feel stronger and more consistent',
         'build confidence around training',
@@ -66,7 +74,7 @@ const WORKOUT_CARD_VARIANTS = [
         workout_name: 'Upper Body',
         duration: '42 min',
         total_sets: 18,
-        total_volume: '6,840 kg',
+        total_volume: '4,956 kg',
         exercises: [
             { name: 'Lat Pulldown', sets: 4, best: '4x10 @ 38 kg' },
             { name: 'Seated Chest Press', sets: 4, best: '4x10 @ 22 kg' },
@@ -79,7 +87,7 @@ const WORKOUT_CARD_VARIANTS = [
         workout_name: 'Lower Body',
         duration: '46 min',
         total_sets: 20,
-        total_volume: '9,420 kg',
+        total_volume: '9,720 kg',
         exercises: [
             { name: 'Leg Press', sets: 4, best: '4x12 @ 74 kg' },
             { name: 'Romanian Deadlift', sets: 4, best: '4x10 @ 32 kg' },

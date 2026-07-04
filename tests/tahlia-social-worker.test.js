@@ -12,7 +12,28 @@ const performSource = fs.readFileSync(path.join(__dirname, '../netlify/functions
 assert.strictEqual(profile.TAHLIA_PROFILE.displayName, 'Tahlia Brooks');
 assert.strictEqual(profile.TAHLIA_PROFILE.age, 25);
 assert.strictEqual(profile.TAHLIA_PROFILE.gender, 'female');
+assert.strictEqual(profile.TAHLIA_PROFILE.portfolio.trainingLevel, 'beginner-to-intermediate');
+assert.strictEqual(profile.TAHLIA_PROFILE.portfolio.estimatedWeightKg, 64);
+assert.strictEqual(profile.TAHLIA_PROFILE.portfolio.calorieTargetRange, '1850-2250 kcal/day');
 assert.ok(profile.TAHLIA_PROFILE.voice.avoids.includes('mentions of AI, bots, automation, seeded accounts, or testing'));
+
+function parseCardVolumeKg(value) {
+    return Number(String(value || '').replace(/[^0-9.]/g, ''));
+}
+
+function exerciseVolumeKg(exercise = {}) {
+    const match = String(exercise.best || '').match(/(\d+)x(\d+)\s*@\s*([\d.]+)\s*kg/i);
+    if (!match) return 0;
+    return Number(match[1]) * Number(match[2]) * Number(match[3]);
+}
+
+function assertWorkoutVolumeMatches(card) {
+    const actual = (card.exercises || []).reduce((sum, exercise) => sum + exerciseVolumeKg(exercise), 0);
+    assert.strictEqual(parseCardVolumeKg(card.total_volume), actual);
+}
+
+assertWorkoutVolumeMatches(profile.buildTahliaPostCardPayload('workout', 'caption', 'tx-upper'));
+assertWorkoutVolumeMatches(profile.buildTahliaPostCardPayload('workout', 'caption', 'tx-workout'));
 
 const workoutTx = {
     id: 'tx-workout',
