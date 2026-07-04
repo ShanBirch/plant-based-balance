@@ -53,10 +53,11 @@ assert.ok(
 );
 
 assert.ok(
-    formcheckSource.includes('WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 30 * 1024 * 1024') &&
-    formcheckSource.includes('WORKOUT_FEED_SHARE_CAMERA_VIDEO_BITS_PER_SECOND = 8000000') &&
-    formcheckSource.includes('WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS = 120000'),
-    'Share a Set should keep enough upload budget and timeout for IG-quality clips'
+    formcheckSource.includes('WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 12 * 1024 * 1024') &&
+    formcheckSource.includes('WORKOUT_FEED_SHARE_QUEUE_VIDEO_TARGET_BYTES = 6 * 1024 * 1024') &&
+    formcheckSource.includes('WORKOUT_FEED_SHARE_CAMERA_VIDEO_BITS_PER_SECOND = 3500000') &&
+    formcheckSource.includes('WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS = 150000'),
+    'Share a Set should keep clips light enough for reliable mobile uploads and queued retries'
 );
 
 const nativeCameraFunctionStart = formcheckSource.indexOf('async function openNativeWorkoutFeedShareCamera()');
@@ -78,8 +79,15 @@ assert.ok(
 
 assert.ok(
     androidSource.includes('MediaStore.EXTRA_VIDEO_QUALITY, 1') &&
-    iosSource.includes('picker.videoQuality = .typeHigh'),
-    'native Share a Set camera capture should request high quality source video'
+    iosSource.includes('picker.videoQuality = .typeMedium'),
+    'native Share a Set camera capture should keep source video upload-friendly'
+);
+
+assert.ok(
+    formcheckSource.includes('prepareWorkoutFeedShareQueuedClip') &&
+    formcheckSource.includes('maxBytes: WORKOUT_FEED_SHARE_QUEUE_VIDEO_TARGET_BYTES') &&
+    formcheckSource.includes('Balance will retry it automatically.'),
+    'Share a Set queued uploads should save a smaller retry clip and avoid blaming reception only'
 );
 
 const uploadHelpersSource = uploadSource.slice(0, uploadSource.indexOf('export default'));
@@ -103,8 +111,8 @@ assert.match(
 assert.strictEqual(validateWorkoutVideoUpload({ type: 'video/mp4' }, mp4Buffer, 'feed_workout_share'), null);
 
 assert.ok(
-    dashboardSource.includes('lib/stories.js?v=37') &&
-    dashboardSource.includes('pbb-deferred-formcheck.js?v=19'),
+    dashboardSource.includes('lib/stories.js?v=39') &&
+    dashboardSource.includes('pbb-deferred-formcheck.js?v=20'),
     'dashboard should bump feed script versions so patched video validation is fetched'
 );
 

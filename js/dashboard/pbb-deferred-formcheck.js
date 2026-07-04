@@ -2,11 +2,12 @@
     const MAX_FORM_CHECK_VIDEO_BYTES = 180 * 1024 * 1024;
     const WORKOUT_FEED_SHARE_QUEUE_DB = 'pbb_workout_feed_share_queue_v1';
     const WORKOUT_FEED_SHARE_QUEUE_STORE = 'uploads';
-    const WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS = 120000;
+    const WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS = 150000;
     const WORKOUT_FEED_SHARE_LATE_RETRY_DELAY_MS = 120000;
-    const WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 30 * 1024 * 1024;
-    const WORKOUT_FEED_SHARE_CAMERA_VIDEO_BITS_PER_SECOND = 8000000;
-    const WORKOUT_FEED_SHARE_CAMERA_AUDIO_BITS_PER_SECOND = 128000;
+    const WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 12 * 1024 * 1024;
+    const WORKOUT_FEED_SHARE_QUEUE_VIDEO_TARGET_BYTES = 6 * 1024 * 1024;
+    const WORKOUT_FEED_SHARE_CAMERA_VIDEO_BITS_PER_SECOND = 3500000;
+    const WORKOUT_FEED_SHARE_CAMERA_AUDIO_BITS_PER_SECOND = 96000;
     const WORKOUT_FEED_SHARE_RETRY_NOTICE_ID = 'workout-feed-share-retry-notice';
     let formCheckState = {
         file: null,
@@ -933,6 +934,24 @@
         return preparedFile;
     }
 
+    async function prepareWorkoutFeedShareQueuedClip(file, statusTarget) {
+        await assertWorkoutFeedShareVideoFile(file);
+        if (!file || file.size <= WORKOUT_FEED_SHARE_QUEUE_VIDEO_TARGET_BYTES) return file;
+        if (typeof window.prepareUploadableFeedVideo !== 'function') return file;
+        try {
+            const queuedFile = await window.prepareUploadableFeedVideo(file, function (status) {
+                if (statusTarget) statusTarget.textContent = status;
+            }, {
+                maxBytes: WORKOUT_FEED_SHARE_QUEUE_VIDEO_TARGET_BYTES
+            });
+            await assertWorkoutFeedShareVideoFile(queuedFile);
+            return queuedFile;
+        } catch (error) {
+            console.warn('[WorkoutFeedShare] could not make queued clip smaller', error);
+            return file;
+        }
+    }
+
     async function queueWorkoutFeedShareUpload(payload) {
         const file = payload && payload.file;
         const userId = payload && payload.userId;
@@ -1319,7 +1338,7 @@
                 </div>
                 <div style="flex:1; min-width:0;">
                     <div class="share-set-retry-title">${escapeWorkoutFeedShareHtml(title)}</div>
-                    <div class="share-set-retry-body">${escapeWorkoutFeedShareHtml(body)} Post it when reception is better.</div>
+                    <div class="share-set-retry-body">${escapeWorkoutFeedShareHtml(body)} Balance will retry it automatically.</div>
                     <div class="share-set-retry-meta">${escapeWorkoutFeedShareHtml(metaParts.join(' | '))}</div>
                 </div>
                 <div class="share-set-retry-actions">
@@ -1451,7 +1470,7 @@
             subtext.textContent = type === 'error'
                 ? 'Please try that clip again.'
                 : type === 'queued'
-                    ? 'Saved on this phone. We will retry when reception improves.'
+                    ? 'Saved on this phone. Balance will retry it automatically.'
                 : type === 'success'
                     ? 'Shared to Feed.'
                     : 'You can keep training.';
@@ -2334,9 +2353,10 @@
             console.error('[WorkoutFeedShare] submit failed', error);
             if (isRetryableWorkoutFeedShareError(error) && workoutFeedShareState.file) {
                 try {
+                    const queuedFile = await prepareWorkoutFeedShareQueuedClip(workoutFeedShareState.file, submitBtn);
                     const queueItem = await queueWorkoutFeedShareUpload({
                         userId: userId,
-                        file: workoutFeedShareState.file,
+                        file: queuedFile,
                         caption: caption,
                         workoutName: workoutName,
                         lastError: error && error.message ? error.message : 'upload failed',
@@ -2446,8 +2466,14 @@
                         break;
                     }
                     const nextRetryDelayMs = Math.min(5 * 60 * 1000, 30000 * Math.max(1, Number(item.attempts || 1)));
+                    const queuedRetryFile = await prepareWorkoutFeedShareQueuedClip(preparedQueuedFile, bannerLabel);
                     await putWorkoutFeedShareQueueItem({
                         ...item,
+                        file: queuedRetryFile,
+                        fileName: queuedRetryFile.name || item.fileName || 'share-set-video.mp4',
+                        fileType: queuedRetryFile.type || item.fileType || 'video/mp4',
+                        fileSize: queuedRetryFile.size || item.fileSize || 0,
+                        fileLastModified: queuedRetryFile.lastModified || item.fileLastModified || Date.now(),
                         attempts: Number(item.attempts || 0) + 1,
                         lastAttemptAt: new Date().toISOString(),
                         nextAttemptAt: new Date(Date.now() + nextRetryDelayMs).toISOString(),

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v235'; // v235: prefer Share a Set HD recorder; v234: raise Share a Set video quality
+const CACHE_NAME = 'pbb-app-v236'; // v236: make Share a Set uploads lighter/retry-safe; v235: prefer Share a Set HD recorder
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
