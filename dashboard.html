@@ -332,7 +332,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-iap.js',
             'lib/stories.js?v=38',
             'lib/ai-opponents.js',
-            'lib/games.js?v=2',
+            'lib/games.js?v=3',
             'lib/nutrition-calculator.js',
             'data/vegan-challenge-meal-plan.js',
             'lib/meal-plan-populator.js',
@@ -351,7 +351,7 @@ if (window._pbbIsIOSSafari) {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
     document.write('<script src="lib/stories.js?v=38"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
-    document.write('<script src="lib/games.js?v=2"><\/script>');
+    document.write('<script src="lib/games.js?v=3"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
     document.write('<script src="data/vegan-challenge-meal-plan.js"><\/script>');
     document.write('<script src="lib/meal-plan-populator.js"><\/script>');
@@ -9369,6 +9369,99 @@ if(!window._pbbIsIOSSafari) {
             </div>
         </section>
 
+        <!-- Feed Battle Launcher -->
+        <style>
+            .feed-start-battle-card,
+            .feed-start-battle-card * {
+                box-sizing: border-box;
+            }
+            .feed-start-battle-card {
+                margin: 0 15px 12px;
+            }
+            .feed-start-battle-button {
+                width: 100%;
+                min-height: 64px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                border: 1px solid rgba(15, 118, 110, 0.24);
+                border-radius: 14px;
+                padding: 12px 14px;
+                background: linear-gradient(135deg, #0f766e 0%, #166534 55%, #ca8a04 100%);
+                color: #ffffff;
+                -webkit-text-fill-color: #ffffff;
+                box-shadow: 0 8px 20px rgba(15, 118, 110, 0.18);
+                font-family: inherit;
+                cursor: pointer;
+                text-align: left;
+            }
+            .feed-start-battle-button:active {
+                transform: translateY(1px);
+            }
+            .feed-start-battle-icon,
+            .feed-start-battle-arrow {
+                flex: 0 0 auto;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                color: #ffffff;
+                -webkit-text-fill-color: #ffffff;
+            }
+            .feed-start-battle-icon {
+                width: 38px;
+                height: 38px;
+                border-radius: 12px;
+                background: rgba(255, 255, 255, 0.15);
+            }
+            .feed-start-battle-arrow {
+                width: 30px;
+                height: 30px;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, 0.14);
+                margin-left: auto;
+            }
+            .feed-start-battle-copy {
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+            }
+            .feed-start-battle-title {
+                display: block;
+                font-size: 1rem;
+                line-height: 1.1;
+                font-weight: 900;
+                color: #ffffff;
+                -webkit-text-fill-color: #ffffff;
+            }
+            .feed-start-battle-subtitle {
+                display: block;
+                font-size: 0.76rem;
+                line-height: 1.2;
+                font-weight: 700;
+                color: rgba(255, 255, 255, 0.82);
+                -webkit-text-fill-color: rgba(255, 255, 255, 0.82);
+            }
+        </style>
+        <section id="feed-start-battle-card" class="feed-start-battle-card" aria-label="Start a battle">
+            <button id="feed-start-battle-button" class="feed-start-battle-button" type="button" onclick="window.openFeedBattleChooser ? window.openFeedBattleChooser() : (typeof showToast === 'function' ? showToast('Battles are still loading. Try again in a moment.', 'info') : alert('Battles are still loading. Try again in a moment.'))" aria-haspopup="dialog">
+                <span class="feed-start-battle-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;">
+                        <path d="M13 2L4 14h7l-1 8 10-13h-7l1-7z"></path>
+                    </svg>
+                </span>
+                <span class="feed-start-battle-copy">
+                    <span class="feed-start-battle-title">Start Battle</span>
+                    <span class="feed-start-battle-subtitle">Quiz, chess, checkers, and more</span>
+                </span>
+                <span class="feed-start-battle-arrow" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;">
+                        <path d="M9 18l6-6-6-6"></path>
+                    </svg>
+                </span>
+            </button>
+        </section>
+
         <!-- Feed Composer -->
         <style>
             #feed-composer-share-menu {
@@ -12722,6 +12815,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Share a thought or encouragement once a day for +2 XP. Add a photo or video if you want." },
     { tab:'friends', sel:'#feed-community-pulse-card', title:'Today in Balance', body:"See today's posts, reactions, comments, and battles at a glance.", quick: true },
+    { tab:'friends', sel:'#feed-start-battle-card', title:'Start Battle', body:"Tap Start Battle to choose Quiz Battle, chess, checkers, or another game before challenging a friend or bot.", quick: true },
     { tab:'friends', sel:'#feed-composer-card', title:'Text post styles', body:"Text-only posts now use big type, smaller notes, and different font styles like a proper social card.", quick: true },
     { tab:'friends', sel:'#feed-composer-share-menu-button,#feed-composer-card', title:'Share from Feed', body:"Use Share to post a meal, choose a workout or PB, or film a set without leaving Feed.", quick: true },
     { tab:'friends', sel:'#friends-photo-feed .feed-post-card,#friends-feed-section', fallbackSel:'#feed-composer-card', title:'Feed media controls', fallbackTitle:'Feed media controls', body:"Tap a video once to play it right in Feed. Double tap any photo or video to open the full view.", fallbackBody:"Post media works like Instagram. Videos play with one tap, and photos or videos open full screen with a double tap once posts are showing.", quick: true, condition: function(){ return !!document.getElementById('friends-feed-section') || !!document.getElementById('feed-composer-card'); } },
@@ -13778,6 +13872,13 @@ if(!window._pbbIsIOSSafari) {
     sel: '#feed-community-pulse-card',
     title: 'Today in Balance',
     body: "See today's posts, reactions, comments, and battles at a glance."
+  });
+  allFeatures.push({
+    id: 'feed-battle-launcher-v1',
+    tab: 'friends',
+    sel: '#feed-start-battle-card',
+    title: 'Start Battle',
+    body: "Tap Start Battle to choose Quiz Battle, chess, checkers, or another game before challenging a friend or bot."
   });
   allFeatures.push({
     id: 'feed-comment-mentions-v1',
@@ -17200,6 +17301,10 @@ if (window._pbbIsIOSSafari) {
     // It's not needed until the user opens the Learn tab.
     if (window._pbbIsIOSSafari) {
         window.addEventListener('appCriticalContentReady', function() {
+            var learningAlreadyRequested = Array.prototype.some.call(document.scripts || [], function(script) {
+                return script.src && script.src.indexOf('learning-inline.js') !== -1;
+            });
+            if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
             s.src = 'lib/learning-inline.js?v=9';
             document.head.appendChild(s);
