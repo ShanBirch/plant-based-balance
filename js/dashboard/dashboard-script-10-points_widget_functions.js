@@ -1683,6 +1683,10 @@ async function awardPointsForPersonalBest(pbRefId, pbData) {
     try {
         const session = await window.authHelpers?.getSession();
         if (!session?.user) return null;
+        const canonicalPbRefId = pbData?.historyId
+            || pbData?.pbHistoryId
+            || pbData?.pb_history_id
+            || pbRefId;
 
         // Get current points to track level before awarding
         let pointsBefore = null;
@@ -1699,7 +1703,7 @@ async function awardPointsForPersonalBest(pbRefId, pbData) {
         const result = await window.db?.points?.awardPoints(
             window.currentUser.id,
             'personal_best',
-            pbRefId,
+            canonicalPbRefId,
             {
                 exercise: pbData.exercise,
                 pbType: pbData.type, // 'weight' or 'reps'

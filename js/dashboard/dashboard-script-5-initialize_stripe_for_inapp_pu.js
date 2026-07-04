@@ -15388,6 +15388,49 @@ function queuePendingWorkoutSave(sets, metadata) {
     return item;
 }
 
+function getPersonalBestAwardReference(pb) {
+    return pb?.historyId
+        || pb?.pbHistoryId
+        || pb?.pb_history_id
+        || `pb_${pb?.exercise || 'unknown'}_${pb?.type || 'pb'}_${Date.now()}`;
+}
+
+async function awardPointsForNewPersonalBests(newPBs) {
+    if (!Array.isArray(newPBs) || newPBs.length === 0) return [];
+    const results = [];
+    for (const pb of newPBs) {
+        const pbRefId = getPersonalBestAwardReference(pb);
+        if (typeof awardPointsForPersonalBest === 'function') {
+            results.push(await awardPointsForPersonalBest(pbRefId, pb));
+        } else if (window.currentUser?.id && window.db?.points?.awardPoints) {
+            results.push(await window.db.points.awardPoints(window.currentUser.id, 'personal_best', pbRefId, {
+                exercise: pb.exercise,
+                pbType: pb.type,
+                value: pb.value,
+                improvement: pb.improvement
+            }));
+        }
+    }
+    return results;
+}
+
+async function processSyncedWorkoutProgress(userId, sets) {
+    if (!userId || !Array.isArray(sets) || sets.length === 0) {
+        return { milestones: [], newPBs: [] };
+    }
+
+    const [milestones, newPBs] = await Promise.all([
+        dbHelpers.milestones.checkAndRecordMilestones(userId),
+        dbHelpers.personalBests.checkAndUpdatePBs(userId, sets)
+    ]);
+
+    await awardPointsForNewPersonalBests(newPBs);
+    return {
+        milestones: milestones || [],
+        newPBs: newPBs || []
+    };
+}
+
 async function flushPendingWorkoutSaves() {
     const user = window.currentUser;
     if (!user || !navigator.onLine) return;
@@ -15400,6 +15443,10 @@ async function flushPendingWorkoutSaves() {
         try {
             const savedRows = await saveWorkoutWithRetry(item.sets || [], user.id);
             await awardWorkoutCompletionPoints(user.id, savedRows);
+            const progress = await processSyncedWorkoutProgress(user.id, item.sets || []);
+            if (progress.newPBs.length) {
+                console.log('Synced offline workout PBs:', progress.newPBs);
+            }
             console.log('Synced offline workout:', item.id);
         } catch (e) {
             console.error('Failed to sync pending workout:', item.id, e);
@@ -15752,13 +15799,7 @@ async function recoverWorkout() {
                 dbHelpers.personalBests.checkAndUpdatePBs(user.id, backup.sets)
             ]);
 
-            // Award points for any PBs
-            if (newPBs && newPBs.length > 0) {
-                for (const pb of newPBs) {
-                    const pbRefId = `pb_${pb.exercise}_${pb.type}_${Date.now()}`;
-                    await awardPointsForPersonalBest(pbRefId, pb);
-                }
-            }
+            await awardPointsForNewPersonalBests(newPBs);
         } catch (progressError) {
             console.error('Error checking progress for recovered workout:', progressError);
         }
@@ -15996,12 +16037,8 @@ async function finishWorkout() {
                  if (newPBs && newPBs.length > 0) {
                      console.log("🏆 New Personal Bests:", newPBs);
 
-                     // Award 1 point per personal best
                      try {
-                         for (const pb of newPBs) {
-                             const pbRefId = `pb_${pb.exercise}_${pb.type}_${Date.now()}`;
-                             await awardPointsForPersonalBest(pbRefId, pb);
-                         }
+                         await awardPointsForNewPersonalBests(newPBs);
                      } catch (pbPointsError) {
                          console.error("Error awarding PB points:", pbPointsError);
                      }
