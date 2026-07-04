@@ -1926,6 +1926,30 @@ function isBalanceNativeInstagramSurface() {
     }
 }
 
+function getBalanceNativeShellRevision() {
+    try {
+        const params = new URLSearchParams(window.location.search || '');
+        return String(params.get('native_rev') || '').trim();
+    } catch (_) {
+        return '';
+    }
+}
+
+function getBalanceNativePlatform() {
+    try {
+        if (window.Capacitor && typeof window.Capacitor.getPlatform === 'function') {
+            return String(window.Capacitor.getPlatform() || '').toLowerCase();
+        }
+    } catch (_) {}
+    return '';
+}
+
+function isLegacyIOSInstagramShareShell() {
+    const revision = getBalanceNativeShellRevision();
+    return isBalanceNativeInstagramSurface()
+        && getBalanceNativePlatform() === 'ios'
+        && revision !== 'ig_meal_share_v15';
+}
 function getBalanceInstagramSharePlugin() {
     if (balanceInstagramSharePlugin) return balanceInstagramSharePlugin;
 
@@ -3531,6 +3555,14 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
     }
 
     if (isBalanceNativeInstagramSurface()) {
+        if (isLegacyIOSInstagramShareShell()) {
+            return shareBalanceCardImageExternally(
+                dataUrl,
+                safeTarget,
+                safeTarget === 'story' ? 'Share this to your Instagram Story' : 'Share this to your Instagram Feed'
+            );
+        }
+
         showToast('Could not open Instagram directly. Make sure Instagram and the latest Balance app are installed.', 'error');
         return false;
     }
