@@ -41,13 +41,15 @@ jobs:
     env:
       FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
       FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      ANDROID_VERSION_CODE: ${{ github.run_number }}
+      ANDROID_VERSION_NAME: 1.5.${{ github.run_number }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Check Google Play upload secret
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_to_play == true }}
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.upload_to_play == true) }}
         env:
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
         run: |
@@ -121,22 +123,25 @@ jobs:
           retention-days: 30
 
       - name: Write Google Play release notes
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_to_play == true }}
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.upload_to_play == true) }}
         env:
           PLAY_RELEASE_NOTES: ${{ inputs.release_notes }}
         run: |
+          if [ -z "$PLAY_RELEASE_NOTES" ]; then
+            PLAY_RELEASE_NOTES="Automatic build from commit $GITHUB_SHA"
+          fi
           mkdir -p android/play/release-notes/en-US
           printf '%s\n' "$PLAY_RELEASE_NOTES" > android/play/release-notes/en-US/default.txt
 
       - name: Upload to Google Play
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_to_play == true }}
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.upload_to_play == true) }}
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.fitgotchi.app
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
-          track: ${{ inputs.play_track }}
-          status: ${{ inputs.play_status }}
+          track: ${{ github.event_name == 'push' && 'internal' || inputs.play_track }}
+          status: ${{ github.event_name == 'push' && 'completed' || inputs.play_status }}
           whatsNewDirectory: android/play/release-notes
 
       # Also build debug APK for Firebase App Distribution
