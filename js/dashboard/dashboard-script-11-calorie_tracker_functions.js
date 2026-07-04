@@ -9347,15 +9347,42 @@ async function deleteMealLog(mealId) {
     }
 
     try {
-        const { error } = await window.supabaseClient
+        if (!window.currentUser?.id) {
+            alert('Please log in to delete meals.');
+            return;
+        }
+
+        const { data: deletedMeal, error } = await window.supabaseClient
             .from('meal_logs')
             .delete()
-            .eq('id', mealId);
+            .eq('id', mealId)
+            .eq('user_id', window.currentUser.id)
+            .select('id')
+            .maybeSingle();
 
         if (error) {
             console.error('Error deleting meal:', error);
             alert('Failed to delete meal. Please try again.');
             return;
+        }
+
+        if (!deletedMeal) {
+            alert('Could not find that meal to delete.');
+            return;
+        }
+
+        let pointsDeducted = 0;
+        let pointsDeductionFailed = false;
+        if (typeof deductPointsForDeletedMeal === 'function') {
+            const pointsResult = await deductPointsForDeletedMeal(mealId);
+            pointsDeducted = Number(pointsResult?.pointsDeducted || 0);
+            if (!pointsResult?.success) {
+                pointsDeductionFailed = true;
+                console.warn('Meal deleted, but XP deduction failed:', pointsResult?.error || pointsResult?.reason);
+                if (typeof showToast === 'function') {
+                    showToast('Meal deleted, but XP could not be updated. Please refresh and try again.', 'warning');
+                }
+            }
         }
 
         // Recalculate daily nutrition totals
@@ -9364,6 +9391,10 @@ async function deleteMealLog(mealId) {
         // Reload data
         await loadTodayNutrition();
         await loadMicronutrientInsights();
+
+        if (!pointsDeductionFailed && typeof showToast === 'function') {
+            showToast(pointsDeducted > 0 ? `Meal deleted. -${pointsDeducted} XP` : 'Meal deleted.', 'success');
+        }
     } catch (error) {
         console.error('Error deleting meal:', error);
         alert('Failed to delete meal. Please try again.');

@@ -1181,6 +1181,96 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
     }
 }
 
+async function deductPointsForDeletedMeal(mealLogId) {
+    try {
+        const session = await window.authHelpers?.getSession();
+        const userId = window.currentUser?.id || session?.user?.id;
+        if (!userId || !mealLogId || !window.supabaseClient) {
+            return { success: false, pointsDeducted: 0, reason: 'Missing user, meal, or Supabase client' };
+        }
+
+        const { data: transactions, error: txError } = await window.supabaseClient
+            .from('point_transactions')
+            .select('id, points_amount, transaction_type')
+            .eq('user_id', userId)
+            .eq('reference_id', mealLogId)
+            .eq('reference_type', 'meal_log')
+            .in('transaction_type', ['earn_meal', 'bonus_meal_timing'])
+            .gt('points_amount', 0);
+
+        if (txError) throw txError;
+
+        const pointsToDeduct = (transactions || []).reduce((sum, tx) => {
+            return sum + Math.max(0, Number(tx.points_amount) || 0);
+        }, 0);
+
+        if (pointsToDeduct <= 0) {
+            return { success: true, pointsDeducted: 0 };
+        }
+
+        const { data: pointsData, error: pointsError } = await window.supabaseClient
+            .from('user_points')
+            .select('current_points, lifetime_points, total_meals_logged')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (pointsError) throw pointsError;
+        if (!pointsData) {
+            throw new Error('No user_points row found for meal XP deduction');
+        }
+
+        const { data: updatedPoints, error: updateError } = await window.supabaseClient
+            .from('user_points')
+            .update({
+                current_points: Math.max(0, Number(pointsData?.current_points || 0) - pointsToDeduct),
+                lifetime_points: Math.max(0, Number(pointsData?.lifetime_points || 0) - pointsToDeduct),
+                total_meals_logged: Math.max(0, Number(pointsData?.total_meals_logged || 0) - 1),
+                updated_at: new Date().toISOString()
+            })
+            .eq('user_id', userId)
+            .select('user_id')
+            .maybeSingle();
+
+        if (updateError) throw updateError;
+        if (!updatedPoints) {
+            throw new Error('Meal XP deduction did not update user_points');
+        }
+
+        const { error: reversalError } = await window.supabaseClient
+            .from('point_transactions')
+            .insert({
+                user_id: userId,
+                transaction_type: 'meal_delete_reversal',
+                points_amount: -pointsToDeduct,
+                reference_id: mealLogId,
+                reference_type: 'meal_log',
+                description: `Deducted ${pointsToDeduct} XP after deleting a meal`
+            });
+
+        if (reversalError) {
+            console.warn('Meal delete XP was deducted but reversal transaction could not be logged:', reversalError);
+        }
+
+        try {
+            await window.supabaseClient.rpc('update_challenge_participant_points', { user_uuid: userId });
+        } catch (challengeError) {
+            console.warn('Could not refresh challenge points after meal delete:', challengeError);
+        }
+
+        if (typeof loadPointsWidget === 'function') {
+            await loadPointsWidget();
+        }
+        if (typeof refreshChallengeProgress === 'function') {
+            refreshChallengeProgress();
+        }
+
+        return { success: true, pointsDeducted: pointsToDeduct };
+    } catch (error) {
+        console.error('Error deducting points for deleted meal:', error);
+        return { success: false, pointsDeducted: 0, error };
+    }
+}
+
 // Returns true if the current user is an accepted participant in any active challenge of the given type
 async function checkInActiveChallengeType(challengeType) {
     try {
