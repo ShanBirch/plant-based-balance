@@ -2,9 +2,11 @@
     const MAX_FORM_CHECK_VIDEO_BYTES = 180 * 1024 * 1024;
     const WORKOUT_FEED_SHARE_QUEUE_DB = 'pbb_workout_feed_share_queue_v1';
     const WORKOUT_FEED_SHARE_QUEUE_STORE = 'uploads';
-    const WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS = 45000;
+    const WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS = 120000;
     const WORKOUT_FEED_SHARE_LATE_RETRY_DELAY_MS = 120000;
-    const WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 3 * 1024 * 1024;
+    const WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 30 * 1024 * 1024;
+    const WORKOUT_FEED_SHARE_CAMERA_VIDEO_BITS_PER_SECOND = 8000000;
+    const WORKOUT_FEED_SHARE_CAMERA_AUDIO_BITS_PER_SECOND = 128000;
     const WORKOUT_FEED_SHARE_RETRY_NOTICE_ID = 'workout-feed-share-retry-notice';
     let formCheckState = {
         file: null,
@@ -1778,19 +1780,34 @@
     }
 
     async function getWorkoutFeedShareCameraStream() {
-        const videoConstraints = {
+        const primaryVideoConstraints = {
+            facingMode: { ideal: workoutFeedShareCameraFacingMode },
+            width: { ideal: 1080 },
+            height: { ideal: 1920 },
+            aspectRatio: { ideal: 9 / 16 },
+            frameRate: { ideal: 30, max: 30 }
+        };
+        const fallbackVideoConstraints = {
             facingMode: { ideal: workoutFeedShareCameraFacingMode },
             width: { ideal: 1280 },
             height: { ideal: 720 },
             frameRate: { ideal: 30, max: 30 }
         };
         try {
-            return await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: true });
+            return await navigator.mediaDevices.getUserMedia({ video: primaryVideoConstraints, audio: true });
         } catch (firstError) {
             try {
-                return await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
+                return await navigator.mediaDevices.getUserMedia({ video: primaryVideoConstraints, audio: false });
             } catch (secondError) {
-                throw firstError || secondError;
+                try {
+                    return await navigator.mediaDevices.getUserMedia({ video: fallbackVideoConstraints, audio: true });
+                } catch (thirdError) {
+                    try {
+                        return await navigator.mediaDevices.getUserMedia({ video: fallbackVideoConstraints, audio: false });
+                    } catch (fourthError) {
+                        throw firstError || secondError || thirdError || fourthError;
+                    }
+                }
             }
         }
     }
@@ -1879,15 +1896,25 @@
         workoutFeedShareRecorderChunks = [];
         workoutFeedShareRecorderMimeType = getWorkoutFeedShareRecorderMimeType(workoutFeedShareCameraStream);
         workoutFeedShareRecorderSaveOnStop = true;
+        const hasAudioTracks = !!(workoutFeedShareCameraStream && typeof workoutFeedShareCameraStream.getAudioTracks === 'function' && workoutFeedShareCameraStream.getAudioTracks().length);
 
         try {
-            const options = workoutFeedShareRecorderMimeType ? { mimeType: workoutFeedShareRecorderMimeType } : {};
+            const options = {
+                videoBitsPerSecond: WORKOUT_FEED_SHARE_CAMERA_VIDEO_BITS_PER_SECOND
+            };
+            if (workoutFeedShareRecorderMimeType) options.mimeType = workoutFeedShareRecorderMimeType;
+            if (hasAudioTracks) options.audioBitsPerSecond = WORKOUT_FEED_SHARE_CAMERA_AUDIO_BITS_PER_SECOND;
             workoutFeedShareRecorder = new MediaRecorder(workoutFeedShareCameraStream, options);
         } catch (error) {
-            console.warn('[WorkoutFeedShare] MediaRecorder unavailable', error);
-            closeWorkoutFeedShareInAppCamera(false);
-            showWorkoutFeedShareUploadBanner('Camera recording is not available on this phone. Use Photos for now.', 'error');
-            return;
+            try {
+                const fallbackOptions = workoutFeedShareRecorderMimeType ? { mimeType: workoutFeedShareRecorderMimeType } : {};
+                workoutFeedShareRecorder = new MediaRecorder(workoutFeedShareCameraStream, fallbackOptions);
+            } catch (fallbackError) {
+                console.warn('[WorkoutFeedShare] MediaRecorder unavailable', fallbackError || error);
+                closeWorkoutFeedShareInAppCamera(false);
+                showWorkoutFeedShareUploadBanner('Camera recording is not available on this phone. Use Photos for now.', 'error');
+                return;
+            }
         }
 
         workoutFeedShareRecorder.ondataavailable = function (event) {

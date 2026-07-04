@@ -51,7 +51,7 @@ public class BalanceVideoCapturePlugin: CAPPlugin, CAPBridgedPlugin, UIImagePick
             if UIImagePickerController.isCameraDeviceAvailable(.rear) {
                 picker.cameraDevice = .rear
             }
-            picker.videoQuality = .typeMedium
+            picker.videoQuality = .typeHigh
             picker.videoMaximumDuration = TimeInterval(call.getInt("maxDurationSeconds") ?? 75)
             picker.delegate = self
 

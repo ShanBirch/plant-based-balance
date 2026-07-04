@@ -900,7 +900,7 @@ public class MainActivity extends BridgeActivity {
 
                     Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
                     intent.putExtra(MediaStore.EXTRA_OUTPUT, workoutVideoOutputUri);
-                    intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 0);
+                    intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 1);
                     intent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, Math.max(1, Math.min(120, maxDurationSeconds)));
                     intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     intent.setClipData(ClipData.newRawUri("Share a Set", workoutVideoOutputUri));
