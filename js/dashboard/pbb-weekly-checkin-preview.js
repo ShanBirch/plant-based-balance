@@ -280,7 +280,7 @@
     var goals = data && data.goals ? data.goals : {};
     var reward = calculateReviewGoalReward(goals.completed, goals.total);
     return reward.earned > 0
-      ? 'Claim ' + reward.earned + ' XP + set next week goals'
+      ? 'Claim your XP + set next week goals'
       : 'Set next week goals';
   }
 
@@ -996,8 +996,17 @@
       '.pbb-wci-feedback-text{min-width:0;font-size:.84rem;line-height:1.42;font-weight:720;color:rgba(255,255,255,.80);word-break:break-word;}',
       '.pbb-wci-actions{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px;}',
       '.pbb-wci-action{min-height:44px;border-radius:14px;border:1px solid rgba(245,217,138,.22);font-family:inherit;font-size:.82rem;font-weight:950;cursor:pointer;}',
+      '.pbb-wci-action:disabled{opacity:.72;cursor:wait;}',
       '.pbb-wci-action.primary{background:linear-gradient(135deg,#f8d98b,#d8b25e);color:#100d07;border-color:rgba(255,255,255,.14);}',
       '.pbb-wci-action.secondary{background:rgba(255,255,255,.08);color:#fff;}',
+      '.pbb-wci-xp-celebration{position:fixed;inset:0;z-index:12180;display:flex;align-items:center;justify-content:center;pointer-events:none;background:rgba(3,7,18,.18);animation:pbbWciXpFade 2.4s ease forwards;}',
+      '.pbb-wci-xp-card{position:relative;min-width:min(82vw,310px);padding:23px 22px;border-radius:22px;background:radial-gradient(circle at 50% 0,rgba(255,255,255,.24),transparent 38%),linear-gradient(135deg,#fff4bf,#d8b25e 54%,#9f7628);box-shadow:0 22px 54px rgba(15,23,42,.34),0 0 48px rgba(245,217,138,.48);text-align:center;color:#120d05;overflow:hidden;animation:pbbWciXpPop .62s cubic-bezier(.17,.84,.44,1) both;}',
+      '.pbb-wci-xp-card:before{content:"";position:absolute;inset:-40%;background:linear-gradient(115deg,transparent 34%,rgba(255,255,255,.45) 48%,transparent 62%);transform:translateX(-65%);animation:pbbWciXpSweep 1.15s ease .15s forwards;}',
+      '.pbb-wci-xp-card>*{position:relative;z-index:1;}',
+      '.pbb-wci-xp-kicker{font-size:.68rem;line-height:1.2;font-weight:950;letter-spacing:.1em;text-transform:uppercase;color:#5f3f05;}',
+      '.pbb-wci-xp-amount{margin-top:7px;font-size:2.35rem;line-height:1;font-weight:950;color:#120d05;}',
+      '.pbb-wci-xp-copy{margin-top:6px;font-size:.9rem;line-height:1.35;font-weight:900;color:#3a2607;}',
+      '.pbb-wci-xp-spark{position:absolute;width:8px;height:8px;border-radius:999px;background:#fff;box-shadow:0 0 14px rgba(255,255,255,.9);animation:pbbWciXpSpark 1.35s ease-out forwards;}',
       'html[data-pbb-theme="light"] .pbb-wci-card,html.pbb-theme-light .pbb-wci-card,body[data-pbb-theme="light"] .pbb-wci-card,body.pbb-theme-light .pbb-wci-card{color:#fffaf2 !important;-webkit-text-fill-color:#fffaf2 !important;box-shadow:0 0 0 1px rgba(255,255,255,.10) inset,0 16px 34px rgba(154,101,18,.22),0 0 24px rgba(245,197,90,.24) !important;}',
       'html[data-pbb-theme="light"] .pbb-wci-card *,html.pbb-theme-light .pbb-wci-card *,body[data-pbb-theme="light"] .pbb-wci-card *,body.pbb-theme-light .pbb-wci-card *{color:inherit;-webkit-text-fill-color:currentColor;}',
       'html[data-pbb-theme="light"] .pbb-wci-card-sub,html.pbb-theme-light .pbb-wci-card-sub,body[data-pbb-theme="light"] .pbb-wci-card-sub,body.pbb-theme-light .pbb-wci-card-sub{color:rgba(255,250,242,.88) !important;-webkit-text-fill-color:rgba(255,250,242,.88) !important;}',
@@ -1028,6 +1037,10 @@
       'html[data-pbb-theme="light"] .pbb-wci-action.secondary,html.pbb-theme-light .pbb-wci-action.secondary,body[data-pbb-theme="light"] .pbb-wci-action.secondary,body.pbb-theme-light .pbb-wci-action.secondary{color:#0f172a !important;-webkit-text-fill-color:#0f172a !important;}',
       '@keyframes pbbWciSweep{0%,55%{transform:translateX(-82%)}78%,100%{transform:translateX(82%)}}',
       '@keyframes pbbWciSheetSweep{0%,50%{transform:translateX(-92%)}76%,100%{transform:translateX(92%)}}',
+      '@keyframes pbbWciXpPop{0%{opacity:0;transform:translateY(18px) scale(.88)}58%{opacity:1;transform:translateY(-3px) scale(1.04)}100%{opacity:1;transform:translateY(0) scale(1)}}',
+      '@keyframes pbbWciXpFade{0%,74%{opacity:1}100%{opacity:0}}',
+      '@keyframes pbbWciXpSweep{100%{transform:translateX(65%)}}',
+      '@keyframes pbbWciXpSpark{0%{opacity:0;transform:translate(0,0) scale(.7)}18%{opacity:1}100%{opacity:0;transform:translate(var(--spark-x),var(--spark-y)) scale(.2)}}',
       '@media (max-width:420px){.pbb-wci-metrics,.pbb-wci-grid-3{grid-template-columns:1fr}.pbb-wci-actions{grid-template-columns:1fr}.pbb-wci-card-title{font-size:1.08rem}.pbb-wci-hero h2{font-size:1.35rem}}',
       '@media (max-width:640px){.pbb-wci-overlay{padding:0}.pbb-wci-sheet{max-width:none;min-height:100%;max-height:100%;border-radius:0;border-left:0;border-right:0}.pbb-wci-body{padding-left:16px;padding-right:16px}}'
     ].join('');
@@ -1193,6 +1206,38 @@
     console.log('[weekly-checkin-preview]', message);
   }
 
+  function showWeeklyReviewXpCelebration(pointsAwarded){
+    var points = Number(pointsAwarded || 0);
+    if (!points) return;
+    ensureStyles();
+
+    var existing = document.getElementById('weekly-review-xp-celebration');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'weekly-review-xp-celebration';
+    overlay.className = 'pbb-wci-xp-celebration';
+    overlay.setAttribute('aria-live', 'polite');
+    overlay.innerHTML = [
+      '<div class="pbb-wci-xp-card" role="status">',
+      '  <span class="pbb-wci-xp-spark" style="--spark-x:-108px;--spark-y:-78px;left:50%;top:50%;"></span>',
+      '  <span class="pbb-wci-xp-spark" style="--spark-x:-72px;--spark-y:-122px;left:50%;top:50%;animation-delay:.04s;"></span>',
+      '  <span class="pbb-wci-xp-spark" style="--spark-x:78px;--spark-y:-116px;left:50%;top:50%;animation-delay:.08s;"></span>',
+      '  <span class="pbb-wci-xp-spark" style="--spark-x:116px;--spark-y:-58px;left:50%;top:50%;animation-delay:.12s;"></span>',
+      '  <span class="pbb-wci-xp-spark" style="--spark-x:102px;--spark-y:72px;left:50%;top:50%;animation-delay:.16s;"></span>',
+      '  <span class="pbb-wci-xp-spark" style="--spark-x:-94px;--spark-y:82px;left:50%;top:50%;animation-delay:.2s;"></span>',
+      '  <div class="pbb-wci-xp-kicker">Weekly Review</div>',
+      '  <div class="pbb-wci-xp-amount">+' + escapeHtml(points) + ' XP</div>',
+      '  <div class="pbb-wci-xp-copy">claimed</div>',
+      '</div>'
+    ].join('');
+    document.body.appendChild(overlay);
+    window.setTimeout(function(){
+      var current = document.getElementById('weekly-review-xp-celebration');
+      if (current) current.remove();
+    }, 2600);
+  }
+
   function normalizeRpcJson(value){
     if (!value) return {};
     if (typeof value === 'string') {
@@ -1239,6 +1284,7 @@
       var pointsAwarded = Number(payload.pointsAwarded || payload.points_awarded || 0);
       state.reviewRewardClaimed = true;
       if (pointsAwarded > 0) {
+        showWeeklyReviewXpCelebration(pointsAwarded);
         showToast('+' + pointsAwarded + ' XP claimed.', 'success');
         if (typeof window.loadUserPoints === 'function') {
           window.loadUserPoints();
@@ -1255,7 +1301,12 @@
     }
   }
 
-  async function openNextGoals(){
+  async function openNextGoals(event){
+    var button = event && event.currentTarget ? event.currentTarget : null;
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Opening goals...';
+    }
     await claimWeeklyReviewReward();
     closeWeeklyCheckinPreview();
     if (typeof window.openWeeklyGoalsModal === 'function') {
