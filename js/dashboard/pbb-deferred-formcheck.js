@@ -2286,6 +2286,7 @@
         const caption = (options.caption && String(options.caption).trim()) || (captionInput && captionInput.value.trim()) || '';
         const workoutName = workoutFeedShareState.workoutName || getActiveWorkoutName();
         let postPromise = null;
+        let initialQueueItem = null;
 
         try {
             if (submitBtn && typeof submitBtn === 'object' && 'disabled' in submitBtn) {
@@ -2310,9 +2311,29 @@
                 return;
             }
 
+            // iOS can hand us a fresh camera/picker File that fails when uploaded
+            // immediately from the workout screen. Persist and read it back first,
+            // matching the Feed retry path that is already reliable.
+            try {
+                initialQueueItem = await queueWorkoutFeedShareUpload({
+                    userId: userId,
+                    file: workoutFeedShareState.file,
+                    caption: caption,
+                    workoutName: workoutName,
+                    lastError: 'posting',
+                    autoRetry: false
+                });
+            } catch (queueError) {
+                console.warn('[WorkoutFeedShare] first-post queue staging failed', queueError);
+                initialQueueItem = null;
+            }
+
+            const uploadFile = initialQueueItem
+                ? (getQueuedWorkoutFeedShareFile(initialQueueItem) || workoutFeedShareState.file)
+                : workoutFeedShareState.file;
             const uploadController = typeof AbortController !== 'undefined' ? new AbortController() : null;
             postPromise = window.createWorkoutFeedSharePost({
-                file: workoutFeedShareState.file,
+                file: uploadFile,
                 caption: caption,
                 workoutName: workoutName,
                 source: 'feed_workout_share',
@@ -2320,9 +2341,14 @@
                 pointsType: 'workout_feed_share',
                 skipVideoPreparation: true,
                 uploadTimeoutMs: WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS,
+                photoTimestamp: initialQueueItem ? initialQueueItem.createdAt : undefined,
                 abortSignal: uploadController ? uploadController.signal : null
             });
             const result = await waitForWorkoutFeedSharePost(postPromise, WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS, uploadController);
+            if (initialQueueItem && initialQueueItem.id) {
+                await deleteWorkoutFeedShareQueueItem(initialQueueItem.id);
+                refreshWorkoutFeedShareRetryNotice().catch(function () {});
+            }
 
             const successMessage = getWorkoutFeedShareSuccessMessage(result);
             showWorkoutFeedShareUploadBanner(successMessage, 'success');
@@ -2335,15 +2361,30 @@
             console.error('[WorkoutFeedShare] submit failed', error);
             if (isRetryableWorkoutFeedShareError(error) && workoutFeedShareState.file) {
                 try {
-                    const queueItem = await queueWorkoutFeedShareUpload({
-                        userId: userId,
-                        file: workoutFeedShareState.file,
-                        caption: caption,
-                        workoutName: workoutName,
-                        lastError: error && error.message ? error.message : 'upload failed',
-                        retryDelayMs: error && error.workoutFeedShareTimeout ? WORKOUT_FEED_SHARE_LATE_RETRY_DELAY_MS : 30000,
-                        autoRetry: true
-                    });
+                    const retryDelayMs = error && error.workoutFeedShareTimeout ? WORKOUT_FEED_SHARE_LATE_RETRY_DELAY_MS : 30000;
+                    let queueItem = initialQueueItem;
+                    if (queueItem && queueItem.id) {
+                        queueItem = {
+                            ...queueItem,
+                            attempts: Number(queueItem.attempts || 0) + 1,
+                            lastAttemptAt: new Date().toISOString(),
+                            nextAttemptAt: new Date(Date.now() + retryDelayMs).toISOString(),
+                            lastError: error && error.message ? error.message : 'upload failed'
+                        };
+                        await putWorkoutFeedShareQueueItem(queueItem);
+                        refreshWorkoutFeedShareRetryNotice().catch(function () {});
+                        scheduleWorkoutFeedShareRetry(retryDelayMs);
+                    } else {
+                        queueItem = await queueWorkoutFeedShareUpload({
+                            userId: userId,
+                            file: workoutFeedShareState.file,
+                            caption: caption,
+                            workoutName: workoutName,
+                            lastError: error && error.message ? error.message : 'upload failed',
+                            retryDelayMs: retryDelayMs,
+                            autoRetry: true
+                        });
+                    }
                     if (error && error.workoutFeedShareTimeout && postPromise) {
                         forgetQueuedWorkoutFeedShareOnLateSuccess(postPromise, queueItem);
                     }
