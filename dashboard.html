@@ -260,7 +260,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 </script>
 
 <!-- Supabase & Auth Guard -->
-<script src="js/dashboard/script_part_2.js?v=6"></script>
+<script src="js/dashboard/script_part_2.js?v=7"></script>
 <script>
 // ── Native OAuth warm-start callback (non-iOS) ────────────────────
 // On iOS this is set up inside the deferred chain above (after supabaseClient exists).
@@ -330,7 +330,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=39',
             'lib/native-iap.js',
-            'lib/stories.js?v=43',
+            'lib/stories.js?v=44',
             'lib/ai-opponents.js',
             'lib/games.js?v=3',
             'lib/nutrition-calculator.js',
@@ -349,7 +349,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=43"><\/script>');
+    document.write('<script src="lib/stories.js?v=44"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=3"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
