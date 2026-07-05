@@ -12,6 +12,10 @@ const block = buildShannonDmTuningBlock();
 const bioBlock = buildCoachBioBlock();
 const clientContextSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/client-context.js'), 'utf8');
 
+assert.ok(block.includes('Plain-reply override: turn the jazz off'), 'turns off over-colourful AI reply tone');
+assert.ok(block.includes('Default to useful, normal, and specific'), 'defaults replies to plain usefulness');
+assert.ok(block.includes('Do not force vivid angles, quirky metaphors, theatrical banter'), 'prevents jazzy rapport overreach');
+assert.ok(block.includes('respond to that concrete thing'), 'keeps rapport anchored to the actual thread');
 assert.ok(block.includes('Emotional replies need one true acknowledgement'), 'warns against validation stacks');
 assert.ok(block.includes('support-line closers'), 'names support-line closers as a pattern');
 assert.ok(block.includes('"I\'m here for you"'), 'calls out the repeated here-for-you closer');
