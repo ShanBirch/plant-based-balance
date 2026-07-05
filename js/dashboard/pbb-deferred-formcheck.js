@@ -4,8 +4,10 @@
     const WORKOUT_FEED_SHARE_QUEUE_STORE = 'uploads';
     const WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS = 300000;
     const WORKOUT_FEED_SHARE_LATE_RETRY_DELAY_MS = 120000;
-    // Share a Set now uploads large clips direct to B2, so keep IG-style quality.
+    // Share a Set uploads large clips direct to B2. Keep the original HD file
+    // whenever it is within the direct-upload ceiling to avoid phone re-encode crashes.
     const WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 100 * 1024 * 1024;
+    const WORKOUT_FEED_SHARE_DIRECT_UPLOAD_MAX_BYTES = 200 * 1024 * 1024;
     const WORKOUT_FEED_SHARE_CAMERA_VIDEO_BITS_PER_SECOND = 16000000;
     const WORKOUT_FEED_SHARE_CAMERA_AUDIO_BITS_PER_SECOND = 192000;
     const WORKOUT_FEED_SHARE_RETRY_NOTICE_ID = 'workout-feed-share-retry-notice';
@@ -929,6 +931,9 @@
 
     async function prepareWorkoutFeedShareClip(file, statusTarget) {
         await assertWorkoutFeedShareVideoFile(file);
+        if (Number(file && file.size || 0) > 0 && file.size <= WORKOUT_FEED_SHARE_DIRECT_UPLOAD_MAX_BYTES) {
+            return file;
+        }
         if (typeof window.prepareUploadableFeedVideo !== 'function') return file;
         const preparedFile = await window.prepareUploadableFeedVideo(file, function (status) {
             if (statusTarget) statusTarget.textContent = status;
