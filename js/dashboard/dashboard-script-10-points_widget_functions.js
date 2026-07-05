@@ -2426,10 +2426,13 @@ function retakeWorkoutSharePhoto() {
 // Store the captured photo and flip the UI into its "share buttons" state.
 async function onWorkoutSharePhotoReady(file) {
     try {
-        // Compress once up front so subsequent shares are fast
-        const compressedFile = typeof compressMealImage === 'function'
-            ? await compressMealImage(file)
+        // Prepare once up front so previews, hashes, and uploads use upright pixels.
+        const preparedFile = typeof window.normalizeFeedImageUploadFile === 'function'
+            ? await window.normalizeFeedImageUploadFile(file)
             : file;
+        const compressedFile = typeof compressMealImage === 'function'
+            ? await compressMealImage(preparedFile)
+            : preparedFile;
         const base64Data = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (e) => resolve(e.target.result);
@@ -2792,9 +2795,12 @@ async function uploadPostWorkoutPhotoToFeed(file) {
 
     try {
         const userId = window.currentUser.id;
-        const compressedFile = typeof compressMealImage === 'function'
-            ? await compressMealImage(file)
+        const preparedFile = typeof window.normalizeFeedImageUploadFile === 'function'
+            ? await window.normalizeFeedImageUploadFile(file)
             : file;
+        const compressedFile = typeof compressMealImage === 'function'
+            ? await compressMealImage(preparedFile)
+            : preparedFile;
         const base64Data = await new Promise(function(resolve, reject) {
             const reader = new FileReader();
             reader.onload = function(event) { resolve(event.target.result); };
@@ -2952,6 +2958,9 @@ async function handleWorkoutPhotoCapture(event) {
 async function handleWorkoutPhotoCaptureFromFile(file) {
     if (!file) return;
 
+    const preparedFile = typeof window.normalizeFeedImageUploadFile === 'function'
+        ? await window.normalizeFeedImageUploadFile(file)
+        : file;
     const photoTimestamp = new Date().toISOString();
 
     const reader = new FileReader();
@@ -2962,7 +2971,7 @@ async function handleWorkoutPhotoCaptureFromFile(file) {
             const photoHash = await window.db?.points?.generatePhotoHash(base64Data);
 
             if (pendingWorkoutShareType === 'story') {
-                window.pendingStoryFile = file;
+                window.pendingStoryFile = preparedFile;
                 window.pendingStoryBase64 = base64Data;
                 window.pendingStoryType = 'image';
                 window.pendingWorkoutPhotoData = {
@@ -3009,7 +3018,7 @@ async function handleWorkoutPhotoCaptureFromFile(file) {
             showToast('Failed to process photo. Please try again.', 'error');
         }
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(preparedFile);
 }
 
 // Award point for workout share
@@ -4556,22 +4565,25 @@ function handleActivityPhotoCapture(input) {
 window.handleActivityPhotoCapture = handleActivityPhotoCapture;
 
 // Handle activity photo from a File object (used by both camera modal and file input)
-function handleActivityPhotoCaptureFromFile(file) {
+async function handleActivityPhotoCaptureFromFile(file) {
     if (!file) return;
 
+    const preparedFile = typeof window.normalizeFeedImageUploadFile === 'function'
+        ? await window.normalizeFeedImageUploadFile(file)
+        : file;
     const reader = new FileReader();
     reader.onload = function(e) {
         const base64Full = e.target.result;
         const base64Data = base64Full.split(',')[1];
         activityFormState.photoBase64 = base64Data;
-        activityFormState.photoMimeType = file.type || 'image/jpeg';
+        activityFormState.photoMimeType = preparedFile.type || 'image/jpeg';
 
         // Show preview
         document.getElementById('activity-photo-img').src = base64Full;
         document.getElementById('activity-photo-preview').style.display = 'block';
         document.getElementById('activity-photo-btn').style.display = 'none';
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(preparedFile);
 }
 
 function removeActivityPhoto() {
@@ -4889,11 +4901,14 @@ function openStoryUploadWithImage(file, base64Data, defaultCaption = '') {
 }
 
 // Handle story file selection (from file picker)
-function handleStoryFileSelect(event) {
-    const file = event.target.files[0];
+async function handleStoryFileSelect(event) {
+    let file = event.target.files[0];
     if (!file) return;
 
     const isVideo = file.type.startsWith('video/');
+    if (!isVideo && typeof window.normalizeFeedImageUploadFile === 'function') {
+        file = await window.normalizeFeedImageUploadFile(file);
+    }
     const reader = new FileReader();
 
     reader.onload = function(e) {
@@ -4985,9 +5000,12 @@ async function uploadStory() {
         // Compress image if needed
         let fileToUpload = window.pendingStoryFile;
         if (window.pendingStoryType === 'image') {
-            fileToUpload = typeof compressMealImage === 'function'
-                ? await compressMealImage(window.pendingStoryFile)
+            const preparedFile = typeof window.normalizeFeedImageUploadFile === 'function'
+                ? await window.normalizeFeedImageUploadFile(window.pendingStoryFile)
                 : window.pendingStoryFile;
+            fileToUpload = typeof compressMealImage === 'function'
+                ? await compressMealImage(preparedFile)
+                : preparedFile;
         }
 
         const fileSizeMB = fileToUpload.size / (1024 * 1024);
@@ -5092,8 +5110,12 @@ async function analyzeStoryForPoints(userId, storyId, imageBase64) {
 
 // Handle workout photo selection
 async function handleWorkoutPhotoSelect(event) {
-    const file = event.target.files[0];
+    let file = event.target.files[0];
     if (!file) return;
+
+    if (typeof window.normalizeFeedImageUploadFile === 'function') {
+        file = await window.normalizeFeedImageUploadFile(file);
+    }
 
     // Compress image first to avoid 502 errors on large photos
     capturedWorkoutFile = typeof compressMealImage === 'function'
