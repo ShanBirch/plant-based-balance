@@ -3449,10 +3449,20 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
     // Success - save meal to database
     try {
         let photoUrl = '';
+        const uploadFile = compressedFile || originalFile;
         try {
-            photoUrl = await uploadMealPhoto(originalFile);
+            photoUrl = await uploadMealPhoto(uploadFile);
         } catch (photoError) {
-            console.warn('Meal photo upload failed; saving nutrition without stored photo:', photoError);
+            console.warn('Compressed meal photo upload failed:', photoError);
+            if (uploadFile !== originalFile && originalFile) {
+                try {
+                    photoUrl = await uploadMealPhoto(originalFile);
+                } catch (fallbackPhotoError) {
+                    console.warn('Original meal photo upload failed; saving nutrition without stored photo:', fallbackPhotoError);
+                }
+            } else {
+                console.warn('Meal photo upload failed; saving nutrition without stored photo:', photoError);
+            }
         }
 
         // If this was a recent meal verification, use the original macros
@@ -3619,7 +3629,7 @@ async function uploadMealPhoto(file) {
 
     const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
     const timeoutId = controller
-        ? setTimeout(() => controller.abort(), 20000)
+        ? setTimeout(() => controller.abort(), 45000)
         : null;
 
     let response;
