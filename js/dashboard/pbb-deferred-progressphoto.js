@@ -697,9 +697,103 @@ let progressPhotoCaptureState = null;
         alert('Camera not available. Please try again.');
     }
 
+    function isProgressPhotoImageFile(file) {
+        return !!(file && typeof file.type === 'string' && /^image\//i.test(file.type));
+    }
+
+    function getProgressPhotoNormalizedFileName(file) {
+        const rawName = file && file.name ? String(file.name) : 'progress-photo.jpg';
+        const baseName = rawName.replace(/\.[^.]+$/, '') || 'progress-photo';
+        return baseName + '.jpg';
+    }
+
+    function getProgressPhotoCanvasSize(sourceWidth, sourceHeight) {
+        const width = Number(sourceWidth) || 0;
+        const height = Number(sourceHeight) || 0;
+        if (!width || !height) return { width: 0, height: 0 };
+
+        const maxEdge = 2400;
+        const scale = Math.min(1, maxEdge / Math.max(width, height));
+        return {
+            width: Math.max(1, Math.round(width * scale)),
+            height: Math.max(1, Math.round(height * scale))
+        };
+    }
+
+    async function loadProgressPhotoImageSource(file) {
+        if (typeof createImageBitmap === 'function') {
+            try {
+                const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+                return {
+                    source: bitmap,
+                    width: bitmap.width,
+                    height: bitmap.height,
+                    cleanup: function() {
+                        if (typeof bitmap.close === 'function') bitmap.close();
+                    }
+                };
+            } catch (error) {
+                console.warn('Progress photo bitmap decode failed, falling back to image decode:', error);
+            }
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        try {
+            const img = await new Promise(function(resolve, reject) {
+                const image = new Image();
+                image.onload = function() { resolve(image); };
+                image.onerror = function() { reject(new Error('Could not read progress photo image')); };
+                image.src = objectUrl;
+            });
+            return {
+                source: img,
+                width: img.naturalWidth || img.width,
+                height: img.naturalHeight || img.height,
+                cleanup: function() { URL.revokeObjectURL(objectUrl); }
+            };
+        } catch (error) {
+            URL.revokeObjectURL(objectUrl);
+            throw error;
+        }
+    }
+
+    async function normalizeProgressPhotoUploadFile(file) {
+        if (!isProgressPhotoImageFile(file)) return file;
+
+        let decoded = null;
+        try {
+            decoded = await loadProgressPhotoImageSource(file);
+            const size = getProgressPhotoCanvasSize(decoded.width, decoded.height);
+            if (!size.width || !size.height) return file;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = size.width;
+            canvas.height = size.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return file;
+
+            ctx.drawImage(decoded.source, 0, 0, size.width, size.height);
+            const blob = await new Promise(function(resolve) {
+                canvas.toBlob(resolve, 'image/jpeg', 0.9);
+            });
+            if (!blob || !blob.size) return file;
+
+            return new File([blob], getProgressPhotoNormalizedFileName(file), {
+                type: 'image/jpeg',
+                lastModified: file.lastModified || Date.now()
+            });
+        } catch (error) {
+            console.warn('Could not normalize progress photo orientation before upload:', error);
+            return file;
+        } finally {
+            if (decoded && typeof decoded.cleanup === 'function') decoded.cleanup();
+        }
+    }
+
     async function uploadProgressPhotoFile(userId, file) {
+        const uploadFile = await normalizeProgressPhotoUploadFile(file);
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', uploadFile);
         formData.append('userId', userId);
 
         const uploadResponse = await fetch('/api/upload-progress-photo', {
