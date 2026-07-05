@@ -763,7 +763,10 @@ let progressPhotoCaptureState = null;
         let decoded = null;
         try {
             decoded = await loadProgressPhotoImageSource(file);
-            const size = getProgressPhotoCanvasSize(decoded.width, decoded.height);
+            const shouldRotateToPortrait = decoded.width > decoded.height;
+            const sourceWidth = shouldRotateToPortrait ? decoded.height : decoded.width;
+            const sourceHeight = shouldRotateToPortrait ? decoded.width : decoded.height;
+            const size = getProgressPhotoCanvasSize(sourceWidth, sourceHeight);
             if (!size.width || !size.height) return file;
 
             const canvas = document.createElement('canvas');
@@ -772,7 +775,13 @@ let progressPhotoCaptureState = null;
             const ctx = canvas.getContext('2d');
             if (!ctx) return file;
 
-            ctx.drawImage(decoded.source, 0, 0, size.width, size.height);
+            if (shouldRotateToPortrait) {
+                ctx.translate(size.width, 0);
+                ctx.rotate(Math.PI / 2);
+                ctx.drawImage(decoded.source, 0, 0, size.height, size.width);
+            } else {
+                ctx.drawImage(decoded.source, 0, 0, size.width, size.height);
+            }
             const blob = await new Promise(function(resolve) {
                 canvas.toBlob(resolve, 'image/jpeg', 0.9);
             });

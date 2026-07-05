@@ -9,7 +9,9 @@ import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.drawable.Icon;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -72,8 +74,49 @@ public class MainActivity extends BridgeActivity {
     private static final String SAVED_MEALS_CACHE_KEY = "saved_meals_cache";
     private static final String RECENT_MEALS_CACHE_KEY = "recent_meals_cache";
 
+    private Bitmap decodeBitmapWithExifOrientation(Uri photoUri, File sourceFile) throws Exception {
+        InputStream is = getContentResolver().openInputStream(photoUri);
+        Bitmap bitmap = BitmapFactory.decodeStream(is);
+        if (is != null) is.close();
+        if (bitmap == null) return null;
+
+        int orientation = ExifInterface.ORIENTATION_UNDEFINED;
+        try {
+            ExifInterface exif = sourceFile != null && sourceFile.exists()
+                    ? new ExifInterface(sourceFile.getAbsolutePath())
+                    : null;
+            if (exif == null) {
+                InputStream exifStream = getContentResolver().openInputStream(photoUri);
+                if (exifStream != null) {
+                    exif = new ExifInterface(exifStream);
+                    exifStream.close();
+                }
+            }
+            if (exif != null) {
+                orientation = exif.getAttributeInt(
+                        ExifInterface.TAG_ORIENTATION,
+                        ExifInterface.ORIENTATION_UNDEFINED);
+            }
+        } catch (Exception ignored) {
+            orientation = ExifInterface.ORIENTATION_UNDEFINED;
+        }
+
+        int degrees = 0;
+        if (orientation == ExifInterface.ORIENTATION_ROTATE_90) degrees = 90;
+        else if (orientation == ExifInterface.ORIENTATION_ROTATE_180) degrees = 180;
+        else if (orientation == ExifInterface.ORIENTATION_ROTATE_270) degrees = 270;
+        if (degrees == 0) return bitmap;
+
+        Matrix matrix = new Matrix();
+        matrix.postRotate(degrees);
+        Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        if (rotated != bitmap) bitmap.recycle();
+        return rotated;
+    }
+
     /** URI where the native camera shortcut saves its photo. */
     private Uri nativeCameraOutputUri = null;
+    private File nativeCameraOutputFile = null;
     /** True while the shortcut native camera photo is being processed in the background. */
     private volatile boolean nativeCameraProcessing = false;
     /** Base64 data-URL of the photo taken via the shortcut native camera, ready for JS. */
@@ -81,6 +124,7 @@ public class MainActivity extends BridgeActivity {
 
     /** URI where the workout-share native camera saves its photo. */
     private Uri workoutCameraOutputUri = null;
+    private File workoutCameraOutputFile = null;
     /** URI/file where the Share a Set native video camera saves its clip. */
     private Uri workoutVideoOutputUri = null;
     private File workoutVideoOutputFile = null;
@@ -102,9 +146,7 @@ public class MainActivity extends BridgeActivity {
             final Uri photoUri = nativeCameraOutputUri;
             new Thread(() -> {
                 try {
-                    InputStream is = getContentResolver().openInputStream(photoUri);
-                    Bitmap bitmap = BitmapFactory.decodeStream(is);
-                    if (is != null) is.close();
+                    Bitmap bitmap = decodeBitmapWithExifOrientation(photoUri, nativeCameraOutputFile);
                     if (bitmap == null) return;
                     // Downscale to max 1024px wide to keep the data-URL manageable
                     int maxW = 1024;
@@ -151,9 +193,7 @@ public class MainActivity extends BridgeActivity {
             new Thread(() -> {
                 String dataUrl = null;
                 try {
-                    InputStream is = getContentResolver().openInputStream(photoUri);
-                    Bitmap bitmap = BitmapFactory.decodeStream(is);
-                    if (is != null) is.close();
+                    Bitmap bitmap = decodeBitmapWithExifOrientation(photoUri, workoutCameraOutputFile);
                     if (bitmap != null) {
                         // Downscale to max 1280px wide for sharing (smaller keeps payload lean)
                         int maxW = 1280;
@@ -870,6 +910,7 @@ public class MainActivity extends BridgeActivity {
             runOnUiThread(() -> {
                 try {
                     File tempFile = new File(getCacheDir(), "workout_share_photo.jpg");
+                    workoutCameraOutputFile = tempFile;
                     workoutCameraOutputUri = FileProvider.getUriForFile(
                             MainActivity.this, getPackageName() + ".fileprovider", tempFile);
                     workoutCameraLauncher.launch(workoutCameraOutputUri);
@@ -1359,6 +1400,7 @@ public class MainActivity extends BridgeActivity {
     private void launchNativeCameraForShortcut() {
         try {
             File tempFile = new File(getCacheDir(), "shortcut_meal_photo.jpg");
+            nativeCameraOutputFile = tempFile;
             nativeCameraOutputUri = FileProvider.getUriForFile(
                     this, getPackageName() + ".fileprovider", tempFile);
             nativeCameraProcessing = true;
