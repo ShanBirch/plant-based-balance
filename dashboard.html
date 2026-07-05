@@ -330,7 +330,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=39',
             'lib/native-iap.js',
-            'lib/stories.js?v=42',
+            'lib/stories.js?v=43',
             'lib/ai-opponents.js',
             'lib/games.js?v=3',
             'lib/nutrition-calculator.js',
@@ -349,7 +349,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=42"><\/script>');
+    document.write('<script src="lib/stories.js?v=43"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=3"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -12821,6 +12821,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Share a thought or encouragement once a day for +2 XP. Add a photo or video if you want." },
     { tab:'friends', sel:'#feed-community-pulse-card', title:'Today in Balance', body:"See today's posts, reactions, comments, and battles at a glance.", quick: true },
+    { tab:'friends', sel:'.feed-post-card,#feed-composer-card', title:'Private post views', body:"Your own Feed posts now show a private view count beside the timestamp. Only you and Shannon can see it.", quick: true },
     { tab:'friends', sel:'#feed-start-battle-card', title:'Start Battle', body:"Tap Start Battle to choose Quiz Battle, chess, checkers, or another game before challenging a friend or bot.", quick: true },
     { tab:'friends', sel:'#feed-composer-card', title:'Text post styles', body:"Text-only posts now use big type, smaller notes, and different font styles like a proper social card.", quick: true },
     { tab:'friends', sel:'#feed-composer-share-menu-button,#feed-composer-card', title:'Share from Feed', body:"Use Share to post a meal, choose a workout or PB, or film a set without leaving Feed.", quick: true },
@@ -13872,6 +13873,13 @@ if(!window._pbbIsIOSSafari) {
     title: 'Like feed comments',
     body: "Tap the heart beside a feed comment to like it.",
     condition: function(){ return !!document.querySelector('.feed-comment-like-btn'); }
+  });
+  allFeatures.push({
+    id: 'feed-private-post-views-v1',
+    tab: 'friends',
+    sel: '.feed-post-card,#feed-composer-card',
+    title: 'Private post views',
+    body: "Your own Feed posts now show a private view count beside the timestamp. Only you and Shannon can see it."
   });
   allFeatures.push({
     id: 'feed-community-pulse-v2',
