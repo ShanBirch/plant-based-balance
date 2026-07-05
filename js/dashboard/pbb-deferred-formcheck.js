@@ -4,7 +4,8 @@
     const WORKOUT_FEED_SHARE_QUEUE_STORE = 'uploads';
     const WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS = 300000;
     const WORKOUT_FEED_SHARE_LATE_RETRY_DELAY_MS = 120000;
-    const WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 30 * 1024 * 1024;
+    // Netlify rejects large POST bodies before the upload edge function can run.
+    const WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 6 * 1024 * 1024;
     const WORKOUT_FEED_SHARE_CAMERA_VIDEO_BITS_PER_SECOND = 8000000;
     const WORKOUT_FEED_SHARE_CAMERA_AUDIO_BITS_PER_SECOND = 128000;
     const WORKOUT_FEED_SHARE_RETRY_NOTICE_ID = 'workout-feed-share-retry-notice';
