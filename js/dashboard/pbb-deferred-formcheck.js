@@ -1319,7 +1319,7 @@
                     <div class="share-set-retry-meta">${escapeWorkoutFeedShareHtml(metaParts.join(' | '))}</div>
                 </div>
                 <div class="share-set-retry-actions">
-                    <button type="button" onclick="retryWorkoutFeedShareQueue(true)" ${workoutFeedShareRetryInProgress ? 'disabled' : ''}>${escapeWorkoutFeedShareHtml(buttonText)}</button>
+                    <button type="button" onclick="postWorkoutFeedShareQueueNow()" ${workoutFeedShareRetryInProgress ? 'disabled' : ''}>${escapeWorkoutFeedShareHtml(buttonText)}</button>
                 </div>
             </div>
         `;
@@ -1401,7 +1401,7 @@
                 <div id="workout-feed-share-upload-bar" style="height:100%; width:36%; border-radius:999px; background:linear-gradient(90deg,#f97316,#ef4444); animation:workoutFeedShareSweep 1.15s ease-in-out infinite;"></div>
             </div>
             <div id="workout-feed-share-upload-actions" style="display:none; gap:8px; margin-top:10px;">
-                <button type="button" onclick="retryWorkoutFeedShareQueue(true)" style="flex:1; min-height:38px; border:none; border-radius:10px; background:#fff; color:#7f1d1d !important; -webkit-text-fill-color:#7f1d1d !important; font-weight:900; font-size:0.82rem;">Retry now</button>
+                <button type="button" onclick="postWorkoutFeedShareQueueNow()" style="flex:1; min-height:38px; border:none; border-radius:10px; background:#fff; color:#7f1d1d !important; -webkit-text-fill-color:#7f1d1d !important; font-weight:900; font-size:0.82rem;">Post now</button>
                 <button type="button" onclick="hideWorkoutFeedShareUploadBanner()" style="min-height:38px; border:1px solid rgba(255,255,255,0.28); border-radius:10px; background:rgba(255,255,255,0.08); color:#fff !important; -webkit-text-fill-color:#fff !important; font-weight:800; font-size:0.82rem; padding:0 13px;">Later</button>
             </div>
         `;
@@ -2443,10 +2443,7 @@
             return;
         }
 
-        if (isWorkoutFeedShareActiveWorkoutOpen()) {
-            if (manual) {
-                showWorkoutFeedShareUploadBanner('Saved for after workout', 'queued', { retry: false });
-            }
+        if (!manual && isWorkoutFeedShareActiveWorkoutOpen()) {
             return;
         }
 
@@ -2539,6 +2536,10 @@
         }
     }
 
+    function postWorkoutFeedShareQueueNow() {
+        return retryWorkoutFeedShareQueue(true);
+    }
+
     window.openFormCheck = openFormCheck;
     window.closeFormCheck = closeFormCheck;
     window.openFormCheckCapture = openFormCheckCapture;
@@ -2557,6 +2558,7 @@
     window.toggleWorkoutFeedShareInAppRecording = toggleWorkoutFeedShareInAppRecording;
     window.flipWorkoutFeedShareInAppCamera = flipWorkoutFeedShareInAppCamera;
     window.retryWorkoutFeedShareQueue = retryWorkoutFeedShareQueue;
+    window.postWorkoutFeedShareQueueNow = postWorkoutFeedShareQueueNow;
     window.hideWorkoutFeedShareUploadBanner = hideWorkoutFeedShareUploadBanner;
     window.refreshWorkoutFeedShareRetryNotice = refreshWorkoutFeedShareRetryNotice;
 
