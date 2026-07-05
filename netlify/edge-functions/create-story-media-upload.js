@@ -4,7 +4,7 @@
  */
 
 const DEFAULT_SUPABASE_URL = 'https://hzapaorxqboevxnumxkv.supabase.co';
-const MAX_DIRECT_UPLOAD_BYTES = 80 * 1024 * 1024;
+const MAX_DIRECT_UPLOAD_BYTES = 200 * 1024 * 1024;
 
 function getEnv(name) {
     try {
