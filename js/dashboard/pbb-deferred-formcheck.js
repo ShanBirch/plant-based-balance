@@ -968,18 +968,12 @@
 
         await putWorkoutFeedShareQueueItem(item);
         refreshWorkoutFeedShareRetryNotice().catch(function () {});
-        if (payload.autoRetry === true) {
-            scheduleWorkoutFeedShareRetry(retryDelayMs || 30000);
-        }
         return item;
     }
 
     function scheduleWorkoutFeedShareRetry(delayMs) {
-        if (navigator && navigator.onLine === false) return;
         if (workoutFeedShareRetryTimer) clearTimeout(workoutFeedShareRetryTimer);
-        workoutFeedShareRetryTimer = setTimeout(function () {
-            retryWorkoutFeedShareQueue(false);
-        }, Math.max(5000, Number(delayMs || 30000)));
+        workoutFeedShareRetryTimer = null;
     }
 
     function resetWorkoutFeedShareUploadBannerMotion(banner) {
@@ -1301,10 +1295,6 @@
             return;
         }
 
-        if (!workoutFeedShareRetryInProgress && !(navigator && navigator.onLine === false)) {
-            scheduleWorkoutFeedShareRetry(getWorkoutFeedShareNextRetryDelay(items));
-        }
-
         const firstItem = items[0] || {};
         const count = items.length;
         const fileSize = formatWorkoutFeedShareFileSize(firstItem.fileSize);
@@ -1325,7 +1315,7 @@
                 </div>
                 <div style="flex:1; min-width:0;">
                     <div class="share-set-retry-title">${escapeWorkoutFeedShareHtml(title)}</div>
-                    <div class="share-set-retry-body">${escapeWorkoutFeedShareHtml(body)} Balance will retry it automatically.</div>
+                    <div class="share-set-retry-body">${escapeWorkoutFeedShareHtml(body)} Tap Post now when you are ready.</div>
                     <div class="share-set-retry-meta">${escapeWorkoutFeedShareHtml(metaParts.join(' | '))}</div>
                 </div>
                 <div class="share-set-retry-actions">
@@ -1457,7 +1447,7 @@
             subtext.textContent = type === 'error'
                 ? 'Please try that clip again.'
                 : type === 'queued'
-                    ? 'Saved on this phone. Balance will retry it automatically.'
+                    ? 'Saved on this phone. Use Post now from Feed.'
                 : type === 'success'
                     ? 'Shared to Feed.'
                     : 'You can keep training.';
@@ -2278,7 +2268,6 @@
             retryDelayMs: 15000,
             autoRetry: false
         });
-        scheduleWorkoutFeedShareRetry(15000);
         showWorkoutFeedShareUploadBanner('Saved for after workout', 'queued', { retry: false });
         clearWorkoutFeedShareVideo();
         return true;
@@ -2406,7 +2395,6 @@
                         };
                         await putWorkoutFeedShareQueueItem(queueItem);
                         refreshWorkoutFeedShareRetryNotice().catch(function () {});
-                        scheduleWorkoutFeedShareRetry(retryDelayMs);
                     } else {
                         queueItem = await queueWorkoutFeedShareUpload({
                             userId: userId,
@@ -2459,7 +2447,6 @@
             if (manual) {
                 showWorkoutFeedShareUploadBanner('Saved for after workout', 'queued', { retry: false });
             }
-            scheduleWorkoutFeedShareRetry(15000);
             return;
         }
 
@@ -2484,7 +2471,7 @@
                         hideWorkoutFeedShareUploadBanner(1400);
                     }
                 } else if (queuedItems.length) {
-                    scheduleWorkoutFeedShareRetry(getWorkoutFeedShareNextRetryDelay(queuedItems));
+                    refreshWorkoutFeedShareRetryNotice().catch(function () {});
                 }
                 return;
             }
@@ -2540,7 +2527,6 @@
                         forgetQueuedWorkoutFeedShareOnLateSuccess(postPromise, item);
                     }
                     showWorkoutFeedShareUploadBanner('Saved for retry', 'queued', { retry: true });
-                    scheduleWorkoutFeedShareRetry(nextRetryDelayMs);
                     break;
                 }
             }
@@ -2578,11 +2564,9 @@
     document.addEventListener('DOMContentLoaded', function () {
         ensureWorkoutFeedShareView();
         refreshWorkoutFeedShareRetryNotice().catch(function () {});
-        setTimeout(function () { retryWorkoutFeedShareQueue(false); }, 3000);
     });
     window.addEventListener('online', function () {
         refreshWorkoutFeedShareRetryNotice().catch(function () {});
-        setTimeout(function () { retryWorkoutFeedShareQueue(false); }, 1200);
     });
     window.addEventListener('offline', function () {
         refreshWorkoutFeedShareRetryNotice().catch(function () {});
@@ -2590,7 +2574,6 @@
     document.addEventListener('visibilitychange', function () {
         if (!document.hidden) {
             refreshWorkoutFeedShareRetryNotice().catch(function () {});
-            retryWorkoutFeedShareQueue(false);
         }
     });
 })();
