@@ -527,7 +527,7 @@ function classifyNeedsYou(alert = {}) {
     });
     if (isAlwaysNeedsYouPerson(alwaysNeedsYouIdentity) && !kayProgramOrFixBypass) {
         reasons.push('always_needs_you_person');
-        labels.push('Shane/Fra/Kay/Miranda/Monica/Dani draft-only Needs You route');
+        labels.push('Shane/Fra/Kay/Jazz/Miranda/Monica/Dani draft-only Needs You route');
     }
     if (appProblemHold) {
         reasons.push(appProblemHold.code);

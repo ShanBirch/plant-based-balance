@@ -25,6 +25,16 @@ const kayAlert = {
     },
 };
 
+const jazzAlert = {
+    alert_type: 'ig_incoming_dm',
+    client_name: 'Jazz',
+    data: {
+        channel: 'instagram',
+        scheduled_via: 'auto_send',
+        ig_username: 'jazz',
+    },
+};
+
 const kayProgramUpdateAlert = {
     ...kayAlert,
     suggested_message: 'Yep, I can tweak that program for next week.',
@@ -55,6 +65,12 @@ assert.strictEqual(
     sendCoach.shouldBlockPermanentNeedsYouAutomatedSend(kayAlert, 'scheduled_worker'),
     true,
     'general send endpoint must block Kay from scheduled auto-send'
+);
+
+assert.strictEqual(
+    sendCoach.shouldBlockPermanentNeedsYouAutomatedSend(jazzAlert, 'scheduled_worker'),
+    true,
+    'general send endpoint must block Jazz from scheduled auto-send'
 );
 
 assert.strictEqual(
@@ -125,6 +141,16 @@ assert.strictEqual(
 
 assert.strictEqual(
     sendIg.shouldBlockPermanentNeedsYouAutomatedIgSend({
+        alert: jazzAlert,
+        alertData: jazzAlert.data,
+        source: 'scheduled_worker',
+    }),
+    true,
+    'IG sender must block Jazz from scheduled auto-send'
+);
+
+assert.strictEqual(
+    sendIg.shouldBlockPermanentNeedsYouAutomatedIgSend({
         alert: fraAlert,
         alertData: fraAlert.data,
         source: 'admin_dashboard_alert_send',
@@ -185,6 +211,15 @@ assert.deepStrictEqual(
     'scheduled worker should hold Kay before a queued auto-send reply is sent'
 );
 
+assert.deepStrictEqual(
+    scheduledWorker.buildPermanentNeedsYouHold(jazzAlert),
+    {
+        code: 'always_needs_you_person',
+        label: 'permanent Needs You client',
+    },
+    'scheduled worker should hold Jazz before a queued auto-send reply is sent'
+);
+
 assert.strictEqual(
     scheduledWorker.buildPermanentNeedsYouHold(kayProgramUpdateAlert),
     null,
@@ -214,6 +249,12 @@ assert.strictEqual(
     scheduleReply.shouldBlockPermanentNeedsYouSchedule(fraAlert, 'auto_send'),
     true,
     'auto-send scheduling should still be blocked for Fra'
+);
+
+assert.strictEqual(
+    scheduleReply.shouldBlockPermanentNeedsYouSchedule(jazzAlert, 'auto_send'),
+    true,
+    'auto-send scheduling should still be blocked for Jazz'
 );
 
 assert.strictEqual(

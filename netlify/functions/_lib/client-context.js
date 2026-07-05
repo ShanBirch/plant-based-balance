@@ -515,6 +515,8 @@ function isAlwaysNeedsYouPerson(record = {}) {
         return tokens.includes('shane')
             || tokens.includes('fra')
             || tokens.includes('kay')
+            || tokens.includes('jazz')
+            || tokens.includes('jaz')
             || tokens.includes('miranda')
             || tokens.includes('monica')
             || tokens.includes('dani')
@@ -524,6 +526,8 @@ function isAlwaysNeedsYouPerson(record = {}) {
             || name === 'shane'
             || name === 'fra'
             || name === 'kay'
+            || name === 'jazz'
+            || name === 'jaz'
             || name === 'miranda'
             || name === 'monica'
             || name === 'dani'
