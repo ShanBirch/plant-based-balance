@@ -743,6 +743,25 @@
         return 'share-set-' + Date.now() + '-' + Math.random().toString(36).slice(2);
     }
 
+    function getWorkoutFeedShareFileDiagnostic(file) {
+        if (!file) return {};
+        return {
+            clientFileName: file.name || 'share-set-video.mp4',
+            contentType: file.type || '',
+            fileSizeBytes: file.size || 0,
+            fileLastModified: file.lastModified || null
+        };
+    }
+
+    function logWorkoutFeedShareDiagnostic(event, data) {
+        if (typeof window.logFeedUploadDiagnostic !== 'function') return;
+        window.logFeedUploadDiagnostic(event, {
+            source: 'feed_workout_share',
+            userId: window.currentUser && window.currentUser.id,
+            ...data
+        });
+    }
+
     function openWorkoutFeedShareQueueDb() {
         return new Promise(function (resolve, reject) {
             if (!window.indexedDB) {
@@ -972,6 +991,16 @@
         };
 
         await putWorkoutFeedShareQueueItem(item);
+        if (item.lastError && item.lastError !== 'posting') {
+            logWorkoutFeedShareDiagnostic('share_set_saved_for_retry', {
+                queueId: item.id,
+                reason: item.lastError,
+                attempts: item.attempts,
+                nextAttemptAt: item.nextAttemptAt,
+                workoutName: item.workoutName,
+                ...getWorkoutFeedShareFileDiagnostic(file)
+            });
+        }
         refreshWorkoutFeedShareRetryNotice().catch(function () {});
         return item;
     }
@@ -2399,6 +2428,14 @@
                             lastError: error && error.message ? error.message : 'upload failed'
                         };
                         await putWorkoutFeedShareQueueItem(queueItem);
+                        logWorkoutFeedShareDiagnostic('share_set_saved_for_retry', {
+                            queueId: queueItem.id,
+                            reason: queueItem.lastError,
+                            attempts: queueItem.attempts,
+                            nextAttemptAt: queueItem.nextAttemptAt,
+                            workoutName: queueItem.workoutName,
+                            ...getWorkoutFeedShareFileDiagnostic(getQueuedWorkoutFeedShareFile(queueItem) || workoutFeedShareState.file)
+                        });
                         refreshWorkoutFeedShareRetryNotice().catch(function () {});
                     } else {
                         queueItem = await queueWorkoutFeedShareUpload({
@@ -2481,6 +2518,12 @@
             for (const item of items) {
                 const queuedFile = getQueuedWorkoutFeedShareFile(item);
                 if (!queuedFile) {
+                    logWorkoutFeedShareDiagnostic('share_set_retry_dropped', {
+                        queueId: item.id,
+                        reason: 'missing_queued_file',
+                        attempts: Number(item.attempts || 0),
+                        nextAttemptAt: item.nextAttemptAt || ''
+                    });
                     await deleteWorkoutFeedShareQueueItem(item.id);
                     continue;
                 }
@@ -2513,17 +2556,32 @@
                 } catch (error) {
                     console.warn('[WorkoutFeedShare] queued retry failed', error);
                     if (!isRetryableWorkoutFeedShareError(error)) {
+                        logWorkoutFeedShareDiagnostic('share_set_retry_dropped', {
+                            queueId: item.id,
+                            reason: error && error.message ? error.message : 'not_retryable',
+                            attempts: Number(item.attempts || 0),
+                            ...getWorkoutFeedShareFileDiagnostic(queuedFile)
+                        });
                         await deleteWorkoutFeedShareQueueItem(item.id);
                         showWorkoutFeedShareUploadBanner(error.message || WORKOUT_FEED_SHARE_INVALID_VIDEO_MESSAGE, 'error');
                         break;
                     }
                     const nextRetryDelayMs = Math.min(5 * 60 * 1000, 30000 * Math.max(1, Number(item.attempts || 1)));
-                    await putWorkoutFeedShareQueueItem({
+                    const retryItem = {
                         ...item,
                         attempts: Number(item.attempts || 0) + 1,
                         lastAttemptAt: new Date().toISOString(),
                         nextAttemptAt: new Date(Date.now() + nextRetryDelayMs).toISOString(),
                         lastError: error && error.message ? error.message : 'retry failed'
+                    };
+                    await putWorkoutFeedShareQueueItem(retryItem);
+                    logWorkoutFeedShareDiagnostic('share_set_retry_failed', {
+                        queueId: retryItem.id,
+                        reason: retryItem.lastError,
+                        attempts: retryItem.attempts,
+                        nextAttemptAt: retryItem.nextAttemptAt,
+                        manualRetry: manual === true,
+                        ...getWorkoutFeedShareFileDiagnostic(queuedFile)
                     });
                     if (error && error.workoutFeedShareTimeout && postPromise) {
                         forgetQueuedWorkoutFeedShareOnLateSuccess(postPromise, item);
