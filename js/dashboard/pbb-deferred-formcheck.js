@@ -233,6 +233,11 @@
         return window.currentWorkoutName || '';
     }
 
+    function isWorkoutFeedShareActiveWorkoutOpen() {
+        const activeWorkout = document.getElementById('view-active-workout');
+        return !!(activeWorkout && activeWorkout.style.display !== 'none');
+    }
+
     function setStatus(message, type) {
         const status = document.getElementById('form-check-status');
         if (!status) return;
@@ -1491,7 +1496,7 @@
                     : 'linear-gradient(90deg,#f97316,#ef4444)';
         }
         if (actions) {
-            actions.style.display = (type === 'queued' || options.retry === true) ? 'flex' : 'none';
+            actions.style.display = ((type === 'queued' || options.retry === true) && options.retry !== false) ? 'flex' : 'none';
         }
         return text || banner;
     }
@@ -2238,6 +2243,14 @@
         workoutFeedShareState.objectUrl = URL.createObjectURL(file);
         hideWorkoutFeedShareChooserForUpload();
         const bannerLabel = showWorkoutFeedShareUploadBanner('Uploading your set...', 'info');
+        if (workoutFeedShareState.source === 'workout' && isWorkoutFeedShareActiveWorkoutOpen()) {
+            try {
+                const queued = await queueWorkoutFeedShareUntilWorkoutExit(workoutFeedShareState.file);
+                if (queued) return;
+            } catch (queueError) {
+                console.warn('[WorkoutFeedShare] workout-screen defer failed', queueError);
+            }
+        }
         void submitWorkoutFeedShare({
             postBtn: bannerLabel
         });
@@ -2249,6 +2262,26 @@
         if (input) input.value = '';
         if (!rawFile) return;
         void processWorkoutFeedShareSelectedFile(rawFile);
+    }
+
+    async function queueWorkoutFeedShareUntilWorkoutExit(file) {
+        const userId = window.currentUser && window.currentUser.id;
+        if (!userId || !file) return false;
+
+        const workoutName = workoutFeedShareState.workoutName || getActiveWorkoutName();
+        await queueWorkoutFeedShareUpload({
+            userId: userId,
+            file: file,
+            caption: '',
+            workoutName: workoutName,
+            lastError: 'waiting_for_workout_exit',
+            retryDelayMs: 15000,
+            autoRetry: false
+        });
+        scheduleWorkoutFeedShareRetry(15000);
+        showWorkoutFeedShareUploadBanner('Saved for after workout', 'queued', { retry: false });
+        clearWorkoutFeedShareVideo();
+        return true;
     }
 
     function clearWorkoutFeedShareVideo() {
@@ -2419,6 +2452,14 @@
 
         if (navigator && navigator.onLine === false) {
             if (manual) showWorkoutFeedShareUploadBanner('Waiting for reception', 'queued', { retry: true });
+            return;
+        }
+
+        if (isWorkoutFeedShareActiveWorkoutOpen()) {
+            if (manual) {
+                showWorkoutFeedShareUploadBanner('Saved for after workout', 'queued', { retry: false });
+            }
+            scheduleWorkoutFeedShareRetry(15000);
             return;
         }
 
