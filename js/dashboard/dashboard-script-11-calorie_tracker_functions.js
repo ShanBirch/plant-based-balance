@@ -1731,7 +1731,9 @@ function getMealFeedSharedSet() {
 const MEAL_FEED_SHARE_XP = 15;
 
 function getMealFeedShareButtonText() {
-    return `Share meal to Feed (+${MEAL_FEED_SHARE_XP} XP)`;
+    return isMealFeedShareUsedToday()
+        ? 'Share meal to Feed'
+        : `Share meal to Feed (+${MEAL_FEED_SHARE_XP} XP)`;
 }
 
 function getMealFeedShareDayKey(date = new Date()) {
@@ -2015,11 +2017,6 @@ async function shareMealRecordToFeed(meal, btn) {
         showToast('This meal is already shared to Feed', 'info');
         return null;
     }
-    if (isMealFeedShareUsedToday()) {
-        showToast('You have already shared a meal to Feed today', 'info');
-        return null;
-    }
-
     const helpers = window.dbHelpers || (typeof dbHelpers !== 'undefined' ? dbHelpers : null);
     if (!helpers || !helpers.stories || typeof helpers.stories.create !== 'function') {
         showToast('Feed is still loading. Try again in a moment.', 'info');
@@ -2223,7 +2220,8 @@ window.sharePendingMealToInstagram = async function(btn) {
 function showMealFeedSharePrompt(meal) {
     if (!meal || !meal.id) return;
     if (String(meal.meal_type || '').toLowerCase() === 'water') return;
-    const feedAvailable = !isMealSharedToFeed(meal.id) && !isMealFeedShareUsedToday();
+    if (isMealSharedToFeed(meal.id)) return;
+    const feedEarnsXp = !isMealFeedShareUsedToday();
 
     window._pbbPendingMealFeedShare = meal;
     closeMealFeedSharePrompt();
@@ -2233,9 +2231,8 @@ function showMealFeedSharePrompt(meal) {
     const prompt = document.createElement('div');
     prompt.id = 'meal-feed-share-prompt';
     prompt.style.cssText = 'position:fixed;left:14px;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:10030;background:#ffffff;border:1px solid #dbeafe;border-radius:16px;box-shadow:0 18px 42px rgba(15,23,42,0.22);padding:14px;font-family:inherit;';
-    const feedButtonHtml = feedAvailable
-        ? '<button type="button" onclick="sharePendingMealToFeed(this)" style="border:none;background:#046a38;color:white;border-radius:999px;padding:11px 12px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">Feed +15 XP</button>'
-        : '<button type="button" disabled style="border:none;background:#e2e8f0;color:#64748b;border-radius:999px;padding:11px 12px;font-size:0.78rem;font-weight:900;white-space:nowrap;">Feed used</button>';
+    const feedButtonLabel = feedEarnsXp ? `Feed +${MEAL_FEED_SHARE_XP} XP` : 'Feed';
+    const feedButtonHtml = `<button type="button" onclick="sharePendingMealToFeed(this)" style="border:none;background:#046a38;color:white;border-radius:999px;padding:11px 12px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">${feedButtonLabel}</button>`;
     prompt.innerHTML = `
         <div style="display:flex;align-items:center;gap:12px;">
             <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#0f766e,#2563eb);display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0;">
@@ -8909,10 +8906,9 @@ function openMealDetailPopup(index) {
     const igShareBtn = document.getElementById('mealDetailIgStoryBtn');
     if (shareBtn) {
         const alreadyShared = isMealSharedToFeed(meal.id);
-        const dailyUsed = isMealFeedShareUsedToday();
-        shareBtn.disabled = alreadyShared || dailyUsed;
-        shareBtn.textContent = alreadyShared ? 'Shared to Feed' : (dailyUsed ? 'Meal share used today' : getMealFeedShareButtonText());
-        shareBtn.style.opacity = (alreadyShared || dailyUsed) ? '0.85' : '1';
+        shareBtn.disabled = alreadyShared;
+        shareBtn.textContent = alreadyShared ? 'Shared to Feed' : getMealFeedShareButtonText();
+        shareBtn.style.opacity = alreadyShared ? '0.85' : '1';
     }
     if (igShareBtn) {
         const isWater = String(meal.meal_type || '').toLowerCase() === 'water';
