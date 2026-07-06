@@ -1923,6 +1923,25 @@ function getMealPhotoUrlForSave(mealData) {
     });
 }
 
+function hydrateMealRecordWithPhotoFallback(meal, mealData) {
+    if (!meal) return meal;
+
+    const existingPhotoUrl = getMealSharePhotoUrl(meal);
+    const fallbackPhotoUrl = getMealPhotoUrlForSave(mealData);
+    const photoUrl = existingPhotoUrl || fallbackPhotoUrl;
+    if (!photoUrl) return meal;
+
+    return Object.assign({}, meal, {
+        photo_url: existingPhotoUrl || photoUrl,
+        photoUrl: meal.photoUrl || photoUrl,
+        storage_path: getMealSharePhotoUrl({ storage_path: meal.storage_path }) ? meal.storage_path : photoUrl,
+        media_url: meal.media_url || photoUrl,
+        mediaUrl: meal.mediaUrl || photoUrl,
+        thumbnail_url: meal.thumbnail_url || photoUrl,
+        thumbnailUrl: meal.thumbnailUrl || photoUrl
+    });
+}
+
 function getMealInputMethodForSave(mealData, photoUrl) {
     const raw = String((mealData && mealData.inputMethod) || '').trim();
     const lower = raw.toLowerCase();
@@ -1969,7 +1988,10 @@ function buildMealFeedCardPayload(meal) {
         carbs: Math.round(Number((meal && meal.carbs_g) || 0)),
         fat: Math.round(Number((meal && meal.fat_g) || 0)),
         photo_url: hasPhoto ? photoUrl : null,
-        photoUrl: hasPhoto ? photoUrl : null
+        photoUrl: hasPhoto ? photoUrl : null,
+        background_photo_url: hasPhoto ? photoUrl : null,
+        media_url: hasPhoto ? photoUrl : null,
+        thumbnail_url: hasPhoto ? photoUrl : null
     };
 
     cardPayload.share_caption = buildMealRecordShareCaption(cardPayload);
@@ -2366,13 +2388,17 @@ async function saveMealLogWithType(mealData) {
         } catch(e) {}
     }
 
+    const mealRows = Array.isArray(data)
+        ? data.map((meal, index) => index === 0 ? hydrateMealRecordWithPhotoFallback(meal, mealData) : meal)
+        : data;
+
     try {
-        scheduleMealFeedSharePrompt(data && data[0], mealData);
+        scheduleMealFeedSharePrompt(mealRows && mealRows[0], mealData);
     } catch (promptError) {
         console.warn('Meal feed share prompt skipped:', promptError);
     }
 
-    return data;
+    return mealRows;
 }
 
 // Add event listener for text input
