@@ -3,6 +3,20 @@
  * Handles photo uploads from the meal analysis feature
  */
 
+function getMealPhotoUploadExtension(file) {
+    const type = String(file?.type || '').toLowerCase();
+    const name = String(file?.name || '').toLowerCase();
+
+    if (type === 'image/jpeg' || type === 'image/jpg') return 'jpg';
+    if (type === 'image/png') return 'png';
+    if (type === 'image/webp') return 'webp';
+    if (type.includes('heic')) return 'heic';
+    if (type.includes('heif')) return 'heif';
+
+    const match = name.match(/\.([a-z0-9]{1,8})$/i);
+    return match && match[1] ? match[1].toLowerCase() : 'jpg';
+}
+
 export default async (request, context) => {
     // Only allow POST
     if (request.method !== "POST") {
@@ -86,7 +100,7 @@ export default async (request, context) => {
 
         // 3. Prepare file for upload
         const fileBuffer = await file.arrayBuffer();
-        const fileExtension = file.name.split('.').pop() || 'jpg';
+        const fileExtension = getMealPhotoUploadExtension(file);
         const timestamp = Date.now();
         const fileName = `meals/${userId}/${timestamp}.${fileExtension}`;
 

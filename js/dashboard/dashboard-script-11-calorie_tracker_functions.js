@@ -3535,11 +3535,31 @@ function fileToBase64(file) {
 
 // Compress image for meal analysis (reduces large phone photos to reasonable size)
 // Max 1280px dimension, 70% JPEG quality - plenty for food recognition
+function getMealPhotoFileNameAsJpeg(file) {
+    const rawName = String(file && file.name ? file.name : '').trim();
+    const baseName = rawName
+        ? rawName.replace(/\.[A-Za-z0-9]{1,8}$/, '')
+        : 'meal-photo';
+    return (baseName || 'meal-photo') + '.jpg';
+}
+
+function isMealPhotoAlreadyWebSafe(file) {
+    const type = String(file && file.type ? file.type : '').toLowerCase();
+    const name = String(file && file.name ? file.name : '').toLowerCase();
+
+    if (type.includes('heic') || type.includes('heif') || /\.(heic|heif)$/i.test(name)) {
+        return false;
+    }
+
+    return type === 'image/jpeg' || type === 'image/jpg' || type === 'image/png' || type === 'image/webp';
+}
+
 async function compressMealImage(file) {
     return new Promise((resolve) => {
-        // Skip if already small (< 1MB)
+        // Skip small photos only when they are already browser-safe. iPhone
+        // HEIC/HEIF can upload successfully but fail inside feed <img> cards.
         const fileSizeMB = file.size / (1024 * 1024);
-        if (fileSizeMB < 1) {
+        if (fileSizeMB < 1 && isMealPhotoAlreadyWebSafe(file)) {
             console.log(`Meal image already small (${fileSizeMB.toFixed(1)}MB), skipping compression`);
             resolve(file);
             return;
@@ -3576,7 +3596,7 @@ async function compressMealImage(file) {
                 if (blob) {
                     const newSizeMB = blob.size / (1024 * 1024);
                     console.log(`Meal image compressed: ${fileSizeMB.toFixed(1)}MB → ${newSizeMB.toFixed(1)}MB`);
-                    const compressedFile = new File([blob], file.name, {
+                    const compressedFile = new File([blob], getMealPhotoFileNameAsJpeg(file), {
                         type: 'image/jpeg',
                         lastModified: Date.now()
                     });
