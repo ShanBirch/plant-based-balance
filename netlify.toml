@@ -321,8 +321,10 @@
 
 # Weekly coach digest - Sunday evening 20:37 UTC (≈ Mon 06:37 AEST / 07:37 AEDT).
 # Per-client planning report for Shannon. Not sent to clients.
-[functions."weekly-coach-digest"]
-  schedule = "37 20 * * 0"
+# Disabled 2026-07-06 at Shannon's request: these Monday morning planning
+# digests were filling Needs You with weekly check-ins.
+# [functions."weekly-coach-digest"]
+#   schedule = "37 20 * * 0"
 
 # Meal plan nutrition audit - daily at 20:12 UTC (≈ 6:12 AEST / 7:12 AEDT).
 # Internal safety net for active client plans: calories, macro math, row counts,
