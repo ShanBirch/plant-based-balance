@@ -2269,6 +2269,28 @@ body,
     color: #f8f7f2 !important;
 }
 
+#feed-composer-share-menu,
+#feed-composer-media-source-menu {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: #e5e7eb !important;
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+}
+
+#feed-composer-share-menu button,
+#feed-composer-media-source-menu button,
+#feed-composer-share-menu button *,
+#feed-composer-media-source-menu button * {
+    background: #ffffff !important;
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+}
+
+#feed-composer-share-menu button + button,
+#feed-composer-media-source-menu button + button {
+    border-top-color: #f1f5f9 !important;
+}
+
 .app-view [style*="background"][style*="#6366f1"],
 .app-view [style*="background"][style*="#8b5cf6"],
 .app-view [style*="background"][style*="#7c3aed"],
