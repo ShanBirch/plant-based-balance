@@ -1047,6 +1047,8 @@
         .coach-action-meta { font-size: 0.72rem; color: #047857; line-height: 1.35; }
         .coach-action-done { font-size: 0.75rem; color: #166534; font-weight: 700; }
         .tahlia-social-context { margin-top: 10px; padding: 10px; border: 1px solid #e9d8a6; background: #fffaf0; border-radius: 8px; display: flex; align-items: flex-start; gap: 10px; }
+        .tahlia-social-context-graphic { display: block; }
+        .tahlia-social-context-graphic .tahlia-social-body { width: 100%; }
         .tahlia-social-thumb { width: 64px; height: 64px; border-radius: 8px; border: 1px solid #e2d2a2; object-fit: cover; background: #f8fafc; flex: 0 0 auto; color: #8a5a16; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.15; padding: 6px; box-sizing: border-box; overflow: hidden; }
         .tahlia-social-body { flex: 1; min-width: 0; }
         .tahlia-social-label { font-size: 0.66rem; font-weight: 900; letter-spacing: 0; text-transform: uppercase; color: #8a5a16; margin-bottom: 3px; }
@@ -16524,6 +16526,8 @@
                     mediaType,
                     backgroundColor: evidence.story_background_color,
                 });
+                const cardPreviewHtml = renderTahliaFeedCardPreview(cardData);
+                const hasCardPreview = !!cardPreviewHtml;
                 const cardDetailsHtml = renderTahliaCardDetails(cardData);
                 const metaHtml = renderTahliaMetaPills([
                     humanizeTahliaContextValue(mediaType),
@@ -16532,13 +16536,14 @@
                     postId ? `Post ${shortTahliaPostId(postId)}` : '',
                 ]);
                 const fallback = 'No caption saved for this Feed post. Check the author and media type before approving.';
-                return `<div class="tahlia-social-context"${postId ? ` data-tahlia-story-id="${escapeHtml(postId)}"` : ''}>
-                    ${thumbHtml}
+                return `<div class="tahlia-social-context${hasCardPreview ? ' tahlia-social-context-graphic' : ''}"${postId ? ` data-tahlia-story-id="${escapeHtml(postId)}"` : ''}>
+                    ${hasCardPreview ? '' : thumbHtml}
                     <div class="tahlia-social-body">
                         <div class="tahlia-social-label">Relevant Feed post</div>
                         <div class="tahlia-social-title">${escapeHtml(author)}'s post</div>
-                        <div class="tahlia-social-text" data-tahlia-story-text="${escapeHtml(storyTextState)}">${escapeHtml(storyTextState === 'weak' ? fallback : (storyText || fallback))}</div>
-                        <div class="tahlia-social-card-details" data-tahlia-card-details>${cardDetailsHtml}</div>
+                        ${hasCardPreview ? '' : `<div class="tahlia-social-text" data-tahlia-story-text="${escapeHtml(storyTextState)}">${escapeHtml(storyTextState === 'weak' ? fallback : (storyText || fallback))}</div>`}
+                        <div data-tahlia-card-preview>${cardPreviewHtml}</div>
+                        <div class="tahlia-social-card-details" data-tahlia-card-details>${hasCardPreview ? '' : cardDetailsHtml}</div>
                         ${metaHtml}
                     </div>
                 </div>`;
@@ -16595,10 +16600,13 @@
                 .filter(ctx => {
                     const textState = ctx.querySelector('[data-tahlia-story-text]')?.dataset?.tahliaStoryText || '';
                     const detailsEl = ctx.querySelector('[data-tahlia-card-details]');
-                    return !ctx.querySelector('img.tahlia-social-thumb')
+                    const previewEl = ctx.querySelector('[data-tahlia-card-preview]');
+                    const hasPreview = !!(previewEl && previewEl.innerHTML.trim());
+                    return (!ctx.querySelector('img.tahlia-social-thumb') && !hasPreview)
                         || textState === 'missing'
                         || textState === 'weak'
-                        || (detailsEl && !detailsEl.innerHTML.trim());
+                        || (previewEl && !hasPreview)
+                        || (detailsEl && !hasPreview && !detailsEl.innerHTML.trim());
                 })
                 .map(ctx => String(ctx.dataset.tahliaStoryId || '').trim())
                 .filter(Boolean))];
@@ -16652,9 +16660,19 @@
                 }
 
                 const cardData = parseTahliaCardCaption(story.caption);
+                const previewHtml = renderTahliaFeedCardPreview(cardData);
+                const previewEl = ctx.querySelector('[data-tahlia-card-preview]');
+                if (previewEl && previewHtml && !previewEl.innerHTML.trim()) {
+                    previewEl.innerHTML = previewHtml;
+                    ctx.classList.add('tahlia-social-context-graphic');
+                    const previewThumb = ctx.querySelector('.tahlia-social-thumb');
+                    if (previewThumb) previewThumb.remove();
+                    const previewText = ctx.querySelector('[data-tahlia-story-text]');
+                    if (previewText) previewText.style.display = 'none';
+                }
                 const detailsHtml = renderTahliaCardDetails(cardData);
                 const detailsEl = ctx.querySelector('[data-tahlia-card-details]');
-                if (detailsEl && detailsHtml && !detailsEl.innerHTML.trim()) {
+                if (detailsEl && detailsHtml && !previewHtml && !detailsEl.innerHTML.trim()) {
                     detailsEl.innerHTML = detailsHtml;
                 }
             });
