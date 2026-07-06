@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v237'; // v237: restore Share a Set HD quality; v236: retry messaging
+const CACHE_NAME = 'pbb-app-v238'; // v238: refresh Feed Share menu contrast; v237: restore Share a Set HD quality
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

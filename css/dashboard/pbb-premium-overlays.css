@@ -8559,3 +8559,43 @@ html[data-pbb-theme="light"] #cohort-info-modal button[onclick*="openXpGuidePage
     color: #ffffff !important;
     fill: currentColor !important;
 }
+
+/* Final Feed composer menu pass. Keep this at the end so mobile light-theme
+   and inline-background overrides cannot turn the menu glassy with pale text. */
+#view-friends #feed-composer-share-menu,
+html[data-pbb-theme="light"] #view-friends #feed-composer-share-menu {
+    background: #ffffff !important;
+    border: 1px solid #d1fae5 !important;
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+    opacity: 1 !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.18) !important;
+}
+
+#view-friends #feed-composer-share-menu [data-feed-composer-share-option],
+html[data-pbb-theme="light"] #view-friends #feed-composer-share-menu [data-feed-composer-share-option] {
+    background: #ffffff !important;
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+    opacity: 1 !important;
+    text-shadow: none !important;
+    filter: none !important;
+}
+
+#view-friends #feed-composer-share-menu [data-feed-composer-share-option] + [data-feed-composer-share-option],
+html[data-pbb-theme="light"] #view-friends #feed-composer-share-menu [data-feed-composer-share-option] + [data-feed-composer-share-option] {
+    border-top-color: #ecfdf5 !important;
+}
+
+#view-friends #feed-composer-share-menu [data-feed-composer-share-option] svg,
+#view-friends #feed-composer-share-menu [data-feed-composer-share-option] svg *,
+html[data-pbb-theme="light"] #view-friends #feed-composer-share-menu [data-feed-composer-share-option] svg,
+html[data-pbb-theme="light"] #view-friends #feed-composer-share-menu [data-feed-composer-share-option] svg * {
+    color: #0f766e !important;
+    stroke: #0f766e !important;
+    -webkit-text-fill-color: #0f766e !important;
+    opacity: 1 !important;
+}
