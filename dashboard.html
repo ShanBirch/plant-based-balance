@@ -12346,6 +12346,10 @@ if (window._pbbIsIOSSafari) {
             <div class="meal-breakdown-insight-label">💡 Nutrition Insight</div>
             <p class="meal-breakdown-insight-text" id="mealBreakdownInsightText"></p>
         </div>
+        <div id="mealBreakdownShareActions" style="display:none; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; padding:0 20px 20px; flex-shrink:0;">
+            <button type="button" id="mealBreakdownFeedBtn" onclick="shareMealBreakdownToFeed(this)" style="border:none; border-radius:14px; padding:13px 10px; background:#046a38; color:#fff; -webkit-text-fill-color:#fff; font-weight:900; font-size:0.86rem; cursor:pointer;">Feed</button>
+            <button type="button" id="mealBreakdownIgBtn" onclick="shareMealBreakdownToInstagram(this)" style="border:none; border-radius:14px; padding:13px 10px; background:#be185d; color:#fff; -webkit-text-fill-color:#fff; font-weight:900; font-size:0.86rem; cursor:pointer;">IG Story</button>
+        </div>
     </div>
 </div>
 
@@ -16712,7 +16716,7 @@ if (window._pbbIsIOSSafari) {
             }
 
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=18';
+            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=19';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -16772,7 +16776,7 @@ if (window._pbbIsIOSSafari) {
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=18" data-pbb-calorie-tracker="1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=19" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js" data-pbb-meal-builder="1"><\/script>');
     }
 })();

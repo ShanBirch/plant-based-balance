@@ -2260,8 +2260,13 @@ function scheduleMealFeedSharePrompt(meal, mealData) {
     if (mealData && mealData.suppressSharePrompt) return;
     if (String((meal && meal.meal_type) || (mealData && mealData.mealType) || '').toLowerCase() === 'water') return;
     setTimeout(function() {
+        const popup = document.getElementById('mealBreakdownPopup');
+        const activeMeal = window._pbbMealBreakdownShareMeal;
+        const popupHasShareActions = popup && popup.classList.contains('visible')
+            && activeMeal && String(activeMeal.id) === String(meal.id);
+        if (popupHasShareActions) return;
         showMealFeedSharePrompt(meal);
-    }, 650);
+    }, 2200);
 }
 
 // Save meal log with meal type and input method
@@ -3507,7 +3512,7 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
         if (data._quickMealMode) {
             _fireQuickMealNotification(nutritionData);
         } else {
-            showMealAnalysisSuccess(nutritionData, photoUrl);
+            showMealAnalysisSuccess(nutritionData, photoUrl, savedMeal && savedMeal[0]);
         }
 
         // Final success cleanup
@@ -9442,8 +9447,68 @@ function hideMealAnalysisLoading() {
     // Kept for compatibility with code that calls it
 }
 
+function setMealBreakdownShareMeal(meal) {
+    window._pbbMealBreakdownShareMeal = meal || null;
+
+    const actions = document.getElementById('mealBreakdownShareActions');
+    const feedBtn = document.getElementById('mealBreakdownFeedBtn');
+    const igBtn = document.getElementById('mealBreakdownIgBtn');
+    if (!actions || !feedBtn || !igBtn) return;
+
+    const isWater = String(meal && meal.meal_type || '').toLowerCase() === 'water';
+    if (!meal || !meal.id || isWater) {
+        actions.style.display = 'none';
+        return;
+    }
+
+    const alreadyShared = isMealSharedToFeed(meal.id);
+    const earnsXp = !isMealFeedShareUsedToday();
+
+    actions.style.display = 'grid';
+    feedBtn.disabled = alreadyShared;
+    feedBtn.textContent = alreadyShared ? 'Shared' : (earnsXp ? `Feed +${MEAL_FEED_SHARE_XP} XP` : 'Feed');
+    feedBtn.style.opacity = alreadyShared ? '0.65' : '1';
+
+    igBtn.disabled = false;
+    igBtn.textContent = 'IG Story';
+    igBtn.style.opacity = '1';
+}
+
+async function shareMealBreakdownToFeed(btn) {
+    const meal = window._pbbMealBreakdownShareMeal;
+    if (!meal || !meal.id) {
+        showToast('Meal is still saving. Try the meal card in a moment.', 'info');
+        return null;
+    }
+
+    const story = await shareMealRecordToFeed(meal, btn || null);
+    if (story) {
+        closeMealFeedSharePrompt();
+        setMealBreakdownShareMeal(meal);
+        dismissMealBreakdownPopup();
+    }
+    return story;
+}
+window.shareMealBreakdownToFeed = shareMealBreakdownToFeed;
+
+async function shareMealBreakdownToInstagram(btn) {
+    const meal = window._pbbMealBreakdownShareMeal;
+    if (!meal || !meal.id) {
+        showToast('Meal is still saving. Try the meal card in a moment.', 'info');
+        return false;
+    }
+
+    const opened = await shareMealRecordToInstagram(meal, btn || null, 'story');
+    if (opened) {
+        closeMealFeedSharePrompt();
+        dismissMealBreakdownPopup();
+    }
+    return opened;
+}
+window.shareMealBreakdownToInstagram = shareMealBreakdownToInstagram;
+
 // Show success message
-function showMealAnalysisSuccess(data, photoUrl) {
+function showMealAnalysisSuccess(data, photoUrl, savedMeal) {
     if (data.is_water) {
         if (typeof showToast === 'function') {
             showToast('💧 Hydration verified! Point awarded.', 'success');
@@ -9455,10 +9520,10 @@ function showMealAnalysisSuccess(data, photoUrl) {
         return;
     }
 
-    showMealBreakdownPopup(data, photoUrl);
+    showMealBreakdownPopup(data, photoUrl, savedMeal);
 }
 
-function showMealBreakdownPopup(data, photoUrl) {
+function showMealBreakdownPopup(data, photoUrl, savedMeal) {
     const popup = document.getElementById('mealBreakdownPopup');
     if (!popup) return;
 
@@ -9527,6 +9592,8 @@ function showMealBreakdownPopup(data, photoUrl) {
             insightEl.style.display = 'none';
         }
     }
+
+    setMealBreakdownShareMeal(savedMeal || null);
 
     // Show popup
     popup.classList.add('visible');
