@@ -8,6 +8,7 @@ const coachAction = require('../netlify/functions/perform-coach-action')._test;
 
 const adminSource = fs.readFileSync(path.join(__dirname, '../admin-dashboard.html'), 'utf8');
 const performSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/perform-coach-action.js'), 'utf8');
+const netlifySource = fs.readFileSync(path.join(__dirname, '../netlify.toml'), 'utf8');
 
 assert.strictEqual(profile.TAHLIA_PROFILE.displayName, 'Tahlia Brooks');
 assert.strictEqual(profile.TAHLIA_PROFILE.age, 25);
@@ -248,6 +249,10 @@ assert.strictEqual(editedWorkoutPost.data.draft_text, 'Love this!');
 
 assert.ok(adminSource.includes('function isTahliaSocialApprovalAlert'));
 assert.ok(adminSource.includes('function isSupportedTahliaSocialApprovalAlert'));
+assert.ok(adminSource.includes('function isSupportVerificationNeedsYouAlert'));
+assert.ok(adminSource.includes("'personal_best', 'weigh_in'"));
+assert.ok(adminSource.includes("mediaType === 'workout_card'"));
+assert.ok(adminSource.includes("mediaType === 'checkin_card'"));
 assert.ok(adminSource.includes('function buildCoachActionRequestBody'));
 assert.ok(adminSource.includes('body.editedText = editedText'));
 assert.ok(adminSource.includes('function renderTahliaSocialContext'));
@@ -264,6 +269,8 @@ assert.ok(adminSource.includes('Relevant Feed post'));
 assert.ok(adminSource.includes('function renderTahliaFeedCardPreview'));
 assert.ok(adminSource.includes('tahlia-feed-card-preview'));
 assert.ok(adminSource.includes("'Tahlia social'"));
+assert.ok(netlifySource.includes('[functions."tahlia-social-worker"]'));
+assert.ok(netlifySource.includes('schedule = "*/20 * * * *"'));
 assert.ok(performSource.includes('publish_tahlia_feed_post'));
 assert.ok(performSource.includes('publish_tahlia_feed_comment'));
 assert.ok(performSource.includes('Tahlia can only publish workout, PB, or check-in posts'));

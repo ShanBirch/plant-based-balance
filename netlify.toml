@@ -319,6 +319,10 @@
 [functions."auto-feed-comment"]
   schedule = "37 * * * *"
 
+# Tahlia seeded social drafts - queues approval-only Feed posts/comments into Needs You.
+[functions."tahlia-social-worker"]
+  schedule = "*/20 * * * *"
+
 # Weekly coach digest - Sunday evening 20:37 UTC (≈ Mon 06:37 AEST / 07:37 AEDT).
 # Per-client planning report for Shannon. Not sent to clients.
 # Disabled 2026-07-06 at Shannon's request: these Monday morning planning

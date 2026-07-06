@@ -12754,7 +12754,11 @@
         }
 
         function isAllowedTahliaPostActivityType(activityType) {
-            return ['workout', 'weigh_in', 'fitness_diary'].includes(String(activityType || '').trim());
+            return ['workout', 'personal_best', 'weigh_in', 'fitness_diary'].includes(String(activityType || '').trim());
+        }
+
+        function hasTahliaCardPayload(payload = {}) {
+            return !!(payload.card_payload || payload.caption);
         }
 
         function isSupportedTahliaSocialApprovalAlert(alert) {
@@ -12767,10 +12771,37 @@
             const payload = action.payload && typeof action.payload === 'object' ? action.payload : {};
             const activityType = payload.activity_type || data.activity_type || data.evidence?.activity_type || '';
             const mediaType = String(payload.media_type || 'text').trim().toLowerCase();
-            return isAllowedTahliaPostActivityType(activityType)
-                && mediaType === 'text'
-                && !payload.media_url
-                && !payload.thumbnail_url;
+            if (!isAllowedTahliaPostActivityType(activityType)) return false;
+            if (mediaType === 'text') return !payload.media_url && !payload.thumbnail_url;
+            if (mediaType === 'workout_card') {
+                return ['workout', 'personal_best', 'weigh_in'].includes(String(activityType || '').trim())
+                    && hasTahliaCardPayload(payload);
+            }
+            if (mediaType === 'checkin_card') {
+                return String(activityType || '').trim() === 'fitness_diary'
+                    && hasTahliaCardPayload(payload);
+            }
+            return false;
+        }
+
+        function isSupportVerificationNeedsYouAlert(alert) {
+            if (alert?.alert_type !== 'general_idea') return false;
+            const data = alert?.data || {};
+            const review = data.codex_review || data.codexReview || {};
+            const queue = String((review && review.queue) || data.operator_queue || '').toLowerCase();
+            const needsYouFlag = data.needs_you_required === true || String(data.needs_you_required || '').toLowerCase() === 'true';
+            const approvalFlag = data.needs_shannon_approval === true || String(data.needs_shannon_approval || '').toLowerCase() === 'true';
+            if (queue !== 'needs_you' && !needsYouFlag && !approvalFlag) return false;
+            const supportText = [
+                alert.title,
+                data.subtype,
+                data.support_state,
+                data.needs_you_reason,
+                ...(Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : []),
+                review && review.reason,
+                review && review.decision,
+            ].map(v => String(v || '').toLowerCase()).join(' ');
+            return /\b(app support|support_|support |program_fix|program review|needs verification|needs_ui_verification|patched_needs_verification|needs_you_after_failed_fix|upload_verification)\b/i.test(supportText);
         }
 
         function needsYouHasOperatorWork(alert, activeClientIds = dmClientIdsCache.ids) {
@@ -12779,6 +12810,7 @@
             if (isCoachActionReceipt(alert)) return true;
             if (isTahliaSocialApprovalAlert(alert)) return isSupportedTahliaSocialApprovalAlert(alert);
             if (isAppSuggestionAlert(alert)) return true;
+            if (isSupportVerificationNeedsYouAlert(alert)) return true;
             if (alert.alert_type === 'subscription_sale') {
                 const data = alert.data || {};
                 return data.sale_made === true
@@ -12821,7 +12853,7 @@
             const directRows = [];
             const otherRows = [];
             rows.filter(a => a.status === 'pending').forEach(row => {
-                if (isCoachActionReceipt(row) || isAppSuggestionAlert(row) || isSupportedTahliaSocialApprovalAlert(row)) directRows.push(row);
+                if (isCoachActionReceipt(row) || isAppSuggestionAlert(row) || isSupportedTahliaSocialApprovalAlert(row) || isSupportVerificationNeedsYouAlert(row)) directRows.push(row);
                 else if (DM_ALERT_TYPES.includes(row.alert_type)) dmRows.push(row);
                 else otherRows.push(row);
             });
