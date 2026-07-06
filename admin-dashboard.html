@@ -12740,11 +12740,16 @@
 
         function isTahliaSocialApprovalAlert(alert) {
             const data = alert?.data || {};
+            const actions = Array.isArray(data.proposed_actions) ? data.proposed_actions : [];
+            const hasTahliaSocialAction = actions.some(action => isTahliaSocialActionType(action?.type));
+            const titleLooksLikeTahliaApproval = /\bapprove\s+tahlia\b.*\bfeed\s+(post|comment)\b/i.test(String(alert?.title || ''));
             return alert?.alert_type === 'general_idea'
                 && (
                     data.subtype === 'tahlia_social_approval'
                     || data.needs_you_reason === 'tahlia_social_approval'
                     || data.source === 'tahlia-social-worker'
+                    || hasTahliaSocialAction
+                    || titleLooksLikeTahliaApproval
                 );
         }
 
