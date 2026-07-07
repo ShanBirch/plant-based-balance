@@ -13,6 +13,7 @@ const POINTS_CONFIG = {
   POINTS_PER_WORKOUT: 1,
   POINTS_PER_PERSONAL_BEST: 1,
   POINTS_PER_WORKOUT_FEED_SHARE: 20,
+  POINTS_PER_EXERCISE_CONTRIBUTION: 15,
   POINTS_PER_PROGRESS_PHOTO: 10,
   POINTS_PER_DAILY_LOG: 2,
   POINTS_PER_WALKTHROUGH_CHECKPOINT: 1,
@@ -65,7 +66,7 @@ const WALKTHROUGH_REFERENCE_IDS: Record<string, string> = {
 
 interface AwardPointsRequest {
   userId: string;
-  type: 'meal' | 'workout' | 'workout_feed_share' | 'personal_best' | 'progress_photo' | 'daily_log' | 'walkthrough';
+  type: 'meal' | 'workout' | 'workout_feed_share' | 'exercise_contribution' | 'personal_best' | 'progress_photo' | 'daily_log' | 'walkthrough';
   referenceId: string;
   photoTimestamp?: string;  // ISO timestamp from EXIF or file
   aiConfidence?: string;    // 'high', 'medium', 'low'
@@ -152,10 +153,10 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
-    if (type !== 'meal' && type !== 'workout' && type !== 'workout_feed_share' && type !== 'personal_best' && type !== 'progress_photo' && type !== 'daily_log' && type !== 'walkthrough') {
+    if (type !== 'meal' && type !== 'workout' && type !== 'workout_feed_share' && type !== 'exercise_contribution' && type !== 'personal_best' && type !== 'progress_photo' && type !== 'daily_log' && type !== 'walkthrough') {
       return new Response(JSON.stringify({
         error: 'Invalid type',
-        message: 'Type must be "meal", "workout", "workout_feed_share", "personal_best", "progress_photo", "daily_log", or "walkthrough"'
+        message: 'Type must be "meal", "workout", "workout_feed_share", "exercise_contribution", "personal_best", "progress_photo", "daily_log", or "walkthrough"'
       }), {
         status: 400,
         headers
@@ -178,8 +179,8 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
-    // Personal bests, daily logs, and walkthrough checkpoints don't require photo verification.
-    const skipPhotoValidation = type === 'personal_best' || type === 'daily_log' || type === 'walkthrough';
+    // Personal bests, exercise contributions, daily logs, and walkthrough checkpoints don't require photo verification.
+    const skipPhotoValidation = type === 'personal_best' || type === 'exercise_contribution' || type === 'daily_log' || type === 'walkthrough';
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -478,6 +479,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
       meal: 'earn_meal',
       workout: 'earn_workout',
       workout_feed_share: 'earn_workout_feed_share',
+      exercise_contribution: 'earn_exercise_contribution',
       personal_best: 'earn_personal_best',
       progress_photo: 'earn_progress_photo',
       daily_log: 'earn_daily_log',
@@ -487,6 +489,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
       meal: 'meal_log',
       workout: 'workout',
       workout_feed_share: 'workout_feed_share',
+      exercise_contribution: 'custom_exercise',
       personal_best: 'personal_best',
       progress_photo: 'weekly_progress_photo',
       daily_log: 'daily_nutrition',
@@ -544,6 +547,8 @@ export default async (request: Request, context: Context): Promise<Response> => 
       basePoints = POINTS_CONFIG.POINTS_PER_WORKOUT;
     } else if (type === 'workout_feed_share') {
       basePoints = POINTS_CONFIG.POINTS_PER_WORKOUT_FEED_SHARE;
+    } else if (type === 'exercise_contribution') {
+      basePoints = POINTS_CONFIG.POINTS_PER_EXERCISE_CONTRIBUTION;
     } else if (type === 'progress_photo') {
       basePoints = POINTS_CONFIG.POINTS_PER_PROGRESS_PHOTO;
     } else if (type === 'daily_log') {
@@ -728,7 +733,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
         updateData.workout_streak as number
       );
     }
-    // personal_best, workout_feed_share, daily_log, and walkthrough types don't update specific counters.
+    // personal_best, workout_feed_share, exercise_contribution, daily_log, and walkthrough types don't update specific counters.
 
     // Upsert points record
     const { error: updateError } = await supabase
@@ -754,7 +759,9 @@ export default async (request: Request, context: Context): Promise<Response> => 
         ? `Earned ${pointsToAward} point for personal best`
       : type === 'workout_feed_share'
         ? `Earned ${pointsToAward} points for sharing a workout video to Feed today`
-        : type === 'progress_photo'
+      : type === 'exercise_contribution'
+        ? `Earned ${pointsToAward} points for adding an exercise video to the shared library`
+      : type === 'progress_photo'
           ? `Earned ${pointsToAward} points for progress photo`
           : `Earned ${pointsToAward} point for ${type}`;
 
@@ -766,7 +773,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
       reference_type: referenceType,
       photo_verified: type === 'meal' || type === 'workout' || type === 'workout_feed_share' || type === 'progress_photo',
       photo_timestamp: photoTimestamp || null,
-      verification_method: (type === 'personal_best' || type === 'daily_log' || type === 'walkthrough') ? 'data_verified' : (photoHash ? 'hash_verified' : (photoTimestamp ? 'timestamp_verified' : 'none')),
+      verification_method: (type === 'personal_best' || type === 'exercise_contribution' || type === 'daily_log' || type === 'walkthrough') ? 'data_verified' : (photoHash ? 'hash_verified' : (photoTimestamp ? 'timestamp_verified' : 'none')),
       ai_confidence: aiConfidence || null,
       description: description
     });

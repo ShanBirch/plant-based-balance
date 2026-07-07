@@ -13964,6 +13964,7 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
 
     hideAllAppViews();
     document.getElementById('view-active-workout').style.display = 'block';
+    ensureWorkoutAddExerciseVideoButton();
     startWorkoutTimer();
 
     // Push navigation state for Android back button
@@ -19138,6 +19139,7 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
     hideAllAppViews();
     document.getElementById('view-active-workout').style.display = 'block';
     document.querySelector('.bottom-nav').style.display = 'none';
+    ensureWorkoutAddExerciseVideoButton();
 
     // Push navigation state for Android back button
     pushNavigationState('view-active-workout', () => quitWorkout());
@@ -19210,6 +19212,7 @@ async function startInlineWorkout(workout) {
     hideAllAppViews();
     document.getElementById('view-active-workout').style.display = 'block';
     document.querySelector('.bottom-nav').style.display = 'none';
+    ensureWorkoutAddExerciseVideoButton();
 
     pushNavigationState('view-active-workout', () => quitWorkout());
 
@@ -20571,6 +20574,32 @@ hideAllAppViews = function() {
 // CUSTOM EXERCISE RECORDING
 // ===========================
 
+function createWorkoutAddExerciseVideoButton() {
+    const btn = document.createElement('button');
+    btn.id = 'workout-add-exercise-video-btn';
+    btn.className = 'workout-camera-action-btn';
+    btn.type = 'button';
+    btn.onclick = () => openCreateCustomExerciseModal('workout');
+    btn.innerHTML = `
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 14H9v-4H5v-2h4V7h2v4h4v2h-4v4zm5-1.5V8l5 3.75-5 3.75z"/></svg>
+        <div class="workout-camera-action-copy">
+            <span class="workout-camera-action-title">Add Exercise Video</span>
+            <span class="workout-camera-action-subtitle">Film or upload a demo, earn +15 XP</span>
+        </div>
+    `;
+    return btn;
+}
+
+function ensureWorkoutAddExerciseVideoButton() {
+    if (document.getElementById('workout-add-exercise-video-btn')) return;
+
+    const shareBtn = document.getElementById('workout-share-set-btn');
+    if (!shareBtn || !shareBtn.parentNode) return;
+
+    shareBtn.insertAdjacentElement('afterend', createWorkoutAddExerciseVideoButton());
+}
+window.ensureWorkoutAddExerciseVideoButton = ensureWorkoutAddExerciseVideoButton;
+
 // In-memory cache of user's custom exercises (loaded on open)
 window._customExercisesCache = [];
 
@@ -20615,6 +20644,8 @@ function openCreateCustomExerciseModal(context) {
     `;
     const fileInput = document.getElementById('custom-exercise-file-input');
     if (fileInput) fileInput.value = '';
+    const cameraInput = document.getElementById('custom-exercise-camera-input');
+    if (cameraInput) cameraInput.value = '';
     updateCustomExerciseUploadStatus('');
     validateCustomExerciseForm();
 
@@ -20641,6 +20672,18 @@ function validateCustomExerciseForm() {
     const btn = document.getElementById('save-custom-exercise-btn');
     btn.style.opacity = name.length > 0 ? '1' : '0.4';
     btn.style.pointerEvents = name.length > 0 ? 'auto' : 'none';
+}
+
+function openCustomExerciseVideoCapture() {
+    stopCameraStream();
+    clearCustomExerciseRecordingTimer();
+    const input = document.getElementById('custom-exercise-camera-input');
+    if (input) {
+        input.value = '';
+        input.click();
+        return;
+    }
+    startCustomExerciseRecording();
 }
 
 async function startCustomExerciseRecording() {
@@ -20782,8 +20825,9 @@ function updateCustomExerciseUploadStatus(message, isError) {
 
     status.style.display = 'block';
     status.textContent = message;
-    status.style.background = isError ? '#fef2f2' : '#ecfdf5';
-    status.style.color = isError ? '#b91c1c' : '#047857';
+    status.style.background = isError ? '#fef2f2' : '#fffbeb';
+    status.style.color = isError ? '#b91c1c' : '#92400e';
+    status.style.webkitTextFillColor = isError ? '#b91c1c' : '#92400e';
 }
 
 function handleCustomExerciseFileSelect(event) {
@@ -20850,6 +20894,30 @@ function removeCustomExerciseVideo() {
     // Reset file input
     const fileInput = document.getElementById('custom-exercise-file-input');
     if (fileInput) fileInput.value = '';
+    const cameraInput = document.getElementById('custom-exercise-camera-input');
+    if (cameraInput) cameraInput.value = '';
+}
+
+async function awardCustomExerciseContributionXp(userId, exerciseId) {
+    if (!userId || !exerciseId || !window.db?.points?.awardPoints) {
+        return { pointsAwarded: 0 };
+    }
+
+    try {
+        const result = await window.db.points.awardPoints(userId, 'exercise_contribution', exerciseId, {
+            clientDate: typeof getLocalDateString === 'function' ? getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]
+        });
+
+        if (result && result.pointsAwarded > 0) {
+            if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
+            if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+        }
+
+        return result || { pointsAwarded: 0 };
+    } catch (error) {
+        console.warn('Failed to award exercise contribution XP:', error);
+        return { pointsAwarded: 0, error: error.message || 'XP award failed' };
+    }
 }
 
 async function saveCustomExercise() {
@@ -20905,13 +20973,20 @@ async function saveCustomExercise() {
             sets: parseInt(document.getElementById('custom-exercise-sets').value) || 3,
             reps: document.getElementById('custom-exercise-reps').value.trim() || '8-12',
             videoUrl: videoUrl,
-            storagePath: storagePath
+            storagePath: storagePath,
+            isPublic: !!videoUrl
         };
 
         const saved = await dbHelpers.customExercises.create(user.id, exerciseData);
+        const xpResult = videoUrl ? await awardCustomExerciseContributionXp(user.id, saved.id) : { pointsAwarded: 0 };
+        const xpMessage = Number(xpResult?.pointsAwarded || 0) > 0
+            ? ` +${xpResult.pointsAwarded} XP`
+            : '';
 
         // Add to local cache
         window._customExercisesCache.unshift(saved);
+        window._myCustomExercisesCache = window._myCustomExercisesCache || [];
+        window._myCustomExercisesCache.unshift(saved);
 
         // If video was uploaded, add to the in-memory EXERCISE_VIDEOS map for immediate use
         if (videoUrl) {
@@ -20929,21 +21004,21 @@ async function saveCustomExercise() {
             if (typeof showToast === 'function') {
                 showToast(
                     addedToBuilder
-                        ? `"${name}" added to your workout builder.`
-                        : `"${name}" has been created!`,
+                        ? `"${name}" added to your workout builder.${xpMessage}`
+                        : `"${name}" has been created!${xpMessage}`,
                     'success'
                 );
             } else {
                 alert(
                     addedToBuilder
-                        ? `"${name}" added to your workout builder.`
-                        : `"${name}" has been created!`
+                        ? `"${name}" added to your workout builder.${xpMessage}`
+                        : `"${name}" has been created!${xpMessage}`
                 );
             }
         } else if (window._customExerciseContext === 'workout') {
             // If we're in an active workout context, offer to add it right away
             closeCreateCustomExerciseModal();
-            const addNow = confirm(`"${name}" has been saved!\n\nWould you like to add it to your current workout?`);
+            const addNow = confirm(`"${name}" has been saved!${xpMessage}\n\nWould you like to add it to your current workout?`);
             if (addNow) {
                 const newExercise = {
                     name: name,
@@ -20971,7 +21046,7 @@ async function saveCustomExercise() {
             }
         } else {
             // Library context - just show success
-            alert(`"${name}" has been created! You can now find it when adding exercises to any workout.`);
+            alert(`"${name}" has been created!${xpMessage} You can now find it when adding exercises to any workout.`);
             closeCreateCustomExerciseModal();
         }
 
@@ -20989,8 +21064,10 @@ async function loadMyCustomExercises() {
     if (!user) return;
 
     try {
-        const exercises = await dbHelpers.customExercises.getAll(user.id);
-        window._customExercisesCache = exercises;
+        const exercises = typeof dbHelpers.customExercises.getMine === 'function'
+            ? await dbHelpers.customExercises.getMine(user.id)
+            : await dbHelpers.customExercises.getAll(user.id);
+        window._myCustomExercisesCache = exercises;
 
         const section = document.getElementById('my-custom-exercises-section');
         const list = document.getElementById('my-custom-exercises-list');

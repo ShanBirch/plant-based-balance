@@ -555,6 +555,9 @@ async function startCustomBuilderWorkout() {
 
         hideAllAppViews();
         document.getElementById('view-active-workout').style.display = 'block';
+        if (typeof ensureWorkoutAddExerciseVideoButton === 'function') {
+            ensureWorkoutAddExerciseVideoButton();
+        }
         startWorkoutTimer();
 
         // Push navigation state for Android back button

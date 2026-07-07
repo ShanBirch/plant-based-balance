@@ -7282,10 +7282,10 @@ if (window._pbbIsIOSSafari) {
 
 <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-workoutbuilder.js?v=7"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-workoutbuilder.js?v=8"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-workoutbuilder.js?v=7');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-workoutbuilder.js?v=8');
 }
 </script>
 
@@ -7531,6 +7531,10 @@ if(!window._pbbIsIOSSafari) {
             #workout-share-set-btn svg * {
                 fill: #b8892b !important;
             }
+            #workout-add-exercise-video-btn svg,
+            #workout-add-exercise-video-btn svg * {
+                fill: #b8892b !important;
+            }
         </style>
 
         <button id="workout-form-check-top-btn" class="workout-camera-action-btn" type="button" onclick="openFormCheck({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })">
@@ -7546,6 +7550,14 @@ if(!window._pbbIsIOSSafari) {
             <div class="workout-camera-action-copy">
                 <span class="workout-camera-action-title">Share a Set</span>
                 <span class="workout-camera-action-subtitle">First share each day earns +20 XP</span>
+            </div>
+        </button>
+
+        <button id="workout-add-exercise-video-btn" class="workout-camera-action-btn" type="button" onclick="openCreateCustomExerciseModal('workout')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 14H9v-4H5v-2h4V7h2v4h4v2h-4v4zm5-1.5V8l5 3.75-5 3.75z"/></svg>
+            <div class="workout-camera-action-copy">
+                <span class="workout-camera-action-title">Add Exercise Video</span>
+                <span class="workout-camera-action-subtitle">Film or upload a demo, earn +15 XP</span>
             </div>
         </button>
 
@@ -7575,7 +7587,7 @@ if(!window._pbbIsIOSSafari) {
 
         <!-- Create Custom Exercise Button -->
         <div style="margin-top: 10px; padding-bottom: 40px;">
-            <button onclick="openCreateCustomExerciseModal('workout')" style="width: 100%; background: transparent; border: 2px dashed #4ade80; color: var(--primary); font-weight: 700; font-size: 0.95rem; padding: 16px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <button onclick="openCreateCustomExerciseModal('workout')" style="width: 100%; background: #fffaf0; border: 2px dashed #fbbf24; color: #92400e; -webkit-text-fill-color: #92400e; font-weight: 700; font-size: 0.95rem; padding: 16px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                 <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;">
                     <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
                 </svg>
@@ -7747,17 +7759,17 @@ if(!window._pbbIsIOSSafari) {
             <input type="text" id="add-exercise-search" placeholder="Search exercises..." oninput="searchExercisesForAdd(this.value)" style="width: 100%; padding: 12px 15px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 1rem; background: white; box-sizing: border-box;">
 
             <!-- Create Your Own Button -->
-            <div onclick="closeAddExerciseModal(); openCreateCustomExerciseModal('workout');" style="margin-top: 10px; padding: 12px 15px; background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 1px solid #bbf7d0; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
-                <div style="width: 36px; height: 36px; background: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <div onclick="closeAddExerciseModal(); openCreateCustomExerciseModal('workout');" style="margin-top: 10px; padding: 12px 15px; background: linear-gradient(135deg, #fffaf0, #fef3c7); border: 1px solid #fbbf24; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 18px rgba(245,158,11,0.08);">
+                <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                     <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;">
                         <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
                     </svg>
                 </div>
                 <div style="flex: 1;">
-                    <div style="font-weight: 700; color: var(--primary); font-size: 0.9rem;">Create Your Own Exercise</div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted);">Record a video and add it to your library</div>
+                    <div style="font-weight: 700; color: #92400e; -webkit-text-fill-color: #92400e; font-size: 0.9rem;">Create Your Own Exercise</div>
+                    <div style="font-size: 0.75rem; color: #7c5b18; -webkit-text-fill-color: #7c5b18;">Record or upload a video and add it to the library</div>
                 </div>
-                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--primary);">
+                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #a16207;">
                     <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
                 </svg>
             </div>
@@ -7779,7 +7791,7 @@ if(!window._pbbIsIOSSafari) {
         <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
             <div onclick="closeCreateCustomExerciseModal()" style="font-weight: 600; cursor: pointer; color: var(--text-muted); padding: 10px;">Cancel</div>
             <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Create Exercise</div>
-            <div onclick="saveCustomExercise()" id="save-custom-exercise-btn" style="font-weight: 600; cursor: pointer; color: var(--primary); padding: 10px;">Save</div>
+            <div onclick="saveCustomExercise()" id="save-custom-exercise-btn" style="font-weight: 700; cursor: pointer; color: #b8892b; -webkit-text-fill-color: #b8892b; padding: 10px;">Save</div>
         </div>
 
         <div style="padding: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; flex: 1; box-sizing: border-box;">
@@ -7839,10 +7851,10 @@ if(!window._pbbIsIOSSafari) {
             </div>
 
             <!-- Video Recording Section -->
-            <div style="background: #f8fafc; border-radius: 16px; padding: 20px; margin-bottom: 20px;">
-                <label style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; display: block; margin-bottom: 12px;">
+            <div style="background: linear-gradient(135deg, #fffaf0, #ffffff 62%); border: 1px solid #f5d98a; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 26px rgba(245,158,11,0.08);">
+                <label style="font-weight: 700; color: #3f2d08; -webkit-text-fill-color: #3f2d08; font-size: 0.9rem; display: block; margin-bottom: 12px;">
                     <span style="display: flex; align-items: center; gap: 8px;">
-                        <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--primary);">
+                        <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #b8892b;">
                             <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
                         </svg>
                         Record Exercise Video
@@ -7867,12 +7879,13 @@ if(!window._pbbIsIOSSafari) {
                 <!-- Action Buttons -->
                 <div id="custom-exercise-video-actions" style="display: flex; flex-direction: column; gap: 10px;">
                     <!-- Record Button -->
-                    <button id="custom-exercise-record-btn" onclick="startCustomExerciseRecording()" style="width: 100%; background: linear-gradient(135deg, var(--primary), #4ade80); border: none; color: white; font-weight: 700; font-size: 0.95rem; padding: 16px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <button id="custom-exercise-record-btn" onclick="openCustomExerciseVideoCapture()" style="width: 100%; background: linear-gradient(135deg, #fbbf24, #f59e0b); border: none; color: #3f2d08; -webkit-text-fill-color: #3f2d08; font-weight: 800; font-size: 0.95rem; padding: 16px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 8px 18px rgba(245,158,11,0.22);">
                         <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor;">
                             <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
                         </svg>
                         Record Video
                     </button>
+                    <input type="file" id="custom-exercise-camera-input" accept="video/*,.mp4,.mov,.m4v,.webm,.3gp,.3gpp" capture="environment" onchange="handleCustomExerciseFileSelect(event)" style="display: none;">
 
                     <!-- Stop Recording Button (hidden by default) -->
                     <button id="custom-exercise-stop-btn" onclick="stopCustomExerciseRecording()" style="display: none; width: 100%; background: #ef4444; border: none; color: white; font-weight: 700; font-size: 0.95rem; padding: 16px; border-radius: 12px; cursor: pointer; display: none; align-items: center; justify-content: center; gap: 8px;">
@@ -12304,13 +12317,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=122';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=123';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=122"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=123"><\/script>');
 }
 </script>
 
@@ -15458,10 +15471,10 @@ if (window._pbbIsIOSSafari) {
 </div>
 <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-savedworkouts.js?v=4"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-savedworkouts.js?v=5"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-savedworkouts.js?v=4');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-savedworkouts.js?v=5');
 }
 </script>
 

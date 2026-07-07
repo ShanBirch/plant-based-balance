@@ -251,6 +251,9 @@ async function startSavedWorkout(id) {
 
         hideAllAppViews();
         document.getElementById('view-active-workout').style.display = 'block';
+        if (typeof ensureWorkoutAddExerciseVideoButton === 'function') {
+            ensureWorkoutAddExerciseVideoButton();
+        }
         window.activeWorkoutSessions = customWorkout;
 
         // Start the workout timer
