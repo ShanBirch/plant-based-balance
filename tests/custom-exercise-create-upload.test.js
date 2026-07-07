@@ -47,7 +47,7 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=128/,
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=129/,
   'dashboard should bump script 5 so phones fetch the non-blocking exercise upload fix'
 );
 assert.match(
@@ -133,8 +133,13 @@ assert.match(
 );
 assert.match(
   workoutScript,
-  /const pendingVideoFile = _customExerciseVideoFile[\s\S]*const saved = await dbHelpers\.customExercises\.create\(user\.id, exerciseData\)[\s\S]*uploadCustomExerciseVideoInBackground\(user, saved, pendingVideoFile, name\)/,
-  'saving should create the exercise first and upload the video in the background'
+  /const pendingVideoFile = _customExerciseVideoFile[\s\S]*const saved = await dbHelpers\.customExercises\.create\(user\.id, exerciseData\)[\s\S]*queuePendingVideoUpload = \(\) =>/,
+  'saving should create the exercise first and queue the video upload separately'
+);
+assert.match(
+  workoutScript,
+  /function queueCustomExerciseVideoBackgroundUpload\(user, savedExercise, videoFile, exerciseName\)[\s\S]*setTimeout\(\(\) =>[\s\S]*uploadCustomExerciseVideoInBackground\(user, savedExercise, videoFile, exerciseName\)/,
+  'video upload should start after native prompts close so mobile webviews do not pause the request'
 );
 assert.match(
   workoutScript,

@@ -21199,6 +21199,16 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
     }
 }
 
+function queueCustomExerciseVideoBackgroundUpload(user, savedExercise, videoFile, exerciseName) {
+    if (!user?.id || !savedExercise?.id || !videoFile) return;
+
+    // Start after any native confirm/alert has closed so mobile webviews do not
+    // pause the request while the video body is being streamed.
+    setTimeout(() => {
+        uploadCustomExerciseVideoInBackground(user, savedExercise, videoFile, exerciseName);
+    }, 300);
+}
+
 async function saveCustomExercise() {
     const name = document.getElementById('custom-exercise-name').value.trim();
     if (!name) {
@@ -21247,15 +21257,17 @@ async function saveCustomExercise() {
             saved.video_upload_status = 'uploading';
             setCustomExerciseVideoUploadState(saved.id, name, 'uploading', { startedAt: Date.now() });
         }
+        let uploadQueued = false;
+        const queuePendingVideoUpload = () => {
+            if (!hasPendingVideo || uploadQueued) return;
+            uploadQueued = true;
+            queueCustomExerciseVideoBackgroundUpload(user, saved, pendingVideoFile, name);
+        };
 
         // Add to local cache
         window._customExercisesCache.unshift(saved);
         window._myCustomExercisesCache = window._myCustomExercisesCache || [];
         window._myCustomExercisesCache.unshift(saved);
-
-        if (hasPendingVideo) {
-            uploadCustomExerciseVideoInBackground(user, saved, pendingVideoFile, name);
-        }
 
         if (window._customExerciseContext === 'builder') {
             closeCreateCustomExerciseModal();
@@ -21277,6 +21289,7 @@ async function saveCustomExercise() {
                         : `"${name}" has been created!${hasPendingVideo ? ' Video uploading.' : ''}`
                 );
             }
+            queuePendingVideoUpload();
         } else if (window._customExerciseContext === 'workout') {
             // If we're in an active workout context, offer to add it right away
             closeCreateCustomExerciseModal();
@@ -21295,6 +21308,7 @@ async function saveCustomExercise() {
                     videoUploading: hasPendingVideo
                 };
                 addExerciseToUI(newExercise);
+                queuePendingVideoUpload();
 
                 // Also save to workout customizations if in a tracked workout
                 const workoutKey = window.currentWorkoutKey;
@@ -21311,6 +21325,7 @@ async function saveCustomExercise() {
                     }
                 }
             }
+            queuePendingVideoUpload();
         } else {
             // Library context - just show success
             closeCreateCustomExerciseModal();
@@ -21319,6 +21334,7 @@ async function saveCustomExercise() {
             } else {
                 alert(`"${name}" has been created.${hasPendingVideo ? ' Video uploading.' : ''} You can now find it when adding exercises to any workout.`);
             }
+            queuePendingVideoUpload();
         }
 
     } catch (err) {
