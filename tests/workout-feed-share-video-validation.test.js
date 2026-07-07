@@ -81,6 +81,19 @@ assert.ok(
 );
 
 assert.ok(
+    formcheckSource.includes('WORKOUT_FEED_SHARE_RECORDING_WIDTH = 1080') &&
+    formcheckSource.includes('WORKOUT_FEED_SHARE_RECORDING_HEIGHT = 1920') &&
+    formcheckSource.includes('workout-feed-share-camera-canvas') &&
+    formcheckSource.includes('canvas.captureStream(WORKOUT_FEED_SHARE_CAMERA_FRAME_RATE)') &&
+    formcheckSource.includes('Math.min(canvas.width / sourceWidth, canvas.height / sourceHeight)') &&
+    formcheckSource.includes('new MediaRecorder(recordingStream, options)') &&
+    !formcheckSource.includes('new MediaRecorder(workoutFeedShareCameraStream, options)') &&
+    !formcheckSource.includes('width: { ideal: 1280 }') &&
+    !formcheckSource.includes('height: { ideal: 720 }'),
+    'Share a Set in-app recording should save a vertical 1080x1920 no-crop canvas stream instead of raw horizontal camera output'
+);
+
+assert.ok(
     storiesSource.includes('FEED_VIDEO_UPLOAD_TARGET_BYTES = 100 * 1024 * 1024') &&
     storiesSource.includes('PHONE_VIDEO_PRIMARY_MAX_DIMENSION = 1920') &&
     storiesSource.includes('PHONE_VIDEO_PRIMARY_BITRATE = 16000000') &&
@@ -123,7 +136,7 @@ assert.strictEqual(validateWorkoutVideoUpload({ type: 'video/mp4' }, mp4Buffer, 
 
 assert.ok(
     dashboardSource.includes('lib/stories.js?v=52') &&
-    dashboardSource.includes('pbb-deferred-formcheck.js?v=32'),
+    dashboardSource.includes('pbb-deferred-formcheck.js?v=33'),
     'dashboard should bump feed script versions so patched video validation is fetched'
 );
 
