@@ -497,6 +497,75 @@
         return { success: true, nudgeId: data && data.id ? data.id : null, fallback: true };
     }
 
+    function buildFormCheckMessageText(uploadResult, exerciseName, notes, workoutName) {
+        const messageLines = [
+            'Form check request',
+            'Exercise: ' + exerciseName
+        ];
+        messageLines.push('Video: [video: ' + uploadResult.publicUrl + ']');
+        if (workoutName) messageLines.push('Workout: ' + workoutName);
+        messageLines.push('Focus: ' + notes);
+        return messageLines.join('\n');
+    }
+
+    async function submitFormCheckInBackground(job) {
+        if (!job || !job.userId || !job.coachId || !job.file) return;
+
+        try {
+            let uploadResult;
+            let primaryUploadError = null;
+            try {
+                uploadResult = await uploadFormCheckClip(job.userId, job.file, job.requestId);
+            } catch (uploadError) {
+                primaryUploadError = uploadError;
+                console.warn('[FormCheck] B2 upload failed, trying Supabase fallback', uploadError);
+            }
+
+            if (!uploadResult && window.storageHelpers && typeof window.storageHelpers.uploadFormCheckVideo === 'function') {
+                try {
+                    uploadResult = await window.storageHelpers.uploadFormCheckVideo(job.userId, job.file, job.requestId);
+                } catch (fallbackError) {
+                    throw primaryUploadError || fallbackError;
+                }
+            }
+
+            if (!uploadResult) {
+                throw primaryUploadError || new Error('Video upload is not available yet. Please refresh and try again.');
+            }
+
+            const messageText = buildFormCheckMessageText(uploadResult, job.exerciseName, job.notes, job.workoutName);
+            try {
+                await submitFormCheckRequest({
+                    coachId: job.coachId,
+                    videoUrl: uploadResult.publicUrl,
+                    exerciseName: job.exerciseName,
+                    notes: job.notes,
+                    workoutName: job.workoutName || '',
+                    requestId: job.requestId
+                });
+            } catch (serverError) {
+                if (serverError && serverError.status && serverError.status < 500 && serverError.status !== 404) {
+                    throw serverError;
+                }
+                console.warn('[FormCheck] server submit failed, trying direct DM insert', serverError);
+                await insertFormCheckNudgeFallback(job.userId, job.coachId, messageText, job.requestId);
+            }
+
+            if (typeof showToast === 'function') showToast('Form check sent to Shannon', 'success');
+        } catch (error) {
+            console.error('[FormCheck] background submit failed', error);
+            if (typeof showToast === 'function') {
+                showToast(error.message || 'Form check upload failed. Please try again.', 'error');
+            }
+        }
+    }
+
+    function queueFormCheckBackgroundSubmit(job) {
+        setTimeout(function () {
+            submitFormCheckInBackground(job);
+        }, 300);
+    }
+
     async function submitFormCheck() {
         const submitBtn = document.getElementById('form-check-submit-btn');
         const exerciseInput = document.getElementById('form-check-exercise');
@@ -515,69 +584,32 @@
         const exerciseName = (exerciseInput && exerciseInput.value.trim()) || 'Exercise';
         const notes = (notesInput && notesInput.value.trim()) || 'Please check my technique.';
         const requestId = createRequestId();
+        const pendingFile = formCheckState.file;
+        const workoutName = formCheckState.workoutName || '';
 
         try {
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Uploading...';
+                submitBtn.textContent = 'Sending...';
                 submitBtn.style.opacity = '0.7';
             }
-            setStatus('Uploading your clip...', 'info');
-
-            let uploadResult;
-            let primaryUploadError = null;
-            try {
-                uploadResult = await uploadFormCheckClip(userId, formCheckState.file, requestId);
-            } catch (uploadError) {
-                primaryUploadError = uploadError;
-                console.warn('[FormCheck] B2 upload failed, trying Supabase fallback', uploadError);
-            }
-
-            if (!uploadResult && window.storageHelpers && typeof window.storageHelpers.uploadFormCheckVideo === 'function') {
-                try {
-                    uploadResult = await window.storageHelpers.uploadFormCheckVideo(userId, formCheckState.file, requestId);
-                } catch (fallbackError) {
-                    throw primaryUploadError || fallbackError;
-                }
-            }
-
-            if (!uploadResult) {
-                throw primaryUploadError || new Error('Video upload is not available yet. Please refresh and try again.');
-            }
-
-            setStatus('Sending request to Shannon...', 'info');
+            setStatus('Video uploading in the background. You can keep working out.', 'info');
             const coachId = window._coachUserId || (typeof getCoachUserId === 'function' ? await getCoachUserId() : null);
             if (!coachId) throw new Error('Could not find Shannon in the app.');
 
-            const messageLines = [
-                'Form check request',
-                'Exercise: ' + exerciseName
-            ];
-            messageLines.push('Video: [video: ' + uploadResult.publicUrl + ']');
-            if (formCheckState.workoutName) messageLines.push('Workout: ' + formCheckState.workoutName);
-            messageLines.push('Focus: ' + notes);
-
-            const messageText = messageLines.join('\n');
-            try {
-                await submitFormCheckRequest({
-                    coachId: coachId,
-                    videoUrl: uploadResult.publicUrl,
-                    exerciseName: exerciseName,
-                    notes: notes,
-                    workoutName: formCheckState.workoutName || '',
-                    requestId: requestId
-                });
-            } catch (serverError) {
-                if (serverError && serverError.status && serverError.status < 500 && serverError.status !== 404) {
-                    throw serverError;
-                }
-                console.warn('[FormCheck] server submit failed, trying direct DM insert', serverError);
-                await insertFormCheckNudgeFallback(userId, coachId, messageText, requestId);
+            closeFormCheck();
+            if (typeof showToast === 'function') {
+                showToast('Video uploading. You can keep working out.', 'success');
             }
-
-            setStatus('Sent to Shannon. He will reply in your DMs.', 'success');
-            if (typeof showToast === 'function') showToast('Form check sent to Shannon', 'success');
-            setTimeout(closeFormCheck, 900);
+            queueFormCheckBackgroundSubmit({
+                userId: userId,
+                coachId: coachId,
+                file: pendingFile,
+                exerciseName: exerciseName,
+                notes: notes,
+                workoutName: workoutName,
+                requestId: requestId
+            });
         } catch (error) {
             console.error('[FormCheck] submit failed', error);
             setStatus(error.message || 'Could not send that clip. Please try again.', 'error');
