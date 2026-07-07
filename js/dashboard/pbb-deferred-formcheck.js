@@ -1601,6 +1601,10 @@
             void openNativeWorkoutFeedShareCamera();
             return;
         }
+        if (isWorkoutFeedShareNativePlatform()) {
+            void openWorkoutFeedShareInAppCamera();
+            return;
+        }
         openWorkoutFeedShareCameraPicker();
     }
 
@@ -1610,6 +1614,10 @@
 
     function openWorkoutFeedShareCameraPicker() {
         openWorkoutFeedShareFilePicker({ capture: true });
+    }
+
+    function isWorkoutFeedShareNativePlatform() {
+        return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
     }
 
     function hasNativeWorkoutFeedShareVideoCamera() {
@@ -1725,7 +1733,7 @@
             #workout-feed-share-camera-video {
                 width: 100%;
                 height: 100%;
-                object-fit: cover;
+                object-fit: contain;
                 background: #000;
                 opacity: 0;
                 transition: opacity 0.15s ease;
@@ -2055,6 +2063,7 @@
     }
 
     function getBalanceVideoCapturePlugin() {
+        if (!isWorkoutFeedShareNativePlatform()) return null;
         let plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BalanceVideoCapture;
         if (!plugin && window.Capacitor && typeof window.Capacitor.registerPlugin === 'function') {
             try { plugin = window.Capacitor.registerPlugin('BalanceVideoCapture'); } catch (e) {}
@@ -2126,6 +2135,17 @@
         return plugin.captureWorkoutVideo({ maxDurationSeconds: 75 });
     }
 
+    async function openWorkoutFeedShareCameraFallback() {
+        if (isWorkoutFeedShareNativePlatform()) {
+            const opened = await openWorkoutFeedShareInAppCamera({ silentFallback: true });
+            if (!opened) {
+                showWorkoutFeedShareUploadBanner('Could not open the camera. Check app permissions or use Photos.', 'error');
+            }
+            return;
+        }
+        openWorkoutFeedShareCameraPicker();
+    }
+
     async function nativeWorkoutVideoResultToFile(result) {
         if (!result || result.cancelled) return null;
 
@@ -2162,12 +2182,12 @@
 
             if (!result) {
                 hideWorkoutFeedShareUploadBanner(1);
-                openWorkoutFeedShareCameraPicker();
+                await openWorkoutFeedShareCameraFallback();
                 return;
             }
             if (result.cancelled) {
                 hideWorkoutFeedShareUploadBanner(result.reason ? 1 : 300);
-                if (result.reason) openWorkoutFeedShareCameraPicker();
+                if (result.reason) await openWorkoutFeedShareCameraFallback();
                 return;
             }
 
@@ -2181,7 +2201,7 @@
         } catch (error) {
             console.error('[WorkoutFeedShare] native camera failed', error);
             hideWorkoutFeedShareUploadBanner(1);
-            openWorkoutFeedShareCameraPicker();
+            await openWorkoutFeedShareCameraFallback();
         }
     }
 

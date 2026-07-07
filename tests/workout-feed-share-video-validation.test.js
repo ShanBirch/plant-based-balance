@@ -68,8 +68,16 @@ assert.ok(
     !nativeCameraFunction.includes('openWorkoutFeedShareInAppCamera') &&
     nativeCameraFunction.includes('captureAndroidWorkoutVideo()') &&
     nativeCameraFunction.includes('captureIosWorkoutVideo()') &&
-    nativeCameraFunction.includes('openWorkoutFeedShareCameraPicker()'),
-    'Share a Set should prefer the native phone camera and camera capture input over the embedded recorder'
+    nativeCameraFunction.includes('openWorkoutFeedShareCameraFallback()'),
+    'Share a Set should prefer the native phone camera and avoid falling into Photos when native capture is unavailable'
+);
+
+assert.ok(
+    formcheckSource.includes('async function openWorkoutFeedShareCameraFallback()') &&
+    formcheckSource.includes('if (isWorkoutFeedShareNativePlatform())') &&
+    formcheckSource.includes('openWorkoutFeedShareInAppCamera({ silentFallback: true })') &&
+    formcheckSource.includes('openWorkoutFeedShareCameraPicker();'),
+    'Share a Set should use the full-frame in-app fallback inside native shells and the capture picker only on web'
 );
 
 assert.ok(
@@ -115,7 +123,7 @@ assert.strictEqual(validateWorkoutVideoUpload({ type: 'video/mp4' }, mp4Buffer, 
 
 assert.ok(
     dashboardSource.includes('lib/stories.js?v=52') &&
-    dashboardSource.includes('pbb-deferred-formcheck.js?v=31'),
+    dashboardSource.includes('pbb-deferred-formcheck.js?v=32'),
     'dashboard should bump feed script versions so patched video validation is fetched'
 );
 
