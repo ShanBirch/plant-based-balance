@@ -12311,13 +12311,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=131';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=132';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=131"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=132"><\/script>');
 }
 </script>
 
@@ -12872,7 +12872,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
       { tab:'movement-tab', sel:'#workout-share-set-btn', fallbackSel:'#today-workout-card', title:'Share a Set', fallbackTitle:'Open a workout to Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +20 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", fallbackBody:"Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +20 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn') || !!document.getElementById('today-workout-card'); } },
-    { tab:'movement-tab', sel:'#workout-add-exercise-video-btn', fallbackSel:'#feed-composer-card', title:'New exercises to Feed', fallbackTitle:'New exercises to Feed', body:"When you upload a new exercise video, Balance posts it to Feed with the exercise name and simple technique tips when the movement pattern is recognised.", fallbackBody:"Upload a new exercise video from Movement and Balance can post it to Feed with the exercise name and simple technique tips.", quick: true, condition: function(){ return !!document.getElementById('workout-add-exercise-video-btn') || !!document.getElementById('feed-composer-card'); } },
+    { tab:'movement-tab', sel:'#workout-add-exercise-video-btn', fallbackSel:'#feed-composer-card', title:'New exercises to review', fallbackTitle:'New exercises to review', body:"When you upload a new exercise video, it is saved for your workouts first. Shannon can approve it for Feed and shared-library XP.", fallbackBody:"Upload a new exercise video from Movement. It is saved for your workouts first, then Shannon can approve it for Feed and shared-library XP.", quick: true, condition: function(){ return !!document.getElementById('workout-add-exercise-video-btn') || !!document.getElementById('feed-composer-card'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Post-workout Share', body:"Finish a workout, then tap the single Share button to post the workout, a PB, or a photo to Feed." },
     { tab:'dashboard', sel:'#weekly-progress-photo-card,#weekly-progress-photo-done-card', title:'Progress photos to Instagram', body:"After your weekly progress photos save, tap IG Story to share a Balance progress card straight to Instagram.", condition: function(){ return !!document.querySelector('#weekly-progress-photo-card,#weekly-progress-photo-done-card'); } },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
@@ -13899,10 +13899,10 @@ if(!window._pbbIsIOSSafari) {
     tab: 'movement-tab',
     sel: '#workout-add-exercise-video-btn',
     fallbackSel: '#feed-composer-card',
-    title: 'New exercises to Feed',
-    fallbackTitle: 'New exercises to Feed',
-    body: "When you upload a new exercise video, Balance posts it to Feed with the exercise name and simple technique tips when the movement pattern is recognised.",
-    fallbackBody: "Upload a new exercise video from Movement and Balance can post it to Feed with the exercise name and simple technique tips.",
+    title: 'New exercises to review',
+    fallbackTitle: 'New exercises to review',
+    body: "When you upload a new exercise video, it is saved for your workouts first. Shannon can approve it for Feed and shared-library XP.",
+    fallbackBody: "Upload a new exercise video from Movement. It is saved for your workouts first, then Shannon can approve it for Feed and shared-library XP.",
     condition: function(){ return !!document.getElementById('workout-add-exercise-video-btn') || !!document.getElementById('feed-composer-card'); }
   });
   allFeatures.push({

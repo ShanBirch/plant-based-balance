@@ -10914,7 +10914,7 @@
         const NEEDS_YOU_ALERT_SELECT_FIELDS = 'id,coach_id,client_id,client_name,alert_type,status,priority,title,description,suggested_message,scheduled_reply_text,created_at,actioned_at,scheduled_for,data';
         let needsYouFeedCache = { rows: [], activeClientIds: new Set(), loadedAt: 0 };
         const NEEDS_YOU_TABS = ['all'];
-        const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'general_idea', 'onboarding_day_30', 'weekly_checkin', 'first_workout', 'subscription_sale'];
+        const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'general_idea', 'onboarding_day_30', 'weekly_checkin', 'first_workout', 'subscription_sale', 'custom_exercise_review'];
         const CLIENT_MANAGER_REVIEW_MARKERS = [
             'balance-combined-dm-manager',
             'balance-lead-client-manager',
@@ -12827,6 +12827,7 @@
             if (isAppSuggestionAlert(alert)) return true;
             if (isSupportVerificationNeedsYouAlert(alert)) return true;
             if (isFormCheckSelfTestNeedsYouAlert(alert)) return true;
+            if (isCustomExerciseReviewAlert(alert)) return true;
             if (alert.alert_type === 'subscription_sale') {
                 const data = alert.data || {};
                 return data.sale_made === true
@@ -15695,7 +15696,7 @@
             morning_pulse: 'Morning',
             first_workout: 'First Workout', weekly_checkin: 'Weekly', weekly_digest: 'Digest',
             plateau_reassess: 'Plateau', badge_earned: 'Badge', follow_up_review: 'Needs Attention',
-            subscription_sale: 'Sale'
+            subscription_sale: 'Sale', custom_exercise_review: 'Exercise'
         };
         const ALERT_TYPE_ICONS = {
             inactive_client: '😴', unread_message: '💬', incoming_dm: '📨',
@@ -15712,6 +15713,7 @@
             plateau_reassess: '🚧', badge_earned: '🏅'
         };
         ALERT_TYPE_ICONS.subscription_sale = '$';
+        ALERT_TYPE_ICONS.custom_exercise_review = 'EX';
         const PRIORITY_ORDER = ['urgent', 'high', 'medium', 'low'];
         const PRIORITY_LABELS = { urgent: 'Urgent', high: 'High priority', medium: 'Medium priority', low: 'Low priority' };
 
@@ -15727,6 +15729,7 @@
             win_to_celebrate:    9,   // Bigger win moments, not routine PBs
             first_workout:       3,
             badge_earned:        3,   // milestone badges — same urgency as first_workout
+            custom_exercise_review: 4,
             onboarding_welcome:  4,   // new client, first impression
             unread_message:      5,
             plateau_reassess:    6,   // substantive convo, not time-critical
@@ -18104,6 +18107,103 @@
             }
         }
 
+        function isCustomExerciseReviewAlert(alert) {
+            return alert?.alert_type === 'custom_exercise_review';
+        }
+
+        function renderCustomExerciseReview(alert) {
+            if (!isCustomExerciseReviewAlert(alert)) return '';
+            const data = alert.data || {};
+            const name = String(data.exercise_name || alert.title || 'Custom exercise');
+            const videoUrl = String(data.video_url || '');
+            const submittedBy = String(data.submitted_by_name || alert.client_name || 'Client');
+            const meta = [
+                data.muscle_group ? `Muscle: ${data.muscle_group}` : '',
+                data.equipment ? `Equipment: ${data.equipment}` : ''
+            ].filter(Boolean).join(' | ');
+            const tips = Array.isArray(data.technique_tips)
+                ? data.technique_tips.filter(Boolean).slice(0, 2)
+                : [];
+            const technique = [
+                data.technique_family ? `Technique: ${data.technique_family}` : '',
+                data.technique_force || ''
+            ].filter(Boolean).join(' | ');
+            const description = String(data.exercise_description || '').trim();
+
+            return `
+                <div style="margin-top:10px; padding:10px; border:1px solid #dbeafe; background:#eff6ff; border-radius:8px;">
+                    <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+                        ${videoUrl ? `<video src="${escapeHtml(videoUrl)}" controls playsinline style="width:180px; max-width:100%; border-radius:8px; background:#0f172a; aspect-ratio:9/16; object-fit:cover;"></video>` : ''}
+                        <div style="flex:1; min-width:180px;">
+                            <div style="font-weight:800; color:#1e3a8a; font-size:0.9rem; margin-bottom:4px;">${escapeHtml(name)}</div>
+                            <div style="font-size:0.78rem; color:#475569; line-height:1.45;">Uploaded by ${escapeHtml(submittedBy)}</div>
+                            ${description ? `<div style="font-size:0.78rem; color:#475569; line-height:1.45; margin-top:6px;">${escapeHtml(description)}</div>` : ''}
+                            ${meta ? `<div style="font-size:0.74rem; color:#64748b; line-height:1.4; margin-top:6px;">${escapeHtml(meta)}</div>` : ''}
+                            ${technique ? `<div style="font-size:0.74rem; color:#1d4ed8; line-height:1.4; margin-top:6px; font-weight:700;">${escapeHtml(technique)}</div>` : ''}
+                            ${tips.length ? `<ul style="margin:6px 0 0 16px; padding:0; font-size:0.74rem; color:#1e40af; line-height:1.4;">${tips.map(tip => `<li>${escapeHtml(String(tip))}</li>`).join('')}</ul>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        function renderCustomExerciseReviewActions(alert) {
+            if (!isCustomExerciseReviewAlert(alert) || alert.status !== 'pending') return '';
+            return `
+                <button class="alert-btn alert-btn-send" onclick="handleCustomExerciseReview('${alert.id}', 'approve', this)" title="Approve this exercise, post it to Feed, and award 15 XP">
+                    Approve +15 XP
+                </button>
+                <button class="alert-btn alert-btn-dismiss" onclick="handleCustomExerciseReview('${alert.id}', 'delete', this)" title="Delete this exercise from the custom exercise database">
+                    Delete
+                </button>`;
+        }
+
+        async function handleCustomExerciseReview(alertId, action, btn) {
+            const alertItem = getVisibleAlertById(alertId) || alertsCache.find(a => String(a.id) === String(alertId));
+            const exerciseId = String(alertItem?.data?.exercise_id || '').trim();
+            if (!exerciseId) {
+                alert('Exercise review is missing its exercise ID.');
+                return false;
+            }
+            if (action === 'delete' && !confirm('Delete this exercise from the database? The client will no longer have it available.')) {
+                return false;
+            }
+
+            const originalHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = action === 'approve' ? 'Approving...' : 'Deleting...';
+            }
+
+            try {
+                const response = await fetch('/api/custom-exercise-review', {
+                    method: 'POST',
+                    headers: await getAdminJsonHeaders(),
+                    body: JSON.stringify({ action, exerciseId })
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || result.error) throw new Error(result.error || `HTTP ${response.status}`);
+
+                clearAlertEditBuffer(alertId);
+                evictAlertFromFastCaches(alertId);
+                const card = document.getElementById(`alert-${alertId}`);
+                if (card) {
+                    card.style.animation = 'alertSlideOut 0.4s ease forwards';
+                    setTimeout(() => card.remove(), 400);
+                }
+                refreshVisibleCountsAfterDismiss();
+                updateVoiceMatchRate();
+                return true;
+            } catch (e) {
+                console.error('custom exercise review failed:', e);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+                alert('Could not review exercise: ' + (e.message || e));
+                return false;
+            }
+        }
+
         function renderAlertCard(alert) {
             const isChallengeCheckin = isChallengeCheckinAlert(alert);
             const isActionReceipt = isCoachActionReceipt(alert);
@@ -18111,6 +18211,7 @@
             const isTahliaSocial = isTahliaSocialApprovalAlert(alert);
             const manualIgRequired = isManualIgBlockedAlert(alert);
             const isFollowUp = isFollowUpAlert(alert);
+            const isCustomExerciseReview = isCustomExerciseReviewAlert(alert);
             const followUpBlockedByActiveDm = isFollowUpBlockedByActiveDm(alert);
             const typeLabel = isTahliaSocial
                 ? 'Tahlia social'
@@ -18201,6 +18302,8 @@
             const manualCheckinActionsHtml = renderManualChallengeCheckinActions(alert, hasMessage, canEdit);
             const manualDmActionsHtml = renderManualDmActions(alert, hasMessage);
             const manualHandleActionsHtml = renderManualHandleActions(alert, hasMessage);
+            const customExerciseReviewHtml = renderCustomExerciseReview(alert);
+            const customExerciseReviewActionsHtml = renderCustomExerciseReviewActions(alert);
             const dmScreenshotContextActionHtml = renderDmScreenshotContextAction(alert);
             const autoSendDmActionHtml = renderAutoSendDmAction(alert, isDmAlert);
             const instagramGraphDmActionsHtml = renderInstagramGraphDmActions(alert, isDmAlert);
@@ -18238,6 +18341,7 @@
                 ${conversationPanelHtml || ''}
                 ${learningReelContextHtml}
                 ${tahliaSocialContextHtml}
+                ${customExerciseReviewHtml}
                 ${suggestedMessageHtml}
                 ${proposedActionsHtml}
                 ${hasMessage ? renderAiAccuracyStripPlaceholder(alert) : ''}
@@ -18279,6 +18383,7 @@
                             </button>
                         ` : ''}
                     ` : `
+                        ${customExerciseReviewActionsHtml}
                         ${manualCheckinActionsHtml}
                         ${canSendFromHere ? `
                             <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}', this)">
@@ -18313,10 +18418,10 @@
                         ${instagramGraphDmActionsHtml}
                         ${dmScreenshotContextActionHtml}
                         ${autoSendDmActionHtml}
-                        <button class="alert-btn alert-btn-control" onclick="toggleControlPanel('${alert.id}')" title="See why the AI drafted this and what evidence it used">
+                        ${!isCustomExerciseReview ? `<button class="alert-btn alert-btn-control" onclick="toggleControlPanel('${alert.id}')" title="See why the AI drafted this and what evidence it used">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                             Control
-                        </button>
+                        </button>` : ''}
                         ${hasMessage && alert.status === 'pending' ? `
                             <button class="alert-btn alert-btn-redraft" onclick="toggleRedraftRow('${alert.id}')" title="Re-run the AI draft with a one-line hint (warmer, shorter, ask about X, etc.)">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path></svg>
@@ -18328,9 +18433,9 @@
                                 View Client
                             </button>
                         ` : ''}
-                        ${alert.status === 'pending' ? `
+                        ${alert.status === 'pending' ? (isCustomExerciseReview ? '' : `
                             <button class="alert-btn alert-btn-dismiss" onclick="promptDismissReason('${alert.id}')" title="Don't remind me about this again — optionally say why so the AI can learn">Forget</button>
-                        ` : `
+                        `) : `
                             <span style="font-size:0.75rem; color:#48864B; font-weight:600;">${alert.status === 'sent' ? 'Sent' : 'Dismissed'}</span>
                         `}
                     `}

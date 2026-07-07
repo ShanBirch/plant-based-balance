@@ -10,10 +10,13 @@ const savedWorkoutsScript = fs.readFileSync(path.join(root, 'js/dashboard/pbb-de
 const workoutBuilderScript = fs.readFileSync(path.join(root, 'js/dashboard/pbb-deferred-workoutbuilder.js'), 'utf8');
 const supabaseHelpers = fs.readFileSync(path.join(root, 'lib/supabase.js'), 'utf8');
 const awardPoints = fs.readFileSync(path.join(root, 'netlify/edge-functions/award-points.ts'), 'utf8');
+const customExerciseReview = fs.readFileSync(path.join(root, 'netlify/edge-functions/custom-exercise-review.js'), 'utf8');
 const pointsConfig = fs.readFileSync(path.join(root, 'lib/points-config.js'), 'utf8');
 const exerciseVideoUpload = fs.readFileSync(path.join(root, 'netlify/edge-functions/upload-exercise-video.js'), 'utf8');
 const netlifyConfig = fs.readFileSync(path.join(root, 'netlify.toml'), 'utf8');
 const publicExerciseMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260707013000_public_custom_exercise_videos.sql'), 'utf8');
+const exerciseReviewMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260707194015_custom_exercise_review_alert.sql'), 'utf8');
+const adminDashboard = fs.readFileSync(path.join(root, 'admin-dashboard.html'), 'utf8');
 
 assert.match(
   dashboardHtml,
@@ -47,18 +50,18 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=131/,
-  'dashboard should bump script 5 so phones fetch the custom exercise feed autopost fix'
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=132/,
+  'dashboard should bump script 5 so phones fetch the custom exercise review fix'
 );
 assert.match(
   dashboardHtml,
-  /id:\s*'custom-exercise-feed-autopost-v1'[\s\S]*title:\s*'New exercises to Feed'/,
-  'custom exercise feed autopost should have a returning-user Feature Drop'
+  /id:\s*'custom-exercise-feed-autopost-v1'[\s\S]*title:\s*'New exercises to review'/,
+  'custom exercise review should have a returning-user Feature Drop'
 );
 assert.match(
   dashboardHtml,
-  /title:'New exercises to Feed'[\s\S]*Balance posts it to Feed with the exercise name and simple technique tips/,
-  'custom exercise feed autopost should be in the guided feature tour'
+  /title:'New exercises to review'[\s\S]*Shannon can approve it for Feed and shared-library XP/,
+  'custom exercise review should be in the guided feature tour'
 );
 assert.match(
   dashboardHtml,
@@ -173,44 +176,31 @@ assert.match(
 );
 assert.match(
   workoutScript,
-  /const updated = await dbHelpers\.customExercises\.update\(user\.id, savedExercise\.id,[\s\S]*is_public:\s*true/,
-  'background upload should patch the exercise public after B2 returns a URL'
+  /const updated = await dbHelpers\.customExercises\.update\(user\.id, savedExercise\.id,[\s\S]*is_public:\s*false/,
+  'background upload should keep the exercise private until Shannon approves it'
 );
 assert.match(
   workoutScript,
-  /await awardCustomExerciseContributionXp\(user\.id, savedExercise\.id\)/,
-  'video-backed custom exercise should award contribution XP after the background upload completes'
+  /async function requestCustomExerciseReview\(savedExercise\)[\s\S]*fetch\('\/api\/custom-exercise-review'/,
+  'video-backed custom exercise should submit a review request after the background upload completes'
 );
 assert.match(
   workoutScript,
-  /function buildCustomExerciseFeedCaption\(exerciseName, savedExercise\)[\s\S]*New exercise added - \$\{safeName\}/,
-  'custom exercise uploads should build a Feed caption with the exercise name'
+  /body:\s*JSON\.stringify\(\{[\s\S]*action:\s*'submit'[\s\S]*exerciseId:\s*savedExercise\.id[\s\S]*technique:\s*getCustomExerciseTechniqueReviewData\(savedExercise\)/,
+  'custom exercise review requests should include recognised technique data when available'
 );
 assert.match(
   workoutScript,
-  /function hasSpecificExerciseTechniqueData\(exerciseName\)[\s\S]*technique\.family !== 'Whole-body lift'/,
-  'custom exercise Feed captions should only add technique tips for recognised exercise families'
+  /function getCustomExerciseTechniqueReviewData\(savedExercise\)[\s\S]*getExerciseTechniqueData\(safeName\)[\s\S]*technique\.family === 'Whole-body lift'/,
+  'custom exercise review should only attach technique tips for recognised exercise families'
 );
 assert.match(
   workoutScript,
-  /const feedStory = await createCustomExerciseFeedPost\(user, updated \|\| savedExercise, videoUrl\)/,
-  'background exercise video uploads should create a Feed post after the public video URL is saved'
+  /Sent to Shannon for review/,
+  'clients should see that uploaded exercise videos are waiting for Shannon review'
 );
-assert.match(
-  workoutScript,
-  /\.from\('stories'\)[\s\S]*\.eq\('media_url', videoUrl\)[\s\S]*\.maybeSingle\(\)/,
-  'custom exercise Feed autopost should avoid duplicates by checking the uploaded video URL'
-);
-assert.match(
-  workoutScript,
-  /dbHelpers\.stories\.create\(user\.id, \{[\s\S]*media_type:\s*'video'[\s\S]*media_url:\s*videoUrl[\s\S]*thumbnail_url:\s*null[\s\S]*caption/,
-  'custom exercise Feed autopost should use the uploaded video as a normal video feed item without a fake thumbnail'
-);
-assert.match(
-  workoutScript,
-  /loadPhotoFeed\('friends-photo-feed', 'friends-feed-empty'\)/,
-  'custom exercise Feed autopost should refresh the Feed when available'
-);
+assert.ok(!/await awardCustomExerciseContributionXp\(user\.id, savedExercise\.id\)/.test(workoutScript), 'clients should not self-award exercise contribution XP on upload');
+assert.ok(!/const feedStory = await createCustomExerciseFeedPost/.test(workoutScript), 'clients should not self-post uploaded exercises to Feed');
 
 assert.match(
   supabaseHelpers,
@@ -236,6 +226,11 @@ assert.match(
   netlifyConfig,
   /function = "upload-exercise-video"[\s\S]*path = "\/api\/upload-exercise-video"/,
   'exercise video B2 upload endpoint should be mapped in Netlify'
+);
+assert.match(
+  netlifyConfig,
+  /function = "custom-exercise-review"[\s\S]*path = "\/api\/custom-exercise-review"/,
+  'custom exercise review endpoint should be mapped in Netlify'
 );
 assert.match(
   supabaseHelpers,
@@ -265,7 +260,7 @@ assert.match(
 assert.match(
   awardPoints,
   /type === 'exercise_contribution'[\s\S]*\.from\('custom_exercises'\)[\s\S]*\.eq\('id', databaseReferenceId\)[\s\S]*\.eq\('user_id', userId\)[\s\S]*is_public === true[\s\S]*video_url/,
-  'exercise contribution XP should require a real public video-backed custom exercise owned by the user'
+  'exercise contribution XP should require a real approved public video-backed custom exercise owned by the user'
 );
 assert.match(
   awardPoints,
@@ -286,6 +281,66 @@ assert.match(
   publicExerciseMigration,
   /create policy "Users can view public custom exercises"/,
   'migration should allow authenticated users to read public custom exercises'
+);
+assert.match(
+  exerciseReviewMigration,
+  /custom_exercise_review/,
+  'coach alert constraint migration should allow custom exercise review alerts'
+);
+assert.match(
+  customExerciseReview,
+  /alert_type:\s*'custom_exercise_review'/,
+  'review endpoint should create a pending Needs You alert for Shannon'
+);
+assert.match(
+  customExerciseReview,
+  /review_status:\s*'pending'/,
+  'review endpoint should mark new exercise reviews as pending'
+);
+assert.match(
+  customExerciseReview,
+  /if \(action === 'approve'\) return approveExercise/,
+  'review endpoint should expose an admin approve action'
+);
+assert.match(
+  customExerciseReview,
+  /if \(action === 'delete'\) return deleteExercise/,
+  'review endpoint should expose an admin delete action'
+);
+assert.match(
+  customExerciseReview,
+  /body:\s*\{ is_public:\s*true[\s\S]*const story = await createFeedPostForExercise[\s\S]*const xp = await awardExerciseContributionXp/,
+  'admin approval should publish the exercise, create the Feed post, and award XP'
+);
+assert.match(
+  customExerciseReview,
+  /New exercise added - \$\{name\}/,
+  'approved exercise Feed captions should start with the requested exercise caption'
+);
+assert.match(
+  customExerciseReview,
+  /technique_tips[\s\S]*Tips:/,
+  'approved exercise Feed captions should include recognised technique tips when available'
+);
+assert.match(
+  adminDashboard,
+  /custom_exercise_review:\s*'Exercise'/,
+  'admin Needs You should label custom exercise review alerts'
+);
+assert.match(
+  adminDashboard,
+  /const NEEDS_YOU_ALERT_TYPES = \[[\s\S]*'custom_exercise_review'[\s\S]*isCustomExerciseReviewAlert\(alert\)\) return true/,
+  'admin Needs You should fetch and keep custom exercise review alerts'
+);
+assert.match(
+  adminDashboard,
+  /function renderCustomExerciseReview\(alert\)[\s\S]*<video[\s\S]*function renderCustomExerciseReviewActions/,
+  'admin Needs You should render the submitted exercise video for review'
+);
+assert.match(
+  adminDashboard,
+  /Approve \+15 XP[\s\S]*handleCustomExerciseReview\('\$\{alert\.id\}', 'delete'/,
+  'admin Needs You should provide approve and delete exercise review actions'
 );
 
 console.log('custom exercise create/upload tests passed');

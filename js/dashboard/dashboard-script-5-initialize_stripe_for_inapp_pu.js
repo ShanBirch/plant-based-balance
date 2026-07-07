@@ -20973,7 +20973,7 @@ function updateCustomExerciseCachesAfterVideoUpload(exerciseId, exerciseName, vi
                 ...ex,
                 video_url: videoUrl,
                 storage_path: storagePath || ex.storage_path || null,
-                is_public: true,
+                is_public: false,
                 video_upload_status: 'uploaded'
             };
         });
@@ -21120,98 +21120,63 @@ function removeCustomExerciseVideo() {
     if (cameraInput) cameraInput.value = '';
 }
 
-async function awardCustomExerciseContributionXp(userId, exerciseId) {
-    if (!userId || !exerciseId || !window.db?.points?.awardPoints) {
-        return { pointsAwarded: 0 };
+async function getCustomExerciseReviewAuthToken() {
+    if (window.authHelpers && typeof window.authHelpers.getSession === 'function') {
+        const session = await window.authHelpers.getSession();
+        return session?.access_token || '';
     }
+    if (window.supabaseClient?.auth && typeof window.supabaseClient.auth.getSession === 'function') {
+        const result = await window.supabaseClient.auth.getSession();
+        return result?.data?.session?.access_token || '';
+    }
+    return '';
+}
+
+function getCustomExerciseTechniqueReviewData(savedExercise) {
+    const safeName = String(savedExercise?.exercise_name || savedExercise?.name || '').trim();
+    if (!safeName || typeof getExerciseTechniqueData !== 'function') return null;
+
+    const technique = getExerciseTechniqueData(safeName);
+    if (!technique || !technique.family || technique.family === 'Whole-body lift') return null;
+
+    const setupCue = Array.isArray(technique.setup) ? technique.setup[0] : '';
+    const moveCue = Array.isArray(technique.move) ? technique.move[0] : '';
+    const tips = [setupCue, moveCue].filter(Boolean).slice(0, 2);
+
+    return {
+        family: technique.family || '',
+        force: technique.force || '',
+        tips
+    };
+}
+
+async function requestCustomExerciseReview(savedExercise) {
+    if (!savedExercise?.id) return null;
 
     try {
-        const result = await window.db.points.awardPoints(userId, 'exercise_contribution', exerciseId, {
-            clientDate: typeof getLocalDateString === 'function' ? getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]
+        const token = await getCustomExerciseReviewAuthToken();
+        if (!token) throw new Error('Please log in again before submitting exercise review.');
+
+        const response = await fetch('/api/custom-exercise-review', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({
+                action: 'submit',
+                exerciseId: savedExercise.id,
+                technique: getCustomExerciseTechniqueReviewData(savedExercise)
+            })
         });
-
-        if (result && result.pointsAwarded > 0) {
-            if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
-            if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result.error) {
+            throw new Error(result.error || `Review request failed (${response.status})`);
         }
-
-        return result || { pointsAwarded: 0 };
+        return result;
     } catch (error) {
-        console.warn('Failed to award exercise contribution XP:', error);
-        return { pointsAwarded: 0, error: error.message || 'XP award failed' };
-    }
-}
-
-function hasSpecificExerciseTechniqueData(exerciseName) {
-    if (typeof getExerciseTechniqueData !== 'function') return false;
-    const technique = getExerciseTechniqueData(exerciseName);
-    return !!(technique && technique.family && technique.family !== 'Whole-body lift');
-}
-
-function buildCustomExerciseFeedCaption(exerciseName, savedExercise) {
-    const safeName = String(exerciseName || savedExercise?.exercise_name || 'new exercise').trim() || 'new exercise';
-    const lines = [`New exercise added - ${safeName}`];
-    const description = String(savedExercise?.description || '').trim();
-
-    if (description) {
-        lines.push('', description);
-    }
-
-    if (hasSpecificExerciseTechniqueData(safeName)) {
-        const technique = getExerciseTechniqueData(safeName);
-        const setupCue = Array.isArray(technique.setup) ? technique.setup[0] : '';
-        const moveCue = Array.isArray(technique.move) ? technique.move[0] : '';
-        const tips = [setupCue, moveCue].filter(Boolean).slice(0, 2);
-
-        lines.push('', `Technique: ${technique.family}. ${technique.force}`);
-        if (tips.length) {
-            lines.push('', 'Tips:');
-            tips.forEach(tip => lines.push(`- ${tip}`));
-        }
-    }
-
-    return lines.join('\n');
-}
-
-async function createCustomExerciseFeedPost(user, savedExercise, videoUrl) {
-    if (!user?.id || !savedExercise?.id || !videoUrl || !window.supabaseClient) return null;
-
-    try {
-        const { data: existing, error: existingError } = await window.supabaseClient
-            .from('stories')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('media_type', 'video')
-            .eq('media_url', videoUrl)
-            .order('created_at', { ascending: true })
-            .limit(1)
-            .maybeSingle();
-
-        if (existingError && existingError.code !== 'PGRST116') {
-            throw existingError;
-        }
-        if (existing) return existing;
-
-        const caption = buildCustomExerciseFeedCaption(savedExercise.exercise_name, savedExercise);
-        const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
-        const story = await dbHelpers.stories.create(user.id, {
-            media_type: 'video',
-            media_url: videoUrl,
-            thumbnail_url: null,
-            caption,
-            duration: 10,
-            expires_at: expiresAt,
-            background_color: '#0f172a'
-        });
-
-        if (typeof loadPhotoFeed === 'function') {
-            loadPhotoFeed('friends-photo-feed', 'friends-feed-empty').catch(e => console.warn('Could not refresh Feed after exercise post:', e));
-        }
-
-        return story;
-    } catch (error) {
-        console.warn('Could not add custom exercise to Feed:', error);
-        return null;
+        console.warn('Could not submit custom exercise for review:', error);
+        return { success: false, error: error.message || 'Review request failed' };
     }
 }
 
@@ -21232,7 +21197,7 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
         const updated = await dbHelpers.customExercises.update(user.id, savedExercise.id, {
             video_url: videoUrl,
             storage_path: storagePath,
-            is_public: true
+            is_public: false
         });
 
         setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'uploaded', {
@@ -21248,15 +21213,15 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
             window._myCustomExercisesCache = window._myCustomExercisesCache.map(ex => ex.id === savedExercise.id ? { ...ex, ...updated } : ex);
         }
         renderCustomExerciseVideoUploadComplete(exerciseName, videoUrl);
-        const feedStory = await createCustomExerciseFeedPost(user, updated || savedExercise, videoUrl);
-
-        const xpResult = await awardCustomExerciseContributionXp(user.id, savedExercise.id);
-        const xpMessage = Number(xpResult?.pointsAwarded || 0) > 0
-            ? ` +${xpResult.pointsAwarded} XP`
-            : '';
+        const reviewResult = await requestCustomExerciseReview(updated || savedExercise);
 
         if (typeof showToast === 'function') {
-            showToast(`Video uploaded for "${exerciseName}".${feedStory ? ' Added to Feed.' : ''}${xpMessage}`, 'success');
+            showToast(
+                reviewResult?.status === 'approved'
+                    ? `Video uploaded for "${exerciseName}". Added to Feed. +${reviewResult.pointsAwarded || 0} XP`
+                    : `Video uploaded for "${exerciseName}". Sent to Shannon for review.`,
+                'success'
+            );
         }
         loadMyCustomExercises();
     } catch (uploadErr) {
