@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v239'; // v239: add payment portal and progress photo camera timer; v238: refresh Feed Share menu contrast
+const CACHE_NAME = 'pbb-app-v240'; // v240: force Feed latest-first script refresh; v239: add payment portal and progress photo camera timer
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
