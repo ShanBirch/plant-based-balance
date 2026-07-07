@@ -8599,3 +8599,211 @@ html[data-pbb-theme="light"] #view-friends #feed-composer-share-menu [data-feed-
     -webkit-text-fill-color: #0f766e !important;
     opacity: 1 !important;
 }
+
+/* Workout media sheets use light cards inside dark app chrome. Keep iOS dark mode from inheriting white text-fill. */
+#view-form-check,
+#view-workout-feed-share,
+#add-exercise-modal,
+#create-custom-exercise-modal {
+    color-scheme: light !important;
+}
+
+#view-form-check .form-check-header,
+#view-workout-feed-share .workout-feed-share-header,
+#view-form-check .form-check-panel,
+#view-workout-feed-share .workout-feed-share-panel,
+#add-exercise-modal > div,
+#create-custom-exercise-modal > div,
+#add-exercise-modal > div > div[style*="position: sticky"],
+#create-custom-exercise-modal > div > div[style*="position: sticky"] {
+    background: #fffdf8 !important;
+    border-color: rgba(184, 137, 43, 0.18) !important;
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+}
+
+#view-form-check .form-check-panel[style*="linear-gradient"],
+#view-workout-feed-share .workout-feed-share-panel[style*="linear-gradient"],
+#create-custom-exercise-modal [style*="background: linear-gradient(135deg, #fffaf0"] {
+    background: linear-gradient(135deg, #ffffff 0%, #fffaf0 100%) !important;
+    border: 1px solid rgba(184, 137, 43, 0.2) !important;
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+    box-shadow: 0 10px 26px rgba(120, 80, 20, 0.1) !important;
+}
+
+#view-form-check .form-check-title,
+#view-workout-feed-share .workout-feed-share-title,
+#view-form-check .form-check-panel :where(div, label, span, p),
+#view-workout-feed-share .workout-feed-share-panel :where(div, label, span, p),
+#add-exercise-modal :where(label, h1, h2, h3, p, span, div),
+#create-custom-exercise-modal :where(label, h1, h2, h3, p, span, div),
+#add-exercise-modal [style*="color: var(--text-main)"],
+#create-custom-exercise-modal [style*="color: var(--text-main)"],
+#add-exercise-modal [style*="color:var(--text-main)"],
+#create-custom-exercise-modal [style*="color:var(--text-main)"],
+#add-exercise-modal [style*="color: var(--text-muted)"],
+#create-custom-exercise-modal [style*="color: var(--text-muted)"],
+#add-exercise-modal [style*="color:var(--text-muted)"],
+#create-custom-exercise-modal [style*="color:var(--text-muted)"] {
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+}
+
+#view-form-check .form-check-panel[style*="linear-gradient"] > div:first-child,
+#view-workout-feed-share .workout-feed-share-panel[style*="linear-gradient"] > div:first-child,
+#create-custom-exercise-modal [style*="color: #7c5b18"],
+#create-custom-exercise-modal [style*="color:#7c5b18"],
+#create-custom-exercise-modal [style*="color: #92400e"],
+#create-custom-exercise-modal [style*="color:#92400e"],
+#create-custom-exercise-modal [style*="color: #3f2d08"],
+#create-custom-exercise-modal [style*="color:#3f2d08"] {
+    color: #7c5b18 !important;
+    -webkit-text-fill-color: #7c5b18 !important;
+}
+
+#view-form-check input,
+#view-form-check textarea,
+#view-workout-feed-share textarea,
+#add-exercise-modal input,
+#create-custom-exercise-modal input,
+#create-custom-exercise-modal textarea,
+#create-custom-exercise-modal select {
+    background: #ffffff !important;
+    border-color: rgba(184, 137, 43, 0.22) !important;
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+    caret-color: #111827 !important;
+}
+
+#view-form-check input::placeholder,
+#view-form-check textarea::placeholder,
+#view-workout-feed-share textarea::placeholder,
+#add-exercise-modal input::placeholder,
+#create-custom-exercise-modal input::placeholder,
+#create-custom-exercise-modal textarea::placeholder {
+    color: #6b7280 !important;
+    -webkit-text-fill-color: #6b7280 !important;
+    opacity: 1 !important;
+}
+
+#view-form-check .form-check-btn-primary,
+#view-workout-feed-share .workout-feed-share-btn-primary,
+#create-custom-exercise-modal #custom-exercise-record-btn {
+    background: linear-gradient(135deg, #f6dc91 0%, #d8b25e 55%, #facc15 100%) !important;
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+}
+
+#view-form-check .form-check-btn-secondary,
+#view-form-check .form-check-btn-muted,
+#view-workout-feed-share .workout-feed-share-btn-secondary,
+#view-workout-feed-share .workout-feed-share-btn-muted,
+#create-custom-exercise-modal label[style*="border: 2px dashed"] {
+    background: #ffffff !important;
+    border: 1px solid rgba(184, 137, 43, 0.2) !important;
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+}
+
+#view-form-check .form-check-btn-danger,
+#view-workout-feed-share .workout-feed-share-btn-danger {
+    background: #fef2f2 !important;
+    color: #991b1b !important;
+    -webkit-text-fill-color: #991b1b !important;
+}
+
+#create-custom-exercise-modal #custom-exercise-video-preview button,
+#workout-feed-share-camera-modal,
+#workout-feed-share-camera-modal * {
+    color-scheme: dark !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+html:not([data-pbb-theme="light"]) #add-exercise-modal,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal {
+    color-scheme: light !important;
+    background: rgba(0, 0, 0, 0.72) !important;
+}
+
+html:not([data-pbb-theme="light"]) #add-exercise-modal > div,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal > div,
+html:not([data-pbb-theme="light"]) #add-exercise-modal > div[style*="background: white"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal > div[style*="background: white"],
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="background: white"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="background: white"],
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="background:white"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="background:white"],
+html:not([data-pbb-theme="light"]) #add-exercise-modal > div > div[style*="position: sticky"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal > div > div[style*="position: sticky"],
+html:not([data-pbb-theme="light"]) #add-exercise-modal > div > div[style*="background: #f8fafc"],
+html:not([data-pbb-theme="light"]) #add-exercise-modal [onclick*="openCreateCustomExerciseModal"],
+html:not([data-pbb-theme="light"]) #add-exercise-results > div,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="background: #f8fafc"],
+html:not([data-pbb-theme="light"]) #my-custom-exercises-list > div {
+    background: #fffdf8 !important;
+    border-color: rgba(184, 137, 43, 0.18) !important;
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+}
+
+html:not([data-pbb-theme="light"]) #add-exercise-modal label,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal label,
+html:not([data-pbb-theme="light"]) #add-exercise-modal :where(h1, h2, h3, p, span, div),
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal :where(h1, h2, h3, p, span, div),
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="color: var(--text-main)"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color: var(--text-main)"],
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="color:var(--text-main)"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color:var(--text-main)"],
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="color: var(--text-muted)"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color: var(--text-muted)"],
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="color:var(--text-muted)"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color:var(--text-muted)"] {
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+}
+
+html:not([data-pbb-theme="light"]) #add-exercise-modal input,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal input,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal textarea,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal select {
+    background: #ffffff !important;
+    border-color: rgba(184, 137, 43, 0.22) !important;
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+    caret-color: #111827 !important;
+}
+
+html:not([data-pbb-theme="light"]) #add-exercise-modal input::placeholder,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal input::placeholder,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal textarea::placeholder {
+    color: #6b7280 !important;
+    -webkit-text-fill-color: #6b7280 !important;
+    opacity: 1 !important;
+}
+
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="background: linear-gradient(135deg, #fffaf0"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="background:linear-gradient(135deg, #fffaf0"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="background:linear-gradient(135deg,#fffaf0"] {
+    background: linear-gradient(135deg, #ffffff 0%, #fffaf0 100%) !important;
+    border-color: rgba(184, 137, 43, 0.2) !important;
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+}
+
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color: #7c5b18"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color:#7c5b18"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color: #92400e"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color:#92400e"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color: #3f2d08"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color:#3f2d08"] {
+    color: #7c5b18 !important;
+    -webkit-text-fill-color: #7c5b18 !important;
+}
+
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal #custom-exercise-record-btn,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal label[style*="border: 2px dashed"] {
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+}
