@@ -20725,6 +20725,29 @@ function closeCreateCustomExerciseModal() {
     }
 }
 
+function suspendCustomExerciseCameraModal() {
+    const modal = document.getElementById('create-custom-exercise-modal');
+    const wasOpen = !!(modal && modal.style.display !== 'none');
+    const state = {
+        wasOpen,
+        display: modal ? (modal.style.display || 'flex') : 'flex',
+        bodyOverflow: document.body.style.overflow || ''
+    };
+    if (wasOpen) {
+        modal.style.display = 'none';
+    }
+    return state;
+}
+window.suspendCustomExerciseCameraModal = suspendCustomExerciseCameraModal;
+
+function restoreCustomExerciseCameraModal(state) {
+    if (!state || !state.wasOpen) return;
+    const modal = document.getElementById('create-custom-exercise-modal');
+    if (modal) modal.style.display = state.display || 'flex';
+    document.body.style.overflow = 'hidden';
+}
+window.restoreCustomExerciseCameraModal = restoreCustomExerciseCameraModal;
+
 function validateCustomExerciseForm() {
     const name = document.getElementById('custom-exercise-name').value.trim();
     const btn = document.getElementById('save-custom-exercise-btn');

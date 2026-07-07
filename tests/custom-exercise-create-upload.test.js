@@ -44,6 +44,11 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=126/,
+  'dashboard should bump script 5 so phones fetch the custom exercise camera fix'
+);
+assert.match(
+  dashboardHtml,
   /id="workout-add-exercise-video-btn"[\s\S]*earn \+15 XP/,
   'workout screen should surface the exercise-video contribution action'
 );
@@ -67,6 +72,16 @@ assert.match(
   workoutScript,
   /window\.handleCustomExerciseCapturedVideoFile = handleCustomExerciseCapturedVideoFile/,
   'shared camera captures should be routable back into the custom exercise flow'
+);
+assert.match(
+  workoutScript,
+  /function suspendCustomExerciseCameraModal\(\)[\s\S]*modal\.style\.display = 'none'/,
+  'custom exercise modal should hide while the shared camera is open'
+);
+assert.match(
+  workoutScript,
+  /function restoreCustomExerciseCameraModal\(state\)[\s\S]*modal\.style\.display = state\.display \|\| 'flex'/,
+  'custom exercise modal should restore after shared camera capture or cancel'
 );
 assert.match(
   workoutScript,
