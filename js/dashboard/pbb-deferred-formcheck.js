@@ -233,7 +233,7 @@
                     <div class="form-check-actions">
                         <button type="button" class="form-check-btn form-check-btn-primary" onclick="openFormCheckCapture()">
                             <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
-                            Film New Clip
+                            Camera
                         </button>
                         <button type="button" class="form-check-btn form-check-btn-secondary" onclick="openFormCheckGallery()">
                             <svg viewBox="0 0 24 24"><path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/></svg>

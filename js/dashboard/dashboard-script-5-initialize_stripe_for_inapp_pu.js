@@ -20640,7 +20640,7 @@ function openCreateCustomExerciseModal(context) {
         <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor;">
             <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
         </svg>
-        Record Video
+        Camera
     `;
     const fileInput = document.getElementById('custom-exercise-file-input');
     if (fileInput) fileInput.value = '';
@@ -20745,7 +20745,7 @@ async function startCustomExerciseRecording() {
                 <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor;">
                     <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
                 </svg>
-                Re-record Video
+                Camera
             `;
             document.getElementById('custom-exercise-stop-btn').style.display = 'none';
             updateCustomExerciseUploadStatus('Video recorded. It will upload when you tap Save.');
@@ -20870,7 +20870,7 @@ function handleCustomExerciseFileSelect(event) {
         <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor;">
             <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
         </svg>
-        Re-record Video
+        Camera
     `;
 }
 
@@ -20888,7 +20888,7 @@ function removeCustomExerciseVideo() {
         <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor;">
             <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
         </svg>
-        Record Video
+        Camera
     `;
 
     // Reset file input

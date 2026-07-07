@@ -39,6 +39,11 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
+  /id="custom-exercise-record-btn"[\s\S]*>\s*Camera\s*<\/button>/,
+  'custom exercise primary video action should be labelled Camera'
+);
+assert.match(
+  dashboardHtml,
   /id="workout-add-exercise-video-btn"[\s\S]*earn \+15 XP/,
   'workout screen should surface the exercise-video contribution action'
 );
@@ -57,6 +62,11 @@ assert.match(
   workoutScript,
   /function openCustomExerciseVideoCapture\(\)[\s\S]*custom-exercise-camera-input[\s\S]*input\.click\(\)/,
   'record video should open the phone capture input'
+);
+assert.match(
+  workoutScript,
+  /document\.getElementById\('custom-exercise-record-btn'\)\.innerHTML = `[\s\S]*Camera[\s\S]*`;/,
+  'custom exercise record button resets should keep the Camera label'
 );
 assert.match(
   workoutScript,
