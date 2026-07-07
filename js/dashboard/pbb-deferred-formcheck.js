@@ -1607,7 +1607,7 @@
             return;
         }
         if (isWorkoutFeedShareNativePlatform()) {
-            void openWorkoutFeedShareInAppCamera();
+            openWorkoutFeedShareCameraPicker();
             return;
         }
         openWorkoutFeedShareCameraPicker();
@@ -2246,13 +2246,6 @@
     }
 
     async function openWorkoutFeedShareCameraFallback() {
-        if (isWorkoutFeedShareNativePlatform()) {
-            const opened = await openWorkoutFeedShareInAppCamera({ silentFallback: true });
-            if (!opened) {
-                showWorkoutFeedShareUploadBanner('Could not open the camera. Check app permissions or use Photos.', 'error');
-            }
-            return;
-        }
         openWorkoutFeedShareCameraPicker();
     }
 
@@ -2331,9 +2324,12 @@
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'video/*';
-        if (options.capture) input.setAttribute('capture', 'environment');
+        if (options.capture) {
+            input.capture = 'environment';
+            input.setAttribute('capture', 'environment');
+        }
         input.setAttribute('aria-hidden', 'true');
-        input.style.cssText = 'position:fixed; left:-9999px; top:0; width:1px; height:1px; opacity:0; pointer-events:none;';
+        input.style.display = 'none';
 
         workoutFeedSharePendingInput = input;
 
