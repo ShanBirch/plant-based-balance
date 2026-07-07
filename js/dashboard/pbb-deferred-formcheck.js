@@ -80,11 +80,38 @@
                 }
                 #view-form-check .form-check-panel {
                     background: white;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid rgba(184,137,43,0.24);
                     border-radius: 16px;
                     padding: 18px;
-                    box-shadow: 0 8px 24px rgba(15,23,42,0.06);
+                    box-shadow: 0 8px 24px rgba(184,137,43,0.08);
                     margin-bottom: 14px;
+                }
+                #view-form-check .form-check-hero {
+                    background: linear-gradient(135deg,#ffffff 0%,#fff8df 100%);
+                    border: 1px solid rgba(184,137,43,0.32);
+                    color: #151515;
+                    box-shadow: 0 10px 26px rgba(184,137,43,0.12);
+                }
+                #view-form-check .form-check-eyebrow {
+                    font-size: 0.78rem;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    color: #b8892b;
+                    margin-bottom: 6px;
+                }
+                #view-form-check .form-check-hero-title {
+                    font-size: 1.25rem;
+                    font-weight: 900;
+                    line-height: 1.15;
+                    margin-bottom: 8px;
+                    color: #151515;
+                }
+                #view-form-check .form-check-hero-copy {
+                    font-size: 0.86rem;
+                    line-height: 1.45;
+                    color: #6f6a61;
+                    font-weight: 700;
                 }
                 #view-form-check label {
                     display: block;
@@ -137,21 +164,27 @@
                     flex-shrink: 0;
                 }
                 #view-form-check .form-check-btn-primary {
-                    background: var(--primary);
-                    color: white;
-                    box-shadow: 0 8px 18px rgba(72,134,75,0.22);
+                    background: linear-gradient(135deg,#b8892b 0%,#e4bd55 100%);
+                    color: #151515;
+                    -webkit-text-fill-color: #151515;
+                    box-shadow: 0 8px 18px rgba(184,137,43,0.22);
                 }
                 #view-form-check .form-check-btn-secondary {
-                    background: #eef2ff;
-                    color: #3730a3;
+                    background: #fff;
+                    color: #151515;
+                    -webkit-text-fill-color: #151515;
+                    border: 1px solid rgba(184,137,43,0.32);
                 }
                 #view-form-check .form-check-btn-muted {
-                    background: #f1f5f9;
-                    color: #475569;
+                    background: #f8f5ee;
+                    color: #6f6a61;
+                    -webkit-text-fill-color: #6f6a61;
                 }
                 #view-form-check .form-check-btn-danger {
-                    background: #fef2f2;
-                    color: #dc2626;
+                    background: #fff;
+                    color: #7a5a18;
+                    -webkit-text-fill-color: #7a5a18;
+                    border: 1px solid rgba(184,137,43,0.32);
                 }
                 #view-form-check .form-check-status {
                     display: none;
@@ -181,10 +214,10 @@
                 <div class="form-check-title">Form Check</div>
             </div>
             <div class="form-check-content">
-                <div class="form-check-panel" style="background:linear-gradient(135deg,#102a1d 0%,#48864B 100%); color:white; border:none;">
-                    <div style="font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; opacity:0.85; margin-bottom:6px;">Send to Shannon</div>
-                    <div style="font-size:1.25rem; font-weight:900; line-height:1.15; margin-bottom:8px;">Film a set for a quick technique check</div>
-                    <div style="font-size:0.86rem; line-height:1.45; opacity:0.9;">Best with the whole body in frame, a side or 45 degree angle, and a clip under 60 seconds.</div>
+                <div class="form-check-panel form-check-hero">
+                    <div class="form-check-eyebrow">Send to Shannon</div>
+                    <div class="form-check-hero-title">Film a set for a quick technique check</div>
+                    <div class="form-check-hero-copy">Best with the whole body in frame, a side or 45 degree angle, and a clip under 60 seconds.</div>
                 </div>
 
                 <div class="form-check-panel">
@@ -574,11 +607,38 @@
                 }
                 #view-workout-feed-share .workout-feed-share-panel {
                     background: white;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid rgba(184,137,43,0.24);
                     border-radius: 16px;
                     padding: 18px;
-                    box-shadow: 0 8px 24px rgba(15,23,42,0.06);
+                    box-shadow: 0 8px 24px rgba(184,137,43,0.08);
                     margin-bottom: 14px;
+                }
+                #view-workout-feed-share .workout-feed-share-hero {
+                    background: linear-gradient(135deg,#ffffff 0%,#fff8df 100%);
+                    border: 1px solid rgba(184,137,43,0.32);
+                    color: #151515;
+                    box-shadow: 0 10px 26px rgba(184,137,43,0.12);
+                }
+                #view-workout-feed-share .workout-feed-share-eyebrow {
+                    font-size: 0.78rem;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    color: #b8892b;
+                    margin-bottom: 6px;
+                }
+                #view-workout-feed-share .workout-feed-share-hero-title {
+                    font-size: 1.25rem;
+                    font-weight: 900;
+                    line-height: 1.15;
+                    margin-bottom: 8px;
+                    color: #151515;
+                }
+                #view-workout-feed-share .workout-feed-share-hero-copy {
+                    font-size: 0.86rem;
+                    line-height: 1.45;
+                    color: #6f6a61;
+                    font-weight: 700;
                 }
                 #view-workout-feed-share label {
                     display: block;
@@ -628,21 +688,27 @@
                     flex-shrink: 0;
                 }
                 #view-workout-feed-share .workout-feed-share-btn-primary {
-                    background: linear-gradient(135deg, #7c2d12 0%, #dc2626 100%);
-                    color: white;
-                    box-shadow: 0 8px 18px rgba(220,38,38,0.22);
+                    background: linear-gradient(135deg,#b8892b 0%,#e4bd55 100%);
+                    color: #151515;
+                    -webkit-text-fill-color: #151515;
+                    box-shadow: 0 8px 18px rgba(184,137,43,0.22);
                 }
                 #view-workout-feed-share .workout-feed-share-btn-secondary {
-                    background: #eef2ff;
-                    color: #3730a3;
+                    background: #fff;
+                    color: #151515;
+                    -webkit-text-fill-color: #151515;
+                    border: 1px solid rgba(184,137,43,0.32);
                 }
                 #view-workout-feed-share .workout-feed-share-btn-muted {
-                    background: #f1f5f9;
-                    color: #475569;
+                    background: #f8f5ee;
+                    color: #6f6a61;
+                    -webkit-text-fill-color: #6f6a61;
                 }
                 #view-workout-feed-share .workout-feed-share-btn-danger {
-                    background: #fef2f2;
-                    color: #dc2626;
+                    background: #fff;
+                    color: #7a5a18;
+                    -webkit-text-fill-color: #7a5a18;
+                    border: 1px solid rgba(184,137,43,0.32);
                 }
                 #view-workout-feed-share .workout-feed-share-status {
                     display: none;
@@ -656,11 +722,6 @@
                 #view-workout-feed-share .workout-feed-share-status.info { display:block; background:#eff6ff; color:#1d4ed8; }
                 #view-workout-feed-share .workout-feed-share-status.success { display:block; background:#dcfce7; color:#166534; }
                 #view-workout-feed-share .workout-feed-share-status.error { display:block; background:#fee2e2; color:#991b1b; }
-                #view-workout-feed-share .workout-feed-share-hero,
-                #view-workout-feed-share .workout-feed-share-hero * {
-                    color: #fff !important;
-                    -webkit-text-fill-color: #fff !important;
-                }
                 #workout-feed-share-video-preview {
                     display: none;
                     width: 100%;
@@ -677,10 +738,10 @@
                 <div class="workout-feed-share-title">Share a Set</div>
             </div>
             <div class="workout-feed-share-content">
-                <div class="workout-feed-share-panel workout-feed-share-hero" style="background:linear-gradient(135deg,#111827 0%,#b91c1c 100%); color:#fff !important; -webkit-text-fill-color:#fff !important; border:none;">
-                    <div style="font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; opacity:0.9; margin-bottom:6px; color:#fff !important; -webkit-text-fill-color:#fff !important;">Stay in workout mode</div>
-                    <div style="font-size:1.25rem; font-weight:900; line-height:1.15; margin-bottom:8px; color:#fff !important; -webkit-text-fill-color:#fff !important;">Record a set, post it to Feed, and earn +20 XP once a day</div>
-                    <div style="font-size:0.86rem; line-height:1.45; opacity:0.92; color:#fff !important; -webkit-text-fill-color:#fff !important;">Open the camera or choose a clip from Photos, then keep your workout running while it uploads.</div>
+                <div class="workout-feed-share-panel workout-feed-share-hero">
+                    <div class="workout-feed-share-eyebrow">Stay in workout mode</div>
+                    <div class="workout-feed-share-hero-title">Record a set, post it to Feed, and earn +20 XP once a day</div>
+                    <div class="workout-feed-share-hero-copy">Open the camera or choose a clip from Photos, then keep your workout running while it uploads.</div>
                 </div>
 
                 <div class="workout-feed-share-panel">

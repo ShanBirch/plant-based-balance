@@ -7478,7 +7478,7 @@ if(!window._pbbIsIOSSafari) {
                 width: 100%;
                 min-height: 78px;
                 margin: 0 0 12px 0;
-                border: none;
+                border: 1px solid rgba(184,137,43,0.28);
                 border-radius: 14px;
                 padding: 14px 15px;
                 display: flex;
@@ -7487,11 +7487,17 @@ if(!window._pbbIsIOSSafari) {
                 gap: 12px;
                 cursor: pointer;
                 text-align: left;
+                background: linear-gradient(135deg,#ffffff 0%,#fff8df 100%);
+                color: #151515;
+                -webkit-text-fill-color: #151515;
+                box-shadow: 0 10px 24px rgba(184,137,43,0.10);
             }
             .workout-camera-action-btn svg {
                 width: 19px;
                 height: 19px;
                 flex-shrink: 0;
+                color: #b8892b;
+                fill: #b8892b;
             }
             .workout-camera-action-copy {
                 display: flex;
@@ -7508,26 +7514,22 @@ if(!window._pbbIsIOSSafari) {
                 font-size: 0.72rem;
                 font-weight: 700;
                 line-height: 1.1;
-                opacity: 0.82;
+                color: #6f6a61;
+                -webkit-text-fill-color: #6f6a61;
             }
             #workout-form-check-top-btn {
-                background: #eef2ff;
-                color: #3730a3;
-                -webkit-text-fill-color: #3730a3;
-                box-shadow: 0 10px 24px rgba(55,48,163,0.08);
+                background: linear-gradient(135deg,#ffffff 0%,#fff8df 100%);
+                color: #151515;
+                -webkit-text-fill-color: #151515;
+                box-shadow: 0 10px 24px rgba(184,137,43,0.10);
             }
             #workout-form-check-top-btn svg,
             #workout-form-check-top-btn svg * {
-                fill: #3730a3 !important;
-            }
-            #workout-share-set-btn,
-            #workout-share-set-btn * {
-                color: #fff !important;
-                -webkit-text-fill-color: #fff !important;
+                fill: #b8892b !important;
             }
             #workout-share-set-btn svg,
             #workout-share-set-btn svg * {
-                fill: #fff !important;
+                fill: #b8892b !important;
             }
         </style>
 
@@ -7539,11 +7541,11 @@ if(!window._pbbIsIOSSafari) {
             </div>
         </button>
 
-        <button id="workout-share-set-btn" class="workout-camera-action-btn" type="button" onclick="openWorkoutFeedShare({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })" style="background:linear-gradient(135deg,#111827 0%,#dc2626 100%); color:#fff; -webkit-text-fill-color:#fff; box-shadow:0 10px 24px rgba(220,38,38,0.16);">
-            <svg viewBox="0 0 24 24" style="width:19px; height:19px; color:#fff; fill:#fff; -webkit-text-fill-color:#fff; flex-shrink:0;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
-            <div class="workout-camera-action-copy" style="color:#fff; -webkit-text-fill-color:#fff;">
-                <span class="workout-camera-action-title" style="color:#fff; -webkit-text-fill-color:#fff;">Share a Set</span>
-                <span class="workout-camera-action-subtitle" style="color:#fff; -webkit-text-fill-color:#fff;">First share each day earns +20 XP</span>
+        <button id="workout-share-set-btn" class="workout-camera-action-btn" type="button" onclick="openWorkoutFeedShare({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+            <div class="workout-camera-action-copy">
+                <span class="workout-camera-action-title">Share a Set</span>
+                <span class="workout-camera-action-subtitle">First share each day earns +20 XP</span>
             </div>
         </button>
 
@@ -15242,7 +15244,7 @@ if (window._pbbIsIOSSafari) {
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>
-<script src="js/dashboard/pbb-deferred-formcheck.js?v=39"></script>
+<script src="js/dashboard/pbb-deferred-formcheck.js?v=40"></script>
 
 
 <script>

@@ -17,7 +17,9 @@ assert.ok(
     dashboard.includes('.workout-camera-action-btn') &&
     dashboard.includes('justify-content: flex-start') &&
     dashboard.includes('text-align: left') &&
-    dashboard.includes('min-height: 78px'),
+    dashboard.includes('min-height: 78px') &&
+    dashboard.includes('linear-gradient(135deg,#ffffff 0%,#fff8df 100%)') &&
+    dashboard.includes('rgba(184,137,43,0.28)'),
     'workout camera action buttons should share the same left-aligned layout'
 );
 
@@ -41,6 +43,13 @@ assert.ok(
     !formButton.includes('justify-content:center') &&
     !formButton.includes('Film Form Check\n'),
     'Film Form Check should not be centered as loose text'
+);
+
+assert.ok(
+    !formButton.includes('#3730a3') &&
+    !shareButton.includes('#dc2626') &&
+    !shareButton.includes('#111827'),
+    'workout camera buttons should use the Balance gold and white theme instead of purple/red'
 );
 
 console.log('workout action button UI tests passed');
