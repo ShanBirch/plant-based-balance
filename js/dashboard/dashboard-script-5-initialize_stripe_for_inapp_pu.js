@@ -20666,6 +20666,7 @@ let _customExerciseMediaRecorder = null;
 let _customExerciseRecordedChunks = [];
 let _customExerciseVideoFile = null;
 let _customExerciseVideoObjectUrl = null;
+let _customExerciseSuspendedCameraInputState = null;
 let _customExerciseRecTimerInterval = null;
 let _customExerciseRecStartTime = null;
 
@@ -20748,6 +20749,13 @@ function restoreCustomExerciseCameraModal(state) {
 }
 window.restoreCustomExerciseCameraModal = restoreCustomExerciseCameraModal;
 
+function restorePendingCustomExerciseCameraInputModal() {
+    if (!_customExerciseSuspendedCameraInputState) return;
+    const state = _customExerciseSuspendedCameraInputState;
+    _customExerciseSuspendedCameraInputState = null;
+    restoreCustomExerciseCameraModal(state);
+}
+
 function validateCustomExerciseForm() {
     const name = document.getElementById('custom-exercise-name').value.trim();
     const btn = document.getElementById('save-custom-exercise-btn');
@@ -20761,6 +20769,19 @@ function openCustomExerciseVideoCapture() {
     if (window.openWorkoutFeedShareCameraForFile) {
         window.openWorkoutFeedShareCameraForFile({ target: 'custom-exercise' });
         return;
+    }
+    const cameraInput = document.getElementById('custom-exercise-camera-input');
+    if (cameraInput && typeof cameraInput.click === 'function') {
+        _customExerciseSuspendedCameraInputState = suspendCustomExerciseCameraModal();
+        cameraInput.value = '';
+        cameraInput.addEventListener('cancel', restorePendingCustomExerciseCameraInputModal, { once: true });
+        try {
+            cameraInput.click();
+            return;
+        } catch (error) {
+            console.warn('Custom exercise camera input failed, falling back to in-app recorder:', error);
+            restorePendingCustomExerciseCameraInputModal();
+        }
     }
     startCustomExerciseRecording();
 }
@@ -20911,7 +20932,11 @@ function updateCustomExerciseUploadStatus(message, isError) {
 
 function handleCustomExerciseFileSelect(event) {
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {
+        restorePendingCustomExerciseCameraInputModal();
+        return;
+    }
+    restorePendingCustomExerciseCameraInputModal();
     applyCustomExerciseVideoFile(file, event.target);
 }
 

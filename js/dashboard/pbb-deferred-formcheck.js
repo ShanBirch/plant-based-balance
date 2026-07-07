@@ -1798,15 +1798,37 @@
         workoutFeedShareCaptureTarget = options.target || 'share-set';
         suspendWorkoutFeedShareCaptureSurface();
         if (hasNativeWorkoutFeedShareVideoCamera()) {
-            void openNativeWorkoutFeedShareCamera();
+            void openWorkoutFeedShareCameraAfterSurfaceSettles(openNativeWorkoutFeedShareCamera);
             return true;
         }
         if (isWorkoutFeedShareNativePlatform()) {
-            void openWorkoutFeedShareInAppCamera();
+            void openWorkoutFeedShareCameraAfterSurfaceSettles(openWorkoutFeedShareInAppCamera);
             return true;
         }
         openWorkoutFeedShareCameraPicker();
         return true;
+    }
+
+    function waitForWorkoutFeedShareHiddenSurfacePaint() {
+        try { void document.body.offsetHeight; } catch (e) {}
+        return new Promise(resolve => {
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(() => requestAnimationFrame(resolve));
+                return;
+            }
+            setTimeout(resolve, 50);
+        });
+    }
+
+    async function openWorkoutFeedShareCameraAfterSurfaceSettles(openCamera) {
+        try {
+            await waitForWorkoutFeedShareHiddenSurfacePaint();
+            await openCamera();
+        } catch (error) {
+            console.error('[WorkoutFeedShare] camera launch failed after hiding surface', error);
+            restoreWorkoutFeedShareCaptureSurface();
+            showWorkoutFeedShareUploadBanner('Could not open the camera. Check app permissions or use Photos.', 'error');
+        }
     }
 
     function suspendWorkoutFeedShareCaptureSurface() {

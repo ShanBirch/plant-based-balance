@@ -44,7 +44,7 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=126/,
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=127/,
   'dashboard should bump script 5 so phones fetch the custom exercise camera fix'
 );
 assert.match(
@@ -82,6 +82,21 @@ assert.match(
   workoutScript,
   /function restoreCustomExerciseCameraModal\(state\)[\s\S]*modal\.style\.display = state\.display \|\| 'flex'/,
   'custom exercise modal should restore after shared camera capture or cancel'
+);
+assert.match(
+  workoutScript,
+  /function restorePendingCustomExerciseCameraInputModal\(\)[\s\S]*restoreCustomExerciseCameraModal\(state\)/,
+  'custom exercise fallback camera input should restore the modal after capture or cancel'
+);
+assert.match(
+  workoutScript,
+  /function openCustomExerciseVideoCapture\(\)[\s\S]*suspendCustomExerciseCameraModal\(\)[\s\S]*cameraInput\.click\(\)/,
+  'custom exercise fallback camera input should hide the modal before opening the camera'
+);
+assert.match(
+  workoutScript,
+  /function handleCustomExerciseFileSelect\(event\)[\s\S]*restorePendingCustomExerciseCameraInputModal\(\)[\s\S]*applyCustomExerciseVideoFile\(file, event\.target\)/,
+  'custom exercise camera input should pop the modal back up before applying the captured video'
 );
 assert.match(
   workoutScript,
