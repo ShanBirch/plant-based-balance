@@ -196,6 +196,38 @@ export default async (request: Request, context: Context): Promise<Response> => 
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    if (type === 'exercise_contribution') {
+      const { data: exerciseContribution, error: exerciseError } = await supabase
+        .from('custom_exercises')
+        .select('id, video_url, is_public')
+        .eq('id', databaseReferenceId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (exerciseError) {
+        console.error('Error validating exercise contribution:', exerciseError);
+        throw exerciseError;
+      }
+
+      const hasPublicVideo = !!(
+        exerciseContribution
+        && exerciseContribution.is_public === true
+        && String(exerciseContribution.video_url || '').trim()
+      );
+
+      if (!hasPublicVideo) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Exercise contribution not eligible',
+          reason: 'Exercise contribution XP only applies to a new video-backed exercise you added to the shared library.',
+          pointsAwarded: 0
+        }), {
+          status: 200,
+          headers
+        });
+      }
+    }
+
     if (type === 'workout_feed_share') {
       const { data: existingDailyShare } = await supabase
         .from('point_transactions')

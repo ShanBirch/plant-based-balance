@@ -264,6 +264,16 @@ assert.match(
 );
 assert.match(
   awardPoints,
+  /type === 'exercise_contribution'[\s\S]*\.from\('custom_exercises'\)[\s\S]*\.eq\('id', databaseReferenceId\)[\s\S]*\.eq\('user_id', userId\)[\s\S]*is_public === true[\s\S]*video_url/,
+  'exercise contribution XP should require a real public video-backed custom exercise owned by the user'
+);
+assert.match(
+  awardPoints,
+  /type === 'workout_feed_share'[\s\S]*getWorkoutFeedShareDailyReferenceId\(clientDate\)[\s\S]*: referenceId/,
+  'exercise contribution XP should keep the custom exercise id as the reference instead of using a daily reference'
+);
+assert.match(
+  awardPoints,
   /earn_exercise_contribution/,
   'exercise contribution XP should use its own transaction type'
 );
