@@ -37,7 +37,7 @@ assert.ok(
 );
 
 assert.ok(
-    dashboard.includes('pbb-deferred-formcheck.js?v=40'),
+    dashboard.includes('pbb-deferred-formcheck.js?v=41'),
     'dashboard should bump the deferred camera/share script so phones fetch the theme change'
 );
 

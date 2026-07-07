@@ -1335,6 +1335,26 @@
                     opacity: 0.62;
                     cursor: default;
                 }
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-clear {
+                    width: 38px;
+                    min-width: 38px;
+                    padding: 0;
+                    background: rgba(124, 45, 18, 0.1);
+                    color: #7c2d12;
+                    -webkit-text-fill-color: #7c2d12;
+                    border: 1px solid rgba(124, 45, 18, 0.16);
+                    box-shadow: none;
+                }
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-clear svg {
+                    width: 17px;
+                    height: 17px;
+                    display: block;
+                    margin: 0 auto;
+                    fill: none;
+                    stroke: currentColor;
+                    stroke-width: 2.5;
+                    stroke-linecap: round;
+                }
                 @media (max-width: 430px) {
                     #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-inner {
                         align-items: flex-start;
@@ -1414,6 +1434,32 @@
         refreshWorkoutFeedShareRetryNotice().catch(function () {});
     }
 
+    async function discardWorkoutFeedShareQueue(manual) {
+        if (workoutFeedShareRetryTimer) {
+            clearTimeout(workoutFeedShareRetryTimer);
+            workoutFeedShareRetryTimer = null;
+        }
+
+        try {
+            const items = (await getCurrentUserWorkoutFeedShareQueueItems()).filter(function (item) {
+                return !isWorkoutFeedSharePostingStagingItem(item);
+            });
+            for (const item of items) {
+                if (item && item.id) await deleteWorkoutFeedShareQueueItem(item.id);
+            }
+            await refreshWorkoutFeedShareRetryNotice();
+            const message = items.length === 1 ? 'Saved upload cleared' : 'Saved uploads cleared';
+            showWorkoutFeedShareUploadBanner(items.length ? message : 'No saved uploads found', 'success');
+            hideWorkoutFeedShareUploadBanner(1400);
+            if (manual && typeof showToast === 'function') {
+                showToast(items.length ? message : 'No saved uploads found', 'success');
+            }
+        } catch (error) {
+            console.warn('[WorkoutFeedShare] could not clear saved uploads', error);
+            if (manual) showWorkoutFeedShareUploadBanner('Could not clear saved uploads.', 'error');
+        }
+    }
+
     async function refreshWorkoutFeedShareRetryNotice() {
         const notice = ensureWorkoutFeedShareRetryNotice();
         if (!notice) return;
@@ -1464,6 +1510,9 @@
                 </div>
                 <div class="share-set-retry-actions">
                     <button type="button" onclick="postWorkoutFeedShareQueueNow()" ${workoutFeedShareRetryInProgress ? 'disabled' : ''}>${escapeWorkoutFeedShareHtml(buttonText)}</button>
+                    <button type="button" class="share-set-retry-clear" aria-label="Clear saved Share a Set upload" onclick="discardWorkoutFeedShareQueue(true)">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                    </button>
                 </div>
             </div>
         `;
@@ -2840,6 +2889,7 @@
     window.flipWorkoutFeedShareInAppCamera = flipWorkoutFeedShareInAppCamera;
     window.retryWorkoutFeedShareQueue = retryWorkoutFeedShareQueue;
     window.postWorkoutFeedShareQueueNow = postWorkoutFeedShareQueueNow;
+    window.discardWorkoutFeedShareQueue = discardWorkoutFeedShareQueue;
     window.hideWorkoutFeedShareUploadBanner = hideWorkoutFeedShareUploadBanner;
     window.refreshWorkoutFeedShareRetryNotice = refreshWorkoutFeedShareRetryNotice;
 

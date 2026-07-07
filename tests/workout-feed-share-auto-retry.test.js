@@ -64,6 +64,14 @@ assert.ok(
 );
 
 assert.ok(
+    source.includes('async function discardWorkoutFeedShareQueue(manual)') &&
+    source.includes('class="share-set-retry-clear"') &&
+    source.includes('onclick="discardWorkoutFeedShareQueue(true)"') &&
+    source.includes('window.discardWorkoutFeedShareQueue = discardWorkoutFeedShareQueue'),
+    'saved Share a Set cards should expose an X action that clears saved uploads'
+);
+
+assert.ok(
     source.includes('async function clearPostedWorkoutFeedShareQueueItems(referenceItem)') &&
     source.includes('function isMatchingPostedWorkoutFeedShareQueueItem(item, referenceItem)') &&
     source.includes('await clearPostedWorkoutFeedShareQueueItems(initialQueueItem)') &&
@@ -79,7 +87,7 @@ assert.ok(
 );
 
 assert.ok(
-    dashboardSource.includes('pbb-deferred-formcheck.js?v=40'),
+    dashboardSource.includes('pbb-deferred-formcheck.js?v=41'),
     'dashboard should bump Share a Set script version so phones fetch the retry fix'
 );
 
