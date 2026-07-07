@@ -27,7 +27,7 @@ assert.match(stories, /options\.finalVideoBitsPerSecond/);
 assert.match(stories, /options\.primaryLabel/);
 
 assert.match(dashboard, /lib\/stories\.js\?v=52/);
-assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=36/);
+assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=37/);
 assert.match(dashboard, /choose Camera to use your phone camera/);
 
 assert.match(formCheck, /function openWorkoutFeedShareCameraPicker\(\)\s*{\s*openWorkoutFeedShareFilePicker\(\{ capture: true \}\);/);
@@ -35,11 +35,9 @@ assert.match(formCheck, /function isWorkoutFeedShareNativePlatform\(\)\s*{\s*ret
 assert.match(formCheck, /if \(!isWorkoutFeedShareNativePlatform\(\)\) return null;/);
 assert.match(formCheck, /input\.accept = options\.capture \? 'video\/\*;capture=camcorder' : 'video\/\*';/);
 assert.match(formCheck, /input\.capture = 'camcorder';[\s\S]*?input\.setAttribute\('capture', 'camcorder'\);/);
-assert.match(formCheck, /function openWorkoutFeedShareCapture\(\)\s*{\s*if \(hasNativeWorkoutFeedShareVideoCamera\(\)\) {[\s\S]*?void openNativeWorkoutFeedShareCamera\(\);[\s\S]*?return;[\s\S]*?}\s*if \(isWorkoutFeedShareNativePlatform\(\)\) {[\s\S]*?showWorkoutFeedShareNativeCameraUnavailable\(\);[\s\S]*?return;[\s\S]*?}\s*openWorkoutFeedShareCameraPicker\(\);/);
-assert.match(formCheck, /async function openWorkoutFeedShareCameraFallback\(\)\s*{\s*if \(isWorkoutFeedShareNativePlatform\(\)\) {[\s\S]*?showWorkoutFeedShareNativeCameraUnavailable\(\);[\s\S]*?return;[\s\S]*?}\s*openWorkoutFeedShareCameraPicker\(\);/);
-assert.match(formCheck, /Camera needs the latest app update/);
+assert.match(formCheck, /function openWorkoutFeedShareCapture\(\)\s*{\s*if \(hasNativeWorkoutFeedShareVideoCamera\(\)\) {[\s\S]*?void openNativeWorkoutFeedShareCamera\(\);[\s\S]*?return;[\s\S]*?}\s*if \(isWorkoutFeedShareNativePlatform\(\)\) {[\s\S]*?void openWorkoutFeedShareInAppCamera\(\);[\s\S]*?return;[\s\S]*?}\s*openWorkoutFeedShareCameraPicker\(\);/);
+assert.match(formCheck, /async function openWorkoutFeedShareCameraFallback\(\)\s*{\s*if \(isWorkoutFeedShareNativePlatform\(\)\) {[\s\S]*?const opened = await openWorkoutFeedShareInAppCamera\(\{ silentFallback: true \}\);[\s\S]*?Could not open the camera\. Check app permissions or use Photos\.[\s\S]*?return;[\s\S]*?}\s*openWorkoutFeedShareCameraPicker\(\);/);
 assert.match(formCheck, /#workout-feed-share-camera-video[\s\S]*?object-fit: contain;/);
-assert.doesNotMatch(formCheck, /const openedInAppCamera = await openWorkoutFeedShareInAppCamera/);
 
 assert.match(androidBuild, /versionCode = \(System\.getenv\("ANDROID_VERSION_CODE"\) \?: "8"\)\.toInteger\(\)/);
 assert.match(androidBuild, /versionName = System\.getenv\("ANDROID_VERSION_NAME"\) \?: "1\.6"/);

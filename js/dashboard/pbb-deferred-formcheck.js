@@ -1607,7 +1607,7 @@
             return;
         }
         if (isWorkoutFeedShareNativePlatform()) {
-            showWorkoutFeedShareNativeCameraUnavailable();
+            void openWorkoutFeedShareInAppCamera();
             return;
         }
         openWorkoutFeedShareCameraPicker();
@@ -2247,7 +2247,10 @@
 
     async function openWorkoutFeedShareCameraFallback() {
         if (isWorkoutFeedShareNativePlatform()) {
-            showWorkoutFeedShareNativeCameraUnavailable();
+            const opened = await openWorkoutFeedShareInAppCamera({ silentFallback: true });
+            if (!opened) {
+                showWorkoutFeedShareUploadBanner('Could not open the camera. Check app permissions or use Photos.', 'error');
+            }
             return;
         }
         openWorkoutFeedShareCameraPicker();

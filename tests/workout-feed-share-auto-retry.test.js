@@ -40,7 +40,7 @@ assert.ok(
 );
 
 assert.ok(
-    dashboardSource.includes('pbb-deferred-formcheck.js?v=36'),
+    dashboardSource.includes('pbb-deferred-formcheck.js?v=37'),
     'dashboard should bump Share a Set script version so phones fetch the retry fix'
 );
 
