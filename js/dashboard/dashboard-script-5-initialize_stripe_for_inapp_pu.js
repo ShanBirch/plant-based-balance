@@ -107,6 +107,64 @@ _onDomReady(() => {
     // switchAppTab('dashboard', document.querySelector('.nav-item')); // Default to Home
 });
 
+async function openBillingPortal() {
+    const btn = document.getElementById('settings-payment-method-btn');
+    const originalText = btn ? btn.textContent : '';
+    try {
+        if (!window.currentUser?.id) {
+            throw new Error('Please log in again to manage your payment method.');
+        }
+
+        let session = null;
+        if (window.authHelpers && typeof window.authHelpers.getSession === 'function') {
+            session = await window.authHelpers.getSession();
+        } else if (window.supabaseClient?.auth && typeof window.supabaseClient.auth.getSession === 'function') {
+            const result = await window.supabaseClient.auth.getSession();
+            session = result?.data?.session || null;
+        }
+
+        const accessToken = session?.access_token;
+        if (!accessToken) {
+            throw new Error('Please log in again to manage your payment method.');
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Opening...';
+        }
+
+        const returnUrl = window.location.origin + window.location.pathname + '?tab=profile';
+        const response = await fetch('/.netlify/functions/create-billing-portal-session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + accessToken
+            },
+            body: JSON.stringify({ returnUrl })
+        });
+
+        let data = {};
+        try { data = await response.json(); } catch(e) {}
+        if (!response.ok || !data.url) {
+            throw new Error(data.error || 'Could not open payment settings yet.');
+        }
+
+        window.location.href = data.url;
+    } catch (error) {
+        console.error('Billing portal failed:', error);
+        if (typeof showToast === 'function') {
+            showToast(error.message || 'Could not open payment settings yet.', 'error');
+        } else {
+            alert(error.message || 'Could not open payment settings yet.');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText || 'Manage';
+        }
+    }
+}
+
 // --- DAILY CONTENT LOGIC ---
 async function initProgramDate() {
     let startDate = null;

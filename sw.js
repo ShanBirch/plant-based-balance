@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v238'; // v238: refresh Feed Share menu contrast; v237: restore Share a Set HD quality
+const CACHE_NAME = 'pbb-app-v239'; // v239: add payment portal and progress photo camera timer; v238: refresh Feed Share menu contrast
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -16,9 +16,9 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=6',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=57',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=122',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=124',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream',
-  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=13',
+  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=17',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=7',
   './js/dashboard/pbb-deferred-yourworkouts.js',
   './js/dashboard/pbb-deferred-savedworkouts.js?v=4',

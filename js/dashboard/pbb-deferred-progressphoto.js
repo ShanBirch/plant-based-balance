@@ -684,21 +684,21 @@ let progressPhotoCaptureState = null;
         // the camera modal and make the capture step look frozen.
         if (overlay) overlay.style.display = 'none';
 
-        // Keep progress photos on the file-input camera path. The generic
-        // workout camera can hand control to native camera flows that reload
-        // the dashboard and lose the front/side/back capture state.
-        if (openProgressPhotoFilePicker(photoInput, index, restoreCurrentGuide)) {
-            return;
-        }
-
-        if (typeof openWorkoutCamera === 'function') {
+        if (typeof openWorkoutCamera === 'function' && navigator.mediaDevices?.getUserMedia) {
             openWorkoutCamera(function(file) {
                 if (!file) {
                     restoreCurrentGuide();
                     return;
                 }
                 continueProgressPhotoShotFlow(index, file);
-            }, shot.label);
+            }, shot.label, {
+                forceWebCamera: true,
+                defaultTimerSeconds: 10
+            });
+            return;
+        }
+
+        if (openProgressPhotoFilePicker(photoInput, index, restoreCurrentGuide)) {
             return;
         }
 

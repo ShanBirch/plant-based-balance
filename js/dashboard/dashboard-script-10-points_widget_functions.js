@@ -2108,6 +2108,9 @@ window.updateWorkoutInstagramShareVisibility = updateWorkoutInstagramShareVisibi
 let workoutCameraStream = null;
 let workoutCameraFacingMode = 'environment';
 let _workoutCameraCallback = null;
+let workoutCameraTimerSeconds = 0;
+let workoutCameraCountdownTimer = null;
+let workoutCameraCaptureInProgress = false;
 
 function showWorkoutCameraPermissionIssue() {
     if (typeof showCameraPermissionSettingsDialog === 'function') {
@@ -2127,14 +2130,45 @@ function finishWorkoutCameraCallback(file) {
     }
 }
 
+function updateWorkoutCameraTimerButton() {
+    const btn = document.getElementById('workout-camera-timer-btn');
+    if (!btn) return;
+    btn.textContent = workoutCameraTimerSeconds > 0 ? (workoutCameraTimerSeconds + 's') : 'Timer';
+    btn.style.background = workoutCameraTimerSeconds > 0
+        ? 'rgba(236,72,153,0.85)'
+        : 'rgba(255,255,255,0.15)';
+}
+
+function setWorkoutCameraTimer(seconds) {
+    workoutCameraTimerSeconds = [0, 3, 10].includes(Number(seconds)) ? Number(seconds) : 0;
+    updateWorkoutCameraTimerButton();
+}
+
+function toggleWorkoutCameraTimer() {
+    const next = workoutCameraTimerSeconds === 0 ? 3 : (workoutCameraTimerSeconds === 3 ? 10 : 0);
+    setWorkoutCameraTimer(next);
+}
+
+function clearWorkoutCameraCountdown() {
+    if (workoutCameraCountdownTimer) {
+        clearInterval(workoutCameraCountdownTimer);
+        workoutCameraCountdownTimer = null;
+    }
+    workoutCameraCaptureInProgress = false;
+    const overlay = document.getElementById('workout-camera-countdown');
+    if (overlay) overlay.style.display = 'none';
+}
+
 // Primary entry point: prefers the native camera bridge for speed, falls back
 // to the in-WebView getUserMedia modal if the bridge isn't available.
-async function openWorkoutCamera(callback, label) {
+async function openWorkoutCamera(callback, label, options = {}) {
     _workoutCameraCallback = callback;
+    const cameraOptions = options && typeof options === 'object' ? options : {};
+    setWorkoutCameraTimer(cameraOptions.defaultTimerSeconds || 0);
 
     // Prefer native Android camera intent — opens the system camera app
     // instantly, far faster than spinning up getUserMedia inside the WebView.
-    if (window.NativePermissions && typeof window.NativePermissions.takeWorkoutPhoto === 'function') {
+    if (!cameraOptions.forceWebCamera && window.NativePermissions && typeof window.NativePermissions.takeWorkoutPhoto === 'function') {
         try {
             // Make sure camera permission is granted before launching the intent.
             // The native TakePicture contract doesn't request permission itself.
@@ -2300,6 +2334,7 @@ async function startWorkoutCamera() {
 }
 
 function stopWorkoutCamera() {
+    clearWorkoutCameraCountdown();
     if (workoutCameraStream) {
         workoutCameraStream.getTracks().forEach(t => t.stop());
         workoutCameraStream = null;
@@ -2324,11 +2359,51 @@ function closeWorkoutCamera(resolveAsCancel = false) {
 }
 
 function flipWorkoutCamera() {
+    clearWorkoutCameraCountdown();
     workoutCameraFacingMode = workoutCameraFacingMode === 'environment' ? 'user' : 'environment';
     startWorkoutCamera();
 }
 
 function captureWorkoutPhoto() {
+    if (workoutCameraCaptureInProgress) return;
+    if (workoutCameraTimerSeconds > 0) {
+        startWorkoutCameraCountdown(workoutCameraTimerSeconds);
+        return;
+    }
+    captureWorkoutPhotoNow();
+}
+
+function startWorkoutCameraCountdown(seconds) {
+    const overlay = document.getElementById('workout-camera-countdown');
+    const numberEl = document.getElementById('workout-camera-countdown-number');
+    if (!overlay || !numberEl) {
+        captureWorkoutPhotoNow();
+        return;
+    }
+
+    let remaining = Number(seconds) || 0;
+    if (remaining <= 0) {
+        captureWorkoutPhotoNow();
+        return;
+    }
+
+    workoutCameraCaptureInProgress = true;
+    overlay.style.display = 'flex';
+    numberEl.textContent = String(remaining);
+
+    workoutCameraCountdownTimer = setInterval(function() {
+        remaining -= 1;
+        if (remaining > 0) {
+            numberEl.textContent = String(remaining);
+            return;
+        }
+
+        clearWorkoutCameraCountdown();
+        captureWorkoutPhotoNow();
+    }, 1000);
+}
+
+function captureWorkoutPhotoNow() {
     const video = document.getElementById('workout-camera-video');
     const canvas = document.getElementById('workout-camera-canvas');
     if (!video || !canvas || video.readyState < 2) {
