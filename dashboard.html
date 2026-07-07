@@ -7473,12 +7473,53 @@ if(!window._pbbIsIOSSafari) {
         <h1 id="workout-player-title" style="margin: 0 0 5px 0; font-size: 1.3rem; line-height: 1.2;">Workout Title</h1>
         <p id="workout-player-goal" style="font-size: 0.85rem; color: var(--text-muted); margin: 0 0 20px 0; line-height: 1.4;"></p>
 
-        <button id="workout-form-check-top-btn" type="button" onclick="openFormCheck({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })" style="width:100%; margin:0 0 16px 0; border:none; border-radius:14px; padding:14px 15px; background:#eef2ff; color:#3730a3; font-weight:900; font-size:0.9rem; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
-            <svg viewBox="0 0 24 24" style="width:19px; height:19px; fill:currentColor; flex-shrink:0;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
-            Film Form Check
-        </button>
-
         <style>
+            .workout-camera-action-btn {
+                width: 100%;
+                min-height: 78px;
+                margin: 0 0 12px 0;
+                border: none;
+                border-radius: 14px;
+                padding: 14px 15px;
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 12px;
+                cursor: pointer;
+                text-align: left;
+            }
+            .workout-camera-action-btn svg {
+                width: 19px;
+                height: 19px;
+                flex-shrink: 0;
+            }
+            .workout-camera-action-copy {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                min-width: 0;
+            }
+            .workout-camera-action-title {
+                font-size: 0.92rem;
+                font-weight: 900;
+                line-height: 1.05;
+            }
+            .workout-camera-action-subtitle {
+                font-size: 0.72rem;
+                font-weight: 700;
+                line-height: 1.1;
+                opacity: 0.82;
+            }
+            #workout-form-check-top-btn {
+                background: #eef2ff;
+                color: #3730a3;
+                -webkit-text-fill-color: #3730a3;
+                box-shadow: 0 10px 24px rgba(55,48,163,0.08);
+            }
+            #workout-form-check-top-btn svg,
+            #workout-form-check-top-btn svg * {
+                fill: #3730a3 !important;
+            }
             #workout-share-set-btn,
             #workout-share-set-btn * {
                 color: #fff !important;
@@ -7490,11 +7531,19 @@ if(!window._pbbIsIOSSafari) {
             }
         </style>
 
-        <button id="workout-share-set-btn" type="button" onclick="openWorkoutFeedShare({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })" style="width:100%; margin:0 0 14px 0; border:none; border-radius:14px; padding:14px 15px; background:linear-gradient(135deg,#111827 0%,#dc2626 100%); color:#fff; -webkit-text-fill-color:#fff; font-weight:900; font-size:0.9rem; display:flex; align-items:center; justify-content:flex-start; gap:12px; cursor:pointer; box-shadow:0 10px 24px rgba(220,38,38,0.16); text-align:left;">
+        <button id="workout-form-check-top-btn" class="workout-camera-action-btn" type="button" onclick="openFormCheck({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+            <div class="workout-camera-action-copy">
+                <span class="workout-camera-action-title">Film Form Check</span>
+                <span class="workout-camera-action-subtitle">Technique review</span>
+            </div>
+        </button>
+
+        <button id="workout-share-set-btn" class="workout-camera-action-btn" type="button" onclick="openWorkoutFeedShare({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })" style="background:linear-gradient(135deg,#111827 0%,#dc2626 100%); color:#fff; -webkit-text-fill-color:#fff; box-shadow:0 10px 24px rgba(220,38,38,0.16);">
             <svg viewBox="0 0 24 24" style="width:19px; height:19px; color:#fff; fill:#fff; -webkit-text-fill-color:#fff; flex-shrink:0;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
-            <div style="display:flex; flex-direction:column; gap:2px; min-width:0; color:#fff; -webkit-text-fill-color:#fff;">
-                <span style="font-size:0.92rem; line-height:1; color:#fff; -webkit-text-fill-color:#fff;">Share a Set</span>
-                <span style="font-size:0.72rem; font-weight:700; opacity:0.82; line-height:1.1; color:#fff; -webkit-text-fill-color:#fff;">First share each day earns +20 XP</span>
+            <div class="workout-camera-action-copy" style="color:#fff; -webkit-text-fill-color:#fff;">
+                <span class="workout-camera-action-title" style="color:#fff; -webkit-text-fill-color:#fff;">Share a Set</span>
+                <span class="workout-camera-action-subtitle" style="color:#fff; -webkit-text-fill-color:#fff;">First share each day earns +20 XP</span>
             </div>
         </button>
 
