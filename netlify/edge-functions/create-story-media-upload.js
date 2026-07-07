@@ -4,7 +4,7 @@
  */
 
 const DEFAULT_SUPABASE_URL = 'https://hzapaorxqboevxnumxkv.supabase.co';
-const MAX_DIRECT_UPLOAD_BYTES = 200 * 1024 * 1024;
+const MAX_DIRECT_UPLOAD_BYTES = 1024 * 1024 * 1024;
 
 function getEnv(name) {
     try {
@@ -86,7 +86,7 @@ export default async (request) => {
         const contentType = String(body.contentType || 'application/octet-stream').trim() || 'application/octet-stream';
         const size = Number(body.size || 0);
         if (!Number.isFinite(size) || size <= 0 || size > MAX_DIRECT_UPLOAD_BYTES) {
-            return jsonResponse(400, { error: 'That video is too large. Trim it to just the set and try again.' });
+            return jsonResponse(400, { error: 'That video is too large. Keep Share a Set clips under 1 GB.' });
         }
         if (!/^feed/.test(source)) {
             return jsonResponse(400, { error: 'Invalid upload source.' });

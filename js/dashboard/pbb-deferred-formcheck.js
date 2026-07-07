@@ -7,7 +7,7 @@
     // Share a Set uploads large clips direct to B2. Keep the original HD file
     // whenever it is within the direct-upload ceiling to avoid phone re-encode crashes.
     const WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 100 * 1024 * 1024;
-    const WORKOUT_FEED_SHARE_DIRECT_UPLOAD_MAX_BYTES = 200 * 1024 * 1024;
+    const WORKOUT_FEED_SHARE_DIRECT_UPLOAD_MAX_BYTES = 1024 * 1024 * 1024;
     const WORKOUT_FEED_SHARE_CAMERA_VIDEO_BITS_PER_SECOND = 16000000;
     const WORKOUT_FEED_SHARE_CAMERA_AUDIO_BITS_PER_SECOND = 192000;
     const WORKOUT_FEED_SHARE_RETRY_NOTICE_ID = 'workout-feed-share-retry-notice';
