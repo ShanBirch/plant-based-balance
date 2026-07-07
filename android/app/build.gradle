@@ -7,8 +7,8 @@ android {
         applicationId "com.fitgotchi.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode = (System.getenv("ANDROID_VERSION_CODE") ?: "7").toInteger()
-        versionName = System.getenv("ANDROID_VERSION_NAME") ?: "1.5"
+        versionCode = (System.getenv("ANDROID_VERSION_CODE") ?: "8").toInteger()
+        versionName = System.getenv("ANDROID_VERSION_NAME") ?: "1.6"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

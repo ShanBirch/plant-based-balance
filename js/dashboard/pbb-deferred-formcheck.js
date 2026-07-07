@@ -1607,7 +1607,7 @@
             return;
         }
         if (isWorkoutFeedShareNativePlatform()) {
-            openWorkoutFeedShareCameraPicker();
+            showWorkoutFeedShareNativeCameraUnavailable();
             return;
         }
         openWorkoutFeedShareCameraPicker();
@@ -2246,7 +2246,15 @@
     }
 
     async function openWorkoutFeedShareCameraFallback() {
+        if (isWorkoutFeedShareNativePlatform()) {
+            showWorkoutFeedShareNativeCameraUnavailable();
+            return;
+        }
         openWorkoutFeedShareCameraPicker();
+    }
+
+    function showWorkoutFeedShareNativeCameraUnavailable() {
+        showWorkoutFeedShareUploadBanner('Camera needs the latest app update. Use Photos for an existing video for now.', 'error');
     }
 
     async function nativeWorkoutVideoResultToFile(result) {
