@@ -5,6 +5,7 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const dashboardHtml = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 const workoutScript = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js'), 'utf8');
+const formCheckScript = fs.readFileSync(path.join(root, 'js/dashboard/pbb-deferred-formcheck.js'), 'utf8');
 const savedWorkoutsScript = fs.readFileSync(path.join(root, 'js/dashboard/pbb-deferred-savedworkouts.js'), 'utf8');
 const workoutBuilderScript = fs.readFileSync(path.join(root, 'js/dashboard/pbb-deferred-workoutbuilder.js'), 'utf8');
 const supabaseHelpers = fs.readFileSync(path.join(root, 'lib/supabase.js'), 'utf8');
@@ -99,6 +100,11 @@ assert.match(
   workoutScript,
   /function handleCustomExerciseFileSelect\(event\)[\s\S]*restorePendingCustomExerciseCameraInputModal\(\)[\s\S]*applyCustomExerciseVideoFile\(file, event\.target\)/,
   'custom exercise camera input should pop the modal back up before applying the captured video'
+);
+assert.match(
+  formCheckScript,
+  /function handleWorkoutFeedShareInAppRecorderStop\(\)[\s\S]*closeWorkoutFeedShareInAppCamera\(false\);\s*routeWorkoutFeedShareCapturedFile\(file\);/,
+  'shared in-app recorder should route custom exercise captures back to Add Exercise instead of posting to Feed'
 );
 assert.match(
   workoutScript,

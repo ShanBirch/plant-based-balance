@@ -2424,7 +2424,7 @@
         }
 
         closeWorkoutFeedShareInAppCamera(false);
-        void processWorkoutFeedShareSelectedFile(file);
+        routeWorkoutFeedShareCapturedFile(file);
     }
 
     function toggleWorkoutFeedShareInAppRecording() {
