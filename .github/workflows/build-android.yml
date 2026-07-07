@@ -42,7 +42,7 @@ jobs:
       FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
       FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       ANDROID_VERSION_CODE: ${{ github.run_number }}
-      ANDROID_VERSION_NAME: 1.5.${{ github.run_number }}
+      ANDROID_VERSION_NAME: 1.6.${{ github.run_number }}
 
     steps:
       - name: Checkout code

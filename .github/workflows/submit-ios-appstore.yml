@@ -6,7 +6,7 @@ on:
       version_string:
         description: App Store version string
         required: true
-        default: "1.4"
+        default: "1.6"
       build_number:
         description: Uploaded iOS build number
         required: true
@@ -45,6 +45,6 @@ jobs:
           IOS_BUILD_NUMBER: ${{ inputs.build_number }}
           PROCESSING_WAIT_MINUTES: "35"
           SUBMIT_FOR_REVIEW: ${{ inputs.submit_for_review }}
-          IOS_RELEASE_NOTES: "Share Balance wins straight to Instagram Story. Workouts, PBs, meals, nutrition summaries, and weekly progress photos can now generate Balance share cards ready to post."
-          IOS_REVIEW_NOTES: "This update adds optional Instagram Story sharing. A logged-in user can finish a workout, log a meal, or save weekly progress photos, then tap IG Story. The app generates a local image card and opens Instagram if installed. No Instagram login is required inside Balance."
+          IOS_RELEASE_NOTES: "Share a Set now supports higher-quality workout videos and native camera capture in the Balance app."
+          IOS_REVIEW_NOTES: "This update improves optional workout video sharing. A logged-in user can open Share a Set from a workout, record or select a short workout clip, and post it to the in-app feed. Camera and microphone access are requested only when the user chooses to record a clip."
         run: node scripts/submit-ios-appstore.mjs
