@@ -27,7 +27,7 @@ assert.match(stories, /options\.finalVideoBitsPerSecond/);
 assert.match(stories, /options\.primaryLabel/);
 
 assert.match(dashboard, /lib\/stories\.js\?v=52/);
-assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=41/);
+assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=43/);
 assert.match(dashboard, /choose Camera to use your phone camera/);
 
 assert.match(formCheck, /function openWorkoutFeedShareCameraPicker\(\)\s*{\s*openWorkoutFeedShareFilePicker\(\{ capture: true \}\);/);
@@ -36,6 +36,10 @@ assert.match(formCheck, /if \(!isWorkoutFeedShareNativePlatform\(\)\) return nul
 assert.match(formCheck, /input\.accept = options\.capture \? 'video\/\*;capture=camcorder' : 'video\/\*';/);
 assert.match(formCheck, /input\.capture = 'camcorder';[\s\S]*?input\.setAttribute\('capture', 'camcorder'\);/);
 assert.match(formCheck, /function openWorkoutFeedShareCapture\(\)\s*{\s*if \(hasNativeWorkoutFeedShareVideoCamera\(\)\) {[\s\S]*?void openNativeWorkoutFeedShareCamera\(\);[\s\S]*?return;[\s\S]*?}\s*if \(isWorkoutFeedShareNativePlatform\(\)\) {[\s\S]*?void openWorkoutFeedShareInAppCamera\(\);[\s\S]*?return;[\s\S]*?}\s*openWorkoutFeedShareCameraPicker\(\);/);
+assert.match(formCheck, /function openWorkoutFeedShareCameraForFile\(options = \{\}\)[\s\S]*hasNativeWorkoutFeedShareVideoCamera\(\)[\s\S]*openNativeWorkoutFeedShareCamera\(\)[\s\S]*isWorkoutFeedShareNativePlatform\(\)[\s\S]*openWorkoutFeedShareInAppCamera\(\)[\s\S]*openWorkoutFeedShareCameraPicker\(\)/);
+assert.match(formCheck, /function openFormCheckCapture\(\)\s*{\s*openWorkoutFeedShareCameraForFile\(\{ target: 'form-check' \}\);/);
+assert.match(formCheck, /routeWorkoutFeedShareCapturedFile\(rawFile\)/);
+assert.match(formCheck, /function routeWorkoutFeedShareCapturedFile\(file\)[\s\S]*void processWorkoutFeedShareSelectedFile\(file\);/);
 assert.match(formCheck, /async function openWorkoutFeedShareCameraFallback\(\)\s*{\s*if \(isWorkoutFeedShareNativePlatform\(\)\) {[\s\S]*?const opened = await openWorkoutFeedShareInAppCamera\(\{ silentFallback: true \}\);[\s\S]*?Could not open the camera\. Check app permissions or use Photos\.[\s\S]*?return;[\s\S]*?}\s*openWorkoutFeedShareCameraPicker\(\);/);
 assert.match(formCheck, /#workout-feed-share-camera-video[\s\S]*?object-fit: contain;/);
 

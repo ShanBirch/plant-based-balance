@@ -45,6 +45,7 @@
     let workoutFeedShareRecorderMaxTimer = null;
     let workoutFeedShareRecordingStream = null;
     let workoutFeedShareRecordingFrameId = null;
+    let workoutFeedShareCaptureTarget = 'share-set';
 
     function ensureFormCheckView() {
         let view = document.getElementById('view-form-check');
@@ -337,8 +338,7 @@
     }
 
     function openFormCheckCapture() {
-        const input = document.getElementById('form-check-camera-input');
-        if (input) input.click();
+        openWorkoutFeedShareCameraForFile({ target: 'form-check' });
     }
 
     function openFormCheckGallery() {
@@ -351,8 +351,24 @@
         const file = input && input.files ? input.files[0] : null;
         if (input) input.value = '';
         if (!file) return;
+        handleFormCheckVideoFile(file);
+    }
 
-        if (!file.type || !file.type.startsWith('video/')) {
+    function getFormCheckVideoMimeType(file) {
+        const type = String(file && file.type ? file.type : '').toLowerCase();
+        if (type.startsWith('video/')) return type;
+
+        const name = String(file && file.name ? file.name : '').toLowerCase();
+        if (/\.(mov|qt)$/.test(name)) return 'video/quicktime';
+        if (/\.(m4v)$/.test(name)) return 'video/x-m4v';
+        if (/\.(webm)$/.test(name)) return 'video/webm';
+        if (/\.(3gp|3gpp)$/.test(name)) return 'video/3gpp';
+        if (/\.(mp4|mpeg|mpg)$/.test(name)) return 'video/mp4';
+        return '';
+    }
+
+    function handleFormCheckVideoFile(file) {
+        if (!getFormCheckVideoMimeType(file)) {
             setStatus('Please choose a video clip.', 'error');
             return;
         }
@@ -1707,6 +1723,7 @@
         options = options || {};
         const view = ensureWorkoutFeedShareView();
         const activeWorkout = document.getElementById('view-active-workout');
+        workoutFeedShareCaptureTarget = 'share-set';
         workoutFeedShareState.source = options.source || (activeWorkout && activeWorkout.style.display !== 'none' ? 'workout' : 'movement');
         workoutFeedShareState.workoutName = options.workoutName || (workoutFeedShareState.source === 'workout' ? getActiveWorkoutName() : '');
 
@@ -1773,6 +1790,42 @@
 
     function openWorkoutFeedShareCameraPicker() {
         openWorkoutFeedShareFilePicker({ capture: true });
+    }
+
+    function openWorkoutFeedShareCameraForFile(options = {}) {
+        workoutFeedShareCaptureTarget = options.target || 'share-set';
+        if (hasNativeWorkoutFeedShareVideoCamera()) {
+            void openNativeWorkoutFeedShareCamera();
+            return true;
+        }
+        if (isWorkoutFeedShareNativePlatform()) {
+            void openWorkoutFeedShareInAppCamera();
+            return true;
+        }
+        openWorkoutFeedShareCameraPicker();
+        return true;
+    }
+
+    function getWorkoutFeedShareCapturePreparingLabel() {
+        return workoutFeedShareCaptureTarget === 'share-set' ? 'Preparing your set...' : 'Preparing video...';
+    }
+
+    function routeWorkoutFeedShareCapturedFile(file) {
+        if (workoutFeedShareCaptureTarget === 'form-check') {
+            handleFormCheckVideoFile(file);
+            hideWorkoutFeedShareUploadBanner(300);
+            return;
+        }
+        if (workoutFeedShareCaptureTarget === 'custom-exercise') {
+            if (typeof window.handleCustomExerciseCapturedVideoFile === 'function') {
+                window.handleCustomExerciseCapturedVideoFile(file);
+                hideWorkoutFeedShareUploadBanner(300);
+                return;
+            }
+            showWorkoutFeedShareUploadBanner('Exercise video tool is still loading. Try Camera again.', 'error');
+            return;
+        }
+        void processWorkoutFeedShareSelectedFile(file);
     }
 
     function isWorkoutFeedShareNativePlatform() {
@@ -2459,13 +2512,13 @@
                 return;
             }
 
-            if (bannerLabel) bannerLabel.textContent = 'Preparing your set...';
+            if (bannerLabel) bannerLabel.textContent = getWorkoutFeedShareCapturePreparingLabel();
             const file = await nativeWorkoutVideoResultToFile(result);
             if (!file) {
                 hideWorkoutFeedShareUploadBanner(300);
                 return;
             }
-            void processWorkoutFeedShareSelectedFile(file);
+            routeWorkoutFeedShareCapturedFile(file);
         } catch (error) {
             console.error('[WorkoutFeedShare] native camera failed', error);
             hideWorkoutFeedShareUploadBanner(1);
@@ -2572,7 +2625,7 @@
         const rawFile = input && input.files ? input.files[0] : null;
         if (input) input.value = '';
         if (!rawFile) return;
-        void processWorkoutFeedShareSelectedFile(rawFile);
+        routeWorkoutFeedShareCapturedFile(rawFile);
     }
 
     function clearWorkoutFeedShareVideo() {
@@ -2880,6 +2933,7 @@
     window.openWorkoutFeedShare = openWorkoutFeedShare;
     window.closeWorkoutFeedShare = closeWorkoutFeedShare;
     window.openWorkoutFeedShareCapture = openWorkoutFeedShareCapture;
+    window.openWorkoutFeedShareCameraForFile = openWorkoutFeedShareCameraForFile;
     window.openWorkoutFeedShareGallery = openWorkoutFeedShareGallery;
     window.handleWorkoutFeedShareFileSelect = handleWorkoutFeedShareFileSelect;
     window.clearWorkoutFeedShareVideo = clearWorkoutFeedShareVideo;

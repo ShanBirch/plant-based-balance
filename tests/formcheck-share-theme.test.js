@@ -38,13 +38,14 @@ assert.ok(
 
 assert.ok(
     source.includes('openFormCheckCapture()') &&
+    source.includes("openWorkoutFeedShareCameraForFile({ target: 'form-check' })") &&
     source.includes('Camera') &&
     !source.includes('Film New Clip'),
-    'Form Check capture action should be labelled Camera'
+    'Form Check capture action should be labelled Camera and use the shared camera path'
 );
 
 assert.ok(
-    dashboard.includes('pbb-deferred-formcheck.js?v=42'),
+    dashboard.includes('pbb-deferred-formcheck.js?v=43'),
     'dashboard should bump the deferred camera/share script so phones fetch the theme change'
 );
 

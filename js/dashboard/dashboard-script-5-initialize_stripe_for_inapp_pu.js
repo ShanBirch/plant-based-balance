@@ -20735,10 +20735,8 @@ function validateCustomExerciseForm() {
 function openCustomExerciseVideoCapture() {
     stopCameraStream();
     clearCustomExerciseRecordingTimer();
-    const input = document.getElementById('custom-exercise-camera-input');
-    if (input) {
-        input.value = '';
-        input.click();
+    if (window.openWorkoutFeedShareCameraForFile) {
+        window.openWorkoutFeedShareCameraForFile({ target: 'custom-exercise' });
         return;
     }
     startCustomExerciseRecording();
@@ -20891,7 +20889,10 @@ function updateCustomExerciseUploadStatus(message, isError) {
 function handleCustomExerciseFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
+    applyCustomExerciseVideoFile(file, event.target);
+}
 
+function applyCustomExerciseVideoFile(file, input) {
     const fileName = file.name || '';
     const fileExt = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : '';
     const allowedVideoExts = ['mp4', 'mov', 'm4v', 'webm', '3gp', '3gpp'];
@@ -20900,14 +20901,14 @@ function handleCustomExerciseFileSelect(event) {
     // Validate it's a video. Some mobile browsers provide an empty MIME type for gallery videos.
     if (!looksLikeVideo) {
         alert('Please select a video file.');
-        event.target.value = '';
+        if (input) input.value = '';
         return;
     }
 
     // Max 100MB
     if (file.size > 100 * 1024 * 1024) {
         alert('Video must be under 100MB.');
-        event.target.value = '';
+        if (input) input.value = '';
         return;
     }
 
@@ -20931,6 +20932,11 @@ function handleCustomExerciseFileSelect(event) {
         Camera
     `;
 }
+
+function handleCustomExerciseCapturedVideoFile(file) {
+    applyCustomExerciseVideoFile(file, null);
+}
+window.handleCustomExerciseCapturedVideoFile = handleCustomExerciseCapturedVideoFile;
 
 function removeCustomExerciseVideo() {
     _customExerciseVideoFile = null;

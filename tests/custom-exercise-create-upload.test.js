@@ -60,8 +60,13 @@ assert.match(
 );
 assert.match(
   workoutScript,
-  /function openCustomExerciseVideoCapture\(\)[\s\S]*custom-exercise-camera-input[\s\S]*input\.click\(\)/,
-  'record video should open the phone capture input'
+  /function openCustomExerciseVideoCapture\(\)[\s\S]*openWorkoutFeedShareCameraForFile\(\{ target: 'custom-exercise' \}\)/,
+  'record video should use the same shared camera path as Share a Set'
+);
+assert.match(
+  workoutScript,
+  /window\.handleCustomExerciseCapturedVideoFile = handleCustomExerciseCapturedVideoFile/,
+  'shared camera captures should be routable back into the custom exercise flow'
 );
 assert.match(
   workoutScript,
