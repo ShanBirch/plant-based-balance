@@ -149,6 +149,7 @@ exports.handler = async (event) => {
             suggested_message: null,
             status: 'pending',
             data: {
+                subtype: 'form_check_self_test',
                 self_test: true,
                 support_exception: true,
                 operator_queue: 'needs_you',

@@ -29,8 +29,8 @@ assert.ok(
     dashboard.includes('function isCoachActionReceipt(alert)') &&
     dashboard.includes("data.subtype === 'coach_action_receipt'") &&
     dashboard.includes('if (isCoachActionReceipt(alert)) return true;') &&
-    dashboard.includes('const actionReceiptRows = [];') &&
-    dashboard.includes('if (isCoachActionReceipt(row)) actionReceiptRows.push(row);'),
+    dashboard.includes('const directRows = [];') &&
+    dashboard.includes('if (isCoachActionReceipt(row) || isAppSuggestionAlert(row)'),
     'completed coach action receipts should route into Needs You without opening all general ideas'
 );
 
@@ -129,6 +129,14 @@ assert.ok(
 assert.ok(
     dashboard.includes("if (isNeedsYouRoutedDmAlert(alert) && reasonInfo.allowed && needsYouHasSuggestedDraft(alert)) return true;"),
     'explicitly routed DM drafts with allowed reasons should remain visible in Needs You'
+);
+
+assert.ok(
+    dashboard.includes('function isFormCheckSelfTestNeedsYouAlert(alert)') &&
+    dashboard.includes("data.is_form_check === true") &&
+    dashboard.includes("data.self_test === true") &&
+    dashboard.includes('if (isFormCheckSelfTestNeedsYouAlert(alert)) return true;'),
+    'Shannon form-check self-tests should remain visible in Needs You while the video draft is still pending'
 );
 
 assert.ok(

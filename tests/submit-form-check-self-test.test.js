@@ -24,7 +24,7 @@ assert.match(
 
 assert.match(
   source,
-  /if \(isSelfTest\) \{[\s\S]*operator_queue: 'needs_you'[\s\S]*is_form_check: true[\s\S]*supabaseQuery\('coach_alerts'/,
+  /if \(isSelfTest\) \{[\s\S]*subtype: 'form_check_self_test'[\s\S]*operator_queue: 'needs_you'[\s\S]*is_form_check: true[\s\S]*supabaseQuery\('coach_alerts'/,
   'Shannon self-tests should create a pending form-check coach alert directly instead of inserting a self-nudge'
 );
 
