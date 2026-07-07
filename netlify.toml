@@ -122,6 +122,10 @@
   path = "/api/create-exercise-video-upload"
 
 [[edge_functions]]
+  function = "upload-exercise-video"
+  path = "/api/upload-exercise-video"
+
+[[edge_functions]]
   function = "upload-ig-operator-media"
   path = "/api/upload-ig-operator-media"
 
