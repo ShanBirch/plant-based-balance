@@ -20493,6 +20493,10 @@ async function selectExerciseToAdd(exerciseName) {
 function addExerciseToUI(exercise) {
     const container = document.getElementById('workout-exercises-list');
     const videoUrl = findVideoMatch(exercise.name);
+    const videoUploading = !!exercise.videoUploading || isCustomExerciseVideoUploading(exercise.name, exercise.customExerciseId);
+    const videoBlockHtml = videoUrl
+        ? createExerciseVideoBlockHtml(videoUrl)
+        : (videoUploading ? createExerciseVideoUploadPlaceholderHtml() : '');
     const previousSummaryHtml = formatPreviousWorkoutSummary(exercise.name);
     const previousSummary = getPreviousWorkoutSummary(exercise.name);
     const escapedName = exercise.name.replace(/'/g, "\\'");
@@ -20519,17 +20523,7 @@ function addExerciseToUI(exercise) {
 
             ${getExerciseNotesHtml(exercise.name)}
 
-            ${videoUrl ? `
-            <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
-                <video style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" preload="metadata" muted playsinline>
-                    <source src="${videoUrl}" type="video/mp4">
-                </video>
-                <div class="inline-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                    <svg viewBox="0 0 24 24" style="width: 30px; height: 30px; fill: var(--primary); margin-left: 3px;">
-                        <path d="M8 5v14l11-7z"/>
-                    </svg>
-                </div>
-            </div>` : ''}
+            ${videoBlockHtml}
 
             <!-- Volume Tracker -->
             <div class="volume-display" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-bottom: 1px solid #fef08a;">
@@ -20669,6 +20663,7 @@ let _customExerciseVideoObjectUrl = null;
 let _customExerciseSuspendedCameraInputState = null;
 let _customExerciseRecTimerInterval = null;
 let _customExerciseRecStartTime = null;
+window._customExerciseVideoUploadState = window._customExerciseVideoUploadState || {};
 
 function openCreateCustomExerciseModal(context) {
     // context: 'workout' (during active workout) or 'library' (from workout library)
@@ -20930,6 +20925,121 @@ function updateCustomExerciseUploadStatus(message, isError) {
     status.style.webkitTextFillColor = isError ? '#b91c1c' : '#92400e';
 }
 
+function ensureCustomExerciseUploadStyles() {
+    if (document.getElementById('custom-exercise-upload-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'custom-exercise-upload-styles';
+    style.textContent = `
+        @keyframes customExerciseUploadBar {
+            0% { transform: translateX(-110%); }
+            100% { transform: translateX(260%); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function getCustomExerciseVideoUploadKey(exerciseId, exerciseName) {
+    return exerciseId || String(exerciseName || '').toLowerCase().trim();
+}
+
+function getCustomExerciseVideoUploadState(exerciseName, exerciseId) {
+    const state = window._customExerciseVideoUploadState || {};
+    return state[getCustomExerciseVideoUploadKey(exerciseId, exerciseName)]
+        || state[getCustomExerciseVideoUploadKey(null, exerciseName)]
+        || null;
+}
+
+function isCustomExerciseVideoUploading(exerciseName, exerciseId) {
+    return getCustomExerciseVideoUploadState(exerciseName, exerciseId)?.status === 'uploading';
+}
+
+function setCustomExerciseVideoUploadState(exerciseId, exerciseName, status, data) {
+    window._customExerciseVideoUploadState = window._customExerciseVideoUploadState || {};
+    const nextState = { status, exerciseId, exerciseName, ...(data || {}) };
+    window._customExerciseVideoUploadState[getCustomExerciseVideoUploadKey(exerciseId, exerciseName)] = nextState;
+    if (exerciseName) {
+        window._customExerciseVideoUploadState[getCustomExerciseVideoUploadKey(null, exerciseName)] = nextState;
+    }
+    return nextState;
+}
+
+function updateCustomExerciseCachesAfterVideoUpload(exerciseId, exerciseName, videoUrl, storagePath) {
+    const updateList = (list) => {
+        if (!Array.isArray(list)) return list;
+        return list.map(ex => {
+            const matches = (exerciseId && ex.id === exerciseId) || (exerciseName && ex.exercise_name === exerciseName);
+            if (!matches) return ex;
+            return {
+                ...ex,
+                video_url: videoUrl,
+                storage_path: storagePath || ex.storage_path || null,
+                is_public: true,
+                video_upload_status: 'uploaded'
+            };
+        });
+    };
+
+    window._customExercisesCache = updateList(window._customExercisesCache || []);
+    window._myCustomExercisesCache = updateList(window._myCustomExercisesCache || []);
+    if (typeof EXERCISE_VIDEOS !== 'undefined' && exerciseName && videoUrl) {
+        EXERCISE_VIDEOS[exerciseName] = videoUrl;
+    }
+}
+
+function createExerciseVideoBlockHtml(videoUrl) {
+    const safeUrl = String(videoUrl || '').replace(/"/g, '&quot;');
+    const clickUrl = String(videoUrl || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    return `
+            <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${clickUrl}')">
+                <video style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" preload="metadata" muted playsinline>
+                    <source src="${safeUrl}" type="video/mp4">
+                </video>
+                <div class="inline-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                    <svg viewBox="0 0 24 24" style="width: 30px; height: 30px; fill: var(--primary); margin-left: 3px;">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
+            </div>`;
+}
+
+function createExerciseVideoUploadPlaceholderHtml() {
+    ensureCustomExerciseUploadStyles();
+    return `
+            <div data-video-container data-video-upload-placeholder="true" style="position: relative; width: 100%; padding-top: 56.25%; background: #020617; overflow: hidden;">
+                <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 18px; box-sizing: border-box; color: white; text-align: center;">
+                    <div style="font-weight: 850; font-size: 0.95rem;">Uploading video...</div>
+                    <div style="width: min(220px, 72%); height: 7px; background: rgba(255,255,255,0.18); border-radius: 999px; overflow: hidden;">
+                        <div style="width: 42%; height: 100%; background: linear-gradient(90deg, #fbbf24, #fde68a); border-radius: 999px; animation: customExerciseUploadBar 1.25s ease-in-out infinite;"></div>
+                    </div>
+                    <div style="font-size: 0.76rem; line-height: 1.35; color: rgba(255,255,255,0.72); max-width: 240px;">You can keep logging your workout.</div>
+                </div>
+            </div>`;
+}
+
+function renderCustomExerciseVideoUploadComplete(exerciseName, videoUrl) {
+    document.querySelectorAll('.exercise-logger-card').forEach(card => {
+        if (card.dataset.exerciseName !== exerciseName) return;
+        const placeholder = card.querySelector('[data-video-upload-placeholder="true"]');
+        if (placeholder) {
+            placeholder.outerHTML = createExerciseVideoBlockHtml(videoUrl);
+        }
+    });
+}
+
+function renderCustomExerciseVideoUploadFailed(exerciseName) {
+    document.querySelectorAll('.exercise-logger-card').forEach(card => {
+        if (card.dataset.exerciseName !== exerciseName) return;
+        const placeholder = card.querySelector('[data-video-upload-placeholder="true"]');
+        if (!placeholder) return;
+        placeholder.innerHTML = `
+            <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 18px; box-sizing: border-box; color: white; text-align: center;">
+                <div style="font-weight: 850; font-size: 0.95rem;">Video upload failed</div>
+                <div style="font-size: 0.76rem; line-height: 1.35; color: rgba(255,255,255,0.72); max-width: 240px;">The exercise is saved, but the clip did not finish uploading.</div>
+            </div>
+        `;
+    });
+}
+
 function handleCustomExerciseFileSelect(event) {
     const file = event.target.files[0];
     if (!file) {
@@ -21032,6 +21142,63 @@ async function awardCustomExerciseContributionXp(userId, exerciseId) {
     }
 }
 
+async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoFile, exerciseName) {
+    if (!user?.id || !savedExercise?.id || !videoFile) return;
+
+    setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'uploading', { startedAt: Date.now() });
+
+    try {
+        const result = await storageHelpers.uploadExerciseVideo(user.id, videoFile, savedExercise.id);
+        const videoUrl = result.publicUrl;
+        const storagePath = result.storagePath;
+
+        if (!videoUrl) {
+            throw new Error('Exercise video upload finished without a public URL.');
+        }
+
+        const updated = await dbHelpers.customExercises.update(user.id, savedExercise.id, {
+            video_url: videoUrl,
+            storage_path: storagePath,
+            is_public: true
+        });
+
+        setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'uploaded', {
+            videoUrl,
+            storagePath,
+            completedAt: Date.now()
+        });
+        updateCustomExerciseCachesAfterVideoUpload(savedExercise.id, exerciseName, videoUrl, storagePath);
+        if (updated && Array.isArray(window._customExercisesCache)) {
+            window._customExercisesCache = window._customExercisesCache.map(ex => ex.id === savedExercise.id ? { ...ex, ...updated } : ex);
+        }
+        if (updated && Array.isArray(window._myCustomExercisesCache)) {
+            window._myCustomExercisesCache = window._myCustomExercisesCache.map(ex => ex.id === savedExercise.id ? { ...ex, ...updated } : ex);
+        }
+        renderCustomExerciseVideoUploadComplete(exerciseName, videoUrl);
+
+        const xpResult = await awardCustomExerciseContributionXp(user.id, savedExercise.id);
+        const xpMessage = Number(xpResult?.pointsAwarded || 0) > 0
+            ? ` +${xpResult.pointsAwarded} XP`
+            : '';
+
+        if (typeof showToast === 'function') {
+            showToast(`Video uploaded for "${exerciseName}".${xpMessage}`, 'success');
+        }
+        loadMyCustomExercises();
+    } catch (uploadErr) {
+        console.error('Background exercise video upload failed:', uploadErr);
+        setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'failed', {
+            error: uploadErr?.message || 'Video upload failed',
+            failedAt: Date.now()
+        });
+        renderCustomExerciseVideoUploadFailed(exerciseName);
+        loadMyCustomExercises();
+        if (typeof showToast === 'function') {
+            showToast(`"${exerciseName}" was saved, but the video upload failed.`, 'error');
+        }
+    }
+}
+
 async function saveCustomExercise() {
     const name = document.getElementById('custom-exercise-name').value.trim();
     if (!name) {
@@ -21056,24 +21223,10 @@ async function saveCustomExercise() {
 
     try {
         const exerciseId = crypto.randomUUID ? crypto.randomUUID() : 'ex-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-
-        let videoUrl = null;
-        let storagePath = null;
-
-        // Upload video if one was recorded/selected
-        if (_customExerciseVideoFile) {
-            try {
-                updateCustomExerciseUploadStatus('Uploading video...');
-                const result = await storageHelpers.uploadExerciseVideo(user.id, _customExerciseVideoFile, exerciseId);
-                videoUrl = result.publicUrl;
-                storagePath = result.storagePath;
-                updateCustomExerciseUploadStatus('Video uploaded.');
-            } catch (uploadErr) {
-                console.error('Video upload failed:', uploadErr);
-                updateCustomExerciseUploadStatus('Video upload failed. Please try again or remove the video before saving.', true);
-                alert('Video upload failed. The exercise was not saved yet, so you can try again or remove the video and save without one.');
-                return;
-            }
+        const pendingVideoFile = _customExerciseVideoFile;
+        const hasPendingVideo = !!pendingVideoFile;
+        if (hasPendingVideo) {
+            updateCustomExerciseUploadStatus('Saving exercise. Video will upload in the background.');
         }
 
         // Save to database
@@ -21084,27 +21237,24 @@ async function saveCustomExercise() {
             equipment: document.getElementById('custom-exercise-equipment').value,
             sets: parseInt(document.getElementById('custom-exercise-sets').value) || 3,
             reps: document.getElementById('custom-exercise-reps').value.trim() || '8-12',
-            videoUrl: videoUrl,
-            storagePath: storagePath,
-            isPublic: !!videoUrl
+            videoUrl: null,
+            storagePath: null,
+            isPublic: false
         };
 
         const saved = await dbHelpers.customExercises.create(user.id, exerciseData);
-        const xpResult = videoUrl ? await awardCustomExerciseContributionXp(user.id, saved.id) : { pointsAwarded: 0 };
-        const xpMessage = Number(xpResult?.pointsAwarded || 0) > 0
-            ? ` +${xpResult.pointsAwarded} XP`
-            : '';
+        if (hasPendingVideo) {
+            saved.video_upload_status = 'uploading';
+            setCustomExerciseVideoUploadState(saved.id, name, 'uploading', { startedAt: Date.now() });
+        }
 
         // Add to local cache
         window._customExercisesCache.unshift(saved);
         window._myCustomExercisesCache = window._myCustomExercisesCache || [];
         window._myCustomExercisesCache.unshift(saved);
 
-        // If video was uploaded, add to the in-memory EXERCISE_VIDEOS map for immediate use
-        if (videoUrl) {
-            if (typeof EXERCISE_VIDEOS !== 'undefined') {
-                EXERCISE_VIDEOS[name] = videoUrl;
-            }
+        if (hasPendingVideo) {
+            uploadCustomExerciseVideoInBackground(user, saved, pendingVideoFile, name);
         }
 
         if (window._customExerciseContext === 'builder') {
@@ -21116,28 +21266,33 @@ async function saveCustomExercise() {
             if (typeof showToast === 'function') {
                 showToast(
                     addedToBuilder
-                        ? `"${name}" added to your workout builder.${xpMessage}`
-                        : `"${name}" has been created!${xpMessage}`,
+                        ? `"${name}" added to your workout builder.${hasPendingVideo ? ' Video uploading.' : ''}`
+                        : `"${name}" has been created!${hasPendingVideo ? ' Video uploading.' : ''}`,
                     'success'
                 );
             } else {
                 alert(
                     addedToBuilder
-                        ? `"${name}" added to your workout builder.${xpMessage}`
-                        : `"${name}" has been created!${xpMessage}`
+                        ? `"${name}" added to your workout builder.${hasPendingVideo ? ' Video uploading.' : ''}`
+                        : `"${name}" has been created!${hasPendingVideo ? ' Video uploading.' : ''}`
                 );
             }
         } else if (window._customExerciseContext === 'workout') {
             // If we're in an active workout context, offer to add it right away
             closeCreateCustomExerciseModal();
-            const addNow = confirm(`"${name}" has been saved!${xpMessage}\n\nWould you like to add it to your current workout?`);
+            const addNow = confirm(hasPendingVideo
+                ? `"${name}" has been saved. Video is uploading.\n\nAdd it to your current workout now?`
+                : `"${name}" has been saved!\n\nWould you like to add it to your current workout?`
+            );
             if (addNow) {
                 const newExercise = {
                     name: name,
                     sets: exerciseData.sets,
                     reps: exerciseData.reps,
                     desc: exerciseData.description || 'Custom exercise',
-                    isUserAdded: true
+                    isUserAdded: true,
+                    customExerciseId: saved.id,
+                    videoUploading: hasPendingVideo
                 };
                 addExerciseToUI(newExercise);
 
@@ -21158,8 +21313,12 @@ async function saveCustomExercise() {
             }
         } else {
             // Library context - just show success
-            alert(`"${name}" has been created!${xpMessage} You can now find it when adding exercises to any workout.`);
             closeCreateCustomExerciseModal();
+            if (typeof showToast === 'function') {
+                showToast(`"${name}" has been created.${hasPendingVideo ? ' Video uploading.' : ''}`, 'success');
+            } else {
+                alert(`"${name}" has been created.${hasPendingVideo ? ' Video uploading.' : ''} You can now find it when adding exercises to any workout.`);
+            }
         }
 
     } catch (err) {
@@ -21192,25 +21351,42 @@ async function loadMyCustomExercises() {
 
         section.style.display = 'block';
         count.textContent = `${exercises.length} exercise${exercises.length !== 1 ? 's' : ''}`;
+        ensureCustomExerciseUploadStyles();
 
         list.innerHTML = exercises.map(ex => {
             const muscleLabel = ex.muscle_group ? ex.muscle_group.replace('_', ' ') : '';
             const equipLabel = ex.equipment || '';
             const hasVideo = ex.video_url ? true : false;
+            const uploadState = getCustomExerciseVideoUploadState(ex.exercise_name, ex.id);
+            const isUploading = uploadState?.status === 'uploading';
+            const uploadFailed = uploadState?.status === 'failed';
+            const iconBg = hasVideo
+                ? 'linear-gradient(135deg, var(--primary), #4ade80)'
+                : isUploading
+                    ? '#020617'
+                    : '#e2e8f0';
+            const iconHtml = hasVideo
+                ? '<svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: white;"><path d="M8 5v14l11-7z"/></svg>'
+                : isUploading
+                    ? '<div style="width: 24px; height: 4px; background: rgba(255,255,255,0.25); border-radius: 999px; overflow: hidden;"><div style="width: 45%; height: 100%; background: #fbbf24; border-radius: 999px; animation: customExerciseUploadBar 1.25s ease-in-out infinite;"></div></div>'
+                    : '<svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: #94a3b8;"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/></svg>';
+            const metaSuffix = hasVideo
+                ? ' &middot; Has video'
+                : isUploading
+                    ? ' &middot; Video uploading'
+                    : uploadFailed
+                        ? ' &middot; Video failed'
+                        : '';
 
             return `
                 <div style="background: #f8fafc; border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; border: 1px solid #e2e8f0;">
-                    <div style="width: 44px; height: 44px; background: ${hasVideo ? 'linear-gradient(135deg, var(--primary), #4ade80)' : '#e2e8f0'}; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        ${hasVideo
-                            ? '<svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: white;"><path d="M8 5v14l11-7z"/></svg>'
-                            : '<svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: #94a3b8;"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/></svg>'
-                        }
+                    <div style="width: 44px; height: 44px; background: ${iconBg}; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        ${iconHtml}
                     </div>
                     <div style="flex: 1; min-width: 0;">
                         <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ex.exercise_name}</div>
                         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
-                            ${muscleLabel}${muscleLabel && equipLabel ? ' · ' : ''}${equipLabel}
-                            ${hasVideo ? ' · Has video' : ''}
+                            ${muscleLabel}${muscleLabel && equipLabel ? ' &middot; ' : ''}${equipLabel}${metaSuffix}
                         </div>
                     </div>
                     <button onclick="deleteCustomExercise('${ex.id}', '${ex.exercise_name.replace(/'/g, "\\'")}')" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 8px; flex-shrink: 0;">

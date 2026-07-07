@@ -47,8 +47,8 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=127/,
-  'dashboard should bump script 5 so phones fetch the custom exercise camera fix'
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=128/,
+  'dashboard should bump script 5 so phones fetch the non-blocking exercise upload fix'
 );
 assert.match(
   dashboardHtml,
@@ -133,8 +133,18 @@ assert.match(
 );
 assert.match(
   workoutScript,
-  /Video upload failed[\s\S]*The exercise was not saved yet[\s\S]*return;/,
-  'saving should stop when a selected video fails to upload'
+  /const pendingVideoFile = _customExerciseVideoFile[\s\S]*const saved = await dbHelpers\.customExercises\.create\(user\.id, exerciseData\)[\s\S]*uploadCustomExerciseVideoInBackground\(user, saved, pendingVideoFile, name\)/,
+  'saving should create the exercise first and upload the video in the background'
+);
+assert.match(
+  workoutScript,
+  /Video is uploading\.[\s\S]*Add it to your current workout now\?/,
+  'workout context should let users add the exercise while the video uploads'
+);
+assert.match(
+  workoutScript,
+  /createExerciseVideoUploadPlaceholderHtml\(\)[\s\S]*Uploading video\.\.\.[\s\S]*You can keep logging your workout\./,
+  'new workout exercise cards should show a black uploading placeholder while B2 finishes'
 );
 assert.match(
   workoutScript,
@@ -143,13 +153,13 @@ assert.match(
 );
 assert.match(
   workoutScript,
-  /awardCustomExerciseContributionXp\(user\.id,\s*saved\.id\)/,
-  'saving a video-backed custom exercise should award contribution XP'
+  /const updated = await dbHelpers\.customExercises\.update\(user\.id, savedExercise\.id,[\s\S]*is_public:\s*true/,
+  'background upload should patch the exercise public after B2 returns a URL'
 );
 assert.match(
   workoutScript,
-  /isPublic:\s*!!videoUrl/,
-  'video-backed exercises should be saved for the shared library'
+  /await awardCustomExerciseContributionXp\(user\.id, savedExercise\.id\)/,
+  'video-backed custom exercise should award contribution XP after the background upload completes'
 );
 
 assert.match(
