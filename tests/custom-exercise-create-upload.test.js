@@ -15,7 +15,7 @@ const pointsConfig = fs.readFileSync(path.join(root, 'lib/points-config.js'), 'u
 const exerciseVideoUpload = fs.readFileSync(path.join(root, 'netlify/edge-functions/upload-exercise-video.js'), 'utf8');
 const netlifyConfig = fs.readFileSync(path.join(root, 'netlify.toml'), 'utf8');
 const publicExerciseMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260707013000_public_custom_exercise_videos.sql'), 'utf8');
-const exerciseReviewMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260707194015_custom_exercise_review_alert.sql'), 'utf8');
+const exerciseReviewMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260707231317_custom_exercise_review_alert.sql'), 'utf8');
 const adminDashboard = fs.readFileSync(path.join(root, 'admin-dashboard.html'), 'utf8');
 
 assert.match(
