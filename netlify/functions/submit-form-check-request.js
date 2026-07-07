@@ -71,7 +71,6 @@ exports.handler = async (event) => {
     const requestId = String(payload.requestId || '').trim();
 
     if (!UUID_RE.test(coachId)) return json(400, { error: 'Missing or invalid coachId' });
-    if (coachId === verified.userId) return json(400, { error: 'Cannot send form check to yourself' });
     if (!/^https:\/\//i.test(videoUrl)) return json(400, { error: 'Missing or invalid videoUrl' });
 
     const adminRows = await supabaseQuery(
@@ -79,6 +78,7 @@ exports.handler = async (event) => {
     );
     const coachEmail = String(adminRows[0]?.email || '').trim().toLowerCase();
     if (coachEmail !== BALANCE_ADMIN_EMAIL) return json(400, { error: 'Receiver is not a coach admin' });
+    const isSelfTest = coachId === verified.userId;
 
     const exerciseName = cleanLine(payload.exerciseName, 'Exercise', 120);
     const notes = cleanLine(payload.notes, 'Please check my technique.', 400);
@@ -121,5 +121,6 @@ exports.handler = async (event) => {
         success: true,
         nudgeId: inserted[0]?.id || null,
         deduped: false,
+        selfTest: isSelfTest,
     });
 };
