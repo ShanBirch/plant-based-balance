@@ -17,26 +17,30 @@ assert.ok(
 );
 
 assert.ok(
-    source.includes('retryWorkoutFeedShareQueue(false);') &&
     source.includes("window.addEventListener('online'") &&
-    source.includes("document.addEventListener('visibilitychange'"),
-    'queued Share a Set uploads should retry automatically when reception returns or the app resumes'
+    source.includes("window.addEventListener('offline'") &&
+    source.includes("document.addEventListener('visibilitychange'") &&
+    source.includes('refreshWorkoutFeedShareRetryNotice().catch(function () {})'),
+    'queued Share a Set uploads should refresh the saved-upload notice when reception changes or the app resumes'
 );
 
 assert.ok(
     source.includes('const items = manual ? queuedItems : queuedItems.filter') &&
-    source.includes('scheduleWorkoutFeedShareRetry(getWorkoutFeedShareNextRetryDelay(queuedItems))'),
-    'automatic Share a Set retries should only post due queued items and schedule future attempts'
+    source.includes("const nextAttempt = Date.parse(item.nextAttemptAt || item.createdAt || '')") &&
+    source.includes('return !Number.isFinite(nextAttempt) || nextAttempt <= now') &&
+    source.includes('function postWorkoutFeedShareQueueNow()'),
+    'Share a Set retries should only post due queued items and expose the saved-upload Post now action'
 );
 
 assert.ok(
     source.includes('autoRetry: true') &&
-    source.includes('if (navigator && navigator.onLine === false) return;'),
-    'newly queued uploads should schedule retry timers without trying while the phone is offline'
+    source.includes('if (navigator && navigator.onLine === false) {') &&
+    source.includes("showWorkoutFeedShareUploadBanner('Waiting for reception', 'queued', { retry: true })"),
+    'queued uploads should be marked for retry without trying to post while the phone is offline'
 );
 
 assert.ok(
-    dashboardSource.includes('pbb-deferred-formcheck.js?v=21'),
+    dashboardSource.includes('pbb-deferred-formcheck.js?v=31'),
     'dashboard should bump Share a Set script version so phones fetch the retry fix'
 );
 

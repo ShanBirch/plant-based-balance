@@ -53,9 +53,10 @@ assert.ok(
 );
 
 assert.ok(
-    formcheckSource.includes('WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 30 * 1024 * 1024') &&
+    formcheckSource.includes('WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 100 * 1024 * 1024') &&
+    formcheckSource.includes('WORKOUT_FEED_SHARE_DIRECT_UPLOAD_MAX_BYTES = 1024 * 1024 * 1024') &&
     !formcheckSource.includes('WORKOUT_FEED_SHARE_QUEUE_VIDEO_TARGET_BYTES') &&
-    formcheckSource.includes('WORKOUT_FEED_SHARE_CAMERA_VIDEO_BITS_PER_SECOND = 8000000') &&
+    formcheckSource.includes('WORKOUT_FEED_SHARE_CAMERA_VIDEO_BITS_PER_SECOND = 16000000') &&
     formcheckSource.includes('WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS = 300000'),
     'Share a Set should keep HD quality while allowing enough upload time'
 );
@@ -64,17 +65,20 @@ const nativeCameraFunctionStart = formcheckSource.indexOf('async function openNa
 const nativeCameraFunctionEnd = formcheckSource.indexOf('    function clearWorkoutFeedSharePendingInput()', nativeCameraFunctionStart);
 const nativeCameraFunction = formcheckSource.slice(nativeCameraFunctionStart, nativeCameraFunctionEnd);
 assert.ok(
-    nativeCameraFunction.includes('openWorkoutFeedShareInAppCamera({ silentFallback: true })') &&
-    nativeCameraFunction.indexOf('openWorkoutFeedShareInAppCamera({ silentFallback: true })') < nativeCameraFunction.indexOf('captureAndroidWorkoutVideo()'),
-    'Share a Set should prefer the HD in-app recorder before native camera fallback'
+    !nativeCameraFunction.includes('openWorkoutFeedShareInAppCamera') &&
+    nativeCameraFunction.includes('captureAndroidWorkoutVideo()') &&
+    nativeCameraFunction.includes('captureIosWorkoutVideo()') &&
+    nativeCameraFunction.includes('openWorkoutFeedShareCameraPicker()'),
+    'Share a Set should prefer the native phone camera and camera capture input over the embedded recorder'
 );
 
 assert.ok(
-    storiesSource.includes('FEED_VIDEO_UPLOAD_TARGET_BYTES = 30 * 1024 * 1024') &&
-    storiesSource.includes('PHONE_VIDEO_PRIMARY_MAX_DIMENSION = 1080') &&
-    storiesSource.includes('PHONE_VIDEO_PRIMARY_BITRATE = 8000000') &&
-    storiesSource.includes('frameRate: 30'),
-    'feed video preparation should target 1080p, 30fps, 8Mbps quality before fallback passes'
+    storiesSource.includes('FEED_VIDEO_UPLOAD_TARGET_BYTES = 100 * 1024 * 1024') &&
+    storiesSource.includes('PHONE_VIDEO_PRIMARY_MAX_DIMENSION = 1920') &&
+    storiesSource.includes('PHONE_VIDEO_PRIMARY_BITRATE = 16000000') &&
+    storiesSource.includes('options.primaryFrameRate || options.frameRate || 30') &&
+    storiesSource.includes('frameRate: primaryFrameRate'),
+    'feed video preparation should target 1080p/1920px, 30fps, 16Mbps quality before fallback passes'
 );
 
 assert.ok(
@@ -85,7 +89,7 @@ assert.ok(
 
 assert.ok(
     !formcheckSource.includes('prepareWorkoutFeedShareQueuedClip') &&
-    formcheckSource.includes('Balance will retry it automatically.'),
+    formcheckSource.includes("showWorkoutFeedShareUploadBanner('Saved for retry', 'queued', { retry: true })"),
     'Share a Set queued uploads should keep the prepared HD clip and avoid blaming reception only'
 );
 
@@ -110,8 +114,8 @@ assert.match(
 assert.strictEqual(validateWorkoutVideoUpload({ type: 'video/mp4' }, mp4Buffer, 'feed_workout_share'), null);
 
 assert.ok(
-    dashboardSource.includes('lib/stories.js?v=40') &&
-    dashboardSource.includes('pbb-deferred-formcheck.js?v=21'),
+    dashboardSource.includes('lib/stories.js?v=52') &&
+    dashboardSource.includes('pbb-deferred-formcheck.js?v=31'),
     'dashboard should bump feed script versions so patched video validation is fetched'
 );
 

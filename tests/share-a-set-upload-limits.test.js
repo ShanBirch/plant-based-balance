@@ -25,6 +25,13 @@ assert.match(stories, /options\.finalVideoBitsPerSecond/);
 assert.match(stories, /options\.primaryLabel/);
 
 assert.match(dashboard, /lib\/stories\.js\?v=52/);
-assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=30/);
+assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=31/);
+assert.match(dashboard, /choose Camera to use your phone camera/);
+
+assert.match(formCheck, /function openWorkoutFeedShareCameraPicker\(\)\s*{\s*openWorkoutFeedShareFilePicker\(\{ capture: true \}\);/);
+assert.match(formCheck, /if \(options\.capture\) input\.setAttribute\('capture', 'environment'\);/);
+assert.match(formCheck, /function openWorkoutFeedShareCapture\(\)\s*{\s*if \(hasNativeWorkoutFeedShareVideoCamera\(\)\) {[\s\S]*?void openNativeWorkoutFeedShareCamera\(\);[\s\S]*?return;[\s\S]*?}\s*openWorkoutFeedShareCameraPicker\(\);/);
+assert.doesNotMatch(formCheck, /const openedInAppCamera = await openWorkoutFeedShareInAppCamera/);
+assert.doesNotMatch(formCheck, /function openWorkoutFeedShareCapture\(\)\s*{[\s\S]*?void openWorkoutFeedShareInAppCamera\(\);[\s\S]*?}/);
 
 console.log('Share a Set upload limits ok');
