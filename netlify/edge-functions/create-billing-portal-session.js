@@ -108,6 +108,71 @@ async function createPaymentMethodPortalSession(stripeSecretKey, customerId, ret
     }
 }
 
+async function getCustomerSubscriptionSummaries(stripeSecretKey, customerId) {
+    const params = new URLSearchParams();
+    params.set("customer", customerId);
+    params.set("status", "all");
+    params.set("limit", "10");
+    const subscriptions = await stripeRequest(stripeSecretKey, "GET", "/v1/subscriptions", params);
+    return (subscriptions.data || []).map((subscription) => ({
+        id: subscription.id,
+        status: subscription.status,
+        current_period_end: subscription.current_period_end || null,
+        cancel_at_period_end: Boolean(subscription.cancel_at_period_end)
+    }));
+}
+
+async function resolvePortalCustomer(stripeSecretKey, user, alertData = {}) {
+    const lookupEmail = String(alertData.payment_update_email || "").trim().toLowerCase();
+    if (lookupEmail) {
+        const params = new URLSearchParams();
+        params.set("email", lookupEmail);
+        params.set("limit", "10");
+        const customers = await stripeRequest(stripeSecretKey, "GET", "/v1/customers", params);
+        const candidates = [];
+
+        for (const customer of customers.data || []) {
+            const subscriptions = await getCustomerSubscriptionSummaries(stripeSecretKey, customer.id);
+            candidates.push({
+                id: customer.id,
+                email: customer.email || null,
+                name: customer.name || null,
+                subscriptions
+            });
+        }
+
+        const activeStatuses = new Set(["active", "trialing", "past_due", "unpaid"]);
+        const selected = candidates.find((candidate) =>
+            candidate.subscriptions.some((subscription) => activeStatuses.has(subscription.status))
+        ) || candidates[0];
+
+        if (!selected?.id) {
+            throw new Error("No Stripe customer found for payment update email");
+        }
+
+        return {
+            customerId: selected.id,
+            source: "email_lookup",
+            customerEmail: selected.email,
+            customerName: selected.name,
+            subscriptions: selected.subscriptions,
+            lookupEmail
+        };
+    }
+
+    if (user?.stripe_customer_id) {
+        return {
+            customerId: user.stripe_customer_id,
+            source: "user_stripe_customer_id",
+            customerEmail: user.email || null,
+            customerName: null,
+            subscriptions: []
+        };
+    }
+
+    throw new Error("No Stripe customer ID available");
+}
+
 async function handleTokenPaymentLink(request, supabase, stripeSecretKey) {
     const requestUrl = new URL(request.url);
     const token = String(requestUrl.searchParams.get("t") || "").trim();
@@ -134,30 +199,35 @@ async function handleTokenPaymentLink(request, supabase, stripeSecretKey) {
 
     const { data: user, error: userError } = await supabase
         .from("users")
-        .select("id,stripe_customer_id")
+        .select("id,email,stripe_customer_id")
         .eq("id", alert.client_id)
         .single();
 
-    if (userError || !user?.stripe_customer_id) {
-        console.error("[billing-portal] token user lookup failed:", userError?.message || "missing customer");
+    if (userError) {
+        console.error("[billing-portal] token user lookup failed:", userError.message);
         return html(paymentLinkMessage("Payment link unavailable", "Message Shannon and he can send you a fresh card update link."), 500);
     }
 
     const returnUrl = getSameOriginReturnUrl(request, requestUrl.searchParams.get("return_url"));
-    const portalSession = await createPaymentMethodPortalSession(stripeSecretKey, user.stripe_customer_id, returnUrl);
+    const resolvedCustomer = await resolvePortalCustomer(stripeSecretKey, user, alert.data || {});
+    const portalSession = await createPaymentMethodPortalSession(stripeSecretKey, resolvedCustomer.customerId, returnUrl);
 
     const updatedData = {
         ...(alert.data || {}),
         payment_update_last_opened_at: new Date().toISOString(),
-        payment_update_last_session_id: portalSession.id
+        payment_update_last_session_id: portalSession.id,
+        payment_update_last_customer_id: resolvedCustomer.customerId,
+        payment_update_last_customer_email: resolvedCustomer.customerEmail,
+        payment_update_last_customer_name: resolvedCustomer.customerName,
+        payment_update_last_customer_source: resolvedCustomer.source,
+        payment_update_last_lookup_email: resolvedCustomer.lookupEmail || null,
+        payment_update_last_subscriptions: resolvedCustomer.subscriptions || []
     };
-    supabase
+    const { error: readbackError } = await supabase
         .from("coach_alerts")
         .update({ data: updatedData })
-        .eq("id", alert.id)
-        .then(({ error }) => {
-            if (error) console.warn("[billing-portal] token readback update failed:", error.message);
-        });
+        .eq("id", alert.id);
+    if (readbackError) console.warn("[billing-portal] token readback update failed:", readbackError.message);
 
     return Response.redirect(portalSession.url, 303);
 }
