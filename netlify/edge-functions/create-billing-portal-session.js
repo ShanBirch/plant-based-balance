@@ -220,17 +220,6 @@ export default async (request) => {
         return json({ url: portalSession.url });
     } catch (error) {
         console.error("[billing-portal] failed:", error?.message || error);
-        try {
-            const requestUrl = new URL(request.url);
-            if (request.method === "GET"
-                && requestUrl.searchParams.get("debug") === "1"
-                && /^[A-Za-z0-9_-]{32,160}$/.test(String(requestUrl.searchParams.get("t") || ""))) {
-                return json({
-                    error: "Could not open payment settings yet",
-                    detail: String(error?.message || error).slice(0, 500)
-                }, 500);
-            }
-        } catch(e) {}
         return json({ error: "Could not open payment settings yet" }, 500);
     }
 };
