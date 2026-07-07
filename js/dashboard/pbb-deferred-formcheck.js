@@ -2323,10 +2323,11 @@
 
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = 'video/*';
+        input.accept = options.capture ? 'video/*;capture=camcorder' : 'video/*';
         if (options.capture) {
-            input.capture = 'environment';
-            input.setAttribute('capture', 'environment');
+            input.capture = 'camcorder';
+            input.setAttribute('accept', 'video/*;capture=camcorder');
+            input.setAttribute('capture', 'camcorder');
         }
         input.setAttribute('aria-hidden', 'true');
         input.style.display = 'none';

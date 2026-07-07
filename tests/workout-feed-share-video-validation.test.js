@@ -75,7 +75,8 @@ assert.ok(
 assert.ok(
     formcheckSource.includes('async function openWorkoutFeedShareCameraFallback()') &&
     !formcheckSource.includes('openWorkoutFeedShareInAppCamera({ silentFallback: true })') &&
-    formcheckSource.includes("input.capture = 'environment';") &&
+    formcheckSource.includes("input.capture = 'camcorder';") &&
+    formcheckSource.includes("video/*;capture=camcorder") &&
     formcheckSource.includes('openWorkoutFeedShareCameraPicker();'),
     'Share a Set should avoid the WebView camera fallback by default and use the phone video capture picker'
 );
@@ -136,7 +137,7 @@ assert.strictEqual(validateWorkoutVideoUpload({ type: 'video/mp4' }, mp4Buffer, 
 
 assert.ok(
     dashboardSource.includes('lib/stories.js?v=52') &&
-    dashboardSource.includes('pbb-deferred-formcheck.js?v=34'),
+    dashboardSource.includes('pbb-deferred-formcheck.js?v=35'),
     'dashboard should bump feed script versions so patched video validation is fetched'
 );
 
