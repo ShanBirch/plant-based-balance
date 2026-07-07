@@ -1160,9 +1160,7 @@
     function forgetQueuedWorkoutFeedShareOnLateSuccess(postPromise, queueItem) {
         if (!postPromise || !queueItem || !queueItem.id) return;
         postPromise.then(function () {
-            deleteWorkoutFeedShareQueueItem(queueItem.id)
-                .then(function () { refreshWorkoutFeedShareRetryNotice().catch(function () {}); })
-                .catch(function () {});
+            clearPostedWorkoutFeedShareQueueItems(queueItem).catch(function () {});
         }).catch(function () {});
     }
 
@@ -1311,13 +1309,59 @@
         });
     }
 
+    function isWorkoutFeedSharePostingStagingItem(item) {
+        return String(item && item.lastError || '') === 'posting';
+    }
+
+    function isMatchingPostedWorkoutFeedShareQueueItem(item, referenceItem) {
+        if (!item || !referenceItem) return false;
+        if (item.id && referenceItem.id && item.id === referenceItem.id) return true;
+        if (item.userId && referenceItem.userId && item.userId !== referenceItem.userId) return false;
+
+        const itemSize = Number(item.fileSize || 0);
+        const referenceSize = Number(referenceItem.fileSize || 0);
+        if (itemSize && referenceSize && itemSize !== referenceSize) return false;
+
+        const itemModified = Number(item.fileLastModified || 0);
+        const referenceModified = Number(referenceItem.fileLastModified || 0);
+        if (itemModified && referenceModified && itemModified === referenceModified) return true;
+
+        const itemCreated = Date.parse(item.createdAt || '');
+        const referenceCreated = Date.parse(referenceItem.createdAt || '');
+        const sameWorkout = String(item.workoutName || '') === String(referenceItem.workoutName || '');
+        return sameWorkout &&
+            itemSize > 0 &&
+            referenceSize > 0 &&
+            Number.isFinite(itemCreated) &&
+            Number.isFinite(referenceCreated) &&
+            Math.abs(itemCreated - referenceCreated) <= 10 * 60 * 1000;
+    }
+
+    async function clearPostedWorkoutFeedShareQueueItems(referenceItem) {
+        if (!referenceItem) return;
+        try {
+            const items = await getWorkoutFeedShareQueueItems();
+            const matches = (items || []).filter(function (item) {
+                return isMatchingPostedWorkoutFeedShareQueueItem(item, referenceItem);
+            });
+            for (const item of matches) {
+                if (item && item.id) await deleteWorkoutFeedShareQueueItem(item.id);
+            }
+        } catch (error) {
+            console.warn('[WorkoutFeedShare] posted queue cleanup failed', error);
+        }
+        refreshWorkoutFeedShareRetryNotice().catch(function () {});
+    }
+
     async function refreshWorkoutFeedShareRetryNotice() {
         const notice = ensureWorkoutFeedShareRetryNotice();
         if (!notice) return;
 
         let items = [];
         try {
-            items = await getCurrentUserWorkoutFeedShareQueueItems();
+            items = (await getCurrentUserWorkoutFeedShareQueueItems()).filter(function (item) {
+                return !isWorkoutFeedSharePostingStagingItem(item);
+            });
         } catch (error) {
             console.warn('[WorkoutFeedShare] retry notice unavailable', error);
             notice.style.display = 'none';
@@ -2516,8 +2560,7 @@
             });
             const result = await waitForWorkoutFeedSharePost(postPromise, WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS, uploadController);
             if (initialQueueItem && initialQueueItem.id) {
-                await deleteWorkoutFeedShareQueueItem(initialQueueItem.id);
-                refreshWorkoutFeedShareRetryNotice().catch(function () {});
+                await clearPostedWorkoutFeedShareQueueItems(initialQueueItem);
             }
 
             const successMessage = getWorkoutFeedShareSuccessMessage(result);

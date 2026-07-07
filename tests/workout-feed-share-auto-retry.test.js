@@ -57,6 +57,21 @@ assert.ok(
 );
 
 assert.ok(
+    source.includes('function isWorkoutFeedSharePostingStagingItem(item)') &&
+    source.includes("return !isWorkoutFeedSharePostingStagingItem(item);") &&
+    source.includes("String(item && item.lastError || '') === 'posting'"),
+    'temporary posting-stage queue items should not render as saved Share a Set cards in Feed'
+);
+
+assert.ok(
+    source.includes('async function clearPostedWorkoutFeedShareQueueItems(referenceItem)') &&
+    source.includes('function isMatchingPostedWorkoutFeedShareQueueItem(item, referenceItem)') &&
+    source.includes('await clearPostedWorkoutFeedShareQueueItems(initialQueueItem)') &&
+    source.includes('clearPostedWorkoutFeedShareQueueItems(queueItem).catch(function () {})'),
+    'successful Share a Set posts should clear matching staged queue items so saved cards disappear'
+);
+
+assert.ok(
     androidWorkflowSource.includes("if: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_to_play == true }}") &&
     !androidWorkflowSource.includes("github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.upload_to_play == true)") &&
     !androidWorkflowSource.includes("github.event_name == 'push' && 'internal'"),
@@ -64,7 +79,7 @@ assert.ok(
 );
 
 assert.ok(
-    dashboardSource.includes('pbb-deferred-formcheck.js?v=38'),
+    dashboardSource.includes('pbb-deferred-formcheck.js?v=39'),
     'dashboard should bump Share a Set script version so phones fetch the retry fix'
 );
 
