@@ -36,6 +36,10 @@
   path = "/.netlify/functions/create-billing-portal-session"
 
 [[edge_functions]]
+  function = "create-billing-portal-session"
+  path = "/update-payment-card"
+
+[[edge_functions]]
   function = "track-purchase"
   path = "/.netlify/functions/track-purchase"
 
