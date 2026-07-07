@@ -47,7 +47,7 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=129/,
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=130/,
   'dashboard should bump script 5 so phones fetch the non-blocking exercise upload fix'
 );
 assert.match(
@@ -150,6 +150,11 @@ assert.match(
   workoutScript,
   /createExerciseVideoUploadPlaceholderHtml\(\)[\s\S]*Uploading video\.\.\.[\s\S]*You can keep logging your workout\./,
   'new workout exercise cards should show a black uploading placeholder while B2 finishes'
+);
+assert.match(
+  workoutScript,
+  /const videoUploading = !!exercise\.videoUploading[\s\S]*const videoUrl = videoUploading \? '' : findVideoMatch\(exercise\.name\)/,
+  'pending custom exercise uploads should show the placeholder instead of fuzzy-matching an older exercise video'
 );
 assert.match(
   workoutScript,

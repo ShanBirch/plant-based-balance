@@ -20492,8 +20492,8 @@ async function selectExerciseToAdd(exerciseName) {
 // Add exercise to UI
 function addExerciseToUI(exercise) {
     const container = document.getElementById('workout-exercises-list');
-    const videoUrl = findVideoMatch(exercise.name);
     const videoUploading = !!exercise.videoUploading || isCustomExerciseVideoUploading(exercise.name, exercise.customExerciseId);
+    const videoUrl = videoUploading ? '' : findVideoMatch(exercise.name);
     const videoBlockHtml = videoUrl
         ? createExerciseVideoBlockHtml(videoUrl)
         : (videoUploading ? createExerciseVideoUploadPlaceholderHtml() : '');
