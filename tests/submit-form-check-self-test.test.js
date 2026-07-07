@@ -22,4 +22,22 @@ assert.match(
   'form-check submit response should identify Shannon self-test submissions'
 );
 
+assert.match(
+  source,
+  /if \(isSelfTest\) \{[\s\S]*operator_queue: 'needs_you'[\s\S]*is_form_check: true[\s\S]*supabaseQuery\('coach_alerts'/,
+  'Shannon self-tests should create a pending form-check coach alert directly instead of inserting a self-nudge'
+);
+
+assert.match(
+  source,
+  /queueFormCheckDraft\(alertId\)/,
+  'Shannon self-test alerts should queue the form-check draft background worker'
+);
+
+assert.match(
+  source,
+  /const row = \{[\s\S]*sender_id: verified\.userId[\s\S]*receiver_id: coachId[\s\S]*nudge_type: 'form_check'/,
+  'non-self form checks should keep using the normal nudge path'
+);
+
 console.log('submit form-check self-test guard passed');

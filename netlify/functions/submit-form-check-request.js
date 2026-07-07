@@ -15,6 +15,7 @@ const {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
+const SITE_URL = (process.env.URL || process.env.DEPLOY_PRIME_URL || 'https://plantbased-balance.org').replace(/\/+$/, '');
 
 function json(statusCode, body) {
     return {
@@ -54,6 +55,21 @@ async function verifyUserToken(event) {
     }
 }
 
+async function queueFormCheckDraft(alertId) {
+    if (!alertId) return false;
+    try {
+        const response = await fetch(`${SITE_URL}/.netlify/functions/form-check-draft-background`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alertId }),
+        });
+        return response.ok;
+    } catch (err) {
+        console.warn('[submit-form-check] self-test draft queue failed:', err.message);
+        return false;
+    }
+}
+
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return json(405, { error: 'Method not allowed' });
@@ -74,7 +90,7 @@ exports.handler = async (event) => {
     if (!/^https:\/\//i.test(videoUrl)) return json(400, { error: 'Missing or invalid videoUrl' });
 
     const adminRows = await supabaseQuery(
-        `users?select=email&id=eq.${encodeURIComponent(coachId)}&limit=1`
+        `users?select=email,name&id=eq.${encodeURIComponent(coachId)}&limit=1`
     );
     const coachEmail = String(adminRows[0]?.email || '').trim().toLowerCase();
     if (coachEmail !== BALANCE_ADMIN_EMAIL) return json(400, { error: 'Receiver is not a coach admin' });
@@ -103,11 +119,73 @@ exports.handler = async (event) => {
     ];
     if (workoutName) messageLines.push(`Workout: ${workoutName}`);
     messageLines.push(`Focus: ${notes}`);
+    const messageText = messageLines.join('\n');
+
+    if (isSelfTest) {
+        const idempotencyKey = uuidRequestId ? `form_check_self_test:${uuidRequestId}` : '';
+        if (idempotencyKey) {
+            const existing = await supabaseQuery(
+                `coach_alerts?select=id&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
+            ).catch(() => []);
+            if (existing.length) {
+                return json(200, {
+                    success: true,
+                    alertId: existing[0].id,
+                    deduped: true,
+                    selfTest: true,
+                });
+            }
+        }
+
+        const clientName = cleanLine(adminRows[0]?.name, 'Coach Shannon', 120);
+        const alertRow = {
+            client_id: verified.userId,
+            client_name: clientName,
+            coach_id: coachId,
+            alert_type: 'incoming_dm',
+            priority: 'high',
+            title: `${clientName} sent a form check`,
+            description: 'Technique video waiting for Shannon review',
+            suggested_message: null,
+            status: 'pending',
+            data: {
+                self_test: true,
+                support_exception: true,
+                operator_queue: 'needs_you',
+                needs_you_required: true,
+                needs_you_reason: 'form_check_self_test',
+                is_form_check: true,
+                message_preview: messageText,
+                draft_model: 'queued-form-check-draft',
+                drafted_at: new Date().toISOString(),
+                form_check_request_id: uuidRequestId || requestId || null,
+                form_check_video_url: videoUrl,
+                form_check_exercise_name: exerciseName,
+                form_check_workout_name: workoutName,
+            },
+        };
+        if (idempotencyKey) alertRow.idempotency_key = idempotencyKey;
+
+        const inserted = await supabaseQuery('coach_alerts', {
+            method: 'POST',
+            body: [alertRow],
+        });
+        const alertId = inserted[0]?.id || null;
+        const draftQueued = await queueFormCheckDraft(alertId);
+
+        return json(200, {
+            success: true,
+            alertId,
+            deduped: false,
+            selfTest: true,
+            formCheckDraftQueued: draftQueued,
+        });
+    }
 
     const row = {
         sender_id: verified.userId,
         receiver_id: coachId,
-        message: messageLines.join('\n'),
+        message: messageText,
         nudge_type: 'form_check',
     };
     if (uuidRequestId) row.reference_id = uuidRequestId;
