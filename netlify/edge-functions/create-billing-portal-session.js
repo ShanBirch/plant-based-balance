@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import Stripe from "stripe";
 
 function json(body, status = 200) {
     return new Response(JSON.stringify(body), {
@@ -36,68 +35,80 @@ function paymentLinkMessage(title, copy) {
         + '</head><body><main><h1>' + title + '</h1><p>' + copy + '</p></main></body></html>';
 }
 
-async function getPaymentUpdateConfigurationId(stripe, returnUrl) {
+async function stripeRequest(stripeSecretKey, method, path, params = null) {
+    const url = new URL(path, "https://api.stripe.com");
+    const options = {
+        method,
+        headers: {
+            Authorization: "Bearer " + stripeSecretKey
+        }
+    };
+
+    if (method === "GET" && params) {
+        for (const [key, value] of params.entries()) {
+            url.searchParams.set(key, value);
+        }
+    } else if (params) {
+        options.headers["Content-Type"] = "application/x-www-form-urlencoded";
+        options.body = params;
+    }
+
+    const response = await fetch(url.toString(), options);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data?.error?.message || data?.error || "Stripe request failed");
+    }
+    return data;
+}
+
+async function getPaymentUpdateConfigurationId(stripeSecretKey, returnUrl) {
     const marker = "balance_payment_update_link_v1";
-    const configs = await stripe.billingPortal.configurations.list({
-        active: true,
-        limit: 100
-    });
+    const listParams = new URLSearchParams();
+    listParams.set("active", "true");
+    listParams.set("limit", "100");
+    const configs = await stripeRequest(stripeSecretKey, "GET", "/v1/billing_portal/configurations", listParams);
     const existing = configs.data.find((config) => config?.metadata?.balance_portal_kind === marker);
     if (existing?.id) return existing.id;
 
-    const created = await stripe.billingPortal.configurations.create({
-        name: "Balance card update",
-        default_return_url: returnUrl,
-        features: {
-            payment_method_update: { enabled: true },
-            invoice_history: { enabled: true }
-        },
-        business_profile: {
-            headline: "Update your Balance payment method"
-        },
-        metadata: {
-            balance_portal_kind: marker
-        }
-    });
+    const createParams = new URLSearchParams();
+    createParams.set("name", "Balance card update");
+    createParams.set("default_return_url", returnUrl);
+    createParams.set("features[payment_method_update][enabled]", "true");
+    createParams.set("features[invoice_history][enabled]", "true");
+    createParams.set("business_profile[headline]", "Update your Balance payment method");
+    createParams.set("metadata[balance_portal_kind]", marker);
+    const created = await stripeRequest(stripeSecretKey, "POST", "/v1/billing_portal/configurations", createParams);
     return created.id;
 }
 
-async function createPaymentMethodPortalSession(stripe, customerId, returnUrl) {
+async function createPaymentMethodPortalSession(stripeSecretKey, customerId, returnUrl) {
     let configuration = null;
     try {
-        configuration = await getPaymentUpdateConfigurationId(stripe, returnUrl);
+        configuration = await getPaymentUpdateConfigurationId(stripeSecretKey, returnUrl);
     } catch (error) {
         console.warn("[billing-portal] could not prepare card update configuration:", error?.message || error);
     }
 
     try {
-        const sessionArgs = {
-            customer: customerId,
-            return_url: returnUrl,
-            flow_data: {
-                type: "payment_method_update",
-                after_completion: {
-                    type: "hosted_confirmation",
-                    hosted_confirmation: {
-                        custom_message: "Your payment method has been updated."
-                    }
-                }
-            }
-        };
-        if (configuration) sessionArgs.configuration = configuration;
-        return await stripe.billingPortal.sessions.create(sessionArgs);
+        const sessionParams = new URLSearchParams();
+        sessionParams.set("customer", customerId);
+        sessionParams.set("return_url", returnUrl);
+        if (configuration) sessionParams.set("configuration", configuration);
+        sessionParams.set("flow_data[type]", "payment_method_update");
+        sessionParams.set("flow_data[after_completion][type]", "hosted_confirmation");
+        sessionParams.set("flow_data[after_completion][hosted_confirmation][custom_message]", "Your payment method has been updated.");
+        return await stripeRequest(stripeSecretKey, "POST", "/v1/billing_portal/sessions", sessionParams);
     } catch (error) {
         console.warn("[billing-portal] payment method deep link failed, falling back:", error?.message || error);
-        const sessionArgs = {
-            customer: customerId,
-            return_url: returnUrl
-        };
-        if (configuration) sessionArgs.configuration = configuration;
-        return await stripe.billingPortal.sessions.create(sessionArgs);
+        const sessionParams = new URLSearchParams();
+        sessionParams.set("customer", customerId);
+        sessionParams.set("return_url", returnUrl);
+        if (configuration) sessionParams.set("configuration", configuration);
+        return await stripeRequest(stripeSecretKey, "POST", "/v1/billing_portal/sessions", sessionParams);
     }
 }
 
-async function handleTokenPaymentLink(request, supabase, stripe) {
+async function handleTokenPaymentLink(request, supabase, stripeSecretKey) {
     const requestUrl = new URL(request.url);
     const token = String(requestUrl.searchParams.get("t") || "").trim();
     if (!/^[A-Za-z0-9_-]{32,160}$/.test(token)) {
@@ -133,7 +144,7 @@ async function handleTokenPaymentLink(request, supabase, stripe) {
     }
 
     const returnUrl = getSameOriginReturnUrl(request, requestUrl.searchParams.get("return_url"));
-    const portalSession = await createPaymentMethodPortalSession(stripe, user.stripe_customer_id, returnUrl);
+    const portalSession = await createPaymentMethodPortalSession(stripeSecretKey, user.stripe_customer_id, returnUrl);
 
     const updatedData = {
         ...(alert.data || {}),
@@ -167,13 +178,8 @@ export default async (request) => {
         }
 
         const supabase = createClient(supabaseUrl, supabaseKey);
-        const stripe = new Stripe(stripeSecretKey, {
-            httpClient: Stripe.createFetchHttpClient(),
-            apiVersion: "2026-02-25.clover",
-        });
-
         if (request.method === "GET") {
-            return await handleTokenPaymentLink(request, supabase, stripe);
+            return await handleTokenPaymentLink(request, supabase, stripeSecretKey);
         }
 
         const authHeader = request.headers.get("Authorization") || "";
@@ -206,7 +212,7 @@ export default async (request) => {
         }
 
         const portalSession = await createPaymentMethodPortalSession(
-            stripe,
+            stripeSecretKey,
             user.stripe_customer_id,
             getSameOriginReturnUrl(request, body.returnUrl)
         );
