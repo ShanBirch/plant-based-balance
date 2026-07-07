@@ -37,19 +37,27 @@ function paymentLinkMessage(title, copy) {
 }
 
 async function createPaymentMethodPortalSession(stripe, customerId, returnUrl) {
-    return await stripe.billingPortal.sessions.create({
-        customer: customerId,
-        return_url: returnUrl,
-        flow_data: {
-            type: "payment_method_update",
-            after_completion: {
-                type: "hosted_confirmation",
-                hosted_confirmation: {
-                    custom_message: "Your payment method has been updated."
+    try {
+        return await stripe.billingPortal.sessions.create({
+            customer: customerId,
+            return_url: returnUrl,
+            flow_data: {
+                type: "payment_method_update",
+                after_completion: {
+                    type: "hosted_confirmation",
+                    hosted_confirmation: {
+                        custom_message: "Your payment method has been updated."
+                    }
                 }
             }
-        }
-    });
+        });
+    } catch (error) {
+        console.warn("[billing-portal] payment method deep link failed, falling back:", error?.message || error);
+        return await stripe.billingPortal.sessions.create({
+            customer: customerId,
+            return_url: returnUrl
+        });
+    }
 }
 
 async function handleTokenPaymentLink(request, supabase, stripe) {
