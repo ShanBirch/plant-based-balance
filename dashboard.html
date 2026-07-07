@@ -1035,6 +1035,9 @@ window.addEventListener('load', function() {
     <!-- Weekly Goals Card (Home) -->
     <div id="weekly-goals-card" style="display: none; margin: 0 25px 14px; background: white; border-radius: 18px; overflow: hidden; box-shadow: 0 4px 18px rgba(15,23,42,0.08); border: 1px solid #e2e8f0;"></div>
 
+    <!-- Next Obvious Steps Card (private preview) -->
+    <div id="next-obvious-steps-card" style="display: none; margin: 0 25px 14px;"></div>
+
     <!-- Friends Modal (Home Page) -->
     <div id="home-friends-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10007; align-items: flex-end; justify-content: center; backdrop-filter: blur(3px);" onclick="if(event.target===this) closeHomeFriendsModal();">
         <div style="background: white; border-radius: 20px 20px 0 0; max-width: 500px; width: 100%; max-height: 70vh; overflow: hidden; animation: slideUpModal 0.3s ease-out;">
@@ -1590,11 +1593,13 @@ if(!window._pbbIsIOSSafari) {
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=9"><\/script>');
     document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=24"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=1"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=20"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=9');
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=24');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=1');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=20');
 }
 </script>
@@ -12836,6 +12841,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'6-Week Challenge', body:"The 6-week challenge sits under your character on Home. Tap it to open the leaderboard or check how to earn XP.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do.", quick: true },
     { tab:'dashboard', sel:'#weekly-goals-card', title:'Weekly goals', body:"Choose up to 3 goals for the week. Balance tracks the exact signals you picked and carries the results into Weekly Wrapped.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
+    { tab:'dashboard', sel:'#next-obvious-steps-card', title:'Next steps', body:"Balance now gives you three clear actions for the day, aligned to your weekly goals and linked straight to the right part of the app.", quick: true, condition: function(){ try { return window.pbbNextSteps && window.pbbNextSteps.isPreviewEligible && window.pbbNextSteps.isPreviewEligible() && !!document.querySelector('#next-obvious-steps-card .next-step-action'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
     { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Friday board day can earn 5 XP if you are down from last Friday, plus 5 XP for sharing the review card to Feed.", quick: true },
     { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
@@ -13640,6 +13646,14 @@ if(!window._pbbIsIOSSafari) {
       title: 'Weekly Goals',
       body: "Pick up to 3 goals for the week. Choose body, training, food, recovery, Health IQ, or community, then watch progress build into your Wrapped.",
       condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; }
+    },
+    {
+      id: 'next-obvious-steps-private-preview-v1',
+      tab: 'dashboard',
+      sel: '#next-obvious-steps-card',
+      title: 'Next Steps',
+      body: "Balance now shows three clear things to do next, matched to your Weekly Goals. Tap any action to jump straight to the right tab or card.",
+      condition: function(){ try { return window.pbbNextSteps && window.pbbNextSteps.isPreviewEligible && window.pbbNextSteps.isPreviewEligible() && !!document.querySelector('#next-obvious-steps-card .next-step-action'); } catch(e){ return false; } }
     },
     {
       id: 'weekly-checkin-preview-v9',
