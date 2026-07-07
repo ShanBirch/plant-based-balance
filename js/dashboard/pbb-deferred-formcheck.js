@@ -1486,7 +1486,7 @@
             subtext.textContent = type === 'error'
                 ? 'Please try that clip again.'
                 : type === 'queued'
-                    ? 'Saved on this phone. Use Post now from Feed.'
+                    ? 'Saved on this phone. Tap Post now to try again.'
                 : type === 'success'
                     ? 'Shared to Feed.'
                     : 'You can keep training.';
@@ -2408,14 +2408,6 @@
         workoutFeedShareState.objectUrl = URL.createObjectURL(file);
         hideWorkoutFeedShareChooserForUpload();
         const bannerLabel = showWorkoutFeedShareUploadBanner('Uploading your set...', 'info');
-        if (workoutFeedShareState.source === 'workout' && isWorkoutFeedShareActiveWorkoutOpen()) {
-            try {
-                const queued = await queueWorkoutFeedShareUntilWorkoutExit(workoutFeedShareState.file);
-                if (queued) return;
-            } catch (queueError) {
-                console.warn('[WorkoutFeedShare] workout-screen defer failed', queueError);
-            }
-        }
         void submitWorkoutFeedShare({
             postBtn: bannerLabel
         });
@@ -2427,25 +2419,6 @@
         if (input) input.value = '';
         if (!rawFile) return;
         void processWorkoutFeedShareSelectedFile(rawFile);
-    }
-
-    async function queueWorkoutFeedShareUntilWorkoutExit(file) {
-        const userId = window.currentUser && window.currentUser.id;
-        if (!userId || !file) return false;
-
-        const workoutName = workoutFeedShareState.workoutName || getActiveWorkoutName();
-        await queueWorkoutFeedShareUpload({
-            userId: userId,
-            file: file,
-            caption: '',
-            workoutName: workoutName,
-            lastError: 'waiting_for_workout_exit',
-            retryDelayMs: 15000,
-            autoRetry: false
-        });
-        showWorkoutFeedShareUploadBanner('Saved for after workout', 'queued', { retry: false });
-        clearWorkoutFeedShareVideo();
-        return true;
     }
 
     function clearWorkoutFeedShareVideo() {
