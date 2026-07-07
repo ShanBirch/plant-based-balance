@@ -47,8 +47,18 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=130/,
-  'dashboard should bump script 5 so phones fetch the non-blocking exercise upload fix'
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=131/,
+  'dashboard should bump script 5 so phones fetch the custom exercise feed autopost fix'
+);
+assert.match(
+  dashboardHtml,
+  /id:\s*'custom-exercise-feed-autopost-v1'[\s\S]*title:\s*'New exercises to Feed'/,
+  'custom exercise feed autopost should have a returning-user Feature Drop'
+);
+assert.match(
+  dashboardHtml,
+  /title:'New exercises to Feed'[\s\S]*Balance posts it to Feed with the exercise name and simple technique tips/,
+  'custom exercise feed autopost should be in the guided feature tour'
 );
 assert.match(
   dashboardHtml,
@@ -170,6 +180,36 @@ assert.match(
   workoutScript,
   /await awardCustomExerciseContributionXp\(user\.id, savedExercise\.id\)/,
   'video-backed custom exercise should award contribution XP after the background upload completes'
+);
+assert.match(
+  workoutScript,
+  /function buildCustomExerciseFeedCaption\(exerciseName, savedExercise\)[\s\S]*New exercise added - \$\{safeName\}/,
+  'custom exercise uploads should build a Feed caption with the exercise name'
+);
+assert.match(
+  workoutScript,
+  /function hasSpecificExerciseTechniqueData\(exerciseName\)[\s\S]*technique\.family !== 'Whole-body lift'/,
+  'custom exercise Feed captions should only add technique tips for recognised exercise families'
+);
+assert.match(
+  workoutScript,
+  /const feedStory = await createCustomExerciseFeedPost\(user, updated \|\| savedExercise, videoUrl\)/,
+  'background exercise video uploads should create a Feed post after the public video URL is saved'
+);
+assert.match(
+  workoutScript,
+  /\.from\('stories'\)[\s\S]*\.eq\('media_url', videoUrl\)[\s\S]*\.maybeSingle\(\)/,
+  'custom exercise Feed autopost should avoid duplicates by checking the uploaded video URL'
+);
+assert.match(
+  workoutScript,
+  /dbHelpers\.stories\.create\(user\.id, \{[\s\S]*media_type:\s*'video'[\s\S]*media_url:\s*videoUrl[\s\S]*thumbnail_url:\s*null[\s\S]*caption/,
+  'custom exercise Feed autopost should use the uploaded video as a normal video feed item without a fake thumbnail'
+);
+assert.match(
+  workoutScript,
+  /loadPhotoFeed\('friends-photo-feed', 'friends-feed-empty'\)/,
+  'custom exercise Feed autopost should refresh the Feed when available'
 );
 
 assert.match(

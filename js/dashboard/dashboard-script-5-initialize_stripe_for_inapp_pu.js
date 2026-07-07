@@ -21142,6 +21142,79 @@ async function awardCustomExerciseContributionXp(userId, exerciseId) {
     }
 }
 
+function hasSpecificExerciseTechniqueData(exerciseName) {
+    if (typeof getExerciseTechniqueData !== 'function') return false;
+    const technique = getExerciseTechniqueData(exerciseName);
+    return !!(technique && technique.family && technique.family !== 'Whole-body lift');
+}
+
+function buildCustomExerciseFeedCaption(exerciseName, savedExercise) {
+    const safeName = String(exerciseName || savedExercise?.exercise_name || 'new exercise').trim() || 'new exercise';
+    const lines = [`New exercise added - ${safeName}`];
+    const description = String(savedExercise?.description || '').trim();
+
+    if (description) {
+        lines.push('', description);
+    }
+
+    if (hasSpecificExerciseTechniqueData(safeName)) {
+        const technique = getExerciseTechniqueData(safeName);
+        const setupCue = Array.isArray(technique.setup) ? technique.setup[0] : '';
+        const moveCue = Array.isArray(technique.move) ? technique.move[0] : '';
+        const tips = [setupCue, moveCue].filter(Boolean).slice(0, 2);
+
+        lines.push('', `Technique: ${technique.family}. ${technique.force}`);
+        if (tips.length) {
+            lines.push('', 'Tips:');
+            tips.forEach(tip => lines.push(`- ${tip}`));
+        }
+    }
+
+    return lines.join('\n');
+}
+
+async function createCustomExerciseFeedPost(user, savedExercise, videoUrl) {
+    if (!user?.id || !savedExercise?.id || !videoUrl || !window.supabaseClient) return null;
+
+    try {
+        const { data: existing, error: existingError } = await window.supabaseClient
+            .from('stories')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('media_type', 'video')
+            .eq('media_url', videoUrl)
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+        if (existingError && existingError.code !== 'PGRST116') {
+            throw existingError;
+        }
+        if (existing) return existing;
+
+        const caption = buildCustomExerciseFeedCaption(savedExercise.exercise_name, savedExercise);
+        const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+        const story = await dbHelpers.stories.create(user.id, {
+            media_type: 'video',
+            media_url: videoUrl,
+            thumbnail_url: null,
+            caption,
+            duration: 10,
+            expires_at: expiresAt,
+            background_color: '#0f172a'
+        });
+
+        if (typeof loadPhotoFeed === 'function') {
+            loadPhotoFeed('friends-photo-feed', 'friends-feed-empty').catch(e => console.warn('Could not refresh Feed after exercise post:', e));
+        }
+
+        return story;
+    } catch (error) {
+        console.warn('Could not add custom exercise to Feed:', error);
+        return null;
+    }
+}
+
 async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoFile, exerciseName) {
     if (!user?.id || !savedExercise?.id || !videoFile) return;
 
@@ -21175,6 +21248,7 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
             window._myCustomExercisesCache = window._myCustomExercisesCache.map(ex => ex.id === savedExercise.id ? { ...ex, ...updated } : ex);
         }
         renderCustomExerciseVideoUploadComplete(exerciseName, videoUrl);
+        const feedStory = await createCustomExerciseFeedPost(user, updated || savedExercise, videoUrl);
 
         const xpResult = await awardCustomExerciseContributionXp(user.id, savedExercise.id);
         const xpMessage = Number(xpResult?.pointsAwarded || 0) > 0
@@ -21182,7 +21256,7 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
             : '';
 
         if (typeof showToast === 'function') {
-            showToast(`Video uploaded for "${exerciseName}".${xpMessage}`, 'success');
+            showToast(`Video uploaded for "${exerciseName}".${feedStory ? ' Added to Feed.' : ''}${xpMessage}`, 'success');
         }
         loadMyCustomExercises();
     } catch (uploadErr) {
