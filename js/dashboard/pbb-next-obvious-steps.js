@@ -167,6 +167,19 @@
     switchTab('learning');
   }
 
+  function openInsightsTarget(selector) {
+    try {
+      if (typeof window.openInsightsView === 'function') {
+        window.openInsightsView();
+        afterTab(function(){ scrollToSelector(selector || '#view-insights', { block: 'center' }); }, 620);
+        return;
+      }
+    } catch (error) {
+      console.warn('[next-steps] insights view failed:', error);
+    }
+    openDashboardTarget('#fitbit-performance-card,#weekly-goals-card', { block: 'center' });
+  }
+
   var ACTIONS = [
     {
       id: 'workout',
@@ -196,6 +209,15 @@
       action: function(){ openNutritionTarget('hydration'); }
     },
     {
+      id: 'steps',
+      title: 'Reach 10k steps',
+      body: 'Steps goal: check progress and add a walk if needed.',
+      cta: 'Open Steps',
+      accent: '#059669',
+      goalIds: ['steps_10k_days'],
+      action: function(){ openInsightsTarget('#insights-steps-container'); }
+    },
+    {
       id: 'weighin',
       title: 'Weigh in for the day',
       body: 'Body goal: keep the trend accurate.',
@@ -210,8 +232,17 @@
       body: 'Recovery goal: log mood, energy, and stress.',
       cta: 'Open Check-In',
       accent: '#7c3aed',
-      goalIds: ['mood_checkin_days', 'sleep_7h_nights', 'steps_10k_days'],
+      goalIds: ['mood_checkin_days'],
       action: function(){ openDashboardTarget('#mood-checkin-card', { block: 'center' }); }
+    },
+    {
+      id: 'sleep',
+      title: 'Check your sleep trend',
+      body: 'Sleep goal: review the week and protect recovery.',
+      cta: 'Open Sleep',
+      accent: '#6366f1',
+      goalIds: ['sleep_7h_nights'],
+      action: function(){ openInsightsTarget('#insights-sleep-container'); }
     },
     {
       id: 'quiz',
@@ -255,13 +286,28 @@
     return count;
   }
 
+  function isActionAvailable(action, selectedGoalIds) {
+    if (!action || !action.id) return false;
+    if (action.id === 'mood') {
+      return isVisibleSelector('#mood-checkin-card');
+    }
+    if (action.id === 'quiz') {
+      return isVisibleSelector('#daily-quiz-card');
+    }
+    if (action.id === 'weighin') {
+      if (isVisibleSelector('#daily-weigh-in-done-card')) return false;
+      return isVisibleSelector('#daily-weigh-in-card') || matchingGoalCount(action, selectedGoalIds) > 0 || selectedGoalIds.length === 0;
+    }
+    return true;
+  }
+
   function scoreAction(action, selectedGoalIds) {
+    if (!isActionAvailable(action, selectedGoalIds)) return -9999;
     var score = matchingGoalCount(action, selectedGoalIds) * 80;
     if (selectedGoalIds.length === 0) score += action.id === 'workout' ? 30 : action.id === 'nutrition' ? 26 : action.id === 'weighin' ? 22 : 10;
     if (action.id === 'weighin' && isVisibleSelector('#daily-weigh-in-card')) score += 28;
     if (action.id === 'mood' && isVisibleSelector('#mood-checkin-card')) score += 16;
     if (action.id === 'quiz' && isVisibleSelector('#daily-quiz-card')) score += 16;
-    if (action.id === 'weighin' && isVisibleSelector('#daily-weigh-in-done-card')) score -= 30;
     return score;
   }
 
@@ -273,6 +319,8 @@
         score: scoreAction(action, selectedGoalIds),
         index: index
       };
+    }).filter(function(item){
+      return item.score > -9999;
     }).sort(function(a, b){
       if (b.score !== a.score) return b.score - a.score;
       return a.index - b.index;
@@ -287,6 +335,7 @@
 
     ACTIONS.forEach(function(action){
       if (picked.length >= 3) return;
+      if (!isActionAvailable(action, selectedGoalIds)) return;
       if (!picked.some(function(item){ return item.id === action.id; })) picked.push(action);
     });
 
