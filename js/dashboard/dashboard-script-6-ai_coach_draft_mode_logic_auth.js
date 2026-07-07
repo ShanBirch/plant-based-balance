@@ -1542,9 +1542,9 @@ window.clearMessageBadges = clearMessageBadges;
 })();
 
 /**
- * Startup unread sync — queries both nudges and ig_threads for messages
- * that arrived while the app was closed. Populates the localStorage-based
- * unread badges so nothing slips through the cracks.
+ * Startup unread sync — queries unread in-app nudges that arrived while the
+ * app was closed. This intentionally excludes Instagram/FB lead threads,
+ * which belong in Shannon's admin inbox rather than the Balance app inbox.
  */
 async function syncUnreadMessagesOnStartup() {
     if (!window.supabaseClient || !window.currentUser) return;
@@ -1561,7 +1561,9 @@ async function syncUnreadMessagesOnStartup() {
             .order('created_at', { ascending: false })
             .limit(200);
 
-        var unreadSenderIds = new Set(getUnreadSenderIds());
+        // Treat the database as authoritative on startup so stale localStorage
+        // sender IDs from old sessions, IG-linked threads, or fixed bugs clear.
+        var unreadSenderIds = new Set();
 
         if (!nudgeErr && unreadNudges && unreadNudges.length) {
             unreadNudges.forEach(function(n) {
@@ -1569,48 +1571,22 @@ async function syncUnreadMessagesOnStartup() {
             });
         }
 
-        // 2. Unanswered ig_threads: last inbound newer than last outbound
-        var isAdmin = false;
-        try { isAdmin = await db.pushSubscriptions.isMainAdmin(); } catch (e) {}
+        window._unansweredIgThreadCount = 0;
 
-        if (isAdmin) {
-            var { data: igThreads, error: igErr } = await window.supabaseClient
-                .from('ig_threads')
-                .select('id, linked_user_id, last_inbound_at, last_outbound_at, profile_name')
-                .eq('coach_id', userId)
-                .not('last_inbound_at', 'is', null)
-                .order('last_inbound_at', { ascending: false })
-                .limit(100);
-
-            if (!igErr && igThreads && igThreads.length) {
-                igThreads.forEach(function(t) {
-                    var unanswered = !t.last_outbound_at || t.last_inbound_at > t.last_outbound_at;
-                    if (unanswered && t.linked_user_id) {
-                        unreadSenderIds.add(t.linked_user_id);
-                    }
-                });
-                // Store unanswered IG thread count for admin badge
-                var unansweredIgCount = igThreads.filter(function(t) {
-                    return !t.last_outbound_at || t.last_inbound_at > t.last_outbound_at;
-                }).length;
-                window._unansweredIgThreadCount = unansweredIgCount;
-            }
-        }
-
-        // 3. Persist to localStorage and update badges
+        // 2. Persist to localStorage and update badges
         var finalSenders = Array.from(unreadSenderIds);
         localStorage.setItem('unread_sender_ids', JSON.stringify(finalSenders));
         updateMessageBadges(finalSenders.length);
         refreshPanelUnreadDots();
 
-        // 4. Seed _lastDMPollTime from localStorage so polling catches
+        // 3. Seed _lastDMPollTime from localStorage so polling catches
         //    messages that arrived between sessions
         var savedPollTime = localStorage.getItem('_lastDMPollTime');
         if (savedPollTime && !window._lastDMPollTime) {
             window._lastDMPollTime = savedPollTime;
         }
 
-        console.log('[StartupSync] Synced unread: ' + finalSenders.length + ' senders from nudges+ig_threads');
+        console.log('[StartupSync] Synced unread: ' + finalSenders.length + ' senders from in-app nudges');
     } catch (e) {
         console.warn('[StartupSync] Error:', e);
     }
@@ -1668,33 +1644,9 @@ async function checkAdminUnrespondedMessages() {
             }
         }
 
-        // Also check ig_threads for unanswered IG/FB conversations
-        try {
-            var { data: igThreads, error: igErr } = await window.supabaseClient
-                .from('ig_threads')
-                .select('id, linked_user_id, last_inbound_at, last_outbound_at, profile_name')
-                .eq('coach_id', userId)
-                .not('last_inbound_at', 'is', null)
-                .neq('lead_stage', 'churned')
-                .order('last_inbound_at', { ascending: false })
-                .limit(100);
-
-            if (!igErr && igThreads && igThreads.length) {
-                window._unansweredIgThreads = [];
-                igThreads.forEach(function(t) {
-                    var unanswered = !t.last_outbound_at || t.last_inbound_at > t.last_outbound_at;
-                    if (unanswered) {
-                        unrespondedCount++;
-                        window._unansweredIgThreads.push(t);
-                        if (t.linked_user_id && unrespondedPartners.indexOf(t.linked_user_id) === -1) {
-                            unrespondedPartners.push(t.linked_user_id);
-                        }
-                    }
-                });
-            }
-        } catch (igE) {
-            console.warn('[AdminUnresponded] ig_threads check failed:', igE);
-        }
+        // IG/FB lead conversations are handled by the admin lead inbox. Keep
+        // this app-level pulse scoped to Balance in-app DMs only.
+        window._unansweredIgThreads = [];
 
         window._adminUnrespondedCount = unrespondedCount;
         window._adminUnrespondedPartners = unrespondedPartners;

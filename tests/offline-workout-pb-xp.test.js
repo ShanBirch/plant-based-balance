@@ -57,11 +57,11 @@ assert.ok(
 );
 
 assert.ok(
-    dashboardSource.includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=130') &&
+    dashboardSource.includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=131') &&
         dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=17') &&
         dashboardSource.includes('js/dashboard/script_part_2.js?v=9') &&
-        scriptPart2.includes('lib/supabase.js?v=9') &&
-        swSource.includes('./lib/supabase.js?v=9') &&
+        scriptPart2.includes('lib/supabase.js?v=10') &&
+        swSource.includes('./lib/supabase.js?v=10') &&
         swSource.includes('./js/dashboard/script_part_2.js?v=9') &&
         swSource.includes('./js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=130') &&
         swSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=17'),

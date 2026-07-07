@@ -7,7 +7,7 @@ const ASSETS = [
   './xp-guide.html',
   './assets/balance_logo.png',
   './welcome.html',
-  './lib/supabase.js?v=9',
+  './lib/supabase.js?v=10',
   './lib/auth-guard.js?v=8',
   './lib/native-push.js?v=38',
   './login.html',
