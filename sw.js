@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v240'; // v240: force Feed latest-first script refresh; v239: add payment portal and progress photo camera timer
+const CACHE_NAME = 'pbb-app-v241'; // v241: force B2 exercise video upload helper refresh; v240: force Feed latest-first script refresh
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -7,16 +7,16 @@ const ASSETS = [
   './xp-guide.html',
   './assets/balance_logo.png',
   './welcome.html',
-  './lib/supabase.js?v=6',
+  './lib/supabase.js?v=8',
   './lib/auth-guard.js?v=8',
   './lib/native-push.js?v=38',
   './login.html',
   './exercise_videos.js?v=20260628-pushup-progression',
   './workout_library.js',
   './workout_library_extended.js',
-  './js/dashboard/script_part_2.js?v=6',
+  './js/dashboard/script_part_2.js?v=8',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=57',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=124',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=127',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream',
   './js/dashboard/dashboard-script-10-points_widget_functions.js?v=17',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=7',
