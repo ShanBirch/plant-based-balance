@@ -36,9 +36,42 @@ function paymentLinkMessage(title, copy) {
         + '</head><body><main><h1>' + title + '</h1><p>' + copy + '</p></main></body></html>';
 }
 
+async function getPaymentUpdateConfigurationId(stripe, returnUrl) {
+    const marker = "balance_payment_update_link_v1";
+    const configs = await stripe.billingPortal.configurations.list({
+        active: true,
+        limit: 100
+    });
+    const existing = configs.data.find((config) => config?.metadata?.balance_portal_kind === marker);
+    if (existing?.id) return existing.id;
+
+    const created = await stripe.billingPortal.configurations.create({
+        name: "Balance card update",
+        default_return_url: returnUrl,
+        features: {
+            payment_method_update: { enabled: true },
+            invoice_history: { enabled: true }
+        },
+        business_profile: {
+            headline: "Update your Balance payment method"
+        },
+        metadata: {
+            balance_portal_kind: marker
+        }
+    });
+    return created.id;
+}
+
 async function createPaymentMethodPortalSession(stripe, customerId, returnUrl) {
+    let configuration = null;
     try {
-        return await stripe.billingPortal.sessions.create({
+        configuration = await getPaymentUpdateConfigurationId(stripe, returnUrl);
+    } catch (error) {
+        console.warn("[billing-portal] could not prepare card update configuration:", error?.message || error);
+    }
+
+    try {
+        const sessionArgs = {
             customer: customerId,
             return_url: returnUrl,
             flow_data: {
@@ -50,13 +83,17 @@ async function createPaymentMethodPortalSession(stripe, customerId, returnUrl) {
                     }
                 }
             }
-        });
+        };
+        if (configuration) sessionArgs.configuration = configuration;
+        return await stripe.billingPortal.sessions.create(sessionArgs);
     } catch (error) {
         console.warn("[billing-portal] payment method deep link failed, falling back:", error?.message || error);
-        return await stripe.billingPortal.sessions.create({
+        const sessionArgs = {
             customer: customerId,
             return_url: returnUrl
-        });
+        };
+        if (configuration) sessionArgs.configuration = configuration;
+        return await stripe.billingPortal.sessions.create(sessionArgs);
     }
 }
 
