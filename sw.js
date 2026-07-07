@@ -278,10 +278,28 @@ function getFeedCommentStoryId(notificationData) {
   }
 }
 
+function getFeedCommentCommentId(notificationData) {
+  const direct = notificationData.commentId || notificationData.comment_id || '';
+  if (direct) return String(direct);
+
+  const rawUrl = notificationData.url || '';
+  try {
+    const parsed = new URL(rawUrl, self.location.origin);
+    return parsed.searchParams.get('comment_id') || '';
+  } catch (_) {
+    const match = String(rawUrl).match(/[?&]comment_id=([^&#]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+}
+
 function getFeedCommentOpenUrl(notificationData) {
-  if (notificationData.url) return notificationData.url;
   const storyId = getFeedCommentStoryId(notificationData);
-  if (storyId) return `./dashboard.html?action=open_feed_post&story_id=${encodeURIComponent(storyId)}`;
+  const commentId = getFeedCommentCommentId(notificationData);
+  if (storyId) {
+    const commentPart = commentId ? `&comment_id=${encodeURIComponent(commentId)}` : '';
+    return `./dashboard.html?action=open_feed_post&story_id=${encodeURIComponent(storyId)}${commentPart}`;
+  }
+  if (notificationData.url) return notificationData.url;
   return './dashboard.html';
 }
 
@@ -324,6 +342,7 @@ self.addEventListener('notificationclick', (e) => {
       // Handle Feed comment notifications
       else if (notificationData.type === 'feed_comment') {
         const storyId = getFeedCommentStoryId(notificationData);
+        const commentId = getFeedCommentCommentId(notificationData);
         const openUrl = getFeedCommentOpenUrl(notificationData);
 
         for (let client of clientList) {
@@ -332,6 +351,7 @@ self.addEventListener('notificationclick', (e) => {
               client.postMessage({
                 type: 'feed_comment_click',
                 storyId: storyId,
+                commentId: commentId,
                 url: openUrl
               });
               return client;
