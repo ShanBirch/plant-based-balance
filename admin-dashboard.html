@@ -12869,7 +12869,7 @@
             const directRows = [];
             const otherRows = [];
             rows.filter(a => a.status === 'pending').forEach(row => {
-                if (isCoachActionReceipt(row) || isAppSuggestionAlert(row) || isSupportedTahliaSocialApprovalAlert(row) || isSupportVerificationNeedsYouAlert(row)) directRows.push(row);
+                if (isCoachActionReceipt(row) || isAppSuggestionAlert(row) || isSupportedTahliaSocialApprovalAlert(row) || isSupportVerificationNeedsYouAlert(row) || isFormCheckSelfTestNeedsYouAlert(row)) directRows.push(row);
                 else if (DM_ALERT_TYPES.includes(row.alert_type)) dmRows.push(row);
                 else otherRows.push(row);
             });
