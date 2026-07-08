@@ -6848,21 +6848,10 @@ function logWaterWithPhoto() {
 }
 
 // --- Water Entry Sheet ---
-let _waterPhotoFile = null;
-
 function openWaterEntrySheet() {
-    _waterPhotoFile = null;
-    const preview = document.getElementById('water-photo-preview');
-    if (preview) {
-        preview.innerHTML = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span style="color:#0369a1; font-size:0.8rem; margin-top:8px;">Add photo (optional)</span>`;
-        preview.style.border = '2px dashed #7dd3fc';
-        preview.style.padding = '';
-    }
     const input = document.getElementById('water-amount-input');
     if (input) input.value = '';
     document.querySelectorAll('.water-amount-btn').forEach(btn => btn.classList.remove('selected'));
-    const fileInput = document.getElementById('water-photo-input');
-    if (fileInput) fileInput.value = '';
 
     const sheet = document.getElementById('water-entry-sheet');
     const overlay = document.getElementById('water-entry-overlay');
@@ -6875,7 +6864,6 @@ function closeWaterEntrySheet() {
     const overlay = document.getElementById('water-entry-overlay');
     if (sheet) sheet.style.display = 'none';
     if (overlay) overlay.style.display = 'none';
-    _waterPhotoFile = null;
 }
 
 function setWaterAmount(ml) {
@@ -6890,18 +6878,6 @@ function clearWaterAmountBtnSelection() {
     document.querySelectorAll('.water-amount-btn').forEach(btn => btn.classList.remove('selected'));
 }
 
-function handleWaterPhotoSelected(input) {
-    if (!input.files || !input.files[0]) return;
-    _waterPhotoFile = input.files[0];
-    const url = URL.createObjectURL(_waterPhotoFile);
-    const preview = document.getElementById('water-photo-preview');
-    if (preview) {
-        preview.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">`;
-        preview.style.border = 'none';
-        preview.style.padding = '0';
-    }
-}
-
 async function confirmWaterEntry() {
     const input = document.getElementById('water-amount-input');
     const ml = parseInt(input?.value);
@@ -6913,27 +6889,6 @@ async function confirmWaterEntry() {
     closeWaterEntrySheet();
     addWaterMl(ml);
     if (typeof showToast === 'function') showToast(`\u{1F4A7} ${ml}ml water logged!`, 'success');
-
-    // Upload photo and save meal record in background (optional, non-blocking)
-    if (_waterPhotoFile) {
-        const photoFile = _waterPhotoFile;
-        _waterPhotoFile = null;
-        try {
-            const photoUrl = await uploadMealPhoto(photoFile);
-            await saveMealLogWithType({
-                photoUrl,
-                foodItems: [{ name: `Water (${ml}ml)` }],
-                totals: { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0 },
-                micronutrients: {},
-                notes: `${ml}ml`,
-                inputMethod: 'photo',
-                mealType: 'water'
-            });
-            if (typeof loadTodayNutrition === 'function') loadTodayNutrition();
-        } catch (e) {
-            console.error('Water photo save failed (non-fatal):', e);
-        }
-    }
 }
 
 // Save hydration to daily_checkins table (stores total ml for the day)
