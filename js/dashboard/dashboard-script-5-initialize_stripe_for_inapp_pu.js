@@ -16797,6 +16797,260 @@ let shareSelection = {
     selectedSetIndices: [] // For 'multi_select' mode - array of set indices
 };
 
+const MILESTONE_FEED_SHARE_XP = 10;
+const SHAREABLE_WORKOUT_COUNT_MILESTONES = [5, 10, 25, 50, 100, 200, 365];
+const SHAREABLE_WORKOUT_STREAK_MILESTONES = [7, 14, 30];
+const MILESTONE_CELEBRATION_SEEN_KEY = 'pbb_seen_milestone_celebrations';
+let milestoneCelebrationState = {
+    milestone: null,
+    cardPayload: null,
+    isSharing: false
+};
+
+function getSeenMilestoneCelebrations() {
+    try {
+        const raw = localStorage.getItem(MILESTONE_CELEBRATION_SEEN_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function markMilestoneCelebrationSeen(milestone) {
+    const key = getMilestoneCelebrationKey(milestone);
+    if (!key) return;
+    const seen = getSeenMilestoneCelebrations();
+    if (!seen.includes(key)) {
+        seen.push(key);
+        try {
+            localStorage.setItem(MILESTONE_CELEBRATION_SEEN_KEY, JSON.stringify(seen.slice(-80)));
+        } catch (error) {
+            console.warn('Could not store milestone celebration state:', error);
+        }
+    }
+}
+
+function getMilestoneCelebrationKey(milestone) {
+    if (!milestone) return '';
+    if (milestone.id) return String(milestone.id);
+    return [milestone.milestone_type || 'milestone', milestone.milestone_value || ''].join(':');
+}
+
+function getShareableMilestone(milestones) {
+    const seen = getSeenMilestoneCelebrations();
+    return (Array.isArray(milestones) ? milestones : []).find(milestone => {
+        if (!milestone || !milestone.id) return false;
+        const value = Number(milestone.milestone_value || 0);
+        const type = String(milestone.milestone_type || '').toLowerCase();
+        const key = getMilestoneCelebrationKey(milestone);
+        if (key && seen.includes(key)) return false;
+        if (type === 'workout_count') return SHAREABLE_WORKOUT_COUNT_MILESTONES.includes(value);
+        if (type === 'workout_streak') return SHAREABLE_WORKOUT_STREAK_MILESTONES.includes(value);
+        return false;
+    }) || null;
+}
+
+function getMilestoneCelebrationTitle(milestone) {
+    const value = Number(milestone?.milestone_value || 0);
+    const type = String(milestone?.milestone_type || '').toLowerCase();
+    if (type === 'workout_streak') return `${value}-day streak`;
+    if (type === 'workout_count') return `${value} workouts complete`;
+    return 'Milestone unlocked';
+}
+
+function getMilestoneCelebrationValueLabel(milestone) {
+    const value = Number(milestone?.milestone_value || 0);
+    const type = String(milestone?.milestone_type || '').toLowerCase();
+    if (type === 'workout_streak') return `${value} days`;
+    if (type === 'workout_count') return `${value} workouts`;
+    return value ? String(value) : '';
+}
+
+function buildMilestoneFeedCardPayload(milestone) {
+    const workoutName = completedWorkoutDataForShare?.workoutName || window.currentWorkoutName || 'Workout';
+    const message = String(milestone?.message || getMilestoneCelebrationTitle(milestone)).replace(/\s+/g, ' ').trim();
+    return {
+        card_type: 'milestone',
+        title: getMilestoneCelebrationTitle(milestone),
+        message,
+        value_label: getMilestoneCelebrationValueLabel(milestone),
+        milestone_type: milestone?.milestone_type || 'workout_milestone',
+        milestone_value: milestone?.milestone_value || null,
+        workout_name: workoutName,
+        share_points: MILESTONE_FEED_SHARE_XP,
+        share_caption: `${message} Shared from Balance.`
+    };
+}
+
+function ensureMilestoneCelebrationModal() {
+    let modal = document.getElementById('milestone-celebration-modal');
+    if (modal) return modal;
+
+    modal = document.createElement('div');
+    modal.id = 'milestone-celebration-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.style.cssText = 'display:none; position:fixed; inset:0; z-index:100050; background:rgba(15,23,42,0.72); backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:calc(18px + env(safe-area-inset-top, 0px)) 18px calc(18px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box;';
+    modal.innerHTML = `
+        <div style="width:100%; max-width:390px; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; background:#fffdf8; border-radius:22px; box-shadow:0 28px 80px rgba(0,0,0,0.34); border:1px solid rgba(245,158,11,0.28); color:#1f2937; -webkit-text-fill-color:#1f2937;">
+            <div style="position:relative; padding:26px 22px 20px; text-align:center; background:linear-gradient(160deg,#78350f 0%,#d97706 62%,#facc15 100%); color:white; -webkit-text-fill-color:white; overflow:hidden;">
+                <button type="button" onclick="closeMilestoneCelebrationModal()" aria-label="Close" style="position:absolute; top:12px; right:12px; width:34px; height:34px; border:none; border-radius:50%; background:rgba(255,255,255,0.22); color:white; -webkit-text-fill-color:white; font-size:1.3rem; line-height:1; cursor:pointer;">&times;</button>
+                <div style="position:absolute; top:-32px; right:-20px; font-size:7rem; opacity:0.1;">&#127942;</div>
+                <div style="font-size:3.1rem; margin-bottom:8px;">&#127881;</div>
+                <div style="font-size:0.72rem; font-weight:900; letter-spacing:1.8px; text-transform:uppercase; opacity:0.9;">Milestone unlocked</div>
+                <h2 id="milestone-celebration-title" style="margin:10px 0 0; font-family:'Playfair Display',serif; font-size:1.65rem; line-height:1.12; color:white; -webkit-text-fill-color:white;"></h2>
+            </div>
+            <div style="padding:22px;">
+                <div id="milestone-celebration-message" style="font-size:0.96rem; line-height:1.45; font-weight:750; color:#374151; -webkit-text-fill-color:#374151; text-align:center; margin-bottom:16px;"></div>
+                <div style="display:flex; align-items:center; justify-content:center; gap:10px; background:#fff7ed; border:1px solid #fed7aa; border-radius:14px; padding:12px 14px; color:#92400e; -webkit-text-fill-color:#92400e; font-size:0.86rem; font-weight:850; margin-bottom:16px;">
+                    <span>&#9889;</span>
+                    <span>Share the celebration to Feed for +10 XP</span>
+                </div>
+                <button id="milestone-celebration-share-btn" type="button" onclick="shareMilestoneCelebrationToFeed()" style="width:100%; min-height:50px; border:none; border-radius:14px; background:linear-gradient(135deg,#0f766e,#2563eb); color:white; -webkit-text-fill-color:white; font-size:0.95rem; font-weight:900; cursor:pointer; box-shadow:0 12px 26px rgba(37,99,235,0.22);">Share to Feed +10 XP</button>
+                <button type="button" onclick="closeMilestoneCelebrationModal()" style="width:100%; margin-top:10px; min-height:44px; border:none; border-radius:12px; background:#f3f4f6; color:#4b5563; -webkit-text-fill-color:#4b5563; font-size:0.9rem; font-weight:800; cursor:pointer;">Not now</button>
+                <div id="milestone-celebration-status" style="display:none; margin-top:12px; text-align:center; font-size:0.82rem; line-height:1.35; font-weight:800;"></div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+}
+
+function showMilestoneCelebrationPopup(milestone) {
+    if (!milestone) return;
+    milestoneCelebrationState = {
+        milestone,
+        cardPayload: buildMilestoneFeedCardPayload(milestone),
+        isSharing: false
+    };
+
+    const modal = ensureMilestoneCelebrationModal();
+    const title = document.getElementById('milestone-celebration-title');
+    const message = document.getElementById('milestone-celebration-message');
+    const status = document.getElementById('milestone-celebration-status');
+    const button = document.getElementById('milestone-celebration-share-btn');
+    if (title) title.textContent = milestoneCelebrationState.cardPayload.title;
+    if (message) message.textContent = milestoneCelebrationState.cardPayload.message;
+    if (status) {
+        status.style.display = 'none';
+        status.textContent = '';
+    }
+    if (button) {
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.textContent = 'Share to Feed +10 XP';
+    }
+    modal.style.display = 'flex';
+    markMilestoneCelebrationSeen(milestone);
+}
+
+function maybeShowMilestoneCelebrationPopup(milestones) {
+    const milestone = getShareableMilestone(milestones);
+    if (!milestone) return;
+    setTimeout(() => showMilestoneCelebrationPopup(milestone), 650);
+}
+
+function closeMilestoneCelebrationModal() {
+    const modal = document.getElementById('milestone-celebration-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function shareMilestoneCelebrationToFeed() {
+    if (milestoneCelebrationState.isSharing) return;
+    const milestone = milestoneCelebrationState.milestone;
+    const cardPayload = milestoneCelebrationState.cardPayload;
+    const userId = window.currentUser?.id;
+    const button = document.getElementById('milestone-celebration-share-btn');
+    const status = document.getElementById('milestone-celebration-status');
+
+    if (!userId || !milestone || !cardPayload) {
+        if (status) {
+            status.style.display = 'block';
+            status.style.color = '#b91c1c';
+            status.style.webkitTextFillColor = '#b91c1c';
+            status.textContent = 'Could not find the milestone to share.';
+        }
+        return;
+    }
+
+    milestoneCelebrationState.isSharing = true;
+    if (button) {
+        button.disabled = true;
+        button.style.opacity = '0.72';
+        button.textContent = 'Sharing...';
+    }
+    if (status) {
+        status.style.display = 'block';
+        status.style.color = '#475569';
+        status.style.webkitTextFillColor = '#475569';
+        status.textContent = 'Posting your celebration card...';
+    }
+
+    try {
+        const story = await dbHelpers.stories.create(userId, {
+            media_type: 'workout_card',
+            media_url: '',
+            thumbnail_url: null,
+            caption: JSON.stringify(cardPayload),
+            duration: 5,
+            background_color: '#92400e',
+            expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+        });
+
+        let pointsAwarded = 0;
+        if (story?.id && window.db?.points && typeof window.db.points.awardPoints === 'function') {
+            const awardResult = await window.db.points.awardPoints(userId, 'milestone_feed_share', milestone.id, {
+                aiConfidence: 'high'
+            });
+            pointsAwarded = Number(awardResult?.pointsAwarded || 0);
+        }
+
+        if (typeof loadPhotoFeed === 'function') {
+            loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
+        }
+        if (typeof window.loadFeedCommunityPulse === 'function') {
+            window.loadFeedCommunityPulse({ force: true }).catch(error => console.warn('Pulse refresh error:', error));
+        }
+        if (typeof loadStoriesCarousel === 'function') {
+            loadStoriesCarousel().catch(error => console.warn('Stories carousel refresh error:', error));
+        }
+
+        if (status) {
+            status.style.color = '#047857';
+            status.style.webkitTextFillColor = '#047857';
+            status.textContent = pointsAwarded > 0
+                ? `Shared to Feed. +${pointsAwarded} XP earned.`
+                : 'Shared to Feed.';
+        }
+        if (button) {
+            button.textContent = 'Shared';
+            button.style.opacity = '0.9';
+        }
+        if (typeof showToast === 'function') {
+            showToast(pointsAwarded > 0 ? `Milestone shared! +${pointsAwarded} XP` : 'Milestone shared to Feed', 'success');
+        }
+        setTimeout(closeMilestoneCelebrationModal, 900);
+    } catch (error) {
+        console.error('Error sharing milestone celebration:', error);
+        if (status) {
+            status.style.color = '#b91c1c';
+            status.style.webkitTextFillColor = '#b91c1c';
+            status.textContent = error?.message || 'Could not share milestone. Try again.';
+        }
+        if (button) {
+            button.disabled = false;
+            button.style.opacity = '1';
+            button.textContent = 'Try again';
+        }
+    } finally {
+        milestoneCelebrationState.isSharing = false;
+    }
+}
+
+window.closeMilestoneCelebrationModal = closeMilestoneCelebrationModal;
+window.shareMilestoneCelebrationToFeed = shareMilestoneCelebrationToFeed;
+
 async function showWorkoutSuccessScreen(duration, improvements, milestones, workoutData, newPBs = []) {
     hideAllAppViews();
 
@@ -16911,6 +17165,8 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
     if (typeof window.renderPostWorkoutShareMenu === 'function') {
         window.renderPostWorkoutShareMenu();
     }
+
+    maybeShowMilestoneCelebrationPopup(milestones);
 
     // Push navigation state for Android back button
     pushNavigationState('view-workout-success', () => closeSuccessScreen());
