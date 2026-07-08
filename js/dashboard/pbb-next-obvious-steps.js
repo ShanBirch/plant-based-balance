@@ -12,6 +12,7 @@
   var PREVIEW_STORAGE_KEY = 'pbb_next_steps_preview';
   var SHOW_ALL_STORAGE_KEY = 'pbb_next_steps_show_all';
   var COMPLETION_XP = 10;
+  var DEFAULT_ACTION_IDS = ['workout', 'nutrition', 'hydration', 'steps', 'weighin', 'mood', 'quiz'];
   var SHANNON_EMAILS = [
     'shannonbirch@cocospersonaltraining.com',
     'shannonrhysbirch@gmail.com'
@@ -380,8 +381,46 @@
     return ACTIONS.filter(function(action){ return matchingGoalCount(action, selectedGoalIds) > 0; });
   }
 
+  function actionById(actionId) {
+    return ACTIONS.find(function(action){ return action.id === actionId; }) || null;
+  }
+
+  function addUniqueAction(list, action) {
+    if (!action || list.some(function(item){ return item.id === action.id; })) return;
+    list.push(action);
+  }
+
+  function isActionTargetable(action, selectedGoalIds) {
+    if (!action || !action.id) return false;
+    if (action.id === 'mood') {
+      return isVisibleSelector('#mood-checkin-card') || isActionComplete(action);
+    }
+    if (action.id === 'quiz') {
+      return isVisibleSelector('#daily-quiz-card') || isActionComplete(action);
+    }
+    if (action.id === 'weighin') {
+      return isVisibleSelector('#daily-weigh-in-card') || isVisibleSelector('#daily-weigh-in-done-card') || matchingGoalCount(action, selectedGoalIds) > 0;
+    }
+    return true;
+  }
+
+  function dailyActionSet(selectedGoalIds) {
+    var picked = [];
+    goalMatchedActions(selectedGoalIds).forEach(function(action){
+      if (isActionTargetable(action, selectedGoalIds)) addUniqueAction(picked, action);
+    });
+
+    DEFAULT_ACTION_IDS.forEach(function(actionId){
+      if (picked.length >= 3) return;
+      var action = actionById(actionId);
+      if (isActionTargetable(action, selectedGoalIds)) addUniqueAction(picked, action);
+    });
+
+    return picked.slice(0, 3);
+  }
+
   function completionActionSet(selectedGoalIds) {
-    return goalMatchedActions(selectedGoalIds);
+    return dailyActionSet(selectedGoalIds);
   }
 
   function matchingGoalCount(action, selectedGoalIds) {
@@ -427,17 +466,17 @@
   function pickSuggestions() {
     var selectedGoalIds = getSelectedGoalIds();
     if (isShowAllEnabled()) return ACTIONS.slice();
-    if (!selectedGoalIds.length) return [];
     if (areDailyActionsComplete(selectedGoalIds)) return [];
 
-    var ranked = ACTIONS.map(function(action, index){
+    var targetActions = dailyActionSet(selectedGoalIds);
+    var ranked = targetActions.map(function(action, index){
       return {
         action: action,
         score: scoreAction(action, selectedGoalIds),
         index: index
       };
     }).filter(function(item){
-      return matchingGoalCount(item.action, selectedGoalIds) > 0 && item.score > -9999;
+      return item.score > -9999;
     }).sort(function(a, b){
       if (b.score !== a.score) return b.score - a.score;
       return a.index - b.index;
@@ -446,7 +485,6 @@
     var picked = [];
     ranked.forEach(function(item){
       if (picked.length >= 3) return;
-      if (item.score <= 0 && selectedGoalIds.length > 0 && picked.length >= 2) return;
       picked.push(item.action);
     });
 
