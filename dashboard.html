@@ -12886,7 +12886,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'friends', sel:'#feed-composer-card', title:'Text post styles', body:"Text-only posts now use big type, smaller notes, and different font styles like a proper social card.", quick: true },
     { tab:'friends', sel:'#feed-composer-share-menu-button,#feed-composer-card', title:'Share from Feed', body:"Use Share to post a meal, choose a workout or PB, or film a set without leaving Feed.", quick: true },
     { tab:'friends', sel:'#feed-composer-share-menu-button,#feed-composer-card', title:'Share a Song', body:"Connect Spotify, play a track, then use Share a Song to post a music vibe card with album art and an Open in Spotify link.", quick: true },
-    { tab:'friends', sel:'#friends-photo-feed .feed-post-card,#friends-feed-section', fallbackSel:'#feed-composer-card', title:'Double-tap to like', fallbackTitle:'Double-tap to like', body:"Tap a photo once to open it. Tap a video once to play it in Feed. Double-tap any Feed photo or video to send a heart reaction.", fallbackBody:"Post media works like Instagram. Videos play with one tap, photos open with one tap, and double-tap sends a heart once posts are showing.", quick: true, condition: function(){ return !!document.getElementById('friends-feed-section') || !!document.getElementById('feed-composer-card'); } },
+    { tab:'friends', sel:'#friends-photo-feed .feed-post-card,#friends-feed-section', fallbackSel:'#feed-composer-card', title:'Double-tap to like', fallbackTitle:'Double-tap to like', body:"Double-tap any Feed photo, video, or card to send a heart reaction. Videos still play with one tap.", fallbackBody:"Post media works like Instagram. Videos play with one tap, and double-tap sends a heart once posts are showing.", quick: true, condition: function(){ return !!document.getElementById('friends-feed-section') || !!document.getElementById('feed-composer-card'); } },
     { tab:'friends', sel:'.feed-post-actions-btn', title:'Post actions', body:"Tap the three dots on one of your own feed posts to edit or delete it.", quick: true, condition: function(){ return !!document.querySelector('.feed-post-actions-btn'); } },
     { tab:'friends', sel:'.feed-comment-like-btn', title:'Like feed comments', body:"Tap the heart beside a feed comment to like it.", quick: true, condition: function(){ return !!document.querySelector('.feed-comment-like-btn'); } },
     { tab:'friends', sel:'#friends-photo-feed .feed-post-card,#friends-feed-section', fallbackSel:'#feed-composer-card', title:'Tag people in comments', fallbackTitle:'Tag people in comments', body:"Type @ in a Feed comment to search people and tag them.", fallbackBody:"Type @ in Feed comments to search people and tag them once posts are showing.", quick: true, condition: function(){ return !!document.getElementById('friends-feed-section') || !!document.getElementById('feed-composer-card'); } },
@@ -14020,19 +14020,19 @@ if(!window._pbbIsIOSSafari) {
     fallbackSel: '#feed-composer-card',
     title: 'Feed media controls',
     fallbackTitle: 'Feed media controls',
-    body: "Tap a photo once to open it. Tap a video once to play it in Feed. Double-tap any Feed photo or video to send a heart reaction.",
-    fallbackBody: "Post media works like Instagram. Videos play with one tap, photos open with one tap, and double-tap sends a heart once posts are showing.",
+    body: "Double-tap any Feed photo, video, or card to send a heart reaction. Videos still play with one tap.",
+    fallbackBody: "Post media works like Instagram. Videos play with one tap, and double-tap sends a heart once posts are showing.",
     condition: function(){ return !!document.getElementById('friends-feed-section') || !!document.getElementById('feed-composer-card'); }
   });
   allFeatures.push({
-    id: 'feed-double-tap-love-v1',
+    id: 'feed-double-tap-love-v2',
     tab: 'friends',
     sel: '#friends-photo-feed .feed-post-card,#friends-feed-section',
     fallbackSel: '#feed-composer-card',
     title: 'Double-tap to like',
     fallbackTitle: 'Double-tap to like',
-    body: "Double-tap any Feed photo or video to send a heart reaction. Tap photos once to open them, and tap videos once to play in Feed.",
-    fallbackBody: "Once posts are showing, double-tap any Feed photo or video to send a heart reaction.",
+    body: "Double-tap any Feed photo, video, or card to send a heart reaction. Videos still play with one tap.",
+    fallbackBody: "Once posts are showing, double-tap any Feed photo, video, or card to send a heart reaction.",
     condition: function(){ return !!document.getElementById('friends-feed-section') || !!document.getElementById('feed-composer-card'); }
   });
   allFeatures.push({
