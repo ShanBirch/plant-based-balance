@@ -608,9 +608,9 @@
         safeSupabaseQuery(function(supabase){ return supabase.from('stories').select('id,media_type,created_at').eq('user_id', userId).gte('created_at', range.startIso).lt('created_at', range.endIso).limit(1); }),
         safeSupabaseQuery(function(supabase){ return supabase.from('fitbit_daily_activity').select('date,steps').eq('user_id', userId).in('date', [dateKey, yKey]); }),
         safeSupabaseQuery(function(supabase){ return supabase.from('oura_daily_activity').select('date,steps').eq('user_id', userId).in('date', [dateKey, yKey]); }),
-        safeSupabaseQuery(function(supabase){ return supabase.from('fitbit_sleep').select('date,duration_minutes').eq('user_id', userId).in('date', [dateKey, yKey]); }),
-        safeSupabaseQuery(function(supabase){ return supabase.from('oura_sleep').select('date,total_sleep_minutes').eq('user_id', userId).in('date', [dateKey, yKey]); }),
-        safeSupabaseQuery(function(supabase){ return supabase.from('whoop_sleep').select('date,duration_minutes').eq('user_id', userId).in('date', [dateKey, yKey]); }),
+        safeSupabaseQuery(function(supabase){ return supabase.from('fitbit_sleep').select('date,duration_minutes').eq('user_id', userId).eq('date', dateKey); }),
+        safeSupabaseQuery(function(supabase){ return supabase.from('oura_sleep').select('date,total_sleep_minutes').eq('user_id', userId).eq('date', dateKey); }),
+        safeSupabaseQuery(function(supabase){ return supabase.from('whoop_sleep').select('date,duration_minutes').eq('user_id', userId).eq('date', dateKey); }),
         getNativeSteps()
       ]);
 
