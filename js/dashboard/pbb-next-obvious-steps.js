@@ -215,7 +215,7 @@
       cta: 'Open Steps',
       accent: '#059669',
       goalIds: ['steps_10k_days'],
-      action: function(){ openInsightsTarget('#insights-steps-container'); }
+      action: function(){ openDashboardTarget('#fitbit-performance-card', { block: 'center' }); }
     },
     {
       id: 'weighin',

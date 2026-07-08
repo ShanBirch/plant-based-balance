@@ -1,5 +1,8 @@
 // ===== ACTIVITY INSIGHTS VIEW =====
 
+    let _insightsStepRefreshInFlight = false;
+    let _insightsLastStepRefreshAt = 0;
+
     function openInsightsView() {
         if (typeof hideAllAppViews === 'function') hideAllAppViews();
         const viewEl = document.getElementById('view-insights');
@@ -10,7 +13,9 @@
         }
         const nav = document.getElementById('bottom-nav');
         if (nav) nav.style.display = 'none';
-        initInsightsView();
+        initInsightsView().then(function(){
+            refreshInsightsStepData({ force: true });
+        });
         if (typeof pushNavigationState === 'function') {
             pushNavigationState('view-insights', closeInsightsView);
         } else {
@@ -44,6 +49,7 @@
 
         try {
             await _syncNativeHealthForInsights(userId);
+            const liveHealthSummary = await _getLiveNativeHealthSummaryForInsights();
 
             const [exerciseHistoryResult, weighInsResult, sleepResult, nutritionResult, wearableCaloriesResult, quizResult, moodResult, stepsResult] = await Promise.allSettled([
                 supabaseClient
@@ -80,7 +86,10 @@
             const wearableCalories = wearableCaloriesResult.status === 'fulfilled' ? (wearableCaloriesResult.value || []) : [];
             const quizData = quizResult.status === 'fulfilled' ? (quizResult.value || {}) : {};
             const moodLogs = moodResult.status === 'fulfilled' ? (moodResult.value || []) : [];
-            const stepsData = stepsResult.status === 'fulfilled' ? (stepsResult.value || []) : [];
+            const stepsData = _mergeTodayStepsFromNativeSummary(
+                stepsResult.status === 'fulfilled' ? (stepsResult.value || []) : [],
+                liveHealthSummary
+            );
 
             const strengthGains = _computeStrengthGains(exerciseHistory);
 
@@ -120,10 +129,101 @@
 
             if (loadingEl) loadingEl.style.display = 'none';
             if (contentEl) contentEl.style.display = 'block';
+            refreshInsightsStepData({ delayMs: 15000 });
         } catch (err) {
             console.warn('Insights load error:', err);
             if (loadingEl) loadingEl.style.display = 'none';
             if (contentEl) contentEl.style.display = 'block';
+        }
+    }
+
+    function _isInsightsViewOpen() {
+        const viewEl = document.getElementById('view-insights');
+        return !!(viewEl && viewEl.style.display !== 'none');
+    }
+
+    async function _getLiveNativeHealthSummaryForInsights() {
+        if (!window.NativeHealth || typeof window.NativeHealth.getSummary !== 'function') return null;
+        try {
+            let ready = !!window._nativeHealthReady;
+            if (!ready && typeof window.NativeHealth.checkPermission === 'function') {
+                ready = await window.NativeHealth.checkPermission();
+            }
+            if (!ready) return null;
+
+            const summary = await window.NativeHealth.getSummary();
+            if (summary) {
+                window._pbbLastNativeHealthSummary = summary;
+                if (typeof updateDashboardWithHealthData === 'function') {
+                    updateDashboardWithHealthData(summary);
+                }
+            }
+            return summary || null;
+        } catch (err) {
+            console.warn('[Insights] Live native health summary skipped:', err);
+            return null;
+        }
+    }
+
+    function _mergeTodayStepsFromNativeSummary(stepsData, summary) {
+        const rows = Array.isArray(stepsData) ? stepsData.slice() : [];
+        const steps = Number(summary && summary.steps);
+        if (!Number.isFinite(steps) || steps <= 0) return rows;
+
+        const today = typeof getLocalDateString === 'function' ? getLocalDateString() : new Date().toISOString().split('T')[0];
+        const existingIndex = rows.findIndex(row => row && row.date === today);
+        if (existingIndex >= 0) {
+            const existing = Number(rows[existingIndex].steps || 0);
+            rows[existingIndex] = Object.assign({}, rows[existingIndex], {
+                steps: Math.max(existing, Math.round(steps)),
+                source: rows[existingIndex].source || 'native-live'
+            });
+        } else {
+            rows.push({ date: today, steps: Math.round(steps), source: 'native-live' });
+        }
+        return rows.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+    }
+
+    async function refreshInsightsStepData(options) {
+        options = options || {};
+        const delayMs = Number(options.delayMs || 0);
+        if (delayMs > 0) {
+            setTimeout(function(){ refreshInsightsStepData(Object.assign({}, options, { delayMs: 0 })); }, delayMs);
+            return;
+        }
+        if (!_isInsightsViewOpen() || !window.currentUser || !window.currentUser.id) return;
+        const now = Date.now();
+        if (!options.force && now - _insightsLastStepRefreshAt < 60000) return;
+        if (_insightsStepRefreshInFlight) return;
+
+        _insightsStepRefreshInFlight = true;
+        _insightsLastStepRefreshAt = now;
+        try {
+            await _syncNativeHealthForInsights(window.currentUser.id);
+            const summary = await _getLiveNativeHealthSummaryForInsights();
+            const oneYearAgoDate = new Date();
+            oneYearAgoDate.setDate(oneYearAgoDate.getDate() - 365);
+            const since = typeof getLocalDateString === 'function' ? getLocalDateString(oneYearAgoDate) : oneYearAgoDate.toISOString().split('T')[0];
+            const freshRows = await _loadWearableStepsForInsights(window.currentUser.id, since);
+            window._insightsSteps = _mergeTodayStepsFromNativeSummary(freshRows, summary);
+
+            const activeBtn = document.querySelector('#insights-steps-timeframe-nav button.active');
+            const days = activeBtn ? parseInt(activeBtn.getAttribute('data-days'), 10) || 7 : 7;
+            renderInsightsSteps(window._insightsSteps, days);
+
+            if (typeof renderVitalityScore === 'function') {
+                renderVitalityScore({
+                    weighIns: window._insightsWeighIns || [],
+                    nutritionDays: window._insightsNutrition || [],
+                    sleepData: window._insightsSleep || null,
+                    stepsData: window._insightsSteps || [],
+                    exerciseHistory: window._insightsExerciseHistory || []
+                });
+            }
+        } catch (err) {
+            console.warn('[Insights] Step refresh failed:', err);
+        } finally {
+            _insightsStepRefreshInFlight = false;
         }
     }
 
@@ -1492,6 +1592,14 @@
     window.closeInsightsView  = closeInsightsView;
     window.renderVolumeGraph = renderVolumeGraph;
     window.setInsightsVolumeArea = setInsightsVolumeArea;
+    window.refreshInsightsStepData = refreshInsightsStepData;
+
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) refreshInsightsStepData({ force: true });
+    });
+    setInterval(function() {
+        refreshInsightsStepData();
+    }, 60000);
 
 // ===== 7-DAY VITALITY SCORE =====
 //
