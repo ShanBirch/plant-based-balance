@@ -143,6 +143,7 @@ jobs:
           track: ${{ inputs.play_track }}
           status: ${{ inputs.play_status }}
           whatsNewDirectory: android/play/release-notes
+          changesNotSentForReview: true
 
       # Also build debug APK for Firebase App Distribution
       - name: Build debug APK
