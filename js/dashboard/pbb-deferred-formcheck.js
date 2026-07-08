@@ -3,6 +3,8 @@
     const WORKOUT_FEED_SHARE_QUEUE_DB = 'pbb_workout_feed_share_queue_v1';
     const WORKOUT_FEED_SHARE_QUEUE_STORE = 'uploads';
     const WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS = 300000;
+    const WORKOUT_FEED_SHARE_NATIVE_UPLOAD_TIMEOUT_MAX_MS = 900000;
+    const WORKOUT_FEED_SHARE_NATIVE_UPLOAD_TIMEOUT_MS_PER_MB = 10000;
     const WORKOUT_FEED_SHARE_LATE_RETRY_DELAY_MS = 120000;
     // Share a Set uploads large clips direct to B2. Keep the original HD file
     // whenever it is within the direct-upload ceiling to avoid phone re-encode crashes.
@@ -877,6 +879,16 @@
         });
     }
 
+    function getWorkoutFeedShareUploadTimeoutMs(file) {
+        const fallback = WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS;
+        const sizeMb = Math.ceil(Number(file && file.size || 0) / (1024 * 1024));
+        if (!isWorkoutFeedShareNativePlatform() || !Number.isFinite(sizeMb) || sizeMb <= 0) return fallback;
+        return Math.min(
+            WORKOUT_FEED_SHARE_NATIVE_UPLOAD_TIMEOUT_MAX_MS,
+            Math.max(fallback, sizeMb * WORKOUT_FEED_SHARE_NATIVE_UPLOAD_TIMEOUT_MS_PER_MB)
+        );
+    }
+
     function openWorkoutFeedShareQueueDb() {
         return new Promise(function (resolve, reject) {
             if (!window.indexedDB) {
@@ -1106,6 +1118,14 @@
         };
 
         await putWorkoutFeedShareQueueItem(item);
+        if (item.lastError === 'posting') {
+            logWorkoutFeedShareDiagnostic('share_set_queue_staged', {
+                queueId: item.id,
+                workoutName: item.workoutName,
+                nextAttemptAt: item.nextAttemptAt,
+                ...getWorkoutFeedShareFileDiagnostic(file)
+            });
+        }
         if (item.lastError && item.lastError !== 'posting') {
             logWorkoutFeedShareDiagnostic('share_set_saved_for_retry', {
                 queueId: item.id,
@@ -1496,6 +1516,12 @@
             for (const item of items) {
                 if (item && item.id) await deleteWorkoutFeedShareQueueItem(item.id);
             }
+            if (items.length) {
+                logWorkoutFeedShareDiagnostic('share_set_retry_discarded', {
+                    discardedCount: items.length,
+                    manual: manual === true
+                });
+            }
             await refreshWorkoutFeedShareRetryNotice();
             const message = items.length === 1 ? 'Saved upload cleared' : 'Saved uploads cleared';
             showWorkoutFeedShareUploadBanner(items.length ? message : 'No saved uploads found', 'success');
@@ -1806,11 +1832,18 @@
     }
 
     function openWorkoutFeedShareCapture() {
-        if (hasNativeWorkoutFeedShareVideoCamera()) {
+        const hasNativeCamera = hasNativeWorkoutFeedShareVideoCamera();
+        const nativePlatform = isWorkoutFeedShareNativePlatform();
+        logWorkoutFeedShareDiagnostic('share_set_capture_open', {
+            captureTarget: workoutFeedShareCaptureTarget,
+            hasNativeCamera,
+            nativePlatform
+        });
+        if (hasNativeCamera) {
             void openNativeWorkoutFeedShareCamera();
             return;
         }
-        if (isWorkoutFeedShareNativePlatform()) {
+        if (nativePlatform) {
             void openWorkoutFeedShareInAppCamera();
             return;
         }
@@ -1818,6 +1851,10 @@
     }
 
     function openWorkoutFeedShareGallery() {
+        logWorkoutFeedShareDiagnostic('share_set_gallery_open', {
+            captureTarget: workoutFeedShareCaptureTarget,
+            nativePlatform: isWorkoutFeedShareNativePlatform()
+        });
         openWorkoutFeedShareFilePicker();
     }
 
@@ -1858,6 +1895,11 @@
             await openCamera();
         } catch (error) {
             console.error('[WorkoutFeedShare] camera launch failed after hiding surface', error);
+            logWorkoutFeedShareDiagnostic('share_set_camera_launch_failed', {
+                captureTarget: workoutFeedShareCaptureTarget,
+                errorName: error && error.name ? error.name : 'Error',
+                errorMessage: error && error.message ? error.message : String(error || 'camera launch failed')
+            });
             restoreWorkoutFeedShareCaptureSurface();
             showWorkoutFeedShareUploadBanner('Could not open the camera. Check app permissions or use Photos.', 'error');
         }
@@ -1902,6 +1944,10 @@
     }
 
     function routeWorkoutFeedShareCapturedFile(file) {
+        logWorkoutFeedShareDiagnostic('share_set_file_captured', {
+            captureTarget: workoutFeedShareCaptureTarget,
+            ...getWorkoutFeedShareFileDiagnostic(file)
+        });
         if (workoutFeedShareCaptureTarget === 'form-check') {
             restoreWorkoutFeedShareCaptureSurface();
             handleFormCheckVideoFile(file);
@@ -2511,8 +2557,15 @@
 
     async function captureAndroidWorkoutVideo() {
         if (!window.NativePermissions || typeof window.NativePermissions.takeWorkoutVideo !== 'function') return null;
+        logWorkoutFeedShareDiagnostic('share_set_native_camera_android_start', {
+            captureTarget: workoutFeedShareCaptureTarget
+        });
         const granted = await ensureNativeWorkoutVideoCameraPermission();
         if (!granted) {
+            logWorkoutFeedShareDiagnostic('share_set_native_camera_permission_denied', {
+                captureTarget: workoutFeedShareCaptureTarget,
+                platform: 'android'
+            });
             throw new Error('Camera permission is blocked. Check app permissions.');
         }
         return new Promise(function (resolve) {
@@ -2521,6 +2574,11 @@
                 if (settled) return;
                 settled = true;
                 delete window._onNativeWorkoutVideo;
+                logWorkoutFeedShareDiagnostic('share_set_native_camera_android_result', {
+                    captureTarget: workoutFeedShareCaptureTarget,
+                    cancelled: !!(result && result.cancelled),
+                    reason: result && result.reason || ''
+                });
                 resolve(result || { cancelled: true });
             };
             try {
@@ -2529,12 +2587,20 @@
                 if (settled) return;
                 settled = true;
                 delete window._onNativeWorkoutVideo;
+                logWorkoutFeedShareDiagnostic('share_set_native_camera_android_error', {
+                    captureTarget: workoutFeedShareCaptureTarget,
+                    errorName: error && error.name ? error.name : 'Error',
+                    errorMessage: error && error.message ? error.message : String(error || 'camera bridge failed')
+                });
                 resolve(null);
             }
             setTimeout(function () {
                 if (settled) return;
                 settled = true;
                 delete window._onNativeWorkoutVideo;
+                logWorkoutFeedShareDiagnostic('share_set_native_camera_android_timeout', {
+                    captureTarget: workoutFeedShareCaptureTarget
+                });
                 resolve({ cancelled: true });
             }, 180000);
         });
@@ -2543,7 +2609,16 @@
     async function captureIosWorkoutVideo() {
         const plugin = getBalanceVideoCapturePlugin();
         if (!plugin || typeof plugin.captureWorkoutVideo !== 'function') return null;
-        return plugin.captureWorkoutVideo({ maxDurationSeconds: 75 });
+        logWorkoutFeedShareDiagnostic('share_set_native_camera_ios_start', {
+            captureTarget: workoutFeedShareCaptureTarget
+        });
+        const result = await plugin.captureWorkoutVideo({ maxDurationSeconds: 75 });
+        logWorkoutFeedShareDiagnostic('share_set_native_camera_ios_result', {
+            captureTarget: workoutFeedShareCaptureTarget,
+            cancelled: !!(result && result.cancelled),
+            reason: result && result.reason || ''
+        });
+        return result;
     }
 
     async function openWorkoutFeedShareCameraFallback() {
@@ -2617,9 +2692,18 @@
                 restoreWorkoutFeedShareCaptureSurface();
                 return;
             }
+            logWorkoutFeedShareDiagnostic('share_set_native_file_ready', {
+                captureTarget: workoutFeedShareCaptureTarget,
+                ...getWorkoutFeedShareFileDiagnostic(file)
+            });
             routeWorkoutFeedShareCapturedFile(file);
         } catch (error) {
             console.error('[WorkoutFeedShare] native camera failed', error);
+            logWorkoutFeedShareDiagnostic('share_set_native_camera_failed', {
+                captureTarget: workoutFeedShareCaptureTarget,
+                errorName: error && error.name ? error.name : 'Error',
+                errorMessage: error && error.message ? error.message : String(error || 'native camera failed')
+            });
             hideWorkoutFeedShareUploadBanner(1);
             await openWorkoutFeedShareCameraFallback();
         }
@@ -2666,6 +2750,12 @@
             input.click();
         } catch (error) {
             console.warn('[WorkoutFeedShare] camera picker failed', error);
+            logWorkoutFeedShareDiagnostic('share_set_file_picker_failed', {
+                captureTarget: workoutFeedShareCaptureTarget,
+                capture: options.capture === true,
+                errorName: error && error.name ? error.name : 'Error',
+                errorMessage: error && error.message ? error.message : String(error || 'picker failed')
+            });
             clearWorkoutFeedSharePendingInput();
             showWorkoutFeedShareUploadBanner('Could not open the camera. Tap Share a Set again.', 'error');
             restoreWorkoutFeedShareCaptureSurface();
@@ -2700,14 +2790,28 @@
     }
 
     async function processWorkoutFeedShareSelectedFile(rawFile) {
+        logWorkoutFeedShareDiagnostic('share_set_file_received', {
+            captureTarget: workoutFeedShareCaptureTarget,
+            ...getWorkoutFeedShareFileDiagnostic(rawFile)
+        });
         const file = normalizeWorkoutFeedShareVideoFile(rawFile);
         if (!file) {
+            logWorkoutFeedShareDiagnostic('share_set_file_rejected', {
+                captureTarget: workoutFeedShareCaptureTarget,
+                reason: 'missing_video_mime_type',
+                ...getWorkoutFeedShareFileDiagnostic(rawFile)
+            });
             showWorkoutFeedShareUploadBanner('Please choose a video clip.', 'error');
             return;
         }
         try {
             await assertWorkoutFeedShareVideoFile(file);
         } catch (error) {
+            logWorkoutFeedShareDiagnostic('share_set_file_rejected', {
+                captureTarget: workoutFeedShareCaptureTarget,
+                reason: error && error.message ? error.message : WORKOUT_FEED_SHARE_INVALID_VIDEO_MESSAGE,
+                ...getWorkoutFeedShareFileDiagnostic(file)
+            });
             showWorkoutFeedShareUploadBanner(error.message || WORKOUT_FEED_SHARE_INVALID_VIDEO_MESSAGE, 'error');
             return;
         }
@@ -2716,6 +2820,10 @@
         workoutFeedShareState.objectUrl = URL.createObjectURL(file);
         hideWorkoutFeedShareChooserForUpload();
         const bannerLabel = showWorkoutFeedShareUploadBanner('Uploading your set...', 'info');
+        logWorkoutFeedShareDiagnostic('share_set_file_ready_for_upload', {
+            captureTarget: workoutFeedShareCaptureTarget,
+            ...getWorkoutFeedShareFileDiagnostic(file)
+        });
         void submitWorkoutFeedShare({
             postBtn: bannerLabel
         });
@@ -2768,6 +2876,7 @@
         const workoutName = workoutFeedShareState.workoutName || getActiveWorkoutName();
         let postPromise = null;
         let initialQueueItem = null;
+        let uploadTimeoutMs = getWorkoutFeedShareUploadTimeoutMs(workoutFeedShareState.file);
 
         try {
             if (submitBtn && typeof submitBtn === 'object' && 'disabled' in submitBtn) {
@@ -2777,6 +2886,12 @@
             }
 
             workoutFeedShareState.file = await prepareWorkoutFeedShareClip(workoutFeedShareState.file, submitBtn);
+            uploadTimeoutMs = getWorkoutFeedShareUploadTimeoutMs(workoutFeedShareState.file);
+            logWorkoutFeedShareDiagnostic('share_set_submit_start', {
+                workoutName,
+                uploadTimeoutMs,
+                ...getWorkoutFeedShareFileDiagnostic(workoutFeedShareState.file)
+            });
 
             if (navigator && navigator.onLine === false) {
                 await queueWorkoutFeedShareUpload({
@@ -2806,12 +2921,25 @@
                 });
             } catch (queueError) {
                 console.warn('[WorkoutFeedShare] first-post queue staging failed', queueError);
+                logWorkoutFeedShareDiagnostic('share_set_queue_stage_failed', {
+                    workoutName,
+                    errorName: queueError && queueError.name ? queueError.name : 'Error',
+                    errorMessage: queueError && queueError.message ? queueError.message : String(queueError || 'queue staging failed'),
+                    ...getWorkoutFeedShareFileDiagnostic(workoutFeedShareState.file)
+                });
                 initialQueueItem = null;
             }
 
             const uploadFile = initialQueueItem
                 ? (getQueuedWorkoutFeedShareFile(initialQueueItem) || workoutFeedShareState.file)
                 : workoutFeedShareState.file;
+            uploadTimeoutMs = getWorkoutFeedShareUploadTimeoutMs(uploadFile);
+            logWorkoutFeedShareDiagnostic('share_set_post_attempt', {
+                queueId: initialQueueItem && initialQueueItem.id || '',
+                workoutName,
+                uploadTimeoutMs,
+                ...getWorkoutFeedShareFileDiagnostic(uploadFile)
+            });
             const uploadController = typeof AbortController !== 'undefined' ? new AbortController() : null;
             postPromise = window.createWorkoutFeedSharePost({
                 file: uploadFile,
@@ -2821,11 +2949,11 @@
                 postBtn: submitBtn,
                 pointsType: 'workout_feed_share',
                 skipVideoPreparation: true,
-                uploadTimeoutMs: WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS,
+                uploadTimeoutMs,
                 photoTimestamp: initialQueueItem ? initialQueueItem.createdAt : undefined,
                 abortSignal: uploadController ? uploadController.signal : null
             });
-            const result = await waitForWorkoutFeedSharePost(postPromise, WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS, uploadController);
+            const result = await waitForWorkoutFeedSharePost(postPromise, uploadTimeoutMs, uploadController);
             if (initialQueueItem && initialQueueItem.id) {
                 await clearPostedWorkoutFeedShareQueueItems(initialQueueItem);
             }
@@ -2834,6 +2962,12 @@
             showWorkoutFeedShareUploadBanner(successMessage, 'success');
 
             if (typeof showToast === 'function') showToast(successMessage, 'success');
+            logWorkoutFeedShareDiagnostic('share_set_submit_success', {
+                storyId: result && result.story && result.story.id || '',
+                queueId: initialQueueItem && initialQueueItem.id || '',
+                pointsAwarded: Number(result && result.pointsAwarded || 0),
+                uploadTimeoutMs
+            });
             refreshWorkoutFeedShareAfterPost();
             hideWorkoutFeedShareUploadBanner(1800);
             setTimeout(clearWorkoutFeedShareVideo, 1800);
@@ -2956,6 +3090,14 @@
                 let postPromise = null;
                 try {
                     const preparedQueuedFile = await prepareWorkoutFeedShareClip(queuedFile, bannerLabel);
+                    const retryUploadTimeoutMs = getWorkoutFeedShareUploadTimeoutMs(preparedQueuedFile);
+                    logWorkoutFeedShareDiagnostic('share_set_retry_attempt', {
+                        queueId: item.id,
+                        attempts: Number(item.attempts || 0),
+                        manualRetry: manual === true,
+                        uploadTimeoutMs: retryUploadTimeoutMs,
+                        ...getWorkoutFeedShareFileDiagnostic(preparedQueuedFile)
+                    });
                     const uploadController = typeof AbortController !== 'undefined' ? new AbortController() : null;
                     postPromise = window.createWorkoutFeedSharePost({
                         file: preparedQueuedFile,
@@ -2965,11 +3107,11 @@
                         postBtn: bannerLabel,
                         pointsType: 'workout_feed_share',
                         skipVideoPreparation: true,
-                        uploadTimeoutMs: WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS,
+                        uploadTimeoutMs: retryUploadTimeoutMs,
                         photoTimestamp: item.createdAt || new Date().toISOString(),
                         abortSignal: uploadController ? uploadController.signal : null
                     });
-                    const result = await waitForWorkoutFeedSharePost(postPromise, WORKOUT_FEED_SHARE_UPLOAD_TIMEOUT_MS, uploadController);
+                    const result = await waitForWorkoutFeedSharePost(postPromise, retryUploadTimeoutMs, uploadController);
 
                     await deleteWorkoutFeedShareQueueItem(item.id);
                     const successMessage = getWorkoutFeedShareSuccessMessage(result);

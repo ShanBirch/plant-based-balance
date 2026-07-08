@@ -26,8 +26,8 @@ assert.match(stories, /options\.fallbackVideoBitsPerSecond/);
 assert.match(stories, /options\.finalVideoBitsPerSecond/);
 assert.match(stories, /options\.primaryLabel/);
 
-assert.match(dashboard, /lib\/stories\.js\?v=53/);
-assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=46/);
+assert.match(dashboard, /lib\/stories\.js\?v=55/);
+assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=47/);
 assert.match(dashboard, /choose Camera to use your phone camera/);
 
 assert.match(formCheck, /function openWorkoutFeedShareCameraPicker\(\)\s*{\s*openWorkoutFeedShareFilePicker\(\{ capture: true \}\);/);
@@ -35,7 +35,7 @@ assert.match(formCheck, /function isWorkoutFeedShareNativePlatform\(\)\s*{\s*ret
 assert.match(formCheck, /if \(!isWorkoutFeedShareNativePlatform\(\)\) return null;/);
 assert.match(formCheck, /input\.accept = options\.capture \? 'video\/\*;capture=camcorder' : 'video\/\*';/);
 assert.match(formCheck, /input\.capture = 'camcorder';[\s\S]*?input\.setAttribute\('capture', 'camcorder'\);/);
-assert.match(formCheck, /function openWorkoutFeedShareCapture\(\)\s*{\s*if \(hasNativeWorkoutFeedShareVideoCamera\(\)\) {[\s\S]*?void openNativeWorkoutFeedShareCamera\(\);[\s\S]*?return;[\s\S]*?}\s*if \(isWorkoutFeedShareNativePlatform\(\)\) {[\s\S]*?void openWorkoutFeedShareInAppCamera\(\);[\s\S]*?return;[\s\S]*?}\s*openWorkoutFeedShareCameraPicker\(\);/);
+assert.match(formCheck, /function openWorkoutFeedShareCapture\(\)[\s\S]*?hasNativeWorkoutFeedShareVideoCamera\(\)[\s\S]*?isWorkoutFeedShareNativePlatform\(\)[\s\S]*?void openNativeWorkoutFeedShareCamera\(\);[\s\S]*?return;[\s\S]*?void openWorkoutFeedShareInAppCamera\(\);[\s\S]*?return;[\s\S]*?openWorkoutFeedShareCameraPicker\(\);/);
 assert.match(formCheck, /function openWorkoutFeedShareCameraForFile\(options = \{\}\)[\s\S]*hasNativeWorkoutFeedShareVideoCamera\(\)[\s\S]*openWorkoutFeedShareCameraAfterSurfaceSettles\(openNativeWorkoutFeedShareCamera\)[\s\S]*isWorkoutFeedShareNativePlatform\(\)[\s\S]*openWorkoutFeedShareCameraAfterSurfaceSettles\(openWorkoutFeedShareInAppCamera\)[\s\S]*openWorkoutFeedShareCameraPicker\(\)/);
 assert.match(formCheck, /function waitForWorkoutFeedShareHiddenSurfacePaint\(\)[\s\S]*requestAnimationFrame[\s\S]*requestAnimationFrame/);
 assert.match(formCheck, /function openWorkoutFeedShareCameraForFile\(options = \{\}\)[\s\S]*suspendWorkoutFeedShareCaptureSurface\(\)[\s\S]*openWorkoutFeedShareCameraAfterSurfaceSettles\(openNativeWorkoutFeedShareCamera\)/);
