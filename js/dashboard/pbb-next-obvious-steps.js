@@ -12,7 +12,6 @@
   var PREVIEW_STORAGE_KEY = 'pbb_next_steps_preview';
   var SHOW_ALL_STORAGE_KEY = 'pbb_next_steps_show_all';
   var COMPLETION_XP = 10;
-  var DEFAULT_ACTION_IDS = ['workout', 'nutrition', 'hydration', 'steps', 'weighin', 'mood', 'quiz'];
   var SHANNON_EMAILS = [
     'shannonbirch@cocospersonaltraining.com',
     'shannonrhysbirch@gmail.com'
@@ -90,12 +89,6 @@
     var end = new Date(start.getTime());
     end.setDate(end.getDate() + 1);
     return { startIso: start.toISOString(), endIso: end.toISOString() };
-  }
-
-  function yesterdayKey() {
-    var d = new Date();
-    d.setDate(d.getDate() - 1);
-    return todayKey(d);
   }
 
   function getWaterGoalMl() {
@@ -368,7 +361,13 @@
       if (window.weeklyGoals && typeof window.weeklyGoals.getState === 'function') {
         var state = window.weeklyGoals.getState();
         var selected = state && Array.isArray(state.selected) ? state.selected : [];
-        return selected.map(function(goal){ return String(goal && goal.id || ''); }).filter(Boolean);
+        var completedGoalIds = {};
+        var progressGoals = state && state.progress && Array.isArray(state.progress.goals) ? state.progress.goals : [];
+        progressGoals.forEach(function(goal){
+          if (goal && goal.complete && goal.id) completedGoalIds[String(goal.id)] = true;
+        });
+        return selected.map(function(goal){ return String(goal && goal.id || ''); })
+          .filter(function(goalId){ return goalId && !completedGoalIds[goalId]; });
       }
     } catch (error) {
       console.warn('[next-steps] weekly goal read failed:', error);
@@ -379,10 +378,6 @@
   function goalMatchedActions(selectedGoalIds) {
     if (!selectedGoalIds || !selectedGoalIds.length) return [];
     return ACTIONS.filter(function(action){ return matchingGoalCount(action, selectedGoalIds) > 0; });
-  }
-
-  function actionById(actionId) {
-    return ACTIONS.find(function(action){ return action.id === actionId; }) || null;
   }
 
   function addUniqueAction(list, action) {
@@ -409,13 +404,6 @@
     goalMatchedActions(selectedGoalIds).forEach(function(action){
       if (isActionTargetable(action, selectedGoalIds)) addUniqueAction(picked, action);
     });
-
-    DEFAULT_ACTION_IDS.forEach(function(actionId){
-      if (picked.length >= 3) return;
-      var action = actionById(actionId);
-      if (isActionTargetable(action, selectedGoalIds)) addUniqueAction(picked, action);
-    });
-
     return picked.slice(0, 3);
   }
 
@@ -541,7 +529,6 @@
     dailyState.loading = true;
     dailyState.date = dateKey;
     var range = localDayRange(dateKey);
-    var yKey = yesterdayKey();
 
     try {
       var userId = window.currentUser.id;
@@ -555,8 +542,8 @@
         safeSupabaseQuery(function(supabase){ return supabase.from('mood_logs').select('log_date,context').eq('user_id', userId).eq('log_date', dateKey); }),
         safeSupabaseQuery(function(supabase){ return supabase.from('learning_milestones').select('id,milestone_type,achieved_at').eq('user_id', userId).eq('milestone_type', 'daily_quiz').gte('achieved_at', range.startIso).lt('achieved_at', range.endIso).limit(1); }),
         safeSupabaseQuery(function(supabase){ return supabase.from('stories').select('id,media_type,created_at').eq('user_id', userId).gte('created_at', range.startIso).lt('created_at', range.endIso).limit(1); }),
-        safeSupabaseQuery(function(supabase){ return supabase.from('fitbit_daily_activity').select('date,steps').eq('user_id', userId).in('date', [dateKey, yKey]); }),
-        safeSupabaseQuery(function(supabase){ return supabase.from('oura_daily_activity').select('date,steps').eq('user_id', userId).in('date', [dateKey, yKey]); }),
+        safeSupabaseQuery(function(supabase){ return supabase.from('fitbit_daily_activity').select('date,steps').eq('user_id', userId).eq('date', dateKey); }),
+        safeSupabaseQuery(function(supabase){ return supabase.from('oura_daily_activity').select('date,steps').eq('user_id', userId).eq('date', dateKey); }),
         safeSupabaseQuery(function(supabase){ return supabase.from('fitbit_sleep').select('date,duration_minutes').eq('user_id', userId).eq('date', dateKey); }),
         safeSupabaseQuery(function(supabase){ return supabase.from('oura_sleep').select('date,total_sleep_minutes').eq('user_id', userId).eq('date', dateKey); }),
         safeSupabaseQuery(function(supabase){ return supabase.from('whoop_sleep').select('date,duration_minutes').eq('user_id', userId).eq('date', dateKey); }),
