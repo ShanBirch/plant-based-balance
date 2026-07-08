@@ -11,6 +11,7 @@
 
   var PREVIEW_STORAGE_KEY = 'pbb_next_steps_preview';
   var SHOW_ALL_STORAGE_KEY = 'pbb_next_steps_show_all';
+  var REQUIRED_STORAGE_PREFIX = 'pbb_next_steps_required:';
   var COMPLETION_XP = 10;
   var SHANNON_EMAILS = [
     'shannonbirch@cocospersonaltraining.com',
@@ -23,6 +24,7 @@
     loading: false,
     awarding: false,
     awarded: false,
+    requiredIds: [],
     status: {}
   };
 
@@ -133,12 +135,53 @@
     return 'pbb_next_steps_complete_xp:' + userId + ':' + dateKey;
   }
 
+  function requiredStorageKey(dateKey) {
+    var userId = window.currentUser && window.currentUser.id;
+    return REQUIRED_STORAGE_PREFIX + (userId || 'anon') + ':' + dateKey;
+  }
+
+  function readRequiredIds(dateKey) {
+    try {
+      var raw = localStorage.getItem(requiredStorageKey(dateKey));
+      var parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function writeRequiredIds(dateKey, ids) {
+    var unique = Array.from(new Set((ids || []).map(String).filter(Boolean)));
+    dailyState.requiredIds = unique;
+    try { localStorage.setItem(requiredStorageKey(dateKey), JSON.stringify(unique)); } catch (_) {}
+    return unique;
+  }
+
+  function mergeRequiredIds(ids) {
+    if (isShowAllEnabled()) return;
+    var dateKey = todayKey();
+    var current = dailyState.date === dateKey && dailyState.requiredIds.length
+      ? dailyState.requiredIds
+      : readRequiredIds(dateKey);
+    writeRequiredIds(dateKey, current.concat(ids || []));
+  }
+
   function isVisibleSelector(selector) {
     var el = null;
     try { el = document.querySelector(selector); } catch (_) {}
     if (!el) return false;
     var style = window.getComputedStyle ? window.getComputedStyle(el) : null;
     return style ? style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' : el.style.display !== 'none';
+  }
+
+  function getSelectorText(selector) {
+    var el = null;
+    try { el = document.querySelector(selector); } catch (_) {}
+    return el ? String(el.textContent || '').trim() : '';
+  }
+
+  function isRestLikeWorkoutText(text) {
+    return /\b(rest day|recovery day|today's plan)\b/i.test(String(text || ''));
   }
 
   function scrollToSelector(selector, options) {
@@ -272,6 +315,32 @@
     return false;
   }
 
+  function getTodayWorkoutScheduleType() {
+    try {
+      var program = window.activeCustomProgramCache;
+      if (!program || !Array.isArray(program.weekly_schedule)) return null;
+      var calendarIndex = (new Date().getDay() + 6) % 7;
+      var sourceIndex = typeof window.getWorkoutSourceDayIndex === 'function'
+        ? window.getWorkoutSourceDayIndex(calendarIndex)
+        : calendarIndex;
+      var item = program.weekly_schedule[sourceIndex] || program.weekly_schedule[calendarIndex] || {};
+      var workout = item.workout || item.inlineWorkout || item;
+      if (!workout) return null;
+      if (workout.type) return String(workout.type).toLowerCase();
+      if (Array.isArray(workout.exercises) && workout.exercises.length) return 'workout';
+      if (workout.name || workout.title) return 'workout';
+    } catch (_) {}
+    return null;
+  }
+
+  function hasScheduledWorkoutToday() {
+    if (isVisibleSelector('#today-workout-card')) {
+      return !isRestLikeWorkoutText(getSelectorText('#today-workout-card'));
+    }
+    var type = getTodayWorkoutScheduleType();
+    return !!(type && type !== 'rest' && type !== 'recovery');
+  }
+
   function isActionComplete(action) {
     if (!action || !action.id) return false;
     if (visibleCompleteFallback(action.id)) return true;
@@ -381,11 +450,19 @@
   }
 
   function completionActionSet(selectedGoalIds) {
-    var matched = goalMatchedActions(selectedGoalIds);
-    if (matched.length) return matched;
-    return ACTIONS.filter(function(action){
-      return action.id === 'workout' || action.id === 'nutrition' || action.id === 'weighin';
-    });
+    var dateKey = todayKey();
+    var ids = readRequiredIds(dateKey);
+    if (dailyState.date === dateKey && dailyState.requiredIds.length) {
+      ids = ids.concat(dailyState.requiredIds);
+    }
+    goalMatchedActions(selectedGoalIds).forEach(function(action){ ids.push(action.id); });
+    if (hasScheduledWorkoutToday()) ids.push('workout');
+
+    var unique = Array.from(new Set(ids));
+    if (!unique.length && (!selectedGoalIds || !selectedGoalIds.length)) {
+      unique = ['workout', 'nutrition', 'weighin'];
+    }
+    return ACTIONS.filter(function(action){ return unique.indexOf(action.id) !== -1; });
   }
 
   function matchingGoalCount(action, selectedGoalIds) {
@@ -422,6 +499,7 @@
   function scoreAction(action, selectedGoalIds) {
     if (!isActionAvailable(action, selectedGoalIds)) return -9999;
     var score = matchingGoalCount(action, selectedGoalIds) * 80;
+    if (action.id === 'workout' && hasScheduledWorkoutToday()) score += 95;
     if (selectedGoalIds.length === 0) score += action.id === 'workout' ? 30 : action.id === 'nutrition' ? 26 : action.id === 'weighin' ? 22 : 10;
     if (action.id === 'weighin' && isVisibleSelector('#daily-weigh-in-card')) score += 28;
     if (action.id === 'mood' && isVisibleSelector('#mood-checkin-card')) score += 16;
@@ -505,6 +583,7 @@
     if (dailyState.date && dailyState.date !== dateKey) {
       dailyState.loaded = false;
       dailyState.awarded = false;
+      dailyState.requiredIds = [];
       dailyState.status = {};
     }
     if (!options.force && dailyState.loading) return;
@@ -746,6 +825,9 @@
     }
 
     card.style.display = 'block';
+    if (!showAll) {
+      mergeRequiredIds(suggestions.map(function(action){ return action.id; }));
+    }
     card.innerHTML = [
       '<div class="next-steps-shell">',
         '<div class="next-steps-head">',
