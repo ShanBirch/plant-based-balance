@@ -62,6 +62,10 @@ Current strategic priority: build the AI-operated business layer around Balance:
 - Auto-send is off by default for new clients. Turn it on per client only after enough voice-match confidence.
 - Shannon's coaching voice varies by gender and individual. The system must observe Shannon's actual sent messages before trusting automation.
 - Push directly to `main` when shipping. No PR ceremony unless Shannon explicitly asks. Treat pushing `main` for Netlify deploy as the default ship path.
+- Auto-ship by default after making repo changes: once Codex completes and verifies an edit Shannon asked for, commit the focused change and push it to `origin/main` without waiting for Shannon to say "push". This applies to code, docs, migrations, Netlify functions, app assets, and instruction updates.
+- Do not auto-ship only when Shannon explicitly says to hold, draft, review only, do not push, or when the task is purely exploratory with no file changes requested.
+- A dirty worktree is not a reason to leave completed Codex work unpushed. Preserve unrelated local changes, stage only the files intentionally changed for the task, and use a clean worktree from `origin/main` if the main checkout is too messy.
+- Stop before auto-shipping only for a real blocker: merge conflict needing Shannon's product decision, failed auth, suspected secret/destructive change, failed verification that matters for the change, or uncertainty about which dirty files belong to Codex's current work.
 - Do not leave completed work sitting unmerged or only mentioned in chat. If Shannon asks to merge or ship, finish the commit and push to `main` in the same session unless there is a concrete blocker.
 - When Shannon says "push", treat that as explicit approval to carefully ship. Do not stop with "the worktree has unrelated dirty changes" or "`main` is behind origin/main" as the final answer. Preserve unrelated local work, stage only the intended files, use a clean worktree when the main workspace is messy, integrate `origin/main` when needed, and push. Only stop for a hard blocker such as auth failure, a conflict that needs Shannon's product decision, or apparent secret/destructive risk.
 - If the main workspace is messy but the requested fix is complete and verified, create a clean worktree from `origin/main`, apply only the intended diff there, commit, and push to `main`. Do not make Shannon ask twice just because the local workspace has unrelated changes.
@@ -300,6 +304,7 @@ Also read `CLAUDE.md` for detailed UI patterns. The big ones:
 6. If editing user-facing copy, scan for em dashes before committing.
 7. If shipping, commit focused changes and push directly to `origin main`.
 8. If Shannon says "push", keep going through fetch/status, selective staging, commit, update from `origin/main` if required, and push. A dirty worktree or a behind local `main` is a caution signal, not a reason to decline the push.
+9. If Codex made and verified file changes, auto-ship by default: commit only the intended files and push to `origin/main` unless Shannon explicitly said not to or a real blocker exists.
 
 ## Current Business Lens
 
