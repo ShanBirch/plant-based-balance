@@ -10,6 +10,7 @@
   window.__pbbNextObviousStepsLoaded = true;
 
   var PREVIEW_STORAGE_KEY = 'pbb_next_steps_preview';
+  var SHOW_ALL_STORAGE_KEY = 'pbb_next_steps_show_all';
   var SHANNON_EMAILS = [
     'shannonbirch@cocospersonaltraining.com',
     'shannonrhysbirch@gmail.com'
@@ -36,6 +37,19 @@
     } catch (_) {}
     try {
       var stored = String(localStorage.getItem(PREVIEW_STORAGE_KEY) || '').toLowerCase();
+      return stored === '1' || stored === 'true' || stored === 'yes';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function isShowAllEnabled() {
+    try {
+      var params = new URLSearchParams(window.location.search || '');
+      if (params.get('next_steps_all') === '1') return true;
+    } catch (_) {}
+    try {
+      var stored = String(localStorage.getItem(SHOW_ALL_STORAGE_KEY) || '').toLowerCase();
       return stored === '1' || stored === 'true' || stored === 'yes';
     } catch (_) {
       return false;
@@ -233,7 +247,7 @@
       cta: 'Open Check-In',
       accent: '#7c3aed',
       goalIds: ['mood_checkin_days'],
-      action: function(){ openDashboardTarget('#mood-checkin-card', { block: 'center' }); }
+      action: function(){ openDashboardTarget('#mood-checkin-card,#mood-checkin-done-card', { block: 'center' }); }
     },
     {
       id: 'sleep',
@@ -313,6 +327,8 @@
 
   function pickSuggestions() {
     var selectedGoalIds = getSelectedGoalIds();
+    if (isShowAllEnabled()) return ACTIONS.slice();
+
     var ranked = ACTIONS.map(function(action, index){
       return {
         action: action,
@@ -352,7 +368,10 @@
       '.next-steps-head{padding:15px 16px 11px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #eef2f7;}',
       '.next-steps-kicker{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:950;margin-bottom:3px;}',
       '.next-steps-title{font-size:1.02rem;line-height:1.2;color:#0f172a;font-weight:950;}',
+      '.next-steps-head-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}',
       '.next-steps-note{font-size:.74rem;color:#64748b;font-weight:800;white-space:nowrap;}',
+      '.next-steps-test-toggle{border:1px solid #e2e8f0;background:#f8fafc;color:#334155;border-radius:999px;padding:7px 9px;font-size:.66rem;font-weight:950;font-family:inherit;cursor:pointer;white-space:nowrap;}',
+      '.next-steps-test-toggle.active{border-color:#0f766e;background:#ecfdf5;color:#0f766e;}',
       '.next-steps-list{display:grid;gap:8px;padding:11px;}',
       '.next-step-action{width:100%;border:1px solid #e5e7eb;background:#fff;color:#0f172a;border-radius:12px;padding:11px 12px;display:flex;align-items:center;gap:11px;text-align:left;font-family:inherit;cursor:pointer;box-shadow:0 6px 14px rgba(15,23,42,.05);}',
       '.next-step-action:active{transform:scale(.99);}',
@@ -378,6 +397,7 @@
 
     ensureStyles();
     var suggestions = pickSuggestions();
+    var showAll = isShowAllEnabled();
     if (!suggestions.length) {
       card.style.display = 'none';
       card.innerHTML = '';
@@ -390,9 +410,12 @@
         '<div class="next-steps-head">',
           '<div>',
             '<div class="next-steps-kicker">Next steps</div>',
-            '<div class="next-steps-title">What to do today</div>',
+            '<div class="next-steps-title">', showAll ? 'Test every route' : 'What to do today', '</div>',
           '</div>',
-          '<div class="next-steps-note">Private preview</div>',
+          '<div class="next-steps-head-actions">',
+            '<button type="button" class="next-steps-test-toggle', showAll ? ' active' : '', '" data-next-steps-test-toggle="1">', showAll ? 'Show 3' : 'Test all', '</button>',
+            '<div class="next-steps-note">Private preview</div>',
+          '</div>',
         '</div>',
         '<div class="next-steps-list">',
           suggestions.map(function(action){
@@ -418,6 +441,17 @@
   }
 
   function handleClick(event) {
+    var toggle = event.target && event.target.closest ? event.target.closest('[data-next-steps-test-toggle]') : null;
+    if (toggle) {
+      event.preventDefault();
+      event.stopPropagation();
+      try {
+        if (isShowAllEnabled()) localStorage.removeItem(SHOW_ALL_STORAGE_KEY);
+        else localStorage.setItem(SHOW_ALL_STORAGE_KEY, '1');
+      } catch (_) {}
+      render();
+      return;
+    }
     var button = event.target && event.target.closest ? event.target.closest('[data-next-step-id]') : null;
     if (!button) return;
     var id = button.getAttribute('data-next-step-id');
@@ -444,6 +478,14 @@
     },
     disablePreview: function(){
       try { localStorage.removeItem(PREVIEW_STORAGE_KEY); } catch (_) {}
+      render();
+    },
+    enableShowAll: function(){
+      try { localStorage.setItem(SHOW_ALL_STORAGE_KEY, '1'); } catch (_) {}
+      render();
+    },
+    disableShowAll: function(){
+      try { localStorage.removeItem(SHOW_ALL_STORAGE_KEY); } catch (_) {}
       render();
     }
   };
