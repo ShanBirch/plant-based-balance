@@ -1524,6 +1524,36 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         }
     }
 
+    async function awardMoodCheckinXp(currentWindow) {
+        if (!window.currentUser || !window.supabaseClient) return 0;
+
+        try {
+            var xpAmount = await getXPMultiplier();
+            var { data: currentPoints } = await window.supabaseClient
+                .from('user_points')
+                .select('lifetime_points')
+                .eq('user_id', window.currentUser.id)
+                .maybeSingle();
+
+            if (currentPoints) {
+                await window.supabaseClient
+                    .from('user_points')
+                    .update({ lifetime_points: (currentPoints.lifetime_points || 0) + xpAmount })
+                    .eq('user_id', window.currentUser.id);
+            } else {
+                await window.supabaseClient
+                    .from('user_points')
+                    .insert({ user_id: window.currentUser.id, lifetime_points: xpAmount, current_points: 0 });
+            }
+            if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
+            if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+            return xpAmount;
+        } catch (xpErr) {
+            console.log('Mood XP award skipped for ' + (currentWindow || 'check-in') + ':', xpErr);
+            return 0;
+        }
+    }
+
     async function submitMoodCheckin() {
         if (!window.currentUser) return;
         var d = window._moodCheckinData;
@@ -1555,6 +1585,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
             // Mark this window as completed
             setMoodCompletedWindow(currentWindow);
             updateMoodDots();
+            var moodXpAwarded = await awardMoodCheckinXp(currentWindow);
             if (typeof window.refreshWeeklyGoalsCard === 'function') {
                 window.refreshWeeklyGoalsCard();
             }
@@ -1568,34 +1599,9 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
             var card = document.getElementById('mood-checkin-card');
 
             if (allDone) {
-                // Award 1 XP for completing all 3
-                try {
-                    var xpAmount = await getXPMultiplier();
-                    var { data: currentPoints } = await window.supabaseClient
-                        .from('user_points')
-                        .select('lifetime_points')
-                        .eq('user_id', window.currentUser.id)
-                        .maybeSingle();
-
-                    if (currentPoints) {
-                        await window.supabaseClient
-                            .from('user_points')
-                            .update({ lifetime_points: (currentPoints.lifetime_points || 0) + xpAmount })
-                            .eq('user_id', window.currentUser.id);
-                    } else {
-                        await window.supabaseClient
-                            .from('user_points')
-                            .insert({ user_id: window.currentUser.id, lifetime_points: xpAmount, current_points: 0 });
-                    }
-                    if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
-                    if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
-                } catch (xpErr) {
-                    console.log('Mood XP award skipped:', xpErr);
-                }
-
                 if (form) form.style.display = 'none';
                 if (success) success.style.display = 'block';
-                if (successText) successText.textContent = 'All 3 check-ins done! Nice one.';
+                if (successText) successText.textContent = 'All 3 check-ins done! +' + (moodXpAwarded || 1) + ' XP for this one.';
 
                 // Transition to done card
                 setTimeout(function() {
@@ -1621,7 +1627,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
                     if (!completed.morning) remaining.push('Morning');
                     if (!completed.afternoon) remaining.push('Afternoon');
                     if (!completed.evening) remaining.push('Evening');
-                    successText.textContent = getMoodWindowLabel(currentWindow) + ' logged! ' + remaining.join(' & ') + ' left for +1 XP.';
+                    successText.textContent = getMoodWindowLabel(currentWindow) + ' logged! +' + (moodXpAwarded || 1) + ' XP earned. ' + remaining.join(' & ') + ' left.';
                 }
 
                 setTimeout(function() {
