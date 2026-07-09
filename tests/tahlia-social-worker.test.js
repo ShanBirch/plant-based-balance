@@ -208,6 +208,11 @@ assert.strictEqual(coachAction.isAllowedTahliaPostActivityType('workout'), true)
 assert.strictEqual(coachAction.isAllowedTahliaPostActivityType('personal_best'), true);
 assert.strictEqual(coachAction.isAllowedTahliaPostActivityType('fitness_diary'), true);
 assert.strictEqual(coachAction.isAllowedTahliaPostActivityType('meal'), false);
+assert.match(
+    performSource,
+    /if \(user\.is_test_account\)[\s\S]*is_test_account: false/,
+    'Tahlia approvals must repair the test-account flag so her posts are visible in Feed'
+);
 
 const editedComment = coachAction.applyTahliaSocialEditFromRequest({
     data: commentAlert.data,

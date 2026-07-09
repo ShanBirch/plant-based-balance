@@ -234,11 +234,19 @@ async function resolveTahliaUserForAction({ alert, action }) {
     if (!userId) throw new Error('Tahlia user id missing from action');
 
     const rows = await supabase(
-        `users?select=id,name,email&id=eq.${encodeURIComponent(userId)}&limit=1`
+        `users?select=id,name,email,is_test_account&id=eq.${encodeURIComponent(userId)}&limit=1`
     );
     const user = rows[0] || null;
     if (!user?.id || String(user.email || '').toLowerCase() !== TAHLIA_EMAIL) {
         throw new Error('Tahlia social action can only publish as the seeded Tahlia account');
+    }
+    if (user.is_test_account) {
+        await supabase(`users?id=eq.${encodeURIComponent(user.id)}`, {
+            method: 'PATCH',
+            body: { is_test_account: false },
+            prefer: 'return=minimal',
+        });
+        user.is_test_account = false;
     }
     return user;
 }
