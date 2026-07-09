@@ -52,10 +52,12 @@ assert.strictEqual(projection.posts[0].pending_tahlia_approval, true);
 assert.strictEqual(projection.posts[0].created_at, '2026-07-09T08:10:00.000Z');
 assert.strictEqual(projection.posts[0].approval_alert_id, postAlert.id);
 assert.strictEqual(projection.posts[0].approval_action_id, postAlert.data.proposed_actions[0].id);
+assert.strictEqual(projection.posts[0].approval_draft_text, postAlert.data.draft_text);
 assert.strictEqual(projection.posts[0].user_name, 'Tahlia Brooks');
 assert.strictEqual(projection.comments[0].story_id, 'story-1');
 assert.strictEqual(projection.comments[0].created_at, '2026-07-09T08:25:00.000Z');
 assert.strictEqual(projection.comments[0].approval_alert_id, commentAlert.id);
+assert.strictEqual(projection.comments[0].approval_draft_text, commentAlert.data.draft_text);
 
 const dismissedAlert = { ...postAlert, status: 'dismissed' };
 const wrongSourceAlert = {
@@ -90,17 +92,26 @@ assert.ok(feedSource.includes('loadTahliaFeedApprovals({ force: !append && tahli
 assert.ok(feedSource.includes('renderTahliaFeedApprovalPanel(story)'));
 assert.ok(feedSource.includes('mergePendingTahliaComments'));
 assert.ok(feedSource.includes('Only you can see this'));
+assert.ok(feedSource.includes('openTahliaFeedEditModal'));
+assert.ok(feedSource.includes('saveTahliaFeedEdit'));
+assert.ok(feedSource.includes('saveOnly: true'));
+assert.ok(feedSource.includes('Future drafts will learn from it.'));
 assert.ok(feedSource.includes("fetch('/.netlify/functions/perform-coach-action'"));
 assert.ok(feedSource.includes("fetch('/.netlify/functions/dismiss-coach-reply'"));
 assert.ok(dashboardSource.includes("id: 'tahlia-private-feed-approval-v1'"));
+assert.ok(dashboardSource.includes("id: 'tahlia-private-feed-edit-learning-v2'"));
 assert.ok(dashboardSource.includes("sel: '.tahlia-feed-approval-panel'"));
+assert.ok(dashboardSource.includes("sel: '.tahlia-feed-approval-edit'"));
 assert.strictEqual(
     (dashboardSource.match(privateRevealCondition) || []).length,
-    2,
-    'Tahlia guided tour and Feature Drop must both stay restricted to Shannon account IDs'
+    4,
+    'All Tahlia guided tour and Feature Drop entries must stay restricted to Shannon account IDs'
 );
 assert.ok(dashboardSource.includes('html.pbb-theme-dark'));
 assert.ok(performSource.includes('created_at: proposedCreatedAt'));
+assert.ok(performSource.includes('SHANNON_FEED_REVIEW_USER_IDS'));
+assert.ok(performSource.includes("body.saveOnly === true"));
+assert.ok(performSource.includes('tahlia_social_learning_pending: true'));
 assert.ok(adminSource.includes('if (isTahliaSocialApprovalAlert(alert)) return false;'));
 assert.ok(adminSource.includes('if (isTahliaSocialApprovalAlert(row)) return;'));
 

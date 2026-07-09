@@ -80,6 +80,10 @@ function buildFeedApprovalProjection(alerts = [], tahliaUser = {}) {
             approval_alert_id: alert.id,
             approval_action_id: action.id,
             approval_created_at: alert.created_at || createdAt,
+            approval_draft_text: cleanText(data.draft_text || action.preview || '', 500),
+            approval_edit_count: Array.isArray(data.tahlia_social_edit_history)
+                ? data.tahlia_social_edit_history.length
+                : 0,
             created_at: createdAt,
         };
 

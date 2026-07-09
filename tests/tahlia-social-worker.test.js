@@ -233,6 +233,8 @@ assert.strictEqual(editedComment.data.draft_text, 'Love this, proper meal win');
 assert.strictEqual(editedComment.data.tahlia_social_last_edit.edit_reason, 'Less polished');
 assert.strictEqual(editedComment.data.tahlia_social_last_edit.action_kind, 'feed_comment');
 assert.strictEqual(editedComment.data.tahlia_social_edit_history.length, 1);
+assert.strictEqual(editedComment.data.original_draft_text, commentAlert.data.draft_text);
+assert.strictEqual(editedComment.data.was_edited, true);
 
 const editedWorkoutPost = coachAction.applyTahliaSocialEditFromRequest({
     data: feedAlert.data,
@@ -251,6 +253,32 @@ assert.strictEqual(editedWorkoutPost.action.payload.media_type, 'workout_card');
 assert.strictEqual(editedWorkoutPost.action.payload.card_payload.share_caption, 'Love this!');
 assert.strictEqual(editedWorkoutCard.share_caption, 'Love this!');
 assert.strictEqual(editedWorkoutPost.data.draft_text, 'Love this!');
+
+const learningExamples = worker.normalizeTahliaSocialLearningExamples([{
+    id: 'edited-alert-1',
+    created_at: '2026-07-03T02:00:00.000Z',
+    data: editedComment.data,
+}]);
+assert.strictEqual(learningExamples.length, 1);
+assert.strictEqual(learningExamples[0].original_text, commentAlert.data.draft_text);
+assert.strictEqual(learningExamples[0].edited_text, 'Love this, proper meal win');
+assert.strictEqual(
+    worker.selectTahliaSocialLearningExamples(learningExamples, { actionKind: 'feed_comment', theme: 'meal' }).length,
+    1
+);
+
+const learnedCommentAlert = worker.applyGeneratedTahliaDraft(commentAlert, {
+    text: 'proper meal win this',
+    mode: 'recent_shannon_edits',
+    example_count: 1,
+    example_alert_ids: ['edited-alert-1'],
+});
+assert.strictEqual(learnedCommentAlert.data.draft_text, 'proper meal win this');
+assert.strictEqual(learnedCommentAlert.data.proposed_actions[0].payload.comment_text, 'proper meal win this');
+assert.strictEqual(learnedCommentAlert.data.tahlia_social_learning.example_count, 1);
+assert.strictEqual(worker.isSafeLearnedTahliaDraft('proper meal win this'), true);
+assert.strictEqual(worker.isSafeLearnedTahliaDraft('you should try a calorie deficit'), false);
+assert.strictEqual(worker.parseTahliaDraftReply('{"text":"little win"}'), 'little win');
 
 assert.ok(adminSource.includes('function isTahliaSocialApprovalAlert'));
 assert.ok(adminSource.includes('function isSupportedTahliaSocialApprovalAlert'));

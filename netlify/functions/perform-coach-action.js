@@ -15,6 +15,10 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.en
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const TAHLIA_EMAIL = 'seed.tahlia.brooks+kayla30@plantbased-balance.org';
 const TAHLIA_SOURCE = 'tahlia-social-worker';
+const SHANNON_FEED_REVIEW_USER_IDS = new Set([
+    'bd1bccd6-56b6-4975-b708-7404c910d1a2',
+    '00a6605e-8edb-4917-85ba-24a23f179059',
+]);
 const ALLOWED_TAHLIA_POST_ACTIVITY_TYPES = new Set(['workout', 'personal_best', 'weigh_in', 'fitness_diary']);
 const TAHLIA_CARD_MEDIA_TYPES = new Set(['workout_card', 'checkin_card']);
 
@@ -45,6 +49,20 @@ async function supabase(path, options = {}) {
 
 function json(statusCode, body) {
     return { statusCode, body: JSON.stringify(body) };
+}
+
+async function authenticatedUser(event = {}) {
+    const authorization = event.headers?.authorization || event.headers?.Authorization || '';
+    const token = String(authorization).replace(/^Bearer\s+/i, '').trim();
+    if (!token) return null;
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: {
+            apikey: SUPABASE_SERVICE_KEY,
+            Authorization: `Bearer ${token}`,
+        },
+    });
+    if (!response.ok) return null;
+    return response.json();
 }
 
 function findAction(data, actionId) {
@@ -221,7 +239,10 @@ function applyTahliaSocialEditFromRequest({ data = {}, action = {}, actionId = '
     };
     const patchedData = {
         ...data,
+        original_draft_text: data.original_draft_text || originalText,
         draft_text: editedText,
+        was_edited: editedText !== (data.original_draft_text || originalText),
+        edit_reason: editReason || data.edit_reason || null,
         tahlia_social_last_edit: learning,
         tahlia_social_edit_history: [...history, learning],
         tahlia_social_learning_updated_at: editedAt,
@@ -889,12 +910,56 @@ exports.handler = async (event) => {
     if (action.status === 'completed') return json(409, { error: 'Action already completed', action });
     if (action.status && action.status !== 'pending') return json(409, { error: `Action is ${action.status}`, action });
 
+    if (isTahliaSocialAction(action)) {
+        const user = await authenticatedUser(event).catch(() => null);
+        if (!user?.id) return json(401, { error: 'Authentication required' });
+        if (!SHANNON_FEED_REVIEW_USER_IDS.has(String(user.id || ''))) {
+            return json(403, { error: 'Tahlia Feed approvals are private' });
+        }
+        if (alert.status !== 'pending') {
+            return json(409, { error: `Tahlia approval is ${alert.status || 'not pending'}` });
+        }
+    }
+
+    let editResult;
     try {
-        const editResult = applyTahliaSocialEditFromRequest({ data, action, actionId, body });
+        editResult = applyTahliaSocialEditFromRequest({ data, action, actionId, body });
         data = editResult.data;
         action = editResult.action;
     } catch (e) {
         return json(400, { error: e.message || 'Tahlia edit could not be applied' });
+    }
+
+    if (body.saveOnly === true) {
+        if (!isTahliaSocialAction(action)) {
+            return json(400, { error: 'Save-only editing is limited to Tahlia Feed approvals' });
+        }
+        if (!Object.prototype.hasOwnProperty.call(body, 'editedText')) {
+            return json(400, { error: 'Edited text is required' });
+        }
+        const savedAt = new Date().toISOString();
+        const savedData = {
+            ...data,
+            tahlia_social_edit_saved_at: savedAt,
+            tahlia_social_learning_pending: true,
+        };
+        try {
+            await supabase(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
+                method: 'PATCH',
+                body: { data: savedData },
+                prefer: 'return=minimal',
+            });
+        } catch (e) {
+            return json(500, { error: 'Tahlia edit could not be saved', details: e.message });
+        }
+        return json(200, {
+            ok: true,
+            saved: true,
+            changed: !!editResult?.changed,
+            saved_at: savedAt,
+            action: findAction(savedData, actionId),
+            data: savedData,
+        });
     }
 
     let result;
@@ -938,8 +1003,19 @@ exports.handler = async (event) => {
     }
 
     const completedAt = new Date().toISOString();
+    const publishedText = isTahliaSocialAction(action)
+        ? cleanSocialText(tahliaSocialActionText(action, data), 500)
+        : '';
     const nextData = {
         ...data,
+        ...(isTahliaSocialAction(action) ? {
+            draft_text: data.original_draft_text || data.draft_text || publishedText,
+            edited_draft_text: publishedText,
+            sent_message: publishedText,
+            was_edited: !!data.original_draft_text && cleanSocialText(data.original_draft_text, 500) !== publishedText,
+            tahlia_social_learning_pending: false,
+            tahlia_social_published_text: publishedText,
+        } : {}),
         proposed_actions: updateAction(data, actionId, {
             status: 'completed',
             completed_at: completedAt,
