@@ -50,7 +50,7 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=134/,
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=135/,
   'dashboard should bump script 5 so phones fetch the custom exercise review fix'
 );
 assert.match(
@@ -176,7 +176,17 @@ assert.match(
 );
 assert.match(
   workoutScript,
-  /\$\{videoUrl \? createExerciseVideoBlockHtml\(videoUrl\) : ''\}/,
+  /function shouldDefaultExerciseVideoToPortrait\(exerciseName, videoUrl\)[\s\S]*window\._customExercisesCache[\s\S]*ex\.exercise_name[\s\S]*ex\.video_url/,
+  'custom exercise videos should default to portrait before metadata arrives'
+);
+assert.match(
+  workoutScript,
+  /const defaultPortrait = shouldDefaultExerciseVideoToPortrait\(exerciseName, videoUrl\)[\s\S]*const initialAspectRatio = defaultPortrait \? '9 \/ 16' : '16 \/ 9'/,
+  'orientation-aware video blocks should render custom exercise videos in a portrait frame immediately'
+);
+assert.match(
+  workoutScript,
+  /\$\{videoUrl \? createExerciseVideoBlockHtml\(videoUrl, ex\.name\) : ''\}/,
   'active workout cards should use the reusable orientation-aware video block'
 );
 assert.match(

@@ -13968,7 +13968,7 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
 
             ${getExerciseNotesHtml(ex.name)}
 
-            ${videoUrl ? createExerciseVideoBlockHtml(videoUrl) : ''}
+            ${videoUrl ? createExerciseVideoBlockHtml(videoUrl, ex.name) : ''}
 
             <!-- Volume Tracker -->
             <div class="volume-display" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-bottom: 1px solid #fef08a;">
@@ -19574,7 +19574,7 @@ function renderWorkoutExercises(exercises) {
 
             ${getExerciseNotesHtml(ex.name)}
 
-            ${videoUrl ? createExerciseVideoBlockHtml(videoUrl) : ''}
+            ${videoUrl ? createExerciseVideoBlockHtml(videoUrl, ex.name) : ''}
 
             ${getVolumeDisplayHtml(ex.name)}
 
@@ -19646,7 +19646,7 @@ function renderYogaExercises(exercises) {
 
                 ${getExerciseNotesHtml(ex.name)}
 
-                ${videoUrl ? createExerciseVideoBlockHtml(videoUrl) : ''}
+                ${videoUrl ? createExerciseVideoBlockHtml(videoUrl, ex.name) : ''}
 
                 <!-- Yoga Timer Section -->
                 <div class="yoga-timer-section" style="padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
@@ -20051,7 +20051,7 @@ function addExerciseWithSets(exerciseName, sets) {
 
             ${getExerciseNotesHtml(exerciseName)}
 
-            ${videoUrl ? createExerciseVideoBlockHtml(videoUrl) : ''}
+            ${videoUrl ? createExerciseVideoBlockHtml(videoUrl, exerciseName) : ''}
 
             <!-- Volume Tracker -->
             <div class="volume-display" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-bottom: 1px solid #fef08a;">
@@ -20711,7 +20711,7 @@ function addExerciseToUI(exercise) {
     const videoUploading = !!exercise.videoUploading || isCustomExerciseVideoUploading(exercise.name, exercise.customExerciseId);
     const videoUrl = videoUploading ? '' : findVideoMatch(exercise.name);
     const videoBlockHtml = videoUrl
-        ? createExerciseVideoBlockHtml(videoUrl)
+        ? createExerciseVideoBlockHtml(videoUrl, exercise.name)
         : (videoUploading ? createExerciseVideoUploadPlaceholderHtml() : '');
     const previousSummaryHtml = formatPreviousWorkoutSummary(exercise.name);
     const previousSummary = getPreviousWorkoutSummary(exercise.name);
@@ -21219,15 +21219,31 @@ function fitInlineExerciseVideoFrame(video) {
 }
 window.fitInlineExerciseVideoFrame = fitInlineExerciseVideoFrame;
 
-function createExerciseVideoBlockHtml(videoUrl) {
+function shouldDefaultExerciseVideoToPortrait(exerciseName, videoUrl) {
+    const name = String(exerciseName || '').trim().toLowerCase();
+    const url = String(videoUrl || '').trim();
+    const customExercises = Array.isArray(window._customExercisesCache) ? window._customExercisesCache : [];
+
+    return customExercises.some(ex => {
+        if (!ex) return false;
+        const exName = String(ex.exercise_name || '').trim().toLowerCase();
+        const exUrl = String(ex.video_url || '').trim();
+        return (name && exName === name) || (url && exUrl === url);
+    });
+}
+
+function createExerciseVideoBlockHtml(videoUrl, exerciseName = '') {
     const safeUrl = String(videoUrl || '')
         .replace(/&/g, '&amp;')
         .replace(/"/g, '&quot;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
     const clickUrl = String(videoUrl || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const defaultPortrait = shouldDefaultExerciseVideoToPortrait(exerciseName, videoUrl);
+    const initialOrientation = defaultPortrait ? 'portrait' : 'pending';
+    const initialAspectRatio = defaultPortrait ? '9 / 16' : '16 / 9';
     return `
-            <div data-video-container data-video-orientation="pending" style="position: relative; width: 100%; aspect-ratio: 16 / 9; background: black; cursor: pointer; overflow: hidden;" onclick="playInlineVideo(event, '${clickUrl}')">
+            <div data-video-container data-video-orientation="${initialOrientation}" style="position: relative; width: 100%; aspect-ratio: ${initialAspectRatio}; background: black; cursor: pointer; overflow: hidden;" onclick="playInlineVideo(event, '${clickUrl}')">
                 <video style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;" preload="metadata" muted playsinline onloadedmetadata="fitInlineExerciseVideoFrame(this)">
                     <source src="${safeUrl}" type="video/mp4">
                 </video>
@@ -21258,7 +21274,7 @@ function renderCustomExerciseVideoUploadComplete(exerciseName, videoUrl) {
         if (card.dataset.exerciseName !== exerciseName) return;
         const placeholder = card.querySelector('[data-video-upload-placeholder="true"]');
         if (placeholder) {
-            placeholder.outerHTML = createExerciseVideoBlockHtml(videoUrl);
+            placeholder.outerHTML = createExerciseVideoBlockHtml(videoUrl, exerciseName);
         }
     });
 }
