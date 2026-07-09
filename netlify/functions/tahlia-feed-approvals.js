@@ -8,7 +8,10 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-const SHANNON_EMAIL = 'shannonrhysbirch@gmail.com';
+const SHANNON_FEED_REVIEW_USER_IDS = new Set([
+    'bd1bccd6-56b6-4975-b708-7404c910d1a2',
+    '00a6605e-8edb-4917-85ba-24a23f179059',
+]);
 const TAHLIA_EMAIL = 'seed.tahlia.brooks+kayla30@plantbased-balance.org';
 const TAHLIA_SOURCE = 'tahlia-social-worker';
 const ALLOWED_POST_MEDIA_TYPES = new Set(['text', 'workout_card', 'checkin_card']);
@@ -165,7 +168,7 @@ exports.handler = async (event) => {
 
     const user = await authenticatedUser(event).catch(() => null);
     if (!user?.id) return json(401, { error: 'Authentication required' });
-    if (String(user.email || '').toLowerCase() !== SHANNON_EMAIL) {
+    if (!SHANNON_FEED_REVIEW_USER_IDS.has(String(user.id || ''))) {
         return json(403, { error: 'Feed approvals are private' });
     }
 

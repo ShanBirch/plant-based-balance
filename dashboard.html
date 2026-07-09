@@ -330,7 +330,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=39',
             'lib/native-iap.js',
-            'lib/stories.js?v=58',
+            'lib/stories.js?v=59',
             'lib/ai-opponents.js',
             'lib/games.js?v=3',
             'lib/nutrition-calculator.js',
@@ -349,7 +349,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=58"><\/script>');
+    document.write('<script src="lib/stories.js?v=59"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=3"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -13007,7 +13007,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'cycle', sel:'#weekly-calendar', title:'Plan your week', body:"Use the weekly calendar to drag workout days around, tap a day, and add walks, classes, Pilates, yoga, or another activity.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
 
     { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Share a thought or encouragement once a day for +2 XP. Add a photo or video if you want." },
-    { tab:'friends', sel:'.tahlia-feed-approval-panel', fallbackSel:'#feed-composer-card', title:'Review Tahlia in Feed', fallbackTitle:'Review Tahlia in Feed', body:"Pending Tahlia posts and comments appear privately in their real Feed position. Check the finished card and context, then tap Approve or Reject.", fallbackBody:"Pending Tahlia posts and comments will appear privately in their real Feed position with Approve and Reject buttons.", condition:function(){ return !!(window.currentUser && String(window.currentUser.email || '').toLowerCase() === 'shannonrhysbirch@gmail.com'); } },
+    { tab:'friends', sel:'.tahlia-feed-approval-panel', fallbackSel:'#feed-composer-card', title:'Review Tahlia in Feed', fallbackTitle:'Review Tahlia in Feed', body:"Pending Tahlia posts and comments appear privately in their real Feed position. Check the finished card and context, then tap Approve or Reject.", fallbackBody:"Pending Tahlia posts and comments will appear privately in their real Feed position with Approve and Reject buttons.", condition:function(){ return !!(window.currentUser && ['bd1bccd6-56b6-4975-b708-7404c910d1a2','00a6605e-8edb-4917-85ba-24a23f179059'].includes(String(window.currentUser.id || ''))); } },
     { tab:'friends', sel:'#feed-community-pulse-card', title:'Today in Balance', body:"See today's posts, reactions, comments, and battles at a glance.", quick: true },
     { tab:'friends', sel:'.feed-post-card,#feed-composer-card', title:'Private post views', body:"Your own Feed posts now show a private view count beside the timestamp. Only you and Shannon can see it.", quick: true },
     { tab:'friends', sel:'#feed-start-battle-card', title:'Start Battle', body:"Tap Start Battle to choose Quiz Battle, chess, checkers, or another game before challenging a friend or bot.", quick: true },
@@ -14089,7 +14089,7 @@ if(!window._pbbIsIOSSafari) {
     fallbackTitle: 'Review Tahlia in Feed',
     body: "Pending Tahlia posts and comments appear privately in their real Feed position. Check the finished card and context, then tap Approve or Reject.",
     fallbackBody: "Pending Tahlia posts and comments will appear privately in their real Feed position with Approve and Reject buttons.",
-    condition: function(){ return !!(window.currentUser && String(window.currentUser.email || '').toLowerCase() === 'shannonrhysbirch@gmail.com'); }
+    condition: function(){ return !!(window.currentUser && ['bd1bccd6-56b6-4975-b708-7404c910d1a2','00a6605e-8edb-4917-85ba-24a23f179059'].includes(String(window.currentUser.id || ''))); }
   });
   allFeatures.push({
     id: 'feed-comment-likes-v1',

@@ -80,9 +80,11 @@ const dashboardSource = fs.readFileSync(path.join(__dirname, '../dashboard.html'
 const adminSource = fs.readFileSync(path.join(__dirname, '../admin-dashboard.html'), 'utf8');
 const performSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/perform-coach-action.js'), 'utf8');
 
-assert.ok(apiSource.includes("String(user.email || '').toLowerCase() !== SHANNON_EMAIL"));
+assert.ok(apiSource.includes("!SHANNON_FEED_REVIEW_USER_IDS.has(String(user.id || ''))"));
+assert.ok(apiSource.includes("'00a6605e-8edb-4917-85ba-24a23f179059'"));
 assert.ok(apiSource.includes("'Cache-Control': 'private, no-store, max-age=0'"));
 assert.ok(feedSource.includes("fetch('/.netlify/functions/tahlia-feed-approvals'"));
+assert.ok(feedSource.includes('SHANNON_FEED_REVIEW_USER_IDS.has'));
 assert.ok(feedSource.includes('loadTahliaFeedApprovals({ force: !append && tahliaFeedApprovalState.loaded })'));
 assert.ok(feedSource.includes('renderTahliaFeedApprovalPanel(story)'));
 assert.ok(feedSource.includes('mergePendingTahliaComments'));
