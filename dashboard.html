@@ -8312,7 +8312,7 @@ if(!window._pbbIsIOSSafari) {
 
         <!-- Photo Section -->
         <div style="margin-bottom: 24px;">
-            <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Venue Photo</div>
+            <div id="activity-photo-heading" style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Venue Photo</div>
             <div id="activity-photo-preview" style="display: none; margin-bottom: 12px; border-radius: 16px; overflow: hidden; position: relative;">
                 <img id="activity-photo-img" src="" style="width: 100%; max-height: 250px; object-fit: cover;">
                 <button onclick="removeActivityPhoto()" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem;">×</button>
@@ -8322,12 +8322,12 @@ if(!window._pbbIsIOSSafari) {
                 <span style="font-weight: 600;">Add venue photo for XP</span>
             </button>
             <input id="activity-photo-input" type="file" accept="image/*" capture="environment" style="display: none;" onchange="handleActivityPhotoCapture(this)">
-            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; text-align: center;">Photos of gyms, courts, pools, treadmills = XP. Outdoor scenery = no XP.</div>
+            <div id="activity-photo-hint" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; text-align: center;">Photos of gyms, courts, pools, treadmills = XP. Outdoor scenery = no XP.</div>
         </div>
 
         <!-- Notes -->
         <div style="margin-bottom: 24px;">
-            <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px;">Notes <span style="font-weight:400; text-transform:none;">(optional)</span></div>
+            <div id="activity-notes-heading" style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px;">Notes <span style="font-weight:400; text-transform:none;">(optional)</span></div>
             <textarea id="activity-notes-input" placeholder="How was your session?" rows="3" style="width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1rem; box-sizing: border-box; resize: none; outline: none; font-family: inherit;" onfocus="this.style.borderColor='#0ea5e9'" onblur="this.style.borderColor='var(--border)'"></textarea>
         </div>
 
@@ -13111,6 +13111,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
+    { tab:'movement-tab', sel:'#move-your-way-pilot-card', title:'Move your way', body:'Classes, runs, walks and rides all count. Log the movement, then add a photo or caption if you want to share it.', quick:true, condition:function(){ return !!(window.isMoveYourWayPilotUser && window.isMoveYourWayPilotUser()); } },
       { tab:'movement-tab', sel:'#workout-share-set-btn', fallbackSel:'#today-workout-card', title:'Share a Set', fallbackTitle:'Open a workout to Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +20 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", fallbackBody:"Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +20 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn') || !!document.getElementById('today-workout-card'); } },
     { tab:'movement-tab', sel:'#workout-add-exercise-video-btn', fallbackSel:'#feed-composer-card', title:'New exercises to review', fallbackTitle:'New exercises to review', body:"When you upload a new exercise video, it is saved for your workouts first. Shannon can approve it for Feed and shared-library XP.", fallbackBody:"Upload a new exercise video from Movement. It is saved for your workouts first, then Shannon can approve it for Feed and shared-library XP.", quick: true, condition: function(){ return !!document.getElementById('workout-add-exercise-video-btn') || !!document.getElementById('feed-composer-card'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Post-workout Share', body:"Finish a workout, then tap the single Share button to post the workout, a PB, or a photo to Feed." },
@@ -13805,6 +13806,17 @@ if(!window._pbbIsIOSSafari) {
   // -------------------------------------------------------
 
   var allFeatures = [
+    {
+      id: 'move-your-way-shannon-pilot-v1',
+      tab: 'movement-tab',
+      sel: '#move-your-way-pilot-card',
+      fallbackSel: '#today-workout-card',
+      title: 'Move your way',
+      body: 'Classes, runs, walks and rides all count. Log the movement, then add a photo or caption if you want to share it.',
+      fallbackTitle: 'Move your way',
+      fallbackBody: 'Open Movement to log a class, run, walk or ride.',
+      condition: function(){ return !!(window.isMoveYourWayPilotUser && window.isMoveYourWayPilotUser()); }
+    },
     {
       id: 'ask-balance-long-hold-only-v1',
       tab: 'dashboard',

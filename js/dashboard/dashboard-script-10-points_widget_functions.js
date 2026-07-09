@@ -4452,6 +4452,40 @@ const ACTIVITY_TYPES = [
     { key: 'other',         label: 'Other',         emoji: '⚡', color: '#64748b' }
 ];
 
+const MOVE_YOUR_WAY_PILOT_EMAIL = 'shannonbirch@cocospersonaltraining.com';
+const MOVE_YOUR_WAY_PILOT_USER_ID = '00a6605e-8edb-4917-85ba-24a23f179059';
+function isMoveYourWayPilotUser() {
+    const user = window.currentUser || {};
+    return String(user.id || '') === MOVE_YOUR_WAY_PILOT_USER_ID ||
+        String(user.email || '').trim().toLowerCase() === MOVE_YOUR_WAY_PILOT_EMAIL;
+}
+window.isMoveYourWayPilotUser = isMoveYourWayPilotUser;
+
+window.showFitbitImportedActivityPrompt = async function() {
+    if (!isMoveYourWayPilotUser() || !window.currentUser || !window.dbHelpers?.activityLogs?.getRecentImported) return;
+    try {
+        const imported = await window.dbHelpers.activityLogs.getRecentImported(window.currentUser.id, 'fitbit', 1);
+        const activity = imported[0];
+        if (!activity) return;
+        const metadata = activity.source_metadata || {};
+        const distance = Number(metadata.distance || 0);
+        const unit = metadata.distance_unit || 'km';
+        const distanceText = distance > 0 ? `${distance.toFixed(distance < 10 ? 1 : 0)} ${unit} ` : '';
+        const label = activity.activity_label || activity.activity_type || 'activity';
+        const prompt = document.createElement('div');
+        prompt.style.cssText = 'position:fixed; left:16px; right:16px; bottom:calc(84px + env(safe-area-inset-bottom, 0px)); z-index:10050; padding:16px; border-radius:18px; background:var(--card-bg); color:var(--text-main); border:1px solid var(--border); box-shadow:0 16px 40px rgba(0,0,0,.28);';
+        prompt.innerHTML = `<div style="font-weight:800; font-size:1rem;">${distanceText}${label.toLowerCase()} imported</div><div style="font-size:.85rem; color:var(--text-muted); margin-top:4px;">Add a photo or caption?</div><div style="display:flex; gap:8px; margin-top:13px;"><button data-action="add" style="flex:1; border:0; border-radius:11px; padding:11px; background:#0ea5e9; color:white; font-weight:800;">Add details</button><button data-action="dismiss" style="border:0; border-radius:11px; padding:11px 14px; background:var(--border); color:var(--text-main); font-weight:700;">Not now</button></div>`;
+        prompt.querySelector('[data-action="dismiss"]').onclick = () => prompt.remove();
+        prompt.querySelector('[data-action="add"]').onclick = () => {
+            prompt.remove();
+            openLogActivityForm({ activityType: activity.activity_type, duration: activity.duration_minutes, label: activity.activity_label, notes: `Imported from Fitbit: ${activity.activity_label || 'activity'}` });
+        };
+        document.body.appendChild(prompt);
+    } catch (error) {
+        console.warn('Could not show Fitbit imported-activity prompt:', error);
+    }
+};
+
 // MET values for calorie estimation (Metabolic Equivalent of Task)
 // Source: Compendium of Physical Activities
 const ACTIVITY_MET_VALUES = {
@@ -4539,9 +4573,22 @@ function openLogActivityForm(prefill = null) {
     document.getElementById('activity-save-btn').disabled = false;
     document.getElementById('activity-save-btn').textContent = 'Log Activity';
 
+    const isPilot = isMoveYourWayPilotUser();
+    const title = document.querySelector('#view-log-activity h2');
+    if (title) title.textContent = isPilot ? 'Log your movement' : 'Log Activity';
+    const photoLabel = document.getElementById('activity-photo-heading');
+    const photoHint = document.getElementById('activity-photo-hint');
+    const notesHeading = document.getElementById('activity-notes-heading');
+    if (photoLabel) photoLabel.textContent = isPilot ? 'Photo or workout screenshot' : 'Venue Photo';
+    if (photoHint) photoHint.textContent = isPilot ? 'Optional. Add a photo now, or write a caption to make it your own.' : 'Photos of gyms, courts, pools, treadmills = XP. Outdoor scenery = no XP.';
+    if (notesHeading) notesHeading.innerHTML = isPilot ? 'Caption <span style="font-weight:400; text-transform:none;">(optional)</span>' : 'Notes <span style="font-weight:400; text-transform:none;">(optional)</span>';
+
     // Build activity type grid
     const grid = document.getElementById('activity-type-grid');
-    grid.innerHTML = ACTIVITY_TYPES.map(t => `
+    const visibleTypes = isPilot
+        ? ACTIVITY_TYPES.filter(t => ['fitness_class', 'running', 'walking', 'cycling', 'pilates', 'other'].includes(t.key))
+        : ACTIVITY_TYPES;
+    grid.innerHTML = visibleTypes.map(t => `
         <button onclick="selectActivityType('${t.key}')" id="activity-type-btn-${t.key}" style="padding: 14px 8px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); cursor: pointer; text-align: center; transition: all 0.2s;">
             <div style="font-size: 1.5rem;">${t.emoji}</div>
             <div style="font-weight: 700; font-size: 0.75rem; margin-top: 4px; color: var(--text-main);">${t.label}</div>

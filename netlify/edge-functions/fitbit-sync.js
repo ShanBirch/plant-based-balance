@@ -1,5 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 
+// This is intentionally a one-person pilot while the imported-session flow is
+// tested in the live app. The server-side check is the authority; the UI gate
+// only controls discovery.
+const MOVE_YOUR_WAY_PILOT_EMAIL = "shannonbirch@cocospersonaltraining.com";
+
 /**
  * Fitbit Data Sync Edge Function
  *
@@ -194,6 +199,17 @@ async function syncUserFitbitData(supabase, userId, clientId, clientSecret) {
         fetchFitbitAPI(`https://api.fitbit.com/1/user/-/activities/heart/date/${today}/1d.json`, headers),
     ]);
 
+    let importedActivities = 0;
+    const { data: profile } = await supabase
+        .from("users")
+        .select("email")
+        .eq("id", userId)
+        .maybeSingle();
+
+    if (profile?.email?.toLowerCase() === MOVE_YOUR_WAY_PILOT_EMAIL) {
+        importedActivities = await syncPilotFitbitActivities(supabase, userId, accessToken);
+    }
+
     // Store activity data
     if (activityData && activityData.summary) {
         const s = activityData.summary;
@@ -282,7 +298,102 @@ async function syncUserFitbitData(supabase, userId, clientId, clientSecret) {
         console.error("Failed to update challenge points after Fitbit sync:", err);
     }
 
-    return { success: true, synced_date: today };
+    return { success: true, synced_date: today, imported_activities: importedActivities };
+}
+
+async function syncPilotFitbitActivities(supabase, userId, accessToken) {
+    const headers = { "Authorization": `Bearer ${accessToken}` };
+    const afterDate = new Date();
+    afterDate.setDate(afterDate.getDate() - 14);
+    const afterDateText = afterDate.toISOString().split("T")[0];
+    const activityData = await fetchFitbitAPI(
+        `https://api.fitbit.com/1/user/-/activities/list.json?afterDate=${afterDateText}&sort=desc&offset=0&limit=100`,
+        headers
+    );
+    const activities = Array.isArray(activityData?.activities) ? activityData.activities : [];
+    const candidates = activities.filter((activity) => {
+        const minutes = Math.round(Number(activity.duration || 0) / 60000);
+        return activity?.logId && minutes >= 10;
+    });
+
+    if (!candidates.length) return 0;
+
+    const ids = candidates.map((activity) => String(activity.logId));
+    const { data: existing, error: existingError } = await supabase
+        .from("activity_logs")
+        .select("external_activity_id")
+        .eq("user_id", userId)
+        .eq("source", "fitbit")
+        .in("external_activity_id", ids);
+    if (existingError) throw existingError;
+
+    const knownIds = new Set((existing || []).map((row) => row.external_activity_id));
+    const now = new Date().toISOString();
+    const rows = candidates
+        .filter((activity) => !knownIds.has(String(activity.logId)))
+        .map((activity) => mapFitbitActivityToLog(userId, activity, now));
+
+    if (!rows.length) return 0;
+    const { error: insertError } = await supabase.from("activity_logs").insert(rows);
+    if (insertError) throw insertError;
+    return rows.length;
+}
+
+function mapFitbitActivityToLog(userId, activity, importedAt) {
+    const name = String(activity.activityName || "Activity").trim();
+    const start = String(activity.startTime || "");
+    const date = /^\d{4}-\d{2}-\d{2}/.test(start)
+        ? start.slice(0, 10)
+        : new Date().toISOString().split("T")[0];
+    const durationMinutes = Math.max(1, Math.round(Number(activity.duration || 0) / 60000));
+
+    return {
+        user_id: userId,
+        activity_type: normaliseFitbitActivityType(name),
+        activity_label: name,
+        duration_minutes: durationMinutes,
+        intensity: inferFitbitIntensity(activity),
+        estimated_calories: Number(activity.calories || 0) || null,
+        notes: null,
+        activity_date: date,
+        source: "fitbit",
+        external_activity_id: String(activity.logId),
+        source_metadata: {
+            device: "Fitbit",
+            log_type: activity.logType || null,
+            auto_detected: activity.logType === "auto_detected",
+            distance: activity.distance ?? null,
+            distance_unit: activity.distanceUnit || null,
+            steps: activity.steps ?? null,
+            average_heart_rate: activity.averageHeartRate ?? null,
+            start_time: activity.startTime || null
+        },
+        imported_at: importedAt,
+        shared_to_feed: false
+    };
+}
+
+function normaliseFitbitActivityType(name) {
+    const value = name.toLowerCase();
+    if (value.includes("run") || value.includes("jog")) return "running";
+    if (value.includes("walk") || value.includes("hike")) return value.includes("hike") ? "hiking" : "walking";
+    if (value.includes("bike") || value.includes("cycl")) return "cycling";
+    if (value.includes("swim")) return "swimming";
+    if (value.includes("yoga")) return "yoga";
+    if (value.includes("pilates")) return "pilates";
+    if (value.includes("tennis")) return "tennis";
+    if (value.includes("box")) return "boxing";
+    if (value.includes("martial")) return "martial_arts";
+    if (value.includes("dance")) return "dance";
+    return "fitness_class";
+}
+
+function inferFitbitIntensity(activity) {
+    const activeZoneMinutes = Number(activity.activeZoneMinutes || 0);
+    const minutes = Math.max(1, Math.round(Number(activity.duration || 0) / 60000));
+    if (activeZoneMinutes >= Math.max(20, minutes * 0.6)) return "vigorous";
+    if (activeZoneMinutes >= 10) return "moderate";
+    return "light";
 }
 
 /**

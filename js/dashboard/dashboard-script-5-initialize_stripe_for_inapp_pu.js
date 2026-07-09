@@ -12615,6 +12615,7 @@ function createBuildCustomMovementCard() {
 
 function createLogActivityMovementCard() {
     const logActivityDiv = document.createElement('div');
+    logActivityDiv.id = 'move-your-way-pilot-card';
     logActivityDiv.onclick = () => {
         if (typeof openLogActivityForm === 'function') {
             openLogActivityForm();
@@ -12627,8 +12628,8 @@ function createLogActivityMovementCard() {
         <div style="position: absolute; inset:0; background: linear-gradient(to bottom right, rgba(0,0,0,0.1), transparent);"></div>
         <div style="position: absolute; bottom: 15px; left: 15px; color: white; z-index: 1;">
             <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">Track</div>
-            <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">Log Activity</div>
-            <div style="font-size: 0.75rem; opacity: 0.9;">Classes, sports & cardio</div>
+            <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">${typeof window.isMoveYourWayPilotUser === 'function' && window.isMoveYourWayPilotUser() ? 'Log your movement' : 'Log Activity'}</div>
+            <div style="font-size: 0.75rem; opacity: 0.9;">${typeof window.isMoveYourWayPilotUser === 'function' && window.isMoveYourWayPilotUser() ? 'Classes, runs, walks & rides' : 'Classes, sports & cardio'}</div>
         </div>
         <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">+</div>
     `;

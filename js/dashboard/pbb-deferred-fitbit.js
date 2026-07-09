@@ -177,11 +177,14 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: window.currentUser.id }),
-        }).then(r => r.json()).then(() => {
+        }).then(r => r.json()).then(syncResult => {
             // Refresh display
-            return fetch('/api/fitbit/data?user_id=' + window.currentUser.id);
-        }).then(r => r.json()).then(data => {
+            return fetch('/api/fitbit/data?user_id=' + window.currentUser.id).then(r => r.json()).then(data => ({ data, syncResult }));
+        }).then(({ data, syncResult }) => {
             if (data.connected) updateFitbitDisplay(data);
+            if (Number(syncResult?.imported_activities || 0) > 0 && typeof window.showFitbitImportedActivityPrompt === 'function') {
+                window.showFitbitImportedActivityPrompt();
+            }
             // Refresh challenge progress (steps/sleep challenges may use Fitbit data)
             if (typeof refreshChallengeProgress === 'function') refreshChallengeProgress();
         }).catch(err => {
