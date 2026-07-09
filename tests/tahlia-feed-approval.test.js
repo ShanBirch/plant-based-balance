@@ -79,6 +79,7 @@ const feedSource = fs.readFileSync(path.join(__dirname, '../lib/stories.js'), 'u
 const dashboardSource = fs.readFileSync(path.join(__dirname, '../dashboard.html'), 'utf8');
 const adminSource = fs.readFileSync(path.join(__dirname, '../admin-dashboard.html'), 'utf8');
 const performSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/perform-coach-action.js'), 'utf8');
+const privateRevealCondition = /condition\s*:\s*function\(\)\{\s*return !!\(window\.currentUser && \['bd1bccd6-56b6-4975-b708-7404c910d1a2','00a6605e-8edb-4917-85ba-24a23f179059'\]\.includes\(String\(window\.currentUser\.id \|\| ''\)\)\);\s*\}/g;
 
 assert.ok(apiSource.includes("!SHANNON_FEED_REVIEW_USER_IDS.has(String(user.id || ''))"));
 assert.ok(apiSource.includes("'00a6605e-8edb-4917-85ba-24a23f179059'"));
@@ -93,6 +94,11 @@ assert.ok(feedSource.includes("fetch('/.netlify/functions/perform-coach-action'"
 assert.ok(feedSource.includes("fetch('/.netlify/functions/dismiss-coach-reply'"));
 assert.ok(dashboardSource.includes("id: 'tahlia-private-feed-approval-v1'"));
 assert.ok(dashboardSource.includes("sel: '.tahlia-feed-approval-panel'"));
+assert.strictEqual(
+    (dashboardSource.match(privateRevealCondition) || []).length,
+    2,
+    'Tahlia guided tour and Feature Drop must both stay restricted to Shannon account IDs'
+);
 assert.ok(dashboardSource.includes('html.pbb-theme-dark'));
 assert.ok(performSource.includes('created_at: proposedCreatedAt'));
 assert.ok(adminSource.includes('if (isTahliaSocialApprovalAlert(alert)) return false;'));
