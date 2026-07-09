@@ -92,6 +92,14 @@ function cleanSocialText(value = '', max = 500) {
         .slice(0, max);
 }
 
+function normalizeTahliaProposedCreatedAt(value, fallback = new Date()) {
+    const parsed = value ? new Date(value) : new Date(fallback);
+    if (!Number.isFinite(parsed.getTime())) return new Date(fallback).toISOString();
+    const latestAllowed = Date.now() + (15 * 60 * 1000);
+    if (parsed.getTime() > latestAllowed) return new Date().toISOString();
+    return parsed.toISOString();
+}
+
 function parseTahliaCardPayload(value) {
     if (!value) return null;
     if (typeof value === 'object' && !Array.isArray(value)) return value;
@@ -685,6 +693,9 @@ async function performPublishTahliaFeedPost({ alert, action }) {
         throw new Error('Tahlia Feed post type is not allowed');
     }
     const backgroundColor = cleanSocialText(payload.background_color || '#f8fafc', 24) || '#f8fafc';
+    const proposedCreatedAt = normalizeTahliaProposedCreatedAt(
+        payload.proposed_created_at || alert.data?.evidence?.source_created_at || alert.data?.drafted_at
+    );
     const summaryText = cleanSocialText(action.preview || alert.data?.draft_text || tahliaCardPublicText(parseTahliaCardPayload(caption)) || caption, 120);
     const recentCutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
     const existing = await supabase(
@@ -709,6 +720,7 @@ async function performPublishTahliaFeedPost({ alert, action }) {
             caption,
             duration: 5,
             background_color: mediaType === 'text' ? backgroundColor : null,
+            created_at: proposedCreatedAt,
             expires_at: expiresAt,
         }],
         prefer: 'return=representation',
@@ -726,6 +738,9 @@ async function performPublishTahliaFeedComment({ alert, action }) {
     const payload = action.payload || {};
     const storyId = String(payload.story_id || alert.data?.target_story_id || '').trim();
     const commentText = cleanSocialText(payload.comment_text || alert.data?.draft_text || '', 500);
+    const proposedCreatedAt = normalizeTahliaProposedCreatedAt(
+        payload.proposed_created_at || alert.data?.drafted_at
+    );
     if (!storyId) throw new Error('Target story missing from Tahlia comment action');
     if (commentText.length < 2) throw new Error('Tahlia comment is empty');
 
@@ -753,6 +768,7 @@ async function performPublishTahliaFeedComment({ alert, action }) {
             story_id: storyId,
             user_id: tahlia.id,
             comment_text: commentText,
+            created_at: proposedCreatedAt,
         }],
         prefer: 'return=representation',
     });
@@ -982,6 +998,7 @@ exports._test = {
     applyTahliaSocialEditFromRequest,
     cleanSocialText,
     isAllowedTahliaPostActivityType,
+    normalizeTahliaProposedCreatedAt,
     isTahliaSocialAction,
     tahliaSocialActionText,
 };
