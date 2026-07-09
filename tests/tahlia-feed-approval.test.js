@@ -92,10 +92,14 @@ assert.ok(feedSource.includes('loadTahliaFeedApprovals({ force: !append && tahli
 assert.ok(feedSource.includes('renderTahliaFeedApprovalPanel(story)'));
 assert.ok(feedSource.includes('mergePendingTahliaComments'));
 assert.ok(feedSource.includes('Only you can see this'));
-assert.ok(feedSource.includes('openTahliaFeedEditModal'));
-assert.ok(feedSource.includes('saveTahliaFeedEdit'));
+assert.ok(feedSource.includes('beginTahliaInlineEdit'));
+assert.ok(feedSource.includes('saveTahliaInlineEdit'));
+assert.ok(feedSource.includes('publishTahliaPostInPlace'));
+assert.ok(feedSource.includes('publishTahliaCommentInPlace'));
+assert.ok(!feedSource.includes('refreshFeedAfterTahliaApproval'));
 assert.ok(feedSource.includes('saveOnly: true'));
 assert.ok(feedSource.includes('Future drafts will learn from it.'));
+assert.ok(feedSource.includes('Send edit'));
 assert.ok(feedSource.includes("fetch('/.netlify/functions/perform-coach-action'"));
 assert.ok(feedSource.includes("fetch('/.netlify/functions/dismiss-coach-reply'"));
 assert.ok(dashboardSource.includes("id: 'tahlia-private-feed-approval-v1'"));
@@ -108,6 +112,8 @@ assert.strictEqual(
     'All Tahlia guided tour and Feature Drop entries must stay restricted to Shannon account IDs'
 );
 assert.ok(dashboardSource.includes('html.pbb-theme-dark'));
+assert.ok(dashboardSource.includes('.tahlia-feed-inline-editor'));
+assert.ok(!dashboardSource.includes('.tahlia-feed-edit-overlay'));
 assert.ok(performSource.includes('created_at: proposedCreatedAt'));
 assert.ok(performSource.includes('SHANNON_FEED_REVIEW_USER_IDS'));
 assert.ok(performSource.includes("body.saveOnly === true"));

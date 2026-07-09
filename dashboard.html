@@ -330,7 +330,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=39',
             'lib/native-iap.js',
-            'lib/stories.js?v=60',
+            'lib/stories.js?v=61',
             'lib/ai-opponents.js',
             'lib/games.js?v=3',
             'lib/nutrition-calculator.js',
@@ -349,7 +349,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=60"><\/script>');
+    document.write('<script src="lib/stories.js?v=61"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=3"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -9547,16 +9547,18 @@ if(!window._pbbIsIOSSafari) {
                 box-shadow: inset 0 0 0 2px var(--tahlia-approval-border);
             }
             .tahlia-feed-approval-panel {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 10px;
                 padding: 10px 14px;
                 background: var(--tahlia-approval-bg);
                 color: var(--tahlia-approval-text);
                 -webkit-text-fill-color: var(--tahlia-approval-text);
                 border-top: 1px solid var(--tahlia-approval-border);
                 border-bottom: 1px solid var(--tahlia-approval-border);
+            }
+            .tahlia-feed-approval-summary {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
             }
             .tahlia-feed-approval-copy {
                 display: flex;
@@ -9621,102 +9623,23 @@ if(!window._pbbIsIOSSafari) {
                 color: var(--tahlia-approval-approve-text);
                 -webkit-text-fill-color: var(--tahlia-approval-approve-text);
             }
-            body.tahlia-feed-edit-open {
-                overflow: hidden;
-            }
-            .tahlia-feed-edit-overlay {
-                position: fixed;
-                inset: 0;
-                z-index: 12000;
+            .tahlia-feed-inline-editor {
                 display: none;
-                align-items: center;
-                justify-content: center;
-                padding: calc(20px + env(safe-area-inset-top, 0px)) 18px calc(20px + env(safe-area-inset-bottom, 0px));
-                box-sizing: border-box;
-                background: rgba(15, 23, 42, 0.74);
-                backdrop-filter: blur(5px);
-                -webkit-backdrop-filter: blur(5px);
             }
-            .tahlia-feed-edit-overlay.is-open {
-                display: flex;
+            .tahlia-feed-approval-panel.is-editing .tahlia-feed-approval-summary {
+                display: none;
             }
-            .tahlia-feed-edit-dialog {
-                display: flex;
-                width: min(100%, 480px);
-                max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px);
-                max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px);
-                flex-direction: column;
-                overflow: hidden;
-                border: 1px solid var(--tahlia-approval-border);
-                border-radius: 20px;
-                background: var(--tahlia-edit-surface);
-                color: var(--tahlia-edit-text);
-                -webkit-text-fill-color: var(--tahlia-edit-text);
-                box-shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
-            }
-            .tahlia-feed-edit-header {
-                display: flex;
-                align-items: flex-start;
-                justify-content: space-between;
-                gap: 16px;
-                padding: 20px 20px 12px;
-            }
-            .tahlia-feed-edit-kicker {
-                margin: 0 0 4px;
-                color: var(--tahlia-approval-border);
-                -webkit-text-fill-color: var(--tahlia-approval-border);
-                font-size: 0.72rem;
-                font-weight: 900;
-                letter-spacing: 0.07em;
-                text-transform: uppercase;
-            }
-            .tahlia-feed-edit-header h2 {
-                margin: 0;
-                color: var(--tahlia-edit-text);
-                -webkit-text-fill-color: var(--tahlia-edit-text);
-                font-family: Georgia, 'Times New Roman', serif;
-                font-size: 1.45rem;
-                line-height: 1.15;
-            }
-            .tahlia-feed-edit-close {
-                width: 38px;
-                height: 38px;
-                flex: 0 0 38px;
-                border: 1px solid var(--tahlia-edit-border);
-                border-radius: 999px;
-                background: var(--tahlia-edit-cancel-bg);
-                color: var(--tahlia-edit-cancel-text);
-                -webkit-text-fill-color: var(--tahlia-edit-cancel-text);
-                font-family: inherit;
-                font-size: 1.5rem;
-                font-weight: 700;
-                line-height: 1;
-                cursor: pointer;
-            }
-            .tahlia-feed-edit-body {
-                min-height: 0;
-                padding: 4px 20px 12px;
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
-                overscroll-behavior: contain;
-            }
-            .tahlia-feed-edit-body label {
+            .tahlia-feed-approval-panel.is-editing .tahlia-feed-inline-editor {
                 display: block;
-                margin-bottom: 7px;
-                color: var(--tahlia-edit-text);
-                -webkit-text-fill-color: var(--tahlia-edit-text);
-                font-size: 0.82rem;
-                font-weight: 850;
             }
-            #tahlia-feed-edit-input {
-                display: block;
+            .tahlia-feed-inline-input {
                 width: 100%;
-                min-height: 128px;
+                min-height: 92px;
                 box-sizing: border-box;
                 resize: vertical;
-                border: 1px solid var(--tahlia-edit-border);
-                border-radius: 14px;
-                padding: 13px 14px;
+                border: 2px solid var(--tahlia-edit-border);
+                border-radius: 12px;
+                padding: 11px 12px;
                 background: var(--tahlia-edit-input);
                 color: var(--tahlia-edit-text);
                 -webkit-text-fill-color: var(--tahlia-edit-text);
@@ -9724,20 +9647,21 @@ if(!window._pbbIsIOSSafari) {
                 font-family: inherit;
                 font-size: 1rem;
                 font-weight: 600;
-                line-height: 1.45;
+                line-height: 1.4;
             }
-            #tahlia-feed-edit-input:focus-visible,
-            .tahlia-feed-edit-close:focus-visible,
-            .tahlia-feed-edit-footer button:focus-visible {
+            .tahlia-feed-inline-input:focus-visible,
+            .tahlia-feed-inline-actions button:focus-visible,
+            .tahlia-feed-pending-comment-copy:focus-visible,
+            .tahlia-feed-pending-post-caption:focus-visible {
                 outline: 3px solid var(--tahlia-approval-border);
                 outline-offset: 2px;
             }
-            #tahlia-feed-edit-input:disabled,
-            .tahlia-feed-edit-footer button:disabled {
+            .tahlia-feed-inline-input:disabled,
+            .tahlia-feed-inline-actions button:disabled {
                 cursor: wait;
                 opacity: 0.62;
             }
-            .tahlia-feed-edit-meta {
+            .tahlia-feed-inline-meta {
                 display: flex;
                 justify-content: space-between;
                 gap: 14px;
@@ -9748,36 +9672,52 @@ if(!window._pbbIsIOSSafari) {
                 font-weight: 650;
                 line-height: 1.35;
             }
-            #tahlia-feed-edit-counter {
+            .tahlia-feed-inline-counter {
                 flex: 0 0 auto;
                 font-variant-numeric: tabular-nums;
             }
-            .tahlia-feed-edit-footer {
+            .tahlia-feed-inline-actions {
                 display: flex;
                 gap: 10px;
-                padding: 12px 20px 20px;
+                margin-top: 10px;
             }
-            .tahlia-feed-edit-footer button {
-                min-height: 46px;
+            .tahlia-feed-inline-actions button {
+                min-height: 40px;
                 flex: 1;
                 border-radius: 999px;
-                padding: 10px 16px;
+                padding: 8px 14px;
                 font-family: inherit;
-                font-size: 0.9rem;
+                font-size: 0.82rem;
                 font-weight: 900;
                 cursor: pointer;
             }
-            .tahlia-feed-edit-cancel {
+            .tahlia-feed-inline-cancel {
                 border: 1px solid var(--tahlia-edit-border);
                 background: var(--tahlia-edit-cancel-bg);
                 color: var(--tahlia-edit-cancel-text);
                 -webkit-text-fill-color: var(--tahlia-edit-cancel-text);
             }
-            .tahlia-feed-edit-save {
+            .tahlia-feed-inline-send {
                 border: 1px solid var(--tahlia-approval-approve-bg);
                 background: var(--tahlia-approval-approve-bg);
                 color: var(--tahlia-approval-approve-text);
                 -webkit-text-fill-color: var(--tahlia-approval-approve-text);
+            }
+            .tahlia-feed-pending-comment-copy,
+            .tahlia-feed-pending-post-caption,
+            [aria-label="Edit pending Tahlia Feed post"] {
+                cursor: text !important;
+            }
+            .tahlia-feed-removing-in-place {
+                opacity: 0;
+                transform: scale(0.985);
+                transition: opacity 0.2s ease, transform 0.2s ease;
+            }
+            .tahlia-feed-published-in-place {
+                transition: box-shadow 0.35s ease, background-color 0.35s ease;
+            }
+            .tahlia-feed-published-in-place.is-visible {
+                box-shadow: inset 0 0 0 3px var(--tahlia-approval-approve-bg), 0 0 20px rgba(34, 197, 94, 0.2);
             }
             .feed-comment-row-pending-tahlia {
                 margin: 5px -6px 7px;
@@ -9803,7 +9743,7 @@ if(!window._pbbIsIOSSafari) {
                 border-radius: 0 0 11px 11px;
             }
             @media (max-width: 390px) {
-                .tahlia-feed-approval-panel {
+                .tahlia-feed-approval-summary {
                     align-items: flex-start;
                     flex-direction: column;
                 }
@@ -9813,14 +9753,6 @@ if(!window._pbbIsIOSSafari) {
                 .tahlia-feed-approval-actions button {
                     flex: 1;
                     padding-inline: 8px;
-                }
-                .tahlia-feed-edit-overlay {
-                    align-items: flex-end;
-                    padding-left: 10px;
-                    padding-right: 10px;
-                }
-                .tahlia-feed-edit-dialog {
-                    border-radius: 20px 20px 14px 14px;
                 }
             }
             #feed-composer-share-menu {
@@ -13195,7 +13127,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Share a thought or encouragement once a day for +2 XP. Add a photo or video if you want." },
     { tab:'friends', sel:'.tahlia-feed-approval-panel', fallbackSel:'#feed-composer-card', title:'Review Tahlia in Feed', fallbackTitle:'Review Tahlia in Feed', body:"Pending Tahlia posts and comments appear privately in their real Feed position. Edit the wording, approve it, or reject it. Saved edits help future drafts match your style.", fallbackBody:"Pending Tahlia posts and comments will appear privately in their real Feed position with Edit, Approve, and Reject buttons.", condition:function(){ return !!(window.currentUser && ['bd1bccd6-56b6-4975-b708-7404c910d1a2','00a6605e-8edb-4917-85ba-24a23f179059'].includes(String(window.currentUser.id || ''))); } },
-    { tab:'friends', sel:'.tahlia-feed-approval-edit', fallbackSel:'.tahlia-feed-approval-panel', title:'Edit before publishing', fallbackTitle:'Edit before publishing', body:"Tap Edit to change the exact wording without publishing it. The private preview refreshes with your saved version, and future Tahlia drafts learn from the change.", fallbackBody:"Use Edit on a pending Tahlia review to change the wording before you approve it.", condition:function(){ return !!(window.currentUser && ['bd1bccd6-56b6-4975-b708-7404c910d1a2','00a6605e-8edb-4917-85ba-24a23f179059'].includes(String(window.currentUser.id || ''))); } },
+    { tab:'friends', sel:'.tahlia-feed-approval-edit', fallbackSel:'.tahlia-feed-approval-panel', title:'Edit before publishing', fallbackTitle:'Edit before publishing', body:"Tap the wording or Edit, change it right in the Feed, then tap Send edit. Nothing opens over the Feed, and future Tahlia drafts learn from the change.", fallbackBody:"Tap the wording or Edit on a pending Tahlia review to change it inline before you approve it.", condition:function(){ return !!(window.currentUser && ['bd1bccd6-56b6-4975-b708-7404c910d1a2','00a6605e-8edb-4917-85ba-24a23f179059'].includes(String(window.currentUser.id || ''))); } },
     { tab:'friends', sel:'#feed-community-pulse-card', title:'Today in Balance', body:"See today's posts, reactions, comments, and battles at a glance.", quick: true },
     { tab:'friends', sel:'.feed-post-card,#feed-composer-card', title:'Private post views', body:"Your own Feed posts now show a private view count beside the timestamp. Only you and Shannon can see it.", quick: true },
     { tab:'friends', sel:'#feed-start-battle-card', title:'Start Battle', body:"Tap Start Battle to choose Quiz Battle, chess, checkers, or another game before challenging a friend or bot.", quick: true },
@@ -14286,8 +14218,8 @@ if(!window._pbbIsIOSSafari) {
     fallbackSel: '.tahlia-feed-approval-panel',
     title: 'Edit Tahlia before publishing',
     fallbackTitle: 'Edit Tahlia before publishing',
-    body: "Tap Edit to change the exact post or comment wording while it is still private. Saved edits help future Tahlia drafts match your style.",
-    fallbackBody: "Pending Tahlia reviews now have an Edit button beside Reject and Approve.",
+    body: "Tap the wording or Edit, change it inline, then tap Send edit. Saved edits help future Tahlia drafts match your style.",
+    fallbackBody: "Pending Tahlia reviews can be edited right inside the Feed before approval.",
     condition: function(){ return !!(window.currentUser && ['bd1bccd6-56b6-4975-b708-7404c910d1a2','00a6605e-8edb-4917-85ba-24a23f179059'].includes(String(window.currentUser.id || ''))); }
   });
   allFeatures.push({
