@@ -50,7 +50,7 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=132/,
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=134/,
   'dashboard should bump script 5 so phones fetch the custom exercise review fix'
 );
 assert.match(
@@ -163,6 +163,21 @@ assert.match(
   workoutScript,
   /createExerciseVideoUploadPlaceholderHtml\(\)[\s\S]*Uploading video\.\.\.[\s\S]*You can keep logging your workout\./,
   'new workout exercise cards should show a black uploading placeholder while B2 finishes'
+);
+assert.match(
+  workoutScript,
+  /function fitInlineExerciseVideoFrame\(video\)[\s\S]*container\.style\.aspectRatio\s*=\s*isPortrait\s*\?\s*'9 \/ 16'\s*:\s*'16 \/ 9'/,
+  'inline exercise videos should switch the card frame to 9:16 for portrait demos'
+);
+assert.match(
+  workoutScript,
+  /onloadedmetadata="fitInlineExerciseVideoFrame\(this\)"/,
+  'inline exercise videos should detect their orientation from video metadata'
+);
+assert.match(
+  workoutScript,
+  /\$\{videoUrl \? createExerciseVideoBlockHtml\(videoUrl\) : ''\}/,
+  'active workout cards should use the reusable orientation-aware video block'
 );
 assert.match(
   workoutScript,

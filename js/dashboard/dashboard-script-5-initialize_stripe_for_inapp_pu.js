@@ -13968,17 +13968,7 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
 
             ${getExerciseNotesHtml(ex.name)}
 
-            ${videoUrl ? `
-            <div data-video-container style="position:relative; width:100%; padding-top:56.25%; background:black; cursor:pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
-                <video style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;" preload="metadata" muted playsinline>
-                    <source src="${videoUrl}" type="video/mp4">
-                </video>
-                <div class="inline-play-overlay" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:60px; height:60px; background:rgba(255,255,255,0.9); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);">
-                    <svg viewBox="0 0 24 24" style="width:30px; height:30px; fill:var(--primary); margin-left:3px;">
-                        <path d="M8 5v14l11-7z"/>
-                    </svg>
-                </div>
-            </div>` : ''}
+            ${videoUrl ? createExerciseVideoBlockHtml(videoUrl) : ''}
 
             <!-- Volume Tracker -->
             <div class="volume-display" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-bottom: 1px solid #fef08a;">
@@ -19584,17 +19574,7 @@ function renderWorkoutExercises(exercises) {
 
             ${getExerciseNotesHtml(ex.name)}
 
-            ${videoUrl ? `
-            <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
-                <video style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" preload="metadata" muted playsinline>
-                    <source src="${videoUrl}" type="video/mp4">
-                </video>
-                <div class="inline-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                    <svg viewBox="0 0 24 24" style="width: 30px; height: 30px; fill: var(--primary); margin-left: 3px;">
-                        <path d="M8 5v14l11-7z"/>
-                    </svg>
-                </div>
-            </div>` : ''}
+            ${videoUrl ? createExerciseVideoBlockHtml(videoUrl) : ''}
 
             ${getVolumeDisplayHtml(ex.name)}
 
@@ -19666,17 +19646,7 @@ function renderYogaExercises(exercises) {
 
                 ${getExerciseNotesHtml(ex.name)}
 
-                ${videoUrl ? `
-                <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
-                    <video style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" preload="metadata" muted playsinline>
-                        <source src="${videoUrl}" type="video/mp4">
-                    </video>
-                    <div class="inline-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                        <svg viewBox="0 0 24 24" style="width: 30px; height: 30px; fill: var(--primary); margin-left: 3px;">
-                            <path d="M8 5v14l11-7z"/>
-                        </svg>
-                    </div>
-                </div>` : ''}
+                ${videoUrl ? createExerciseVideoBlockHtml(videoUrl) : ''}
 
                 <!-- Yoga Timer Section -->
                 <div class="yoga-timer-section" style="padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
@@ -20081,17 +20051,7 @@ function addExerciseWithSets(exerciseName, sets) {
 
             ${getExerciseNotesHtml(exerciseName)}
 
-            ${videoUrl ? `
-            <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
-                <video style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" preload="metadata" muted playsinline>
-                    <source src="${videoUrl}" type="video/mp4">
-                </video>
-                <div class="inline-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                    <svg viewBox="0 0 24 24" style="width: 30px; height: 30px; fill: var(--primary); margin-left: 3px;">
-                        <path d="M8 5v14l11-7z"/>
-                    </svg>
-                </div>
-            </div>` : ''}
+            ${videoUrl ? createExerciseVideoBlockHtml(videoUrl) : ''}
 
             <!-- Volume Tracker -->
             <div class="volume-display" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-bottom: 1px solid #fef08a;">
@@ -21242,12 +21202,33 @@ function updateCustomExerciseCachesAfterVideoUpload(exerciseId, exerciseName, vi
     }
 }
 
+function fitInlineExerciseVideoFrame(video) {
+    if (!video) return;
+    const container = video.closest('[data-video-container]');
+    if (!container || container.dataset.videoUploadPlaceholder === 'true') return;
+
+    const width = Number(video.videoWidth || 0);
+    const height = Number(video.videoHeight || 0);
+    if (!width || !height) return;
+
+    const isPortrait = height > width;
+    container.dataset.videoOrientation = isPortrait ? 'portrait' : 'landscape';
+    container.style.paddingTop = '';
+    container.style.aspectRatio = isPortrait ? '9 / 16' : '16 / 9';
+    video.style.objectFit = 'cover';
+}
+window.fitInlineExerciseVideoFrame = fitInlineExerciseVideoFrame;
+
 function createExerciseVideoBlockHtml(videoUrl) {
-    const safeUrl = String(videoUrl || '').replace(/"/g, '&quot;');
+    const safeUrl = String(videoUrl || '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
     const clickUrl = String(videoUrl || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     return `
-            <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${clickUrl}')">
-                <video style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" preload="metadata" muted playsinline>
+            <div data-video-container data-video-orientation="pending" style="position: relative; width: 100%; aspect-ratio: 16 / 9; background: black; cursor: pointer; overflow: hidden;" onclick="playInlineVideo(event, '${clickUrl}')">
+                <video style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;" preload="metadata" muted playsinline onloadedmetadata="fitInlineExerciseVideoFrame(this)">
                     <source src="${safeUrl}" type="video/mp4">
                 </video>
                 <div class="inline-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
