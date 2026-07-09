@@ -83,6 +83,7 @@ const performSource = fs.readFileSync(path.join(__dirname, '../netlify/functions
 assert.ok(apiSource.includes("String(user.email || '').toLowerCase() !== SHANNON_EMAIL"));
 assert.ok(apiSource.includes("'Cache-Control': 'private, no-store, max-age=0'"));
 assert.ok(feedSource.includes("fetch('/.netlify/functions/tahlia-feed-approvals'"));
+assert.ok(feedSource.includes('loadTahliaFeedApprovals({ force: !append && tahliaFeedApprovalState.loaded })'));
 assert.ok(feedSource.includes('renderTahliaFeedApprovalPanel(story)'));
 assert.ok(feedSource.includes('mergePendingTahliaComments'));
 assert.ok(feedSource.includes('Only you can see this'));
