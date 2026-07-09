@@ -9,11 +9,15 @@ const dashboard = read('dashboard.html');
 const stories = read('lib/stories.js');
 const formCheck = read('js/dashboard/pbb-deferred-formcheck.js');
 const uploadStart = read('netlify/edge-functions/create-story-media-upload.js');
+const multipartUpload = read('netlify/edge-functions/story-media-multipart.js');
 const androidBuild = read('android/app/build.gradle');
 const capacitorConfig = read('capacitor.config.ts');
 
 assert.match(uploadStart, /MAX_DIRECT_UPLOAD_BYTES\s*=\s*1024\s*\*\s*1024\s*\*\s*1024/);
 assert.match(uploadStart, /Keep Share a Set clips under 1 GB/);
+assert.match(multipartUpload, /MAX_MULTIPART_UPLOAD_BYTES\s*=\s*1024\s*\*\s*1024\s*\*\s*1024/);
+assert.match(multipartUpload, /MIN_MULTIPART_UPLOAD_BYTES\s*=\s*5\s*\*\s*1024\s*\*\s*1024\s*\+\s*1/);
+assert.match(multipartUpload, /size <= MULTIPART_PART_BYTES[\s\S]*?5 \* 1024 \* 1024[\s\S]*?: MULTIPART_PART_BYTES/);
 
 assert.match(formCheck, /WORKOUT_FEED_SHARE_DIRECT_UPLOAD_MAX_BYTES\s*=\s*1024\s*\*\s*1024\s*\*\s*1024/);
 assert.match(formCheck, /WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES\s*=\s*100\s*\*\s*1024\s*\*\s*1024/);
@@ -26,7 +30,7 @@ assert.match(stories, /options\.fallbackVideoBitsPerSecond/);
 assert.match(stories, /options\.finalVideoBitsPerSecond/);
 assert.match(stories, /options\.primaryLabel/);
 
-assert.match(dashboard, /lib\/stories\.js\?v=55/);
+assert.match(dashboard, /lib\/stories\.js\?v=56/);
 assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=47/);
 assert.match(dashboard, /choose Camera to use your phone camera/);
 

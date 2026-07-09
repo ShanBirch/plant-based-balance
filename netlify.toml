@@ -118,6 +118,10 @@
   path = "/api/create-story-media-upload"
 
 [[edge_functions]]
+  function = "story-media-multipart"
+  path = "/api/story-media-multipart"
+
+[[edge_functions]]
   function = "create-exercise-video-upload"
   path = "/api/create-exercise-video-upload"
 
