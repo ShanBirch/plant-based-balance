@@ -13854,14 +13854,6 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
     let dayIndex = 0;
     let customizations = null;
 
-    // Always preload history regardless of how the workout was started
-    if (user) {
-        try {
-            const rawHistory = await dbHelpers.workouts.getHistory(user.id);
-            window.workoutHistoryCache = normalizeHistoryCache(rawHistory);
-        } catch(e) { console.error("Failed to load history", e); }
-    }
-
     if (forcedDayIndex !== null) {
         dayIndex = forcedDayIndex;
     } else if (user) {
@@ -13904,6 +13896,10 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
             ...ex,
             isUserAdded: true
         })));
+    }
+
+    if (user) {
+        await preloadWorkoutHistoryForExercises(user.id, exercises.map(ex => ex.name));
     }
 
     // Preload personal bests and exercise notes for all exercises in this workout
@@ -14054,6 +14050,24 @@ function normalizeHistoryCache(historyData) {
         };
     });
 }
+
+async function preloadWorkoutHistoryForExercises(userId, exerciseNames) {
+    if (!userId || !Array.isArray(exerciseNames) || exerciseNames.length === 0) {
+        window.workoutHistoryCache = [];
+        return [];
+    }
+
+    try {
+        const rawHistory = await dbHelpers.workouts.getLatestHistoryForExercises(userId, exerciseNames);
+        const normalized = normalizeHistoryCache(rawHistory);
+        window.workoutHistoryCache = normalized;
+        return normalized;
+    } catch (error) {
+        console.error('Failed to load previous exercise sessions', error);
+        return window.workoutHistoryCache || [];
+    }
+}
+window.preloadWorkoutHistoryForExercises = preloadWorkoutHistoryForExercises;
 
 function getPreviousStats(name, set) {
     // Use cached history from DB
@@ -15474,10 +15488,20 @@ async function processSyncedWorkoutProgress(userId, sets) {
         return { milestones: [], newPBs: [] };
     }
 
-    const [milestones, newPBs] = await Promise.all([
+    const [milestonesResult, pbResult] = await Promise.allSettled([
         dbHelpers.milestones.checkAndRecordMilestones(userId),
         dbHelpers.personalBests.checkAndUpdatePBs(userId, sets)
     ]);
+
+    if (milestonesResult.status === 'rejected') {
+        console.warn('Offline workout milestone check failed:', milestonesResult.reason);
+    }
+    if (pbResult.status === 'rejected') {
+        console.warn('Offline workout PB check failed:', pbResult.reason);
+    }
+
+    const milestones = milestonesResult.status === 'fulfilled' ? (milestonesResult.value || []) : [];
+    const newPBs = pbResult.status === 'fulfilled' ? (pbResult.value || []) : [];
 
     await awardPointsForNewPersonalBests(newPBs);
     return {
@@ -16093,11 +16117,25 @@ async function finishWorkout() {
 
              // Check for improvements, milestones, and personal bests
              try {
-                 const [improvements, milestones, newPBs] = await Promise.all([
+                 const [improvementsResult, milestonesResult, pbResult] = await Promise.allSettled([
                      dbHelpers.workouts.getWorkoutImprovements(user.id, setsToSave),
                      dbHelpers.milestones.checkAndRecordMilestones(user.id),
                      dbHelpers.personalBests.checkAndUpdatePBs(user.id, setsToSave)
                  ]);
+
+                 if (improvementsResult.status === 'rejected') {
+                     console.warn('Workout improvement check failed:', improvementsResult.reason);
+                 }
+                 if (milestonesResult.status === 'rejected') {
+                     console.warn('Workout milestone check failed:', milestonesResult.reason);
+                 }
+                 if (pbResult.status === 'rejected') {
+                     console.warn('Workout PB check failed:', pbResult.reason);
+                 }
+
+                 const improvements = improvementsResult.status === 'fulfilled' ? (improvementsResult.value || []) : [];
+                 const milestones = milestonesResult.status === 'fulfilled' ? (milestonesResult.value || []) : [];
+                 const newPBs = pbResult.status === 'fulfilled' ? (pbResult.value || []) : [];
 
                  // Log any new personal bests and award points
                  if (newPBs && newPBs.length > 0) {
@@ -19379,13 +19417,10 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
     let customizations = null;
     if (user) {
         try {
-            const rawHistory2 = await dbHelpers.workouts.getHistory(user.id);
-            window.workoutHistoryCache = normalizeHistoryCache(rawHistory2);
-            // Load workout customizations
             customizations = await dbHelpers.workoutCustomizations.get(user.id, window.currentWorkoutKey);
             window.currentWorkoutCustomizations = customizations;
         } catch(e) {
-            console.error("Failed to load history/customizations", e);
+            console.error("Failed to load workout customizations", e);
         }
     }
 
@@ -19404,6 +19439,10 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
             ...ex,
             isUserAdded: true
         })));
+    }
+
+    if (user) {
+        await preloadWorkoutHistoryForExercises(user.id, exercises.map(ex => ex.name));
     }
 
     // Preload personal bests and exercise notes for all exercises in this workout
@@ -19475,10 +19514,7 @@ async function startInlineWorkout(workout) {
 
     const user = window.currentUser;
     if (user) {
-        try {
-            const rawHistory = await dbHelpers.workouts.getHistory(user.id);
-            window.workoutHistoryCache = normalizeHistoryCache(rawHistory);
-        } catch (e) { console.error('Failed to load history', e); }
+        await preloadWorkoutHistoryForExercises(user.id, exercises.map(ex => ex.name));
         window.currentInlineWorkoutWeek = getCustomProgramWorkoutWeekNumber(workout, window.activeCustomProgramCache, fallbackInlineWeek);
         try {
             const exerciseNames = exercises.map(ex => ex.name);

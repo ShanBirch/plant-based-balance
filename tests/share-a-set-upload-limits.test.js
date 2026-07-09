@@ -30,7 +30,7 @@ assert.match(stories, /options\.fallbackVideoBitsPerSecond/);
 assert.match(stories, /options\.finalVideoBitsPerSecond/);
 assert.match(stories, /options\.primaryLabel/);
 
-assert.match(dashboard, /lib\/stories\.js\?v=57/);
+assert.match(dashboard, /lib\/stories\.js\?v=59/);
 assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=47/);
 assert.match(dashboard, /choose Camera to use your phone camera/);
 

@@ -123,6 +123,7 @@ async function startSavedWorkout(id) {
         try {
             await window.pbbEnsureWorkoutRuntimeReady([
                 'normalizeHistoryCache',
+                'preloadWorkoutHistoryForExercises',
                 'preloadExerciseNotes',
                 'findVideoMatch',
                 'formatPreviousWorkoutSummary',
@@ -150,19 +151,13 @@ async function startSavedWorkout(id) {
         window.currentCustomWorkoutId = id;
         window.currentWorkoutName = workout.template_name || 'Custom Workout';
 
-        // Preload workout history for previous stats and volume tracking
         const user = window.currentUser;
+        const exerciseNames = workout.template_data?.exercises || [];
         if (user) {
-            try {
-                const rawHistory3 = await dbHelpers.workouts.getHistory(user.id);
-                window.workoutHistoryCache = normalizeHistoryCache(rawHistory3);
-            } catch(e) {
-                console.error("Failed to load workout history", e);
-            }
+            await preloadWorkoutHistoryForExercises(user.id, exerciseNames);
         }
 
         // Preload personal bests and exercise notes
-        const exerciseNames = workout.template_data?.exercises || [];
         if (user) {
             try {
                 window.personalBestsCache = await dbHelpers.personalBests.getForExercises(user.id, exerciseNames);

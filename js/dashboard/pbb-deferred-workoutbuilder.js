@@ -373,6 +373,7 @@ async function startCustomBuilderWorkout() {
         try {
             await window.pbbEnsureWorkoutRuntimeReady([
                 'normalizeHistoryCache',
+                'preloadWorkoutHistoryForExercises',
                 'preloadExerciseNotes',
                 'findVideoMatch',
                 'formatPreviousWorkoutSummary',
@@ -411,9 +412,7 @@ async function startCustomBuilderWorkout() {
                 if (typeof window.refreshWeeklyGoalsCard === 'function') {
                     window.refreshWeeklyGoalsCard();
                 }
-                // Preload workout history for previous stats and volume tracking
-                const rawHistory1 = await dbHelpers.workouts.getHistory(user.id);
-                window.workoutHistoryCache = normalizeHistoryCache(rawHistory1);
+                await preloadWorkoutHistoryForExercises(user.id, customWorkoutSelection);
             } catch(e) {
                 console.error("Failed to auto-save workout:", e);
                 window.currentCustomWorkoutId = null;

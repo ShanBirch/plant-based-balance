@@ -32,7 +32,7 @@ assert.match(formCheck, /const retryUploadTimeoutMs = getWorkoutFeedShareUploadT
     assert.ok(formCheck.includes(eventName), `missing diagnostic event ${eventName}`);
 });
 
-assert.match(dashboard, /lib\/stories\.js\?v=57/);
+assert.match(dashboard, /lib\/stories\.js\?v=59/);
 assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=47/);
 
 console.log('Share a Set diagnostics and timeout contract ok');
