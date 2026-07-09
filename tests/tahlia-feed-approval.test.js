@@ -77,6 +77,7 @@ assert.strictEqual(commentAlert.data.proposed_actions[0].payload.proposed_create
 const apiSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/tahlia-feed-approvals.js'), 'utf8');
 const feedSource = fs.readFileSync(path.join(__dirname, '../lib/stories.js'), 'utf8');
 const dashboardSource = fs.readFileSync(path.join(__dirname, '../dashboard.html'), 'utf8');
+const adminSource = fs.readFileSync(path.join(__dirname, '../admin-dashboard.html'), 'utf8');
 const performSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/perform-coach-action.js'), 'utf8');
 
 assert.ok(apiSource.includes("String(user.email || '').toLowerCase() !== SHANNON_EMAIL"));
@@ -91,5 +92,7 @@ assert.ok(dashboardSource.includes("id: 'tahlia-private-feed-approval-v1'"));
 assert.ok(dashboardSource.includes("sel: '.tahlia-feed-approval-panel'"));
 assert.ok(dashboardSource.includes('html.pbb-theme-dark'));
 assert.ok(performSource.includes('created_at: proposedCreatedAt'));
+assert.ok(adminSource.includes('if (isTahliaSocialApprovalAlert(alert)) return false;'));
+assert.ok(adminSource.includes('if (isTahliaSocialApprovalAlert(row)) return;'));
 
 console.log('tahlia-feed-approval tests passed');

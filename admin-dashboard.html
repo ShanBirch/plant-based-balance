@@ -12822,8 +12822,10 @@
         function needsYouHasOperatorWork(alert, activeClientIds = dmClientIdsCache.ids) {
             if (!alert || alert.status !== 'pending') return false;
             if (!NEEDS_YOU_ALERT_TYPES.includes(alert.alert_type)) return false;
+            // Tahlia social drafts are reviewed in their real chronological
+            // context inside Balance Feed, not as detached Needs You cards.
+            if (isTahliaSocialApprovalAlert(alert)) return false;
             if (isCoachActionReceipt(alert)) return true;
-            if (isTahliaSocialApprovalAlert(alert)) return isSupportedTahliaSocialApprovalAlert(alert);
             if (isAppSuggestionAlert(alert)) return true;
             if (isSupportVerificationNeedsYouAlert(alert)) return true;
             if (isFormCheckSelfTestNeedsYouAlert(alert)) return true;
@@ -12870,7 +12872,8 @@
             const directRows = [];
             const otherRows = [];
             rows.filter(a => a.status === 'pending').forEach(row => {
-                if (isCoachActionReceipt(row) || isAppSuggestionAlert(row) || isSupportedTahliaSocialApprovalAlert(row) || isSupportVerificationNeedsYouAlert(row) || isFormCheckSelfTestNeedsYouAlert(row)) directRows.push(row);
+                if (isTahliaSocialApprovalAlert(row)) return;
+                if (isCoachActionReceipt(row) || isAppSuggestionAlert(row) || isSupportVerificationNeedsYouAlert(row) || isFormCheckSelfTestNeedsYouAlert(row)) directRows.push(row);
                 else if (DM_ALERT_TYPES.includes(row.alert_type)) dmRows.push(row);
                 else otherRows.push(row);
             });
