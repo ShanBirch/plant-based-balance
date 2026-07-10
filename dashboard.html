@@ -12197,7 +12197,7 @@ if(!window._pbbIsIOSSafari) {
                             <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:#4285F4;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                             Health
                         </div>
-                        <div id="health-connect-status-text" style="font-size:0.75rem; color:var(--text-muted);">Sync steps, sleep, heart rate & more</div>
+                        <div id="health-connect-status-text" style="font-size:0.75rem; color:var(--text-muted);">Sync steps, activity calories, and sleep</div>
                     </div>
                     <button id="health-connect-btn" onclick="toggleHealthConnect()" style="padding:8px 16px; border-radius:8px; border:none; background:#4285F4; color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:90px; justify-content:center;">
                         Connect
@@ -18152,7 +18152,7 @@ if(!window._pbbIsIOSSafari) {
                 <svg viewBox="0 0 24 24" style="width:32px; height:32px; fill:white;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             </div>
             <div style="color:white; font-size:1.2rem; font-weight:800; margin-bottom:6px;">Connect Your Health</div>
-            <div style="color:rgba(255,255,255,0.85); font-size:0.85rem; line-height:1.5;">Sync steps, sleep, heart rate & workouts from any device connected to your phone.</div>
+            <div style="color:rgba(255,255,255,0.85); font-size:0.85rem; line-height:1.5;">Sync steps, activity calories, and sleep to track daily progress and score Balance challenges.</div>
         </div>
         <div style="padding:24px;">
             <div style="display:flex; justify-content:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
@@ -18188,7 +18188,7 @@ function toggleHealthConnect() {
             localStorage.removeItem('healthConnectEnabled');
             window._nativeHealthReady = false;
             if (btn) { btn.textContent = 'Connect'; btn.style.background = '#4285F4'; }
-            if (statusEl) statusEl.textContent = 'Sync steps, sleep, heart rate & more';
+            if (statusEl) statusEl.textContent = 'Sync steps, activity calories, and sleep';
             if (typeof showWearableToast === 'function') showWearableToast('Health disconnected');
         }
         return;
@@ -18232,7 +18232,7 @@ function onHealthConnectGranted() {
     var btn = document.getElementById('health-connect-btn');
     var statusEl = document.getElementById('health-connect-status-text');
     if (btn) { btn.textContent = 'Disconnect'; btn.style.background = '#ef4444'; btn.disabled = false; }
-    if (statusEl) statusEl.textContent = 'Connected — syncing your health data';
+    if (statusEl) statusEl.textContent = 'Connected, syncing steps, activity calories, and sleep';
     if (typeof showWearableToast === 'function') showWearableToast('Health connected!');
 
     // Load initial data
@@ -18298,13 +18298,6 @@ function updateDashboardWithHealthData(data) {
         var sleepSubEl = document.getElementById('perf-sleep-sub');
         if (sleepSubEl) sleepSubEl.textContent = 'Health Connect';
     }
-    if (data.workouts && data.workouts.length) {
-        var activeEl = document.getElementById('fitbit-perf-active');
-        if (activeEl) {
-            var totalActive = data.workouts.reduce(function(sum, w) { return sum + (Number(w.duration) || 0); }, 0);
-            activeEl.textContent = totalActive ? totalActive + ' min' : data.workouts.length;
-        }
-    }
 }
 
 function showHealthConnectModal() {
@@ -18361,7 +18354,7 @@ function updateHealthConnectSettingsUI() {
     if (localStorage.getItem('healthConnectEnabled') === 'true') {
         btn.textContent = 'Disconnect';
         btn.style.background = '#ef4444';
-        if (statusEl) statusEl.textContent = 'Connected — syncing your health data';
+        if (statusEl) statusEl.textContent = 'Connected, syncing steps, activity calories, and sleep';
     }
 }
 
