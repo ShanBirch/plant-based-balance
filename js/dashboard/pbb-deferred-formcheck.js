@@ -943,6 +943,15 @@
         });
     }
 
+    function compareWorkoutFeedShareQueueNewestFirst(a, b) {
+        const aTime = Date.parse(a && a.createdAt || '');
+        const bTime = Date.parse(b && b.createdAt || '');
+        if (Number.isFinite(aTime) && Number.isFinite(bTime) && aTime !== bTime) {
+            return bTime - aTime;
+        }
+        return String(b && b.id || '').localeCompare(String(a && a.id || ''));
+    }
+
     async function deleteWorkoutFeedShareQueueItem(id) {
         const db = await openWorkoutFeedShareQueueDb();
         return new Promise(function (resolve, reject) {
@@ -1373,6 +1382,34 @@
                     line-height: 1.2;
                     margin-bottom: 3px;
                 }
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-content {
+                    flex: 1;
+                    min-width: 0;
+                }
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-stack {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    margin-top: 8px;
+                }
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 9px;
+                    border: 1px solid rgba(124, 45, 18, 0.12);
+                    border-radius: 12px;
+                    background: rgba(255, 255, 255, 0.6);
+                }
+                #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-row-title {
+                    color: #431407;
+                    -webkit-text-fill-color: #431407;
+                    font-size: 0.84rem;
+                    font-weight: 900;
+                    line-height: 1.2;
+                    margin-bottom: 2px;
+                    overflow-wrap: anywhere;
+                }
                 #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-body,
                 #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-meta {
                     color: #7c2d12;
@@ -1428,8 +1465,15 @@
                     #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-inner {
                         align-items: flex-start;
                     }
+                    #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-row {
+                        align-items: flex-start;
+                        flex-direction: column;
+                    }
                     #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-actions {
                         align-self: stretch;
+                    }
+                    #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} .share-set-retry-actions button:first-child {
+                        flex: 1;
                     }
                     #${WORKOUT_FEED_SHARE_RETRY_NOTICE_ID} button {
                         padding: 0 12px;
@@ -1503,21 +1547,28 @@
         refreshWorkoutFeedShareRetryNotice().catch(function () {});
     }
 
-    async function discardWorkoutFeedShareQueue(manual) {
+    async function discardWorkoutFeedShareQueue(manual, targetId) {
         if (workoutFeedShareRetryTimer) {
             clearTimeout(workoutFeedShareRetryTimer);
             workoutFeedShareRetryTimer = null;
         }
 
         try {
-            const items = (await getCurrentUserWorkoutFeedShareQueueItems()).filter(function (item) {
+            const requestedQueueId = targetId ? String(targetId) : '';
+            let items = (await getCurrentUserWorkoutFeedShareQueueItems()).filter(function (item) {
                 return !isWorkoutFeedSharePostingStagingItem(item);
             });
+            if (requestedQueueId) {
+                items = items.filter(function (item) {
+                    return String(item && item.id || '') === requestedQueueId;
+                });
+            }
             for (const item of items) {
                 if (item && item.id) await deleteWorkoutFeedShareQueueItem(item.id);
             }
             if (items.length) {
                 logWorkoutFeedShareDiagnostic('share_set_retry_discarded', {
+                    queueId: requestedQueueId,
                     discardedCount: items.length,
                     manual: manual === true
                 });
@@ -1560,38 +1611,60 @@
             return;
         }
 
-        const firstItem = items[0] || {};
+        items = items.slice().sort(compareWorkoutFeedShareQueueNewestFirst);
         const count = items.length;
-        const fileSize = formatWorkoutFeedShareFileSize(firstItem.fileSize);
-        const workoutName = String(firstItem.workoutName || '').trim();
         const title = count === 1 ? 'Share a Set is saved' : count + ' Share a Set uploads are saved';
-        const body = count === 1
-            ? (workoutName ? workoutName + ' is saved on this phone.' : 'Your set is saved on this phone.')
-            : 'Your saved sets are waiting on this phone.';
-        const metaParts = [formatWorkoutFeedShareQueuedAge(firstItem)];
-        if (fileSize) metaParts.push(fileSize);
-        if (navigator && navigator.onLine === false) metaParts.push('Waiting for reception');
-        const buttonText = workoutFeedShareRetryInProgress ? 'Posting...' : 'Post now';
+        const rowsHtml = items.map(function (item, index) {
+            const fileSize = formatWorkoutFeedShareFileSize(item.fileSize);
+            const workoutName = String(item.workoutName || '').trim();
+            const rowTitle = workoutName || 'Saved set';
+            const rowBody = count === 1
+                ? 'Saved on this phone. Tap Post now to try again.'
+                : (index === 0 ? 'Newest saved set.' : 'Older saved set.');
+            const metaParts = [formatWorkoutFeedShareQueuedAge(item)];
+            if (fileSize) metaParts.push(fileSize);
+            if (navigator && navigator.onLine === false) metaParts.push('Waiting for reception');
+            const buttonText = workoutFeedShareRetryInProgress ? 'Posting...' : 'Post now';
+            const queueId = escapeWorkoutFeedShareHtml(item && item.id || '');
+            return `
+                <div class="share-set-retry-row">
+                    <div style="flex:1; min-width:0;">
+                        <div class="share-set-retry-row-title">${escapeWorkoutFeedShareHtml(rowTitle)}</div>
+                        <div class="share-set-retry-body">${escapeWorkoutFeedShareHtml(rowBody)}</div>
+                        <div class="share-set-retry-meta">${escapeWorkoutFeedShareHtml(metaParts.join(' | '))}</div>
+                    </div>
+                    <div class="share-set-retry-actions">
+                        <button type="button" data-share-set-retry-post="${queueId}" ${workoutFeedShareRetryInProgress ? 'disabled' : ''}>${escapeWorkoutFeedShareHtml(buttonText)}</button>
+                        <button type="button" class="share-set-retry-clear" aria-label="Clear this saved Share a Set upload" data-share-set-retry-clear="${queueId}" ${workoutFeedShareRetryInProgress ? 'disabled' : ''}>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
 
         notice.innerHTML = `
             <div class="share-set-retry-inner">
                 <div class="share-set-retry-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
                 </div>
-                <div style="flex:1; min-width:0;">
+                <div class="share-set-retry-content">
                     <div class="share-set-retry-title">${escapeWorkoutFeedShareHtml(title)}</div>
-                    <div class="share-set-retry-body">${escapeWorkoutFeedShareHtml(body)} Tap Post now when you are ready.</div>
-                    <div class="share-set-retry-meta">${escapeWorkoutFeedShareHtml(metaParts.join(' | '))}</div>
-                </div>
-                <div class="share-set-retry-actions">
-                    <button type="button" onclick="postWorkoutFeedShareQueueNow()" ${workoutFeedShareRetryInProgress ? 'disabled' : ''}>${escapeWorkoutFeedShareHtml(buttonText)}</button>
-                    <button type="button" class="share-set-retry-clear" aria-label="Clear saved Share a Set upload" onclick="discardWorkoutFeedShareQueue(true)">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-                    </button>
+                    <div class="share-set-retry-stack">${rowsHtml}</div>
                 </div>
             </div>
         `;
         notice.style.display = 'block';
+        notice.querySelectorAll('[data-share-set-retry-post]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                postWorkoutFeedShareQueueNow(button.getAttribute('data-share-set-retry-post'));
+            });
+        });
+        notice.querySelectorAll('[data-share-set-retry-clear]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                discardWorkoutFeedShareQueue(true, button.getAttribute('data-share-set-retry-clear'));
+            });
+        });
     }
 
     function ensureWorkoutFeedShareUploadBanner() {
@@ -3026,7 +3099,7 @@
         }
     }
 
-    async function retryWorkoutFeedShareQueue(manual) {
+    async function retryWorkoutFeedShareQueue(manual, targetId) {
         if (workoutFeedShareRetryInProgress) {
             if (manual) showWorkoutFeedShareUploadBanner('Retry already running...', 'info');
             return;
@@ -3050,14 +3123,22 @@
         workoutFeedShareRetryInProgress = true;
         refreshWorkoutFeedShareRetryNotice().catch(function () {});
         try {
+            const requestedQueueId = targetId ? String(targetId) : '';
             const queuedItems = (await getWorkoutFeedShareQueueItems()).filter(function (item) {
-                return item && item.userId === userId;
+                return item && item.userId === userId && !isWorkoutFeedSharePostingStagingItem(item);
             });
             const now = Date.now();
-            const items = manual ? queuedItems : queuedItems.filter(function (item) {
+            let items = manual ? queuedItems.slice() : queuedItems.filter(function (item) {
                 const nextAttempt = Date.parse(item.nextAttemptAt || item.createdAt || '');
                 return !Number.isFinite(nextAttempt) || nextAttempt <= now;
             });
+            if (requestedQueueId) {
+                items = items.filter(function (item) {
+                    return String(item && item.id || '') === requestedQueueId;
+                });
+            } else if (manual) {
+                items = items.sort(compareWorkoutFeedShareQueueNewestFirst).slice(0, 1);
+            }
 
             if (!items.length) {
                 if (manual) {
@@ -3093,6 +3174,7 @@
                     const retryUploadTimeoutMs = getWorkoutFeedShareUploadTimeoutMs(preparedQueuedFile);
                     logWorkoutFeedShareDiagnostic('share_set_retry_attempt', {
                         queueId: item.id,
+                        targetedRetry: !!requestedQueueId,
                         attempts: Number(item.attempts || 0),
                         manualRetry: manual === true,
                         uploadTimeoutMs: retryUploadTimeoutMs,
@@ -3144,6 +3226,7 @@
                     logWorkoutFeedShareDiagnostic('share_set_retry_failed', {
                         queueId: retryItem.id,
                         reason: retryItem.lastError,
+                        targetedRetry: !!requestedQueueId,
                         attempts: retryItem.attempts,
                         nextAttemptAt: retryItem.nextAttemptAt,
                         manualRetry: manual === true,
@@ -3165,8 +3248,8 @@
         }
     }
 
-    function postWorkoutFeedShareQueueNow() {
-        return retryWorkoutFeedShareQueue(true);
+    function postWorkoutFeedShareQueueNow(targetId) {
+        return retryWorkoutFeedShareQueue(true, targetId);
     }
 
     window.openFormCheck = openFormCheck;

@@ -29,10 +29,10 @@ assert.ok(
 );
 
 assert.ok(
-    source.includes('const items = manual ? queuedItems : queuedItems.filter') &&
+    source.includes('let items = manual ? queuedItems.slice() : queuedItems.filter') &&
     source.includes("const nextAttempt = Date.parse(item.nextAttemptAt || item.createdAt || '')") &&
     source.includes('return !Number.isFinite(nextAttempt) || nextAttempt <= now') &&
-    source.includes('function postWorkoutFeedShareQueueNow()'),
+    source.includes('function postWorkoutFeedShareQueueNow(targetId)'),
     'Share a Set retries should only post due queued items and expose the saved-upload Post now action'
 );
 
@@ -64,11 +64,22 @@ assert.ok(
 );
 
 assert.ok(
-    source.includes('async function discardWorkoutFeedShareQueue(manual)') &&
+    source.includes('async function discardWorkoutFeedShareQueue(manual, targetId)') &&
     source.includes('class="share-set-retry-clear"') &&
-    source.includes('onclick="discardWorkoutFeedShareQueue(true)"') &&
+    source.includes('data-share-set-retry-clear') &&
     source.includes('window.discardWorkoutFeedShareQueue = discardWorkoutFeedShareQueue'),
-    'saved Share a Set cards should expose an X action that clears saved uploads'
+    'saved Share a Set cards should expose an X action that clears a targeted saved upload'
+);
+
+assert.ok(
+    source.includes('function compareWorkoutFeedShareQueueNewestFirst') &&
+    source.includes('async function retryWorkoutFeedShareQueue(manual, targetId)') &&
+    source.includes('const requestedQueueId = targetId ? String(targetId) :') &&
+    source.includes("items = items.sort(compareWorkoutFeedShareQueueNewestFirst).slice(0, 1)") &&
+    source.includes('data-share-set-retry-post') &&
+    source.includes('discardWorkoutFeedShareQueue(true, button.getAttribute') &&
+    source.includes('postWorkoutFeedShareQueueNow(button.getAttribute'),
+    'manual Share a Set retry controls should target one saved queue item instead of looping through the whole backlog'
 );
 
 assert.ok(
@@ -87,7 +98,7 @@ assert.ok(
 );
 
 assert.ok(
-    dashboardSource.includes('pbb-deferred-formcheck.js?v=47'),
+    dashboardSource.includes('pbb-deferred-formcheck.js?v=48'),
     'dashboard should bump Share a Set script version so phones fetch the retry fix'
 );
 
