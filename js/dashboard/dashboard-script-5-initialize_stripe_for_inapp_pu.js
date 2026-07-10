@@ -20583,6 +20583,19 @@ function renderAddExerciseSuggestions(options = {}) {
     `;
 }
 
+// Keep natural exercise searches working when the library label omits an
+// anatomical qualifier, such as "Machine Seated Abduction" for a user who
+// searches "seated hip abduction".
+function addExerciseSearchTermMatches(nameLower, term, terms) {
+    if (nameLower.includes(term)) return true;
+
+    if (term === 'hip' && terms.some(searchTerm => searchTerm.includes('abduct') || searchTerm.includes('adduct'))) {
+        return nameLower.includes('abduct') || nameLower.includes('adduct');
+    }
+
+    return false;
+}
+
 // Search exercises for add modal
 function searchExercisesForAdd(query) {
     const resultsContainer = document.getElementById('add-exercise-results');
@@ -20606,7 +20619,7 @@ function searchExercisesForAdd(query) {
     const terms = query.toLowerCase().split(' ').filter(t => t);
     const filteredExercises = allExercises.filter(name => {
         const nameLower = name.toLowerCase();
-        return terms.every(term => nameLower.includes(term));
+        return terms.every(term => addExerciseSearchTermMatches(nameLower, term, terms));
     });
 
     // Also search user's custom exercises
