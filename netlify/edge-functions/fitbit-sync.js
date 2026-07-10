@@ -329,6 +329,15 @@ async function syncPilotFitbitActivities(supabase, userId, accessToken) {
 
     const knownIds = new Set((existing || []).map((row) => row.external_activity_id));
     const now = new Date().toISOString();
+    const candidateDates = [...new Set(candidates.map((activity) => mapFitbitActivityToLog(userId, activity, now).activity_date))];
+    const { data: alreadyShared } = await supabase
+        .from("activity_logs")
+        .select("activity_date")
+        .eq("user_id", userId)
+        .eq("source", "fitbit")
+        .eq("shared_to_feed", true)
+        .in("activity_date", candidateDates);
+    const closedShareDates = new Set((alreadyShared || []).map((row) => row.activity_date));
     await Promise.all(candidates.filter((activity) => knownIds.has(String(activity.logId))).map(async (activity) => {
         const mapped = mapFitbitActivityToLog(userId, activity, now);
         const { error } = await supabase.from("activity_logs").update({
@@ -343,7 +352,13 @@ async function syncPilotFitbitActivities(supabase, userId, accessToken) {
     }));
     const rows = candidates
         .filter((activity) => !knownIds.has(String(activity.logId)))
-        .map((activity) => mapFitbitActivityToLog(userId, activity, now));
+        .map((activity) => {
+            const mapped = mapFitbitActivityToLog(userId, activity, now);
+            // A day already shared to Feed is complete. Fitbit may send a late
+            // auto-detected segment after a pause, but it must not resurrect a card.
+            if (closedShareDates.has(mapped.activity_date)) mapped.shared_to_feed = true;
+            return mapped;
+        });
 
     if (!rows.length) return 0;
     const { error: insertError } = await supabase.from("activity_logs").insert(rows);
