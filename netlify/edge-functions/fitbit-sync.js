@@ -329,6 +329,18 @@ async function syncPilotFitbitActivities(supabase, userId, accessToken) {
 
     const knownIds = new Set((existing || []).map((row) => row.external_activity_id));
     const now = new Date().toISOString();
+    await Promise.all(candidates.filter((activity) => knownIds.has(String(activity.logId))).map(async (activity) => {
+        const mapped = mapFitbitActivityToLog(userId, activity, now);
+        const { error } = await supabase.from("activity_logs").update({
+            activity_type: mapped.activity_type,
+            activity_label: mapped.activity_label,
+            duration_minutes: mapped.duration_minutes,
+            intensity: mapped.intensity,
+            estimated_calories: mapped.estimated_calories,
+            source_metadata: mapped.source_metadata
+        }).eq("user_id", userId).eq("source", "fitbit").eq("external_activity_id", String(activity.logId));
+        if (error) throw error;
+    }));
     const rows = candidates
         .filter((activity) => !knownIds.has(String(activity.logId)))
         .map((activity) => mapFitbitActivityToLog(userId, activity, now));

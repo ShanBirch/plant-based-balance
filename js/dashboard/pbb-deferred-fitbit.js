@@ -38,7 +38,7 @@
     async function renderFitbitImportedActivityHomeCard() {
         if (!window.currentUser || !window.isMoveYourWayPilotUser?.() || !window.dbHelpers?.activityLogs?.getRecentImported) return;
         try {
-            const activities = await window.dbHelpers.activityLogs.getRecentImported(window.currentUser.id, 'fitbit', 3);
+            const activities = await window.dbHelpers.activityLogs.getRecentImported(window.currentUser.id, 'fitbit', 25);
             const newest = activities.find(activity => {
                 const importedAt = new Date(activity.imported_at || 0).getTime();
                 return importedAt && (Date.now() - importedAt) < 7 * 24 * 60 * 60 * 1000;
@@ -48,19 +48,21 @@
                 if (existing) existing.remove();
                 return;
             }
-            const metadata = newest.source_metadata || {};
-            const distance = Number(metadata.distance || 0);
-            const distanceUnit = metadata.distance_unit || 'km';
+            const groupedActivities = activities.filter(activity => activity.activity_date === newest.activity_date && activity.activity_type === newest.activity_type);
+            const distance = groupedActivities.reduce((sum, activity) => sum + Number(activity.source_metadata?.distance || 0), 0);
+            const distanceUnit = newest.source_metadata?.distance_unit || 'km';
             const distanceText = distance > 0 ? `${distance.toFixed(distance < 10 ? 1 : 0)} ${distanceUnit} ` : '';
-            const label = String(newest.activity_label || newest.activity_type || 'activity');
+            const totalDuration = groupedActivities.reduce((sum, activity) => sum + Number(activity.duration_minutes || 0), 0);
+            const label = groupedActivities.length > 1 && newest.activity_type === 'walking' ? 'Walk' : String(newest.activity_label || newest.activity_type || 'activity');
+            const combinedActivity = { ...newest, duration_minutes: totalDuration, estimated_calories: groupedActivities.reduce((sum, activity) => sum + Number(activity.estimated_calories || 0), 0), activity_label: label, source_metadata: { ...(newest.source_metadata || {}), distance, distance_unit: distanceUnit }, activityIds: groupedActivities.map(activity => activity.id) };
             const card = existing || document.createElement('div');
             card.id = 'fitbit-imported-activity-card';
             card.style.cssText = 'margin:0 25px 14px; padding:18px; border-radius:18px; background:linear-gradient(135deg,#0f766e,#0e7490); color:#fff; box-shadow:0 8px 22px rgba(14,116,144,.2);';
-            card.innerHTML = `<div style="display:flex; gap:12px; align-items:flex-start;"><div style="font-size:2rem; line-height:1;">${newest.activity_type === 'walking' ? '🚶' : newest.activity_type === 'running' ? '🏃' : newest.activity_type === 'cycling' ? '🚴' : '✨'}</div><div style="min-width:0; flex:1;"><div style="font-size:.74rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; opacity:.9;">Imported from Fitbit</div><div style="font-size:1.08rem; font-weight:800; line-height:1.25; margin-top:4px;">${distanceText}${label}</div><div style="font-size:.85rem; margin-top:4px; opacity:.92;">${newest.duration_minutes || 0} min. Share your movement with the Feed.</div></div></div><button id="fitbit-imported-activity-share" style="margin-top:14px; width:100%; padding:12px; border:0; border-radius:12px; background:var(--card-bg); color:var(--text-main); font:inherit; font-weight:800; cursor:pointer;">Share to Feed</button>`;
+            card.innerHTML = `<div style="display:flex; gap:12px; align-items:flex-start;"><div style="font-size:2rem; line-height:1;">${newest.activity_type === 'walking' ? '🚶' : newest.activity_type === 'running' ? '🏃' : newest.activity_type === 'cycling' ? '🚴' : '✨'}</div><div style="min-width:0; flex:1;"><div style="font-size:.74rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; opacity:.9;">Imported from Fitbit</div><div style="font-size:1.08rem; font-weight:800; line-height:1.25; margin-top:4px;">${distanceText}${label}</div><div style="font-size:.85rem; margin-top:4px; opacity:.92;">${totalDuration || 0} min. Share your movement with the Feed.</div></div></div><button id="fitbit-imported-activity-share" style="margin-top:14px; width:100%; padding:12px; border:0; border-radius:12px; background:var(--card-bg); color:var(--text-main); font:inherit; font-weight:800; cursor:pointer;">Share to Feed</button>`;
             const anchor = document.getElementById('weekly-goals-card') || document.getElementById('ai-assistant-card');
             if (!existing && anchor?.parentNode) anchor.parentNode.insertBefore(card, anchor.nextSibling);
             const shareButton = card.querySelector('#fitbit-imported-activity-share');
-            if (shareButton) shareButton.onclick = () => window.openImportedActivityForSharing?.(newest);
+            if (shareButton) shareButton.onclick = () => window.openImportedActivityForSharing?.(combinedActivity);
         } catch (error) {
             console.warn('Could not render Fitbit imported-activity home card:', error);
         }

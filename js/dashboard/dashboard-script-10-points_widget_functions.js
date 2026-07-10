@@ -4504,7 +4504,8 @@ window.openImportedActivityForSharing = function(activity) {
         venueType: null,
         photoBase64: null,
         photoMimeType: null,
-        sourceMetadata: metadata
+        sourceMetadata: metadata,
+        activityIds: Array.isArray(activity.activityIds) ? activity.activityIds : [activity.id]
     };
     showActivitySuccess(savedActivityData);
 };
@@ -4961,6 +4962,8 @@ async function shareActivityCardToFeed() {
                     shared_to_feed: true,
                     xp_awarded: savedActivityData.xpEligible
                 });
+                const additionalIds = (savedActivityData.activityIds || []).filter(id => id && id !== savedActivityData.id);
+                await Promise.all(additionalIds.map(id => window.dbHelpers?.activityLogs?.update(id, { shared_to_feed: true })));
             } catch (e) {
                 console.error('Failed to update activity log:', e);
             }
