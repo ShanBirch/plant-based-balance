@@ -6525,6 +6525,34 @@ html[data-pbb-theme="light"] #daily-quiz-card #hlq-card-root .hlq-question-text 
     -webkit-text-fill-color: #151515 !important;
 }
 
+/* Keep quiz answer labels visible in iOS WebKit, which can retain an inherited
+   text-fill colour even when the option's inline `color` changes. */
+#daily-quiz-card #hlq-card-root .hlq-fb-opt,
+#daily-quiz-card #hlq-card-root .hlq-ta-opt,
+#daily-quiz-card #hlq-card-root .hlq-match-left,
+#daily-quiz-card #hlq-card-root .hlq-match-right,
+#daily-quiz-card #hlq-card-root .hlq-sc-opt,
+#daily-quiz-card #hlq-card-root .hlq-order-item {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+html[data-pbb-theme="light"] #daily-quiz-card #hlq-card-root .hlq-fb-opt,
+html[data-pbb-theme="light"] #daily-quiz-card #hlq-card-root .hlq-ta-opt,
+html[data-pbb-theme="light"] #daily-quiz-card #hlq-card-root .hlq-match-left,
+html[data-pbb-theme="light"] #daily-quiz-card #hlq-card-root .hlq-match-right,
+html[data-pbb-theme="light"] #daily-quiz-card #hlq-card-root .hlq-sc-opt,
+html[data-pbb-theme="light"] #daily-quiz-card #hlq-card-root .hlq-order-item {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+#daily-quiz-card #hlq-card-root .hlq-correct,
+#daily-quiz-card #hlq-card-root .hlq-wrong {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
 /* Activity Insights hub and child insight pages. */
 #view-insights.activity-insights-view,
 #view-progress,
