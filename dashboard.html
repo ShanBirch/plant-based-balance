@@ -8246,33 +8246,59 @@ if(!window._pbbIsIOSSafari) {
     </div>
 </div>
 
+<style>
+/* Move your way: a quieter, editorial Balance logging surface. */
+#view-log-activity { background: radial-gradient(circle at 88% 3%, rgba(14, 165, 233, .16), transparent 29%), var(--bg) !important; }
+#view-log-activity .activity-log-shell { padding: 0 20px calc(138px + env(safe-area-inset-bottom, 0px)) !important; }
+#view-log-activity .activity-log-header { min-height: 74px; border-bottom: 1px solid var(--border); }
+#view-log-activity .activity-log-header h2 { font-size: 2rem !important; letter-spacing: -.035em; text-align: left !important; }
+#view-log-activity .activity-section { margin-bottom: 22px !important; }
+#view-log-activity .activity-section-title { font-size: .72rem !important; letter-spacing: .13em !important; color: var(--text-muted) !important; }
+#activity-type-grid { gap: 9px !important; }
+#activity-type-grid .activity-type-choice { min-height: 92px; padding: 12px 6px !important; border: 1px solid var(--border) !important; background: color-mix(in srgb, var(--card-bg) 88%, transparent) !important; box-shadow: none !important; }
+#activity-type-grid .activity-type-choice.is-selected { border-color: #38bdf8 !important; background: linear-gradient(145deg, rgba(14,165,233,.22), rgba(34,197,94,.12)) !important; box-shadow: 0 0 0 3px rgba(14,165,233,.12) !important; }
+#activity-type-grid .activity-type-choice > div:first-child { font-size: 1.75rem !important; }
+#activity-type-grid .activity-type-choice > div:last-child { font-size: .76rem !important; }
+#view-log-activity .activity-text-input { padding: 16px 17px !important; border: 1px solid var(--border) !important; border-radius: 16px !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.03); }
+#view-log-activity .activity-duration-card { border: 1px solid var(--border) !important; border-radius: 20px !important; padding: 14px !important; background: linear-gradient(135deg, color-mix(in srgb, var(--card-bg) 92%, #0ea5e9), var(--card-bg)) !important; }
+#view-log-activity .activity-duration-card button { background: var(--bg) !important; border: 1px solid var(--border) !important; width: 46px !important; height: 46px !important; }
+#view-log-activity #activity-duration-display { font-size: 2.35rem !important; letter-spacing: -.06em; }
+#view-log-activity #activity-intensity-row .intensity-btn { min-height: 82px; padding: 11px 6px !important; border: 1px solid var(--border) !important; background: var(--card-bg) !important; }
+#view-log-activity #activity-intensity-row .intensity-btn.is-selected { border-color: #38bdf8 !important; background: rgba(14,165,233,.14) !important; box-shadow: 0 0 0 3px rgba(14,165,233,.1) !important; }
+#view-log-activity .activity-burn-card { display:flex; align-items:center; justify-content:space-between; padding: 16px 18px !important; border: 1px solid rgba(56,189,248,.34); border-radius: 18px !important; background: linear-gradient(135deg, #0f3a53, #075985) !important; text-align:left !important; }
+#view-log-activity .activity-burn-card > div:first-child { font-size:.72rem !important; }
+#view-log-activity .activity-burn-card > div:last-child { margin:0 !important; }
+#view-log-activity #activity-photo-btn { border-radius: 18px !important; padding: 18px !important; border-color: var(--border) !important; }
+#view-log-activity #activity-save-btn { border-radius: 18px !important; background: linear-gradient(135deg, #16a34a, #0891b2) !important; box-shadow: 0 10px 24px rgba(8,145,178,.25) !important; }
+</style>
+
 <!-- LOG ACTIVITY VIEW -->
 <div id="view-log-activity" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 500; background: var(--bg); color: var(--text-main); overflow-y: auto;">
-    <div style="padding: 0 20px 120px 20px; max-width: 500px; margin: 0 auto;">
+    <div class="activity-log-shell" style="padding: 0 20px 120px 20px; max-width: 500px; margin: 0 auto;">
 
         <!-- Header -->
-        <div style="display: flex; align-items: center; padding: calc(15px + env(safe-area-inset-top, 0px)) 0 16px 0; gap: 12px; position: sticky; top: 0; background: var(--bg); z-index: 10;">
+        <div class="activity-log-header" style="display: flex; align-items: center; padding: calc(15px + env(safe-area-inset-top, 0px)) 0 16px 0; gap: 12px; position: sticky; top: 0; background: var(--bg); z-index: 10;">
             <div style="width: 40px;"></div>
             <h2 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; margin: 0; flex: 1; text-align: center;">Log Activity</h2>
             <div style="width: 40px;"></div>
         </div>
 
         <!-- Activity Type Grid -->
-        <div style="margin-bottom: 24px;">
-            <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Activity Type</div>
+        <div class="activity-section" style="margin-bottom: 24px;">
+            <div class="activity-section-title" style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Activity Type</div>
             <div id="activity-type-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;"></div>
         </div>
 
         <!-- Custom Label -->
-        <div style="margin-bottom: 24px;">
-            <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px;">Session Name <span style="font-weight:400; text-transform:none;">(optional)</span></div>
-            <input id="activity-label-input" type="text" placeholder="e.g. Morning Boxing, Barry's Bootcamp" style="width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1rem; box-sizing: border-box; outline: none;" onfocus="this.style.borderColor='#0ea5e9'" onblur="this.style.borderColor='var(--border)'">
+        <div class="activity-section" style="margin-bottom: 24px;">
+            <div class="activity-section-title" style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px;">Session Name <span style="font-weight:400; text-transform:none;">(optional)</span></div>
+            <input class="activity-text-input" id="activity-label-input" type="text" placeholder="e.g. Morning Boxing, Barry's Bootcamp" style="width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1rem; box-sizing: border-box; outline: none;" onfocus="this.style.borderColor='#0ea5e9'" onblur="this.style.borderColor='var(--border)'">
         </div>
 
         <!-- Duration -->
-        <div style="margin-bottom: 24px;">
-            <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Duration</div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 20px; background: var(--card-bg); border-radius: 16px; padding: 16px; border: 2px solid var(--border);">
+        <div class="activity-section" style="margin-bottom: 24px;">
+            <div class="activity-section-title" style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Duration</div>
+            <div class="activity-duration-card" style="display: flex; align-items: center; justify-content: center; gap: 20px; background: var(--card-bg); border-radius: 16px; padding: 16px; border: 2px solid var(--border);">
                 <button onclick="adjustActivityDuration(-5)" style="width: 44px; height: 44px; border-radius: 50%; background: var(--border); border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-main); font-weight: 700;">−</button>
                 <div style="text-align: center; min-width: 80px;">
                     <div id="activity-duration-display" style="font-size: 2rem; font-weight: 800; font-family: monospace;">30</div>
@@ -8283,8 +8309,8 @@ if(!window._pbbIsIOSSafari) {
         </div>
 
         <!-- Intensity -->
-        <div style="margin-bottom: 24px;">
-            <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Intensity</div>
+        <div class="activity-section" style="margin-bottom: 24px;">
+            <div class="activity-section-title" style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Intensity</div>
             <div id="activity-intensity-row" style="display: flex; gap: 8px;">
                 <button onclick="selectActivityIntensity('light')" class="intensity-btn" data-intensity="light" style="flex: 1; padding: 14px 8px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); cursor: pointer; text-align: center; transition: all 0.2s;">
                     <div style="font-size: 1.2rem;">🚶</div>
@@ -8302,7 +8328,7 @@ if(!window._pbbIsIOSSafari) {
         </div>
 
         <!-- Estimated Calories -->
-        <div style="margin-bottom: 24px; background: linear-gradient(135deg, #0c4a6e, #0284c7); border-radius: 16px; padding: 20px; color: white; text-align: center;">
+        <div class="activity-section activity-burn-card" style="margin-bottom: 24px; background: linear-gradient(135deg, #0c4a6e, #0284c7); border-radius: 16px; padding: 20px; color: white; text-align: center;">
             <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Estimated Burn</div>
             <div style="display: flex; align-items: baseline; justify-content: center; gap: 4px; margin-top: 6px;">
                 <span id="activity-calories-display" style="font-size: 2.2rem; font-weight: 800;">0</span>
@@ -8311,7 +8337,7 @@ if(!window._pbbIsIOSSafari) {
         </div>
 
         <!-- Photo Section -->
-        <div style="margin-bottom: 24px;">
+        <div class="activity-section" style="margin-bottom: 24px;">
             <div id="activity-photo-heading" style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Venue Photo</div>
             <div id="activity-photo-preview" style="display: none; margin-bottom: 12px; border-radius: 16px; overflow: hidden; position: relative;">
                 <img id="activity-photo-img" src="" style="width: 100%; max-height: 250px; object-fit: cover;">
@@ -8326,9 +8352,9 @@ if(!window._pbbIsIOSSafari) {
         </div>
 
         <!-- Notes -->
-        <div style="margin-bottom: 24px;">
+        <div class="activity-section" style="margin-bottom: 24px;">
             <div id="activity-notes-heading" style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px;">Notes <span style="font-weight:400; text-transform:none;">(optional)</span></div>
-            <textarea id="activity-notes-input" placeholder="How was your session?" rows="3" style="width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1rem; box-sizing: border-box; resize: none; outline: none; font-family: inherit;" onfocus="this.style.borderColor='#0ea5e9'" onblur="this.style.borderColor='var(--border)'"></textarea>
+            <textarea class="activity-text-input" id="activity-notes-input" placeholder="How was your session?" rows="3" style="width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1rem; box-sizing: border-box; resize: none; outline: none; font-family: inherit;" onfocus="this.style.borderColor='#0ea5e9'" onblur="this.style.borderColor='var(--border)'"></textarea>
         </div>
 
         <!-- Save Button -->

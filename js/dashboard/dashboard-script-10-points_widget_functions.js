@@ -4613,7 +4613,7 @@ function openLogActivityForm(prefill = null) {
         ? ACTIVITY_TYPES.filter(t => ['fitness_class', 'running', 'walking', 'cycling', 'pilates', 'other'].includes(t.key))
         : ACTIVITY_TYPES;
     grid.innerHTML = visibleTypes.map(t => `
-        <button onclick="selectActivityType('${t.key}')" id="activity-type-btn-${t.key}" style="padding: 14px 8px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); cursor: pointer; text-align: center; transition: all 0.2s;">
+        <button class="activity-type-choice" onclick="selectActivityType('${t.key}')" id="activity-type-btn-${t.key}" style="padding: 14px 8px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); cursor: pointer; text-align: center; transition: all 0.2s;">
             <div style="font-size: 1.5rem;">${t.emoji}</div>
             <div style="font-weight: 700; font-size: 0.75rem; margin-top: 4px; color: var(--text-main);">${t.label}</div>
         </button>
@@ -4654,6 +4654,7 @@ function selectActivityType(typeKey) {
     ACTIVITY_TYPES.forEach(t => {
         const btn = document.getElementById(`activity-type-btn-${t.key}`);
         if (btn) {
+            btn.classList.toggle('is-selected', t.key === typeKey);
             if (t.key === typeKey) {
                 btn.style.border = `2px solid ${t.color}`;
                 btn.style.background = `${t.color}15`;
@@ -4680,6 +4681,7 @@ function selectActivityIntensity(level) {
     activityFormState.intensity = level;
     document.querySelectorAll('#activity-intensity-row .intensity-btn').forEach(btn => {
         const isSelected = btn.getAttribute('data-intensity') === level;
+        btn.classList.toggle('is-selected', isSelected);
         btn.style.border = isSelected ? '2px solid #0ea5e9' : '2px solid var(--border)';
         btn.style.background = isSelected ? 'rgba(14,165,233,0.1)' : 'var(--card-bg)';
     });
