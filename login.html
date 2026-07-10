@@ -801,6 +801,9 @@
     <!-- Page code -->
     <script>
         async function initializePage() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isSwitchingAccount = urlParams.get('switch_account') === '1';
+
             // Check if already logged in
             let session = null;
             try {
@@ -808,7 +811,7 @@
             } catch (error) {
                 console.warn('Login startup session check skipped:', error);
             }
-            if (session) {
+            if (session && !isSwitchingAccount) {
                 let user = session.user || null;
                 try {
                     user = await authHelpers.getUser();
@@ -866,7 +869,6 @@
                 }
 
                 // Already logged in - redirect to dashboard
-                const urlParams = new URLSearchParams(window.location.search);
                 let redirect = urlParams.get('redirect');
 
                 if (!redirect) {
@@ -878,7 +880,6 @@
             }
 
             // Check for signup action (from Stripe redirect)
-            const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('password_reset') === '1') {
                 showSuccess('Password updated. Log in with your new password.');
                 if (window.history && window.history.replaceState) {
