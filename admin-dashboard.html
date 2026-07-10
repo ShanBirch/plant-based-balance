@@ -14649,6 +14649,8 @@
             const avatarBg = row.channel === 'in_app' ? '#48864B' : (row.channel === 'messenger' ? '#2563eb' : '#7c3aed');
             const outbound = truncateWaitingMessage(row.lastOutboundText) || 'Message sent';
             const inbound = truncateWaitingMessage(row.lastInboundText, 160);
+            const outcome = row.__cocosOutcome || (isCocosDmRow(row) ? buildCocosOutcomeMeta(row) : null);
+            const outcomeChip = renderCocosOutcomePill(outcome);
             const meta = [channel, row.stageLabel, row.handle ? (row.channel === 'in_app' ? row.handle : '@' + row.handle) : '']
                 .filter(Boolean)
                 .join(' | ');
