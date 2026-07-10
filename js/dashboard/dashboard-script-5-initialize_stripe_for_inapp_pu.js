@@ -1244,6 +1244,7 @@ function _switchAppTabReal(tabName, btn) {
         if (typeof checkAndShowMealTipCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowMealTipCard, 725);
         if (typeof checkAndShowProgressPhotoCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowProgressPhotoCard, 825);
         if (typeof checkAndShowNudgeFriendsCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowNudgeFriendsCard, 1050);
+        if (typeof window.renderFitbitImportedActivityHomeCard === 'function') scheduleDashboardTaskForActiveUser(window.renderFitbitImportedActivityHomeCard, 1125);
         if (typeof initPerformanceCard === 'function') scheduleDashboardTaskForActiveUser(initPerformanceCard, 1200);
         if (typeof refreshRaffleStateFromServer === 'function') scheduleDashboardTaskForActiveUser(refreshRaffleStateFromServer, 1350);
         if (typeof window.syncRareUnlocksFromServer === 'function') scheduleDashboardTaskForActiveUser(window.syncRareUnlocksFromServer, 1500);

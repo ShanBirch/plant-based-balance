@@ -4486,6 +4486,29 @@ window.showFitbitImportedActivityPrompt = async function() {
     }
 };
 
+window.openImportedActivityForSharing = function(activity) {
+    if (!activity) return;
+    const typeInfo = ACTIVITY_TYPES.find(t => t.key === activity.activity_type) || ACTIVITY_TYPES[ACTIVITY_TYPES.length - 1];
+    const metadata = activity.source_metadata || {};
+    savedActivityData = {
+        id: activity.id,
+        activity_type: activity.activity_type,
+        activity_label: activity.activity_label || typeInfo.label,
+        duration: activity.duration_minutes,
+        intensity: activity.intensity || 'moderate',
+        calories: activity.estimated_calories || 0,
+        emoji: typeInfo.emoji,
+        color: typeInfo.color,
+        xpEligible: false,
+        venueVerifiable: false,
+        venueType: null,
+        photoBase64: null,
+        photoMimeType: null,
+        sourceMetadata: metadata
+    };
+    showActivitySuccess(savedActivityData);
+};
+
 // MET values for calorie estimation (Metabolic Equivalent of Task)
 // Source: Compendium of Physical Activities
 const ACTIVITY_MET_VALUES = {
