@@ -7376,7 +7376,7 @@
                 body: JSON.stringify({ threadId, message: msg }),
             });
             const json = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(json.error || json.details || `HTTP ${res.status}`);
+            if (!res.ok) throw new Error(json.details || json.error || `HTTP ${res.status}`);
             return json;
         }
 
