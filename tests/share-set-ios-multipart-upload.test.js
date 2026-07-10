@@ -16,6 +16,8 @@ assert.match(stories, /crypto\.subtle\.digest\('SHA-1'/);
 assert.match(stories, /'X-Bz-Part-Number': partNumber/);
 assert.match(stories, /'X-Bz-Content-Sha1': partSha1/);
 assert.match(stories, /partSha1Array/);
+assert.match(stories, /share_set_multipart_part_read_error/);
+assert.match(stories, /share_set_multipart_part_upload_error/);
 assert.match(stories, /multipartUpload: true/);
 assert.match(stories, /\? 'multipart_b2'/);
 
@@ -33,6 +35,6 @@ assert.match(edge, /action === 'cancel'/);
 assert.match(edge, /session\.userId !== userId/);
 
 assert.match(netlify, /function = "story-media-multipart"[\s\S]*?path = "\/api\/story-media-multipart"/);
-assert.match(dashboard, /lib\/stories\.js\?v=61/);
+assert.match(dashboard, /lib\/stories\.js\?v=62/);
 
 console.log('Share a Set iOS multipart upload contract ok');

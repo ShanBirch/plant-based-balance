@@ -10,6 +10,9 @@
     // whenever it is within the direct-upload ceiling to avoid phone re-encode crashes.
     const WORKOUT_FEED_SHARE_VIDEO_TARGET_BYTES = 100 * 1024 * 1024;
     const WORKOUT_FEED_SHARE_DIRECT_UPLOAD_MAX_BYTES = 1024 * 1024 * 1024;
+    // iOS WKWebView can release a gallery-backed File after its hidden picker
+    // is cleared. Copy ordinary phone clips while that picker is still alive.
+    const WORKOUT_FEED_SHARE_IOS_STABLE_FILE_MAX_BYTES = 128 * 1024 * 1024;
     const WORKOUT_FEED_SHARE_CAMERA_VIDEO_BITS_PER_SECOND = 16000000;
     const WORKOUT_FEED_SHARE_CAMERA_AUDIO_BITS_PER_SECOND = 192000;
     const WORKOUT_FEED_SHARE_RECORDING_WIDTH = 1080;
@@ -2809,8 +2812,9 @@
         workoutFeedSharePendingInput = input;
 
         input.addEventListener('change', function (event) {
-            handleWorkoutFeedShareFileSelect(event);
-            setTimeout(clearWorkoutFeedSharePendingInput, 0);
+            void handleWorkoutFeedShareFileSelect(event).finally(function () {
+                setTimeout(clearWorkoutFeedSharePendingInput, 0);
+            });
         }, { once: true });
 
         input.addEventListener('cancel', function () {
@@ -2862,6 +2866,58 @@
         return file;
     }
 
+    function isIosNativeWorkoutFeedShare() {
+        try {
+            const userAgent = navigator.userAgent || '';
+            return isWorkoutFeedShareNativePlatform()
+                && /(iPhone|iPad|iPod)/i.test(userAgent)
+                && /FitGotchi-Native/i.test(userAgent);
+        } catch (_) {
+            return false;
+        }
+    }
+
+    async function materializeWorkoutFeedShareFile(file, stage) {
+        const fileSize = Number(file && file.size || 0);
+        if (!isIosNativeWorkoutFeedShare()
+            || !file
+            || typeof file.arrayBuffer !== 'function'
+            || !Number.isFinite(fileSize)
+            || fileSize <= 0
+            || fileSize > WORKOUT_FEED_SHARE_IOS_STABLE_FILE_MAX_BYTES) {
+            return file;
+        }
+
+        try {
+            const bytes = await file.arrayBuffer();
+            if (bytes.byteLength !== fileSize) {
+                throw new Error('The selected video could not be copied safely.');
+            }
+            const fileName = file.name || 'share-set-video.mp4';
+            const fileType = getWorkoutFeedShareVideoMimeType(file) || file.type || 'video/mp4';
+            const stableFile = typeof File !== 'undefined'
+                ? new File([bytes], fileName, {
+                    type: fileType,
+                    lastModified: file.lastModified || Date.now()
+                })
+                : new Blob([bytes], { type: fileType });
+            logWorkoutFeedShareDiagnostic('share_set_file_materialized', {
+                stage: stage || 'capture',
+                materializedBytes: bytes.byteLength,
+                ...getWorkoutFeedShareFileDiagnostic(stableFile)
+            });
+            return stableFile;
+        } catch (error) {
+            logWorkoutFeedShareDiagnostic('share_set_file_materialize_failed', {
+                stage: stage || 'capture',
+                errorName: error && error.name ? error.name : 'Error',
+                errorMessage: error && error.message ? error.message : String(error || 'file copy failed'),
+                ...getWorkoutFeedShareFileDiagnostic(file)
+            });
+            return file;
+        }
+    }
+
     async function processWorkoutFeedShareSelectedFile(rawFile) {
         logWorkoutFeedShareDiagnostic('share_set_file_received', {
             captureTarget: workoutFeedShareCaptureTarget,
@@ -2902,15 +2958,20 @@
         });
     }
 
-    function handleWorkoutFeedShareFileSelect(event) {
+    async function handleWorkoutFeedShareFileSelect(event) {
         const input = event && event.target;
         const rawFile = input && input.files ? input.files[0] : null;
-        if (input) input.value = '';
         if (!rawFile) {
+            if (input) input.value = '';
             restoreWorkoutFeedShareCaptureSurface();
             return;
         }
-        routeWorkoutFeedShareCapturedFile(rawFile);
+        // Keep the hidden iOS picker mounted until its gallery-backed File is
+        // copied. Removing it first is what leaves later multipart reads with
+        // a WebKit NotFoundError.
+        const stableFile = await materializeWorkoutFeedShareFile(rawFile, 'gallery_picker');
+        if (input) input.value = '';
+        routeWorkoutFeedShareCapturedFile(stableFile);
     }
 
     function clearWorkoutFeedShareVideo() {
@@ -3154,8 +3215,8 @@
                 return;
             }
 
-            for (const item of items) {
-                const queuedFile = getQueuedWorkoutFeedShareFile(item);
+            for (let item of items) {
+                let queuedFile = getQueuedWorkoutFeedShareFile(item);
                 if (!queuedFile) {
                     logWorkoutFeedShareDiagnostic('share_set_retry_dropped', {
                         queueId: item.id,
@@ -3165,6 +3226,20 @@
                     });
                     await deleteWorkoutFeedShareQueueItem(item.id);
                     continue;
+                }
+
+                const stableQueuedFile = await materializeWorkoutFeedShareFile(queuedFile, 'retry_queue');
+                if (stableQueuedFile !== queuedFile) {
+                    queuedFile = stableQueuedFile;
+                    item = {
+                        ...item,
+                        file: stableQueuedFile,
+                        fileName: stableQueuedFile.name || item.fileName,
+                        fileType: stableQueuedFile.type || item.fileType,
+                        fileSize: stableQueuedFile.size || item.fileSize,
+                        fileLastModified: stableQueuedFile.lastModified || item.fileLastModified
+                    };
+                    await putWorkoutFeedShareQueueItem(item);
                 }
 
                 const bannerLabel = showWorkoutFeedShareUploadBanner('Retrying Share a Set...', 'info');

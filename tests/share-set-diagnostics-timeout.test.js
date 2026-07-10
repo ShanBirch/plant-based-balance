@@ -27,12 +27,17 @@ assert.match(formCheck, /const retryUploadTimeoutMs = getWorkoutFeedShareUploadT
     'share_set_retry_discarded',
     'share_set_native_camera_ios_start',
     'share_set_native_camera_ios_result',
-    'share_set_native_file_ready'
+    'share_set_native_file_ready',
+    'share_set_file_materialized',
+    'share_set_file_materialize_failed'
 ].forEach(eventName => {
     assert.ok(formCheck.includes(eventName), `missing diagnostic event ${eventName}`);
 });
 
-assert.match(dashboard, /lib\/stories\.js\?v=61/);
-assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=48/);
+assert.match(formCheck, /async function materializeWorkoutFeedShareFile\(file, stage\)/);
+assert.match(formCheck, /await materializeWorkoutFeedShareFile\(rawFile, 'gallery_picker'\)/);
+assert.match(formCheck, /await materializeWorkoutFeedShareFile\(queuedFile, 'retry_queue'\)/);
+assert.match(dashboard, /lib\/stories\.js\?v=62/);
+assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=49/);
 
 console.log('Share a Set diagnostics and timeout contract ok');
