@@ -1631,85 +1631,6 @@
             color: var(--admin-muted-2) !important;
         }
 
-        .convo-compose-panel {
-            background: var(--admin-surface-2) !important;
-            border-color: var(--admin-border) !important;
-        }
-
-        .convo-compose-search,
-        .convo-messenger-sync {
-            background: var(--admin-elevated) !important;
-            border-color: var(--admin-border-strong) !important;
-            color: var(--admin-text) !important;
-        }
-
-        .convo-messenger-sync {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
-            gap: 8px 10px;
-            margin-top: 10px;
-            padding: 10px 12px;
-            border: 1px solid var(--admin-border-strong);
-            border-radius: 8px;
-        }
-
-        .convo-messenger-sync-copy {
-            grid-column: 1 / -1;
-            color: var(--admin-muted);
-            font-size: 0.75rem;
-            line-height: 1.35;
-        }
-
-        .convo-messenger-sync input {
-            min-width: 0;
-            border: 1px solid var(--admin-border-strong);
-            border-radius: 8px;
-            padding: 9px 10px;
-            font: inherit;
-        }
-
-        .convo-messenger-sync button {
-            border: 0;
-            border-radius: 8px;
-            padding: 9px 13px;
-            background: var(--admin-primary);
-            color: var(--admin-on-primary);
-            font: inherit;
-            font-weight: 800;
-            cursor: pointer;
-        }
-
-        .convo-messenger-sync button:hover {
-            background: var(--admin-primary-light);
-        }
-
-        .convo-messenger-sync button:focus-visible {
-            outline: 3px solid var(--admin-focus);
-            outline-offset: 2px;
-        }
-
-        .convo-messenger-sync button:disabled {
-            opacity: 0.6;
-            cursor: wait;
-        }
-
-        .convo-messenger-sync-status {
-            grid-column: 1 / -1;
-            min-height: 1.1em;
-            color: var(--admin-muted);
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-
-        .convo-messenger-sync-status.success { color: var(--admin-success); }
-        .convo-messenger-sync-status.error { color: var(--admin-danger); }
-
-        @media (max-width: 720px) {
-            .convo-messenger-sync { grid-template-columns: 1fr; }
-            .convo-messenger-sync-copy,
-            .convo-messenger-sync-status { grid-column: 1; }
-        }
-
         input:focus,
         select:focus,
         textarea:focus,
@@ -2808,12 +2729,6 @@
                             <div class="convo-compose-search">
                                 <i data-lucide="search"></i>
                                 <input type="text" id="convo-search" placeholder="Search name, email, or IG handle..." oninput="filterConvoUsers()">
-                            </div>
-                            <div class="convo-messenger-sync">
-                                <div class="convo-messenger-sync-copy">After a person messages the Balance APP Facebook Page, enter their exact Facebook name to securely sync that user-initiated Messenger conversation.</div>
-                                <input type="text" id="messenger-sync-name" aria-label="Facebook name for Messenger sync" placeholder="Facebook name (for example, Shannon Birch)" onkeydown="handleMessengerSyncKeydown(event)">
-                                <button type="button" id="messenger-sync-btn" onclick="syncMessengerContact()">Sync Messenger</button>
-                                <div id="messenger-sync-status" class="convo-messenger-sync-status" role="status" aria-live="polite"></div>
                             </div>
                         </div>
                         <div id="convo-users-list" class="convo-user-list"><div class="loading">Loading...</div></div>
@@ -6561,74 +6476,6 @@
         }
 
         function filterConvoUsers(){renderFilteredConvoTargets();}
-
-        function setMessengerSyncStatus(message, type = '') {
-            const status = document.getElementById('messenger-sync-status');
-            if (!status) return;
-            status.textContent = message || '';
-            status.className = `convo-messenger-sync-status${type ? ` ${type}` : ''}`;
-        }
-
-        function handleMessengerSyncKeydown(event) {
-            if (event.key !== 'Enter') return;
-            event.preventDefault();
-            syncMessengerContact();
-        }
-
-        async function syncMessengerContact() {
-            const input = document.getElementById('messenger-sync-name');
-            const button = document.getElementById('messenger-sync-btn');
-            const name = String(input?.value || '').replace(/\s+/g, ' ').trim();
-            if (!name) {
-                setMessengerSyncStatus('Enter the exact Facebook name shown in Messenger.', 'error');
-                input?.focus();
-                return;
-            }
-
-            if (button) button.disabled = true;
-            if (input) input.disabled = true;
-            setMessengerSyncStatus(`Checking Messenger for ${name}...`);
-
-            try {
-                const res = await fetch('/.netlify/functions/manychat-reconcile', {
-                    method: 'POST',
-                    headers: await getAdminJsonHeaders(),
-                    body: JSON.stringify({ search_name: name }),
-                });
-                const json = await res.json().catch(() => ({}));
-                const contacts = Array.isArray(json.contacts) ? json.contacts : [];
-                const messengerContacts = contacts.filter(contact => contact.channel === 'messenger');
-                const synced = messengerContacts.find(contact => contact.backfilled && contact.thread_id)
-                    || messengerContacts.find(contact => contact.thread_id)
-                    || null;
-
-                if (!res.ok || json.failed > 0) {
-                    const details = json.failures?.[0]?.error || json.error || `HTTP ${res.status}`;
-                    throw new Error(details);
-                }
-                if (!messengerContacts.length) {
-                    throw new Error(`No Messenger contact named ${name} was found. Confirm they messaged the Balance APP Page first.`);
-                }
-                if (!synced?.thread_id) {
-                    const skipped = messengerContacts[0]?.skipped;
-                    if (skipped === 'empty_last_input_text') {
-                        throw new Error(`${name} has not sent a Messenger message to the Page yet.`);
-                    }
-                    throw new Error(`Messenger found ${name}, but there was no new message to sync.`);
-                }
-
-                await renderConvoUsersList();
-                const target = (convoTargetsCache || []).find(item => item.type === 'ig' && String(item.id) === String(synced.thread_id));
-                setMessengerSyncStatus(`Messenger conversation synced for ${synced.contact_name || name}.`, 'success');
-                if (target) openConversationTarget(target.type, target.id);
-            } catch (error) {
-                console.error('[messenger-sync] failed:', error);
-                setMessengerSyncStatus(error.message || 'Messenger sync failed.', 'error');
-            } finally {
-                if (button) button.disabled = false;
-                if (input) input.disabled = false;
-            }
-        }
 
         function openConversationTarget(type, id) {
             const target = (convoTargetsCache || []).find(t => t.type === type && t.id === id);
