@@ -445,6 +445,7 @@ Rules:
 - Apply the pattern of Shannon's edits, but do not copy an old line unless it genuinely fits.
 - Keep it under 240 characters.
 - No advice, diagnosis, body or weight judgement, hashtags, URLs, or claims about unseen media.
+- Never use em dashes, en dashes, double hyphens, or a spaced hyphen as punctuation. Use a comma or full stop instead.
 - Never mention internal tools, testing, or how the draft was made.
 - Return only JSON: {"text":"..."}`;
     try {

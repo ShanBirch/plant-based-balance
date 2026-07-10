@@ -97,6 +97,10 @@ assert.strictEqual(worker.buildFeedPostAlert({
     now: new Date('2026-07-03T01:00:00.000Z'),
 }), null);
 assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/tahlia-profile.js'), 'utf8'), /session win/i);
+assert.strictEqual(
+    profile.cleanPublicText('little win — showed up -- that is enough – genuinely'),
+    'little win, showed up, that is enough, genuinely'
+);
 assert.match(profile.storyText({ caption: JSON.stringify(workoutCardPayload) }), /Upper Body/i);
 assert.match(profile.storyText({ caption: JSON.stringify(workoutCardPayload) }), /Lat Pulldown/i);
 
@@ -279,6 +283,23 @@ assert.strictEqual(learnedCommentAlert.data.tahlia_social_learning.example_count
 assert.strictEqual(worker.isSafeLearnedTahliaDraft('proper meal win this'), true);
 assert.strictEqual(worker.isSafeLearnedTahliaDraft('you should try a calorie deficit'), false);
 assert.strictEqual(worker.parseTahliaDraftReply('{"text":"little win"}'), 'little win');
+assert.strictEqual(
+    worker.applyGeneratedTahliaDraft(commentAlert, {
+        text: 'little win — showed up -- that is enough',
+        mode: 'recent_shannon_edits',
+    }).data.draft_text,
+    'little win, showed up, that is enough'
+);
+assert.strictEqual(
+    coachAction.applyTahliaSocialEditFromRequest({
+        data: commentAlert.data,
+        action: commentAlert.data.proposed_actions[0],
+        actionId: commentAlert.data.proposed_actions[0].id,
+        body: { editedText: 'solid effort — keep it going -- nice' },
+        now: new Date('2026-07-03T02:20:00.000Z'),
+    }).data.draft_text,
+    'solid effort, keep it going, nice'
+);
 
 assert.ok(adminSource.includes('function isTahliaSocialApprovalAlert'));
 assert.ok(adminSource.includes('function isSupportedTahliaSocialApprovalAlert'));

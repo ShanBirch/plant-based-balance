@@ -104,6 +104,12 @@ function tahliaSocialActionKind(action = {}, data = {}) {
 
 function cleanSocialText(value = '', max = 500) {
     return String(value || '')
+        // This is the final guard before a Tahlia draft, edit, or card caption
+        // reaches the Feed. Preserve hyphenated words, but remove AI-style
+        // dash punctuation from public copy.
+        .replace(/\s*--+\s*/g, ', ')
+        .replace(/\s*[\u2012-\u2015\uFE58\uFE63\uFF0D]+\s*/g, ', ')
+        .replace(/\s-\s/g, ', ')
         .replace(/\s+/g, ' ')
         .replace(/[<>]/g, '')
         .trim()

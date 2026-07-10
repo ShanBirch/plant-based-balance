@@ -234,6 +234,12 @@ function pick(list, seed) {
 
 function cleanPublicText(value, max = 500) {
     return String(value || '')
+        // Tahlia's casual Feed voice never uses AI-style dash punctuation.
+        // Keep ordinary hyphenated words intact, but turn dash-as-a-pause
+        // punctuation into a natural comma before this becomes public text.
+        .replace(/\s*--+\s*/g, ', ')
+        .replace(/\s*[\u2012-\u2015\uFE58\uFE63\uFF0D]+\s*/g, ', ')
+        .replace(/\s-\s/g, ', ')
         .replace(/\s+/g, ' ')
         .replace(/[<>]/g, '')
         .trim()
