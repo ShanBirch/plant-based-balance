@@ -265,6 +265,15 @@ function isSongIdentificationQuestion(text) {
     return /\b(?:what(?:'s|s| is| was)?|which|name\s+(?:of|for))\s+(?:the\s+)?(?:song|track|tune|music|audio)\b|\b(?:what(?:'s|s| is| was)?|which)\s+(?:song|track|tune)\s+(?:is|was)\s+(?:this|that|it)\b|\b(?:what(?:'s|s| is| was))\s+(?:this|that|it)\s+(?:song|track|tune)\b/i.test(value);
 }
 
+function songShareCommentForContext(...parts) {
+    const text = parts.map(part => cleanText(part, 1200)).filter(Boolean).join(' ');
+    if (!text) return '';
+    if (!/\b(?:spotify|apple\s+music|soundcloud|play\s+on\s+spotify|check\s+(?:out\s+)?(?:my|our)\s+(?:latest\s+)?(?:new\s+)?release|(?:new|latest)\s+release|out\s+now|stream\s+(?:now|on)|available\s+on|listen\s+now)\b/i.test(text)) return '';
+    return /\b(?:check\s+(?:out\s+)?(?:my|our)\s+(?:latest\s+)?(?:new\s+)?release|(?:new|latest)\s+release|out\s+now|single|album)\b/i.test(text)
+        ? 'love the new release'
+        : 'such a good track';
+}
+
 const ANIMAL_WELFARE_SUPPORT_COMMENT = "i can't believe this happens, so sad. you okay?";
 const ANIMAL_WELFARE_ADVOCACY_COMMENT = "so true, it just normalises it hey";
 
@@ -735,6 +744,11 @@ function repairDraftCommentWithContext({ comment = '', description = '', visible
     const normalizedLower = normalized.toLowerCase();
     const clean = value => normalizeDraftComment(value, { storyOwner, sharedFromUsername, sharedContent });
 
+    const songShareComment = songShareCommentForContext(description, visibleText);
+    if (songShareComment && !/\b(?:song|track|music|release|spotify|artist|listen|album|single)\b/i.test(`${raw} ${normalized}`)) {
+        return clean(songShareComment);
+    }
+
     const animalSubjectComment = animalSubjectCommentForContext(text);
     if (animalSubjectComment && /\blooking good\b/i.test(`${rawLower} ${normalizedLower}`)) {
         return clean(animalSubjectComment);
@@ -937,7 +951,15 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
         sharedFromUsername,
         surfaceContext,
     });
-    if (foreignSourceHandle) {
+    const songShareComment = songShareCommentForContext(
+        description,
+        visibleText,
+        surfaceContext?.storyMusicLabel,
+        surfaceContext?.storyMusicArtist,
+        surfaceContext?.storyMusicTitle,
+    );
+    const songAwareComment = /\b(?:song|track|music|release|spotify|artist|listen|album|single)\b/i.test(comment);
+    if (foreignSourceHandle && !(songShareComment && songAwareComment)) {
         return { safeToComment: false, reason: 'story_credits_another_creator' };
     }
     const unsafePatterns = [
