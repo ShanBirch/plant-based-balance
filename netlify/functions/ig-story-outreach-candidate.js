@@ -617,6 +617,27 @@ function commentHasSpecificStoryHook(comment = '', contextText = '', surfaceCont
     return false;
 }
 
+const STORY_COMMENT_ECHO_STOP_WORDS = new Set([
+    'a', 'an', 'and', 'are', 'as', 'at', 'be', 'for', 'from', 'haha', 'has',
+    'have', 'how', 'i', 'in', 'is', 'it', 'my', 'of', 'on', 'or', 'so', 'that',
+    'the', 'this', 'to', 'was', 'were', 'what', 'whats', 'with', 'you', 'your',
+]);
+
+function gymCaptionEchoFallback(comment = '', contextText = '') {
+    const draftWords = normalizeEvidencePhrase(comment)
+        .split(' ')
+        .filter(word => word && word.length > 2 && !STORY_COMMENT_ECHO_STOP_WORDS.has(word));
+    const contextWords = new Set(normalizeEvidencePhrase(contextText).split(' ').filter(Boolean));
+    const gymContext = /\b(?:gym|workout|training|class|session|lift|squat|deadlift|bench|row|curl|run|walk|hike|sport|dance|yoga|pilates|spin|quads?|hamstrings?|glutes?|legs?|chest|back|shoulders?)\b/i.test(contextText);
+    if (!gymContext || draftWords.length < 3) return '';
+
+    const overlapCount = draftWords.filter(word => contextWords.has(word)).length;
+    const repeatsCaption = overlapCount >= 2 && overlapCount / draftWords.length >= 0.6;
+    if (!repeatsCaption) return '';
+
+    return 'hell yeah, how was the sesh?';
+}
+
 const UNSUPPORTED_DETAIL_STOP_WORDS = new Set([
     'and',
     'the',
@@ -749,6 +770,8 @@ function repairDraftCommentWithContext({ comment = '', description = '', visible
         return clean(songShareComment);
     }
     if (envFlag('STORY_COMMENT_MINIMAL_COMMENT_RULES', true)) {
+        const nonEchoingGymComment = gymCaptionEchoFallback(normalized || raw, text);
+        if (nonEchoingGymComment) return clean(nonEchoingGymComment);
         return clean(normalized || raw);
     }
 
@@ -1230,6 +1253,8 @@ Rules:
 - For shared content, avoid "you/your" and avoid commenting on the person in the reel/post. Good angles are the shared idea, text, place, joke, news, or mood.
 - Treat audio transcript as supplemental. If audio/transcript and visible frames point to different subjects, avoid transcript-only details and plan to skip unless a visible-only opener is clearly safe.
 - Pick the main subject before planning the comment: animal beats person appearance, visible text beats selfie appearance when the text is emotional/heavy, and scenery comments are only for scenery-led stories.
+- Treat captions, overlays, and visible text as context, not copy. Never repeat a distinctive phrase from the story back to the person; react to the underlying moment in fresh wording.
+- For gym/action stories where the text names a body part or repeats the workout result (for example, "quads were popping"), do not echo that wording. Prefer a simple opener such as "hell yeah, how was the sesh?" when the activity is clear.
 - If you cannot point to a concrete visual hook, choose skip/like-only instead of a broad one-line pun.
 - Prefer one tiny natural question when the story gives a clear handle: pet name, location, food/drink, class, hobby, travel, weather, event, or an interesting object.
 - For animal stories with no visible pet name, prefer: oh so cute, whats their name?
@@ -1296,6 +1321,7 @@ Rules:
 - Mostly lowercase unless a proper noun really needs it.
 - Prefer "whats", "hows", and "thats" over polished apostrophe-heavy wording when it still reads clearly.
 - Pick the main subject before writing: animal beats person appearance, visible text beats selfie appearance when the text is emotional/heavy, and scenery comments are only for scenery-led stories.
+- Do not copy visible caption or overlay wording into the reply. Use the text to understand the moment, then answer in fresh, natural Shannon wording. If a gym caption repeats a body part or workout result, prefer "hell yeah, how was the sesh?" over parroting it.
 - If the story does not give a specific visual hook, return an empty comment instead of a broad compliment.
 - Ask one tiny specific question when it clearly keeps the conversation going.
 - Do not ask a question if the story already gives the answer.

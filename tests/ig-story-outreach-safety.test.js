@@ -1019,4 +1019,17 @@ const songOnlyVideoSalvage = assessStillsOnlyVideoSalvageContext({
 assert.strictEqual(songOnlyVideoSalvage.safeToComment, true);
 assert.strictEqual(songOnlyVideoSalvage.reason, 'song_metadata_handle');
 
+process.env.STORY_COMMENT_MINIMAL_COMMENT_RULES = '1';
+assert.strictEqual(
+    repairDraftCommentWithContext({
+        comment: 'quads were popping this morning haha',
+        description: 'A clear gym story showing someone training after a workout.',
+        visibleText: 'quads were popping this morning',
+        storyOwner: 'gym.action',
+    }),
+    'hell yeah, how was the sesh?',
+    'minimal model-first mode should replace caption-echoing gym comments with a natural opener'
+);
+process.env.STORY_COMMENT_MINIMAL_COMMENT_RULES = '0';
+
 console.log('ig story outreach safety tests passed');
