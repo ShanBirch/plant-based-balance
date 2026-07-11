@@ -50,7 +50,7 @@
         var s = document.createElement('style');
         s.id = 'hlq-styles';
         s.textContent = [
-            '#hlq-card-root { position:relative; z-index:1; }',
+            '#hlq-card-root { position:relative; z-index:1; width:100%; box-sizing:border-box; }',
             '#hlq-stage { position:relative; }',
             '#hlq-fxtrack { position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:14px; z-index:0; }',
             '#hlq-wand {',
@@ -62,7 +62,7 @@
             '    0 0 110px 30px rgba(255,140,40,0.30);',
             '  border-radius:50%; opacity:0; transform:translateX(-30%) skewX(-14deg);',
             '}',
-            '#hlq-content { position:relative; z-index:2; }',
+            '#hlq-content { position:relative; z-index:2; width:100%; overflow:visible; }',
             '@keyframes hlqWand {',
             '  0%   { transform: translateX(-30%) skewX(-14deg); opacity: 0; }',
             '  10%  { opacity: 1; }',
@@ -100,6 +100,7 @@
             '  -webkit-tap-highlight-color: transparent;',
             '  transition: transform 140ms ease, background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;',
             '}',
+            '.hlq-sc-opt { display:block; width:100%; box-sizing:border-box; white-space:normal; }',
             '.hlq-btn:active { transform: scale(0.97); }',
             '.hlq-correct { background: rgba(16,185,129,0.92) !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: 0 0 0 2px rgba(255,255,255,0.4) !important; }',
             '.hlq-wrong   { background: rgba(239,68,68,0.92)  !important; border-color: #ffffff !important; color: #ffffff !important; box-shadow: 0 0 0 2px rgba(255,255,255,0.4) !important; }'
@@ -208,6 +209,9 @@
         HLQ.savedStyles = {
             cursor: card.style.cursor,
             minHeight: card.style.minHeight,
+            height: card.style.height,
+            maxHeight: card.style.maxHeight,
+            overflow: card.style.overflow,
             padding: card.style.padding,
             display: card.style.display
         };
@@ -215,6 +219,9 @@
         card.style.cursor = 'default';
         card.style.padding = '18px 18px 22px';
         card.style.minHeight = '';   // grow naturally with content
+        card.style.height = 'auto';
+        card.style.maxHeight = 'none';
+        card.style.overflow = 'visible'; // keep the full answer stack reachable
         card.style.display = 'block';
 
         var lessonTitle = (HLQ.lesson && HLQ.lesson.title) || '';
@@ -270,6 +277,9 @@
         if (HLQ.savedStyles) {
             card.style.cursor = HLQ.savedStyles.cursor || 'pointer';
             card.style.minHeight = HLQ.savedStyles.minHeight || '';
+            card.style.height = HLQ.savedStyles.height || '';
+            card.style.maxHeight = HLQ.savedStyles.maxHeight || '';
+            card.style.overflow = HLQ.savedStyles.overflow || '';
             card.style.padding = HLQ.savedStyles.padding || '';
             card.style.display = HLQ.savedStyles.display || '';
         }
