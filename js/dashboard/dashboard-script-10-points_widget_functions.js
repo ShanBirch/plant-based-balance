@@ -3420,6 +3420,85 @@ async function pbbShareDrawMealCard(ctx, cardPayload, panelX, panelY, panelW, pa
     }
 }
 
+async function pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, target) {
+    const panelX = 48;
+    const panelW = width - 96;
+    const panelH = target === 'feed' ? 392 : 456;
+    const panelY = height - panelH - 58;
+
+    const lowerGradient = ctx.createLinearGradient(0, height * 0.46, 0, height);
+    lowerGradient.addColorStop(0, 'rgba(4, 12, 9, 0)');
+    lowerGradient.addColorStop(0.58, 'rgba(4, 12, 9, 0.28)');
+    lowerGradient.addColorStop(1, 'rgba(4, 12, 9, 0.78)');
+    ctx.fillStyle = lowerGradient;
+    ctx.fillRect(0, 0, width, height);
+
+    try {
+        const logo = await pbbShareLoadImage('balance_logo_transparent.png');
+        ctx.save();
+        ctx.globalAlpha = 0.94;
+        ctx.drawImage(logo, 64, 54, 82, 82);
+        ctx.restore();
+    } catch (error) {
+        console.warn('Could not draw transparent Balance logo:', error);
+    }
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 29px Arial, sans-serif';
+    ctx.fillText('BALANCE', 164, 108);
+
+    pbbShareFillRoundRect(ctx, panelX, panelY, panelW, panelH, 38, 'rgba(10, 15, 13, 0.62)');
+    pbbShareRoundRect(ctx, panelX, panelY, panelW, panelH, 38);
+    ctx.strokeStyle = 'rgba(255,255,255,0.72)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    const contentX = panelX + 48;
+    const contentW = panelW - 96;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 52px Arial, sans-serif';
+    let titleY = panelY + 72;
+    titleY = pbbShareWrapText(
+        ctx,
+        String(cardPayload.foods || cardPayload.meal_type || 'Meal logged').toUpperCase(),
+        contentX,
+        titleY,
+        contentW,
+        58,
+        2
+    );
+
+    const calories = Math.max(0, Math.round(Number(cardPayload.calories || 0)));
+    const protein = Math.max(0, Math.round(Number(cardPayload.protein || 0)));
+    const carbs = Math.max(0, Math.round(Number(cardPayload.carbs || 0)));
+    const fat = Math.max(0, Math.round(Number(cardPayload.fat || 0)));
+    const metrics = [
+        [calories > 0 ? String(calories) : '-', 'kcal', '#f5c45c'],
+        [`${protein}g`, 'protein', '#c9b7ff'],
+        [`${carbs}g`, 'carbs', '#c9b7ff'],
+        [`${fat}g`, 'fat', '#c9b7ff']
+    ];
+    const metricY = Math.max(panelY + 184, titleY + 20);
+    const metricW = contentW / metrics.length;
+    metrics.forEach((metric, index) => {
+        const x = contentX + (index * metricW);
+        if (index > 0) {
+            ctx.fillStyle = 'rgba(255,255,255,0.28)';
+            ctx.fillRect(x, metricY - 8, 1, 108);
+        }
+        ctx.fillStyle = metric[2];
+        ctx.font = '900 42px Arial, sans-serif';
+        ctx.fillText(metric[0], x + (index === 0 ? 0 : 20), metricY + 42);
+        ctx.fillStyle = 'rgba(255,255,255,0.88)';
+        ctx.font = '750 22px Arial, sans-serif';
+        ctx.fillText(metric[1], x + (index === 0 ? 0 : 20), metricY + 78);
+    });
+
+    ctx.fillStyle = 'rgba(255,255,255,0.72)';
+    ctx.font = '750 20px Arial, sans-serif';
+    ctx.fillText('Fuel. Track. Level up.', contentX, panelY + panelH - 26);
+}
+
 async function pbbShareDrawProgressPhotoCard(ctx, cardPayload, panelX, panelY, panelW, panelH, photoDataUrls) {
     let y = panelY + 142;
     const photos = Array.isArray(photoDataUrls) ? photoDataUrls.filter(Boolean).slice(0, 3) : [];
@@ -3518,11 +3597,18 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
         try {
             const photo = await pbbShareLoadImage(primaryPhotoDataUrl);
             pbbShareDrawCoverImage(ctx, photo, 0, 0, width, height);
-            ctx.fillStyle = 'rgba(4, 12, 9, 0.56)';
+            ctx.fillStyle = cardType === 'meal'
+                ? 'rgba(4, 12, 9, 0.18)'
+                : 'rgba(4, 12, 9, 0.56)';
             ctx.fillRect(0, 0, width, height);
         } catch (e) {
             console.warn('Could not draw share background photo:', e);
         }
+    }
+
+    if (cardType === 'meal' && primaryPhotoDataUrl) {
+        await pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, target);
+        return canvas.toDataURL('image/jpeg', 0.92);
     }
 
     ctx.fillStyle = 'rgba(255,255,255,0.12)';
