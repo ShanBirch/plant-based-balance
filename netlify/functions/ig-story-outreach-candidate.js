@@ -19,8 +19,11 @@ const {
     isTestAccount,
     isAiAutomationOptedOut,
 } = require('./_lib/client-context');
+const { callOpenAIModelChain } = require('./_lib/ai-router');
 
 const SHARED_SECRET = process.env.IG_STORY_BOT_BRIDGE_SECRET || process.env.STORY_COMMENT_BRIDGE_SECRET || '';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const STORY_COMMENT_OPENAI_ANALYSIS_FIRST = envFlag('STORY_COMMENT_OPENAI_ANALYSIS_FIRST', true);
 const OWN_HANDLES = new Set(['shan_n_sunny', 'cocos_connected', 'cocos_pt_studio']);
 const RESERVED_STORY_USERNAMES = new Set(['highlights', 'explore', 'reels', 'stories']);
 const MAX_COMMENT_CHARS = 160;
@@ -89,6 +92,76 @@ function envFlag(name, fallback = false) {
 function envInt(name, fallback) {
     const value = Number.parseInt(String(process.env[name] || ''), 10);
     return Number.isFinite(value) ? value : fallback;
+}
+
+function parseModelList(value) {
+    return String(value || '')
+        .split(',')
+        .map(model => model.trim())
+        .filter(Boolean);
+}
+
+function extractModelText(data) {
+    return (data?.candidates?.[0]?.content?.parts || [])
+        .map(part => part?.text || '')
+        .join('')
+        .trim();
+}
+
+function storyOpenAIModels() {
+    return parseModelList(
+        process.env.OPENAI_MODEL_CHAIN_STORY_VISION
+        || process.env.OPENAI_MODEL_CHAIN_STORY_COMMENT
+        || process.env.STORY_COMMENT_OPENAI_MODEL
+        || ''
+    );
+}
+
+async function callOpenAIStoryModel(contents, generationConfig = {}, { label = 'openai-story-analysis', profile = 'story_vision' } = {}) {
+    if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
+    const models = storyOpenAIModels();
+    const { data, model } = await callOpenAIModelChain({
+        apiKey: OPENAI_API_KEY,
+        profile,
+        label,
+        payload: { contents, generationConfig },
+        models: models.length ? models : undefined,
+    });
+    const text = extractModelText(data);
+    if (!text) throw new Error(`${label} returned empty text from ${model}`);
+    return { text, model };
+}
+
+async function callStoryTextModel(contents, generationConfig = {}, label = 'story-comment-text') {
+    if (STORY_COMMENT_OPENAI_ANALYSIS_FIRST && OPENAI_API_KEY) {
+        try {
+            const result = await callOpenAIStoryModel(contents, generationConfig, { label, profile: 'story_comment' });
+            return result.text;
+        } catch (err) {
+            console.warn(`[${label}] OpenAI failed, falling back to Gemini: ${err.message}`);
+        }
+    }
+    return callGeminiFallback(contents, generationConfig);
+}
+
+async function callStoryVisionModel(contents, generationConfig = {}) {
+    if (STORY_COMMENT_OPENAI_ANALYSIS_FIRST && OPENAI_API_KEY) {
+        try {
+            return await callOpenAIStoryModel(contents, generationConfig, { label: 'openai-story-vision', profile: 'story_vision' });
+        } catch (err) {
+            console.warn(`[story-vision] OpenAI failed, falling back to Vertex/Gemini: ${err.message}`);
+        }
+    }
+    try {
+        return { text: await callVertexGeminiMultimodal(contents, generationConfig), model: 'vertex-gemini' };
+    } catch (err) {
+        return { text: await callGeminiFallback(contents, generationConfig), model: 'gemini' };
+    }
+}
+
+function shouldIncludeStoryVideoEvidence(evidenceVideo) {
+    return Boolean(evidenceVideo?.clean)
+        && !(STORY_COMMENT_OPENAI_ANALYSIS_FIRST && OPENAI_API_KEY);
 }
 
 const STORY_COMMENT_DEEP_PIPELINE_ENABLED = envFlag('STORY_COMMENT_DEEP_PIPELINE_ENABLED', false);
@@ -1164,7 +1237,7 @@ Rules:
 
 STORY CONTEXT:
 ${context}`;
-        const reply = await callGeminiFallback([{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 700, temperature: 0.2 });
+        const reply = await callStoryTextModel([{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 700, temperature: 0.2 }, 'openai-story-plan');
         return normalizeStoryCommentPlanPayload(parseJsonMaybe(reply) || {});
     } catch (err) {
         console.warn('[story-comment-plan] failed:', err.message);
@@ -1242,7 +1315,7 @@ ${JSON.stringify(draftPlan, null, 2)}
 
 STORY CONTEXT:
 ${context}`;
-        const reply = await callGeminiFallback([{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 220, temperature: 0.45 });
+        const reply = await callStoryTextModel([{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 220, temperature: 0.45 }, 'openai-story-writer');
         const parsed = parseJsonMaybe(reply) || {};
         const normalized = normalizeDraftComment(parsed.comment || initialComment || '', {
             storyOwner: username,
@@ -1351,7 +1424,7 @@ ${context}
 
 COMMENT TO REVIEW:
 ${normalizedComment}`;
-        const reply = await callGeminiFallback([{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 500, temperature: 0.1 });
+        const reply = await callStoryTextModel([{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 500, temperature: 0.1 }, 'openai-story-review');
         const review = normalizeStoryCommentReviewPayload(parseJsonMaybe(reply) || {});
         if (review.verdict !== 'block' && !deterministicSafety.safeToComment) {
             return normalizeStoryCommentReviewPayload({
@@ -1429,7 +1502,7 @@ ${context}
 
 ORIGINAL COMMENT:
 ${comment}`;
-        const reply = await callGeminiFallback([{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 220, temperature: 0.4 });
+        const reply = await callStoryTextModel([{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 220, temperature: 0.4 }, 'openai-story-repair');
         const parsed = parseJsonMaybe(reply) || {};
         const repaired = applyRelationshipAwareStoryCommentGuard(normalizeDraftComment(parsed.comment || '', {
             storyOwner: username,
@@ -2322,13 +2395,16 @@ async function analyzeStoryEvidence({ username, evidenceImages, evidenceVideo = 
     }
 
     const stillsOnlyVideoSalvage = isStillsOnlyVideoSalvage(surfaceContext, evidenceVideo);
-    const frameNote = evidenceVideo?.clean
+    const includeVideoEvidence = shouldIncludeStoryVideoEvidence(evidenceVideo);
+    const frameNote = includeVideoEvidence
         ? 'The evidence includes the short story video plus screenshot/frame stills when available. Use the video for action and sequence context.'
+        : (evidenceVideo?.clean
+            ? 'A video was detected but intentionally omitted from OpenAI analysis. Use only the supplied still image evidence and do not guess action, sequence, or speech.'
         : (stillsOnlyVideoSalvage
             ? 'The full video could not be analyzed, so the evidence is screenshot/sample-frame stills only. Do not guess action or sequence. Only comment if a concrete harmless handle is visible in the stills, text, or song label.'
             : (evidenceImages.length > 1
             ? 'The images are ordered evidence from the same Instagram story: the first is the main screenshot, then sampled frames from the video over time.'
-            : 'The image is the main Instagram story screenshot.'));
+            : 'The image is the main Instagram story screenshot.')));
     const contextNote = surfaceContext?.storyContentType && surfaceContext.storyContentType !== 'unknown'
         ? `Browser context hint: this appears to be ${surfaceContext.storyContentType}${surfaceContext.sharedFromUsername ? ` from @${surfaceContext.sharedFromUsername}` : ''}${surfaceContext.sharedContentUrl ? ` (${surfaceContext.sharedContentUrl})` : ''}. Treat this as a hint, not certainty.`
         : 'Browser context hint: no reliable shared reel/post signal was found.';
@@ -2412,7 +2488,7 @@ Rules:
     if (surfaceContext?.storyMusicLabel) {
         parts.push({ text: songNote });
     }
-    if (evidenceVideo?.clean) {
+    if (includeVideoEvidence) {
         parts.push({ text: `Evidence video: full visible story video (${evidenceVideo.bytes || 'unknown'} bytes).` });
         parts.push({ inlineData: { mimeType: evidenceVideo.mimeType, data: evidenceVideo.clean } });
     }
@@ -2428,24 +2504,21 @@ Rules:
     const generationConfig = { maxOutputTokens: 500, temperature: 0.35 };
 
     let raw = '';
-    let model = 'vertex-gemini';
+    let model = 'openai-story-vision';
     try {
-        raw = await callVertexGeminiMultimodal(contents, generationConfig);
+        const modelResult = await callStoryVisionModel(contents, generationConfig);
+        raw = modelResult.text;
+        model = modelResult.model;
     } catch (err) {
-        try {
-            raw = await callGeminiFallback(contents, generationConfig);
-            model = 'gemini';
-        } catch (err2) {
-            return buildStoryEvidenceAnalysisFallback({
-                normalizedSupplied,
-                surfaceContext,
-                relationshipContext,
-                relationshipStoryBlockReason,
-                safetyReason: 'analysis_failed',
-                error: `${err.message || err} | ${err2.message || err2}`.slice(0, 500),
-                preserveSuppliedDraft: forceSuppliedComment && Boolean(normalizedSupplied),
-            });
-        }
+        return buildStoryEvidenceAnalysisFallback({
+            normalizedSupplied,
+            surfaceContext,
+            relationshipContext,
+            relationshipStoryBlockReason,
+            safetyReason: 'analysis_failed',
+            error: String(err.message || err).slice(0, 500),
+            preserveSuppliedDraft: forceSuppliedComment && Boolean(normalizedSupplied),
+        });
     }
 
     const parsed = parseJsonMaybe(raw) || {};
@@ -3119,6 +3192,9 @@ exports._test = {
     storyAnalysisTranscriptNote,
     buildStoryOutreachMemory,
     buildStoryEvidenceAnalysisFallback,
+    analyzeStoryEvidence,
     normalizeStoryCommentPlanPayload,
     normalizeStoryCommentReviewPayload,
+    callOpenAIStoryModel,
+    shouldIncludeStoryVideoEvidence,
 };
