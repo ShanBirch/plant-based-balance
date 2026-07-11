@@ -46,7 +46,7 @@ assert.match(formCheck, /async function readWorkoutFeedShareNativeVideoBlob\(sou
 assert.match(formCheck, /request\.responseType = 'blob';[\s\S]*request\.status === 0/);
 assert.match(formCheck, /function nativeWorkoutVideoBase64ToBlob\(dataBase64, mimeType\)/);
 assert.match(formCheck, /includeDataBase64: true/);
-assert.match(formCheck, /if \(result\.dataBase64\)/);
+assert.match(formCheck, /const hasInlineNativeVideoData = !!result\.dataBase64;/);
 assert.match(formCheck, /if \(!hasInlineNativeVideoData\)\s*{\s*await assertWorkoutFeedShareVideoFile\(file\);/);
 assert.match(read('ios/App/App/BalanceVideoCapturePlugin.swift'), /result\["dataBase64"\] = videoData\.base64EncodedString\(\)/);
 
