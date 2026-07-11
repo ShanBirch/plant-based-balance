@@ -1233,7 +1233,7 @@ Rules:
 - If existing relationship context already includes pet names or a recent pet-name question, do not ask for the pet names again. React to the animal or the known name instead.
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
 - If the answer is already visible in the story context, do not ask it. React to the known detail instead.
-- Never ask what song, track, tune, music, or audio it is. If music is the only clear handle, use a non-question reaction like "good song choice" or skip.
+- Never ask what song, track, tune, music, or audio it is. If the Story explicitly shares a Spotify/release link or says a new release is out, acknowledge the release/song itself with a short non-question reaction. Treat an attached Instagram song sticker as metadata only; use "good song choice" or skip unless the music share is clearly the subject.
 - If the story shows an unfamiliar event, venue, class, food, hobby, or object, prefer the obvious small context question using the visible noun over "never seen that thing" or another dead-end observation.
 - If the story does not give a specific visual hook, set safe_to_comment=false and comment="" rather than forcing a broad compliment.
 - If this is an existing client or active IG thread, do not write like a cold first touch. Keep it warmer but still short.
@@ -2470,7 +2470,7 @@ Rules:
 - Do not ask a question if the story already answers it. If a pet name is visible, react to that pet/name; if no pet name is visible, asking "whats their name?" is good.
 - For animal stories with no visible pet name, prefer: oh so cute, whats their name?
 - If existing relationship context already includes pet names or a recent pet-name question, do not ask for the pet names again. React to the animal or the known name instead.
-- Never ask what song, track, tune, music, or audio it is. Popular or labelled music does not need identifying. If music is the only clear handle, use a non-question reaction like "good song choice" or set safe_to_comment=false.
+- Never ask what song, track, tune, music, or audio it is. Popular or labelled music does not need identifying. If the Story explicitly shares Spotify/release/artist promotion text, comment on that release/song with a short non-question reaction. If it is only an attached Instagram song sticker, treat it as metadata and use "good song choice" or set safe_to_comment=false.
 - Audio transcript is supplemental. If transcript/audio and the visible frames point to different subjects, never base the comment on transcript-only details; set safe_to_comment=false with safety_reason="audio_visual_mismatch" unless a clear visible-only comment exists.
 - If a beach/coastal story says "this is my clubbing" or "vamos a la playa", do not ask if it is a club or venue. Treat it as beach-over-clubbing contrast.
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
