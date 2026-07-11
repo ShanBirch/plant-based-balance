@@ -173,7 +173,10 @@ BEGIN
   ) m
   JOIN auth.users au ON au.id = m.mention_id
   WHERE m.mention_id <> v_user_id
-  ON CONFLICT (comment_id, mentioned_user_id) DO NOTHING;
+  -- The function exposes comment_id as an output column, so an unqualified
+  -- conflict target is ambiguous inside this PL/pgSQL function. The table's
+  -- primary key is the only conflict target, so the target can be omitted.
+  ON CONFLICT DO NOTHING;
 
   RETURN QUERY
   SELECT *
