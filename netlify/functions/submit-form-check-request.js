@@ -121,8 +121,11 @@ exports.handler = async (event) => {
     messageLines.push(`Focus: ${notes}`);
     const messageText = messageLines.join('\n');
 
-    if (isSelfTest) {
-        const idempotencyKey = uuidRequestId ? `form_check_self_test:${uuidRequestId}` : '';
+    // Form checks always need an immediate Needs You card. Do this here instead
+    // of relying on the nudge-to-alert trigger, which does not fire reliably
+    // for the specialised form_check nudge type.
+    {
+        const idempotencyKey = uuidRequestId ? `form_check:${uuidRequestId}` : '';
         if (idempotencyKey) {
             const existing = await supabaseQuery(
                 `coach_alerts?select=id&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
@@ -137,7 +140,10 @@ exports.handler = async (event) => {
             }
         }
 
-        const clientName = cleanLine(adminRows[0]?.name, 'Coach Shannon', 120);
+        const clientRows = await supabaseQuery(
+            `users?select=name&id=eq.${encodeURIComponent(verified.userId)}&limit=1`
+        ).catch(() => []);
+        const clientName = cleanLine(clientRows[0]?.name, 'Balance member', 120);
         const alertRow = {
             client_id: verified.userId,
             client_name: clientName,
@@ -149,9 +155,8 @@ exports.handler = async (event) => {
             suggested_message: null,
             status: 'pending',
             data: {
-                subtype: 'form_check_self_test',
-                self_test: true,
-                support_exception: true,
+                subtype: isSelfTest ? 'form_check_self_test' : 'form_check',
+                self_test: isSelfTest,
                 operator_queue: 'needs_you',
                 needs_you_required: true,
                 needs_you_reason: 'form_check_self_test',
@@ -178,7 +183,7 @@ exports.handler = async (event) => {
             success: true,
             alertId,
             deduped: false,
-            selfTest: true,
+            selfTest: isSelfTest,
             formCheckDraftQueued: draftQueued,
         });
     }

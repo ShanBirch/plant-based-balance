@@ -24,20 +24,20 @@ assert.match(
 
 assert.match(
   source,
-  /if \(isSelfTest\) \{[\s\S]*subtype: 'form_check_self_test'[\s\S]*operator_queue: 'needs_you'[\s\S]*is_form_check: true[\s\S]*supabaseQuery\('coach_alerts'/,
-  'Shannon self-tests should create a pending form-check coach alert directly instead of inserting a self-nudge'
+  /Form checks always need an immediate Needs You card[\s\S]*subtype: isSelfTest \? 'form_check_self_test' : 'form_check'[\s\S]*operator_queue: 'needs_you'[\s\S]*is_form_check: true[\s\S]*supabaseQuery\('coach_alerts'/,
+  'every form check should create a pending Needs You alert directly rather than depend on the nudge trigger'
 );
 
 assert.match(
   source,
   /queueFormCheckDraft\(alertId\)/,
-  'Shannon self-test alerts should queue the form-check draft background worker'
+  'form-check alerts should queue the form-check draft background worker'
 );
 
 assert.match(
   source,
   /const row = \{[\s\S]*sender_id: verified\.userId[\s\S]*receiver_id: coachId[\s\S]*nudge_type: 'form_check'/,
-  'non-self form checks should keep using the normal nudge path'
+  'the legacy nudge fallback remains available for compatibility'
 );
 
 console.log('submit form-check self-test guard passed');
