@@ -20932,9 +20932,31 @@ let _customExerciseRecTimerInterval = null;
 let _customExerciseRecStartTime = null;
 window._customExerciseVideoUploadState = window._customExerciseVideoUploadState || {};
 
+function getCustomExerciseVideoDiagnostic(file) {
+    return file ? {
+        clientFileName: file.name || 'exercise-video.mp4',
+        contentType: file.type || '',
+        fileSizeBytes: Number(file.size || 0),
+        fileLastModified: file.lastModified || null
+    } : {};
+}
+
+function logCustomExerciseVideoDiagnostic(event, data = {}) {
+    const logger = window.logBalanceVideoUploadDiagnostic || window.logFeedUploadDiagnostic;
+    if (typeof logger !== 'function') return;
+    logger(event, {
+        source: 'custom_exercise',
+        userId: window.currentUser?.id || '',
+        ...data
+    });
+}
+
 function openCreateCustomExerciseModal(context) {
     // context: 'workout' (during active workout) or 'library' (from workout library)
     window._customExerciseContext = context || 'library';
+    logCustomExerciseVideoDiagnostic('custom_exercise_modal_open', {
+        context: window._customExerciseContext
+    });
     const modal = document.getElementById('create-custom-exercise-modal');
     modal.style.display = 'flex';
     window._customExercisePreviousBodyOverflow = document.body.style.overflow || '';
@@ -21026,6 +21048,9 @@ function validateCustomExerciseForm() {
 }
 
 function openCustomExerciseVideoCapture() {
+    logCustomExerciseVideoDiagnostic('custom_exercise_camera_open', {
+        hasSharedCamera: typeof window.openWorkoutFeedShareCameraForFile === 'function'
+    });
     stopCameraStream();
     clearCustomExerciseRecordingTimer();
     if (window.openWorkoutFeedShareCameraForFile) {
@@ -21047,6 +21072,21 @@ function openCustomExerciseVideoCapture() {
     }
     startCustomExerciseRecording();
 }
+
+function openCustomExerciseVideoGallery(event) {
+    if (event && event.target && event.target.id === 'custom-exercise-file-input') return;
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    logCustomExerciseVideoDiagnostic('custom_exercise_gallery_open', {
+        hasSharedGallery: typeof window.openWorkoutFeedShareGalleryForFile === 'function'
+    });
+    if (typeof window.openWorkoutFeedShareGalleryForFile === 'function') {
+        window.openWorkoutFeedShareGalleryForFile({ target: 'custom-exercise' });
+        return;
+    }
+    const input = document.getElementById('custom-exercise-file-input');
+    if (input && typeof input.click === 'function') input.click();
+}
+window.openCustomExerciseVideoGallery = openCustomExerciseVideoGallery;
 
 async function startCustomExerciseRecording() {
     try {
@@ -21344,14 +21384,23 @@ function renderCustomExerciseVideoUploadFailed(exerciseName) {
     });
 }
 
-function handleCustomExerciseFileSelect(event) {
-    const file = event.target.files[0];
-    if (!file) {
+async function handleCustomExerciseFileSelect(event) {
+    const input = event && event.target;
+    const rawFile = input && input.files ? input.files[0] : null;
+    logCustomExerciseVideoDiagnostic('custom_exercise_file_picker_result', {
+        cancelled: !rawFile,
+        inputKind: input && input.id === 'custom-exercise-camera-input' ? 'camera' : 'gallery',
+        ...getCustomExerciseVideoDiagnostic(rawFile)
+    });
+    if (!rawFile) {
         restorePendingCustomExerciseCameraInputModal();
         return;
     }
+    const file = typeof window.prepareBalanceVideoUploadFile === 'function'
+        ? await window.prepareBalanceVideoUploadFile(rawFile, 'custom_exercise_picker', 'custom-exercise')
+        : rawFile;
     restorePendingCustomExerciseCameraInputModal();
-    applyCustomExerciseVideoFile(file, event.target);
+    applyCustomExerciseVideoFile(file, input);
 }
 
 function applyCustomExerciseVideoFile(file, input) {
@@ -21362,6 +21411,10 @@ function applyCustomExerciseVideoFile(file, input) {
 
     // Validate it's a video. Some mobile browsers provide an empty MIME type for gallery videos.
     if (!looksLikeVideo) {
+        logCustomExerciseVideoDiagnostic('custom_exercise_file_rejected', {
+            reason: 'missing_video_mime_type',
+            ...getCustomExerciseVideoDiagnostic(file)
+        });
         alert('Please select a video file.');
         if (input) input.value = '';
         return;
@@ -21369,12 +21422,18 @@ function applyCustomExerciseVideoFile(file, input) {
 
     // Max 100MB
     if (file.size > 100 * 1024 * 1024) {
+        logCustomExerciseVideoDiagnostic('custom_exercise_file_rejected', {
+            reason: 'file_too_large',
+            maximumBytes: 100 * 1024 * 1024,
+            ...getCustomExerciseVideoDiagnostic(file)
+        });
         alert('Video must be under 100MB.');
         if (input) input.value = '';
         return;
     }
 
     _customExerciseVideoFile = file;
+    logCustomExerciseVideoDiagnostic('custom_exercise_file_ready', getCustomExerciseVideoDiagnostic(file));
     stopCameraStream();
     clearCustomExerciseRecordingTimer();
     document.getElementById('custom-exercise-camera-container').style.display = 'none';
@@ -21396,6 +21455,7 @@ function applyCustomExerciseVideoFile(file, input) {
 }
 
 function handleCustomExerciseCapturedVideoFile(file) {
+    logCustomExerciseVideoDiagnostic('custom_exercise_camera_file_received', getCustomExerciseVideoDiagnostic(file));
     applyCustomExerciseVideoFile(file, null);
 }
 window.handleCustomExerciseCapturedVideoFile = handleCustomExerciseCapturedVideoFile;
@@ -21488,6 +21548,11 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
     if (!user?.id || !savedExercise?.id || !videoFile) return;
 
     setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'uploading', { startedAt: Date.now() });
+    logCustomExerciseVideoDiagnostic('custom_exercise_background_upload_start', {
+        exerciseId: savedExercise.id,
+        exerciseName,
+        ...getCustomExerciseVideoDiagnostic(videoFile)
+    });
 
     try {
         const result = await storageHelpers.uploadExerciseVideo(user.id, videoFile, savedExercise.id);
@@ -21497,11 +21562,21 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
         if (!videoUrl) {
             throw new Error('Exercise video upload finished without a public URL.');
         }
+        logCustomExerciseVideoDiagnostic('custom_exercise_media_upload_success', {
+            exerciseId: savedExercise.id,
+            exerciseName,
+            uploadedBytes: Number(result.size || videoFile.size || 0),
+            hasPublicUrl: true
+        });
 
         const updated = await dbHelpers.customExercises.update(user.id, savedExercise.id, {
             video_url: videoUrl,
             storage_path: storagePath,
             is_public: false
+        });
+        logCustomExerciseVideoDiagnostic('custom_exercise_database_update_success', {
+            exerciseId: savedExercise.id,
+            exerciseName
         });
 
         setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'uploaded', {
@@ -21518,6 +21593,11 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
         }
         renderCustomExerciseVideoUploadComplete(exerciseName, videoUrl);
         const reviewResult = await requestCustomExerciseReview(updated || savedExercise);
+        logCustomExerciseVideoDiagnostic('custom_exercise_upload_complete', {
+            exerciseId: savedExercise.id,
+            exerciseName,
+            reviewStatus: reviewResult?.status || (reviewResult?.success === false ? 'failed' : 'submitted')
+        });
 
         if (typeof showToast === 'function') {
             showToast(
@@ -21530,6 +21610,13 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
         loadMyCustomExercises();
     } catch (uploadErr) {
         console.error('Background exercise video upload failed:', uploadErr);
+        logCustomExerciseVideoDiagnostic('custom_exercise_upload_failed', {
+            exerciseId: savedExercise.id,
+            exerciseName,
+            errorName: uploadErr?.name || 'Error',
+            errorMessage: uploadErr?.message || String(uploadErr || 'exercise video upload failed'),
+            ...getCustomExerciseVideoDiagnostic(videoFile)
+        });
         setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'failed', {
             error: uploadErr?.message || 'Video upload failed',
             failedAt: Date.now()
@@ -21547,6 +21634,11 @@ function queueCustomExerciseVideoBackgroundUpload(user, savedExercise, videoFile
 
     // Start after any native confirm/alert has closed so mobile webviews do not
     // pause the request while the video body is being streamed.
+    logCustomExerciseVideoDiagnostic('custom_exercise_background_upload_queued', {
+        exerciseId: savedExercise.id,
+        exerciseName,
+        ...getCustomExerciseVideoDiagnostic(videoFile)
+    });
     setTimeout(() => {
         uploadCustomExerciseVideoInBackground(user, savedExercise, videoFile, exerciseName);
     }, 300);
@@ -21578,6 +21670,11 @@ async function saveCustomExercise() {
         const exerciseId = crypto.randomUUID ? crypto.randomUUID() : 'ex-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
         const pendingVideoFile = _customExerciseVideoFile;
         const hasPendingVideo = !!pendingVideoFile;
+        logCustomExerciseVideoDiagnostic('custom_exercise_save_start', {
+            exerciseName: name,
+            hasPendingVideo,
+            ...getCustomExerciseVideoDiagnostic(pendingVideoFile)
+        });
         if (hasPendingVideo) {
             updateCustomExerciseUploadStatus('Saving exercise. Video will upload in the background.');
         }
@@ -21596,6 +21693,11 @@ async function saveCustomExercise() {
         };
 
         const saved = await dbHelpers.customExercises.create(user.id, exerciseData);
+        logCustomExerciseVideoDiagnostic('custom_exercise_database_create_success', {
+            exerciseId: saved?.id || '',
+            exerciseName: name,
+            hasPendingVideo
+        });
         if (hasPendingVideo) {
             saved.video_upload_status = 'uploading';
             setCustomExerciseVideoUploadState(saved.id, name, 'uploading', { startedAt: Date.now() });
@@ -21682,6 +21784,12 @@ async function saveCustomExercise() {
 
     } catch (err) {
         console.error('Failed to save custom exercise:', err);
+        logCustomExerciseVideoDiagnostic('custom_exercise_save_failed', {
+            exerciseName: name,
+            errorName: err?.name || 'Error',
+            errorMessage: err?.message || String(err || 'custom exercise save failed'),
+            ...getCustomExerciseVideoDiagnostic(_customExerciseVideoFile)
+        });
         alert('Failed to save exercise. Please try again.');
     } finally {
         btn.textContent = 'Save';

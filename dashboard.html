@@ -260,7 +260,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 </script>
 
 <!-- Supabase & Auth Guard -->
-<script src="js/dashboard/script_part_2.js?v=10"></script>
+<script src="js/dashboard/script_part_2.js?v=11"></script>
 <script>
 // ── Native OAuth warm-start callback (non-iOS) ────────────────────
 // On iOS this is set up inside the deferred chain above (after supabaseClient exists).
@@ -330,7 +330,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=39',
             'lib/native-iap.js',
-            'lib/stories.js?v=62',
+            'lib/stories.js?v=63',
             'lib/ai-opponents.js',
             'lib/games.js?v=3',
             'lib/nutrition-calculator.js',
@@ -349,7 +349,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=62"><\/script>');
+    document.write('<script src="lib/stories.js?v=63"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=3"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -7877,7 +7877,7 @@ if(!window._pbbIsIOSSafari) {
                     <!-- Or upload from gallery -->
                     <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">or</div>
 
-                    <label style="width: 100%; background: white; border: 2px dashed #e2e8f0; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; padding: 14px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center; box-sizing: border-box;">
+                    <label onclick="openCustomExerciseVideoGallery(event)" style="width: 100%; background: white; border: 2px dashed #e2e8f0; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; padding: 14px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center; box-sizing: border-box;">
                         <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;">
                             <path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/>
                         </svg>
@@ -12577,13 +12577,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=137';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=138';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=137"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=138"><\/script>');
 }
 </script>
 
@@ -15601,7 +15601,7 @@ if (window._pbbIsIOSSafari) {
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>
-<script src="js/dashboard/pbb-deferred-formcheck.js?v=49"></script>
+<script src="js/dashboard/pbb-deferred-formcheck.js?v=50"></script>
 
 
 <script>

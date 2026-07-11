@@ -52,6 +52,7 @@
     let workoutFeedShareRecordingFrameId = null;
     let workoutFeedShareCaptureTarget = 'share-set';
     let workoutFeedShareSuspendedSurface = null;
+    let workoutFeedShareDiagnosticAttemptId = '';
 
     function ensureFormCheckView() {
         let view = document.getElementById('view-form-check');
@@ -305,6 +306,11 @@
         const activeWorkout = document.getElementById('view-active-workout');
         formCheckState.source = options.source || (activeWorkout && activeWorkout.style.display !== 'none' ? 'workout' : 'movement');
         formCheckState.workoutName = options.workoutName || (formCheckState.source === 'workout' ? getActiveWorkoutName() : '');
+        workoutFeedShareCaptureTarget = 'form-check';
+        logWorkoutFeedShareDiagnostic('form_check_open', {
+            formSource: formCheckState.source,
+            hasWorkoutName: !!formCheckState.workoutName
+        });
 
         const exerciseInput = document.getElementById('form-check-exercise');
         const notesInput = document.getElementById('form-check-notes');
@@ -348,13 +354,19 @@
     }
 
     function openFormCheckGallery() {
-        const input = document.getElementById('form-check-gallery-input');
-        if (input) input.click();
+        openWorkoutFeedShareGalleryForFile({ target: 'form-check' });
     }
 
-    function handleFormCheckFileSelect(event) {
+    async function handleFormCheckFileSelect(event) {
         const input = event && event.target;
-        const file = input && input.files ? input.files[0] : null;
+        const rawFile = input && input.files ? input.files[0] : null;
+        logWorkoutFeedShareDiagnostic('form_check_gallery_result', {
+            cancelled: !rawFile,
+            ...getWorkoutFeedShareFileDiagnostic(rawFile)
+        });
+        const file = rawFile
+            ? await materializeWorkoutFeedShareFile(rawFile, 'form_check_gallery')
+            : null;
         if (input) input.value = '';
         if (!file) return;
         handleFormCheckVideoFile(file);
@@ -375,10 +387,19 @@
 
     function handleFormCheckVideoFile(file) {
         if (!getFormCheckVideoMimeType(file)) {
+            logWorkoutFeedShareDiagnostic('form_check_file_rejected', {
+                reason: 'missing_video_mime_type',
+                ...getWorkoutFeedShareFileDiagnostic(file)
+            });
             setStatus('Please choose a video clip.', 'error');
             return;
         }
         if (file.size > MAX_FORM_CHECK_VIDEO_BYTES) {
+            logWorkoutFeedShareDiagnostic('form_check_file_rejected', {
+                reason: 'file_too_large',
+                maximumBytes: MAX_FORM_CHECK_VIDEO_BYTES,
+                ...getWorkoutFeedShareFileDiagnostic(file)
+            });
             setStatus('That video is too large. Keep form checks under 180 MB.', 'error');
             return;
         }
@@ -394,6 +415,7 @@
             preview.style.display = 'block';
         }
         if (removeBtn) removeBtn.style.display = 'flex';
+        logWorkoutFeedShareDiagnostic('form_check_file_ready', getWorkoutFeedShareFileDiagnostic(file));
         setStatus('Clip ready. Add any notes, then send it to Shannon.', 'success');
     }
 
@@ -428,11 +450,35 @@
         formData.append('userId', userId);
         formData.append('requestId', requestId);
 
-        const response = await fetch('/api/upload-form-check-video', {
-            method: 'POST',
-            body: formData
+        logWorkoutFeedShareDiagnostic('form_check_upload_request_start', {
+            requestId,
+            ...getWorkoutFeedShareFileDiagnostic(file)
         });
+
+        let response;
+        try {
+            response = await fetch('/api/upload-form-check-video', {
+                method: 'POST',
+                body: formData
+            });
+        } catch (error) {
+            logWorkoutFeedShareDiagnostic('form_check_upload_network_error', {
+                requestId,
+                errorName: error && error.name ? error.name : 'Error',
+                errorMessage: error && error.message ? error.message : String(error || 'upload request failed'),
+                ...getWorkoutFeedShareFileDiagnostic(file)
+            });
+            throw error;
+        }
         const payload = await response.json().catch(function () { return {}; });
+        logWorkoutFeedShareDiagnostic('form_check_upload_response', {
+            requestId,
+            httpStatus: response.status,
+            responseOk: response.ok,
+            payloadSuccess: payload.success === true,
+            errorMessage: payload.error || '',
+            uploadedBytes: Number(payload.size || 0)
+        });
 
         if (!response.ok || !payload.success) {
             throw new Error(payload.error || 'Could not upload that clip. Please try again.');
@@ -516,20 +562,49 @@
     async function submitFormCheckInBackground(job) {
         if (!job || !job.userId || !job.coachId || !job.file) return;
 
+        workoutFeedShareCaptureTarget = 'form-check';
+        workoutFeedShareDiagnosticAttemptId = job.attemptId || workoutFeedShareDiagnosticAttemptId;
+        logWorkoutFeedShareDiagnostic('form_check_background_submit_start', {
+            requestId: job.requestId,
+            ...getWorkoutFeedShareFileDiagnostic(job.file)
+        });
+
         try {
             let uploadResult;
             let primaryUploadError = null;
             try {
                 uploadResult = await uploadFormCheckClip(job.userId, job.file, job.requestId);
+                logWorkoutFeedShareDiagnostic('form_check_primary_upload_success', {
+                    requestId: job.requestId,
+                    uploadedBytes: Number(uploadResult?.upload?.size || job.file.size || 0)
+                });
             } catch (uploadError) {
                 primaryUploadError = uploadError;
                 console.warn('[FormCheck] B2 upload failed, trying Supabase fallback', uploadError);
+                logWorkoutFeedShareDiagnostic('form_check_primary_upload_failed', {
+                    requestId: job.requestId,
+                    errorName: uploadError && uploadError.name ? uploadError.name : 'Error',
+                    errorMessage: uploadError && uploadError.message ? uploadError.message : String(uploadError || 'primary upload failed')
+                });
             }
 
             if (!uploadResult && window.storageHelpers && typeof window.storageHelpers.uploadFormCheckVideo === 'function') {
                 try {
+                    logWorkoutFeedShareDiagnostic('form_check_fallback_upload_start', {
+                        requestId: job.requestId,
+                        ...getWorkoutFeedShareFileDiagnostic(job.file)
+                    });
                     uploadResult = await window.storageHelpers.uploadFormCheckVideo(job.userId, job.file, job.requestId);
+                    logWorkoutFeedShareDiagnostic('form_check_fallback_upload_success', {
+                        requestId: job.requestId,
+                        uploadedBytes: Number(job.file.size || 0)
+                    });
                 } catch (fallbackError) {
+                    logWorkoutFeedShareDiagnostic('form_check_fallback_upload_failed', {
+                        requestId: job.requestId,
+                        errorName: fallbackError && fallbackError.name ? fallbackError.name : 'Error',
+                        errorMessage: fallbackError && fallbackError.message ? fallbackError.message : String(fallbackError || 'fallback upload failed')
+                    });
                     throw primaryUploadError || fallbackError;
                 }
             }
@@ -548,17 +623,35 @@
                     workoutName: job.workoutName || '',
                     requestId: job.requestId
                 });
+                logWorkoutFeedShareDiagnostic('form_check_message_submit_success', {
+                    requestId: job.requestId,
+                    submitMode: 'server'
+                });
             } catch (serverError) {
                 if (serverError && serverError.status && serverError.status < 500 && serverError.status !== 404) {
                     throw serverError;
                 }
                 console.warn('[FormCheck] server submit failed, trying direct DM insert', serverError);
                 await insertFormCheckNudgeFallback(job.userId, job.coachId, messageText, job.requestId);
+                logWorkoutFeedShareDiagnostic('form_check_message_submit_success', {
+                    requestId: job.requestId,
+                    submitMode: 'direct_fallback',
+                    serverErrorMessage: serverError && serverError.message ? serverError.message : ''
+                });
             }
 
+            logWorkoutFeedShareDiagnostic('form_check_submit_success', {
+                requestId: job.requestId
+            });
             if (typeof showToast === 'function') showToast('Form check sent to Shannon', 'success');
         } catch (error) {
             console.error('[FormCheck] background submit failed', error);
+            logWorkoutFeedShareDiagnostic('form_check_submit_failed', {
+                requestId: job.requestId,
+                errorName: error && error.name ? error.name : 'Error',
+                errorMessage: error && error.message ? error.message : String(error || 'form check failed'),
+                ...getWorkoutFeedShareFileDiagnostic(job.file)
+            });
             if (typeof showToast === 'function') {
                 showToast(error.message || 'Form check upload failed. Please try again.', 'error');
             }
@@ -602,6 +695,12 @@
             const coachId = window._coachUserId || (typeof getCoachUserId === 'function' ? await getCoachUserId() : null);
             if (!coachId) throw new Error('Could not find Shannon in the app.');
 
+            logWorkoutFeedShareDiagnostic('form_check_submit_queued', {
+                requestId,
+                hasCoachId: true,
+                ...getWorkoutFeedShareFileDiagnostic(pendingFile)
+            });
+
             closeFormCheck();
             if (typeof showToast === 'function') {
                 showToast('Video uploading. You can keep working out.', 'success');
@@ -613,7 +712,8 @@
                 exerciseName: exerciseName,
                 notes: notes,
                 workoutName: workoutName,
-                requestId: requestId
+                requestId: requestId,
+                attemptId: workoutFeedShareDiagnosticAttemptId
             });
         } catch (error) {
             console.error('[FormCheck] submit failed', error);
@@ -873,11 +973,36 @@
         };
     }
 
+    function getWorkoutFeedShareDiagnosticId(prefix) {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            return window.crypto.randomUUID();
+        }
+        return String(prefix || 'video-upload') + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+    }
+
+    function beginWorkoutFeedShareDiagnosticAttempt(target, trigger) {
+        workoutFeedShareCaptureTarget = target || workoutFeedShareCaptureTarget || 'share-set';
+        workoutFeedShareDiagnosticAttemptId = getWorkoutFeedShareDiagnosticId('video-upload');
+        logWorkoutFeedShareDiagnostic('video_upload_attempt_start', {
+            captureTarget: workoutFeedShareCaptureTarget,
+            trigger: trigger || 'unknown',
+            hasNativeCamera: hasNativeWorkoutFeedShareVideoCamera(),
+            nativePlatform: isWorkoutFeedShareNativePlatform()
+        });
+        return workoutFeedShareDiagnosticAttemptId;
+    }
+
     function logWorkoutFeedShareDiagnostic(event, data) {
         if (typeof window.logFeedUploadDiagnostic !== 'function') return;
         window.logFeedUploadDiagnostic(event, {
-            source: 'feed_workout_share',
+            source: workoutFeedShareCaptureTarget === 'form-check'
+                ? 'form_check'
+                : workoutFeedShareCaptureTarget === 'custom-exercise'
+                    ? 'custom_exercise'
+                    : 'feed_workout_share',
             userId: window.currentUser && window.currentUser.id,
+            captureTarget: workoutFeedShareCaptureTarget,
+            attemptId: workoutFeedShareDiagnosticAttemptId,
             ...data
         });
     }
@@ -1908,6 +2033,7 @@
     }
 
     function openWorkoutFeedShareCapture() {
+        beginWorkoutFeedShareDiagnosticAttempt('share-set', 'camera');
         const hasNativeCamera = hasNativeWorkoutFeedShareVideoCamera();
         const nativePlatform = isWorkoutFeedShareNativePlatform();
         logWorkoutFeedShareDiagnostic('share_set_capture_open', {
@@ -1927,6 +2053,7 @@
     }
 
     function openWorkoutFeedShareGallery() {
+        beginWorkoutFeedShareDiagnosticAttempt('share-set', 'gallery');
         logWorkoutFeedShareDiagnostic('share_set_gallery_open', {
             captureTarget: workoutFeedShareCaptureTarget,
             nativePlatform: isWorkoutFeedShareNativePlatform()
@@ -1940,7 +2067,7 @@
 
     function openWorkoutFeedShareCameraForFile(options = {}) {
         restoreWorkoutFeedShareCaptureSurface();
-        workoutFeedShareCaptureTarget = options.target || 'share-set';
+        beginWorkoutFeedShareDiagnosticAttempt(options.target || 'share-set', 'camera');
         suspendWorkoutFeedShareCaptureSurface();
         if (hasNativeWorkoutFeedShareVideoCamera()) {
             void openWorkoutFeedShareCameraAfterSurfaceSettles(openNativeWorkoutFeedShareCamera);
@@ -1951,6 +2078,17 @@
             return true;
         }
         openWorkoutFeedShareCameraPicker();
+        return true;
+    }
+
+    function openWorkoutFeedShareGalleryForFile(options = {}) {
+        restoreWorkoutFeedShareCaptureSurface();
+        beginWorkoutFeedShareDiagnosticAttempt(options.target || 'share-set', 'gallery');
+        suspendWorkoutFeedShareCaptureSurface();
+        logWorkoutFeedShareDiagnostic('video_gallery_picker_open', {
+            nativePlatform: isWorkoutFeedShareNativePlatform()
+        });
+        openWorkoutFeedShareFilePicker();
         return true;
     }
 
@@ -2684,7 +2822,13 @@
 
     async function captureIosWorkoutVideo() {
         const plugin = getBalanceVideoCapturePlugin();
-        if (!plugin || typeof plugin.captureWorkoutVideo !== 'function') return null;
+        if (!plugin || typeof plugin.captureWorkoutVideo !== 'function') {
+            logWorkoutFeedShareDiagnostic('share_set_native_camera_ios_unavailable', {
+                hasPlugin: !!plugin,
+                hasCaptureMethod: !!(plugin && typeof plugin.captureWorkoutVideo === 'function')
+            });
+            return null;
+        }
         logWorkoutFeedShareDiagnostic('share_set_native_camera_ios_start', {
             captureTarget: workoutFeedShareCaptureTarget
         });
@@ -2692,7 +2836,12 @@
         logWorkoutFeedShareDiagnostic('share_set_native_camera_ios_result', {
             captureTarget: workoutFeedShareCaptureTarget,
             cancelled: !!(result && result.cancelled),
-            reason: result && result.reason || ''
+            reason: result && result.reason || '',
+            hasWebPath: !!(result && result.webPath),
+            hasFilePath: !!(result && (result.path || result.filePath)),
+            reportedSizeBytes: Number(result && result.size || 0),
+            reportedMimeType: result && result.mimeType || '',
+            reportedFileName: result && result.name || ''
         });
         return result;
     }
@@ -2725,10 +2874,36 @@
             throw new Error('The camera returned a clip the app could not read.');
         }
 
-        const response = await fetch(source);
+        logWorkoutFeedShareDiagnostic('video_native_file_read_start', {
+            sourceKind: result.webPath ? 'web_path' : result.url ? 'url' : 'converted_file_path',
+            reportedSizeBytes: Number(result.size || 0),
+            reportedMimeType: result.mimeType || '',
+            reportedFileName: result.name || ''
+        });
+        let response;
+        try {
+            response = await fetch(source);
+        } catch (error) {
+            logWorkoutFeedShareDiagnostic('video_native_file_read_network_error', {
+                errorName: error && error.name ? error.name : 'Error',
+                errorMessage: error && error.message ? error.message : String(error || 'native file fetch failed')
+            });
+            throw error;
+        }
+        logWorkoutFeedShareDiagnostic('video_native_file_read_response', {
+            httpStatus: response.status,
+            responseOk: response.ok,
+            responseType: response.type || '',
+            responseContentType: response.headers && response.headers.get ? (response.headers.get('content-type') || '') : '',
+            responseContentLength: response.headers && response.headers.get ? Number(response.headers.get('content-length') || 0) : 0
+        });
         if (!response.ok) throw new Error('Could not load the recorded clip.');
 
         const blob = await response.blob();
+        logWorkoutFeedShareDiagnostic('video_native_file_blob_ready', {
+            blobSizeBytes: Number(blob && blob.size || 0),
+            blobType: blob && blob.type || ''
+        });
         if (!blob || !blob.size) throw new Error('The recorded clip was empty.');
 
         const fallbackName = result.name || ('share-set-' + Date.now() + '.mp4');
@@ -2812,12 +2987,19 @@
         workoutFeedSharePendingInput = input;
 
         input.addEventListener('change', function (event) {
+            logWorkoutFeedShareDiagnostic('video_file_picker_change', {
+                capture: options.capture === true,
+                hasFile: !!(event && event.target && event.target.files && event.target.files[0])
+            });
             void handleWorkoutFeedShareFileSelect(event).finally(function () {
                 setTimeout(clearWorkoutFeedSharePendingInput, 0);
             });
         }, { once: true });
 
         input.addEventListener('cancel', function () {
+            logWorkoutFeedShareDiagnostic('video_file_picker_cancelled', {
+                capture: options.capture === true
+            });
             clearWorkoutFeedSharePendingInput();
             restoreWorkoutFeedShareCaptureSurface();
         }, { once: true });
@@ -2879,12 +3061,28 @@
 
     async function materializeWorkoutFeedShareFile(file, stage) {
         const fileSize = Number(file && file.size || 0);
-        if (!isIosNativeWorkoutFeedShare()
+        const isIosNative = isIosNativeWorkoutFeedShare();
+        if (!isIosNative
             || !file
             || typeof file.arrayBuffer !== 'function'
             || !Number.isFinite(fileSize)
             || fileSize <= 0
             || fileSize > WORKOUT_FEED_SHARE_IOS_STABLE_FILE_MAX_BYTES) {
+            logWorkoutFeedShareDiagnostic('video_file_materialize_skipped', {
+                stage: stage || 'capture',
+                isIosNative,
+                hasFile: !!file,
+                hasArrayBuffer: !!(file && typeof file.arrayBuffer === 'function'),
+                maximumCopyBytes: WORKOUT_FEED_SHARE_IOS_STABLE_FILE_MAX_BYTES,
+                reason: !isIosNative
+                    ? 'not_ios_native'
+                    : !file
+                        ? 'missing_file'
+                        : fileSize > WORKOUT_FEED_SHARE_IOS_STABLE_FILE_MAX_BYTES
+                            ? 'file_too_large_to_copy'
+                            : 'file_not_readable',
+                ...getWorkoutFeedShareFileDiagnostic(file)
+            });
             return file;
         }
 
@@ -3338,7 +3536,12 @@
     window.closeWorkoutFeedShare = closeWorkoutFeedShare;
     window.openWorkoutFeedShareCapture = openWorkoutFeedShareCapture;
     window.openWorkoutFeedShareCameraForFile = openWorkoutFeedShareCameraForFile;
+    window.openWorkoutFeedShareGalleryForFile = openWorkoutFeedShareGalleryForFile;
     window.openWorkoutFeedShareGallery = openWorkoutFeedShareGallery;
+    window.prepareBalanceVideoUploadFile = function (file, stage, target) {
+        if (target) workoutFeedShareCaptureTarget = target;
+        return materializeWorkoutFeedShareFile(file, stage);
+    };
     window.handleWorkoutFeedShareFileSelect = handleWorkoutFeedShareFileSelect;
     window.clearWorkoutFeedShareVideo = clearWorkoutFeedShareVideo;
     window.submitWorkoutFeedShare = submitWorkoutFeedShare;

@@ -50,7 +50,7 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=135/,
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=138/,
   'dashboard should bump script 5 so phones fetch the custom exercise review fix'
 );
 assert.match(
@@ -111,7 +111,7 @@ assert.match(
 );
 assert.match(
   workoutScript,
-  /function handleCustomExerciseFileSelect\(event\)[\s\S]*restorePendingCustomExerciseCameraInputModal\(\)[\s\S]*applyCustomExerciseVideoFile\(file, event\.target\)/,
+  /async function handleCustomExerciseFileSelect\(event\)[\s\S]*prepareBalanceVideoUploadFile\(rawFile, 'custom_exercise_picker', 'custom-exercise'\)[\s\S]*restorePendingCustomExerciseCameraInputModal\(\)[\s\S]*applyCustomExerciseVideoFile\(file, input\)/,
   'custom exercise camera input should pop the modal back up before applying the captured video'
 );
 assert.match(
