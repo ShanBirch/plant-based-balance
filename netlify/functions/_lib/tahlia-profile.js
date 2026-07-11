@@ -161,17 +161,17 @@ function tahliaPostMediaType(activityType) {
 }
 
 function buildTahliaPostCardPayload(activityType, caption, seed) {
+    // These cards mirror the real share flow. Members can share the activity,
+    // but do not add a separate freeform comment to workout or diary cards.
     if (activityType === 'workout') {
         return {
             card_type: 'workout',
-            share_caption: caption,
             ...clonePicked(WORKOUT_CARD_VARIANTS, seed),
         };
     }
     if (activityType === 'personal_best') {
         return {
             card_type: 'pb',
-            share_caption: caption,
             ...clonePicked(PB_CARD_VARIANTS, seed),
         };
     }
@@ -180,7 +180,6 @@ function buildTahliaPostCardPayload(activityType, caption, seed) {
             card_type: 'fitness_diary',
             diary_date: brisbaneDateKeyFromSeed(seed),
             title: 'Fitness Diary',
-            note: caption,
             timestamp: new Date().toISOString(),
             ...clonePicked(FITNESS_DIARY_CARD_VARIANTS, seed),
         };
@@ -340,8 +339,8 @@ function activityLabel(activityType) {
 
 function buildTahliaPostDraft({ activityType, seed }) {
     const type = POST_TEMPLATES[activityType] ? activityType : 'fitness_diary';
-    const caption = cleanPublicText(pick(POST_TEMPLATES[type], seed), 500);
-    const cardPayload = buildTahliaPostCardPayload(type, caption, seed);
+    const cardPayload = buildTahliaPostCardPayload(type, '', seed);
+    const caption = cardPayload ? '' : cleanPublicText(pick(POST_TEMPLATES[type], seed), 500);
     return {
         activityType: type,
         label: activityLabel(type),

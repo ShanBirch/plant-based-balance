@@ -211,7 +211,9 @@ function buildFeedPostAlert({ coachId, tahliaUser, transaction, now = new Date()
         coach_id: coachId,
         priority: 'medium',
         title: `Approve Tahlia ${label} Feed post`,
-        description: `Draft: "${truncate(caption, 220)}"`,
+        description: cardPayload
+            ? `Tahlia ${label} card, no added caption.`
+            : `Draft: "${truncate(caption, 220)}"`,
         suggested_message: null,
         status: 'pending',
         data: {
@@ -478,6 +480,12 @@ function applyGeneratedTahliaDraft(alertRow, generated = {}) {
     const action = actions[0];
     if (!action || !text) return alertRow;
     const payload = { ...(action.payload || {}) };
+    const mediaCard = action.type === 'publish_tahlia_feed_post'
+        ? (parseCardCaption(payload.caption) || parseMaybeJsonObject(payload.card_payload))
+        : null;
+    if (mediaCard?.card_type) {
+        return alertRow;
+    }
     if (action.type === 'publish_tahlia_feed_comment') {
         payload.comment_text = text;
     } else if (action.type === 'publish_tahlia_feed_post') {
@@ -580,14 +588,16 @@ async function queueFeedPostApprovals({ coachId, tahliaUser, now, maxAlerts, loo
             skipped.unsupported = (skipped.unsupported || 0) + 1;
             continue;
         }
-        const generated = await generateLearnedTahliaDraft({
-            actionKind: 'feed_post',
-            baseText: baseAlertRow.data.draft_text,
-            activityType: baseAlertRow.data.activity_type,
-            contextText: baseAlertRow.data.evidence?.source_description || activityLabel(baseAlertRow.data.activity_type),
-            learningExamples,
-        });
-        const alertRow = applyGeneratedTahliaDraft(baseAlertRow, generated);
+        const isMediaCard = !!baseAlertRow.data.evidence?.post_card_type;
+        const alertRow = isMediaCard
+            ? baseAlertRow
+            : applyGeneratedTahliaDraft(baseAlertRow, await generateLearnedTahliaDraft({
+                actionKind: 'feed_post',
+                baseText: baseAlertRow.data.draft_text,
+                activityType: baseAlertRow.data.activity_type,
+                contextText: baseAlertRow.data.evidence?.source_description || activityLabel(baseAlertRow.data.activity_type),
+                learningExamples,
+            }));
         const result = await insertCoachAlert(alertRow, key);
         if (result.alertId && !result.deduped) {
             inserted.push({

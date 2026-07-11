@@ -124,6 +124,8 @@ assert.strictEqual(feedAlert.data.proposed_actions[0].payload.card_payload.card_
 assert.strictEqual(JSON.parse(feedAlert.data.proposed_actions[0].payload.caption).card_type, 'workout');
 assert.strictEqual(feedAlert.data.evidence.post_card_type, 'workout');
 assert.strictEqual(feedAlert.data.draft_text, feedAlert.data.proposed_actions[0].preview);
+assert.strictEqual(feedAlert.data.draft_text, '');
+assert.strictEqual(feedAlert.data.proposed_actions[0].payload.card_payload.share_caption, undefined);
 
 const pbAlert = worker.buildFeedPostAlert({
     coachId: 'coach-1',
@@ -135,6 +137,7 @@ assert.strictEqual(pbAlert.data.activity_type, 'personal_best');
 assert.strictEqual(pbAlert.data.proposed_actions[0].payload.media_type, 'workout_card');
 assert.strictEqual(pbAlert.data.proposed_actions[0].payload.card_payload.card_type, 'pb');
 assert.strictEqual(JSON.parse(pbAlert.data.proposed_actions[0].payload.caption).card_type, 'pb');
+assert.strictEqual(pbAlert.data.proposed_actions[0].payload.card_payload.share_caption, undefined);
 
 const fitnessDiaryAlert = worker.buildFeedPostAlert({
     coachId: 'coach-1',
@@ -146,6 +149,7 @@ assert.strictEqual(fitnessDiaryAlert.data.activity_type, 'fitness_diary');
 assert.strictEqual(fitnessDiaryAlert.data.proposed_actions[0].payload.media_type, 'checkin_card');
 assert.strictEqual(fitnessDiaryAlert.data.proposed_actions[0].payload.card_payload.card_type, 'fitness_diary');
 assert.strictEqual(JSON.parse(fitnessDiaryAlert.data.proposed_actions[0].payload.caption).card_type, 'fitness_diary');
+assert.strictEqual(fitnessDiaryAlert.data.proposed_actions[0].payload.card_payload.note, undefined);
 
 const commentAlert = worker.buildCommentAlert({
     coachId: 'coach-1',
@@ -240,23 +244,33 @@ assert.strictEqual(editedComment.data.tahlia_social_edit_history.length, 1);
 assert.strictEqual(editedComment.data.original_draft_text, commentAlert.data.draft_text);
 assert.strictEqual(editedComment.data.was_edited, true);
 
-const editedWorkoutPost = coachAction.applyTahliaSocialEditFromRequest({
+assert.throws(() => coachAction.applyTahliaSocialEditFromRequest({
     data: feedAlert.data,
     action: feedAlert.data.proposed_actions[0],
     actionId: feedAlert.data.proposed_actions[0].id,
-    body: {
-        editedText: 'Love this!',
-        originalText: feedAlert.data.draft_text,
-        editReason: 'Shorter',
-        source: 'admin_dashboard_tahlia_social',
-    },
+    body: { editedText: 'Love this!' },
     now: new Date('2026-07-03T02:10:00.000Z'),
-});
-const editedWorkoutCard = JSON.parse(editedWorkoutPost.action.payload.caption);
-assert.strictEqual(editedWorkoutPost.action.payload.media_type, 'workout_card');
-assert.strictEqual(editedWorkoutPost.action.payload.card_payload.share_caption, 'Love this!');
-assert.strictEqual(editedWorkoutCard.share_caption, 'Love this!');
-assert.strictEqual(editedWorkoutPost.data.draft_text, 'Love this!');
+}), /Tahlia media posts do not support a caption/);
+assert.deepStrictEqual(
+    coachAction.stripTahliaMediaPostCopy({
+        card_type: 'workout',
+        workout_name: 'Upper Body',
+        share_caption: 'legacy caption',
+        note: 'legacy note',
+    }),
+    { card_type: 'workout', workout_name: 'Upper Body' }
+);
+const captionStrippedAtPublish = JSON.parse(coachAction.normalizedTahliaCardCaption({
+    activityType: 'workout',
+    payload: {
+        media_type: 'workout_card',
+        card_payload: {
+            ...feedAlert.data.proposed_actions[0].payload.card_payload,
+            share_caption: 'legacy caption',
+        },
+    },
+}));
+assert.strictEqual(captionStrippedAtPublish.share_caption, undefined);
 
 const learningExamples = worker.normalizeTahliaSocialLearningExamples([{
     id: 'edited-alert-1',
@@ -283,6 +297,13 @@ assert.strictEqual(learnedCommentAlert.data.tahlia_social_learning.example_count
 assert.strictEqual(worker.isSafeLearnedTahliaDraft('proper meal win this'), true);
 assert.strictEqual(worker.isSafeLearnedTahliaDraft('you should try a calorie deficit'), false);
 assert.strictEqual(worker.parseTahliaDraftReply('{"text":"little win"}'), 'little win');
+assert.strictEqual(
+    worker.applyGeneratedTahliaDraft(feedAlert, {
+        text: 'this must not become a workout caption',
+        mode: 'recent_shannon_edits',
+    }).data.proposed_actions[0].payload.card_payload.share_caption,
+    undefined
+);
 assert.strictEqual(
     worker.applyGeneratedTahliaDraft(commentAlert, {
         text: 'little win — showed up -- that is enough',

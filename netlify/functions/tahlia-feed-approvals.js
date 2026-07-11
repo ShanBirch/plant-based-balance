@@ -31,6 +31,22 @@ function cleanText(value = '', max = 500) {
     return String(value || '').replace(/[<>]/g, '').trim().slice(0, max);
 }
 
+function stripTahliaMediaPostCopy(value = '') {
+    if (typeof value !== 'string') return value;
+    try {
+        const card = JSON.parse(value);
+        if (!card || typeof card !== 'object' || Array.isArray(card)) return value;
+        const next = { ...card };
+        delete next.share_caption;
+        delete next.caption;
+        delete next.note;
+        delete next.day_story;
+        return JSON.stringify(next);
+    } catch {
+        return value;
+    }
+}
+
 function safeIso(value, fallback) {
     const parsed = value ? new Date(value) : null;
     if (parsed && Number.isFinite(parsed.getTime())) return parsed.toISOString();
@@ -75,12 +91,15 @@ function buildFeedApprovalProjection(alerts = [], tahliaUser = {}) {
         const data = alert.data || {};
         const payload = action.payload || {};
         const createdAt = intendedCreatedAt(alert, action);
+        const mediaType = cleanText(payload.media_type || 'text', 40) || 'text';
+        const isMediaCard = action.type === 'publish_tahlia_feed_post'
+            && ['workout_card', 'checkin_card'].includes(mediaType);
         const common = {
             pending_tahlia_approval: true,
             approval_alert_id: alert.id,
             approval_action_id: action.id,
             approval_created_at: alert.created_at || createdAt,
-            approval_draft_text: cleanText(data.draft_text || action.preview || '', 500),
+            approval_draft_text: isMediaCard ? '' : cleanText(data.draft_text || action.preview || '', 500),
             approval_edit_count: Array.isArray(data.tahlia_social_edit_history)
                 ? data.tahlia_social_edit_history.length
                 : 0,
@@ -88,12 +107,12 @@ function buildFeedApprovalProjection(alerts = [], tahliaUser = {}) {
         };
 
         if (action.type === 'publish_tahlia_feed_post') {
-            const mediaType = cleanText(payload.media_type || 'text', 40) || 'text';
             if (!ALLOWED_POST_MEDIA_TYPES.has(mediaType)) continue;
             if (payload.media_url || payload.thumbnail_url) continue;
-            const caption = typeof payload.caption === 'string'
+            const rawCaption = typeof payload.caption === 'string'
                 ? payload.caption.slice(0, 6000)
                 : cleanText(data.draft_text || action.preview || '', 500);
+            const caption = isMediaCard ? stripTahliaMediaPostCopy(rawCaption) : rawCaption;
             if (!caption) continue;
             posts.push({
                 ...common,
@@ -193,4 +212,5 @@ exports._test = {
     findPendingTahliaAction,
     intendedCreatedAt,
     buildFeedApprovalProjection,
+    stripTahliaMediaPostCopy,
 };

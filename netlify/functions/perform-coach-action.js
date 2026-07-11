@@ -144,6 +144,15 @@ function tahliaCardPublicText(card = {}) {
     return cleanSocialText(card.share_caption || card.caption || '', 500);
 }
 
+function stripTahliaMediaPostCopy(card = {}) {
+    const next = { ...(card || {}) };
+    delete next.share_caption;
+    delete next.caption;
+    delete next.note;
+    delete next.day_story;
+    return next;
+}
+
 function activityAllowsTahliaCardType(activityType, cardType) {
     if (activityType === 'workout') return cardType === 'workout';
     if (activityType === 'personal_best') return cardType === 'pb';
@@ -177,7 +186,7 @@ function normalizedTahliaCardCaption({ payload = {}, activityType = '' }) {
     if (mediaType === 'checkin_card' && cardType !== 'fitness_diary') {
         throw new Error('Tahlia check-in card payload is not a fitness diary card');
     }
-    const caption = JSON.stringify(card);
+    const caption = JSON.stringify(stripTahliaMediaPostCopy(card));
     if (caption.length > 6000) throw new Error('Tahlia card payload is too large');
     return caption;
 }
@@ -204,11 +213,7 @@ function applyTahliaSocialEditFromRequest({ data = {}, action = {}, actionId = '
     if (action.type === 'publish_tahlia_feed_post') {
         const mediaType = cleanSocialText(payload.media_type || 'text', 40) || 'text';
         if (TAHLIA_CARD_MEDIA_TYPES.has(mediaType)) {
-            const currentCard = parseTahliaCardPayload(payload.card_payload) || parseTahliaCardPayload(payload.caption);
-            if (!currentCard) throw new Error('Tahlia card post is missing card data');
-            const nextCard = applyTahliaCardPublicText(currentCard, editedText);
-            payload.card_payload = nextCard;
-            payload.caption = JSON.stringify(nextCard);
+            throw new Error('Tahlia media posts do not support a caption');
         } else {
             payload.caption = editedText;
         }
@@ -1081,6 +1086,8 @@ exports._test = {
     cleanSocialText,
     isAllowedTahliaPostActivityType,
     normalizeTahliaProposedCreatedAt,
+    normalizedTahliaCardCaption,
     isTahliaSocialAction,
+    stripTahliaMediaPostCopy,
     tahliaSocialActionText,
 };

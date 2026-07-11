@@ -54,10 +54,20 @@ assert.strictEqual(projection.posts[0].approval_alert_id, postAlert.id);
 assert.strictEqual(projection.posts[0].approval_action_id, postAlert.data.proposed_actions[0].id);
 assert.strictEqual(projection.posts[0].approval_draft_text, postAlert.data.draft_text);
 assert.strictEqual(projection.posts[0].user_name, 'Tahlia Brooks');
+assert.strictEqual(projection.posts[0].approval_draft_text, '');
+assert.strictEqual(JSON.parse(projection.posts[0].caption).share_caption, undefined);
 assert.strictEqual(projection.comments[0].story_id, 'story-1');
 assert.strictEqual(projection.comments[0].created_at, '2026-07-09T08:25:00.000Z');
 assert.strictEqual(projection.comments[0].approval_alert_id, commentAlert.id);
 assert.strictEqual(projection.comments[0].approval_draft_text, commentAlert.data.draft_text);
+assert.strictEqual(
+    approvalApi.stripTahliaMediaPostCopy(JSON.stringify({
+        card_type: 'fitness_diary',
+        title: 'Fitness Diary',
+        note: 'legacy note',
+    })),
+    JSON.stringify({ card_type: 'fitness_diary', title: 'Fitness Diary' })
+);
 
 const dismissedAlert = { ...postAlert, status: 'dismissed' };
 const wrongSourceAlert = {
