@@ -15,6 +15,7 @@ assert.match(stories, /pageSessionId: FEED_UPLOAD_DIAGNOSTIC_PAGE_SESSION_ID/);
 assert.match(stories, /capacitorPlatform,[\s\S]*nativeRevision:/);
 assert.match(stories, /raw\.includes\('form_check'\)[\s\S]*raw\.includes\('custom_exercise'\)/);
 assert.match(stories, /window\.logBalanceVideoUploadDiagnostic = logFeedUploadDiagnostic/);
+assert.match(stories, /skipIosQuickTimeThumbnail/);
 
 for (const eventName of [
     'video_upload_attempt_start',
@@ -70,7 +71,7 @@ assert.match(supabase, /custom_exercise_upload_request_start/);
 assert.match(supabase, /custom_exercise_upload_network_error/);
 assert.match(supabase, /custom_exercise_upload_response/);
 assert.match(dashboard, /onclick="openCustomExerciseVideoGallery\(event\)"/);
-assert.match(dashboard, /lib\/stories\.js\?v=63/);
+assert.match(dashboard, /lib\/stories\.js\?v=64/);
 assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=138/);
 assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=55/);
 
