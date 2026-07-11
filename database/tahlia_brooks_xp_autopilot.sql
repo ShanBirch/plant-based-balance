@@ -4,7 +4,7 @@
 -- Supabase Cron checks the worker every minute. The worker only applies due
 -- awards, so visible XP changes still happen 5-10 randomized times per
 -- Brisbane day and only enough XP is applied to keep the day inside the
--- 30-75 XP target.
+-- 60-120 XP target.
 
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS private.seed_xp_automation_rules (
     user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
     timezone TEXT NOT NULL DEFAULT 'Australia/Brisbane',
-    daily_min_xp INTEGER NOT NULL DEFAULT 30 CHECK (daily_min_xp >= 0),
-    daily_max_xp INTEGER NOT NULL DEFAULT 75 CHECK (daily_max_xp >= daily_min_xp),
+    daily_min_xp INTEGER NOT NULL DEFAULT 60 CHECK (daily_min_xp >= 0),
+    daily_max_xp INTEGER NOT NULL DEFAULT 120 CHECK (daily_max_xp >= daily_min_xp),
     min_awards_per_day INTEGER NOT NULL DEFAULT 5 CHECK (min_awards_per_day > 0),
     max_awards_per_day INTEGER NOT NULL DEFAULT 10 CHECK (max_awards_per_day >= min_awards_per_day),
     active_start TIME NOT NULL DEFAULT '06:10',
@@ -448,8 +448,8 @@ INSERT INTO private.seed_xp_automation_rules (
 SELECT
     'tahlia_brooks_xp_autopilot',
     u.id,
-    30,
-    75,
+    60,
+    120,
     5,
     10,
     '06:10'::TIME,
