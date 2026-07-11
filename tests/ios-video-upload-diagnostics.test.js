@@ -21,6 +21,7 @@ for (const eventName of [
     'video_native_file_read_start',
     'video_native_file_read_response',
     'video_native_file_blob_ready',
+    'video_ios_system_camera_picker',
     'video_file_materialize_skipped',
     'form_check_upload_request_start',
     'form_check_upload_response',
@@ -53,6 +54,6 @@ assert.match(supabase, /custom_exercise_upload_response/);
 assert.match(dashboard, /onclick="openCustomExerciseVideoGallery\(event\)"/);
 assert.match(dashboard, /lib\/stories\.js\?v=63/);
 assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=138/);
-assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=50/);
+assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=51/);
 
 console.log('iPhone video upload diagnostics contract ok');

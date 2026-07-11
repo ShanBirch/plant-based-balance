@@ -31,7 +31,7 @@ assert.match(stories, /options\.finalVideoBitsPerSecond/);
 assert.match(stories, /options\.primaryLabel/);
 
 assert.match(dashboard, /lib\/stories\.js\?v=63/);
-assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=50/);
+assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=51/);
 assert.match(dashboard, /choose Camera to use your phone camera/);
 
 assert.match(formCheck, /function openWorkoutFeedShareCameraPicker\(\)\s*{\s*openWorkoutFeedShareFilePicker\(\{ capture: true \}\);/);
@@ -39,8 +39,13 @@ assert.match(formCheck, /function isWorkoutFeedShareNativePlatform\(\)\s*{\s*ret
 assert.match(formCheck, /if \(!isWorkoutFeedShareNativePlatform\(\)\) return null;/);
 assert.match(formCheck, /input\.accept = options\.capture \? 'video\/\*;capture=camcorder' : 'video\/\*';/);
 assert.match(formCheck, /input\.capture = 'camcorder';[\s\S]*?input\.setAttribute\('capture', 'camcorder'\);/);
-assert.match(formCheck, /function openWorkoutFeedShareCapture\(\)[\s\S]*?hasNativeWorkoutFeedShareVideoCamera\(\)[\s\S]*?isWorkoutFeedShareNativePlatform\(\)[\s\S]*?void openNativeWorkoutFeedShareCamera\(\);[\s\S]*?return;[\s\S]*?void openWorkoutFeedShareInAppCamera\(\);[\s\S]*?return;[\s\S]*?openWorkoutFeedShareCameraPicker\(\);/);
-assert.match(formCheck, /function openWorkoutFeedShareCameraForFile\(options = \{\}\)[\s\S]*hasNativeWorkoutFeedShareVideoCamera\(\)[\s\S]*openWorkoutFeedShareCameraAfterSurfaceSettles\(openNativeWorkoutFeedShareCamera\)[\s\S]*isWorkoutFeedShareNativePlatform\(\)[\s\S]*openWorkoutFeedShareCameraAfterSurfaceSettles\(openWorkoutFeedShareInAppCamera\)[\s\S]*openWorkoutFeedShareCameraPicker\(\)/);
+assert.ok(
+    formCheck.includes("if (isIosNativeWorkoutFeedShare())") &&
+    formCheck.includes("fallbackReason: 'native_camera_plugin_unavailable'") &&
+    formCheck.includes('openWorkoutFeedShareCameraAfterSurfaceSettles(openWorkoutFeedShareCameraPicker)') &&
+    formCheck.includes('void openWorkoutFeedShareInAppCamera();'),
+    'iPhone should use the system camera picker when its native camera plugin is unavailable'
+);
 assert.match(formCheck, /function waitForWorkoutFeedShareHiddenSurfacePaint\(\)[\s\S]*requestAnimationFrame[\s\S]*requestAnimationFrame/);
 assert.match(formCheck, /function openWorkoutFeedShareCameraForFile\(options = \{\}\)[\s\S]*suspendWorkoutFeedShareCaptureSurface\(\)[\s\S]*openWorkoutFeedShareCameraAfterSurfaceSettles\(openNativeWorkoutFeedShareCamera\)/);
 assert.match(formCheck, /function openFormCheckCapture\(\)\s*{\s*openWorkoutFeedShareCameraForFile\(\{ target: 'form-check' \}\);/);
@@ -48,7 +53,7 @@ assert.match(formCheck, /async function materializeWorkoutFeedShareFile\(file, s
 assert.match(formCheck, /await materializeWorkoutFeedShareFile\(rawFile, 'gallery_picker'\)/);
 assert.match(formCheck, /routeWorkoutFeedShareCapturedFile\(stableFile\)/);
 assert.match(formCheck, /function routeWorkoutFeedShareCapturedFile\(file\)[\s\S]*void processWorkoutFeedShareSelectedFile\(file\);/);
-assert.match(formCheck, /async function openWorkoutFeedShareCameraFallback\(\)\s*{\s*if \(isWorkoutFeedShareNativePlatform\(\)\) {[\s\S]*?const opened = await openWorkoutFeedShareInAppCamera\(\{ silentFallback: true \}\);[\s\S]*?Could not open the camera\. Check app permissions or use Photos\.[\s\S]*?return;[\s\S]*?}\s*openWorkoutFeedShareCameraPicker\(\);/);
+assert.match(formCheck, /async function openWorkoutFeedShareCameraFallback\(\)[\s\S]*?if \(isIosNativeWorkoutFeedShare\(\)\) {[\s\S]*?video_ios_system_camera_picker[\s\S]*?openWorkoutFeedShareCameraPicker\(\);[\s\S]*?return;[\s\S]*?}\s*if \(isWorkoutFeedShareNativePlatform\(\)\) {[\s\S]*?openWorkoutFeedShareInAppCamera\(\{ silentFallback: true \}\)/);
 assert.match(formCheck, /#workout-feed-share-camera-video[\s\S]*?object-fit: contain;/);
 
 assert.match(androidBuild, /versionCode = \(System\.getenv\("ANDROID_VERSION_CODE"\) \?: "8"\)\.toInteger\(\)/);

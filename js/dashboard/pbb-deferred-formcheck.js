@@ -2045,6 +2045,13 @@
             void openNativeWorkoutFeedShareCamera();
             return;
         }
+        if (isIosNativeWorkoutFeedShare()) {
+            logWorkoutFeedShareDiagnostic('video_ios_system_camera_picker', {
+                fallbackReason: 'native_camera_plugin_unavailable'
+            });
+            openWorkoutFeedShareCameraPicker();
+            return;
+        }
         if (nativePlatform) {
             void openWorkoutFeedShareInAppCamera();
             return;
@@ -2071,6 +2078,13 @@
         suspendWorkoutFeedShareCaptureSurface();
         if (hasNativeWorkoutFeedShareVideoCamera()) {
             void openWorkoutFeedShareCameraAfterSurfaceSettles(openNativeWorkoutFeedShareCamera);
+            return true;
+        }
+        if (isIosNativeWorkoutFeedShare()) {
+            logWorkoutFeedShareDiagnostic('video_ios_system_camera_picker', {
+                fallbackReason: 'native_camera_plugin_unavailable'
+            });
+            void openWorkoutFeedShareCameraAfterSurfaceSettles(openWorkoutFeedShareCameraPicker);
             return true;
         }
         if (isWorkoutFeedShareNativePlatform()) {
@@ -2847,6 +2861,13 @@
     }
 
     async function openWorkoutFeedShareCameraFallback() {
+        if (isIosNativeWorkoutFeedShare()) {
+            logWorkoutFeedShareDiagnostic('video_ios_system_camera_picker', {
+                fallbackReason: 'native_camera_plugin_failed'
+            });
+            openWorkoutFeedShareCameraPicker();
+            return;
+        }
         if (isWorkoutFeedShareNativePlatform()) {
             const opened = await openWorkoutFeedShareInAppCamera({ silentFallback: true });
             if (!opened) {
