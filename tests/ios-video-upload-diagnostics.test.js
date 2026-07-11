@@ -66,6 +66,6 @@ assert.match(supabase, /custom_exercise_upload_response/);
 assert.match(dashboard, /onclick="openCustomExerciseVideoGallery\(event\)"/);
 assert.match(dashboard, /lib\/stories\.js\?v=63/);
 assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=138/);
-assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=52/);
+assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=53/);
 
 console.log('iPhone video upload diagnostics contract ok');
