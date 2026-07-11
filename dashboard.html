@@ -330,7 +330,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=39',
             'lib/native-iap.js',
-            'lib/stories.js?v=64',
+            'lib/stories.js?v=65',
             'lib/ai-opponents.js',
             'lib/games.js?v=3',
             'lib/nutrition-calculator.js',
@@ -349,7 +349,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=64"><\/script>');
+    document.write('<script src="lib/stories.js?v=65"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=3"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -7548,7 +7548,7 @@ if(!window._pbbIsIOSSafari) {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
             <div class="workout-camera-action-copy">
                 <span class="workout-camera-action-title">Share a Set</span>
-                <span class="workout-camera-action-subtitle">First share each day earns +20 XP</span>
+                <span class="workout-camera-action-subtitle">First share each day earns +15 XP</span>
             </div>
         </button>
 
@@ -13139,7 +13139,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
     { tab:'movement-tab', sel:'#move-your-way-pilot-card', title:'Move your way', body:'Classes, runs, walks and rides all count. Log the movement, then add a photo or caption if you want to share it.', quick:true, condition:function(){ return !!(window.isMoveYourWayPilotUser && window.isMoveYourWayPilotUser()); } },
-      { tab:'movement-tab', sel:'#workout-share-set-btn', fallbackSel:'#today-workout-card', title:'Share a Set', fallbackTitle:'Open a workout to Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +20 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", fallbackBody:"Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +20 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn') || !!document.getElementById('today-workout-card'); } },
+      { tab:'movement-tab', sel:'#workout-share-set-btn', fallbackSel:'#today-workout-card', title:'Share a Set', fallbackTitle:'Open a workout to Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", fallbackBody:"Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn') || !!document.getElementById('today-workout-card'); } },
     { tab:'movement-tab', sel:'#workout-add-exercise-video-btn', fallbackSel:'#feed-composer-card', title:'New exercises to review', fallbackTitle:'New exercises to review', body:"When you upload a new exercise video, it is saved for your workouts first. Shannon can approve it for Feed and shared-library XP.", fallbackBody:"Upload a new exercise video from Movement. It is saved for your workouts first, then Shannon can approve it for Feed and shared-library XP.", quick: true, condition: function(){ return !!document.getElementById('workout-add-exercise-video-btn') || !!document.getElementById('feed-composer-card'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Post-workout Share', body:"Finish a workout, then tap the single Share button to post the workout, a PB, or a photo to Feed." },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Milestone celebrations', body:"When you hit bigger workout count or streak milestones, Balance pops up a celebration card you can share to Feed for +10 XP.", quick: true },
@@ -14368,8 +14368,8 @@ if(!window._pbbIsIOSSafari) {
     fallbackSel: '#today-workout-card',
     title: 'Share a Set',
     fallbackTitle: 'Open a workout to Share a Set',
-            body: "Tap Share a Set under Film Form Check, then choose Camera to use your phone camera or Photos to choose an existing clip. Balance shares it to Feed while you stay in workout mode. First share each day earns +20 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.",
-            fallbackBody: "Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +20 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.",
+            body: "Tap Share a Set under Film Form Check, then choose Camera to use your phone camera or Photos to choose an existing clip. Balance shares it to Feed while you stay in workout mode. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.",
+            fallbackBody: "Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.",
     condition: function(){ return !!document.getElementById('workout-share-set-btn') || !!document.getElementById('today-workout-card'); }
   });
   allFeatures.push({

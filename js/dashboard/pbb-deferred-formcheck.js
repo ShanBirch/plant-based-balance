@@ -895,7 +895,7 @@
             <div class="workout-feed-share-content">
                 <div class="workout-feed-share-panel workout-feed-share-hero">
                     <div class="workout-feed-share-eyebrow">Stay in workout mode</div>
-                    <div class="workout-feed-share-hero-title">Record a set, post it to Feed, and earn +20 XP once a day</div>
+                    <div class="workout-feed-share-hero-title">Record a set, post it to Feed, and earn +15 XP once a day</div>
                     <div class="workout-feed-share-hero-copy">Open the camera or choose a clip from Photos, then keep your workout running while it uploads.</div>
                 </div>
 
