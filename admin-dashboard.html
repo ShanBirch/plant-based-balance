@@ -12652,11 +12652,10 @@
                 || (isKayNeedsYouIdentity(alert) && !isKayProgramUpdateOrAppFixAlert(alert));
         }
 
-        function isFormCheckSelfTestNeedsYouAlert(alert) {
+        function isFormCheckNeedsYouAlert(alert) {
             const data = alert?.data || {};
             return alert?.alert_type === 'incoming_dm'
                 && (data.is_form_check === true || String(data.is_form_check || '').toLowerCase() === 'true')
-                && (data.self_test === true || String(data.self_test || '').toLowerCase() === 'true')
                 && (data.operator_queue === 'needs_you' || data.needs_you_required === true || String(data.needs_you_required || '').toLowerCase() === 'true');
         }
 
@@ -12828,7 +12827,7 @@
             if (isCoachActionReceipt(alert)) return true;
             if (isAppSuggestionAlert(alert)) return true;
             if (isSupportVerificationNeedsYouAlert(alert)) return true;
-            if (isFormCheckSelfTestNeedsYouAlert(alert)) return true;
+            if (isFormCheckNeedsYouAlert(alert)) return true;
             if (isCustomExerciseReviewAlert(alert)) return true;
             if (alert.alert_type === 'subscription_sale') {
                 const data = alert.data || {};
@@ -12873,7 +12872,7 @@
             const otherRows = [];
             rows.filter(a => a.status === 'pending').forEach(row => {
                 if (isTahliaSocialApprovalAlert(row)) return;
-                if (isCoachActionReceipt(row) || isAppSuggestionAlert(row) || isSupportVerificationNeedsYouAlert(row) || isFormCheckSelfTestNeedsYouAlert(row)) directRows.push(row);
+                if (isCoachActionReceipt(row) || isAppSuggestionAlert(row) || isSupportVerificationNeedsYouAlert(row) || isFormCheckNeedsYouAlert(row)) directRows.push(row);
                 else if (DM_ALERT_TYPES.includes(row.alert_type)) dmRows.push(row);
                 else otherRows.push(row);
             });

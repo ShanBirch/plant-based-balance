@@ -21,8 +21,8 @@ assert.ok(
 );
 
 assert.ok(
-    dashboard.includes("const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'general_idea', 'onboarding_day_30', 'weekly_checkin', 'first_workout', 'subscription_sale'];"),
-    'coach action receipts, month-one milestones, actionable weekly check-ins, first workouts, and subscription sales should be loaded into Needs You'
+    dashboard.includes("const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'general_idea', 'onboarding_day_30', 'weekly_checkin', 'first_workout', 'subscription_sale', 'custom_exercise_review'];"),
+    'coach action receipts, month-one milestones, actionable weekly check-ins, first workouts, subscription sales, and exercise reviews should be loaded into Needs You'
 );
 
 assert.ok(
@@ -32,6 +32,13 @@ assert.ok(
     dashboard.includes('const directRows = [];') &&
     dashboard.includes('if (isCoachActionReceipt(row) || isAppSuggestionAlert(row)'),
     'completed coach action receipts should route into Needs You without opening all general ideas'
+);
+
+assert.ok(
+    dashboard.includes('function isFormCheckNeedsYouAlert(alert)') &&
+    dashboard.includes('if (isFormCheckNeedsYouAlert(alert)) return true;') &&
+    dashboard.includes('isFormCheckNeedsYouAlert(row)'),
+    'all form-check cards should route directly into Needs You'
 );
 
 assert.ok(
