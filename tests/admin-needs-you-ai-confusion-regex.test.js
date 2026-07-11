@@ -139,12 +139,11 @@ assert.ok(
 );
 
 assert.ok(
-    dashboard.includes('function isFormCheckSelfTestNeedsYouAlert(alert)') &&
+    dashboard.includes('function isFormCheckNeedsYouAlert(alert)') &&
     dashboard.includes("data.is_form_check === true") &&
-    dashboard.includes("data.self_test === true") &&
-    dashboard.includes('if (isFormCheckSelfTestNeedsYouAlert(alert)) return true;') &&
-    dashboard.includes('|| isFormCheckSelfTestNeedsYouAlert(row)) directRows.push(row);'),
-    'Shannon form-check self-tests should remain visible in Needs You while the video draft is still pending'
+    dashboard.includes('if (isFormCheckNeedsYouAlert(alert)) return true;') &&
+    dashboard.includes('|| isFormCheckNeedsYouAlert(row)) directRows.push(row);'),
+    'form checks should remain visible in Needs You while the video draft is pending'
 );
 
 assert.ok(
