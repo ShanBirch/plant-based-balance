@@ -53,6 +53,7 @@
     let workoutFeedShareCaptureTarget = 'share-set';
     let workoutFeedShareSuspendedSurface = null;
     let workoutFeedShareDiagnosticAttemptId = '';
+    const workoutFeedShareNativeValidatedFiles = typeof WeakSet !== 'undefined' ? new WeakSet() : null;
 
     function ensureFormCheckView() {
         let view = document.getElementById('view-form-check');
@@ -3024,6 +3025,7 @@
         if (!hasInlineNativeVideoData) {
             await assertWorkoutFeedShareVideoFile(file);
         } else {
+            if (workoutFeedShareNativeValidatedFiles) workoutFeedShareNativeValidatedFiles.add(file);
             logWorkoutFeedShareDiagnostic('video_native_file_validation_bypassed', {
                 blobSizeBytes: Number(blob && blob.size || 0),
                 blobType: blob && blob.type || ''
@@ -3248,7 +3250,12 @@
             return;
         }
         try {
-            await assertWorkoutFeedShareVideoFile(file);
+            const nativeValidated = !!(workoutFeedShareNativeValidatedFiles && workoutFeedShareNativeValidatedFiles.has(file));
+            if (!nativeValidated) await assertWorkoutFeedShareVideoFile(file);
+            else logWorkoutFeedShareDiagnostic('share_set_native_file_validation_reused', {
+                captureTarget: workoutFeedShareCaptureTarget,
+                ...getWorkoutFeedShareFileDiagnostic(file)
+            });
         } catch (error) {
             logWorkoutFeedShareDiagnostic('share_set_file_rejected', {
                 captureTarget: workoutFeedShareCaptureTarget,

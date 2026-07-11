@@ -27,6 +27,7 @@ for (const eventName of [
     'video_native_file_inline_data_start',
     'video_native_file_inline_data_ready',
     'video_native_file_validation_bypassed',
+    'share_set_native_file_validation_reused',
     'video_native_file_blob_ready',
     'video_ios_system_camera_picker',
     'video_file_materialize_skipped',
@@ -48,6 +49,9 @@ assert.match(formCheck, /function nativeWorkoutVideoBase64ToBlob\(dataBase64, mi
 assert.match(formCheck, /includeDataBase64: true/);
 assert.match(formCheck, /const hasInlineNativeVideoData = !!result\.dataBase64;/);
 assert.match(formCheck, /if \(!hasInlineNativeVideoData\)\s*{\s*await assertWorkoutFeedShareVideoFile\(file\);/);
+assert.match(formCheck, /const workoutFeedShareNativeValidatedFiles = typeof WeakSet/);
+assert.match(formCheck, /workoutFeedShareNativeValidatedFiles\.has\(file\)/);
+assert.match(formCheck, /workoutFeedShareNativeValidatedFiles\.add\(file\)/);
 assert.match(read('ios/App/App/BalanceVideoCapturePlugin.swift'), /result\["dataBase64"\] = videoData\.base64EncodedString\(\)/);
 
 for (const eventName of [
@@ -68,6 +72,6 @@ assert.match(supabase, /custom_exercise_upload_response/);
 assert.match(dashboard, /onclick="openCustomExerciseVideoGallery\(event\)"/);
 assert.match(dashboard, /lib\/stories\.js\?v=63/);
 assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=138/);
-assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=54/);
+assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=55/);
 
 console.log('iPhone video upload diagnostics contract ok');
