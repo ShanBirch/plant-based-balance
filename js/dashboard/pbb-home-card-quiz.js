@@ -545,11 +545,26 @@
         return 'Top = first step. Bottom = final result.';
     }
 
+    function normalizeScenarioOption(game, option, index) {
+        if (typeof option === 'string') {
+            return {
+                text: option,
+                correct: Number(game.correctIndex) === index
+            };
+        }
+
+        return {
+            text: option && option.text ? option.text : '',
+            correct: !!(option && option.correct)
+        };
+    }
+
     function renderScenario(game) {
         var opts = game.options || [];
         var btns = '';
         for (var i = 0; i < opts.length; i++) {
-            var label = escapeHtml(opts[i].text || '');
+            var normalizedOption = normalizeScenarioOption(game, opts[i], i);
+            var label = escapeHtml(normalizedOption.text);
             btns += '<button class="hlq-btn hlq-sc-opt" data-hlq-sc="' + i + '" style="padding:13px 14px;background:rgba(255,255,255,0.18);border:2px solid rgba(255,255,255,0.40);border-radius:11px;color:#fff;font-size:0.92rem;cursor:pointer;text-align:left;font-weight:600;line-height:1.4;">' + label + '</button>';
         }
         return ''
@@ -873,11 +888,11 @@
                 if (HLQ.attempted) return;
                 HLQ.attempted = true;
                 var idx = parseInt(btn.getAttribute('data-hlq-sc'), 10);
-                var ok = !!((game.options[idx] || {}).correct);
+                var ok = normalizeScenarioOption(game, game.options[idx], idx).correct;
                 btn.classList.add(ok ? 'hlq-correct' : 'hlq-wrong');
                 if (!ok) {
                     btns.forEach(function(b, i) {
-                        if ((game.options[i] || {}).correct) b.classList.add('hlq-correct');
+                        if (normalizeScenarioOption(game, game.options[i], i).correct) b.classList.add('hlq-correct');
                     });
                 }
                 btns.forEach(function(b) { b.disabled = true; });
