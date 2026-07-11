@@ -31,6 +31,7 @@ const {
     isAlwaysNeedsYouPerson,
     shouldBypassKayNeedsYouForAlert,
 } = require('./_lib/client-context');
+const { resolveUtf8TransportText } = require('./_lib/outbound-text-integrity');
 
 async function supabase(path, options = {}) {
     const url = `${SUPABASE_URL}/rest/v1/${path}`;
@@ -336,8 +337,22 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const alertId = body.alertId;
-    const replyTextInput = normalizeGeneratedCoachDraftText(body.replyText || '').trim();
-    const draftTextInput = normalizeGeneratedCoachDraftText(body.draftText || '').trim();
+    let replyTextInput;
+    let draftTextInput;
+    try {
+        replyTextInput = normalizeGeneratedCoachDraftText(resolveUtf8TransportText({
+            text: body.replyText,
+            textUtf8Base64: body.replyTextUtf8Base64 || body.reply_text_utf8_base64,
+            fieldName: 'replyText',
+        })).trim();
+        draftTextInput = normalizeGeneratedCoachDraftText(resolveUtf8TransportText({
+            text: body.draftText,
+            textUtf8Base64: body.draftTextUtf8Base64 || body.draft_text_utf8_base64,
+            fieldName: 'draftText',
+        })).trim();
+    } catch (err) {
+        return { statusCode: 400, body: JSON.stringify({ error: err.message, code: err.code || 'invalid_utf8_base64' }) };
+    }
     const source = body.source || 'unknown';
     // Optional one-line note from Shannon explaining WHY he edited the
     // draft. Stamped into data.edit_reason when the reply differs from

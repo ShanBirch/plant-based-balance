@@ -90,6 +90,7 @@ const {
     isAiAutomationOptedOut,
 } = require('./_lib/client-context');
 const { buildExerciseLibrarySupportBlock } = require('./_lib/exercise-library-search');
+const { resolveCoachDmManagerScheduledFor } = require('./_lib/coach-dm-working-hours');
 
 const {
     isQualifierEligible,
@@ -411,19 +412,27 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
         allowImmediate: alertData?.auto_send_allow_immediate === true,
     });
     const scheduledAt = new Date();
-    const scheduledFor = new Date(scheduledAt.getTime() + normalizedTiming.delay_ms);
+    const scheduleResolution = resolveCoachDmManagerScheduledFor(scheduledAt, normalizedTiming.delay_ms);
+    const scheduledFor = scheduleResolution.scheduledFor;
+    const actualDelayMs = scheduledFor.getTime() - scheduledAt.getTime();
     const mergedData = {
         ...(alertData || {}),
         scheduled_via: 'auto_send',
         scheduled_was_edited: false,
-        scheduled_send_in_ms: normalizedTiming.delay_ms,
+        scheduled_send_in_ms: actualDelayMs,
+        requested_send_in_ms: normalizedTiming.delay_ms,
+        scheduled_working_hours_deferred: scheduleResolution.deferredForWorkingHours,
+        scheduled_requested_for: scheduleResolution.requestedFor.toISOString(),
         scheduled_at: scheduledAt.toISOString(),
         schedule_reason: normalizedTiming.action === 'send_now'
             ? 'Auto DM recommended sending now; queued for worker dispatch.'
-            : 'Auto DM enabled; delayed using contextual timing.',
+            : scheduleResolution.deferredForWorkingHours
+                ? 'Auto DM delayed using contextual timing, then moved to the next coach DM working slot.'
+                : 'Auto DM enabled; delayed using contextual timing.',
         reply_timing_choice: {
             action: normalizedTiming.action,
-            chosen_delay_ms: normalizedTiming.delay_ms,
+            chosen_delay_ms: actualDelayMs,
+            requested_delay_ms: normalizedTiming.delay_ms,
             chosen_at: scheduledAt.toISOString(),
             source: 'auto_send',
         },

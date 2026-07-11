@@ -32,6 +32,11 @@ const {
     mergeLearningReelContext,
     normalizeLearningReelItems,
 } = require('./_lib/client-context');
+const {
+    OUTBOUND_TEXT_ENCODING_CORRUPTION_CODE,
+    resolveUtf8TransportText,
+    validateOutboundTextIntegrity,
+} = require('./_lib/outbound-text-integrity');
 function normalizeGraphApiVersion(value) {
     const raw = String(value || '').trim();
     if (!raw) return 'v25.0';
@@ -1236,8 +1241,22 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const alertId = body.alertId;
-    const replyTextInput = normalizeGeneratedCoachDraftText(body.replyText || '').trim();
-    const draftTextInput = normalizeGeneratedCoachDraftText(body.draftText || '').trim();
+    let replyTextInput;
+    let draftTextInput;
+    try {
+        replyTextInput = normalizeGeneratedCoachDraftText(resolveUtf8TransportText({
+            text: body.replyText,
+            textUtf8Base64: body.replyTextUtf8Base64 || body.reply_text_utf8_base64,
+            fieldName: 'replyText',
+        })).trim();
+        draftTextInput = normalizeGeneratedCoachDraftText(resolveUtf8TransportText({
+            text: body.draftText,
+            textUtf8Base64: body.draftTextUtf8Base64 || body.draft_text_utf8_base64,
+            fieldName: 'draftText',
+        })).trim();
+    } catch (err) {
+        return { statusCode: 400, body: JSON.stringify({ error: err.message, code: err.code || 'invalid_utf8_base64' }) };
+    }
     const source = body.source || 'inline_reply';
     const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
     const timingSuggestion = normalizeTimingSuggestion(body.timingSuggestion || body.reply_timing_suggestion);
@@ -1315,6 +1334,33 @@ exports.handler = async (event) => {
             statusCode: 400,
             body: JSON.stringify({ error: 'Reply text became empty after visible-copy cleanup' }),
         };
+    }
+    const textIntegrity = validateOutboundTextIntegrity(replyText);
+    if (!textIntegrity.ok) {
+        const blockedAt = new Date().toISOString();
+        const blockedData = {
+            ...alertData,
+            last_send_error: textIntegrity.message,
+            last_send_error_code: OUTBOUND_TEXT_ENCODING_CORRUPTION_CODE,
+            last_send_error_at: blockedAt,
+            outbound_text_integrity: {
+                blocked_at: blockedAt,
+                code: textIntegrity.code,
+                token: textIntegrity.token,
+            },
+            chunks_sent: 0,
+            chunks_total: 1,
+        };
+        try {
+            await supabase(`coach_alerts?id=eq.${alertId}`, {
+                method: 'PATCH',
+                body: { data: blockedData },
+                prefer: 'return=minimal',
+            });
+        } catch (err) {
+            console.warn('[send-ig-reply] outbound text-integrity block patch failed:', err.message);
+        }
+        return { statusCode: 422, body: JSON.stringify({ error: textIntegrity.message, code: textIntegrity.code }) };
     }
     let graphRecipientId = '';
     let graphAccountId = '';
@@ -1982,4 +2028,5 @@ exports._test = {
     isGratitudeCloserText,
     resolveLatestInboundTextForSend,
     validateSendTimeOutboundSafety,
+    validateOutboundTextIntegrity,
 };

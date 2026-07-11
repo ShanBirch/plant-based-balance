@@ -7,6 +7,7 @@ const {
     isGratitudeCloserText,
     resolveLatestInboundTextForSend,
     validateSendTimeOutboundSafety,
+    validateOutboundTextIntegrity,
 } = require('../netlify/functions/send-ig-reply')._test;
 
 assert.strictEqual(isCocosAlertData({ bot_account: 'cocos_pt_studio' }), true);
@@ -60,5 +61,11 @@ assert.strictEqual(validateSendTimeOutboundSafety({
     messagesToSend: ['No worries at all'],
     latestInboundText: 'Thanks!!!',
 }).ok, true);
+
+assert.strictEqual(
+    validateOutboundTextIntegrity('Hahaha ?? what did you train?').code,
+    'outbound_text_encoding_corruption'
+);
+assert.strictEqual(validateOutboundTextIntegrity('wait what??').ok, true);
 
 console.log('send ig challenge offer notification tests passed');

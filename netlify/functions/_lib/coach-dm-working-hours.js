@@ -32,6 +32,34 @@ function isCoachDmManagerWorkingTime(date = new Date()) {
     );
 }
 
+function resolveCoachDmManagerScheduledFor(now = new Date(), delayMs = 0) {
+    const nowDate = now instanceof Date ? now : new Date(now);
+    const normalizedDelayMs = Number.isFinite(Number(delayMs)) && Number(delayMs) > 0
+        ? Math.round(Number(delayMs))
+        : 0;
+    const requestedFor = new Date(nowDate.getTime() + normalizedDelayMs);
+    if (isCoachDmManagerWorkingTime(requestedFor)) {
+        return {
+            scheduledFor: requestedFor,
+            requestedFor,
+            deferredForWorkingHours: false,
+        };
+    }
+
+    const minuteOfDay = getBrisbaneMinuteOfDay(requestedFor);
+    const minutesUntilStart = minuteOfDay === null
+        ? 0
+        : (COACH_DM_MANAGER_START_MINUTES - minuteOfDay + (24 * 60)) % (24 * 60);
+    const scheduledFor = new Date(requestedFor.getTime() + (minutesUntilStart * 60 * 1000));
+    scheduledFor.setUTCSeconds(0, 0);
+
+    return {
+        scheduledFor,
+        requestedFor,
+        deferredForWorkingHours: true,
+    };
+}
+
 function coachDmManagerWindowLabel() {
     return '05:00-02:00 Australia/Brisbane';
 }
@@ -43,5 +71,6 @@ module.exports = {
     getBrisbaneMinuteOfDay,
     isMinuteInWindow,
     isCoachDmManagerWorkingTime,
+    resolveCoachDmManagerScheduledFor,
     coachDmManagerWindowLabel,
 };

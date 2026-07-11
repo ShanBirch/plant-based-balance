@@ -4,6 +4,7 @@ const {
     getBrisbaneMinuteOfDay,
     isCoachDmManagerWorkingTime,
     isMinuteInWindow,
+    resolveCoachDmManagerScheduledFor,
 } = require('../netlify/functions/_lib/coach-dm-working-hours');
 
 assert.strictEqual(isMinuteInWindow(4 * 60 + 59, 5 * 60, 2 * 60), false);
@@ -17,6 +18,28 @@ assert.strictEqual(
     4 * 60 + 59,
     '18:59 UTC should be 04:59 Brisbane'
 );
+
+const deferredAcrossPause = resolveCoachDmManagerScheduledFor(
+    new Date('2026-06-24T15:30:00.000Z'),
+    60 * 60 * 1000
+);
+assert.strictEqual(deferredAcrossPause.requestedFor.toISOString(), '2026-06-24T16:30:00.000Z');
+assert.strictEqual(deferredAcrossPause.scheduledFor.toISOString(), '2026-06-24T19:00:00.000Z');
+assert.strictEqual(deferredAcrossPause.deferredForWorkingHours, true);
+
+const nextSlotStartsCleanly = resolveCoachDmManagerScheduledFor(
+    new Date('2026-06-23T18:29:45.500Z'),
+    30 * 1000
+);
+assert.strictEqual(nextSlotStartsCleanly.scheduledFor.toISOString(), '2026-06-23T19:00:00.000Z');
+
+const allowedOvernight = resolveCoachDmManagerScheduledFor(
+    new Date('2026-06-24T13:30:00.000Z'),
+    60 * 60 * 1000
+);
+assert.strictEqual(allowedOvernight.requestedFor.toISOString(), '2026-06-24T14:30:00.000Z');
+assert.strictEqual(allowedOvernight.scheduledFor.toISOString(), '2026-06-24T14:30:00.000Z');
+assert.strictEqual(allowedOvernight.deferredForWorkingHours, false);
 assert.strictEqual(
     isCoachDmManagerWorkingTime(new Date('2026-06-23T18:59:00.000Z')),
     false,

@@ -31,6 +31,11 @@ const {
     isAlwaysNeedsYouPerson,
     shouldBypassKayNeedsYouForAlert,
 } = require('./_lib/client-context');
+const { resolveCoachDmManagerScheduledFor } = require('./_lib/coach-dm-working-hours');
+const {
+    resolveUtf8TransportText,
+    validateOutboundTextIntegrity,
+} = require('./_lib/outbound-text-integrity');
 
 // Hard floor so the worker has a fair chance of firing on time, hard ceiling
 // so a typo in the picker UI can't accidentally schedule something a year out.
@@ -319,8 +324,22 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const alertId = body.alertId;
-    const replyTextInput = normalizeGeneratedCoachDraftText(body.replyText || '').trim();
-    const draftTextInput = normalizeGeneratedCoachDraftText(body.draftText || '').trim();
+    let replyTextInput;
+    let draftTextInput;
+    try {
+        replyTextInput = normalizeGeneratedCoachDraftText(resolveUtf8TransportText({
+            text: body.replyText,
+            textUtf8Base64: body.replyTextUtf8Base64 || body.reply_text_utf8_base64,
+            fieldName: 'replyText',
+        })).trim();
+        draftTextInput = normalizeGeneratedCoachDraftText(resolveUtf8TransportText({
+            text: body.draftText,
+            textUtf8Base64: body.draftTextUtf8Base64 || body.draft_text_utf8_base64,
+            fieldName: 'draftText',
+        })).trim();
+    } catch (err) {
+        return { statusCode: 400, body: JSON.stringify({ error: err.message, code: err.code || 'invalid_utf8_base64' }) };
+    }
     const source = body.source || 'send_later';
     const sendInMs = Number(body.sendInMs);
     // Optional one-line note from Shannon explaining WHY he's delaying.
@@ -390,20 +409,30 @@ exports.handler = async (event) => {
     if (!replyText) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Reply text became empty after visible-copy cleanup' }) };
     }
+    const textIntegrity = validateOutboundTextIntegrity(replyText);
+    if (!textIntegrity.ok) {
+        return { statusCode: 422, body: JSON.stringify({ error: textIntegrity.message, code: textIntegrity.code }) };
+    }
     // 2. Compute scheduled_for and stamp the row.
     const now = new Date();
-    const scheduledFor = new Date(now.getTime() + sendInMs);
+    const scheduleResolution = resolveCoachDmManagerScheduledFor(now, sendInMs);
+    const scheduledFor = scheduleResolution.scheduledFor;
+    const actualDelayMs = scheduledFor.getTime() - now.getTime();
     const wasEdited = !!draftText && replyText !== draftText;
 
     const mergedData = {
         ...(alert.data || {}),
         scheduled_via: source,
         scheduled_was_edited: wasEdited,
-        scheduled_send_in_ms: sendInMs,
+        scheduled_send_in_ms: actualDelayMs,
+        requested_send_in_ms: sendInMs,
+        scheduled_working_hours_deferred: scheduleResolution.deferredForWorkingHours,
+        scheduled_requested_for: scheduleResolution.requestedFor.toISOString(),
         scheduled_at: now.toISOString(),
         reply_timing_choice: {
             action: 'schedule',
-            chosen_delay_ms: sendInMs,
+            chosen_delay_ms: actualDelayMs,
+            requested_delay_ms: sendInMs,
             chosen_at: now.toISOString(),
             source,
         },
@@ -467,4 +496,5 @@ exports._test = {
     isAutomatedPermanentNeedsYouScheduleSource,
     isAppSupportFastFixException,
     shouldBlockPermanentNeedsYouSchedule,
+    resolveCoachDmManagerScheduledFor,
 };
