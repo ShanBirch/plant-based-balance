@@ -20,6 +20,10 @@ for (const eventName of [
     'video_upload_attempt_start',
     'video_native_file_read_start',
     'video_native_file_read_response',
+    'video_native_file_read_fetch_failed',
+    'video_native_file_read_xhr_start',
+    'video_native_file_read_xhr_success',
+    'video_native_file_read_xhr_error',
     'video_native_file_blob_ready',
     'video_ios_system_camera_picker',
     'video_file_materialize_skipped',
@@ -35,6 +39,8 @@ assert.match(formCheck, /function openFormCheckGallery\(\)\s*{\s*openWorkoutFeed
 assert.match(formCheck, /await materializeWorkoutFeedShareFile\(rawFile, 'form_check_gallery'\)/);
 assert.match(formCheck, /window\.openWorkoutFeedShareGalleryForFile = openWorkoutFeedShareGalleryForFile/);
 assert.match(formCheck, /window\.prepareBalanceVideoUploadFile = function \(file, stage, target\)/);
+assert.match(formCheck, /async function readWorkoutFeedShareNativeVideoBlob\(source\)/);
+assert.match(formCheck, /request\.responseType = 'blob';[\s\S]*request\.status === 0/);
 
 for (const eventName of [
     'custom_exercise_gallery_open',
@@ -54,6 +60,6 @@ assert.match(supabase, /custom_exercise_upload_response/);
 assert.match(dashboard, /onclick="openCustomExerciseVideoGallery\(event\)"/);
 assert.match(dashboard, /lib\/stories\.js\?v=63/);
 assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=138/);
-assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=51/);
+assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=52/);
 
 console.log('iPhone video upload diagnostics contract ok');

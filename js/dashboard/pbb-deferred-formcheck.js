@@ -2883,6 +2883,73 @@
         showWorkoutFeedShareUploadBanner('Camera needs the latest app update. Use Photos for an existing video for now.', 'error');
     }
 
+    async function readWorkoutFeedShareNativeVideoBlob(source) {
+        let fetchError = null;
+        try {
+            const response = await fetch(source);
+            logWorkoutFeedShareDiagnostic('video_native_file_read_response', {
+                httpStatus: response.status,
+                responseOk: response.ok,
+                responseType: response.type || '',
+                responseContentType: response.headers && response.headers.get ? (response.headers.get('content-type') || '') : '',
+                responseContentLength: response.headers && response.headers.get ? Number(response.headers.get('content-length') || 0) : 0
+            });
+            if (!response.ok) throw new Error('Could not load the recorded clip.');
+
+            const blob = await response.blob();
+            if (!blob || !blob.size) throw new Error('The recorded clip was empty.');
+            return blob;
+        } catch (error) {
+            fetchError = error;
+            logWorkoutFeedShareDiagnostic('video_native_file_read_fetch_failed', {
+                errorName: error && error.name ? error.name : 'Error',
+                errorMessage: error && error.message ? error.message : String(error || 'native file fetch failed')
+            });
+        }
+
+        logWorkoutFeedShareDiagnostic('video_native_file_read_xhr_start', {});
+        try {
+            const blob = await new Promise(function (resolve, reject) {
+                const request = new XMLHttpRequest();
+                request.open('GET', source, true);
+                request.responseType = 'blob';
+                request.onload = function () {
+                    const responseBlob = request.response;
+                    const acceptedStatus = (request.status >= 200 && request.status < 300) || request.status === 0;
+                    if (acceptedStatus && responseBlob && responseBlob.size) {
+                        resolve(responseBlob);
+                        return;
+                    }
+                    reject(new Error('Could not load the recorded clip (status ' + request.status + ').'));
+                };
+                request.onerror = function () {
+                    reject(new Error('Could not read the recorded clip from the phone.'));
+                };
+                request.onabort = function () {
+                    reject(new Error('Reading the recorded clip was cancelled.'));
+                };
+                request.send();
+            });
+            logWorkoutFeedShareDiagnostic('video_native_file_read_xhr_success', {
+                blobSizeBytes: Number(blob && blob.size || 0),
+                blobType: blob && blob.type || ''
+            });
+            return blob;
+        } catch (error) {
+            logWorkoutFeedShareDiagnostic('video_native_file_read_xhr_error', {
+                errorName: error && error.name ? error.name : 'Error',
+                errorMessage: error && error.message ? error.message : String(error || 'native file XHR failed'),
+                fetchErrorName: fetchError && fetchError.name ? fetchError.name : 'Error',
+                fetchErrorMessage: fetchError && fetchError.message ? fetchError.message : String(fetchError || 'native file fetch failed')
+            });
+            logWorkoutFeedShareDiagnostic('video_native_file_read_network_error', {
+                errorName: error && error.name ? error.name : 'Error',
+                errorMessage: error && error.message ? error.message : String(error || 'native file read failed')
+            });
+            throw error;
+        }
+    }
+
     async function nativeWorkoutVideoResultToFile(result) {
         if (!result || result.cancelled) return null;
 
@@ -2901,26 +2968,7 @@
             reportedMimeType: result.mimeType || '',
             reportedFileName: result.name || ''
         });
-        let response;
-        try {
-            response = await fetch(source);
-        } catch (error) {
-            logWorkoutFeedShareDiagnostic('video_native_file_read_network_error', {
-                errorName: error && error.name ? error.name : 'Error',
-                errorMessage: error && error.message ? error.message : String(error || 'native file fetch failed')
-            });
-            throw error;
-        }
-        logWorkoutFeedShareDiagnostic('video_native_file_read_response', {
-            httpStatus: response.status,
-            responseOk: response.ok,
-            responseType: response.type || '',
-            responseContentType: response.headers && response.headers.get ? (response.headers.get('content-type') || '') : '',
-            responseContentLength: response.headers && response.headers.get ? Number(response.headers.get('content-length') || 0) : 0
-        });
-        if (!response.ok) throw new Error('Could not load the recorded clip.');
-
-        const blob = await response.blob();
+        const blob = await readWorkoutFeedShareNativeVideoBlob(source);
         logWorkoutFeedShareDiagnostic('video_native_file_blob_ready', {
             blobSizeBytes: Number(blob && blob.size || 0),
             blobType: blob && blob.type || ''
