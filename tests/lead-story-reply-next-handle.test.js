@@ -26,6 +26,16 @@ Story/content context:
 Recent story opener already used: love these InsightTimer reminders!`;
 }
 
+function nativePostContextFor(message) {
+    return `Just-arrived Instagram message from lea: "${message}"
+Recent timestamped Instagram timeline:
+Shannon [12 Jul 2026, 08:49 AEST]: good session?
+lea [12 Jul 2026, 08:57 AEST]: ${message}
+NATIVE STORY/POST OPENER CONTEXT:
+Shannon previously commented on Lea's Instagram post before this inbound.
+Shannon's native story reply/comment: "good session?"`;
+}
+
 const asideOnly = applyLeadStoryReplyQuestionGuard(passReview, {
     draftText: 'haha so true! i try to fit them in while sunshine is causing chaos',
     contextBlocks: storyContextFor('They truly fill your cup right?!'),
@@ -60,6 +70,23 @@ const lowSignalThanks = applyLeadStoryReplyQuestionGuard(passReview, {
 });
 
 assert.strictEqual(lowSignalThanks.verdict, 'pass');
+
+const shortPositivePostReply = applyLeadStoryReplyQuestionGuard(passReview, {
+    draftText: 'love that session',
+    contextBlocks: nativePostContextFor('Amazing session!'),
+    alertType: 'ig_incoming_dm',
+});
+
+assert.strictEqual(shortPositivePostReply.verdict, 'warn');
+assert.strictEqual(shortPositivePostReply.deterministic_guard, 'lead_story_reply_missing_question');
+
+const shortPostReplyWithQuestion = applyLeadStoryReplyQuestionGuard(passReview, {
+    draftText: 'love that. what did you train?',
+    contextBlocks: nativePostContextFor('Amazing session!'),
+    alertType: 'ig_incoming_dm',
+});
+
+assert.strictEqual(shortPostReplyWithQuestion.verdict, 'pass');
 
 const oldInjuryHistory = applyLeadStoryReplyQuestionGuard(passReview, {
     draftText: "ahh wow, that's a massive thing to go through",

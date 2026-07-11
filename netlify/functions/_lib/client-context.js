@@ -5458,7 +5458,7 @@ function normalizeDraftReviewPayload(value) {
     };
 }
 
-const LEAD_STORY_REPLY_CONTEXT_RE = /\b(?:replied to their story|story media attached|native story opener|story\/content context|story opener already used)\b/i;
+const LEAD_STORY_REPLY_CONTEXT_RE = /\b(?:replied to their story|story media attached|native story opener|native post opener|story\/post context|story\/content context|story opener already used|comment(?:ed)? on (?:their|Shannon's) (?:Instagram )?post|comment Shannon left on their post)\b/i;
 const LEAD_NEXT_QUESTION_RE = /\?|\b(?:what|how|where|when|why|who|are you|do you|did you|have you|would you|tell me|curious|reckon|ever tried|ever used)\b/i;
 const LEAD_NEXT_INVITE_RE = /\b(?:challenge|30\s*day|30-day|free coaching|send (?:you )?(?:the )?(?:details|link)|want me to send|jump in|join|start|sign up|bio\.html|plantbased-balance|coaching\.html|future-balance)\b/i;
 const LEAD_INTENTIONAL_CLOSE_RE = /\b(?:bye|byeee+|goodnight|sleep well|have a nice day|have a good day|enjoy(?: your)?(?: day| night| trip| weekend)?|no worries|all good|you're welcome|you are welcome|thanks|thank you|appreciate it|talk soon|catch you)\b/i;
@@ -5512,6 +5512,7 @@ function lineMatchesReviewMessage(line, message) {
 
 function latestOutboundWasStoryOpener(contextBlocks, currentMessage) {
     const context = String(contextBlocks || '');
+    const explicitNativeOpener = /(?:NATIVE STORY(?:\/POST)?|NATIVE POST|STORY\/POST) OPENER CONTEXT|comment(?:ed)? on (?:their|Shannon's) (?:Instagram )?post/i.test(context);
     const lines = context.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
     let currentIndex = lines.length;
     for (let i = lines.length - 1; i >= 0; i -= 1) {
@@ -5523,10 +5524,12 @@ function latestOutboundWasStoryOpener(contextBlocks, currentMessage) {
     for (let i = currentIndex - 1; i >= 0; i -= 1) {
         const line = lines[i];
         if (/^Shannon\b/i.test(line)) {
-            return LEAD_STORY_REPLY_CONTEXT_RE.test(line);
+            if (LEAD_STORY_REPLY_CONTEXT_RE.test(line)) return true;
+            if (!explicitNativeOpener) return false;
         }
     }
-    return /Story\/content context/i.test(context) && LEAD_STORY_REPLY_CONTEXT_RE.test(context);
+    return LEAD_STORY_REPLY_CONTEXT_RE.test(context)
+        || /(?:NATIVE STORY(?:\/POST)?|NATIVE POST|STORY\/POST) OPENER CONTEXT/i.test(context);
 }
 
 function applyLeadStoryReplyQuestionGuard(review, { draftText, contextBlocks, alertType } = {}) {

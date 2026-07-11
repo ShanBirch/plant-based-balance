@@ -36,6 +36,18 @@ function makeAlert(overrides = {}) {
     };
 }
 
+const nativeOpenerReviewContext = manager.buildDraftReviewContextBlocks(makeAlert({
+    data: {
+        draft_evidence: {
+            current_message: 'Amazing session!',
+            recent_timeline: 'Shannon: good session?',
+            native_story_context: 'NATIVE STORY/POST OPENER CONTEXT: Shannon previously commented on their Instagram post.',
+        },
+    },
+}));
+assert.match(nativeOpenerReviewContext, /Native story\/post opener context/);
+assert.match(nativeOpenerReviewContext, /NATIVE STORY\/POST OPENER CONTEXT/);
+
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Shane' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ profile_name: 'Fra' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'francesca_balance' }), true);
@@ -652,6 +664,11 @@ assert.ok(
 assert.ok(
     clientContextSource.includes('Do not warn just because a lead/client reply is short and reaction-only'),
     'client/lead manager draft QA should not over-penalize reaction-only Shannon replies'
+);
+assert.ok(
+    clientContextSource.includes('native post opener')
+        && clientContextSource.includes('comment Shannon left on their post'),
+    'lead draft QA should recognise native post/comment openers'
 );
 assert.ok(
     clientContextSource.includes('Warn if the draft tacks an optional curiosity question'),

@@ -1753,10 +1753,10 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
         summary,
         block: `
 
-NATIVE STORY OPENER CONTEXT:
+NATIVE STORY/POST OPENER CONTEXT:
 ${lines.join('\n')}
 
-Use this if the new message is replying to Shannon's native story opener. Do not pretend ${leadName || 'the lead'} said the story context themselves. Preserve the free-offer feel on the first reply: rapport, one useful hook, no hard pitch from empty friendliness. Keep Shannon's real texting voice above all sales context: short, specific, casual, built from their newest detail. For unlinked leads, bridge to paid Starter Coaching only after real help/fitness/food/consistency signal or enough earned context; free challenge is fallback. If the story context identifies an animal as a cat, dog, rabbit, horse, or another species, keep that species exactly. If the species is unknown, stay neutral and never guess dog, cat, breed, or type from a pet name alone. If visible story text or a location sticker already names a place, treat that place as known and do not ask where it is or where they are watching from. If the visual story context already shows beach, ocean, sand, coast, or waterfront, do not ask whether they were on/at the beach.`,
+Use this if the new message is replying to Shannon's native story opener or a comment/reply Shannon just left on their post. Do not pretend ${leadName || 'the lead'} said the story/post context themselves. Preserve the free-offer feel on the first reply: rapport, one useful hook, no hard pitch from empty friendliness. Keep Shannon's real texting voice above all sales context: short, specific, casual, built from their newest detail. For an early unlinked-lead response with a concrete signal, always try one short, topic-specific question after the reaction, even when the reply is brief or positive, such as "Amazing session!". Do not default to a reaction-only/like when a natural question can keep the conversation open. Skip the question for a pure thanks/closer, emoji or filler only, confusion or AI suspicion, safety/medical/rehab advice, or when the thread is already an established back-and-forth rather than the opening beat. For unlinked leads, bridge to paid Starter Coaching only after real help/fitness/food/consistency signal or enough earned context; free challenge is fallback. If the story context identifies an animal as a cat, dog, rabbit, horse, or another species, keep that species exactly. If the species is unknown, stay neutral and never guess dog, cat, breed, or type from a pet name alone. If visible story text or a location sticker already names a place, treat that place as known and do not ask where it is or where they are watching from. If the visual story context already shows beach, ocean, sand, coast, or waterfront, do not ask whether they were on/at the beach.`,
     };
 }
 
@@ -2593,6 +2593,7 @@ There is no reliable prior DM context in the system. Usually Shannon has already
 - Do not ask what this is about or say you have no context.
 - If the message is only a bare tag/mention notification like "mentioned you in a story photo", do not ask what they tagged Shannon in or ask them to resend it. A tiny reaction like "oh hell yeah!" is enough.
 - If their message is short or ambiguous, treat it as them replying to unseen story/post context. Match their energy and keep it short. Ask a tiny clarifier only if needed.
+- If their short reply is a concrete positive response to Shannon's recent story/post opener or comment, try one tiny topic-specific question so the conversation has a chance to continue. Keep reaction-only/like for thanks, filler, emoji-only, or clear closers.
 - If they clearly ask about the challenge, what is included, plant-based stuff, a signup link, or ask Shannon for help because they feel stuck, answer that directly and keep it casual.
 - No coaching intake, no pitch, no name/age/goal bundle on this first captured reply.` : '';
 

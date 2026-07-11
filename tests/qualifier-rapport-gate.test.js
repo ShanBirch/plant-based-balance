@@ -201,6 +201,8 @@ assert.match(adminSource, /MOVE NOW/);
 assert.doesNotMatch(adminSource, /ASK NOW/);
 assert.match(igDraftSource, /Earn the next response/);
 assert.match(igDraftSource, /SHANNON FOLLOW-UP QUESTION FINGERPRINT/);
+assert.match(igDraftSource, /always try one short, topic-specific question/);
+assert.match(igDraftSource, /reaction-only\/like/);
 assert.match(igDraftSource, /why by April\?/);
 assert.match(igDraftSource, /local\/in-person trainer/);
 assert.match(qualifierSource, /LOCAL \/ IN-PERSON \/ EXISTING TRAINER GATE/);

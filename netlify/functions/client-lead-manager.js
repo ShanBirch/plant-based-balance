@@ -411,6 +411,8 @@ function buildDraftReviewContextBlocks(alert = {}) {
     const latest = evidence.current_message || data.message_preview || alert.description || '';
     const priorText = formatReviewList(evidence.prior_unanswered || data.recent_inbound_messages, m => `- "${truncate(m.text || m.message || '', 220)}"`);
     const timelineText = evidence.recent_timeline || '';
+    const storyContextText = evidence.story_context || '';
+    const nativeStoryContextText = evidence.native_story_context || '';
     const activityText = evidence.recent_activity || '';
     const workoutText = evidence.recent_workouts || '';
     const memoryText = evidence.memory_context || '';
@@ -427,6 +429,8 @@ function buildDraftReviewContextBlocks(alert = {}) {
         `Just-arrived message from ${clientName}: "${truncate(latest, 500)}"`,
         priorText ? `Prior unanswered messages:\n${priorText}` : '',
         timelineText ? `Recent timestamped timeline:\n${truncate(timelineText, 2400)}` : '',
+        storyContextText ? `Story/post opener context:\n${truncate(storyContextText, 1400)}` : '',
+        nativeStoryContextText ? `Native story/post opener context:\n${truncate(nativeStoryContextText, 1400)}` : '',
         exerciseLibrarySupportBlock ? exerciseLibrarySupportBlock.trim() : '',
         activityText ? `Recent activity snapshot:\n${truncate(activityText, 1200)}` : '',
         workoutText ? `Exact recent workout logs:\n${truncate(workoutText, 1200)}` : '',
