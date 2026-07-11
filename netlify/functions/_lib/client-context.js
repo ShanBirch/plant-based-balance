@@ -1172,6 +1172,62 @@ function shouldUseCoachEditExample(row) {
     return true;
 }
 
+function normalizeNativeVoiceExampleText(value, maxChars = 220) {
+    const text = normalizeCoachDraftText(value || '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    if (!text || text.length < 3 || text.length > maxChars) return '';
+    if (/https?:\/\/|www\.|\[[A-Z_]+:[^\]]+\]/i.test(text)) return '';
+    return text;
+}
+
+const nativeIgVoiceGeneralCache = new Map();
+
+async function loadNativeIgVoiceExamples({
+    igThreadId = null,
+    max = 8,
+    generalCap = 4,
+    source = 'instagram_graph',
+} = {}) {
+    const cleanSource = String(source || '').trim();
+    if (!cleanSource) return { person: [], general: [] };
+
+    const queryRows = async (path) => {
+        try {
+            return await supabaseQuery(path);
+        } catch (e) {
+            return [];
+        }
+    };
+    const base = `select=text,created_at,source&direction=eq.out&source=eq.${encodeURIComponent(cleanSource)}&order=created_at.desc&limit=${Math.max(max, generalCap, 1) * 4}`;
+    const personRows = igThreadId
+        ? await queryRows(`ig_messages?${base}&thread_id=eq.${encodeURIComponent(igThreadId)}`)
+        : [];
+    const cachedGeneral = nativeIgVoiceGeneralCache.get(cleanSource);
+    let generalRows = cachedGeneral && Date.now() - cachedGeneral.fetchedAt < 5 * 60 * 1000
+        ? cachedGeneral.rows
+        : null;
+    if (!generalRows) {
+        generalRows = await queryRows(`ig_messages?${base}`);
+        nativeIgVoiceGeneralCache.set(cleanSource, { fetchedAt: Date.now(), rows: generalRows });
+    }
+    const cleanRows = (rows) => {
+        const seen = new Set();
+        return (Array.isArray(rows) ? rows : [])
+            .map(row => normalizeNativeVoiceExampleText(row?.text))
+            .filter(text => {
+                const key = text.toLowerCase();
+                if (!text || seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+    };
+    return {
+        person: cleanRows(personRows).slice(0, max),
+        general: cleanRows(generalRows).slice(0, generalCap),
+    };
+}
+
 async function loadEditExamples({
     alertType = null,
     lookback = 40,
@@ -1260,6 +1316,12 @@ async function loadEditExamples({
         );
         const generalExamples = buildExamples(generalRecent);
 
+        const nativeVoice = await loadNativeIgVoiceExamples({
+            igThreadId,
+            max: Math.min(8, max),
+            generalCap: Math.min(4, generalCap),
+        });
+
         const personSlice = personExamples.slice(0, max);
         const personSentMessages = new Set(personSlice.map(p => p.final));
 
@@ -1276,7 +1338,7 @@ async function loadEditExamples({
             .filter(g => !personSentMessages.has(g.final))
             .slice(0, generalLimit);
 
-        if (personSlice.length === 0 && generalSlice.length === 0) return globalLearningBlock || '';
+        if (personSlice.length === 0 && generalSlice.length === 0 && !nativeVoice.person.length && !nativeVoice.general.length) return globalLearningBlock || '';
 
         const formatExample = (e, i) => {
             const reason = e.reason ? `\nWhy Shannon changed it: ${e.reason}` : '';
@@ -1323,6 +1385,7 @@ RECENT SHANNON EDIT LESSONS TO APPLY BEFORE COPYING ANY EXAMPLE:
 - When Shannon writes an edit reason or redraft hint below, treat that reason as higher priority than the old draft.
 `;        if (globalLearningBlock) block = `${globalLearningBlock}${block}`;
         block += '\n- Do not prove you read every clause. Pick the strongest live detail, react to it normally, then stop or move one inch forward.';
+        block += '\n- Learning priority is: native replies to this person, then native replies across Shannon\'s account, then edited AI examples, then static rules. Use every example as style evidence only, never as text to copy.';
         block += "\n- Only add a Shannon day/training/work/pet update when they directly ask about Shannon's current day, sleep, training, weekend, work, phone, pets, or plans.";
         block += '\n- When they do directly ask, answer it with one concrete detail. Avoid the dead "just app work" loop unless you make the app detail specific.';
         block += '\n- If they ask what something is like "by you", "near you", or where Shannon is, answer that topic briefly. Do not substitute a random app/Sunshine/day update.';
@@ -1340,6 +1403,14 @@ RECENT SHANNON EDIT LESSONS TO APPLY BEFORE COPYING ANY EXAMPLE:
                 : '\n\n' + (label || 'LEARN FROM PAST EDITS â€” Shannon rewrote these AI drafts into how he actually talks. Mimic the SECOND version:') + '\n\n';
             block += generalHeader;
             block += generalSlice.map(formatExample).join('\n\n');
+        }
+        if (nativeVoice.person.length > 0) {
+            block += '\n\nNATIVE IG REPLIES TO THIS PERSON (highest-priority style evidence; use the rhythm and level of warmth, never copy the wording or personal facts):\n';
+            block += nativeVoice.person.map(text => `- ${text}`).join('\n');
+        }
+        if (nativeVoice.general.length > 0) {
+            block += '\n\nNATIVE IG REPLIES ACROSS SHANNON\'S ACCOUNT (general style evidence; lower priority than this person and never copy exact text):\n';
+            block += nativeVoice.general.map(text => `- ${text}`).join('\n');
         }
         return block;
     } catch (e) {
@@ -7503,6 +7574,7 @@ module.exports = {
     describeEditDeltaTags,
     buildFallbackEditLearningBullets,
     loadEditExamples,
+    loadNativeIgVoiceExamples,
     loadResponseTimingProfile,
     buildReplyTimingSuggestion,
     buildCheckinThreadMetadata,

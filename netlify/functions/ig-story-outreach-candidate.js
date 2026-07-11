@@ -16,6 +16,7 @@ const {
     callGeminiFallback,
     callVertexGeminiMultimodal,
     truncate,
+    normalizeCoachDraftText,
     isTestAccount,
     isAiAutomationOptedOut,
 } = require('./_lib/client-context');
@@ -1843,6 +1844,61 @@ async function loadRecentThreadMessages(threadId, limit = 50) {
     }
 }
 
+let storyCommentVoiceExamplesCache = { fetchedAt: 0, rows: [] };
+
+async function loadStoryCommentVoiceExamples({ threadId = null, recentMessages = [], max = 6, generalCap = 6 } = {}) {
+    const clean = (value) => normalizeCoachDraftText(value || '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const usable = (value) => {
+        const text = clean(value);
+        if (!text || text.length < 3 || text.length > 180) return '';
+        if (/https?:\/\/|www\.|\[[A-Z_]+:[^\]]+\]/i.test(text)) return '';
+        return text;
+    };
+    const unique = (rows) => {
+        const seen = new Set();
+        return (Array.isArray(rows) ? rows : [])
+            .map(row => usable(row?.text || row))
+            .filter(text => {
+                const key = text.toLowerCase();
+                if (!text || seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+    };
+    const person = unique((recentMessages || []).filter(row => (
+        String(row?.direction || '').toLowerCase() === 'out'
+        && String(row?.source || '').toLowerCase() === 'native_story_comment'
+    ))).slice(0, max);
+    let generalRows = storyCommentVoiceExamplesCache.rows;
+    if (Date.now() - storyCommentVoiceExamplesCache.fetchedAt > 5 * 60 * 1000) {
+        try {
+            generalRows = await supabaseQuery(
+                `ig_messages?select=text,created_at,source&direction=eq.out&source=eq.native_story_comment&order=created_at.desc&limit=${Math.max(generalCap * 4, 12)}`
+            );
+            storyCommentVoiceExamplesCache = { fetchedAt: Date.now(), rows: generalRows };
+        } catch (err) {
+            console.warn('[ig-story-outreach] story voice example lookup failed:', err.message);
+        }
+    }
+    const general = unique(generalRows).slice(0, generalCap);
+    if (!person.length && !general.length) return '';
+    const lines = [
+        'STORY COMMENTER SHANNON VOICE EXAMPLES (style evidence only; never copy exact wording or personal facts):',
+    ];
+    if (person.length) {
+        lines.push('Replies Shannon has actually sent to this person:');
+        person.forEach(text => lines.push(`- ${text}`));
+    }
+    if (general.length) {
+        lines.push('Recent native Story replies across the account:');
+        general.forEach(text => lines.push(`- ${text}`));
+    }
+    lines.push('Use these only to match Shannon\'s rhythm, brevity, warmth, and question discipline. Ground the reply in the current Story evidence, not in the example topics.');
+    return lines.join('\n');
+}
+
 async function loadPendingThreadAlerts(threadId, limit = 5) {
     if (!threadId) return [];
     try {
@@ -2227,6 +2283,7 @@ async function loadRelationshipContextForHandle(username) {
     if (!thread?.id) {
         return {
             thread: null,
+            recentMessages: [],
             context: buildExistingRelationshipContext(null),
             storyBlockReason: '',
         };
@@ -2242,6 +2299,7 @@ async function loadRelationshipContextForHandle(username) {
     const storyBlockReason = relationshipStoryBlockReason(thread, pendingAlerts, recentMessages);
     return {
         thread,
+        recentMessages,
         context: buildExistingRelationshipContext(thread, {
             recentMessages,
             pendingAlerts,
@@ -2401,7 +2459,7 @@ function buildStoryEvidenceAnalysisFallback({
     };
 }
 
-async function analyzeStoryEvidence({ username, evidenceImages, evidenceVideo = null, suppliedComment, surfaceContext, relationshipContext = '', relationshipStoryBlockReason = '', forceSuppliedComment = false }) {
+async function analyzeStoryEvidence({ username, evidenceImages, evidenceVideo = null, suppliedComment, surfaceContext, relationshipContext = '', relationshipStoryBlockReason = '', storyCommentVoiceExamples = '', forceSuppliedComment = false }) {
     const normalizedSupplied = normalizeDraftComment(suppliedComment, {
         storyOwner: username,
         sharedFromUsername: surfaceContext?.sharedFromUsername,
@@ -2467,6 +2525,8 @@ async function analyzeStoryEvidence({ username, evidenceImages, evidenceVideo = 
     const prompt = `Analyze this Instagram story evidence and draft one story reply for Shannon.
 
 ${shannonStoryVoiceGuideBlock()}
+
+${storyCommentVoiceExamples}
 
 Return JSON only:
 {
@@ -2966,6 +3026,10 @@ exports.handler = async (event = {}) => {
     const relationshipContext = relationship.context;
     const relationshipStoryBlockReason = relationship.storyBlockReason || '';
     const relationshipStoryCooldown = relationship.storyCooldown || null;
+    const storyCommentVoiceExamples = await loadStoryCommentVoiceExamples({
+        threadId: existingThread?.id || null,
+        recentMessages: relationship.recentMessages,
+    });
     const sentRequest = body.send_status === 'sent' || body.sent === true;
     const threadOptedOut = isAiAutomationOptedOut(existingThread);
     const manualStoryReviewOnly = isManualStoryOutreachOnly(existingThread);
@@ -2999,6 +3063,7 @@ exports.handler = async (event = {}) => {
         surfaceContext,
         relationshipContext: analysisRelationshipContext,
         relationshipStoryBlockReason: analysisRelationshipStoryBlockReason,
+        storyCommentVoiceExamples,
         forceSuppliedComment: body.lock_supplied_comment === true || body.lockSuppliedComment === true || body.send_status === 'sent' || body.sent === true,
     });
     if (!sentRequest && relationshipStoryBlockReason && !dryRunQualityJudge) {
