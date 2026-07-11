@@ -748,6 +748,9 @@ function repairDraftCommentWithContext({ comment = '', description = '', visible
     if (songShareComment && !/\b(?:song|track|music|release|spotify|artist|listen|album|single)\b/i.test(`${raw} ${normalized}`)) {
         return clean(songShareComment);
     }
+    if (envFlag('STORY_COMMENT_MINIMAL_COMMENT_RULES', true)) {
+        return clean(normalized || raw);
+    }
 
     const animalSubjectComment = animalSubjectCommentForContext(text);
     if (animalSubjectComment && /\blooking good\b/i.test(`${rawLower} ${normalizedLower}`)) {

@@ -1,5 +1,9 @@
 const assert = require('assert');
 
+// Keep these unit cases focused on the legacy deterministic safety helpers.
+// The live commenter enables minimal model-first comment rules explicitly.
+process.env.STORY_COMMENT_MINIMAL_COMMENT_RULES = '0';
+
 const {
     normalizeDraftComment,
     applyRelationshipAwareStoryCommentGuard,
