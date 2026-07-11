@@ -53,6 +53,9 @@ class ViewController: CAPBridgeViewController {
         // registration file for them.  Without this call,
         // window.Capacitor.Plugins.NativeCharacterViewer is undefined in JS
         // and the native SceneKit viewer never activates.
+        // This bridge powers both native Sign in with Apple and the secure
+        // system-browser flow used for Google sign-in on iPhone.
+        bridge?.registerPluginInstance(FitGotchiAuthPlugin())
         bridge?.registerPluginInstance(NativeCharacterViewerPlugin())
         // FitGotchiPush bridges @capacitor/push-notifications + Firebase to
         // hand JS an FCM token on iOS. Same deal — app-target plugin, not
