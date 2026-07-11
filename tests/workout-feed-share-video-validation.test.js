@@ -140,7 +140,7 @@ assert.strictEqual(validateWorkoutVideoUpload({ type: 'video/mp4' }, mp4Buffer, 
 
 assert.ok(
     dashboardSource.includes('lib/stories.js?v=63') &&
-    dashboardSource.includes('pbb-deferred-formcheck.js?v=53'),
+    dashboardSource.includes('pbb-deferred-formcheck.js?v=54'),
     'dashboard should bump feed script versions so patched video validation is fetched'
 );
 

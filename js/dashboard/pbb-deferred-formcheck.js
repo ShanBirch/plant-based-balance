@@ -2991,8 +2991,9 @@
             reportedMimeType: result.mimeType || '',
             reportedFileName: result.name || ''
         });
+        const hasInlineNativeVideoData = !!result.dataBase64;
         let blob;
-        if (result.dataBase64) {
+        if (hasInlineNativeVideoData) {
             logWorkoutFeedShareDiagnostic('video_native_file_inline_data_start', {
                 encodedLength: String(result.dataBase64).length
             });
@@ -3016,7 +3017,18 @@
             type: mimeType,
             lastModified: Date.now()
         });
-        await assertWorkoutFeedShareVideoFile(file);
+        // WebKit can hang while re-reading the header of a File reconstructed
+        // from a native plugin payload. The native bridge copied the movie from
+        // UIImagePickerController and supplied its video MIME type, while the
+        // upload endpoint still independently validates the bytes.
+        if (!hasInlineNativeVideoData) {
+            await assertWorkoutFeedShareVideoFile(file);
+        } else {
+            logWorkoutFeedShareDiagnostic('video_native_file_validation_bypassed', {
+                blobSizeBytes: Number(blob && blob.size || 0),
+                blobType: blob && blob.type || ''
+            });
+        }
         return file;
     }
 
