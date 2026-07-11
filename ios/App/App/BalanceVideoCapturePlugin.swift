@@ -12,6 +12,7 @@ public class BalanceVideoCapturePlugin: CAPPlugin, CAPBridgedPlugin, UIImagePick
     ]
 
     private var pendingCall: CAPPluginCall?
+    private var shouldIncludeVideoData = false
 
     @objc func captureWorkoutVideo(_ call: CAPPluginCall) {
         DispatchQueue.main.async { [weak self] in
@@ -43,6 +44,7 @@ public class BalanceVideoCapturePlugin: CAPPlugin, CAPBridgedPlugin, UIImagePick
             }
 
             self.pendingCall = call
+            self.shouldIncludeVideoData = call.getBool("includeDataBase64") ?? false
 
             let picker = UIImagePickerController()
             picker.sourceType = .camera
@@ -63,6 +65,7 @@ public class BalanceVideoCapturePlugin: CAPPlugin, CAPBridgedPlugin, UIImagePick
         picker.dismiss(animated: true) { [weak self] in
             self?.pendingCall?.resolve(["cancelled": true])
             self?.pendingCall = nil
+            self?.shouldIncludeVideoData = false
         }
     }
 
@@ -71,6 +74,7 @@ public class BalanceVideoCapturePlugin: CAPPlugin, CAPBridgedPlugin, UIImagePick
             picker.dismiss(animated: true) { [weak self] in
                 self?.pendingCall?.resolve(["cancelled": true, "reason": "missing-video"])
                 self?.pendingCall = nil
+                self?.shouldIncludeVideoData = false
             }
             return
         }
@@ -80,11 +84,13 @@ public class BalanceVideoCapturePlugin: CAPPlugin, CAPBridgedPlugin, UIImagePick
             picker.dismiss(animated: true) { [weak self] in
                 self?.pendingCall?.resolve(result)
                 self?.pendingCall = nil
+                self?.shouldIncludeVideoData = false
             }
         } catch {
             picker.dismiss(animated: true) { [weak self] in
                 self?.pendingCall?.reject("Could not prepare recorded video: \(error.localizedDescription)")
                 self?.pendingCall = nil
+                self?.shouldIncludeVideoData = false
             }
         }
     }
@@ -115,6 +121,10 @@ public class BalanceVideoCapturePlugin: CAPPlugin, CAPBridgedPlugin, UIImagePick
         }
         if let size = size {
             result["size"] = size.int64Value
+        }
+        if shouldIncludeVideoData {
+            let videoData = try Data(contentsOf: destination, options: .mappedIfSafe)
+            result["dataBase64"] = videoData.base64EncodedString()
         }
         return result
     }

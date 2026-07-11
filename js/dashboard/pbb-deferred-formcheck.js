@@ -2846,13 +2846,17 @@
         logWorkoutFeedShareDiagnostic('share_set_native_camera_ios_start', {
             captureTarget: workoutFeedShareCaptureTarget
         });
-        const result = await plugin.captureWorkoutVideo({ maxDurationSeconds: 75 });
+        const result = await plugin.captureWorkoutVideo({
+            maxDurationSeconds: 75,
+            includeDataBase64: true
+        });
         logWorkoutFeedShareDiagnostic('share_set_native_camera_ios_result', {
             captureTarget: workoutFeedShareCaptureTarget,
             cancelled: !!(result && result.cancelled),
             reason: result && result.reason || '',
             hasWebPath: !!(result && result.webPath),
             hasFilePath: !!(result && (result.path || result.filePath)),
+            hasInlineData: !!(result && result.dataBase64),
             reportedSizeBytes: Number(result && result.size || 0),
             reportedMimeType: result && result.mimeType || '',
             reportedFileName: result && result.name || ''
@@ -2950,6 +2954,25 @@
         }
     }
 
+    function nativeWorkoutVideoBase64ToBlob(dataBase64, mimeType) {
+        const raw = String(dataBase64 || '').replace(/^data:[^;]+;base64,/i, '');
+        if (!raw) throw new Error('The camera returned empty video data.');
+
+        const chunkSize = 1024 * 1024;
+        const byteParts = [];
+        for (let offset = 0; offset < raw.length; offset += chunkSize) {
+            const decoded = atob(raw.slice(offset, offset + chunkSize));
+            const bytes = new Uint8Array(decoded.length);
+            for (let index = 0; index < decoded.length; index += 1) {
+                bytes[index] = decoded.charCodeAt(index);
+            }
+            byteParts.push(bytes);
+        }
+        const blob = new Blob(byteParts, { type: mimeType || 'video/quicktime' });
+        if (!blob.size) throw new Error('The camera returned empty video data.');
+        return blob;
+    }
+
     async function nativeWorkoutVideoResultToFile(result) {
         if (!result || result.cancelled) return null;
 
@@ -2958,7 +2981,7 @@
         if (!source && rawPath && window.Capacitor && typeof window.Capacitor.convertFileSrc === 'function') {
             source = window.Capacitor.convertFileSrc(rawPath);
         }
-        if (!source) {
+        if (!source && !result.dataBase64) {
             throw new Error('The camera returned a clip the app could not read.');
         }
 
@@ -2968,7 +2991,19 @@
             reportedMimeType: result.mimeType || '',
             reportedFileName: result.name || ''
         });
-        const blob = await readWorkoutFeedShareNativeVideoBlob(source);
+        let blob;
+        if (result.dataBase64) {
+            logWorkoutFeedShareDiagnostic('video_native_file_inline_data_start', {
+                encodedLength: String(result.dataBase64).length
+            });
+            blob = nativeWorkoutVideoBase64ToBlob(result.dataBase64, result.mimeType);
+            logWorkoutFeedShareDiagnostic('video_native_file_inline_data_ready', {
+                blobSizeBytes: Number(blob && blob.size || 0),
+                blobType: blob && blob.type || ''
+            });
+        } else {
+            blob = await readWorkoutFeedShareNativeVideoBlob(source);
+        }
         logWorkoutFeedShareDiagnostic('video_native_file_blob_ready', {
             blobSizeBytes: Number(blob && blob.size || 0),
             blobType: blob && blob.type || ''

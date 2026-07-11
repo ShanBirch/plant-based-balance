@@ -24,6 +24,8 @@ for (const eventName of [
     'video_native_file_read_xhr_start',
     'video_native_file_read_xhr_success',
     'video_native_file_read_xhr_error',
+    'video_native_file_inline_data_start',
+    'video_native_file_inline_data_ready',
     'video_native_file_blob_ready',
     'video_ios_system_camera_picker',
     'video_file_materialize_skipped',
@@ -41,6 +43,10 @@ assert.match(formCheck, /window\.openWorkoutFeedShareGalleryForFile = openWorkou
 assert.match(formCheck, /window\.prepareBalanceVideoUploadFile = function \(file, stage, target\)/);
 assert.match(formCheck, /async function readWorkoutFeedShareNativeVideoBlob\(source\)/);
 assert.match(formCheck, /request\.responseType = 'blob';[\s\S]*request\.status === 0/);
+assert.match(formCheck, /function nativeWorkoutVideoBase64ToBlob\(dataBase64, mimeType\)/);
+assert.match(formCheck, /includeDataBase64: true/);
+assert.match(formCheck, /if \(result\.dataBase64\)/);
+assert.match(read('ios/App/App/BalanceVideoCapturePlugin.swift'), /result\["dataBase64"\] = videoData\.base64EncodedString\(\)/);
 
 for (const eventName of [
     'custom_exercise_gallery_open',
