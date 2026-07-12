@@ -294,7 +294,9 @@
     var liveRow = liveMatchesWeek && liveState && liveState.row && typeof liveState.row === 'object'
       ? liveState.row
       : null;
-    var sourceRow = liveRow || localRow || row || null;
+    // A local snapshot can predate a late wearable sync. Prefer the refreshed
+    // server row so a completed Sunday is not held back by stale device data.
+    var sourceRow = liveRow || row || localRow || null;
     var selected = liveMatchesWeek && Array.isArray(liveState.selected) && liveState.selected.length
       ? liveState.selected
       : (sourceRow && Array.isArray(sourceRow.selected_goals) ? sourceRow.selected_goals : []);
@@ -898,6 +900,18 @@
     var whoopSleep = payload[8] || [];
     var weeklyGoalsRow = payload[9];
     var moodRows = payload[10] || [];
+
+    if (window.weeklyGoals && typeof window.weeklyGoals.refreshCompletedWeek === 'function') {
+      try {
+        var refreshedWeeklyGoals = await window.weeklyGoals.refreshCompletedWeek(week.startKey);
+        if (refreshedWeeklyGoals && refreshedWeeklyGoals.row) {
+          weeklyGoalsRow = refreshedWeeklyGoals.row;
+        }
+      } catch (error) {
+        console.warn('[weekly-checkin-preview] completed-week goals refresh failed', error);
+      }
+    }
+
     var weeklyGoalsSummary = buildWeeklyGoalsSummary(weeklyGoalsRow, userId, week.startKey);
 
     if ((!profile && !facts) || (!dailyNutrition.length && !workouts.length && !checkins.length && !stepsRows.length && !fitbitSleep.length && !ouraSleep.length && !whoopSleep.length && !moodRows.length)) {

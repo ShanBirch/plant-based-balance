@@ -1010,6 +1010,26 @@
     };
   }
 
+  async function refreshCompletedWeek(userId, weekStart) {
+    if (!userId || !weekStart) return null;
+
+    const week = buildWeekFromStart(weekStart);
+    if (isFutureWeek(week)) return null;
+
+    const row = await fetchWeeklyRow(userId, week.start);
+    const selected = normalizeSelected(row && row.selected_goals);
+    if (!selected.length) return null;
+
+    const result = await calculateProgress(userId, week, selected);
+    const savedRow = await saveWeeklyRow(userId, week, selected, result.progress, result.arc);
+    return {
+      row: savedRow,
+      selected,
+      progress: result.progress,
+      arc: result.arc
+    };
+  }
+
   function renderProgressRows(goals) {
     return (goals || []).map(goal => {
       const meta = getCategoryMeta(goal.category);
@@ -1480,6 +1500,10 @@
   window.refreshWeeklyGoalsCard = loadAndRender;
   window.weeklyGoals = {
     refresh: loadAndRender,
+    refreshCompletedWeek: function(weekStart) {
+      const userId = window.currentUser && window.currentUser.id;
+      return refreshCompletedWeek(userId, weekStart);
+    },
     getCatalog: function(){ return GOAL_CATALOG; },
     getState: function(){ return state; }
   };
