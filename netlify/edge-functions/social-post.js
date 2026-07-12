@@ -16,7 +16,8 @@ function json(status, body) {
 }
 
 function env(name) {
-    return clean(Deno.env.get(name) || '', 5000);
+    const netlifyValue = globalThis.Netlify?.env?.get?.(name);
+    return clean(netlifyValue || Deno.env.get(name) || '', 5000);
 }
 
 function siteUrl(request) {
