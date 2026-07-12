@@ -3620,23 +3620,21 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
     ctx.fillStyle = lowerGradient;
     ctx.fillRect(0, 0, width, height);
 
-    if (cardType === 'pb') {
-        try {
-            const logo = await pbbShareLoadImage('balance_logo_transparent.png');
-            ctx.save();
-            ctx.globalAlpha = 0.94;
-            ctx.drawImage(logo, 64, 48, 82, 82);
-            ctx.restore();
-        } catch (error) {
-            console.warn('Could not draw transparent Balance logo:', error);
-        }
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '900 34px Arial, sans-serif';
-        ctx.fillText('BALANCE', 164, 94);
-        ctx.fillStyle = 'rgba(255,255,255,0.74)';
-        ctx.font = '750 21px Arial, sans-serif';
-        ctx.fillText('SHOW UP. KEEP THE RECEIPTS.', 164, 126);
+    try {
+        const logo = await pbbShareLoadImage('balance_logo_transparent.png');
+        ctx.save();
+        ctx.globalAlpha = 0.94;
+        ctx.drawImage(logo, 64, 48, 82, 82);
+        ctx.restore();
+    } catch (error) {
+        console.warn('Could not draw transparent Balance logo:', error);
     }
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 34px Arial, sans-serif';
+    ctx.fillText('BALANCE', 164, 94);
+    ctx.fillStyle = 'rgba(255,255,255,0.74)';
+    ctx.font = '750 21px Arial, sans-serif';
+    ctx.fillText('SHOW UP. KEEP THE RECEIPTS.', 164, 126);
 
     ctx.save();
     ctx.shadowColor = 'rgba(0, 0, 0, 0.82)';
@@ -3654,16 +3652,16 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
         ? Math.round(height * (target === 'feed' ? 0.56 : 0.60))
         : contentBottom - 468;
 
-    if (cardType === 'pb') {
     ctx.fillStyle = 'rgba(255,255,255,0.96)';
     ctx.font = '900 24px Arial, sans-serif';
     ctx.fillText(cardType === 'pb' ? 'NEW PERSONAL BEST' : 'WORKOUT COMPLETE', contentX, y);
     y += 58;
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = '900 ' + titleFontSize + 'px Arial, sans-serif';
+    ctx.font = '900 ' + titleFontSize + 'px Georgia, serif';
     y = pbbShareWrapText(ctx, title, contentX, y, contentW, titleLineHeight, 2) + 20;
 
+    if (cardType === 'pb') {
         ctx.fillStyle = '#ffffff';
         ctx.font = '900 44px Arial, sans-serif';
         ctx.fillText(pbbFormatPBShareValue(cardPayload), contentX, y + 42);
@@ -3677,72 +3675,50 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
             ctx.textAlign = 'left';
         }
     } else {
-        // Match the Meal Shared post: editorial title, a translucent detail
-        // card, one hero stat, then a clean three-stat row at the bottom.
-        const exercises = (cardPayload.exercises || []).slice(0, 3);
-        const exerciseSummary = exercises.map(exercise => String(exercise.name || 'Exercise')).join('  •  ') || 'Workout logged in Balance';
-        const duration = String(cardPayload.duration || '--');
-        const durationMatch = duration.match(/^(\d+):\d{2}$/);
-        const durationValue = durationMatch ? String(Number(durationMatch[1])) : duration;
-        const sectionY = target === 'feed' ? 620 : 780;
-        const detailsY = sectionY + 132;
-        const detailsH = 174;
-        const bottomMetricsY = height - (target === 'feed' ? 246 : 374);
         const metrics = [
-            [String(cardPayload.total_sets || 0), 'Sets'],
-            [String(cardPayload.total_volume || '-'), 'Volume'],
-            [String(exercises.length || 0), 'Exercises']
+            ['DURATION', cardPayload.duration || '00:00'],
+            ['SETS', String(cardPayload.total_sets || 0)],
+            ['VOLUME', cardPayload.total_volume || '-']
         ];
-
-        ctx.fillStyle = 'rgba(255,255,255,0.96)';
-        ctx.font = '800 22px Arial, sans-serif';
-        ctx.fillText('WORKOUT COMPLETE', contentX, sectionY);
-        ctx.font = '900 64px Georgia, serif';
-        pbbShareWrapText(ctx, title, contentX, sectionY + 74, contentW, 70, 2);
-        ctx.save();
-        ctx.shadowColor = 'transparent';
-        ctx.fillStyle = 'rgba(255,255,255,0.8)';
-        ctx.fillRect(contentX, sectionY + 104, 96, 2);
-        pbbShareFillRoundRect(ctx, contentX, detailsY, contentW, detailsH, 28, 'rgba(8, 18, 27, 0.38)');
-        ctx.restore();
-        ctx.fillStyle = 'rgba(255,255,255,0.84)';
-        ctx.font = '800 18px Arial, sans-serif';
-        ctx.fillText('WORKOUT', contentX + 28, detailsY + 46);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '700 28px Arial, sans-serif';
-        pbbShareWrapText(ctx, exerciseSummary, contentX + 28, detailsY + 92, contentW - 56, 36, 2);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '900 66px Arial, sans-serif';
-        ctx.fillText(durationValue, contentX, detailsY + detailsH + 104);
-        const durationWidth = ctx.measureText(durationValue).width;
-        ctx.font = '700 24px Arial, sans-serif';
-        ctx.fillText('min', contentX + durationWidth + 14, detailsY + detailsH + 102);
-
-        const metricW = contentW / metrics.length;
+        const metricW = contentW / 3;
         metrics.forEach((metric, index) => {
             const x = contentX + (index * metricW);
+            if (index > 0) {
+                ctx.save();
+                ctx.shadowColor = 'transparent';
+                ctx.fillStyle = 'rgba(255,255,255,0.65)';
+                ctx.fillRect(x - 20, y - 10, 2, 76);
+                ctx.restore();
+            }
+            ctx.fillStyle = 'rgba(255,255,255,0.88)';
+            ctx.font = '800 18px Arial, sans-serif';
+            ctx.fillText(metric[0], x, y + 18);
             ctx.fillStyle = '#ffffff';
-            ctx.font = '900 40px Arial, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(metric[0], x + (metricW / 2), bottomMetricsY);
-            ctx.fillStyle = 'rgba(255,255,255,0.84)';
-            ctx.font = '700 20px Arial, sans-serif';
-            ctx.fillText(metric[1], x + (metricW / 2), bottomMetricsY + 34);
+            ctx.font = '900 32px Arial, sans-serif';
+            pbbShareWrapText(ctx, metric[1], x, y + 58, metricW - 28, 34, 1);
         });
-        ctx.textAlign = 'center';
-        ctx.fillStyle = 'rgba(255,255,255,0.88)';
+        y += 104;
+
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
         ctx.font = '900 20px Arial, sans-serif';
-        ctx.fillText('BALANCE', width / 2, height - (target === 'feed' ? 82 : 132));
-        ctx.textAlign = 'left';
+        ctx.fillText('TOP SETS', contentX, y);
+        y += 30;
+        (cardPayload.exercises || []).slice(0, 3).forEach(exercise => {
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '800 20px Arial, sans-serif';
+            ctx.fillText(String(exercise.name || 'Exercise'), contentX, y + 28);
+            ctx.textAlign = 'right';
+            ctx.font = '800 19px Arial, sans-serif';
+            ctx.fillText(String(exercise.best || ''), contentX + contentW, y + 28);
+            ctx.textAlign = 'left';
+            y += 50;
+        });
     }
 
     ctx.restore();
-    if (cardType === 'pb') {
-        ctx.fillStyle = 'rgba(255,255,255,0.82)';
-        ctx.font = '750 19px Arial, sans-serif';
-        ctx.fillText('Fuel. Track. Level up.', contentX, contentBottom);
-    }
+    ctx.fillStyle = 'rgba(255,255,255,0.82)';
+    ctx.font = '750 19px Arial, sans-serif';
+    ctx.fillText('Fuel. Track. Level up.', contentX, contentBottom);
 }
 
 async function pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, target) {
