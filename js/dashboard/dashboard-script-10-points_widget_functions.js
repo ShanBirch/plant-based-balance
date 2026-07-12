@@ -3609,7 +3609,8 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
     const cardType = cardPayload.card_type === 'pb' ? 'pb' : 'workout';
     const contentX = 64;
     const contentW = width - (contentX * 2);
-    const contentBottom = target === 'feed' ? height - 86 : height - 132;
+    // Keep the post clear of Instagram's reply and navigation controls.
+    const contentBottom = target === 'feed' ? height - 260 : height - 132;
 
     // Keep the photo as the hero. The fade is only there to keep the white
     // type readable on brighter gym shots, matching the food-share treatment.
