@@ -3620,12 +3620,21 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
     ctx.fillStyle = lowerGradient;
     ctx.fillRect(0, 0, width, height);
 
+    try {
+        const logo = await pbbShareLoadImage('balance_logo_transparent.png');
+        ctx.save();
+        ctx.globalAlpha = 0.94;
+        ctx.drawImage(logo, 64, 48, 82, 82);
+        ctx.restore();
+    } catch (error) {
+        console.warn('Could not draw transparent Balance logo:', error);
+    }
     ctx.fillStyle = '#ffffff';
     ctx.font = '900 34px Arial, sans-serif';
-    ctx.fillText('BALANCE', 64, 92);
+    ctx.fillText('BALANCE', 164, 94);
     ctx.fillStyle = 'rgba(255,255,255,0.74)';
     ctx.font = '750 21px Arial, sans-serif';
-    ctx.fillText('SHOW UP. KEEP THE RECEIPTS.', 64, 124);
+    ctx.fillText('SHOW UP. KEEP THE RECEIPTS.', 164, 126);
 
     ctx.save();
     ctx.shadowColor = 'rgba(0, 0, 0, 0.82)';
@@ -3637,7 +3646,11 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
         : (cardPayload.workout_name || 'Workout');
     const titleLineHeight = cardType === 'pb' ? 62 : 58;
     const titleFontSize = cardType === 'pb' ? 60 : 56;
-    let y = contentBottom - (cardType === 'pb' ? 282 : 468);
+    // PBs are the hero moment, so sit them higher in the frame rather than
+    // anchoring them to the bottom like a workout summary.
+    let y = cardType === 'pb'
+        ? Math.round(height * (target === 'feed' ? 0.56 : 0.60))
+        : contentBottom - 468;
 
     ctx.fillStyle = 'rgba(255,255,255,0.96)';
     ctx.font = '900 24px Arial, sans-serif';
