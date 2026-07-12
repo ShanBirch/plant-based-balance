@@ -301,6 +301,16 @@
     -webkit-text-fill-color: var(--text-main);
 }
 
+/* Chrome renders the native option list on a light system surface. Give that
+   surface an explicit readable foreground instead of inheriting the dark-page
+   white text colour from the closed select. */
+.booking-form select option {
+    background: #fff;
+    color: #1a202c;
+    font-weight: 700;
+    -webkit-text-fill-color: #1a202c;
+}
+
 .booking-form input::placeholder,
 .booking-form textarea::placeholder {
     color: var(--text-muted);
