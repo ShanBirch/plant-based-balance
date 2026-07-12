@@ -376,10 +376,11 @@
 # [functions."weekly-checkin-scan"]
 #   schedule = "23 21 * * 1"
 
-# Challenge check-ins - active cohort drafts for Shannon to approve/edit/send.
-# Mon/Sun drafts: Sun/Sat 19:30 UTC (Mon/Sun 05:30 Brisbane) so they are ready before 6am.
-[functions."challenge-checkin-scan"]
-  schedule = "30 19 * * 0,6"
+# Challenge check-ins are retired for now because the community is carrying
+# engagement without the Monday-morning and Sunday Needs You DM batches.
+# Keep this dormant configuration for a simple re-enable when needed.
+# [functions."challenge-checkin-scan"]
+#   schedule = "30 19 * * 0,6"
 
 # Challenge leaderboard refresher - releases future-dated seed/test activity
 # by timestamp and keeps active participant rows current without a page open.
