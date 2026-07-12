@@ -17,6 +17,7 @@ type BookingSettings = {
 
 type BusyRange = { start: string; end: string };
 type CallType = "phone" | "video" | "whatsapp";
+type BookingMode = "standard" | "outside_hours";
 type CalendarEventResult = { id: string; meetingUrl: string };
 
 const BRISBANE_TIMEZONE = "Australia/Brisbane";
@@ -27,6 +28,7 @@ const DEFAULT_PUBLIC_ORIGIN = "https://plantbased-balance.org";
 const DEFAULT_BOOKING_URL = `${DEFAULT_PUBLIC_ORIGIN}/book`;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const OUTSIDE_HOURS_DURATION_MINUTES = 60;
 
 function getEnv(name: string): string {
     const netlifyValue = globalThis.Netlify?.env?.get?.(name);
@@ -67,6 +69,25 @@ function trimText(value: unknown, max = 500): string {
 function normalizeCallType(value: unknown): CallType {
     const callType = trimText(value, 20).toLowerCase();
     return callType === "video" || callType === "whatsapp" ? callType : "phone";
+}
+
+function normalizeBookingMode(value: unknown): BookingMode {
+    return trimText(value, 30).toLowerCase() === "outside_hours" ? "outside_hours" : "standard";
+}
+
+function normalizeTimeZone(value: unknown): string {
+    const candidate = trimText(value, 120);
+    if (!candidate) return BRISBANE_TIMEZONE;
+    try {
+        new Intl.DateTimeFormat("en-AU", { timeZone: candidate }).format();
+        return candidate;
+    } catch {
+        return BRISBANE_TIMEZONE;
+    }
+}
+
+function timeZoneLabel(value: unknown): string {
+    return normalizeTimeZone(value).replace(/_/g, " ");
 }
 
 function callTypeLabel(callType: CallType): string {
@@ -117,12 +138,13 @@ function confirmationCallNote(callType: CallType, meetingUrl: string): { html: s
     return { html: "Shannon will call you on the number you entered.", text: "Shannon will call you on the number you entered." };
 }
 
-function confirmationEmailContent({ name, prettyDate, goal, callType, meetingUrl }: {
+function confirmationEmailContent({ name, prettyDate, goal, callType, meetingUrl, timezone }: {
     name: string;
     prettyDate: string;
     goal: string;
     callType: CallType;
     meetingUrl: string;
+    timezone: string;
 }): { subject: string; html: string; text: string } {
     const callNote = confirmationCallNote(callType, meetingUrl);
     const method = callTypeLabel(callType);
@@ -130,6 +152,24 @@ function confirmationEmailContent({ name, prettyDate, goal, callType, meetingUrl
         subject: `You’re booked in for a Balance ${method}, ${prettyDate}`,
         html: `<!doctype html><html><body style="margin:0;background:#f6f3ec;padding:32px 16px;font-family:Inter,Arial,sans-serif;color:#171717"><table role="presentation" style="width:100%;max-width:620px;margin:0 auto;background:#111111;border-radius:24px;overflow:hidden"><tr><td style="padding:34px 32px 18px;text-align:center"><img src="${publicOrigin()}/balance_logo_transparent.png" width="64" height="64" alt="Balance" style="display:inline-block;border-radius:16px"><p style="margin:18px 0 0;color:#f5d98a;font-size:12px;font-weight:800;letter-spacing:1.7px;text-transform:uppercase">Call confirmed</p><h1 style="margin:10px 0 0;color:#fff;font-size:30px;line-height:1.1">You’re in, ${safeHtml(name)}.</h1></td></tr><tr><td style="padding:16px 32px 34px"><div style="background:#f5d98a;border-radius:18px;padding:22px;color:#151515"><p style="margin:0 0 7px;font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase">Your Balance ${safeHtml(method)}</p><p style="margin:0;font-size:21px;font-weight:800;line-height:1.3">${safeHtml(prettyDate)}<br><span style="font-size:15px;font-weight:600">Brisbane time</span></p></div><p style="margin:24px 0 0;color:#ded8cc;font-size:16px;line-height:1.65">I’m looking forward to hearing where you’re at and what would make things feel easier from here.</p><p style="margin:18px 0 0;padding:16px;border:1px solid #36332e;border-radius:14px;color:#ded8cc;font-size:14px;line-height:1.55">${callNote.html}</p>${goal ? `<p style="margin:18px 0 0;padding:16px;border:1px solid #36332e;border-radius:14px;color:#ded8cc;font-size:14px;line-height:1.55"><strong style="display:block;margin-bottom:5px;color:#f5d98a">You want to cover</strong>${safeHtml(goal)}</p>` : ""}<p style="margin:24px 0 0;color:#aaa396;font-size:13px;line-height:1.55">A calendar invitation is on its way too. If anything changes, reply to this email and we’ll sort it.</p><p style="margin:24px 0 0;color:#f5d98a;font-size:15px;font-weight:800">Shannon<br><span style="color:#aaa396;font-size:13px;font-weight:500">Balance</span></p></td></tr></table></body></html>`,
         text: `You’re booked in with Balance, ${name}.\n\nYour ${method}: ${prettyDate} (Brisbane time).\n\n${callNote.text}\n\n${goal ? `You want to cover: ${goal}\n\n` : ""}A calendar invitation is on its way too. If anything changes, reply to this email and we’ll sort it.\n\nShannon, Balance`,
+    };
+}
+
+function localizedConfirmationEmailContent({ name, prettyDate, goal, callType, meetingUrl, timezone }: {
+    name: string;
+    prettyDate: string;
+    goal: string;
+    callType: CallType;
+    meetingUrl: string;
+    timezone: string;
+}): { subject: string; html: string; text: string } {
+    const callNote = confirmationCallNote(callType, meetingUrl);
+    const method = callTypeLabel(callType);
+    const zone = timeZoneLabel(timezone);
+    return {
+        subject: `Your Balance ${method} is booked, ${prettyDate}`,
+        html: `<!doctype html><html><body style="margin:0;background:#f6f3ec;padding:32px 16px;font-family:Inter,Arial,sans-serif;color:#171717"><table role="presentation" style="width:100%;max-width:620px;margin:0 auto;background:#111111;border-radius:24px;overflow:hidden"><tr><td style="padding:34px 32px 18px;text-align:center"><img src="${publicOrigin()}/balance_logo_transparent.png" width="64" height="64" alt="Balance" style="display:inline-block;border-radius:16px"><p style="margin:18px 0 0;color:#f5d98a;font-size:12px;font-weight:800;letter-spacing:1.7px;text-transform:uppercase">Call confirmed</p><h1 style="margin:10px 0 0;color:#fff;font-size:30px;line-height:1.1">You're in, ${safeHtml(name)}.</h1></td></tr><tr><td style="padding:16px 32px 34px"><div style="background:#f5d98a;border-radius:18px;padding:22px;color:#151515"><p style="margin:0 0 7px;font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase">Your Balance ${safeHtml(method)}</p><p style="margin:0;font-size:21px;font-weight:800;line-height:1.3">${safeHtml(prettyDate)}<br><span style="font-size:15px;font-weight:600">Your time: ${safeHtml(zone)}</span></p></div><p style="margin:24px 0 0;color:#ded8cc;font-size:16px;line-height:1.65">Looking forward to hearing where you're at and what would make things feel easier from here.</p><p style="margin:18px 0 0;padding:16px;border:1px solid #36332e;border-radius:14px;color:#ded8cc;font-size:14px;line-height:1.55">${callNote.html}</p>${goal ? `<p style="margin:18px 0 0;padding:16px;border:1px solid #36332e;border-radius:14px;color:#ded8cc;font-size:14px;line-height:1.55"><strong style="display:block;margin-bottom:5px;color:#f5d98a">You want to cover</strong>${safeHtml(goal)}</p>` : ""}<p style="margin:24px 0 0;color:#aaa396;font-size:13px;line-height:1.55">A calendar invitation is on its way too. If anything changes, reply to this email and we'll sort it.</p><p style="margin:24px 0 0;color:#f5d98a;font-size:15px;font-weight:800">Shannon<br><span style="color:#aaa396;font-size:13px;font-weight:500">Balance</span></p></td></tr></table></body></html>`,
+        text: `You're booked in with Balance, ${name}.\n\nYour ${method}: ${prettyDate} (${zone}).\n\n${callNote.text}\n\n${goal ? `You want to cover: ${goal}\n\n` : ""}A calendar invitation is on its way too. If anything changes, reply to this email and we'll sort it.\n\nShannon, Balance`,
     };
 }
 
@@ -173,9 +213,9 @@ function weekdayForDate(date: string): string {
     return String(new Date(`${date}T12:00:00Z`).getUTCDay());
 }
 
-function dateTimeLabel(value: string): string {
+function dateTimeLabel(value: string, timezone: string = BRISBANE_TIMEZONE): string {
     return new Intl.DateTimeFormat("en-AU", {
-        timeZone: BRISBANE_TIMEZONE,
+        timeZone: normalizeTimeZone(timezone),
         weekday: "long",
         day: "numeric",
         month: "long",
@@ -438,6 +478,22 @@ async function getAvailability(fromDate: string, settings: BookingSettings): Pro
     return { dates, calendarConnected: google.connected };
 }
 
+async function getOutsideHoursSlot(settings: BookingSettings, startsAt: string, now = new Date()): Promise<{ start: string; end: string; label: string } | null> {
+    const start = new Date(startsAt);
+    if (Number.isNaN(start.getTime())) return null;
+    const end = new Date(start.getTime() + OUTSIDE_HOURS_DURATION_MINUTES * 60 * 1000);
+    const noticeCutoff = now.getTime() + settings.minimum_notice_hours * 60 * 60 * 1000;
+    const bookingCutoff = now.getTime() + settings.booking_window_days * 24 * 60 * 60 * 1000;
+    if (start.getTime() < noticeCutoff || end.getTime() > bookingCutoff) return null;
+
+    const [databaseBusy, google] = await Promise.all([
+        databaseBusyRanges(start.toISOString(), end.toISOString()),
+        googleBusyRanges(settings, start.toISOString(), end.toISOString()),
+    ]);
+    if ([...databaseBusy, ...google.busy].some(range => overlaps(start, end, range))) return null;
+    return { start: start.toISOString(), end: end.toISOString(), label: timeLabel(start.toISOString()) };
+}
+
 function hmac(input: string): string {
     return createHmac("sha256", getEnv("SUPABASE_SERVICE_ROLE_KEY") || getEnv("SUPABASE_SERVICE_KEY"))
         .update(input)
@@ -565,7 +621,8 @@ async function sendConfirmationEmail(settings: BookingSettings, booking: Record<
     const name = trimText(booking.name, 120);
     const email = trimText(booking.email, 320);
     const startsAt = trimText(booking.starts_at, 80);
-    const prettyDate = dateTimeLabel(startsAt);
+    const timezone = normalizeTimeZone(booking.timezone);
+    const prettyDate = dateTimeLabel(startsAt, timezone);
     const goal = trimText(booking.goal, 1000);
     const callType = normalizeCallType(booking.call_type);
     const meetingUrl = trimText(booking.meeting_url, 500);
@@ -578,7 +635,7 @@ async function sendConfirmationEmail(settings: BookingSettings, booking: Record<
             subject: `You’re booked in with Balance, ${prettyDate}`,
             html: `<!doctype html><html><body style="margin:0;background:#f6f3ec;padding:32px 16px;font-family:Inter,Arial,sans-serif;color:#171717"><table role="presentation" style="width:100%;max-width:620px;margin:0 auto;background:#111111;border-radius:24px;overflow:hidden"><tr><td style="padding:34px 32px 18px;text-align:center"><img src="${publicOrigin()}/balance_logo_transparent.png" width="64" height="64" alt="Balance" style="display:inline-block;border-radius:16px"><p style="margin:18px 0 0;color:#f5d98a;font-size:12px;font-weight:800;letter-spacing:1.7px;text-transform:uppercase">Call confirmed</p><h1 style="margin:10px 0 0;color:#fff;font-size:30px;line-height:1.1">You’re in, ${safeHtml(name)}.</h1></td></tr><tr><td style="padding:16px 32px 34px"><div style="background:#f5d98a;border-radius:18px;padding:22px;color:#151515"><p style="margin:0 0 7px;font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase">Your Balance call</p><p style="margin:0;font-size:21px;font-weight:800;line-height:1.3">${safeHtml(prettyDate)}<br><span style="font-size:15px;font-weight:600">Brisbane time</span></p></div><p style="margin:24px 0 0;color:#ded8cc;font-size:16px;line-height:1.65">I’m looking forward to hearing where you’re at and what would make things feel easier from here.</p>${goal ? `<p style="margin:18px 0 0;padding:16px;border:1px solid #36332e;border-radius:14px;color:#ded8cc;font-size:14px;line-height:1.55"><strong style="display:block;margin-bottom:5px;color:#f5d98a">You want to cover</strong>${safeHtml(goal)}</p>` : ""}<p style="margin:24px 0 0;color:#aaa396;font-size:13px;line-height:1.55">A calendar invitation is on its way too. If anything changes, reply to this email and we’ll sort it.</p><p style="margin:24px 0 0;color:#f5d98a;font-size:15px;font-weight:800">Shannon<br><span style="color:#aaa396;font-size:13px;font-weight:500">Balance</span></p></td></tr></table></body></html>`,
             text: `You’re booked in with Balance, ${name}.\n\nYour call: ${prettyDate} (Brisbane time).\n\n${goal ? `You want to cover: ${goal}\n\n` : ""}A calendar invitation is on its way too. If anything changes, reply to this email and we’ll sort it.\n\nShannon, Balance`,
-            ...confirmationEmailContent({ name, prettyDate, goal, callType, meetingUrl }),
+            ...localizedConfirmationEmailContent({ name, prettyDate, goal, callType, meetingUrl, timezone }),
         }),
     });
     return response.ok;
@@ -599,6 +656,8 @@ async function createBooking(req: Request): Promise<Response> {
     const goal = trimText(body.goal, 1000);
     const startsAt = trimText(body.startsAt, 80);
     const callType = normalizeCallType(body.callType);
+    const bookingMode = normalizeBookingMode(body.bookingMode);
+    const visitorTimeZone = normalizeTimeZone(body.visitorTimeZone);
     if (!name || !EMAIL_RE.test(email) || !startsAt || Number.isNaN(Date.parse(startsAt))) {
         return json(400, { ok: false, error: "check_your_details" });
     }
@@ -607,9 +666,11 @@ async function createBooking(req: Request): Promise<Response> {
     }
 
     const start = new Date(startsAt);
-    const localDate = brisbaneDateKey(start);
-    const availability = await getAvailability(localDate, settings);
-    const selectedSlot = availability.dates.flatMap(date => date.slots).find(slot => slot.start === start.toISOString());
+    const selectedSlot = bookingMode === "outside_hours"
+        ? await getOutsideHoursSlot(settings, start.toISOString())
+        : (await getAvailability(brisbaneDateKey(start), settings))
+            .dates.flatMap(date => date.slots)
+            .find(slot => slot.start === start.toISOString());
     if (!selectedSlot) return json(409, { ok: false, error: "slot_no_longer_available" });
 
     let inserted: Record<string, unknown>;
@@ -624,8 +685,13 @@ async function createBooking(req: Request): Promise<Response> {
                 phone: phone || null,
                 goal: goal || null,
                 call_type: callType,
-                timezone: BRISBANE_TIMEZONE,
-                metadata: { source: "public_booking_page", call_type: callType, user_agent: trimText(req.headers.get("user-agent"), 300) || null },
+                timezone: visitorTimeZone,
+                metadata: {
+                    source: "public_booking_page",
+                    booking_mode: bookingMode,
+                    call_type: callType,
+                    user_agent: trimText(req.headers.get("user-agent"), 300) || null,
+                },
             }]),
         }) as Record<string, unknown>[];
         inserted = rows[0] || {};
@@ -670,7 +736,15 @@ async function createBooking(req: Request): Promise<Response> {
 
     return json(201, {
         ok: true,
-        booking: { id: inserted.id || null, startsAt: selectedSlot.start, endsAt: selectedSlot.end, label: dateTimeLabel(selectedSlot.start), timezone: BRISBANE_TIMEZONE, callType, meetingUrl: meetingUrl || null },
+        booking: {
+            id: inserted.id || null,
+            startsAt: selectedSlot.start,
+            endsAt: selectedSlot.end,
+            label: dateTimeLabel(selectedSlot.start, visitorTimeZone),
+            timezone: visitorTimeZone,
+            callType,
+            meetingUrl: meetingUrl || null,
+        },
         calendarEventCreated: Boolean(calendarEventId),
         confirmationEmailSent: emailSent,
         notices: outcome,

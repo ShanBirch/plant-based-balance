@@ -45,7 +45,7 @@
                 <h1>Book a call<br><span>with Shannon.</span></h1>
                 <p>Pick a time that works and let me know what you want to get clear on. We’ll keep it simple and useful.</p>
                 <div class="booking-trust-row" aria-label="Booking details">
-                    <span><i>01</i> Brisbane time</span>
+                    <span><i>01</i> <span id="booking-timezone-label">Your local time</span></span>
                     <span><i>02</i> Confirmation sent after booking</span>
                 </div>
             </section>
@@ -58,6 +58,7 @@
                     </div>
                     <span class="booking-duration" id="booking-duration">Loading</span>
                 </div>
+                <p class="booking-timezone-note" id="booking-timezone-note">Times adjust to your local timezone.</p>
 
                 <div class="booking-loading" id="booking-loading" role="status">
                     <span class="booking-spinner" aria-hidden="true"></span>
@@ -115,6 +116,67 @@
                         </button>
                         <p class="booking-error" id="booking-error" role="alert" hidden></p>
                     </form>
+
+                    <section class="booking-outside-hours" aria-labelledby="booking-outside-hours-title">
+                        <button class="booking-outside-toggle" id="booking-outside-toggle" type="button" aria-expanded="false" aria-controls="booking-outside-panel">
+                            <span>
+                                <strong id="booking-outside-hours-title">Need a time outside Shannon's usual hours?</strong>
+                                <small>Choose a one-hour time that works for you.</small>
+                            </span>
+                            <span class="booking-outside-arrow" aria-hidden="true">→</span>
+                        </button>
+
+                        <div class="booking-outside-panel" id="booking-outside-panel" hidden>
+                            <p>Pick a one-hour time in your timezone. Balance checks Shannon's calendar before confirming it.</p>
+                            <form id="booking-outside-form" class="booking-form booking-outside-form" novalidate>
+                                <div class="booking-form-grid">
+                                    <label>
+                                        <span>Date</span>
+                                        <input type="date" name="outsideDate" required>
+                                    </label>
+                                    <label>
+                                        <span>Start time</span>
+                                        <input type="time" name="outsideTime" step="1800" required>
+                                    </label>
+                                    <label>
+                                        <span>Your name</span>
+                                        <input type="text" name="name" autocomplete="name" maxlength="120" required placeholder="Your name">
+                                    </label>
+                                    <label>
+                                        <span>Email</span>
+                                        <input type="email" name="email" autocomplete="email" maxlength="320" required placeholder="you@email.com">
+                                    </label>
+                                    <label>
+                                        <span>How would you like to chat?</span>
+                                        <select name="callType" aria-describedby="booking-outside-call-type-note">
+                                            <option value="phone">Phone call</option>
+                                            <option value="video">Video call (Google Meet)</option>
+                                            <option value="whatsapp">WhatsApp call</option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span id="booking-outside-phone-label">Phone <em>required for phone or WhatsApp</em></span>
+                                        <input type="tel" name="phone" autocomplete="tel" maxlength="40" required placeholder="Your number">
+                                    </label>
+                                    <p class="booking-call-note" id="booking-outside-call-type-note">Shannon will call you on this number.</p>
+                                    <label class="booking-goal">
+                                        <span>What would you like to cover? <em>optional</em></span>
+                                        <textarea name="goal" maxlength="1000" rows="3" placeholder="A little context helps Shannon come prepared."></textarea>
+                                    </label>
+                                    <label class="booking-honeypot" aria-hidden="true">
+                                        <span>Company</span>
+                                        <input type="text" name="company" tabindex="-1" autocomplete="off">
+                                    </label>
+                                </div>
+                                <p class="booking-form-note">This books a one-hour call if it is clear in Shannon's calendar.</p>
+                                <button class="btn primary booking-submit" type="submit">
+                                    <span>Book my one-hour call</span>
+                                    <span class="booking-submit-loader" aria-hidden="true"></span>
+                                </button>
+                                <p class="booking-error" id="booking-outside-error" role="alert" hidden></p>
+                            </form>
+                        </div>
+                    </section>
                 </div>
 
                 <div class="booking-success" id="booking-success" hidden aria-live="polite">

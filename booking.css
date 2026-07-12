@@ -103,6 +103,14 @@
     font-weight: 900;
 }
 
+.booking-timezone-note {
+    margin: 14px 0 0;
+    color: var(--text-muted);
+    font-size: .76rem;
+    font-weight: 700;
+    line-height: 1.45;
+}
+
 .booking-loading,
 .booking-unavailable,
 .booking-success {
@@ -318,6 +326,53 @@
     line-height: 1.5;
 }
 
+.booking-outside-hours {
+    margin-top: 22px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+}
+
+.booking-outside-toggle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 15px;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    background: var(--button-bg);
+    color: var(--text-main);
+    cursor: pointer;
+    text-align: left;
+    transition: border-color .18s ease, transform .18s ease, background .18s ease;
+}
+
+.booking-outside-toggle:hover,
+.booking-outside-toggle:focus-visible {
+    border-color: var(--secondary);
+    background: var(--accent-soft);
+    outline: none;
+}
+
+.booking-outside-toggle:hover { transform: translateY(-1px); }
+.booking-outside-toggle > span:first-child { display: grid; gap: 4px; }
+.booking-outside-toggle strong { color: var(--text-main); font: 800 .84rem Inter, sans-serif; }
+.booking-outside-toggle small { color: var(--text-muted); font: 600 .74rem/1.4 Inter, sans-serif; }
+.booking-outside-arrow { color: var(--secondary); font-size: 1.3rem; font-weight: 800; }
+
+.booking-outside-panel {
+    margin-top: 10px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    background: var(--accent-soft);
+}
+
+.booking-outside-panel[hidden] { display: none !important; }
+.booking-outside-panel > p { margin: 0; color: var(--text-muted); font-size: .78rem; font-weight: 650; line-height: 1.5; }
+.booking-outside-panel .booking-form { margin-top: 16px; padding-top: 16px; }
+
 .booking-submit {
     width: 100%;
     min-height: 52px;
@@ -407,4 +462,13 @@ html[data-bio-theme="light"] .booking-hours-row input[type="time"] {
     background: #fff;
     color: #1a202c;
     -webkit-text-fill-color: #1a202c;
+}
+
+html[data-bio-theme="light"] .booking-outside-panel {
+    background: #f7f1df;
+}
+
+html[data-bio-theme="light"] .booking-outside-panel > p,
+html[data-bio-theme="light"] .booking-outside-toggle small {
+    color: #334155;
 }
