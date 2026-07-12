@@ -42,6 +42,19 @@ const DRAFT_DISPATCH_TIMEOUT_MS = 1200;
 const GRAPH_ECHO_EDIT_ANALYSIS_BUDGET_MS = 6500;
 const GRAPH_ECHO_BALANCE_SEND_WINDOW_MS = 10 * 60 * 1000;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
+const IG_NATIVE_INBOX_MESSAGE_SOURCE = 'instagram_native_inbox';
+const IG_NATIVE_INBOX_TRAINING_LABEL = Object.freeze({
+    author_type: 'shannon',
+    delivery_origin: 'instagram_native_inbox',
+    training_eligible: true,
+    training_provenance: 'graph_echo_verified',
+});
+const IG_GRAPH_SYSTEM_MESSAGE_LABEL = Object.freeze({
+    author_type: 'balance_system',
+    delivery_origin: 'instagram_graph_api',
+    training_eligible: false,
+    training_provenance: 'system_generated',
+});
 const RECENT_IDENTITY_MATCH_MS = 12 * 60 * 1000;
 const RECENT_DUPLICATE_MATCH_MS = 12 * 60 * 1000;
 const GRAPH_BASE = (process.env.META_IG_GRAPH_BASE
@@ -1926,7 +1939,42 @@ async function findGraphMessageByDedupeId(dedupeId) {
     }
 }
 
-async function insertGraphMessage({ threadId, direction, text, graphMessageId, nowIso }) {
+function graphMessageTrainingMetadata({ direction, source, metadata = {} } = {}) {
+    const base = direction === 'out' && source === IG_NATIVE_INBOX_MESSAGE_SOURCE
+        ? IG_NATIVE_INBOX_TRAINING_LABEL
+        : (direction === 'in'
+            ? {
+                author_type: 'lead',
+                delivery_origin: 'instagram_graph_webhook',
+                training_eligible: false,
+                training_provenance: null,
+            }
+            : {});
+    return { ...base, ...metadata };
+}
+
+async function refreshGraphMessageTrainingMetadata({ messageId, source, metadata }) {
+    if (!messageId) return;
+    try {
+        await supabase(`ig_messages?id=eq.${encodeURIComponent(messageId)}`, {
+            method: 'PATCH',
+            body: { source, ...metadata },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[instagram-webhook] graph message training metadata refresh skipped:', err.message);
+    }
+}
+
+async function insertGraphMessage({ threadId, direction, text, graphMessageId, nowIso, source, trainingMetadata } = {}) {
+    const resolvedSource = source || (direction === 'out'
+        ? IG_NATIVE_INBOX_MESSAGE_SOURCE
+        : 'instagram_graph');
+    const metadata = graphMessageTrainingMetadata({
+        direction,
+        source: resolvedSource,
+        metadata: trainingMetadata,
+    });
     const dedupeId = graphMessageId
         ? `${GRAPH_SUBSCRIBER_PREFIX}${graphMessageId}`
         : `${GRAPH_SUBSCRIBER_PREFIX}${threadId}:${Date.now()}`;
@@ -1934,6 +1982,18 @@ async function insertGraphMessage({ threadId, direction, text, graphMessageId, n
     if (duplicate) {
         if (shouldRefreshGraphMessageText(duplicate.text, text)) {
             await refreshGraphMessageText({ messageId: duplicate.id, text });
+        }
+        // Older native inbox echoes used the generic instagram_graph source.
+        // Upgrade only that legacy value. A more specific source means the
+        // duplicate was already recorded by Balance and must keep its origin.
+        if (direction === 'out'
+            && resolvedSource === IG_NATIVE_INBOX_MESSAGE_SOURCE
+            && duplicate.source === 'instagram_graph') {
+            await refreshGraphMessageTrainingMetadata({
+                messageId: duplicate.id,
+                source: resolvedSource,
+                metadata,
+            });
         }
         return {
             inserted: false,
@@ -1951,7 +2011,8 @@ async function insertGraphMessage({ threadId, direction, text, graphMessageId, n
                 direction,
                 text,
                 manychat_message_id: dedupeId,
-                source: 'instagram_graph',
+                source: resolvedSource,
+                ...metadata,
                 created_at: nowIso,
             }],
             prefer: 'return=representation',
@@ -2208,6 +2269,8 @@ async function maybeHandleFoodPhotoTracking({ thread, event, rawMessageText, mes
             text: FOOD_PHOTO_TRACKING_ACK,
             graphMessageId: ackGraphMessageId,
             nowIso: sentAt,
+            source: 'instagram_graph_food_photo_ack',
+            trainingMetadata: IG_GRAPH_SYSTEM_MESSAGE_LABEL,
         });
         await patchThreadFoodPhotoTrackingState({
             thread,
@@ -2639,6 +2702,9 @@ async function auditPayload(payload, options) {
 }
 
 exports._test = {
+    IG_NATIVE_INBOX_MESSAGE_SOURCE,
+    IG_GRAPH_SYSTEM_MESSAGE_LABEL,
+    graphMessageTrainingMetadata,
     messageTextForDraft,
     extractFoodPhotoUrls,
     foodPhotoUrlsFromMessaging,
