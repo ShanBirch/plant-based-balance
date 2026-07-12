@@ -3732,17 +3732,14 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
 
 async function pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, target) {
     const isFeed = target === 'feed';
-    // Keep the logo and all meal information clear of Instagram's top and
-    // bottom chrome when the exported image is shown in the native share flow.
+    // This deliberately mirrors the Balance Feed meal card: photo first,
+    // white type, then a light food panel and three compact macro panels.
+    // The only difference is extra breathing room around Instagram chrome.
     const instagramSafeTop = isFeed ? 118 : 250;
     const instagramSafeBottom = isFeed ? 176 : 360;
-    const panelX = 48;
-    const panelW = width - 96;
-    const panelH = isFeed ? 392 : 456;
-    const panelY = Math.max(
-        instagramSafeTop + 120,
-        height - instagramSafeBottom - panelH
-    );
+    const contentX = 68;
+    const contentW = width - (contentX * 2);
+    const contentBottom = height - instagramSafeBottom;
 
     const lowerGradient = ctx.createLinearGradient(0, height * 0.46, 0, height);
     lowerGradient.addColorStop(0, 'rgba(4, 12, 9, 0)');
@@ -3757,70 +3754,73 @@ async function pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, ta
     ctx.fillStyle = upperGradient;
     ctx.fillRect(0, 0, width, instagramSafeTop + 180);
 
-    try {
-        const logo = await pbbShareLoadImage('balance_logo_transparent.png');
-        ctx.save();
-        ctx.globalAlpha = 0.94;
-        ctx.drawImage(logo, 64, instagramSafeTop, 82, 82);
-        ctx.restore();
-    } catch (error) {
-        console.warn('Could not draw transparent Balance logo:', error);
-    }
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.76)';
+    ctx.shadowBlur = 14;
+    ctx.shadowOffsetY = 3;
+
+    let y = instagramSafeTop + 40;
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.font = '900 23px Arial, sans-serif';
+    ctx.letterSpacing = '4px';
+    ctx.fillText('MEAL SHARED', contentX, y);
+    ctx.letterSpacing = '0px';
+    y += 64;
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = '900 29px Arial, sans-serif';
-    ctx.fillText('BALANCE', 164, instagramSafeTop + 54);
+    ctx.font = '900 62px Georgia, serif';
+    y = pbbShareWrapText(ctx, cardPayload.meal_type || 'Meal', contentX, y, contentW, 68, 2) + 24;
 
-    pbbShareFillRoundRect(ctx, panelX, panelY, panelW, panelH, 38, 'rgba(10, 15, 13, 0.62)');
-    pbbShareRoundRect(ctx, panelX, panelY, panelW, panelH, 38);
-    ctx.strokeStyle = 'rgba(255,255,255,0.72)';
+    ctx.save();
+    ctx.shadowColor = 'transparent';
+    pbbShareFillRoundRect(ctx, contentX, y, contentW, 142, 28, 'rgba(255,255,255,0.14)');
+    pbbShareRoundRect(ctx, contentX, y, contentW, 142, 28);
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
     ctx.lineWidth = 2;
     ctx.stroke();
+    ctx.restore();
 
-    const contentX = panelX + 48;
-    const contentW = panelW - 96;
+    ctx.fillStyle = 'rgba(255,255,255,0.84)';
+    ctx.font = '800 20px Arial, sans-serif';
+    ctx.fillText('FOOD', contentX + 28, y + 42);
     ctx.fillStyle = '#ffffff';
-    ctx.font = '900 52px Arial, sans-serif';
-    let titleY = panelY + 72;
-    titleY = pbbShareWrapText(
-        ctx,
-        String(cardPayload.foods || cardPayload.meal_type || 'Meal logged').toUpperCase(),
-        contentX,
-        titleY,
-        contentW,
-        58,
-        2
-    );
+    ctx.font = '800 31px Arial, sans-serif';
+    pbbShareWrapText(ctx, cardPayload.foods || 'Tracked in Balance', contentX + 28, y + 88, contentW - 56, 36, 2);
+    y += 192;
 
     const calories = Math.max(0, Math.round(Number(cardPayload.calories || 0)));
     const protein = Math.max(0, Math.round(Number(cardPayload.protein || 0)));
     const carbs = Math.max(0, Math.round(Number(cardPayload.carbs || 0)));
     const fat = Math.max(0, Math.round(Number(cardPayload.fat || 0)));
-    const metrics = [
-        [calories > 0 ? String(calories) : '-', 'kcal', '#f5c45c'],
-        [`${protein}g`, 'protein', '#c9b7ff'],
-        [`${carbs}g`, 'carbs', '#c9b7ff'],
-        [`${fat}g`, 'fat', '#c9b7ff']
-    ];
-    const metricY = Math.max(panelY + 184, titleY + 20);
-    const metricW = contentW / metrics.length;
-    metrics.forEach((metric, index) => {
-        const x = contentX + (index * metricW);
-        if (index > 0) {
-            ctx.fillStyle = 'rgba(255,255,255,0.28)';
-            ctx.fillRect(x, metricY - 8, 1, 108);
-        }
-        ctx.fillStyle = metric[2];
-        ctx.font = '900 42px Arial, sans-serif';
-        ctx.fillText(metric[0], x + (index === 0 ? 0 : 20), metricY + 42);
-        ctx.fillStyle = 'rgba(255,255,255,0.88)';
-        ctx.font = '750 22px Arial, sans-serif';
-        ctx.fillText(metric[1], x + (index === 0 ? 0 : 20), metricY + 78);
-    });
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 74px Arial, sans-serif';
+    ctx.fillText(calories > 0 ? String(calories) : '-', contentX, y + 58);
+    ctx.font = '800 28px Arial, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.fillText('kcal', contentX + 176, y + 56);
 
-    ctx.fillStyle = 'rgba(255,255,255,0.72)';
-    ctx.font = '750 20px Arial, sans-serif';
-    ctx.fillText('Fuel. Track. Level up.', contentX, panelY + panelH - 26);
+    const macroY = Math.max(y + 116, contentBottom - 202);
+    const macroGap = 18;
+    const macroW = (contentW - (macroGap * 2)) / 3;
+    [[`${protein}g`, 'Protein'], [`${carbs}g`, 'Carbs'], [`${fat}g`, 'Fat']].forEach((metric, index) => {
+        const x = contentX + (index * (macroW + macroGap));
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        pbbShareFillRoundRect(ctx, x, macroY, macroW, 122, 24, 'rgba(15,23,42,0.54)');
+        ctx.restore();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 38px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(metric[0], x + (macroW / 2), macroY + 50);
+        ctx.fillStyle = 'rgba(255,255,255,0.84)';
+        ctx.font = '800 20px Arial, sans-serif';
+        ctx.fillText(metric[1], x + (macroW / 2), macroY + 88);
+    });
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,255,255,0.82)';
+    ctx.font = '800 20px Arial, sans-serif';
+    ctx.fillText('BALANCE', contentX, contentBottom - 22);
+    ctx.restore();
 }
 
 async function pbbShareDrawProgressPhotoCard(ctx, cardPayload, panelX, panelY, panelW, panelH, photoDataUrls) {
