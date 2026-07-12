@@ -2,6 +2,10 @@
   publish = "."
   functions = "netlify/functions"
 
+[[edge_functions]]
+  function = "social-post"
+  path = "/api/social/post"
+
 # Edge Function Mappings
 [[edge_functions]]
   function = "create-challenge-buyin-checkout"

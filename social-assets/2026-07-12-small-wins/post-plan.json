@@ -1,0 +1,24 @@
+{
+  "mode": "publish",
+  "content_id": "2026-07-12-small-wins",
+  "media": {
+    "type": "carousel",
+    "path": ".",
+    "url": "https://plantbased-balance.org/social-assets/2026-07-12-small-wins/small-wins-share-reference-slide-01.jpg",
+    "mime": "image/jpeg"
+  },
+  "caption": "Small wins beat motivation.\n\nOn a hard day, you don’t need to do everything perfectly.\n\n10 minutes. One walk. One decent meal.\n\nThe version you can repeat beats the perfect plan you abandon.\n\nSave this for the next rough day.\nGet back in Balance.",
+  "platforms": {
+    "instagram": {
+      "enabled": true,
+      "kind": "carousel",
+      "caption": "Small wins beat motivation.\n\nOn a hard day, you don’t need to do everything perfectly.\n\n10 minutes. One walk. One decent meal.\n\nThe version you can repeat beats the perfect plan you abandon.\n\nSave this for the next rough day.\nGet back in Balance."
+    }
+  },
+  "approval": {
+    "approved": true,
+    "approved_by": "Shannon",
+    "approved_at": "2026-07-12",
+    "platforms": ["instagram"]
+  }
+}
