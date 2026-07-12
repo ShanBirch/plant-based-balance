@@ -3711,13 +3711,15 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
         ctx.fillText('TOP SETS', contentX, y);
         y += 30;
         (cardPayload.exercises || []).slice(0, 3).forEach(exercise => {
+            const exerciseName = String(exercise.name || 'Exercise');
+            const exerciseBest = String(exercise.best || '');
             ctx.fillStyle = '#ffffff';
             ctx.font = '800 20px Arial, sans-serif';
-            ctx.fillText(String(exercise.name || 'Exercise'), contentX, y + 28);
-            ctx.textAlign = 'right';
+            ctx.fillText(exerciseName, contentX, y + 28);
+            const nameWidth = ctx.measureText(exerciseName).width;
+            const bestX = Math.min(contentX + nameWidth + 28, contentX + contentW - 170);
             ctx.font = '800 19px Arial, sans-serif';
-            ctx.fillText(String(exercise.best || ''), contentX + contentW, y + 28);
-            ctx.textAlign = 'left';
+            ctx.fillText(exerciseBest, bestX, y + 28);
             y += 50;
         });
     }
