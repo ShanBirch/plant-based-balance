@@ -33,6 +33,7 @@ const MAX_PER_RUN = 80;
 const DEFAULT_AI_DRAFT_REVIEWS_PER_RUN = 8;
 const DM_ALERT_TYPES = ['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm'];
 const APPROVED_COACHING_URL = 'https://future-balance.netlify.app/coaching.html';
+const APPROVED_BOOKING_URL = 'https://plantbased-balance.org/book';
 const APPROVED_COACHING_LINK_SEND_DELAY_MS = 2 * 60 * 1000;
 
 function parseNonNegativeInteger(value, fallback) {
@@ -319,16 +320,22 @@ function draftReviewPassedForAutoSend(data = {}) {
         && review.context_loss_suspected !== true;
 }
 
-function hasApprovedCoachingLinkHandoff(alert = {}) {
+function approvedLinkHandoffKind(alert = {}) {
     const data = alert.data || {};
     const url = String(data.signup_link_handoff_url || data.signupLinkHandoffUrl || '').trim();
     const replyText = normalizeCoachDraftText(alert.scheduled_reply_text || alert.suggested_message || data.draft_text || '').trim();
-    return data.approved_link_auto_sendable === true
+    const baseAllowed = data.approved_link_auto_sendable === true
         && data.signup_link_manual_only !== true
         && data.client_manager_review_required !== true
-        && data.needs_you_required !== true
-        && url === APPROVED_COACHING_URL
-        && replyText.includes(APPROVED_COACHING_URL);
+        && data.needs_you_required !== true;
+    if (!baseAllowed) return '';
+    if (url === APPROVED_COACHING_URL && replyText.includes(APPROVED_COACHING_URL)) return 'coaching';
+    if (data.call_booking_handoff === true && url === APPROVED_BOOKING_URL && replyText.includes(APPROVED_BOOKING_URL)) return 'call_booking';
+    return '';
+}
+
+function hasApprovedCoachingLinkHandoff(alert = {}) {
+    return Boolean(approvedLinkHandoffKind(alert));
 }
 
 function shouldAutoScheduleApprovedCoachingHandoff(alert = {}, classification = {}) {
@@ -340,6 +347,13 @@ function shouldAutoScheduleApprovedCoachingHandoff(alert = {}, classification = 
 
 function buildApprovedCoachingAutoSchedulePatch(alert = {}, now = new Date()) {
     const data = alert.data || {};
+    const handoffKind = approvedLinkHandoffKind(alert);
+    const isCallBooking = handoffKind === 'call_booking';
+    const handoffLabel = isCallBooking ? 'call-booking link' : 'Starter Coaching link';
+    const scheduleReason = isCallBooking
+        ? 'Client/lead manager approved the call-booking link handoff; accelerated sales follow-up.'
+        : 'Client/lead manager approved the Starter Coaching link handoff; accelerated sales follow-up.';
+    const autoScheduleReason = isCallBooking ? 'approved_call_booking_link_handoff' : 'approved_starter_coaching_link_handoff';
     const nowIso = now.toISOString();
     const scheduledFor = new Date(now.getTime() + APPROVED_COACHING_LINK_SEND_DELAY_MS).toISOString();
     const replyText = normalizeCoachDraftText(alert.scheduled_reply_text || alert.suggested_message || data.draft_text || '').trim();
@@ -353,11 +367,11 @@ function buildApprovedCoachingAutoSchedulePatch(alert = {}, now = new Date()) {
             scheduled_via: 'auto_send',
             scheduled_was_edited: false,
             scheduled_send_in_ms: APPROVED_COACHING_LINK_SEND_DELAY_MS,
-            schedule_reason: 'Client/lead manager approved the Starter Coaching link handoff; accelerated sales follow-up.',
+            schedule_reason: scheduleReason,
             auto_send_review_approved_at: nowIso,
             auto_send_review_approved_by: MANAGER_SOURCE,
             client_manager_auto_scheduled_at: nowIso,
-            client_manager_auto_schedule_reason: 'approved_starter_coaching_link_handoff',
+            client_manager_auto_schedule_reason: autoScheduleReason,
             reply_timing_choice: {
                 action: 'schedule',
                 chosen_delay_ms: APPROVED_COACHING_LINK_SEND_DELAY_MS,
@@ -368,10 +382,11 @@ function buildApprovedCoachingAutoSchedulePatch(alert = {}, now = new Date()) {
                 action: 'schedule',
                 delay_ms: APPROVED_COACHING_LINK_SEND_DELAY_MS,
                 label: '2 min',
-                reason: 'Approved Starter Coaching link handoff; keep the sales moment warm.',
+                reason: `Approved ${handoffLabel} handoff; keep the sales moment warm.`,
                 confidence: 0.9,
                 signals: {
-                    approved_starter_coaching_link_handoff: true,
+                    approved_starter_coaching_link_handoff: !isCallBooking,
+                    approved_call_booking_link_handoff: isCallBooking,
                 },
             },
         },
@@ -650,7 +665,9 @@ async function scheduleApprovedCoachingHandoff(alert) {
         id: alert.id,
         client_name: alert.client_name || patch.data.profile_name || patch.data.ig_username || null,
         scheduled_for: patch.scheduled_for,
-        reason: 'approved Starter Coaching link handoff',
+        reason: approvedLinkHandoffKind(alert) === 'call_booking'
+            ? 'approved call-booking link handoff'
+            : 'approved Starter Coaching link handoff',
     };
 }
 
@@ -757,6 +774,7 @@ exports._test = {
     isAcquisitionLeadAlert,
     leadMediaContextMissing,
     draftReviewPassedForAutoSend,
+    approvedLinkHandoffKind,
     hasApprovedCoachingLinkHandoff,
     shouldAutoScheduleApprovedCoachingHandoff,
     buildApprovedCoachingAutoSchedulePatch,

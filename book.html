@@ -87,9 +87,18 @@
                                 <input type="email" name="email" autocomplete="email" maxlength="320" required placeholder="you@email.com">
                             </label>
                             <label>
-                                <span>Phone <em>optional</em></span>
-                                <input type="tel" name="phone" autocomplete="tel" maxlength="40" placeholder="Your number">
+                                <span>How would you like to chat?</span>
+                                <select name="callType" aria-describedby="booking-call-type-note">
+                                    <option value="phone">Phone call</option>
+                                    <option value="video">Video call (Google Meet)</option>
+                                    <option value="whatsapp">WhatsApp call</option>
+                                </select>
                             </label>
+                            <label>
+                                <span id="booking-phone-label">Phone <em>required for phone or WhatsApp</em></span>
+                                <input type="tel" name="phone" autocomplete="tel" maxlength="40" required placeholder="Your number">
+                            </label>
+                            <p class="booking-call-note" id="booking-call-type-note">Shannon will call you on this number.</p>
                             <label class="booking-goal">
                                 <span>What would you like to cover? <em>optional</em></span>
                                 <textarea name="goal" maxlength="1000" rows="3" placeholder="A little context helps me come prepared."></textarea>
@@ -99,7 +108,7 @@
                                 <input type="text" name="company" tabindex="-1" autocomplete="off">
                             </label>
                         </div>
-                        <p class="booking-form-note">By booking, you’ll receive a confirmation and calendar invite for this call.</p>
+                        <p class="booking-form-note">By booking, you’ll receive a Balance confirmation and calendar invitation.</p>
                         <button class="btn primary booking-submit" type="submit">
                             <span>Confirm my call</span>
                             <span class="booking-submit-loader" aria-hidden="true"></span>

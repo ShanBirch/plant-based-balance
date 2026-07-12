@@ -1265,6 +1265,7 @@ BALANCE CALL BOOKING:
 - Approved call-booking link: ${BALANCE_CALL_BOOKING_URL}
 - The normal Starter Coaching path is still online with weekly check-ins. Do not turn every coaching conversation into a phone-call pitch.
 - Use the call link when they directly ask to chat, talk it through, book a call, ask when Shannon is free, clearly say a call would help, or explicitly accept Shannon's just-offered quick chat after the earned lead window. Keep the handoff casual and short, such as "yeah for sure, grab a time that works for you here".
+- The booking page lets them choose a phone call, video call, or WhatsApp call. Let them choose there. Do not make them pick a format in the DM or promise a specific platform before they book.
 - Do not send this link just because they are interested in Starter Coaching, have shared a goal, or asked for coaching details. Use the regular coaching link in those cases.
 - The booking link is an approved lead handoff. Once the lead has clearly asked for or accepted the call, the normal lead-manager send path can deliver it after its usual thread readback. It is not a Needs You reason by itself.`;
 }
@@ -1361,6 +1362,17 @@ function isApprovedChallengeBioLinkText(text) {
     return /https?:\/\/future-balance\.netlify\.app\/coaching\.html\b/i.test(String(text || ''));
 }
 
+function isBalanceCallBookingLinkText(text) {
+    return /https?:\/\/plantbased-balance\.org\/book\b/i.test(String(text || ''));
+}
+
+function isExplicitCallBookingRequest(text) {
+    const s = String(text || '');
+    return /\b(?:book|schedule|set up|organise|organize|have|do|jump on|take)\b.{0,48}\b(?:a )?(?:call|chat|phone|video|whatsapp)\b/i.test(s)
+        || /\b(?:can|could|would|want to)\b.{0,32}\b(?:call|chat|talk)\b/i.test(s)
+        || /\b(?:phone|video|whatsapp)\s+call\b/i.test(s);
+}
+
 function isPositiveChallengeLinkConfirmationText(text) {
     return /\b(?:yes|yeah|yea|yep|sure|please|pls|sounds good|sounds so good|keen|okay|ok|sweet|let'?s do it|lets do it|do it)\b/i.test(String(text || ''));
 }
@@ -1440,6 +1452,10 @@ function isApprovedChallengeBioHandoffAllowed({ draftText, qualifier, currentMes
     return isCurrentChallengeHandoffMoment({ qualifier, currentMessage });
 }
 
+function isApprovedBalanceCallBookingHandoffAllowed({ draftText, currentMessage } = {}) {
+    return isBalanceCallBookingLinkText(draftText) && isExplicitCallBookingRequest(currentMessage);
+}
+
 function isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId } = {}) {
     if (linkedUserId) return false;
     const stage = String(leadStage || 'new').toLowerCase();
@@ -1467,6 +1483,28 @@ function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linke
                 queue: null,
                 needs_shannon_approval: false,
                 reason: 'Approved coaching link handoff is allowed for this accepted/ready lead.',
+                evidence_ids: [threadId ? `ig_threads:${threadId}` : '', manychatMessageId ? `manychat_message_id:${manychatMessageId}` : ''].filter(Boolean),
+                reviewed_at: new Date().toISOString(),
+            },
+        };
+    }
+
+    if (isApprovedBalanceCallBookingHandoffAllowed({ draftText, currentMessage })) {
+        return {
+            lead_onboarding_handoff: false,
+            needs_you_required: false,
+            operator_queue: null,
+            style_note: 'Approved call-booking link handoff can send after the lead has directly asked for or accepted a call.',
+            signup_link_manual_only: false,
+            signup_link_handoff_url: BALANCE_CALL_BOOKING_URL,
+            approved_link_auto_sendable: true,
+            call_booking_handoff: true,
+            codex_review: {
+                source: 'ig-instant-draft',
+                decision: 'approved_call_booking_link_handoff',
+                queue: null,
+                needs_shannon_approval: false,
+                reason: 'Approved call-booking link handoff is allowed because the lead directly asked for a call.',
                 evidence_ids: [threadId ? `ig_threads:${threadId}` : '', manychatMessageId ? `manychat_message_id:${manychatMessageId}` : ''].filter(Boolean),
                 reviewed_at: new Date().toISOString(),
             },
@@ -4611,6 +4649,8 @@ exports._test = {
     normalizeCocosRepairedDraft,
     reviewLooksLikePureContextGap,
     isSignupLinkHandoffText,
+    isBalanceCallBookingLinkText,
+    isExplicitCallBookingRequest,
     buildLeadOnboardingHandoffData,
     finalizeDraftChunksFromRawText,
     repairMissingChallengeBioLinkChunks,

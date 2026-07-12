@@ -557,6 +557,29 @@ assert.strictEqual(schedulePatch.data.scheduled_via, 'auto_send');
 assert.strictEqual(schedulePatch.data.auto_send_review_approved_by, 'balance-lead-client-manager');
 assert.strictEqual(schedulePatch.data.client_manager_auto_schedule_reason, 'approved_starter_coaching_link_handoff');
 
+const approvedCallBookingHandoff = makeAlert({
+    suggested_message: "yeah for sure, grab a time that works for you here: https://plantbased-balance.org/book",
+    data: {
+        message_preview: 'could we do a video call?',
+        approved_link_auto_sendable: true,
+        signup_link_manual_only: false,
+        signup_link_handoff_url: 'https://plantbased-balance.org/book',
+        call_booking_handoff: true,
+        draft_review: {
+            verdict: 'pass',
+            confidence: 0.9,
+            notification_reason: 'none',
+            notification_required: false,
+            context_loss_suspected: false,
+        },
+    },
+});
+assert.strictEqual(manager.approvedLinkHandoffKind(approvedCallBookingHandoff), 'call_booking');
+assert.strictEqual(manager.shouldAutoScheduleApprovedCoachingHandoff(approvedCallBookingHandoff, { shouldRoute: false }), true);
+const callBookingSchedulePatch = manager.buildApprovedCoachingAutoSchedulePatch(approvedCallBookingHandoff, new Date('2026-06-22T00:00:00.000Z'));
+assert.strictEqual(callBookingSchedulePatch.data.client_manager_auto_schedule_reason, 'approved_call_booking_link_handoff');
+assert.strictEqual(callBookingSchedulePatch.data.reply_timing_suggestion.signals.approved_call_booking_link_handoff, true);
+
 const unsafeCoachingHandoff = makeAlert({
     suggested_message: "yeah here's the link: https://future-balance.netlify.app/coaching.html",
     data: {

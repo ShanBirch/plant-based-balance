@@ -273,14 +273,15 @@
 }
 
 .booking-form em {
-    color: var(--text-muted);
+    color: var(--text-main);
     font-size: .69rem;
     font-style: normal;
     font-weight: 600;
 }
 
 .booking-form input,
-.booking-form textarea {
+.booking-form textarea,
+.booking-form select {
     width: 100%;
     border: 1px solid var(--button-border);
     border-radius: 12px;
@@ -300,17 +301,19 @@
 }
 
 .booking-form input:focus,
-.booking-form textarea:focus {
+.booking-form textarea:focus,
+.booking-form select:focus {
     border-color: var(--secondary);
     box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .booking-goal { grid-column: 1 / -1; }
+.booking-call-note { grid-column: 1 / -1; margin: -2px 0 2px; color: var(--text-main); font-size: .78rem; line-height: 1.45; }
 .booking-honeypot { display: none !important; }
 
 .booking-form-note {
     margin: 14px 2px;
-    color: var(--text-muted);
+    color: var(--text-main);
     font-size: .75rem;
     line-height: 1.5;
 }

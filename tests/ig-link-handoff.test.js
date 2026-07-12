@@ -2,6 +2,8 @@ const assert = require('assert');
 
 const {
     isSignupLinkHandoffText,
+    isBalanceCallBookingLinkText,
+    isExplicitCallBookingRequest,
     buildLeadOnboardingHandoffData,
     finalizeDraftChunksFromRawText,
     buildChallengeNextStepBlock,
@@ -19,6 +21,22 @@ assert.strictEqual(
     true
 );
 assert.strictEqual(isSignupLinkHandoffText('want me to send you the details?'), false);
+assert.strictEqual(isBalanceCallBookingLinkText('sweet, grab a time here: https://plantbased-balance.org/book'), true);
+assert.strictEqual(isExplicitCallBookingRequest('could we do a WhatsApp call?'), true);
+assert.strictEqual(isExplicitCallBookingRequest('yeah I want coaching details'), false);
+
+const approvedCallBooking = buildLeadOnboardingHandoffData({
+    draftText: "yeah for sure, grab a time that works for you here https://plantbased-balance.org/book",
+    currentMessage: 'could we do a video call?',
+    qualifier: { stage: 'qualifying' },
+    leadStage: 'qualifying',
+    linkedUserId: null,
+    threadId: 'thread-call-123',
+});
+assert.strictEqual(approvedCallBooking.approved_link_auto_sendable, true);
+assert.strictEqual(approvedCallBooking.call_booking_handoff, true);
+assert.strictEqual(approvedCallBooking.signup_link_handoff_url, 'https://plantbased-balance.org/book');
+assert.strictEqual(approvedCallBooking.codex_review.decision, 'approved_call_booking_link_handoff');
 
 const accepted = buildLeadOnboardingHandoffData({
     draftText: "i'll send the link through for you now",

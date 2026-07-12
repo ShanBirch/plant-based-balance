@@ -16,6 +16,8 @@ type BookingSettings = {
 };
 
 type BusyRange = { start: string; end: string };
+type CallType = "phone" | "video" | "whatsapp";
+type CalendarEventResult = { id: string; meetingUrl: string };
 
 const BRISBANE_TIMEZONE = "Australia/Brisbane";
 const ADMIN_EMAIL = "shannonbirch@cocospersonaltraining.com";
@@ -60,6 +62,75 @@ function redirect(location: string): Response {
 
 function trimText(value: unknown, max = 500): string {
     return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+function normalizeCallType(value: unknown): CallType {
+    const callType = trimText(value, 20).toLowerCase();
+    return callType === "video" || callType === "whatsapp" ? callType : "phone";
+}
+
+function callTypeLabel(callType: CallType): string {
+    if (callType === "video") return "video call";
+    if (callType === "whatsapp") return "WhatsApp call";
+    return "phone call";
+}
+
+function callTypeLocation(_settings: BookingSettings, callType: CallType): string {
+    if (callType === "video") return "Google Meet";
+    if (callType === "whatsapp") return "WhatsApp call";
+    return "Phone call";
+}
+
+function videoMeetingUrl(value: unknown): string {
+    const data = value && typeof value === "object" ? value as Record<string, unknown> : {};
+    const hangoutLink = trimText(data.hangoutLink, 500);
+    if (hangoutLink) return hangoutLink;
+    const conferenceData = data.conferenceData && typeof data.conferenceData === "object"
+        ? data.conferenceData as Record<string, unknown>
+        : {};
+    const entryPoints = Array.isArray(conferenceData.entryPoints) ? conferenceData.entryPoints : [];
+    for (const entryPoint of entryPoints) {
+        const point = entryPoint && typeof entryPoint === "object" ? entryPoint as Record<string, unknown> : {};
+        if (trimText(point.entryPointType, 30) !== "video") continue;
+        const url = trimText(point.uri, 500);
+        if (url) return url;
+    }
+    return "";
+}
+
+function confirmationCallNote(callType: CallType, meetingUrl: string): { html: string; text: string } {
+    if (callType === "video") {
+        if (meetingUrl) {
+            return {
+                html: `Your Google Meet link: <a href="${safeHtml(meetingUrl)}" style="color:#f5d98a;font-weight:800">Join your video call</a>.`,
+                text: `Your Google Meet link: ${meetingUrl}`,
+            };
+        }
+        return {
+            html: "Your video link will follow shortly.",
+            text: "Your video link will follow shortly.",
+        };
+    }
+    if (callType === "whatsapp") {
+        return { html: "Shannon will give you a WhatsApp call on the number you entered.", text: "Shannon will give you a WhatsApp call on the number you entered." };
+    }
+    return { html: "Shannon will call you on the number you entered.", text: "Shannon will call you on the number you entered." };
+}
+
+function confirmationEmailContent({ name, prettyDate, goal, callType, meetingUrl }: {
+    name: string;
+    prettyDate: string;
+    goal: string;
+    callType: CallType;
+    meetingUrl: string;
+}): { subject: string; html: string; text: string } {
+    const callNote = confirmationCallNote(callType, meetingUrl);
+    const method = callTypeLabel(callType);
+    return {
+        subject: `You’re booked in for a Balance ${method}, ${prettyDate}`,
+        html: `<!doctype html><html><body style="margin:0;background:#f6f3ec;padding:32px 16px;font-family:Inter,Arial,sans-serif;color:#171717"><table role="presentation" style="width:100%;max-width:620px;margin:0 auto;background:#111111;border-radius:24px;overflow:hidden"><tr><td style="padding:34px 32px 18px;text-align:center"><img src="${publicOrigin()}/balance_logo_transparent.png" width="64" height="64" alt="Balance" style="display:inline-block;border-radius:16px"><p style="margin:18px 0 0;color:#f5d98a;font-size:12px;font-weight:800;letter-spacing:1.7px;text-transform:uppercase">Call confirmed</p><h1 style="margin:10px 0 0;color:#fff;font-size:30px;line-height:1.1">You’re in, ${safeHtml(name)}.</h1></td></tr><tr><td style="padding:16px 32px 34px"><div style="background:#f5d98a;border-radius:18px;padding:22px;color:#151515"><p style="margin:0 0 7px;font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase">Your Balance ${safeHtml(method)}</p><p style="margin:0;font-size:21px;font-weight:800;line-height:1.3">${safeHtml(prettyDate)}<br><span style="font-size:15px;font-weight:600">Brisbane time</span></p></div><p style="margin:24px 0 0;color:#ded8cc;font-size:16px;line-height:1.65">I’m looking forward to hearing where you’re at and what would make things feel easier from here.</p><p style="margin:18px 0 0;padding:16px;border:1px solid #36332e;border-radius:14px;color:#ded8cc;font-size:14px;line-height:1.55">${callNote.html}</p>${goal ? `<p style="margin:18px 0 0;padding:16px;border:1px solid #36332e;border-radius:14px;color:#ded8cc;font-size:14px;line-height:1.55"><strong style="display:block;margin-bottom:5px;color:#f5d98a">You want to cover</strong>${safeHtml(goal)}</p>` : ""}<p style="margin:24px 0 0;color:#aaa396;font-size:13px;line-height:1.55">A calendar invitation is on its way too. If anything changes, reply to this email and we’ll sort it.</p><p style="margin:24px 0 0;color:#f5d98a;font-size:15px;font-weight:800">Shannon<br><span style="color:#aaa396;font-size:13px;font-weight:500">Balance</span></p></td></tr></table></body></html>`,
+        text: `You’re booked in with Balance, ${name}.\n\nYour ${method}: ${prettyDate} (Brisbane time).\n\n${callNote.text}\n\n${goal ? `You want to cover: ${goal}\n\n` : ""}A calendar invitation is on its way too. If anything changes, reply to this email and we’ll sort it.\n\nShannon, Balance`,
+    };
 }
 
 function safeHtml(value: unknown): string {
@@ -445,32 +516,45 @@ async function completeGoogleConnect(url: URL): Promise<Response> {
     return redirect(`${publicOrigin()}/booking-settings.html?calendar=connected`);
 }
 
-async function createCalendarEvent(settings: BookingSettings, booking: Record<string, unknown>): Promise<string> {
+async function createCalendarEvent(settings: BookingSettings, booking: Record<string, unknown>): Promise<CalendarEventResult> {
     const accessToken = await getGoogleAccessToken();
-    if (!accessToken) return "";
+    if (!accessToken) return { id: "", meetingUrl: "" };
     const name = trimText(booking.name, 120);
     const email = trimText(booking.email, 320);
     const goal = trimText(booking.goal, 1000);
-    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(settings.calendar_id || "primary")}/events?sendUpdates=all`, {
+    const callType = normalizeCallType(booking.call_type);
+    const createMeet = callType === "video";
+    const query = new URLSearchParams({ sendUpdates: "all" });
+    if (createMeet) query.set("conferenceDataVersion", "1");
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(settings.calendar_id || "primary")}/events?${query.toString()}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-            summary: `${settings.event_name} with ${name}`,
+            summary: `${settings.event_name} (${callTypeLabel(callType)}) with ${name}`,
             description: [
                 `Booked through Balance`,
+                `Call type: ${callTypeLabel(callType)}`,
                 goal ? `What they want to cover: ${goal}` : "",
                 `Booking: ${bookingUrl()}`,
             ].filter(Boolean).join("\n\n"),
-            location: settings.location,
+            location: callTypeLocation(settings, callType),
             start: { dateTime: booking.starts_at, timeZone: BRISBANE_TIMEZONE },
             end: { dateTime: booking.ends_at, timeZone: BRISBANE_TIMEZONE },
             attendees: email ? [{ email, displayName: name }] : [],
             reminders: { useDefault: true },
+            ...(createMeet ? {
+                conferenceData: {
+                    createRequest: {
+                        requestId: `balance-${trimText(booking.id, 120) || randomBytes(12).toString("hex")}`,
+                        conferenceSolutionKey: { type: "hangoutsMeet" },
+                    },
+                },
+            } : {}),
         }),
     });
-    const data = await response.json().catch(() => ({})) as { id?: unknown };
+    const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error("Google Calendar event could not be created");
-    return trimText(data.id, 300);
+    return { id: trimText((data as Record<string, unknown>).id, 300), meetingUrl: createMeet ? videoMeetingUrl(data) : "" };
 }
 
 async function sendConfirmationEmail(settings: BookingSettings, booking: Record<string, unknown>): Promise<boolean> {
@@ -483,6 +567,8 @@ async function sendConfirmationEmail(settings: BookingSettings, booking: Record<
     const startsAt = trimText(booking.starts_at, 80);
     const prettyDate = dateTimeLabel(startsAt);
     const goal = trimText(booking.goal, 1000);
+    const callType = normalizeCallType(booking.call_type);
+    const meetingUrl = trimText(booking.meeting_url, 500);
     const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -492,6 +578,7 @@ async function sendConfirmationEmail(settings: BookingSettings, booking: Record<
             subject: `You’re booked in with Balance, ${prettyDate}`,
             html: `<!doctype html><html><body style="margin:0;background:#f6f3ec;padding:32px 16px;font-family:Inter,Arial,sans-serif;color:#171717"><table role="presentation" style="width:100%;max-width:620px;margin:0 auto;background:#111111;border-radius:24px;overflow:hidden"><tr><td style="padding:34px 32px 18px;text-align:center"><img src="${publicOrigin()}/balance_logo_transparent.png" width="64" height="64" alt="Balance" style="display:inline-block;border-radius:16px"><p style="margin:18px 0 0;color:#f5d98a;font-size:12px;font-weight:800;letter-spacing:1.7px;text-transform:uppercase">Call confirmed</p><h1 style="margin:10px 0 0;color:#fff;font-size:30px;line-height:1.1">You’re in, ${safeHtml(name)}.</h1></td></tr><tr><td style="padding:16px 32px 34px"><div style="background:#f5d98a;border-radius:18px;padding:22px;color:#151515"><p style="margin:0 0 7px;font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase">Your Balance call</p><p style="margin:0;font-size:21px;font-weight:800;line-height:1.3">${safeHtml(prettyDate)}<br><span style="font-size:15px;font-weight:600">Brisbane time</span></p></div><p style="margin:24px 0 0;color:#ded8cc;font-size:16px;line-height:1.65">I’m looking forward to hearing where you’re at and what would make things feel easier from here.</p>${goal ? `<p style="margin:18px 0 0;padding:16px;border:1px solid #36332e;border-radius:14px;color:#ded8cc;font-size:14px;line-height:1.55"><strong style="display:block;margin-bottom:5px;color:#f5d98a">You want to cover</strong>${safeHtml(goal)}</p>` : ""}<p style="margin:24px 0 0;color:#aaa396;font-size:13px;line-height:1.55">A calendar invitation is on its way too. If anything changes, reply to this email and we’ll sort it.</p><p style="margin:24px 0 0;color:#f5d98a;font-size:15px;font-weight:800">Shannon<br><span style="color:#aaa396;font-size:13px;font-weight:500">Balance</span></p></td></tr></table></body></html>`,
             text: `You’re booked in with Balance, ${name}.\n\nYour call: ${prettyDate} (Brisbane time).\n\n${goal ? `You want to cover: ${goal}\n\n` : ""}A calendar invitation is on its way too. If anything changes, reply to this email and we’ll sort it.\n\nShannon, Balance`,
+            ...confirmationEmailContent({ name, prettyDate, goal, callType, meetingUrl }),
         }),
     });
     return response.ok;
@@ -511,8 +598,12 @@ async function createBooking(req: Request): Promise<Response> {
     const phone = trimText(body.phone, 40);
     const goal = trimText(body.goal, 1000);
     const startsAt = trimText(body.startsAt, 80);
+    const callType = normalizeCallType(body.callType);
     if (!name || !EMAIL_RE.test(email) || !startsAt || Number.isNaN(Date.parse(startsAt))) {
         return json(400, { ok: false, error: "check_your_details" });
+    }
+    if ((callType === "phone" || callType === "whatsapp") && phone.replace(/\D/g, "").length < 6) {
+        return json(400, { ok: false, error: "phone_required_for_call_type" });
     }
 
     const start = new Date(startsAt);
@@ -532,8 +623,9 @@ async function createBooking(req: Request): Promise<Response> {
                 email,
                 phone: phone || null,
                 goal: goal || null,
+                call_type: callType,
                 timezone: BRISBANE_TIMEZONE,
-                metadata: { source: "public_booking_page", user_agent: trimText(req.headers.get("user-agent"), 300) || null },
+                metadata: { source: "public_booking_page", call_type: callType, user_agent: trimText(req.headers.get("user-agent"), 300) || null },
             }]),
         }) as Record<string, unknown>[];
         inserted = rows[0] || {};
@@ -543,15 +635,18 @@ async function createBooking(req: Request): Promise<Response> {
     }
 
     let calendarEventId = "";
+    let meetingUrl = "";
     let emailSent = false;
     const outcome: string[] = [];
     try {
-        calendarEventId = await createCalendarEvent(settings, inserted);
+        const calendarEvent = await createCalendarEvent(settings, inserted);
+        calendarEventId = calendarEvent.id;
+        meetingUrl = calendarEvent.meetingUrl;
         if (calendarEventId) {
             await supabaseRequest(`balance_bookings?id=eq.${encodeURIComponent(String(inserted.id || ""))}`, {
                 method: "PATCH",
                 headers: { Prefer: "return=minimal" },
-                body: JSON.stringify({ calendar_event_id: calendarEventId }),
+                body: JSON.stringify({ calendar_event_id: calendarEventId, meeting_url: meetingUrl || null }),
             });
         }
     } catch (error) {
@@ -559,6 +654,7 @@ async function createBooking(req: Request): Promise<Response> {
         outcome.push("calendar_invite_pending");
     }
     try {
+        inserted.meeting_url = meetingUrl || null;
         emailSent = await sendConfirmationEmail(settings, inserted);
         if (emailSent) {
             await supabaseRequest(`balance_bookings?id=eq.${encodeURIComponent(String(inserted.id || ""))}`, {
@@ -574,7 +670,7 @@ async function createBooking(req: Request): Promise<Response> {
 
     return json(201, {
         ok: true,
-        booking: { id: inserted.id || null, startsAt: selectedSlot.start, endsAt: selectedSlot.end, label: dateTimeLabel(selectedSlot.start), timezone: BRISBANE_TIMEZONE },
+        booking: { id: inserted.id || null, startsAt: selectedSlot.start, endsAt: selectedSlot.end, label: dateTimeLabel(selectedSlot.start), timezone: BRISBANE_TIMEZONE, callType, meetingUrl: meetingUrl || null },
         calendarEventCreated: Boolean(calendarEventId),
         confirmationEmailSent: emailSent,
         notices: outcome,

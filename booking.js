@@ -15,6 +15,10 @@
     const error = byId('booking-error');
     const success = byId('booking-success');
     const duration = byId('booking-duration');
+    const callTypeInput = form?.querySelector('[name="callType"]');
+    const phoneInput = form?.querySelector('[name="phone"]');
+    const phoneLabel = byId('booking-phone-label');
+    const callTypeNote = byId('booking-call-type-note');
 
     function show(el, visible) {
         if (el) el.hidden = !visible;
@@ -34,6 +38,29 @@
         if (!error) return;
         error.hidden = false;
         error.textContent = message;
+    }
+
+    function currentCallType() {
+        const value = String(callTypeInput?.value || 'phone').toLowerCase();
+        return ['phone', 'video', 'whatsapp'].includes(value) ? value : 'phone';
+    }
+
+    function updateCallTypeFields() {
+        const callType = currentCallType();
+        const needsPhone = callType === 'phone' || callType === 'whatsapp';
+        if (phoneInput) phoneInput.required = needsPhone;
+        if (phoneLabel) {
+            phoneLabel.innerHTML = needsPhone
+                ? 'Phone <em>required for phone or WhatsApp</em>'
+                : 'Phone <em>optional</em>';
+        }
+        if (callTypeNote) {
+            callTypeNote.textContent = callType === 'video'
+                ? 'You’ll get a Google Meet link in your calendar invitation.'
+                : callType === 'whatsapp'
+                    ? 'Shannon will give you a WhatsApp call on this number.'
+                    : 'Shannon will call you on this number.';
+        }
     }
 
     function renderDates() {
@@ -103,7 +130,12 @@
         const data = new FormData(form);
         const name = String(data.get('name') || '').trim();
         const email = String(data.get('email') || '').trim();
+        const callType = currentCallType();
+        const phone = String(data.get('phone') || '').trim();
         if (!name || !email) return showError('Add your name and email to confirm this call.');
+        if ((callType === 'phone' || callType === 'whatsapp') && phone.replace(/\D/g, '').length < 6) {
+            return showError('Add the number Shannon should use for this call.');
+        }
 
         const button = form.querySelector('button[type="submit"]');
         button.disabled = true;
@@ -116,7 +148,8 @@
                     startsAt: state.selectedSlot.start,
                     name,
                     email,
-                    phone: String(data.get('phone') || '').trim(),
+                    phone,
+                    callType,
                     goal: String(data.get('goal') || '').trim(),
                     company: String(data.get('company') || '').trim(),
                 }),
@@ -133,9 +166,15 @@
             show(flow, false);
             show(success, true);
             byId('booking-success-time').textContent = `${result.booking.label}, Brisbane time`;
-            byId('booking-success-copy').textContent = result.confirmationEmailSent
-                ? 'Your call is confirmed. A Balance email and calendar invitation are on their way.'
-                : 'Your call is confirmed. Shannon will be in touch with the details.';
+            const bookingCallType = result.booking?.callType || callType;
+            const meetingUrl = result.booking?.meetingUrl || '';
+            byId('booking-success-copy').textContent = bookingCallType === 'video'
+                ? (meetingUrl
+                    ? 'Your video call is confirmed. Your Google Meet link is in the Balance email and calendar invitation.'
+                    : 'Your video call is confirmed. Shannon will send the video link shortly.')
+                : bookingCallType === 'whatsapp'
+                    ? 'Your WhatsApp call is confirmed. Shannon will call the number you entered.'
+                    : 'Your phone call is confirmed. Shannon will call the number you entered.';
         } catch (_) {
             showError('Couldn’t confirm that call just now. Please try again in a moment.');
         } finally {
@@ -158,5 +197,7 @@
     });
 
     form?.addEventListener('submit', submitBooking);
+    callTypeInput?.addEventListener('change', updateCallTypeFields);
+    updateCallTypeFields();
     loadAvailability();
 }());
