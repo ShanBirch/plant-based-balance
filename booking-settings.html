@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Balance Booking Setup</title>
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="color-scheme" content="dark light">
+    <link rel="icon" type="image/png" href="balance_logo_transparent.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        (function () {
+            try {
+                var savedTheme = localStorage.getItem('userThemePreference');
+                document.documentElement.setAttribute('data-bio-theme', savedTheme === 'light' || savedTheme === 'antigravity-light' ? 'light' : 'dark');
+            } catch (_) { document.documentElement.setAttribute('data-bio-theme', 'dark'); }
+        }());
+    </script>
+    <link rel="stylesheet" href="bio.css">
+    <link rel="stylesheet" href="booking.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="lib/supabase.js"></script>
+    <script src="booking-settings.js" defer></script>
+</head>
+<body class="bio-page booking-page booking-settings-page">
+    <div class="page-shell">
+        <header class="site-header">
+            <a class="brand" href="admin-dashboard.html" aria-label="Back to Balance admin">
+                <img src="balance_logo_transparent.png" alt="Balance logo">
+                <span>Balance</span>
+            </a>
+            <a class="nav-link" href="admin-dashboard.html?tab=conversion-operator">Conversion Operator</a>
+        </header>
+
+        <main class="booking-layout">
+            <section class="booking-intro">
+                <span class="eyebrow">Call booking</span>
+                <h1>Make the calendar<br><span>yours.</span></h1>
+                <p>Set your call windows, then connect the calendar you already use. Balance handles the public booking link, availability and confirmation flow from there.</p>
+                <div class="booking-trust-row">
+                    <span><i>01</i> Public page: <strong id="booking-link-label">/book</strong></span>
+                    <span><i>02</i> All call times use Brisbane time</span>
+                </div>
+            </section>
+
+            <section class="surface booking-card booking-settings-card" id="booking-settings-card" aria-busy="true">
+                <div class="booking-card-heading">
+                    <div>
+                        <p class="booking-kicker">Owner settings</p>
+                        <h2>Call availability</h2>
+                    </div>
+                    <span class="booking-duration">Admin only</span>
+                </div>
+
+                <p class="booking-setup-status" id="booking-setup-status" role="status">Loading your booking setup.</p>
+
+                <form id="booking-settings-form" hidden>
+                    <section class="booking-setup-group">
+                        <label class="booking-toggle">
+                            <span>
+                                <strong>Open call bookings</strong>
+                                <small>Keep this off until your availability and calendar are ready.</small>
+                            </span>
+                            <input type="checkbox" name="booking_enabled">
+                        </label>
+                    </section>
+
+                    <section class="booking-setup-group">
+                        <h3>Call details</h3>
+                        <p>These details appear on the public booking page and calendar invitation.</p>
+                        <div class="booking-setting-grid">
+                            <label class="booking-setting-full">Call name
+                                <input type="text" name="event_name" maxlength="80" required>
+                            </label>
+                            <label>Call length
+                                <select name="duration_minutes">
+                                    <option value="15">15 minutes</option>
+                                    <option value="30">30 minutes</option>
+                                    <option value="45">45 minutes</option>
+                                    <option value="60">60 minutes</option>
+                                </select>
+                            </label>
+                            <label>Minimum notice
+                                <select name="minimum_notice_hours">
+                                    <option value="12">12 hours</option>
+                                    <option value="24">24 hours</option>
+                                    <option value="48">48 hours</option>
+                                </select>
+                            </label>
+                            <label>How far ahead
+                                <select name="booking_window_days">
+                                    <option value="14">2 weeks</option>
+                                    <option value="21">3 weeks</option>
+                                    <option value="28">4 weeks</option>
+                                    <option value="42">6 weeks</option>
+                                </select>
+                            </label>
+                            <label>Calendar location
+                                <input type="text" name="location" maxlength="200" placeholder="Online, link sent after booking">
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="booking-setup-group">
+                        <h3>Weekly call windows</h3>
+                        <p>Only checked days are shown. Add one continuous window for each day you want calls available.</p>
+                        <div class="booking-hours" id="booking-hours"></div>
+                    </section>
+
+                    <section class="booking-setup-group">
+                        <h3>Google Calendar</h3>
+                        <p>Busy blocks are removed from the public page, and confirmed calls become calendar invitations.</p>
+                        <div class="booking-connection-card">
+                            <div>
+                                <strong id="google-calendar-title">Google Calendar is not connected</strong>
+                                <p id="google-calendar-copy">Connect your calendar before switching live so Balance can protect busy times.</p>
+                            </div>
+                            <button class="btn primary" type="button" id="google-calendar-button">Connect Google</button>
+                        </div>
+                    </section>
+
+                    <section class="booking-setup-group">
+                        <h3>Confirmation email</h3>
+                        <p id="confirmation-email-copy">Checking email sender setup.</p>
+                    </section>
+
+                    <div class="booking-settings-actions">
+                        <button class="btn primary" type="submit" id="booking-settings-save">Save booking settings</button>
+                        <a class="btn secondary" href="book.html" target="_blank" rel="noopener">Preview booking page</a>
+                    </div>
+                </form>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

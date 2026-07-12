@@ -1242,6 +1242,7 @@ function challengeUrlForRoute(route) {
 }
 
 const ONE_ON_ONE_COACHING_URL = 'https://future-balance.netlify.app/coaching.html';
+const BALANCE_CALL_BOOKING_URL = 'https://future-balance.netlify.app/book';
 
 function buildOneOnOneCoachingBlock() {
     return `
@@ -1255,6 +1256,17 @@ BALANCE STARTER COACHING LINK:
 - Frame it as low-ticket online coaching with one weekly check-in. Mention XP or app details only when they ask what is included or need the fuller rundown.
 - If they only ask a general help question and have not asked for coaching details/link, do not send the link yet. Reply to the question and use a low-pressure statement-led bridge if Starter Coaching might fit.
 - If they ask whether it is local/in-person or mention they already have a PT/trainer, do not send the link yet. Answer that Starter Coaching is online through Balance with one weekly check-in and check whether that would still suit them.`;
+}
+
+function buildBalanceCallBookingBlock() {
+    return `
+
+BALANCE CALL BOOKING:
+- Approved call-booking link: ${BALANCE_CALL_BOOKING_URL}
+- The normal Starter Coaching path is still online with weekly check-ins and no call required. Do not turn every coaching conversation into a phone-call pitch.
+- Use the call link only when they directly ask to chat, talk it through, book a call, ask when Shannon is free, or clearly say a call would help. Keep the handoff casual and short, such as "yeah for sure, grab a time that works for you here".
+- Do not send this link just because they are interested in Starter Coaching, have shared a goal, or asked for coaching details. Use the regular coaching link in those cases.
+- A booking-link draft is a real external handoff. It must stay in the approval flow and never be auto-sent.`;
 }
 
 function buildChallengeNextStepBlock(qualifier, currentMessageText = '') {
@@ -2481,6 +2493,7 @@ Use this batch as context, not a checklist. First decide what is still live: dir
     const funnelContext = isOnboardedOrPostFunnel ? '' : META_AD_FUNNEL_CONTEXT;
     const challengeNextStepBlock = isOnboardedOrPostFunnel ? '' : buildChallengeNextStepBlock(qualifier, currentMessageText);
     const oneOnOneCoachingBlock = isOnboardedOrPostFunnel ? '' : buildOneOnOneCoachingBlock();
+    const balanceCallBookingBlock = isOnboardedOrPostFunnel ? '' : buildBalanceCallBookingBlock();
     const qualifierRelationshipBlock = buildQualifierRelationshipBlock(qualifier);
 
     // Cross-channel: when this lead is linked to an app user, fold in
@@ -2701,6 +2714,7 @@ ${exerciseLibrarySupportBlock}
 ${funnelContext}
 ${challengeNextStepBlock}
 ${oneOnOneCoachingBlock}
+${balanceCallBookingBlock}
 ${unansweredBatchBlock}
 ${storyReplyPromptContextBlock}
 ${mediaContextPromptBlock}

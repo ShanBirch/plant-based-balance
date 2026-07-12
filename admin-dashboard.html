@@ -2954,6 +2954,14 @@
                                 <i data-lucide="messages-square"></i>
                                 DMs
                             </button>
+                            <button class="conversion-operator-text-btn" type="button" onclick="copyBalanceBookingLink()" title="Copy the Balance call-booking link for a DM">
+                                <i data-lucide="link"></i>
+                                Book link
+                            </button>
+                            <a class="conversion-operator-text-btn" href="booking-settings.html" title="Set call times and connect Google Calendar">
+                                <i data-lucide="calendar-days"></i>
+                                Booking setup
+                            </a>
                             <button class="conversion-operator-icon-btn" id="conversion-operator-refresh-btn" type="button" onclick="loadConversionOperator(true)" title="Refresh">
                                 <i data-lucide="refresh-cw"></i>
                             </button>
@@ -4150,6 +4158,28 @@
 
         function conversionOperatorMetric(label, value) {
             return `<div class="conversion-operator-metric"><span>${adminEsc(label)}</span><strong>${adminEsc(value)}</strong></div>`;
+        }
+
+        const BALANCE_BOOKING_URL = 'https://future-balance.netlify.app/book';
+
+        async function copyBalanceBookingLink() {
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(BALANCE_BOOKING_URL);
+                } else {
+                    const input = document.createElement('textarea');
+                    input.value = BALANCE_BOOKING_URL;
+                    input.style.position = 'fixed';
+                    input.style.opacity = '0';
+                    document.body.appendChild(input);
+                    input.select();
+                    document.execCommand('copy');
+                    input.remove();
+                }
+                setConversionOperatorStatus('Booking link copied. Paste it straight into the DM when a call makes sense.');
+            } catch (_) {
+                setConversionOperatorStatus(`Booking link: ${BALANCE_BOOKING_URL}`, 'error');
+            }
         }
 
         function renderConversionOperatorSummary(snapshot) {

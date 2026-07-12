@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Book a Balance Call | Shannon Birch</title>
+    <meta name="description" content="Choose a time to chat with Shannon from Balance.">
+    <meta property="og:title" content="Book a Balance Call">
+    <meta property="og:description" content="Choose a time to chat with Shannon about your next step.">
+    <meta property="og:image" content="https://plantbased-balance.org/balance_logo_transparent.png">
+    <meta name="color-scheme" content="dark light">
+    <link rel="icon" type="image/png" href="balance_logo_transparent.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        (function () {
+            try {
+                var savedTheme = localStorage.getItem('userThemePreference');
+                document.documentElement.setAttribute('data-bio-theme', savedTheme === 'light' || savedTheme === 'antigravity-light' ? 'light' : 'dark');
+            } catch (_) {
+                document.documentElement.setAttribute('data-bio-theme', 'dark');
+            }
+            document.documentElement.classList.add('reveal-ready');
+        })();
+    </script>
+    <link rel="stylesheet" href="bio.css">
+    <link rel="stylesheet" href="booking.css">
+    <script src="bio-animations.js" defer></script>
+    <script src="booking.js" defer></script>
+</head>
+<body class="bio-page booking-page">
+    <div class="page-shell">
+        <header class="site-header">
+            <a class="brand" href="bio.html" aria-label="Back to Balance hub">
+                <img src="balance_logo_transparent.png" alt="Balance logo">
+                <span>Balance</span>
+            </a>
+            <a class="nav-link" href="bio.html">Back to hub</a>
+        </header>
+
+        <main class="booking-layout">
+            <section class="booking-intro reveal">
+                <span class="eyebrow">A proper chat</span>
+                <h1>Book a call<br><span>with Shannon.</span></h1>
+                <p>Pick a time that works and let me know what you want to get clear on. We’ll keep it simple and useful.</p>
+                <div class="booking-trust-row" aria-label="Booking details">
+                    <span><i>01</i> Brisbane time</span>
+                    <span><i>02</i> Confirmation sent after booking</span>
+                </div>
+            </section>
+
+            <section class="surface booking-card reveal" aria-labelledby="booking-card-title">
+                <div class="booking-card-heading">
+                    <div>
+                        <p class="booking-kicker">Choose your time</p>
+                        <h2 id="booking-card-title">Find a spot that suits.</h2>
+                    </div>
+                    <span class="booking-duration" id="booking-duration">Loading</span>
+                </div>
+
+                <div class="booking-loading" id="booking-loading" role="status">
+                    <span class="booking-spinner" aria-hidden="true"></span>
+                    Loading available call times
+                </div>
+
+                <div class="booking-unavailable" id="booking-unavailable" hidden>
+                    <div class="booking-unavailable-mark">+</div>
+                    <h2>New call times are being opened.</h2>
+                    <p>Try again shortly, or send Shannon a message through the Balance hub.</p>
+                    <a class="btn secondary" href="bio.html">Back to Balance</a>
+                </div>
+
+                <div id="booking-flow" hidden>
+                    <div class="booking-date-list" id="booking-date-list" aria-label="Available dates"></div>
+                    <div class="booking-slots" id="booking-slots" aria-live="polite"></div>
+
+                    <form id="booking-form" class="booking-form" novalidate hidden>
+                        <div class="booking-selected-slot" id="booking-selected-slot"></div>
+                        <div class="booking-form-grid">
+                            <label>
+                                <span>Your name</span>
+                                <input type="text" name="name" autocomplete="name" maxlength="120" required placeholder="Your name">
+                            </label>
+                            <label>
+                                <span>Email</span>
+                                <input type="email" name="email" autocomplete="email" maxlength="320" required placeholder="you@email.com">
+                            </label>
+                            <label>
+                                <span>Phone <em>optional</em></span>
+                                <input type="tel" name="phone" autocomplete="tel" maxlength="40" placeholder="Your number">
+                            </label>
+                            <label class="booking-goal">
+                                <span>What would you like to cover? <em>optional</em></span>
+                                <textarea name="goal" maxlength="1000" rows="3" placeholder="A little context helps me come prepared."></textarea>
+                            </label>
+                            <label class="booking-honeypot" aria-hidden="true">
+                                <span>Company</span>
+                                <input type="text" name="company" tabindex="-1" autocomplete="off">
+                            </label>
+                        </div>
+                        <p class="booking-form-note">By booking, you’ll receive a confirmation and calendar invite for this call.</p>
+                        <button class="btn primary booking-submit" type="submit">
+                            <span>Confirm my call</span>
+                            <span class="booking-submit-loader" aria-hidden="true"></span>
+                        </button>
+                        <p class="booking-error" id="booking-error" role="alert" hidden></p>
+                    </form>
+                </div>
+
+                <div class="booking-success" id="booking-success" hidden aria-live="polite">
+                    <div class="booking-success-mark">✓</div>
+                    <p class="booking-kicker">You’re booked</p>
+                    <h2>Locked in.</h2>
+                    <p id="booking-success-copy">Your call is confirmed. A confirmation is on its way.</p>
+                    <div class="booking-success-time" id="booking-success-time"></div>
+                    <a class="btn secondary" href="bio.html">Back to Balance</a>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer booking-footer">
+            <div>Balance is operated by Shannon Birch.</div>
+            <div class="footer-links"><a href="mailto:shannon@plantbased-balance.org">shannon@plantbased-balance.org</a></div>
+        </footer>
+    </div>
+</body>
+</html>

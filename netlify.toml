@@ -553,6 +553,16 @@
   status = 200
 
 [[redirects]]
+  from = "/book"
+  to = "/book.html"
+  status = 200
+
+[[redirects]]
+  from = "/booking-settings"
+  to = "/booking-settings.html"
+  status = 200
+
+[[redirects]]
   from = "/hub"
   to = "/bio.html"
   status = 200
