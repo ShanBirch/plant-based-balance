@@ -3730,6 +3730,18 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
     ctx.fillText('Fuel. Track. Level up.', contentX, contentBottom);
 }
 
+async function pbbShareDrawBalanceBrandMark(ctx, x, y, size = 38) {
+    try {
+        const logo = await pbbShareLoadImage('balance_logo_transparent.png');
+        ctx.save();
+        ctx.globalAlpha = 0.92;
+        ctx.drawImage(logo, x, y, size, size);
+        ctx.restore();
+    } catch (error) {
+        console.warn('Could not draw Balance share mark:', error);
+    }
+}
+
 async function pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, target) {
     const isFeed = target === 'feed';
     // This deliberately mirrors the Balance Feed meal card: photo first,
@@ -3819,7 +3831,8 @@ async function pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, ta
     ctx.textAlign = 'left';
     ctx.fillStyle = 'rgba(255,255,255,0.82)';
     ctx.font = '800 20px Arial, sans-serif';
-    ctx.fillText('BALANCE', contentX, contentBottom - 22);
+    await pbbShareDrawBalanceBrandMark(ctx, contentX, contentBottom - 62, 32);
+    ctx.fillText('BALANCE', contentX + 42, contentBottom - 36);
     ctx.restore();
 }
 
@@ -4054,12 +4067,13 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
         }
     }
 
+    await pbbShareDrawBalanceBrandMark(ctx, 76, height - 142, 34);
     ctx.fillStyle = '#ffffff';
     ctx.font = '900 46px Arial, sans-serif';
-    ctx.fillText('Train. Track. Level up.', 76, height - 98);
+    ctx.fillText('Train. Track. Level up.', 124, height - 98);
     ctx.font = '750 27px Arial, sans-serif';
     ctx.fillStyle = 'rgba(255,255,255,0.82)';
-    ctx.fillText('Balance - Fitness Gamified', 76, height - 58);
+    ctx.fillText('Balance - Fitness Gamified', 124, height - 58);
 
     return canvas.toDataURL('image/jpeg', 0.92);
 }
