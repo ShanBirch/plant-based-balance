@@ -3607,17 +3607,16 @@ async function pbbShareDrawMealCard(ctx, cardPayload, panelX, panelY, panelW, pa
 
 async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height, target) {
     const cardType = cardPayload.card_type === 'pb' ? 'pb' : 'workout';
-    const panelX = 48;
-    const panelW = width - 96;
-    const panelH = cardType === 'pb'
-        ? (target === 'feed' ? 470 : 650)
-        : (target === 'feed' ? 590 : 760);
-    const panelY = height - panelH - 54;
+    const contentX = 64;
+    const contentW = width - (contentX * 2);
+    const contentBottom = target === 'feed' ? height - 86 : height - 132;
 
-    const lowerGradient = ctx.createLinearGradient(0, height * 0.26, 0, height);
+    // Keep the photo as the hero. The fade is only there to keep the white
+    // type readable on brighter gym shots, matching the food-share treatment.
+    const lowerGradient = ctx.createLinearGradient(0, height * 0.52, 0, height);
     lowerGradient.addColorStop(0, 'rgba(2, 6, 23, 0)');
-    lowerGradient.addColorStop(0.42, 'rgba(2, 6, 23, 0.28)');
-    lowerGradient.addColorStop(1, 'rgba(2, 6, 23, 0.82)');
+    lowerGradient.addColorStop(0.62, 'rgba(2, 6, 23, 0.18)');
+    lowerGradient.addColorStop(1, 'rgba(2, 6, 23, 0.48)');
     ctx.fillStyle = lowerGradient;
     ctx.fillRect(0, 0, width, height);
 
@@ -3628,39 +3627,39 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
     ctx.font = '750 21px Arial, sans-serif';
     ctx.fillText('SHOW UP. KEEP THE RECEIPTS.', 64, 124);
 
-    pbbShareFillRoundRect(ctx, panelX, panelY, panelW, panelH, 38, 'rgba(2, 6, 23, 0.66)');
-    pbbShareRoundRect(ctx, panelX, panelY, panelW, panelH, 38);
-    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.82)';
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 4;
 
-    const contentX = panelX + 42;
-    const contentW = panelW - 84;
-    let y = panelY + 58;
-    ctx.fillStyle = '#bbf7d0';
+    const title = cardType === 'pb'
+        ? (cardPayload.exercise || 'Personal best')
+        : (cardPayload.workout_name || 'Workout');
+    const titleLineHeight = cardType === 'pb' ? 62 : 58;
+    const titleFontSize = cardType === 'pb' ? 60 : 56;
+    let y = contentBottom - (cardType === 'pb' ? 282 : 468);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.96)';
     ctx.font = '900 24px Arial, sans-serif';
     ctx.fillText(cardType === 'pb' ? 'NEW PERSONAL BEST' : 'WORKOUT COMPLETE', contentX, y);
     y += 58;
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = '900 ' + (cardType === 'pb' ? '58px' : '54px') + ' Arial, sans-serif';
-    y = pbbShareWrapText(ctx, cardType === 'pb' ? (cardPayload.exercise || 'Personal best') : (cardPayload.workout_name || 'Workout'), contentX, y, contentW, 60, 2) + 22;
+    ctx.font = '900 ' + titleFontSize + 'px Arial, sans-serif';
+    y = pbbShareWrapText(ctx, title, contentX, y, contentW, titleLineHeight, 2) + 20;
 
     if (cardType === 'pb') {
-        pbbShareFillRoundRect(ctx, contentX, y, contentW, 128, 24, 'rgba(245,196,92,0.20)');
-        ctx.fillStyle = '#fde68a';
-        ctx.font = '900 22px Arial, sans-serif';
-        ctx.fillText('PB RESULT', contentX + 28, y + 38);
         ctx.fillStyle = '#ffffff';
-        ctx.font = '900 42px Arial, sans-serif';
-        ctx.fillText(pbbFormatPBShareValue(cardPayload), contentX + 28, y + 91);
+        ctx.font = '900 44px Arial, sans-serif';
+        ctx.fillText(pbbFormatPBShareValue(cardPayload), contentX, y + 42);
         if (cardPayload.improvement) {
-            ctx.fillStyle = '#bbf7d0';
-            ctx.font = '900 23px Arial, sans-serif';
+            ctx.font = '900 26px Arial, sans-serif';
             const improvementText = cardPayload.pb_type === 'weight'
                 ? 'UP ' + pbbPointsFormatWeightFromKg(cardPayload.improvement)
                 : 'UP ' + cardPayload.improvement + ' REPS';
-            ctx.fillText(improvementText, contentX + contentW - 190, y + 38);
+            ctx.textAlign = 'right';
+            ctx.fillText(improvementText, contentX + contentW, y + 42);
+            ctx.textAlign = 'left';
         }
     } else {
         const metrics = [
@@ -3668,40 +3667,45 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
             ['SETS', String(cardPayload.total_sets || 0)],
             ['VOLUME', cardPayload.total_volume || '-']
         ];
-        const metricW = (contentW - 20) / 3;
+        const metricW = contentW / 3;
         metrics.forEach((metric, index) => {
-            const x = contentX + (index * (metricW + 10));
-            pbbShareFillRoundRect(ctx, x, y, metricW, 112, 20, 'rgba(255,255,255,0.12)');
-            ctx.fillStyle = 'rgba(255,255,255,0.70)';
+            const x = contentX + (index * metricW);
+            if (index > 0) {
+                ctx.save();
+                ctx.shadowColor = 'transparent';
+                ctx.fillStyle = 'rgba(255,255,255,0.65)';
+                ctx.fillRect(x - 20, y - 10, 2, 76);
+                ctx.restore();
+            }
+            ctx.fillStyle = 'rgba(255,255,255,0.88)';
             ctx.font = '800 18px Arial, sans-serif';
-            ctx.fillText(metric[0], x + 20, y + 34);
+            ctx.fillText(metric[0], x, y + 18);
             ctx.fillStyle = '#ffffff';
-            ctx.font = '900 29px Arial, sans-serif';
-            pbbShareWrapText(ctx, metric[1], x + 20, y + 78, metricW - 40, 31, 1);
+            ctx.font = '900 32px Arial, sans-serif';
+            pbbShareWrapText(ctx, metric[1], x, y + 58, metricW - 28, 34, 1);
         });
-        y += 142;
+        y += 104;
 
-        ctx.fillStyle = 'rgba(255,255,255,0.76)';
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
         ctx.font = '900 20px Arial, sans-serif';
         ctx.fillText('TOP SETS', contentX, y);
         y += 30;
         (cardPayload.exercises || []).slice(0, 3).forEach(exercise => {
-            pbbShareFillRoundRect(ctx, contentX, y, contentW, 48, 14, 'rgba(255,255,255,0.10)');
             ctx.fillStyle = '#ffffff';
             ctx.font = '800 20px Arial, sans-serif';
-            ctx.fillText(String(exercise.name || 'Exercise'), contentX + 16, y + 31);
+            ctx.fillText(String(exercise.name || 'Exercise'), contentX, y + 28);
             ctx.textAlign = 'right';
-            ctx.fillStyle = '#a7f3d0';
             ctx.font = '800 19px Arial, sans-serif';
-            ctx.fillText(String(exercise.best || ''), contentX + contentW - 16, y + 31);
+            ctx.fillText(String(exercise.best || ''), contentX + contentW, y + 28);
             ctx.textAlign = 'left';
-            y += 58;
+            y += 50;
         });
     }
 
-    ctx.fillStyle = 'rgba(255,255,255,0.68)';
+    ctx.restore();
+    ctx.fillStyle = 'rgba(255,255,255,0.82)';
     ctx.font = '750 19px Arial, sans-serif';
-    ctx.fillText('Fuel. Track. Level up.', contentX, panelY + panelH - 24);
+    ctx.fillText('Fuel. Track. Level up.', contentX, contentBottom);
 }
 
 async function pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, target) {
