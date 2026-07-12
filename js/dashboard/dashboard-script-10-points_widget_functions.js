@@ -3421,10 +3421,18 @@ async function pbbShareDrawMealCard(ctx, cardPayload, panelX, panelY, panelW, pa
 }
 
 async function pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, target) {
+    const isFeed = target === 'feed';
+    // Keep the logo and all meal information clear of Instagram's top and
+    // bottom chrome when the exported image is shown in the native share flow.
+    const instagramSafeTop = isFeed ? 118 : 250;
+    const instagramSafeBottom = isFeed ? 176 : 360;
     const panelX = 48;
     const panelW = width - 96;
-    const panelH = target === 'feed' ? 392 : 456;
-    const panelY = height - panelH - 58;
+    const panelH = isFeed ? 392 : 456;
+    const panelY = Math.max(
+        instagramSafeTop + 120,
+        height - instagramSafeBottom - panelH
+    );
 
     const lowerGradient = ctx.createLinearGradient(0, height * 0.46, 0, height);
     lowerGradient.addColorStop(0, 'rgba(4, 12, 9, 0)');
@@ -3433,11 +3441,17 @@ async function pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, ta
     ctx.fillStyle = lowerGradient;
     ctx.fillRect(0, 0, width, height);
 
+    const upperGradient = ctx.createLinearGradient(0, 0, 0, instagramSafeTop + 180);
+    upperGradient.addColorStop(0, 'rgba(4, 12, 9, 0.56)');
+    upperGradient.addColorStop(1, 'rgba(4, 12, 9, 0)');
+    ctx.fillStyle = upperGradient;
+    ctx.fillRect(0, 0, width, instagramSafeTop + 180);
+
     try {
         const logo = await pbbShareLoadImage('balance_logo_transparent.png');
         ctx.save();
         ctx.globalAlpha = 0.94;
-        ctx.drawImage(logo, 64, 54, 82, 82);
+        ctx.drawImage(logo, 64, instagramSafeTop, 82, 82);
         ctx.restore();
     } catch (error) {
         console.warn('Could not draw transparent Balance logo:', error);
@@ -3445,7 +3459,7 @@ async function pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, ta
 
     ctx.fillStyle = '#ffffff';
     ctx.font = '900 29px Arial, sans-serif';
-    ctx.fillText('BALANCE', 164, 108);
+    ctx.fillText('BALANCE', 164, instagramSafeTop + 54);
 
     pbbShareFillRoundRect(ctx, panelX, panelY, panelW, panelH, 38, 'rgba(10, 15, 13, 0.62)');
     pbbShareRoundRect(ctx, panelX, panelY, panelW, panelH, 38);
