@@ -338,6 +338,11 @@
 [functions."weekly-wrapped-push"]
   schedule = "0 23 * * 6"
 
+# Independent weekly-goal rewards. The database applies XP only after each
+# member's local Sunday has ended, and safely tops up late wearable syncs.
+[functions."award-weekly-goal-rewards"]
+  schedule = "*/15 * * * *"
+
 # Auto feed reactions - hourly scanner, code gates to 07:30-21:45 Brisbane.
 # Adds one Shannon love reaction to fresh feed posts after a human-ish delay.
 [functions."auto-feed-comment"]
