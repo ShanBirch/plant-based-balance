@@ -13,6 +13,9 @@ assert.match(stories, /Choose one video, or up to 6 photos for a carousel/);
 assert.match(stories, /archiveFeedPostMediaItems/);
 assert.match(stories, /hydrateFeedPostMedia\(stories\)/);
 assert.match(stories, /renderFeedMediaCarousel/);
+assert.match(stories, /options\.preferDirectUpload === true \|\| file\.size > FEED_MEDIA_UPLOAD_REQUEST_SAFE_BYTES/);
+assert.match(stories, /maxUploadAttempts: isPhotoCarousel \? 3 : 1/);
+assert.match(stories, /Reconnecting photo \$\{index \+ 1\} of \$\{composerFiles\.length\}/);
 assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.feed_post_media/);
 assert.match(migration, /UNIQUE \(story_id, sort_order\)/);
 
