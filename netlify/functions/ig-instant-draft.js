@@ -1242,7 +1242,7 @@ function challengeUrlForRoute(route) {
 }
 
 const ONE_ON_ONE_COACHING_URL = 'https://future-balance.netlify.app/coaching.html';
-const BALANCE_CALL_BOOKING_URL = 'https://future-balance.netlify.app/book';
+const BALANCE_CALL_BOOKING_URL = 'https://plantbased-balance.org/book';
 
 function buildOneOnOneCoachingBlock() {
     return `
