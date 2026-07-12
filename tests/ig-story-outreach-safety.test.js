@@ -13,6 +13,7 @@ const {
     parseStoryCommentUsernameSet,
     storyCommentUsernameRule,
     assessStoryCommentSafety,
+    hasClearOrdinaryStoryEvidence,
     assessAudioVisualCommentConsistency,
     relationshipStoryBlockReason,
     hasRecentUnansweredInbound,
@@ -113,7 +114,44 @@ const creditedSafety = assessStoryCommentSafety({
     comment: 'a Nike lower back, yes please!',
 });
 assert.strictEqual(creditedSafety.safeToComment, false);
-assert.strictEqual(creditedSafety.reason, 'story_credits_another_creator');
+assert.strictEqual(creditedSafety.reason, 'body_part_or_injury_joke');
+
+const sharedReelSafety = assessStoryCommentSafety({
+    storyOwner: 'someone',
+    sharedFromUsername: 'creator',
+    description: 'A shared reel from @creator shows a person talking to camera about getting back outside.',
+    visibleText: 'go touch grass',
+    surfaceContext: { storyContentType: 'shared_reel' },
+    comment: 'that line is gold',
+});
+assert.strictEqual(sharedReelSafety.safeToComment, true,
+    'shared reels should be framed as shares, not blanket-blocked when the reply is safely about the shared idea');
+
+const sharedStillSafety = assessStillsOnlyVideoSalvageContext({
+    description: 'A shared reel from @creator has the visible caption go touch grass.',
+    visibleText: 'go touch grass',
+    comment: 'that line is gold',
+    storyContentType: 'shared_reel',
+    sharedFromUsername: 'creator',
+    surfaceContext: {
+        videoDetected: true,
+        videoEvidenceStatus: 'omitted_after_video_bridge_failure',
+    },
+});
+assert.strictEqual(sharedStillSafety.safeToComment, true,
+    'a clear shared-reel still and caption should be enough to send a safely framed reaction');
+assert.strictEqual(sharedStillSafety.reason, 'visible_text_handle');
+
+const clearOrdinaryStorySafety = assessStoryCommentSafety({
+    storyOwner: 'someone',
+    description: 'A clear portrait photo of a person smiling in a bright cafe.',
+    visibleText: '',
+    comment: 'looking good',
+});
+assert.strictEqual(clearOrdinaryStorySafety.safeToComment, true,
+    'a clear ordinary image should be enough evidence for a light, harmless reply');
+assert.strictEqual(hasClearOrdinaryStoryEvidence('A clear portrait photo in a bright cafe.'), true);
+assert.strictEqual(hasClearOrdinaryStoryEvidence('The image is blurry and unclear.'), false);
 
 const bodyPartSafety = assessStoryCommentSafety({
     storyOwner: 'someone',
@@ -146,8 +184,8 @@ assert.strictEqual(
         storyOwner: 'someone',
         sharedContent: false,
     }),
-    '',
-    'generic love-this openers should be rewritten or blocked'
+    'love this!',
+    'the normalizer should preserve a simple reaction for the evidence-aware safety gate to judge'
 );
 
 assert.strictEqual(
@@ -190,8 +228,9 @@ const mirrorSelfieSafety = assessStoryCommentSafety({
     visibleText: '',
     comment: 'looking good',
 });
-assert.strictEqual(mirrorSelfieSafety.safeToComment, false);
-assert.strictEqual(mirrorSelfieSafety.reason, 'specific_visual_hook_required');
+assert.strictEqual(mirrorSelfieSafety.safeToComment, true,
+    'a clear mirror selfie can receive a light, non-flirty reply');
+assert.strictEqual(mirrorSelfieSafety.reason, '');
 
 const scenicViewSafety = assessStoryCommentSafety({
     storyOwner: 'view.spot',
@@ -381,8 +420,8 @@ assert.strictEqual(
         storyOwner: 'bnhntr',
         sharedContent: false,
     }),
-    '',
-    'generic caption praise should be blocked'
+    'love the caption!',
+    'a simple caption reaction should be left for the evidence-aware safety gate to approve or reject'
 );
 
 assert.strictEqual(

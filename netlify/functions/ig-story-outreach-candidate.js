@@ -28,8 +28,8 @@ const STORY_COMMENT_OPENAI_ANALYSIS_FIRST = envFlag('STORY_COMMENT_OPENAI_ANALYS
 const OWN_HANDLES = new Set(['shan_n_sunny', 'cocos_connected', 'cocos_pt_studio']);
 const RESERVED_STORY_USERNAMES = new Set(['highlights', 'explore', 'reels', 'stories']);
 const MAX_COMMENT_CHARS = 160;
-const STORY_COMMENT_PIPELINE_VERSION = 'story-planner-generator-critic-fixer-v2';
-const STORY_COMMENT_FAST_PIPELINE_VERSION = 'story-single-pass-deterministic-safety-v1';
+const STORY_COMMENT_PIPELINE_VERSION = 'story-planner-generator-critic-fixer-v3';
+const STORY_COMMENT_FAST_PIPELINE_VERSION = 'story-single-pass-evidence-first-v2';
 const STORY_OUTREACH_SALES_CONTEXT = {
     acquisition_source: 'native_story_outreach',
     primary_offer: 'balance_starter_coaching',
@@ -58,7 +58,7 @@ function shannonStoryVoiceGuideBlock() {
 - Use the concrete noun or activity that is actually visible. A food, place, pet, hike, class, object, event, or hobby should steer the wording instead of a reusable filler.
 - Good shapes only when there is a concrete visual hook: "where was that taken?", "what was the spot?", "how was the session?", "coffee and wine? hows that combo go?".
 - Do not fall back to generic defaults such as "needed this reminder", "what a view", or "good song choice" just because they are safe. Use one only when it is genuinely the best, grounded read of this exact Story. Otherwise skip or like-only.
-- If there is no specific hook, skip or like-only instead of forcing a broad one-line pun.
+- A clear ordinary image or readable caption is enough evidence to reply. Use the visible subject or caption angle, even when it is simple. Skip only when the Story is genuinely unclear, sensitive, or unsafe.
 - Mirror selfies, vague vibe shots, and plain appearances should not be rescued with generic praise.
 - Clear gym action clips can use short hype like "lets go!", "so good!", or "how was the sesh?".
 - Bland gym floor, rack, or equipment-only shots with no clear action should usually be like-only instead of fake lift praise.
@@ -434,13 +434,10 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (possibleDirectAddress && !safeDirectAddressOpeners.has(possibleDirectAddress[1])) {
         text = text.replace(/^([A-Z][a-z]{2,24})\s+/, '').trim();
     }
-    if (/^(?:love it|love this|love the caption|lets goo|get it|mad views|looks unreal|nice as|beauty|fuck yeah|yew|doggo|cutie puppy)\b/i.test(text)) {
-        return '';
-    }
     if (/^(?:oh\s+hey|hey|hi)\s+[a-z][a-z]{2,24}\b/i.test(text)) {
         return '';
     }
-    if (/\b(?:never seen that(?: .{1,35})? thing|that's random|thats random|that's cool|thats cool|interesting|crazy|big vibe|vibes)\b/i.test(text)) {
+    if (/^(?:never seen that(?: .{1,35})? thing|that's random|thats random|that's cool|thats cool|interesting|crazy|big vibe|vibes)[.!?]*$/i.test(text)) {
         return '';
     }
     if (/^(?:is|was)\s+(?:this|that)\??$/i.test(text)) {
@@ -481,7 +478,7 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (/\byou\s+look\s+(?:hot|sexy|beautiful|gorgeous|tiny|skinny|ripped|jacked)\b/i.test(text) || /\b(hot|sexy|beautiful|gorgeous)\b/i.test(text)) {
         return '';
     }
-    if (/\bwild\b/i.test(text)) {
+    if (/^.{0,28}\bwild\b[.!?]*$/i.test(text) && !/\?/.test(text)) {
         return '';
     }
     if (/\b(can'?t tell|cannot tell|not sure|no idea|what'?s going on|whats going on|what'?s happening|whats happening|can'?t figure out|cant figure out|unclear|blurry)\b/i.test(text)) {
@@ -928,6 +925,12 @@ function assessAudioVisualCommentConsistency({ description = '', visibleText = '
     return { safeToComment: true, reason: '' };
 }
 
+function hasClearOrdinaryStoryEvidence(value = '') {
+    const text = cleanText(value, 4000);
+    if (text.length < 12) return false;
+    return !/\b(?:blurry|unclear|can't tell|cant tell|cannot tell|hard to tell|difficult to tell|not sure what|no idea what|possibly of someone moving)\b/i.test(text);
+}
+
 function assessStoryCommentSafety({ description = '', visibleText = '', comment = '', raw = {}, storyOwner = '', sharedFromUsername = '', surfaceContext = {}, relationshipContext = '' } = {}) {
     const text = cleanText([
         description,
@@ -940,6 +943,13 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
     if (!text) return { safeToComment: true, reason: '' };
     if (STORY_PET_NAME_QUESTION_RE.test(comment) && relationshipContextHasKnownPetNames(relationshipContext)) {
         return { safeToComment: false, reason: 'known_pet_name_thread' };
+    }
+    // A body-part word in the Story itself is not a reason to skip. Only block
+    // when the proposed reply makes the body part the subject, which prevents
+    // injury/body jokes without discarding ordinary captions such as "back
+    // outside" or a workout update mentioning quads.
+    if (/\b(?:(?:lower|upper)\s+back|knees?|shoulders?|hips?|neck|ankles?|wrists?|elbows?|hamstrings?|quads?|calves?)\b/i.test(comment)) {
+        return { safeToComment: false, reason: 'body_part_or_injury_joke' };
     }
     const transcript = cleanText(surfaceContext?.audioTranscript || raw?.audio_transcript || raw?.audioTranscript || '', 1600);
     const transcriptWords = transcript.toLowerCase().match(/[a-z']+/g) || [];
@@ -973,32 +983,12 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
     if (!audioVisualConsistency.safeToComment) {
         return audioVisualConsistency;
     }
-    const foreignSourceHandle = detectForeignSourceHandle({
-        description,
-        visibleText,
-        raw,
-        storyOwner,
-        sharedFromUsername,
-        surfaceContext,
-    });
-    const songShareComment = songShareCommentForContext(
-        description,
-        visibleText,
-        surfaceContext?.storyMusicLabel,
-        surfaceContext?.storyMusicArtist,
-        surfaceContext?.storyMusicTitle,
-    );
-    const songAwareComment = /\b(?:song|track|music|release|spotify|artist|listen|album|single)\b/i.test(comment);
-    if (foreignSourceHandle && !(songShareComment && songAwareComment)) {
-        return { safeToComment: false, reason: 'story_credits_another_creator' };
-    }
     const unsafePatterns = [
         ['war_or_conflict', /\b(war|airstrike|bomb(?:ing)?|missile|genocide|massacre|terror(?:ist|ism)?|gaza|palestine|israel|ukraine|russia|hostage|ceasefire)\b/i],
         ['violence_or_weapons', /\b(shooting|shot|gun|knife|weapon|assault|abuse|rape|murder|killed|stabbed|violence|police brutality)\b/i],
         ['death_grief_or_tragedy', /\b(died|dead|death|funeral|rip|rest in peace|grief|passed away|memorial|tragic|tragedy)\b/i],
         ['low_mood_or_mental_health', /\b(sadness|sad|depress(?:ed|ion)|anxiety|panic|panic attack|anxiety attack|mental health|hopeless|lonely|breakdown|trauma|can'?t cope|cant cope|at my lowest|my lowest|turn this sadness off|turn feelings off)\b/i],
         ['medical_or_emergency', /\b(cancer|hospital|ambulance|emergency|accident|crash|surgery|diagnos(?:ed|is)|illness|sick|injur(?:y|ed)|pain|sore|soreness)\b/i],
-        ['body_part_or_injury_joke', /\b(?:lower|upper)?\s*(?:back|knee|knees|shoulder|hip|neck|ankle|wrist|elbow|hamstring|quad|calf)\b/i],
         ['self_harm_or_body_risk', /\b(suicide|self[-\s]?harm|eating disorder|body shaming|body[-\s]?shame|ed recovery)\b/i],
         ['animal_shelter_context', /\b(animal shelter|dog kennels?|nycacc|euthan(?:asia|ise|ize)|adoption plea|rescue shelter)\b/i],
         ['minor_or_toilet_context', /\b(child|children|kid|kids|toddler|toddlers|baby|babies|infant|infants|minor|young boys?|young girls?|schoolboys?|schoolgirls?|group of (?:young )?boys|group of (?:young )?girls|boys (?:are )?(?:sitting|standing|playing|posing)|girls (?:are )?(?:sitting|standing|playing|posing)|girls? in dance attire|boys? in dance attire|youth dance|kids? dance|children'?s dance|poop|toilet|bathroom|female toilets|male toilets)\b/i],
@@ -1014,21 +1004,11 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
     for (const [reason, pattern] of unsafePatterns) {
         if (pattern.test(text)) return { safeToComment: false, reason };
     }
-    const sharedContext = isSharedStoryContext({
-        storyContentType: raw?.story_content_type || raw?.storyContentType || surfaceContext?.storyContentType || surfaceContext?.story_content_type || '',
-        sharedFromUsername,
-        storyOwner,
-        surfaceContext,
-    }) || /\b(shared|reshared|reposted|reel|from\s+@|via\s+@)\b/i.test(text);
     const storyGymContext = /\b(gym|workout|training|class|session|lift|lifting|squat|squats|deadlift|bench|press|row|curl|weights?|reps?|sets?|cardio|run|jog|pilates|yoga|spin|bootcamp|football|game|team|practice|exercise)\b/i.test(storyContextText);
     const clearGymAction = /\b(?:performing|doing|working on|training|squatting|deadlifting|benching|pressing|rowing|curling|hip abduction|plank|session|workout)\b/i.test(storyContextText);
     const gymSelfieContext = /\b(selfie|mirror selfie|portrait|wearing|outfit|look)\b/i.test(storyContextText);
     const gymActionComment = /\b(?:lets?\s+go+!?|so\s+good!?|how\s+was\s+the\s+sesh\??|how\s+was\s+the\s+session\??|good\s+sesh!?|good\s+session!?|get\s+it!?)/i.test(comment);
     const genericGymPraise = /\b(?:nice lift|looking good|lets?\s+go+!?|so\s+good!?|good\s+sesh!?|good\s+session!?|get\s+it!?|how\s+was\s+the\s+sesh\??|how\s+was\s+the\s+session\??)\b/i.test(comment);
-    const hasTranscript = Boolean(transcript);
-    if (sharedContext && !hasTranscript && /\b(?:person|man|woman|creator|someone|guy|girl|he|she|they|speaker|host|podcast(?:er)?|interview(?:er|ee)?)\b.{0,90}\b(?:talk(?:ing|s)?|speak(?:ing|s)?|say(?:ing|s)?|tell(?:ing|s)?|explain(?:ing|s)?|discuss(?:ing|es)?|interview(?:ing|s)?|voice[-\s]?over|lip[-\s]?sync(?:ing)?)\b/i.test(text)) {
-        return { safeToComment: false, reason: 'shared_talking_reel_uncertain' };
-    }
     if (storyGymContext && !clearGymAction && genericGymPraise && !gymSelfieContext) {
         return { safeToComment: false, reason: 'gym_context_mismatch' };
     }
@@ -1038,10 +1018,18 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
     if (storyGymContext && clearGymAction && gymActionComment) {
         return { safeToComment: true, reason: 'activity_handle' };
     }
-    if (/\b(talking|speaking|talks|speaks)\s+(?:to|at)\s+(?:the\s+)?camera\b/i.test(text) && meaningfulTranscriptWords.length < 4) {
+    if (
+        /\b(talking|speaking|talks|speaks)\s+(?:to|at)\s+(?:the\s+)?camera\b/i.test(text)
+        && meaningfulTranscriptWords.length < 4
+        && !hasClearOrdinaryStoryEvidence(storyContextText)
+    ) {
         return { safeToComment: false, reason: 'talking_video_low_context_transcript' };
     }
-    if (isBroadStoryPuntComment(comment) && !commentHasSpecificStoryHook(comment, storyContextText, surfaceContext)) {
+    if (
+        isBroadStoryPuntComment(comment)
+        && !commentHasSpecificStoryHook(comment, storyContextText, surfaceContext)
+        && !hasClearOrdinaryStoryEvidence(storyContextText)
+    ) {
         return { safeToComment: false, reason: 'specific_visual_hook_required' };
     }
     return { safeToComment: true, reason: '' };
@@ -1085,7 +1073,7 @@ function assessStillsOnlyVideoSalvageContext({
     if (!text && !surfaceContext?.storyMusicLabel) {
         return { safeToComment: false, reason: 'analysis_failed' };
     }
-    if (/\b(unclear|blurry|hard to tell|difficult to tell|can't tell|cant tell|cannot tell|not sure what|no idea what|possibly|appears to show|seems to show|looks like someone|moving|talking|speaking)\b/i.test(text)) {
+    if (/\b(?:unclear|blurry|hard to tell|difficult to tell|can't tell|cant tell|cannot tell|not sure what|no idea what|possibly(?:\s+of)?\s+someone\s+moving)\b/i.test(text)) {
         return { safeToComment: false, reason: 'analysis_failed' };
     }
     if (/^(?:nice|cool|love it|love this|great|good one|looks good|awesome|solid|big vibe|vibes|interesting|crazy)[.!?]*$/i.test(draft)) {
@@ -1136,12 +1124,16 @@ function assessStillsOnlyVideoSalvageContext({
     if (visibleText && visibleText.length >= 12 && /\b(true|gold|funny|sign|line|back|good to have|this is)\b/i.test(draft)) {
         return { safeToComment: true, reason: 'visible_text_handle' };
     }
-    if (isBroadStoryPuntComment(comment) && !commentHasSpecificStoryHook(comment, text, surfaceContext)) {
+    if (
+        isBroadStoryPuntComment(comment)
+        && !commentHasSpecificStoryHook(comment, text, surfaceContext)
+        && !hasClearOrdinaryStoryEvidence(text)
+    ) {
         return { safeToComment: false, reason: 'specific_visual_hook_required' };
     }
 
-    if (sharedContent) {
-        return { safeToComment: false, reason: 'analysis_failed' };
+    if (draft && hasClearOrdinaryStoryEvidence(text)) {
+        return { safeToComment: true, reason: sharedContent ? 'shared_still_evidence' : 'visible_still_evidence' };
     }
     return { safeToComment: false, reason: 'analysis_failed' };
 }
@@ -2590,15 +2582,15 @@ Rules:
 - ${contextNote}
 - ${songNote}
 - ${transcriptNote || 'No audio transcript was captured.'}
-- If this is stills-only recovery after a video failure, safe_to_comment must be false with safety_reason="analysis_failed" unless the stills/text/song clearly support a specific harmless comment. A vague guess is worse than a heart reaction.
+- If this is stills-only recovery after a video failure, a clear still image or readable caption is enough to comment. Skip only when the stills are genuinely unclear, sensitive, or do not support an ordinary harmless reaction.
 - Existing relationship context: ${relationshipContext || 'No existing context supplied.'}
 - If existing relationship context says this person has a reply-needed warning, active DM/admin alert, or unanswered inbound DM, set safe_to_comment=false with safety_reason="pending_dm_reply". Answering their DM is the next move, not adding a fresh story opener.
 - Pick the main subject before writing: animal beats person appearance, visible text beats selfie appearance when the text is emotional/heavy, and scenery comments are only for scenery-led stories.
-- If the story does not give a specific visual hook, return an empty comment instead of a broad compliment.
-- If it is a shared reel/post, tagged story, reshared story, or credited content from another account, you may comment only as a reaction to what @${username} shared. Do not write as if the person in the reel/post is @${username}.
+- A clear ordinary image or readable caption is enough to write a short reply. Use the visible subject, caption, or overall moment. Return an empty comment only when the Story is genuinely unclear, sensitive, or unsafe.
+- If it is a shared reel/post, tagged story, reshared story, or credited content from another account, treat that as a framing cue, not a reason to skip. React to the idea, text, place, joke, news, or mood that @${username} shared. Do not write as if the person in the reel/post is @${username}.
 - Good shared-content comments react to the idea, text, place, joke, news, or mood, for example "this is so true", "good to have them back", "that line is gold", "that sign is funny".
-- If the main story clearly shows another creator's @handle, credit, watermark, repost source, or tag, avoid commenting even if the content is funny or relevant.
-- Comment must be 3-12 words, natural, casual Australian, Shannon-like, and specific to the visible story when possible.
+- If the main story clearly shows another creator's @handle, credit, watermark, repost source, or tag, keep the reply about the shared idea or visible context, never the creator or person shown.
+- Comment must be 2-18 words, natural, casual Australian, Shannon-like, and grounded in the visible story or caption.
 - Mostly lowercase unless a proper noun really needs it. Prefer "whats", "hows", and "thats" when it still reads clearly.
 - Prefer one tiny natural question when the story has an obvious harmless handle: pet name, location, food/drink, training class, hobby, event, weather, travel, or a clear object.
 - Do not ask a question if the story already answers it. If a pet name is visible, react to that pet/name; if no pet name is visible, asking "whats their name?" is good.
@@ -2609,7 +2601,7 @@ Rules:
 - If a beach/coastal story says "this is my clubbing" or "vamos a la playa", do not ask if it is a club or venue. Treat it as beach-over-clubbing contrast.
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
 - If the story shows an unfamiliar event, venue, class, food, hobby, or object, ask the obvious small context question using the visible noun rather than making a flat observation.
-- If the best reply is only a broad one-line pun, skip instead of sending it.
+- A simple, warm one-line reaction is fine when the image or caption is clear. Do not force a pun or invent detail.
 - Do not ask about unlabeled bags, powder, pills, tablets, capsules, medication, or unknown substances. If the story includes those, set safe_to_comment=false.
 - Do not use vague curiosity like "what's the story here?" and do not ask what unclear OCR/slang text means. If the only handle is unclear text, set safe_to_comment=false.
 - Use "what a view" only when the scenery/view is the main subject. For a person/outfit/costume/selfie with scenery behind them, choose the person/story context or skip.
@@ -2619,13 +2611,13 @@ Rules:
 - Do not guess personal location or home. Avoid "is that at home?" unless the story explicitly says home.
 - For brand birthday or anniversary celebration graphics, a simple milestone reaction is okay. For sales, spin-to-win, competitions, giveaways, or ads, set safe_to_comment=false.
 - Do not wish someone happy birthday unless the story explicitly says it is @${username}'s birthday. A generic birthday sign, cake, balloon, or party prop is not enough.
-- Normal selfies and nights out only get a simple line when there is a specific hook. Otherwise skip or like-only instead of forcing "looking good" or "looks like a fun night".
+- Normal selfies and nights out can receive a brief, harmless reaction when the photo or caption is clear. Keep it light and non-flirty.
 - Keep appearance comments broad and harmless. Do not be flirty, sexual, body-specific, weight/physique-focused, or weirdly intense.
 - For plain selfie/pose videos, do not invent an occasion. If the only real handle is the visible song or audio, a tiny music comment is okay.
 - Music comments must be non-question reactions. Do not ask what song, track, tune, or audio it is.
 - If existing relationship context says this is a client, lead, or active thread, write warmer and more familiar, but still short and grounded.
 - Comment must not include the story owner's name, profile name, username, @handle, or a direct address like "Alice,".
-- Normal selfies and nights out only get a simple line when there is a specific hook. Otherwise skip or like-only instead of forcing "looking good" or "looks like a fun night".
+- Normal selfies and nights out can receive a brief, harmless reaction when the photo or caption is clear. Keep it light and non-flirty.
 - Keep appearance comments broad and harmless. Do not be flirty, sexual, body-specific, weight/physique-focused, or weirdly intense.
 - For gym stories, do not ask how a body part feels or imply injury/pain. Comment on the exercise setup, class, object, or effort instead.
 - Do not guess that something is a product, brand deal, collab, or sponsor unless packaging/signage makes that explicit.
@@ -3334,6 +3326,7 @@ exports._test = {
     repairDraftCommentWithContext,
     mentionsHandleToken,
     assessStoryCommentSafety,
+    hasClearOrdinaryStoryEvidence,
     assessAudioVisualCommentConsistency,
     assessStillsOnlyVideoSalvageContext,
     animalWelfareSupportCommentForContext,
