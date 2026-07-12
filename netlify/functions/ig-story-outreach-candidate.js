@@ -28,7 +28,7 @@ const STORY_COMMENT_OPENAI_ANALYSIS_FIRST = envFlag('STORY_COMMENT_OPENAI_ANALYS
 const OWN_HANDLES = new Set(['shan_n_sunny', 'cocos_connected', 'cocos_pt_studio']);
 const RESERVED_STORY_USERNAMES = new Set(['highlights', 'explore', 'reels', 'stories']);
 const MAX_COMMENT_CHARS = 160;
-const STORY_COMMENT_PIPELINE_VERSION = 'story-planner-generator-critic-fixer-v1';
+const STORY_COMMENT_PIPELINE_VERSION = 'story-planner-generator-critic-fixer-v2';
 const STORY_COMMENT_FAST_PIPELINE_VERSION = 'story-single-pass-deterministic-safety-v1';
 const STORY_OUTREACH_SALES_CONTEXT = {
     acquisition_source: 'native_story_outreach',
@@ -54,7 +54,10 @@ function shannonStoryVoiceGuideBlock() {
 - Mostly lowercase and text-like. Short, casual, direct, a bit Gold Coast/Aussie without forcing slang.
 - Prefer "yeah", "haha", "hey", "aye", "hows", "thats", and "whats" only when they fit naturally. Do not sprinkle them everywhere.
 - Sound like a quick real story reply, not polished creator copy, influencer hype, or a sales script.
-- Good shapes only when there is a concrete visual hook: "where was that taken?", "what was the spot?", "how was the session?", "coffee and wine? hows that combo go?", "thats a good line", "good song choice", "what a view".
+- Shannon's strongest real pattern is: a tiny reaction to the exact thing shown, then one easy, answerable follow-up. Examples of the shape: "yum! what did you put in it?", "thats so pretty! where is this?", "how good are falafel!", "shreds bro!!".
+- Use the concrete noun or activity that is actually visible. A food, place, pet, hike, class, object, event, or hobby should steer the wording instead of a reusable filler.
+- Good shapes only when there is a concrete visual hook: "where was that taken?", "what was the spot?", "how was the session?", "coffee and wine? hows that combo go?".
+- Do not fall back to generic defaults such as "needed this reminder", "what a view", or "good song choice" just because they are safe. Use one only when it is genuinely the best, grounded read of this exact Story. Otherwise skip or like-only.
 - If there is no specific hook, skip or like-only instead of forcing a broad one-line pun.
 - Mirror selfies, vague vibe shots, and plain appearances should not be rescued with generic praise.
 - Clear gym action clips can use short hype like "lets go!", "so good!", or "how was the sesh?".
@@ -1836,7 +1839,7 @@ async function loadRecentThreadMessages(threadId, limit = 50) {
     if (!threadId) return [];
     try {
         return await supabaseQuery(
-            `ig_messages?select=direction,text,created_at,source&thread_id=eq.${encodeURIComponent(threadId)}&order=created_at.desc&limit=${limit}`
+            `ig_messages?select=thread_id,direction,text,created_at,source&thread_id=eq.${encodeURIComponent(threadId)}&order=created_at.desc&limit=${limit}`
         );
     } catch (err) {
         console.warn('[ig-story-outreach] recent message lookup failed:', err.message);
@@ -1844,7 +1847,45 @@ async function loadRecentThreadMessages(threadId, limit = 50) {
     }
 }
 
-let storyCommentVoiceExamplesCache = { fetchedAt: 0, rows: [] };
+let storyCommentVoiceExamplesCache = { fetchedAt: 0, graphRows: [], nativeRows: [] };
+
+const DIRECT_STORY_REPLY_PREFIX = /^replied to their story \(story media attached\)\s*/i;
+const STORY_COMMENTOR_MIRROR_WINDOW_MS = 2 * 60 * 1000;
+
+function directStoryReplyText(row = {}) {
+    if (String(row?.direction || '').toLowerCase() !== 'out') return '';
+    if (String(row?.source || '').toLowerCase() !== 'instagram_graph') return '';
+    const raw = cleanText(row?.text || '', 220);
+    if (!DIRECT_STORY_REPLY_PREFIX.test(raw)) return '';
+    return raw.replace(DIRECT_STORY_REPLY_PREFIX, '').replace(/\s+/g, ' ').trim();
+}
+
+function normalizedStoryReplyText(value = '') {
+    return normalizeCoachDraftText(value || '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+}
+
+function isStoryCommentorMirror(row = {}, comment = '', nativeRows = []) {
+    const rowAt = Date.parse(row?.created_at || '');
+    const target = normalizedStoryReplyText(comment);
+    if (!target || !Number.isFinite(rowAt)) return false;
+    return (Array.isArray(nativeRows) ? nativeRows : []).some(nativeRow => {
+        if (String(nativeRow?.direction || '').toLowerCase() !== 'out') return false;
+        if (String(nativeRow?.source || '').toLowerCase() !== 'native_story_comment') return false;
+        if (row?.thread_id && nativeRow?.thread_id && row.thread_id !== nativeRow.thread_id) return false;
+        const nativeAt = Date.parse(nativeRow?.created_at || '');
+        if (!Number.isFinite(nativeAt) || Math.abs(nativeAt - rowAt) > STORY_COMMENTOR_MIRROR_WINDOW_MS) return false;
+        return normalizedStoryReplyText(nativeRow?.text) === target;
+    });
+}
+
+function filterManualGraphStoryReplies(rows = [], nativeRows = []) {
+    return (Array.isArray(rows) ? rows : [])
+        .map(row => ({ ...row, text: directStoryReplyText(row) }))
+        .filter(row => row.text && !isStoryCommentorMirror(row, row.text, nativeRows));
+}
 
 async function loadStoryCommentVoiceExamples({ threadId = null, recentMessages = [], max = 6, generalCap = 6 } = {}) {
     const clean = (value) => normalizeCoachDraftText(value || '')
@@ -1867,22 +1908,26 @@ async function loadStoryCommentVoiceExamples({ threadId = null, recentMessages =
                 return true;
             });
     };
-    const person = unique((recentMessages || []).filter(row => (
-        String(row?.direction || '').toLowerCase() === 'out'
-        && String(row?.source || '').toLowerCase() === 'native_story_comment'
-    ))).slice(0, max);
-    let generalRows = storyCommentVoiceExamplesCache.rows;
+    const person = unique(filterManualGraphStoryReplies(recentMessages, recentMessages)).slice(0, max);
+    let graphRows = storyCommentVoiceExamplesCache.graphRows;
+    let nativeRows = storyCommentVoiceExamplesCache.nativeRows;
     if (Date.now() - storyCommentVoiceExamplesCache.fetchedAt > 5 * 60 * 1000) {
         try {
-            generalRows = await supabaseQuery(
-                `ig_messages?select=text,created_at,source&direction=eq.out&source=eq.native_story_comment&order=created_at.desc&limit=${Math.max(generalCap * 4, 12)}`
-            );
-            storyCommentVoiceExamplesCache = { fetchedAt: Date.now(), rows: generalRows };
+            const limit = Math.max(generalCap * 20, 120);
+            [graphRows, nativeRows] = await Promise.all([
+                supabaseQuery(
+                    `ig_messages?select=thread_id,text,created_at,source,direction&direction=eq.out&source=eq.instagram_graph&order=created_at.desc&limit=${limit}`
+                ),
+                supabaseQuery(
+                    `ig_messages?select=thread_id,text,created_at,source,direction&direction=eq.out&source=eq.native_story_comment&order=created_at.desc&limit=${limit}`
+                ),
+            ]);
+            storyCommentVoiceExamplesCache = { fetchedAt: Date.now(), graphRows, nativeRows };
         } catch (err) {
             console.warn('[ig-story-outreach] story voice example lookup failed:', err.message);
         }
     }
-    const general = unique(generalRows).slice(0, generalCap);
+    const general = unique(filterManualGraphStoryReplies(graphRows, nativeRows)).slice(0, generalCap);
     if (!person.length && !general.length) return '';
     const lines = [
         'STORY COMMENTER SHANNON VOICE EXAMPLES (style evidence only; never copy exact wording or personal facts):',
@@ -1892,7 +1937,7 @@ async function loadStoryCommentVoiceExamples({ threadId = null, recentMessages =
         person.forEach(text => lines.push(`- ${text}`));
     }
     if (general.length) {
-        lines.push('Recent native Story replies across the account:');
+        lines.push('Verified direct Instagram Story replies Shannon wrote himself:');
         general.forEach(text => lines.push(`- ${text}`));
     }
     lines.push('Use these only to match Shannon\'s rhythm, brevity, warmth, and question discipline. Ground the reply in the current Story evidence, not in the example topics.');
@@ -3313,4 +3358,6 @@ exports._test = {
     normalizeStoryCommentReviewPayload,
     callOpenAIStoryModel,
     shouldIncludeStoryVideoEvidence,
+    directStoryReplyText,
+    filterManualGraphStoryReplies,
 };

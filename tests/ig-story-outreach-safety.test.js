@@ -27,7 +27,43 @@ const {
     animalWelfareSupportCommentForContext,
     buildStoryOutreachMemory,
     buildStoryEvidenceAnalysisFallback,
+    directStoryReplyText,
+    filterManualGraphStoryReplies,
 } = require('../netlify/functions/ig-story-outreach-candidate')._test;
+
+const manualStoryMirrorRows = [
+    {
+        thread_id: 'manual-thread',
+        direction: 'out',
+        source: 'instagram_graph',
+        created_at: '2026-07-12T08:00:00.000Z',
+        text: 'replied to their story (story media attached) yum! what did you put in it?',
+    },
+    {
+        thread_id: 'bot-thread',
+        direction: 'out',
+        source: 'instagram_graph',
+        created_at: '2026-07-12T08:01:00.000Z',
+        text: 'replied to their story (story media attached) needed this reminder',
+    },
+];
+const storyCommentorMirrorRows = [{
+    thread_id: 'bot-thread',
+    direction: 'out',
+    source: 'native_story_comment',
+    created_at: '2026-07-12T08:01:05.000Z',
+    text: 'needed this reminder',
+}];
+assert.strictEqual(
+    directStoryReplyText(manualStoryMirrorRows[0]),
+    'yum! what did you put in it?',
+    'manual graph Story replies should drop Instagram’s transport prefix before becoming voice evidence'
+);
+assert.deepStrictEqual(
+    filterManualGraphStoryReplies(manualStoryMirrorRows, storyCommentorMirrorRows).map(row => row.text),
+    ['yum! what did you put in it?'],
+    'Story Commentor echoes must not be recycled as Shannon-written voice examples'
+);
 
 assert.strictEqual(
     parseStoryUrl('https://www.instagram.com/stories/highlights/18100654963567629/').username,
