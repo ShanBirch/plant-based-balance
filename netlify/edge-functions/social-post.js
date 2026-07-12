@@ -154,7 +154,14 @@ async function publishCarousel(validation) {
 export default async request => {
     if (request.method !== 'POST') return json(405, { ok: false, error: 'method_not_allowed' });
     const body = await readBody(request);
-    if (!authorized(request, body)) return json(401, { ok: false, error: 'unauthorized' });
+    if (!authorized(request, body)) {
+        return json(401, {
+            ok: false,
+            error: 'unauthorized',
+            tokenConfigured: Boolean(env('CROSSPOST_ADMIN_TOKEN')),
+            tokenSupplied: Boolean(clean(request.headers.get('x-crosspost-token') || body.token || '', 5000)),
+        });
+    }
     const mode = clean(body.mode || 'dry_run', 30);
     if (!['dry_run', 'publish'].includes(mode)) return json(400, { ok: false, error: 'invalid_mode' });
     if (clean(body.idempotencyKey, 200) !== REQUIRED_IDEMPOTENCY_KEY) return json(400, { ok: false, error: 'invalid_idempotency_key' });
