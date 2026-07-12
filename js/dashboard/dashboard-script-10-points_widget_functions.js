@@ -3621,6 +3621,12 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
     ctx.fillStyle = lowerGradient;
     ctx.fillRect(0, 0, width, height);
 
+    if (cardType === 'workout') {
+        const backdropY = target === 'feed' ? height - 790 : height - 920;
+        const backdropH = target === 'feed' ? 640 : 760;
+        pbbShareFillRoundRect(ctx, 40, backdropY, width - 80, backdropH, 38, 'rgba(2, 6, 23, 0.28)');
+    }
+
     try {
         const logo = await pbbShareLoadImage('balance_logo_transparent.png');
         ctx.save();
