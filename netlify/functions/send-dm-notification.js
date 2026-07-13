@@ -94,10 +94,12 @@ const ADMIN_WARNING_NOTIFICATION_TYPES = new Set([
 
 const ADMIN_SALE_NOTIFICATION_TYPES = new Set([
     'sale_made',
+    'sales_call_opportunity',
 ]);
 
 const ADMIN_SALE_ALERT_TYPES = new Set([
     'subscription_sale',
+    'sales_call_opportunity',
 ]);
 
 const ADMIN_COMMUNITY_NOTIFICATION_TYPES = new Set([
@@ -201,14 +203,25 @@ function isAllowedAdminPhonePush({ type, alert, payload }) {
     }
     if (ADMIN_SALE_NOTIFICATION_TYPES.has(type)) {
         const data = alert?.data || {};
+        const isSalesCallOpportunity = alert?.alert_type === 'sales_call_opportunity'
+            && (
+                data.sales_moment === true
+                || data.phone_notification_required === true
+                || data.needs_you_reason === 'sales_call_opportunity'
+                || payload?.actionType === 'sales_call_opportunity'
+            );
         return !!alert
             && ADMIN_SALE_ALERT_TYPES.has(alert.alert_type)
             && (
                 data.sale_made === true
                 || data.needs_you_reason === 'subscription_sale'
                 || payload?.actionType === 'subscription_sale'
+                || isSalesCallOpportunity
             )
-            && isClientScopedAdminPush({ alert, payload });
+            && (
+                isClientScopedAdminPush({ alert, payload })
+                || isSalesCallOpportunity
+            );
     }
     if (ADMIN_COMMUNITY_NOTIFICATION_TYPES.has(type)) {
         return isClientScopedAdminPush({ alert, payload });

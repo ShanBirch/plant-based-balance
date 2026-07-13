@@ -167,3 +167,53 @@ assert.strictEqual(
     }),
     false
 );
+
+assert.strictEqual(
+    isAllowedAdminPhonePush({
+        type: 'sales_call_opportunity',
+        alert: {
+            alert_type: 'sales_call_opportunity',
+            client_id: null,
+            data: {
+                channel: 'instagram',
+                ig_thread_id: 'ig-thread-hot-1',
+                ig_username: 'hotlead',
+                sales_moment: true,
+                phone_notification_required: true,
+                needs_you_reason: 'sales_call_opportunity',
+                operator_queue: 'needs_you',
+            },
+        },
+        payload: {
+            sourceChannel: 'instagram',
+            actionType: 'sales_call_opportunity',
+            actionLabel: 'Call opportunity',
+            senderName: 'hotlead',
+            messageText: 'Can we chat about coaching?',
+        },
+    }),
+    true
+);
+
+assert.strictEqual(
+    isAllowedAdminPhonePush({
+        type: 'sales_call_opportunity',
+        alert: {
+            alert_type: 'ig_incoming_dm',
+            client_id: null,
+            data: {
+                channel: 'instagram',
+                ig_thread_id: 'ig-thread-noisy-1',
+                sales_moment: true,
+                phone_notification_required: true,
+            },
+        },
+        payload: {
+            sourceChannel: 'instagram',
+            actionType: 'sales_call_opportunity',
+            senderName: 'Lead',
+            messageText: 'Hey',
+        },
+    }),
+    false
+);
