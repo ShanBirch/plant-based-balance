@@ -5541,6 +5541,7 @@ const LEAD_HIGH_RISK_CONTEXT_RE = /\b(?:grief|passed away|died|death|funeral|tra
 const LEAD_HEALTH_HISTORY_TOPIC_RE = /\b(?:injur|pain|hurt|hurts|hurting|sore|rehab|recover|surgery|operation|hospital|acl|knee|back|shoulder|ankle|symptom|treatment|physio|doctor)\b/i;
 const LEAD_CURRENT_HEALTH_RE = /\b(?:currently|right now|atm|at the moment|today|tonight|this week|still|ongoing|flar(?:e|ed|ing)|new|fresh|acute|can't|cant|unable|struggling with|dealing with|killing me|hurts|hurting|sore|in pain|injured|recovering|in rehab)\b/i;
 const LEAD_HEALTH_ADVICE_RE = /\b(?:what should i do|what do i do|any advice|should i|can i|could i|help with|fix|train around|work around|safe to|okay to|ok to|exercises?|stretches?|rehab)\b/i;
+const LEAD_EXPLICIT_HEALTH_ADVICE_ASK_RE = /\b(?:what should i do|what do i do|any advice|should i|can i|could i|help with|fix|train around|work around|safe to|okay to|ok to|any (?:exercises?|stretches?)|which exercises?|exercises? (?:for|to)|stretches? (?:for|to)|rehab (?:for|advice))\b/i;
 const LEAD_NO_RESPONSE_WORDS = new Set([
     'yep', 'yup', 'yes', 'yeah', 'yea', 'nah', 'no',
     'ok', 'okay', 'haha', 'lol', 'lmao', 'thanks', 'thank',
@@ -5561,6 +5562,14 @@ function isCurrentHealthAdviceLeadTurn(text) {
     const current = normalizeCoachDraftText(text || '').replace(/\s+/g, ' ').trim();
     if (!LEAD_HEALTH_HISTORY_TOPIC_RE.test(current)) return false;
     return LEAD_HEALTH_ADVICE_RE.test(current) || LEAD_CURRENT_HEALTH_RE.test(current);
+}
+
+function isStableTrainingConstraintLeadTurn(text) {
+    const current = normalizeCoachDraftText(text || '').replace(/\s+/g, ' ').trim();
+    if (!LEAD_HEALTH_HISTORY_TOPIC_RE.test(current) || LEAD_EXPLICIT_HEALTH_ADVICE_ASK_RE.test(current)) return false;
+    const trainingReference = /\b(?:train(?:ing)?|work(?:ing)? out|workout|exercise|gym|leg day|legs|squat|squats|deadlift|deadlifts|romanian|rdl)\b/i;
+    const constraint = /\b(?:avoid(?:ing|ed)?|can't|cant|cannot|limit(?:ing|ed|s)?|stop(?:s|ped|ping)?|hurt(?:s|ing)?|pain|flare(?:s|d|ing)?|constant|ongoing)\b/i;
+    return trainingReference.test(current) && constraint.test(current);
 }
 
 function isClosingOrLowSignalLeadReviewTurn(currentMessage, draftText) {
@@ -5621,21 +5630,28 @@ function applyLeadStoryReplyQuestionGuard(review, { draftText, contextBlocks, al
 
     const currentMessage = extractJustArrivedReviewMessage(contextBlocks);
     if (!latestOutboundWasStoryOpener(contextBlocks, currentMessage)) return base;
-    if (isClosingOrLowSignalLeadReviewTurn(currentMessage, draft)) return base;
+    const stableTrainingConstraint = isStableTrainingConstraintLeadTurn(currentMessage);
+    if (isClosingOrLowSignalLeadReviewTurn(currentMessage, draft) && !stableTrainingConstraint) return base;
 
-    const issue = 'Early story-reply lead draft needs one topic-specific follow-up question.';
+    const issue = stableTrainingConstraint
+        ? 'Early lead draft leaves a meaningful training limitation without a non-medical next handle.'
+        : 'Early story-reply lead draft needs one topic-specific follow-up question.';
     return {
         ...base,
         verdict: base.verdict === 'pass' ? 'warn' : base.verdict,
         confidence: Math.max(Number(base.confidence) || 0, 0.9),
-        summary: 'Lead replied to a story opener, but the draft leaves the hook hanging.',
+        summary: stableTrainingConstraint
+            ? 'Lead shared a training limitation, but the draft only acknowledges it.'
+            : 'Lead replied to a story opener, but the draft leaves the hook hanging.',
         issues: normalizeDraftReviewIssues([...(Array.isArray(base.issues) ? base.issues : []), issue]),
-        suggested_fix: 'Keep the casual reaction, but add one tiny relevant question tied to their exact story-reply topic. Do not pivot to goals, blockers, coaching, or the challenge.',
+        suggested_fix: stableTrainingConstraint
+            ? 'Keep the casual reaction, then ask one short non-medical question about the training they can still progress or what the limitation changes in their week. Do not diagnose, prescribe rehab, or ask them to describe pain.'
+            : 'Keep the casual reaction, but add one tiny relevant question tied to their exact story-reply topic. Do not pivot to goals, blockers, coaching, or the challenge.',
         context_loss_suspected: false,
         notification_required: base.notification_required || false,
-        notification_reason: base.notification_required ? base.notification_reason : 'lead_story_reply_missing_question',
+        notification_reason: base.notification_required ? base.notification_reason : (stableTrainingConstraint ? 'lead_training_constraint_missing_question' : 'lead_story_reply_missing_question'),
         reviewer_model: `${base.reviewer_model || DRAFT_REVIEW_MODEL}+story-reply-guard`,
-        deterministic_guard: 'lead_story_reply_missing_question',
+        deterministic_guard: stableTrainingConstraint ? 'lead_training_constraint_missing_question' : 'lead_story_reply_missing_question',
     };
 }
 
@@ -5777,6 +5793,7 @@ IG/FB LEAD QUALITY CHECK:
 - Warn if an unlinked lead has a normal-life anchor, a real health/fitness goal or blocker, and roughly 3 meaningful replies, but the draft keeps collecting small-talk details instead of offering a specific optional next step. A short, low-pressure quick-call question is a valid bridge when it fits their own words; it must never be used as a cold opener or called a sales call.
 - Warn if a shan_n_sunny lead draft is technically contextual but does not progress the conversation: passive mirroring, generic praise, generic empathy, a stock broad question, or a dead-end reaction when the thread has a concrete next handle available.
 - Warn if an early lead reply ends in a passive reaction even though a photo, story, hobby, place, meal, work detail, or opinion gives a concrete, low-pressure question that would naturally earn the next reply. Do not warn for thanks, emoji-only replies, clear closers, or genuinely low-bandwidth banter.
+- Warn if an early lead says a stable injury or pain limitation is changing how they train and the draft only acknowledges it. Unless they asked for diagnosis, treatment, rehab, or pain advice, use one short non-medical question about what training they can still progress or what it changes in their week. Do not ask them to describe symptoms or prescribe a fix.
 - Do not warn just because a lead/client reply is short and reaction-only. Recent Shannon edits show he often removes optional curiosity questions and sends only the specific reaction when the latest turn is banter, a quick update, a food/photo reaction, or an answer to his previous tiny question.
 - Do not warn just because an IG/client reply is a tiny direct answer, rough app-support instruction, one-cue form note, or one-line celebration. Recent native IG sends show this is often the correct Shannon voice.
 - Warn if an ordinary IG/client draft runs long when the latest turn only needs a reaction, direct answer, app-support step, workout cue, thanks/closer, or "I'll try that" acknowledgement. Recent edited drafts around 140-250 chars are often cut to 20-80 chars.
@@ -5831,6 +5848,7 @@ Do not warn when the draft is longer because the client/lead sent a long message
 Warn when the draft appears to ask a question only to keep the thread alive after a specific human reaction would be enough. Use the 30-day edit pattern: "reaction + optional question" often should become reaction-only unless the answer changes the next step.
 Warn when the latest inbound is an answer to Shannon's previous small rapport question and the draft asks a sibling same-topic follow-up, such as liked most -> surprised most, favourite bit -> best bit, or how was it -> how did it feel, instead of reacting or pausing. This is a warning, not a hard ban: pass if the second question moves into a clearly new useful next step.
 Warn when the draft asks for a current status, feeling, pain, soreness, or symptom detail that the latest inbound message already supplied. Example: if they wrote "just pain when i walk", the draft should not ask "how's it feeling today" or "still pain when you walk?"
+For an early unlinked lead who shares a stable training restriction, this does not prohibit one bounded follow-up about their training context. If they have not asked for medical advice, ask what they can still progress with or how it changes their training week, not how bad the pain is or what treatment they need.
 Warn with notification_reason "generic_voice" when the draft sounds like a generic coach, therapist, brand, or assistant: polished recap, broad encouragement, stock question, "keep me posted", "you've got this", "what does that look like for you", or a reply that could be sent to almost anyone despite a clear specific hook.
 Warn with notification_reason "generic_voice" when the draft starts with generic filler before touching the newest message, unless the newest message is genuinely heavy and needs a soft first line.
 Pass only when the draft is clearly grounded in the context below.

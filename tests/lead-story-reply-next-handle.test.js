@@ -105,6 +105,16 @@ const currentInjuryAdvice = applyLeadStoryReplyQuestionGuard(passReview, {
 
 assert.strictEqual(currentInjuryAdvice.verdict, 'pass');
 
+const stableTrainingConstraint = applyLeadStoryReplyQuestionGuard(passReview, {
+    draftText: 'ahh fair, good call avoiding the movements that flare it',
+    contextBlocks: storyContextFor('i do all those exercises except smith machine squats and romanians, they hurt my lower back. i have constant lower back pain from lumbar degeneration'),
+    alertType: 'ig_incoming_dm',
+});
+
+assert.strictEqual(stableTrainingConstraint.verdict, 'warn');
+assert.strictEqual(stableTrainingConstraint.deterministic_guard, 'lead_training_constraint_missing_question');
+assert.match(stableTrainingConstraint.suggested_fix, /non-medical/i);
+
 const oldStoryContext = applyLeadStoryReplyQuestionGuard(passReview, {
     draftText: 'that sounds full on but makes sense',
     contextBlocks: `Just-arrived Instagram message from lead: "Emergency has been intense lately"
