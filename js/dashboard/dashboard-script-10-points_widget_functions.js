@@ -5516,6 +5516,13 @@ window.shareActivityCardToFeed = shareActivityCardToFeed;
 
 async function handleActivitySharePhotoSelected(input) {
     const file = input?.files?.[0];
+    if (!file) return;
+    await useActivitySharePhotoFile(file);
+    input.value = '';
+}
+window.handleActivitySharePhotoSelected = handleActivitySharePhotoSelected;
+
+async function useActivitySharePhotoFile(file) {
     if (!file || !savedActivityData) return;
     const label = document.getElementById('activity-share-photo-btn-text');
     try {
@@ -5537,11 +5544,8 @@ async function handleActivitySharePhotoSelected(input) {
     } catch (error) {
         console.error('Could not read activity share photo:', error);
         showToast('Could not use that photo. Please try another one.', 'error');
-    } finally {
-        input.value = '';
     }
 }
-window.handleActivitySharePhotoSelected = handleActivitySharePhotoSelected;
 
 function toggleActivitySharePhotoSourceMenu(event) {
     event?.stopPropagation?.();
@@ -5562,6 +5566,12 @@ function openActivitySharePhotoSource(source) {
     const inputId = source === 'camera'
         ? 'activity-share-photo-camera-input'
         : 'activity-share-photo-gallery-input';
+    if (source === 'camera' && typeof openWorkoutCamera === 'function') {
+        openWorkoutCamera(async function(file) {
+            if (file) await useActivitySharePhotoFile(file);
+        }, 'Take an activity photo');
+        return;
+    }
     document.getElementById(inputId)?.click();
 }
 window.openActivitySharePhotoSource = openActivitySharePhotoSource;
