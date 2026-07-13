@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { normalizeSmsPhone, sendBookingSms, smsConfigured } from "./_lib/booking-sms.mts";
 
 type TimeRange = { start: string; end: string };
 type WeeklyHours = Record<string, TimeRange[]>;
@@ -29,6 +30,7 @@ const DEFAULT_BOOKING_URL = `${DEFAULT_PUBLIC_ORIGIN}/book`;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const OUTSIDE_HOURS_DURATION_MINUTES = 60;
+const PUBLIC_BOOKING_WINDOW_DAYS = 5;
 
 function getEnv(name: string): string {
     const netlifyValue = globalThis.Netlify?.env?.get?.(name);
@@ -249,7 +251,7 @@ function defaultSettings(): BookingSettings {
         event_name: "Balance call",
         duration_minutes: 30,
         minimum_notice_hours: 24,
-        booking_window_days: 28,
+        booking_window_days: PUBLIC_BOOKING_WINDOW_DAYS,
         timezone: BRISBANE_TIMEZONE,
         calendar_id: "primary",
         location: "Online, link sent after booking",
@@ -299,7 +301,7 @@ function normalizeSettings(value: unknown): BookingSettings {
         event_name: trimText(raw.event_name, 80) || fallback.event_name,
         duration_minutes: numberInRange(raw.duration_minutes, fallback.duration_minutes, 15, 90),
         minimum_notice_hours: numberInRange(raw.minimum_notice_hours, fallback.minimum_notice_hours, 1, 168),
-        booking_window_days: numberInRange(raw.booking_window_days, fallback.booking_window_days, 7, 90),
+        booking_window_days: PUBLIC_BOOKING_WINDOW_DAYS,
         timezone: BRISBANE_TIMEZONE,
         calendar_id: trimText(raw.calendar_id, 180) || "primary",
         location: trimText(raw.location, 200) || fallback.location,
@@ -459,9 +461,9 @@ export function buildSlotsForDate(settingsInput: BookingSettings, date: string, 
     return slots;
 }
 
-async function getAvailability(fromDate: string, settings: BookingSettings): Promise<{ dates: Array<{ date: string; label: string; slots: Array<{ start: string; end: string; label: string }> }>; calendarConnected: boolean }> {
-    const days = settings.booking_window_days;
-    const firstDate = isIsoDate(fromDate) ? fromDate : brisbaneDateKey();
+async function getAvailability(_fromDate: string, settings: BookingSettings): Promise<{ dates: Array<{ date: string; label: string; slots: Array<{ start: string; end: string; label: string }> }>; calendarConnected: boolean }> {
+    const days = PUBLIC_BOOKING_WINDOW_DAYS;
+    const firstDate = brisbaneDateKey();
     const lastDate = dateKeyForOffset(firstDate, days - 1);
     const timeMin = dateAtBrisbaneTime(firstDate, "00:00").toISOString();
     const timeMax = dateAtBrisbaneTime(dateKeyForOffset(lastDate, 1), "00:00").toISOString();
@@ -483,7 +485,8 @@ async function getOutsideHoursSlot(settings: BookingSettings, startsAt: string, 
     if (Number.isNaN(start.getTime())) return null;
     const end = new Date(start.getTime() + OUTSIDE_HOURS_DURATION_MINUTES * 60 * 1000);
     const noticeCutoff = now.getTime() + settings.minimum_notice_hours * 60 * 60 * 1000;
-    const bookingCutoff = now.getTime() + settings.booking_window_days * 24 * 60 * 60 * 1000;
+    const finalBookableDate = dateKeyForOffset(brisbaneDateKey(now), PUBLIC_BOOKING_WINDOW_DAYS - 1);
+    const bookingCutoff = dateAtBrisbaneTime(dateKeyForOffset(finalBookableDate, 1), "00:00").getTime();
     if (start.getTime() < noticeCutoff || end.getTime() > bookingCutoff) return null;
 
     const [databaseBusy, google] = await Promise.all([
@@ -641,6 +644,13 @@ async function sendConfirmationEmail(settings: BookingSettings, booking: Record<
     return response.ok;
 }
 
+function bookingConfirmationSms(booking: Record<string, unknown>): string {
+    const startsAt = trimText(booking.starts_at, 80);
+    const timezone = normalizeTimeZone(booking.timezone);
+    const method = callTypeLabel(normalizeCallType(booking.call_type));
+    return `Balance: You're booked for a ${method} with Shannon, ${dateTimeLabel(startsAt, timezone)}. Check your email and calendar invite for details. We'll text you a reminder about 2 hours before.`;
+}
+
 async function createBooking(req: Request): Promise<Response> {
     let body: Record<string, unknown>;
     try { body = await req.json() as Record<string, unknown>; }
@@ -652,7 +662,7 @@ async function createBooking(req: Request): Promise<Response> {
 
     const name = trimText(body.name, 120);
     const email = trimText(body.email, 320).toLowerCase();
-    const phone = trimText(body.phone, 40);
+    const phone = normalizeSmsPhone(body.phone);
     const goal = trimText(body.goal, 1000);
     const startsAt = trimText(body.startsAt, 80);
     const callType = normalizeCallType(body.callType);
@@ -661,14 +671,14 @@ async function createBooking(req: Request): Promise<Response> {
     if (!name || !EMAIL_RE.test(email) || !startsAt || Number.isNaN(Date.parse(startsAt))) {
         return json(400, { ok: false, error: "check_your_details" });
     }
-    if ((callType === "phone" || callType === "whatsapp") && phone.replace(/\D/g, "").length < 6) {
-        return json(400, { ok: false, error: "phone_required_for_call_type" });
+    if (!phone) {
+        return json(400, { ok: false, error: "mobile_required_for_booking_updates" });
     }
 
     const start = new Date(startsAt);
     const selectedSlot = bookingMode === "outside_hours"
         ? await getOutsideHoursSlot(settings, start.toISOString())
-        : (await getAvailability(brisbaneDateKey(start), settings))
+        : (await getAvailability("", settings))
             .dates.flatMap(date => date.slots)
             .find(slot => slot.start === start.toISOString());
     if (!selectedSlot) return json(409, { ok: false, error: "slot_no_longer_available" });
@@ -703,6 +713,7 @@ async function createBooking(req: Request): Promise<Response> {
     let calendarEventId = "";
     let meetingUrl = "";
     let emailSent = false;
+    let smsConfirmationSent = false;
     const outcome: string[] = [];
     try {
         const calendarEvent = await createCalendarEvent(settings, inserted);
@@ -733,6 +744,21 @@ async function createBooking(req: Request): Promise<Response> {
         console.error("[balance-booking] confirmation email failed", error);
         outcome.push("confirmation_email_pending");
     }
+    try {
+        smsConfirmationSent = await sendBookingSms({ to: phone, body: bookingConfirmationSms(inserted) });
+        if (smsConfirmationSent) {
+            await supabaseRequest(`balance_bookings?id=eq.${encodeURIComponent(String(inserted.id || ""))}`, {
+                method: "PATCH",
+                headers: { Prefer: "return=minimal" },
+                body: JSON.stringify({ sms_confirmation_sent_at: new Date().toISOString() }),
+            });
+        } else if (smsConfigured()) {
+            outcome.push("sms_confirmation_pending");
+        }
+    } catch (error) {
+        console.error("[balance-booking] SMS confirmation failed", error);
+        outcome.push("sms_confirmation_pending");
+    }
 
     return json(201, {
         ok: true,
@@ -747,6 +773,7 @@ async function createBooking(req: Request): Promise<Response> {
         },
         calendarEventCreated: Boolean(calendarEventId),
         confirmationEmailSent: emailSent,
+        smsConfirmationSent,
         notices: outcome,
     });
 }
@@ -758,6 +785,7 @@ function publicSettings(settings: BookingSettings): Record<string, unknown> {
         durationMinutes: settings.duration_minutes,
         timezone: BRISBANE_TIMEZONE,
         minimumNoticeHours: settings.minimum_notice_hours,
+        bookingWindowDays: PUBLIC_BOOKING_WINDOW_DAYS,
     };
 }
 
@@ -773,6 +801,8 @@ async function handleSettings(req: Request): Promise<Response> {
             googleCalendarConnected: Boolean(refreshToken),
             googleOAuthConfigured: Boolean(getEnv("GOOGLE_CALENDAR_CLIENT_ID") && getEnv("GOOGLE_CALENDAR_CLIENT_SECRET")),
             confirmationEmailConfigured: Boolean(getEnv("RESEND_API_KEY") && getEnv("BOOKING_EMAIL_FROM")),
+            smsConfigured: smsConfigured(),
+            smsReminderLeadMinutes: 120,
         });
     }
     if (req.method !== "POST") return json(405, { ok: false, error: "method_not_allowed" });

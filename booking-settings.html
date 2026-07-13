@@ -89,13 +89,8 @@
                                     <option value="48">48 hours</option>
                                 </select>
                             </label>
-                            <label>How far ahead
-                                <select name="booking_window_days">
-                                    <option value="14">2 weeks</option>
-                                    <option value="21">3 weeks</option>
-                                    <option value="28">4 weeks</option>
-                                    <option value="42">6 weeks</option>
-                                </select>
+                            <label>Booking window
+                                <input type="text" value="Next 5 days" disabled aria-label="Booking window: next 5 days">
                             </label>
                             <label>Calendar location
                                 <input type="text" name="location" maxlength="200" placeholder="Online, link sent after booking">
@@ -124,6 +119,11 @@
                     <section class="booking-setup-group">
                         <h3>Confirmation email</h3>
                         <p id="confirmation-email-copy">Checking email sender setup.</p>
+                    </section>
+
+                    <section class="booking-setup-group">
+                        <h3>Text confirmations and reminders</h3>
+                        <p id="booking-sms-copy">Checking text message setup.</p>
                     </section>
 
                     <div class="booking-settings-actions">

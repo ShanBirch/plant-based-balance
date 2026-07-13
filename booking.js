@@ -2,6 +2,7 @@
     'use strict';
 
     const endpoint = '/api/booking';
+    const bookingWindowDays = 5;
     const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
     const state = { dates: [], selectedDateIndex: 0, selectedSlot: null, settings: null };
 
@@ -79,22 +80,19 @@
 
     function updateCallTypeFields(targetForm, phoneLabelId, noteId) {
         const callType = currentCallType(targetForm);
-        const needsPhone = callType === 'phone' || callType === 'whatsapp';
         const phoneInput = targetForm?.querySelector('[name="phone"]');
         const phoneLabel = byId(phoneLabelId);
         const callTypeNote = byId(noteId);
-        if (phoneInput) phoneInput.required = needsPhone;
+        if (phoneInput) phoneInput.required = true;
         if (phoneLabel) {
-            phoneLabel.innerHTML = needsPhone
-                ? 'Phone <em>required for phone or WhatsApp</em>'
-                : 'Phone <em>optional</em>';
+            phoneLabel.innerHTML = 'Mobile number <em>for your text confirmation and reminder</em>';
         }
         if (callTypeNote) {
             callTypeNote.textContent = callType === 'video'
-                ? 'You will get a Google Meet link in your calendar invitation.'
+                ? 'You will get a Google Meet link in your calendar invitation, plus a text confirmation and reminder.'
                 : callType === 'whatsapp'
-                    ? 'Shannon will give you a WhatsApp call on this number.'
-                    : 'Shannon will call you on this number.';
+                    ? 'Shannon will give you a WhatsApp call on this number. We will also text your confirmation and reminder.'
+                    : 'Shannon will call you on this number. We will also text your confirmation and reminder.';
         }
     }
 
@@ -159,9 +157,12 @@
     function setOutsideDateMinimum() {
         const input = outsideForm?.querySelector('[name="outsideDate"]');
         if (!input) return;
+        const formatDateInput = (value) => [value.getFullYear(), String(value.getMonth() + 1).padStart(2, '0'), String(value.getDate()).padStart(2, '0')].join('-');
         const now = new Date();
-        const localDate = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
-        input.min = localDate;
+        const maxDate = new Date(now);
+        maxDate.setDate(maxDate.getDate() + bookingWindowDays - 1);
+        input.min = formatDateInput(now);
+        input.max = formatDateInput(maxDate);
     }
 
     function setOutsidePanel(open) {
@@ -206,8 +207,8 @@
             showError('Add your name and email to confirm this call.', targetError);
             return null;
         }
-        if ((callType === 'phone' || callType === 'whatsapp') && phone.replace(/\D/g, '').length < 6) {
-            showError('Add the number Shannon should use for this call.', targetError);
+        if (phone.replace(/\D/g, '').length < 6) {
+            showError('Add a mobile number for your text confirmation and reminder.', targetError);
             return null;
         }
         return { data, name, email, callType, phone };
@@ -251,13 +252,14 @@
             byId('booking-success-time').textContent = `${dateTimeLabel(result.booking.startsAt)} (${friendlyTimeZone()})`;
             const bookingCallType = result.booking?.callType || details.callType;
             const meetingUrl = result.booking?.meetingUrl || '';
+            const smsNote = result.smsConfirmationSent ? ' A text confirmation is on its way too.' : '';
             byId('booking-success-copy').textContent = bookingCallType === 'video'
                 ? (meetingUrl
-                    ? 'Your video call is confirmed. Your Google Meet link is in the Balance email and calendar invitation.'
-                    : 'Your video call is confirmed. Shannon will send the video link shortly.')
+                    ? `Your video call is confirmed. Your Google Meet link is in the Balance email and calendar invitation.${smsNote}`
+                    : `Your video call is confirmed. Shannon will send the video link shortly.${smsNote}`)
                 : bookingCallType === 'whatsapp'
-                    ? 'Your WhatsApp call is confirmed. Shannon will call the number you entered.'
-                    : 'Your phone call is confirmed. Shannon will call the number you entered.';
+                    ? `Your WhatsApp call is confirmed. Shannon will call the number you entered.${smsNote}`
+                    : `Your phone call is confirmed. Shannon will call the number you entered.${smsNote}`;
         } catch (_) {
             showError('Could not confirm that call just now. Please try again in a moment.', targetError);
         } finally {

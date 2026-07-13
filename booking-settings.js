@@ -62,7 +62,6 @@
         setField('event_name', settings.event_name || 'Balance call');
         setField('duration_minutes', settings.duration_minutes || 30);
         setField('minimum_notice_hours', settings.minimum_notice_hours || 24);
-        setField('booking_window_days', settings.booking_window_days || 28);
         setField('location', settings.location || 'Online, link sent after booking');
         renderHours(settings.weekly_hours || {});
         byId('booking-link-label').textContent = data.bookingUrl || '/book';
@@ -80,6 +79,10 @@
         byId('confirmation-email-copy').textContent = data.confirmationEmailConfigured
             ? 'Balance will send the branded confirmation email and the calendar invite after every booking.'
             : 'Calendar invitations still send after Google is connected. Add RESEND_API_KEY and BOOKING_EMAIL_FROM in Netlify to turn on the branded Balance confirmation email too.';
+
+        byId('booking-sms-copy').textContent = data.smsConfigured
+            ? `Balance sends a text confirmation after booking and a reminder about ${data.smsReminderLeadMinutes || 120} minutes before the call.`
+            : 'Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_FROM_NUMBER in Netlify to turn on text confirmations and reminders.';
     }
 
     async function load() {
@@ -115,7 +118,7 @@
                 event_name: field('event_name').value.trim(),
                 duration_minutes: Number(field('duration_minutes').value),
                 minimum_notice_hours: Number(field('minimum_notice_hours').value),
-                booking_window_days: Number(field('booking_window_days').value),
+                booking_window_days: 5,
                 location: field('location').value.trim(),
                 weekly_hours: collectHours(),
             };
