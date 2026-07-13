@@ -87,6 +87,48 @@ async function claimAlert(alertId) {
     return claimed[0] || null;
 }
 
+/**
+ * A scheduled IG reply must still be the next reply when it actually fires.
+ * New inbound messages can arrive after the draft was made but before its
+ * human-like delay expires. Sending the saved text in that case answers an
+ * older bubble and can also clear the newer alert as an outbound sibling.
+ */
+async function getNewerInstagramInbound(alert = {}) {
+    const data = alert.data || {};
+    const threadId = String(data.ig_thread_id || '').trim();
+    const draftedAt = String(alert.created_at || data.drafted_at || '').trim();
+    const isInstagram = data.channel === 'instagram'
+        || data.delivery_channel === 'instagram_graph'
+        || !!threadId;
+    if (!isInstagram || !threadId || !draftedAt) return null;
+
+    const rows = await supabase(
+        `ig_messages?select=id,text,created_at,alert_id&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.in&created_at=gt.${encodeURIComponent(draftedAt)}&order=created_at.desc&limit=1`
+    );
+    return rows[0] || null;
+}
+
+async function cancelStaleScheduledInstagramReply(alert, newerInbound) {
+    const canceledAt = new Date().toISOString();
+    const data = alert.data || {};
+    await supabase(`coach_alerts?id=eq.${alert.id}&status=eq.pending`, {
+        method: 'PATCH',
+        body: {
+            status: 'canceled',
+            actioned_at: canceledAt,
+            data: {
+                ...data,
+                cancel_reason: 'stale_scheduled_reply_newer_inbound',
+                stale_scheduled_reply_canceled_at: canceledAt,
+                stale_scheduled_reply_newer_inbound_id: newerInbound.id,
+                stale_scheduled_reply_newer_inbound_at: newerInbound.created_at,
+                stale_scheduled_reply_newer_inbound_alert_id: newerInbound.alert_id || null,
+            },
+        },
+        prefer: 'return=minimal',
+    });
+}
+
 function buildAutoSendReviewHold(alert) {
     const data = alert?.data || {};
     const isAutoSend = data.scheduled_via === 'auto_send'
@@ -312,6 +354,21 @@ async function sendAutoSendHoldNotification(alert, autoHold) {
  * to flip to 'sent' once delivered.
  */
 async function fireAlert(alert) {
+    try {
+        const newerInbound = await getNewerInstagramInbound(alert);
+        if (newerInbound) {
+            await cancelStaleScheduledInstagramReply(alert, newerInbound);
+            console.info(`[scheduled-worker] canceled stale scheduled IG reply ${alert.id}; newer inbound ${newerInbound.id} arrived before send`);
+            return { ok: false, error: 'stale_scheduled_reply_newer_inbound' };
+        }
+    } catch (e) {
+        // Do not send when the final conversation-delta check cannot be read.
+        // Leaving the claimed alert pending keeps it visible for Shannon or a
+        // fresh manager pass instead of risking an out-of-context message.
+        console.error(`[scheduled-worker] final IG delta check failed for ${alert.id}:`, e.message);
+        return { ok: false, error: 'stale_check_failed' };
+    }
+
     const repairedLink = repairMissingScheduledLinkHandoff(alert, alert.scheduled_reply_text || alert.suggested_message || '');
     const replyText = repairedLink.text;
     const draftText = normalizeGeneratedCoachDraftText(alert.suggested_message || '');
@@ -498,5 +555,6 @@ exports._test = {
     hasCocosAutoContextBypass,
     hasAutoContextBypass,
     repairMissingScheduledLinkHandoff,
+    getNewerInstagramInbound,
     isCoachDmManagerWorkingTime,
 };
