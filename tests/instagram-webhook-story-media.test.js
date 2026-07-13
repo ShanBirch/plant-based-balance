@@ -246,6 +246,26 @@ const guideComment = {
     mediaId: 'reel-media-1',
     text: ' GUIDE! ',
 };
+const publicComment = {
+    ...guideComment,
+    commentId: '18103608319999510',
+    text: '👏👏👏',
+};
+assert.strictEqual(
+    _test.shouldSendPublicCommentReply(publicComment, { botAccount: 'shan_n_sunny' }),
+    true
+);
+assert.strictEqual(
+    _test.shouldSendPublicCommentReply({ ...publicComment, username: 'shan_n_sunny' }, { botAccount: 'shan_n_sunny' }),
+    false,
+    'the account must not reply to its own public-reply webhook echo'
+);
+assert.strictEqual(
+    _test.shouldSendPublicCommentReply(publicComment, { botAccount: 'goldcoast_ai_solutions' }),
+    false,
+    'account-wide public replies must stay limited to Shan n Sunny'
+);
+assert.strictEqual(_test.buildPublicCommentReply(publicComment), 'Thanks heaps ❤️');
 const guideGiveaway = {
     keyword: 'guide',
     account: 'shan_n_sunny',
