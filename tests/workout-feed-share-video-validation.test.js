@@ -131,7 +131,9 @@ const mp4Buffer = new Uint8Array([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70
 
 assert.strictEqual(requiresWorkoutVideo('feed_workout_share'), true);
 assert.strictEqual(requiresWorkoutVideo('feed_workout_share_thumbnail'), false);
+assert.strictEqual(requiresWorkoutVideo('workout_share_photo_overlay'), false);
 assert.strictEqual(validateWorkoutVideoUpload({ type: 'image/jpeg' }, jpegBuffer, 'feed_workout_share_thumbnail'), null);
+assert.strictEqual(validateWorkoutVideoUpload({ type: 'image/jpeg' }, jpegBuffer, 'workout_share_photo_overlay'), null);
 assert.match(
     validateWorkoutVideoUpload({ type: 'image/jpeg' }, jpegBuffer, 'feed_workout_share'),
     /photo instead of a video/
@@ -139,7 +141,7 @@ assert.match(
 assert.strictEqual(validateWorkoutVideoUpload({ type: 'video/mp4' }, mp4Buffer, 'feed_workout_share'), null);
 
 assert.ok(
-    dashboardSource.includes('lib/stories.js?v=64') &&
+    dashboardSource.includes('lib/stories.js?v=68') &&
     dashboardSource.includes('pbb-deferred-formcheck.js?v=55'),
     'dashboard should bump feed script versions so patched video validation is fetched'
 );

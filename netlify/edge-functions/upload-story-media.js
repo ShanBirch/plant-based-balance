@@ -44,7 +44,10 @@ function hasSupportedVideoSignature(bytes) {
 function requiresWorkoutVideo(source) {
     const cleanSource = String(source || '').trim().toLowerCase();
     if (cleanSource.includes('thumbnail')) return false;
-    return cleanSource === 'feed_workout_share' || cleanSource.includes('workout_share') || cleanSource.includes('share_set');
+    // Only Share a Set uploads are video-only. Post-workout photo overlays
+    // intentionally use sources such as `workout_share_photo_overlay` and
+    // must be accepted as JPEGs.
+    return cleanSource === 'feed_workout_share' || cleanSource === 'share_set';
 }
 
 function validateWorkoutVideoUpload(file, fileBuffer, source) {
