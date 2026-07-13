@@ -5543,6 +5543,38 @@ async function handleActivitySharePhotoSelected(input) {
 }
 window.handleActivitySharePhotoSelected = handleActivitySharePhotoSelected;
 
+function toggleActivitySharePhotoSourceMenu(event) {
+    event?.stopPropagation?.();
+    const menu = document.getElementById('activity-share-photo-source-menu');
+    const button = document.getElementById('activity-share-photo-btn');
+    if (!menu) return;
+    const isOpen = menu.style.display !== 'none';
+    menu.style.display = isOpen ? 'none' : 'block';
+    button?.setAttribute('aria-expanded', String(!isOpen));
+}
+window.toggleActivitySharePhotoSourceMenu = toggleActivitySharePhotoSourceMenu;
+
+function openActivitySharePhotoSource(source) {
+    const menu = document.getElementById('activity-share-photo-source-menu');
+    const button = document.getElementById('activity-share-photo-btn');
+    if (menu) menu.style.display = 'none';
+    button?.setAttribute('aria-expanded', 'false');
+    const inputId = source === 'camera'
+        ? 'activity-share-photo-camera-input'
+        : 'activity-share-photo-gallery-input';
+    document.getElementById(inputId)?.click();
+}
+window.openActivitySharePhotoSource = openActivitySharePhotoSource;
+
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('activity-share-photo-source-menu');
+    const button = document.getElementById('activity-share-photo-btn');
+    if (!menu || menu.style.display === 'none') return;
+    if (menu.contains(event.target) || button?.contains(event.target)) return;
+    menu.style.display = 'none';
+    button?.setAttribute('aria-expanded', 'false');
+});
+
 function closeLogActivity() {
     document.getElementById('view-log-activity').style.display = 'none';
     switchAppTab('movement-tab');
