@@ -38,7 +38,7 @@ const STORY_OUTREACH_SALES_CONTEXT = {
     first_touch_rule: 'story reply is rapport only; no coaching, checkout, or link pitch',
     dm_rule: 'when they reply and show help, food, training, consistency, or enough relationship context, bridge to Starter Coaching; free challenge is fallback only',
 };
-const STORY_NO_REPLY_COMMENT_LIMIT = 3;
+const STORY_NO_REPLY_COMMENT_LIMIT = 4;
 const STORY_NO_REPLY_COOLDOWN_DAYS = 30;
 const STORY_NO_REPLY_COOLDOWN_MS = STORY_NO_REPLY_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
 const STORY_RECENT_OUTREACH_COOLDOWN_HOURS = 20;

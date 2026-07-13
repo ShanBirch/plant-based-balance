@@ -17,6 +17,7 @@ const {
     assessAudioVisualCommentConsistency,
     relationshipStoryBlockReason,
     hasRecentUnansweredInbound,
+    storyNoReplyCooldown,
     storyRecentOutreachCooldown,
     isDryRunQualityJudge,
     validateEvidenceVideo,
@@ -1106,5 +1107,22 @@ assert.strictEqual(
     'minimal model-first mode should replace caption-echoing gym comments with a natural opener'
 );
 process.env.STORY_COMMENT_MINIMAL_COMMENT_RULES = '0';
+
+const fourUnansweredStoryMessages = [
+    { direction: 'out', source: 'native_story_comment', text: 'first', created_at: '2026-05-20T10:00:00.000Z' },
+    { direction: 'out', source: 'native_story_comment', text: 'second', created_at: '2026-05-21T10:00:00.000Z' },
+    { direction: 'out', source: 'native_story_comment', text: 'third', created_at: '2026-05-22T10:00:00.000Z' },
+    { direction: 'out', source: 'native_story_comment', text: 'fourth', created_at: '2026-05-23T10:00:00.000Z' },
+];
+assert.strictEqual(
+    storyNoReplyCooldown({ id: 'four-unanswered', last_inbound_at: null, custom_data: {} }, fourUnansweredStoryMessages, new Date('2026-05-24T10:00:00.000Z')).count,
+    4,
+    'four unanswered Story replies should start the cool-down'
+);
+assert.strictEqual(
+    storyNoReplyCooldown({ id: 'three-unanswered', last_inbound_at: null, custom_data: {} }, fourUnansweredStoryMessages.slice(0, 3), new Date('2026-05-24T10:00:00.000Z')),
+    null,
+    'three unanswered Story replies should remain eligible'
+);
 
 console.log('ig story outreach safety tests passed');

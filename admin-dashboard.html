@@ -7591,7 +7591,7 @@
         let igLeadsCache = [];
         let igLeadEditingId = null;
         let igLeadPendingLinkedUserId = null;
-        let igLeadsView = 'all'; // 'all' | 'pipeline' | 'urgent' | 'hottest'
+        let igLeadsView = 'all'; // 'all' | 'pipeline' | 'urgent' | 'hottest' | 'story_ready'
         let igLeadsMsgCounts = new Map(); // thread_id -> total message count
         const IG_LEAD_STAGE_ORDER = ['new', 'qualifying', 'invited', 'in_app', 'paying', 'churned'];
         const IG_LEAD_STAGE_META = {
@@ -7686,6 +7686,14 @@
                     color: '#92400e',
                 };
             }
+            if (lead?.engagement_temperature === 'dead') {
+                return {
+                    label: 'Cooling down',
+                    detail: lead.engagement_reason || 'four unanswered messages, revisit after 30 days',
+                    bg: '#f1f5f9',
+                    color: '#475569',
+                };
+            }
             if (!lead?.last_outbound_at) {
                 return { label: 'Never replied', detail: 'needs first Shannon touch', bg: '#fee2e2', color: '#991b1b' };
             }
@@ -7709,6 +7717,8 @@
 
         function _igLeadHeatScore(lead) {
             if (!lead) return 0;
+            const livePriority = Number(lead.engagement_priority_score);
+            if (Number.isFinite(livePriority)) return Math.max(0, Math.round(livePriority));
             const q = lead.qualifier || {};
             const stage = _igEffectiveLeadStage(lead);
             const qStage = String(q.stage || '').toLowerCase();
@@ -7727,7 +7737,13 @@
             return Math.max(0, Math.round(score));
         }
 
-        function _igLeadHeatMeta(score) {
+        function _igLeadHeatMeta(score, lead) {
+            const label = String(lead?.engagement_label || '').toLowerCase();
+            if (label === 'client') return { label: 'Client', bg: '#ecfdf5', color: '#047857', border: '#a7f3d0' };
+            if (label === 'dead') return { label: 'Dead', bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' };
+            if (label === 'hot') return { label: 'Hot', bg: '#fee2e2', color: '#991b1b', border: '#fecaca' };
+            if (label === 'warm') return { label: 'Warm', bg: '#fffbeb', color: '#92400e', border: '#fde68a' };
+            if (label === 'cold') return { label: 'Cold', bg: '#f8fafc', color: '#475569', border: '#e2e8f0' };
             if (score >= 95) return { label: 'Hot', bg: '#fee2e2', color: '#991b1b', border: '#fecaca' };
             if (score >= 70) return { label: 'Warm', bg: '#fffbeb', color: '#92400e', border: '#fde68a' };
             if (score >= 45) return { label: 'Active', bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' };
@@ -7748,10 +7764,12 @@
             let neverReplied = 0;
             let stageDrift = 0;
             let hottestCount = 0;
+            let storyReadyCount = 0;
             leads.forEach(lead => {
                 const effective = _igEffectiveLeadStage(lead);
                 if (counts[effective] !== undefined) counts[effective]++;
-                if (_igLeadHeatScore(lead) >= 70) hottestCount++;
+                if (lead.engagement_temperature === 'hot' || lead.engagement_temperature === 'warm' || _igLeadHeatScore(lead) >= 70) hottestCount++;
+                if (lead.story_outreach_eligible) storyReadyCount++;
                 if (_igLeadIsUrgent(lead)) {
                     needsReply++;
                     const daysLeft = _igDaysLeftInWindow(lead.last_inbound_at);
@@ -7766,6 +7784,7 @@
                 { key: 'all', label: 'All loaded', value: leads.length, sub: 'after channel filter', onClick: "drillIgLeadList('all','')", active: igLeadsView === 'all' && !selectedStage },
                 { key: 'needs', label: 'Needs reply', value: needsReply, sub: expiring ? `${expiring} under 24h` : 'inside Meta window', onClick: "drillIgLeadList('urgent','')", active: igLeadsView === 'urgent' },
                 { key: 'hottest', label: 'Hottest', value: hottestCount, sub: 'warmest active', onClick: "drillIgLeadList('hottest','')", active: igLeadsView === 'hottest' },
+                { key: 'story-ready', label: 'Story ready', value: storyReadyCount, sub: 'safe to visit next', onClick: "drillIgLeadList('story_ready','')", active: igLeadsView === 'story_ready' },
                 { key: 'never', label: 'Never replied', value: neverReplied, sub: 'first touch missing', onClick: "drillIgLeadList('all','new')", active: false },
                 { key: 'drift', label: 'Linked drift', value: stageDrift, sub: 'shown as effective stage', onClick: "drillIgLeadList('all','in_app')", active: false },
             ].map(card => `<button type="button" onclick="${card.onClick}" style="text-align:left; background:${card.active ? '#0f172a' : 'white'}; color:${card.active ? 'white' : '#334155'}; border:1px solid ${card.active ? '#0f172a' : '#e2e8f0'}; border-radius:8px; padding:10px 12px; cursor:pointer;">
@@ -7830,6 +7849,7 @@
             const labels = [];
             if (igLeadsView === 'urgent') labels.push('Needs reply');
             if (igLeadsView === 'hottest') labels.push('Hottest');
+            if (igLeadsView === 'story_ready') labels.push('Story ready');
             if (stageFilter) labels.push(_igStageMeta(stageFilter).label);
             if (search) labels.push(`Search: ${search}`);
             if (labels.length === 0) return '';
@@ -7939,12 +7959,44 @@
                 .order('last_inbound_at', { ascending: false, nullsFirst: false })
                 .limit(200);
             if (channel) query = query.eq('channel', channel);
-            const { data, error } = await query;
+            const [threadResult, priorityResult] = await Promise.all([
+                query,
+                (async () => {
+                    try {
+                        const response = await fetch('/.netlify/functions/ig-engagement-priorities?scope=admin&limit=1000', {
+                            headers: await getAdminJsonHeaders(),
+                        });
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        return await response.json();
+                    } catch (err) {
+                        console.warn('[ig-leads] engagement state lookup failed:', err.message || err);
+                        return null;
+                    }
+                })(),
+            ]);
+            const { data, error } = threadResult;
             if (error) {
                 list.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load: ${escapeHtml(error.message)}</div>`;
                 return;
             }
-            igLeadsCache = data || [];
+            const engagementByThreadId = new Map((priorityResult?.targets || []).map(target => [target.threadId, target]));
+            igLeadsCache = (data || []).map(lead => {
+                const engagement = engagementByThreadId.get(lead.id);
+                if (!engagement) return lead;
+                return {
+                    ...lead,
+                    relationship_kind: engagement.relationshipKind,
+                    engagement_temperature: engagement.engagementTemperature,
+                    engagement_label: engagement.engagementLabel,
+                    engagement_reason: engagement.engagementReason,
+                    engagement_priority_score: engagement.priorityScore,
+                    unanswered_outbound_count: engagement.unansweredOutboundCount,
+                    dead_until: engagement.deadUntil,
+                    pending_dm_reply: engagement.pendingDmReply,
+                    story_outreach_eligible: engagement.storyOutreachEligible,
+                    story_outreach_block_reason: engagement.storyOutreachBlockReason,
+                };
+            });
             // Per-thread total message counts (in + out) — drives the "Hottest"
             // sort and the 💬 N badge on each card. Single fetch then group
             // client-side; cheap at the 200-row limit.
@@ -8052,6 +8104,17 @@
                 // cutoff = most urgent.
                 leads.sort((a, b) => new Date(a.last_inbound_at) - new Date(b.last_inbound_at));
             } else if (igLeadsView === 'hottest') {
+                leads = leads.filter(lead => lead.relationship_kind !== 'client' && lead.engagement_temperature !== 'dead');
+                leads.sort((a, b) => {
+                    const ca = _igLeadHeatScore(a);
+                    const cb = _igLeadHeatScore(b);
+                    if (cb !== ca) return cb - ca;
+                    const ta = a.last_inbound_at ? new Date(a.last_inbound_at).getTime() : 0;
+                    const tb = b.last_inbound_at ? new Date(b.last_inbound_at).getTime() : 0;
+                    return tb - ta;
+                });
+            } else if (igLeadsView === 'story_ready') {
+                leads = leads.filter(lead => lead.story_outreach_eligible === true);
                 leads.sort((a, b) => {
                     const ca = _igLeadHeatScore(a);
                     const cb = _igLeadHeatScore(b);
@@ -8092,7 +8155,7 @@
                 const action = _igLeadActionState(l);
                 const msgCount = igLeadsMsgCounts.get(l.id) || 0;
                 const heatScore = _igLeadHeatScore(l);
-                const heatMeta = _igLeadHeatMeta(heatScore);
+                const heatMeta = _igLeadHeatMeta(heatScore, l);
                 const lastIn = _igRelative(l.last_inbound_at);
                 const lastOut = _igRelative(l.last_outbound_at);
                 const borderColor = _igLeadIsUrgent(l) ? '#f59e0b' : '#e2e8f0';
@@ -8111,7 +8174,7 @@
                         <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:7px;">
                             <span style="font-size:0.68rem; padding:2px 7px; border-radius:8px; background:#f8fafc; color:${stageMeta.color}; border:1px solid #e2e8f0; font-weight:800;">${escapeHtml(stageMeta.label)}</span>
                             <span style="font-size:0.68rem; padding:2px 7px; border-radius:8px; background:${action.bg}; color:${action.color}; border:1px solid ${action.bg}; font-weight:800;">${escapeHtml(action.label)}</span>
-                            <span style="font-size:0.68rem; padding:2px 7px; border-radius:8px; background:${heatMeta.bg}; color:${heatMeta.color}; border:1px solid ${heatMeta.border}; font-weight:800;">${escapeHtml(heatMeta.label)} ${heatScore}</span>
+                            <span style="font-size:0.68rem; padding:2px 7px; border-radius:8px; background:${heatMeta.bg}; color:${heatMeta.color}; border:1px solid ${heatMeta.border}; font-weight:800;">${escapeHtml(heatMeta.label)}</span>
                         </div>
                         ${action.detail ? `<div style="font-size:0.74rem; color:#64748b; line-height:1.35; margin-top:6px;">${escapeHtml(action.detail)}</div>` : ''}
                     </div>
