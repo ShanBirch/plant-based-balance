@@ -9,6 +9,7 @@
     align-items: center;
     min-height: calc(100vh - 178px);
     padding: 18px 0 42px;
+    min-width: 0;
 }
 
 .booking-intro {
@@ -65,6 +66,7 @@
 .booking-card {
     padding: clamp(22px, 4vw, 34px);
     min-height: 514px;
+    min-width: 0;
 }
 
 .booking-card-heading {
@@ -187,9 +189,18 @@
 .booking-date-list {
     display: flex;
     gap: 8px;
+    max-width: 100%;
     overflow-x: auto;
     padding: 22px 0 4px;
     scrollbar-width: thin;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+#booking-flow,
+.booking-outside-hours,
+.booking-outside-panel {
+    min-width: 0;
 }
 
 .booking-date-button,
@@ -450,7 +461,10 @@
 }
 
 @media (max-width: 520px) {
-    .booking-page .site-header { padding-bottom: 16px; }
+    .booking-page .site-header { padding-bottom: 16px; gap: 12px; }
+    .booking-page .brand { gap: 8px; font-size: .92rem; }
+    .booking-page .brand img { width: 34px; height: 34px; border-radius: 11px; }
+    .booking-page .nav-link { font-size: .82rem; }
     .booking-intro h1 { font-size: clamp(2.75rem, 15vw, 4.1rem); }
     .booking-card { padding: 20px 16px; border-radius: 24px; }
     .booking-card-heading { gap: 10px; padding-bottom: 18px; }
@@ -462,6 +476,15 @@
     .booking-hours-row { grid-template-columns: 78px 1fr 1fr; gap: 6px; }
     .booking-connection-card { align-items: flex-start; flex-direction: column; }
     .booking-connection-card .btn { width: 100%; }
+}
+
+@media (max-width: 360px) {
+    .booking-page .page-shell { width: min(100% - 20px, 620px); }
+    .booking-intro { padding-bottom: 16px; }
+    .booking-card { padding: 18px 14px; border-radius: 22px; }
+    .booking-card-heading { align-items: flex-start; }
+    .booking-date-button { min-width: 76px; }
+    .booking-slot { min-height: 46px; font-size: .8rem; }
 }
 
 html[data-bio-theme="light"] .booking-form input,
@@ -476,6 +499,17 @@ html[data-bio-theme="light"] .booking-hours-row input[type="time"] {
 
 html[data-bio-theme="light"] .booking-outside-panel {
     background: #f7f1df;
+}
+
+html[data-bio-theme="light"] .booking-intro > p,
+html[data-bio-theme="light"] .booking-trust-row,
+html[data-bio-theme="light"] .booking-timezone-note,
+html[data-bio-theme="light"] .booking-unavailable p,
+html[data-bio-theme="light"] .booking-success > p:not(.booking-kicker),
+html[data-bio-theme="light"] .booking-form input::placeholder,
+html[data-bio-theme="light"] .booking-form textarea::placeholder {
+    color: #475569;
+    -webkit-text-fill-color: #475569;
 }
 
 html[data-bio-theme="light"] .booking-outside-panel > p,
