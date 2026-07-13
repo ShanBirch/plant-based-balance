@@ -3742,6 +3742,63 @@ async function pbbShareDrawBalanceBrandMark(ctx, x, y, size = 38) {
     }
 }
 
+async function pbbShareDrawFullBleedActivityCard(ctx, cardPayload, width, height, target) {
+    const isFeed = target === 'feed';
+    const top = isFeed ? 130 : 270;
+    const bottom = height - (isFeed ? 165 : 330);
+    const x = 70;
+    const w = width - (x * 2);
+    const label = String(cardPayload.activity_label || 'Activity');
+    const metrics = [
+        [String(cardPayload.duration || '-'), 'DURATION'],
+        [String(cardPayload.calories || '-'), 'KCAL'],
+        [String(cardPayload.intensity || 'moderate').toUpperCase(), 'INTENSITY']
+    ];
+
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, 'rgba(3, 7, 18, 0.18)');
+    gradient.addColorStop(0.45, 'rgba(3, 7, 18, 0.08)');
+    gradient.addColorStop(1, 'rgba(3, 7, 18, 0.84)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.72)';
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 3;
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.font = '900 25px Arial, sans-serif';
+    ctx.fillText('BALANCE ACTIVITY', x, top);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 70px Georgia, serif';
+    const titleEnd = pbbShareWrapText(ctx, label, x, top + 72, w, 76, 2);
+    ctx.restore();
+
+    const cardY = Math.max(titleEnd + 28, bottom - 205);
+    pbbShareFillRoundRect(ctx, x, cardY, w, 156, 28, 'rgba(8, 47, 73, 0.72)');
+    ctx.save();
+    pbbShareRoundRect(ctx, x, cardY, w, 156, 28);
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    const cellW = w / metrics.length;
+    metrics.forEach((metric, index) => {
+        const metricX = x + (cellW * index) + 25;
+        ctx.fillStyle = 'rgba(255,255,255,0.72)';
+        ctx.font = '800 19px Arial, sans-serif';
+        ctx.fillText(metric[1], metricX, cardY + 44);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 33px Arial, sans-serif';
+        pbbShareWrapText(ctx, metric[0], metricX, cardY + 95, cellW - 38, 36, 1);
+    });
+
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.font = '800 20px Arial, sans-serif';
+    ctx.fillText('Tracked in Balance', x, bottom + 30);
+}
+
 async function pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, target) {
     const isFeed = target === 'feed';
     // This deliberately mirrors the Balance Feed meal card: photo first,
@@ -3950,6 +4007,11 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
 
     if (cardType === 'meal' && primaryPhotoDataUrl) {
         await pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, target);
+        return canvas.toDataURL('image/jpeg', 0.92);
+    }
+
+    if (cardType === 'activity' && primaryPhotoDataUrl) {
+        await pbbShareDrawFullBleedActivityCard(ctx, cardPayload, width, height, target);
         return canvas.toDataURL('image/jpeg', 0.92);
     }
 
@@ -5326,10 +5388,21 @@ function showActivitySuccess(data) {
         noXpHint.style.display = 'block';
     }
 
+    // Activity shares always earn 5 XP. Venue verification remains useful for the activity log, not this reward.
+    xpStatus.style.display = 'block';
+    xpStatus.style.background = 'rgba(68, 255, 68, 0.2)';
+    xpStatus.style.border = '2px solid rgba(68, 255, 68, 0.5)';
+    xpStatus.innerHTML = '<div style="font-weight:700;">Share to Feed for +5 XP</div>';
+    noXpHint.style.display = 'none';
+
     // Reset share button
     const shareBtn = document.getElementById('activity-share-btn');
     shareBtn.disabled = false;
-    document.getElementById('activity-share-btn-text').textContent = data.xpEligible ? 'Share Activity Card (+1 XP)' : 'Share Activity Card';
+    document.getElementById('activity-share-btn-text').textContent = 'Share to Feed (+5 XP)';
+    const sharePhotoLabel = document.getElementById('activity-share-photo-btn-text');
+    if (sharePhotoLabel) sharePhotoLabel.textContent = data.photoBase64
+        ? 'Photo ready, your activity stats will be overlaid'
+        : 'Add a photo for your share';
 
     window.history.pushState({ view: 'activity-success' }, '', '#activity-success');
 }
@@ -5365,25 +5438,49 @@ async function shareActivityCardToFeed() {
             venue_type: savedActivityData.venueType
         };
 
-        // Create story in feed
+        let mediaUrl = '';
+        if (savedActivityData.photoBase64) {
+            const compositeDataUrl = await renderBalanceShareCardImage(cardPayload, {
+                target: 'feed',
+                photoDataUrl: savedActivityData.photoBase64
+            });
+            const compositeFile = postWorkoutShareFileFromDataUrl(compositeDataUrl, 'balance-activity-overlay.jpg');
+            const formData = new FormData();
+            formData.append('file', compositeFile);
+            formData.append('userId', window.currentUser.id);
+            formData.append('storyId', crypto.randomUUID ? crypto.randomUUID() : Date.now().toString());
+            formData.append('source', 'activity_share_photo_overlay');
+            const uploadResponse = await fetch('/api/upload-story-media', { method: 'POST', body: formData });
+            if (!uploadResponse.ok) throw new Error('Photo overlay upload failed');
+            const uploadData = await uploadResponse.json();
+            mediaUrl = uploadData.url;
+            cardPayload.share_style = 'photo_overlay';
+        }
+
+        // Create story in feed. A selected photo is rendered with the activity text overlaid.
         const storyData = {
             media_type: 'workout_card',
-            media_url: '',
+            media_url: mediaUrl,
+            thumbnail_url: mediaUrl || null,
             caption: JSON.stringify(cardPayload),
             duration: 5
         };
 
         await window.dbHelpers?.stories?.create(window.currentUser.id, storyData);
 
-        // Award XP if eligible
-        if (savedActivityData.xpEligible) {
-            await awardWorkoutSharePoint('story', Date.now(), null);
-
+        // Every tracked activity feed share receives 5 XP. Its activity id makes the award idempotent.
+        const xpResult = await window.db?.points?.awardPoints(
+            window.currentUser.id,
+            'activity_feed_share',
+            savedActivityData.id || `activity_${Date.now()}`,
+            { photoTimestamp: savedActivityData.photoBase64 ? Date.now() : null, aiConfidence: 'high' }
+        );
+        if (xpResult?.success) {
             const xpStatus = document.getElementById('activity-xp-status');
             xpStatus.style.display = 'block';
             xpStatus.style.background = 'rgba(68, 255, 68, 0.2)';
             xpStatus.style.border = '2px solid rgba(68, 255, 68, 0.5)';
-            xpStatus.innerHTML = '<div style="font-weight:700; font-size:1.1rem;">+1 XP Earned! 🎉</div>';
+            xpStatus.innerHTML = '<div style="font-weight:700; font-size:1.1rem;">+5 XP Earned! 🎉</div>';
         }
 
         // Update activity log record
@@ -5391,7 +5488,7 @@ async function shareActivityCardToFeed() {
             try {
                 await window.dbHelpers?.activityLogs?.update(savedActivityData.id, {
                     shared_to_feed: true,
-                    xp_awarded: savedActivityData.xpEligible
+                    xp_awarded: !!xpResult?.success
                 });
                 const additionalIds = (savedActivityData.activityIds || []).filter(id => id && id !== savedActivityData.id);
                 await Promise.all(additionalIds.map(id => window.dbHelpers?.activityLogs?.update(id, { shared_to_feed: true })));
@@ -5416,6 +5513,35 @@ async function shareActivityCardToFeed() {
     }
 }
 window.shareActivityCardToFeed = shareActivityCardToFeed;
+
+async function handleActivitySharePhotoSelected(input) {
+    const file = input?.files?.[0];
+    if (!file || !savedActivityData) return;
+    const label = document.getElementById('activity-share-photo-btn-text');
+    try {
+        const normalizedFile = typeof window.normalizeFeedImageUploadFile === 'function'
+            ? await window.normalizeFeedImageUploadFile(file)
+            : file;
+        const preparedFile = typeof compressMealImage === 'function'
+            ? await compressMealImage(normalizedFile)
+            : normalizedFile;
+        const reader = new FileReader();
+        const dataUrl = await new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(preparedFile);
+        });
+        savedActivityData.photoBase64 = String(dataUrl || '');
+        savedActivityData.photoMimeType = preparedFile.type || 'image/jpeg';
+        if (label) label.textContent = 'Photo added, your activity stats will be overlaid';
+    } catch (error) {
+        console.error('Could not read activity share photo:', error);
+        showToast('Could not use that photo. Please try another one.', 'error');
+    } finally {
+        input.value = '';
+    }
+}
+window.handleActivitySharePhotoSelected = handleActivitySharePhotoSelected;
 
 function closeLogActivity() {
     document.getElementById('view-log-activity').style.display = 'none';

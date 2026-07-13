@@ -8394,6 +8394,11 @@ if(!window._pbbIsIOSSafari) {
         <!-- Share Section -->
         <div id="activity-share-section" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin: 15px 0;">
             <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 10px;">Share to Feed</div>
+            <input id="activity-share-photo-input" type="file" accept="image/*" style="display:none;" onchange="handleActivitySharePhotoSelected(this)">
+            <button id="activity-share-photo-btn" type="button" onclick="document.getElementById('activity-share-photo-input').click()" style="width:100%; margin:0 0 10px; background:rgba(3,32,57,0.58); color:white; -webkit-text-fill-color:white; padding:12px; border-radius:12px; font-weight:700; cursor:pointer; border:1px dashed rgba(255,255,255,0.78); display:flex; align-items:center; justify-content:center; gap:8px; font-size:0.9rem;">
+                <span style="font-size:1.1rem;">📷</span>
+                <span id="activity-share-photo-btn-text">Add a photo for your share</span>
+            </button>
             <button id="activity-share-btn" onclick="shareActivityCardToFeed()" style="width: 100%; background: white; color: #0284c7; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem;">
                 <span style="font-size: 1.2rem;">📤</span>
                 <span id="activity-share-btn-text">Share Activity Card</span>
@@ -8405,7 +8410,7 @@ if(!window._pbbIsIOSSafari) {
 
         <!-- No XP hint -->
         <div id="activity-no-xp-hint" style="display: none; background: rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 14px; margin: 10px 0;">
-            <div style="font-size: 0.85rem; opacity: 0.85;">💡 Take a photo of your venue next time to earn XP!</div>
+            <div style="font-size: 0.85rem; opacity: 0.85;">💡 Add a photo to make your Feed share feel like yours.</div>
         </div>
 
         <!-- Done Button -->
@@ -13093,6 +13098,7 @@ if(!window._pbbIsIOSSafari) {
 <script>
 (function(){
   const steps = [
+    { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity', body:'After logging a walk, run, ride or class, add a photo and Balance overlays your activity stats before sharing it to Feed. Each share earns +5 XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
     { tab:'dashboard', sel:'#ask-balance-command-palette .ask-balance-command-card,#ask-balance-command-palette', title:'Ask Balance by long hold', body:"Press and hold any open space for 3 seconds to open Ask Balance. Type what you want and Balance can log food, start workouts, open quizzes, post to Feed, or help change a workout.", xpReward:'intro', tourBottomReserve:16, action: async function(){
         try {
             if (typeof window.showAskBalanceCommandPalette === 'function') {
@@ -14178,6 +14184,17 @@ if(!window._pbbIsIOSSafari) {
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({
+    id: 'activity-photo-overlay-feed-share-v1',
+    tab: 'movement-tab',
+    sel: '#activity-share-section',
+    fallbackSel: '#move-your-way-pilot-card',
+    title: 'Share your walk or run',
+    fallbackTitle: 'Share your walk or run',
+    body: 'After logging an activity, add a photo and Balance puts your activity stats straight on it for Feed. Each share earns +5 XP.',
+    fallbackBody: 'Log a walk, run, ride or class in Movement, then add a photo to share your activity stats to Feed for +5 XP.',
+    condition: function(){ return !!document.getElementById('activity-share-section') || !!document.getElementById('move-your-way-pilot-card'); }
+  });
   allFeatures.push({
     id: 'custom-exercise-feed-autopost-v1',
     tab: 'movement-tab',
