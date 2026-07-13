@@ -11255,8 +11255,9 @@
         function isExternalDmAlert(alert) {
             const data = alert?.data || {};
             const channel = data.channel;
-            if (channel === 'instagram' || channel === 'messenger') return true;
-            if (alert?.alert_type === 'ig_incoming_dm' || alert?.alert_type === 'fb_incoming_dm') return true;
+            if (channel === 'instagram' || channel === 'messenger' || channel === 'whatsapp') return true;
+            if (alert?.alert_type === 'ig_incoming_dm' || alert?.alert_type === 'fb_incoming_dm' || alert?.alert_type === 'whatsapp_incoming_message') return true;
+            if (data.delivery_channel === 'whatsapp_cloud') return true;
             return !!data.ig_thread_id && (
                 channel === 'manual_ig'
                 || data.delivery_channel === 'manual_ig'
@@ -15781,7 +15782,7 @@
         // can reuse the ordered list of rendered alerts.
         const ALERT_TYPE_LABELS = {
             inactive_client: 'Inactive', unread_message: 'Unread', incoming_dm: 'New DM',
-            ig_incoming_dm: 'IG DM', fb_incoming_dm: 'FB DM', coach_draft_ready: 'Draft',
+            ig_incoming_dm: 'IG DM', fb_incoming_dm: 'FB DM', whatsapp_incoming_message: 'WhatsApp', coach_draft_ready: 'Draft',
             challenge_dropout: 'Challenge', streak_broken: 'Streak', milestone_near: 'Milestone',
             nutrition_gap: 'Nutrition', coaching_idea: 'Idea', win_to_celebrate: 'Win',
             general_idea: 'Idea', new_user_onboarding: 'New User', not_in_challenge: 'Invite',
@@ -15797,6 +15798,7 @@
         };
         const ALERT_TYPE_ICONS = {
             inactive_client: '😴', unread_message: '💬', incoming_dm: '📨',
+            whatsapp_incoming_message: '🟢',
             challenge_dropout: '📉', streak_broken: '🔥', milestone_near: '🎯',
             nutrition_gap: '🥗', coaching_idea: '💡', win_to_celebrate: '🎉',
             general_idea: '💡', new_user_onboarding: '👋', not_in_challenge: '🎪',
@@ -21448,7 +21450,9 @@
             }
         }
 
-        // ManyChat (Instagram + Messenger) outbound. Uses /send-ig-reply
+        // External inbox outbound. Instagram/Messenger use /send-ig-reply;
+        // WhatsApp uses the Cloud API sender. Both preserve the same alert
+        // approval gate and sent-message learning record.
         // which is the same endpoint the phone push approve-gate hits, so
         // ManyChat send + ig_messages logging + status='sent' flip + edit
         // signal all happen there. We only handle the optimistic UI here.
@@ -21471,12 +21475,17 @@
                         return;
                     }
                 }
-                const estimatedChunks = estimateManyChatDashboardChunks(alertData, message, draftText);
-                const useBackgroundSend = estimatedChunks.length > 1;
+                const isWhatsApp = alertData?.data?.channel === 'whatsapp'
+                    || alertData?.data?.delivery_channel === 'whatsapp_cloud'
+                    || alertData?.alert_type === 'whatsapp_incoming_message';
+                const estimatedChunks = isWhatsApp ? [message] : estimateManyChatDashboardChunks(alertData, message, draftText);
+                const useBackgroundSend = !isWhatsApp && estimatedChunks.length > 1;
                 if (btn && useBackgroundSend) {
                     btn.textContent = `Sending ${estimatedChunks.length} messages...`;
                 }
-                const sendEndpoint = useBackgroundSend ? '/.netlify/functions/send-ig-reply-background' : '/.netlify/functions/send-ig-reply';
+                const sendEndpoint = isWhatsApp
+                    ? '/.netlify/functions/send-whatsapp-reply'
+                    : (useBackgroundSend ? '/.netlify/functions/send-ig-reply-background' : '/.netlify/functions/send-ig-reply');
                 const sendPayload = {
                     alertId,
                     replyText: message,

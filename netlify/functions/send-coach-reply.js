@@ -397,7 +397,8 @@ exports.handler = async (event) => {
         }) };
     }
 
-    // Channel routing: IG/FB alert rows go through send-ig-reply instead of
+    // Channel routing: WhatsApp alerts go through the Cloud API sender. IG/FB
+    // alert rows go through send-ig-reply instead of
     // inserting a nudges row. That function chooses Instagram Graph first for
     // IG and keeps ManyChat only as the Messenger / legacy fallback.
     const alertData = alert.data || {};
@@ -410,6 +411,20 @@ exports.handler = async (event) => {
         : draftTextInput;
     if (!replyText) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Reply text became empty after visible-copy cleanup' }) };
+    }
+    if (alertData.channel === 'whatsapp' || alertData.delivery_channel === 'whatsapp_cloud' || alert.alert_type === 'whatsapp_incoming_message') {
+        try {
+            const res = await fetch(`${SITE_URL}/.netlify/functions/send-whatsapp-reply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ alertId, replyText, draftText, source, editReason, timingSuggestion }),
+            });
+            const text = await res.text();
+            return { statusCode: res.status, body: text || JSON.stringify({ ok: res.ok }) };
+        } catch (err) {
+            console.error('[send-coach-reply] WhatsApp forward failed:', err.message);
+            return { statusCode: 502, body: JSON.stringify({ error: 'WhatsApp forward failed', details: err.message }) };
+        }
     }
     const hasExternalThread = !!alertData.ig_thread_id;
     const isInstagramOrMessenger = alertData.channel === 'instagram'

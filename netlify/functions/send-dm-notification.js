@@ -74,6 +74,7 @@ const ADMIN_MESSAGE_ALERT_TYPES = new Set([
     'incoming_dm',
     'ig_incoming_dm',
     'fb_incoming_dm',
+    'whatsapp_incoming_message',
     'unread_message',
 ]);
 
@@ -82,6 +83,7 @@ const ADMIN_DIRECT_MESSAGE_TYPES = new Set([
     'incoming_dm',
     'ig_incoming_dm',
     'fb_incoming_dm',
+    'whatsapp_incoming_message',
 ]);
 
 const ADMIN_WARNING_NOTIFICATION_TYPES = new Set([
