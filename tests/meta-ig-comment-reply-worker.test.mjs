@@ -79,12 +79,13 @@ assert.strictEqual(
 );
 assert.strictEqual(
     _test.shouldSkipComment({
-        interaction: { text: '!!!', from_username: 'plant_lead', raw_payload: {} },
+        interaction: { text: '👏👏👏', from_username: 'plant_lead', raw_payload: {} },
         content,
         accountConfig: { botAccount: 'shan_n_sunny' },
         handles: new Set(['shan_n_sunny']),
-    }).reason,
-    'emoji_or_punctuation_only'
+    }).skip,
+    false,
+    'emoji-only engagement should be passed to the context-aware reply writer'
 );
 assert.strictEqual(_test.looksLikeSpam('Promote it on @growth_one @growth_two'), true);
 
@@ -114,5 +115,6 @@ const prompt = _test.buildCommentReplyPrompt({
 });
 assert.match(prompt, /public Instagram comment reply/);
 assert.match(prompt, /I love this/);
+assert.match(prompt, /including emoji-only comments/);
 
 console.log('meta ig comment reply worker tests passed');

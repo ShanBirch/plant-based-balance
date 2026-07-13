@@ -84,21 +84,6 @@ const COMMENT_PRIVATE_REPLY_DISABLED = envFlagEnabled(
     process.env.IG_COMMENT_PRIVATE_REPLY_DISABLED
     || process.env.META_IG_COMMENT_PRIVATE_REPLY_DISABLED
 );
-// Shannon asked for simple acknowledgement replies on every public comment.
-// This intentionally stays account-scoped, so the Gold Coast AI account and
-// keyword-based private-reply campaigns keep their existing behaviour.
-const PUBLIC_COMMENT_REPLY_DISABLED = envFlagEnabled(
-    process.env.IG_PUBLIC_COMMENT_REPLY_DISABLED
-    || process.env.META_IG_PUBLIC_COMMENT_REPLY_DISABLED
-);
-const PUBLIC_COMMENT_REPLY_HANDLES = new Set(
-    splitEnvList(process.env.IG_PUBLIC_COMMENT_REPLY_HANDLES || 'shan_n_sunny')
-        .map(normalizeHandle)
-        .filter(Boolean)
-);
-const PUBLIC_COMMENT_REPLY_TEXT = String(
-    process.env.IG_PUBLIC_COMMENT_REPLY_TEXT || 'Thanks heaps ❤️'
-).trim();
 const FOOD_PHOTO_TRACKING_ACK = process.env.IG_FOOD_PHOTO_TRACKING_ACK
     || "Looks so good. I'll track it for you now.";
 const FOOD_PHOTO_TRACKING_DEFAULTS_DISABLED = envFlagEnabled(
@@ -283,23 +268,6 @@ function shouldSendGoldCoastWebsitePrivateReply(event = {}, accountConfig = {}) 
     if (commentKeywordForPrivateReply(event) !== 'website') return false;
     if (!event.commentId || !event.fromId) return false;
     return isGoldCoastAiAccount(event, accountConfig);
-}
-
-function shouldSendPublicCommentReply(event = {}, accountConfig = {}) {
-    if (PUBLIC_COMMENT_REPLY_DISABLED || !PUBLIC_COMMENT_REPLY_TEXT) return false;
-    if (event.type !== 'comment' || !event.commentId || !event.fromId) return false;
-    const botAccount = normalizeHandle(accountConfig.botAccount);
-    if (!botAccount || !PUBLIC_COMMENT_REPLY_HANDLES.has(botAccount)) return false;
-    // Meta emits our own public reply back through the comment webhook. Never
-    // reply to that echo or we would create a reply loop.
-    return normalizeHandle(event.username) !== botAccount;
-}
-
-function buildPublicCommentReply(event = {}) {
-    return interpolateCommentGiveawayTemplate(PUBLIC_COMMENT_REPLY_TEXT, {
-        username: event.username || '',
-        handle: normalizeHandle(event.username),
-    }).trim();
 }
 
 function firstString(...values) {
@@ -947,29 +915,6 @@ async function postInstagramPrivateReply({ accountId, commentId, text }) {
     return parsed;
 }
 
-async function postInstagramPublicCommentReply({ accountId, commentId, text }) {
-    const accessToken = await getInstagramGraphAccessToken(accountId);
-    if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
-    if (!commentId) throw new Error('Instagram comment id missing');
-
-    const res = await fetch(`${GRAPH_BASE}/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(commentId)}/replies`, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: text }),
-    });
-    const responseText = await res.text();
-    let parsed;
-    try { parsed = responseText ? JSON.parse(responseText) : {}; } catch { parsed = { raw: responseText }; }
-    if (!res.ok) {
-        const detail = parsed?.error?.message || responseText;
-        throw new Error(`Instagram Graph public comment reply ${res.status}: ${String(detail || '').slice(0, 400)}`);
-    }
-    return parsed;
-}
-
 async function postInstagramTextMessage({ accountId, recipientId, text }) {
     const accessToken = await getInstagramGraphAccessToken(accountId);
     if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
@@ -1022,32 +967,7 @@ async function insertPrivateReplyMessage({ threadId, text, dedupeId, nowIso }) {
     }
 }
 
-async function insertPublicCommentReplyMessage({ threadId, text, dedupeId, nowIso }) {
-    const existing = await findGraphMessageByDedupeId(dedupeId);
-    if (existing) return { inserted: false, deduped: true, messageId: existing.id || null, dedupeId };
-    try {
-        const rows = await supabase('ig_messages', {
-            method: 'POST',
-            body: [{
-                thread_id: threadId,
-                direction: 'out',
-                text,
-                manychat_message_id: dedupeId,
-                source: 'instagram_graph_public_comment_reply',
-                created_at: nowIso,
-            }],
-            prefer: 'return=representation',
-        });
-        return { inserted: true, deduped: false, messageId: rows[0]?.id || null, dedupeId };
-    } catch (err) {
-        const duplicate = err.sqlstate === '23505' || /23505|duplicate key/i.test(err.message || '');
-        if (!duplicate) throw err;
-        const existing = await findGraphMessageByDedupeId(dedupeId);
-        return { inserted: false, deduped: true, messageId: existing?.id || null, dedupeId };
-    }
-}
-
-async function patchInteractionAutoReplyState({ interaction, state, field = 'auto_private_reply' }) {
+async function patchInteractionPrivateReplyState({ interaction, state }) {
     if (!interaction?.id) return;
     try {
         await supabase(`ig_content_interactions?id=eq.${encodeURIComponent(interaction.id)}`, {
@@ -1055,14 +975,14 @@ async function patchInteractionAutoReplyState({ interaction, state, field = 'aut
             body: {
                 raw_payload: {
                     ...safeObject(interaction.raw_payload),
-                    [field]: state,
+                    auto_private_reply: state,
                 },
                 processed_at: state.sent_at || state.failed_at || new Date().toISOString(),
             },
             prefer: 'return=minimal',
         });
     } catch (err) {
-        console.warn('[instagram-webhook] auto reply state patch failed:', err.message);
+        console.warn('[instagram-webhook] private reply state patch failed:', err.message);
     }
 }
 
@@ -1116,7 +1036,7 @@ async function maybeSendCommentKeywordPrivateReply({ event, interaction, content
         const inserted = thread?.id
             ? await insertPrivateReplyMessage({ threadId: thread.id, text, dedupeId, nowIso: sentAt })
             : { inserted: false, deduped: false, messageId: null, dedupeId };
-        await patchInteractionAutoReplyState({
+        await patchInteractionPrivateReplyState({
             interaction,
             state: {
                 status: 'sent',
@@ -1139,81 +1059,11 @@ async function maybeSendCommentKeywordPrivateReply({ event, interaction, content
             campaignId: campaign.id || null,
         };
     } catch (err) {
-        await patchInteractionAutoReplyState({
+        await patchInteractionPrivateReplyState({
             interaction,
             state: {
                 status: 'failed',
                 ...privateReplyState,
-                failed_at: new Date().toISOString(),
-                dedupe_id: dedupeId,
-                error: err.message || String(err),
-            },
-        });
-        throw err;
-    }
-}
-
-async function maybeSendPublicCommentReply({ event, interaction, contentItem }) {
-    const accountConfig = resolveMetaIgAccountConfig(event.ownerId || event.igAccountId || '');
-    if (!shouldSendPublicCommentReply(event, accountConfig)) {
-        return { attempted: false, skipped: 'not_applicable' };
-    }
-
-    const dedupeId = `ig_graph:public_comment_reply:${String(event.commentId || '').trim()}`;
-    const existing = await findGraphMessageByDedupeId(dedupeId);
-    if (existing) {
-        return { attempted: false, skipped: 'already_sent', messageId: existing.id || null, dedupeId };
-    }
-
-    const accountId = String(event.ownerId || event.igAccountId || event.recipientId || '').trim();
-    const text = buildPublicCommentReply(event);
-    if (!text) return { attempted: false, skipped: 'empty_reply', dedupeId };
-    const sentAt = new Date().toISOString();
-    const publicReplyState = {
-        media_id: event.mediaId || contentItem?.ig_media_id || null,
-        source_key: contentItem?.source_key || sourceKeyForEvent(event) || null,
-        reply_text: text,
-    };
-
-    try {
-        const graphResponse = await postInstagramPublicCommentReply({ accountId, commentId: event.commentId, text });
-        const graphMessageId = graphMessageIdFromResponse(graphResponse) || `public_comment_reply:${event.commentId}`;
-        const defaultCoachId = await findDefaultCoachId();
-        const thread = await upsertGraphThread({
-            participantId: event.fromId,
-            participantUsername: event.username || '',
-            igAccountId: accountId,
-            direction: 'out',
-            nowIso: sentAt,
-            messageId: graphMessageId,
-            messageText: text,
-            defaultCoachId,
-        });
-        const inserted = thread?.id
-            ? await insertPublicCommentReplyMessage({ threadId: thread.id, text, dedupeId, nowIso: sentAt })
-            : { inserted: false, deduped: false, messageId: null, dedupeId };
-        await patchInteractionAutoReplyState({
-            interaction,
-            field: 'auto_public_reply',
-            state: {
-                status: 'sent',
-                ...publicReplyState,
-                sent_at: sentAt,
-                dedupe_id: dedupeId,
-                thread_id: thread?.id || null,
-                ig_message_id: inserted.messageId || null,
-                graph_message_id: graphMessageId,
-                graph_response: graphResponse || {},
-            },
-        });
-        return { attempted: true, sent: true, dedupeId, graphMessageId };
-    } catch (err) {
-        await patchInteractionAutoReplyState({
-            interaction,
-            field: 'auto_public_reply',
-            state: {
-                status: 'failed',
-                ...publicReplyState,
                 failed_at: new Date().toISOString(),
                 dedupe_id: dedupeId,
                 error: err.message || String(err),
@@ -1728,9 +1578,6 @@ async function processContentInteractions(payload) {
         privateRepliesSent: 0,
         privateRepliesSkipped: 0,
         privateRepliesFailed: 0,
-        publicRepliesSent: 0,
-        publicRepliesSkipped: 0,
-        publicRepliesFailed: 0,
         failed: 0,
     };
     for (const event of events) {
@@ -1746,18 +1593,6 @@ async function processContentInteractions(payload) {
                 byMessageId.set(event.messageId, buildContextMessage(event, contentItem));
             }
             if (event.type === 'comment') {
-                try {
-                    const publicReply = await maybeSendPublicCommentReply({ event, interaction, contentItem });
-                    if (publicReply.sent) summary.publicRepliesSent++;
-                    else if (publicReply.skipped && publicReply.skipped !== 'not_applicable') summary.publicRepliesSkipped++;
-                } catch (err) {
-                    summary.publicRepliesFailed++;
-                    console.warn('[instagram-webhook] public comment reply failed:', {
-                        eventId: event.eventId || null,
-                        commentId: event.commentId || null,
-                        error: err.message,
-                    });
-                }
                 try {
                     const autoReply = await maybeSendCommentKeywordPrivateReply({ event, interaction, contentItem });
                     if (autoReply.sent) summary.privateRepliesSent++;
@@ -2891,8 +2726,6 @@ exports._test = {
     resolveCommentGiveawayCampaign,
     buildCommentGiveawayPrivateReply,
     shouldSendGoldCoastWebsitePrivateReply,
-    shouldSendPublicCommentReply,
-    buildPublicCommentReply,
     buildGoldCoastWebsiteUrl,
     buildGoldCoastWebsitePrivateReply,
     commentPrivateReplyDedupeId,

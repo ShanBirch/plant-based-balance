@@ -220,7 +220,6 @@ function shouldSkipComment({ interaction = {}, content = {}, accountConfig = {},
     if (commenter && (commenter === contentHandle || commenter === normalizeHandle(accountConfig.botAccount))) {
         return { skip: true, reason: 'own_comment' };
     }
-    if (mostlyEmojiOrPunctuation(text)) return { skip: true, reason: 'emoji_or_punctuation_only' };
     if (looksLikeSpam(text)) return { skip: true, reason: 'spam_or_promo' };
     return { skip: false, reason: 'ok' };
 }
@@ -357,8 +356,8 @@ or:
 {"action":"skip","reply":"","reason":"brief reason"}
 
 Rules:
-- Reply only when the comment deserves a real public response. When in doubt, skip.
-- Skip spam, promo, emojis-only, tags-only, hostile bait, medical claims needing nuance, or anything that would be weird to automate.
+- Reply to genuine engagement, including emoji-only comments. Skip spam, promo, tags-only, hostile bait, medical claims needing nuance, or anything that would be weird to automate.
+- For emoji-only comments, use the post context and write a tiny natural reaction. Never use a fixed acknowledgement for every comment.
 - Keep it very chill: usually 2-12 words, never a paragraph.
 - Sound like Shannon: casual, grounded, Australian, not corporate, not hypey.
 - No greeting, no hashtags, no links, no emojis, no sales pitch, no "AI", no "coach bot".
