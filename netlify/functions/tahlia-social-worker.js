@@ -416,6 +416,7 @@ function parseTahliaDraftReply(value = '') {
 function isSafeLearnedTahliaDraft(value = '') {
     const text = cleanPublicText(value, 500);
     if (text.length < 2 || text.length > 240) return false;
+    if (/\bwin(?:s)?\b/i.test(text)) return false;
     if (/https?:\/\/|www\.|#\w+|\b(ai|automation|bot|model|prompt|seeded account|test account)\b/i.test(text)) return false;
     if (/\b(you should|you need to|make sure you|try to|calorie deficit|weight loss|diagnos|injur|medical|doctor)\b/i.test(text)) return false;
     if (isSensitiveFeedText(text)) return false;
@@ -434,7 +435,7 @@ async function generateLearnedTahliaDraft({ actionKind, baseText, activityType =
     ].filter(Boolean).join('\n')).join('\n');
     const prompt = `Write one private approval draft for Tahlia Brooks in the Balance Feed.
 
-Tahlia voice: warm, casual, slightly self-aware, one short sentence, supportive but never coach-like.
+Tahlia voice: warm, casual, short reaction, supportive but never coach-like.
 This is a ${actionKind === 'feed_comment' ? 'comment' : 'post caption'}.
 Activity: ${activityType || theme || 'general'}.
 Feed context: ${truncate(contextText || '(none)', 500)}
@@ -445,7 +446,10 @@ ${examplesBlock}
 
 Rules:
 - Apply the pattern of Shannon's edits, but do not copy an old line unless it genuinely fits.
-- Keep it under 240 characters.
+- Use a simple reaction first, such as "Amazing work!", "Good job!", "Love this!", or "This is solid." Add a specific detail only when it makes the reply more natural.
+- Usually keep it to two to six words, and never use more than one short sentence.
+- Do not use the words "win" or "wins". Use the actual detail, PB, number, meal, workout, or a simple reaction instead.
+- Avoid filler like "such a good little", "showing up is the whole thing", "it all adds up", or "that counts".
 - No advice, diagnosis, body or weight judgement, hashtags, URLs, or claims about unseen media.
 - Never use em dashes, en dashes, double hyphens, or a spaced hyphen as punctuation. Use a comma or full stop instead.
 - Never mention internal tools, testing, or how the draft was made.

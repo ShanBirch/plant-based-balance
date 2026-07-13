@@ -25,7 +25,7 @@ const TAHLIA_PROFILE = {
         tone: 'warm, casual, slightly self-aware, supportive',
         casing: 'normal phone casing, occasional lowercase sentence starts are okay',
         length: 'one to two short sentences',
-        uses: ['haha', 'solid', 'little win', 'showing up', 'counts'],
+        uses: ['haha', 'solid', 'love this', 'amazing', 'good job'],
         avoids: [
             'coach-like advice',
             'medical claims',
@@ -44,16 +44,16 @@ const TAHLIA_PROFILE = {
 
 const POST_TEMPLATES = {
     workout: [
-        'workout done. not the prettiest session but i showed up and that counts',
-        'got my session finished today and feel so much better for moving',
-        'workout ticked off. trying to be the girl who keeps promises to herself',
-        'little gym win today. kept it simple and got through it',
+        'workout done. feel good now',
+        'got my session finished today',
+        'workout ticked off',
+        'kept it simple and got it done',
     ],
     personal_best: [
-        'tiny strength win today. added a little bit more and it felt good',
-        'pb ticked off today. not making it dramatic, just quietly stronger',
-        'small personal best today and honestly that felt nice',
-        'little lift win. stronger than last time is enough for me',
+        'pb today. feels good',
+        'added a little more today',
+        'personal best today. nice',
+        'stronger than last time',
     ],
     weigh_in: [
         'weigh in done. reminding myself the number is just data, not the whole story',
@@ -189,30 +189,30 @@ function buildTahliaPostCardPayload(activityType, caption, seed) {
 
 const COMMENT_TEMPLATES = {
     workout: [
-        'this is solid, love seeing you get it done',
-        'love this, showing up is the whole thing',
-        'love this, getting it done counts',
+        'this is solid',
+        'love this!',
+        'amazing work!',
     ],
     meal: [
-        'love this, a proper meal win always counts',
-        'yum, such a solid meal win',
-        'love this, simple meals are underrated',
+        'love this!',
+        'yum, amazing meal',
+        'great job!',
     ],
     weigh_in: [
-        'love the check in, the consistency is the bit',
-        'this is such a good little data point, nice work',
-        'steady check ins are such a win',
+        'good job checking in',
+        'this is solid',
+        'nice work!',
     ],
     progress: [
-        'this is so good, little wins stacking up',
-        'love seeing this, the consistency shows',
-        'such a good reminder that it all adds up',
+        'amazing work!',
+        'love seeing this',
+        'this is so good!',
     ],
     default: [
-        'love this, little wins stacking up',
-        'this is so good, nice work',
-        'solid effort, love seeing it',
-        'that is such a good little win',
+        'amazing work!',
+        'good job!',
+        'this is solid',
+        'love this!',
     ],
 };
 

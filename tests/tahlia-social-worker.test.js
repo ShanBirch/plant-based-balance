@@ -294,7 +294,8 @@ const learnedCommentAlert = worker.applyGeneratedTahliaDraft(commentAlert, {
 assert.strictEqual(learnedCommentAlert.data.draft_text, 'proper meal win this');
 assert.strictEqual(learnedCommentAlert.data.proposed_actions[0].payload.comment_text, 'proper meal win this');
 assert.strictEqual(learnedCommentAlert.data.tahlia_social_learning.example_count, 1);
-assert.strictEqual(worker.isSafeLearnedTahliaDraft('proper meal win this'), true);
+assert.strictEqual(worker.isSafeLearnedTahliaDraft('Amazing work!'), true);
+assert.strictEqual(worker.isSafeLearnedTahliaDraft('That is such a good little win'), false);
 assert.strictEqual(worker.isSafeLearnedTahliaDraft('you should try a calorie deficit'), false);
 assert.strictEqual(worker.parseTahliaDraftReply('{"text":"little win"}'), 'little win');
 assert.strictEqual(
@@ -321,6 +322,19 @@ assert.strictEqual(
     }).data.draft_text,
     'solid effort, keep it going, nice'
 );
+
+const simpleCommentContexts = [
+    { media_type: 'workout_card', caption: 'workout done' },
+    { media_type: 'meal_card', caption: 'tofu bowl' },
+    { media_type: 'text', caption: 'scale check in' },
+    { media_type: 'text', caption: 'progress photo' },
+    { media_type: 'text', caption: 'hello' },
+];
+for (const story of simpleCommentContexts) {
+    for (let seed = 0; seed < 20; seed += 1) {
+        assert.doesNotMatch(profile.buildTahliaCommentDraft({ story, seed: String(seed) }).comment, /\bwin(?:s)?\b/i);
+    }
+}
 
 assert.ok(adminSource.includes('function isTahliaSocialApprovalAlert'));
 assert.ok(adminSource.includes('function isSupportedTahliaSocialApprovalAlert'));
