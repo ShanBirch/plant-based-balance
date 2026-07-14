@@ -29,6 +29,19 @@ async function run() {
     const newer = await worker.getNewerInstagramInbound(alert);
     assert.strictEqual(newer.id, 'newer-inbound');
 
+    const messengerAlert = {
+        ...alert,
+        data: { channel: 'messenger', ig_thread_id: 'thread-messenger' },
+    };
+    global.fetch = async (url) => {
+        assert.match(String(url), /thread_id=eq\.thread-messenger/);
+        return {
+            ok: true,
+            text: async () => JSON.stringify([{ id: 'newer-messenger-inbound' }]),
+        };
+    };
+    assert.strictEqual((await worker.getNewerInstagramInbound(messengerAlert)).id, 'newer-messenger-inbound');
+
     global.fetch = async () => ({ ok: true, text: async () => '[]' });
     assert.strictEqual(await worker.getNewerInstagramInbound(alert), null);
     assert.strictEqual(await worker.getNewerInstagramInbound({ data: { channel: 'instagram' } }), null);

@@ -15762,7 +15762,7 @@
         // tell them apart for analytics, but Shannon thinks of them as one
         // bucket — "messages from clients."
         const ALERT_FILTER_GROUPS = {
-            incoming_dm: ['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm'],
+            incoming_dm: ['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm', 'whatsapp_incoming_message'],
         };
 
         function filterAlerts() {
@@ -15824,6 +15824,7 @@
         //   40     — coach-facing planning artifacts (weekly_digest)
         const ALERT_TYPE_URGENCY = {
             subscription_sale:    2,
+            whatsapp_incoming_message: 1,
             incoming_dm:         1,   // real client message waiting — highest of all
             win_to_celebrate:    9,   // Bigger win moments, not routine PBs
             first_workout:       3,
