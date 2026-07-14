@@ -1485,7 +1485,7 @@ if(!window._pbbIsIOSSafari) {
 
     <script src="js/dashboard/script_part_9.js"></script>
 
-    <script src="js/dashboard/script_part_10.js"></script>
+<script src="js/dashboard/script_part_10.js?v=strava-route-v1"></script>
 
     <script src="js/dashboard/script_part_11.js?v=settings-spotify-row-v1"></script>
 
@@ -1803,6 +1803,7 @@ if(!window._pbbIsIOSSafari) {
                     </div>
                 </div>
             </div>
+            <button id="strava-share-route-btn" type="button" onclick="shareLatestStravaRoute()" style="display:none; width:100%; margin-top:12px; border:0; border-radius:12px; padding:13px 14px; background:linear-gradient(135deg,#0f766e,#0891b2); color:white; font:inherit; font-size:0.88rem; font-weight:800; cursor:pointer; box-shadow:0 7px 15px rgba(8,145,178,.2);">Share route to Feed</button>
             <div id="strava-last-sync" style="text-align: right; font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; padding-right: 4px;"></div>
         </div>
 
@@ -13107,6 +13108,7 @@ if(!window._pbbIsIOSSafari) {
   const steps = [
     { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity', body:'After logging a walk, run, ride or class, add a photo and Balance overlays your activity stats before sharing it to Feed. Each share earns +5 XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
     { tab:'movement-tab', sel:'#activity-share-photo-btn', title:'Take a photo or choose one', body:'When you share an activity, tap Add a photo to open your camera or choose one from your gallery. Balance puts your activity stats straight on it for Feed.', condition: function(){ return !!document.getElementById('activity-share-photo-btn'); } },
+    { tab:'dashboard', sel:'#strava-share-route-btn', title:'Share your route', body:'Connect Strava, then share a walk, run or ride with its recorded route over your photo. You choose every route before it reaches Feed.', condition: function(){ var b = document.getElementById('strava-share-route-btn'); return b && b.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#ask-balance-command-palette .ask-balance-command-card,#ask-balance-command-palette', title:'Ask Balance by long hold', body:"Press and hold any open space for 3 seconds to open Ask Balance. Type what you want and Balance can log food, start workouts, open quizzes, post to Feed, or help change a workout.", xpReward:'intro', tourBottomReserve:16, action: async function(){
         try {
             if (typeof window.showAskBalanceCommandPalette === 'function') {
@@ -14213,6 +14215,14 @@ if(!window._pbbIsIOSSafari) {
     body: 'Tap Add a photo after logging an activity, then take a new photo or choose one from your gallery. Balance adds your activity stats before sharing it to Feed.',
     fallbackBody: 'Log an activity in Movement, then take a new photo or choose one from your gallery before sharing it to Feed.',
     condition: function(){ return !!document.getElementById('activity-share-photo-btn') || !!document.getElementById('move-your-way-pilot-card'); }
+  });
+  allFeatures.push({
+    id: 'strava-route-photo-overlay-v1',
+    tab: 'dashboard',
+    sel: '#strava-share-route-btn',
+    title: 'Your route, on your activity photo',
+    body: 'A Strava walk, run or ride with a recorded route can now be shared to Feed with the route and your Balance stats over your own photo. Nothing posts until you choose Share.',
+    condition: function(){ var b = document.getElementById('strava-share-route-btn'); return b && b.style.display !== 'none'; }
   });
   allFeatures.push({
     id: 'custom-exercise-feed-autopost-v1',
@@ -17109,13 +17119,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=21';
+s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=22';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=21"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=22"><\/script>');
 }
 </script>
 

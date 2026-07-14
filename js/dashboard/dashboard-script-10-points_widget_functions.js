@@ -3742,6 +3742,119 @@ async function pbbShareDrawBalanceBrandMark(ctx, x, y, size = 38) {
     }
 }
 
+function pbbShareDecodeRoutePolyline(polyline) {
+    const encoded = String(polyline || '');
+    const points = [];
+    let index = 0;
+    let lat = 0;
+    let lng = 0;
+
+    while (index < encoded.length) {
+        let result = 0;
+        let shift = 0;
+        let byte;
+        do {
+            byte = encoded.charCodeAt(index++) - 63;
+            result |= (byte & 0x1f) << shift;
+            shift += 5;
+        } while (byte >= 0x20 && index <= encoded.length);
+        lat += (result & 1) ? ~(result >> 1) : (result >> 1);
+
+        result = 0;
+        shift = 0;
+        do {
+            byte = encoded.charCodeAt(index++) - 63;
+            result |= (byte & 0x1f) << shift;
+            shift += 5;
+        } while (byte >= 0x20 && index <= encoded.length);
+        lng += (result & 1) ? ~(result >> 1) : (result >> 1);
+
+        const point = { lat: lat / 1e5, lng: lng / 1e5 };
+        if (Number.isFinite(point.lat) && Number.isFinite(point.lng)) points.push(point);
+    }
+    return points;
+}
+
+function pbbShareDrawActivityRoute(ctx, cardPayload, x, y, w, h) {
+    const points = pbbShareDecodeRoutePolyline(cardPayload.route_polyline);
+    if (points.length < 2) return false;
+
+    const lats = points.map(point => point.lat);
+    const lngs = points.map(point => point.lng);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    const centreLat = (minLat + maxLat) / 2;
+    const centreLng = (minLng + maxLng) / 2;
+    const lngScale = Math.max(Math.cos(centreLat * Math.PI / 180), 0.01);
+    const dataW = Math.max((maxLng - minLng) * lngScale, 0.00001);
+    const dataH = Math.max(maxLat - minLat, 0.00001);
+    const pad = 40;
+    const scale = Math.min((w - (pad * 2)) / dataW, (h - (pad * 2)) / dataH);
+    const project = (point) => ({
+        x: x + (w / 2) + ((point.lng - centreLng) * lngScale * scale),
+        y: y + (h / 2) - ((point.lat - centreLat) * scale)
+    });
+
+    pbbShareFillRoundRect(ctx, x, y, w, h, 26, 'rgba(2, 23, 36, 0.56)');
+    ctx.save();
+    pbbShareRoundRect(ctx, x, y, w, h, 26);
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(226, 232, 240, 0.16)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 5; i++) {
+        const gridX = x + (w * i / 5);
+        const gridY = y + (h * i / 5);
+        ctx.beginPath();
+        ctx.moveTo(gridX, y);
+        ctx.lineTo(gridX, y + h);
+        ctx.moveTo(x, gridY);
+        ctx.lineTo(x + w, gridY);
+        ctx.stroke();
+    }
+
+    const first = project(points[0]);
+    ctx.beginPath();
+    ctx.moveTo(first.x, first.y);
+    points.slice(1).forEach(point => {
+        const projected = project(point);
+        ctx.lineTo(projected.x, projected.y);
+    });
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.78)';
+    ctx.lineWidth = 15;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    ctx.strokeStyle = '#f8c255';
+    ctx.lineWidth = 8;
+    ctx.stroke();
+
+    const last = project(points[points.length - 1]);
+    [[first, '#22c55e'], [last, '#f97316']].forEach(([point, colour]) => {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 12, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 7, 0, Math.PI * 2);
+        ctx.fillStyle = colour;
+        ctx.fill();
+    });
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.font = '900 18px Arial, sans-serif';
+    ctx.fillText('ROUTE', x + 20, y + 30);
+    const distance = Number(cardPayload.distance_km || 0);
+    if (distance > 0) {
+        ctx.textAlign = 'right';
+        ctx.fillText(`${distance.toFixed(distance < 10 ? 1 : 0)} KM`, x + w - 20, y + 30);
+        ctx.textAlign = 'left';
+    }
+    return true;
+}
+
 async function pbbShareDrawFullBleedActivityCard(ctx, cardPayload, width, height, target) {
     const isFeed = target === 'feed';
     const top = isFeed ? 130 : 270;
@@ -3775,6 +3888,11 @@ async function pbbShareDrawFullBleedActivityCard(ctx, cardPayload, width, height
     ctx.restore();
 
     const cardY = Math.max(titleEnd + 28, bottom - 205);
+    const routeH = target === 'feed' ? 270 : 340;
+    const routeY = Math.max(titleEnd + 30, cardY - routeH - 32);
+    if (cardPayload.route_polyline) {
+        pbbShareDrawActivityRoute(ctx, cardPayload, x, routeY, w, Math.max(170, cardY - routeY - 30));
+    }
     pbbShareFillRoundRect(ctx, x, cardY, w, 156, 28, 'rgba(8, 47, 73, 0.72)');
     ctx.save();
     pbbShareRoundRect(ctx, x, cardY, w, 156, 28);
@@ -4010,7 +4128,7 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
         return canvas.toDataURL('image/jpeg', 0.92);
     }
 
-    if (cardType === 'activity' && primaryPhotoDataUrl) {
+    if (cardType === 'activity') {
         await pbbShareDrawFullBleedActivityCard(ctx, cardPayload, width, height, target);
         return canvas.toDataURL('image/jpeg', 0.92);
     }
@@ -4996,9 +5114,67 @@ window.openImportedActivityForSharing = function(activity) {
         photoBase64: null,
         photoMimeType: null,
         sourceMetadata: metadata,
+        routePolyline: metadata.route_polyline || null,
+        distanceKm: Number(metadata.distance_km || 0) || null,
+        includeRoute: Boolean(metadata.route_polyline),
         activityIds: Array.isArray(activity.activityIds) ? activity.activityIds : [activity.id]
     };
     showActivitySuccess(savedActivityData);
+};
+
+window.openStravaActivityForSharing = async function(activity) {
+    if (!activity || !activity.route_polyline || !window.currentUser) {
+        throw new Error('A recorded Strava route is required');
+    }
+
+    const externalId = String(activity.strava_activity_id || activity.id || '');
+    const recent = await window.dbHelpers?.activityLogs?.getRecentImported(window.currentUser.id, 'strava', 20) || [];
+    let imported = recent.find(row => String(row.external_activity_id || '') === externalId);
+
+    if (!imported) {
+        const sport = String(activity.sport_type || '').toLowerCase();
+        const activityType = sport.includes('walk') ? 'walking'
+            : sport.includes('hike') ? 'hiking'
+                : sport.includes('run') ? 'running'
+                    : sport.includes('ride') ? 'cycling'
+                        : sport.includes('swim') ? 'swimming'
+                            : 'other';
+        const startTime = activity.start_time || null;
+        const distanceKm = Number(activity.distance_meters || 0) / 1000;
+        const payload = {
+            activity_type: activityType,
+            activity_label: activity.name || 'Strava activity',
+            duration_minutes: Math.max(1, Math.round(Number(activity.moving_time_seconds || 0) / 60)),
+            intensity: 'moderate',
+            estimated_calories: Math.max(0, Math.round(Number(activity.calories || 0))),
+            activity_date: startTime ? String(startTime).slice(0, 10) : undefined,
+            source: 'strava',
+            external_activity_id: externalId,
+            source_metadata: {
+                provider: 'Strava',
+                sport_type: activity.sport_type || null,
+                distance_meters: Number(activity.distance_meters || 0) || null,
+                distance_km: distanceKm ? Number(distanceKm.toFixed(2)) : null,
+                elevation_meters: Number(activity.total_elevation_gain || 0) || null,
+                average_heart_rate: Number(activity.avg_heart_rate || 0) || null,
+                route_polyline: activity.route_polyline,
+                route_available: true,
+                start_time: startTime
+            },
+            imported_at: new Date().toISOString()
+        };
+        try {
+            imported = await window.dbHelpers?.activityLogs?.create(window.currentUser.id, payload);
+        } catch (error) {
+            // The scheduled sync may have inserted it between the lookup and
+            // this fallback. In that case use the canonical imported record.
+            const refreshed = await window.dbHelpers?.activityLogs?.getRecentImported(window.currentUser.id, 'strava', 20) || [];
+            imported = refreshed.find(row => String(row.external_activity_id || '') === externalId);
+            if (!imported) throw error;
+        }
+    }
+
+    window.openImportedActivityForSharing(imported);
 };
 
 // MET values for calorie estimation (Metabolic Equivalent of Task)
@@ -5400,9 +5576,12 @@ function showActivitySuccess(data) {
     shareBtn.disabled = false;
     document.getElementById('activity-share-btn-text').textContent = 'Share to Feed (+5 XP)';
     const sharePhotoLabel = document.getElementById('activity-share-photo-btn-text');
-    if (sharePhotoLabel) sharePhotoLabel.textContent = data.photoBase64
-        ? 'Photo ready, your activity stats will be overlaid'
-        : 'Add a photo for your share';
+    if (sharePhotoLabel) {
+        const routeCopy = data.routePolyline ? 'route and activity stats' : 'activity stats';
+        sharePhotoLabel.textContent = data.photoBase64
+            ? `Photo ready, your ${routeCopy} will be overlaid`
+            : `Add a photo for your ${routeCopy}`;
+    }
 
     window.history.pushState({ view: 'activity-success' }, '', '#activity-success');
 }
@@ -5437,12 +5616,17 @@ async function shareActivityCardToFeed() {
             emoji: savedActivityData.emoji,
             venue_type: savedActivityData.venueType
         };
+        if (savedActivityData.includeRoute !== false && savedActivityData.routePolyline) {
+            cardPayload.route_polyline = savedActivityData.routePolyline;
+            cardPayload.distance_km = savedActivityData.distanceKm || null;
+            cardPayload.route_source = savedActivityData.sourceMetadata?.provider || 'Strava';
+        }
 
         let mediaUrl = '';
-        if (savedActivityData.photoBase64) {
+        if (savedActivityData.photoBase64 || cardPayload.route_polyline) {
             const compositeDataUrl = await renderBalanceShareCardImage(cardPayload, {
                 target: 'feed',
-                photoDataUrl: savedActivityData.photoBase64
+                photoDataUrl: savedActivityData.photoBase64 || null
             });
             const compositeFile = postWorkoutShareFileFromDataUrl(compositeDataUrl, 'balance-activity-overlay.jpg');
             const formData = new FormData();

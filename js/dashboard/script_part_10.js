@@ -26,6 +26,7 @@
 
     function updateStravaDisplay(data) {
         const latest = data.activities && data.activities[0];
+        window._latestStravaActivity = latest || null;
         if (latest) {
             const nameEl = document.getElementById('strava-activity-name');
             const typeEl = document.getElementById('strava-activity-type');
@@ -53,6 +54,10 @@
             if (hrEl && latest.avg_heart_rate) hrEl.textContent = latest.avg_heart_rate;
             if (calEl) calEl.textContent = (latest.calories || 0).toLocaleString();
             if (elevEl) elevEl.textContent = Math.round(latest.total_elevation_gain || 0) + 'm';
+        }
+        const shareRouteBtn = document.getElementById('strava-share-route-btn');
+        if (shareRouteBtn) {
+            shareRouteBtn.style.display = latest && latest.route_polyline ? 'block' : 'none';
         }
         if (data.last_sync) {
             const syncEl = document.getElementById('strava-last-sync');
@@ -107,6 +112,24 @@
             .finally(() => { if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; } });
     }
 
+    async function shareLatestStravaRoute() {
+        const activity = window._latestStravaActivity;
+        if (!activity || !activity.route_polyline) {
+            showWearableToast('No recorded route is available for that Strava activity.');
+            return;
+        }
+        if (typeof window.openStravaActivityForSharing !== 'function') {
+            showWearableToast('Route sharing is still loading. Try again in a moment.');
+            return;
+        }
+        try {
+            await window.openStravaActivityForSharing(activity);
+        } catch (error) {
+            console.warn('Could not open Strava route share:', error);
+            showWearableToast('Could not prepare that route. Sync and try again.');
+        }
+    }
+
     function checkStravaOAuthResult() {
         const params = new URLSearchParams(window.location.search);
         const result = params.get('strava');
@@ -125,6 +148,7 @@
 
     window.toggleStravaConnection = toggleStravaConnection;
     window.syncStravaNow = syncStravaNow;
+    window.shareLatestStravaRoute = shareLatestStravaRoute;
     window.initStravaDashboard = initStravaDashboard;
     checkStravaOAuthResult();
 

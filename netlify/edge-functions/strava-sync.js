@@ -66,11 +66,27 @@ export default async (request, context) => {
                 .gte("date", dateStr)
                 .order("date", { ascending: false });
 
+            const { data: importedActivities } = await supabase
+                .from("activity_logs")
+                .select("external_activity_id, source_metadata")
+                .eq("user_id", userId)
+                .eq("source", "strava")
+                .gte("activity_date", dateStr);
+
+            const routeByActivityId = new Map((importedActivities || []).map(row => [
+                String(row.external_activity_id || ""),
+                row.source_metadata?.route_polyline || null
+            ]));
+            const activitiesWithRoutes = (activities || []).map(activity => ({
+                ...activity,
+                route_polyline: routeByActivityId.get(String(activity.strava_activity_id || "")) || null
+            }));
+
             return jsonResponse({
                 connected: true,
                 last_sync: connection.last_sync_at,
                 connected_at: connection.connected_at,
-                activities: activities || [],
+                activities: activitiesWithRoutes,
             });
 
         } catch (err) {
@@ -194,6 +210,8 @@ async function syncUserStravaData(supabase, userId, clientId, clientSecret) {
                 synced_at: new Date().toISOString(),
             }, { onConflict: "strava_activity_id" });
         }
+
+        await syncStravaActivitiesToActivityLogs(supabase, userId, activitiesData);
     }
 
     // Update last_sync_at
@@ -203,6 +221,102 @@ async function syncUserStravaData(supabase, userId, clientId, clientSecret) {
         .eq("user_id", userId);
 
     return { success: true, activities_synced: activitiesData?.length || 0 };
+}
+
+function normaliseStravaActivityType(value) {
+    const type = String(value || "").toLowerCase();
+    if (type.includes("walk")) return "walking";
+    if (type.includes("hike")) return "hiking";
+    if (type.includes("run")) return "running";
+    if (type.includes("ride") || type.includes("cycle")) return "cycling";
+    if (type.includes("swim")) return "swimming";
+    return "other";
+}
+
+function getStravaIntensity(activity) {
+    const watts = Number(activity?.average_watts || 0);
+    const speed = Number(activity?.average_speed || 0);
+    if (watts >= 220 || speed >= 4.5) return "vigorous";
+    if (watts >= 120 || speed >= 1.8) return "moderate";
+    return "light";
+}
+
+function mapStravaActivityToLog(userId, activity, importedAt) {
+    const routePolyline = activity?.map?.summary_polyline || null;
+    const activityDate = activity?.start_date_local
+        ? String(activity.start_date_local).slice(0, 10)
+        : new Date(activity?.start_date || importedAt).toISOString().slice(0, 10);
+    const distanceMeters = Number(activity?.distance || 0);
+    const movingSeconds = Number(activity?.moving_time || 0);
+
+    return {
+        user_id: userId,
+        activity_type: normaliseStravaActivityType(activity?.sport_type || activity?.type),
+        activity_label: activity?.name || "Strava activity",
+        duration_minutes: Math.max(1, Math.round(movingSeconds / 60)),
+        intensity: getStravaIntensity(activity),
+        estimated_calories: Math.max(0, Math.round(Number(activity?.calories || 0))),
+        activity_date: activityDate,
+        source: "strava",
+        external_activity_id: String(activity.id),
+        source_metadata: {
+            provider: "Strava",
+            sport_type: activity?.sport_type || activity?.type || null,
+            distance_meters: distanceMeters || null,
+            distance_km: distanceMeters ? Number((distanceMeters / 1000).toFixed(2)) : null,
+            elevation_meters: Number(activity?.total_elevation_gain || 0) || null,
+            average_heart_rate: Number(activity?.average_heartrate || 0) || null,
+            route_polyline: routePolyline,
+            route_available: Boolean(routePolyline),
+            start_time: activity?.start_date || null
+        },
+        imported_at: importedAt,
+        shared_to_feed: false
+    };
+}
+
+async function syncStravaActivitiesToActivityLogs(supabase, userId, activities) {
+    const supported = (activities || []).filter(activity => activity && activity.id);
+    if (!supported.length) return 0;
+
+    const ids = supported.map(activity => String(activity.id));
+    const { data: existing, error: existingError } = await supabase
+        .from("activity_logs")
+        .select("external_activity_id, shared_to_feed")
+        .eq("user_id", userId)
+        .eq("source", "strava")
+        .in("external_activity_id", ids);
+    if (existingError) throw existingError;
+
+    const existingById = new Map((existing || []).map(row => [row.external_activity_id, row]));
+    const importedAt = new Date().toISOString();
+    const rowsToInsert = [];
+
+    for (const activity of supported) {
+        const mapped = mapStravaActivityToLog(userId, activity, importedAt);
+        const existingRow = existingById.get(mapped.external_activity_id);
+        if (existingRow) {
+            // Never reopen a card the member has already shared, but keep its
+            // route and metrics fresh if Strava corrected the activity.
+            const { error } = await supabase.from("activity_logs").update({
+                activity_type: mapped.activity_type,
+                activity_label: mapped.activity_label,
+                duration_minutes: mapped.duration_minutes,
+                intensity: mapped.intensity,
+                estimated_calories: mapped.estimated_calories,
+                activity_date: mapped.activity_date,
+                source_metadata: mapped.source_metadata
+            }).eq("user_id", userId).eq("source", "strava").eq("external_activity_id", mapped.external_activity_id);
+            if (error) throw error;
+        } else {
+            rowsToInsert.push(mapped);
+        }
+    }
+
+    if (!rowsToInsert.length) return 0;
+    const { error: insertError } = await supabase.from("activity_logs").insert(rowsToInsert);
+    if (insertError) throw insertError;
+    return rowsToInsert.length;
 }
 
 /**
