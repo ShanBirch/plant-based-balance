@@ -43,10 +43,11 @@ assert.ok(clientContextSource.includes('Warn if the draft tacks an optional curi
 assert.ok(clientContextSource.includes('near-duplicate same-topic question'), 'draft QA catches same-lane rapport follow-up questions');
 assert.ok(clientContextSource.includes('sibling same-topic follow-up'), 'draft QA treats repeated rapport questions as a warning, not a ban');
 assert.ok(clientContextSource.includes('Warn when the draft asks for a current status'), 'draft QA catches redundant current-status questions');
-assert.ok(block.includes('Vegetarian voice guard'), 'keeps meat praise out of Shannon DM tuning');
-assert.ok(block.includes('do not call meat, bacon, fish, or other animal products yum/elite/delicious'), 'prevents praising meat in Shannon voice');
-assert.ok(bioBlock.includes('Shannon is vegetarian'), 'keeps vegetarian fact in coach bio');
-assert.ok(bioBlock.includes('do not praise meat, bacon, fish, or other animal products'), 'keeps meat praise out of coach bio facts');
+assert.ok(block.includes('Vegan voice guard'), 'keeps meat praise out of Shannon DM tuning');
+assert.ok(block.includes('do not call meat, bacon, fish, dairy, eggs, or other animal products yum/elite/delicious'), 'prevents praising animal products in Shannon voice');
+assert.ok(bioBlock.includes('Vegan for five years'), 'keeps vegan fact in coach bio');
+assert.ok(bioBlock.includes('ive been vegan for five years too'), 'gives the coach a shared-identity vegan reply');
+assert.ok(bioBlock.includes('do not praise meat, bacon, fish, dairy, eggs, or other animal products'), 'keeps animal-product praise out of coach bio facts');
 
 const memoryBlock = buildMemoryBlock({
     coach_instructions: [

@@ -418,10 +418,10 @@ function hasEthicalFoundationProgression(text) {
     return /\b(what|which|how|where|when|does|do).*\b(misunderstand|ethical|ethics|compassion|animal|welfare|values|advocacy|social|logistic|daily choices|shapes|structure|commitment|tested|carry|pressure|burnout|hardest|non.?negotiable|foundation|compromise|thriv(?:e|ing)|performance|alignment|discipline|knowledge|physical pursuits?)\b/i.test(s);
 }
 
-function isVeganEthicalChallengeToVegetarianism(text) {
+function isVeganIdentityQuestion(text) {
     const s = String(text || '').toLowerCase();
-    return /\b(vegetarianism|vegetarian|fully plant.?based|vegan|animal welfare)\b/i.test(s)
-        && /\b(what made you|why did you|why not|settle back|go back|after trying|with animal welfare in mind|beyond just tradition)\b/i.test(s);
+    return /\bvegan\b/i.test(s)
+        && /\b(how long|how about you|you too|are you vegan|you vegan|been vegan|vegan for)\b/i.test(s);
 }
 
 function hasPlantBasedProcessProgression(text) {
@@ -435,10 +435,9 @@ function trivializesEthicalFoundation(text) {
     return /\b(easy to stay on track|stay on track|make it easy|mostly plant.?based|busy days|with training)\b/i.test(String(text || ''));
 }
 
-function mishandlesVeganEthicalChallenge(text) {
+function mishandlesVeganIdentityQuestion(text) {
     const s = String(text || '').toLowerCase();
-    return /\b(good balance|fits my day-to-day|too restrictive|still aligns with animal welfare|aligns with the animal welfare|settled back into vegetarian|personally sustainable)\b/i.test(s)
-        && !/\b(imperfect|not a clean answer|compromise|i get why that may not land|i know that is not the same)\b/i.test(s);
+    return /\b(vegetarian|mostly plant.?based|tried (?:full )?vegan|not (?:fully )?vegan|settled back)\b/i.test(s);
 }
 
 function isAppOrWorkoutPlanSupportRequest(text) {
@@ -1351,13 +1350,10 @@ function detectCoachTurnIssues({ coachText, leadText, qualifier, leadStage = 'qu
             issues.push('no_progression');
         }
     }
-    if (isVeganEthicalChallengeToVegetarianism(leadText)) {
-        if (mishandlesVeganEthicalChallenge(text)) {
+    if (isVeganIdentityQuestion(leadText)) {
+        if (mishandlesVeganIdentityQuestion(text)) {
             issues.push('missed_specific_hook');
             issues.push('too_generic');
-        }
-        if (!hasPlantBasedProcessProgression(text)) {
-            issues.push('no_progression');
         }
     }
     if (isEthicalFoundationSignal(leadText) && trivializesEthicalFoundation(text)) {
@@ -2069,7 +2065,7 @@ function buildCoachTurnPrompt({ leadName, history, currentLeadText, qualifier, m
     const unresolvedPlateauSignal = isUnresolvedPlateauSignal(currentLeadText);
     const advancedPlantBasedSignal = isAdvancedPlantBasedSignal(currentLeadText);
     const ethicalFoundationSignal = isEthicalFoundationSignal(currentLeadText);
-    const veganEthicalChallengeSignal = isVeganEthicalChallengeToVegetarianism(currentLeadText);
+    const veganIdentityQuestionSignal = isVeganIdentityQuestion(currentLeadText);
     const hookContext = String(qualifier?.facts?.hook_context || '');
     const challengeInfoRequestSignal = /\b(what'?s included|what is included|what'?s it about|what is it about|what'?s this about|tell me more about (?:it|the challenge)|what does it involve|what'?s involved)\b/i.test(currentLeadText)
         && /\b(challenge|invite|low.?impact|fitness|plant.?based|program|30\s*day|30-day)\b/i.test(`${hookContext} ${currentLeadText}`);
@@ -2307,13 +2303,12 @@ They are asking what the challenge/invite is about, not necessarily asking to jo
 - Do not ask to send the link in this same reply unless they explicitly ask for the link, to join, or how to start.
 - Add one light fit-check question about what caught their eye, what they need low-impact for, or whether the time/app setup needs to be simple.`
         : '';
-    const veganEthicalChallengeNudge = veganEthicalChallengeSignal
+    const veganIdentityQuestionNudge = veganIdentityQuestionSignal
         ? `
-VEGAN ETHICAL CHALLENGE:
-They are directly asking why Shannon is vegetarian rather than fully vegan/plant-based, especially through an animal-welfare lens.
-- Answer humbly in one short sentence. Do not defend it as perfectly aligned with animal welfare or ask them to validate the compromise.
-- Avoid "good balance", "fits my day-to-day", or "too restrictive" as the main frame.
-- Then pivot back to their experience, advocacy load, ethical pressure, or what feels hardest to carry.`
+VEGAN IDENTITY:
+Shannon has been vegan for five years. They are inviting a shared-identity reply, so answer that directly and do not describe Shannon as vegetarian or mostly plant-based.
+- A natural shape is: "ive been vegan for five years too. i actually built Balance for plant-based people who want to get fit."
+- Use the Balance line only when it fits the flow. Keep it a warm bridge, not a sudden pitch.`
         : '';
     const publicAiTopicNudge = publicAiTopicSignal
         ? `
@@ -2690,7 +2685,7 @@ ${casualHelpNudge}
 ${plateauNudge}
 ${hypermobilityRoutineNudge}
 ${plantExpertNudge}
-${veganEthicalChallengeNudge}
+${veganIdentityQuestionNudge}
 ${challengeInfoRequestNudge}
 ${publicAiTopicNudge}
 ${supportRequestNudge}

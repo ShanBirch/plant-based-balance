@@ -1524,24 +1524,22 @@ const plantExpertBridge = detectCoachTurnIssues({
 });
 assert.ok(!plantExpertBridge.includes('missed_specific_hook'));
 
-const veganEthicsChallengeLead = "What made you settle back into vegetarianism after trying to go fully plant-based, especially with animal welfare in mind?";
-const veganEthicsMiss = detectCoachTurnIssues({
-    coachText: "it came down to finding what felt personally sustainable long-term without feeling too restrictive. vegetarianism still aligns with animal welfare but fits my day-to-day better.",
-    leadText: veganEthicsChallengeLead,
+const veganIdentityLead = "I've been vegan for five years, how about you?";
+const veganIdentityMiss = detectCoachTurnIssues({
+    coachText: "yeah im vegetarian, grew up veggie and mostly eat plant-based now.",
+    leadText: veganIdentityLead,
     qualifier: null,
     leadStage: 'qualifying',
 });
-assert.ok(veganEthicsMiss.includes('missed_specific_hook'));
-assert.ok(veganEthicsMiss.includes('no_progression'));
+assert.ok(veganIdentityMiss.includes('missed_specific_hook'));
 
-const veganEthicsBridge = detectCoachTurnIssues({
-    coachText: "honestly, it was me falling back into what felt sustainable, but i know that is not a clean answer from an animal welfare lens. what feels hardest to carry now, the advocacy burnout or the social side?",
-    leadText: veganEthicsChallengeLead,
+const veganIdentityBridge = detectCoachTurnIssues({
+    coachText: "ive been vegan for five years too. i actually built Balance for plant-based people who want to get fit.",
+    leadText: veganIdentityLead,
     qualifier: null,
     leadStage: 'qualifying',
 });
-assert.ok(!veganEthicsBridge.includes('missed_specific_hook'));
-assert.ok(!veganEthicsBridge.includes('no_progression'));
+assert.ok(!veganIdentityBridge.includes('missed_specific_hook'));
 
 const ethicalTrivialized = detectCoachTurnIssues({
     coachText: 'with that kind of commitment, what helps you make it easy to stay on track, especially with training or busy days?',
