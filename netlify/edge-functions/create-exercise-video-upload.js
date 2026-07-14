@@ -5,7 +5,6 @@
  */
 
 const DEFAULT_SUPABASE_URL = 'https://hzapaorxqboevxnumxkv.supabase.co';
-const MAX_EXERCISE_VIDEO_BYTES = 1024 * 1024 * 1024;
 
 function getEnv(name) {
     try {
@@ -91,8 +90,8 @@ export default async (request) => {
         const fileName = String(body.fileName || 'exercise-video.mp4').trim();
         const size = Number(body.size || 0);
 
-        if (!Number.isFinite(size) || size <= 0 || size > MAX_EXERCISE_VIDEO_BYTES) {
-            return jsonResponse(400, { error: 'That video is too large. Keep exercise clips under 1 GB.' });
+        if (!Number.isFinite(size) || size <= 0) {
+            return jsonResponse(400, { error: 'Missing or invalid video size.' });
         }
         if (!isSupportedExerciseVideo(contentType, fileName)) {
             return jsonResponse(400, { error: 'Please choose a video clip.' });

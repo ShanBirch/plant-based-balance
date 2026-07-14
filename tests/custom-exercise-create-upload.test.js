@@ -12,7 +12,7 @@ const supabaseHelpers = fs.readFileSync(path.join(root, 'lib/supabase.js'), 'utf
 const awardPoints = fs.readFileSync(path.join(root, 'netlify/edge-functions/award-points.ts'), 'utf8');
 const customExerciseReview = fs.readFileSync(path.join(root, 'netlify/edge-functions/custom-exercise-review.js'), 'utf8');
 const pointsConfig = fs.readFileSync(path.join(root, 'lib/points-config.js'), 'utf8');
-const exerciseVideoUpload = fs.readFileSync(path.join(root, 'netlify/edge-functions/upload-exercise-video.js'), 'utf8');
+const directExerciseVideoUpload = fs.readFileSync(path.join(root, 'netlify/edge-functions/create-exercise-video-upload.js'), 'utf8');
 const netlifyConfig = fs.readFileSync(path.join(root, 'netlify.toml'), 'utf8');
 const publicExerciseMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260707013000_public_custom_exercise_videos.sql'), 'utf8');
 const exerciseReviewMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260707231317_custom_exercise_review_alert.sql'), 'utf8');
@@ -150,9 +150,9 @@ assert.doesNotMatch(
   'gallery exercise videos should not be rejected by a client-side size limit'
 );
 assert.doesNotMatch(
-  exerciseVideoUpload,
-  /MAX_EXERCISE_VIDEO_BYTES|file\.size\s*>\s*MAX_EXERCISE_VIDEO_BYTES|under 120 MB/,
-  'exercise upload API should not impose a server-side video size limit'
+  directExerciseVideoUpload,
+  /MAX_EXERCISE_VIDEO_BYTES|size\s*>\s*MAX_EXERCISE_VIDEO_BYTES|under 1 GB/,
+  'direct exercise upload setup should not impose an application video size limit'
 );
 assert.match(
   workoutScript,
@@ -239,8 +239,13 @@ assert.ok(!/const feedStory = await createCustomExerciseFeedPost/.test(workoutSc
 
 assert.match(
   supabaseHelpers,
-  /fetch\('\/api\/upload-exercise-video'[\s\S]*body:\s*formData/,
-  'exercise video uploads should go through the exercise upload API, not Feed'
+  /fetch\('\/api\/create-exercise-video-upload'[\s\S]*body:\s*JSON\.stringify/,
+  'exercise video uploads should request a direct B2 upload target instead of sending the clip through Netlify'
+);
+assert.match(
+  supabaseHelpers,
+  /directUploadHeaders[\s\S]*X-Bz-File-Name[\s\S]*X-Bz-Content-Sha1[\s\S]*fetch\(startData\.uploadUrl[\s\S]*body:\s*file/,
+  'exercise video bytes should upload directly from the phone to B2'
 );
 assert.match(
   supabaseHelpers,
@@ -248,19 +253,19 @@ assert.match(
   'exercise video upload paths should sanitize the exercise ID'
 );
 assert.match(
-  exerciseVideoUpload,
-  /const fileName = `exercises\/\$\{userId\}\/\$\{exerciseId\}\.\$\{getVideoExtension\(file\)\}`/,
-  'exercise videos should be stored under the shared B2 exercises prefix'
+  directExerciseVideoUpload,
+  /const b2FileName = `exercises\/\$\{userId\}\/\$\{exerciseId\}\.\$\{extension\}`/,
+  'direct exercise uploads should be stored under the shared B2 exercises prefix'
 );
 assert.match(
-  exerciseVideoUpload,
-  /publicUrl = `\$\{authData\.downloadUrl\}\/file\/\$\{B2_BUCKET_NAME\}\/\$\{fileName\}`/,
-  'exercise video upload setup should return a public Backblaze URL'
+  directExerciseVideoUpload,
+  /publicUrl = `\$\{authData\.downloadUrl\}\/file\/\$\{B2_BUCKET_NAME\}\/\$\{b2FileName\}`/,
+  'direct exercise upload setup should return a public Backblaze URL'
 );
 assert.match(
   netlifyConfig,
-  /function = "upload-exercise-video"[\s\S]*path = "\/api\/upload-exercise-video"/,
-  'exercise video B2 upload endpoint should be mapped in Netlify'
+  /function = "create-exercise-video-upload"[\s\S]*path = "\/api\/create-exercise-video-upload"/,
+  'direct exercise video upload setup endpoint should be mapped in Netlify'
 );
 assert.match(
   netlifyConfig,
