@@ -20902,8 +20902,8 @@ function createWorkoutAddExerciseVideoButton() {
     btn.innerHTML = `
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 14H9v-4H5v-2h4V7h2v4h4v2h-4v4zm5-1.5V8l5 3.75-5 3.75z"/></svg>
         <div class="workout-camera-action-copy">
-            <span class="workout-camera-action-title">Add Exercise Video</span>
-            <span class="workout-camera-action-subtitle">Film or upload a demo, earn +15 XP</span>
+            <span class="workout-camera-action-title">Add an Exercise</span>
+            <span class="workout-camera-action-subtitle">Create it now, add a demo video when you're ready</span>
         </div>
     `;
     return btn;
@@ -20927,6 +20927,7 @@ let _customExerciseMediaRecorder = null;
 let _customExerciseRecordedChunks = [];
 let _customExerciseVideoFile = null;
 let _customExerciseVideoObjectUrl = null;
+let _customExerciseVideoTarget = null;
 let _customExerciseSuspendedCameraInputState = null;
 let _customExerciseRecTimerInterval = null;
 let _customExerciseRecStartTime = null;
@@ -20951,9 +20952,10 @@ function logCustomExerciseVideoDiagnostic(event, data = {}) {
     });
 }
 
-function openCreateCustomExerciseModal(context) {
+function openCreateCustomExerciseModal(context, videoTarget) {
     // context: 'workout' (during active workout) or 'library' (from workout library)
     window._customExerciseContext = context || 'library';
+    _customExerciseVideoTarget = videoTarget && videoTarget.id ? videoTarget : null;
     logCustomExerciseVideoDiagnostic('custom_exercise_modal_open', {
         context: window._customExerciseContext
     });
@@ -20969,6 +20971,31 @@ function openCreateCustomExerciseModal(context) {
     document.getElementById('custom-exercise-equipment').value = 'bodyweight';
     document.getElementById('custom-exercise-sets').value = '3';
     document.getElementById('custom-exercise-reps').value = '8-12';
+    const isVideoRecovery = !!_customExerciseVideoTarget;
+    const modalTitle = document.getElementById('custom-exercise-modal-title');
+    const saveButton = document.getElementById('save-custom-exercise-btn');
+    const detailFields = [
+        document.getElementById('custom-exercise-name'),
+        document.getElementById('custom-exercise-desc'),
+        document.getElementById('custom-exercise-muscle'),
+        document.getElementById('custom-exercise-equipment'),
+        document.getElementById('custom-exercise-sets'),
+        document.getElementById('custom-exercise-reps')
+    ];
+    detailFields.forEach(field => {
+        if (field) field.disabled = isVideoRecovery;
+    });
+    if (isVideoRecovery) {
+        const exercise = _customExerciseVideoTarget;
+        document.getElementById('custom-exercise-name').value = exercise.exercise_name || exercise.name || 'Exercise';
+        document.getElementById('custom-exercise-desc').value = exercise.description || '';
+        document.getElementById('custom-exercise-muscle').value = exercise.muscle_group || 'other';
+        document.getElementById('custom-exercise-equipment').value = exercise.equipment || 'bodyweight';
+        document.getElementById('custom-exercise-sets').value = exercise.default_sets || 3;
+        document.getElementById('custom-exercise-reps').value = exercise.default_reps || '8-12';
+    }
+    if (modalTitle) modalTitle.textContent = isVideoRecovery ? 'Add Video' : 'Create Exercise';
+    if (saveButton) saveButton.textContent = isVideoRecovery ? 'Upload' : 'Save';
     _customExerciseVideoFile = null;
     if (_customExerciseVideoObjectUrl) {
         URL.revokeObjectURL(_customExerciseVideoObjectUrl);
@@ -20989,15 +21016,31 @@ function openCreateCustomExerciseModal(context) {
     if (fileInput) fileInput.value = '';
     const cameraInput = document.getElementById('custom-exercise-camera-input');
     if (cameraInput) cameraInput.value = '';
-    updateCustomExerciseUploadStatus('');
+    updateCustomExerciseUploadStatus(isVideoRecovery
+        ? 'Add a new video for "' + (_customExerciseVideoTarget.exercise_name || _customExerciseVideoTarget.name || 'this exercise') + '".'
+        : '');
     validateCustomExerciseForm();
 
     // Load existing custom exercises
     loadMyCustomExercises();
 
     // Focus on name
-    setTimeout(() => document.getElementById('custom-exercise-name').focus(), 300);
+    if (!isVideoRecovery) {
+        setTimeout(() => document.getElementById('custom-exercise-name').focus(), 300);
+    }
 }
+
+function addVideoToExistingCustomExercise(exerciseId, exerciseName) {
+    const exercises = Array.isArray(window._myCustomExercisesCache)
+        ? window._myCustomExercisesCache
+        : [];
+    const exercise = exercises.find(item => item.id === exerciseId) || {
+        id: exerciseId,
+        exercise_name: exerciseName || 'Exercise'
+    };
+    openCreateCustomExerciseModal('recovery', exercise);
+}
+window.addVideoToExistingCustomExercise = addVideoToExistingCustomExercise;
 
 function closeCreateCustomExerciseModal() {
     document.getElementById('create-custom-exercise-modal').style.display = 'none';
@@ -21008,6 +21051,7 @@ function closeCreateCustomExerciseModal() {
         URL.revokeObjectURL(_customExerciseVideoObjectUrl);
         _customExerciseVideoObjectUrl = null;
     }
+    _customExerciseVideoTarget = null;
 }
 
 function suspendCustomExerciseCameraModal() {
@@ -21654,6 +21698,35 @@ async function saveCustomExercise() {
     btn.textContent = 'Saving...';
     btn.style.pointerEvents = 'none';
 
+    const videoTarget = _customExerciseVideoTarget;
+    if (videoTarget) {
+        const videoFile = _customExerciseVideoFile;
+        if (!videoFile) {
+            alert('Choose or film a video first.');
+            btn.textContent = 'Upload';
+            btn.style.pointerEvents = 'auto';
+            return;
+        }
+
+        const targetName = videoTarget.exercise_name || videoTarget.name || name;
+        try {
+            logCustomExerciseVideoDiagnostic('custom_exercise_video_retry_start', {
+                exerciseId: videoTarget.id,
+                exerciseName: targetName,
+                ...getCustomExerciseVideoDiagnostic(videoFile)
+            });
+            closeCreateCustomExerciseModal();
+            queueCustomExerciseVideoBackgroundUpload(user, videoTarget, videoFile, targetName);
+            if (typeof showToast === 'function') {
+                showToast('"' + targetName + '" is saved. Video uploading now.', 'success');
+            }
+        } finally {
+            btn.textContent = 'Save';
+            btn.style.pointerEvents = 'auto';
+        }
+        return;
+    }
+
     try {
         const exerciseId = crypto.randomUUID ? crypto.randomUUID() : 'ex-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
         const pendingVideoFile = _customExerciseVideoFile;
@@ -21832,6 +21905,11 @@ async function loadMyCustomExercises() {
                     : uploadFailed
                         ? ' &middot; Video failed'
                         : '';
+            const videoActionLabel = uploadFailed ? 'Retry video' : 'Add video';
+            const escapedExerciseName = String(ex.exercise_name || '').replace(/'/g, "\\'");
+            const videoActionHtml = !hasVideo
+                ? '<button type="button" onclick="addVideoToExistingCustomExercise(\'' + ex.id + '\', \'' + escapedExerciseName + '\')" style="background: #fff7ed; border: 1px solid #fbbf24; color: #92400e; border-radius: 8px; padding: 8px 10px; font-size: 0.78rem; font-weight: 800; cursor: pointer; white-space: nowrap;">' + videoActionLabel + '</button>'
+                : '';
 
             return `
                 <div style="background: #f8fafc; border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; border: 1px solid #e2e8f0;">
@@ -21844,6 +21922,7 @@ async function loadMyCustomExercises() {
                             ${muscleLabel}${muscleLabel && equipLabel ? ' &middot; ' : ''}${equipLabel}${metaSuffix}
                         </div>
                     </div>
+                    ${videoActionHtml}
                     <button onclick="deleteCustomExercise('${ex.id}', '${ex.exercise_name.replace(/'/g, "\\'")}')" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 8px; flex-shrink: 0;">
                         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
                             <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>

@@ -50,23 +50,23 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=139/,
-  'dashboard should bump script 5 so phones fetch the unrestricted custom exercise upload flow'
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=140/,
+  'dashboard should bump script 5 so phones fetch the custom exercise retry flow'
 );
 assert.match(
   dashboardHtml,
-  /id:\s*'custom-exercise-feed-autopost-v1'[\s\S]*title:\s*'New exercises to review'/,
-  'custom exercise review should have a returning-user Feature Drop'
+  /id:\s*'custom-exercise-video-retry-v1'[\s\S]*title:\s*'Finish an exercise video later'/,
+  'custom exercise retry should have a returning-user Feature Drop'
 );
 assert.match(
   dashboardHtml,
-  /title:'New exercises to review'[\s\S]*Shannon can approve it for Feed and shared-library XP/,
-  'custom exercise review should be in the guided feature tour'
+  /title:'Add an Exercise'[\s\S]*If a video ever fails[\s\S]*tap Add video beside that exercise/,
+  'custom exercise retry should be in the guided feature tour'
 );
 assert.match(
   dashboardHtml,
-  /id="workout-add-exercise-video-btn"[\s\S]*earn \+15 XP/,
-  'workout screen should surface the exercise-video contribution action'
+  /id="workout-add-exercise-video-btn"[\s\S]*Add an Exercise[\s\S]*add a demo video when you're ready/,
+  'workout screen should surface an Add an Exercise action under the camera actions'
 );
 assert.match(
   dashboardHtml,
@@ -128,6 +128,21 @@ assert.match(
   workoutScript,
   /function ensureWorkoutAddExerciseVideoButton\(\)[\s\S]*workout-share-set-btn[\s\S]*createWorkoutAddExerciseVideoButton/,
   'active workout routes should be able to insert the contribution button under Share a Set'
+);
+assert.match(
+  workoutScript,
+  /function addVideoToExistingCustomExercise\(exerciseId, exerciseName\)[\s\S]*openCreateCustomExerciseModal\('recovery', exercise\)/,
+  'saved exercises without a video should open a recovery upload flow instead of creating a duplicate'
+);
+assert.match(
+  workoutScript,
+  /const videoTarget = _customExerciseVideoTarget[\s\S]*queueCustomExerciseVideoBackgroundUpload\(user, videoTarget, videoFile, targetName\)/,
+  'recovery uploads should attach their new clip to the existing exercise'
+);
+assert.match(
+  workoutScript,
+  /videoActionLabel = uploadFailed \? 'Retry video' : 'Add video'[\s\S]*addVideoToExistingCustomExercise/,
+  'saved exercises should expose an Add video or Retry video action when they have no clip'
 );
 assert.match(
   savedWorkoutsScript,

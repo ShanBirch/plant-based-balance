@@ -7556,8 +7556,8 @@ if(!window._pbbIsIOSSafari) {
         <button id="workout-add-exercise-video-btn" class="workout-camera-action-btn" type="button" onclick="openCreateCustomExerciseModal('workout')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 14H9v-4H5v-2h4V7h2v4h4v2h-4v4zm5-1.5V8l5 3.75-5 3.75z"/></svg>
             <div class="workout-camera-action-copy">
-                <span class="workout-camera-action-title">Add Exercise Video</span>
-                <span class="workout-camera-action-subtitle">Film or upload a demo, earn +15 XP</span>
+                <span class="workout-camera-action-title">Add an Exercise</span>
+                <span class="workout-camera-action-subtitle">Create it now, add a demo video when you're ready</span>
             </div>
         </button>
 
@@ -7770,7 +7770,7 @@ if(!window._pbbIsIOSSafari) {
         <!-- Modal Header -->
         <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
             <div onclick="closeCreateCustomExerciseModal()" style="font-weight: 600; cursor: pointer; color: var(--text-muted); padding: 10px;">Cancel</div>
-            <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Create Exercise</div>
+            <div id="custom-exercise-modal-title" style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Create Exercise</div>
             <div onclick="saveCustomExercise()" id="save-custom-exercise-btn" style="font-weight: 700; cursor: pointer; color: #b8892b; -webkit-text-fill-color: #b8892b; padding: 10px;">Save</div>
         </div>
 
@@ -12591,13 +12591,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=139';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=140';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=139"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=140"><\/script>');
 }
 </script>
 
@@ -13156,7 +13156,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
     { tab:'movement-tab', sel:'#move-your-way-pilot-card', title:'Move your way', body:'Classes, runs, walks and rides all count. Log the movement, then add a photo or caption if you want to share it.', quick:true, condition:function(){ return !!(window.isMoveYourWayPilotUser && window.isMoveYourWayPilotUser()); } },
       { tab:'movement-tab', sel:'#workout-share-set-btn', fallbackSel:'#today-workout-card', title:'Share a Set', fallbackTitle:'Open a workout to Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", fallbackBody:"Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn') || !!document.getElementById('today-workout-card'); } },
-    { tab:'movement-tab', sel:'#workout-add-exercise-video-btn', fallbackSel:'#feed-composer-card', title:'New exercises to review', fallbackTitle:'New exercises to review', body:"When you upload a new exercise video, it is saved for your workouts first. Shannon can approve it for Feed and shared-library XP.", fallbackBody:"Upload a new exercise video from Movement. It is saved for your workouts first, then Shannon can approve it for Feed and shared-library XP.", quick: true, condition: function(){ return !!document.getElementById('workout-add-exercise-video-btn') || !!document.getElementById('feed-composer-card'); } },
+    { tab:'movement-tab', sel:'#workout-add-exercise-video-btn', fallbackSel:'#feed-composer-card', title:'Add an Exercise', fallbackTitle:'Add an Exercise', body:"Under Film Form Check, tap Add an Exercise to create one without leaving your workout. You can add its demo video now or later. If a video ever fails, open this screen again and tap Add video beside that exercise.", fallbackBody:"Start a workout and tap Add an Exercise under Film Form Check. You can always add or retry its demo video later.", quick: true, condition: function(){ return !!document.getElementById('workout-add-exercise-video-btn') || !!document.getElementById('feed-composer-card'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Post-workout Share', body:"Finish a workout, then tap the single Share button to post the workout, a PB, or a photo to Feed." },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Photo + workout overlays', body:"Choose Photo + workout or Photo + PB after a session. Balance places the result over your gym photo in a clean transparent overlay, then shows you a preview before posting." },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Milestone celebrations', body:"When you hit bigger workout count or streak milestones, Balance pops up a celebration card you can share to Feed for +10 XP.", quick: true },
@@ -14234,6 +14234,17 @@ if(!window._pbbIsIOSSafari) {
     body: "When you upload a new exercise video, it is saved for your workouts first. Shannon can approve it for Feed and shared-library XP.",
     fallbackBody: "Upload a new exercise video from Movement. It is saved for your workouts first, then Shannon can approve it for Feed and shared-library XP.",
     condition: function(){ return !!document.getElementById('workout-add-exercise-video-btn') || !!document.getElementById('feed-composer-card'); }
+  });
+  allFeatures.push({
+    id: 'custom-exercise-video-retry-v1',
+    tab: 'movement-tab',
+    sel: '#workout-add-exercise-video-btn',
+    fallbackSel: '#today-workout-card',
+    title: 'Finish an exercise video later',
+    fallbackTitle: 'Finish an exercise video later',
+    body: 'Add an exercise without leaving your workout. If its video did not finish, open Add an Exercise again and tap Add video beside the saved exercise. It will not create a duplicate.',
+    fallbackBody: "Start a workout, then tap Add an Exercise under Film Form Check. Your saved exercises stay there until you're ready to add or retry a video.",
+    condition: function(){ return !!document.getElementById('workout-add-exercise-video-btn') || !!document.getElementById('today-workout-card'); }
   });
   allFeatures.push({
     id: 'fitness-diary-day-story-v1',
