@@ -21420,18 +21420,6 @@ function applyCustomExerciseVideoFile(file, input) {
         return;
     }
 
-    // Max 100MB
-    if (file.size > 100 * 1024 * 1024) {
-        logCustomExerciseVideoDiagnostic('custom_exercise_file_rejected', {
-            reason: 'file_too_large',
-            maximumBytes: 100 * 1024 * 1024,
-            ...getCustomExerciseVideoDiagnostic(file)
-        });
-        alert('Video must be under 100MB.');
-        if (input) input.value = '';
-        return;
-    }
-
     _customExerciseVideoFile = file;
     logCustomExerciseVideoDiagnostic('custom_exercise_file_ready', getCustomExerciseVideoDiagnostic(file));
     stopCameraStream();

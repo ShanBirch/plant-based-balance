@@ -4,7 +4,6 @@
  */
 
 const DEFAULT_SUPABASE_URL = 'https://hzapaorxqboevxnumxkv.supabase.co';
-const MAX_EXERCISE_VIDEO_BYTES = 120 * 1024 * 1024;
 
 function jsonResponse(status, body) {
     return new Response(JSON.stringify(body), {
@@ -98,10 +97,6 @@ export default async (request) => {
         if (!isSupportedVideoFile(file)) {
             return jsonResponse(400, { error: 'Please choose a video clip.' });
         }
-        if (file.size > MAX_EXERCISE_VIDEO_BYTES) {
-            return jsonResponse(400, { error: 'That video is too large. Keep exercise clips under 120 MB.' });
-        }
-
         const B2_KEY_ID = getEnv('B2_KEY_ID');
         const B2_APPLICATION_KEY = getEnv('B2_APPLICATION_KEY');
         const B2_BUCKET_ID = getEnv('B2_BUCKET_ID');

@@ -50,8 +50,8 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=138/,
-  'dashboard should bump script 5 so phones fetch the custom exercise review fix'
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=139/,
+  'dashboard should bump script 5 so phones fetch the unrestricted custom exercise upload flow'
 );
 assert.match(
   dashboardHtml,
@@ -70,8 +70,8 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /id="workout-share-set-btn"[\s\S]*First share each day earns \+20 XP/,
-  'share a set should keep its existing 20 XP reward copy'
+  /id="workout-share-set-btn"[\s\S]*First share each day earns \+15 XP/,
+  'share a set should keep its existing 15 XP reward copy'
 );
 
 assert.match(
@@ -143,6 +143,16 @@ assert.match(
   workoutScript,
   /allowedVideoExts\s*=\s*\['mp4',\s*'mov',\s*'m4v',\s*'webm',\s*'3gp',\s*'3gpp'\]/,
   'file selection should allow common video extensions when MIME type is missing'
+);
+assert.doesNotMatch(
+  workoutScript,
+  /file\.size\s*>\s*100\s*\*\s*1024\s*\*\s*1024|Video must be under 100MB/,
+  'gallery exercise videos should not be rejected by a client-side size limit'
+);
+assert.doesNotMatch(
+  exerciseVideoUpload,
+  /MAX_EXERCISE_VIDEO_BYTES|file\.size\s*>\s*MAX_EXERCISE_VIDEO_BYTES|under 120 MB/,
+  'exercise upload API should not impose a server-side video size limit'
 );
 assert.match(
   workoutScript,
