@@ -10963,7 +10963,7 @@
         // Alert types that belong in the DMs tab — owned exclusively there
         // (filtered out of the coaching action hub's active/status
         // queries so the two surfaces don't double up).
-        const DM_ALERT_TYPES = ['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm', 'unread_message'];
+        const DM_ALERT_TYPES = ['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm', 'whatsapp_incoming_message', 'unread_message'];
         const DM_ALERT_TYPES_PG = `(${DM_ALERT_TYPES.join(',')})`;
         const FOLLOW_UP_ALERT_TYPES = ['follow_up_review'];
         const FOLLOW_UP_ALERT_TYPES_PG = `(${FOLLOW_UP_ALERT_TYPES.join(',')})`;
@@ -15423,7 +15423,7 @@
         const _vmBgFor = pct => pct <= 25 ? '#f0fdf4' : (pct <= 60 ? '#eff6ff' : '#fef3c7');
         const _vmBorderFor = pct => pct <= 25 ? '#bbf7d0' : (pct <= 60 ? '#bfdbfe' : '#fde68a');
 
-        const _VM_DM_ALERT_TYPES = new Set(['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm', 'unread_message']);
+        const _VM_DM_ALERT_TYPES = new Set(['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm', 'whatsapp_incoming_message', 'unread_message']);
 
         function _vmThreadIdForAlert(a) {
             return a?.data?.ig_thread_id || a?.data?.thread_id || '';
