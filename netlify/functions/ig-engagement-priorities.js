@@ -9,6 +9,7 @@
 
 const crypto = require('crypto');
 const { SUPABASE_URL, SUPABASE_SERVICE_KEY, supabaseQuery } = require('./_lib/client-context');
+const { claimNextActions, seedStoryActions } = require('./_lib/ig-next-action-queue');
 
 const SHARED_SECRET = process.env.IG_STORY_BOT_BRIDGE_SECRET || process.env.STORY_COMMENT_BRIDGE_SECRET || '';
 const MAX_LIMIT = 1000;
@@ -154,6 +155,42 @@ async function loadRows({ storyOnly = false, limit }) {
     return supabaseQuery(`ig_thread_engagement_snapshot?${filters.join('&')}`);
 }
 
+function mapClaimedStoryRows(claimed = [], candidates = []) {
+    const byThreadId = new Map(candidates.map(row => [row.thread_id, row]));
+    return claimed
+        .map(action => {
+            const row = byThreadId.get(action.thread_id);
+            if (!row) return null;
+            return {
+                ...mapPriorityRow(row),
+                nextAction: {
+                    id: action.id,
+                    type: action.action_type,
+                    version: action.action_version,
+                    claimToken: action.claim_token,
+                    claimExpiresAt: action.claim_expires_at,
+                },
+            };
+        })
+        .filter(Boolean);
+}
+
+async function loadClaimedStoryRows(limit) {
+    // Load a little deeper than the requested batch so a temporarily claimed
+    // lead does not make the current run come up short.
+    const requested = clampLimit(limit, STORY_QUEUE_MAX_LIMIT, 20);
+    const candidates = await loadRows({ storyOnly: true, limit: Math.min(MAX_LIMIT, requested * 4) });
+    await seedStoryActions(candidates);
+    const claimed = await claimNextActions({
+        owner: 'story_operator',
+        limit: requested,
+        leaseSeconds: 2 * 60 * 60,
+        runId: `story-priorities:${new Date().toISOString()}`,
+        threadIds: candidates.map(row => row.thread_id).filter(Boolean),
+    });
+    return mapClaimedStoryRows(claimed, candidates);
+}
+
 exports.handler = async (event = {}) => {
     if (event.httpMethod === 'OPTIONS') return json(204, {});
     if (event.httpMethod !== 'GET') return json(405, { error: 'Method not allowed' });
@@ -168,7 +205,9 @@ exports.handler = async (event = {}) => {
     if (requestedScope === 'admin' && !admin) return json(403, { error: 'Forbidden' });
 
     try {
-        const rows = (await loadRows({ storyOnly, limit: query.limit })).map(mapPriorityRow);
+        const rows = storyOnly
+            ? await loadClaimedStoryRows(query.limit)
+            : (await loadRows({ storyOnly, limit: query.limit })).map(mapPriorityRow);
         return json(200, {
             ok: true,
             scope: storyOnly ? 'story' : 'admin',
@@ -181,4 +220,4 @@ exports.handler = async (event = {}) => {
     }
 };
 
-exports._test = { clampLimit, mapPriorityRow, buildSummary, safeEqual };
+exports._test = { clampLimit, mapPriorityRow, mapClaimedStoryRows, buildSummary, safeEqual };
