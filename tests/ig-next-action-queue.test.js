@@ -55,3 +55,14 @@ test('migration keeps the queue server-only and uses an atomic claim lease', () 
     assert.match(migration, /feed_engagement[\s\S]{0,900}7 days/i);
     assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.claim_ig_next_actions[\s\S]+TO service_role/i);
 });
+
+test('a superseding inbound action clears an older operator receipt', () => {
+    const migration = fs.readFileSync(
+        path.join(__dirname, '..', 'supabase', 'migrations', '20260714181112_clear_superseded_next_action_receipts.sql'),
+        'utf8'
+    );
+    assert.match(
+        migration,
+        /receipt\s*=\s*CASE\s+WHEN\s+p_supersede\s+THEN\s+'\{\}'::JSONB\s+ELSE\s+v_existing\.receipt\s+END/i
+    );
+});
