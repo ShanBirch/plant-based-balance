@@ -33,6 +33,13 @@ import androidx.core.content.FileProvider;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.work.BackoffPolicy;
+import androidx.work.Constraints;
+import androidx.work.Data;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.speech.RecognitionListener;
@@ -44,6 +51,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -128,6 +139,47 @@ public class MainActivity extends BridgeActivity {
     /** URI/file where the Share a Set native video camera saves its clip. */
     private Uri workoutVideoOutputUri = null;
     private File workoutVideoOutputFile = null;
+    private final ActivityResultLauncher<String[]> workoutVideoGalleryLauncher =
+        registerForActivityResult(new ActivityResultContracts.OpenDocument(), sourceUri -> {
+            if (sourceUri == null) {
+                sendNativeWorkoutVideoResult("{\"cancelled\":true}");
+                return;
+            }
+            new Thread(() -> {
+                try {
+                    String mimeType = getContentResolver().getType(sourceUri);
+                    if (mimeType == null || !mimeType.startsWith("video/")) {
+                        sendNativeWorkoutVideoResult("{\"cancelled\":true,\"reason\":\"not-video\"}");
+                        return;
+                    }
+                    File dir = new File(getFilesDir(), "exercise_video_uploads");
+                    if (!dir.exists() && !dir.mkdirs()) throw new IOException("Could not prepare video storage");
+                    String extension = mimeType.contains("quicktime") ? ".mov"
+                            : mimeType.contains("webm") ? ".webm"
+                            : mimeType.contains("3gpp") ? ".3gp" : ".mp4";
+                    File localFile = new File(dir, "gallery-" + UUID.randomUUID() + extension);
+                    try (InputStream input = getContentResolver().openInputStream(sourceUri);
+                         OutputStream output = new FileOutputStream(localFile)) {
+                        if (input == null) throw new IOException("Could not read selected video");
+                        byte[] buffer = new byte[64 * 1024];
+                        int count;
+                        while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
+                    }
+                    if (!localFile.exists() || localFile.length() == 0) throw new IOException("Selected video was empty");
+                    String json = "{"
+                            + "\"cancelled\":false,"
+                            + "\"path\":" + jsonStringQuote(Uri.fromFile(localFile).toString()) + ","
+                            + "\"nativePath\":" + jsonStringQuote(localFile.getAbsolutePath()) + ","
+                            + "\"name\":" + jsonStringQuote(localFile.getName()) + ","
+                            + "\"mimeType\":" + jsonStringQuote(mimeType) + ","
+                            + "\"size\":" + localFile.length()
+                            + "}";
+                    sendNativeWorkoutVideoResult(json);
+                } catch (Exception error) {
+                    sendNativeWorkoutVideoResult("{\"cancelled\":true,\"reason\":\"gallery-error\"}");
+                }
+            }).start();
+        });
 
     /**
      * Launcher for the native Android camera used by the "Log Meal" home-screen shortcut.
@@ -956,6 +1008,56 @@ public class MainActivity extends BridgeActivity {
                     sendNativeWorkoutVideoResult("{\"cancelled\":true,\"reason\":\"camera-error\"}");
                 }
             });
+        }
+
+        /**
+         * Uses Android's document picker instead of WebView's file input. The
+         * selected clip is copied into private app storage before JavaScript is
+         * notified, so a foreground Worker can keep streaming it after the
+         * WebView is backgrounded.
+         */
+        @JavascriptInterface
+        public void pickWorkoutVideo() {
+            runOnUiThread(() -> workoutVideoGalleryLauncher.launch(new String[] { "video/*" }));
+        }
+
+        /** Queue a direct B2 exercise-video upload in WorkManager. */
+        @JavascriptInterface
+        public boolean enqueueExerciseVideoUpload(String payloadJson) {
+            try {
+                org.json.JSONObject payload = new org.json.JSONObject(payloadJson);
+                String exerciseId = payload.optString("exerciseId", "").trim();
+                String sourcePath = payload.optString("sourcePath", "").trim();
+                if (exerciseId.isEmpty() || sourcePath.isEmpty() || !new File(sourcePath).exists()) return false;
+
+                Data input = new Data.Builder()
+                        .putString(ExerciseVideoUploadWorker.INPUT_PAYLOAD, payload.toString())
+                        .build();
+                Constraints constraints = new Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build();
+                OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(ExerciseVideoUploadWorker.class)
+                        .setInputData(input)
+                        .setConstraints(constraints)
+                        .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.SECONDS)
+                        .addTag("exercise-video-upload")
+                        .build();
+                WorkManager.getInstance(MainActivity.this).enqueueUniqueWork(
+                        "exercise-video-upload-" + exerciseId,
+                        ExistingWorkPolicy.REPLACE,
+                        request);
+                return true;
+            } catch (Exception ignored) {
+                return false;
+            }
+        }
+
+        /** Returns the current native upload state for the selected exercise. */
+        @JavascriptInterface
+        public String getExerciseVideoUploadStatus(String exerciseId) {
+            if (exerciseId == null || exerciseId.trim().isEmpty()) return null;
+            return getSharedPreferences(ExerciseVideoUploadWorker.STATUS_PREFS, MODE_PRIVATE)
+                    .getString(ExerciseVideoUploadWorker.statusKey(exerciseId), null);
         }
 
         /**

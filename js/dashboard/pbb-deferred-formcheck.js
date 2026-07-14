@@ -2066,7 +2066,11 @@
             captureTarget: workoutFeedShareCaptureTarget,
             nativePlatform: isWorkoutFeedShareNativePlatform()
         });
-        openWorkoutFeedShareFilePicker();
+        if (window.NativePermissions && typeof window.NativePermissions.pickWorkoutVideo === 'function') {
+            void openNativeWorkoutFeedShareGallery();
+        } else {
+            openWorkoutFeedShareFilePicker();
+        }
     }
 
     function openWorkoutFeedShareCameraPicker() {
@@ -2103,7 +2107,11 @@
         logWorkoutFeedShareDiagnostic('video_gallery_picker_open', {
             nativePlatform: isWorkoutFeedShareNativePlatform()
         });
-        openWorkoutFeedShareFilePicker();
+        if (window.NativePermissions && typeof window.NativePermissions.pickWorkoutVideo === 'function') {
+            void openNativeWorkoutFeedShareGallery();
+        } else {
+            openWorkoutFeedShareFilePicker();
+        }
         return true;
     }
 
@@ -2986,6 +2994,19 @@
             throw new Error('The camera returned a clip the app could not read.');
         }
 
+        // Android's document picker copies gallery clips into private app
+        // storage. Keep that native reference for custom exercises so the
+        // WebView never needs to load the entire clip before WorkManager uploads it.
+        if (result.nativePath && workoutFeedShareCaptureTarget === 'custom-exercise') {
+            return {
+                name: result.name || 'exercise-video.mp4',
+                type: result.mimeType || 'video/mp4',
+                size: Number(result.size || 0),
+                _balanceNativeVideoPath: result.nativePath,
+                _balanceNativePreviewUrl: source
+            };
+        }
+
         logWorkoutFeedShareDiagnostic('video_native_file_read_start', {
             sourceKind: result.webPath ? 'web_path' : result.url ? 'url' : 'converted_file_path',
             reportedSizeBytes: Number(result.size || 0),
@@ -3075,6 +3096,46 @@
             });
             hideWorkoutFeedShareUploadBanner(1);
             await openWorkoutFeedShareCameraFallback();
+        }
+    }
+
+    async function openNativeWorkoutFeedShareGallery() {
+        if (!window.NativePermissions || typeof window.NativePermissions.pickWorkoutVideo !== 'function') {
+            openWorkoutFeedShareFilePicker();
+            return;
+        }
+        const bannerLabel = workoutFeedShareCaptureTarget === 'share-set'
+            ? showWorkoutFeedShareUploadBanner('Opening photos...', 'info')
+            : null;
+        try {
+            const result = await new Promise(function (resolve) {
+                let settled = false;
+                window._onNativeWorkoutVideo = function (value) {
+                    if (settled) return;
+                    settled = true;
+                    delete window._onNativeWorkoutVideo;
+                    resolve(value || { cancelled: true });
+                };
+                window.NativePermissions.pickWorkoutVideo();
+                setTimeout(function () {
+                    if (settled) return;
+                    settled = true;
+                    delete window._onNativeWorkoutVideo;
+                    resolve({ cancelled: true });
+                }, 180000);
+            });
+            if (result.cancelled) {
+                hideWorkoutFeedShareUploadBanner(300);
+                restoreWorkoutFeedShareCaptureSurface();
+                return;
+            }
+            if (bannerLabel) bannerLabel.textContent = getWorkoutFeedShareCapturePreparingLabel();
+            const file = await nativeWorkoutVideoResultToFile(result);
+            if (file) routeWorkoutFeedShareCapturedFile(file);
+        } catch (error) {
+            console.warn('[WorkoutFeedShare] native gallery failed', error);
+            hideWorkoutFeedShareUploadBanner(1);
+            openWorkoutFeedShareFilePicker();
         }
     }
 

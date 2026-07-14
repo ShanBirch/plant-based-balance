@@ -21254,8 +21254,12 @@ function setCustomExercisePreviewUrl(source) {
         _customExerciseVideoObjectUrl = null;
     }
 
-    _customExerciseVideoObjectUrl = URL.createObjectURL(source);
     const videoPlayback = document.getElementById('custom-exercise-video-playback');
+    if (source && source._balanceNativePreviewUrl) {
+        videoPlayback.src = source._balanceNativePreviewUrl;
+        return;
+    }
+    _customExerciseVideoObjectUrl = URL.createObjectURL(source);
     videoPlayback.src = _customExerciseVideoObjectUrl;
 }
 
@@ -21395,13 +21399,26 @@ function createExerciseVideoUploadPlaceholderHtml() {
     return `
             <div data-video-container data-video-upload-placeholder="true" style="position: relative; width: 100%; padding-top: 56.25%; background: #020617; overflow: hidden;">
                 <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 18px; box-sizing: border-box; color: white; text-align: center;">
-                    <div style="font-weight: 850; font-size: 0.95rem;">Uploading video...</div>
+                    <div data-video-upload-label style="font-weight: 850; font-size: 0.95rem;">Uploading video 0%</div>
                     <div style="width: min(220px, 72%); height: 7px; background: rgba(255,255,255,0.18); border-radius: 999px; overflow: hidden;">
-                        <div style="width: 42%; height: 100%; background: linear-gradient(90deg, #fbbf24, #fde68a); border-radius: 999px; animation: customExerciseUploadBar 1.25s ease-in-out infinite;"></div>
+                        <div data-video-upload-progress style="width: 0%; height: 100%; background: linear-gradient(90deg, #fbbf24, #fde68a); border-radius: 999px; transition: width 180ms ease;"></div>
                     </div>
                     <div style="font-size: 0.76rem; line-height: 1.35; color: rgba(255,255,255,0.72); max-width: 240px;">You can keep logging your workout.</div>
                 </div>
             </div>`;
+}
+
+function renderCustomExerciseVideoUploadProgress(exerciseName, percent) {
+    const safePercent = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
+    document.querySelectorAll('.exercise-logger-card').forEach(card => {
+        if (card.dataset.exerciseName !== exerciseName) return;
+        const placeholder = card.querySelector('[data-video-upload-placeholder="true"]');
+        if (!placeholder) return;
+        const label = placeholder.querySelector('[data-video-upload-label]');
+        const progress = placeholder.querySelector('[data-video-upload-progress]');
+        if (label) label.textContent = `Uploading video ${safePercent}%`;
+        if (progress) progress.style.width = `${safePercent}%`;
+    });
 }
 
 function renderCustomExerciseVideoUploadComplete(exerciseName, videoUrl) {
@@ -21579,7 +21596,8 @@ async function requestCustomExerciseReview(savedExercise) {
 async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoFile, exerciseName) {
     if (!user?.id || !savedExercise?.id || !videoFile) return;
 
-    setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'uploading', { startedAt: Date.now() });
+    setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'uploading', { startedAt: Date.now(), progress: 0 });
+    renderCustomExerciseVideoUploadProgress(exerciseName, 0);
     logCustomExerciseVideoDiagnostic('custom_exercise_background_upload_start', {
         exerciseId: savedExercise.id,
         exerciseName,
@@ -21587,7 +21605,38 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
     });
 
     try {
-        const result = await storageHelpers.uploadExerciseVideo(user.id, videoFile, savedExercise.id);
+        if (videoFile._balanceNativeVideoPath
+            && window.NativePermissions
+            && typeof window.NativePermissions.enqueueExerciseVideoUpload === 'function') {
+            const accessToken = await getCustomExerciseReviewAuthToken();
+            const accepted = accessToken && window.NativePermissions.enqueueExerciseVideoUpload(JSON.stringify({
+                accessToken,
+                userId: user.id,
+                exerciseId: savedExercise.id,
+                sourcePath: videoFile._balanceNativeVideoPath,
+                fileName: videoFile.name || 'exercise-video.mp4',
+                contentType: videoFile.type || 'video/mp4',
+                technique: getCustomExerciseTechniqueReviewData(savedExercise)
+            }));
+            if (!accepted) throw new Error('Could not start the background upload.');
+            setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'uploading', {
+                startedAt: Date.now(), progress: 0, nativeWorker: true
+            });
+            updateCustomExerciseUploadStatus('Uploading video 0%...');
+            watchNativeCustomExerciseVideoUpload(savedExercise.id, exerciseName);
+            return;
+        }
+        const result = await storageHelpers.uploadExerciseVideo(user.id, videoFile, savedExercise.id, {
+            onProgress: function (percent) {
+                const progress = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
+                setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'uploading', {
+                    startedAt: Date.now(),
+                    progress
+                });
+                renderCustomExerciseVideoUploadProgress(exerciseName, progress);
+                updateCustomExerciseUploadStatus(`Uploading video ${progress}%...`);
+            }
+        });
         const videoUrl = result.publicUrl;
         const storagePath = result.storagePath;
 
@@ -21659,6 +21708,39 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
             showToast(`"${exerciseName}" was saved, but the video upload failed.`, 'error');
         }
     }
+}
+
+function watchNativeCustomExerciseVideoUpload(exerciseId, exerciseName) {
+    if (!window.NativePermissions || typeof window.NativePermissions.getExerciseVideoUploadStatus !== 'function') return;
+    const poll = () => {
+        let result = null;
+        try { result = JSON.parse(window.NativePermissions.getExerciseVideoUploadStatus(exerciseId) || 'null'); } catch (_) {}
+        if (!result) return false;
+        const progress = Math.max(0, Math.min(100, Math.round(Number(result.progress) || 0)));
+        if (result.status === 'uploaded') {
+            setCustomExerciseVideoUploadState(exerciseId, exerciseName, 'uploaded', {
+                progress: 100, videoUrl: result.publicUrl || '', storagePath: result.storagePath || '', completedAt: Date.now()
+            });
+            updateCustomExerciseCachesAfterVideoUpload(exerciseId, exerciseName, result.publicUrl || '', result.storagePath || '');
+            if (result.publicUrl) renderCustomExerciseVideoUploadComplete(exerciseName, result.publicUrl);
+            updateCustomExerciseUploadStatus('Video uploaded.');
+            loadMyCustomExercises();
+            return true;
+        }
+        if (result.status === 'failed') {
+            setCustomExerciseVideoUploadState(exerciseId, exerciseName, 'failed', { error: result.error || 'Video upload failed' });
+            renderCustomExerciseVideoUploadFailed(exerciseName);
+            updateCustomExerciseUploadStatus(result.error || 'Video upload failed.', true);
+            loadMyCustomExercises();
+            return true;
+        }
+        setCustomExerciseVideoUploadState(exerciseId, exerciseName, 'uploading', { progress, nativeWorker: true });
+        renderCustomExerciseVideoUploadProgress(exerciseName, progress);
+        updateCustomExerciseUploadStatus(result.status === 'retrying' ? 'Waiting for a connection...' : `Uploading video ${progress}%...`);
+        return false;
+    };
+    if (poll()) return;
+    const interval = setInterval(() => { if (poll()) clearInterval(interval); }, 600);
 }
 
 function queueCustomExerciseVideoBackgroundUpload(user, savedExercise, videoFile, exerciseName) {

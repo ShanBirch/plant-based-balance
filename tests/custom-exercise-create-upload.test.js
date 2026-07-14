@@ -50,8 +50,8 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=140/,
-  'dashboard should bump script 5 so phones fetch the custom exercise retry flow'
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=141/,
+  'dashboard should bump script 5 so phones fetch the upload progress and background worker flow'
 );
 assert.match(
   dashboardHtml,
@@ -186,8 +186,23 @@ assert.match(
 );
 assert.match(
   workoutScript,
-  /createExerciseVideoUploadPlaceholderHtml\(\)[\s\S]*Uploading video\.\.\.[\s\S]*You can keep logging your workout\./,
-  'new workout exercise cards should show a black uploading placeholder while B2 finishes'
+  /createExerciseVideoUploadPlaceholderHtml\(\)[\s\S]*Uploading video 0%[\s\S]*data-video-upload-progress[\s\S]*You can keep logging your workout\./,
+  'new workout exercise cards should show actual upload percentage progress'
+);
+assert.match(
+  workoutScript,
+  /function renderCustomExerciseVideoUploadProgress\(exerciseName, percent\)[\s\S]*Uploading video \$\{safePercent\}%/,
+  'custom exercise uploads should render XHR progress in the workout card'
+);
+assert.match(
+  workoutScript,
+  /videoFile\._balanceNativeVideoPath[\s\S]*enqueueExerciseVideoUpload[\s\S]*watchNativeCustomExerciseVideoUpload/,
+  'Android gallery videos should be handed to the durable native upload worker'
+);
+assert.match(
+  formCheckScript,
+  /result\.nativePath[\s\S]*_balanceNativeVideoPath[\s\S]*openNativeWorkoutFeedShareGallery/,
+  'Android gallery selection should preserve a private native file reference for background upload'
 );
 assert.match(
   workoutScript,
@@ -256,6 +271,11 @@ assert.match(
   supabaseHelpers,
   /fetch\('\/api\/create-exercise-video-upload'[\s\S]*body:\s*JSON\.stringify/,
   'exercise video uploads should request a direct B2 upload target instead of sending the clip through Netlify'
+);
+assert.match(
+  supabaseHelpers,
+  /uploadViaXhr\(startData\.uploadUrl, directUploadHeaders, file, \{ onProgress \}\)/,
+  'native foreground uploads should report direct B2 XHR progress'
 );
 assert.match(
   supabaseHelpers,

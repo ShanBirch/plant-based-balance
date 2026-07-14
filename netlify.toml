@@ -130,6 +130,10 @@
   path = "/api/create-exercise-video-upload"
 
 [[edge_functions]]
+  function = "finalize-exercise-video-upload"
+  path = "/api/finalize-exercise-video-upload"
+
+[[edge_functions]]
   function = "upload-exercise-video"
   path = "/api/upload-exercise-video"
 
