@@ -33,6 +33,13 @@ assert.ok(
 );
 
 assert.ok(
+    source.includes('function buildRetryHint(game, explanation = \'\')') &&
+    source.includes('const raw = game?.hint || lessonKeyPoint || explanation || game?.explanation || lessonSurprise;') &&
+    source.includes("const feedbackInsightLabel = isCorrect ? 'Surprise fact' : 'Hint from the lesson';"),
+    'wrong feedback should point back to the lesson key point before retrying'
+);
+
+assert.ok(
     source.includes('window.retryCurrentGameAfterFeedback = function()') &&
     source.includes('dismissGameFeedback(() => renderCurrentGame());') &&
     source.includes('learningState.currentGameIndex++;'),
