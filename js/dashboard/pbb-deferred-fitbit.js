@@ -20,6 +20,7 @@
                 }
                 if (statusText) statusText.textContent = 'Connected and syncing';
                 renderFitbitImportedActivityHomeCard();
+                maybeSyncFitbitImportedActivity();
             } else {
                 // Reset settings button
                 const btn = document.getElementById('fitbit-connect-btn');
@@ -35,10 +36,39 @@
         }
     }
 
-    async function renderFitbitImportedActivityHomeCard() {
-        if (!window.currentUser || !window.isMoveYourWayPilotUser?.() || !window.dbHelpers?.activityLogs?.getRecentImported) return;
+    const FITBIT_CARD_SYNC_COOLDOWN_MS = 10 * 60 * 1000;
+    let fitbitImportedActivitySyncInFlight = null;
+
+    function importedActivitySourceLabel(activity) {
+        if (activity?.source === 'native_health') {
+            return activity?.source_metadata?.provider || 'your health app';
+        }
+        return 'Fitbit';
+    }
+
+    async function syncNativeWorkoutsForImportedCard() {
+        if (!window.currentUser || !window.NativeHealth || typeof window.NativeHealth.syncWorkoutsForSharing !== 'function') return [];
         try {
-            const activities = await window.dbHelpers.activityLogs.getRecentImported(window.currentUser.id, 'fitbit', 25);
+            let ready = !!window._nativeHealthReady;
+            if (!ready && typeof window.NativeHealth.checkPermission === 'function') {
+                ready = await window.NativeHealth.checkPermission();
+            }
+            if (!ready) return [];
+            return await window.NativeHealth.syncWorkoutsForSharing(window.supabaseClient, window.currentUser.id, 2);
+        } catch (error) {
+            console.warn('Could not sync native workouts for the activity card:', error);
+            return [];
+        }
+    }
+
+    async function renderFitbitImportedActivityHomeCard() {
+        if (!window.currentUser || !window.isMoveYourWayPilotUser?.()) return;
+        try {
+            await syncNativeWorkoutsForImportedCard();
+            const activityLogs = window.dbHelpers?.activityLogs;
+            const activities = typeof activityLogs?.getRecentImportedFromSources === 'function'
+                ? await activityLogs.getRecentImportedFromSources(window.currentUser.id, ['fitbit', 'native_health'], 25)
+                : await activityLogs?.getRecentImported?.(window.currentUser.id, 'fitbit', 25) || [];
             const newest = activities.find(activity => {
                 const importedAt = new Date(activity.imported_at || 0).getTime();
                 return importedAt && (Date.now() - importedAt) < 7 * 24 * 60 * 60 * 1000;
@@ -48,17 +78,21 @@
                 if (existing) existing.remove();
                 return;
             }
-            const groupedActivities = activities.filter(activity => activity.activity_date === newest.activity_date && activity.activity_type === newest.activity_type);
-            const distance = groupedActivities.reduce((sum, activity) => sum + Number(activity.source_metadata?.distance || 0), 0);
+            const groupedActivities = activities.filter(activity => activity.source === newest.source && activity.activity_date === newest.activity_date && activity.activity_type === newest.activity_type);
+            const distance = groupedActivities.reduce((sum, activity) => {
+                const metadata = activity.source_metadata || {};
+                return sum + Number(metadata.distance ?? metadata.distance_km ?? 0);
+            }, 0);
             const distanceUnit = newest.source_metadata?.distance_unit || 'km';
             const distanceText = distance > 0 ? `${distance.toFixed(distance < 10 ? 1 : 0)} ${distanceUnit} ` : '';
             const totalDuration = groupedActivities.reduce((sum, activity) => sum + Number(activity.duration_minutes || 0), 0);
             const label = groupedActivities.length > 1 && newest.activity_type === 'walking' ? 'Walk' : String(newest.activity_label || newest.activity_type || 'activity');
+            const sourceLabel = importedActivitySourceLabel(newest);
             const combinedActivity = { ...newest, duration_minutes: totalDuration, estimated_calories: groupedActivities.reduce((sum, activity) => sum + Number(activity.estimated_calories || 0), 0), activity_label: label, source_metadata: { ...(newest.source_metadata || {}), distance, distance_unit: distanceUnit }, activityIds: groupedActivities.map(activity => activity.id) };
             const card = existing || document.createElement('div');
             card.id = 'fitbit-imported-activity-card';
             card.style.cssText = 'margin:0 25px 14px; padding:18px; border-radius:18px; background:linear-gradient(135deg,#0f766e,#0e7490); color:#fff; box-shadow:0 8px 22px rgba(14,116,144,.2);';
-            card.innerHTML = `<div style="display:flex; gap:12px; align-items:flex-start;"><div style="font-size:2rem; line-height:1;">${newest.activity_type === 'walking' ? '🚶' : newest.activity_type === 'running' ? '🏃' : newest.activity_type === 'cycling' ? '🚴' : '✨'}</div><div style="min-width:0; flex:1;"><div style="font-size:.74rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; opacity:.9;">Imported from Fitbit</div><div style="font-size:1.08rem; font-weight:800; line-height:1.25; margin-top:4px;">${distanceText}${label}</div><div style="font-size:.85rem; margin-top:4px; opacity:.92;">${totalDuration || 0} min. Share your movement with the Feed.</div></div></div><button id="fitbit-imported-activity-share" style="margin-top:14px; width:100%; padding:12px; border:0; border-radius:12px; background:var(--card-bg); color:var(--text-main); font:inherit; font-weight:800; cursor:pointer;">Share to Feed</button>`;
+            card.innerHTML = `<div style="display:flex; gap:12px; align-items:flex-start;"><div style="font-size:2rem; line-height:1;">${newest.activity_type === 'walking' ? '🚶' : newest.activity_type === 'running' ? '🏃' : newest.activity_type === 'cycling' ? '🚴' : '✨'}</div><div style="min-width:0; flex:1;"><div style="font-size:.74rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; opacity:.9;">Imported from ${sourceLabel}</div><div style="font-size:1.08rem; font-weight:800; line-height:1.25; margin-top:4px;">${distanceText}${label}</div><div style="font-size:.85rem; margin-top:4px; opacity:.92;">${totalDuration || 0} min. Share your movement with the Feed.</div></div></div><button id="fitbit-imported-activity-share" style="margin-top:14px; width:100%; padding:12px; border:0; border-radius:12px; background:var(--card-bg); color:var(--text-main); font:inherit; font-weight:800; cursor:pointer;">Share to Feed</button>`;
             const anchor = document.getElementById('weekly-goals-card') || document.getElementById('ai-assistant-card');
             if (!existing && anchor?.parentNode) anchor.parentNode.insertBefore(card, anchor.nextSibling);
             const shareButton = card.querySelector('#fitbit-imported-activity-share');
@@ -66,6 +100,48 @@
         } catch (error) {
             console.warn('Could not render Fitbit imported-activity home card:', error);
         }
+    }
+
+    async function maybeSyncFitbitImportedActivity(force = false) {
+        if (!window.currentUser || !window.isMoveYourWayPilotUser?.()) return 0;
+        if (fitbitImportedActivitySyncInFlight) return fitbitImportedActivitySyncInFlight;
+
+        const storageKey = `pbb_fitbit_activity_sync_at:${window.currentUser.id}`;
+        const lastSync = Number(localStorage.getItem(storageKey) || 0);
+        if (!force && lastSync && Date.now() - lastSync < FITBIT_CARD_SYNC_COOLDOWN_MS) return 0;
+        localStorage.setItem(storageKey, String(Date.now()));
+
+        fitbitImportedActivitySyncInFlight = fetch('/api/fitbit/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: window.currentUser.id })
+        }).then(async response => {
+            if (!response.ok) throw new Error(`Fitbit sync failed (${response.status})`);
+            return response.json();
+        }).then(async result => {
+            await renderFitbitImportedActivityHomeCard();
+            return Number(result?.imported_activities || 0);
+        }).catch(error => {
+            console.warn('Could not refresh Fitbit activities for the share card:', error);
+            return 0;
+        }).finally(() => {
+            fitbitImportedActivitySyncInFlight = null;
+        });
+
+        return fitbitImportedActivitySyncInFlight;
+    }
+
+    function bindImportedActivityRefresh() {
+        if (window._importedActivityRefreshBound) return;
+        window._importedActivityRefreshBound = true;
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState !== 'visible') return;
+            renderFitbitImportedActivityHomeCard();
+            maybeSyncFitbitImportedActivity();
+        });
+        window._importedActivityRefreshInterval = setInterval(() => {
+            if (document.visibilityState === 'visible') maybeSyncFitbitImportedActivity();
+        }, FITBIT_CARD_SYNC_COOLDOWN_MS);
     }
 
     /**
@@ -207,17 +283,13 @@
             btn.style.pointerEvents = 'none';
         }
 
-        fetch('/api/fitbit/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: window.currentUser.id }),
-        }).then(r => r.json()).then(syncResult => {
+        maybeSyncFitbitImportedActivity(true).then(syncResult => {
             // Refresh display
             return fetch('/api/fitbit/data?user_id=' + window.currentUser.id).then(r => r.json()).then(data => ({ data, syncResult }));
         }).then(({ data, syncResult }) => {
             if (data.connected) updateFitbitDisplay(data);
-            if (Number(syncResult?.imported_activities || 0) > 0 && typeof window.showFitbitImportedActivityPrompt === 'function') {
-                window.showFitbitImportedActivityPrompt();
+            if (Number(syncResult || 0) > 0 && typeof showToast === 'function') {
+                showToast('Your activity is ready to share on Dashboard', 'success');
             }
             // Refresh challenge progress (steps/sleep challenges may use Fitbit data)
             if (typeof refreshChallengeProgress === 'function') refreshChallengeProgress();
@@ -266,6 +338,9 @@
     window.syncFitbitNow = syncFitbitNow;
     window.initFitbitDashboard = initFitbitDashboard;
     window.renderFitbitImportedActivityHomeCard = renderFitbitImportedActivityHomeCard;
+    window.refreshImportedActivityHomeCard = renderFitbitImportedActivityHomeCard;
+    window.maybeSyncFitbitImportedActivity = maybeSyncFitbitImportedActivity;
+    bindImportedActivityRefresh();
 
     // Check OAuth result on page load
     checkFitbitOAuthResult();

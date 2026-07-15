@@ -327,17 +327,20 @@ async function syncPilotFitbitActivities(supabase, userId, accessToken) {
         .in("external_activity_id", ids);
     if (existingError) throw existingError;
 
-    const knownIds = new Set((existing || []).map((row) => row.external_activity_id));
     const now = new Date().toISOString();
-    const candidateDates = [...new Set(candidates.map((activity) => mapFitbitActivityToLog(userId, activity, now).activity_date))];
-    const { data: alreadyShared } = await supabase
+    const mappedCandidates = candidates.map((activity) => mapFitbitActivityToLog(userId, activity, now));
+    const knownIds = new Set((existing || []).map((row) => row.external_activity_id));
+    const candidateDates = [...new Set(mappedCandidates.map((activity) => activity.activity_date))];
+    const { data: existingImports, error: existingImportsError } = await supabase
         .from("activity_logs")
-        .select("activity_date")
+        .select("source, external_activity_id, activity_type, activity_date, duration_minutes, source_metadata, shared_to_feed")
         .eq("user_id", userId)
-        .eq("source", "fitbit")
-        .eq("shared_to_feed", true)
+        .in("source", ["fitbit", "native_health"])
         .in("activity_date", candidateDates);
-    const closedShareDates = new Set((alreadyShared || []).map((row) => row.activity_date));
+    if (existingImportsError) throw existingImportsError;
+    const closedShareDates = new Set((existingImports || [])
+        .filter((row) => row.source === "fitbit" && row.shared_to_feed)
+        .map((row) => row.activity_date));
     await Promise.all(candidates.filter((activity) => knownIds.has(String(activity.logId))).map(async (activity) => {
         const mapped = mapFitbitActivityToLog(userId, activity, now);
         const { error } = await supabase.from("activity_logs").update({
@@ -350,10 +353,12 @@ async function syncPilotFitbitActivities(supabase, userId, accessToken) {
         }).eq("user_id", userId).eq("source", "fitbit").eq("external_activity_id", String(activity.logId));
         if (error) throw error;
     }));
-    const rows = candidates
-        .filter((activity) => !knownIds.has(String(activity.logId)))
-        .map((activity) => {
-            const mapped = mapFitbitActivityToLog(userId, activity, now);
+    const rows = mappedCandidates
+        .filter((mapped) => !knownIds.has(mapped.external_activity_id))
+        .filter((mapped) => !((existingImports || []).some((existingRow) =>
+            existingRow.source === "native_health" && isSameImportedMovement(mapped, existingRow)
+        )))
+        .map((mapped) => {
             // A day already shared to Feed is complete. Fitbit may send a late
             // auto-detected segment after a pause, but it must not resurrect a card.
             if (closedShareDates.has(mapped.activity_date)) mapped.shared_to_feed = true;
@@ -421,6 +426,18 @@ function inferFitbitIntensity(activity) {
     if (activeZoneMinutes >= Math.max(20, minutes * 0.6)) return "vigorous";
     if (activeZoneMinutes >= 10) return "moderate";
     return "light";
+}
+
+function isSameImportedMovement(candidate, existing) {
+    if (!existing || candidate.activity_type !== existing.activity_type || candidate.activity_date !== existing.activity_date) {
+        return false;
+    }
+    const candidateStart = new Date(candidate.source_metadata?.start_time || "").getTime();
+    const existingStart = new Date(existing.source_metadata?.start_time || "").getTime();
+    if (Number.isNaN(candidateStart) || Number.isNaN(existingStart)) return false;
+    const startsTogether = Math.abs(candidateStart - existingStart) <= 15 * 60 * 1000;
+    const similarDuration = Math.abs(Number(candidate.duration_minutes || 0) - Number(existing.duration_minutes || 0)) <= 15;
+    return startsTogether && similarDuration;
 }
 
 /**

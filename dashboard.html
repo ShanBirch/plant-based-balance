@@ -13108,6 +13108,7 @@ if(!window._pbbIsIOSSafari) {
   const steps = [
     { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity', body:'After logging a walk, run, ride or class, add a photo and Balance overlays your activity stats before sharing it to Feed. Each share earns +5 XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
     { tab:'movement-tab', sel:'#activity-share-photo-btn', title:'Take a photo or choose one', body:'When you share an activity, tap Add a photo to open your camera or choose one from your gallery. Balance puts your activity stats straight on it for Feed.', condition: function(){ return !!document.getElementById('activity-share-photo-btn'); } },
+    { tab:'dashboard', sel:'#fitbit-imported-activity-card', title:'Your walk is ready to share', body:'When Fitbit or your connected health app records a walk, run or ride, Balance brings it to Home ready for a photo and Feed share.', quick:true, condition: function(){ return !!document.getElementById('fitbit-imported-activity-card'); } },
     { tab:'dashboard', sel:'#strava-share-route-btn', title:'Share your route', body:'Connect Strava, then share a walk, run or ride with its recorded route over your photo. You choose every route before it reaches Feed.', condition: function(){ var b = document.getElementById('strava-share-route-btn'); return b && b.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#ask-balance-command-palette .ask-balance-command-card,#ask-balance-command-palette', title:'Ask Balance by long hold', body:"Press and hold any open space for 3 seconds to open Ask Balance. Type what you want and Balance can log food, start workouts, open quizzes, post to Feed, or help change a workout.", xpReward:'intro', tourBottomReserve:16, action: async function(){
         try {
@@ -14215,6 +14216,17 @@ if(!window._pbbIsIOSSafari) {
     body: 'Tap Add a photo after logging an activity, then take a new photo or choose one from your gallery. Balance adds your activity stats before sharing it to Feed.',
     fallbackBody: 'Log an activity in Movement, then take a new photo or choose one from your gallery before sharing it to Feed.',
     condition: function(){ return !!document.getElementById('activity-share-photo-btn') || !!document.getElementById('move-your-way-pilot-card'); }
+  });
+  allFeatures.push({
+    id: 'auto-imported-activity-share-v1',
+    tab: 'dashboard',
+    sel: '#fitbit-imported-activity-card',
+    fallbackSel: '#move-your-way-pilot-card',
+    title: 'Your walk is ready to share',
+    fallbackTitle: 'Automatic activity sharing',
+    body: 'When Fitbit or your connected health app records a walk, run or ride, Balance brings it to Home ready for a photo and Feed share.',
+    fallbackBody: 'Connect Fitbit or your health app and Balance will bring recorded walks, runs and rides to Home ready to share.',
+    condition: function(){ return !!document.getElementById('fitbit-imported-activity-card') || !!document.getElementById('move-your-way-pilot-card'); }
   });
   allFeatures.push({
     id: 'strava-route-photo-overlay-v1',
@@ -18330,6 +18342,13 @@ function onHealthConnectGranted() {
                 }
                 if (typeof window.NativeHealth.syncStepsForInsights === 'function' && window.supabaseClient && window.currentUser) {
                     window.NativeHealth.syncStepsForInsights(window.supabaseClient, window.currentUser.id, 30);
+                }
+                if (typeof window.NativeHealth.syncWorkoutsForSharing === 'function' && typeof window.isMoveYourWayPilotUser === 'function' && window.isMoveYourWayPilotUser() && window.supabaseClient && window.currentUser) {
+                    window.NativeHealth.syncWorkoutsForSharing(window.supabaseClient, window.currentUser.id, 2).then(function() {
+                        if (typeof window.refreshImportedActivityHomeCard === 'function') {
+                            window.refreshImportedActivityHomeCard();
+                        }
+                    });
                 }
             }
         });

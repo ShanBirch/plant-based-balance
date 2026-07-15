@@ -508,6 +508,13 @@
                                 if (window.supabaseClient && typeof window.NativeHealth.syncStepsForInsights === 'function') {
                                     window.NativeHealth.syncStepsForInsights(window.supabaseClient, window.currentUser?.id, 30);
                                 }
+                                if (window.supabaseClient && typeof window.NativeHealth.syncWorkoutsForSharing === 'function' && typeof window.isMoveYourWayPilotUser === 'function' && window.isMoveYourWayPilotUser()) {
+                                    window.NativeHealth.syncWorkoutsForSharing(window.supabaseClient, window.currentUser?.id, 2).then(() => {
+                                        if (typeof window.refreshImportedActivityHomeCard === 'function') {
+                                            window.refreshImportedActivityHomeCard();
+                                        }
+                                    });
+                                }
                                 // Sync native steps into DB so the Steps challenge scores
                                 // correctly.  Same guard as sleep above — Supabase client
                                 // has to exist, and the function handles missing challenges
@@ -535,6 +542,13 @@
                                             window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser?.id);
                                             if (typeof window.NativeHealth.syncStepsForInsights === 'function') {
                                                 window.NativeHealth.syncStepsForInsights(window.supabaseClient, window.currentUser?.id, 30);
+                                            }
+                                            if (typeof window.NativeHealth.syncWorkoutsForSharing === 'function' && typeof window.isMoveYourWayPilotUser === 'function' && window.isMoveYourWayPilotUser()) {
+                                                window.NativeHealth.syncWorkoutsForSharing(window.supabaseClient, window.currentUser?.id, 2).then(() => {
+                                                    if (typeof window.refreshImportedActivityHomeCard === 'function') {
+                                                        window.refreshImportedActivityHomeCard();
+                                                    }
+                                                });
                                             }
                                         }
                                     });
