@@ -66,3 +66,17 @@ test('a superseding inbound action clears an older operator receipt', () => {
         /receipt\s*=\s*CASE\s+WHEN\s+p_supersede\s+THEN\s+'\{\}'::JSONB\s+ELSE\s+v_existing\.receipt\s+END/i
     );
 });
+
+test('feed refresh seeds ranked prospects without displacing another relationship owner', () => {
+    const migration = fs.readFileSync(
+        path.join(__dirname, '..', 'supabase', 'migrations', '20260715024542_refresh_ig_feed_next_actions.sql'),
+        'utf8'
+    );
+    assert.match(migration, /warmth_label[\s\S]+IN \('hot', 'warm'\)/i);
+    assert.match(migration, /linked_user_id IS NULL/i);
+    assert.match(migration, /lead_stage[\s\S]+\('new', 'qualifying', 'invited'\)/i);
+    assert.match(migration, /'feed_operator'[\s\S]+'feed_engagement'/i);
+    assert.match(migration, /NULL,\s*FALSE\s*\)/i);
+    assert.match(migration, /GRANT EXECUTE[\s\S]+TO service_role/i);
+    assert.doesNotMatch(migration, /GRANT EXECUTE[\s\S]+TO authenticated/i);
+});
