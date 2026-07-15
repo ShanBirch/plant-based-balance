@@ -2022,6 +2022,78 @@ async function getFreshMealRecordForFeedShare(meal) {
     }
 }
 
+function pickMealFeedSharePhotoFile() {
+    return new Promise(resolve => {
+        const input = document.createElement('input');
+        let settled = false;
+        let focusTimer = null;
+
+        function finish(file) {
+            if (settled) return;
+            settled = true;
+            if (focusTimer) clearTimeout(focusTimer);
+            window.removeEventListener('focus', handleWindowFocus);
+            if (input.parentNode) input.parentNode.removeChild(input);
+            resolve(file || null);
+        }
+
+        function handleWindowFocus() {
+            focusTimer = setTimeout(() => {
+                if (!input.files || input.files.length === 0) finish(null);
+            }, 700);
+        }
+
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.setAttribute('aria-label', 'Choose food photo for Feed share');
+        input.style.position = 'fixed';
+        input.style.left = '-9999px';
+        input.style.width = '1px';
+        input.style.height = '1px';
+        input.addEventListener('change', () => finish(input.files && input.files[0]));
+        input.addEventListener('cancel', () => finish(null));
+        window.addEventListener('focus', handleWindowFocus);
+        document.body.appendChild(input);
+        input.click();
+    });
+}
+
+async function attachPhotoToMealForFeedShare(meal, file) {
+    if (!meal || !meal.id || !file) throw new Error('Meal photo is required');
+    if (!String(file.type || '').toLowerCase().startsWith('image/')) {
+        throw new Error('Please choose an image file');
+    }
+    if (!window.supabaseClient || !window.currentUser?.id) {
+        throw new Error('You must be logged in to add a meal photo');
+    }
+
+    const preparedFile = await compressMealImage(file);
+    const photoUrl = await uploadMealPhoto(preparedFile || file);
+    const { data, error } = await window.supabaseClient
+        .from('meal_logs')
+        .update({
+            photo_url: photoUrl,
+            storage_path: photoUrl
+        })
+        .eq('id', meal.id)
+        .eq('user_id', window.currentUser.id)
+        .select('id, photo_url, storage_path')
+        .maybeSingle();
+
+    if (error || !data) {
+        throw error || new Error('Meal photo could not be attached');
+    }
+
+    return Object.assign({}, meal, data, {
+        photo_url: photoUrl,
+        photoUrl,
+        media_url: photoUrl,
+        mediaUrl: photoUrl,
+        thumbnail_url: photoUrl,
+        thumbnailUrl: photoUrl
+    });
+}
+
 async function shareMealRecordToFeed(meal, btn) {
     if (!meal || !meal.id) {
         showToast('Meal is not ready to share yet', 'info');
@@ -2048,14 +2120,32 @@ async function shareMealRecordToFeed(meal, btn) {
     if (btn) {
         btn.disabled = true;
         btn.dataset.originalText = btn.textContent || btn.dataset.originalText || '';
-        btn.textContent = 'Sharing...';
+        btn.textContent = getMealSharePhotoUrl(meal) ? 'Sharing...' : 'Choose photo...';
         btn.style.opacity = '0.75';
     }
 
     try {
-        const mealForShare = await getFreshMealRecordForFeedShare(meal);
+        let mealForShare = meal;
+        if (!getMealSharePhotoUrl(mealForShare)) {
+            showToast('Choose the food photo to use behind your meal details', 'info');
+            const selectedPhoto = await pickMealFeedSharePhotoFile();
+            if (!selectedPhoto) {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = btn.dataset.originalText || getMealFeedShareButtonText();
+                    btn.style.opacity = '1';
+                }
+                return null;
+            }
+
+            if (btn) btn.textContent = 'Uploading photo...';
+            mealForShare = await attachPhotoToMealForFeedShare(mealForShare, selectedPhoto);
+        }
+
+        mealForShare = await getFreshMealRecordForFeedShare(mealForShare);
         const cardPayload = buildMealFeedCardPayload(mealForShare);
         const hasPhoto = !!cardPayload.photo_url;
+        if (!hasPhoto) throw new Error('Meal photo was not available after upload');
         const storyData = {
             media_type: 'meal_card',
             media_url: hasPhoto ? cardPayload.photo_url : '',
