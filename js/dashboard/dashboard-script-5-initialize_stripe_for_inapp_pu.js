@@ -15066,6 +15066,14 @@ function addWorkoutSet(btn, exName, isTimeBased) {
         return;
     }
 
+    // iOS can keep the keyboard bound to the previously edited set after the
+    // Add Set button is tapped. Release that field before mounting the row so
+    // the next keystroke cannot land in an older set.
+    const previouslyFocusedInput = document.activeElement;
+    if (previouslyFocusedInput && typeof previouslyFocusedInput.blur === 'function') {
+        previouslyFocusedInput.blur();
+    }
+
     const setNum = container.children.length + 1;
 
     // Create new div wrapper (since getSetRowHtml returns a string)
@@ -15079,6 +15087,15 @@ function addWorkoutSet(btn, exName, isTimeBased) {
     newRow.style.transition = 'all 0.3s ease';
 
     container.appendChild(newRow);
+
+    const primaryInput = newRow.querySelector(isTimeBased ? '.input-time' : '.input-kg');
+    if (primaryInput && typeof primaryInput.focus === 'function') {
+        try {
+            primaryInput.focus({ preventScroll: true });
+        } catch (e) {
+            primaryInput.focus();
+        }
+    }
 
     // Add volume tracking for the new inputs
     const inputs = newRow.querySelectorAll('.input-kg, .input-reps, .drop-kg, .drop-reps');

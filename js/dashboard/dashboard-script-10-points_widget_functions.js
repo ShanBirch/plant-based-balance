@@ -3403,15 +3403,24 @@ function buildWorkoutShareCardPayload() {
 
 function buildPBShareCardPayload(pbData) {
     if (!pbData) return null;
+    const pbType = String(pbData.pb_type || pbData.type || 'weight').toLowerCase() === 'reps' ? 'reps' : 'weight';
+    const value = pbData.new_value != null ? pbData.new_value : pbData.value;
+    const improvement = pbData.improvement != null ? pbData.improvement : null;
+    const previous = pbData.previous_value != null
+        ? pbData.previous_value
+        : (pbData.previousValue != null
+            ? pbData.previousValue
+            : (pbData.previous != null ? pbData.previous : (improvement ? value - improvement : null)));
     return {
         card_type: 'pb',
-        exercise: pbData.exercise,
-        pb_type: pbData.type,
-        value: pbData.value,
-        reps: pbData.reps,
-        weight: pbData.weight,
-        improvement: pbData.improvement,
-        previous: pbData.previous != null ? pbData.previous : (pbData.improvement ? pbData.value - pbData.improvement : null)
+        pb_history_id: pbData.pbHistoryId || pbData.historyId || pbData.id || null,
+        exercise: pbData.exercise_name || pbData.exercise || 'Personal best',
+        pb_type: pbType,
+        value: value,
+        reps: pbData.new_reps != null ? pbData.new_reps : pbData.reps,
+        weight: pbData.new_weight_kg != null ? pbData.new_weight_kg : pbData.weight,
+        improvement: improvement,
+        previous: previous
     };
 }
 
@@ -4709,18 +4718,29 @@ async function handleWorkoutCardPhotoCaptureFromFile(file) {
 
 // Share a PB achievement card to feed
 async function sharePBCardToFeed(pbData) {
-    if (!pbData) return;
+    if (!pbData) throw new Error('No personal best was selected.');
 
     try {
         const cardPayload = buildPBShareCardPayload(pbData);
+        const helpers = window.dbHelpers || (typeof dbHelpers !== 'undefined' ? dbHelpers : null);
+        if (!window.currentUser || !window.currentUser.id) {
+            throw new Error('Please log in before sharing a personal best.');
+        }
+        if (!helpers || !helpers.stories || typeof helpers.stories.create !== 'function') {
+            throw new Error('Feed sharing is still loading. Please try again.');
+        }
 
-        const story = await dbHelpers.stories.create(window.currentUser.id, {
+        const story = await helpers.stories.create(window.currentUser.id, {
             media_type: 'workout_card',
             media_url: '',
             thumbnail_url: null,
             caption: JSON.stringify(cardPayload),
             duration: 5
         });
+
+        if (!story || !story.id) {
+            throw new Error('The PB post was not confirmed by the Feed.');
+        }
 
         console.log('PB card story created:', story);
 
@@ -4734,8 +4754,7 @@ async function sharePBCardToFeed(pbData) {
 
     } catch (error) {
         console.error('Error sharing PB card:', error);
-        showToast('Failed to share PB. Please try again.', 'error');
-        return null;
+        throw error;
     }
 }
 

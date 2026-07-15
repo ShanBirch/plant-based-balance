@@ -29,6 +29,7 @@
     let workoutFeedShareState = {
         file: null,
         objectUrl: null,
+        caption: '',
         source: 'workout',
         workoutName: '',
         previousBottomNavDisplay: ''
@@ -1993,6 +1994,7 @@
 
         const captionInput = document.getElementById('workout-feed-share-caption');
         if (captionInput) captionInput.value = '';
+        workoutFeedShareState.caption = '';
 
         const bottomNav = document.querySelector('.bottom-nav');
         if (bottomNav) {
@@ -2005,6 +2007,18 @@
         if (typeof pushNavigationState === 'function') {
             try { pushNavigationState('view-workout-feed-share', closeWorkoutFeedShare); } catch (e) {}
         }
+    }
+
+    function captureWorkoutFeedShareCaption() {
+        const captionInput = document.getElementById('workout-feed-share-caption');
+        if (!captionInput) return workoutFeedShareState.caption || '';
+        const caption = String(captionInput.value || '').trim();
+        // A native picker can rebuild the WebView with an empty textarea. Keep
+        // the pre-picker snapshot in that case instead of stripping the post.
+        if (caption || !workoutFeedShareState.caption) {
+            workoutFeedShareState.caption = caption;
+        }
+        return workoutFeedShareState.caption;
     }
 
     function hideWorkoutFeedShareChooserForUpload() {
@@ -2034,6 +2048,7 @@
     }
 
     function openWorkoutFeedShareCapture() {
+        captureWorkoutFeedShareCaption();
         beginWorkoutFeedShareDiagnosticAttempt('share-set', 'camera');
         const hasNativeCamera = hasNativeWorkoutFeedShareVideoCamera();
         const nativePlatform = isWorkoutFeedShareNativePlatform();
@@ -2061,6 +2076,7 @@
     }
 
     function openWorkoutFeedShareGallery() {
+        captureWorkoutFeedShareCaption();
         beginWorkoutFeedShareDiagnosticAttempt('share-set', 'gallery');
         logWorkoutFeedShareDiagnostic('share_set_gallery_open', {
             captureTarget: workoutFeedShareCaptureTarget,
@@ -2101,6 +2117,7 @@
     }
 
     function openWorkoutFeedShareGalleryForFile(options = {}) {
+        captureWorkoutFeedShareCaption();
         restoreWorkoutFeedShareCaptureSurface();
         beginWorkoutFeedShareDiagnosticAttempt(options.target || 'share-set', 'gallery');
         suspendWorkoutFeedShareCaptureSurface();
@@ -3388,7 +3405,10 @@
             return;
         }
 
-        const caption = (options.caption && String(options.caption).trim()) || (captionInput && captionInput.value.trim()) || '';
+        const optionCaption = options.caption != null ? String(options.caption).trim() : '';
+        const liveCaption = captionInput ? String(captionInput.value || '').trim() : '';
+        const caption = optionCaption || workoutFeedShareState.caption || liveCaption;
+        workoutFeedShareState.caption = caption;
         const workoutName = workoutFeedShareState.workoutName || getActiveWorkoutName();
         let postPromise = null;
         let initialQueueItem = null;
