@@ -187,7 +187,7 @@ assert.match(compactCustomData, /native_story_hook/);
 assert.match(compactCustomData, /offer_path: balance_starter_coaching/);
 assert.doesNotMatch(compactCustomData, /story_outreach_history/);
 assert.doesNotMatch(compactCustomData, /long sales rule/);
-assert.match(igDraftSource, /https:\/\/future-balance\.netlify\.app\/coaching\.html/);
+assert.match(igDraftSource, /https:\/\/plantbased-balance\.org\/coaching\.html/);
 assert.match(igDraftSource, /Balance Starter Coaching: AUD \$29\.99\/week/);
 assert.match(igDraftSource, /one weekly check-in with Shannon/);
 assert.match(igDraftSource, /default close happens inside DMs/);
@@ -407,7 +407,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: "yeah 1:1 coaching is a bit more hands-on with weekly check-ins with me. here's the link: https://future-balance.netlify.app/coaching.html",
+        draftText: "yeah 1:1 coaching is a bit more hands-on with weekly check-ins with me. here's the link: https://plantbased-balance.org/coaching.html",
         currentMessage: 'do you do 1:1 coaching? can you send me the details?',
         qualifier: vagueWarmth,
         leadStage: 'qualifying',
@@ -418,7 +418,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     isPrematureChallengeInvite({
-        draftText: "yeah starter coaching would be perfect. here's the link: https://future-balance.netlify.app/coaching.html",
+        draftText: "yeah starter coaching would be perfect. here's the link: https://plantbased-balance.org/coaching.html",
         currentMessage: 'haha yeah sounds good',
         qualifier: vagueWarmth,
         leadStage: 'qualifying',
@@ -428,12 +428,12 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
-    isSignupLinkHandoffText("here's the link: https://future-balance.netlify.app/coaching.html"),
+    isSignupLinkHandoffText("here's the link: https://plantbased-balance.org/coaching.html"),
     true
 );
 
 const approvedBioHandoff = buildLeadOnboardingHandoffData({
-    draftText: "yeah sounds so good, stoked you're keen\nhere's the link: https://future-balance.netlify.app/coaching.html",
+    draftText: "yeah sounds so good, stoked you're keen\nhere's the link: https://plantbased-balance.org/coaching.html",
     currentMessage: 'yeah sounds good',
     qualifier: { ...vagueWarmth, stage: 'won' },
     leadStage: 'qualifying',
@@ -448,7 +448,7 @@ assert.strictEqual(approvedBioHandoff.signup_link_manual_only, false);
 assert.strictEqual(approvedBioHandoff.approved_link_auto_sendable, true);
 
 const unreadyBioHandoff = buildLeadOnboardingHandoffData({
-    draftText: "yeah starter coaching would be perfect. here's the link: https://future-balance.netlify.app/coaching.html",
+    draftText: "yeah starter coaching would be perfect. here's the link: https://plantbased-balance.org/coaching.html",
     currentMessage: 'haha yeah sounds good',
     qualifier: vagueWarmth,
     leadStage: 'qualifying',

@@ -182,7 +182,7 @@ assert.strictEqual(
             message_preview: 'a win is a win',
             qualifier: { stage: 'won', warmth_score: 96 },
             ig_thread_id: 'thread-kennedy',
-            signup_link_handoff_url: 'https://future-balance.netlify.app/coaching.html',
+      signup_link_handoff_url: 'https://plantbased-balance.org/coaching.html',
         },
     }),
     false,
@@ -192,12 +192,12 @@ assert.strictEqual(
 assert.strictEqual(
     handoffContext.isLeadOnboardingHandoff({
         alert_type: 'ig_incoming_dm',
-        suggested_message: "yeah sounds good, here's the link: https://future-balance.netlify.app/coaching.html",
+      suggested_message: "yeah sounds good, here's the link: https://plantbased-balance.org/coaching.html",
         data: {
             message_preview: 'send me the link',
             qualifier: { stage: 'won', warmth_score: 96 },
             ig_thread_id: 'thread-ready',
-            signup_link_handoff_url: 'https://future-balance.netlify.app/coaching.html',
+      signup_link_handoff_url: 'https://plantbased-balance.org/coaching.html',
         },
     }),
     true,

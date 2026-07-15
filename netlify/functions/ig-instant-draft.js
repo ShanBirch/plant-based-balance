@@ -854,7 +854,7 @@ RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
 - "What's Balance?" / "what's your app?" -> answer plainly: it is Shannon's fitness app/coaching setup. If their latest training detail gives a natural opening, one casual line is enough: "honestly one weekly check-in would probably help keep that simple if you wanted the coaching details". Do not hardcode that wording, but keep that size and feel. No app feature list or signup link unless they ask what is included or ask for details.
 - "Is it in person?" / "I'm looking for a local trainer" / "I already have a PT" -> treat this as a preference or compatibility objection. Answer plainly first: Starter Coaching is online through Balance with one weekly check-in. Do not push the link yet. Ask whether online check-ins/accountability would still be useful, or how it would need to fit around their current trainer.
 - "Do I need to already be Plant Based?" -> warm reassurance ("not at all, lots of my crew start curious"), then ask their current eating situation, ever cooked plant-based before.
-- "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, send https://future-balance.netlify.app/coaching.html with the quick coaching/app handoff. Do NOT ask a Name + Age + Main goal intake bundle.
+- "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, send https://plantbased-balance.org/coaching.html with the quick coaching/app handoff. Do NOT ask a Name + Age + Main goal intake bundle.
 - "I need help" / "I don't know what I'm doing" / "where do I start?" -> human first: validate the stuck feeling, ask one grounded context question if needed, then softly explain that Starter Coaching is the easiest starting point because the app gives structure and Shannon checks in weekly. Do not sound like a canned invite.
 - Warm lead with enough context already shared -> use a low-key bridge instead of endless discovery. Do not write stock lines that say the offer is made for this exact situation. Anchor it to their actual situation in one casual sentence, for example "if having one check-in a week would keep that from drifting again, starter coaching would probably fit". End by asking if they want the details only when they have not already asked. Do not send the link or app feature rundown until they say yes or ask what is included.
 
@@ -1241,7 +1241,7 @@ function challengeUrlForRoute(route) {
     return ONE_ON_ONE_COACHING_URL;
 }
 
-const ONE_ON_ONE_COACHING_URL = 'https://future-balance.netlify.app/coaching.html';
+const ONE_ON_ONE_COACHING_URL = 'https://plantbased-balance.org/coaching.html';
 const BALANCE_CALL_BOOKING_URL = 'https://plantbased-balance.org/book';
 
 function buildOneOnOneCoachingBlock() {

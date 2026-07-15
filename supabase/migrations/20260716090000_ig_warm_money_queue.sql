@@ -82,6 +82,16 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.ig_message_has_coaching_checkout_link(p_text TEXT)
+RETURNS BOOLEAN
+LANGUAGE sql
+IMMUTABLE
+SET search_path = public, pg_temp
+AS $$
+    SELECT lower(COALESCE(p_text, '')) LIKE '%plantbased-balance.org/coaching.html%'
+        OR lower(COALESCE(p_text, '')) LIKE '%future-balance.netlify.app/coaching.html%';
+$$;
+
 -- Backfill deterministic funnel milestones from conversation facts. Repeated
 -- calls are safe because every derived event has a stable event key.
 CREATE OR REPLACE FUNCTION public.sync_ig_money_funnel_events()
@@ -164,7 +174,7 @@ BEGIN
         SELECT DISTINCT ON (m.thread_id) m.id, m.thread_id, m.created_at
         FROM public.ig_messages m
         WHERE lower(COALESCE(m.direction, '')) = 'out'
-          AND lower(COALESCE(m.text, '')) LIKE '%future-balance.netlify.app/coaching.html%'
+          AND public.ig_message_has_coaching_checkout_link(m.text)
         ORDER BY m.thread_id, m.created_at
     ), inserted AS (
         INSERT INTO public.growth_outcome_events (
@@ -302,7 +312,7 @@ BEGIN
         ), candidates AS (
             SELECT l.*,
                 CASE
-                    WHEN lower(COALESCE(l.outbound_text, '')) LIKE '%future-balance.netlify.app/coaching.html%' THEN 'checkout_followup'
+                    WHEN public.ig_message_has_coaching_checkout_link(l.outbound_text) THEN 'checkout_followup'
                     WHEN lower(COALESCE(l.outbound_text, '')) LIKE '%starter coaching%' THEN 'offer_followup'
                     WHEN COALESCE(l.qualifier->>'stage', '') = 'commitment' THEN 'offer_ready'
                 END AS commercial_stage
@@ -312,7 +322,7 @@ BEGIN
               AND l.outbound_at <= NOW() - INTERVAL '24 hours'
               AND (l.inbound_at IS NULL OR l.outbound_at > l.inbound_at)
               AND (
-                  lower(COALESCE(l.outbound_text, '')) LIKE '%future-balance.netlify.app/coaching.html%'
+                  public.ig_message_has_coaching_checkout_link(l.outbound_text)
                   OR lower(COALESCE(l.outbound_text, '')) LIKE '%starter coaching%'
                   OR COALESCE(l.qualifier->>'stage', '') = 'commitment'
               )
@@ -545,12 +555,14 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.record_ig_money_event(UUID, TEXT, UUID, JSONB, TIMESTAMPTZ) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.ig_message_has_coaching_checkout_link(TEXT) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.sync_ig_money_funnel_events() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.refresh_ig_money_queue(INTEGER, TEXT) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.get_ig_money_queue(INTEGER) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.get_ig_acquisition_capacity() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.get_ig_warm_lead_scorecard(INTEGER) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.record_ig_money_event(UUID, TEXT, UUID, JSONB, TIMESTAMPTZ) TO service_role;
+GRANT EXECUTE ON FUNCTION public.ig_message_has_coaching_checkout_link(TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION public.sync_ig_money_funnel_events() TO service_role;
 GRANT EXECUTE ON FUNCTION public.refresh_ig_money_queue(INTEGER, TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION public.get_ig_money_queue(INTEGER) TO authenticated, service_role;

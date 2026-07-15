@@ -274,6 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
             walletAvailable = true;
             const btns = document.querySelectorAll('.checkout-btn');
             btns.forEach(btn => {
+                if (btn.dataset.hostedCheckoutOnly === 'true') return;
                 const plan = btn.getAttribute('data-plan');
                 let walletLabel = "G-Pay";
                 const ua = navigator.userAgent.toLowerCase();
@@ -346,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // B. If Wallet is available
-            if (walletAvailable) {
+            if (walletAvailable && btn.dataset.hostedCheckoutOnly !== 'true') {
                 const details = PLAN_DETAILS[plan];
                 if (details) {
                     let totalAmount = details.amount;

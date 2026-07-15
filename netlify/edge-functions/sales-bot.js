@@ -36,7 +36,7 @@ Answer questions, qualify lightly, and guide warm leads to Balance Starter Coach
 CURRENT PRIMARY OFFER:
 - Balance Starter Coaching is AUD $29.99/week.
 - It includes Balance app access, tailored workout structure, food direction, progress tracking, and one weekly check-in with Shannon.
-- No sales call is needed. They can start from the coaching page: https://future-balance.netlify.app/coaching.html
+- No sales call is needed. They can start from the coaching page: https://plantbased-balance.org/coaching.html
 - Cancel any time. No hidden fees.
 - Free challenge/free entry is only a fallback for colder leads who are not ready to pay yet.
 

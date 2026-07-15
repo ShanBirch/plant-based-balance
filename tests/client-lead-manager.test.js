@@ -531,12 +531,12 @@ const genericVoiceReview = manager.classifyNeedsYou(makeAlert({
 assert.strictEqual(genericVoiceReview.shouldRoute, false);
 
 const approvedCoachingHandoff = makeAlert({
-    suggested_message: "yeah love that you're keen. here's the link: https://future-balance.netlify.app/coaching.html",
+    suggested_message: "yeah love that you're keen. here's the link: https://plantbased-balance.org/coaching.html",
     data: {
         message_preview: 'yeah send me the link',
         approved_link_auto_sendable: true,
         signup_link_manual_only: false,
-        signup_link_handoff_url: 'https://future-balance.netlify.app/coaching.html',
+        signup_link_handoff_url: 'https://plantbased-balance.org/coaching.html',
         draft_review: {
             verdict: 'pass',
             confidence: 0.9,
@@ -581,11 +581,11 @@ assert.strictEqual(callBookingSchedulePatch.data.client_manager_auto_schedule_re
 assert.strictEqual(callBookingSchedulePatch.data.reply_timing_suggestion.signals.approved_call_booking_link_handoff, true);
 
 const unsafeCoachingHandoff = makeAlert({
-    suggested_message: "yeah here's the link: https://future-balance.netlify.app/coaching.html",
+    suggested_message: "yeah here's the link: https://plantbased-balance.org/coaching.html",
     data: {
         message_preview: 'send the link',
         approved_link_auto_sendable: true,
-        signup_link_handoff_url: 'https://future-balance.netlify.app/coaching.html',
+        signup_link_handoff_url: 'https://plantbased-balance.org/coaching.html',
         draft_review: {
             verdict: 'warn',
             confidence: 0.6,

@@ -45,6 +45,17 @@ The real funnel:
 
 Critical: Balance no longer uses a free 30-day challenge as its acquisition or conversion path. DMs are the primary sales surface, and Starter Coaching is the primary offer.
 
+Shannon is currently running a live six-week Balance challenge. Keep its participant experience, daily proof, recap, and challenge Story automations active. It is current client/community delivery and social proof, not the default lead-acquisition offer. Do not confuse it with the retired free 30-day funnel or invite unlinked leads into it as the normal DM close.
+
+Canonical Starter Coaching signup path:
+
+1. Explain the fit and AUD $29.99/week offer inside the DM.
+2. When the lead asks for details, accepts, or says they are ready, send `https://plantbased-balance.org/coaching.html`.
+3. The branded coaching page gives a short offer summary and starts a Stripe-hosted subscription Checkout Session after legal acceptance.
+4. Stripe webhook-backed payment is the sale; then onboarding continues through Balance.
+
+Do not send a raw, temporary Stripe Checkout Session URL in DMs. The stable branded coaching URL keeps the offer understandable, preserves legal/attribution handling, and then hands payment to Stripe securely.
+
 Revenue operating loop:
 
 - The Warm Lead Money Queue is the exact commercial worklist inside `ig_next_actions`; it is not a second inbox and never authorizes a blind send.
