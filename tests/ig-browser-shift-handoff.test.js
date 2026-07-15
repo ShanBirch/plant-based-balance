@@ -13,6 +13,7 @@ const migration = fs.readFileSync(
     ),
     'utf8'
 );
+const operatingBrief = fs.readFileSync(path.join(__dirname, '..', 'CODEX.md'), 'utf8');
 
 test('browser shifts have one durable global running lease', () => {
     assert.match(migration, /CREATE TABLE public\.ig_browser_shift_runs/i);
@@ -65,4 +66,17 @@ test('the shift ledger and RPCs are server-only', () => {
     );
     assert.doesNotMatch(migration, /GRANT EXECUTE[\s\S]+TO authenticated/i);
     assert.doesNotMatch(migration, /SECURITY DEFINER/i);
+});
+
+test('an early-finished lane rolls forward without multiplying native actions', () => {
+    assert.match(operatingBrief, /rolls forward through later lanes when one finishes early/i);
+    assert.match(operatingBrief, /actively works for 22 minutes/i);
+    assert.match(operatingBrief, /task-level action ceiling/i);
+    assert.match(operatingBrief, /visits at most one full rotation/i);
+});
+
+test('recent discovery follows defer welcomes instead of losing them', () => {
+    assert.match(operatingBrief, /claim due deferred welcomes first/i);
+    assert.match(operatingBrief, /safe_after=touch\+24 hours/i);
+    assert.match(operatingBrief, /not permanently cancelled/i);
 });
