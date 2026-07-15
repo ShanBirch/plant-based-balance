@@ -183,14 +183,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Keep a truthy plan token here so legacy client-side checks still pass.
     const PRICES = {
         '1-month': 'balance_starter_coaching_weekly',
-        'app-monthly': 'balance_app_community_monthly'
+        'app-monthly': 'balance_app_community_monthly',
+        'coaching-calls': 'balance_coaching_calls_weekly'
     };
 
     // 4. One-Click Payment Logic (Apple Pay / Google Pay)
     // Flat Pricing - no discount complexity
     const PLAN_DETAILS = {
         '1-month': { amount: 2999, label: 'Balance Starter Coaching' },
-        'app-monthly': { amount: 1999, label: 'Balance App + Community' }
+        'app-monthly': { amount: 1999, label: 'Balance App + Community' },
+        'coaching-calls': { amount: 9999, label: 'Balance Coaching + Calls' }
     };
 
     const paymentRequest = stripe.paymentRequest({

@@ -23,6 +23,9 @@ test('DM coaching page goes directly to hosted Stripe Checkout', () => {
     assert.match(checkout, /'app-monthly': 'balance_app_community_monthly'/);
     assert.match(coaching, /App \+ Community/);
     assert.match(coaching, /\$19\.99<span>\/month<\/span>/);
+    assert.match(coaching, /data-plan="coaching-calls"/);
+    assert.match(checkout, /'coaching-calls': 'balance_coaching_calls_weekly'/);
+    assert.match(coaching, /\$99\.99<span>\/week<\/span>/);
 });
 
 test('all active DM handoffs use the permanent branded coaching URL', () => {
@@ -56,5 +59,8 @@ test('paid coaching handoff sends buyers into Balance with the checkout email', 
     assert.doesNotMatch(success, /Your hormones will thank you/);
     assert.match(success, /app_community_monthly/);
     assert.match(success, /Balance App \+ Community/);
+    assert.match(success, /coaching_calls_weekly/);
+    assert.match(success, /BOOK MY FIRST CALL/);
+    assert.match(success, /book\.html\?source=coaching_calls_purchase&amp;first_call=1/);
     assert.match(adminAi, /profile\.subscription_plan \|\| profile\.subscription_type/);
 });

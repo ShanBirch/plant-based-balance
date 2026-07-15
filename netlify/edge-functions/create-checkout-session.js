@@ -87,6 +87,7 @@ export default async (request, context) => {
                 balance_product: plan.balanceProduct,
                 balance_plan: plan.balancePlan,
                 checkins_per_week: plan.checkinsPerWeek,
+                calls_per_week: plan.callsPerWeek,
                 ...stripeComplianceMetadata,
             },
         };
@@ -105,6 +106,7 @@ export default async (request, context) => {
                 balance_product: plan.balanceProduct,
                 balance_plan: plan.balancePlan,
                 checkins_per_week: plan.checkinsPerWeek,
+                calls_per_week: plan.callsPerWeek,
                 price_token: priceId || "",
                 fbc: fbc || "",
                 fbp: fbp || "",

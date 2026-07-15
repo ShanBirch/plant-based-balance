@@ -7,6 +7,7 @@ const BALANCE_ADMIN_EMAIL = "shannonbirch@cocospersonaltraining.com";
 const SITE_URL = Deno.env.get("URL") || "https://plantbased-balance.org";
 const STARTER_COACHING_PRODUCT = "Balance Starter Coaching";
 const APP_COMMUNITY_PRODUCT = "Balance App + Community";
+const COACHING_CALLS_PRODUCT = "Balance Coaching + Calls";
 
 function subscriptionOfferDetails(plan) {
     if (plan === "app_community_monthly") {
@@ -15,7 +16,18 @@ function subscriptionOfferDetails(plan) {
             subtype: "app_community_sale",
             recurringInterval: "month",
             checkinsPerWeek: "0",
+            callsPerWeek: "0",
             needsYouReason: "app_community_sale",
+        };
+    }
+    if (plan === "coaching_calls_weekly") {
+        return {
+            productName: COACHING_CALLS_PRODUCT,
+            subtype: "coaching_calls_sale",
+            recurringInterval: "week",
+            checkinsPerWeek: "1",
+            callsPerWeek: "1",
+            needsYouReason: "coaching_calls_sale",
         };
     }
     return {
@@ -23,6 +35,7 @@ function subscriptionOfferDetails(plan) {
         subtype: "starter_coaching_sale",
         recurringInterval: "week",
         checkinsPerWeek: "1",
+        callsPerWeek: "0",
         needsYouReason: "starter_coaching_sale",
     };
 }
@@ -446,6 +459,7 @@ function buildSubscriptionSaleAlert({ adminId, syncResult, stripeEvent, subscrip
             currency,
             recurring_interval: offer.recurringInterval,
             checkins_per_week: offer.checkinsPerWeek,
+            calls_per_week: offer.callsPerWeek,
             email: email || null,
             user_id: clientId,
             lifecycle: { stage: "paying" },

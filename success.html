@@ -29,7 +29,7 @@
     // Dynamic Purchase Tracking
     const urlParams = new URLSearchParams(window.location.search);
     const checkoutPlan = urlParams.get('plan') || 'starter_weekly';
-    const purchaseValue = parseFloat(urlParams.get('amount')) || (checkoutPlan === 'app_community_monthly' ? 19.99 : 29.99);
+    const purchaseValue = parseFloat(urlParams.get('amount')) || (checkoutPlan === 'app_community_monthly' ? 19.99 : checkoutPlan === 'coaching_calls_weekly' ? 99.99 : 29.99);
 
     fbq('init', '1928402271406692'); 
     fbq('track', 'PageView');
@@ -136,6 +136,11 @@
                     <span id="success-ready-copy">Once your setup is complete, your app plan and weekly check-ins with Shannon are ready in Balance.</span>
                 </p>
             </div>
+            <div id="first-call-box" style="display: none; background: #fff8e7; padding: 25px; border-radius: 16px; border: 1px solid #e7c867; margin-top: 20px;">
+                <h3 style="margin: 0 0 10px; color: #713f12; font-size: 1.2rem;">Next: book your first call</h3>
+                <p style="color: #854d0e; margin: 0 0 20px; font-size: 0.95rem; line-height: 1.5;">Choose your first weekly call time with Shannon now. Your confirmation and calendar invitation will be sent after booking.</p>
+                <a href="book.html?source=coaching_calls_purchase&amp;first_call=1" class="btn btn-primary" style="background: #b88918; color: #111827; padding: 15px 30px; border-radius: 12px; font-weight: 800; font-size: 1.05rem; width: 100%; display: block; text-decoration: none;">BOOK MY FIRST CALL &rarr;</a>
+            </div>
         </div>
     </section>
 
@@ -147,7 +152,8 @@
             const urlParams = new URLSearchParams(window.location.search);
             const planKey = urlParams.get('plan') || 'starter_weekly';
             const isAppCommunityPlan = planKey === 'app_community_monthly';
-            const purchaseValue = parseFloat(urlParams.get('amount')) || (isAppCommunityPlan ? 19.99 : 29.99);
+            const isCoachingCallsPlan = planKey === 'coaching_calls_weekly';
+            const purchaseValue = parseFloat(urlParams.get('amount')) || (isAppCommunityPlan ? 19.99 : isCoachingCallsPlan ? 99.99 : 29.99);
             const isBump = urlParams.get('bump') === 'true';
 
             if (isAppCommunityPlan) {
@@ -155,6 +161,14 @@
                 const readyCopy = document.getElementById('success-ready-copy');
                 if (planName) planName.textContent = 'Balance App + Community';
                 if (readyCopy) readyCopy.textContent = 'Once your setup is complete, your app membership and Balance community access are ready.';
+            }
+            if (isCoachingCallsPlan) {
+                const planName = document.getElementById('success-plan-name');
+                const readyCopy = document.getElementById('success-ready-copy');
+                const firstCallBox = document.getElementById('first-call-box');
+                if (planName) planName.textContent = 'Balance Coaching + Calls';
+                if (readyCopy) readyCopy.textContent = 'Once your setup is complete, your app plan, coaching support, and weekly calls with Shannon are ready in Balance.';
+                if (firstCallBox) firstCallBox.style.display = 'block';
             }
             
             // Show Kickstart Box if purchased
@@ -281,7 +295,7 @@
 
                 let workout = workoutLabels[fullProfile.equipment] || 'Bodyweight Strength';
 
-                const packagePlan = isAppCommunityPlan ? 'App + Community Monthly' : 'Starter Coaching Weekly';
+                const packagePlan = isAppCommunityPlan ? 'App + Community Monthly' : isCoachingCallsPlan ? 'Coaching + Calls Weekly' : 'Starter Coaching Weekly';
 
                 const payload = {
                     emailValue: email, // Named for Zapier consistency

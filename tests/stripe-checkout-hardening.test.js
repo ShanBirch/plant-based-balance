@@ -17,6 +17,9 @@ assert(
     guard.includes('balance_app_community_monthly') &&
     guard.includes('unitAmount: 1999') &&
     guard.includes('interval: "month"') &&
+    guard.includes('balance_coaching_calls_weekly') &&
+    guard.includes('unitAmount: 9999') &&
+    guard.includes('callsPerWeek: "1"') &&
     guard.includes('plantbased-balance.org'),
     'checkout guard should enforce Balance origin, accepted terms, and the allowlisted recurring plan tokens'
 );
@@ -27,6 +30,7 @@ assert(
     checkoutSession.includes('successUrl: checkoutOrigin') &&
     checkoutSession.includes('const plan = getBalanceCheckoutPlan(priceId);') &&
     checkoutSession.includes('checkout.plan.unitAmount') &&
+    checkoutSession.includes('calls_per_week: plan.callsPerWeek') &&
     checkoutSession.includes('customerEmail: checkoutEmail') &&
     checkoutSession.includes('https://api.stripe.com/v1/checkout/sessions') &&
     checkoutSession.includes('"Content-Type": "application/x-www-form-urlencoded"') &&
@@ -49,6 +53,9 @@ assert(
     webhook.includes('function subscriptionOfferDetails(plan)') &&
     webhook.includes('app_community_monthly') &&
     webhook.includes('checkinsPerWeek: "0"') &&
+    webhook.includes('coaching_calls_weekly') &&
+    webhook.includes('subtype: "coaching_calls_sale"') &&
+    webhook.includes('calls_per_week: offer.callsPerWeek') &&
     webhook.includes('function createStripeRestClient(secretKey)') &&
     webhook.includes('https://api.stripe.com/v1/') &&
     webhook.includes('const stripe = createStripeRestClient(STRIPE_SECRET_KEY);') &&

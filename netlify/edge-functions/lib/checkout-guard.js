@@ -75,6 +75,7 @@ const BALANCE_CHECKOUT_PLANS = Object.freeze({
         balanceProduct: "balance_starter_coaching",
         balancePlan: "starter_weekly",
         checkinsPerWeek: "1",
+        callsPerWeek: "0",
         allowBump: true,
     }),
     balance_app_community_monthly: Object.freeze({
@@ -86,6 +87,19 @@ const BALANCE_CHECKOUT_PLANS = Object.freeze({
         balanceProduct: "balance_app_community",
         balancePlan: "app_community_monthly",
         checkinsPerWeek: "0",
+        callsPerWeek: "0",
+        allowBump: false,
+    }),
+    balance_coaching_calls_weekly: Object.freeze({
+        token: "balance_coaching_calls_weekly",
+        productName: "Balance Coaching + Calls",
+        productDescription: "Balance app access, coaching support, and one weekly call with Shannon",
+        unitAmount: 9999,
+        interval: "week",
+        balanceProduct: "balance_coaching_calls",
+        balancePlan: "coaching_calls_weekly",
+        checkinsPerWeek: "1",
+        callsPerWeek: "1",
         allowBump: false,
     }),
 });
