@@ -111,3 +111,13 @@ test('daily revenue review measures movement and instrumentation quality', () =>
     assert.match(operatingBrief, /acquisition source/i);
     assert.match(operatingBrief, /incomplete tracking as a true zero/i);
 });
+
+test('the API DM manager has its own short ten-minute operating cycle', () => {
+    assert.match(operatingBrief, /API-based `Balance Lead \+ Client DM Manager` is a separate 24-hour worker/i);
+    assert.match(operatingBrief, /wakes every ten minutes/i);
+    assert.match(operatingBrief, /stops claiming new work after minute seven/i);
+    assert.match(operatingBrief, /releases its own lock by minute nine/i);
+    assert.match(operatingBrief, /15-minute crash-recovery lease/i);
+    assert.match(operatingBrief, /never shared with the browser dispatcher/i);
+    assert.doesNotMatch(operatingBrief, /API-based[\s\S]{0,500}90-minute/i);
+});
