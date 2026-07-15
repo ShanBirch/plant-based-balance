@@ -7,6 +7,7 @@ const root = path.join(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const coaching = read('coaching.html');
 const checkout = read('checkout.js');
+const success = read('success.html');
 const migration = read('supabase/migrations/20260716100000_standardise_ig_coaching_checkout_url.sql');
 
 test('DM coaching page goes directly to hosted Stripe Checkout', () => {
@@ -41,4 +42,11 @@ test('money funnel recognises new and historic coaching links', () => {
     assert.match(migration, /plantbased-balance\.org\/coaching\.html/);
     assert.match(migration, /future-balance\.netlify\.app\/coaching\.html/);
     assert.match(migration, /ig_message_has_coaching_checkout_link/);
+});
+
+test('paid coaching handoff sends buyers into Balance with the checkout email', () => {
+    assert.match(success, /Create your account using the same email you used at checkout/);
+    assert.match(success, /login\.html\?action=signup&amp;source=checkout/);
+    assert.match(success, /I already have a Balance account/);
+    assert.doesNotMatch(success, /Your hormones will thank you/);
 });

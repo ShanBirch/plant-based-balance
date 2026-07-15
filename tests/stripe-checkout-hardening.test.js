@@ -39,8 +39,12 @@ assert(
     webhook.includes('async function patchUsersForSubscription(payload, { patchByEmail = true } = {})') &&
     webhook.includes('const isActive = ACTIVE_SUBSCRIPTION_STATUSES.has(status);') &&
     webhook.includes('patchUsersForSubscription(payload, { patchByEmail: isActive })') &&
-    webhook.includes('mirrored without user/status side effects'),
-    'inactive Stripe subscription attempts should not patch users by email or record negative revenue unless linked'
+    webhook.includes('mirrored without user/status side effects') &&
+    webhook.includes('function createStripeRestClient(secretKey)') &&
+    webhook.includes('https://api.stripe.com/v1/') &&
+    webhook.includes('const stripe = createStripeRestClient(STRIPE_SECRET_KEY);') &&
+    !webhook.includes('Stripe.createFetchHttpClient()'),
+    'webhooks should safely mirror subscription truth and use REST for Stripe network calls in the restricted Edge runtime'
 );
 
 console.log('Stripe checkout hardening assertions passed');

@@ -7,6 +7,52 @@ const BALANCE_ADMIN_EMAIL = "shannonbirch@cocospersonaltraining.com";
 const SITE_URL = Deno.env.get("URL") || "https://plantbased-balance.org";
 const STARTER_COACHING_PRODUCT = "Balance Starter Coaching";
 
+function appendStripeFormValue(params, prefix, value) {
+    if (value === undefined || value === null) return;
+    if (typeof value === "object" && !Array.isArray(value)) {
+        Object.entries(value).forEach(([key, nested]) => {
+            appendStripeFormValue(params, `${prefix}[${key}]`, nested);
+        });
+        return;
+    }
+    params.set(prefix, String(value));
+}
+
+async function stripeRestRequest(secretKey, method, path, body) {
+    const options = {
+        method,
+        headers: {
+            Authorization: `Bearer ${secretKey}`,
+            "Stripe-Version": STRIPE_API_VERSION,
+        },
+    };
+    if (body !== undefined) {
+        const params = new URLSearchParams();
+        Object.entries(body).forEach(([key, value]) => appendStripeFormValue(params, key, value));
+        options.headers["Content-Type"] = "application/x-www-form-urlencoded";
+        options.body = params;
+    }
+
+    const response = await fetch(`https://api.stripe.com/v1/${path}`, options);
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+        throw new Error(payload?.error?.message || `Stripe API request failed (${response.status})`);
+    }
+    return payload;
+}
+
+function createStripeRestClient(secretKey) {
+    return {
+        customers: {
+            retrieve: customerId => stripeRestRequest(secretKey, "GET", `customers/${encodeURIComponent(customerId)}`),
+            update: (customerId, body) => stripeRestRequest(secretKey, "POST", `customers/${encodeURIComponent(customerId)}`, body),
+        },
+        subscriptions: {
+            retrieve: subscriptionId => stripeRestRequest(secretKey, "GET", `subscriptions/${encodeURIComponent(subscriptionId)}`),
+        },
+    };
+}
+
 function cleanEmail(email) {
     return String(email || "").trim();
 }
@@ -508,10 +554,11 @@ export default async (request, context) => {
         return new Response("Server Config Error", { status: 500 });
     }
 
-    const stripe = new Stripe(STRIPE_SECRET_KEY, {
-        httpClient: Stripe.createFetchHttpClient(),
+    const stripeVerifier = new Stripe(STRIPE_SECRET_KEY, {
         apiVersion: STRIPE_API_VERSION,
+        telemetry: false,
     });
+    const stripe = createStripeRestClient(STRIPE_SECRET_KEY);
 
     const signature = request.headers.get("stripe-signature");
     const bodyText = await request.text();
@@ -519,7 +566,7 @@ export default async (request, context) => {
     let stripeEvent;
     try {
         // Use constructEventAsync for Web Crypto support
-        stripeEvent = await stripe.webhooks.constructEventAsync(
+        stripeEvent = await stripeVerifier.webhooks.constructEventAsync(
             bodyText,
             signature,
             STRIPE_WEBHOOK_SECRET
