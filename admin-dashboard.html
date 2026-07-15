@@ -3095,6 +3095,19 @@
                         <div id="m-warmth" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
                     </div>
 
+                    <!-- Revenue-first warm lead funnel -->
+                    <div class="content-card" style="padding:20px;">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+                            <div>
+                                <h3 style="font-family:'Montserrat',sans-serif; font-size:0.95rem; font-weight:700; margin:0;">Warm Lead Money Queue</h3>
+                                <p style="font-size:0.75rem; color:#64748b; margin-top:4px;">DM close first. Calls only when the lead asks or the situation needs a proper conversation.</p>
+                            </div>
+                            <div id="m-acquisition-mode"></div>
+                        </div>
+                        <div id="m-warm-scorecard" class="stats-grid" style="margin-bottom:14px;"></div>
+                        <div id="m-money-queue" style="display:flex; flex-direction:column; gap:8px;"></div>
+                    </div>
+
                     <!-- Engagement -->
                     <div class="content-card" style="padding:20px;">
                         <h3 style="font-family:'Montserrat',sans-serif; font-size:0.95rem; font-weight:700; margin-bottom:14px;">App Engagement</h3>
@@ -7487,7 +7500,8 @@
                 const [
                     clientsRes, usersRes, leadsRes, talkingRes,
                     active7Res, active30Res, workouts7Res, mood7Res, weighins7Res, pbs30Res,
-                    alertsPendingRes, alertsTodayRes, dmsWeekRes, autosendRes, igAutosendRes
+                    alertsPendingRes, alertsTodayRes, dmsWeekRes, autosendRes, igAutosendRes,
+                    warmScorecardRes, moneyQueueRes, acquisitionCapacityRes
                 ] = await Promise.all([
                     sb.from('coach_clients').select('id', { count: 'exact', head: true }).eq('status', 'active'),
                     sb.from('users').select('id', { count: 'exact', head: true }),
@@ -7503,7 +7517,10 @@
                     sb.from('coach_alerts').select('id', { count: 'exact', head: true }).eq('status', 'sent').gte('actioned_at', todayStart),
                     sb.from('ig_messages').select('id', { count: 'exact', head: true }).eq('direction', 'out').gte('created_at', d7),
                     sb.from('client_memory').select('id', { count: 'exact', head: true }).eq('auto_send_enabled', true),
-                    sb.from('ig_threads').select('id', { count: 'exact', head: true }).eq('auto_send_enabled', true)
+                    sb.from('ig_threads').select('id', { count: 'exact', head: true }).eq('auto_send_enabled', true),
+                    sb.rpc('get_ig_warm_lead_scorecard', { p_days: 30 }),
+                    sb.rpc('get_ig_money_queue', { p_limit: 20 }),
+                    sb.rpc('get_ig_acquisition_capacity')
                 ]);
 
                 // Top-line
@@ -7564,6 +7581,37 @@
                     warmthHtml += `<div class="warmth-chip" style="background:${cl.bg}; color:${cl.text};"><div class="wc-val">${v}</div><div class="wc-lbl">${k}</div></div>`;
                 });
                 document.getElementById('m-warmth').innerHTML = warmthHtml;
+
+                // Revenue-first scorecard and exact next actions
+                const warm = warmScorecardRes.data || {};
+                const capacity = acquisitionCapacityRes.data || { mode: 'normal', due_money_actions: 0, multiplier: 1 };
+                const capacityTone = capacity.mode === 'paused'
+                    ? { bg: '#fee2e2', text: '#991b1b', label: 'Acquisition paused' }
+                    : capacity.mode === 'half'
+                        ? { bg: '#fef3c7', text: '#92400e', label: 'Acquisition at half volume' }
+                        : { bg: '#dcfce7', text: '#166534', label: 'Acquisition normal' };
+                document.getElementById('m-acquisition-mode').innerHTML = `<span title="${escapeHtml(capacity.reason || '')}" style="display:inline-flex; align-items:center; padding:6px 10px; border-radius:999px; background:${capacityTone.bg}; color:${capacityTone.text}; font-size:0.72rem; font-weight:850;">${capacityTone.label} &middot; ${Number(capacity.due_money_actions || 0)} due</span>`;
+                const warmCards = [
+                    ['Warm now', warm.warm_now || 0, 'warm + hot, not clients'],
+                    ['Problem known', warm.problem_known_now || 0, 'clear DM context'],
+                    ['Offer-ready', warm.offer_ready_now || 0, 'commitment or pitched'],
+                    ['Money actions due', warm.due_now || 0, 'close, checkout, call, follow-up'],
+                    ['Pitch rate', `${Number(warm.warm_to_pitch_pct || 0).toFixed(1)}%`, 'warm → Starter Coaching'],
+                    ['Checkout rate', `${Number(warm.pitch_to_checkout_pct || 0).toFixed(1)}%`, 'pitch → checkout']
+                ];
+                document.getElementById('m-warm-scorecard').innerHTML = warmCards.map(([label, value, sub]) => `
+                    <div class="stat-card"><h3>${escapeHtml(label)}</h3><div class="value">${escapeHtml(value)}</div><p class="stat-sub" style="color:#64748b; font-size:0.68rem; margin-top:2px;">${escapeHtml(sub)}</p></div>
+                `).join('');
+
+                const moneyRows = moneyQueueRes.data || [];
+                document.getElementById('m-money-queue').innerHTML = moneyRows.length ? moneyRows.map(row => {
+                    const name = row.profile_name || (row.ig_username ? `@${row.ig_username}` : 'Instagram lead');
+                    const stage = String(row.commercial_stage || row.action_type || '').replaceAll('_', ' ');
+                    return `<button type="button" onclick="openIgLeadModal('${row.thread_id}')" style="width:100%; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:11px 12px; text-align:left; background:#fff; border:1px solid #e2e8f0; border-left:4px solid #48864B; border-radius:9px; cursor:pointer;">
+                        <span style="min-width:0;"><strong style="display:block; color:#0f172a; font-size:0.84rem;">${escapeHtml(name)}</strong><span style="display:block; color:#64748b; font-size:0.72rem; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(row.why || row.inbound_preview || '')}</span></span>
+                        <span style="flex-shrink:0; background:#ecfdf5; color:#166534; border-radius:999px; padding:4px 8px; font-size:0.66rem; font-weight:850; text-transform:capitalize;">${escapeHtml(stage)}</span>
+                    </button>`;
+                }).join('') : '<div style="padding:14px; border:1px dashed #cbd5e1; border-radius:9px; color:#64748b; font-size:0.78rem; text-align:center;">No commercial follow-ups are due. Fresh inbound replies still stay first.</div>';
 
                 // Conversion rates
                 const totalLeads = leads.length || 1;

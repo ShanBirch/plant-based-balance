@@ -45,6 +45,14 @@ The real funnel:
 
 Critical: Balance no longer uses a free 30-day challenge as its acquisition or conversion path. DMs are the primary sales surface, and Starter Coaching is the primary offer.
 
+Revenue operating loop:
+
+- The Warm Lead Money Queue is the exact commercial worklist inside `ig_next_actions`; it is not a second inbox and never authorizes a blind send.
+- Fresh inbound intent comes first, then call requests, checkout/close actions, and one due offer/checkout follow-up after at least 24 hours with no reply.
+- A general warm label alone is not a follow-up trigger. Proactive follow-up requires an explicit milestone: commitment reached, Starter Coaching pitched, or checkout sent.
+- `growth_outcome_events` records warm, problem-known, details-requested, pitched, checkout, call, and paid milestones so the admin scorecard measures the DM-to-revenue path.
+- Proactive Story/feed/discovery volume adapts to due revenue work: 0-5 money actions = normal, 6-15 = half volume, and 16+ = pause acquisition. Fresh replies, support, and client work are never paused by this gate.
+
 Current strategic priority: build the AI-operated business layer around Balance:
 
 - Instagram Graph lead capture, with ManyChat kept only as a temporary legacy/Facebook Messenger backstop.
