@@ -41,9 +41,9 @@
 
         <main class="booking-layout">
             <section class="booking-intro reveal">
-                <span class="eyebrow">A proper chat</span>
-                <h1>Book a call<br><span>with Shannon.</span></h1>
-                <p>Pick a time that works and let me know what you want to get clear on. We’ll keep it simple and useful.</p>
+                <span class="eyebrow" id="booking-intro-kicker">A proper chat</span>
+                <h1 id="booking-intro-title">Book a call<br><span>with Shannon.</span></h1>
+                <p id="booking-intro-copy">Pick a time that works and let me know what you want to get clear on. We’ll keep it simple and useful.</p>
                 <div class="booking-trust-row" aria-label="Booking details">
                     <span><i>01</i> <span id="booking-timezone-label">Your local time</span></span>
                     <span><i>02</i> Confirmation sent after booking</span>
@@ -182,10 +182,13 @@
                 <div class="booking-success" id="booking-success" hidden aria-live="polite">
                     <div class="booking-success-mark">✓</div>
                     <p class="booking-kicker">You’re booked</p>
-                    <h2>Locked in.</h2>
+                    <h2 id="booking-success-title">Locked in.</h2>
                     <p id="booking-success-copy">Your call is confirmed. A confirmation is on its way.</p>
                     <div class="booking-success-time" id="booking-success-time"></div>
-                    <a class="btn secondary" href="bio.html">Back to Balance</a>
+                    <div class="booking-success-actions">
+                        <a class="btn secondary" id="booking-success-primary" href="bio.html">Back to Balance</a>
+                        <a class="btn secondary" id="booking-success-existing" href="login.html?source=coaching_calls_booking" hidden>I already have a Balance account</a>
+                    </div>
                 </div>
             </section>
         </main>

@@ -8,6 +8,10 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const coaching = read('coaching.html');
 const checkout = read('checkout.js');
 const success = read('success.html');
+const bookingPage = read('book.html');
+const booking = read('booking.js');
+const bookingStyles = read('booking.css');
+const netlifyConfig = read('netlify.toml');
 const adminAi = read('netlify/edge-functions/admin-ai-coach.ts');
 const migration = read('supabase/migrations/20260716100000_standardise_ig_coaching_checkout_url.sql');
 
@@ -52,6 +56,11 @@ test('money funnel recognises new and historic coaching links', () => {
     assert.match(migration, /ig_message_has_coaching_checkout_link/);
 });
 
+test('legacy public funnel pages route into the current customer journey', () => {
+    assert.match(netlifyConfig, /from = "\/shop"[\s\S]*?to = "\/coaching\.html"[\s\S]*?force = true/);
+    assert.match(netlifyConfig, /from = "\/success-stories"[\s\S]*?to = "\/clients\.html"[\s\S]*?force = true/);
+});
+
 test('paid coaching handoff sends buyers into Balance with the checkout email', () => {
     assert.match(success, /Create your account using the same email you used at checkout/);
     assert.match(success, /login\.html\?action=signup&amp;source=checkout/);
@@ -62,5 +71,11 @@ test('paid coaching handoff sends buyers into Balance with the checkout email', 
     assert.match(success, /coaching_calls_weekly/);
     assert.match(success, /BOOK MY FIRST CALL/);
     assert.match(success, /book\.html\?source=coaching_calls_purchase&amp;first_call=1/);
+    assert.match(success, /Step 1: book your first call/);
+    assert.match(success, /Step 2: open Balance/);
+    assert.match(booking, /isFirstCoachingCall/);
+    assert.match(booking, /login\.html\?action=signup&source=coaching_calls_booking/);
+    assert.match(bookingPage, /booking-success-existing/);
+    assert.match(bookingStyles, /\.booking-date-list::-webkit-scrollbar/);
     assert.match(adminAi, /profile\.subscription_plan \|\| profile\.subscription_type/);
 });

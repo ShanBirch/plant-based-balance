@@ -192,9 +192,13 @@
     max-width: 100%;
     overflow-x: auto;
     padding: 22px 0 4px;
-    scrollbar-width: thin;
+    scrollbar-width: none;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
+}
+
+.booking-date-list::-webkit-scrollbar {
+    display: none;
 }
 
 #booking-flow,
@@ -414,6 +418,16 @@
 
 .booking-success-time {
     color: var(--secondary);
+}
+
+.booking-success-actions {
+    display: grid;
+    width: min(100%, 370px);
+    gap: 10px;
+}
+
+.booking-success-actions .btn {
+    width: 100%;
 }
 
 .booking-footer { margin-top: 0; }

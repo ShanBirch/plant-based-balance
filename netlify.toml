@@ -553,6 +553,30 @@
   force = true
 
 [[redirects]]
+  from = "/shop"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/shop.html"
+  to = "/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/success-stories"
+  to = "/clients.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/success-stories.html"
+  to = "/clients.html"
+  status = 301
+  force = true
+
+[[redirects]]
   from = "/bio"
   to = "/bio.html"
   status = 200

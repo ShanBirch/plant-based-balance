@@ -21,6 +21,23 @@
     const duration = byId('booking-duration');
     const outsideToggle = byId('booking-outside-toggle');
     const outsidePanel = byId('booking-outside-panel');
+    const urlParams = new URLSearchParams(window.location.search);
+    const isFirstCoachingCall = urlParams.get('first_call') === '1'
+        && urlParams.get('source') === 'coaching_calls_purchase';
+
+    if (isFirstCoachingCall) {
+        document.title = 'Book Your First Coaching Call | Balance';
+        byId('booking-intro-kicker').textContent = 'Coaching + Calls';
+        byId('booking-intro-title').innerHTML = 'Book your first call<br><span>with Shannon.</span>';
+        byId('booking-intro-copy').textContent = 'Choose a time for your first coaching call. We will use it to get clear on your goal, your plan, and the support you need.';
+        byId('booking-card-title').textContent = 'Choose your first call.';
+        const successPrimary = byId('booking-success-primary');
+        successPrimary.textContent = 'Create my Balance account';
+        successPrimary.href = 'login.html?action=signup&source=coaching_calls_booking';
+        successPrimary.classList.remove('secondary');
+        successPrimary.classList.add('primary');
+        show(byId('booking-success-existing'), true);
+    }
 
     function show(el, visible) {
         if (el) el.hidden = !visible;
@@ -249,6 +266,7 @@
             }
             show(flow, false);
             show(success, true);
+            if (isFirstCoachingCall) byId('booking-success-title').textContent = 'First call booked.';
             byId('booking-success-time').textContent = `${dateTimeLabel(result.booking.startsAt)} (${friendlyTimeZone()})`;
             const bookingCallType = result.booking?.callType || details.callType;
             const meetingUrl = result.booking?.meetingUrl || '';
