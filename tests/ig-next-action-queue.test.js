@@ -80,3 +80,22 @@ test('feed refresh seeds ranked prospects without displacing another relationshi
     assert.match(migration, /GRANT EXECUTE[\s\S]+TO service_role/i);
     assert.doesNotMatch(migration, /GRANT EXECUTE[\s\S]+TO authenticated/i);
 });
+
+test('feed eligibility fix removes DM-owned people before claim and cools down only real touches', () => {
+    const migration = fs.readFileSync(
+        path.join(__dirname, '..', 'supabase', 'migrations', '20260715030414_fix_feed_queue_eligibility_and_cooldowns.sql'),
+        'utf8'
+    );
+    assert.match(migration, /last_inbound_at[\s\S]+last_outbound_at/i);
+    assert.match(migration, /coach_alerts[\s\S]+pending[\s\S]+scheduled/i);
+    assert.match(migration, /operator_lock[\s\S]+expires_at/i);
+    assert.match(migration, /receipt\s*->>\s*'decision'\s*=\s*'blocked_relationship_owned_elsewhere'/i);
+    assert.match(
+        migration,
+        /action_type\s*=\s*'feed_engagement'[\s\S]+v_status\s+IN\s*\('completed',\s*'cooldown'\)/i
+    );
+    assert.doesNotMatch(
+        migration,
+        /ELSIF\s+v_existing\.action_type\s*=\s*'feed_engagement'\s+THEN/i
+    );
+});
