@@ -94,3 +94,20 @@ test('genuine replies create delayed reciprocal cross-surface nurture', () => {
     assert.match(operatingBrief, /cross_surface_nurture/i);
     assert.match(operatingBrief, /one reciprocal cross-surface touch per person per rolling seven days/i);
 });
+
+test('one Story slot discovers new conversations from the broad tray', () => {
+    assert.match(operatingBrief, /Ranked Story nurturing gets one slot/i);
+    assert.match(operatingBrief, /Story-tray discovery gets the second Story slot/i);
+    assert.match(operatingBrief, /base target of five verified replies/i);
+    assert.match(operatingBrief, /source=story_tray_discovery/i);
+    assert.match(operatingBrief, /p_supersede=false/i);
+    assert.match(operatingBrief, /durable tray cursor/i);
+});
+
+test('daily revenue review measures movement and instrumentation quality', () => {
+    assert.match(operatingBrief, /Balance Daily Lead Movement Brief/i);
+    assert.match(operatingBrief, /completed Brisbane days/i);
+    assert.match(operatingBrief, /stalled revenue opportunities/i);
+    assert.match(operatingBrief, /acquisition source/i);
+    assert.match(operatingBrief, /incomplete tracking as a true zero/i);
+});
