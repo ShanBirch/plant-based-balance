@@ -71,7 +71,7 @@ test('the shift ledger and RPCs are server-only', () => {
 test('an early-finished lane rolls forward without multiplying native actions', () => {
     assert.match(operatingBrief, /rolls forward through later lanes when one finishes early/i);
     assert.match(operatingBrief, /actively works for 22 minutes/i);
-    assert.match(operatingBrief, /watchdog wakes every five minutes/i);
+    assert.match(operatingBrief, /watchdog wakes every ten minutes/i);
     assert.match(operatingBrief, /up to ten verified native Instagram interactions/i);
     assert.match(operatingBrief, /verified_native_actions/i);
     assert.match(operatingBrief, /no separate messages\/comments subcap/i);
