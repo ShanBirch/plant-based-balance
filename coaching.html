@@ -15,6 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://js.stripe.com/v3/"></script>
     <script>
         (function () {
             document.documentElement.setAttribute('data-bio-theme', 'light');
@@ -22,6 +23,104 @@
         })();
     </script>
     <link rel="stylesheet" href="bio.css">
+    <style>
+        .starter-checkout {
+            max-width: 720px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .starter-checkout .offer-price {
+            margin: 10px 0 4px;
+        }
+
+        .starter-checkout .label {
+            width: fit-content;
+            margin: 0 auto;
+        }
+
+        .checkout-inclusions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin: 24px 0;
+            text-align: left;
+        }
+
+        .checkout-inclusion {
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: rgba(65, 103, 65, 0.08);
+            color: #243124;
+            -webkit-text-fill-color: #243124;
+            font-weight: 700;
+            line-height: 1.45;
+        }
+
+        .checkout-inclusion::before {
+            content: '✓';
+            color: #416741;
+            margin-right: 9px;
+        }
+
+        #checkout-terms-container {
+            margin: 20px 0;
+            padding: 16px;
+            border: 1px solid rgba(36, 49, 36, 0.14);
+            border-radius: 16px;
+            background: #f7f8f4;
+            text-align: left;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        #checkout-terms-container label {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            color: #394339;
+            -webkit-text-fill-color: #394339;
+            font-size: 0.88rem;
+            line-height: 1.55;
+            cursor: pointer;
+        }
+
+        #checkout-terms-container input {
+            width: 21px;
+            height: 21px;
+            margin-top: 1px;
+            flex: 0 0 auto;
+            accent-color: #416741;
+        }
+
+        #checkout-terms-container a {
+            color: #315531;
+            -webkit-text-fill-color: #315531;
+            font-weight: 800;
+            text-decoration: underline;
+        }
+
+        .checkout-btn {
+            width: 100%;
+            border: 0;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: inherit;
+            font-weight: 800;
+        }
+
+        .checkout-note {
+            margin: 12px 0 0;
+            color: #667066;
+            -webkit-text-fill-color: #667066;
+            font-size: 0.84rem;
+        }
+
+        @media (max-width: 640px) {
+            .checkout-inclusions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
     <script src="bio-animations.js" defer></script>
 </head>
 <body class="bio-page landing-page">
@@ -45,7 +144,7 @@
                         Get Shannon in your week without booking a call. Balance Starter Coaching gives you the app structure, a tailored plan, and one weekly check-in for AUD $29.99/week.
                     </p>
                     <div class="button-row">
-                        <a class="btn primary" href="shop.html#pricing">Start for $29.99/week</a>
+                        <a class="btn primary" href="#starter-checkout">Start for $29.99/week</a>
                         <a class="btn secondary" href="book.html">Book a call with Shannon</a>
                         <a class="btn secondary" href="dashboard.html">Open the app</a>
                         <a class="btn secondary" href="clients.html">See results</a>
@@ -147,6 +246,37 @@
                     </ul>
                 </div>
             </section>
+
+            <section class="section" id="starter-checkout">
+                <div class="surface offer-card featured starter-checkout reveal">
+                    <span class="label">start here</span>
+                    <h2 class="section-title">Start Balance Starter Coaching.</h2>
+                    <div class="offer-price">$29.99<span>/week</span></div>
+                    <p class="offer-copy">Get your tailored plan, app access, and one weekly check-in with Shannon. Cancel any time.</p>
+
+                    <div class="checkout-inclusions" aria-label="Starter Coaching inclusions">
+                        <div class="checkout-inclusion">Tailored workout program</div>
+                        <div class="checkout-inclusion">Food direction for your goal</div>
+                        <div class="checkout-inclusion">Balance app access</div>
+                        <div class="checkout-inclusion">Weekly check-in with Shannon</div>
+                    </div>
+
+                    <div id="checkout-terms-container">
+                        <label>
+                            <input type="checkbox" id="terms-checkbox">
+                            <span>
+                                I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>,
+                                <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>,
+                                <a href="client-agreement.html" target="_blank" rel="noopener">Client Agreement</a>, and
+                                <a href="refund-policy.html" target="_blank" rel="noopener">Refund Policy</a>.
+                            </span>
+                        </label>
+                    </div>
+
+                    <button class="btn primary checkout-btn" data-plan="1-month" type="button">Start coaching securely</button>
+                    <p class="checkout-note">AUD $29.99 due today. Secure checkout. Cancel any time.</p>
+                </div>
+            </section>
         </main>
 
         <footer class="footer">
@@ -157,5 +287,6 @@
             </div>
         </footer>
     </div>
+    <script src="checkout.js"></script>
 </body>
 </html>
