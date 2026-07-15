@@ -1,9 +1,9 @@
 import {
     assertAcceptedCheckoutTerms,
     assertSameSiteCheckoutRequest,
-    assertStarterCoachingPlan,
     checkoutErrorResponse,
     cleanCheckoutEmail,
+    getBalanceCheckoutPlan,
 } from "./lib/checkout-guard.js";
 
 const STRIPE_API_VERSION = "2026-02-25.clover";
@@ -22,10 +22,10 @@ async function createStripeCheckoutSession(secretKey, checkout) {
     if (checkout.customerEmail) params.set("customer_email", checkout.customerEmail);
 
     params.set("line_items[0][price_data][currency]", "aud");
-    params.set("line_items[0][price_data][product_data][name]", "Balance Starter Coaching");
-    params.set("line_items[0][price_data][product_data][description]", "Online coaching with one weekly check-in from Shannon");
-    params.set("line_items[0][price_data][unit_amount]", "2999");
-    params.set("line_items[0][price_data][recurring][interval]", "week");
+    params.set("line_items[0][price_data][product_data][name]", checkout.plan.productName);
+    params.set("line_items[0][price_data][product_data][description]", checkout.plan.productDescription);
+    params.set("line_items[0][price_data][unit_amount]", String(checkout.plan.unitAmount));
+    params.set("line_items[0][price_data][recurring][interval]", checkout.plan.interval);
     params.set("line_items[0][quantity]", "1");
 
     if (checkout.bump) {
@@ -64,7 +64,7 @@ export default async (request, context) => {
         const body = await request.json();
         const { priceId, isTrial, trialDays, referralCode, email, bump, fbc, fbp, utm_data, compliance } = body;
         const checkoutOrigin = assertSameSiteCheckoutRequest(request);
-        assertStarterCoachingPlan(priceId);
+        const plan = getBalanceCheckoutPlan(priceId);
         assertAcceptedCheckoutTerms(compliance);
         const checkoutEmail = cleanCheckoutEmail(email, { required: false });
         const complianceMetadata = compliance?.metadata || {};
@@ -84,26 +84,27 @@ export default async (request, context) => {
         const subscriptionData = {
             metadata: {
                 checkout_email: checkoutEmail,
-                balance_product: "balance_starter_coaching",
-                balance_plan: "starter_weekly",
-                checkins_per_week: "1",
+                balance_product: plan.balanceProduct,
+                balance_plan: plan.balancePlan,
+                checkins_per_week: plan.checkinsPerWeek,
                 ...stripeComplianceMetadata,
             },
         };
 
-        // No trial on the starter offer: the first weekly coaching payment is due today.
+        // No trial: the first subscription payment is due today.
 
         const session = await createStripeCheckoutSession(STRIPE_SECRET_KEY, {
+            plan,
             customerEmail: checkoutEmail,
-            bump: Boolean(bump),
+            bump: Boolean(bump && plan.allowBump),
             subscriptionMetadata: subscriptionData.metadata,
-            successUrl: checkoutOrigin + `/success.html?session_id={CHECKOUT_SESSION_ID}&bump=${bump ? "true" : "false"}`,
+            successUrl: checkoutOrigin + `/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan.balancePlan)}&amount=${(plan.unitAmount / 100).toFixed(2)}&bump=${bump && plan.allowBump ? "true" : "false"}`,
             cancelUrl: checkoutOrigin + "/plantbasedswitch.html",
             metadata: {
                 checkout_email: checkoutEmail,
-                balance_product: "balance_starter_coaching",
-                balance_plan: "starter_weekly",
-                checkins_per_week: "1",
+                balance_product: plan.balanceProduct,
+                balance_plan: plan.balancePlan,
+                checkins_per_week: plan.checkinsPerWeek,
                 price_token: priceId || "",
                 fbc: fbc || "",
                 fbp: fbp || "",

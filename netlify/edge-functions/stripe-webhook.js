@@ -6,6 +6,26 @@ const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing"]);
 const BALANCE_ADMIN_EMAIL = "shannonbirch@cocospersonaltraining.com";
 const SITE_URL = Deno.env.get("URL") || "https://plantbased-balance.org";
 const STARTER_COACHING_PRODUCT = "Balance Starter Coaching";
+const APP_COMMUNITY_PRODUCT = "Balance App + Community";
+
+function subscriptionOfferDetails(plan) {
+    if (plan === "app_community_monthly") {
+        return {
+            productName: APP_COMMUNITY_PRODUCT,
+            subtype: "app_community_sale",
+            recurringInterval: "month",
+            checkinsPerWeek: "0",
+            needsYouReason: "app_community_sale",
+        };
+    }
+    return {
+        productName: STARTER_COACHING_PRODUCT,
+        subtype: "starter_coaching_sale",
+        recurringInterval: "week",
+        checkinsPerWeek: "1",
+        needsYouReason: "starter_coaching_sale",
+    };
+}
 
 function appendStripeFormValue(params, prefix, value) {
     if (value === undefined || value === null) return;
@@ -403,6 +423,7 @@ function buildSubscriptionSaleAlert({ adminId, syncResult, stripeEvent, subscrip
     const email = cleanEmail(payload.email || session?.customer_details?.email || session?.customer_email || invoice?.customer_email || "");
     const idempotencyKey = `subscription_sale:${subscription.id}`;
     const plan = payload.subscription_plan || "starter_weekly";
+    const offer = subscriptionOfferDetails(plan);
     const createdAt = new Date().toISOString();
 
     return {
@@ -413,18 +434,18 @@ function buildSubscriptionSaleAlert({ adminId, syncResult, stripeEvent, subscrip
         alert_type: "subscription_sale",
         priority: "urgent",
         title: `New sale: ${clientName}`,
-        description: `${clientName} bought ${STARTER_COACHING_PRODUCT} (${amountDisplay}/week).`,
+        description: `${clientName} bought ${offer.productName} (${amountDisplay}/${offer.recurringInterval}).`,
         suggested_message: null,
         status: "pending",
         data: {
-            subtype: "starter_coaching_sale",
+            subtype: offer.subtype,
             sale_made: true,
-            product_name: STARTER_COACHING_PRODUCT,
+            product_name: offer.productName,
             amount_minor: amountMinor,
             amount_display: amountDisplay,
             currency,
-            recurring_interval: "week",
-            checkins_per_week: "1",
+            recurring_interval: offer.recurringInterval,
+            checkins_per_week: offer.checkinsPerWeek,
             email: email || null,
             user_id: clientId,
             lifecycle: { stage: "paying" },
@@ -440,12 +461,12 @@ function buildSubscriptionSaleAlert({ adminId, syncResult, stripeEvent, subscrip
             payment_intent_id: payload.latest_payment_intent_id || normalizeStripeId(invoice?.payment_intent || session?.payment_intent),
             needs_you_required: true,
             needs_you_reason: "subscription_sale",
-            needs_you_reasons: ["subscription_sale", "starter_coaching_sale"],
+            needs_you_reasons: ["subscription_sale", offer.needsYouReason],
             operator_queue: "needs_you",
             codex_review: {
                 decision: "needs_you_subscription_sale",
                 queue: "needs_you",
-                reason: "Stripe confirmed a new paid Starter Coaching subscription.",
+                reason: `Stripe confirmed a new paid ${offer.productName} subscription.`,
                 needs_shannon_approval: true,
                 source: "stripe-webhook",
                 reviewed_at: createdAt,

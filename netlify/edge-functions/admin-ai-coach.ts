@@ -810,7 +810,7 @@ Name: ${profile.name || "Unknown"}
 Email: ${profile.email || "Unknown"}
 Joined: ${profile.created_at ? new Date(profile.created_at).toLocaleDateString("en-AU") : "Unknown"}
 Last Login: ${profile.last_login ? new Date(profile.last_login).toLocaleString("en-AU") : "Never"}
-Subscription: ${profile.subscription_status || "Unknown"} (${profile.subscription_type || "N/A"})
+Subscription: ${profile.subscription_status || "Unknown"} (${profile.subscription_plan || profile.subscription_type || "N/A"})
 User ID: ${profile.id || "?"}
 
 === KNOWN FACTS ABOUT CLIENT ===

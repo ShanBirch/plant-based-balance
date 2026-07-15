@@ -65,6 +65,37 @@ export function assertStarterCoachingPlan(priceId) {
     }
 }
 
+const BALANCE_CHECKOUT_PLANS = Object.freeze({
+    balance_starter_coaching_weekly: Object.freeze({
+        token: "balance_starter_coaching_weekly",
+        productName: "Balance Starter Coaching",
+        productDescription: "Online coaching with one weekly check-in from Shannon",
+        unitAmount: 2999,
+        interval: "week",
+        balanceProduct: "balance_starter_coaching",
+        balancePlan: "starter_weekly",
+        checkinsPerWeek: "1",
+        allowBump: true,
+    }),
+    balance_app_community_monthly: Object.freeze({
+        token: "balance_app_community_monthly",
+        productName: "Balance App + Community",
+        productDescription: "Balance app access and community membership",
+        unitAmount: 1999,
+        interval: "month",
+        balanceProduct: "balance_app_community",
+        balancePlan: "app_community_monthly",
+        checkinsPerWeek: "0",
+        allowBump: false,
+    }),
+});
+
+export function getBalanceCheckoutPlan(priceId) {
+    const plan = BALANCE_CHECKOUT_PLANS[String(priceId || "")];
+    if (!plan) throw new CheckoutGuardError("Invalid checkout plan.", 400);
+    return plan;
+}
+
 export function cleanCheckoutEmail(email, { required = false } = {}) {
     const value = String(email || "").trim().toLowerCase();
     if (!value && !required) return "";

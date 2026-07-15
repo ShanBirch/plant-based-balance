@@ -39,6 +39,50 @@
             margin: 0 auto;
         }
 
+        .offer-cta {
+            width: 100%;
+            margin-top: 18px;
+            box-sizing: border-box;
+        }
+
+        .checkout-plan-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin: 24px 0;
+            text-align: left;
+        }
+
+        .checkout-plan-option {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            border: 1px solid rgba(36, 49, 36, 0.14);
+            border-radius: 18px;
+            background: #f7f8f4;
+            color: #243124;
+            -webkit-text-fill-color: #243124;
+        }
+
+        .checkout-plan-option.featured-option {
+            border: 2px solid #d8ab47;
+            background: #fffaf0;
+        }
+
+        .checkout-plan-option h3,
+        .checkout-plan-option p {
+            color: #243124;
+            -webkit-text-fill-color: #243124;
+        }
+
+        .checkout-plan-option .offer-price {
+            margin-bottom: 10px;
+        }
+
+        .checkout-plan-option .checkout-btn {
+            margin-top: auto;
+        }
+
         .checkout-inclusions {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -116,7 +160,8 @@
         }
 
         @media (max-width: 640px) {
-            .checkout-inclusions {
+            .checkout-inclusions,
+            .checkout-plan-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -144,7 +189,7 @@
                         Get Shannon in your week without booking a call. Balance Starter Coaching gives you the app structure, a tailored plan, and one weekly check-in for AUD $29.99/week.
                     </p>
                     <div class="button-row">
-                        <a class="btn primary" href="#starter-checkout">Start for $29.99/week</a>
+                        <a class="btn primary" href="#plan-checkout">Start for $29.99/week</a>
                         <a class="btn secondary" href="book.html">Book a call with Shannon</a>
                         <a class="btn secondary" href="dashboard.html">Open the app</a>
                         <a class="btn secondary" href="clients.html">See results</a>
@@ -195,6 +240,7 @@
                             <li>Weekly goal setting</li>
                             <li>XP, streaks, character levels, and progress tracking</li>
                         </ul>
+                        <a class="btn secondary offer-cta" href="#plan-checkout">Get App + Community</a>
                     </article>
 
                     <article class="surface offer-card featured reveal">
@@ -208,6 +254,7 @@
                             <li>Workout and food adjustments as your week changes</li>
                             <li>Accountability, support, and course correction inside Balance</li>
                         </ul>
+                        <a class="btn primary offer-cta" href="#plan-checkout">Start coaching</a>
                     </article>
 
                     <article class="surface offer-card reveal">
@@ -247,19 +294,11 @@
                 </div>
             </section>
 
-            <section class="section" id="starter-checkout">
+            <section class="section" id="plan-checkout">
                 <div class="surface offer-card featured starter-checkout reveal">
-                    <span class="label">start here</span>
-                    <h2 class="section-title">Start Balance Starter Coaching.</h2>
-                    <div class="offer-price">$29.99<span>/week</span></div>
-                    <p class="offer-copy">Get your tailored plan, app access, and one weekly check-in with Shannon. Cancel any time.</p>
-
-                    <div class="checkout-inclusions" aria-label="Starter Coaching inclusions">
-                        <div class="checkout-inclusion">Tailored workout program</div>
-                        <div class="checkout-inclusion">Food direction for your goal</div>
-                        <div class="checkout-inclusion">Balance app access</div>
-                        <div class="checkout-inclusion">Weekly check-in with Shannon</div>
-                    </div>
+                    <span class="label">choose your plan</span>
+                    <h2 class="section-title">Choose the support you want.</h2>
+                    <p class="offer-copy">The app is free to download. Membership unlocks your ongoing Balance plan and community access.</p>
 
                     <div id="checkout-terms-container">
                         <label>
@@ -273,8 +312,21 @@
                         </label>
                     </div>
 
-                    <button class="btn primary checkout-btn" data-plan="1-month" data-hosted-checkout-only="true" type="button">Start coaching securely</button>
-                    <p class="checkout-note">AUD $29.99 due today. Secure checkout. Cancel any time.</p>
+                    <div class="checkout-plan-grid">
+                        <div class="checkout-plan-option">
+                            <h3>App + Community</h3>
+                            <div class="offer-price">$19.99<span>/month</span></div>
+                            <p class="offer-copy">App membership, tailored workout structure, progress tools, and the Balance community. No weekly 1:1 check-in.</p>
+                            <button class="btn secondary checkout-btn" data-plan="app-monthly" data-hosted-checkout-only="true" type="button">Start App + Community</button>
+                        </div>
+                        <div class="checkout-plan-option featured-option">
+                            <h3>Starter Coaching</h3>
+                            <div class="offer-price">$29.99<span>/week</span></div>
+                            <p class="offer-copy">Everything in App + Community, plus one weekly check-in with Shannon and tailored food and workout support.</p>
+                            <button class="btn primary checkout-btn" data-plan="1-month" data-hosted-checkout-only="true" type="button">Start coaching securely</button>
+                        </div>
+                    </div>
+                    <p class="checkout-note">Secure checkout. Your selected subscription is due today. Cancel any time.</p>
                 </div>
             </section>
         </main>

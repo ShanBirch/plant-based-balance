@@ -179,16 +179,18 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 2. Define Product Pricing
-    // Hosted Checkout creates the weekly starter-coaching price server-side.
+    // Hosted Checkout creates the selected recurring price server-side.
     // Keep a truthy plan token here so legacy client-side checks still pass.
     const PRICES = {
-        '1-month': 'balance_starter_coaching_weekly'
+        '1-month': 'balance_starter_coaching_weekly',
+        'app-monthly': 'balance_app_community_monthly'
     };
 
     // 4. One-Click Payment Logic (Apple Pay / Google Pay)
     // Flat Pricing - no discount complexity
     const PLAN_DETAILS = {
-        '1-month': { amount: 2999, label: 'Balance Starter Coaching' }      // $29.99 AUD weekly
+        '1-month': { amount: 2999, label: 'Balance Starter Coaching' },
+        'app-monthly': { amount: 1999, label: 'Balance App + Community' }
     };
 
     const paymentRequest = stripe.paymentRequest({

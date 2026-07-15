@@ -13,14 +13,20 @@ assert(
     guard.includes('assertSameSiteCheckoutRequest') &&
     guard.includes('assertAcceptedCheckoutTerms') &&
     guard.includes('assertStarterCoachingPlan') &&
+    guard.includes('getBalanceCheckoutPlan') &&
+    guard.includes('balance_app_community_monthly') &&
+    guard.includes('unitAmount: 1999') &&
+    guard.includes('interval: "month"') &&
     guard.includes('plantbased-balance.org'),
-    'checkout guard should enforce Balance origin, accepted terms, and the starter plan token'
+    'checkout guard should enforce Balance origin, accepted terms, and the allowlisted recurring plan tokens'
 );
 
 assert(
     checkoutSession.includes('const checkoutOrigin = assertSameSiteCheckoutRequest(request);') &&
     checkoutSession.includes('assertAcceptedCheckoutTerms(compliance);') &&
     checkoutSession.includes('successUrl: checkoutOrigin') &&
+    checkoutSession.includes('const plan = getBalanceCheckoutPlan(priceId);') &&
+    checkoutSession.includes('checkout.plan.unitAmount') &&
     checkoutSession.includes('customerEmail: checkoutEmail') &&
     checkoutSession.includes('https://api.stripe.com/v1/checkout/sessions') &&
     checkoutSession.includes('"Content-Type": "application/x-www-form-urlencoded"') &&
@@ -40,6 +46,9 @@ assert(
     webhook.includes('const isActive = ACTIVE_SUBSCRIPTION_STATUSES.has(status);') &&
     webhook.includes('patchUsersForSubscription(payload, { patchByEmail: isActive })') &&
     webhook.includes('mirrored without user/status side effects') &&
+    webhook.includes('function subscriptionOfferDetails(plan)') &&
+    webhook.includes('app_community_monthly') &&
+    webhook.includes('checkinsPerWeek: "0"') &&
     webhook.includes('function createStripeRestClient(secretKey)') &&
     webhook.includes('https://api.stripe.com/v1/') &&
     webhook.includes('const stripe = createStripeRestClient(STRIPE_SECRET_KEY);') &&
