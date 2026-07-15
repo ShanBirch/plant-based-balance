@@ -79,3 +79,12 @@ test('paid coaching handoff sends buyers into Balance with the checkout email', 
     assert.match(bookingStyles, /\.booking-date-list::-webkit-scrollbar/);
     assert.match(adminAi, /profile\.subscription_plan \|\| profile\.subscription_type/);
 });
+
+test('the paid acupressure bonus has every diagram it references', () => {
+    const guide = read('acupressure-guide.html');
+    const diagrams = [...guide.matchAll(/assets\/acupressure\/([^"']+\.png)/g)].map((match) => match[1]);
+    assert.ok(diagrams.length >= 10);
+    for (const diagram of diagrams) {
+        assert.ok(fs.existsSync(path.join(root, 'assets', 'acupressure', diagram)), diagram);
+    }
+});
