@@ -71,7 +71,12 @@ test('the shift ledger and RPCs are server-only', () => {
 test('an early-finished lane rolls forward without multiplying native actions', () => {
     assert.match(operatingBrief, /rolls forward through later lanes when one finishes early/i);
     assert.match(operatingBrief, /actively works for 22 minutes/i);
-    assert.match(operatingBrief, /task-level action ceiling/i);
+    assert.match(operatingBrief, /watchdog wakes every five minutes/i);
+    assert.match(operatingBrief, /previous 30 minutes/i);
+    assert.match(operatingBrief, /verified_native_actions/i);
+    assert.match(operatingBrief, /communication_actions/i);
+    assert.match(operatingBrief, /start_ig_browser_shift\(\.\.\., 600\)/i);
+    assert.match(operatingBrief, /final segment running and heartbeating/i);
     assert.match(operatingBrief, /visits at most one full rotation/i);
 });
 
