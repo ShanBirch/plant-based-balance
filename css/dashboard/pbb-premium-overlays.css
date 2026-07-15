@@ -6452,6 +6452,29 @@ html:not([data-pbb-theme="light"]) #learning-content .scenario-option[style*="ba
     -webkit-text-fill-color: #fffaf2 !important;
 }
 
+/* Quiz interaction states use pale feedback surfaces in both themes. Keep
+   their foreground explicit so dark-mode text-fill rules cannot bleed in. */
+#learning-content .learning-answer-selected {
+    color: #3b0764 !important;
+    -webkit-text-fill-color: #3b0764 !important;
+}
+
+#learning-content .learning-answer-correct {
+    color: #14532d !important;
+    -webkit-text-fill-color: #14532d !important;
+}
+
+#learning-content .learning-answer-incorrect {
+    color: #7f1d1d !important;
+    -webkit-text-fill-color: #7f1d1d !important;
+}
+
+#learning-content .learning-answer-selected .tap-checkbox,
+#learning-content .learning-answer-correct .tap-checkbox {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
 html:not([data-pbb-theme="light"]) #learning-content .learning-complete-summary-card {
     background:
         radial-gradient(circle at 88% 0%, rgba(245, 217, 138, 0.1), transparent 30%),
