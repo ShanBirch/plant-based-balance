@@ -22,9 +22,16 @@ assert.ok(
 );
 
 assert.ok(
-    progressSource.indexOf('openProgressPhotoFilePicker(photoInput, index, restoreCurrentGuide)') <
-        progressSource.indexOf("typeof openWorkoutCamera === 'function'"),
-    'progress photos should try the file-input camera before the generic workout camera fallback'
+    progressSource.includes("typeof openWorkoutCamera === 'function' && navigator.mediaDevices?.getUserMedia") &&
+        progressSource.includes('forceWebCamera: true') &&
+        progressSource.includes('defaultTimerSeconds: 10'),
+    'progress photos should use the in-WebView timed camera without handing off to the native workout camera'
+);
+
+assert.ok(
+    progressSource.indexOf("typeof openWorkoutCamera === 'function' && navigator.mediaDevices?.getUserMedia") <
+        progressSource.indexOf('openProgressPhotoFilePicker(photoInput, index, restoreCurrentGuide)'),
+    'progress photos should keep the dedicated file input as the fallback when the timed WebView camera is unavailable'
 );
 
 assert.ok(
