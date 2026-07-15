@@ -7592,12 +7592,13 @@
                         : { bg: '#dcfce7', text: '#166534', label: 'Acquisition normal' };
                 document.getElementById('m-acquisition-mode').innerHTML = `<span title="${escapeHtml(capacity.reason || '')}" style="display:inline-flex; align-items:center; padding:6px 10px; border-radius:999px; background:${capacityTone.bg}; color:${capacityTone.text}; font-size:0.72rem; font-weight:850;">${capacityTone.label} &middot; ${Number(capacity.due_money_actions || 0)} due</span>`;
                 const warmCards = [
-                    ['Warm now', warm.warm_now || 0, 'warm + hot, not clients'],
-                    ['Problem known', warm.problem_known_now || 0, 'clear DM context'],
-                    ['Offer-ready', warm.offer_ready_now || 0, 'commitment or pitched'],
+                    ['Engaged', warm.engaged_now || 0, 'rapport, not assumed buyer intent'],
+                    ['Problem-qualified', warm.problem_qualified_now || 0, 'relevant goal plus blocker'],
+                    ['Offer-ready', warm.offer_ready_now || 0, 'acknowledged wanting help'],
+                    ['Buyer intent', warm.buyer_intent_now || 0, 'price, link, signup or call'],
                     ['Money actions due', warm.due_now || 0, 'close, checkout, call, follow-up'],
-                    ['Pitch rate', `${Number(warm.warm_to_pitch_pct || 0).toFixed(1)}%`, 'warm → Starter Coaching'],
-                    ['Checkout rate', `${Number(warm.pitch_to_checkout_pct || 0).toFixed(1)}%`, 'pitch → checkout']
+                    ['Qualified to pitch', `${Number(warm.qualified_to_pitch_pct || 0).toFixed(1)}%`, 'qualified to Starter Coaching'],
+                    ['Pitch to checkout', `${Number(warm.pitch_to_checkout_pct || 0).toFixed(1)}%`, 'offer to checkout']
                 ];
                 document.getElementById('m-warm-scorecard').innerHTML = warmCards.map(([label, value, sub]) => `
                     <div class="stat-card"><h3>${escapeHtml(label)}</h3><div class="value">${escapeHtml(value)}</div><p class="stat-sub" style="color:#64748b; font-size:0.68rem; margin-top:2px;">${escapeHtml(sub)}</p></div>

@@ -138,6 +138,13 @@ const WARMTH_LABELS = [
     { max: 100, label: 'hot' },
 ];
 
+const COMMERCIAL_STAGES = [
+    'engaged',
+    'problem_qualified',
+    'offer_ready',
+    'buyer_intent',
+];
+
 const BEHAVIOR_PROFILE_OPTIONS = {
     primary_need: [
         'unknown',
@@ -205,6 +212,61 @@ function normalizeBehaviorProfile(raw = {}) {
         identity_signal: cleanProfileText(source.identity_signal, 140),
         best_next_move: cleanProfileText(source.best_next_move, 180),
     };
+}
+
+function hasDirectBuyerIntent(value) {
+    const text = String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!text) return false;
+    return /^(?:how much|price\??|pricing\??|cost\??|what(?:'s| is) included\??|send (?:me )?(?:the )?(?:link|details)\b)/i.test(text)
+        || /\b(?:can|could) you send (?:me )?(?:the )?(?:link|details)\b/i.test(text)
+        || /\b(?:can|could|how do|where do) i (?:join|start|sign up|get (?:the )?(?:link|details))\b/i.test(text)
+        || /\b(?:i(?:'m| am)|im) (?:in|keen|ready)(?:\b| to (?:join|start|sign up))/i.test(text)
+        || /\b(?:i want|i'd like|i would like|keen|ready) to (?:join|start|sign up|work with you)\b/i.test(text)
+        || /\b(?:coaching|starter coaching|balance|work with you|your (?:program|coaching))\b.{0,80}\b(?:price|cost|details|included|inclusions|link|join|sign up|start)\b/i.test(text)
+        || /\b(?:price|cost|details|included|inclusions|link|join|sign up)\b.{0,80}\b(?:coaching|starter coaching|balance|work with you|your (?:program|coaching))\b/i.test(text);
+}
+
+function hasCommercialProblemEvidence(qualifier = {}) {
+    const behavior = normalizeBehaviorProfile(qualifier.behavior_profile);
+    const facts = qualifier.facts || {};
+    const relevantNeed = behavior.primary_need && behavior.primary_need !== 'unknown';
+    const currentState = String(facts.current_state || '');
+    const motivation = String(facts.motivation || '');
+    const blockers = String(facts.history_blockers || '');
+    const combined = `${currentState} ${motivation} ${blockers}`.toLowerCase();
+    const domainSignal = /\b(train|training|workout|gym|food|meal|nutrition|weight|fat|muscle|strength|fitness|energy|routine|consistent|consistency|accountability|exercise|pilates|running|cardio|health|body)\b/i.test(combined);
+    const currentProblem = /\b(struggl|stuck|hard|difficult|drop|fall|inconsisten|need|want|goal|trying|low energy|burnt out|pain|recover|plateau|results?)\b/i.test(currentState);
+    const explicitProblem = hasUsefulFact(motivation) || hasUsefulFact(blockers) || currentProblem;
+    const peerOnly = /\b(my clients?|my business|who to coach|as a coach|as a practitioner|with clients?)\b/i.test(combined)
+        && !/\b(i|my)\b.{0,30}\b(struggl|need|want|goal|training|food|weight|energy|routine)\b/i.test(combined);
+    return relevantNeed && domainSignal && explicitProblem && !peerOnly;
+}
+
+function normalizeCommercialStage(value, fallback = 'engaged') {
+    const normalized = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+    return COMMERCIAL_STAGES.includes(normalized) ? normalized : fallback;
+}
+
+function deriveCommercialStage({ qualifier = {}, currentMessage = '', proposedStage = '' } = {}) {
+    const behavior = normalizeBehaviorProfile(qualifier.behavior_profile);
+    const replies = Math.max(0, Number(qualifier.meaningful_lead_reply_count || 0));
+    if (qualifier.stage === 'lost' || behavior.sales_readiness === 'not_now') return 'engaged';
+    if (hasDirectBuyerIntent(currentMessage)) return 'buyer_intent';
+
+    const prior = normalizeCommercialStage(qualifier.commercial_stage);
+    if (behavior.sales_readiness === 'link_ready' || prior === 'buyer_intent') return 'buyer_intent';
+
+    const hasProblem = hasCommercialProblemEvidence(qualifier) && replies >= 3;
+    if (!hasProblem) return 'engaged';
+
+    const proposed = normalizeCommercialStage(proposedStage);
+    if (
+        proposed === 'offer_ready'
+        || proposed === 'buyer_intent'
+        || prior === 'offer_ready'
+        || behavior.sales_readiness === 'bridge_ready'
+    ) return 'offer_ready';
+    return 'problem_qualified';
 }
 
 function mergeBehaviorProfiles(priorProfile = {}, parsedProfile = {}) {
@@ -701,6 +763,8 @@ function freshQualifier({ hookContext = null } = {}) {
         },
         warmth_score: 30,
         warmth_label: 'lukewarm',
+        commercial_stage: 'engaged',
+        commercial_reason: 'Conversation started; no qualified sales evidence yet.',
         next_question: '',
         why_now: "first captured reply in this thread, likely after Shannon's unseen story/post opener. Keep rapport first and wait for a real health, fitness, or help signal before pushing a move.",
         quote_evidence: null,
@@ -728,13 +792,15 @@ function normalizeQualifier(raw) {
         commitment: cleanFactValue(raw.facts?.commitment),
     };
     const warmthScore = Math.max(0, Math.min(100, Math.round(Number(raw.warmth_score) || 0)));
-    return {
+    const normalized = {
         stage,
         stage_label: stageLabel,
         stage_index: stageIndex,
         facts,
         warmth_score: warmthScore,
         warmth_label: raw.warmth_label || warmthLabelFor(warmthScore),
+        commercial_stage: normalizeCommercialStage(raw.commercial_stage),
+        commercial_reason: cleanProfileText(raw.commercial_reason, 180),
         next_question: typeof raw.next_question === 'string' ? raw.next_question.trim() : '',
         why_now: typeof raw.why_now === 'string' ? raw.why_now.trim() : '',
         quote_evidence: typeof raw.quote_evidence === 'string' ? raw.quote_evidence.trim() : null,
@@ -744,6 +810,11 @@ function normalizeQualifier(raw) {
         meaningful_lead_reply_count: Math.max(0, Math.round(Number(raw.meaningful_lead_reply_count) || 0)),
         evaluated_at: raw.evaluated_at || new Date().toISOString(),
     };
+    normalized.commercial_stage = deriveCommercialStage({
+        qualifier: normalized,
+        proposedStage: raw.commercial_stage,
+    });
+    return normalized;
 }
 
 // ============================================================
@@ -889,6 +960,13 @@ FIRST CAPTURED REPLY CONTEXT: if the conversation history is empty, do NOT assum
 
 YOUR JOB: read the conversation, update the qualifier state, and decide whether THIS turn should keep chatting, gently bridge toward health/fitness, or move toward paid Starter Coaching because they have admitted they need help or asked how to start.
 
+COMMERCIAL STAGE IS SEPARATE FROM ENGAGEMENT. A lively conversation, many replies, questions about Shannon's coaching philosophy, or professional curiosity can still be only engaged. Classify the lead as exactly one of:
+- engaged: rapport, banter, curiosity, or useful conversation without a personally acknowledged coaching need;
+- problem_qualified: they have personally named a relevant fitness, food, energy, training, consistency, structure, or accountability goal plus a real blocker;
+- offer_ready: they have acknowledged wanting help, structure, accountability, or coaching, or positively accepted a soft Starter Coaching bridge;
+- buyer_intent: they personally ask for price, inclusions, the link, how to join/start/sign up, say they are in/ready, or request a call about working with Shannon.
+Do not mark buyer_intent merely because the word coaching, start, call, details, or help appears. "Do you use mindfulness in your coaching?" is professional curiosity unless they connect it to getting help themselves. A peer discussing their own clients or business is not a buyer without personal purchase intent.
+
 CRITICAL TONE RULE: Shannon is chatting like a mate, NOT interviewing like a coach. A question is not required. Prefer a statement they can confirm, correct, or expand. If you do ask one, it must come from the lead's exact words and help them name what feels hard, what they want to change, or where they need support. The lead should never feel like they're being funnelled or assessed.
 
 RAPPORT HAS A JOB: do not collect facts just to tick boxes. Build normal human back-and-forth, then use their own words to connect the chat toward health, fitness, energy, confidence, food, training, or consistency when it genuinely fits. If relationship_context is blank and their latest message has no health/fitness/food/energy/help signal, usually set is_question_moment=false and let Shannon keep chatting. But once they name a clear blocker, goal, low-energy pattern, consistency issue, or practical help need, stop pen-palling and move one step toward help: a tiny useful lens, a precise fit question, or an earned soft Starter Coaching bridge. Do not treat playful "send help" as an offer request by itself. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
@@ -977,13 +1055,15 @@ NOW DECIDE:
 
 5. **behavior_profile**: update the behavior profile from the newest message and recent history. Preserve prior fields unless the lead clearly updates the read. Good examples: "I know what to do, I just never stick to it" -> primary_need=accountability, protection_pattern=already_knows_what_to_do, sales_readiness=identity_confirmed. "I have tried so many plans" -> protection_pattern=fear_of_failing_again or skeptical_of_another_plan. "I hate being sold stuff" -> protection_pattern=hates_being_sold_to and autonomy_sensitivity=high. "Can you send me the details?" -> sales_readiness=link_ready. "not right now" -> sales_readiness=not_now. Do not infer medical, trauma, or personality claims.
 
-6. **next_question**: legacy field name. Prefer a statement-led next move when this turn naturally supports one. One sentence max, Australian casual, normal phone autocorrect casing, no greetings, no em-dashes. An earned Starter Coaching offer should be a casual fit bridge plus a low-pressure details handle, not an app explainer. The move should either keep a real thread-specific hook alive, bridge their own words toward health/fitness, help them self-identify what they need help with, or softly invite them into Starter Coaching once enough lead-only context has been earned. Use declarative elicitation before questions: "sounds like food is the bit that keeps derailing the week", "seems like you do better with structure than winging it", or "you are probably past needing more random tips". Let them confirm, correct, or add the missing detail. Do not ask routine survey questions. Do not push a move just because the checklist is thin. First/early replies to Shannon's story opener can use one tiny relevant move about their hook, like how they use the app/tool/routine, where the place is, what the food was, or how the session went, but that move can be a statement. Set is_question_moment=true only when this turn genuinely needs a hook move; set it false when a short acknowledgement, banter line, or statement is enough. If there is no specific hook and Shannon has not asked a basic day/week opener, a simple day/week check-in is acceptable. Only skip the move when they only said thanks/emoji/filler, it is a genuinely short no-response-needed reply, the topic is a current safety/medical/rehab advice situation, or the thread is clearly closing. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is not sensitive by itself. When they share a stable limitation that affects their training but do not ask for diagnosis, treatment, or rehab advice, set is_question_moment=true and use one non-medical training-context question about what they can still progress or how it affects their week. Treat it as normal rapport, never a diagnosis, prescription, or pitch off vulnerability. A Shannon personal aside alone is not enough there, but do not force a question mark just to keep them replying. No health/fitness/help bridge is required for this first story-reply move. If Shannon asked whether they were okay after a sad animal/pet story and they answer that they are okay but the animals are not, do not ask what happened to the animals. If a move is useful, bridge through vegan/animal-values context instead, such as how long they have been vegan/plant-based or what got them into it; later, bridge to how they go with fitness before offering coaching. If the latest message is banter with enough relationship context, a direct answer to Shannon's last question, or there is no clear health/fitness/help bridge, set is_question_moment=false and next_question="". If the latest message is an in-person/local/PT/current-trainer preference, make the next move about that preference first, not the coaching link. If at least 3 meaningful lead replies plus real context have been earned, prefer a contextual starter-coaching bridge like "if one check-in a week would keep it simple, I can send the coaching details through here" over asking another personal-history question. Vary this wording to match the lead's exact situation and do not hardcode that example. If stage is "pitched" and they have not accepted yet, only use a tiny next-step move if needed, like "I can send the link through here". If stage is "won", set is_question_moment=false and make next_question the approved coaching-link handoff, not another intake question. Do not mark "pitched" just because they are friendly or vaguely interested; wait for a real help/start/coaching signal or an earned soft bridge.
+6. **commercial_stage** and **commercial_reason**: apply the four-stage commercial definition above. commercial_reason must cite the lead's own personal buying/problem evidence in under 18 words. If there is no such evidence, say that the conversation is engaged but not commercially qualified. Never use reply count or warmth score as the reason.
 
-7. **why_now**: 1-2 sentences explaining the timing, citing a specific phrase from THE LEAD'S WORDS. Format: "She wrote 'X', which signals Y. Now's the moment because Z." Be concrete. If is_question_moment is false, why_now explains why we're holding off ("she just vented about her boss, validate first").
+7. **next_question**: legacy field name. Prefer a statement-led next move when this turn naturally supports one. One sentence max, Australian casual, normal phone autocorrect casing, no greetings, no em-dashes. An earned Starter Coaching offer should be a casual fit bridge plus a low-pressure details handle, not an app explainer. The move should either keep a real thread-specific hook alive, bridge their own words toward health/fitness, help them self-identify what they need help with, or softly invite them into Starter Coaching once enough lead-only context has been earned. Use declarative elicitation before questions: "sounds like food is the bit that keeps derailing the week", "seems like you do better with structure than winging it", or "you are probably past needing more random tips". Let them confirm, correct, or add the missing detail. Do not ask routine survey questions. Do not push a move just because the checklist is thin. First/early replies to Shannon's story opener can use one tiny relevant move about their hook, like how they use the app/tool/routine, where the place is, what the food was, or how the session went, but that move can be a statement. Set is_question_moment=true only when this turn genuinely needs a hook move; set it false when a short acknowledgement, banter line, or statement is enough. If there is no specific hook and Shannon has not asked a basic day/week opener, a simple day/week check-in is acceptable. Only skip the move when they only said thanks/emoji/filler, it is a genuinely short no-response-needed reply, the topic is a current safety/medical/rehab advice situation, or the thread is clearly closing. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is not sensitive by itself. When they share a stable limitation that affects their training but do not ask for diagnosis, treatment, or rehab advice, set is_question_moment=true and use one non-medical training-context question about what they can still progress or how it affects their week. Treat it as normal rapport, never a diagnosis, prescription, or pitch off vulnerability. A Shannon personal aside alone is not enough there, but do not force a question mark just to keep them replying. No health/fitness/help bridge is required for this first story-reply move. If Shannon asked whether they were okay after a sad animal/pet story and they answer that they are okay but the animals are not, do not ask what happened to the animals. If a move is useful, bridge through vegan/animal-values context instead, such as how long they have been vegan/plant-based or what got them into it; later, bridge to how they go with fitness before offering coaching. If the latest message is banter with enough relationship context, a direct answer to Shannon's last question, or there is no clear health/fitness/help bridge, set is_question_moment=false and next_question="". If the latest message is an in-person/local/PT/current-trainer preference, make the next move about that preference first, not the coaching link. If at least 3 meaningful lead replies plus real context have been earned, prefer a contextual starter-coaching bridge like "if one check-in a week would keep it simple, I can send the coaching details through here" over asking another personal-history question. Vary this wording to match the lead's exact situation and do not hardcode that example. If stage is "pitched" and they have not accepted yet, only use a tiny next-step move if needed, like "I can send the link through here". If stage is "won", set is_question_moment=false and make next_question the approved coaching-link handoff, not another intake question. Do not mark "pitched" just because they are friendly or vaguely interested; wait for a real help/start/coaching signal or an earned soft bridge.
 
-8. **quote_evidence**: the exact phrase from the lead's words your reasoning hinges on. Null if there isn't one (e.g. on a first reply with no signal yet).
+8. **why_now**: 1-2 sentences explaining the timing, citing a specific phrase from THE LEAD'S WORDS. Format: "She wrote 'X', which signals Y. Now's the moment because Z." Be concrete. If is_question_moment is false, why_now explains why we're holding off ("she just vented about her boss, validate first").
 
-9. **is_question_moment**: legacy field name. true if this turn is the right moment to push the next stage's elicitation move. false if Shannon should just chat / validate / acknowledge without pushing the funnel forward this turn.
+9. **quote_evidence**: the exact phrase from the lead's words your reasoning hinges on. Null if there isn't one (e.g. on a first reply with no signal yet).
+
+10. **is_question_moment**: legacy field name. true if this turn is the right moment to push the next stage's elicitation move. false if Shannon should just chat / validate / acknowledge without pushing the funnel forward this turn.
 
 Keep the whole JSON compact. Use null for unknown facts. Each fact string should be under 12 words. next_question should be one short statement or question. why_now should be under 18 words. Do not repeat the schema or explain anything outside JSON.
 
@@ -992,6 +1072,8 @@ OUTPUT JSON ONLY — no commentary, no code fences:
   "stage": "...",
   "facts": { "hook_context": "...", "relationship_context": "...", "relationship_checklist": { "location": "...", "work_study": "...", "household_family": "...", "pets": "...", "daily_rhythm": "...", "food_setup": "...", "training_background": "...", "loves": "...", "stressors_frustrations": "..." }, "current_state": "...", "motivation": "...", "history_blockers": "...", "commitment": "..." },
   "warmth_score": 0,
+  "commercial_stage": "engaged",
+  "commercial_reason": "...",
   "challenge_route": "...",
   "behavior_profile": { "primary_need": "...", "protection_pattern": "...", "autonomy_sensitivity": "...", "sales_readiness": "...", "identity_signal": "...", "best_next_move": "..." },
   "next_question": "...",
@@ -1129,6 +1211,8 @@ async function evaluateQualifier({ thread, history, currentMessage, draftText, l
         facts: mergedFacts,
         warmth_score: parsed.warmth_score ?? prior.warmth_score,
         warmth_label: warmthLabelFor(parsed.warmth_score ?? prior.warmth_score),
+        commercial_stage: parsed.commercial_stage || prior.commercial_stage,
+        commercial_reason: parsed.commercial_reason || prior.commercial_reason,
         next_question: parsed.next_question || prior.next_question,
         why_now: parsed.why_now || prior.why_now,
         quote_evidence: parsed.quote_evidence ?? prior.quote_evidence,
@@ -1140,6 +1224,13 @@ async function evaluateQualifier({ thread, history, currentMessage, draftText, l
     });
     next.meaningful_lead_reply_count = meaningfulLeadReplyCount;
     next = applyRapportGate({ qualifier: next, currentMessage, leadReplyCount: meaningfulLeadReplyCount });
+    next.commercial_stage = deriveCommercialStage({
+        qualifier: next,
+        currentMessage,
+        proposedStage: parsed.commercial_stage,
+    });
+    next.commercial_reason = cleanProfileText(parsed.commercial_reason, 180)
+        || `Commercial stage: ${next.commercial_stage.replace(/_/g, ' ')}.`;
 
     return { qualifier: next, evaluated: true, error: null, model: modelUsed };
 }
@@ -1213,6 +1304,8 @@ function summarizeForFcmData(qualifier) {
         qualifierStageIndex: String(qualifier.stage_index || ''),
         qualifierWarmth: String(qualifier.warmth_score || ''),
         qualifierWarmthLabel: qualifier.warmth_label || '',
+        qualifierCommercialStage: normalizeCommercialStage(qualifier.commercial_stage),
+        qualifierCommercialReason: qualifier.commercial_reason || '',
         qualifierNextQuestion: qualifier.next_question || '',
         qualifierWhyNow: qualifier.why_now || '',
         qualifierIsQuestionMoment: qualifier.is_question_moment ? '1' : '0',
@@ -1249,6 +1342,8 @@ function buildQualifierRelationshipBlock(qualifier) {
     if (stageLabel || warmth) {
         lines.push(['Qualifier', stageIndex, stageLabel, warmth].filter(Boolean).join(' | '));
     }
+    lines.push(`Commercial stage: ${humanizeProfileToken(normalizeCommercialStage(qualifier.commercial_stage))}`);
+    if (qualifier.commercial_reason) lines.push(`Commercial evidence: ${qualifier.commercial_reason}`);
     if (Number(qualifier.meaningful_lead_reply_count) > 0) {
         lines.push(`Meaningful lead replies: ${Number(qualifier.meaningful_lead_reply_count)} (soft invite window starts at 3)`);
     }
@@ -1303,6 +1398,10 @@ module.exports = {
     freshQualifier,
     normalizeQualifier,
     normalizeBehaviorProfile,
+    normalizeCommercialStage,
+    deriveCommercialStage,
+    hasDirectBuyerIntent,
+    hasCommercialProblemEvidence,
     inferNativeStoryHookContext,
     inferHookContext,
     formatQualifierCustomDataText,
