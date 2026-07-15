@@ -86,3 +86,11 @@ test('recent discovery follows defer welcomes instead of losing them', () => {
     assert.match(operatingBrief, /safe_after=touch\+24 hours/i);
     assert.match(operatingBrief, /not permanently cancelled/i);
 });
+
+test('genuine replies create delayed reciprocal cross-surface nurture', () => {
+    assert.match(operatingBrief, /reply to Shannon's comment[\s\S]+Story check after at least 24 hours/i);
+    assert.match(operatingBrief, /reply to Shannon's Story message[\s\S]+feed check/i);
+    assert.match(operatingBrief, /p_supersede=false/i);
+    assert.match(operatingBrief, /cross_surface_nurture/i);
+    assert.match(operatingBrief, /one reciprocal cross-surface touch per person per rolling seven days/i);
+});
