@@ -10,6 +10,10 @@ test('priority queue clamps bot requests to a safe batch size', () => {
     assert.equal(_test.clampLimit('', 50, 20), 20);
 });
 
+test('Story leases fit inside the half-hour browser handoff', () => {
+    assert.equal(_test.STORY_CLAIM_LEASE_SECONDS, 25 * 60);
+});
+
 test('priority queue preserves the engagement state and opens the right profile', () => {
     const row = _test.mapPriorityRow({
         thread_id: 'thread-1',

@@ -14,6 +14,9 @@ const { claimNextActions, seedStoryActions } = require('./_lib/ig-next-action-qu
 const SHARED_SECRET = process.env.IG_STORY_BOT_BRIDGE_SECRET || process.env.STORY_COMMENT_BRIDGE_SECRET || '';
 const MAX_LIMIT = 1000;
 const STORY_QUEUE_MAX_LIMIT = 50;
+// Browser micro-shifts stop claiming after 22 minutes. Keep Story leases just
+// beyond that window so a dead run does not starve the next half-hour shift.
+const STORY_CLAIM_LEASE_SECONDS = 25 * 60;
 
 function json(statusCode, body) {
     return {
@@ -184,7 +187,7 @@ async function loadClaimedStoryRows(limit) {
     const claimed = await claimNextActions({
         owner: 'story_operator',
         limit: requested,
-        leaseSeconds: 2 * 60 * 60,
+        leaseSeconds: STORY_CLAIM_LEASE_SECONDS,
         runId: `story-priorities:${new Date().toISOString()}`,
         threadIds: candidates.map(row => row.thread_id).filter(Boolean),
     });
@@ -220,4 +223,11 @@ exports.handler = async (event = {}) => {
     }
 };
 
-exports._test = { clampLimit, mapPriorityRow, mapClaimedStoryRows, buildSummary, safeEqual };
+exports._test = {
+    clampLimit,
+    mapPriorityRow,
+    mapClaimedStoryRows,
+    buildSummary,
+    safeEqual,
+    STORY_CLAIM_LEASE_SECONDS,
+};
