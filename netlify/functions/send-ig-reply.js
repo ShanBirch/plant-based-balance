@@ -452,7 +452,7 @@ async function notifyChallengeOfferSent({ alert, alertData, alertId, replyText, 
             body: JSON.stringify({
                 recipientId: alert.coach_id,
                 senderId: alert.client_id || alertData.linked_user_id || alertData.subscriber_id || '',
-                senderName: `30-day challenge sent: ${leadName}`,
+                senderName: `Starter Coaching offer sent: ${leadName}`,
                 messageText: truncateText(replyText, 180),
                 type: 'dm_message',
                 alertId,
@@ -462,7 +462,7 @@ async function notifyChallengeOfferSent({ alert, alertData, alertId, replyText, 
                 channelLabel: channel === 'messenger' ? 'Balance FB' : 'Balance IG',
                 url: './admin-dashboard.html?tab=cocos',
                 challengeOfferWarning: '1',
-                challengeOfferLabel: '30-day challenge sent',
+                challengeOfferLabel: 'Starter Coaching offer sent',
             }),
         }).catch(e => console.warn('[send-ig-reply] challenge-offer sent push failed:', e.message));
     } catch (err) {

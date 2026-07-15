@@ -25,7 +25,7 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 - Facebook Pixel: `1928402271406692`.
 - Pricing:
   - App + Group: $20/month.
-  - Coaching: $29/week.
+  - Balance Starter Coaching: $29.99/week.
 
 ## Strategy
 
@@ -35,13 +35,15 @@ Client/prospect-facing language must reflect this: do not say Shannon is "buildi
 
 The real funnel:
 
-1. Facebook/Instagram ad with vegan challenge angle.
+1. Instagram/Facebook outreach, content, referrals, or ads create a conversation.
 2. Lead lands in IG/FB DMs with Shannon.
-3. Free 30-day challenge invite into the app.
-4. Conversion happens through DMs, not through the in-app onboarding sequence.
-5. Around day 30, pitch $29/week coaching. Offer $20/month app/group as fallback.
+3. The DM flow builds rapport, identifies the live goal/blocker, and qualifies fit without interrogating.
+4. When earned, offer Balance Starter Coaching at $29.99/week and complete the sale through DMs.
+5. Send the coaching details/checkout link in the DM when they ask or accept. Do not require a call.
+6. Offer a short call only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. The call is an escalation lane, not the default close.
+7. If Starter Coaching is not the right fit, the $20/month app/group option can be the lighter paid fallback.
 
-Critical: the in-app 30-day onboarding sequence is not the main conversion mechanism. DMs are.
+Critical: Balance no longer uses a free 30-day challenge as its acquisition or conversion path. DMs are the primary sales surface, and Starter Coaching is the primary offer.
 
 Current strategic priority: build the AI-operated business layer around Balance:
 

@@ -41,7 +41,7 @@ assert.strictEqual(context.from_username, 'example_user');
 
 const block = buildCommentResourceHandoffBlock(context);
 assert.match(block, /already been sent the resource\/study link/i);
-assert.match(block, /normal free challenge lead path/i);
+assert.match(block, /normal Starter Coaching DM path/i);
 assert.match(block, /Do not ask if they want the resource link again/i);
 assert.match(block, /Unconscious determinants of free decisions/i);
 

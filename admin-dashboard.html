@@ -11368,7 +11368,7 @@
             if (offerWarning) {
                 return {
                     code: 'challenge_offer',
-                    label: `${offerWarning.label || '30-day challenge offer'} needs timing review`,
+                    label: `${offerWarning.label || 'Starter Coaching offer'} needs timing review`,
                 };
             }
             return null;
@@ -20506,7 +20506,7 @@
         function getChallengeOfferWarningInfo(alert) {
             const warning = alert?.data?.challenge_offer_warning || alert?.data?.challengeOfferWarning || null;
             if (!warning || typeof warning !== 'object' || warning.required === false) return null;
-            const label = String(warning.label || '30-day challenge offer').trim();
+            const label = String(warning.label || 'Starter Coaching offer').trim();
             const routeLabel = String(warning.route_label || warning.routeLabel || '').trim();
             const reason = String(warning.reason || '').trim();
             return {

@@ -76,15 +76,15 @@ function buildChallengeOfferWarning({ draftText, qualifier, detectedAt }) {
         ? 'plant-based challenge'
         : route === 'generic'
             ? 'transformation challenge'
-            : '30-day challenge';
+            : 'legacy challenge or coaching';
     return {
         required: true,
         code: 'challenge_offer',
         dot: '🟡',
-        label: '30-day challenge offer',
+        label: 'Starter Coaching offer',
         route,
         route_label: routeLabel,
-        reason: `Draft appears to offer the free ${routeLabel} or send a challenge link.`,
+        reason: `Draft appears to offer ${routeLabel}, Starter Coaching, or send a signup link. Review timing and use the DM-close funnel.`,
         detected_at: detectedAt || new Date().toISOString(),
     };
 }

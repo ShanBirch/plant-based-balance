@@ -100,7 +100,7 @@ const salesNativeContext = buildNativeStoryOutreachContextBlock({
 assert.strictEqual(salesNativeContext.summary.lead_origin, 'native_story_outreach');
 assert.strictEqual(salesNativeContext.summary.offer_path, 'balance_starter_coaching');
 assert.match(salesNativeContext.block, /paid Balance Starter Coaching/);
-assert.match(salesNativeContext.block, /Free challenge is fallback/);
+assert.match(salesNativeContext.block, /do not offer a free challenge/i);
 assert.match(salesNativeContext.block, /Voice priority/);
 assert.match(salesNativeContext.block, /no sales script/);
 assert.match(salesNativeContext.block, /Keep Shannon's real texting voice above all sales context/);

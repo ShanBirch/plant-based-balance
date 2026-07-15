@@ -36,7 +36,7 @@ const STORY_OUTREACH_SALES_CONTEXT = {
     offer_price: 'AUD $29.99/week',
     offer_check_in: 'one weekly check-in',
     first_touch_rule: 'story reply is rapport only; no coaching, checkout, or link pitch',
-    dm_rule: 'when they reply and show help, food, training, consistency, or enough relationship context, bridge to Starter Coaching; free challenge is fallback only',
+    dm_rule: 'when they reply and show help, food, training, consistency, or enough relationship context, bridge to Starter Coaching and close through DMs; calls are escalation only and there is no free-challenge funnel',
 };
 const STORY_NO_REPLY_COMMENT_LIMIT = 4;
 const STORY_NO_REPLY_COOLDOWN_DAYS = 30;
