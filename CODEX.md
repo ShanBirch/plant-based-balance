@@ -211,6 +211,14 @@ Important triggers:
 - `plateau-detection-scan`: weekly, catches weight/strength stalls post-day-30.
 - `send-meal-reminders`, `sync-fitbit-data`, `sync-wearable-data`: reminders and wearable sync.
 
+## Support Repair Worker
+
+- Conversational DM work and app/program repair work use separate operators.
+- The DM manager should identify a genuine support issue, stamp the source `coach_alerts` row with `data.operator_queue='support_operator'`, `data.support_routed_by`, and `data.support_routed_at`, then leave the repair to the support worker.
+- `balance_support_jobs` is the Supabase traffic controller for repairs. `coach_alerts` remains the source message and the final Needs You receipt.
+- The support worker calls `refresh_balance_support_jobs`, claims a short lease through `claim_balance_support_jobs`, follows the Balance app-support verification rules, and finishes with `complete_balance_support_job`.
+- Never repair a support item without a live claim. Never send around Shannon or another operator. Never claim fixed until the client confirms; the first verified repair remains `fix_attempted_client_confirmation_pending`.
+
 Morning pulse priority signals:
 
 - High: missed scheduled workout, 5+ day streak broken, challenge versus Shannon.
