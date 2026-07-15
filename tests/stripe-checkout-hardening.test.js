@@ -20,9 +20,12 @@ assert(
 assert(
     checkoutSession.includes('const checkoutOrigin = assertSameSiteCheckoutRequest(request);') &&
     checkoutSession.includes('assertAcceptedCheckoutTerms(compliance);') &&
-    checkoutSession.includes('success_url: checkoutOrigin') &&
-    checkoutSession.includes('customer_email: checkoutEmail || undefined'),
-    'hosted Checkout sessions should use the guarded origin and validated compliance context'
+    checkoutSession.includes('successUrl: checkoutOrigin') &&
+    checkoutSession.includes('customerEmail: checkoutEmail') &&
+    checkoutSession.includes('https://api.stripe.com/v1/checkout/sessions') &&
+    checkoutSession.includes('"Content-Type": "application/x-www-form-urlencoded"') &&
+    !checkoutSession.includes('import Stripe from "stripe"'),
+    'hosted Checkout sessions should use the guarded origin and Stripe REST API without the restricted Node SDK runtime'
 );
 
 assert(
