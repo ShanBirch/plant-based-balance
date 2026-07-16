@@ -17,7 +17,7 @@ assert.match(helpers, /source:\s*activityData\.source \|\| 'manual'[\s\S]*source
 
 assert.match(dashboard, /id="strava-share-route-btn"[\s\S]*Share route to Feed/, 'Strava dashboard should expose a route-share action');
 assert.match(dashboard, /script_part_10\.js\?v=strava-route-v1/, 'phones should fetch the new Strava route-share controller');
-assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=22/, 'phones should fetch the route-aware activity-card renderer');
+assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=24/, 'phones should fetch the route-aware activity-card renderer');
 assert.match(dashboard, /id:\s*'strava-route-photo-overlay-v1'/, 'route sharing should have a returning-user Feature Drop');
 assert.match(dashboard, /title:'Share your route'/, 'route sharing should be included in the new-user guided tour');
 assert.match(stravaUi, /window\._latestStravaActivity = latest \|\| null/, 'latest Strava activity should be retained for sharing');

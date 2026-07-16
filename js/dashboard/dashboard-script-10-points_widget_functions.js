@@ -2581,7 +2581,7 @@ function resetWorkoutShareUI() {
         cardBtn.style.opacity = '1';
         cardBtn.style.background = 'linear-gradient(135deg, #ffffff, #f0fdf4)';
         cardBtn.style.border = 'none';
-        cardBtn.innerHTML = '<span style="font-size: 1.3rem;">📢</span><span style="font-size: 0.95rem;">Balance Feed (+1 XP)</span>';
+        cardBtn.innerHTML = '<span style="font-size: 1.3rem;">📢</span><span style="font-size: 0.95rem;">Balance Feed (+15 XP)</span>';
     }
 
     const igStoryBtn = document.getElementById('share-workout-ig-story-btn');
@@ -2595,7 +2595,7 @@ function resetWorkoutShareUI() {
     if (igFeedBtn) {
         igFeedBtn.disabled = false;
         igFeedBtn.style.opacity = '1';
-        igFeedBtn.innerHTML = '<span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span><span style="font-size: 0.9rem;">Feed</span>';
+        igFeedBtn.innerHTML = '<span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span><span style="font-size: 0.9rem;">Feed (+15 XP)</span>';
     }
     updateWorkoutInstagramShareVisibility();
     renderPostWorkoutShareMenu();
@@ -2628,7 +2628,7 @@ async function preparePostWorkoutCompositePreview() {
             shareButton.setAttribute('onclick', 'sharePendingPostWorkoutCompositeToFeed()');
             shareButton.innerHTML = pending.cardPayload.card_type === 'pb'
                 ? '<span style="font-size:1.3rem;">🏆</span><span style="font-size:0.95rem;">Photo + PB to Feed (+1 XP)</span>'
-                : '<span style="font-size:1.3rem;">📢</span><span style="font-size:0.95rem;">Photo + workout to Feed (+1 XP)</span>';
+                : '<span style="font-size:1.3rem;">📢</span><span style="font-size:0.95rem;">Photo + workout to Feed (+15 XP)</span>';
         }
         if (igOptions) igOptions.style.display = pending.cardPayload.card_type === 'pb' ? 'none' : 'grid';
         setPostWorkoutShareStatus('Preview ready. Check the overlay, then post it to Feed.', 'info');
@@ -2744,7 +2744,7 @@ async function sharePendingPostWorkoutCompositeToFeed() {
         if (typeof loadStories === 'function') loadStories();
 
         const shareLabel = pending.type === 'pb' ? 'Photo + PB overlay' : 'Photo + workout overlay';
-        const message = xpResult?.success ? shareLabel + ' shared. +1 XP earned.' : shareLabel + ' shared to Feed.';
+        const message = xpResult?.success ? shareLabel + ' shared. +15 XP earned.' : shareLabel + ' shared to Feed.';
         setPostWorkoutShareStatus(message, 'success');
         showToast(message, 'success');
         return story;
@@ -2938,7 +2938,13 @@ function renderPostWorkoutShareMenu() {
 async function awardPostWorkoutFeedShareXP(photoTimestamp, photoHash) {
     if (workoutPointsEarnedThisSession.story) return null;
     if (!isWorkoutDurationEligibleForShareXP(false)) return null;
-    return awardWorkoutSharePoint('story', photoTimestamp || new Date().toISOString(), photoHash || null);
+    const result = await awardBalanceSocialShareXP(
+        'workout',
+        'balance_feed',
+        getCompletedWorkoutSocialShareReferenceId()
+    );
+    if (result?.success || result?.alreadyAwarded) workoutPointsEarnedThisSession.story = true;
+    return result;
 }
 
 async function sharePostWorkoutWorkoutToFeed() {
@@ -2975,7 +2981,7 @@ async function sharePostWorkoutWorkoutToFeed() {
             loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
         }
 
-        const message = xpResult?.success ? 'Workout shared to Feed. +1 XP earned.' : 'Workout shared to Feed.';
+        const message = xpResult?.success ? 'Workout shared to Feed. +15 XP earned.' : 'Workout shared to Feed.';
         setPostWorkoutShareStatus(message, 'success');
         showToast(message, 'success');
     } catch (error) {
@@ -3122,7 +3128,7 @@ async function uploadPostWorkoutPhotoToFeed(file) {
             loadStories();
         }
 
-        const message = xpResult?.success ? 'Photo shared to Feed. +1 XP earned.' : 'Photo shared to Feed.';
+        const message = xpResult?.success ? 'Photo shared to Feed. +15 XP earned.' : 'Photo shared to Feed.';
         setPostWorkoutShareStatus(message, 'success');
         showToast(message, 'success');
     } catch (error) {
@@ -4370,6 +4376,35 @@ window.shareBalanceCardToInstagram = shareBalanceCardToInstagram;
 window.renderBalanceShareCardImage = renderBalanceShareCardImage;
 window.pbbShareImageUrlToDataUrl = pbbShareImageUrlToDataUrl;
 
+async function awardBalanceSocialShareXP(shareKind, shareDestination, referenceId) {
+    if (!window.currentUser?.id || !window.db?.points?.awardPoints) return null;
+    const result = await window.db.points.awardPoints(
+        window.currentUser.id,
+        'social_share',
+        referenceId,
+        { shareKind, shareDestination }
+    );
+    if (result?.success) {
+        if (typeof window.refreshLevelDisplay === 'function') window.refreshLevelDisplay();
+        if (typeof window.refreshPointsDisplay === 'function') window.refreshPointsDisplay();
+        if (typeof window.triggerXPBarRainbow === 'function') window.triggerXPBarRainbow();
+        if (typeof window.refreshChallengeProgress === 'function') window.refreshChallengeProgress();
+    }
+    return result;
+}
+window.awardBalanceSocialShareXP = awardBalanceSocialShareXP;
+
+function getCompletedWorkoutSocialShareReferenceId() {
+    const data = completedWorkoutDataForShare || {};
+    const firstSet = Array.isArray(data.sets) ? data.sets[0] : null;
+    const existing = data.workoutId || data.workout_id || data.id || firstSet?.workout_id || firstSet?.id;
+    if (existing) return existing;
+    if (!window._pbbWorkoutSocialShareReferenceId) {
+        window._pbbWorkoutSocialShareReferenceId = crypto.randomUUID();
+    }
+    return window._pbbWorkoutSocialShareReferenceId;
+}
+
 async function shareWorkoutCardToInstagram(target) {
     if (!canUseBalanceInstagramShareTest()) {
         showToast('Instagram sharing is in test mode for now.', 'info');
@@ -4418,7 +4453,18 @@ async function shareWorkoutCardToInstagram(target) {
         }
 
         const cardPayload = buildWorkoutShareCardPayload();
-        await shareBalanceCardToInstagram(cardPayload, safeTarget, { photoDataUrl: cachedWorkoutShareBase64 });
+        const opened = await shareBalanceCardToInstagram(cardPayload, safeTarget, { photoDataUrl: cachedWorkoutShareBase64 });
+        if (opened && safeTarget === 'feed') {
+            const xpResult = await awardBalanceSocialShareXP(
+                'workout',
+                'instagram_feed',
+                getCompletedWorkoutSocialShareReferenceId()
+            );
+            showToast(
+                xpResult?.success ? 'Workout shared to Instagram Feed! +15 XP' : 'Workout opened in Instagram. Today\'s IG Feed XP is already claimed.',
+                'success'
+            );
+        }
     } catch (error) {
         console.error('Error sharing workout card to Instagram:', error);
         showToast('Could not open Instagram share. Please try again.', 'error');
@@ -4567,12 +4613,6 @@ window.sharePendingPBToDestination = sharePendingPBToDestination;
 
 // Share workout as an aesthetic card to feed — uses the cached gym photo
 async function shareWorkoutCardToFeed() {
-    // Check if already earned story point this session
-    if (workoutPointsEarnedThisSession.story) {
-        showToast('You already earned the feed post point for this workout!', 'info');
-        return;
-    }
-
     if (!validateWorkoutDurationForShare()) return;
 
     if (!completedWorkoutDataForShare) {
@@ -4685,15 +4725,14 @@ async function handleWorkoutCardPhotoCaptureFromFile(file) {
 
         console.log('Workout card story created:', story);
 
-        // Award XP
-        const photoTimestamp = new Date().toISOString();
-        await awardWorkoutSharePoint('story', photoTimestamp, null);
+        const xpResult = await awardBalanceSocialShareXP('workout', 'balance_feed', story.id);
+        if (xpResult?.success || xpResult?.alreadyAwarded) workoutPointsEarnedThisSession.story = true;
 
         // Update button to show success
         if (btn) {
             btn.style.background = 'rgba(68, 255, 68, 0.3)';
             btn.style.border = '1px solid rgba(68, 255, 68, 0.5)';
-            btn.innerHTML = '<span style="font-size:1.3rem;">✅</span><span style="font-size:0.95rem;">Shared! +1 XP</span>';
+            btn.innerHTML = `<span style="font-size:1.3rem;">✅</span><span style="font-size:0.95rem;">${xpResult?.success ? 'Shared! +15 XP' : 'Shared!'}</span>`;
         }
 
         // Refresh feed if visible
@@ -4701,7 +4740,7 @@ async function handleWorkoutCardPhotoCaptureFromFile(file) {
             loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
         }
 
-        showToast('Workout card shared to feed! +1 XP', 'success');
+        showToast(xpResult?.success ? 'Workout shared to Balance Feed! +15 XP' : 'Workout shared. Today\'s Balance Feed XP is already claimed.', 'success');
 
     } catch (error) {
         console.error('Error sharing workout card:', error);
@@ -4709,7 +4748,7 @@ async function handleWorkoutCardPhotoCaptureFromFile(file) {
 
         if (btn) {
             btn.disabled = false;
-            btn.querySelector('span:last-child').textContent = 'Balance Feed (+1 XP)';
+            btn.querySelector('span:last-child').textContent = 'Balance Feed (+15 XP)';
         }
     }
 
@@ -4787,7 +4826,7 @@ async function shareNutritionToFeed() {
             showToast('Log some meals first before sharing!', 'info');
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '<span style="font-size:1rem;">🥗</span><span style="font-size:0.85rem;">Share Nutrition</span>';
+                btn.innerHTML = '<span style="font-size:1rem;">🥗</span><span style="font-size:0.85rem;">Balance Feed (+15 XP)</span>';
             }
             return;
         }
@@ -4839,11 +4878,16 @@ async function shareNutritionToFeed() {
 
         console.log('Nutrition card story created:', story);
 
+        const xpResult = await awardBalanceSocialShareXP('meal', 'balance_feed', story.id);
+        if (xpResult?.success && typeof markMealFeedShareUsedToday === 'function') {
+            markMealFeedShareUsedToday();
+        }
+
         // Update button to show success
         if (btn) {
             btn.style.background = 'rgba(99, 102, 241, 0.2)';
             btn.style.border = '1px solid rgba(99, 102, 241, 0.4)';
-            btn.innerHTML = '<span style="font-size:1rem;">✅</span><span style="font-size:0.85rem;">Shared!</span>';
+            btn.innerHTML = `<span style="font-size:1rem;">✅</span><span style="font-size:0.85rem;">${xpResult?.success ? 'Shared! +15 XP' : 'Shared!'}</span>`;
         }
 
         // Refresh feed if visible
@@ -4851,7 +4895,7 @@ async function shareNutritionToFeed() {
             loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
         }
 
-        showToast('Nutrition card shared to feed!', 'success');
+        showToast(xpResult?.success ? 'Nutrition shared to Balance Feed! +15 XP' : 'Nutrition shared. Today\'s food Feed XP is already claimed.', 'success');
 
     } catch (error) {
         console.error('Error sharing nutrition card:', error);
@@ -4859,7 +4903,7 @@ async function shareNutritionToFeed() {
 
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<span style="font-size:1rem;">🥗</span><span style="font-size:0.85rem;">Share Nutrition</span>';
+            btn.innerHTML = '<span style="font-size:1rem;">🥗</span><span style="font-size:0.85rem;">Balance Feed (+15 XP)</span>';
         }
     }
 }
@@ -4907,7 +4951,8 @@ async function buildDailyNutritionInstagramPayload() {
         fat: dailyData.total_fat_g || 0,
         fat_goal: dailyData.fat_goal_g || 70,
         meal_count: mealsData ? mealsData.length : 0,
-        streak: streak
+        streak: streak,
+        share_reference_id: dailyData.id || mealsData?.[0]?.id || null
     };
 }
 
@@ -4927,7 +4972,22 @@ async function shareNutritionToInstagram(target = 'story') {
 
     try {
         const cardPayload = await buildDailyNutritionInstagramPayload();
-        await shareBalanceCardToInstagram(cardPayload, target === 'feed' ? 'feed' : 'story');
+        const safeTarget = target === 'feed' ? 'feed' : 'story';
+        const opened = await shareBalanceCardToInstagram(cardPayload, safeTarget);
+        if (opened && safeTarget === 'feed') {
+            const xpResult = await awardBalanceSocialShareXP(
+                'meal',
+                'instagram_feed',
+                cardPayload.share_reference_id || crypto.randomUUID()
+            );
+            if (xpResult?.success && typeof markMealInstagramShareUsedToday === 'function') {
+                markMealInstagramShareUsedToday();
+            }
+            showToast(
+                xpResult?.success ? 'Nutrition shared to Instagram Feed! +15 XP' : 'Nutrition opened in Instagram. Today\'s food IG XP is already claimed.',
+                'success'
+            );
+        }
     } catch (error) {
         console.error('Error sharing nutrition to Instagram:', error);
         showToast(error?.message || 'Could not open Instagram share.', 'error');
@@ -5587,13 +5647,20 @@ function showActivitySuccess(data) {
     xpStatus.style.display = 'block';
     xpStatus.style.background = 'rgba(68, 255, 68, 0.2)';
     xpStatus.style.border = '2px solid rgba(68, 255, 68, 0.5)';
-    xpStatus.innerHTML = '<div style="font-weight:700;">Share to Feed for +5 XP</div>';
+    xpStatus.innerHTML = '<div style="font-weight:700;">Balance Feed +15 XP, Instagram Feed +15 XP</div>';
     noXpHint.style.display = 'none';
 
     // Reset share button
     const shareBtn = document.getElementById('activity-share-btn');
     shareBtn.disabled = false;
-    document.getElementById('activity-share-btn-text').textContent = 'Share to Feed (+5 XP)';
+    document.getElementById('activity-share-btn-text').textContent = 'Balance Feed (+15 XP)';
+    const instagramBtn = document.getElementById('activity-share-instagram-btn');
+    if (instagramBtn) {
+        instagramBtn.disabled = false;
+        instagramBtn.style.opacity = '1';
+        const instagramLabel = document.getElementById('activity-share-instagram-btn-text');
+        if (instagramLabel) instagramLabel.textContent = 'IG Feed (+15 XP)';
+    }
     const sharePhotoLabel = document.getElementById('activity-share-photo-btn-text');
     if (sharePhotoLabel) {
         const routeCopy = data.routePolyline ? 'route and activity stats' : 'activity stats';
@@ -5603,6 +5670,34 @@ function showActivitySuccess(data) {
     }
 
     window.history.pushState({ view: 'activity-success' }, '', '#activity-success');
+}
+
+function buildActivityShareCardPayload() {
+    if (!savedActivityData) return null;
+    const cardPayload = {
+        card_type: 'activity',
+        activity_type: savedActivityData.activity_type,
+        activity_label: savedActivityData.activity_label,
+        duration: savedActivityData.duration + ' min',
+        intensity: savedActivityData.intensity,
+        calories: savedActivityData.calories,
+        emoji: savedActivityData.emoji,
+        venue_type: savedActivityData.venueType
+    };
+    if (savedActivityData.includeRoute !== false && savedActivityData.routePolyline) {
+        cardPayload.route_polyline = savedActivityData.routePolyline;
+        cardPayload.distance_km = savedActivityData.distanceKm || null;
+        cardPayload.route_source = savedActivityData.sourceMetadata?.provider || 'Strava';
+    }
+    return cardPayload;
+}
+
+function getActivitySocialShareReferenceId() {
+    if (!savedActivityData) return crypto.randomUUID();
+    if (!savedActivityData.socialShareReferenceId) {
+        savedActivityData.socialShareReferenceId = savedActivityData.id || crypto.randomUUID();
+    }
+    return savedActivityData.socialShareReferenceId;
 }
 
 async function shareActivityCardToFeed() {
@@ -5620,26 +5715,11 @@ async function shareActivityCardToFeed() {
         if (!session?.user) {
             showToast('Please log in to share', 'error');
             shareBtn.disabled = false;
-            document.getElementById('activity-share-btn-text').textContent = 'Share Activity Card';
+            document.getElementById('activity-share-btn-text').textContent = 'Balance Feed (+15 XP)';
             return;
         }
 
-        // Build card payload for feed rendering
-        const cardPayload = {
-            card_type: 'activity',
-            activity_type: savedActivityData.activity_type,
-            activity_label: savedActivityData.activity_label,
-            duration: savedActivityData.duration + ' min',
-            intensity: savedActivityData.intensity,
-            calories: savedActivityData.calories,
-            emoji: savedActivityData.emoji,
-            venue_type: savedActivityData.venueType
-        };
-        if (savedActivityData.includeRoute !== false && savedActivityData.routePolyline) {
-            cardPayload.route_polyline = savedActivityData.routePolyline;
-            cardPayload.distance_km = savedActivityData.distanceKm || null;
-            cardPayload.route_source = savedActivityData.sourceMetadata?.provider || 'Strava';
-        }
+        const cardPayload = buildActivityShareCardPayload();
 
         let mediaUrl = '';
         if (savedActivityData.photoBase64 || cardPayload.route_polyline) {
@@ -5671,19 +5751,17 @@ async function shareActivityCardToFeed() {
 
         await window.dbHelpers?.stories?.create(window.currentUser.id, storyData);
 
-        // Every tracked activity feed share receives 5 XP. Its activity id makes the award idempotent.
-        const xpResult = await window.db?.points?.awardPoints(
-            window.currentUser.id,
-            'activity_feed_share',
-            savedActivityData.id || `activity_${Date.now()}`,
-            { photoTimestamp: savedActivityData.photoBase64 ? Date.now() : null, aiConfidence: 'high' }
+        const xpResult = await awardBalanceSocialShareXP(
+            'activity',
+            'balance_feed',
+            getActivitySocialShareReferenceId()
         );
         if (xpResult?.success) {
             const xpStatus = document.getElementById('activity-xp-status');
             xpStatus.style.display = 'block';
             xpStatus.style.background = 'rgba(68, 255, 68, 0.2)';
             xpStatus.style.border = '2px solid rgba(68, 255, 68, 0.5)';
-            xpStatus.innerHTML = '<div style="font-weight:700; font-size:1.1rem;">+5 XP Earned! 🎉</div>';
+            xpStatus.innerHTML = '<div style="font-weight:700; font-size:1.1rem;">Balance Feed +15 XP earned! 🎉</div>';
         }
 
         // Update activity log record
@@ -5701,7 +5779,7 @@ async function shareActivityCardToFeed() {
         }
 
         document.getElementById('activity-share-btn-text').textContent = '✅ Shared!';
-        showToast('Activity shared to feed!', 'success');
+        showToast(xpResult?.success ? 'Activity shared to Balance Feed! +15 XP' : 'Activity shared. Its Balance Feed XP is already claimed.', 'success');
 
         // Refresh feed in background
         if (typeof window.loadPhotoFeed === 'function') {
@@ -5712,10 +5790,56 @@ async function shareActivityCardToFeed() {
         console.error('Error sharing activity:', error);
         showToast('Failed to share. Please try again.', 'error');
         shareBtn.disabled = false;
-        document.getElementById('activity-share-btn-text').textContent = 'Share Activity Card';
+        document.getElementById('activity-share-btn-text').textContent = 'Balance Feed (+15 XP)';
     }
 }
 window.shareActivityCardToFeed = shareActivityCardToFeed;
+
+async function shareActivityCardToInstagram() {
+    if (!savedActivityData) {
+        showToast('No activity data to share', 'error');
+        return false;
+    }
+    const btn = document.getElementById('activity-share-instagram-btn');
+    const label = document.getElementById('activity-share-instagram-btn-text');
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.72';
+    }
+    if (label) label.textContent = 'Preparing...';
+
+    try {
+        const opened = await shareBalanceCardToInstagram(
+            buildActivityShareCardPayload(),
+            'feed',
+            { photoDataUrl: savedActivityData.photoBase64 || null }
+        );
+        if (!opened) return false;
+
+        const xpResult = await awardBalanceSocialShareXP(
+            'activity',
+            'instagram_feed',
+            getActivitySocialShareReferenceId()
+        );
+        if (label) label.textContent = xpResult?.success ? 'IG Feed shared (+15 XP)' : 'IG Feed opened';
+        showToast(
+            xpResult?.success ? 'Activity shared to Instagram Feed! +15 XP' : 'Activity opened in Instagram. Its IG Feed XP is already claimed.',
+            'success'
+        );
+        return true;
+    } catch (error) {
+        console.error('Error sharing activity to Instagram:', error);
+        showToast('Could not open Instagram Feed. Please try again.', 'error');
+        return false;
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+        }
+        if (label && label.textContent === 'Preparing...') label.textContent = 'IG Feed (+15 XP)';
+    }
+}
+window.shareActivityCardToInstagram = shareActivityCardToInstagram;
 
 async function handleActivitySharePhotoSelected(input) {
     const file = input?.files?.[0];

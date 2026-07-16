@@ -13,7 +13,8 @@ const POINTS_CONFIG = {
   POINTS_PER_WORKOUT: 1,
   POINTS_PER_PERSONAL_BEST: 1,
   POINTS_PER_WORKOUT_FEED_SHARE: 15,
-  POINTS_PER_ACTIVITY_FEED_SHARE: 5,
+  POINTS_PER_ACTIVITY_FEED_SHARE: 15,
+  POINTS_PER_SOCIAL_SHARE: 15,
   POINTS_PER_MILESTONE_FEED_SHARE: 10,
   POINTS_PER_EXERCISE_CONTRIBUTION: 15,
   POINTS_PER_PROGRESS_PHOTO: 10,
@@ -68,7 +69,7 @@ const WALKTHROUGH_REFERENCE_IDS: Record<string, string> = {
 
 interface AwardPointsRequest {
   userId: string;
-  type: 'meal' | 'workout' | 'workout_feed_share' | 'activity_feed_share' | 'milestone_feed_share' | 'exercise_contribution' | 'personal_best' | 'progress_photo' | 'daily_log' | 'walkthrough';
+  type: 'meal' | 'workout' | 'workout_feed_share' | 'activity_feed_share' | 'milestone_feed_share' | 'exercise_contribution' | 'personal_best' | 'progress_photo' | 'daily_log' | 'walkthrough' | 'social_share';
   referenceId: string;
   photoTimestamp?: string;  // ISO timestamp from EXIF or file
   aiConfidence?: string;    // 'high', 'medium', 'low'
@@ -81,6 +82,8 @@ interface AwardPointsRequest {
   nutritionDate?: string;   // For daily_log: the date being logged (YYYY-MM-DD)
   finishDay?: boolean;      // For daily_log: mark day complete without requiring goals met
   clientDate?: string;      // Client's local date (YYYY-MM-DD) for timezone-correct streak logic
+  shareKind?: 'meal' | 'activity' | 'workout';
+  shareDestination?: 'balance_feed' | 'instagram_feed';
 }
 
 interface PointsResult {
@@ -155,10 +158,10 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
-    if (type !== 'meal' && type !== 'workout' && type !== 'workout_feed_share' && type !== 'activity_feed_share' && type !== 'milestone_feed_share' && type !== 'exercise_contribution' && type !== 'personal_best' && type !== 'progress_photo' && type !== 'daily_log' && type !== 'walkthrough') {
+    if (type !== 'meal' && type !== 'workout' && type !== 'workout_feed_share' && type !== 'activity_feed_share' && type !== 'milestone_feed_share' && type !== 'exercise_contribution' && type !== 'personal_best' && type !== 'progress_photo' && type !== 'daily_log' && type !== 'walkthrough' && type !== 'social_share') {
       return new Response(JSON.stringify({
         error: 'Invalid type',
-        message: 'Type must be "meal", "workout", "workout_feed_share", "activity_feed_share", "milestone_feed_share", "exercise_contribution", "personal_best", "progress_photo", "daily_log", or "walkthrough"'
+        message: 'Unsupported points event type'
       }), {
         status: 400,
         headers
@@ -197,6 +200,38 @@ export default async (request: Request, context: Context): Promise<Response> => 
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    if (type === 'social_share') {
+      const shareKind = body.shareKind;
+      const shareDestination = body.shareDestination;
+      if (!shareKind || !['meal', 'activity', 'workout'].includes(shareKind)
+          || !shareDestination || !['balance_feed', 'instagram_feed'].includes(shareDestination)) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Invalid social share reward',
+          reason: 'A supported share kind and destination are required.',
+          pointsAwarded: 0
+        }), { status: 400, headers });
+      }
+
+      const { data: shareResult, error: shareError } = await supabase.rpc('award_social_share_xp', {
+        p_user_id: userId,
+        p_share_kind: shareKind,
+        p_destination: shareDestination,
+        p_reference_id: databaseReferenceId
+      });
+
+      if (shareError) {
+        console.error('Social share XP award failed:', shareError);
+        throw shareError;
+      }
+
+      return new Response(JSON.stringify(shareResult || {
+        success: false,
+        error: 'Share reward unavailable',
+        pointsAwarded: 0
+      }), { status: 200, headers });
+    }
 
     if (type === 'exercise_contribution') {
       const { data: exerciseContribution, error: exerciseError } = await supabase

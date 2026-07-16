@@ -1768,6 +1768,28 @@ function markMealFeedShareUsedToday() {
         localStorage.setItem('pbbMealSharedToFeedDay_' + dayKey, '1');
     } catch (_) {}
 }
+window.markMealFeedShareUsedToday = markMealFeedShareUsedToday;
+
+function isMealInstagramShareUsedToday() {
+    const dayKey = getMealFeedShareDayKey();
+    try {
+        return localStorage.getItem('pbbMealSharedToInstagramDay_' + dayKey) === '1';
+    } catch (_) {
+        return false;
+    }
+}
+
+function markMealInstagramShareUsedToday() {
+    const dayKey = getMealFeedShareDayKey();
+    try {
+        localStorage.setItem('pbbMealSharedToInstagramDay_' + dayKey, '1');
+    } catch (_) {}
+}
+window.markMealInstagramShareUsedToday = markMealInstagramShareUsedToday;
+
+function getMealInstagramShareButtonText() {
+    return isMealInstagramShareUsedToday() ? 'IG Feed' : `IG Feed (+${MEAL_FEED_SHARE_XP} XP)`;
+}
 
 function isMealSharedToFeed(mealId) {
     if (!mealId) return false;
@@ -2290,20 +2312,36 @@ async function shareMealRecordToInstagram(meal, btn, target = 'story') {
         const mealForShare = await getFreshMealRecordForFeedShare(meal);
         const cardPayload = buildMealFeedCardPayload(mealForShare);
         const photoDataUrl = await getMealInstagramPhotoDataUrl(cardPayload);
-        await window.shareBalanceCardToInstagram(cardPayload, target === 'feed' ? 'feed' : 'story', {
+        const safeTarget = target === 'feed' ? 'feed' : 'story';
+        const opened = await window.shareBalanceCardToInstagram(cardPayload, safeTarget, {
             photoDataUrl
         });
+        if (!opened) return false;
+
+        let xpResult = null;
+        if (safeTarget === 'feed' && typeof window.awardBalanceSocialShareXP === 'function') {
+            xpResult = await window.awardBalanceSocialShareXP('meal', 'instagram_feed', mealForShare.id);
+            if (xpResult?.success) markMealInstagramShareUsedToday();
+        }
         if (btn) {
-            btn.textContent = 'Opening IG Story';
+            btn.textContent = safeTarget === 'feed'
+                ? (xpResult?.success ? 'IG Feed +15 XP' : 'Opening IG Feed')
+                : 'Opening IG Story';
             btn.style.opacity = '1';
+        }
+        if (safeTarget === 'feed') {
+            showToast(
+                xpResult?.success ? 'Meal shared to Instagram Feed! +15 XP' : 'Meal opened in Instagram. Today\'s food IG XP is already claimed.',
+                'success'
+            );
         }
         return true;
     } catch (error) {
         console.error('Error sharing meal to Instagram:', error);
-        showToast('Could not open Instagram Story. Please try again.', 'error');
+        showToast(`Could not open Instagram ${target === 'feed' ? 'Feed' : 'Story'}. Please try again.`, 'error');
         if (btn) {
             btn.disabled = false;
-            btn.textContent = btn.dataset.originalText || 'Share to IG Story';
+            btn.textContent = btn.dataset.originalText || getMealInstagramShareButtonText();
             btn.style.opacity = '1';
         }
         return false;
@@ -2319,14 +2357,12 @@ window.closeMealFeedSharePrompt = closeMealFeedSharePrompt;
 
 window.sharePendingMealToFeed = async function(btn) {
     const meal = window._pbbPendingMealFeedShare;
-    const story = await shareMealRecordToFeed(meal, btn);
-    if (story) closeMealFeedSharePrompt();
+    await shareMealRecordToFeed(meal, btn);
 };
 
 window.sharePendingMealToInstagram = async function(btn) {
     const meal = window._pbbPendingMealFeedShare;
-    const opened = await shareMealRecordToInstagram(meal, btn, 'story');
-    if (opened) closeMealFeedSharePrompt();
+    await shareMealRecordToInstagram(meal, btn, 'feed');
 };
 
 function showMealFeedSharePrompt(meal) {
@@ -2358,7 +2394,7 @@ function showMealFeedSharePrompt(meal) {
         </div>
         <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:12px;">
             ${feedButtonHtml}
-            <button type="button" onclick="sharePendingMealToInstagram(this)" style="border:none;background:#be185d;color:white;border-radius:999px;padding:11px 12px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">IG Story</button>
+            <button type="button" onclick="sharePendingMealToInstagram(this)" style="border:none;background:#be185d;color:white;border-radius:999px;padding:11px 12px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">${getMealInstagramShareButtonText()}</button>
         </div>
     `;
     document.body.appendChild(prompt);
@@ -8989,7 +9025,7 @@ function openMealDetailPopup(index) {
     if (igShareBtn) {
         const isWater = String(meal.meal_type || '').toLowerCase() === 'water';
         igShareBtn.disabled = isWater;
-        igShareBtn.textContent = isWater ? 'IG Story unavailable' : 'Share to IG Story';
+        igShareBtn.textContent = isWater ? 'IG Feed unavailable' : getMealInstagramShareButtonText();
         igShareBtn.style.opacity = isWater ? '0.85' : '1';
     }
 
@@ -9104,7 +9140,7 @@ async function shareCurrentMealToInstagram() {
 
     const meal = currentMealsList[currentEditingMealIndex];
     const btn = document.getElementById('mealDetailIgStoryBtn');
-    await shareMealRecordToInstagram(meal, btn, 'story');
+    await shareMealRecordToInstagram(meal, btn, 'feed');
 }
 window.shareCurrentMealToInstagram = shareCurrentMealToInstagram;
 
@@ -9541,7 +9577,7 @@ function setMealBreakdownShareMeal(meal) {
     feedBtn.style.opacity = alreadyShared ? '0.65' : '1';
 
     igBtn.disabled = false;
-    igBtn.textContent = 'IG Story';
+    igBtn.textContent = getMealInstagramShareButtonText();
     igBtn.style.opacity = '1';
 }
 
@@ -9554,9 +9590,7 @@ async function shareMealBreakdownToFeed(btn) {
 
     const story = await shareMealRecordToFeed(meal, btn || null);
     if (story) {
-        closeMealFeedSharePrompt();
         setMealBreakdownShareMeal(meal);
-        dismissMealBreakdownPopup();
     }
     return story;
 }
@@ -9569,12 +9603,7 @@ async function shareMealBreakdownToInstagram(btn) {
         return false;
     }
 
-    const opened = await shareMealRecordToInstagram(meal, btn || null, 'story');
-    if (opened) {
-        closeMealFeedSharePrompt();
-        dismissMealBreakdownPopup();
-    }
-    return opened;
+    return await shareMealRecordToInstagram(meal, btn || null, 'feed');
 }
 window.shareMealBreakdownToInstagram = shareMealBreakdownToInstagram;
 

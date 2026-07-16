@@ -2398,11 +2398,11 @@ if(!window._pbbIsIOSSafari) {
                     <!-- Share Nutrition Card Button -->
                     <button id="share-nutrition-btn" onclick="shareNutritionToFeed()" style="display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:12px; padding:10px 16px; background:linear-gradient(135deg, rgba(99,102,241,0.15), rgba(129,140,248,0.15)); border:1px solid rgba(99,102,241,0.25); border-radius:10px; color:var(--text-main); font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.2s;">
                         <span style="font-size:1rem;">🥗</span>
-                        <span style="font-size:0.85rem;">Share Nutrition</span>
+                        <span style="font-size:0.85rem;">Balance Feed (+15 XP)</span>
                     </button>
-                    <button id="share-nutrition-ig-story-btn" onclick="shareNutritionToInstagram('story')" style="display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:8px; padding:10px 16px; background:linear-gradient(135deg, rgba(190,24,93,0.14), rgba(67,56,202,0.12)); border:1px solid rgba(190,24,93,0.22); border-radius:10px; color:var(--text-main); font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.2s;">
+                    <button id="share-nutrition-ig-story-btn" onclick="shareNutritionToInstagram('feed')" style="display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:8px; padding:10px 16px; background:linear-gradient(135deg, rgba(190,24,93,0.14), rgba(67,56,202,0.12)); border:1px solid rgba(190,24,93,0.22); border-radius:10px; color:var(--text-main); font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.2s;">
                         <span style="font-size:0.82rem; font-weight:950;">IG</span>
-                        <span style="font-size:0.85rem;">Story</span>
+                        <span style="font-size:0.85rem;">Feed (+15 XP)</span>
                     </button>
                 </div>
 
@@ -8052,7 +8052,7 @@ if(!window._pbbIsIOSSafari) {
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <button id="share-workout-card-btn" onclick="shareWorkoutCardToFeed()" style="width: 100%; background: linear-gradient(135deg, #ffffff, #f0fdf4); color: var(--primary); padding: 14px 15px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                         <span style="font-size: 1.3rem;">📢</span>
-                        <span style="font-size: 0.95rem;">Balance Feed (+1 XP)</span>
+                        <span style="font-size: 0.95rem;">Balance Feed (+15 XP)</span>
                     </button>
                     <div id="share-workout-ig-options" style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px;">
                         <button id="share-workout-ig-story-btn" onclick="shareWorkoutCardToInstagram('story')" style="width: 100%; background: linear-gradient(135deg, #ffffff, #fdf2f8); color: #be185d; padding: 13px 10px; border-radius: 12px; font-weight: 800; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 48px;">
@@ -8061,7 +8061,7 @@ if(!window._pbbIsIOSSafari) {
                         </button>
                         <button id="share-workout-ig-feed-btn" onclick="shareWorkoutCardToInstagram('feed')" style="width: 100%; background: linear-gradient(135deg, #ffffff, #eef2ff); color: #4338ca; padding: 13px 10px; border-radius: 12px; font-weight: 800; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 48px;">
                             <span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span>
-                            <span style="font-size: 0.9rem;">Feed</span>
+                            <span style="font-size: 0.9rem;">Feed (+15 XP)</span>
                         </button>
                     </div>
                 </div>
@@ -8394,7 +8394,7 @@ if(!window._pbbIsIOSSafari) {
 
         <!-- Share Section -->
         <div id="activity-share-section" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin: 15px 0;">
-            <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 10px;">Share to Feed</div>
+            <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 10px;">Share your activity</div>
             <div style="position:relative; margin:0 0 10px;">
             <input id="activity-share-photo-gallery-input" type="file" accept="image/*" style="display:none;" onchange="handleActivitySharePhotoSelected(this)">
             <input id="activity-share-photo-camera-input" type="file" accept="image/*" capture="environment" style="display:none;" onchange="handleActivitySharePhotoSelected(this)">
@@ -8407,10 +8407,14 @@ if(!window._pbbIsIOSSafari) {
                 <button type="button" role="menuitem" onclick="openActivitySharePhotoSource('gallery')" style="width:100%; display:flex; align-items:center; justify-content:center; gap:9px; padding:13px 14px; border:0; border-top:1px solid #e2e8f0; background:#ffffff; color:#0f172a; -webkit-text-fill-color:#0f172a; font:inherit; font-size:0.9rem; font-weight:800; cursor:pointer;">Choose from gallery</button>
             </div>
             </div>
-            <button id="activity-share-btn" onclick="shareActivityCardToFeed()" style="width: 100%; background: white; color: #0284c7; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem;">
-                <span style="font-size: 1.2rem;">📤</span>
-                <span id="activity-share-btn-text">Share Activity Card</span>
-            </button>
+            <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px;">
+                <button id="activity-share-btn" onclick="shareActivityCardToFeed()" style="width: 100%; background: white; color: #0284c7; padding: 14px 8px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; display: flex; align-items:center; justify-content:center; gap:6px; font-size:0.88rem;">
+                    <span id="activity-share-btn-text">Balance Feed (+15 XP)</span>
+                </button>
+                <button id="activity-share-instagram-btn" onclick="shareActivityCardToInstagram()" style="width:100%; background:white; color:#be185d; padding:14px 8px; border-radius:12px; font-weight:800; cursor:pointer; border:none; display:flex; align-items:center; justify-content:center; gap:6px; font-size:0.88rem;">
+                    <span id="activity-share-instagram-btn-text">IG Feed (+15 XP)</span>
+                </button>
+            </div>
         </div>
 
         <!-- XP Status -->
@@ -12639,7 +12643,7 @@ if (window._pbbIsIOSSafari) {
                 Share meal to Feed (+15 XP)
             </button>
             <button class="meal-detail-edit-btn" id="mealDetailIgStoryBtn" onclick="shareCurrentMealToInstagram()" style="background: linear-gradient(135deg, #be185d, #4338ca); color: white; margin-bottom: 10px;">
-                Share to IG Story
+                Share to IG Feed (+15 XP)
             </button>
             <button class="meal-detail-edit-btn" id="mealDetailEditBtn" onclick="openEditItemsModal()">
                 ✏️ Edit Items
@@ -12686,7 +12690,7 @@ if (window._pbbIsIOSSafari) {
         </div>
         <div id="mealBreakdownShareActions" style="display:none; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; padding:0 20px 20px; flex-shrink:0;">
             <button type="button" id="mealBreakdownFeedBtn" onclick="shareMealBreakdownToFeed(this)" style="border:none; border-radius:14px; padding:13px 10px; background:#046a38; color:#fff; -webkit-text-fill-color:#fff; font-weight:900; font-size:0.86rem; cursor:pointer;">Feed</button>
-            <button type="button" id="mealBreakdownIgBtn" onclick="shareMealBreakdownToInstagram(this)" style="border:none; border-radius:14px; padding:13px 10px; background:#be185d; color:#fff; -webkit-text-fill-color:#fff; font-weight:900; font-size:0.86rem; cursor:pointer;">IG Story</button>
+            <button type="button" id="mealBreakdownIgBtn" onclick="shareMealBreakdownToInstagram(this)" style="border:none; border-radius:14px; padding:13px 10px; background:#be185d; color:#fff; -webkit-text-fill-color:#fff; font-weight:900; font-size:0.86rem; cursor:pointer;">IG Feed +15 XP</button>
         </div>
     </div>
 </div>
@@ -13106,7 +13110,7 @@ if(!window._pbbIsIOSSafari) {
 <script>
 (function(){
   const steps = [
-    { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity', body:'After logging a walk, run, ride or class, add a photo and Balance overlays your activity stats before sharing it to Feed. Each share earns +5 XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
+    { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity twice', body:'After a walk, run, ride or class, share to Balance Feed for +15 XP and Instagram Feed for another +15 XP. The two rewards are separate.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
     { tab:'movement-tab', sel:'#activity-share-photo-btn', title:'Take a photo or choose one', body:'When you share an activity, tap Add a photo to open your camera or choose one from your gallery. Balance puts your activity stats straight on it for Feed.', condition: function(){ return !!document.getElementById('activity-share-photo-btn'); } },
     { tab:'dashboard', sel:'#fitbit-imported-activity-card', title:'Your walk is ready to share', body:'When Fitbit or your connected health app records a walk, run or ride, Balance brings it to Home ready for a photo and Feed share.', quick:true, condition: function(){ return !!document.getElementById('fitbit-imported-activity-card'); } },
     { tab:'dashboard', sel:'#strava-share-route-btn', title:'Share your route', body:'Connect Strava, then share a walk, run or ride with its recorded route over your photo. You choose every route before it reaches Feed.', condition: function(){ var b = document.getElementById('strava-share-route-btn'); return b && b.style.display !== 'none'; } },
@@ -13146,7 +13150,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"],[title="Build a meal"]', title:'Build-a-Meal', body:"Use Build-a-Meal when one meal has a few parts. Add items by photo, barcode, text, or manual entry until the whole plate is saved together." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openRecentMealsModal"],.camera-btn-widget[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Use Recent & saved meals to re-log food you have already tracked. Tap the clock, pick the meal, and it drops back into today." },
     { tab:'meals', sel:'#meals-log-list,.meal-log-card', title:'Share meals to Feed', body:"Share any logged meal to Feed. The first meal share each day earns +15 XP, and later shares still post without extra XP.", quick: true },
-    { tab:'meals', sel:'#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn', title:'Share meals to Instagram', body:"Open a logged meal or your daily nutrition summary, then tap IG Story to send a Balance card straight to Instagram.", quick: true },
+    { tab:'meals', sel:'#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn', title:'Two shares, two rewards', body:"Share food to Balance Feed for +15 XP, then share it to Instagram Feed for another +15 XP. One does not block the other.", quick: true },
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#browse-plans-pill', title:'Your meal plan', body:"Tap here for your AI-generated meal plan for the week — tap any day to see recipes." },
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Profile settings', body:"Open Profile when you need settings, dietary requirements, password changes, character customisation, or to replay this tour later." },
@@ -14202,8 +14206,8 @@ if(!window._pbbIsIOSSafari) {
     fallbackSel: '#move-your-way-pilot-card',
     title: 'Share your walk or run',
     fallbackTitle: 'Share your walk or run',
-    body: 'After logging an activity, add a photo and Balance puts your activity stats straight on it for Feed. Each share earns +5 XP.',
-    fallbackBody: 'Log a walk, run, ride or class in Movement, then add a photo to share your activity stats to Feed for +5 XP.',
+    body: 'After logging an activity, add a photo and share it to Balance Feed for +15 XP, then Instagram Feed for another +15 XP.',
+    fallbackBody: 'Log a walk, run, ride or class in Movement, then share it to Balance Feed and Instagram Feed for separate +15 XP rewards.',
     condition: function(){ return !!document.getElementById('activity-share-section') || !!document.getElementById('move-your-way-pilot-card'); }
   });
   allFeatures.push({
@@ -14296,11 +14300,22 @@ if(!window._pbbIsIOSSafari) {
     tab: 'meals',
     subtab: 'calorie-tracker',
     sel: '#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn',
-    title: 'Share to Instagram Story',
-    body: "Meals, nutrition summaries, and weekly progress photos can open straight into Instagram Story as Balance cards.",
+    title: 'Share to Instagram',
+    body: "Meals and nutrition summaries can open in Instagram Feed as Balance cards. Weekly progress photos can still open in Instagram Story.",
     condition: function(){
       return !!(document.querySelector('#meals-log-list .meal-log-card,.meal-log-card,#share-nutrition-ig-story-btn,#progress-photo-share-ig-story-btn'));
     }
+  });
+  allFeatures.push({
+    id: 'independent-balance-instagram-share-xp-v1',
+    tab: 'meals',
+    subtab: 'calorie-tracker',
+    sel: '#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn',
+    fallbackSel: '#share-nutrition-btn',
+    title: 'Two shares, two XP rewards',
+    body: "Food, walks, runs, and workouts can now earn +15 XP in Balance Feed and another +15 XP in Instagram Feed. Share to both to claim both rewards.",
+    fallbackBody: "Share eligible food, activities, and workouts to Balance Feed for +15 XP, then Instagram Feed for another +15 XP.",
+    condition: function(){ return !!document.querySelector('#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn,#share-nutrition-btn'); }
   });
   allFeatures.push({
     id: 'feed-post-actions-menu-v1',
@@ -17142,13 +17157,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=23';
+s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=24';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=23"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=24"><\/script>');
 }
 </script>
 
@@ -17217,7 +17232,7 @@ document.write('<script src="js/dashboard/dashboard-script-10-points_widget_func
             }
 
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=21';
+        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=22';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -17277,7 +17292,7 @@ document.write('<script src="js/dashboard/dashboard-script-10-points_widget_func
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=21" data-pbb-calorie-tracker="1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=22" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js" data-pbb-meal-builder="1"><\/script>');
     }
 })();
