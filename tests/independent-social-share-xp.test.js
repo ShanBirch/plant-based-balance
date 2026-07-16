@@ -43,7 +43,7 @@ assert.match(dashboard, /id="share-workout-card-btn"[\s\S]*Balance Feed \(\+15 X
 assert.match(dashboard, /id="share-workout-ig-feed-btn"[\s\S]*Feed \(\+15 XP\)/);
 assert.match(dashboard, /id:\s*'independent-balance-instagram-share-xp-v1'/);
 assert.match(dashboard, /title:'Two shares, two rewards'/);
-assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=26/);
+assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=27/);
 assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=22/);
 assert.match(coachContext, /food and workout shares earn \+15 XP[\s\S]*another independent \+15 XP in Instagram Feed/);
 

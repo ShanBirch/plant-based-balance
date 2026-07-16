@@ -4353,20 +4353,15 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
     }
 
     if (isBalanceNativeInstagramSurface()) {
-        // Instagram's iOS Feed document handoff can stop accepting the image
-        // even when both apps are installed. Always fall back to the native
-        // iOS share sheet so the user can still choose Instagram and complete
-        // the independent IG share reward.
-        if (getBalanceNativePlatform() === 'ios') {
-            return shareBalanceCardImageExternally(
-                dataUrl,
-                safeTarget,
-                safeTarget === 'story' ? 'Share this to your Instagram Story' : 'Share this to your Instagram Feed'
-            );
-        }
-
-        showToast('Could not open Instagram directly. Make sure Instagram and the latest Balance app are installed.', 'error');
-        return false;
+        // Direct Instagram intents can be rejected by either mobile platform,
+        // including Android OEM/Instagram combinations where the app is
+        // installed but does not resolve the targeted composer. Keep the share
+        // usable by falling back to the platform share sheet on both platforms.
+        return shareBalanceCardImageExternally(
+            dataUrl,
+            safeTarget,
+            safeTarget === 'story' ? 'Share this to your Instagram Story' : 'Share this to your Instagram Feed'
+        );
     }
 
     return shareBalanceCardImageExternally(
