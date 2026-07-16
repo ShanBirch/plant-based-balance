@@ -1461,12 +1461,12 @@ window.addEventListener('load', function() {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=70';
+                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=71';
                 document.head.appendChild(s);
             }, 3000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=70"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=71"><\/script>');
     }
     </script>
 
@@ -13095,7 +13095,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#weekly-goals-card', title:'Weekly goals', body:"Choose up to 3 goals for the week. Balance tracks the exact signals you picked and carries the results into Weekly Wrapped.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#next-obvious-steps-card', title:'Next steps', body:"Balance now gives you three clear actions for the day, aligned to your weekly goals and linked straight to the right part of the app.", quick: true, condition: function(){ try { return window.pbbNextSteps && window.pbbNextSteps.isPreviewEligible && window.pbbNextSteps.isPreviewEligible() && !!document.querySelector('#next-obvious-steps-card .next-step-action'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
-    { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Friday board day can earn 5 XP if you are down from last Friday, plus 5 XP for sharing the review card to Feed.", quick: true },
+    { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Sunday board day can earn 5 XP if you are down from last Sunday, plus 5 XP for sharing the review card to Feed.", quick: true },
     { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#progress-photo-share-feed-btn,#weekly-progress-photo-done-card', title:'Share progress photos', body:"After your Monday progress photos are saved, share them to Feed for an extra 20 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-done-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#weekly-checkin-card', title:'Weekly Review', body:"A shimmering gold review card shows the person's onboarding goal, weekly progress, check-ins, mood signals, and one clear action to set next week goals.", quick: true, condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
@@ -14129,11 +14129,11 @@ if(!window._pbbIsIOSSafari) {
       body: "Finish a workout or hit a PB, then choose Balance Feed, Instagram Story, or Instagram Feed from the share options."
     },
     {
-      id: 'friday-weigh-in-feed-share-v1',
+      id: 'sunday-weigh-in-feed-share-v1',
       tab: 'dashboard',
       sel: '#daily-weigh-in-card,#daily-weigh-in-done-card',
-      title: 'Friday weigh-ins',
-      body: "Friday now opens a review card before posting your weigh-in to the feed. Earn 5 XP if you are down from last Friday, then post it to Feed for another 5 XP."
+      title: 'Sunday weigh-ins',
+      body: "Sunday now opens a review card before posting your weigh-in to the feed. Earn 5 XP if you are down from last Sunday, then post it to Feed for another 5 XP."
     },
     {
       id: 'group-chat-options-menu-v1',

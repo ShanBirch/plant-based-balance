@@ -3470,7 +3470,7 @@ async function loadGroupChatMessages(chatId) {
             if (msg.is_win_share) {
                 const winDetails = msg.win_details || {};
                 const typeConfig = {
-                    'friday_weigh_in': { icon: 'FRI', bg: 'linear-gradient(135deg, #e0f2fe, #f8fafc)', border: '#38bdf8', label: 'Friday Weigh-In' },
+                    'friday_weigh_in': { icon: 'SUN', bg: 'linear-gradient(135deg, #e0f2fe, #f8fafc)', border: '#38bdf8', label: 'Sunday Weigh-In' },
                     'workout_complete': { icon: '💪', bg: 'linear-gradient(135deg, #dcfce7, #f0fdf4)', border: '#86efac', label: 'Workout Complete' },
                     'entire_workout': { icon: '📋', bg: 'linear-gradient(135deg, #dcfce7, #f0fdf4)', border: '#86efac', label: 'Full Workout' },
                     'exercise_all_sets': { icon: '📊', bg: 'linear-gradient(135deg, #dbeafe, #eff6ff)', border: '#93c5fd', label: 'Exercise' },
@@ -3574,13 +3574,13 @@ async function loadGroupChatMessages(chatId) {
                     let changeColor = '#0369a1';
                     if (previous && Number.isFinite(change)) {
                         if (change < 0) {
-                            changeLabel = `Down ${Math.abs(change).toFixed(1)}kg from last Friday`;
+                            changeLabel = `Down ${Math.abs(change).toFixed(1)}kg from last Sunday`;
                             changeColor = '#15803d';
                         } else if (change > 0) {
-                            changeLabel = `Up ${Math.abs(change).toFixed(1)}kg from last Friday`;
+                            changeLabel = `Up ${Math.abs(change).toFixed(1)}kg from last Sunday`;
                             changeColor = '#b45309';
                         } else {
-                            changeLabel = 'Steady from last Friday';
+                            changeLabel = 'Steady from last Sunday';
                         }
                     }
                     detailsHtml = `
@@ -3683,7 +3683,7 @@ function ensureSharedWeighTrendModal() {
                 <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px;">
                     <div>
                         <div style="font-size:0.72rem; font-weight:850; letter-spacing:0; text-transform:uppercase; color:#0369a1; margin-bottom:4px;">Weight trend</div>
-                        <h3 id="shared-weigh-trend-title" style="margin:0; color:#111827; font-size:1.22rem; line-height:1.2; font-weight:900;">Friday weigh-in</h3>
+                        <h3 id="shared-weigh-trend-title" style="margin:0; color:#111827; font-size:1.22rem; line-height:1.2; font-weight:900;">Sunday weigh-in</h3>
                     </div>
                     <button onclick="closeSharedWeighInTrend()" title="Close" style="width:34px; height:34px; border:none; border-radius:50%; background:#f1f5f9; color:#334155; font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
                 </div>
@@ -3734,7 +3734,7 @@ async function openSharedWeighInTrend(messageId, rangeDays = 30) {
             body.innerHTML = `
                 <div style="text-align:center; padding:20px;">
                     <div style="font-weight:850; color:#ef4444; margin-bottom:6px;">Could not load trend</div>
-                    <div style="font-size:0.86rem; color:#64748b;">This graph only opens from a shared Friday weigh-in in a group chat you belong to.</div>
+                    <div style="font-size:0.86rem; color:#64748b;">This graph only opens from a shared Sunday weigh-in in a group chat you belong to.</div>
                 </div>
             `;
         }
@@ -5270,8 +5270,8 @@ const CHALLENGE_XP_INFO_GROUPS = [
             { amount: '+10', title: 'Weekly progress photos', body: 'Earn once when the weekly progress photo set is accepted.' },
             { amount: '+10', title: 'Share weekly progress', body: 'Share that weekly progress photo set to Feed once.' },
             { amount: '+1', title: 'Daily weigh-in', body: 'Add your weigh-in for the day.' },
-            { amount: '+5', title: 'Friday weigh-in down', body: 'Earn when Friday weight is down from the previous Friday in a challenge.' },
-            { amount: '+5', title: 'Friday Feed card', body: 'Post the Friday weigh-in review card to Feed once per Friday weigh-in.' },
+            { amount: '+5', title: 'Sunday weigh-in down', body: 'Earn when Sunday weight is down from the previous Sunday in a challenge.' },
+            { amount: '+5', title: 'Sunday Feed card', body: 'Post the Sunday weigh-in review card to Feed once per Sunday weigh-in.' },
         ],
     },
     {

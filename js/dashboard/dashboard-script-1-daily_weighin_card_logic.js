@@ -100,7 +100,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
     }
 
     function isFridayWeighInDay(date = new Date()) {
-        return date.getDay() === 5;
+        return date.getDay() === 0;
     }
 
     function ensureFridayWeighInCardStyles() {
@@ -247,7 +247,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         if (subtitle) subtitle.style.display = 'none';
         const xpBadge = document.getElementById('weigh-in-xp-badge');
         if (xpBadge) xpBadge.style.display = 'none';
-        setTextContent('weigh-in-card-title', 'Friday Weigh-Ins');
+        setTextContent('weigh-in-card-title', 'Sunday Weigh-Ins');
         setTextContent('weigh-in-card-subtitle', '');
         setTextContent('weigh-in-xp-badge', '');
         setTextContent('weigh-in-submit-btn', 'Weigh In');
@@ -275,7 +275,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
     }
 
     function shouldShowFridayShareCard(payload) {
-        if (!payload || !payload.is_friday || !payload.active_challenge || payload.share_already_posted) return false;
+        if (!payload || !(payload.is_sunday || payload.is_friday) || !payload.active_challenge || payload.share_already_posted) return false;
         const weighInId = payload.weigh_in_id;
         if (!weighInId) return false;
         const dismissed = localStorage.getItem(getFridayWeighStorageKey('fridayWeighShareDismissed_', weighInId));
@@ -291,12 +291,12 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         const change = parseFloat(payload.change_kg);
         const weight = formatWeightForPreference(payload.weight_kg);
         const lost = payload.lost_weight || Number(payload.loss_points_awarded || 0) > 0;
-        let changeCopy = 'First Friday marker for this challenge.';
+        let changeCopy = 'First Sunday marker for this challenge.';
         if (isFinite(previous) && isFinite(change)) {
             const abs = Math.abs(change).toFixed(1);
-            if (change < 0) changeCopy = `Down ${abs} kg from last Friday.`;
-            else if (change > 0) changeCopy = `Up ${abs} kg from last Friday.`;
-            else changeCopy = 'Steady from last Friday.';
+            if (change < 0) changeCopy = `Down ${abs} kg from last Sunday.`;
+            else if (change > 0) changeCopy = `Up ${abs} kg from last Sunday.`;
+            else changeCopy = 'Steady from last Sunday.';
         }
         doneCard.classList.remove('pbb-friday-shared-card');
         doneCard.classList.add('pbb-friday-share-card');
@@ -306,7 +306,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
             <div style="width:100%;">
                 <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px;">
                     <div>
-                        <div style="font-size:0.66rem; color:#64748b; text-transform:uppercase; letter-spacing:0; font-weight:900; margin-bottom:4px;">Friday weigh-in</div>
+                        <div style="font-size:0.66rem; color:#64748b; text-transform:uppercase; letter-spacing:0; font-weight:900; margin-bottom:4px;">Sunday weigh-in</div>
                         <div style="font-size:1.08rem; font-weight:950; color:#111827;">Share to Feed?</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.88); border:1px solid rgba(148,163,184,0.38); border-radius:12px; padding:8px 10px; text-align:right; flex-shrink:0; box-shadow:0 8px 18px rgba(15,23,42,0.08);">
@@ -315,7 +315,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
                     </div>
                 </div>
                 <div style="display:flex; gap:7px; flex-wrap:wrap; margin-bottom:12px;">
-                    <span style="background:${lost ? 'rgba(22,163,74,0.12)' : 'rgba(255,255,255,0.74)'}; color:${lost ? '#166534' : '#334155'}; border:1px solid ${lost ? 'rgba(22,163,74,0.24)' : 'rgba(148,163,184,0.32)'}; padding:6px 9px; border-radius:999px; font-size:0.72rem; font-weight:900;">+${FRIDAY_WEIGH_LOSS_POINTS} XP if down from last Friday</span>
+                    <span style="background:${lost ? 'rgba(22,163,74,0.12)' : 'rgba(255,255,255,0.74)'}; color:${lost ? '#166534' : '#334155'}; border:1px solid ${lost ? 'rgba(22,163,74,0.24)' : 'rgba(148,163,184,0.32)'}; padding:6px 9px; border-radius:999px; font-size:0.72rem; font-weight:900;">+${FRIDAY_WEIGH_LOSS_POINTS} XP if down from last Sunday</span>
                     <span style="background:rgba(37,99,235,0.1); color:#1d4ed8; border:1px solid rgba(37,99,235,0.2); padding:6px 9px; border-radius:999px; font-size:0.72rem; font-weight:900;">+${FRIDAY_WEIGH_SHARE_POINTS} XP for feed share</span>
                 </div>
                 <div style="font-size:0.84rem; color:#334155; line-height:1.42; font-weight:760; margin-bottom:13px;">${escapeWeighInHtml(changeCopy)} Review it first, then post to Feed for +${FRIDAY_WEIGH_SHARE_POINTS} XP.</div>
@@ -342,10 +342,10 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         doneCard.style.gap = '12px';
         doneCard.innerHTML = `
             <button onclick="dismissWeighInDoneCard()" style="position:absolute; top:8px; right:8px; background:rgba(255,255,255,0.18); border:none; color:white; width:24px; height:24px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; line-height:1; padding:0;">&#x2715;</button>
-            <div style="width:44px; height:44px; background:rgba(255,255,255,0.18); border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.9rem; font-weight:950;">FRI</div>
+            <div style="width:44px; height:44px; background:rgba(255,255,255,0.18); border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.9rem; font-weight:950;">SUN</div>
             <div style="flex:1; min-width:0; padding-right:18px;">
                 <div style="font-weight:950; font-size:1rem; color:#064e3b;">Posted to Feed</div>
-                <div style="font-size:0.84rem; color:#166534; font-weight:750; margin-top:2px;">${Number(data?.share_points_awarded || 0) > 0 ? '+' + Number(data.share_points_awarded || 0) + ' XP for sharing. ' : ''}Friday weigh-in posted.</div>
+                <div style="font-size:0.84rem; color:#166534; font-weight:750; margin-top:2px;">${Number(data?.share_points_awarded || 0) > 0 ? '+' + Number(data.share_points_awarded || 0) + ' XP for sharing. ' : ''}Sunday weigh-in posted.</div>
             </div>
         `;
     }
@@ -398,7 +398,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
             .limit(1)
             .maybeSingle();
         if (error && error.code !== 'PGRST116') {
-            console.warn('Could not check Friday weigh-in feed post:', error);
+            console.warn('Could not check Sunday weigh-in feed post:', error);
             return null;
         }
         return data || null;
@@ -415,14 +415,14 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
             .limit(1)
             .maybeSingle();
         if (error && error.code !== 'PGRST116') {
-            console.warn('Could not check Friday weigh-in share ledger:', error);
+            console.warn('Could not check Sunday weigh-in share ledger:', error);
             return false;
         }
         return !!data;
     }
 
     async function hydrateFridayWeighShareState(payload, weighInId) {
-        if (!payload || !weighInId || !payload.is_friday || !payload.active_challenge) return payload;
+        if (!payload || !weighInId || !(payload.is_sunday || payload.is_friday) || !payload.active_challenge) return payload;
         const postedKey = getFridayWeighStorageKey('fridayWeighSharePosted_', weighInId);
         if (localStorage.getItem(postedKey) || await hasFridayWeighShareLedger(weighInId)) {
             try { localStorage.setItem(postedKey, '1'); } catch(e) {}
@@ -512,7 +512,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
                 reference_type: 'daily_weigh_in',
                 photo_verified: false,
                 verification_method: 'feed_post',
-                description: 'Posted Friday weigh-in to feed'
+                description: 'Posted Sunday weigh-in to feed'
             });
         if (txError && !String(txError.message || txError.details || '').toLowerCase().includes('duplicate')) throw txError;
 
@@ -598,7 +598,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
                 payload = data;
             } catch (error) {
                 if (!isMissingFridayWeighRpc(error)) {
-                    console.warn('Friday weigh-in reward check failed:', error);
+                    console.warn('Sunday weigh-in reward check failed:', error);
                     return null;
                 }
                 payload = await awardDailyWeighInFallback(weighIn);
@@ -612,14 +612,14 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
                 if (!options.silent) {
                     const loss = Number(payload.loss_points_awarded || 0);
                     const daily = Number(payload.daily_points_awarded || 0);
-                    if (loss > 0) showWeighRewardToast(`+${daily + loss} XP for Friday weigh-in progress`, 'success');
+                    if (loss > 0) showWeighRewardToast(`+${daily + loss} XP for Sunday weigh-in progress`, 'success');
                     else showWeighRewardToast(`+${awarded} XP for your weigh-in`, 'success');
                 }
             }
 
             payload = await hydrateFridayWeighShareState(payload, weighIn.id);
 
-            if (payload.is_friday && payload.active_challenge && !payload.share_already_posted) {
+            if ((payload.is_sunday || payload.is_friday) && payload.active_challenge && !payload.share_already_posted) {
                 const dismissed = localStorage.getItem(getFridayWeighStorageKey('fridayWeighShareDismissed_', weighIn.id));
                 const posted = localStorage.getItem(getFridayWeighStorageKey('fridayWeighSharePosted_', weighIn.id));
                 if (!dismissed && !posted) {
@@ -648,7 +648,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
                 <div style="width:100%; max-width:390px; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; background:white; border-radius:18px; box-shadow:0 24px 70px rgba(0,0,0,0.35); padding:20px; box-sizing:border-box;">
                     <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px;">
                         <div>
-                            <div style="font-size:0.72rem; font-weight:900; letter-spacing:0; text-transform:uppercase; color:#64748b; margin-bottom:4px;">Friday weigh-in</div>
+                            <div style="font-size:0.72rem; font-weight:900; letter-spacing:0; text-transform:uppercase; color:#64748b; margin-bottom:4px;">Sunday weigh-in</div>
                             <h3 style="margin:0; color:#111827; font-size:1.25rem; line-height:1.2; font-weight:850;">Share to Feed?</h3>
                         </div>
                         <button onclick="closeFridayWeighInShareCard()" title="Close" style="width:34px; height:34px; border:none; border-radius:50%; background:#f1f5f9; color:#334155; font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
@@ -656,11 +656,11 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
                     <div id="friday-weigh-share-weight" style="font-size:2rem; font-weight:900; color:#0f172a; line-height:1; margin-bottom:6px;"></div>
                     <div id="friday-weigh-share-detail" style="font-size:0.92rem; color:#475569; line-height:1.45; margin-bottom:14px;"></div>
                     <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
-                        <span id="friday-weigh-loss-chip" style="background:#dcfce7; color:#166534; border:1px solid #86efac; padding:6px 10px; border-radius:999px; font-size:0.78rem; font-weight:800;">+${FRIDAY_WEIGH_LOSS_POINTS} XP if down from last Friday</span>
+                        <span id="friday-weigh-loss-chip" style="background:#dcfce7; color:#166534; border:1px solid #86efac; padding:6px 10px; border-radius:999px; font-size:0.78rem; font-weight:800;">+${FRIDAY_WEIGH_LOSS_POINTS} XP if down from last Sunday</span>
                         <span style="background:#dbeafe; color:#1e3a8a; border:1px solid #93c5fd; padding:6px 10px; border-radius:999px; font-size:0.78rem; font-weight:850;">+${FRIDAY_WEIGH_SHARE_POINTS} XP for feed share</span>
                     </div>
                     <div style="font-size:0.88rem; color:#334155; line-height:1.45; font-weight:650; background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:12px; margin-bottom:16px;">
-                        This posts a Friday weigh-in card to the Feed so people can react and keep the challenge moving.
+                        This posts a Sunday weigh-in card to the Feed so people can react and keep the challenge moving.
                     </div>
                     <div style="display:grid; grid-template-columns:1fr; gap:10px;">
                         <button id="friday-weigh-share-post-btn" onclick="postFridayWeighInShare()" style="width:100%; border:none; border-radius:12px; background:#111827; color:white; -webkit-text-fill-color:white; padding:13px 14px; font-weight:900; font-size:0.95rem; cursor:pointer; box-shadow:0 10px 22px rgba(15,23,42,0.2);">Post to Feed</button>
@@ -689,21 +689,21 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
 
         const previous = parseFloat(payload.previous_weight_kg);
         const change = parseFloat(payload.change_kg);
-        let detail = 'Post this to the Feed for +' + FRIDAY_WEIGH_SHARE_POINTS + ' XP and keep Friday weigh-ins moving.';
+        let detail = 'Post this to the Feed for +' + FRIDAY_WEIGH_SHARE_POINTS + ' XP and keep Sunday weigh-ins moving.';
         if (isFinite(previous) && isFinite(change)) {
             const abs = Math.abs(change).toFixed(1);
-            if (change < 0) detail = `Down ${abs} kg from last Friday. Post it to the Feed for +${FRIDAY_WEIGH_SHARE_POINTS} XP?`;
-            else if (change > 0) detail = `Up ${abs} kg from last Friday. Still worth posting for +${FRIDAY_WEIGH_SHARE_POINTS} XP.`;
-            else detail = `Steady from last Friday. Still counts for showing up.`;
+            if (change < 0) detail = `Down ${abs} kg from last Sunday. Post it to the Feed for +${FRIDAY_WEIGH_SHARE_POINTS} XP?`;
+            else if (change > 0) detail = `Up ${abs} kg from last Sunday. Still worth posting for +${FRIDAY_WEIGH_SHARE_POINTS} XP.`;
+            else detail = `Steady from last Sunday. Still counts for showing up.`;
         } else {
-            detail = 'First Friday marker for this run. Post the starting point to the Feed for +' + FRIDAY_WEIGH_SHARE_POINTS + ' XP?';
+            detail = 'First Sunday marker for this run. Post the starting point to the Feed for +' + FRIDAY_WEIGH_SHARE_POINTS + ' XP?';
         }
         if (detailEl) detailEl.textContent = detail;
 
         const lossAwarded = Number(payload.loss_points_awarded || 0);
         if (lossChip) {
             lossChip.style.display = 'inline-flex';
-            lossChip.textContent = lossAwarded > 0 ? `+${lossAwarded} XP for moving down from last Friday` : `+${FRIDAY_WEIGH_LOSS_POINTS} XP if down from last Friday`;
+            lossChip.textContent = lossAwarded > 0 ? `+${lossAwarded} XP for moving down from last Sunday` : `+${FRIDAY_WEIGH_LOSS_POINTS} XP if down from last Sunday`;
         }
 
         if (postBtn) {
@@ -763,7 +763,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
             if (typeof loadPhotoFeed === 'function') loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
             if (typeof refreshWeeklyGoalsCard === 'function') refreshWeeklyGoalsCard();
 
-            showWeighRewardToast(sharePoints > 0 ? `Posted to Feed. +${sharePoints} XP` : 'Friday weigh-in already posted to Feed', 'success');
+            showWeighRewardToast(sharePoints > 0 ? `Posted to Feed. +${sharePoints} XP` : 'Sunday weigh-in already posted to Feed', 'success');
 
             if (typeof switchAppTab === 'function') {
                 switchAppTab('friends');
@@ -772,8 +772,8 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
                 }, 250);
             }
         } catch (error) {
-            console.error('Friday weigh-in share failed:', error);
-            showWeighRewardToast('Could not post Friday weigh-in to Feed. Try again.', 'error');
+            console.error('Sunday weigh-in share failed:', error);
+            showWeighRewardToast('Could not post Sunday weigh-in to Feed. Try again.', 'error');
             if (postBtn) {
                 postBtn.disabled = false;
                 postBtn.textContent = 'Post to Feed (+' + FRIDAY_WEIGH_SHARE_POINTS + ' XP)';
