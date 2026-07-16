@@ -25,4 +25,6 @@
     <string name="widget_daily_weigh_in_description">Log today\'s weigh-in from your home screen</string>
     <string name="widget_mood_check_description">Log mood, energy, and stress from your home screen</string>
     <string name="widget_coach_inbox_description">Pending and scheduled coach drafts at a glance.</string>
+    <string name="capacitor_background_geolocation_notification_channel_name">Balance route recording</string>
+    <string name="capacitor_background_geolocation_notification_color">#0891B2</string>
 </resources>

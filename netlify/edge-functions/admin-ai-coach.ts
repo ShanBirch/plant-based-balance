@@ -791,11 +791,6 @@ function buildClientSnapshot(userData: any, analyticsSummary: string | undefined
       `Score: ${s.score || "?"}, Duration: ${s.total_sleep || "?"}h, Efficiency: ${s.efficiency || "?"}%`,
     ).join("\n");
   }
-  if (wearables.stravaActivities?.length > 0) {
-    wearableSummary += "\nStrava Activities:\n" + wearables.stravaActivities.map((a: any) =>
-      `${a.name || a.type}: ${a.distance_km || "?"}km, ${a.moving_time_minutes || "?"}min, ${a.calories || "?"} cal`,
-    ).join("\n");
-  }
   if (!wearableSummary) wearableSummary = "No wearable data connected or recorded.";
 
   const pbSummary = personalBests.length > 0

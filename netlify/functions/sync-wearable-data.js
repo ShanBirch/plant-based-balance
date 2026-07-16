@@ -2,7 +2,7 @@
  * Scheduled Wearable Data Sync
  *
  * Syncs data for all connected wearable providers:
- * Fitbit, WHOOP, Oura, and Strava
+ * Fitbit, WHOOP, and Oura
  *
  * Schedule: Every 2 hours (configured in netlify.toml)
  */
@@ -16,7 +16,6 @@ exports.handler = async (event) => {
         { name: 'Fitbit', endpoint: '/api/fitbit/sync-all' },
         { name: 'WHOOP', endpoint: '/api/whoop/sync-all' },
         { name: 'Oura', endpoint: '/api/oura/sync-all' },
-        { name: 'Strava', endpoint: '/api/strava/sync-all' },
     ];
 
     const results = {};

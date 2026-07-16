@@ -242,11 +242,6 @@ export default async function (request: Request, context: Context) {
         `Score ${s.score || '?'}, ${s.total_sleep || '?'}h`
       ).join(' | ') + '\n';
     }
-    if (wearables.stravaActivities?.length > 0) {
-      wearableSummary += 'Strava: ' + wearables.stravaActivities.map((a: any) =>
-        `${a.name || a.type}: ${a.distance_km || '?'}km, ${a.calories || '?'} cal`
-      ).join(' | ') + '\n';
-    }
     if (!wearableSummary) wearableSummary = 'No wearable data available.';
 
     // Format mood logs

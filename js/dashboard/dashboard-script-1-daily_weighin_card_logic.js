@@ -1723,7 +1723,6 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
                 if (typeof initFitbitDashboard === 'function') initFitbitDashboard();
                 if (typeof initWhoopDashboard === 'function') initWhoopDashboard();
                 if (typeof initOuraDashboard === 'function') initOuraDashboard();
-                if (typeof initStravaDashboard === 'function') initStravaDashboard();
                 if (typeof initSpotifyDashboard === 'function') initSpotifyDashboard();
             }
         }

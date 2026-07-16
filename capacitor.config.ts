@@ -26,6 +26,9 @@ const config: CapacitorConfig = {
   },
 
   android: {
+    // Required by the native GPS recorder so location callbacks continue
+    // while a member locks the phone during a walk, run, ride or hike.
+    useLegacyBridge: true,
     // Allow mixed content for any HTTP resources
     allowMixedContent: true,
     // Append user agent so your JS can detect native app

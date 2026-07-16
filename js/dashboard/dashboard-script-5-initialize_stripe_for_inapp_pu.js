@@ -13696,6 +13696,7 @@ async function renderMovementView() {
 
     // Add 'Log Activity' Card (cardio, classes, sports)
     const logActivityDiv = document.createElement('div');
+    logActivityDiv.id = 'log-activity-card';
     logActivityDiv.onclick = () => openLogActivityForm();
     logActivityDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);";
     logActivityDiv.innerHTML = `
@@ -13703,7 +13704,7 @@ async function renderMovementView() {
         <div style="position: absolute; bottom: 15px; left: 15px; color: white; z-index: 1;">
             <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">Track</div>
             <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">Log Activity</div>
-            <div style="font-size: 0.75rem; opacity: 0.9;">Classes, sports & cardio</div>
+            <div style="font-size: 0.75rem; opacity: 0.9;">Classes, sports & GPS routes</div>
         </div>
         <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">🏃</div>
     `;

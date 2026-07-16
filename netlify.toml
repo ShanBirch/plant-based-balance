@@ -231,31 +231,6 @@
   function = "oura-sync"
   path = "/api/oura/data"
 
-# Strava Integration Edge Functions
-[[edge_functions]]
-  function = "strava-auth"
-  path = "/api/strava/auth"
-
-[[edge_functions]]
-  function = "strava-auth"
-  path = "/api/strava/callback"
-
-[[edge_functions]]
-  function = "strava-auth"
-  path = "/api/strava/disconnect"
-
-[[edge_functions]]
-  function = "strava-sync"
-  path = "/api/strava/sync"
-
-[[edge_functions]]
-  function = "strava-sync"
-  path = "/api/strava/sync-all"
-
-[[edge_functions]]
-  function = "strava-sync"
-  path = "/api/strava/data"
-
 # Spotify Integration Edge Functions
 [[edge_functions]]
   function = "spotify-auth"

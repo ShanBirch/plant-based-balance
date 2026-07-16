@@ -1,5 +1,9 @@
 [
 	{
+		"pkg": "@capacitor-community/in-app-review",
+		"classpath": "com.getcapacitor.community.inappreview.InAppReviewPlugin"
+	},
+	{
 		"pkg": "@capacitor/local-notifications",
 		"classpath": "com.capacitorjs.plugins.localnotifications.LocalNotificationsPlugin"
 	},
@@ -8,8 +12,8 @@
 		"classpath": "com.capacitorjs.plugins.pushnotifications.PushNotificationsPlugin"
 	},
 	{
-		"pkg": "@capacitor-community/in-app-review",
-		"classpath": "com.getcapacitor.community.inappreview.InAppReviewPlugin"
+		"pkg": "@capgo/background-geolocation",
+		"classpath": "com.capgo.capacitor_background_geolocation.BackgroundGeolocation"
 	},
 	{
 		"pkg": "@capgo/capacitor-health",

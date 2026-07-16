@@ -615,13 +615,12 @@
             })(),
             // Active replacements
             db.workoutReplacements.getActive(user.id),
-            // Wearable data (Fitbit, Oura, Strava - last 7 days)
+            // Wearable data (Fitbit and Oura - last 7 days)
             (async () => {
                 const wearables = {};
                 const tables = [
                     { key: 'fitbitActivity', table: 'fitbit_activity', dateCol: 'date' },
-                    { key: 'ouraSleep', table: 'oura_sleep', dateCol: 'date' },
-                    { key: 'stravaActivities', table: 'strava_activities', dateCol: 'start_date' }
+                    { key: 'ouraSleep', table: 'oura_sleep', dateCol: 'date' }
                 ];
                 await Promise.allSettled(tables.map(async (t) => {
                     try {

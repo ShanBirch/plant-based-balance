@@ -2,7 +2,7 @@
 	"appId": "com.fitgotchi.app",
 	"appName": "Balance",
 	"server": {
-	"url": "https://plantbased-balance.org/dashboard.html?native_rev=share_set_upload_logs_v1",
+		"url": "https://plantbased-balance.org/dashboard.html?native_rev=share_set_video_bridge_v1",
 		"cleartext": false,
 		"allowNavigation": [
 			"plantbased-balance.org",
@@ -15,6 +15,7 @@
 		"backgroundColor": "#1a1a2e"
 	},
 	"android": {
+		"useLegacyBridge": true,
 		"allowMixedContent": true,
 		"appendUserAgent": "FitGotchi-Native",
 		"backgroundColor": "#1a1a2e"

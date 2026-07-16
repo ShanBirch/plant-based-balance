@@ -1485,8 +1485,6 @@ if(!window._pbbIsIOSSafari) {
 
     <script src="js/dashboard/script_part_9.js"></script>
 
-<script src="js/dashboard/script_part_10.js?v=strava-route-v1"></script>
-
     <script src="js/dashboard/script_part_11.js?v=settings-spotify-row-v1"></script>
 
     <!-- Spotify mini player moved to global scope (before bottom-nav) for cross-tab visibility -->
@@ -1532,7 +1530,6 @@ if(!window._pbbIsIOSSafari) {
     function initAllWearableDashboards() {
         if (typeof initWhoopDashboard === 'function') initWhoopDashboard();
         if (typeof initOuraDashboard === 'function') initOuraDashboard();
-        if (typeof initStravaDashboard === 'function') initStravaDashboard();
         if (typeof initSpotifyDashboard === 'function') initSpotifyDashboard();
     }
 
@@ -1752,61 +1749,6 @@ if(!window._pbbIsIOSSafari) {
             </div>
             <div id="oura-last-sync" style="text-align: right; font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; padding-right: 4px;"></div>
         </div>
-
-        <!-- Strava Activity Card (hidden until connected) -->
-        <div id="strava-dashboard-card" style="display: none; margin: 20px 0 15px 0;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
-                    <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#FC4C02;"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
-                    Strava
-                </h3>
-                <button onclick="syncStravaNow()" id="strava-sync-btn" style="background: none; border: none; color: #FC4C02; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:#FC4C02;"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-                    Sync
-                </button>
-            </div>
-            <div id="strava-latest-activity" style="background: white; border-radius: 14px; padding: 16px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <div id="strava-activity-name" style="font-weight: 700; color: var(--text-main);">No recent activity</div>
-                    <div id="strava-activity-type" style="font-size: 0.7rem; background: #FFF4ED; color: #FC4C02; padding: 2px 8px; border-radius: 6px; font-weight: 600;"></div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
-                    <div style="text-align: center;">
-                        <div id="strava-distance" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">--</div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Distance</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div id="strava-duration" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">--</div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Time</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div id="strava-heart-rate" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">--</div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Avg HR</div>
-                    </div>
-                </div>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
-                <!-- Calories -->
-                <div style="background: white; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                    <div style="width: 36px; height: 36px; background: #FFF7ED; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">🔥</div>
-                    <div>
-                        <div id="strava-calories" style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">--</div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Calories</div>
-                    </div>
-                </div>
-                <!-- Elevation -->
-                <div style="background: white; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                    <div style="width: 36px; height: 36px; background: #F0FDF4; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">⛰️</div>
-                    <div>
-                        <div id="strava-elevation" style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">--</div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Elevation</div>
-                    </div>
-                </div>
-            </div>
-            <button id="strava-share-route-btn" type="button" onclick="shareLatestStravaRoute()" style="display:none; width:100%; margin-top:12px; border:0; border-radius:12px; padding:13px 14px; background:linear-gradient(135deg,#0f766e,#0891b2); color:white; font:inherit; font-size:0.88rem; font-weight:800; cursor:pointer; box-shadow:0 7px 15px rgba(8,145,178,.2);">Share route to Feed</button>
-            <div id="strava-last-sync" style="text-align: right; font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; padding-right: 4px;"></div>
-        </div>
-
 
         <!-- Monthly Raffle Section (signup window + joined state; hidden otherwise) -->
         <div id="monthly-raffle-section" style="display: none;">
@@ -8290,6 +8232,28 @@ if(!window._pbbIsIOSSafari) {
             <div id="activity-type-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;"></div>
         </div>
 
+        <!-- Balance GPS route recording -->
+        <div id="activity-route-section" class="activity-section" style="display:none; margin-bottom:24px; padding:18px; border-radius:18px; background:linear-gradient(135deg,rgba(5,150,105,.12),rgba(8,145,178,.12)); border:1px solid rgba(8,145,178,.3);">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                <div>
+                    <div style="font-weight:800; color:var(--text-main);">Record with Balance GPS</div>
+                    <div id="activity-route-status" style="font-size:.78rem; color:var(--text-muted); margin-top:4px; line-height:1.4;">Balance uses your phone GPS to record the route you choose.</div>
+                </div>
+                <span style="font-size:1.7rem;">📍</span>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;">
+                <div style="background:var(--card-bg); border-radius:12px; padding:11px; text-align:center;">
+                    <div style="font-size:.68rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted);">Distance</div>
+                    <div id="activity-route-distance" style="font-size:1.1rem; font-weight:800; color:var(--text-main); margin-top:3px;">0.00 km</div>
+                </div>
+                <div style="background:var(--card-bg); border-radius:12px; padding:11px; text-align:center;">
+                    <div style="font-size:.68rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted);">Time</div>
+                    <div id="activity-route-duration" style="font-size:1.1rem; font-weight:800; color:var(--text-main); margin-top:3px;">00:00</div>
+                </div>
+            </div>
+            <button id="activity-route-toggle-btn" type="button" onclick="toggleBalanceRouteTracking()" style="width:100%; margin-top:12px; border:0; border-radius:13px; padding:13px 14px; background:linear-gradient(135deg,#059669,#0891b2); color:white; font:inherit; font-weight:800; cursor:pointer;">Start route recording</button>
+        </div>
+
         <!-- Custom Label -->
         <div class="activity-section" style="margin-bottom: 24px;">
             <div class="activity-section-title" style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px;">Session Name <span style="font-weight:400; text-transform:none;">(optional)</span></div>
@@ -12595,13 +12559,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=142';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=143';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=142"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=143"><\/script>');
 }
 </script>
 
@@ -13113,7 +13077,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity twice', body:'After a walk, run, ride or class, share to Balance Feed for +15 XP and Instagram Feed for another +15 XP. The two rewards are separate.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
     { tab:'movement-tab', sel:'#activity-share-photo-btn', title:'Take a photo or choose one', body:'When you share an activity, tap Add a photo to open your camera or choose one from your gallery. Balance puts your activity stats straight on it for Feed.', condition: function(){ return !!document.getElementById('activity-share-photo-btn'); } },
     { tab:'dashboard', sel:'#fitbit-imported-activity-card', title:'Your walk is ready to share', body:'When Fitbit or your connected health app records a walk, run or ride, Balance brings it to Home ready for a photo and Feed share.', quick:true, condition: function(){ return !!document.getElementById('fitbit-imported-activity-card'); } },
-    { tab:'dashboard', sel:'#strava-share-route-btn', title:'Share your route', body:'Connect Strava, then share a walk, run or ride with its recorded route over your photo. You choose every route before it reaches Feed.', condition: function(){ var b = document.getElementById('strava-share-route-btn'); return b && b.style.display !== 'none'; } },
+    { tab:'movement-tab', sel:'#log-activity-card', title:'Balance records your route', body:'Open Log Activity, choose a walk, run, ride or hike, then start Balance GPS. Balance records the route itself and can place it over your activity photo.', condition: function(){ return !!document.getElementById('log-activity-card'); } },
     { tab:'dashboard', sel:'#ask-balance-command-palette .ask-balance-command-card,#ask-balance-command-palette', title:'Ask Balance by long hold', body:"Press and hold any open space for 3 seconds to open Ask Balance. Type what you want and Balance can log food, start workouts, open quizzes, post to Feed, or help change a workout.", xpReward:'intro', tourBottomReserve:16, action: async function(){
         try {
             if (typeof window.showAskBalanceCommandPalette === 'function') {
@@ -14233,12 +14197,12 @@ if(!window._pbbIsIOSSafari) {
     condition: function(){ return !!document.getElementById('fitbit-imported-activity-card') || !!document.getElementById('move-your-way-pilot-card'); }
   });
   allFeatures.push({
-    id: 'strava-route-photo-overlay-v1',
-    tab: 'dashboard',
-    sel: '#strava-share-route-btn',
-    title: 'Your route, on your activity photo',
-    body: 'A Strava walk, run or ride with a recorded route can now be shared to Feed with the route and your Balance stats over your own photo. Nothing posts until you choose Share.',
-    condition: function(){ var b = document.getElementById('strava-share-route-btn'); return b && b.style.display !== 'none'; }
+    id: 'balance-native-gps-route-recording-v1',
+    tab: 'movement-tab',
+    sel: '#log-activity-card',
+    title: 'Balance now records your route',
+    body: 'In the Balance phone app, choose a walk, run, ride or hike and start Balance GPS. Balance records the route while your phone is locked, then puts the route and stats over your photo for sharing.',
+    condition: function(){ return !!document.getElementById('log-activity-card'); }
   });
   allFeatures.push({
     id: 'custom-exercise-feed-autopost-v1',
@@ -17157,13 +17121,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=24';
+s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=25';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=24"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=25"><\/script>');
 }
 </script>
 

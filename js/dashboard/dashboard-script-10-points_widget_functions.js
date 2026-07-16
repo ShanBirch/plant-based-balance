@@ -5201,61 +5201,6 @@ window.openImportedActivityForSharing = function(activity) {
     showActivitySuccess(savedActivityData);
 };
 
-window.openStravaActivityForSharing = async function(activity) {
-    if (!activity || !activity.route_polyline || !window.currentUser) {
-        throw new Error('A recorded Strava route is required');
-    }
-
-    const externalId = String(activity.strava_activity_id || activity.id || '');
-    const recent = await window.dbHelpers?.activityLogs?.getRecentImported(window.currentUser.id, 'strava', 20) || [];
-    let imported = recent.find(row => String(row.external_activity_id || '') === externalId);
-
-    if (!imported) {
-        const sport = String(activity.sport_type || '').toLowerCase();
-        const activityType = sport.includes('walk') ? 'walking'
-            : sport.includes('hike') ? 'hiking'
-                : sport.includes('run') ? 'running'
-                    : sport.includes('ride') ? 'cycling'
-                        : sport.includes('swim') ? 'swimming'
-                            : 'other';
-        const startTime = activity.start_time || null;
-        const distanceKm = Number(activity.distance_meters || 0) / 1000;
-        const payload = {
-            activity_type: activityType,
-            activity_label: activity.name || 'Strava activity',
-            duration_minutes: Math.max(1, Math.round(Number(activity.moving_time_seconds || 0) / 60)),
-            intensity: 'moderate',
-            estimated_calories: Math.max(0, Math.round(Number(activity.calories || 0))),
-            activity_date: startTime ? String(startTime).slice(0, 10) : undefined,
-            source: 'strava',
-            external_activity_id: externalId,
-            source_metadata: {
-                provider: 'Strava',
-                sport_type: activity.sport_type || null,
-                distance_meters: Number(activity.distance_meters || 0) || null,
-                distance_km: distanceKm ? Number(distanceKm.toFixed(2)) : null,
-                elevation_meters: Number(activity.total_elevation_gain || 0) || null,
-                average_heart_rate: Number(activity.avg_heart_rate || 0) || null,
-                route_polyline: activity.route_polyline,
-                route_available: true,
-                start_time: startTime
-            },
-            imported_at: new Date().toISOString()
-        };
-        try {
-            imported = await window.dbHelpers?.activityLogs?.create(window.currentUser.id, payload);
-        } catch (error) {
-            // The scheduled sync may have inserted it between the lookup and
-            // this fallback. In that case use the canonical imported record.
-            const refreshed = await window.dbHelpers?.activityLogs?.getRecentImported(window.currentUser.id, 'strava', 20) || [];
-            imported = refreshed.find(row => String(row.external_activity_id || '') === externalId);
-            if (!imported) throw error;
-        }
-    }
-
-    window.openImportedActivityForSharing(imported);
-};
-
 // MET values for calorie estimation (Metabolic Equivalent of Task)
 // Source: Compendium of Physical Activities
 const ACTIVITY_MET_VALUES = {
@@ -5306,6 +5251,221 @@ let activityFormState = {
 // Saved activity data for sharing after save
 let savedActivityData = null;
 
+const BALANCE_ROUTE_ACTIVITY_TYPES = new Set(['walking', 'running', 'cycling', 'hiking']);
+const BALANCE_ROUTE_STORAGE_KEY = 'balance_active_route_v1';
+let balanceRouteTracker = {
+    active: false,
+    startedAt: null,
+    stoppedAt: null,
+    points: [],
+    distanceMeters: 0,
+    nativePlugin: null,
+    webWatchId: null,
+    timerId: null,
+    error: null
+};
+
+function balanceRouteDistanceMeters(a, b) {
+    const toRadians = value => value * Math.PI / 180;
+    const lat1 = toRadians(a.latitude);
+    const lat2 = toRadians(b.latitude);
+    const dLat = lat2 - lat1;
+    const dLon = toRadians(b.longitude - a.longitude);
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+    return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+function encodeBalanceRoutePolyline(points) {
+    let lastLat = 0;
+    let lastLon = 0;
+    let encoded = '';
+    const encodeValue = value => {
+        let shifted = value < 0 ? ~(value << 1) : value << 1;
+        let output = '';
+        while (shifted >= 0x20) {
+            output += String.fromCharCode((0x20 | (shifted & 0x1f)) + 63);
+            shifted >>= 5;
+        }
+        return output + String.fromCharCode(shifted + 63);
+    };
+    points.forEach(point => {
+        const lat = Math.round(Number(point.latitude) * 1e5);
+        const lon = Math.round(Number(point.longitude) * 1e5);
+        encoded += encodeValue(lat - lastLat) + encodeValue(lon - lastLon);
+        lastLat = lat;
+        lastLon = lon;
+    });
+    return encoded;
+}
+
+function persistBalanceRouteTracker() {
+    try {
+        if (!balanceRouteTracker.startedAt) {
+            localStorage.removeItem(BALANCE_ROUTE_STORAGE_KEY);
+            return;
+        }
+        localStorage.setItem(BALANCE_ROUTE_STORAGE_KEY, JSON.stringify({
+            active: balanceRouteTracker.active,
+            startedAt: balanceRouteTracker.startedAt,
+            stoppedAt: balanceRouteTracker.stoppedAt,
+            points: balanceRouteTracker.points.slice(-5000),
+            distanceMeters: balanceRouteTracker.distanceMeters
+        }));
+    } catch (error) {
+        console.warn('[BalanceRoute] Could not persist route progress:', error);
+    }
+}
+
+function updateBalanceRouteUI() {
+    const section = document.getElementById('activity-route-section');
+    const eligible = BALANCE_ROUTE_ACTIVITY_TYPES.has(activityFormState.selectedType);
+    if (section) section.style.display = eligible ? 'block' : 'none';
+
+    const button = document.getElementById('activity-route-toggle-btn');
+    const status = document.getElementById('activity-route-status');
+    const distance = document.getElementById('activity-route-distance');
+    const duration = document.getElementById('activity-route-duration');
+    if (button) {
+        button.textContent = balanceRouteTracker.active ? 'Stop route recording' : (balanceRouteTracker.points.length > 1 ? 'Record route again' : 'Start route recording');
+        button.style.background = balanceRouteTracker.active ? '#dc2626' : 'linear-gradient(135deg,#059669,#0891b2)';
+    }
+    if (status) {
+        const nativeRouteRecorder = !!window.Capacitor?.Plugins?.BackgroundGeolocation;
+        status.textContent = balanceRouteTracker.active
+            ? nativeRouteRecorder
+                ? 'Balance is recording your route. You can lock your phone and keep moving.'
+                : 'Balance is recording your route. Keep this page open while you move.'
+            : balanceRouteTracker.points.length > 1
+                ? 'Route ready. Add a photo now or after you finish.'
+                : 'Balance uses your phone GPS to record the route you choose.';
+    }
+    if (distance) distance.textContent = `${(balanceRouteTracker.distanceMeters / 1000).toFixed(2)} km`;
+    if (duration) {
+        const end = balanceRouteTracker.active ? Date.now() : (balanceRouteTracker.stoppedAt || Date.now());
+        const seconds = balanceRouteTracker.startedAt ? Math.max(0, Math.floor((end - balanceRouteTracker.startedAt) / 1000)) : 0;
+        duration.textContent = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+    }
+}
+
+function acceptBalanceRouteLocation(rawLocation) {
+    if (!balanceRouteTracker.active || !rawLocation) return;
+    const point = {
+        latitude: Number(rawLocation.latitude ?? rawLocation.coords?.latitude),
+        longitude: Number(rawLocation.longitude ?? rawLocation.coords?.longitude),
+        accuracy: Number(rawLocation.accuracy ?? rawLocation.coords?.accuracy ?? 999),
+        altitude: rawLocation.altitude ?? rawLocation.coords?.altitude ?? null,
+        time: Number(rawLocation.time ?? rawLocation.timestamp ?? Date.now())
+    };
+    if (!Number.isFinite(point.latitude) || !Number.isFinite(point.longitude) || point.accuracy > 80) return;
+
+    const previous = balanceRouteTracker.points[balanceRouteTracker.points.length - 1];
+    if (previous) {
+        const segment = balanceRouteDistanceMeters(previous, point);
+        const seconds = Math.max(1, (point.time - previous.time) / 1000);
+        const maxSpeed = activityFormState.selectedType === 'cycling' ? 30 : 15;
+        if (segment < 3 || segment / seconds > maxSpeed) return;
+        balanceRouteTracker.distanceMeters += segment;
+    }
+    balanceRouteTracker.points.push(point);
+    persistBalanceRouteTracker();
+    updateBalanceRouteUI();
+}
+
+async function startBalanceRouteTracking() {
+    if (!BALANCE_ROUTE_ACTIVITY_TYPES.has(activityFormState.selectedType)) {
+        showToast('Choose Walking, Running, Cycling or Hiking first', 'error');
+        return false;
+    }
+    balanceRouteTracker = {
+        active: true,
+        startedAt: Date.now(),
+        stoppedAt: null,
+        points: [],
+        distanceMeters: 0,
+        nativePlugin: null,
+        webWatchId: null,
+        timerId: null,
+        error: null
+    };
+    updateBalanceRouteUI();
+    persistBalanceRouteTracker();
+
+    try {
+        const nativePlugin = window.Capacitor?.Plugins?.BackgroundGeolocation;
+        if (nativePlugin && typeof nativePlugin.start === 'function') {
+            balanceRouteTracker.nativePlugin = nativePlugin;
+            await nativePlugin.start({
+                backgroundTitle: 'Balance route recording',
+                backgroundMessage: 'Balance is recording your walk, run or ride.',
+                requestPermissions: true,
+                stale: false,
+                distanceFilter: 8
+            }, (location, error) => {
+                if (error) {
+                    balanceRouteTracker.error = error.code || error.message || 'Location unavailable';
+                    updateBalanceRouteUI();
+                    return;
+                }
+                acceptBalanceRouteLocation(location);
+            });
+        } else if (navigator.geolocation) {
+            balanceRouteTracker.webWatchId = navigator.geolocation.watchPosition(
+                position => acceptBalanceRouteLocation(position),
+                error => {
+                    balanceRouteTracker.error = error.message || 'Location unavailable';
+                    updateBalanceRouteUI();
+                },
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
+            );
+        } else {
+            throw new Error('Location tracking is unavailable on this device');
+        }
+        balanceRouteTracker.timerId = setInterval(updateBalanceRouteUI, 1000);
+        showToast('Balance route recording started', 'success');
+        return true;
+    } catch (error) {
+        console.error('[BalanceRoute] Could not start tracking:', error);
+        balanceRouteTracker.active = false;
+        balanceRouteTracker.error = error.message || 'Location permission is required';
+        persistBalanceRouteTracker();
+        updateBalanceRouteUI();
+        showToast('Turn on location access to record your route', 'error');
+        return false;
+    }
+}
+
+async function stopBalanceRouteTracking(options = {}) {
+    if (balanceRouteTracker.nativePlugin) {
+        try { await balanceRouteTracker.nativePlugin.stop(); } catch (error) { console.warn('[BalanceRoute] Native stop failed:', error); }
+    }
+    if (balanceRouteTracker.webWatchId !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(balanceRouteTracker.webWatchId);
+    }
+    if (balanceRouteTracker.timerId) clearInterval(balanceRouteTracker.timerId);
+    if (balanceRouteTracker.startedAt) {
+        balanceRouteTracker.stoppedAt = Date.now();
+        activityFormState.duration = Math.max(1, Math.round((balanceRouteTracker.stoppedAt - balanceRouteTracker.startedAt) / 60000));
+        const durationDisplay = document.getElementById('activity-duration-display');
+        if (durationDisplay) durationDisplay.textContent = String(activityFormState.duration);
+        updateActivityCalories();
+    }
+    balanceRouteTracker.active = false;
+    balanceRouteTracker.nativePlugin = null;
+    balanceRouteTracker.webWatchId = null;
+    balanceRouteTracker.timerId = null;
+    persistBalanceRouteTracker();
+    updateBalanceRouteUI();
+    if (!options.silent) {
+        showToast(balanceRouteTracker.points.length > 1 ? 'Route recorded by Balance' : 'Route stopped before enough GPS points were recorded', balanceRouteTracker.points.length > 1 ? 'success' : 'error');
+    }
+    return balanceRouteTracker.points.length > 1;
+}
+
+async function toggleBalanceRouteTracking() {
+    return balanceRouteTracker.active ? stopBalanceRouteTracking() : startBalanceRouteTracking();
+}
+window.toggleBalanceRouteTracking = toggleBalanceRouteTracking;
+
 function openLogActivityForm(prefill = null) {
     const activityPrefill = prefill && typeof prefill === 'object' ? prefill : {};
     const prefillDuration = parseInt(activityPrefill.durationMinutes || activityPrefill.duration, 10);
@@ -5332,6 +5492,20 @@ function openLogActivityForm(prefill = null) {
         userWeightKg: 70
     };
     savedActivityData = null;
+    if (!balanceRouteTracker.active) {
+        balanceRouteTracker = {
+            active: false,
+            startedAt: null,
+            stoppedAt: null,
+            points: [],
+            distanceMeters: 0,
+            nativePlugin: null,
+            webWatchId: null,
+            timerId: null,
+            error: null
+        };
+        localStorage.removeItem(BALANCE_ROUTE_STORAGE_KEY);
+    }
 
     // Reset form UI
     document.getElementById('activity-label-input').value = activityPrefill.label || '';
@@ -5370,6 +5544,7 @@ function openLogActivityForm(prefill = null) {
         selectActivityType(activityFormState.selectedType);
     } else {
         updateActivityCalories();
+        updateBalanceRouteUI();
     }
 
     // Load user weight for calorie estimation
@@ -5395,6 +5570,9 @@ async function loadUserWeightForActivity() {
 }
 
 function selectActivityType(typeKey) {
+    if (balanceRouteTracker.active && !BALANCE_ROUTE_ACTIVITY_TYPES.has(typeKey)) {
+        stopBalanceRouteTracking({ silent: true });
+    }
     activityFormState.selectedType = typeKey;
     // Update UI - highlight selected
     ACTIVITY_TYPES.forEach(t => {
@@ -5413,6 +5591,7 @@ function selectActivityType(typeKey) {
         }
     });
     updateActivityCalories();
+    updateBalanceRouteUI();
 }
 window.selectActivityType = selectActivityType;
 
@@ -5494,6 +5673,10 @@ async function saveActivity() {
         return;
     }
 
+    if (balanceRouteTracker.active) {
+        await stopBalanceRouteTracking({ silent: true });
+    }
+
     const saveBtn = document.getElementById('activity-save-btn');
     saveBtn.disabled = true;
     saveBtn.textContent = 'Saving...';
@@ -5515,6 +5698,17 @@ async function saveActivity() {
         const calories = estimateCaloriesBurned(activityType, intensity, duration, activityFormState.userWeightKg);
         const metValues = ACTIVITY_MET_VALUES[activityType] || ACTIVITY_MET_VALUES.other;
         const metValue = metValues[intensity] || metValues.moderate;
+        const routePolyline = balanceRouteTracker.points.length > 1
+            ? encodeBalanceRoutePolyline(balanceRouteTracker.points)
+            : null;
+        const routeMetadata = routePolyline ? {
+            provider: 'Balance GPS',
+            route_polyline: routePolyline,
+            distance_meters: Math.round(balanceRouteTracker.distanceMeters),
+            started_at: new Date(balanceRouteTracker.startedAt).toISOString(),
+            ended_at: new Date(balanceRouteTracker.stoppedAt || Date.now()).toISOString(),
+            point_count: balanceRouteTracker.points.length
+        } : {};
 
         // Photo verification
         let venueVerifiable = false;
@@ -5572,7 +5766,9 @@ async function saveActivity() {
             ai_confidence: aiConfidence,
             detected_elements: detectedElements,
             xp_eligible: xpEligible,
-            notes: notes || null
+            notes: notes || null,
+            source: routePolyline ? 'balance_gps' : 'manual',
+            source_metadata: routeMetadata
         });
 
         // Store for sharing
@@ -5590,7 +5786,12 @@ async function saveActivity() {
             venueVerifiable: venueVerifiable,
             venueType: venueType,
             photoBase64: activityFormState.photoBase64,
-            photoMimeType: activityFormState.photoMimeType
+            photoMimeType: activityFormState.photoMimeType,
+            routePolyline: routePolyline,
+            distanceMeters: Math.round(balanceRouteTracker.distanceMeters),
+            distanceKm: routePolyline ? Number((balanceRouteTracker.distanceMeters / 1000).toFixed(2)) : null,
+            source: routePolyline ? 'balance_gps' : 'manual',
+            sourceMetadata: routeMetadata
         };
 
         // Show success screen
@@ -5687,7 +5888,7 @@ function buildActivityShareCardPayload() {
     if (savedActivityData.includeRoute !== false && savedActivityData.routePolyline) {
         cardPayload.route_polyline = savedActivityData.routePolyline;
         cardPayload.distance_km = savedActivityData.distanceKm || null;
-        cardPayload.route_source = savedActivityData.sourceMetadata?.provider || 'Strava';
+        cardPayload.route_source = savedActivityData.sourceMetadata?.provider || 'Balance GPS';
     }
     return cardPayload;
 }
@@ -5913,6 +6114,7 @@ document.addEventListener('click', function(event) {
 });
 
 function closeLogActivity() {
+    if (balanceRouteTracker.active) stopBalanceRouteTracking({ silent: true });
     document.getElementById('view-log-activity').style.display = 'none';
     switchAppTab('movement-tab');
 }

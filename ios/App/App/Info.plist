@@ -99,7 +99,9 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Balance needs microphone access for voice meal logging and recording custom exercises.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Balance uses your location to show local weather conditions on your dashboard.</string>
+	<string>Balance uses your location to record the route of walks, runs, rides and hikes you choose to track, and to show local weather.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Balance uses location while your phone is locked only during a route recording you start.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Balance reads your health data (steps, heart rate, sleep, workouts) to track your fitness progress and sync with your FitGotchi.</string>
 	<key>NSHealthUpdateUsageDescription</key>
@@ -108,6 +110,7 @@
 	<false/>
 	<key>UIBackgroundModes</key>
 	<array>
+		<string>location</string>
 		<string>remote-notification</string>
 	</array>
 	<key>FirebaseAppDelegateProxyEnabled</key>
