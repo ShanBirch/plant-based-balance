@@ -38,7 +38,7 @@ export default async (request, context) => {
         const userAgent = request.headers.get("user-agent");
         const referer = request.headers.get("referer");
 
-        const STRIPE_SECRET_KEY = globalThis.Netlify?.env?.get?.("STRIPE_SECRET_KEY") || Deno.env.get("STRIPE_SECRET_KEY");
+        const STRIPE_SECRET_KEY = globalThis.Netlify?.env?.get?.("STRIPE_SECRET_KEY");
         if (!STRIPE_SECRET_KEY) throw new Error("Missing Internal Configuration");
 
         const stripe = new Stripe(STRIPE_SECRET_KEY, {
