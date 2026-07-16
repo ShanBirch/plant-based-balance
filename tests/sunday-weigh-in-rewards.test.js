@@ -12,7 +12,8 @@ test('special weigh-in card runs on Sunday', () => {
   assert.match(client, /function isFridayWeighInDay[\s\S]*date\.getDay\(\) === 0/);
   assert.match(client, /Sunday Weigh-Ins/);
   assert.match(client, /down from last Sunday/i);
-  assert.match(client, /payload\.is_sunday \|\| payload\.is_friday/);
+  assert.match(client, /if \(weighInDay === 5\)[\s\S]*awardDailyWeighInFallback/);
+  assert.doesNotMatch(client, /payload\.is_sunday \|\| payload\.is_friday/);
 });
 
 test('database compares Sunday weigh-ins and preserves the 5 plus 5 XP split', () => {

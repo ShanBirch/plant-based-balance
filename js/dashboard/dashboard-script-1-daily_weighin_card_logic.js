@@ -275,7 +275,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
     }
 
     function shouldShowFridayShareCard(payload) {
-        if (!payload || !(payload.is_sunday || payload.is_friday) || !payload.active_challenge || payload.share_already_posted) return false;
+        if (!payload || !payload.is_sunday || !payload.active_challenge || payload.share_already_posted) return false;
         const weighInId = payload.weigh_in_id;
         if (!weighInId) return false;
         const dismissed = localStorage.getItem(getFridayWeighStorageKey('fridayWeighShareDismissed_', weighInId));
@@ -422,7 +422,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
     }
 
     async function hydrateFridayWeighShareState(payload, weighInId) {
-        if (!payload || !weighInId || !(payload.is_sunday || payload.is_friday) || !payload.active_challenge) return payload;
+        if (!payload || !weighInId || !payload.is_sunday || !payload.active_challenge) return payload;
         const postedKey = getFridayWeighStorageKey('fridayWeighSharePosted_', weighInId);
         if (localStorage.getItem(postedKey) || await hasFridayWeighShareLedger(weighInId)) {
             try { localStorage.setItem(postedKey, '1'); } catch(e) {}
@@ -589,13 +589,21 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
 
         const work = (async function() {
             let payload = null;
+            const weighInDate = String(weighIn.weigh_in_date || '').trim();
+            const weighInDay = weighInDate ? new Date(weighInDate + 'T12:00:00').getDay() : new Date().getDay();
 
             try {
-                const { data, error } = await window.supabaseClient.rpc('handle_friday_weigh_in_rewards', {
-                    p_weigh_in_id: weighIn.id
-                });
-                if (error) throw error;
-                payload = data;
+                // Prevent a still-cached pre-migration database function from awarding
+                // the retired Friday bonus while production rolls over to Sunday.
+                if (weighInDay === 5) {
+                    payload = await awardDailyWeighInFallback(weighIn);
+                } else {
+                    const { data, error } = await window.supabaseClient.rpc('handle_friday_weigh_in_rewards', {
+                        p_weigh_in_id: weighIn.id
+                    });
+                    if (error) throw error;
+                    payload = data;
+                }
             } catch (error) {
                 if (!isMissingFridayWeighRpc(error)) {
                     console.warn('Sunday weigh-in reward check failed:', error);
@@ -619,7 +627,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
 
             payload = await hydrateFridayWeighShareState(payload, weighIn.id);
 
-            if ((payload.is_sunday || payload.is_friday) && payload.active_challenge && !payload.share_already_posted) {
+            if (payload.is_sunday && payload.active_challenge && !payload.share_already_posted) {
                 const dismissed = localStorage.getItem(getFridayWeighStorageKey('fridayWeighShareDismissed_', weighIn.id));
                 const posted = localStorage.getItem(getFridayWeighStorageKey('fridayWeighSharePosted_', weighIn.id));
                 if (!dismissed && !posted) {
