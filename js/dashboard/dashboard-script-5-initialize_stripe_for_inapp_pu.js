@@ -15264,8 +15264,11 @@ function removeDropRow(btn) {
 let workoutTimerInterval;
 let workoutStartTime = null; // Store actual start timestamp for accurate timing
 
-function startWorkoutTimer() {
-    workoutStartTime = Date.now(); // Record when workout actually started
+function startWorkoutTimer(existingStartTime = null) {
+    const restoredStartTime = Number(existingStartTime);
+    workoutStartTime = Number.isFinite(restoredStartTime) && restoredStartTime > 0
+        ? restoredStartTime
+        : Date.now(); // Record when workout actually started
     const display = document.getElementById('workout-timer');
     clearInterval(workoutTimerInterval);
 
@@ -15839,11 +15842,12 @@ function showWorkoutRecoveryDialog(backup, timeAgo) {
         position: fixed; top: 0; left: 0; right: 0; bottom: 0;
         background: rgba(0,0,0,0.7); z-index: 999999;
         display: flex; align-items: center; justify-content: center;
-        padding: 20px;
+        padding: calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px));
+        box-sizing: border-box;
     `;
 
     dialog.innerHTML = `
-        <div style="background: var(--surface); border: 1px solid var(--pbb-widget-glass-border, rgba(216, 178, 94, 0.22)); box-shadow: 0 24px 70px rgba(0,0,0,0.38); border-radius: 20px; padding: 25px; max-width: 340px; width: 100%; text-align: center;">
+        <div style="background: var(--surface); border: 1px solid var(--pbb-widget-glass-border, rgba(216, 178, 94, 0.22)); box-shadow: 0 24px 70px rgba(0,0,0,0.38); border-radius: 20px; padding: 25px; max-width: 340px; width: 100%; max-height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; text-align: center; box-sizing: border-box;">
             <div style="font-size: 3rem; margin-bottom: 15px;">💪</div>
             <h3 style="margin: 0 0 10px 0; color: var(--text-main); font-size: 1.2rem;">Unsaved Workout Found</h3>
             <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
@@ -15851,8 +15855,11 @@ function showWorkoutRecoveryDialog(backup, timeAgo) {
                 <strong>${exerciseCount} exercise${exerciseCount !== 1 ? 's' : ''}, ${setCount} set${setCount !== 1 ? 's' : ''}</strong>
             </p>
             <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="continueRecoveredWorkout()" style="background: var(--primary); color: white; border: none; padding: 14px 20px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer;">
+                    Continue Workout
+                </button>
                 <button onclick="recoverWorkout()" style="background: var(--primary); color: white; border: none; padding: 14px 20px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer;">
-                    Recover & Save Workout
+                    Save Workout
                 </button>
                 <button onclick="dismissWorkoutRecovery()" style="background: var(--pbb-widget-glass-soft, rgba(255,255,255,0.1)); color: var(--text-main); border: 1px solid var(--pbb-widget-glass-border, rgba(216, 178, 94, 0.18)); padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 0.9rem; cursor: pointer;">
                     Discard
@@ -15862,6 +15869,142 @@ function showWorkoutRecoveryDialog(backup, timeAgo) {
     `;
 
     document.body.appendChild(dialog);
+}
+
+function escapeWorkoutRecoveryHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+// Rebuild the active workout from the local backup instead of forcing the
+// member to save or discard it after iOS/Android reloads the web view.
+async function continueRecoveredWorkout() {
+    const backup = getWorkoutBackup();
+    if (!backup || !Array.isArray(backup.sets) || backup.sets.length === 0) {
+        alert('No workout data to recover.');
+        return;
+    }
+
+    const dialog = document.getElementById('workout-recovery-dialog');
+    if (dialog) dialog.remove();
+
+    const exerciseGroups = [];
+    const exerciseMap = new Map();
+    backup.sets.forEach(set => {
+        const exerciseName = String(set.exercise || '').trim();
+        if (!exerciseName) return;
+        if (!exerciseMap.has(exerciseName)) {
+            const group = { name: exerciseName, sets: [] };
+            exerciseMap.set(exerciseName, group);
+            exerciseGroups.push(group);
+        }
+        exerciseMap.get(exerciseName).sets.push(set);
+    });
+
+    if (exerciseGroups.length === 0) {
+        alert('No workout data to recover.');
+        return;
+    }
+
+    const user = window.currentUser;
+    const exerciseNames = exerciseGroups.map(group => group.name);
+    if (user) {
+        try {
+            await preloadWorkoutHistoryForExercises(user.id, exerciseNames);
+            window.personalBestsCache = await dbHelpers.personalBests.getForExercises(user.id, exerciseNames);
+            await preloadExerciseNotes(exerciseNames);
+        } catch (error) {
+            console.warn('Recovered workout history preload failed:', error);
+        }
+    }
+
+    window.currentWorkoutName = backup.workoutName || 'Workout';
+    window.currentCustomWorkoutId = backup.customWorkoutId || null;
+    document.getElementById('workout-player-title').innerText = window.currentWorkoutName;
+    document.getElementById('workout-player-goal').innerText = 'Recovered workout, keep going where you left off';
+
+    const list = document.getElementById('workout-exercises-list');
+    list.innerHTML = '';
+
+    exerciseGroups.forEach(group => {
+        const exerciseName = group.name;
+        const safeName = escapeWorkoutRecoveryHtml(exerciseName);
+        const jsName = exerciseName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const card = document.createElement('div');
+        card.className = 'exercise-logger-card';
+        card.setAttribute('data-exercise-name', exerciseName);
+        card.setAttribute('data-is-user-added', 'false');
+        card.style.cssText = 'background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;';
+
+        const previousSummaryHtml = formatPreviousWorkoutSummary(exerciseName);
+        const orderedSets = group.sets.slice().sort((a, b) => Number(a.set || 0) - Number(b.set || 0));
+        const setsHtml = orderedSets.map((set, index) => getSetRowHtml(
+            exerciseName,
+            index + 1,
+            Boolean(set.time && !set.reps),
+            { kg: set.kg, reps: set.reps, time: set.time }
+        )).join('');
+
+        card.innerHTML = `
+            <div style="padding:15px; background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+                <h3 style="margin:0 0 5px 0; font-size:1.05rem; font-weight:700; color:var(--text-main);">${safeName}</h3>
+                <div style="font-size:0.8rem; color:var(--text-muted);">Recovered session</div>
+                ${previousSummaryHtml}
+            </div>
+            ${getExerciseNotesHtml(exerciseName)}
+            ${getVolumeDisplayHtml(exerciseName)}
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
+            </div>
+            <div class="sets-list-container">${setsHtml}</div>
+            <div style="padding:15px; border-top:1px solid #f8fafc;">
+                <button onclick="addWorkoutSet(this, '${jsName}', false)" style="width:100%; background:transparent; border:2px dashed #e2e8f0; color:#94a3b8; font-weight:700; font-size:0.8rem; padding:12px; border-radius:12px; cursor:pointer;">+ ADD SET</button>
+            </div>`;
+
+        list.appendChild(card);
+        setupVolumeTracking(card);
+
+        const wrappers = card.querySelectorAll('.set-wrapper');
+        orderedSets.forEach((set, index) => {
+            if (!set.isDropSet || !wrappers[index]) return;
+            const wrapper = wrappers[index];
+            const toggle = wrapper.querySelector('.drop-set-toggle');
+            if (toggle) toggleDropSet(toggle);
+
+            const weights = String(set.dropSetWeights || '').split(',').filter(Boolean);
+            const reps = String(set.dropSetReps || '').split(',').filter(Boolean);
+            const rowCount = Math.max(weights.length, reps.length);
+            for (let rowIndex = 1; rowIndex < rowCount; rowIndex++) {
+                const addButton = wrapper.querySelector('.drop-set-row:last-child .drop-add-btn');
+                if (addButton) addDropRow(addButton);
+            }
+            wrapper.querySelectorAll('.drop-set-row').forEach((row, rowIndex) => {
+                const kgInput = row.querySelector('.drop-kg');
+                const repsInput = row.querySelector('.drop-reps');
+                if (kgInput) kgInput.value = weights[rowIndex] || '';
+                if (repsInput) repsInput.value = reps[rowIndex] || '';
+            });
+        });
+    });
+
+    hideAllAppViews();
+    document.getElementById('view-active-workout').style.display = 'block';
+    window.activeWorkoutSessions = {
+        title: window.currentWorkoutName,
+        name: window.currentWorkoutName,
+        description: 'Recovered workout',
+        exercises: exerciseGroups.map(group => ({ name: group.name, sets: group.sets.length }))
+    };
+    startWorkoutTimer(backup.workoutStartTime);
+    pushNavigationState('view-active-workout', () => quitWorkout());
+    updateTotalWorkoutVolume();
+    if (typeof showToast === 'function') {
+        showToast('Workout restored, keep going where you left off.', 'success');
+    }
 }
 
 // Recover and save the backed-up workout

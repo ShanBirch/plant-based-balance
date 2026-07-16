@@ -56,14 +56,22 @@ assert.ok(
 );
 
 assert.ok(
-    dashboardSource.includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=143') &&
+    dashboardSource.includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=144') &&
         dashboardSource.includes('pbb-deferred-formcheck.js?v=56') &&
         dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=27') &&
-        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v251'") &&
-        serviceWorkerSource.includes('./js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=143') &&
+        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v252'") &&
+        serviceWorkerSource.includes('./js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=144') &&
         serviceWorkerSource.includes('./js/dashboard/pbb-deferred-formcheck.js?v=56') &&
         serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=27'),
     'phones must fetch all three Miranda workout/share repairs'
+);
+
+assert.ok(
+    workoutSource.includes('function continueRecoveredWorkout()') &&
+        workoutSource.includes('Continue Workout') &&
+        workoutSource.includes('startWorkoutTimer(backup.workoutStartTime)') &&
+        workoutSource.includes("showToast('Workout restored, keep going where you left off.', 'success')"),
+    'an interrupted workout must offer a real continue path and retain its elapsed timer'
 );
 
 console.log('Miranda workout and share resilience contracts passed');

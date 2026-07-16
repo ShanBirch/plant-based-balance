@@ -50,13 +50,13 @@ assert.ok(
 
 assert.ok(
     dashboardSource.includes('script_part_2.js?v=11') &&
-        dashboardSource.includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=143') &&
+        dashboardSource.includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=144') &&
         dashboardSource.includes('pbb-deferred-workoutbuilder.js?v=9') &&
         dashboardSource.includes('pbb-deferred-savedworkouts.js?v=6') &&
         loaderSource.includes('lib/supabase.js?v=13') &&
-        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v251'") &&
+        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v252'") &&
         serviceWorkerSource.includes('./lib/supabase.js?v=13') &&
-        serviceWorkerSource.includes('./js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=143'),
+        serviceWorkerSource.includes('./js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=144'),
     'phones must fetch the repaired PB and previous-session code instead of cached versions'
 );
 
