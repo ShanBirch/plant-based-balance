@@ -7,6 +7,7 @@ const root = path.join(__dirname, '..');
 const guard = fs.readFileSync(path.join(root, 'netlify/edge-functions/lib/checkout-guard.js'), 'utf8');
 const checkoutSession = fs.readFileSync(path.join(root, 'netlify/edge-functions/create-checkout-session.js'), 'utf8');
 const createSubscription = fs.readFileSync(path.join(root, 'netlify/edge-functions/create-subscription.js'), 'utf8');
+const checkout = fs.readFileSync(path.join(root, 'checkout.js'), 'utf8');
 const webhook = fs.readFileSync(path.join(root, 'netlify/edge-functions/stripe-webhook.js'), 'utf8');
 
 assert(
@@ -41,8 +42,22 @@ assert(
 assert(
     createSubscription.includes('assertStripePaymentMethodId(paymentMethodId);') &&
     createSubscription.includes('const checkoutEmail = cleanCheckoutEmail(email, { required: true });') &&
-    createSubscription.includes('email: checkoutEmail'),
-    'wallet subscription creation should require a real payment method and validated payer email'
+    createSubscription.includes('const plan = getBalanceCheckoutPlan(priceId);') &&
+    createSubscription.includes('unit_amount: plan.unitAmount') &&
+    createSubscription.includes('interval: plan.interval') &&
+    createSubscription.includes('balance_plan: plan.balancePlan') &&
+    createSubscription.includes('calls_per_week: plan.callsPerWeek') &&
+    createSubscription.includes('email: checkoutEmail') &&
+    !createSubscription.includes('unit_amount: 2999'),
+    'wallet subscription creation should validate the payer and create the selected allowlisted plan'
+);
+
+assert(
+    checkout.includes("'app-monthly': { amount: 1999, label: 'Balance App + Community', successPlan: 'app_community_monthly' }") &&
+    checkout.includes("'coaching-calls': { amount: 9999, label: 'Balance Coaching + Calls', successPlan: 'coaching_calls_weekly' }") &&
+    checkout.includes("walletAvailable && btn.dataset.hostedCheckoutOnly !== 'true' && !isBumpChecked") &&
+    checkout.includes('plan=${encodeURIComponent(successPlan)}'),
+    'wallet checkout should preserve the selected plan and route order bumps through hosted Checkout'
 );
 
 assert(

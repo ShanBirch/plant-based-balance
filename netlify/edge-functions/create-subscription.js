@@ -3,10 +3,10 @@ import { sendCAPIEvent, hash } from "./lib/capi-utils.js";
 import {
     assertAcceptedCheckoutTerms,
     assertSameSiteCheckoutRequest,
-    assertStarterCoachingPlan,
     assertStripePaymentMethodId,
     checkoutErrorResponse,
     cleanCheckoutEmail,
+    getBalanceCheckoutPlan,
 } from "./lib/checkout-guard.js";
 
 export default async (request, context) => {
@@ -17,9 +17,9 @@ export default async (request, context) => {
 
     try {
         const body = await request.json();
-        const { email, name, paymentMethodId, priceId, isDiscounted, fbc, fbp, compliance } = body;
+        const { email, name, paymentMethodId, priceId, fbc, fbp, compliance } = body;
         assertSameSiteCheckoutRequest(request);
-        assertStarterCoachingPlan(priceId);
+        const plan = getBalanceCheckoutPlan(priceId);
         assertAcceptedCheckoutTerms(compliance);
         assertStripePaymentMethodId(paymentMethodId);
         const checkoutEmail = cleanCheckoutEmail(email, { required: true });
@@ -46,8 +46,7 @@ export default async (request, context) => {
             apiVersion: "2026-02-25.clover",
         });
 
-        // Balance Starter Coaching: AUD $29.99/week with one weekly check-in.
-        let finalValue = 29.99;
+        const finalValue = plan.unitAmount / 100;
 
         const externalId = await hash(checkoutEmail);
 
@@ -63,7 +62,7 @@ export default async (request, context) => {
                 fbc, fbp,
                 sourceUrl: referer
             }, {
-                content_category: 'Starter Coaching',
+                content_category: plan.productName,
                 content_ids: [priceId],
                 value: finalValue,
                 currency: 'AUD'
@@ -80,9 +79,10 @@ export default async (request, context) => {
                 fbc,
                 fbp,
                 checkout_email: checkoutEmail,
-                balance_product: "balance_starter_coaching",
-                balance_plan: "starter_weekly",
-                checkins_per_week: "1",
+                balance_product: plan.balanceProduct,
+                balance_plan: plan.balancePlan,
+                checkins_per_week: plan.checkinsPerWeek,
+                calls_per_week: plan.callsPerWeek,
                 ...stripeComplianceMetadata
             }
         });
@@ -94,12 +94,12 @@ export default async (request, context) => {
                 price_data: {
                     currency: 'aud',
                     product_data: {
-                        name: 'Balance Starter Coaching',
-                        description: 'Online coaching with one weekly check-in from Shannon',
+                        name: plan.productName,
+                        description: plan.productDescription,
                     },
-                    unit_amount: 2999,
+                    unit_amount: plan.unitAmount,
                     recurring: {
-                        interval: 'week',
+                        interval: plan.interval,
                     },
                 },
                 quantity: 1,
@@ -108,9 +108,10 @@ export default async (request, context) => {
             payment_settings: { save_default_payment_method: 'on_subscription' },
             metadata: {
                 checkout_email: checkoutEmail,
-                balance_product: "balance_starter_coaching",
-                balance_plan: "starter_weekly",
-                checkins_per_week: "1",
+                balance_product: plan.balanceProduct,
+                balance_plan: plan.balancePlan,
+                checkins_per_week: plan.checkinsPerWeek,
+                calls_per_week: plan.callsPerWeek,
                 price_token: priceId || "",
                 ...stripeComplianceMetadata,
             },

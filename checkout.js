@@ -190,9 +190,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. One-Click Payment Logic (Apple Pay / Google Pay)
     // Flat Pricing - no discount complexity
     const PLAN_DETAILS = {
-        '1-month': { amount: 2999, label: 'Balance Starter Coaching' },
-        'app-monthly': { amount: 1999, label: 'Balance App + Community' },
-        'coaching-calls': { amount: 9999, label: 'Balance Coaching + Calls' }
+        '1-month': { amount: 2999, label: 'Balance Starter Coaching', successPlan: 'starter_weekly' },
+        'app-monthly': { amount: 1999, label: 'Balance App + Community', successPlan: 'app_community_monthly' },
+        'coaching-calls': { amount: 9999, label: 'Balance Coaching + Calls', successPlan: 'coaching_calls_weekly' }
     };
 
     const paymentRequest = stripe.paymentRequest({
@@ -257,9 +257,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 ev.complete('success');
                 // Redirect to success page
                 const amount = PLAN_DETAILS[currentSelectedPlan].amount / 100;
+                const successPlan = PLAN_DETAILS[currentSelectedPlan].successPlan;
                 const emailParam = encodeURIComponent(ev.payerEmail || '');
                 const nameParam = encodeURIComponent(ev.payerName || '');
-                window.location.href = `/success.html?amount=${amount}&email=${emailParam}&name=${nameParam}`;
+                window.location.href = `/success.html?amount=${amount}&plan=${encodeURIComponent(successPlan)}&email=${emailParam}&name=${nameParam}`;
             }
 
         } catch (err) {
@@ -351,23 +352,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // B. If Wallet is available
-            if (walletAvailable && btn.dataset.hostedCheckoutOnly !== 'true') {
+            // An order bump needs two server-created line items. Use hosted Checkout
+            // for that case; Stripe Checkout still offers Apple Pay/Google Pay.
+            if (walletAvailable && btn.dataset.hostedCheckoutOnly !== 'true' && !isBumpChecked) {
                 const details = PLAN_DETAILS[plan];
                 if (details) {
-                    let totalAmount = details.amount;
-                    let displayLabel = details.label;
-
-                    if (isBumpChecked) {
-                        totalAmount += BUMP_AMOUNT;
-                        displayLabel += " + Acupressure Series";
-                    }
-
-                    if (isBumpChecked) {
-                        displayLabel = "Balance Starter Coaching + Acupressure Series";
-                    }
-
                     paymentRequest.update({
-                        total: { label: displayLabel, amount: totalAmount }
+                        total: { label: details.label, amount: details.amount }
                     });
 
                     try {
