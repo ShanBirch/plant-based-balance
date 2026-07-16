@@ -5285,10 +5285,10 @@ const CHALLENGE_XP_INFO_GROUPS = [
     {
         title: 'Health IQ',
         rows: [
-            { amount: '+1', title: 'New lesson complete', body: 'Health IQ lessons need 100% completion to award XP, with a daily lesson limit.' },
+            { amount: '+5', title: 'New lesson complete', body: 'Health IQ lessons need 100% completion to award XP, with a daily lesson limit.' },
             { amount: '+2', title: 'Unit complete', body: 'Finish all lessons in a unit.' },
             { amount: '+5', title: 'Module complete', body: 'Finish a full module.' },
-            { amount: '+5', title: 'Daily quiz', body: 'Score 100% on the daily quiz, once per day.' },
+            { amount: '+15', title: 'Daily quiz', body: 'Score 100% on the daily quiz, once per day.' },
             { amount: 'Bonus', title: 'Health IQ level-ups', body: 'Level bonuses are +5, +10, +15, +20, +25, +30, +40, +50, then +100 XP.' },
         ],
     },
