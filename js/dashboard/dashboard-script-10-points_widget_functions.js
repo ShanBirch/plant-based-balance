@@ -4353,7 +4353,11 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
     }
 
     if (isBalanceNativeInstagramSurface()) {
-        if (isLegacyIOSInstagramShareShell()) {
+        // Instagram's iOS Feed document handoff can stop accepting the image
+        // even when both apps are installed. Always fall back to the native
+        // iOS share sheet so the user can still choose Instagram and complete
+        // the independent IG share reward.
+        if (getBalanceNativePlatform() === 'ios') {
             return shareBalanceCardImageExternally(
                 dataUrl,
                 safeTarget,
