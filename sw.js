@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v256'; // v256: content greeting and quieter level progress card
+const CACHE_NAME = 'pbb-app-v257'; // v257: retain completed Instagram workout-share state
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -18,7 +18,7 @@ const ASSETS = [
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=57',
   './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=147',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream',
-  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=28',
+  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=29',
   './js/dashboard/pbb-deferred-formcheck.js?v=56',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=9',
   './js/dashboard/pbb-deferred-yourworkouts.js',

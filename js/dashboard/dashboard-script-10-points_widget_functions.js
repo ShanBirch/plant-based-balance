@@ -2012,6 +2012,7 @@ let workoutPhotoBase64 = null;
 // Legacy "story" here means the in-app feed story row used for workout-share XP.
 let pendingWorkoutShareType = null;
 let workoutPointsEarnedThisSession = { story: false, groupchat: false };
+let workoutInstagramShareCompleted = { story: false, feed: false };
 
 // Cached workout-share photo captured once and reused for Balance Feed and
 // Instagram so the user does not have to take it twice.
@@ -2566,6 +2567,7 @@ function resetWorkoutShareUI() {
     pendingPostWorkoutCompositeShare = null;
     postWorkoutShareCompleted = { workout: false, photo: false, pbs: {} };
     postWorkoutShareBusy = null;
+    loadWorkoutInstagramShareCompleted();
 
     const captureStep = document.getElementById('share-step-capture');
     const shareStep = document.getElementById('share-step-share');
@@ -2600,19 +2602,8 @@ function resetWorkoutShareUI() {
         cardBtn.innerHTML = '<span style="font-size: 1.3rem;">📢</span><span style="font-size: 0.95rem;">Balance Feed (+15 XP)</span>';
     }
 
-    const igStoryBtn = document.getElementById('share-workout-ig-story-btn');
-    if (igStoryBtn) {
-        igStoryBtn.disabled = false;
-        igStoryBtn.style.opacity = '1';
-        igStoryBtn.innerHTML = '<span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span><span style="font-size: 0.9rem;">Story</span>';
-    }
-
-    const igFeedBtn = document.getElementById('share-workout-ig-feed-btn');
-    if (igFeedBtn) {
-        igFeedBtn.disabled = false;
-        igFeedBtn.style.opacity = '1';
-        igFeedBtn.innerHTML = '<span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span><span style="font-size: 0.9rem;">Feed (+15 XP)</span>';
-    }
+    renderWorkoutInstagramShareButton('story');
+    renderWorkoutInstagramShareButton('feed');
     updateWorkoutInstagramShareVisibility();
     renderPostWorkoutShareMenu();
 }
@@ -4420,6 +4411,56 @@ function getCompletedWorkoutSocialShareReferenceId() {
     return window._pbbWorkoutSocialShareReferenceId;
 }
 
+function getWorkoutInstagramShareStorageKey() {
+    if (!window.currentUser?.id || !completedWorkoutDataForShare) return '';
+    return `pbb_workout_instagram_share:${window.currentUser.id}:${getCompletedWorkoutSocialShareReferenceId()}`;
+}
+
+function loadWorkoutInstagramShareCompleted() {
+    workoutInstagramShareCompleted = { story: false, feed: false };
+    const key = getWorkoutInstagramShareStorageKey();
+    if (!key) return;
+    try {
+        const saved = JSON.parse(localStorage.getItem(key) || '{}');
+        workoutInstagramShareCompleted.story = saved.story === true;
+        workoutInstagramShareCompleted.feed = saved.feed === true;
+    } catch (_) {}
+}
+
+function renderWorkoutInstagramShareButton(target) {
+    const safeTarget = target === 'feed' ? 'feed' : 'story';
+    const btn = document.getElementById(safeTarget === 'story' ? 'share-workout-ig-story-btn' : 'share-workout-ig-feed-btn');
+    if (!btn) return;
+
+    const completed = workoutInstagramShareCompleted[safeTarget] === true;
+    btn.disabled = completed;
+    btn.style.opacity = '1';
+    btn.style.background = completed
+        ? 'linear-gradient(135deg, #dcfce7, #bbf7d0)'
+        : (safeTarget === 'story'
+            ? 'linear-gradient(135deg, #ffffff, #fdf2f8)'
+            : 'linear-gradient(135deg, #ffffff, #eef2ff)');
+    btn.style.color = completed ? '#166534' : (safeTarget === 'story' ? '#be185d' : '#4338ca');
+    btn.style.border = completed ? '1px solid #86efac' : 'none';
+    btn.innerHTML = completed
+        ? '<span style="font-size: 1rem; font-weight: 950;">&#10003;</span><span style="font-size: 0.9rem;">Instagram shared</span>'
+        : (safeTarget === 'story'
+            ? '<span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span><span style="font-size: 0.9rem;">Story</span>'
+            : '<span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span><span style="font-size: 0.9rem;">Feed (+15 XP)</span>');
+}
+
+function markWorkoutInstagramShareCompleted(target) {
+    const safeTarget = target === 'feed' ? 'feed' : 'story';
+    workoutInstagramShareCompleted[safeTarget] = true;
+    const key = getWorkoutInstagramShareStorageKey();
+    if (key) {
+        try {
+            localStorage.setItem(key, JSON.stringify(workoutInstagramShareCompleted));
+        } catch (_) {}
+    }
+    renderWorkoutInstagramShareButton(safeTarget);
+}
+
 async function shareWorkoutCardToInstagram(target) {
     if (!canUseBalanceInstagramShareTest()) {
         showToast('Instagram sharing is in test mode for now.', 'info');
@@ -4469,6 +4510,7 @@ async function shareWorkoutCardToInstagram(target) {
 
         const cardPayload = buildWorkoutShareCardPayload();
         const opened = await shareBalanceCardToInstagram(cardPayload, safeTarget, { photoDataUrl: cachedWorkoutShareBase64 });
+        if (opened) markWorkoutInstagramShareCompleted(safeTarget);
         if (opened && safeTarget === 'feed') {
             const xpResult = await awardBalanceSocialShareXP(
                 'workout',
@@ -4484,7 +4526,7 @@ async function shareWorkoutCardToInstagram(target) {
         console.error('Error sharing workout card to Instagram:', error);
         showToast('Could not open Instagram share. Please try again.', 'error');
     } finally {
-        if (btn) {
+        if (btn && !workoutInstagramShareCompleted[safeTarget]) {
             btn.disabled = false;
             btn.style.opacity = '1';
             btn.innerHTML = originalHtml;
