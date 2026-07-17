@@ -214,11 +214,30 @@ export default async (request: Request, context: Context): Promise<Response> => 
         }), { status: 400, headers });
       }
 
+      // Social-share rewards are daily per category and destination. Use a
+      // deterministic daily UUID so the database uniqueness guards also cap
+      // activity shares, which previously used a different activity ID each time.
+      const brisbaneDate = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Australia/Brisbane',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(new Date());
+      const dailyShareSeed = `${shareKind}:${shareDestination}:${brisbaneDate}`;
+      const dailyShareHash = new Uint8Array(await crypto.subtle.digest(
+        'SHA-256',
+        new TextEncoder().encode(dailyShareSeed)
+      ));
+      dailyShareHash[6] = (dailyShareHash[6] & 0x0f) | 0x40;
+      dailyShareHash[8] = (dailyShareHash[8] & 0x3f) | 0x80;
+      const dailyShareHex = Array.from(dailyShareHash.slice(0, 16), byte => byte.toString(16).padStart(2, '0')).join('');
+      const dailyShareReferenceId = `${dailyShareHex.slice(0, 8)}-${dailyShareHex.slice(8, 12)}-${dailyShareHex.slice(12, 16)}-${dailyShareHex.slice(16, 20)}-${dailyShareHex.slice(20, 32)}`;
+
       const { data: shareResult, error: shareError } = await supabase.rpc('award_social_share_xp', {
         p_user_id: userId,
         p_share_kind: shareKind,
         p_destination: shareDestination,
-        p_reference_id: databaseReferenceId
+        p_reference_id: dailyShareReferenceId
       });
 
       if (shareError) {
@@ -226,7 +245,15 @@ export default async (request: Request, context: Context): Promise<Response> => 
         throw shareError;
       }
 
-      return new Response(JSON.stringify(shareResult || {
+      const normalizedShareResult = shareResult?.alreadyAwarded
+        ? {
+            ...shareResult,
+            dailyLimitReached: true,
+            reason: `Today's ${shareKind} ${shareDestination === 'balance_feed' ? 'Balance Feed' : 'Instagram Feed'} XP is already claimed.`
+          }
+        : shareResult;
+
+      return new Response(JSON.stringify(normalizedShareResult || {
         success: false,
         error: 'Share reward unavailable',
         pointsAwarded: 0

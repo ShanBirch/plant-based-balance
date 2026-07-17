@@ -4648,7 +4648,19 @@ async function sharePendingPBToDestination(destination) {
             if (story) markPBFeedShareDone();
         } else {
             const cardPayload = buildPBShareCardPayload(pendingPBShareData);
-            await shareBalanceCardToInstagram(cardPayload, destination === 'instagram-feed' ? 'feed' : 'story');
+            const instagramTarget = destination === 'instagram-feed' ? 'feed' : 'story';
+            const opened = await shareBalanceCardToInstagram(cardPayload, instagramTarget);
+            if (opened && instagramTarget === 'feed') {
+                const xpResult = await awardBalanceSocialShareXP(
+                    'workout',
+                    'instagram_feed',
+                    pendingPBShareData.pbHistoryId || pendingPBShareData.historyId || pendingPBShareData.id || getCompletedWorkoutSocialShareReferenceId()
+                );
+                showToast(
+                    xpResult?.success ? 'PB shared to Instagram Feed! +15 XP' : 'PB opened in Instagram. Today\'s workout IG Feed XP is already claimed.',
+                    'success'
+                );
+            }
         }
         closePBShareOptions();
     } catch (error) {
@@ -4840,12 +4852,18 @@ async function sharePBCardToFeed(pbData) {
 
         console.log('PB card story created:', story);
 
+        const xpResult = await awardBalanceSocialShareXP('workout', 'balance_feed', story.id);
+        if (xpResult?.success || xpResult?.alreadyAwarded) workoutPointsEarnedThisSession.story = true;
+
         // Refresh feed if visible
         if (typeof loadPhotoFeed === 'function') {
             loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
         }
 
-        showToast('PB shared to feed!', 'success');
+        showToast(
+            xpResult?.success ? 'PB shared to Balance Feed! +15 XP' : 'PB shared. Today\'s workout Feed XP is already claimed.',
+            'success'
+        );
         return story;
 
     } catch (error) {

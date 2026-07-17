@@ -13339,7 +13339,7 @@ if(!window._pbbIsIOSSafari) {
 <script>
 (function(){
   const steps = [
-    { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity twice', body:'After a walk, run, ride or class, share to Balance Feed for +15 XP and Instagram Feed for another +15 XP. The two rewards are separate.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
+    { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity twice', body:'The first activity share each day earns +15 XP in Balance Feed and another +15 XP in Instagram Feed. Later activity posts still share without extra XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
     { tab:'movement-tab', sel:'#activity-share-photo-btn', title:'Take a photo or choose one', body:'When you share an activity, tap Add a photo to open your camera or choose one from your gallery. Balance puts your activity stats straight on it for Feed.', condition: function(){ return !!document.getElementById('activity-share-photo-btn'); } },
     { tab:'dashboard', sel:'#fitbit-imported-activity-card', title:'Your walk is ready to share', body:'When Fitbit or your connected health app records a walk, run or ride, Balance brings it to Home ready for a photo and Feed share.', quick:true, condition: function(){ return !!document.getElementById('fitbit-imported-activity-card'); } },
     { tab:'movement-tab', sel:'#log-activity-card', title:'Balance records your route', body:'Open Log Activity, choose a walk, run, ride or hike, then start Balance GPS. Balance records the route itself and can place it over your activity photo.', condition: function(){ return !!document.getElementById('log-activity-card'); } },
@@ -13393,6 +13393,7 @@ if(!window._pbbIsIOSSafari) {
       { tab:'movement-tab', sel:'#workout-share-set-btn', fallbackSel:'#today-workout-card', title:'Share a Set', fallbackTitle:'Open a workout to Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", fallbackBody:"Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn') || !!document.getElementById('today-workout-card'); } },
     { tab:'movement-tab', sel:'#workout-add-exercise-video-btn', fallbackSel:'#feed-composer-card', title:'Add an Exercise', fallbackTitle:'Add an Exercise', body:"Under Film Form Check, tap Add an Exercise to create one without leaving your workout. You can add its demo video now or later. If a video ever fails, open this screen again and tap Add video beside that exercise.", fallbackBody:"Start a workout and tap Add an Exercise under Film Form Check. You can always add or retry its demo video later.", quick: true, condition: function(){ return !!document.getElementById('workout-add-exercise-video-btn') || !!document.getElementById('feed-composer-card'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Post-workout Share', body:"Finish a workout, then tap the single Share button to post the workout, a PB, or a photo to Feed." },
+    { tab:'movement-tab', sel:'#today-workout-card', title:'One daily workout share reward', body:"Share one workout or PB to Balance Feed for +15 XP, and one to Instagram Feed for another +15 XP each day. More posts can still be shared without extra XP." },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Photo + workout overlays', body:"Choose Photo + workout or Photo + PB after a session. Balance places the result over your gym photo in a clean transparent overlay, then shows you a preview before posting." },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Milestone celebrations', body:"When you hit bigger workout count or streak milestones, Balance pops up a celebration card you can share to Feed for +10 XP.", quick: true },
     { tab:'dashboard', sel:'#weekly-progress-photo-card,#weekly-progress-photo-done-card', title:'Progress photos to Instagram', body:"After your weekly progress photos save, tap IG Story to share a Balance progress card straight to Instagram.", condition: function(){ return !!document.querySelector('#weekly-progress-photo-card,#weekly-progress-photo-done-card'); } },
@@ -14557,6 +14558,13 @@ if(!window._pbbIsIOSSafari) {
     body: "Food, walks, runs, and workouts can now earn +15 XP in Balance Feed and another +15 XP in Instagram Feed. Share to both to claim both rewards.",
     fallbackBody: "Share eligible food, activities, and workouts to Balance Feed for +15 XP, then Instagram Feed for another +15 XP.",
     condition: function(){ return !!document.querySelector('#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn,#share-nutrition-btn'); }
+  });
+  allFeatures.push({
+    id: 'daily-workout-pb-share-xp-v1',
+    tab: 'movement-tab',
+    sel: '#today-workout-card',
+    title: 'One daily workout share reward',
+    body: "Share one workout or PB to Balance Feed for +15 XP, and one to Instagram Feed for another +15 XP each day. More posts can still be shared without extra XP."
   });
   allFeatures.push({
     id: 'feed-post-actions-menu-v1',
@@ -17409,13 +17417,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=29';
+s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=30';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=29"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=30"><\/script>');
 }
 </script>
 
