@@ -53,6 +53,40 @@ assert.deepStrictEqual(_test.foodPhotoUrlsFromMessaging({
     },
 }), []);
 
+const genericVoiceAttachmentUrl = 'https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=voice-123';
+const genericVoiceAttachmentText = _test.messageTextForDraft({
+    igAccountId: '17841400000000000',
+    item: {
+        sender: { id: '978239761327698' },
+        recipient: { id: '17841400000000000' },
+        message: {
+            mid: 'generic-voice-in',
+            attachments: [{
+                type: 'file',
+                payload: { url: genericVoiceAttachmentUrl, mime_type: 'audio/mp4' },
+            }],
+        },
+    },
+});
+assert.strictEqual(genericVoiceAttachmentText, `[AUDIO:${genericVoiceAttachmentUrl}]`);
+
+const genericVideoAttachmentUrl = 'https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=video-123';
+const genericVideoAttachmentText = _test.messageTextForDraft({
+    igAccountId: '17841400000000000',
+    item: {
+        sender: { id: '978239761327698' },
+        recipient: { id: '17841400000000000' },
+        message: {
+            mid: 'generic-video-in',
+            attachments: [{
+                type: 'file',
+                payload: { url: genericVideoAttachmentUrl, content_type: 'video/mp4' },
+            }],
+        },
+    },
+});
+assert.strictEqual(genericVideoAttachmentText, `[VIDEO:${genericVideoAttachmentUrl}]`);
+
 assert.strictEqual(
     _test.foodTrackingIdentityTokens({ linked_user_id: 'client-1', profile_name: 'Fra Smith' }).includes('fra'),
     true

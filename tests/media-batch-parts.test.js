@@ -1,6 +1,7 @@
 const assert = require('assert');
 
 const {
+    buildContextReviewInfo,
     buildMediaReviewInfo,
     buildMessageMediaBatchParts,
     mergeDraftReviewContextReview,
@@ -12,6 +13,20 @@ const {
 const originalFetch = global.fetch;
 
 global.fetch = async (url) => {
+    if (String(url).includes('/v1/audio/transcriptions')) {
+        return new Response(JSON.stringify({ error: { message: 'primary unavailable' } }), {
+            status: 503,
+            headers: { 'content-type': 'application/json' },
+        });
+    }
+    if (String(url).includes(':generateContent')) {
+        return new Response(JSON.stringify({
+            candidates: [{ content: { parts: [{ text: 'Palm Beach is already feeling much better.' }] } }],
+        }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+        });
+    }
     if (String(url).includes('/voice.m4a')) {
         return new Response(Buffer.from('fake audio bytes'), {
             status: 200,
@@ -60,7 +75,11 @@ global.fetch = async (url) => {
     assert.strictEqual(audioThenText.audioUrlCount, 1);
     assert.strictEqual(audioThenText.audioParts.length, 1);
     assert.strictEqual(audioThenText.mediaParts.length, 1);
-    assert.strictEqual(audioThenText.rewrittenMessages[0], '[voice note #1]');
+    assert.strictEqual(
+        audioThenText.rewrittenMessages[0],
+        '[voice note #1 transcript: Palm Beach is already feeling much better.]'
+    );
+    assert.strictEqual(audioThenText.audioTranscriptCount, 1);
     assert.strictEqual(
         audioThenText.rewrittenMessages[1],
         'Ps did a session today but it did not save in the app haha'
@@ -76,7 +95,10 @@ global.fetch = async (url) => {
     assert.strictEqual(photoAndAudio.imageParts.length, 1);
     assert.strictEqual(photoAndAudio.audioParts.length, 1);
     assert.strictEqual(photoAndAudio.rewrittenMessages[0], 'look at this [attached photo #1]');
-    assert.strictEqual(photoAndAudio.rewrittenMessages[1], '[voice note #1]');
+    assert.strictEqual(
+        photoAndAudio.rewrittenMessages[1],
+        '[voice note #1 transcript: Palm Beach is already feeling much better.]'
+    );
 
     const reelLink = await buildMessageMediaBatchParts([
         'https://www.instagram.com/reel/DYbSqu6A9qO/',
@@ -105,6 +127,61 @@ global.fetch = async (url) => {
     });
     assert.strictEqual(review.required, true);
     assert.deepStrictEqual(review.kinds, ['video']);
+
+    const analyzedAudioReview = buildMediaReviewInfo({
+        message_preview: '[AUDIO:https://example.com/voice.m4a]',
+        media_decode: {
+            audio_url_count: 1,
+            audio_inline_count: 1,
+            analyzed_kinds: ['audio'],
+            analysis_succeeded: true,
+            analysis_complete: true,
+        },
+    });
+    assert.strictEqual(analyzedAudioReview.required, false);
+
+    const analyzedVisualReview = buildMediaReviewInfo({
+        message_preview: '[PHOTO:https://example.com/photo.jpg] [VIDEO:https://example.com/clip.mp4]',
+        media_decode: {
+            photo_url_count: 1,
+            photo_inline_count: 1,
+            video_url_count: 1,
+            video_file_count: 1,
+            analyzed_kinds: ['photo', 'video'],
+            analysis_succeeded: true,
+            analysis_complete: true,
+        },
+    });
+    assert.strictEqual(analyzedVisualReview.required, false);
+
+    const analyzedAudioContextReview = buildContextReviewInfo({
+        channel: 'instagram',
+        message_preview: '[AUDIO:https://example.com/voice.m4a]',
+        context_review: {
+            required: true,
+            reason: 'voice_note_review_required',
+            label: 'voice note needs Shannon review',
+        },
+        media_decode: {
+            audio_url_count: 1,
+            audio_inline_count: 1,
+            analyzed_kinds: ['audio'],
+            analysis_succeeded: true,
+        },
+    });
+    assert.strictEqual(analyzedAudioContextReview.voice_note_review_required, false);
+
+    const inaccessibleAudioReview = buildMediaReviewInfo({
+        message_preview: '[AUDIO:https://example.com/expired.m4a]',
+        media_decode: {
+            audio_url_count: 1,
+            audio_inline_count: 0,
+            audio_failed: true,
+            analyzed_kinds: [],
+            analysis_succeeded: false,
+        },
+    });
+    assert.deepStrictEqual(inaccessibleAudioReview.kinds, ['audio']);
     assert.strictEqual(
         normalizeImplicitMediaMarkers('[attachment:https://www.instagram.com/reel/DYbSqu6A9qO/]'),
         '[VIDEO:https://www.instagram.com/reel/DYbSqu6A9qO/]'

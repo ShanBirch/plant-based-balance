@@ -2407,6 +2407,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
         photoUrlCount,
         audioUrlCount,
         videoUrlCount,
+        videoFileCount,
         audioTranscriptCount,
         audioTranscripts,
         reelContextText,
@@ -2428,7 +2429,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const bareStoryMentionNotification = isBareStoryMentionNotificationText(promptCurrentMessage);
     const photoFetchFailed = hadPhotoUrls && imageParts.length === 0 && !bareStoryMentionNotification;
     const audioFetchFailed = hadAudioUrls && audioParts.length === 0;
-    const videoFetchFailed = hadVideoUrls && videoParts.length === 0 && !hasReelContext;
+    const videoFetchFailed = hadVideoUrls && videoParts.length === 0 && videoFileCount === 0 && !hasReelContext;
     const mediaFailureNotes = [];
     if (photoFetchFailed) {
         mediaFailureNotes.push('one of the photos in the unanswered batch did not open on my end, ask casually if they can re-send or check if it loaded for them');
@@ -2457,6 +2458,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
             })),
         video_url_count: videoUrlCount,
         video_inline_count: videoParts.length,
+        video_file_count: videoFileCount || 0,
         reel_context_count: reelContextCount || 0,
         reel_thumbnail_count: reelThumbnailCount || 0,
     };
@@ -2885,6 +2887,21 @@ Rules:
         }
     }
 
+    const mediaGenerationSucceeded = hasInlineMedia
+        && !!rawText
+        && !/media-failed/i.test(String(model || ''));
+    const analyzedKinds = [];
+    if (imageParts.length > 0 && mediaGenerationSucceeded) analyzedKinds.push('photo');
+    if (audioTranscriptCount > 0 || (audioParts.length > 0 && mediaGenerationSucceeded)) analyzedKinds.push('audio');
+    if (((videoParts.length > 0 || videoFileCount > 0) && mediaGenerationSucceeded) || reelContextCount > 0) analyzedKinds.push('video');
+    mediaDecode.analyzed_kinds = analyzedKinds;
+    mediaDecode.analysis_succeeded = analyzedKinds.length > 0;
+    mediaDecode.analysis_complete = (!hadPhotoUrls || analyzedKinds.includes('photo'))
+        && (!hadAudioUrls || analyzedKinds.includes('audio'))
+        && (!hadVideoUrls || analyzedKinds.includes('video'));
+    mediaDecode.analysis_model = mediaDecode.analysis_succeeded ? model : null;
+    mediaDecode.analyzed_at = mediaDecode.analysis_succeeded ? new Date().toISOString() : null;
+
     const hasDecodedMedia = mediaParts.length > 0;
     let emptyDraftRecovery = null;
     let cleanedChunks = finalizeDraftChunksFromRawText(rawText, {
@@ -2987,6 +3004,7 @@ Rules:
         imageCount: imageParts.length,
         audioCount: audioParts.length,
         videoCount: videoParts.length,
+        videoFileCount: videoFileCount || 0,
         reelContextCount,
         reelThumbnailCount,
         urlCount: photoUrlCount,
@@ -4016,12 +4034,8 @@ exports.handler = async (event) => {
             video_url_count: draft.videoUrlCount || 0,
             video_inline_count: draft.videoCount || 0,
             media_decode: draft.mediaDecode || existingPending.data?.media_decode || null,
-            media_review: mediaReview.required
-                ? mediaReview
-                : (existingPending.data?.media_review || null),
-            context_review: contextReview.required
-                ? contextReview
-                : (existingPending.data?.context_review || null),
+            media_review: mediaReview.required ? mediaReview : null,
+            context_review: contextReview.required ? contextReview : null,
             challenge_offer_warning: challengeOfferWarning,
             ...(leadOnboardingHandoffData || {}),
             first_captured_lead_reply: firstCapturedLeadReply || !!existingPending.data?.first_captured_lead_reply,

@@ -3995,44 +3995,80 @@ function cleanAudioTranscriptText(value, max = 1200) {
 }
 
 async function transcribeAudioInlineData(inlineData, index = 0) {
-    if (!OPENAI_API_KEY) {
-        return { text: '', error: 'OPENAI_API_KEY not configured' };
-    }
     if (!inlineData?.data) {
         return { text: '', error: 'missing audio inline data' };
     }
     const mimeType = inlineData.mimeType || inlineData.mime_type || 'audio/mp4';
+    let primaryError = '';
+    if (!OPENAI_API_KEY) primaryError = 'OPENAI_API_KEY not configured';
     try {
-        const bytes = Buffer.from(inlineData.data, 'base64');
-        const form = new FormData();
-        form.append('model', OPENAI_TRANSCRIPTION_MODEL);
-        form.append('response_format', 'json');
-        form.append(
-            'file',
-            new Blob([bytes], { type: mimeType }),
-            `voice-note-${index + 1}.${audioExtensionForMimeType(mimeType)}`
-        );
-        const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${OPENAI_API_KEY}`,
-            },
-            body: form,
-        });
-        const bodyText = await res.text();
-        let data = {};
-        try { data = bodyText ? JSON.parse(bodyText) : {}; } catch { data = { text: bodyText }; }
-        if (!res.ok) {
-            const message = data?.error?.message || bodyText || `HTTP ${res.status}`;
-            console.warn(`[audio-transcript] OpenAI failed ${res.status}: ${String(message).slice(0, 180)}`);
-            return { text: '', error: String(message).slice(0, 240), model: OPENAI_TRANSCRIPTION_MODEL };
+        if (OPENAI_API_KEY) {
+            const bytes = Buffer.from(inlineData.data, 'base64');
+            const form = new FormData();
+            form.append('model', OPENAI_TRANSCRIPTION_MODEL);
+            form.append('response_format', 'json');
+            form.append(
+                'file',
+                new Blob([bytes], { type: mimeType }),
+                `voice-note-${index + 1}.${audioExtensionForMimeType(mimeType)}`
+            );
+            const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+                body: form,
+            });
+            const bodyText = await res.text();
+            let data = {};
+            try { data = bodyText ? JSON.parse(bodyText) : {}; } catch { data = { text: bodyText }; }
+            if (res.ok) {
+                const text = cleanAudioTranscriptText(data.text);
+                if (text) {
+                    console.log(`[audio-transcript] ok chars=${text.length} model=${OPENAI_TRANSCRIPTION_MODEL}`);
+                    return { text, error: '', model: OPENAI_TRANSCRIPTION_MODEL };
+                }
+                primaryError = 'transcription returned empty text';
+            } else {
+                primaryError = String(data?.error?.message || bodyText || `HTTP ${res.status}`).slice(0, 240);
+                console.warn(`[audio-transcript] OpenAI failed ${res.status}: ${primaryError.slice(0, 180)}`);
+            }
         }
-        const text = cleanAudioTranscriptText(data.text);
-        console.log(`[audio-transcript] ok chars=${text.length} model=${OPENAI_TRANSCRIPTION_MODEL}`);
-        return { text, error: '', model: OPENAI_TRANSCRIPTION_MODEL };
     } catch (err) {
-        console.warn(`[audio-transcript] failed: ${err.message}`);
-        return { text: '', error: String(err.message || err).slice(0, 240), model: OPENAI_TRANSCRIPTION_MODEL };
+        primaryError = String(err.message || err).slice(0, 240);
+        console.warn(`[audio-transcript] primary failed: ${primaryError}`);
+    }
+
+    if (!GEMINI_API_KEY) {
+        return { text: '', error: primaryError || 'no transcription provider configured', model: OPENAI_TRANSCRIPTION_MODEL };
+    }
+
+    try {
+        const { data, model } = await callGeminiModelChain({
+            apiKey: GEMINI_API_KEY,
+            profile: 'coach_fallback',
+            label: 'voice-note-transcription',
+            payload: {
+                contents: [{
+                    role: 'user',
+                    parts: [
+                        { text: 'Transcribe this voice message accurately. Return only the spoken words, with no labels, summary, or commentary.' },
+                        { inlineData },
+                    ],
+                }],
+                generationConfig: { maxOutputTokens: 1536, temperature: 0 },
+            },
+        });
+        const text = cleanAudioTranscriptText(extractCandidateText(data, model));
+        if (!text) throw new Error('transcription returned empty text');
+        console.log(`[audio-transcript] fallback ok chars=${text.length} model=${model}`);
+        return { text, error: '', model };
+    } catch (err) {
+        const fallbackError = String(err.message || err).slice(0, 240);
+        console.warn(`[audio-transcript] fallback failed: ${fallbackError}`);
+        return {
+            text: '',
+            error: [primaryError, fallbackError].filter(Boolean).join(' | ').slice(0, 480),
+            model: OPENAI_TRANSCRIPTION_MODEL,
+        };
     }
 }
 
@@ -4393,6 +4429,7 @@ async function buildMessageMediaBatchParts(messages) {
             photoUrlCount: 0,
             audioUrlCount: 0,
             videoUrlCount: 0,
+            videoFileCount: 0,
             reelContexts: [],
             reelContextText: '',
             reelContextCount: 0,
@@ -4421,6 +4458,15 @@ async function buildMessageMediaBatchParts(messages) {
     const videoParts = fetchedVideos
         .filter(Boolean)
         .map(p => ({ inlineData: p }));
+    const fetchedVideoFiles = await Promise.all(
+        urls.video.map((url, index) => {
+            if (isInstagramReelUrl(url) || fetchedVideos[index]) return Promise.resolve(null);
+            return fetchVideoAsGeminiFileData(url, `ig-lead-video-${index + 1}`);
+        })
+    );
+    const videoFileParts = fetchedVideoFiles
+        .filter(Boolean)
+        .map(item => ({ fileData: item.fileData }));
     const reelContexts = fetchedReelContexts.filter(Boolean);
     const reelImageParts = reelContexts
         .map(ctx => ctx.thumbnailInlineData ? { inlineData: ctx.thumbnailInlineData } : null)
@@ -4433,12 +4479,13 @@ async function buildMessageMediaBatchParts(messages) {
         imageParts,
         audioParts,
         videoParts,
-        mediaParts: [...imageParts, ...audioParts, ...videoParts, ...reelImageParts],
+        mediaParts: [...imageParts, ...audioParts, ...videoParts, ...videoFileParts, ...reelImageParts],
         rewrittenMessages,
         rewrittenMessage: rewrittenMessages[rewrittenMessages.length - 1] || '',
         photoUrlCount: urls.photo.length,
         audioUrlCount: urls.audio.length,
         videoUrlCount: urls.video.length,
+        videoFileCount: videoFileParts.length,
         reelContexts,
         reelContextText: formatInstagramReelContexts(reelContexts),
         reelContextCount: reelContexts.length,
@@ -4459,6 +4506,7 @@ async function buildMessageMediaParts(message) {
         photoUrlCount: batch.photoUrlCount,
         audioUrlCount: batch.audioUrlCount,
         videoUrlCount: batch.videoUrlCount,
+        videoFileCount: batch.videoFileCount || 0,
         reelContexts: batch.reelContexts || [],
         reelContextText: batch.reelContextText || '',
         reelContextCount: batch.reelContextCount || 0,
@@ -4536,6 +4584,14 @@ function hasUsableAudioTranscript(data = {}) {
     if (decode.audio_failed) return false;
     if (Number(data.audio_url_count || data.audioUrlCount || decode.audio_url_count || decode.audioUrlCount) <= 0) return false;
     return audioTranscriptCountFromData(data) > 0;
+}
+
+function hasSuccessfulMediaAnalysis(data = {}, kind = '') {
+    const decode = data.media_decode || data.mediaDecode || {};
+    if (!decode.analysis_succeeded && !decode.analysis_complete) return false;
+    const target = String(kind || '').toLowerCase();
+    return (Array.isArray(decode.analyzed_kinds) ? decode.analyzed_kinds : [])
+        .some(value => String(value || '').toLowerCase() === target);
 }
 
 function firstUsableAudioTranscriptText(data = {}) {
@@ -4621,6 +4677,17 @@ function buildMediaReviewInfo(alertOrData) {
     if (Array.isArray(stored.kinds)) {
         stored.kinds.forEach(kind => addMediaReviewKind(state, String(kind || '').toLowerCase()));
     }
+    const analyzedKinds = new Set(
+        (Array.isArray(decode.analyzed_kinds) ? decode.analyzed_kinds : [])
+            .map(kind => String(kind || '').toLowerCase())
+    );
+    if (decode.analysis_succeeded || decode.analysis_complete) {
+        analyzedKinds.forEach(kind => {
+            if (!Object.prototype.hasOwnProperty.call(state.present, kind)) return;
+            state.present[kind] = false;
+            state.counts[kind] = 0;
+        });
+    }
     if (hasUsableAudioTranscript(data)) {
         state.present.audio = false;
         state.counts.audio = 0;
@@ -4682,7 +4749,7 @@ function buildVoiceNoteReviewInfo(alertOrData) {
     const data = alertOrData?.data && typeof alertOrData.data === 'object'
         ? alertOrData.data
         : (alertOrData && typeof alertOrData === 'object' ? alertOrData : {});
-    if (hasUsableAudioTranscript(data)) {
+    if (hasUsableAudioTranscript(data) || hasSuccessfulMediaAnalysis(data, 'audio')) {
         return {
             required: false,
             reason: null,
@@ -4802,11 +4869,12 @@ function buildContextReviewInfo(alertOrData) {
     const reasons = [];
     const labels = [];
     const hasAudioTranscript = hasUsableAudioTranscript(data);
+    const hasAudioAnalysis = hasAudioTranscript || hasSuccessfulMediaAnalysis(data, 'audio');
 
     if (stored.required) {
         (Array.isArray(stored.reasons) ? stored.reasons : [stored.reason])
             .filter(Boolean)
-            .filter(reason => !(hasAudioTranscript && String(reason) === 'voice_note_review_required'))
+            .filter(reason => !(hasAudioAnalysis && String(reason) === 'voice_note_review_required'))
             .forEach(reason => reasons.push(String(reason)));
     }
 
@@ -4853,7 +4921,7 @@ function buildContextReviewInfo(alertOrData) {
     }
 
     const uniqueReasons = [...new Set(reasons.filter(Boolean))];
-    const label = (uniqueReasons.length && !(hasAudioTranscript && stored.label === 'voice note needs Shannon review') ? stored.label : '')
+    const label = (uniqueReasons.length && !(hasAudioAnalysis && stored.label === 'voice note needs Shannon review') ? stored.label : '')
         || (labels.length ? [...new Set(labels)].join(', ') : '')
         || (uniqueReasons.length ? 'tracked thread context may be incomplete' : '');
 

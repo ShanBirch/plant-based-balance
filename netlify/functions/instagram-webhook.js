@@ -1284,6 +1284,9 @@ function markerForAttachment(type, url) {
 function attachmentText(attachment) {
     const payload = safeObject(attachment?.payload);
     const type = String(attachment?.type || payload.type || 'attachment').toLowerCase();
+    const mimeType = String(
+        payload.mime_type || payload.content_type || attachment?.mime_type || attachment?.content_type || ''
+    ).toLowerCase();
     const url = cleanUrl(payload.url || payload.media_url || payload.attachment_url || attachment?.url);
     if (type === 'story_mention') {
         return url ? `mentioned you in a story ${markerForAttachment('story', url)}` : 'mentioned you in a story';
@@ -1295,7 +1298,14 @@ function attachmentText(attachment) {
             .filter(Boolean)
             .join(' ');
     }
-    return markerForAttachment(type, url);
+    const mediaType = mimeType.startsWith('audio/')
+        ? 'audio'
+        : mimeType.startsWith('video/')
+            ? 'video'
+            : mimeType.startsWith('image/')
+                ? 'image'
+                : type;
+    return markerForAttachment(mediaType, url);
 }
 
 function messageTextForDraft(event) {
