@@ -16069,7 +16069,66 @@
             return `
                 <textarea class="alert-edit-area" id="alert-edit-${key}" oninput="handleAlertEditMessageInput('${key}', this)" onclick="event.stopPropagation()">${escapeHtml(String(message ?? ''))}</textarea>
                 <input type="text" class="alert-edit-reason" id="alert-edit-reason-${key}" value="${escapeHtml(String(reason ?? ''))}" placeholder="Why did you change it? (optional, helps the AI learn)" maxlength="240" oninput="handleAlertEditReasonInput('${key}')" onclick="event.stopPropagation()" />
+                <button type="button" class="alert-btn alert-btn-edit" onclick="saveAlertDraft('${key}', this); event.stopPropagation();" style="margin-top:8px;">
+                    <i data-lucide="save" style="width:12px;height:12px;"></i>Save draft
+                </button>
             `;
+        }
+
+        async function saveAlertDraft(alertId, btn = null) {
+            const alertData = getVisibleAlertById(alertId);
+            if (!alertData) return;
+            updateAlertEditBuffer(alertId);
+            const message = normalizeCoachDraftTextForAdmin(getAlertEditMessage(alertId, alertData)).trim();
+            if (!message) {
+                alert('The draft is empty.');
+                return;
+            }
+
+            const oldHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Saving...';
+            }
+            try {
+                const savedAt = new Date().toISOString();
+                const editReason = getAlertEditReason(alertId);
+                const mergedData = {
+                    ...(alertData.data || {}),
+                    draft_saved_at: savedAt,
+                    draft_saved_via: 'admin_dashboard',
+                    needs_you_required: true,
+                    needs_shannon_approval: true,
+                    outbound_attempted: false,
+                };
+                if (editReason) mergedData.edit_reason = editReason;
+                const { data: updated, error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .update({ suggested_message: message, data: mergedData })
+                    .eq('id', alertId)
+                    .select('*')
+                    .maybeSingle();
+                if (error) throw error;
+
+                alertData.suggested_message = message;
+                alertData.data = mergedData;
+                if (updated) replaceAlertInFastCaches(updated);
+                activeAlertEdits.set(String(alertId), {
+                    message,
+                    reason: editReason,
+                    focusedField: 'message',
+                });
+                if (btn) btn.textContent = 'Saved';
+                if (typeof showToast === 'function') showToast('Draft saved in Needs You', 'success');
+            } catch (error) {
+                console.error('saveAlertDraft failed:', error);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = oldHtml || 'Save draft';
+                    if (window.lucide) lucide.createIcons();
+                }
+                alert('Could not save draft: ' + (error.message || error));
+            }
         }
 
         function getAlertEditMessage(alertId, alertData) {
