@@ -23,7 +23,7 @@ export default async function (request: Request, context: Context) {
 
   try {
     const body = await request.json();
-    const { userData, weekNumber, dayNumber, previousDays, previousWeeks } = body;
+    const { userData, weekNumber, dayNumber, previousDays, previousWeeks, adaptiveWeek } = body;
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     const hasOpenAI = !!Deno.env.get("OPENAI_API_KEY");
 
@@ -128,7 +128,7 @@ export default async function (request: Request, context: Context) {
 
     // Build context about previous days in this week to avoid repetition
     let previousDayContext = '';
-    if (previousDays && Array.isArray(previousDays) && previousDays.length > 0) {
+    if (!adaptiveWeek && previousDays && Array.isArray(previousDays) && previousDays.length > 0) {
       previousDayContext = `\n\nALREADY GENERATED THIS WEEK (do NOT repeat these meals - make ${dayName} different):\n`;
       previousDays.forEach((pd: any) => {
         previousDayContext += `${pd.day_name}: ${(pd.mealNames || []).join(', ')}\n`;
@@ -137,12 +137,33 @@ export default async function (request: Request, context: Context) {
 
     // Build context about previous weeks
     let previousWeekContext = '';
-    if (previousWeeks && Array.isArray(previousWeeks) && previousWeeks.length > 0) {
+    if (!adaptiveWeek && previousWeeks && Array.isArray(previousWeeks) && previousWeeks.length > 0) {
       previousWeekContext = `\n\nPREVIOUS WEEKS (avoid repeating these meals too):\n`;
       previousWeeks.forEach((pw: any) => {
         previousWeekContext += `Week ${pw.weekNumber}: ${(pw.mealNames || []).slice(0, 15).join(', ')}\n`;
       });
     }
+
+    const adaptiveMeals = Array.isArray(adaptiveWeek?.meals) ? adaptiveWeek.meals : [];
+    const adaptiveFocus = Array.isArray(adaptiveWeek?.nutritionFocus) ? adaptiveWeek.nutritionFocus : [];
+    const adaptiveContext = adaptiveWeek ? `
+
+=== WEEKLY EVOLUTION MODE ===
+This plan is based on meals the user actually logged from ${String(adaptiveWeek.sourceStart || '')} to ${String(adaptiveWeek.sourceEnd || '')}.
+The goal is familiarity, not novelty. Repetition across days is intentional.
+Use this exact meal blueprint for ${dayName}:
+${JSON.stringify(adaptiveMeals.map((item: any) => ({ meal_slot: item.meal_slot, base_meal: item.base_meal, variation: !!item.variation })), null, 2)}
+
+STRICT EVOLUTION RULES:
+- For every blueprint item with variation=false, keep the base meal recognisable and keep its name. Adjust portions or add a simple side only when needed for targets.
+- For a blueprint item with variation=true, create one close variation of that base meal. Change only one or two ingredients, flavour, or presentation. Add "New variation" to its tags.
+- Do not create any other new meals. Across the full week, the supplied blueprint contains exactly ${Number(adaptiveWeek.variationLimit) || 2} variation slots.
+- Use the logged ingredients when available. Fill in reasonable text-only quantities and brief preparation steps.
+- Return no image fields, image prompts, photo descriptions, or URLs.
+- Nutrition focus inferred from sufficiently complete logged data: ${adaptiveFocus.length ? adaptiveFocus.map((item: any) => `${item.label}: ${item.suggestion}`).join('; ') : 'No reliable gap identified. Keep the plan balanced.'}
+- Support those nutrition focus areas with foods, but never violate allergies, dislikes, dietary requirements, or the familiar-meal rule.
+- Food logs and nutrient estimates can be incomplete. Do not diagnose a deficiency and do not prescribe supplement doses.
+` : '';
 
     const prompt = `You are an expert ${nutritionistRole}. Generate meals for ${dayName} (Day ${day + 1} of 7) in Week ${week}.
 
@@ -168,7 +189,7 @@ Before finalizing any meal, double-check the ingredient list contains NONE of th
 
 === GOALS ===
 ${facts.goals?.join(', ') || 'General wellness'}
-${previousDayContext}${previousWeekContext}
+${previousDayContext}${previousWeekContext}${adaptiveContext}
 
 === WEEK ${week} THEME: "${currentTheme.theme}" ===
 Focus: ${currentTheme.focus}

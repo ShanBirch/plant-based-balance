@@ -5013,11 +5013,17 @@ async function loadExistingAiMealPlanInner() {
         const weekThemes = weeksResult.status === 'fulfilled' ? weeksResult.value.data || [] : [];
 
         // Reconstruct the plan structure
+        const weekNumbers = [...new Set([
+            ...weekThemes.map(w => Number(w.week_number)),
+            ...meals.map(m => Number(m.week_number))
+        ].filter(Boolean))].sort((a, b) => a - b);
+
         const fullPlan = {
             id: plan.id,
             plan_name: plan.plan_name,
             plan_description: plan.plan_description,
-            weeks: [1, 2, 3, 4].map(wn => {
+            generated_at: plan.generated_at || plan.created_at,
+            weeks: (weekNumbers.length ? weekNumbers : [1]).map(wn => {
                 const weekTheme = weekThemes.find(w => w.week_number === wn) || {};
                 const weekMeals = meals.filter(m => m.week_number === wn);
                 return {
@@ -5113,6 +5119,18 @@ function showAiPlanLoaded(plan) {
     // Render current week/day
     renderAiPlanWeek(_aiMealPlanCurrentWeek);
     renderAiPlanDay(_aiMealPlanCurrentDay);
+    renderAiPlanGuidance(plan);
+    setTimeout(() => maybeBuildWeeklyPlanAtWeekEnd(plan), 800);
+}
+
+function renderAiPlanGuidance(plan) {
+    const card = document.getElementById('ai-plan-weekly-guidance');
+    if (!card) return;
+    const firstWeek = plan?.weeks?.[0];
+    const guidance = firstWeek?.theme_description || '';
+    const isEvolvingPlan = plan?.plan_name === 'Your Evolving Weekly Plan';
+    card.textContent = isEvolvingPlan ? guidance : '';
+    card.style.display = isEvolvingPlan && guidance ? 'block' : 'none';
 }
 
 /**
@@ -5242,7 +5260,6 @@ function renderAiPlanDay(dayNum) {
         const slotLabel = mealSlotLabels[meal.meal_slot] || meal.meal_slot;
         const slotIcon = mealSlotIcons[meal.meal_slot] || '🍽️';
         const time = meal.meal_time || '';
-        const hasImage = !!meal.image_url;
 
         // Build ingredients list
         const ingredientsList = (meal.ingredients || []).map(ing => {
@@ -5274,7 +5291,6 @@ function renderAiPlanDay(dayNum) {
                 </div>
             </div>
             <div class="card-body">
-                ${hasImage ? `<img alt="${meal.name}" src="${meal.image_url}" loading="lazy" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:15px;" onerror="this.style.display='none'"/>` : ''}
                 ${meal.description ? `<p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px; font-style: italic;">${meal.description}</p>` : ''}
                 ${tagsHtml ? `<div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 15px;">${tagsHtml}</div>` : ''}
                 <div style="display: flex; gap: 12px; margin-bottom: 15px; flex-wrap: wrap;">
@@ -5497,6 +5513,205 @@ async function generateAiMealPlan() {
 }
 
 // Image generation functionality removed
+
+function weeklyEvolutionDateString(date) {
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
+}
+
+async function loadWeeklyEvolutionHistory(userId) {
+    const end = new Date();
+    const start = new Date(end);
+    start.setDate(start.getDate() - 6);
+    const { data, error } = await window.supabaseClient
+        .from('meal_logs')
+        .select('meal_date,meal_time,meal_type,meal_description,notes,food_items,calories,protein_g,carbs_g,fat_g,fiber_g,micronutrients')
+        .eq('user_id', userId)
+        .gte('meal_date', weeklyEvolutionDateString(start))
+        .lte('meal_date', weeklyEvolutionDateString(end))
+        .order('meal_date', { ascending: true })
+        .order('meal_time', { ascending: true });
+    if (error) throw error;
+    return { meals: data || [], start: weeklyEvolutionDateString(start), end: weeklyEvolutionDateString(end) };
+}
+
+async function loadWeeklyEvolutionPreferences(userId) {
+    try {
+        const { data } = await window.supabaseClient
+            .from('user_food_preferences').select('*').eq('user_id', userId).maybeSingle();
+        if (data) return data;
+    } catch (e) {}
+    try { return JSON.parse(localStorage.getItem('user_food_preferences') || '{}'); } catch (e) { return {}; }
+}
+
+async function buildNextWeekFromMealHistory(options) {
+    const automatic = !!options?.automatic;
+    const user = window.currentUser || await waitForCurrentUser();
+    const engine = window.weeklyMealEvolution;
+    if (!user) {
+        if (!automatic) alert('Please log in to build next week.');
+        return false;
+    }
+    if (!engine) {
+        if (!automatic) alert('The weekly meal planner is still loading. Please try again in a moment.');
+        return false;
+    }
+    if (_aiMealPlanGenerationInProgress) return false;
+    if (!automatic && !confirm("Build next week's plan from the meals you logged? Your current plan will stay in place until the new one is ready.")) return false;
+
+    const previousPlan = _aiMealPlanCache;
+    _aiMealPlanGenerationInProgress = true;
+    showAiPlanGenerating();
+    updateAiPlanGeneratingStatus('Reviewing the meals you logged this week...', '8%');
+    let newPlanId = null;
+
+    try {
+        const history = await loadWeeklyEvolutionHistory(user.id);
+        const coverage = engine.assessHistory(history.meals);
+        if (!coverage.eligible) {
+            if (!automatic) alert(`Balance needs a little more food history first. Please ${coverage.reasons.join(', ')}.`);
+            if (previousPlan) showAiPlanLoaded(previousPlan); else showAiPlanEmpty();
+            return false;
+        }
+
+        const quizPromise = window.dbHelpers?.quizResults?.getLatest
+            ? window.dbHelpers.quizResults.getLatest(user.id).catch(() => ({}))
+            : Promise.resolve({});
+        const factsPromise = window.dbHelpers?.userFacts?.get
+            ? window.dbHelpers.userFacts.get(user.id).catch(() => ({}))
+            : Promise.resolve({});
+        const [targets, foodPreferences, quizResult, factsResult] = await Promise.all([
+            window.getUserNutritionTargets(window.supabaseClient, user.id),
+            loadWeeklyEvolutionPreferences(user.id),
+            quizPromise,
+            factsPromise
+        ]);
+        const blueprint = engine.buildBlueprint(history.meals);
+        const dietType = foodPreferences?.diet_type || foodPreferences?.dietary_requirements?.[0] || 'vegan';
+        const nutritionFocus = engine.buildNutritionFocus(history.meals, targets || {}, dietType);
+        const guidance = engine.guidanceText(nutritionFocus, coverage.mealCount);
+        const profile = { name: user.user_metadata?.name || user.email?.split('@')[0] || 'User' };
+        const generatedDays = [];
+
+        for (let dayNumber = 0; dayNumber < 7; dayNumber++) {
+            updateAiPlanGeneratingStatus(`Building ${['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][dayNumber]} from your usual meals...`, `${12 + Math.round(dayNumber * 9)}%`);
+            const dayBlueprint = blueprint.filter(item => item.day_of_week === dayNumber);
+            const result = await fetchMealPlanDay({
+                userData: { profile, quizResults: { ...(quizResult || {}), ...(targets || {}) }, facts: factsResult || {}, foodPreferences },
+                weekNumber: 1,
+                dayNumber,
+                previousDays: generatedDays.map(day => ({ day_name: day.day_name, mealNames: day.meals.map(meal => meal.name) })),
+                previousWeeks: [],
+                adaptiveWeek: {
+                    sourceStart: history.start,
+                    sourceEnd: history.end,
+                    loggedMealCount: coverage.mealCount,
+                    variationLimit: 2,
+                    nutritionFocus,
+                    meals: dayBlueprint
+                }
+            });
+            const mealsBySlot = new Map((result.day?.meals || []).map(meal => [meal.meal_slot, meal]));
+            const finalMeals = dayBlueprint.map(item => {
+                const generated = mealsBySlot.get(item.meal_slot);
+                if (!generated) throw new Error(`Missing ${item.meal_slot} for day ${dayNumber + 1}`);
+                return {
+                    ...generated,
+                    name: item.variation ? generated.name : item.base_meal.name,
+                    tags: [...new Set([...(generated.tags || []), item.variation ? 'New variation' : 'Familiar favourite'])],
+                    image_url: null
+                };
+            });
+            generatedDays.push({ ...result.day, day_of_week: dayNumber, meals: finalMeals });
+        }
+
+        updateAiPlanGeneratingStatus('Saving your next week...', '82%');
+        const parent = await window.supabaseClient.from('ai_generated_meal_plans').insert({
+            user_id: user.id,
+            plan_name: 'Your Evolving Weekly Plan',
+            plan_description: 'Your usual meals, gently adjusted for this week.',
+            status: 'generating',
+            calorie_goal: targets?.calorie_goal || null,
+            protein_goal_g: targets?.protein_goal_g || null,
+            carbs_goal_g: targets?.carbs_goal_g || null,
+            fat_goal_g: targets?.fat_goal_g || null,
+            diet_type: dietType,
+            total_meals: 35,
+            current_week: 1
+        }).select('id,generated_at').single();
+        if (parent.error) throw parent.error;
+        newPlanId = parent.data.id;
+
+        const weekInsert = await window.supabaseClient.from('ai_meal_plan_weeks').insert({
+            plan_id: newPlanId,
+            week_number: 1,
+            theme: 'Familiar favourites with two fresh twists',
+            theme_description: guidance
+        });
+        if (weekInsert.error) throw weekInsert.error;
+
+        const mealRows = [];
+        generatedDays.forEach(day => day.meals.forEach(meal => mealRows.push({
+            plan_id: newPlanId, week_number: 1, day_of_week: day.day_of_week, day_name: day.day_name,
+            meal_slot: meal.meal_slot, meal_time: meal.meal_time, name: meal.name,
+            description: meal.description, calories: meal.calories, protein_g: meal.protein_g,
+            carbs_g: meal.carbs_g, fat_g: meal.fat_g, fiber_g: meal.fiber_g,
+            ingredients: meal.ingredients || [], preparation: meal.preparation,
+            prep_time_mins: meal.prep_time_mins, cook_time_mins: meal.cook_time_mins,
+            tags: meal.tags || [], cuisine: meal.cuisine, image_url: null
+        })));
+        const mealsInsert = await window.supabaseClient.from('ai_generated_meals').insert(mealRows);
+        if (mealsInsert.error) throw mealsInsert.error;
+
+        const activate = await window.supabaseClient.from('ai_generated_meal_plans').update({ status: 'active' }).eq('id', newPlanId);
+        if (activate.error) throw activate.error;
+        const archive = await window.supabaseClient.from('ai_generated_meal_plans').update({ status: 'archived' }).eq('user_id', user.id).eq('status', 'active').neq('id', newPlanId);
+        if (archive.error) console.warn('Could not archive the previous meal plan:', archive.error);
+
+        const plan = {
+            id: newPlanId, plan_name: 'Your Evolving Weekly Plan',
+            plan_description: 'Your usual meals, gently adjusted for this week.',
+            generated_at: parent.data.generated_at,
+            weeks: [{ week_number: 1, theme: 'Familiar favourites with two fresh twists', theme_description: guidance, days: generatedDays }]
+        };
+        _aiMealPlanCache = plan;
+        _aiMealPlanCurrentWeek = 1;
+        _aiMealPlanCurrentDay = 0;
+        try { localStorage.setItem('ai_meal_plan', JSON.stringify(plan)); } catch (e) {}
+        updateAiPlanGeneratingStatus('Your next week is ready!', '100%');
+        setTimeout(() => showAiPlanLoaded(plan), 350);
+        notifyMealPlanReady(user.id, 1);
+        return true;
+    } catch (error) {
+        console.error('Weekly meal evolution failed:', error);
+        if (newPlanId) {
+            try { await window.supabaseClient.from('ai_generated_meal_plans').delete().eq('id', newPlanId); } catch (cleanupError) {}
+        }
+        if (!automatic) alert('Balance could not build next week right now. Your current plan has not been changed.');
+        if (previousPlan) showAiPlanLoaded(previousPlan); else showAiPlanEmpty();
+        return false;
+    } finally {
+        _aiMealPlanGenerationInProgress = false;
+    }
+}
+
+function maybeBuildWeeklyPlanAtWeekEnd(plan) {
+    if (!plan || _aiMealPlanGenerationInProgress) return;
+    const now = new Date();
+    if (![0, 1].includes(now.getDay())) return;
+    const generated = new Date(plan.generated_at || 0);
+    if (Number.isFinite(generated.getTime()) && (now - generated) < 5 * 86400000) return;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    const attemptKey = `pbb_weekly_meal_evolution_${weeklyEvolutionDateString(monday)}`;
+    try {
+        if (localStorage.getItem(attemptKey)) return;
+        localStorage.setItem(attemptKey, 'attempted');
+    } catch (e) {}
+    buildNextWeekFromMealHistory({ automatic: true });
+}
+
+window.buildNextWeekFromMealHistory = buildNextWeekFromMealHistory;
 
 /**
  * Generate the next week of the meal plan.
