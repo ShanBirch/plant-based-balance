@@ -6485,11 +6485,17 @@ function closeOnboardingBlockingSurfaces() {
     });
 }
 
+function isWizardSlideSkipped(step) {
+    if (skippedWizardSlides.includes(step)) return true;
+    return step === 17 && !window._wizardCustomizeOnlyMode &&
+        typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden();
+}
+
 function normalizeWizardStep() {
-    while (skippedWizardSlides.includes(currentWizardStep) && currentWizardStep < finalWizardStep) {
+    while (isWizardSlideSkipped(currentWizardStep) && currentWizardStep < finalWizardStep) {
         currentWizardStep++;
     }
-    if (skippedWizardSlides.includes(currentWizardStep)) {
+    if (isWizardSlideSkipped(currentWizardStep)) {
         currentWizardStep = finalWizardStep;
     }
 }
@@ -8246,6 +8252,8 @@ function saveWizardFoodPreferences() {
 }
 
 async function checkAndTriggerOnboarding() {
+    let isReturningMember = localStorage.getItem('onboardingComplete') === 'true';
+    let databaseOnboardingStatusChecked = false;
     // TRANSFERRED CLIENT INTERCEPT:
     // Clients migrated from another platform (Trainerize etc.) have their data
     // pre-filled by scripts/transfer_kylie.js and similar. They only need to
@@ -8258,7 +8266,9 @@ async function checkAndTriggerOnboarding() {
             const userData = typeof window.getUserProfile === 'function'
                 ? await window.getUserProfile()
                 : await dbHelpers.users.get(window.currentUser.id);
+            databaseOnboardingStatusChecked = true;
             if (userData && userData.is_transferred_client && userData.onboarding_complete) {
+                isReturningMember = true;
                 console.log('🎁 Transferred client detected — running trimmed setup flow');
                 localStorage.setItem('onboardingComplete', 'true');
                 if (userData.sex) localStorage.setItem('userGender', userData.sex);
@@ -8306,7 +8316,9 @@ async function checkAndTriggerOnboarding() {
             const userData = typeof window.getUserProfile === 'function'
                 ? await window.getUserProfile()
                 : await dbHelpers.users.get(window.currentUser.id);
+            databaseOnboardingStatusChecked = true;
             if (userData && userData.onboarding_complete) {
+                isReturningMember = true;
                 // SELF-HEALING: Check if cycle data actually exists for female users
                 // If onboarding is marked complete but data is missing, allow re-onboarding
                 const userGender = localStorage.getItem('userGender') || userData.sex;
@@ -8373,6 +8385,17 @@ async function checkAndTriggerOnboarding() {
     // Check if gender is selected (required for proper UI)
     const hasGender = localStorage.getItem('userGender');
 
+    // Only a member positively confirmed as new gets the clean Home default.
+    // If the database check failed, keep FitGotchi visible so a returning member
+    // is never changed because of a temporary network problem.
+    if (!isReturningMember && databaseOnboardingStatusChecked &&
+        !localStorage.getItem('pbb_fitgotchi_visibility')) {
+        localStorage.setItem('pbb_fitgotchi_visibility', 'hidden');
+        if (typeof window.applyFitGotchiVisibility === 'function') {
+            window.applyFitGotchiVisibility('hidden');
+        }
+    }
+
     // If missing essential data OR missing gender selection, trigger onboarding wizard
     if (!hasEssentialData || !hasGender) {
         console.log("Essential quiz data or gender missing, triggering onboarding wizard...");
@@ -8438,7 +8461,8 @@ function initOnboardingWizard() {
     // actually loads the GLB. model-viewer 4.x uses a module-level CachingGLTFLoader keyed
     // by URL, so when slide 17's wizard-preview-model later sets the same src, it gets the
     // parsed result from the in-memory cache and renders immediately.
-    try {
+    if (!(typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden())) {
+      try {
         const babyGlbUrl = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
         // On iOS, <model-viewer id="wizard-preview-model"> has been replaced with a
         // <div> placeholder by script_part_3.js to avoid the upfront WebGL context +
@@ -8506,7 +8530,8 @@ function initOnboardingWizard() {
                 }
             }
         }
-    } catch (e) { /* ignore */ }
+      } catch (e) { /* ignore */ }
+    }
 
     // Fitgotchi story (Shanbot awakening + rare showcase) is disabled on all
     // platforms — it was already skipped on iOS Safari and Capacitor native;
@@ -10299,7 +10324,7 @@ async function wizardNext() {
         currentWizardStep++;
 
         // Skip optional/deferred setup slides and keep the weekly-goal handoff as the final step.
-        while (skippedWizardSlides.includes(currentWizardStep) && currentWizardStep < finalWizardStep) {
+        while (isWizardSlideSkipped(currentWizardStep) && currentWizardStep < finalWizardStep) {
             currentWizardStep++;
         }
 
@@ -10332,7 +10357,7 @@ function wizardPrev() {
         }
 
         // Skip optional/deferred setup slides when navigating backward too.
-        while (skippedWizardSlides.includes(currentWizardStep) && currentWizardStep > 1) {
+        while (isWizardSlideSkipped(currentWizardStep) && currentWizardStep > 1) {
             currentWizardStep--;
         }
 
@@ -11699,12 +11724,16 @@ async function finishOnboarding() {
         }
     });
 
-    // Restore the tamagotchi-model after the wizard.
+    // Restore the tamagotchi-model after the wizard only when the member chose
+    // to show it. New members using the clean Home keep the model released.
     // On iOS Safari, just removing src (deactivate) does NOT free GPU memory —
     // the Three.js shared renderer holds textures/buffers. Using iosHotSwapModel
     // fully destroys and recreates the element so GPU state is properly cleared
     // before the model loads. This prevents the OOM crash on wizard exit.
-    if (window._pbbIsIOSSafari && window._pausedTamagotchiSrc) {
+    const shouldRestoreFitGotchi = !(typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden());
+    if (!shouldRestoreFitGotchi) {
+        window._pausedTamagotchiSrc = null;
+    } else if (window._pbbIsIOSSafari && window._pausedTamagotchiSrc) {
         if (typeof window.iosHotSwapModel === 'function') {
             window.iosHotSwapModel(window._pausedTamagotchiSrc);
             // iosHotSwapModel applies character colors in its load callback — no need to call again

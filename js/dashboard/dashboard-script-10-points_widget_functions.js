@@ -174,6 +174,22 @@ function updatePointsDisplay(pointsData) {
                 levelProgressLabel.textContent = `${xpToNext} XP to Level ${levelData.level + 1}`;
             }
         }
+
+        // Keep the compact Home level bar in sync when the character is hidden.
+        const compactLevel = document.getElementById('balance-level-number');
+        const compactRank = document.getElementById('balance-level-rank');
+        const compactXp = document.getElementById('balance-level-xp-text');
+        const compactFill = document.getElementById('balance-level-xp-fill');
+        const compactTrack = compactFill?.parentElement;
+        if (compactLevel) compactLevel.textContent = levelData.level;
+        if (compactRank) compactRank.textContent = getLevelTitle(levelData.level);
+        if (compactXp) {
+            compactXp.textContent = levelData.isMaxLevel
+                ? 'MAX LEVEL'
+                : `${levelData.pointsIntoLevel} / ${levelData.pointsNeededForNext} XP`;
+        }
+        if (compactFill) compactFill.style.width = `${levelData.progress}%`;
+        if (compactTrack) compactTrack.setAttribute('aria-valuenow', String(levelData.progress));
     }
 
     // Update points number

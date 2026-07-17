@@ -259,6 +259,170 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 })();
 </script>
 
+<!-- FitGotchi display preference. Missing preferences stay visible until onboarding confirms a new member. -->
+<style>
+    #balance-level-bar {
+        display: none;
+        margin: 10px 16px 14px;
+        padding: 13px 15px;
+        align-items: center;
+        gap: 13px;
+        color: #fffaf0;
+        background: linear-gradient(135deg, #2f240d 0%, #493714 100%);
+        border: 1px solid #d8b25e;
+        border-radius: 14px;
+        box-shadow: 0 7px 20px rgba(47, 36, 13, 0.22);
+    }
+    html.pbb-fitgotchi-hidden #tamagotchi-widget-container,
+    html.pbb-fitgotchi-hidden #tamagotchi-stats-bar,
+    html.pbb-fitgotchi-hidden #battle-stats-row {
+        display: none !important;
+    }
+    html.pbb-fitgotchi-hidden #balance-level-bar {
+        display: flex;
+    }
+    .balance-level-badge {
+        width: 49px;
+        height: 49px;
+        flex: 0 0 49px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #261b06;
+        background: linear-gradient(145deg, #f5dc91, #c99a31);
+        border-radius: 12px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+    }
+    .balance-level-badge-label {
+        font-size: 0.48rem;
+        font-weight: 900;
+        letter-spacing: 0.8px;
+        line-height: 1;
+    }
+    #balance-level-number {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.35rem;
+        font-weight: 900;
+        line-height: 1.05;
+    }
+    .balance-level-progress-track {
+        height: 7px;
+        overflow: hidden;
+        background: rgba(255,255,255,0.16);
+        border-radius: 999px;
+    }
+    #balance-level-xp-fill {
+        width: 0%;
+        height: 100%;
+        background: linear-gradient(90deg, #d8b25e, #f5dc91);
+        border-radius: inherit;
+        transition: width 0.5s ease;
+    }
+    .fitgotchi-visibility-switch {
+        width: 48px;
+        height: 28px;
+        padding: 3px;
+        flex: 0 0 48px;
+        border: 1px solid #8a8378;
+        border-radius: 999px;
+        background: #6f6a61;
+        cursor: pointer;
+        transition: background 0.2s, border-color 0.2s;
+    }
+    .fitgotchi-visibility-switch::after {
+        content: '';
+        display: block;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.28);
+        transition: transform 0.2s;
+    }
+    .fitgotchi-visibility-switch[aria-checked="true"] {
+        background: var(--primary);
+        border-color: var(--primary);
+    }
+    .fitgotchi-visibility-switch[aria-checked="true"]::after {
+        transform: translateX(20px);
+    }
+    .fitgotchi-visibility-switch:focus-visible {
+        outline: 3px solid #d8b25e;
+        outline-offset: 3px;
+    }
+</style>
+<script>
+(function() {
+    var KEY = 'pbb_fitgotchi_visibility';
+
+    function getVisibility() {
+        return localStorage.getItem(KEY) === 'hidden' ? 'hidden' : 'visible';
+    }
+
+    function syncControls(mode) {
+        var show = mode !== 'hidden';
+        var toggle = document.getElementById('fitgotchi-visibility-toggle');
+        var status = document.getElementById('fitgotchi-visibility-status');
+        var customize = document.getElementById('settings-customize-character-btn');
+        if (toggle) {
+            toggle.setAttribute('aria-checked', show ? 'true' : 'false');
+            toggle.setAttribute('aria-label', show ? 'Hide FitGotchi on Home' : 'Show FitGotchi on Home');
+        }
+        if (status) status.textContent = show ? 'Shown on Home' : 'Hidden, level bar shown';
+        if (customize) customize.style.display = show ? 'flex' : 'none';
+    }
+
+    function applyVisibility(mode, options) {
+        mode = mode === 'hidden' ? 'hidden' : 'visible';
+        document.documentElement.classList.toggle('pbb-fitgotchi-hidden', mode === 'hidden');
+        syncControls(mode);
+
+        if (mode === 'hidden') {
+            var model = document.getElementById('tamagotchi-model');
+            var src = model && model.getAttribute('src');
+            if (src) window._pausedTamagotchiVisibilitySrc = src;
+            if (src && typeof window._pbbDeactivateViewer === 'function') {
+                window._pbbDeactivateViewer('tamagotchi-model');
+            }
+        } else if (options && options.reloadModel) {
+            setTimeout(function() {
+                var restoreSrc = window._pausedTamagotchiVisibilitySrc || localStorage.getItem('fitgotchi_model_src');
+                if (restoreSrc && typeof window._pbbActivateViewer === 'function') {
+                    window._pbbActivateViewer('tamagotchi-model', restoreSrc);
+                } else if (restoreSrc) {
+                    var model = document.getElementById('tamagotchi-model');
+                    if (model) model.setAttribute('src', restoreSrc);
+                }
+                window._pausedTamagotchiVisibilitySrc = null;
+                if (typeof window.forceReloadFitGotchiModel === 'function') {
+                    window.forceReloadFitGotchiModel();
+                } else if (typeof window.loadUserPoints === 'function') {
+                    window.loadUserPoints();
+                }
+            }, 50);
+        }
+        window.dispatchEvent(new CustomEvent('pbbFitGotchiVisibilityChanged', { detail: { mode: mode } }));
+        return mode;
+    }
+
+    window.getFitGotchiVisibility = getVisibility;
+    window.isFitGotchiHidden = function() { return getVisibility() === 'hidden'; };
+    window.applyFitGotchiVisibility = applyVisibility;
+    window.setFitGotchiVisibility = function(mode) {
+        mode = mode === 'hidden' ? 'hidden' : 'visible';
+        localStorage.setItem(KEY, mode);
+        return applyVisibility(mode, { reloadModel: mode === 'visible' });
+    };
+    window.toggleFitGotchiVisibility = function() {
+        return window.setFitGotchiVisibility(getVisibility() === 'hidden' ? 'visible' : 'hidden');
+    };
+
+    applyVisibility(getVisibility());
+    document.addEventListener('DOMContentLoaded', function() { applyVisibility(getVisibility()); });
+})();
+</script>
+
 <!-- Supabase & Auth Guard -->
 <script src="js/dashboard/script_part_2.js?v=11"></script>
 <script>
@@ -910,6 +1074,23 @@ window.addEventListener('load', function() {
             </div>
         </div>
 
+        <!-- Compact Home level display used when FitGotchi is hidden. -->
+        <div id="balance-level-bar" aria-label="Your Balance level and XP progress">
+            <div class="balance-level-badge" aria-hidden="true">
+                <span class="balance-level-badge-label">LVL</span>
+                <span id="balance-level-number">1</span>
+            </div>
+            <div style="flex:1; min-width:0;">
+                <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:7px;">
+                    <span id="balance-level-rank" style="font-size:0.78rem; font-weight:900; letter-spacing:0.8px; text-transform:uppercase; color:#f5dc91;">Newcomer</span>
+                    <span id="balance-level-xp-text" style="font-size:0.67rem; font-weight:700; color:#fffaf0; white-space:nowrap;">0 / 8 XP</span>
+                </div>
+                <div class="balance-level-progress-track" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                    <div id="balance-level-xp-fill"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Tamagotchi Stats Bar (Below Character) -->
         <div id="tamagotchi-stats-bar" style="background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; margin: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
             <!-- Level & XP Section -->
@@ -946,6 +1127,15 @@ window.addEventListener('load', function() {
             if (xpText) { var el = document.getElementById('tamagotchi-xp-text'); if (el) el.textContent = xpText; }
             if (xpPct) { var el = document.getElementById('tamagotchi-xp-bar'); if (el) el.style.width = xpPct; }
             if (streak) { var el = document.getElementById('tamagotchi-streak'); if (el) el.textContent = streak; }
+            if (lvl) { var el = document.getElementById('balance-level-number'); if (el) el.textContent = lvl; }
+            if (rank) { var el = document.getElementById('balance-level-rank'); if (el) el.textContent = rank; }
+            if (xpText) { var el = document.getElementById('balance-level-xp-text'); if (el) el.textContent = xpText.replace(/ to Level.*$/, ''); }
+            if (xpPct) {
+                var fill = document.getElementById('balance-level-xp-fill');
+                var track = fill && fill.parentElement;
+                if (fill) fill.style.width = xpPct;
+                if (track) track.setAttribute('aria-valuenow', String(parseInt(xpPct, 10) || 0));
+            }
         })();
         </script>
 
@@ -12007,7 +12197,7 @@ if(!window._pbbIsIOSSafari) {
                 <button onclick="initOnboardingWizard()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🌸</span> Restart Onboarding Setup
                 </button>
-                <button onclick="openCharacterCustomizationShortcut()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <button id="settings-customize-character-btn" onclick="openCharacterCustomizationShortcut()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>✨</span> Customize Character
                 </button>
                 <button onclick="replayFeatureTour()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
@@ -12050,6 +12240,13 @@ if(!window._pbbIsIOSSafari) {
                              if (selector) selector.value = savedTheme;
                          })();
                       </script>
+                  </div>
+                  <div id="settings-fitgotchi-visibility" style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; gap:14px;">
+                      <div>
+                          <div style="color:var(--text-main); font-weight:600;">Show FitGotchi</div>
+                          <div id="fitgotchi-visibility-status" style="font-size:0.75rem; color:var(--text-muted);">Shown on Home</div>
+                      </div>
+                      <button id="fitgotchi-visibility-toggle" class="fitgotchi-visibility-switch" type="button" role="switch" aria-checked="true" aria-label="Hide FitGotchi on Home" onclick="toggleFitGotchiVisibility()"></button>
                   </div>
                   <div id="settings-change-password" style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; gap:14px;">
                       <div>
@@ -12563,13 +12760,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=144';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=145';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=144"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=145"><\/script>');
 }
 </script>
 
@@ -13095,7 +13292,7 @@ if(!window._pbbIsIOSSafari) {
         await new Promise(function(r){ setTimeout(r, 260); });
       } },
     { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'6-Week Challenge', body:"The 6-week challenge sits under your character on Home. Tap it to open the leaderboard or check how to earn XP.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
-    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do.", quick: true },
+    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you as it levels up with you.", quick: true, condition: function(){ return !(typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden()); } },
     { tab:'dashboard', sel:'#weekly-goals-card', title:'Weekly goals', body:"Choose up to 3 goals for the week. Balance tracks the exact signals you picked and carries the results into Weekly Wrapped.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#next-obvious-steps-card', title:'Next steps', body:"Balance now gives you three clear actions for the day, aligned to your weekly goals and linked straight to the right part of the app.", quick: true, condition: function(){ try { return window.pbbNextSteps && window.pbbNextSteps.isPreviewEligible && window.pbbNextSteps.isPreviewEligible() && !!document.querySelector('#next-obvious-steps-card .next-step-action'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
@@ -13123,6 +13320,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'#weekly-meal-evolution-btn', fallbackSel:'#browse-plans-pill', title:'A plan that learns your meals', fallbackTitle:'Open your meal plan', body:"At the end of each week, Balance keeps the meals you actually eat, adds two small variations, and suggests simple ways to cover nutrition gaps.", fallbackBody:"Open your meal plan to build next week from the meals you actually ate.", action:function(){ try { var pill=document.getElementById('browse-plans-pill'); if(typeof switchWeek==='function') switchWeek('meal-plan-store', pill); } catch(e){} } },
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Profile settings', body:"Open Profile when you need settings, dietary requirements, password changes, character customisation, or to replay this tour later." },
     { tab:'profile', sel:'#settings-app-suggestions', title:'App Suggestions', body:"Got an idea for Balance? Tap this row in Settings and send it straight to Shannon's Needs You list." },
+    { tab:'profile', sel:'#settings-fitgotchi-visibility', title:'Choose your Home style', body:'FitGotchi starts hidden for new members. Turn this on any time if you want your character back on Home.', condition: function(){ return typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden(); } },
     { tab:'profile', sel:'#settings-payment-method', title:'Payment Method', body:"Update your saved card from Profile > Settings > Payment Method." },
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
@@ -14456,6 +14654,17 @@ if(!window._pbbIsIOSSafari) {
     sel: '#today-workout-card',
     title: 'Milestone celebrations',
     body: "When you hit bigger workout count or streak milestones, Balance pops up a celebration card you can share to Feed for +10 XP."
+  });
+  allFeatures.push({
+    id: 'fitgotchi-visibility-toggle-v1',
+    tab: 'profile',
+    sel: '#settings-fitgotchi-visibility',
+    title: 'FitGotchi is now optional',
+    body: 'Your FitGotchi is still right where you left it. If you want a cleaner Home screen, you can hide it here and turn it back on any time.',
+    condition: function(){
+      return localStorage.getItem('onboardingComplete') === 'true' &&
+        !(typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden());
+    }
   });
 
   var revealIdx = 0;
@@ -17136,13 +17345,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=27';
+s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=28';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=27"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=28"><\/script>');
 }
 </script>
 

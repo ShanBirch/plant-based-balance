@@ -22,7 +22,7 @@ assert.strictEqual(fs.existsSync(path.join(root, 'netlify/edge-functions/strava-
 assert.strictEqual(fs.existsSync(path.join(root, 'js/dashboard/script_part_10.js')), false, 'Strava dashboard controller should be removed');
 
 assert.match(dashboard, /id="activity-route-section"[\s\S]*Record with Balance GPS/, 'activity logger should expose Balance GPS route recording');
-assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=27/, 'phones should fetch the native route-aware activity renderer');
+assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=28/, 'phones should fetch the native route-aware activity renderer');
 assert.match(dashboard, /id:\s*'balance-native-gps-route-recording-v1'/, 'native route recording should have a returning-user Feature Drop');
 assert.match(dashboard, /title:'Balance records your route'/, 'native route recording should be included in the guided tour');
 assert.doesNotMatch(dashboard, /Strava/i, 'the Balance UI should not mention or depend on Strava');
