@@ -85,6 +85,14 @@ test('personal hardship and peer curiosity are not automatically sales problems'
         },
         behavior_profile: { primary_need: 'professional_networking' },
     }), false);
+
+    assert.equal(hasCommercialProblemEvidence({
+        facts: {
+            current_state: 'the vets wanted to put my cat down but he keeps flourishing',
+            history_blockers: 'his health has been hard and painful',
+        },
+        behavior_profile: { primary_need: 'structure' },
+    }), false);
 });
 
 test('database routing uses strict stages and preserves acquisition capacity', () => {

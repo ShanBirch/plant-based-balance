@@ -4183,6 +4183,9 @@ exports.handler = async (event) => {
                 clientName: leadName,
                 channelLabel,
                 existingContextReview: contextReview,
+                qualifier,
+                linkedUserId: thread.linked_user_id,
+                meaningfulLeadReplyCount,
             }), reviewTimeoutMs, 'draft review');
             draftReview = reviewResult?.review || null;
             effectiveContextReview = reviewResult?.contextReview || contextReview;
@@ -4258,6 +4261,9 @@ exports.handler = async (event) => {
                         clientName: leadName,
                         channelLabel,
                         existingContextReview: contextReview,
+                        qualifier,
+                        linkedUserId: thread.linked_user_id,
+                        meaningfulLeadReplyCount,
                     }), IG_DRAFT_REVIEW_TIMEOUT_MS, 'Coco repaired draft review');
                     const repairedReview = repairedReviewResult?.review || null;
                     const acceptRepair = !!repairedReview;

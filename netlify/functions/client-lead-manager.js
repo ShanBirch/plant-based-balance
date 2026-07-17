@@ -519,6 +519,9 @@ async function ensureDraftReview(alert = {}) {
             clientName: alert.client_name || alert.data?.profile_name || alert.data?.ig_username || 'client',
             channelLabel: alert.data?.channel || 'in-app',
             existingContextReview: buildContextReviewInfo(alert),
+            qualifier: alert.data?.qualifier || null,
+            linkedUserId: alert.client_id || alert.data?.linked_user_id || null,
+            meaningfulLeadReplyCount: alert.data?.qualifier?.meaningful_lead_reply_count || 0,
         });
         return {
             ...alert,

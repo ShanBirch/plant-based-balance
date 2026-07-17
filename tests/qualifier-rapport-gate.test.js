@@ -125,6 +125,33 @@ const foodHelp = applyRapportGate({
 assert.strictEqual(foodHelp.is_question_moment, true);
 assert.ok(/food|help/i.test(foodHelp.next_question), foodHelp.next_question);
 
+const earnedFitnessBridge = applyRapportGate({
+    qualifier: {
+        ...base,
+        meaningful_lead_reply_count: 4,
+        is_question_moment: false,
+        next_question: 'what kind of stuff keeps you feeling active on the Gold Coast?',
+        facts: { ...base.facts },
+    },
+    currentMessage: 'Honestly pretty cruisy, I love being back on the Gold Coast',
+    leadReplyCount: 4,
+});
+assert.strictEqual(earnedFitnessBridge.is_question_moment, true);
+assert.match(earnedFitnessBridge.why_now, /next-missing-fact/i);
+
+const petGriefBridge = applyRapportGate({
+    qualifier: {
+        ...base,
+        meaningful_lead_reply_count: 5,
+        is_question_moment: false,
+        next_question: 'what kind of training keeps you active?',
+        facts: { ...base.facts },
+    },
+    currentMessage: 'The vets wanted to put him down but my cat keeps flourishing',
+    leadReplyCount: 5,
+});
+assert.strictEqual(petGriefBridge.is_question_moment, false);
+
 assert.strictEqual(
     hasChallengeInviteReadinessSignal("i need help, i dunno what i'm doing"),
     true

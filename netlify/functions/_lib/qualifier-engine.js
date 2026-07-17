@@ -239,7 +239,9 @@ function hasCommercialProblemEvidence(qualifier = {}) {
     const explicitProblem = hasUsefulFact(motivation) || hasUsefulFact(blockers) || currentProblem;
     const peerOnly = /\b(my clients?|my business|who to coach|as a coach|as a practitioner|with clients?)\b/i.test(combined)
         && !/\b(i|my)\b.{0,30}\b(struggl|need|want|goal|training|food|weight|energy|routine)\b/i.test(combined);
-    return relevantNeed && domainSignal && explicitProblem && !peerOnly;
+    const petOrGriefOnly = /\b(?:my|our)\s+(?:dog|cat|rabbit|pet|puppy|kitten)\b|\b(?:vet|put (?:him|her|them) down|passed away|died|dying|funeral|grief|grieving)\b/i.test(combined)
+        && !/\bmy\s+(?:training|workouts?|food|nutrition|weight|fitness|energy|routine|consistency|health|body|goal)\b|\bi(?:'m| am)\s+(?:struggling|trying|working|training|aiming)\b/i.test(combined);
+    return relevantNeed && domainSignal && explicitProblem && !peerOnly && !petOrGriefOnly;
 }
 
 function normalizeCommercialStage(value, fallback = 'engaged') {
@@ -681,6 +683,31 @@ function applyStockQuestionGuard({ qualifier, currentMessage }) {
     return next;
 }
 
+function isProtectedLeadProgressionQuestion(question) {
+    const text = String(question || '').replace(/\s+/g, ' ').trim();
+    if (!text || isUnsafeStockDiscoveryQuestion(text)) return false;
+    return /\b(active|activity|train|training|workout|gym|food|meal|nutrition|weight|fat|muscle|strength|fitness|energy|routine|consistent|consistency|accountability|exercise|pilates|running|cardio|health|body|goal|progress)\b/i.test(text);
+}
+
+function isUnsafeLeadProgressionTurn(currentMessage) {
+    const text = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    if (!text) return true;
+    if (/^(?:thank(?:s| you)|cheers|haha|lol|yep|yeah|nah|ok(?:ay)?|❤️|❤|🙏|😂|🥰|😊)[.!\s]*$/i.test(text)) return true;
+    return /\b(?:vet|put (?:him|her|them) down|passed away|died|dying|funeral|grief|grieving|terminal|cancer|hospital|emergency|suicid|self[- ]?harm)\b/i.test(text);
+}
+
+function protectEarnedLeadProgression({ qualifier, currentMessage, leadReplyCount } = {}) {
+    if (!qualifier || qualifier.is_question_moment || TERMINAL_STAGES.has(qualifier.stage)) return qualifier;
+    if (Math.max(0, Number(leadReplyCount || qualifier.meaningful_lead_reply_count || 0)) < 2) return qualifier;
+    if (isUnsafeLeadProgressionTurn(currentMessage)) return qualifier;
+    if (!isProtectedLeadProgressionQuestion(qualifier.next_question)) return qualifier;
+    return {
+        ...qualifier,
+        is_question_moment: true,
+        why_now: 'Reciprocal rapport is established. Ask one specific next-missing-fact question that opens relevant fitness, food, consistency, or accountability context.',
+    };
+}
+
 function applyRapportGate({ qualifier, currentMessage, leadReplyCount } = {}) {
     if (!qualifier || TERMINAL_STAGES.has(qualifier.stage)) {
         return qualifier;
@@ -690,7 +717,11 @@ function applyRapportGate({ qualifier, currentMessage, leadReplyCount } = {}) {
     }
 
     const facts = qualifier.facts || {};
-    const next = { ...qualifier };
+    const next = protectEarnedLeadProgression({
+        qualifier: { ...qualifier },
+        currentMessage,
+        leadReplyCount,
+    });
 
     if (
         next.is_question_moment
@@ -1409,6 +1440,7 @@ module.exports = {
     evaluateQualifier,
     persistQualifier,
     applyRapportGate,
+    protectEarnedLeadProgression,
     formatPushTitle,
     formatPushBody,
     summarizeForFcmData,

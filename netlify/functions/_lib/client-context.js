@@ -5724,6 +5724,46 @@ function applyLeadStoryReplyQuestionGuard(review, { draftText, contextBlocks, al
     };
 }
 
+function applyLeadProgressionQuestionProtection(review, {
+    draftText,
+    alertType,
+    qualifier,
+    linkedUserId,
+    meaningfulLeadReplyCount,
+} = {}) {
+    const base = review || normalizeDraftReviewPayload({
+        verdict: 'pass',
+        confidence: 0,
+        summary: 'Draft matches the available context.',
+    });
+    if (!['ig_incoming_dm', 'fb_incoming_dm'].includes(alertType)) return base;
+    if (linkedUserId || base.verdict !== 'warn' || base.context_loss_suspected || base.notification_required) return base;
+    if (!qualifier?.is_question_moment || !qualifier?.next_question) return base;
+    if (Math.max(0, Number(meaningfulLeadReplyCount || qualifier.meaningful_lead_reply_count || 0)) < 2) return base;
+
+    const draft = normalizeCoachDraftText(draftText || '').replace(/\s+/g, ' ').trim();
+    if ((draft.match(/\?/g) || []).length !== 1) return base;
+    const reviewText = [base.summary, base.suggested_fix, ...(Array.isArray(base.issues) ? base.issues : [])]
+        .filter(Boolean)
+        .join(' ');
+    const questionSuppression = /\b(?:question|curiosity|over-question|same-topic|thread[- ]keeping|follow[- ]?up)\b/i.test(reviewText);
+    const independentProblem = /\b(?:unsupported|invented|context loss|non[- ]?sequitur|ignored latest|medical|diagnos|safety|automation|generic voice|several|multiple)\b/i.test(reviewText);
+    if (!questionSuppression || independentProblem) return base;
+
+    return {
+        ...base,
+        verdict: 'pass',
+        confidence: Math.max(Number(base.confidence) || 0, 0.9),
+        summary: 'The single question supplies the lead\'s protected next progression fact.',
+        issues: [],
+        suggested_fix: '',
+        notification_required: false,
+        notification_reason: 'none',
+        reviewer_model: `${base.reviewer_model || DRAFT_REVIEW_MODEL}+lead-progression-guard`,
+        deterministic_guard: 'lead_next_missing_fact_protected',
+    };
+}
+
 function shouldDraftReviewTriggerContextReview(review) {
     if (!review) return false;
     if (review.context_loss_suspected) return true;
@@ -5854,6 +5894,7 @@ IG/FB LEAD QUALITY CHECK:
 - Current primary paid offer: Balance Vegan Fitness Founders Pass is AUD $99 once for a guided six-week kickstart plus lifetime access to the core Balance app and vegan fitness community. Ongoing individual weekly coaching is not included. Starter Coaching at AUD $29.99/week is an optional upgrade only when they explicitly want Shannon personally adjusting their plan each week. The default close happens inside DMs.
 - Block if it uses a stock intake line such as "what does a normal day look like", a bare "what are your goals", or any name + age + goal + blocker bundle.
 - Block if it asks several discovery questions at once. One natural question max, and it should be tied to the strongest latest detail unless they clearly asked to start.
+- When qualifier context designates one next-missing-fact question, treat that question as conversion work, not optional curiosity. Preserve one equivalent specific question unless it is unsafe, unsupported, repetitive, or the lead is clearly closing.
 - Prefer statement-led elicitation over question-led intake. Warn if the draft could have used a clear label like "sounds like this is more a structure problem than a motivation problem" but instead asks another broad discovery question.
 - Block if a draft offers a free challenge/free entry as the acquisition or conversion path. Balance no longer uses that funnel.
 - Block if the lead asks how to join, asks for the link, asks price/what is included, says they are keen, or accepts the Founders Pass, but the draft slows them down with more rapport instead of moving them forward.
@@ -5991,7 +6032,7 @@ async function updateAlertDraftReview(alertId, review, contextReview = null) {
     }
 }
 
-async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contextBlocks, clientName, channelLabel, existingContextReview } = {}) {
+async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contextBlocks, clientName, channelLabel, existingContextReview, qualifier, linkedUserId, meaningfulLeadReplyCount } = {}) {
     const rawReview = await generateDraftReview({
         draftText,
         alertType,
@@ -6004,7 +6045,14 @@ async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contex
         softenMediaOnlyDraftReview(rawReview, existingContextReview),
         contextBlocks
     );
-    const guardedReview = applyLeadStoryReplyQuestionGuard(review, {
+    const progressionGuardedReview = applyLeadProgressionQuestionProtection(review, {
+        draftText,
+        alertType,
+        qualifier,
+        linkedUserId,
+        meaningfulLeadReplyCount,
+    });
+    const guardedReview = applyLeadStoryReplyQuestionGuard(progressionGuardedReview, {
         draftText,
         contextBlocks,
         alertType,
@@ -6156,6 +6204,11 @@ function softenAbsoluteLearnedInstruction(value) {
     if (/(distress|difficult|hard|vulnerable|emotional|upset|overwhelmed).{0,90}(offer|offering|give).{0,35}support/i.test(text)
         || /i'?m here for you|if you need to talk|want to talk about it|talk more about it|always here|you can talk to me/i.test(text)) {
         text = 'For distress, acknowledge one specific thing and move to a concrete next handle; do not default to "I\'m here for you" or "if you need to talk" support closers unless the conversation is naturally closing.';
+    }
+
+    if (/(?:do not|don't|dont|avoid|never).{0,90}(?:coaching|discovery|qualif|sales|fitness|goal|blocker).{0,90}(?:unless|until).{0,45}(?:ask|asks|help|interest)/i.test(text)
+        || /(?:wait|hold off).{0,70}(?:coaching|discovery|qualif|sales).{0,70}(?:ask|asks|help|interest)/i.test(text)) {
+        text = 'Keep casual rapport human, but when an unlinked lead gives a natural opening, allow one specific next-missing-fact move; do not wait for them to ask for help.';
     }
 
     if (/^when it fits,\s+include\s+a\s+personal\s+check-?in\s+question/i.test(text)) {
@@ -6834,6 +6887,7 @@ Rules:
 - If the edit is only spelling, punctuation, or a one-off fact correction, set should_update_prompt=false.
 - Avoid absolute texting rules like "always ask", "always include a check-in", or "always add a question" unless Shannon explicitly wrote that as a manual instruction. Prefer conditional rules tied to context: "when...", "if...", or "unless...".
 - If Shannon's edit adds a question, learn when that question was useful. If his edit removes a question, learn where to hold back. Do not turn either case into a blanket rule.
+- Learned bullets may control voice, warmth, and length. They must never tell an unlinked lead to wait until they ask for help or disable a qualifier-designated next-missing-fact move.
 - If a new lesson conflicts with an existing learned bullet, keep the more conditional, context-specific version and drop the broad one.
 - Even if there is not enough signal to update instructions, still return the JSON object with should_update_prompt=false. Do not explain outside JSON.
 
@@ -7634,12 +7688,14 @@ module.exports = {
     softenMediaOnlyDraftReview,
     softenRecentInboundBurstDraftReview,
     applyLeadStoryReplyQuestionGuard,
+    applyLeadProgressionQuestionProtection,
     isAppProblemSupportRequest,
     getAppProblemAutoSendHoldReason,
     mergeDraftReviewContextReview,
     mergeLateDraftReviewData,
     isDraftReviewAutoSendSafe,
     calculateCoachEditMetrics,
+    softenAbsoluteLearnedInstruction,
     analyzeCoachEditAndUpdatePrompt,
     fireCoachEditAnalysis,
     recentlyMessaged,
