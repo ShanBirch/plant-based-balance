@@ -56,15 +56,29 @@ test('migration keeps the queue server-only and uses an atomic claim lease', () 
     assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.claim_ig_next_actions[\s\S]+TO service_role/i);
 });
 
-test('a superseding inbound action clears an older operator receipt', () => {
+test('a new action version archives and clears the older operator receipt', () => {
     const migration = fs.readFileSync(
-        path.join(__dirname, '..', 'supabase', 'migrations', '20260714181112_clear_superseded_next_action_receipts.sql'),
+        path.join(__dirname, '..', 'supabase', 'migrations', '20260717214000_harden_operator_queue_receipts_and_founders_metrics.sql'),
         'utf8'
     );
-    assert.match(
-        migration,
-        /receipt\s*=\s*CASE\s+WHEN\s+p_supersede\s+THEN\s+'\{\}'::JSONB\s+ELSE\s+v_existing\.receipt\s+END/i
+    assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.ig_next_action_receipts/i);
+    assert.match(migration, /BEFORE UPDATE OR DELETE ON public\.ig_next_actions/i);
+    assert.match(migration, /receipt\s*=\s*'\{\}'::JSONB/i);
+    assert.match(migration, /coalesce\(q\.receipt, '\{\}'::JSONB\) = '\{\}'::JSONB/i);
+    assert.match(migration, /stale_receipt_safety_cooldown/i);
+    assert.match(migration, /THEN interval '7 days' ELSE interval '24 hours'/i);
+    assert.match(migration, /GRANT SELECT ON TABLE public\.ig_next_action_receipts TO service_role/i);
+});
+
+test('commercial queue recognises Founders Pass offer and checkout evidence', () => {
+    const migration = fs.readFileSync(
+        path.join(__dirname, '..', 'supabase', 'migrations', '20260717214000_harden_operator_queue_receipts_and_founders_metrics.sql'),
+        'utf8'
     );
+    assert.match(migration, /plantbased-balance\.org\/vegan-fitness\.html/i);
+    assert.match(migration, /founders pass\|founder''s pass/i);
+    assert.match(migration, /Founders Pass offered 24h\+ ago/i);
+    assert.match(migration, /earned Founders Pass bridge/i);
 });
 
 test('feed refresh seeds ranked prospects without displacing another relationship owner', () => {

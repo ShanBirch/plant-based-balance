@@ -23,4 +23,14 @@ assert.match(sql, /CREATE OR REPLACE FUNCTION public\.complete_balance_support_j
 assert.match(sql, /q\.claim_token = p_claim_token/i);
 assert.doesNotMatch(sql, /GRANT EXECUTE[\s\S]+TO (?:anon|authenticated)/i);
 
+const hardeningFile = fs.readdirSync(migrations)
+    .find(name => name.endsWith('_harden_operator_queue_receipts_and_founders_metrics.sql'));
+assert.ok(hardeningFile, 'operator queue hardening migration should exist');
+const hardeningSql = fs.readFileSync(path.join(migrations, hardeningFile), 'utf8');
+assert.match(hardeningSql, /CREATE UNIQUE INDEX IF NOT EXISTS uq_balance_support_jobs_open_issue/i);
+assert.match(hardeningSql, /PARTITION BY q\.support_issue_key/i);
+assert.match(hardeningSql, /duplicate_support_job_reconciled/i);
+assert.match(hardeningSql, /pg_advisory_xact_lock\(hashtext\('refresh_balance_support_jobs'\)\)/i);
+assert.match(hardeningSql, /SELECT DISTINCT ON \(issue_key\)/i);
+
 console.log('Balance support job queue migration checks passed');
