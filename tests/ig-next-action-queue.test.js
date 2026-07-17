@@ -68,6 +68,14 @@ test('a new action version archives and clears the older operator receipt', () =
     assert.match(migration, /stale_receipt_safety_cooldown/i);
     assert.match(migration, /THEN interval '7 days' ELSE interval '24 hours'/i);
     assert.match(migration, /GRANT SELECT ON TABLE public\.ig_next_action_receipts TO service_role/i);
+
+    const waitingRepair = fs.readFileSync(
+        path.join(__dirname, '..', 'supabase', 'migrations', '20260717215200_allow_waiting_receipt_reconciliation.sql'),
+        'utf8'
+    );
+    assert.match(waitingRepair, /q\.status IN \('waiting', 'claimed'\)/i);
+    assert.match(waitingRepair, /OR coalesce\(q\.receipt, '\{\}'::JSONB\) = '\{\}'::JSONB/i);
+    assert.match(waitingRepair, /fresh ready\/cooldown rows cannot carry stale receipts/i);
 });
 
 test('commercial queue recognises Founders Pass offer and checkout evidence', () => {
