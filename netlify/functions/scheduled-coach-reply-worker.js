@@ -41,7 +41,7 @@ const {
 // kicking in, it's either a worker outage or someone schedule-bombed the API.
 const MAX_PER_RUN = 25;
 const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
-const DEFAULT_COACHING_URL = 'https://plantbased-balance.org/coaching.html';
+const DEFAULT_COACHING_URL = 'https://plantbased-balance.org/vegan-fitness.html';
 const AUTOMATED_PERMANENT_NEEDS_YOU_SCHEDULE_SOURCES = new Set([
     'auto_send',
     'balance_lead_client_manager_cron',

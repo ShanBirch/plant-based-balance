@@ -124,9 +124,9 @@ assert.strictEqual(leadContext.link_sent, true);
 assert.strictEqual(leadContext.landing_url, 'https://plantbased-balance.org/science/free-will-willpower/');
 assert.strictEqual(leadContext.paper_title, 'Unconscious determinants of free decisions in the human brain');
 assert.strictEqual(
-    leadContext.next_step.includes('normal Starter Coaching DM path'),
+    leadContext.next_step.includes('normal Vegan Fitness Founders Pass DM path'),
     true,
-    'lead context should tell the AI this belongs in the Starter Coaching DM path'
+    'lead context should tell the AI this belongs in the Vegan Fitness Founders Pass DM path'
 );
 
 const exerciseLeadContext = automation.buildCommentResourceLeadContext({

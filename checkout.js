@@ -184,7 +184,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const PRICES = {
         '1-month': 'balance_starter_coaching_weekly',
         'app-monthly': 'balance_app_community_monthly',
-        'coaching-calls': 'balance_coaching_calls_weekly'
+        'coaching-calls': 'balance_coaching_calls_weekly',
+        'founders-pass': 'balance_vegan_founders_pass'
     };
 
     // 4. One-Click Payment Logic (Apple Pay / Google Pay)
@@ -192,7 +193,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const PLAN_DETAILS = {
         '1-month': { amount: 2999, label: 'Balance Starter Coaching', successPlan: 'starter_weekly' },
         'app-monthly': { amount: 1999, label: 'Balance App + Community', successPlan: 'app_community_monthly' },
-        'coaching-calls': { amount: 9999, label: 'Balance Coaching + Calls', successPlan: 'coaching_calls_weekly' }
+        'coaching-calls': { amount: 9999, label: 'Balance Coaching + Calls', successPlan: 'coaching_calls_weekly' },
+        'founders-pass': { amount: 9900, label: 'Balance Vegan Fitness Founders Pass', successPlan: 'founders_pass_lifetime' }
     };
 
     const paymentRequest = stripe.paymentRequest({

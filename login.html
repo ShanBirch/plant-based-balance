@@ -800,8 +800,44 @@
 
     <!-- Page code -->
     <script>
+        function captureFoundersPassHandoff(urlParams) {
+            if (urlParams.get('source') !== 'founders_pass') return;
+            sessionStorage.setItem('balance_founders_pass_pending', 'true');
+            const sessionId = urlParams.get('session_id');
+            if (sessionId) sessionStorage.setItem('balance_founders_pass_session_id', sessionId);
+        }
+
+        async function claimPendingFoundersPass(session) {
+            if (sessionStorage.getItem('balance_founders_pass_pending') !== 'true') return null;
+            const accessToken = session?.access_token;
+            if (!accessToken) return null;
+            try {
+                const response = await fetch('/.netlify/functions/claim-founders-pass', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({
+                        sessionId: sessionStorage.getItem('balance_founders_pass_session_id') || ''
+                    })
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || result.error) throw new Error(result.error || 'Founders Pass activation is still processing.');
+                if (result.claimed) {
+                    sessionStorage.removeItem('balance_founders_pass_pending');
+                    sessionStorage.removeItem('balance_founders_pass_session_id');
+                }
+                return result;
+            } catch (error) {
+                console.warn('Founders Pass activation will retry after the next login:', error.message);
+                return null;
+            }
+        }
+
         async function initializePage() {
             const urlParams = new URLSearchParams(window.location.search);
+            captureFoundersPassHandoff(urlParams);
             const isSwitchingAccount = urlParams.get('switch_account') === '1';
 
             // Check if already logged in
@@ -867,6 +903,8 @@
                         console.warn('Error processing OAuth referral:', e);
                     }
                 }
+
+                await claimPendingFoundersPass(session);
 
                 // Already logged in - redirect to dashboard
                 let redirect = urlParams.get('redirect');
@@ -959,6 +997,8 @@
 
             try {
                 const { user } = await authHelpers.signIn(email, password);
+                const signedInSession = await authHelpers.getSession();
+                await claimPendingFoundersPass(signedInSession);
 
                 showSuccess('Login successful!');
                 try {
@@ -1093,6 +1133,9 @@
                     btn.textContent = 'CREATE ACCOUNT';
                     return;
                 }
+
+
+                await claimPendingFoundersPass(signupResult.session);
 
                 showSuccess('Account created! Logging you in...');
 

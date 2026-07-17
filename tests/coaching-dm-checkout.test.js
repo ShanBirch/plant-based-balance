@@ -6,6 +6,7 @@ const test = require('node:test');
 const root = path.join(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const coaching = read('coaching.html');
+const founders = read('vegan-fitness.html');
 const checkout = read('checkout.js');
 const success = read('success.html');
 const bookingPage = read('book.html');
@@ -32,7 +33,7 @@ test('DM coaching page goes directly to hosted Stripe Checkout', () => {
     assert.match(coaching, /\$99\.99<span>\/week<\/span>/);
 });
 
-test('all active DM handoffs use the permanent branded coaching URL', () => {
+test('all active DM handoffs use the permanent branded Founders Pass URL', () => {
     const files = [
         'netlify/edge-functions/sales-bot.js',
         'netlify/functions/_lib/client-context.js',
@@ -45,9 +46,22 @@ test('all active DM handoffs use the permanent branded coaching URL', () => {
 
     for (const file of files) {
         const source = read(file);
-        assert.match(source, /https:\/\/plantbased-balance\.org\/coaching\.html/, file);
+        assert.match(source, /https:\/\/plantbased-balance\.org\/vegan-fitness\.html/, file);
         assert.doesNotMatch(source, /https:\/\/future-balance\.netlify\.app\/coaching\.html/, file);
     }
+});
+
+test('Founders Pass page sells the one-time membership through guarded hosted checkout', () => {
+    assert.match(founders, /Balance Vegan Fitness Founders Pass/);
+    assert.match(founders, /AU\$99/);
+    assert.match(founders, /guided six-week/i);
+    assert.match(founders, /Lifetime core app \+ community access/i);
+    assert.match(founders, /Ongoing personal coaching is optional/i);
+    assert.match(founders, /id="terms-checkbox"/);
+    assert.match(founders, /data-plan="founders-pass"/);
+    assert.match(founders, /data-hosted-checkout-only="true"/);
+    assert.match(founders, /src="checkout\.js"/);
+    assert.match(checkout, /'founders-pass': 'balance_vegan_founders_pass'/);
 });
 
 test('money funnel recognises new and historic coaching links', () => {

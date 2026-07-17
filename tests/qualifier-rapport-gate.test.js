@@ -170,9 +170,9 @@ assert.match(inferredHook, /native story opener/);
 assert.doesNotMatch(inferredHook, /entered via/);
 
 const compactCustomData = formatQualifierCustomDataText({
-    offer_path: 'balance_starter_coaching',
+    offer_path: 'balance_vegan_founders_pass',
     sales_context: {
-        primary_offer: 'balance_starter_coaching',
+        primary_offer: 'balance_vegan_founders_pass',
         dm_rule: 'long sales rule that should not be dumped wholesale into the qualifier prompt',
     },
     story_outreach_history: [
@@ -184,15 +184,15 @@ const compactCustomData = formatQualifierCustomDataText({
     },
 });
 assert.match(compactCustomData, /native_story_hook/);
-assert.match(compactCustomData, /offer_path: balance_starter_coaching/);
+assert.match(compactCustomData, /offer_path: balance_vegan_founders_pass/);
 assert.doesNotMatch(compactCustomData, /story_outreach_history/);
 assert.doesNotMatch(compactCustomData, /long sales rule/);
-assert.match(igDraftSource, /https:\/\/plantbased-balance\.org\/coaching\.html/);
-assert.match(igDraftSource, /Balance Starter Coaching: AUD \$29\.99\/week/);
-assert.match(igDraftSource, /one weekly check-in with Shannon/);
+assert.match(igDraftSource, /https:\/\/plantbased-balance\.org\/vegan-fitness\.html/);
+assert.match(igDraftSource, /Balance Vegan Fitness Founders Pass: AUD \$99 once/);
+assert.match(igDraftSource, /Ongoing individual weekly coaching is not included/);
 assert.match(igDraftSource, /default close happens inside DMs/);
 assert.match(igDraftSource, /Balance no longer uses a free challenge/);
-assert.match(igDraftSource, /quick coaching\/app handoff/);
+assert.match(igDraftSource, /quick Founders Pass handoff/);
 assert.match(qualifierSource, /not an app explainer/);
 assert.match(qualifierSource, /LEAD BEHAVIOR PROFILE/);
 assert.match(qualifierSource, /hates_being_sold_to/);
@@ -205,7 +205,7 @@ assert.match(igDraftSource, /SHANNON FOLLOW-UP QUESTION FINGERPRINT/);
 assert.match(igDraftSource, /always try one short, topic-specific question/);
 assert.match(igDraftSource, /reaction-only\/like/);
 assert.match(igDraftSource, /A plant bargain, local spot, hobby, meal, dog, shift, trip, or project can earn one natural question/);
-assert.match(igDraftSource, /specific life hook -> daily rhythm or preference -> health\/fitness\/food\/energy context -> their goal or blocker -> Starter Coaching details in DMs/);
+assert.match(igDraftSource, /specific life hook -> daily rhythm or preference -> health\/fitness\/food\/energy context -> their goal or blocker -> Founders Pass details in DMs/);
 assert.match(igDraftSource, /call is an escalation, not the normal late bridge/);
 assert.match(igDraftSource, /remain genuinely uncertain after a clear DM explanation/);
 assert.match(igDraftSource, /Approved call-booking link/);

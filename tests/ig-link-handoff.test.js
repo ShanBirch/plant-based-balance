@@ -78,7 +78,7 @@ const repairedChunks = finalizeDraftChunksFromRawText(
         currentMessageText: 'yeah sounds good',
     }
 );
-assert.match(repairedChunks.join('\n'), /https:\/\/plantbased-balance\.org\/coaching\.html/);
+assert.match(repairedChunks.join('\n'), /https:\/\/plantbased-balance\.org\/vegan-fitness\.html/);
 
 const supportChunks = finalizeDraftChunksFromRawText(
     JSON.stringify({ messages: ["sounds good mate", "here's the link, check it out and download the app"] }),
@@ -155,7 +155,7 @@ assert.deepStrictEqual(
         mediaDecode: { photo_url_count: 1 },
         currentMessageText: 'mentioned you in a story [PHOTO:https://lookaside.fbsbx.com/example.jpg]',
     }),
-    ['oh hell yeah!']
+    ['Oh hell yeah!']
 );
 
 assert.deepStrictEqual(
@@ -212,6 +212,6 @@ const scheduledRepair = scheduledWorker.repairMissingScheduledLinkHandoff({
     data: { signup_link_handoff_url: 'https://plantbased-balance.org/coaching.html' },
 }, "sounds good mate, here's the link");
 assert.strictEqual(scheduledRepair.repaired, true);
-assert.match(scheduledRepair.text, /https:\/\/future-balance\.netlify\.app\/coaching\.html/);
+assert.match(scheduledRepair.text, /https:\/\/plantbased-balance\.org\/coaching\.html/);
 
 console.log('ig link handoff tests passed');

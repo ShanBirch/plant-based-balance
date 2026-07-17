@@ -1,0 +1,133 @@
+const STRIPE_API_VERSION = "2026-02-25.clover";
+const FOUNDERS_PRODUCT = "balance_vegan_founders_pass";
+const FOUNDERS_PLAN = "founders_pass_lifetime";
+
+function json(payload, status = 200) {
+    return new Response(JSON.stringify(payload), {
+        status,
+        headers: { "Content-Type": "application/json" },
+    });
+}
+
+function cleanSessionId(value) {
+    const sessionId = String(value || "").trim();
+    return /^cs_(?:test|live)_[A-Za-z0-9_]+$/.test(sessionId) ? sessionId : "";
+}
+
+function cleanEmail(value) {
+    return String(value || "").trim().toLowerCase();
+}
+
+async function supabaseRequest(url, key, path, options = {}) {
+    const response = await fetch(`${url}/rest/v1/${path}`, {
+        method: options.method || "GET",
+        headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            "Content-Type": "application/json",
+            Prefer: options.prefer || "return=representation",
+        },
+        body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    });
+    const text = await response.text();
+    if (!response.ok) throw new Error(`Supabase request failed (${response.status}): ${text.slice(0, 240)}`);
+    return text ? JSON.parse(text) : null;
+}
+
+async function authenticatedUser(supabaseUrl, serviceKey, request) {
+    const authorization = request.headers.get("authorization") || "";
+    if (!/^Bearer\s+\S+$/i.test(authorization)) return null;
+    const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+        headers: { apikey: serviceKey, Authorization: authorization },
+    });
+    if (!response.ok) return null;
+    return response.json();
+}
+
+async function retrieveStripeSession(secretKey, sessionId) {
+    const response = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, {
+        headers: { Authorization: `Bearer ${secretKey}`, "Stripe-Version": STRIPE_API_VERSION },
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(payload?.error?.message || "Unable to verify Stripe purchase.");
+    return payload;
+}
+
+function purchaseFromSession(session) {
+    const email = cleanEmail(session?.customer_details?.email || session?.customer_email || session?.metadata?.checkout_email);
+    if (session?.mode !== "payment"
+        || session?.payment_status !== "paid"
+        || session?.metadata?.product_type !== FOUNDERS_PRODUCT
+        || !email) {
+        return null;
+    }
+    return {
+        stripe_checkout_session_id: session.id,
+        stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id || null,
+        stripe_customer_id: typeof session.customer === "string" ? session.customer : session.customer?.id || null,
+        email,
+        amount_minor: Number(session.amount_total || 9900),
+        currency: String(session.currency || "aud").toLowerCase(),
+        status: "paid",
+        purchased_at: new Date(Number(session.created || Math.floor(Date.now() / 1000)) * 1000).toISOString(),
+        metadata: {
+            balance_plan: FOUNDERS_PLAN,
+            product_type: FOUNDERS_PRODUCT,
+            access_type: "lifetime_core_app_community",
+        },
+    };
+}
+
+export default async (request) => {
+    if (request.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
+
+    try {
+        const supabaseUrl = Netlify.env.get("SUPABASE_URL");
+        const serviceKey = Netlify.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        const stripeKey = Netlify.env.get("STRIPE_SECRET_KEY");
+        if (!supabaseUrl || !serviceKey || !stripeKey) throw new Error("Missing Internal Configuration");
+
+        const user = await authenticatedUser(supabaseUrl, serviceKey, request);
+        if (!user?.id || !user?.email) return json({ error: "Authentication required." }, 401);
+
+        const body = await request.json().catch(() => ({}));
+        const sessionId = cleanSessionId(body.sessionId);
+        const userEmail = cleanEmail(user.email);
+
+        if (sessionId) {
+            const session = await retrieveStripeSession(stripeKey, sessionId);
+            const verified = purchaseFromSession(session);
+            if (!verified || verified.email !== userEmail) {
+                return json({ error: "This purchase does not match the signed-in account." }, 403);
+            }
+            await supabaseRequest(supabaseUrl, serviceKey, "founders_pass_purchases?on_conflict=stripe_checkout_session_id", {
+                method: "POST",
+                prefer: "resolution=merge-duplicates,return=representation",
+                body: verified,
+            });
+        }
+
+        const purchases = await supabaseRequest(
+            supabaseUrl,
+            serviceKey,
+            `founders_pass_purchases?select=id,stripe_checkout_session_id,status,user_id&email=eq.${encodeURIComponent(userEmail)}&status=eq.paid&order=purchased_at.desc&limit=1`
+        );
+        const purchase = Array.isArray(purchases) ? purchases[0] : null;
+        if (!purchase) return json({ claimed: false, reason: "no_paid_founders_pass" });
+
+        const now = new Date().toISOString();
+        await supabaseRequest(supabaseUrl, serviceKey, `founders_pass_purchases?id=eq.${encodeURIComponent(purchase.id)}`, {
+            method: "PATCH",
+            body: { user_id: user.id, claimed_at: now },
+        });
+        await supabaseRequest(supabaseUrl, serviceKey, `users?id=eq.${encodeURIComponent(user.id)}`, {
+            method: "PATCH",
+            body: { subscription_status: "active", subscription_plan: FOUNDERS_PLAN },
+        });
+
+        return json({ claimed: true, plan: FOUNDERS_PLAN });
+    } catch (error) {
+        console.error("Founders Pass claim error:", error.message);
+        return json({ error: "We could not activate the Founders Pass yet. Please try again shortly." }, 400);
+    }
+};

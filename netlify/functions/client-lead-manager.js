@@ -32,7 +32,8 @@ const MANAGER_SOURCE = 'balance-lead-client-manager';
 const MAX_PER_RUN = 80;
 const DEFAULT_AI_DRAFT_REVIEWS_PER_RUN = 8;
 const DM_ALERT_TYPES = ['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm'];
-const APPROVED_COACHING_URL = 'https://plantbased-balance.org/coaching.html';
+const APPROVED_COACHING_URL = 'https://plantbased-balance.org/vegan-fitness.html';
+const LEGACY_APPROVED_COACHING_URL = 'https://plantbased-balance.org/coaching.html';
 const APPROVED_BOOKING_URL = 'https://plantbased-balance.org/book';
 const APPROVED_COACHING_LINK_SEND_DELAY_MS = 2 * 60 * 1000;
 
@@ -329,7 +330,7 @@ function approvedLinkHandoffKind(alert = {}) {
         && data.client_manager_review_required !== true
         && data.needs_you_required !== true;
     if (!baseAllowed) return '';
-    if (url === APPROVED_COACHING_URL && replyText.includes(APPROVED_COACHING_URL)) return 'coaching';
+    if ([APPROVED_COACHING_URL, LEGACY_APPROVED_COACHING_URL].includes(url) && replyText.includes(url)) return 'coaching';
     if (data.call_booking_handoff === true && url === APPROVED_BOOKING_URL && replyText.includes(APPROVED_BOOKING_URL)) return 'call_booking';
     return '';
 }
@@ -349,10 +350,10 @@ function buildApprovedCoachingAutoSchedulePatch(alert = {}, now = new Date()) {
     const data = alert.data || {};
     const handoffKind = approvedLinkHandoffKind(alert);
     const isCallBooking = handoffKind === 'call_booking';
-    const handoffLabel = isCallBooking ? 'call-booking link' : 'Starter Coaching link';
+    const handoffLabel = isCallBooking ? 'call-booking link' : 'Vegan Fitness Founders Pass link';
     const scheduleReason = isCallBooking
         ? 'Client/lead manager approved the call-booking link handoff; accelerated sales follow-up.'
-        : 'Client/lead manager approved the Starter Coaching link handoff; accelerated sales follow-up.';
+        : 'Client/lead manager approved the Vegan Fitness Founders Pass link handoff; accelerated sales follow-up.';
     const autoScheduleReason = isCallBooking ? 'approved_call_booking_link_handoff' : 'approved_starter_coaching_link_handoff';
     const nowIso = now.toISOString();
     const scheduledFor = new Date(now.getTime() + APPROVED_COACHING_LINK_SEND_DELAY_MS).toISOString();
@@ -667,7 +668,7 @@ async function scheduleApprovedCoachingHandoff(alert) {
         scheduled_for: patch.scheduled_for,
         reason: approvedLinkHandoffKind(alert) === 'call_booking'
             ? 'approved call-booking link handoff'
-            : 'approved Starter Coaching link handoff',
+            : 'approved Vegan Fitness Founders Pass link handoff',
     };
 }
 

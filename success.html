@@ -29,7 +29,7 @@
     // Dynamic Purchase Tracking
     const urlParams = new URLSearchParams(window.location.search);
     const checkoutPlan = urlParams.get('plan') || 'starter_weekly';
-    const purchaseValue = parseFloat(urlParams.get('amount')) || (checkoutPlan === 'app_community_monthly' ? 19.99 : checkoutPlan === 'coaching_calls_weekly' ? 99.99 : 29.99);
+    const purchaseValue = parseFloat(urlParams.get('amount')) || (checkoutPlan === 'founders_pass_lifetime' ? 99 : checkoutPlan === 'app_community_monthly' ? 19.99 : checkoutPlan === 'coaching_calls_weekly' ? 99.99 : 29.99);
 
     fbq('init', '1928402271406692'); 
     fbq('track', 'PageView');
@@ -133,10 +133,10 @@
             <div style="background: #f0fdf4; padding: 25px; border-radius: 16px; border: 1px solid #bbf7d0; margin-top: 20px;">
                 <h3 id="success-account-heading" style="margin: 0 0 10px 0; color: #166534; font-size: 1.2rem;">Final step: open Balance</h3>
                 <p style="color: #15803d; margin-bottom: 20px; font-size: 0.95rem;">
-                    Create your account using the same email you used at checkout. That connects your paid access and coaching profile automatically.
+                    Create your account using the same email you used at checkout. That connects your paid access automatically.
                 </p>
-                <a href="login.html?action=signup&amp;source=checkout" class="btn btn-primary" style="background: #166534; color: white; padding: 15px 30px; border-radius: 12px; font-weight: 700; font-size: 1.1rem; width: 100%; display: block; text-decoration: none; box-shadow: 0 4px 12px rgba(22, 101, 52, 0.2);">CREATE MY BALANCE ACCOUNT &rarr;</a>
-                <a href="login.html?source=checkout" style="display: inline-block; margin-top: 16px; color: #166534; font-weight: 700;">I already have a Balance account</a>
+                <a id="success-signup-link" href="login.html?action=signup&amp;source=checkout" class="btn btn-primary" style="background: #166534; color: white; padding: 15px 30px; border-radius: 12px; font-weight: 700; font-size: 1.1rem; width: 100%; display: block; text-decoration: none; box-shadow: 0 4px 12px rgba(22, 101, 52, 0.2);">CREATE MY BALANCE ACCOUNT &rarr;</a>
+                <a id="success-login-link" href="login.html?source=checkout" style="display: inline-block; margin-top: 16px; color: #166534; font-weight: 700;">I already have a Balance account</a>
                 <p style="color: #3f6212; margin: 18px 0 0; font-size: 0.85rem; line-height: 1.5;">
                     <span id="success-ready-copy">Once your setup is complete, your app plan and weekly check-ins with Shannon are ready in Balance.</span>
                 </p>
@@ -153,7 +153,8 @@
             const planKey = urlParams.get('plan') || 'starter_weekly';
             const isAppCommunityPlan = planKey === 'app_community_monthly';
             const isCoachingCallsPlan = planKey === 'coaching_calls_weekly';
-            const purchaseValue = parseFloat(urlParams.get('amount')) || (isAppCommunityPlan ? 19.99 : isCoachingCallsPlan ? 99.99 : 29.99);
+            const isFoundersPass = planKey === 'founders_pass_lifetime';
+            const purchaseValue = parseFloat(urlParams.get('amount')) || (isFoundersPass ? 99 : isAppCommunityPlan ? 19.99 : isCoachingCallsPlan ? 99.99 : 29.99);
             const isBump = urlParams.get('bump') === 'true';
 
             if (isAppCommunityPlan) {
@@ -173,6 +174,24 @@
                 if (nextCopy) nextCopy.textContent = 'First book your call, then connect your Balance account.';
                 if (accountHeading) accountHeading.textContent = 'Step 2: open Balance';
                 if (firstCallBox) firstCallBox.style.display = 'block';
+            }
+            if (isFoundersPass) {
+                const planName = document.getElementById('success-plan-name');
+                const readyCopy = document.getElementById('success-ready-copy');
+                const nextCopy = document.getElementById('success-next-copy');
+                const signupLink = document.getElementById('success-signup-link');
+                const loginLink = document.getElementById('success-login-link');
+                const sessionId = urlParams.get('session_id') || '';
+                if (planName) planName.textContent = 'Balance Vegan Fitness Founders Pass';
+                if (readyCopy) readyCopy.textContent = 'Once your setup is complete, your six-week kickstart, core Balance app, and vegan fitness community access are ready.';
+                if (nextCopy) nextCopy.textContent = 'Now connect your lifetime membership to your Balance account.';
+                if (sessionId) {
+                    sessionStorage.setItem('balance_founders_pass_session_id', sessionId);
+                    sessionStorage.setItem('balance_founders_pass_pending', 'true');
+                }
+                const sessionQuery = sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : '';
+                if (signupLink) signupLink.href = `login.html?action=signup&source=founders_pass${sessionQuery}`;
+                if (loginLink) loginLink.href = `login.html?source=founders_pass${sessionQuery}`;
             }
             
             // Show Kickstart Box if purchased
@@ -299,7 +318,7 @@
 
                 let workout = workoutLabels[fullProfile.equipment] || 'Bodyweight Strength';
 
-                const packagePlan = isAppCommunityPlan ? 'App + Community Monthly' : isCoachingCallsPlan ? 'Coaching + Calls Weekly' : 'Starter Coaching Weekly';
+                const packagePlan = isFoundersPass ? 'Vegan Fitness Founders Pass' : isAppCommunityPlan ? 'App + Community Monthly' : isCoachingCallsPlan ? 'Coaching + Calls Weekly' : 'Starter Coaching Weekly';
 
                 const payload = {
                     emailValue: email, // Named for Zapier consistency

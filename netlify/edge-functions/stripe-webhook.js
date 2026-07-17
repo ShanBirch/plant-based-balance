@@ -8,6 +8,9 @@ const SITE_URL = Deno.env.get("URL") || "https://plantbased-balance.org";
 const STARTER_COACHING_PRODUCT = "Balance Starter Coaching";
 const APP_COMMUNITY_PRODUCT = "Balance App + Community";
 const COACHING_CALLS_PRODUCT = "Balance Coaching + Calls";
+const FOUNDERS_PASS_PRODUCT = "Balance Vegan Fitness Founders Pass";
+const FOUNDERS_PASS_PRODUCT_TYPE = "balance_vegan_founders_pass";
+const FOUNDERS_PASS_PLAN = "founders_pass_lifetime";
 
 function subscriptionOfferDetails(plan) {
     if (plan === "app_community_monthly") {
@@ -575,6 +578,141 @@ async function createSaleAlertAndNotify(context, args) {
     }
 }
 
+async function recordFoundersPassSale(context, stripeEvent, session) {
+    if (session?.mode !== "payment"
+        || session?.payment_status !== "paid"
+        || session?.metadata?.product_type !== FOUNDERS_PASS_PRODUCT_TYPE) {
+        return { skipped: "not_paid_founders_pass" };
+    }
+
+    const email = cleanEmail(
+        session?.customer_details?.email
+        || session?.customer_email
+        || session?.metadata?.checkout_email
+    ).toLowerCase();
+    if (!email) return { skipped: "missing_checkout_email" };
+
+    const amountMinor = Math.max(0, Number(session.amount_total || 9900));
+    const currency = cleanCurrency(session.currency || "aud");
+    const purchasedAt = isoFromStripeTimestamp(session.created) || new Date().toISOString();
+    const existingUsers = await supabaseRequest(
+        `users?select=id,name,email&email=eq.${encodeURIComponent(email)}&limit=1`
+    );
+    const user = Array.isArray(existingUsers) ? existingUsers[0] || null : null;
+
+    const purchaseRows = await supabaseRequest(
+        "founders_pass_purchases?on_conflict=stripe_checkout_session_id",
+        {
+            method: "POST",
+            prefer: "resolution=merge-duplicates,return=representation",
+            body: {
+                stripe_checkout_session_id: session.id,
+                stripe_payment_intent_id: normalizeStripeId(session.payment_intent) || null,
+                stripe_customer_id: normalizeStripeId(session.customer) || null,
+                email,
+                user_id: user?.id || null,
+                amount_minor: amountMinor,
+                currency: currency.toLowerCase(),
+                status: "paid",
+                purchased_at: purchasedAt,
+                claimed_at: user?.id ? new Date().toISOString() : null,
+                metadata: {
+                    balance_plan: FOUNDERS_PASS_PLAN,
+                    product_type: FOUNDERS_PASS_PRODUCT_TYPE,
+                    access_type: "lifetime_core_app_community",
+                    stripe_event_id: stripeEvent.id,
+                },
+            },
+        }
+    );
+
+    if (user?.id) {
+        await supabaseRequest(`users?id=eq.${encodeURIComponent(user.id)}`, {
+            method: "PATCH",
+            prefer: "return=minimal",
+            body: { subscription_status: "active", subscription_plan: FOUNDERS_PASS_PLAN },
+        });
+        await syncLinkedLeadStages([user.id], "active");
+    }
+
+    const adminId = await findBalanceAdminId();
+    if (!adminId) return { purchase: purchaseRows?.[0] || null, skipped: "no_balance_admin" };
+
+    const clientName = user?.name || session?.customer_details?.name || email.split("@")[0] || "New member";
+    const amountDisplay = formatMoney(amountMinor, currency);
+    const createdAt = new Date().toISOString();
+    const row = {
+        idempotency_key: `founders_pass_sale:${session.id}`,
+        client_id: user?.id || null,
+        client_name: clientName,
+        coach_id: adminId,
+        alert_type: "subscription_sale",
+        priority: "urgent",
+        title: `New Founders Pass sale: ${clientName}`,
+        description: `${clientName} bought ${FOUNDERS_PASS_PRODUCT} (${amountDisplay} once).`,
+        suggested_message: null,
+        status: "pending",
+        data: {
+            subtype: "founders_pass_sale",
+            sale_made: true,
+            product_name: FOUNDERS_PASS_PRODUCT,
+            amount_minor: amountMinor,
+            amount_display: amountDisplay,
+            currency,
+            recurring_interval: "none",
+            checkins_per_week: "0",
+            calls_per_week: "0",
+            email,
+            user_id: user?.id || null,
+            lifecycle: { stage: "paying" },
+            subscription_status: "active",
+            subscription_plan: FOUNDERS_PASS_PLAN,
+            stripe_customer_id: normalizeStripeId(session.customer) || null,
+            checkout_session_id: session.id,
+            payment_intent_id: normalizeStripeId(session.payment_intent) || null,
+            stripe_event_id: stripeEvent.id,
+            stripe_event_type: stripeEvent.type,
+            needs_you_required: true,
+            needs_you_reason: "founders_pass_sale",
+            needs_you_reasons: ["subscription_sale", "founders_pass_sale"],
+            operator_queue: "needs_you",
+            codex_review: {
+                decision: "needs_you_founders_pass_sale",
+                queue: "needs_you",
+                reason: `Stripe confirmed a paid ${FOUNDERS_PASS_PRODUCT} purchase.`,
+                needs_shannon_approval: true,
+                source: "stripe-webhook",
+                reviewed_at: createdAt,
+            },
+        },
+    };
+    const result = await insertSubscriptionSaleAlert(row);
+    if (result?.alert?.id && !result.deduped) {
+        const notify = fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                recipientId: adminId,
+                senderId: user?.id || normalizeStripeId(session.customer) || session.id,
+                senderName: row.title,
+                messageText: row.description,
+                type: "sale_made",
+                alertId: result.alert.id,
+                clientId: user?.id || "",
+                clientName,
+                lifecycleStage: "paying",
+                actionRequired: true,
+                actionType: "subscription_sale",
+                actionLabel: "New Founders Pass sale",
+                actionReason: "Stripe confirmed a paid Founders Pass purchase.",
+                collapseKey: row.idempotency_key,
+            }),
+        }).catch(error => console.warn("[stripe-sync] founders sale push failed:", error.message));
+        if (context?.waitUntil) context.waitUntil(notify); else await notify;
+    }
+    return { purchase: purchaseRows?.[0] || null, ...result };
+}
+
 export default async (request, context) => {
     // Only allow POST
     if (request.method !== "POST") {
@@ -663,6 +801,10 @@ export default async (request, context) => {
                 const subscription = await retrieveSubscriptionForSession(stripe, session);
                 const syncResult = await syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscription, session });
                 await createSaleAlertAndNotify(context, { syncResult, stripeEvent, subscription, session });
+            }
+
+            if (session.metadata?.product_type === FOUNDERS_PASS_PRODUCT_TYPE) {
+                await recordFoundersPassSale(context, stripeEvent, session);
             }
 
             // Handle Challenge Pass purchase

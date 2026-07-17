@@ -7,6 +7,7 @@ import {
     checkoutErrorResponse,
     cleanCheckoutEmail,
     getBalanceCheckoutPlan,
+    assertRecurringCheckoutPlan,
 } from "./lib/checkout-guard.js";
 
 export default async (request, context) => {
@@ -20,6 +21,7 @@ export default async (request, context) => {
         const { email, name, paymentMethodId, priceId, fbc, fbp, compliance } = body;
         assertSameSiteCheckoutRequest(request);
         const plan = getBalanceCheckoutPlan(priceId);
+        assertRecurringCheckoutPlan(plan);
         assertAcceptedCheckoutTerms(compliance);
         assertStripePaymentMethodId(paymentMethodId);
         const checkoutEmail = cleanCheckoutEmail(email, { required: true });

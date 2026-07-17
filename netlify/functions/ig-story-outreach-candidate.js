@@ -32,11 +32,11 @@ const STORY_COMMENT_PIPELINE_VERSION = 'story-planner-generator-critic-fixer-v3'
 const STORY_COMMENT_FAST_PIPELINE_VERSION = 'story-single-pass-evidence-first-v2';
 const STORY_OUTREACH_SALES_CONTEXT = {
     acquisition_source: 'native_story_outreach',
-    primary_offer: 'balance_starter_coaching',
-    offer_price: 'AUD $29.99/week',
-    offer_check_in: 'one weekly check-in',
+    primary_offer: 'balance_vegan_founders_pass',
+    offer_price: 'AUD $99 once',
+    offer_access: 'guided six-week kickstart plus lifetime core app and vegan fitness community access',
     first_touch_rule: 'story reply is rapport only; no coaching, checkout, or link pitch',
-    dm_rule: 'when they reply and show help, food, training, consistency, or enough relationship context, bridge to Starter Coaching and close through DMs; calls are escalation only and there is no free-challenge funnel',
+    dm_rule: 'when they reply and show help, food, training, consistency, or enough relationship context, bridge to the Vegan Fitness Founders Pass and close through DMs; Starter Coaching is an optional upgrade, calls are escalation only, and there is no free-challenge funnel',
 };
 const STORY_NO_REPLY_COMMENT_LIMIT = 4;
 const STORY_NO_REPLY_COOLDOWN_DAYS = 30;
@@ -1244,7 +1244,7 @@ Return JSON only:
 }
 
 Rules:
-- The final comment must start a light conversation, not pitch Balance/coaching/challenge/app. Product and Starter Coaching talk belongs later in the lead-only DM qualifier after a direct help/start signal or 3-6 meaningful lead replies with real context.
+- The final comment must start a light conversation, not pitch Balance/coaching/challenge/app. Product and Founders Pass talk belongs later in the lead-only DM qualifier after a direct help/start signal or 3-6 meaningful lead replies with real context.
 - If the story is a shared reel/post, tagged story, reshared story, or content from another account, plan a sharer-framed reaction only. Treat @${username} as the person sharing it, not the person in the content.
 - For shared content, avoid "you/your" and avoid commenting on the person in the reel/post. Good angles are the shared idea, text, place, joke, news, or mood.
 - Treat audio transcript as supplemental. If audio/transcript and visible frames point to different subjects, avoid transcript-only details and plan to skip unless a visible-only opener is clearly safe.
@@ -1343,7 +1343,7 @@ Rules:
 - For plain selfie/pose videos, do not invent an occasion. If the only real handle is the visible song or audio, a tiny music comment is okay.
 - Music comments must be non-question reactions. Do not ask what song, track, tune, or audio it is.
 - No name, profile name, username, @handle, or direct address.
-- No Balance/coaching/challenge/app/program/link/meal-plan pitch. Product and Starter Coaching talk belongs later in the lead-only DM qualifier after a direct help/start signal or 3-6 meaningful lead replies with real context.
+- No Balance/coaching/challenge/app/program/link/meal-plan pitch. Product and Founders Pass talk belongs later in the lead-only DM qualifier after a direct help/start signal or 3-6 meaningful lead replies with real context.
 - No unsupported claims. Use only the story context.
 - Normal selfies and nights out only get a simple line when there is a specific hook. Otherwise skip or like-only instead of forcing "looking good" or "looks like a fun night".
 - Bland gym floor, rack, or equipment-only shots with no clear action should usually be like-only instead of fake lift praise.
@@ -2622,7 +2622,7 @@ Rules:
 - For gym stories, do not ask how a body part feels or imply injury/pain. Comment on the exercise setup, class, object, or effort instead.
 - Do not guess that something is a product, brand deal, collab, or sponsor unless packaging/signage makes that explicit.
 - Do not make teasing or critical jokes about grooming, weight, size, or appearance. Pet comments should feel warm and easy.
-- Do not pitch Balance, the app, coaching, a program, a meal plan, a link, or the challenge. The Starter Coaching bridge belongs later in DMs, only for unlinked leads after direct start/help intent or roughly 3-6 meaningful lead replies with real relationship and goal/blocker context.
+- Do not pitch Balance, the app, coaching, a program, a meal plan, a link, or the challenge. The Founders Pass bridge belongs later in DMs, only for unlinked leads after direct start/help intent or roughly 3-6 meaningful lead replies with real relationship and goal/blocker context.
 - For animal-cruelty, factory-farming, animal-welfare, or vegan-advocacy stories, a supportive reply to the story owner is allowed when it is not graphic gore and the concern is clear. Prefer exactly "i can't believe this happens, so sad. you okay?" for actual distress/cruelty. For advocacy, theory, or opinion text posts, prefer exactly "so true, it just normalises it hey".
 - Do not mention anything you cannot see.
 - Set safe_to_comment=false and comment="" for shared content if the only possible reply would treat the reel/post subject as the story owner, or for anything heavy, sensitive, or inappropriate: war, politics, weapons, violence, death, grief, sadness, low mood, mental health, race/slur/discrimination topics, unclear/blurry content, disasters, medical emergencies, self-harm, sexual/nude content, hate/harassment, vulnerable minors, drugs, legal trouble, or anything where a casual opener could look insensitive. The animal-welfare support exception above is the only exception.

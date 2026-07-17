@@ -89,7 +89,7 @@ function defaultNextStepForSourceLane(sourceLane = '') {
         return 'Use the exercise reel context first. If they reply vaguely, assume they are asking about the form fix from the comment flow and ask one practical troubleshooting question.';
     }
     if (/science|study|paper/i.test(sourceLane)) {
-    return 'Use the resource topic as context, then continue the normal Starter Coaching DM path when they show help/start intent.';
+    return 'Use the resource topic as context, then continue the normal Vegan Fitness Founders Pass DM path when they show help/start intent.';
     }
     return 'Use the comment-flow context first, then continue the normal DM conversation naturally.';
 }

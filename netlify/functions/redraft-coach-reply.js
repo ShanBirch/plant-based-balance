@@ -81,10 +81,10 @@ function buildChallengeOfferWarning({ draftText, qualifier, detectedAt }) {
         required: true,
         code: 'challenge_offer',
         dot: '🟡',
-        label: 'Starter Coaching offer',
+            label: 'Vegan Fitness Founders Pass offer',
         route,
         route_label: routeLabel,
-        reason: `Draft appears to offer ${routeLabel}, Starter Coaching, or send a signup link. Review timing and use the DM-close funnel.`,
+            reason: `Draft appears to offer ${routeLabel}, the Vegan Fitness Founders Pass, or send a signup link. Review timing and use the DM-close funnel.`,
         detected_at: detectedAt || new Date().toISOString(),
     };
 }

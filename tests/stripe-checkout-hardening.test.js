@@ -21,6 +21,10 @@ assert(
     guard.includes('balance_coaching_calls_weekly') &&
     guard.includes('unitAmount: 9999') &&
     guard.includes('callsPerWeek: "1"') &&
+    guard.includes('balance_vegan_founders_pass') &&
+    guard.includes('unitAmount: 9900') &&
+    guard.includes('mode: "payment"') &&
+    guard.includes('assertRecurringCheckoutPlan') &&
     guard.includes('plantbased-balance.org'),
     'checkout guard should enforce Balance origin, accepted terms, and the allowlisted recurring plan tokens'
 );
@@ -31,6 +35,8 @@ assert(
     checkoutSession.includes('successUrl: checkoutOrigin') &&
     checkoutSession.includes('const plan = getBalanceCheckoutPlan(priceId);') &&
     checkoutSession.includes('checkout.plan.unitAmount') &&
+    checkoutSession.includes('params.set("mode", checkout.plan.mode)') &&
+    checkoutSession.includes('payment_intent_data[metadata]') &&
     checkoutSession.includes('calls_per_week: plan.callsPerWeek') &&
     checkoutSession.includes('customerEmail: checkoutEmail') &&
     checkoutSession.includes('https://api.stripe.com/v1/checkout/sessions') &&
@@ -43,6 +49,7 @@ assert(
     createSubscription.includes('assertStripePaymentMethodId(paymentMethodId);') &&
     createSubscription.includes('const checkoutEmail = cleanCheckoutEmail(email, { required: true });') &&
     createSubscription.includes('const plan = getBalanceCheckoutPlan(priceId);') &&
+    createSubscription.includes('assertRecurringCheckoutPlan(plan);') &&
     createSubscription.includes('unit_amount: plan.unitAmount') &&
     createSubscription.includes('interval: plan.interval') &&
     createSubscription.includes('balance_plan: plan.balancePlan') &&
@@ -55,6 +62,7 @@ assert(
 assert(
     checkout.includes("'app-monthly': { amount: 1999, label: 'Balance App + Community', successPlan: 'app_community_monthly' }") &&
     checkout.includes("'coaching-calls': { amount: 9999, label: 'Balance Coaching + Calls', successPlan: 'coaching_calls_weekly' }") &&
+    checkout.includes("'founders-pass': { amount: 9900, label: 'Balance Vegan Fitness Founders Pass', successPlan: 'founders_pass_lifetime' }") &&
     checkout.includes("walletAvailable && btn.dataset.hostedCheckoutOnly !== 'true' && !isBumpChecked") &&
     checkout.includes('plan=${encodeURIComponent(successPlan)}'),
     'wallet checkout should preserve the selected plan and route order bumps through hosted Checkout'
@@ -70,6 +78,8 @@ assert(
     webhook.includes('checkinsPerWeek: "0"') &&
     webhook.includes('coaching_calls_weekly') &&
     webhook.includes('subtype: "coaching_calls_sale"') &&
+    webhook.includes('async function recordFoundersPassSale') &&
+    webhook.includes('founders_pass_purchases?on_conflict=stripe_checkout_session_id') &&
     webhook.includes('calls_per_week: offer.callsPerWeek') &&
     webhook.includes('function createStripeRestClient(secretKey)') &&
     webhook.includes('https://api.stripe.com/v1/') &&

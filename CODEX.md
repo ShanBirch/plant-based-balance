@@ -24,8 +24,9 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 - Logo asset: `balance_logo.png`, Japanese kanji wa/harmony.
 - Facebook Pixel: `1928402271406692`.
 - Pricing:
+  - Balance Vegan Fitness Founders Pass: AUD $99 once. Guided six-week kickstart plus lifetime access to the core Balance app and vegan fitness community. Ongoing individual weekly coaching is not included.
   - App + Group: $20/month.
-  - Balance Starter Coaching: $29.99/week.
+  - Balance Starter Coaching: $29.99/week, optional upgrade for individual weekly review and adjustment from Shannon.
 
 ## Strategy
 
@@ -38,23 +39,23 @@ The real funnel:
 1. Instagram/Facebook outreach, content, referrals, or ads create a conversation.
 2. Lead lands in IG/FB DMs with Shannon.
 3. The DM flow builds rapport, identifies the live goal/blocker, and qualifies fit without interrogating.
-4. When earned, offer Balance Starter Coaching at $29.99/week and complete the sale through DMs.
-5. Send the coaching details/checkout link in the DM when they ask or accept. Do not require a call.
+4. When earned, offer the Balance Vegan Fitness Founders Pass at AUD $99 once and complete the sale through DMs.
+5. Send the Founders Pass details/checkout link in the DM when they ask or accept. Do not require a call.
 6. Offer a short call only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. The call is an escalation lane, not the default close.
-7. If Starter Coaching is not the right fit, the $20/month app/group option can be the lighter paid fallback.
+7. If they explicitly want Shannon personally reviewing and adjusting their plan each week, offer Starter Coaching at $29.99/week as the optional upgrade.
 
-Critical: Balance no longer uses a free 30-day challenge as its acquisition or conversion path. DMs are the primary sales surface, and Starter Coaching is the primary offer.
+Critical: Balance no longer uses a free 30-day challenge as its acquisition or conversion path. DMs are the primary sales surface, and the Vegan Fitness Founders Pass is the primary offer. Starter Coaching is the optional higher-touch upgrade.
 
 Shannon is currently running a live six-week Balance challenge. Keep its participant experience, daily proof, recap, and challenge Story automations active. It is current client/community delivery and social proof, not the default lead-acquisition offer. Do not confuse it with the retired free 30-day funnel or invite unlinked leads into it as the normal DM close.
 
-Canonical Starter Coaching signup path:
+Canonical Vegan Fitness Founders Pass signup path:
 
-1. Explain the fit and AUD $29.99/week offer inside the DM.
-2. When the lead asks for details, accepts, or says they are ready, send `https://plantbased-balance.org/coaching.html`.
-3. The branded coaching page gives a short offer summary and starts a Stripe-hosted subscription Checkout Session after legal acceptance.
+1. Explain the fit and AUD $99 one-time offer inside the DM. Be clear that ongoing individual weekly coaching is separate.
+2. When the lead asks for details, accepts, or says they are ready, send `https://plantbased-balance.org/vegan-fitness.html`.
+3. The branded Founders Pass page gives a clear offer summary and starts a Stripe-hosted one-time Checkout Session after legal acceptance.
 4. Stripe webhook-backed payment is the sale; then onboarding continues through Balance.
 
-Do not send a raw, temporary Stripe Checkout Session URL in DMs. The stable branded coaching URL keeps the offer understandable, preserves legal/attribution handling, and then hands payment to Stripe securely.
+Do not send a raw, temporary Stripe Checkout Session URL in DMs. The stable branded Founders Pass URL keeps the offer understandable, preserves legal/attribution handling, and then hands payment to Stripe securely.
 
 Revenue operating loop:
 
@@ -72,7 +73,7 @@ Revenue operating loop:
 - The legacy `hot_lead_feed_nurture` lane name represents one durable full lead list, ordered hot, warm, cold, then unscored-as-cold, with an exact target and hard ceiling of 20 verified public comments per owned shift. Load at most 25 people at a time through `get_ig_feed_nurture_batch`, using tier rank, warmth score, and thread id as the durable cursor. Work every person in order and fetch the next batch while time remains. The current feed work slice ends at 20 comments or minute 25, saves its exact cursor, and rotates; the next feed slot resumes there. Normal no-post/no-hook skips advance immediately with no timed cooldown and cannot be revisited until the next full cycle; browser failure keeps the cursor on that person for retry. Only a zero-row batch after the saved cursor proves `full_cycle_complete=true`. This lane is public-comment-only: never click Like and never use a like-only fallback. Only a verified specific comment receives the rolling seven-day duplicate gate.
 - Reciprocal engagement creates one delayed cross-surface nurture opportunity. A genuine reply to Shannon's comment on someone else's post can queue a named-profile Story check after at least 24 hours; a genuine reply to Shannon's Story message can queue a newest-safe-post feed check after the unanswered DM batch is resolved and at least 24 hours have passed. These use `p_supersede=false`, never replace DM/manual/sales/support ownership, and persist a pending `cross_surface_nurture` marker when the single action row is occupied. The later operator still needs a natural hook, never touches the person again in the triggering shift, and allows at most one reciprocal cross-surface touch per person per rolling seven days.
 - Fresh inbound intent comes first, then call requests, checkout/close actions, and one due offer/checkout follow-up after at least 24 hours with no reply.
-- A general warm label alone is not a follow-up trigger. Proactive follow-up requires an explicit milestone: commitment reached, Starter Coaching pitched, or checkout sent.
+- A general warm label alone is not a follow-up trigger. Proactive follow-up requires an explicit milestone: commitment reached, Founders Pass pitched, or checkout sent.
 - `growth_outcome_events` records engaged, problem-qualified, offer-ready, buyer-intent, pitched, checkout, call, and paid milestones so the admin scorecard measures the DM-to-revenue path.
 - The active `Balance Daily Lead Movement Brief` runs read-only at 06:05 Australia/Brisbane. It compares completed Brisbane days, names genuine stage movers and stalled revenue opportunities, ranks at most five next actions, groups verified movement by acquisition source, and flags missing stage or attribution receipts instead of presenting incomplete tracking as a true zero.
 - Proactive Story/feed/discovery volume adapts to due revenue work: 0-5 money actions = normal, 6-15 = half volume, and 16+ = pause acquisition. Fresh replies, support, and client work are never paused by this gate.

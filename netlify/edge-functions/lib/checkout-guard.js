@@ -77,6 +77,7 @@ const BALANCE_CHECKOUT_PLANS = Object.freeze({
         checkinsPerWeek: "1",
         callsPerWeek: "0",
         allowBump: true,
+        mode: "subscription",
     }),
     balance_app_community_monthly: Object.freeze({
         token: "balance_app_community_monthly",
@@ -89,6 +90,7 @@ const BALANCE_CHECKOUT_PLANS = Object.freeze({
         checkinsPerWeek: "0",
         callsPerWeek: "0",
         allowBump: false,
+        mode: "subscription",
     }),
     balance_coaching_calls_weekly: Object.freeze({
         token: "balance_coaching_calls_weekly",
@@ -101,6 +103,20 @@ const BALANCE_CHECKOUT_PLANS = Object.freeze({
         checkinsPerWeek: "1",
         callsPerWeek: "1",
         allowBump: false,
+        mode: "subscription",
+    }),
+    balance_vegan_founders_pass: Object.freeze({
+        token: "balance_vegan_founders_pass",
+        productName: "Balance Vegan Fitness Founders Pass",
+        productDescription: "Six-week guided kickstart plus lifetime access to the core Balance app and vegan fitness community",
+        unitAmount: 9900,
+        interval: null,
+        balanceProduct: "balance_vegan_founders_pass",
+        balancePlan: "founders_pass_lifetime",
+        checkinsPerWeek: "0",
+        callsPerWeek: "0",
+        allowBump: false,
+        mode: "payment",
     }),
 });
 
@@ -108,6 +124,12 @@ export function getBalanceCheckoutPlan(priceId) {
     const plan = BALANCE_CHECKOUT_PLANS[String(priceId || "")];
     if (!plan) throw new CheckoutGuardError("Invalid checkout plan.", 400);
     return plan;
+}
+
+export function assertRecurringCheckoutPlan(plan) {
+    if (plan?.mode !== "subscription" || !plan?.interval) {
+        throw new CheckoutGuardError("This plan must use secure hosted checkout.", 400);
+    }
 }
 
 export function cleanCheckoutEmail(email, { required = false } = {}) {
