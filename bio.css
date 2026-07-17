@@ -2605,6 +2605,71 @@ body.bio-page.landing-page[data-bio-theme="light"] .label {
     border-color: rgba(245, 217, 138, 0.28);
 }
 
+.landing-page .founders-pass-section {
+    padding-top: 26px;
+    padding-bottom: 26px;
+}
+
+.landing-page .founders-pass-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+    gap: 34px;
+    align-items: center;
+    padding: clamp(28px, 5vw, 52px);
+    border-color: rgba(184, 137, 43, 0.22);
+    background:
+        radial-gradient(circle at 88% 14%, var(--accent-soft), transparent 38%),
+        linear-gradient(180deg, var(--surface-strong), var(--surface));
+}
+
+.landing-page .founders-pass-copy .section-title {
+    max-width: 720px;
+}
+
+.landing-page .founders-pass-copy .section-text {
+    max-width: 680px;
+}
+
+.landing-page .founders-pass-copy .tag-row {
+    margin-top: 22px;
+}
+
+.landing-page .founders-pass-offer {
+    padding: 26px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--bg-soft);
+}
+
+.landing-page .founders-pass-offer .offer-price {
+    margin-bottom: 12px;
+    font-size: clamp(2.35rem, 5vw, 3.4rem);
+}
+
+.landing-page .founders-pass-offer .offer-price span {
+    color: var(--text-muted);
+    font-family: "Inter", sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.landing-page .founders-pass-offer .btn {
+    width: 100%;
+    margin: 8px 0 12px;
+}
+
+.landing-page .founders-pass-offer .small-note {
+    display: block;
+    margin: 0;
+    text-align: center;
+}
+
+@media (max-width: 620px) {
+    .landing-page .nav-secondary-action {
+        display: none;
+    }
+}
+
 .landing-page .trial-card {
     margin-bottom: 18px;
 }
@@ -3037,6 +3102,10 @@ body.bio-page.landing-page[data-bio-theme="light"] .label {
     }
 
     .feature-motion-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .landing-page .founders-pass-card {
         grid-template-columns: 1fr;
     }
 
