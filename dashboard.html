@@ -263,15 +263,17 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <style>
     #balance-level-bar {
         display: none;
-        margin: 10px 16px 14px;
-        padding: 13px 15px;
-        align-items: center;
-        gap: 13px;
+        margin: 0;
+        padding: 20px 24px 18px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
         color: #fffaf0;
-        background: linear-gradient(135deg, #2f240d 0%, #493714 100%);
-        border: 1px solid #d8b25e;
-        border-radius: 14px;
-        box-shadow: 0 7px 20px rgba(47, 36, 13, 0.22);
+        background: linear-gradient(180deg, #12100c 0%, #080808 100%);
+        border: 0;
+        border-bottom: 1px solid rgba(216,178,94,0.2);
+        border-radius: 0;
+        box-shadow: none;
     }
     html.pbb-fitgotchi-hidden #tamagotchi-widget-container,
     html.pbb-fitgotchi-hidden #tamagotchi-stats-bar,
@@ -281,30 +283,25 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
     html.pbb-fitgotchi-hidden #balance-level-bar {
         display: flex;
     }
-    .balance-level-badge {
-        width: 49px;
-        height: 49px;
-        flex: 0 0 49px;
+    .balance-level-card {
         display: flex;
-        flex-direction: column;
         align-items: center;
-        justify-content: center;
-        color: #261b06;
-        background: linear-gradient(145deg, #f5dc91, #c99a31);
-        border-radius: 12px;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+        gap: 12px;
+        padding: 12px 14px;
+        background: rgba(255,255,255,0.045);
+        border: 1px solid rgba(216,178,94,0.18);
+        border-radius: 14px;
     }
-    .balance-level-badge-label {
-        font-size: 0.48rem;
-        font-weight: 900;
-        letter-spacing: 0.8px;
-        line-height: 1;
+    .balance-level-copy {
+        flex: 1;
+        min-width: 0;
     }
-    #balance-level-number {
-        font-family: 'Outfit', sans-serif;
-        font-size: 1.35rem;
-        font-weight: 900;
-        line-height: 1.05;
+    .balance-level-meta {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 7px;
     }
     .balance-level-progress-track {
         height: 7px;
@@ -867,10 +864,7 @@ window.addEventListener('load', function() {
 <!-- DASHBOARD VIEW (HOME) -->
 <div id="view-dashboard" class="app-view">
     <div class="app-header">
-        <div class="home-welcome-block">
-            <div id="home-welcome-title" class="home-welcome-title">Welcome back</div>
-            <div id="home-welcome-date" class="home-welcome-date"></div>
-        </div>
+        <div class="app-logo">Home</div>
         <div class="home-header-actions">
             <div id="tamagotchi-streak-container" class="streak-header-widget">
                 <span style="font-size: 0.85rem;">🔥</span>
@@ -929,6 +923,7 @@ window.addEventListener('load', function() {
         };
 
         window.updateHomeWelcome();
+        document.addEventListener('DOMContentLoaded', function() { window.updateHomeWelcome(); }, { once: true });
         window.addEventListener('pbbInitComplete', function() { window.updateHomeWelcome(); }, { once: true });
     })();
     </script>
@@ -1140,17 +1135,22 @@ window.addEventListener('load', function() {
 
         <!-- Compact Home level display used when FitGotchi is hidden. -->
         <div id="balance-level-bar" aria-label="Your Balance level and XP progress">
-            <div class="balance-level-badge" aria-hidden="true">
-                <span class="balance-level-badge-label">LVL</span>
-                <span id="balance-level-number">1</span>
+            <div class="home-welcome-block">
+                <div id="home-welcome-title" class="home-welcome-title">Welcome back</div>
+                <div id="home-welcome-date" class="home-welcome-date"></div>
             </div>
-            <div style="flex:1; min-width:0;">
-                <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:7px;">
-                    <span id="balance-level-rank" style="font-size:0.78rem; font-weight:900; letter-spacing:0.8px; text-transform:uppercase; color:#f5dc91;">Newcomer</span>
-                    <span id="balance-level-xp-text" style="font-size:0.67rem; font-weight:700; color:#fffaf0; white-space:nowrap;">0 / 8 XP</span>
-                </div>
-                <div class="balance-level-progress-track" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                    <div id="balance-level-xp-fill"></div>
+            <div class="balance-level-card">
+                <div class="balance-level-copy">
+                    <div class="balance-level-meta">
+                        <div>
+                            <span class="balance-level-label">Level <span id="balance-level-number">1</span></span>
+                            <span id="balance-level-rank" class="balance-level-rank">Newcomer</span>
+                        </div>
+                        <span id="balance-level-xp-text" class="balance-level-xp-text">0 / 8 XP</span>
+                    </div>
+                    <div class="balance-level-progress-track" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                        <div id="balance-level-xp-fill"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -15959,7 +15959,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=86">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=87">
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>

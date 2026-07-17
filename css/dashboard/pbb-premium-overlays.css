@@ -4401,33 +4401,32 @@ html[data-pbb-theme="light"] .battle-stat-value {
 
 .home-welcome-block {
     min-width: 0;
-    flex: 1 1 auto;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 2px;
+    gap: 4px;
 }
 
 .home-welcome-title {
     overflow: hidden;
     color: #fffaf2;
     font-family: 'Outfit', sans-serif;
-    font-size: 1.08rem;
+    font-size: 1.55rem;
     font-weight: 800;
     line-height: 1.15;
-    letter-spacing: -0.2px;
+    letter-spacing: -0.45px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .home-welcome-date {
     overflow: hidden;
-    color: #e9c86f;
+    color: #cfc5ad;
     font-family: 'Inter', sans-serif;
-    font-size: 0.65rem;
-    font-weight: 700;
+    font-size: 0.72rem;
+    font-weight: 600;
     line-height: 1.2;
-    letter-spacing: 0.35px;
+    letter-spacing: 0.2px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -4440,12 +4439,70 @@ html[data-pbb-theme="light"] .battle-stat-value {
     gap: 8px;
 }
 
+html.pbb-fitgotchi-hidden .dashboard-welcome {
+    background: transparent !important;
+}
+
+.balance-level-label {
+    color: #d8b25e;
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.55px;
+    text-transform: uppercase;
+}
+
+.balance-level-rank {
+    margin-left: 8px;
+    color: #fffaf2;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.98rem;
+    font-weight: 750;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.balance-level-xp-text {
+    flex: 0 0 auto;
+    color: #cfc5ad;
+    font-size: 0.67rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
 html[data-pbb-theme="light"] .home-welcome-title {
     color: #151515 !important;
 }
 
 html[data-pbb-theme="light"] .home-welcome-date {
-    color: #765914 !important;
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #balance-level-bar {
+    background: linear-gradient(180deg, #fffdf8 0%, #f8f5ee 100%);
+    border-bottom-color: rgba(184,137,43,0.2);
+    color: #151515;
+}
+
+html[data-pbb-theme="light"] .balance-level-card {
+    background: rgba(255,255,255,0.88);
+    border-color: rgba(184,137,43,0.18);
+    box-shadow: 0 8px 24px rgba(57,47,31,0.06);
+}
+
+html[data-pbb-theme="light"] .balance-level-label {
+    color: #765914;
+}
+
+html[data-pbb-theme="light"] .balance-level-rank {
+    color: #151515;
+}
+
+html[data-pbb-theme="light"] .balance-level-xp-text {
+    color: #6f6a61;
+}
+
+html[data-pbb-theme="light"] .balance-level-progress-track {
+    background: #e7dfd0;
 }
 
 @media (max-width: 390px) {
@@ -4454,12 +4511,11 @@ html[data-pbb-theme="light"] .home-welcome-date {
     }
 
     .home-welcome-title {
-        font-size: 0.98rem;
+        font-size: 1.35rem;
     }
 
     .home-welcome-date {
-        font-size: 0.6rem;
-        letter-spacing: 0.15px;
+        font-size: 0.68rem;
     }
 
     .home-header-actions {
@@ -4469,18 +4525,6 @@ html[data-pbb-theme="light"] .home-welcome-date {
     .home-header-actions .streak-header-widget {
         padding-right: 8px;
         padding-left: 7px;
-    }
-
-    .home-header-actions .coin-header-widget {
-        min-width: 46px;
-        justify-content: center;
-        padding-right: 9px;
-        padding-left: 9px;
-    }
-
-    .home-header-actions .coin-header-widget .coin-emoji,
-    .home-header-actions .coin-header-widget .coin-buy-btn {
-        display: none;
     }
 }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v255'; // v255: personal Home welcome header with local date
+const CACHE_NAME = 'pbb-app-v256'; // v256: content greeting and quieter level progress card
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
