@@ -2,8 +2,8 @@
  * client-lead-manager - scheduled Needs You router.
  *
  * Runs over pending DM alerts and stamps the cases Shannon explicitly needs
- * to inspect. For cold leads, keep Needs You narrow: confusion, AI/authenticity
- * suspicion, or missing source/media/thread context.
+ * to inspect. For unlinked leads, Needs You is deliberately limited to a
+ * credible current danger signal or an explicit AI/authenticity challenge.
  */
 
 const {
@@ -131,6 +131,30 @@ function latestLeadText(data = {}) {
         || data.client_message
         || ''
     ).trim();
+}
+
+function leadExplicitlyDetectsAi(data = {}) {
+    const text = normalizeStatusText(latestLeadText(data));
+    if (!text) return false;
+    return /\b(?:is\s+this\s+(?:ai|a\.?i\.?|a\s+bot|automated)|are\s+you\s+(?:ai|a\.?i\.?|a\s+bot|automated|real)|am\s+i\s+talking\s+to\s+(?:ai|a\s+bot|a\s+person)|this\s+(?:is|feels|sounds|looks)\s+(?:like\s+)?(?:ai|a\s+bot|automated|scripted|generated)|you(?:'re|\s+are)\s+(?:ai|a\s+bot|automated)|chatgpt|automated\s+reply|real\s+person|not\s+really\s+shannon)\b/i.test(text);
+}
+
+function leadHasCredibleCurrentDanger(data = {}) {
+    const text = normalizeStatusText(latestLeadText(data));
+    if (!text) return false;
+    const selfHarmIntent = /\b(?:i\s+(?:am|m|'m|might|may|will|want\s+to|plan\s+to|going\s+to|gonna|could)\s+(?:kill|hurt|harm)\s+myself|thinking\s+about\s+(?:killing|hurting|harming)\s+myself|thinking\s+about\s+suicide|suicidal\s+(?:right\s+now|tonight|today)|don'?t\s+want\s+to\s+(?:be\s+alive|live)|can'?t\s+keep\s+myself\s+safe)\b/i;
+    const dangerToOthers = /\b(?:i\s+(?:am|m|'m|might|may|will|want\s+to|plan\s+to|going\s+to|gonna)\s+(?:kill|hurt|harm)\s+(?:him|her|them|someone|somebody)|someone\s+(?:is\s+going\s+to|is\s+gonna|will)\s+(?:kill|hurt|harm)\s+me|i\s+am\s+in\s+immediate\s+danger)\b/i;
+    return selfHarmIntent.test(text) || dangerToOthers.test(text);
+}
+
+function latestInboundIsMediaOnly(data = {}) {
+    const text = String(latestLeadText(data) || '')
+        .replace(/\[(?:PHOTO|AUDIO|VIDEO):https?:\/\/[^\]]+\]/gi, ' media ')
+        .replace(/[\u{1F3A5}\u{1F4F9}\u{1F4F7}\u{1F5BC}\u{1F399}\u{1F50A}]/gu, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+    return /^(?:media|photo|image|picture|video|voice note|audio)(?:\s+#?\d+)?$/.test(text);
 }
 
 function normalizeStatusText(value = '') {
@@ -268,6 +292,24 @@ function draftReviewText(data = {}) {
     ].map(v => String(v || '').toLowerCase()).join(' ');
 }
 
+function draftReviewOnlyConcernsMedia(data = {}) {
+    const text = draftReviewText(data);
+    if (!/\b(?:media|photo|image|video|reel|audio|voice note|voice_note)\b/i.test(text)) return false;
+    if (/\b(?:ai|a\.?i\.?|bot|automation|automated|authenticity|real person|not really shannon|self[-_ ]?harm|suicid|immediate danger)\b/i.test(text)) return false;
+    const counts = getMediaContextCounts(data);
+    const hasMediaEvidence = [
+        counts.photoUrl,
+        counts.photoInline,
+        counts.audioUrl,
+        counts.audioInline,
+        counts.videoUrl,
+        counts.videoInline,
+        counts.reelContext,
+    ].some(value => Number(value) > 0)
+        || /\[(?:PHOTO|AUDIO|VIDEO):/i.test(String(latestLeadText(data) || ''));
+    return hasMediaEvidence;
+}
+
 function draftReviewNeedsManualCheck(data = {}) {
     const review = normalizeDraftReview(data);
     if (!review || Object.keys(review).length === 0) return false;
@@ -282,7 +324,7 @@ function draftReviewNeedsManualCheck(data = {}) {
         review.suggestedFix,
         ...(Array.isArray(review.issues) ? review.issues : []),
     ].map(v => String(v || '').toLowerCase()).join(' ');
-    const hardManualSignal = /\b(context[_ -]?loss|missing[_ -]?(?:source[_ -]?)?context|missing thread|missing conversation|unclear context|lost context|open (?:the )?(?:source )?dm|manual check|needs? (?:shannon|human|manual)|non[-_ ]?sequitur|ignored[_ -]?latest(?:[_ -]?message)?|unsupported[_ -]?claim|media[_ -]?review|voice[_ -]?note|ai[_ -]?suspicion|authenticity|does(?:n'?t| not) follow|out of context|safety|medical|diagnosis|treatment|pregnancy|eating[_ -]?disorder|body[_ -]?image|crisis|self[-_ ]?harm|non[_ -]?approved[_ -]?link)\b/i;
+    const hardManualSignal = /\b(context[_ -]?loss|missing[_ -]?(?:source[_ -]?)?context|missing thread|missing conversation|unclear context|lost context|open (?:the )?(?:source )?dm|manual check|needs? (?:shannon|human|manual)|non[-_ ]?sequitur|ignored[_ -]?latest(?:[_ -]?message)?|unsupported[_ -]?claim|ai[_ -]?suspicion|authenticity|does(?:n'?t| not) follow|out of context|safety|medical|diagnosis|treatment|pregnancy|eating[_ -]?disorder|body[_ -]?image|crisis|self[-_ ]?harm|non[_ -]?approved[_ -]?link)\b/i;
 
     if (review.notification_required === true) {
         return hardManualSignal.test(text) || reason === 'draft_review_required';
@@ -514,10 +556,7 @@ function classifyNeedsYou(alert = {}) {
     const mediaReview = buildMediaReviewInfo(alert);
     const contextReview = buildContextReviewInfo(alert);
     const exerciseSupport = buildExerciseSupportClassification(alert);
-    const exerciseLookupFastTrack = exerciseSupport.isSupport && exerciseSupport.canFastTrack;
     const acquisitionLead = isAcquisitionLeadAlert(alert);
-    const leadMissingMediaContext = acquisitionLead && leadMediaContextMissing(data, mediaReview);
-    const missingLearningReelContext = acquisitionLead && leadReferencesLearningReel(data) && !leadHasLearningReelContext(data);
     const reasons = [];
     const labels = [];
     const appProblemHold = getAppProblemAutoSendHoldReason({
@@ -526,14 +565,26 @@ function classifyNeedsYou(alert = {}) {
         alertData: data,
     });
 
-    if (missingLearningReelContext) {
-        reasons.push('missing_learning_reel_context');
-        labels.push('lead is asking about a reel but no stored reel context is available');
+    if (acquisitionLead) {
+        if (leadHasCredibleCurrentDanger(data)) {
+            reasons.push('credible_current_danger');
+            labels.push('lead shared a credible current danger signal');
+        }
+        if (leadExplicitlyDetectsAi(data)) {
+            reasons.push('ai_suspicion_or_authenticity_question');
+            labels.push('lead directly questioned whether the reply is AI or automated');
+        }
+        const uniqueReasons = [...new Set(reasons.filter(Boolean))];
+        const uniqueLabels = [...new Set(labels.filter(Boolean))];
+        return {
+            shouldRoute: uniqueReasons.length > 0,
+            reasons: uniqueReasons,
+            label: uniqueLabels.join(', ') || 'Handled by lead DM manager',
+            mediaReview,
+            contextReview,
+        };
     }
-    if (acquisitionLead && draftIgnoredLearningReelContext(alert)) {
-        reasons.push('draft_ignored_learning_reel_context');
-        labels.push('draft ignored the stored reel context');
-    }
+
     if (exerciseSupport.confusedFollowup) {
         reasons.push('exercise_lookup_confused_followup');
         labels.push('exercise lookup got confusing, send a holding reply and leave it for Shannon');
@@ -557,20 +608,24 @@ function classifyNeedsYou(alert = {}) {
         reasons.push('redundant_current_status_question');
         labels.push('draft asks for the status they just gave; use a short acknowledgement or statement instead');
     }
-    if (mediaReview.required && !exerciseLookupFastTrack && (!acquisitionLead || leadMissingMediaContext)) {
-        reasons.push('media_review_required');
-        labels.push(acquisitionLead
-            ? `${mediaReview.label || 'media'} context did not come through cleanly`
-            : (mediaReview.label || 'media needs Shannon review'));
-    }
-    if (contextReview.required && (!acquisitionLead || contextReviewShouldRouteForLead(data, contextReview, mediaReview))) {
-        reasons.push(...contextReview.reasons);
+    const mediaOnlyLatest = latestInboundIsMediaOnly(data);
+    const routableContextReasons = (Array.isArray(contextReview.reasons) ? contextReview.reasons : [])
+        .filter(reason => !['media_review_required', 'voice_note_review_required'].includes(String(reason)))
+        .filter(reason => !(mediaOnlyLatest && [
+            'manychat_reconcile_latest_only',
+            'first_captured_reply_with_hidden_context',
+            'reference_heavy_reply_without_tracked_context',
+            'client_does_not_understand_context',
+        ].includes(String(reason))));
+    if (routableContextReasons.length > 0) {
+        reasons.push(...routableContextReasons);
         labels.push(contextReview.label || 'tracked context may be incomplete');
     }
-    if (draftReviewNeedsContext(data)) {
+    const mediaHandlingOnlyReview = draftReviewOnlyConcernsMedia(data);
+    if (!mediaHandlingOnlyReview && draftReviewNeedsContext(data)) {
         reasons.push('draft_review_context_loss');
         labels.push(draftReviewNeedsYouLabel(data));
-    } else if (acquisitionLead ? draftReviewNeedsLeadManualCheck(data, mediaReview) : draftReviewNeedsManualCheck(data)) {
+    } else if (!mediaHandlingOnlyReview && draftReviewNeedsManualCheck(data)) {
         reasons.push('draft_review_manual_check');
         labels.push(draftReviewNeedsYouLabel(data));
     }
@@ -769,6 +824,10 @@ exports._test = {
     draftReviewNeedsContext,
     draftReviewNeedsManualCheck,
     draftReviewNeedsLeadManualCheck,
+    draftReviewOnlyConcernsMedia,
+    leadExplicitlyDetectsAi,
+    leadHasCredibleCurrentDanger,
+    latestInboundIsMediaOnly,
     buildDraftReviewContextBlocks,
     shouldRunDraftReview,
     resolveAiDraftReviewLimit,

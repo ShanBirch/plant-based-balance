@@ -4702,7 +4702,7 @@ function buildMediaReviewInfo(alertOrData) {
         counts: state.counts,
         label,
         warning: label
-            ? `Warning: ${label} attached. Check the media before sending.`
+            ? `Media attached: ${label}. The DM manager must retrieve and analyze it before drafting.`
             : '',
         reason: kinds.length > 0 ? 'media_review_required' : null,
     };
@@ -4772,8 +4772,8 @@ function buildVoiceNoteReviewInfo(alertOrData) {
     return {
         required: true,
         reason: 'voice_note_review_required',
-        label: 'voice note needs Shannon review',
-        warning: 'Warning: voice note attached. Open the source DM and inspect the audio before sending.',
+        label: 'voice note needs DM manager analysis',
+        warning: 'Voice note attached. The DM manager must retrieve and transcribe or analyze it before drafting.',
         latest_text: truncate(normalizeContextText(latest), 180),
     };
 }
@@ -4921,7 +4921,7 @@ function buildContextReviewInfo(alertOrData) {
     }
 
     const uniqueReasons = [...new Set(reasons.filter(Boolean))];
-    const label = (uniqueReasons.length && !(hasAudioAnalysis && stored.label === 'voice note needs Shannon review') ? stored.label : '')
+    const label = (uniqueReasons.length && !(hasAudioAnalysis && ['voice note needs Shannon review', 'voice note needs DM manager analysis'].includes(stored.label)) ? stored.label : '')
         || (labels.length ? [...new Set(labels)].join(', ') : '')
         || (uniqueReasons.length ? 'tracked thread context may be incomplete' : '');
 
@@ -5904,7 +5904,7 @@ Block and set notification_required=true when:
 - the latest inbound is a pure gratitude closer ("thanks", "thank you", "legend", "perfect", "sounds good", etc.) and the draft adds a fresh question instead of closing, reacting, or staying quiet.
 - the latest inbound is an app exercise-search issue such as "no seated option", "can't find it", or "the exercise isn't in there", and the draft says the exercise is missing or recommends a substitute without APP EXERCISE LIBRARY CHECK evidence in the context.
 
-For unlinked acquisition leads, do not block, notify, or mark manual-only just because they mention old injury, surgery, rehab, hospital, or pain history. That is normal rapport if the draft stays light, non-medical, and does not pitch the offer off their vulnerability. Also do not mark the approved Founders Pass handoff manual-only when a lead has accepted the offer or asked for the link/details/how to start; the approved link is https://plantbased-balance.org/vegan-fitness.html. Block or warn only when the latest turn asks for current pain, symptoms, rehab/training/treatment advice, diagnosis, pregnancy, eating/body-image risk, crisis/safety support, or when the draft gives medical/rehab advice.
+For unlinked acquisition leads, the DM manager owns every normal reply. Do not block, notify, or mark manual-only for injury, surgery, rehab, hospital, pain, pregnancy, eating/body-image language, grief, difficult emotions, missing context, or attached media. Keep the reply non-diagnostic and non-prescriptive, retrieve and analyze media before drafting, and ask one natural clarification or resend/gist question when evidence is genuinely unavailable. The only lead handoffs are a credible current self-harm/imminent-danger signal or the lead directly asking/calling out whether the replies are AI, automated, a bot, scripted, generated, or not really Shannon. Also do not mark the approved Founders Pass handoff manual-only when a lead has accepted the offer or asked for the link/details/how to start; the approved link is https://plantbased-balance.org/vegan-fitness.html.
 Do not block just because the older timeline contains a different unresolved topic if the clearly labelled latest inbound message is answered naturally. Treat details as grounded when they appear anywhere in the labelled latest message, including near the ending of a long message.
 Do not block just because the draft also answers prior unanswered messages from the same recent inbound burst. If Shannon has not replied between those inbound messages and the draft naturally answers the newest message, treat the burst as one conversational turn.
 

@@ -91,6 +91,7 @@ Current strategic priority: build the AI-operated business layer around Balance:
 ## Non-Negotiables
 
 - Never reveal AI to clients or prospects. Public copy must not mention AI, automation, Gemini, Vertex, models, smart coaching, or "trained on Shannon's voice".
+- The lead/client DM manager owns every normal unlinked-lead reply. Shannon should not receive lead handoffs for media, missing context, medical or emotional language, draft uncertainty, or ordinary judgment calls. The manager must retrieve and analyze voice notes, audio, photos, video, Reels, and Story context, then respond in Shannon's voice. The only unlinked-lead send holds are a credible current self-harm/imminent-danger signal or the lead directly detecting/questioning AI, automation, bots, scripted/generated replies, or whether it is really Shannon.
 - Position the service as personal coaching from Shannon.
 - Approved public-facing framing: "weekly check-ins with Shannon", "Shannon in your corner", "ongoing support".
 - No em dashes in user-facing copy. Use commas, periods, colons, parentheses, or rewrite.
@@ -174,7 +175,7 @@ Auto-send:
 - `client_memory.auto_send_enabled BOOLEAN DEFAULT FALSE`.
 - Shared helper: `maybeAutoSendDraft(...)` in `netlify/functions/_lib/client-context.js`.
 - When enabled, draft producers can skip the approve-gate, insert the DM, mark alert sent, and send Shannon a low-key confirmation push.
-- IG cold leads should never auto-send.
+- Safe IG/FB lead replies are owned and sent by the DM manager after its live-thread review. Per-client auto-send settings remain separate and default off for new linked clients.
 
 Memory extractor:
 

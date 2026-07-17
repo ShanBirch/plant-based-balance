@@ -89,8 +89,7 @@ assert.strictEqual(manager.isAcquisitionLeadAlert(makeAlert({
 })), false);
 
 const coldLeadNamedShane = manager.classifyNeedsYou(makeAlert({ client_name: 'Shane' }));
-assert.strictEqual(coldLeadNamedShane.shouldRoute, true, 'permanent IG thread identities must route to Needs You');
-assert.ok(coldLeadNamedShane.reasons.includes('always_needs_you_person'));
+assert.strictEqual(coldLeadNamedShane.shouldRoute, false, 'unlinked leads are manager-owned even when a name matches a permanent client');
 
 const shane = manager.classifyNeedsYou(makeAlert({
     client_id: 'client-shane',
@@ -297,9 +296,11 @@ assert.strictEqual(mirandaExerciseLookup.shouldRoute, true, 'permanent Needs You
 assert.ok(mirandaExerciseLookup.reasons.includes('always_needs_you_person'));
 
 const mirandaConfusedExerciseLookup = manager.classifyNeedsYou(makeAlert({
+    client_id: 'client-miranda',
     client_name: 'Miranda',
     data: {
         channel: 'instagram',
+        lead_stage: 'paying',
         message_preview: 'No seated option',
         draft_evidence: {
             current_message: 'No seated option',
@@ -316,8 +317,7 @@ const media = manager.classifyNeedsYou(makeAlert({
         image_url_count: 1,
     },
 }));
-assert.strictEqual(media.shouldRoute, true);
-assert.ok(media.reasons.includes('media_review_required'));
+assert.strictEqual(media.shouldRoute, false, 'unlinked lead media stays with the DM manager');
 
 const decodedLeadPhoto = manager.classifyNeedsYou(makeAlert({
     data: {
@@ -345,8 +345,7 @@ const decodedClientPhoto = manager.classifyNeedsYou(makeAlert({
         },
     },
 }));
-assert.strictEqual(decodedClientPhoto.shouldRoute, true, 'client media review still routes');
-assert.ok(decodedClientPhoto.reasons.includes('media_review_required'));
+assert.strictEqual(decodedClientPhoto.shouldRoute, false, 'client media stays with the DM manager');
 
 const visibleLeadReel = manager.classifyNeedsYou(makeAlert({
     data: {
@@ -375,8 +374,7 @@ const unseenLeadReel = manager.classifyNeedsYou(makeAlert({
         },
     },
 }));
-assert.strictEqual(unseenLeadReel.shouldRoute, true, 'lead reel without decoded/context evidence should route');
-assert.ok(unseenLeadReel.reasons.includes('media_review_required'));
+assert.strictEqual(unseenLeadReel.shouldRoute, false, 'inaccessible lead media should trigger manager recovery, not Shannon handoff');
 
 const voiceNoteReview = clientContext.buildContextReviewInfo(makeAlert({
     data: {
@@ -398,8 +396,7 @@ const voiceNoteNeedsYou = manager.classifyNeedsYou(makeAlert({
         },
     },
 }));
-assert.strictEqual(voiceNoteNeedsYou.shouldRoute, true);
-assert.ok(voiceNoteNeedsYou.reasons.includes('voice_note_review_required'));
+assert.strictEqual(voiceNoteNeedsYou.shouldRoute, false, 'voice notes stay with the DM manager for transcription/recovery');
 
 const transcribedVoiceNoteReview = clientContext.buildContextReviewInfo(makeAlert({
     data: {
@@ -452,6 +449,47 @@ const aiSuspicion = manager.classifyNeedsYou(makeAlert({
 assert.strictEqual(aiSuspicion.shouldRoute, true);
 assert.ok(aiSuspicion.reasons.includes('ai_suspicion_or_authenticity_question'));
 
+const aiDetectionStatement = manager.classifyNeedsYou(makeAlert({
+    data: {
+        message_preview: 'this sounds like an automated reply, is it really Shannon?',
+    },
+}));
+assert.strictEqual(aiDetectionStatement.shouldRoute, true);
+assert.ok(aiDetectionStatement.reasons.includes('ai_suspicion_or_authenticity_question'));
+
+const imminentDanger = manager.classifyNeedsYou(makeAlert({
+    data: {
+        message_preview: "I can't keep myself safe tonight and I'm thinking about killing myself",
+    },
+}));
+assert.strictEqual(imminentDanger.shouldRoute, true);
+assert.ok(imminentDanger.reasons.includes('credible_current_danger'));
+
+const historicDifficultyIsNotImminent = manager.classifyNeedsYou(makeAlert({
+    data: {
+        message_preview: 'I had depression years ago but training helped me a lot',
+    },
+}));
+assert.strictEqual(historicDifficultyIsNotImminent.shouldRoute, false);
+
+const unresolvedClientMediaDraft = manager.classifyNeedsYou(makeAlert({
+    client_id: 'client-media',
+    data: {
+        lead_stage: 'paying',
+        message_preview: '[AUDIO:https://example.com/voice.m4a]',
+        media_decode: { audio_url_count: 1, audio_failed: true },
+        draft_review: {
+            verdict: 'block',
+            summary: 'Voice note media needs review because the audio was unavailable.',
+            issues: ['media_review_required'],
+            notification_required: true,
+            notification_reason: 'media_review_required',
+            context_loss_suspected: true,
+        },
+    },
+}));
+assert.strictEqual(unresolvedClientMediaDraft.shouldRoute, false, 'client media failures stay with the DM manager recovery path');
+
 const contextLoss = manager.classifyNeedsYou(makeAlert({
     data: {
         message_preview: 'sorry i dont understand what you mean',
@@ -460,9 +498,7 @@ const contextLoss = manager.classifyNeedsYou(makeAlert({
         },
     },
 }));
-assert.strictEqual(contextLoss.shouldRoute, true);
-assert.ok(contextLoss.reasons.includes('client_does_not_understand_context'));
-assert.ok(contextLoss.reasons.includes('draft_review_context_loss'));
+assert.strictEqual(contextLoss.shouldRoute, false, 'lead confusion is repaired and answered by the DM manager');
 
 const curlyApostropheConfusion = manager.classifyNeedsYou(makeAlert({
     data: {
@@ -470,8 +506,7 @@ const curlyApostropheConfusion = manager.classifyNeedsYou(makeAlert({
         message_preview: "I don\u2019t understand your question",
     },
 }));
-assert.strictEqual(curlyApostropheConfusion.shouldRoute, true);
-assert.ok(curlyApostropheConfusion.reasons.includes('client_does_not_understand_context'));
+assert.strictEqual(curlyApostropheConfusion.shouldRoute, false);
 
 const bareSorryConfusion = manager.classifyNeedsYou(makeAlert({
     data: {
@@ -479,8 +514,7 @@ const bareSorryConfusion = manager.classifyNeedsYou(makeAlert({
         last_outbound_message: 'wait canada? how was it?',
     },
 }));
-assert.strictEqual(bareSorryConfusion.shouldRoute, true);
-assert.ok(bareSorryConfusion.reasons.includes('client_does_not_understand_context'));
+assert.strictEqual(bareSorryConfusion.shouldRoute, false);
 
 const lateReplyApology = manager.classifyNeedsYou(makeAlert({
     data: {
@@ -496,8 +530,7 @@ const typoWhatDoYouMean = manager.classifyNeedsYou(makeAlert({
         last_outbound_message: 'Bacon + balsamic glaze on there is a bit elite',
     },
 }));
-assert.strictEqual(typoWhatDoYouMean.shouldRoute, true);
-assert.ok(typoWhatDoYouMean.reasons.includes('client_does_not_understand_context'));
+assert.strictEqual(typoWhatDoYouMean.shouldRoute, false);
 
 const nonSequiturReview = manager.classifyNeedsYou(makeAlert({
     data: {
@@ -511,8 +544,7 @@ const nonSequiturReview = manager.classifyNeedsYou(makeAlert({
         },
     },
 }));
-assert.strictEqual(nonSequiturReview.shouldRoute, true);
-assert.ok(nonSequiturReview.reasons.includes('draft_review_manual_check'));
+assert.strictEqual(nonSequiturReview.shouldRoute, false, 'lead draft problems are repaired by the DM manager');
 
 const genericVoiceReview = manager.classifyNeedsYou(makeAlert({
     data: {
