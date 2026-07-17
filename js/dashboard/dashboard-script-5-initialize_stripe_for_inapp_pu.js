@@ -8391,6 +8391,7 @@ async function checkAndTriggerOnboarding() {
     if (!isReturningMember && databaseOnboardingStatusChecked &&
         !localStorage.getItem('pbb_fitgotchi_visibility')) {
         localStorage.setItem('pbb_fitgotchi_visibility', 'hidden');
+        localStorage.setItem('pbb_fitgotchi_needs_character_setup', 'true');
         if (typeof window.applyFitGotchiVisibility === 'function') {
             window.applyFitGotchiVisibility('hidden');
         }

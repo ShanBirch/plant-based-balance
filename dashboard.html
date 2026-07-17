@@ -411,8 +411,25 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
     window.applyFitGotchiVisibility = applyVisibility;
     window.setFitGotchiVisibility = function(mode) {
         mode = mode === 'hidden' ? 'hidden' : 'visible';
+        var shouldPromptForCharacter = mode === 'visible' &&
+            localStorage.getItem('pbb_fitgotchi_needs_character_setup') === 'true';
         localStorage.setItem(KEY, mode);
-        return applyVisibility(mode, { reloadModel: mode === 'visible' });
+        var appliedMode = applyVisibility(mode, { reloadModel: mode === 'visible' });
+        if (shouldPromptForCharacter) {
+            var setupAttempts = 0;
+            function openFirstCharacterSetup() {
+                if (typeof window.openCharacterCustomizationShortcut === 'function') {
+                    localStorage.removeItem('pbb_fitgotchi_needs_character_setup');
+                    localStorage.setItem('pbb_fitgotchi_character_setup_prompted', 'true');
+                    window.openCharacterCustomizationShortcut();
+                } else if (setupAttempts < 20) {
+                    setupAttempts += 1;
+                    setTimeout(openFirstCharacterSetup, 250);
+                }
+            }
+            setTimeout(openFirstCharacterSetup, 350);
+        }
+        return appliedMode;
     };
     window.toggleFitGotchiVisibility = function() {
         return window.setFitGotchiVisibility(getVisibility() === 'hidden' ? 'visible' : 'hidden');
@@ -12760,13 +12777,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=145';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=146';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=145"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=146"><\/script>');
 }
 </script>
 

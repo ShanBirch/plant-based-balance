@@ -14,12 +14,13 @@ assert.match(dashboard, /id="settings-fitgotchi-visibility"/, 'Profile should in
 assert.match(dashboard, /role="switch" aria-checked="true"/, 'the visibility control should expose accessible switch state');
 assert.match(dashboard, /id:\s*'fitgotchi-visibility-toggle-v1'/, 'returning members should receive a one-time Feature Drop');
 assert.match(dashboard, /title:'Choose your Home style'/, 'new members should see the visibility option in the guided tour');
-assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=145/, 'phones should fetch the new onboarding behavior');
+assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=146/, 'phones should fetch the new onboarding behavior');
 assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=28/, 'phones should fetch the compact level updates');
-assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v253'/, 'the app shell cache should advance for this feature');
+assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v254'/, 'the app shell cache should advance for this feature');
 
 assert.match(onboarding, /let isReturningMember = localStorage\.getItem\('onboardingComplete'\) === 'true'/, 'local onboarding history should preserve returning members');
 assert.match(onboarding, /if \(!isReturningMember && databaseOnboardingStatusChecked/, 'only database-confirmed new members should receive the hidden default');
+assert.match(onboarding, /pbb_fitgotchi_needs_character_setup', 'true'/, 'new members should be marked for one character setup prompt');
 assert.match(onboarding, /step === 17[\s\S]*window\.isFitGotchiHidden\(\)/, 'hidden-mode onboarding should skip character design');
 assert.match(onboarding, /const shouldRestoreFitGotchi = !\(typeof window\.isFitGotchiHidden/, 'finishing onboarding should not reload a hidden character');
 assert.match(points, /balance-level-number[\s\S]*balance-level-xp-fill/, 'the compact level bar should update from real point data');
@@ -36,7 +37,8 @@ const classes = new Set();
 const sandbox = {
   localStorage: {
     getItem: key => storage.has(key) ? storage.get(key) : null,
-    setItem: (key, value) => storage.set(key, String(value))
+    setItem: (key, value) => storage.set(key, String(value)),
+    removeItem: key => storage.delete(key)
   },
   document: {
     documentElement: {
@@ -63,7 +65,16 @@ assert.strictEqual(classes.has('pbb-fitgotchi-hidden'), false, 'FitGotchi should
 sandbox.setFitGotchiVisibility('hidden');
 assert.strictEqual(storage.get('pbb_fitgotchi_visibility'), 'hidden', 'the member choice should persist');
 assert.strictEqual(classes.has('pbb-fitgotchi-hidden'), true, 'the hidden choice should switch Home to the compact level bar');
+let characterPromptCount = 0;
+sandbox.openCharacterCustomizationShortcut = () => { characterPromptCount += 1; };
+storage.set('pbb_fitgotchi_needs_character_setup', 'true');
 sandbox.toggleFitGotchiVisibility();
 assert.strictEqual(storage.get('pbb_fitgotchi_visibility'), 'visible', 'the member should be able to reveal FitGotchi again');
+assert.strictEqual(characterPromptCount, 1, 'a new member should see character design on the first reveal');
+assert.strictEqual(storage.has('pbb_fitgotchi_needs_character_setup'), false, 'the first reveal should consume the setup prompt');
+assert.strictEqual(storage.get('pbb_fitgotchi_character_setup_prompted'), 'true', 'the prompt should be recorded as used');
+sandbox.toggleFitGotchiVisibility();
+sandbox.toggleFitGotchiVisibility();
+assert.strictEqual(characterPromptCount, 1, 'later hide and reveal toggles should not reopen character design');
 
 console.log('FitGotchi visibility tests passed');
