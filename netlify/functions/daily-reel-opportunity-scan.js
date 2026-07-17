@@ -22,6 +22,7 @@ const {
 } = require('./_lib/learning-reel-sources');
 
 const SOURCE = 'daily-reel-opportunity-scan';
+const AUTOMATED_YOUTUBE_REELS_ENABLED = false;
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const RECENT_LOOKBACK_HOURS = Number(process.env.DAILY_REEL_RECENT_HOURS || 42);
@@ -765,6 +766,17 @@ async function runDailyReelOpportunityScan({ maxAlerts = MAX_ALERTS_PER_RUN, now
 }
 
 exports.handler = async () => {
+    if (!AUTOMATED_YOUTUBE_REELS_ENABLED) {
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                ok: true,
+                disabled: true,
+                reason: 'automated_youtube_reels_disabled',
+            }),
+        };
+    }
+
     try {
         const result = await runDailyReelOpportunityScan();
         return {

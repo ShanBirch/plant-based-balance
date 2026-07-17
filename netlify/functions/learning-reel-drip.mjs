@@ -27,6 +27,7 @@ const DEFAULT_TARGET_HANDLE = 'shan_n_sunny';
 const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
 const COCOS_ALGORITHM_FORK = 'cocos_acquisition_v1';
 const SOURCE = 'learning_reel_drip_instagram_graph';
+const AUTOMATED_YOUTUBE_REELS_ENABLED = false;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const LEGACY_GRAPH_SUBSCRIBER_PREFIX = 'meta_ig:';
 const DEFAULT_AUTOSTART_UNTIL = '2026-06-10T00:00:00+10:00';
@@ -136,10 +137,6 @@ const TOPIC_SEQUENCE = [
     'supplements',
     'meal_prep_planning',
 ];
-
-export const config = {
-    schedule: '*/5 * * * *',
-};
 
 function getEnv(name) {
     const netlifyValue = globalThis.Netlify?.env?.get?.(name);
@@ -3269,6 +3266,14 @@ async function runAllDrips({ sendDue = true } = {}) {
 }
 
 export default async function handler(req) {
+    if (!AUTOMATED_YOUTUBE_REELS_ENABLED) {
+        return json(200, {
+            ok: true,
+            disabled: true,
+            reason: 'automated_youtube_reels_disabled',
+        });
+    }
+
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return json(500, { ok: false, error: 'Supabase env missing' });
 
     const url = new URL(req.url);

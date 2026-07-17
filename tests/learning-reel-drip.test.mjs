@@ -1,10 +1,19 @@
 import assert from 'node:assert';
 
-const { _test } = await import('../netlify/functions/learning-reel-drip.mjs');
+const learningReelDrip = await import('../netlify/functions/learning-reel-drip.mjs');
+const { _test } = learningReelDrip;
 const learningReelSources = (await import('../netlify/functions/_lib/learning-reel-sources.js')).default;
 
 delete process.env.LEARNING_REEL_DRIP_FORCE_ACTIVE;
 delete process.env.LEARNING_REEL_DRIP_AUTOSTART_UNTIL;
+
+const disabledResponse = await learningReelDrip.default(new Request('https://example.com/.netlify/functions/learning-reel-drip'));
+assert.strictEqual(disabledResponse.status, 200);
+assert.deepStrictEqual(await disabledResponse.json(), {
+    ok: true,
+    disabled: true,
+    reason: 'automated_youtube_reels_disabled',
+});
 
 const nowMs = Date.parse('2026-06-02T02:00:00.000Z');
 const plan = _test.buildInitialPlan(nowMs);

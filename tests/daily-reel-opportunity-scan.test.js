@@ -1,6 +1,20 @@
 const assert = require('assert');
 
-const dailyReels = require('../netlify/functions/daily-reel-opportunity-scan')._test;
+const dailyReelModule = require('../netlify/functions/daily-reel-opportunity-scan');
+const dailyReels = dailyReelModule._test;
+
+(async () => {
+    const disabledResponse = await dailyReelModule.handler();
+    assert.strictEqual(disabledResponse.statusCode, 200);
+    assert.deepStrictEqual(JSON.parse(disabledResponse.body), {
+        ok: true,
+        disabled: true,
+        reason: 'automated_youtube_reels_disabled',
+    });
+})().catch(error => {
+    console.error(error);
+    process.exitCode = 1;
+});
 
 const NOW = new Date('2026-06-07T00:00:00.000Z');
 
