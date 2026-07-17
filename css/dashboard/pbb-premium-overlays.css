@@ -4394,6 +4394,96 @@ html[data-pbb-theme="light"] .battle-stat-value {
     color: #151515 !important;
 }
 
+/* Personal Home welcome header */
+#view-dashboard .app-header {
+    gap: 10px;
+}
+
+.home-welcome-block {
+    min-width: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+}
+
+.home-welcome-title {
+    overflow: hidden;
+    color: #fffaf2;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.08rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.2px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-welcome-date {
+    overflow: hidden;
+    color: #e9c86f;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.35px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-header-actions {
+    min-width: 0;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+html[data-pbb-theme="light"] .home-welcome-title {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .home-welcome-date {
+    color: #765914 !important;
+}
+
+@media (max-width: 390px) {
+    #view-dashboard .app-header {
+        gap: 7px;
+    }
+
+    .home-welcome-title {
+        font-size: 0.98rem;
+    }
+
+    .home-welcome-date {
+        font-size: 0.6rem;
+        letter-spacing: 0.15px;
+    }
+
+    .home-header-actions {
+        gap: 6px;
+    }
+
+    .home-header-actions .streak-header-widget {
+        padding-right: 8px;
+        padding-left: 7px;
+    }
+
+    .home-header-actions .coin-header-widget {
+        min-width: 46px;
+        justify-content: center;
+        padding-right: 9px;
+        padding-left: 9px;
+    }
+
+    .home-header-actions .coin-header-widget .coin-emoji,
+    .home-header-actions .coin-header-widget .coin-buy-btn {
+        display: none;
+    }
+}
+
 html[data-pbb-theme="light"] #view-dashboard p,
 html[data-pbb-theme="light"] #view-dashboard .text-muted,
 html[data-pbb-theme="light"] #tamagotchi-fallback-msg,

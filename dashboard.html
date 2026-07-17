@@ -867,8 +867,11 @@ window.addEventListener('load', function() {
 <!-- DASHBOARD VIEW (HOME) -->
 <div id="view-dashboard" class="app-view">
     <div class="app-header">
-        <div class="app-logo">Home</div>
-        <div style="display:flex; align-items:center; gap:10px;">
+        <div class="home-welcome-block">
+            <div id="home-welcome-title" class="home-welcome-title">Welcome back</div>
+            <div id="home-welcome-date" class="home-welcome-date"></div>
+        </div>
+        <div class="home-header-actions">
             <div id="tamagotchi-streak-container" class="streak-header-widget">
                 <span style="font-size: 0.85rem;">🔥</span>
                 <span id="tamagotchi-streak" class="streak-header-count">0</span>
@@ -885,6 +888,50 @@ window.addEventListener('load', function() {
             <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
         </div>
     </div>
+    <script>
+    (function() {
+        function firstNameFrom(value) {
+            var clean = String(value || '').trim();
+            if (!clean) return '';
+            if (clean.indexOf('@') !== -1) clean = clean.split('@')[0];
+            var first = clean.split(/\s+/)[0].replace(/[._-]+/g, ' ');
+            return first ? first.charAt(0).toUpperCase() + first.slice(1) : '';
+        }
+
+        function localProfileName() {
+            try {
+                var profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                return profile.name || profile.full_name || profile.display_name || '';
+            } catch (e) {
+                return '';
+            }
+        }
+
+        window.updateHomeWelcome = function(name) {
+            var title = document.getElementById('home-welcome-title');
+            var date = document.getElementById('home-welcome-date');
+            var metadata = window.currentUser && window.currentUser.user_metadata || {};
+            var resolvedName = name || metadata.full_name || metadata.name || localProfileName() ||
+                (window.currentUser && window.currentUser.email) || '';
+            var firstName = firstNameFrom(resolvedName);
+            if (title) title.textContent = firstName ? 'Welcome, ' + firstName : 'Welcome back';
+            if (date) {
+                try {
+                    date.textContent = new Intl.DateTimeFormat('en-AU', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long'
+                    }).format(new Date());
+                } catch (e) {
+                    date.textContent = '';
+                }
+            }
+        };
+
+        window.updateHomeWelcome();
+        window.addEventListener('pbbInitComplete', function() { window.updateHomeWelcome(); }, { once: true });
+    })();
+    </script>
     <!-- Pull-to-Refresh Indicator -->
     <div id="ptr-indicator" class="ptr-indicator" style="height:0;overflow:hidden;opacity:0">
         <div class="ptr-spinner">
@@ -12777,13 +12824,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=146';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=147';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=146"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=147"><\/script>');
 }
 </script>
 
@@ -15912,7 +15959,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=85">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=86">
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>

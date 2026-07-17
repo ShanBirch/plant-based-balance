@@ -792,6 +792,7 @@ async function _loadProfileDataRealImpl() {
         document.getElementById('profile-default-initial').innerText = initialSource ? initialSource.charAt(0).toUpperCase() : '?';
     }
     if(document.getElementById('profile-name-display')) document.getElementById('profile-name-display').innerText = context.name;
+    if(typeof window.updateHomeWelcome === 'function') window.updateHomeWelcome(context.name);
     if(document.getElementById('profile-email-display')) document.getElementById('profile-email-display').innerText = context.email;
     if(document.getElementById('profile-age-display')) document.getElementById('profile-age-display').innerText = context.age;
     
