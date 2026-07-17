@@ -162,6 +162,40 @@
         }
         .hero-sublink:hover { opacity: 0.75; }
 
+        /* FOUNDERS PASS */
+        .founders-section {
+            padding: 88px 24px;
+            border-top: 1px solid rgba(0, 212, 170, 0.15);
+            border-bottom: 1px solid rgba(0, 212, 170, 0.15);
+            background: linear-gradient(135deg, #0d2a25 0%, #0f1923 62%);
+        }
+        .founders-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 52px;
+            align-items: center;
+        }
+        .founders-copy .section-label { text-align: left; }
+        .founders-copy h2 { text-align: left; margin-bottom: 18px; }
+        .founders-copy > p { max-width: 620px; margin-bottom: 26px; color: #9aabb9; font-size: 1.05rem; }
+        .founders-points { display: grid; gap: 12px; margin-bottom: 30px; }
+        .founders-point { display: flex; align-items: flex-start; gap: 10px; color: var(--text); }
+        .founders-point::before { content: "+"; flex: 0 0 auto; color: var(--green); font-weight: 900; }
+        .founders-offer {
+            padding: 32px;
+            border: 1px solid rgba(0, 212, 170, 0.24);
+            border-radius: 20px;
+            background: var(--card-bg);
+            box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+        }
+        .founders-price { font-family: 'Montserrat', sans-serif; font-size: 3.4rem; font-weight: 900; line-height: 1; }
+        .founders-price span { color: var(--green); }
+        .founders-offer p { margin: 12px 0 24px; color: #9aabb9; }
+        .founders-offer .btn-primary { display: block; text-align: center; }
+        .founders-note { display: block; margin-top: 14px; color: #9aabb9; font-size: 0.8rem; text-align: center; }
+
         /* FEATURE STRIP */
         .strip {
             display: flex;
@@ -364,6 +398,7 @@
         @media (max-width: 700px) {
             nav { padding: 16px 20px; }
             .highlight-inner { grid-template-columns: 1fr; gap: 40px; }
+            .founders-inner { grid-template-columns: 1fr; gap: 32px; }
             .highlight-text h2 { text-align: center; }
             .highlight-text .section-label { text-align: center; }
             .stat-row { justify-content: center; }
@@ -379,7 +414,7 @@
             Balance
         </a>
         <div class="nav-right">
-            <a href="https://plantbased-balance.org" target="_blank" rel="noopener" class="nav-link">Main site</a>
+            <a href="vegan-fitness.html" class="nav-link">Founders Pass</a>
             <a href="#download" class="nav-cta">Download Free</a>
         </div>
     </nav>
@@ -394,7 +429,7 @@
             <a href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" class="btn-primary">Download on Android</a>
             <a href="#features" class="btn-secondary">See Features</a>
         </div>
-        <a href="https://plantbased-balance.org" target="_blank" rel="noopener" class="hero-sublink">Visit the main Balance website →</a>
+        <a href="vegan-fitness.html" class="hero-sublink">Vegan Fitness Founders Pass: AU$99 once</a>
     </section>
 
     <!-- STRIP -->
@@ -505,6 +540,29 @@
         </div>
     </div>
 
+    <!-- VEGAN FITNESS FOUNDERS PASS -->
+    <section class="founders-section" id="founders-pass">
+        <div class="founders-inner">
+            <div class="founders-copy">
+                <div class="section-label">Vegan fitness community</div>
+                <h2>Start with a plan. Stay for the people.</h2>
+                <p>The Founders Pass brings the Balance app, a guided six-week vegan fitness kickstart and community accountability together in one simple membership.</p>
+                <div class="founders-points">
+                    <div class="founders-point">Home and gym training structure</div>
+                    <div class="founders-point">Vegan nutrition and progress tools</div>
+                    <div class="founders-point">Lifetime access to the core app and community</div>
+                </div>
+                <a href="vegan-fitness.html" class="btn-primary">See everything included</a>
+            </div>
+            <div class="founders-offer">
+                <div class="founders-price"><span>AU$99</span> once</div>
+                <p>One founding-member payment. Weekly personal coaching is available separately if you want more individual support.</p>
+                <a href="vegan-fitness.html#join" class="btn-primary">Get the Founders Pass</a>
+                <span class="founders-note">Secure checkout through Stripe</span>
+            </div>
+        </div>
+    </section>
+
     <!-- CTA -->
     <section class="cta-section" id="download">
         <h2>Ready to level up?</h2>
@@ -537,6 +595,7 @@
     <footer>
         <p>© 2026 Shannon Birch. All rights reserved.</p>
         <div class="footer-links">
+            <a href="/vegan-fitness.html">Founders Pass</a>
             <a href="/privacy.html">Privacy Policy</a>
             <a href="/terms.html">Terms of Service</a>
             <a href="/contact.html">Support</a>
