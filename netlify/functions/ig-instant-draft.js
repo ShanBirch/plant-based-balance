@@ -2339,7 +2339,7 @@ They sent a long, emotional, or multi-topic message. Do not compress this into a
     };
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount, coachId = null }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, qualifierQuestionProtected = false, botAccount, coachId = null }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -2785,8 +2785,8 @@ ${currentMessageText}${mediaInstruction ? ` ${mediaInstruction}` : ''}${editExam
 ${effectiveQualifierQuestion ? `
 IMPORTANT - CONVERSATIONAL ELICITATION:
 Use this suggested next move only if it naturally fits this exact reply: "${effectiveQualifierQuestion}"
-This is guidance, not a command. It may be a statement, label, or question. Prefer a statement they can confirm, correct, or expand unless a direct question is genuinely needed. If the latest message is only thanks/emoji/filler, closing, a genuinely short no-response-needed reply, or a current safety/medical/rehab advice situation, skip it. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is normal rapport when the reply stays non-medical. If it is a first/early story/post reply with anything more than that, use this move or rewrite it around that topic so the reply earns the next response. If you do use it, use only that one light elicitation move. When the reply has several things to answer, weave the move into the reflection that sparked it instead of defaulting to a standalone final bubble. Do not add a goal, age, blocker, or coaching pitch in the same reply.
-If the suggested move sounds generic or ignores a fresher detail from their latest message, rewrite it around that detail or skip it. Never paste a stock line like "what does a normal day look like", "are you much of a cook or more of a takeaway person", "you training at the moment", or "what are your goals" into an auto-DM draft.
+${qualifierQuestionProtected ? 'This is a protected next-missing-fact move. Answer their latest point naturally, then preserve one equivalent fitness, food, consistency, or accountability question in the final reply. Do not replace it with more rapport trivia or remove it merely to keep the reply short.' : 'This is guidance, not a command.'} It may be a statement, label, or question. Prefer a statement they can confirm, correct, or expand unless a direct question is genuinely needed. If the latest message is only thanks/emoji/filler, closing, a genuinely short no-response-needed reply, or a current safety/medical/rehab advice situation, skip it. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is normal rapport when the reply stays non-medical. If it is a first/early story/post reply with anything more than that, use this move or rewrite it around that topic so the reply earns the next response. If you do use it, use only that one light elicitation move. When the reply has several things to answer, weave the move into the reflection that sparked it instead of defaulting to a standalone final bubble. Do not add a goal, age, blocker, or coaching pitch in the same reply.
+${qualifierQuestionProtected ? 'If its exact wording feels generic, rewrite it naturally around their latest detail, but retain the same relevant missing fact.' : 'If the suggested move sounds generic or ignores a fresher detail from their latest message, rewrite it around that detail or skip it.'} Never paste a stock line like "what does a normal day look like", "are you much of a cook or more of a takeaway person", "you training at the moment", or "what are your goals" into an auto-DM draft.
 ` : ''}
 OUTPUT FORMAT — JSON only, nothing else:
 ${replyMode.chunkExample}
@@ -3059,6 +3059,18 @@ function _notifyQualifierAdvance({ priorStage, priorFacts, nextQualifier, leadNa
             sourceChannel: channel,
         }),
     }).catch(e => console.warn('[ig-draft] qualifier advance push failed:', e.message));
+}
+
+function buildAudioTranscriptReviewContext(mediaDecode = {}, leadName = 'Lead') {
+    if (mediaDecode?.analysis_succeeded === false) return '';
+    const transcripts = Array.isArray(mediaDecode?.audio_transcripts)
+        ? mediaDecode.audio_transcripts
+            .map(item => String(item?.text || '').replace(/\s+/g, ' ').trim())
+            .filter(Boolean)
+            .slice(0, 3)
+        : [];
+    if (!transcripts.length) return '';
+    return `\nDecoded voice-note content from ${leadName} (authoritative latest inbound evidence):\n${transcripts.map((text, index) => `- Voice note ${index + 1}: "${truncate(text, 900)}"`).join('\n')}`;
 }
 
 async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel, recentInboundMessages, qualifier, qualifierEligible, lifecycle, mediaReview, contextReview, autoHoldReason, challengeOfferWarning }) {
@@ -3625,6 +3637,10 @@ exports.handler = async (event) => {
     const qualifierQuestion = (!terminalQualifierStage && qualifierEligible && qualifierEvaluated && qualifier?.is_question_moment && qualifier?.next_question)
         ? qualifier.next_question.trim()
         : null;
+    const qualifierQuestionProtected = Boolean(
+        qualifierQuestion
+        && /next missing fact|next-missing-fact|no relevant fitness signal/i.test(String(qualifier?.why_now || ''))
+    );
 
     let draft;
     try {
@@ -3652,6 +3668,7 @@ exports.handler = async (event) => {
             onboardingPhase,
             qualifier,
             qualifierQuestion,
+            qualifierQuestionProtected,
             botAccount,
             coachId: thread.coach_id || null,
         });
@@ -3737,6 +3754,8 @@ exports.handler = async (event) => {
         recent_inbound_messages: displayRecentInboundMessages,
         last_outbound_message: lastOutboundMessage,
         learning_reels: learningReelHistory,
+        media_decode: draft.mediaDecode || null,
+        audio_transcript_count: draft.audioTranscriptCount || 0,
         first_captured_lead_reply: firstCapturedLeadReply,
         draft_evidence: {
             current_message: displayMessage,
@@ -4168,11 +4187,12 @@ exports.handler = async (event) => {
                 return `${speaker}: ${replaceIgMediaMarkers(m.message || '')}`;
             }).join('\n'), 1200)}`
             : '';
+        const audioTranscriptReviewContext = buildAudioTranscriptReviewContext(draft.mediaDecode, leadName);
         const learningReelReviewText = draft.learningReelEvidenceBlock || learningReelEvidenceBlock || draft.learningReelContextBlock || '';
         const learningReelReviewContext = learningReelReviewText
             ? `\nRecent sent learning reel context:\n${truncate(learningReelReviewText, 1800)}`
             : '';
-        const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReviewContext}`;
+        const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${audioTranscriptReviewContext}${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReviewContext}`;
         const reviewTimeoutMs = cocosAutoSendLane ? COCOS_DRAFT_REVIEW_TIMEOUT_MS : IG_DRAFT_REVIEW_TIMEOUT_MS;
         try {
             const reviewResult = await withTimeout(reviewDraftAndUpdateAlert({
@@ -4681,6 +4701,7 @@ exports._test = {
     buildCommentResourceContextFromFulfillment,
     buildCommentResourceHandoffBlock,
     buildEmptyMediaDraftFallbackChunks,
+    buildAudioTranscriptReviewContext,
     isAudioPuntDraftText,
     isAudioPuntDraftChunks,
     buildCurrentTurnAnchorBlock,

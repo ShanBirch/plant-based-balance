@@ -139,6 +139,30 @@ const earnedFitnessBridge = applyRapportGate({
 assert.strictEqual(earnedFitnessBridge.is_question_moment, true);
 assert.match(earnedFitnessBridge.why_now, /next-missing-fact/i);
 
+const erikaRapportBridge = applyRapportGate({
+    qualifier: {
+        ...base,
+        meaningful_lead_reply_count: 5,
+        is_question_moment: true,
+        next_question: "What's your favourite Denmark comfort food or ritual?",
+        facts: {
+            ...base.facts,
+            relationship_context: 'Long-term vegan who loves Denmark',
+            relationship_checklist: {
+                ...base.facts.relationship_checklist,
+                location: 'United States',
+                loves: 'Denmark',
+            },
+        },
+    },
+    currentMessage: '[AUDIO:voice-note]',
+    leadReplyCount: 5,
+});
+assert.strictEqual(erikaRapportBridge.is_question_moment, true);
+assert.match(erikaRapportBridge.next_question, /fitness/i);
+assert.doesNotMatch(erikaRapportBridge.next_question, /Denmark|comfort food|ritual/i);
+assert.match(erikaRapportBridge.why_now, /no relevant fitness signal/i);
+
 const petGriefBridge = applyRapportGate({
     qualifier: {
         ...base,

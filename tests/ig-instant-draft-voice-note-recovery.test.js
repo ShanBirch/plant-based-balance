@@ -32,6 +32,17 @@ assert.strictEqual(
     'decoded voice-note drafts should not open with a listening receipt'
 );
 
+const reviewContext = _test.buildAudioTranscriptReviewContext({
+    analysis_succeeded: true,
+    audio_transcripts: [
+        { text: 'I messaged because I was curious why you followed me, and now I am getting awkwardly flirty.' },
+        { text: 'I want to hear your accent too.' },
+    ],
+}, 'Erika');
+assert.match(reviewContext, /Decoded voice-note content from Erika/);
+assert.match(reviewContext, /awkwardly flirty/);
+assert.match(reviewContext, /hear your accent/);
+
 const fallback = _test.buildEmptyMediaDraftFallbackChunks({
     mediaDecode: { audio_url_count: 1 },
     currentMessageText: '[AUDIO:https://example.com/voice.m4a]',

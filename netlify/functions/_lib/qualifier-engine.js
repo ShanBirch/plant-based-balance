@@ -686,7 +686,10 @@ function applyStockQuestionGuard({ qualifier, currentMessage }) {
 function isProtectedLeadProgressionQuestion(question) {
     const text = String(question || '').replace(/\s+/g, ' ').trim();
     if (!text || isUnsafeStockDiscoveryQuestion(text)) return false;
-    return /\b(active|activity|train|training|workout|gym|food|meal|nutrition|weight|fat|muscle|strength|fitness|energy|routine|consistent|consistency|accountability|exercise|pilates|running|cardio|health|body|goal|progress)\b/i.test(text);
+    const nonFoodProgression = /\b(active|activity|move|movement|train|training|workout|gym|weight|fat|muscle|strength|fitness|energy|routine|consistent|consistency|accountability|exercise|pilates|running|cardio|health|body|goal|progress)\b/i.test(text);
+    if (nonFoodProgression) return true;
+    return /\b(food|meal|nutrition)\b/i.test(text)
+        && /\b(plan|planning|prep|structure|routine|consistent|consistency|health|goal|progress|struggl|hard|help|direction|accountability)\b/i.test(text);
 }
 
 function isUnsafeLeadProgressionTurn(currentMessage) {
@@ -697,15 +700,34 @@ function isUnsafeLeadProgressionTurn(currentMessage) {
 }
 
 function protectEarnedLeadProgression({ qualifier, currentMessage, leadReplyCount } = {}) {
-    if (!qualifier || qualifier.is_question_moment || TERMINAL_STAGES.has(qualifier.stage)) return qualifier;
-    if (Math.max(0, Number(leadReplyCount || qualifier.meaningful_lead_reply_count || 0)) < 2) return qualifier;
-    if (isUnsafeLeadProgressionTurn(currentMessage)) return qualifier;
-    if (!isProtectedLeadProgressionQuestion(qualifier.next_question)) return qualifier;
-    return {
-        ...qualifier,
-        is_question_moment: true,
-        why_now: 'Reciprocal rapport is established. Ask one specific next-missing-fact question that opens relevant fitness, food, consistency, or accountability context.',
-    };
+    if (!qualifier || TERMINAL_STAGES.has(qualifier.stage)) return qualifier;
+    const replies = Math.max(0, Number(leadReplyCount || qualifier.meaningful_lead_reply_count || 0));
+    if (isUnsafeLeadProgressionTurn(currentMessage)) {
+        return qualifier.is_question_moment
+            ? { ...qualifier, is_question_moment: false, next_question: '' }
+            : qualifier;
+    }
+    if (replies < 2) return qualifier;
+    if (isProtectedLeadProgressionQuestion(qualifier.next_question)) {
+        return {
+            ...qualifier,
+            is_question_moment: true,
+            why_now: 'Reciprocal rapport is established. Ask one specific next-missing-fact question that opens relevant fitness, food, consistency, or accountability context.',
+        };
+    }
+    if (replies < 3 || !hasAnyRelationshipAnchor(qualifier.facts || {})) return qualifier;
+
+    const checklist = normalizeRelationshipChecklist(qualifier.facts || {});
+    if (!hasUsefulFact(checklist.training_background)) {
+        return {
+            ...qualifier,
+            next_question: 'are you into fitness much too?',
+            is_question_moment: true,
+            why_now: 'Reciprocal rapport is established but no relevant fitness signal is known. Answer their latest point, then open that next missing fact.',
+        };
+    }
+
+    return qualifier;
 }
 
 function applyRapportGate({ qualifier, currentMessage, leadReplyCount } = {}) {
