@@ -6,18 +6,18 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
-test('perfect quizzes award 5 XP in both client and database paths', () => {
+test('perfect quizzes award 10 XP in both client and database paths', () => {
   const inline = read('lib/learning-inline.js');
   const config = read('lib/learning-config.js');
-  const migration = read('supabase/migrations/20260716130000_raise_perfect_quiz_xp.sql');
+  const migration = read('supabase/migrations/20260718070000_fix_quiz_xp_awards.sql');
 
-  assert.match(inline, /LESSON_COMPLETE:\s*5/);
+  assert.match(inline, /LESSON_COMPLETE:\s*10/);
   assert.match(inline, /Math\.max\(0, expectedQuizXp - dbXpEarned\)/);
-  assert.match(config, /LESSON_COMPLETE:\s*5/);
-  assert.match(migration, /xp_per_lesson INTEGER := 5/);
+  assert.match(config, /LESSON_COMPLETE:\s*10/);
+  assert.match(migration, /xp_per_lesson INTEGER := 10/);
 });
 
-test('daily quiz totals 15 XP before the existing challenge multiplier', () => {
+test('daily quiz totals 20 XP before the existing challenge multiplier', () => {
   const inline = read('lib/learning-inline.js');
   const pointsConfig = read('lib/points-config.js');
   const dashboard = read('dashboard.html');
@@ -25,8 +25,17 @@ test('daily quiz totals 15 XP before the existing challenge multiplier', () => {
 
   assert.match(inline, /dailyQuizBonus = 10 \* _quizXpMultiplier/);
   assert.match(pointsConfig, /DAILY_QUIZ_BONUS:\s*10/);
-  assert.match(dashboard, /\+15 XP earned\. Come back tomorrow!/);
-  assert.match(homeQuiz, /var xpAmount = perfect \? 15 : 1;/);
+  assert.match(dashboard, /\+20 XP earned\. Come back tomorrow!/);
+  assert.match(homeQuiz, /var xpAmount = perfect \? 20 : 1;/);
+});
+
+test('learning quizzes are not silently capped after three completions', () => {
+  const config = read('lib/learning-config.js');
+  const migration = read('supabase/migrations/20260718070000_fix_quiz_xp_awards.sql');
+
+  assert.doesNotMatch(config, /DAILY_LESSON_LIMIT/);
+  assert.doesNotMatch(migration, /daily_limit_reached/);
+  assert.match(migration, /'lessons_remaining_today', NULL/);
 });
 
 test('completed lesson replays explain that XP was already claimed', () => {
