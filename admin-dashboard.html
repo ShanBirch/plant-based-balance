@@ -1006,6 +1006,9 @@
         .alert-story-context-label { display: inline-flex; align-items: center; width: fit-content; padding: 2px 7px; border-radius: 999px; background: #cffafe; border: 1px solid #67e8f9; color: #0e7490; font-size: 0.62rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; }
         .alert-story-context-body { margin-top: 5px; font-size: 0.78rem; line-height: 1.42; color: #155e75; }
         .alert-story-context-body div + div { margin-top: 2px; }
+        .alert-story-context.unavailable { background: #fff7ed; border-color: #fed7aa; border-left-color: #f97316; color: #9a3412; }
+        .alert-story-context.unavailable .alert-story-context-label { background: #ffedd5; border-color: #fdba74; color: #c2410c; }
+        .alert-story-context.unavailable .alert-story-context-body { color: #9a3412; }
         .alert-message-media { display: grid; gap: 6px; margin-top: 7px; }
         .alert-message-photo { display: block; width: min(320px, 100%); max-height: 280px; object-fit: contain; background: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; }
         .alert-media-fallback { display: none; width: max-content; max-width: 100%; align-items: center; justify-content: center; padding: 7px 10px; border-radius: 8px; border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; font-size: 0.78rem; font-weight: 700; text-decoration: none; }
@@ -1886,6 +1889,23 @@
         }
 
         .alert-story-context-body {
+            color: var(--admin-muted) !important;
+        }
+
+        .alert-story-context.unavailable {
+            background: var(--admin-warn-bg) !important;
+            border-color: var(--admin-border) !important;
+            border-left-color: var(--admin-warn) !important;
+            color: var(--admin-text) !important;
+        }
+
+        .alert-story-context.unavailable .alert-story-context-label {
+            background: rgba(245, 158, 11, 0.14) !important;
+            border-color: var(--admin-border-strong) !important;
+            color: var(--admin-warn) !important;
+        }
+
+        .alert-story-context.unavailable .alert-story-context-body {
             color: var(--admin-muted) !important;
         }
 
@@ -7953,6 +7973,7 @@
                 const match = raw.match(re);
                 return match && match[1] ? cleanIgStoryReplyContextValue(match[1]) : '';
             };
+            const caption = take(/Story caption:\s*([^\n|]+)/i);
             const visibleText = take(/Visible story text:\s*([^\n|]+)/i);
             const summary = take(/Story summary:\s*([^\n|]+)/i);
             const reply = take(/Their reply:\s*([^\n]+)/i)
@@ -7960,8 +7981,8 @@
                 || take(/Raw IG message:\s*replied to your story(?:\s*\([^)]*\))?\s*([\s\S]*)$/i)
                 || take(/^\s*replied to your story(?:\s*\([^)]*\))?\s+(.+)$/i);
             const displayReply = /^\(no text\b/i.test(reply) ? '' : reply;
-            if (!visibleText && !summary && !displayReply) return null;
-            return { visibleText, summary, reply: displayReply };
+            if (!caption && !visibleText && !summary && !displayReply) return null;
+            return { caption, visibleText, summary, reply: displayReply };
         }
 
         function extractIgStoryReplyDisplayText(text) {
@@ -19835,28 +19856,53 @@
                 list.forEach(item => candidates.push(item?.text || item?.message || item?.body || item?.message_text));
             });
 
-            const merged = { visibleText: '', summary: '', reply: '' };
+            const merged = { caption: '', visibleText: '', summary: '', reply: '' };
+            let detected = false;
+            let explicitlyUnavailable = false;
             candidates.forEach(candidate => {
+                const raw = String(candidate || '');
+                if (/\[IG_STORY_REPLY_CONTEXT\]|STORY REPLY CONTEXT:|Raw IG message:\s*replied to your story|^\s*replied to your story\b/im.test(raw)) {
+                    detected = true;
+                }
+                if (/does not have verified story contents|no verified story contents|context[_ ]reliable[^\n]*(?:false|no)/i.test(raw)) {
+                    explicitlyUnavailable = true;
+                }
                 const parsed = parseIgStoryReplyContext(candidate);
                 if (!parsed) return;
+                if (!merged.caption && parsed.caption) merged.caption = parsed.caption;
                 if (!merged.visibleText && parsed.visibleText) merged.visibleText = parsed.visibleText;
                 if (!merged.summary && parsed.summary) merged.summary = parsed.summary;
                 if (!merged.reply && parsed.reply) merged.reply = parsed.reply;
             });
 
-            return (merged.visibleText || merged.summary || merged.reply) ? merged : null;
+            if (!detected && !merged.caption && !merged.visibleText && !merged.summary && !merged.reply) return null;
+            return {
+                ...merged,
+                detected: true,
+                available: !explicitlyUnavailable && !!(merged.caption || merged.visibleText || merged.summary),
+            };
         }
 
         function renderStoryReplyContextStrip(alert) {
             const context = getAlertStoryReplyContextInfo(alert);
             if (!context) return '';
+            if (!context.available) {
+                return `<div class="alert-story-context unavailable">
+                    <span class="alert-story-context-label">Story context unavailable</span>
+                    <div class="alert-story-context-body">
+                        <div>Instagram identified this as a Story reply, but did not provide verified frame contents. The draft must not guess what the Story showed.</div>
+                        ${context.reply ? `<div><strong>Their reply:</strong> ${escapeHtml(context.reply)}</div>` : ''}
+                    </div>
+                </div>`;
+            }
             const rows = [
+                context.caption ? `<div><strong>Story caption:</strong> ${escapeHtml(context.caption)}</div>` : '',
                 context.visibleText ? `<div><strong>Shannon story:</strong> ${escapeHtml(context.visibleText)}</div>` : '',
                 context.summary ? `<div><strong>Context:</strong> ${escapeHtml(context.summary)}</div>` : '',
                 context.reply ? `<div><strong>Their reply:</strong> ${escapeHtml(context.reply)}</div>` : '',
             ].filter(Boolean).join('');
             return `<div class="alert-story-context">
-                <span class="alert-story-context-label">Story reply - context</span>
+                <span class="alert-story-context-label">Story context available</span>
                 <div class="alert-story-context-body">${rows}</div>
             </div>`;
         }
