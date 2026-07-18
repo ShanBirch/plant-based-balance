@@ -5634,6 +5634,8 @@ const LEAD_NO_RESPONSE_WORDS = new Set([
     'ok', 'okay', 'haha', 'lol', 'lmao', 'thanks', 'thank',
     'you', 'ta', 'cheers', 'cool', 'nice', 'sweet', 'fair',
 ]);
+const LEAD_RECIPROCAL_QUESTION_RE = /(?:\b(?:yours|wbu|hbu|what about you|how about you)\s*\?+|(?:^|[,;.!]\s*|\band\s+)you\s*\?+)/i;
+const DRAFT_FIRST_PERSON_ANSWER_RE = /\b(?:i|i'm|im|i've|ive|i'd|id|my|mine|me|personally)\b/i;
 
 function compactReviewWords(text) {
     return String(text || '').toLowerCase().match(/[a-z0-9]+(?:'[a-z0-9]+)?/g) || [];
@@ -5739,6 +5741,39 @@ function applyLeadStoryReplyQuestionGuard(review, { draftText, contextBlocks, al
         notification_reason: base.notification_required ? base.notification_reason : (stableTrainingConstraint ? 'lead_training_constraint_missing_question' : 'lead_story_reply_missing_question'),
         reviewer_model: `${base.reviewer_model || DRAFT_REVIEW_MODEL}+story-reply-guard`,
         deterministic_guard: stableTrainingConstraint ? 'lead_training_constraint_missing_question' : 'lead_story_reply_missing_question',
+    };
+}
+
+function applyLeadDirectQuestionCoverageGuard(review, { draftText, contextBlocks, alertType } = {}) {
+    const base = review || normalizeDraftReviewPayload({
+        verdict: 'pass',
+        confidence: 0,
+        summary: 'Draft matches the available context.',
+    });
+    if (!['ig_incoming_dm', 'fb_incoming_dm'].includes(alertType)) return base;
+    if (base.verdict === 'block') return base;
+
+    const currentMessage = extractJustArrivedReviewMessage(contextBlocks);
+    if (!LEAD_RECIPROCAL_QUESTION_RE.test(currentMessage)) return base;
+
+    const draft = normalizeCoachDraftText(draftText || '').replace(/\s+/g, ' ').trim();
+    if (DRAFT_FIRST_PERSON_ANSWER_RE.test(draft)) return base;
+
+    return {
+        ...base,
+        verdict: 'warn',
+        confidence: Math.max(Number(base.confidence) || 0, 0.99),
+        summary: 'The lead asked the same question back, but the draft did not answer for Shannon.',
+        issues: normalizeDraftReviewIssues([
+            ...(Array.isArray(base.issues) ? base.issues : []),
+            'Unanswered reciprocal direct question from the latest inbound message.',
+        ]),
+        suggested_fix: 'Add one brief first-person answer to their "yours?" / "you?" question before any new follow-up.',
+        context_loss_suspected: base.context_loss_suspected || false,
+        notification_required: base.notification_required || false,
+        notification_reason: base.notification_required ? base.notification_reason : 'unanswered_direct_question',
+        reviewer_model: `${base.reviewer_model || DRAFT_REVIEW_MODEL}+direct-question-guard`,
+        deterministic_guard: 'unanswered_reciprocal_question',
     };
 }
 
@@ -5912,6 +5947,7 @@ IG/FB LEAD QUALITY CHECK:
 - Current primary paid offer: Balance Vegan Fitness Founders Pass is AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and vegan fitness community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included. Starter Coaching at AUD $29.99/week is the optional ongoing higher-touch upgrade. The default close happens inside DMs.
 - Block if it uses a stock intake line such as "what does a normal day look like", a bare "what are your goals", or any name + age + goal + blocker bundle.
 - Block if it asks several discovery questions at once. One natural question max, and it should be tied to the strongest latest detail unless they clearly asked to start.
+- Warn with notification_required=false if the latest inbound ends with a reciprocal question such as "yours?", "you?", "what about you?", "wbu?", or "hbu?" and the draft does not give Shannon's brief first-person answer before moving on. The DM manager should repair it. Reacting to their answer and asking a different question does not satisfy this.
 - When qualifier context designates one next-missing-fact question, treat that question as conversion work, not optional curiosity. Preserve one equivalent specific question unless it is unsafe, unsupported, repetitive, or the lead is clearly closing.
 - Prefer statement-led elicitation over question-led intake. Warn if the draft could have used a clear label like "sounds like this is more a structure problem than a motivation problem" but instead asks another broad discovery question.
 - Block if a draft offers a free challenge/free entry as the acquisition or conversion path. Balance no longer uses that funnel.
@@ -5970,6 +6006,7 @@ Do not block just because the older timeline contains a different unresolved top
 Do not block just because the draft also answers prior unanswered messages from the same recent inbound burst. If Shannon has not replied between those inbound messages and the draft naturally answers the newest message, treat the burst as one conversational turn.
 
 Warn when the draft is usable but should be checked or softened.
+Warn when the draft answers one part of the latest inbound but skips any other explicit direct question. Audit every question mark and reciprocal shorthand before passing it; a relevant new follow-up does not replace an answer owed to the lead.
 Warn when the draft adds a Shannon day/app/Sunshine update that was not directly asked for, especially if the lead asked about a specific topic like dating, where Shannon lives, or what something is like near him.
 Do not warn or block just because the draft answers Shannon's day, evening, sleep, weekend, plans, or what he is up to when the latest inbound directly asks about that. In that case, a short personal answer plus one tie-back is context-following rapport, not unsolicited filler.
 Warn when the draft over-covers: it reflects several details, adds praise, and adds a question when one normal reaction or direct answer would do.
@@ -6077,11 +6114,16 @@ async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contex
         contextBlocks,
         alertType,
     });
-    const contextReview = mergeDraftReviewContextReview(guardedReview, existingContextReview);
-    if (alertId && guardedReview) {
-        await updateAlertDraftReview(alertId, guardedReview, contextReview);
+    const directQuestionGuardedReview = applyLeadDirectQuestionCoverageGuard(guardedReview, {
+        draftText,
+        contextBlocks,
+        alertType,
+    });
+    const contextReview = mergeDraftReviewContextReview(directQuestionGuardedReview, existingContextReview);
+    if (alertId && directQuestionGuardedReview) {
+        await updateAlertDraftReview(alertId, directQuestionGuardedReview, contextReview);
     }
-    return { review: guardedReview, contextReview };
+    return { review: directQuestionGuardedReview, contextReview };
 }
 
 function isDraftReviewAutoSendSafe(review) {
@@ -7708,6 +7750,7 @@ module.exports = {
     softenMediaOnlyDraftReview,
     softenRecentInboundBurstDraftReview,
     applyLeadStoryReplyQuestionGuard,
+    applyLeadDirectQuestionCoverageGuard,
     applyLeadProgressionQuestionProtection,
     isAppProblemSupportRequest,
     getAppProblemAutoSendHoldReason,

@@ -995,6 +995,22 @@ function requireNonEmptyDraftText(text, sourceLabel) {
     return text;
 }
 
+function extractMediaSummaryFromDraftRawText(rawText) {
+    const candidate = String(rawText || '')
+        .trim()
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/, '')
+        .trim();
+    if (!candidate) return '';
+    try {
+        const parsed = JSON.parse(candidate);
+        const summary = parsed?.media_summary ?? parsed?.mediaSummary ?? parsed?.visual_summary ?? parsed?.visualSummary;
+        return truncate(String(summary || '').replace(/\s+/g, ' ').trim(), 600);
+    } catch {
+        return '';
+    }
+}
+
 function splitPlainDraftIntoChunks(text, maxChunks = MAX_CHUNKS) {
     const trimmed = String(text || '').trim();
     if (!trimmed) return [];
@@ -2793,6 +2809,7 @@ ${learningReelContextBlock}
 
 CONVERSATION RESPONSIBILITY:
 - BUSINESS/PERSONAL BOUNDARY: Shannon's acquisition inbox is for genuine human rapport that can lead to Balance, not for the system to conduct his dating or private social life. Never flirt back, call someone cute/hot/sexy, accept or arrange a social/video call, move them to Discord/WhatsApp, promise beach/personal photos, say "I'll make it up to you", or imply future personal contact. A social or flirtatious call request is not buyer intent. Do not draft a reply for it as if Shannon accepted. It requires Shannon's manual decision. A coaching/sales call is valid only when the lead explicitly connects the call to Balance, coaching, fitness/health help, the paid offer, or working with Shannon.
+- Answer every live direct question before introducing a new question. A trailing "yours?", "you?", "what about you?", "wbu?", or "hbu?" asks Shannon the same question he just asked them. Include a brief first-person answer; praising their answer and moving to a different follow-up does not answer it.
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
 - When that answer completes the small thread, do not turn it into another question by default. A practical steer, acknowledgement, or clean pause is often better for active clients.
 - If they just gave their current status, feeling, pain, soreness, or symptom answer, do not ask "how's it feeling today", "how are you feeling", or "still pain?" back at them. Treat it as answered, acknowledge it, then use a statement or practical next step unless a different missing detail changes what Shannon should do.
@@ -2872,7 +2889,9 @@ ${qualifierQuestionProtected ? 'This is a protected next-missing-fact move. Answ
 ${qualifierQuestionProtected ? 'If its exact wording feels generic, rewrite it naturally around their latest detail, but retain the same relevant missing fact.' : 'If the suggested move sounds generic or ignores a fresher detail from their latest message, rewrite it around that detail or skip it.'} Never paste a stock line like "what does a normal day look like", "are you much of a cook or more of a takeaway person", "you training at the moment", or "what are your goals" into an auto-DM draft.
 ` : ''}
 OUTPUT FORMAT — JSON only, nothing else:
-${replyMode.chunkExample}
+${mediaParts.length > 0
+        ? '{"messages": ["chunk 1", "chunk 2 (if needed)"], "media_summary": "one brief factual description of what is visibly or audibly relevant in the attached media"}'
+        : replyMode.chunkExample}
 
 Rules:
 - ${replyMode.lengthRule}
@@ -2883,6 +2902,7 @@ Rules:
 - Don't artificially split a single sentence. Each chunk should stand on its own.
 - Never put literal backslash-n escape sequences inside a chunk. Use normal punctuation, or start a new chunk if you need a pause.
 - The JSON wrapper is only for the system. The chunk strings must contain only the exact DM text Shannon would send. Never put "json", "messages", "chunk", labels, or formatting instructions inside a chunk.
+- When attached media is available, media_summary is required. Describe the useful visible or audible facts in one concise sentence without guessing identity, relationships, location, or intent. This is private context for later review and must not be copied mechanically into the DM.
 - No quotes, labels, code-fence, or commentary outside the JSON.`;
     prompt = prompt.replace(
         /- 1 to 3 chunks\.[^\n]*\n- Split where/,
@@ -2973,8 +2993,11 @@ Rules:
     const mediaGenerationSucceeded = hasInlineMedia
         && !!rawText
         && !/media-failed/i.test(String(model || ''));
+    const mediaSummary = mediaGenerationSucceeded
+        ? extractMediaSummaryFromDraftRawText(rawText)
+        : '';
     const analyzedKinds = [];
-    if (imageParts.length > 0 && mediaGenerationSucceeded) analyzedKinds.push('photo');
+    if (imageParts.length > 0 && mediaGenerationSucceeded && mediaSummary) analyzedKinds.push('photo');
     if (audioTranscriptCount > 0 || (audioParts.length > 0 && mediaGenerationSucceeded)) analyzedKinds.push('audio');
     if (((videoParts.length > 0 || videoFileCount > 0) && mediaGenerationSucceeded) || reelContextCount > 0) analyzedKinds.push('video');
     mediaDecode.analyzed_kinds = analyzedKinds;
@@ -2984,6 +3007,8 @@ Rules:
         && (!hadVideoUrls || analyzedKinds.includes('video'));
     mediaDecode.analysis_model = mediaDecode.analysis_succeeded ? model : null;
     mediaDecode.analyzed_at = mediaDecode.analysis_succeeded ? new Date().toISOString() : null;
+    mediaDecode.media_summary = mediaSummary || null;
+    mediaDecode.summary_missing = imageParts.length > 0 && mediaGenerationSucceeded && !mediaSummary;
 
     const hasDecodedMedia = mediaParts.length > 0;
     let emptyDraftRecovery = null;
@@ -3095,6 +3120,7 @@ Rules:
         audioTranscriptCount,
         videoUrlCount,
         mediaDecode,
+        mediaSummary,
         timeline: totalConversationText,
         currentTurnAnchorBlock,
         storyReplyPromptContextBlock,
@@ -3866,6 +3892,7 @@ exports.handler = async (event) => {
             current_message: displayMessage,
             recent_timeline: draft.timeline || '',
             story_context: draft.storyReplyPromptContextBlock || '',
+            media_context: draft.mediaSummary || draft.mediaContextPromptBlock || '',
             learning_reel_context: draft.learningReelEvidenceBlock || draft.learningReelContextBlock || '',
         },
     });
@@ -4017,6 +4044,7 @@ exports.handler = async (event) => {
             video_url_count: draft.videoUrlCount || 0,
             video_inline_count: draft.videoCount || 0,
             media_decode: draft.mediaDecode || null,
+            media_summary: draft.mediaSummary || null,
             media_review: mediaReview.required ? mediaReview : null,
             context_review: contextReview.required ? contextReview : null,
             challenge_offer_warning: challengeOfferWarning,
@@ -4045,7 +4073,10 @@ exports.handler = async (event) => {
                 story_context: truncate(String(draft.storyReplyPromptContextBlock || '').trim(), 1400),
                 native_story_context: truncate(String(draft.nativeStoryOutreachContextBlock || '').trim(), 1400),
                 native_story_confusion_repair: truncate(String(draft.nativeStoryConfusionRepairBlock || '').trim(), 1400),
-                media_context: truncate(String(draft.mediaContextPromptBlock || '').trim(), 1800),
+                media_context: truncate([
+                    draft.mediaSummary ? `Decoded media summary: ${draft.mediaSummary}` : '',
+                    String(draft.mediaContextPromptBlock || '').trim(),
+                ].filter(Boolean).join('\n\n'), 1800),
                 learning_reel_context: truncate(String(draft.learningReelEvidenceBlock || draft.learningReelContextBlock || '').trim(), 1800),
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
@@ -4302,11 +4333,14 @@ exports.handler = async (event) => {
             }).join('\n'), 1200)}`
             : '';
         const audioTranscriptReviewContext = buildAudioTranscriptReviewContext(draft.mediaDecode, leadName);
+        const mediaSummaryReviewContext = draft.mediaSummary
+            ? `\nDecoded media summary: ${truncate(draft.mediaSummary, 900)} (private evidence, not the lead's typed words)`
+            : '';
         const learningReelReviewText = draft.learningReelEvidenceBlock || learningReelEvidenceBlock || draft.learningReelContextBlock || '';
         const learningReelReviewContext = learningReelReviewText
             ? `\nRecent sent learning reel context:\n${truncate(learningReelReviewText, 1800)}`
             : '';
-        const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${audioTranscriptReviewContext}${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReviewContext}`;
+        const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${mediaSummaryReviewContext}${audioTranscriptReviewContext}${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReviewContext}`;
         const reviewTimeoutMs = cocosAutoSendLane ? COCOS_DRAFT_REVIEW_TIMEOUT_MS : IG_DRAFT_REVIEW_TIMEOUT_MS;
         try {
             const reviewResult = await withTimeout(reviewDraftAndUpdateAlert({
@@ -4817,6 +4851,7 @@ exports._test = {
     isExplicitCallBookingRequest,
     buildLeadOnboardingHandoffData,
     finalizeDraftChunksFromRawText,
+    extractMediaSummaryFromDraftRawText,
     repairMissingChallengeBioLinkChunks,
     suppressExistingClientSignupLinkHandoffInDraftChunks,
     isExistingClientThread,
