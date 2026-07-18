@@ -480,15 +480,30 @@ with params as (
           'lead_offer_ready',
           'lead_buyer_intent'
       )
+), attempts_7d as (
+    select e.id
+    from public.growth_outcome_events e
+    join public.ig_threads t on t.id = e.ig_thread_id
+    cross join params p
+    where t.coach_id = p.coach_id
+      and e.event_type = 'lead_health_progression_attempted'
+      and e.occurred_at >= p.day_end - interval '7 days'
+      and e.occurred_at < p.day_end
+), answered_attempts_7d as (
+    select count(distinct a.id)::int as answered_count
+    from attempts_7d a
+    join public.growth_outcome_events e
+      on e.event_type = 'lead_health_progression_answered'
+     and e.attribution->>'attempt_event_id' = a.id::text
 )
 select
     count(*) filter (where event_type = 'lead_health_progression_attempted')::int as health_moves,
     count(distinct ig_thread_id) filter (where event_type = 'lead_health_progression_attempted')::int as leads_health_moved,
     count(*) filter (where event_type = 'lead_health_progression_answered')::int as health_replies,
     case
-        when count(*) filter (where event_type = 'lead_health_progression_attempted') = 0 then 0
-        else round(100.0 * count(*) filter (where event_type = 'lead_health_progression_answered')
-            / count(*) filter (where event_type = 'lead_health_progression_attempted'))::int
+        when (select count(*) from attempts_7d) = 0 then 0
+        else round(100.0 * (select answered_count from answered_attempts_7d)
+            / (select count(*) from attempts_7d))::int
     end as health_reply_rate,
     count(*) filter (where event_type = 'lead_goal_identified')::int as goals_identified,
     count(*) filter (where event_type = 'lead_blocker_identified')::int as blockers_identified,
