@@ -303,13 +303,22 @@ function hasDecodedAudioTranscript(data = {}) {
     return Number(data.audio_transcript_count || data.audioTranscriptCount || decode.audio_transcript_count || decode.audioTranscriptCount || 0) > 0;
 }
 
+function hasVoiceNoteEvidence(data = {}) {
+    const decode = data.media_decode || data.mediaDecode || {};
+    if (Number(data.audio_url_count || data.audioUrlCount || decode.audio_url_count || decode.audioUrlCount || 0) > 0) return true;
+    if (Number(data.audio_inline_count || data.audioInlineCount || decode.audio_inline_count || decode.audioInlineCount || 0) > 0) return true;
+    return /\b(?:voice note|audio)\b|\[AUDIO:/i.test(joinedLeadEvidenceText(data));
+}
+
 function draftAsksForMissingVoiceNote(alert = {}) {
+    const data = alert.data || {};
     const draft = normalizeStatusText(draftTextFromAlert(alert));
     if (!draft) return false;
+    const voiceEvidence = hasVoiceNoteEvidence(data);
     return /\b(?:voice note|audio|last note|that note|the note)\b.{0,100}\b(?:didn'?t|did not|doesn'?t|does not|couldn'?t|could not|can'?t|cannot)\s+(?:come through|hear|understand|make out|play|open)\b/i.test(draft)
         || /\b(?:didn'?t|did not|doesn'?t|does not|couldn'?t|could not|can'?t|cannot)\s+(?:hear|understand|make out|play|open)\b.{0,100}\b(?:voice note|audio|last note|that note|the note)\b/i.test(draft)
         || /\b(?:can|could)\s+you\s+(?:send|type|say|repeat)\b.{0,80}\b(?:gist|again|voice note|audio|what you said)\b/i.test(draft)
-        || /\bwhat\s+(?:were|are)\s+you\s+(?:saying|trying\s+to\s+say)\b/i.test(draft);
+        || (voiceEvidence && /\bwhat\s+(?:were|are)\s+you\s+(?:saying|trying\s+to\s+say)\b/i.test(draft));
 }
 
 function draftAsksForMissingDecodedVoiceNote(alert = {}) {
@@ -738,6 +747,10 @@ function classifyNeedsYou(alert = {}) {
             reasons.push('public_ai_automation_wording_in_draft');
             labels.push('draft mentions AI, bot, automation, or system wording in public copy');
         }
+        if (draftAsksForMissingVoiceNote(alert)) {
+            reasons.push('voice_note_public_resend_or_gist_draft');
+            labels.push('draft asks the lead to resend, repeat, or type the gist of a voice note');
+        }
         if (draftAsksForMissingDecodedVoiceNote(alert)) {
             reasons.push('decoded_voice_note_stale_clarification');
             labels.push('draft asks for a voice-note repeat even though transcript evidence exists');
@@ -1005,6 +1018,8 @@ exports._test = {
     leadHasAiAuthenticityConcern,
     draftHasPublicAiAutomationWording,
     hasDecodedAudioTranscript,
+    hasVoiceNoteEvidence,
+    draftAsksForMissingVoiceNote,
     draftAsksForMissingDecodedVoiceNote,
     draftReopensDroppedClarification,
     draftForcesStockFitnessPivotFromLightStory,

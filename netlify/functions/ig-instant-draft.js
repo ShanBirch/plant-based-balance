@@ -929,7 +929,7 @@ THE OFFERING (for context — never list as a brochure; speak like a friend):
 - Once they start, the Balance app gives them the guided kickstart, training and food structure, progress tools and community.
 - Shannon checks in once a week only in the optional Starter Coaching upgrade.
 - Keep it low-pressure. If they are not ready, leave a clean re-entry handle or use the paid app/group option when it genuinely fits. Do not revive a free-challenge funnel.
-- Voice notes: when the system supplies a decoded voice-note transcript or media summary, treat it as heard. Reply to the content. Do not ask them to resend, repeat, or type the gist unless there is no transcript/summary and the media is genuinely inaccessible.
+- Voice notes: when the system supplies a decoded voice-note transcript or media summary, treat it as heard. Reply to the content. Never ask them to resend, repeat, or type the gist of a voice note. If audio is genuinely inaccessible or unintelligible after retries, leave no public voice-note fallback and let the media-review hold/retry path handle it.
 
 RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
 - "What's actually included?" -> explain the Founders Pass casually: six-week guided kickstart plus lifetime core app and vegan community access for $99 once. Be clear ongoing individual coaching is separate. Don't dump a brochure.
@@ -1105,7 +1105,7 @@ function buildEmptyMediaDraftFallbackChunks({ mediaDecode = {}, currentMessageTe
     const photoCount = Number(mediaDecode.photo_url_count || mediaDecode.image_url_count || mediaDecode.photoUrlCount || 0);
     const videoCount = Number(mediaDecode.video_url_count || mediaDecode.videoUrlCount || 0);
     if (audioCount > 0 || /\bvoice note|audio\b/.test(current)) {
-        return [normalizeGeneratedCoachDraftText('i got your voice note but it didn\'t come through clearly on my end. can you send me the gist quickly?')];
+        return [];
     }
     if (photoCount > 0 || /\bphoto|image|pic|picture\b/.test(current)) {
         return [normalizeGeneratedCoachDraftText('that photo didn\'t come through clearly on my end. can you send it again?')];
@@ -1254,7 +1254,7 @@ ${lastShannonText ? `Shannon's previous message: ${truncate(lastShannonText, 260
 Conversation context, oldest to newest:
 ${truncateTail(totalConversationText || '(no prior tracked context)', 2600)}
 
-Attached media below is from the latest unanswered inbound batch. If a voice note is attached, listen to it and reply to what they said. Do not transcribe it. Do not say you listened to, heard, opened, checked, saw, or watched the media. If the media is genuinely not understandable, write one casual message asking them to resend it or type the gist.
+Attached media below is from the latest unanswered inbound batch. If a voice note is attached, listen to it and reply to what they said. Do not transcribe it. Do not say you listened to, heard, opened, checked, saw, or watched the media. Never ask them to resend, repeat, or type the gist of a voice note. If the audio is genuinely not understandable, return {"messages":[]} so the media-review hold/retry path can handle it internally.
 
 Write in Shannon's casual texting voice with normal phone autocorrect casing. Use contractions so the reply sounds spoken: it's, I'd, wouldn't, don't, can't, you're. Keep it short unless the audio asks for detailed help. No AI/automation wording. No em-dashes. Never type literal backslash-n escape sequences in the reply text. Use normal punctuation instead.
 
@@ -2634,7 +2634,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
         mediaFailureNotes.push('one of the photos in the unanswered batch did not open on my end, ask casually if they can re-send or check if it loaded for them');
     }
     if (audioFetchFailed) {
-        mediaFailureNotes.push('one of the voice notes in the unanswered batch did not play on my end, ask casually if they can resend it or type the gist');
+        mediaFailureNotes.push('one of the voice notes in the unanswered batch did not play on my end; do not ask them to resend, repeat, or type the gist. Answer only typed context, or return no public draft if the reply depends on the audio');
     }
     if (videoFetchFailed) {
         mediaFailureNotes.push('one of the videos in the unanswered batch did not open on my end, ask casually if they can resend it or type the gist');
@@ -2947,7 +2947,7 @@ ACTION CLAIMS:
 - If they report a weird food/meal name from the app, correct obvious voice-to-text or typo errors using the conversation and app context instead of repeating the nonsense phrase as a real meal. Example: if the likely plan meal is "Berry Almond Baked Oats", do not call it "very almond mixed oats".
 - If they report a calorie/logging discrepancy, acknowledge it as something Shannon should check. Do not promise to manually adjust or log anything unless the app data below proves it has already been done.
 ${acquisitionStyleBlock}
-- For first/early replies to Shannon's story opener, default to one tiny move about their hook. That can be a short statement, not always a question. Ask a light question only when it is clearly the best next text, or when there is no better hook and Shannon has not asked a basic day/week opener yet. Skip the move when they only said thanks/emoji/filler, it is a genuinely short no-response-needed reply, the topic is a current safety/medical/rehab advice situation, or the thread is clearly closing. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is not sensitive by itself. If they share a stable limitation that affects their training but do not ask for diagnosis, treatment, or rehab advice, acknowledge it then ask one short non-medical question about what training they can still progress or how it changes their week. Keep it as light rapport, never a diagnosis or prescription. A one-word story reaction such as "cute" is not permission to reset into "are you into fitness much too?". The DM manager owns unclear context and every media type: retrieve and inspect the full unanswered batch, transcribe voice notes, analyze photos/video, and ask one natural clarification or resend/gist question if the source is genuinely inaccessible. If a decoded voice-note transcript or media summary is present, it is accessible and must be answered directly, never treated as missing. Route only a credible current self-harm/imminent-danger signal or a direct AI/automation/authenticity challenge to Needs You. A Shannon-side personal aside cannot be the whole reply in this moment. Example: if they reply about InsightTimer filling your cup, "that stuff can properly reset a day" may be enough; ask whether they use it for meditations or reminders only if the thread needs a question.
+- For first/early replies to Shannon's story opener, default to one tiny move about their hook. That can be a short statement, not always a question. Ask a light question only when it is clearly the best next text, or when there is no better hook and Shannon has not asked a basic day/week opener yet. Skip the move when they only said thanks/emoji/filler, it is a genuinely short no-response-needed reply, the topic is a current safety/medical/rehab advice situation, or the thread is clearly closing. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is not sensitive by itself. If they share a stable limitation that affects their training but do not ask for diagnosis, treatment, or rehab advice, acknowledge it then ask one short non-medical question about what training they can still progress or how it changes their week. Keep it as light rapport, never a diagnosis or prescription. A one-word story reaction such as "cute" is not permission to reset into "are you into fitness much too?". The DM manager owns unclear context and every media type: retrieve and inspect the full unanswered batch, transcribe voice notes, and analyze photos/video. If a voice note is inaccessible, do not ask the lead to resend, repeat, or type the gist; leave no public voice-note fallback and let the media-review hold/retry path handle it. If a decoded voice-note transcript or media summary is present, it is accessible and must be answered directly, never treated as missing. Route only a credible current self-harm/imminent-danger signal or a direct AI/automation/authenticity challenge to Needs You. A Shannon-side personal aside cannot be the whole reply in this moment. Example: if they reply about InsightTimer filling your cup, "that stuff can properly reset a day" may be enough; ask whether they use it for meditations or reminders only if the thread needs a question.
 
 NEVER reveal AI, automation, "trained on Shannon's voice", "24/7", or anything that breaks the personal-coach illusion. Shannon is replying personally.
 
@@ -3016,6 +3016,9 @@ Rules:
         : [{ text: prompt }, ...mediaParts];
     const mediaContents = [{ role: 'user', parts: inlineMediaParts }];
     const hasInlineMedia = mediaParts.length > 0;
+    const textOnlyMediaFallbackNote = (hadAudioUrls || audioParts.length > 0 || audioTranscriptCount > 0)
+        ? ' (NOTE: a voice note/audio attachment could not be decoded in this fallback. Do not ask them to resend, repeat, or type the gist. Answer only typed context; if the reply depends on the audio, return {"messages":[]}. Do not pretend you heard it.)'
+        : ' (NOTE: attached media could not be decoded in this fallback. If the reply depends on it, casually ask them to resend it or type the gist. Do not pretend you saw or heard it.)';
     // Text-only contents — used when vision fails OR when there's no image.
     // We rebuild the prompt with the photo-failed hint so the AI knows to
     // ask casually about the photo without pretending it saw it.
@@ -3024,7 +3027,7 @@ Rules:
             'THEIR NEW MESSAGE:\n' + currentMessageText + (mediaInstruction ? ` ${mediaInstruction}` : ''),
             'THEIR NEW MESSAGE:\n' + currentMessageText + (reelContextText
                 ? ' (NOTE: use the reel caption/metadata text above if the thumbnail is unavailable in this fallback. Do not claim to have watched the full reel.)'
-                : ' (NOTE: attached media could not be decoded in this fallback. If the reply depends on it, casually ask them to resend it or type the gist. Do not pretend you saw or heard it.)')
+                : textOnlyMediaFallbackNote)
         )
         : prompt;
     const textContents = [{ role: 'user', parts: [{ text: textOnlyPrompt }] }];

@@ -47,9 +47,11 @@ const fallback = _test.buildEmptyMediaDraftFallbackChunks({
     mediaDecode: { audio_url_count: 1 },
     currentMessageText: '[AUDIO:https://example.com/voice.m4a]',
 });
-assert.strictEqual(fallback.length, 1);
-assert.match(fallback[0], /voice note/i);
-assert.doesNotMatch(fallback[0], /\b(ai|automation|draft)\b/i);
+assert.deepStrictEqual(
+    fallback,
+    [],
+    'voice-note media failures must not create a public resend/gist fallback'
+);
 
 assert.strictEqual(
     _test.isAudioPuntDraftChunks(

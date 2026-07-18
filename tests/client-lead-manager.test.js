@@ -494,8 +494,23 @@ const decodedVoiceNoteClarification = manager.classifyNeedsYou(makeAlert({
     },
 }));
 assert.strictEqual(decodedVoiceNoteClarification.shouldRoute, true);
+assert.ok(decodedVoiceNoteClarification.reasons.includes('voice_note_public_resend_or_gist_draft'));
 assert.ok(decodedVoiceNoteClarification.reasons.includes('decoded_voice_note_stale_clarification'));
 assert.ok(decodedVoiceNoteClarification.reasons.includes('dropped_clarification_reopened'));
+
+const undecodedVoiceNoteResendDraft = manager.classifyNeedsYou(makeAlert({
+    suggested_message: "I got your voice note but it didn't come through clearly, can you send me the gist quickly?",
+    data: {
+        message_preview: '[AUDIO:https://example.com/voice.m4a]',
+        media_decode: {
+            audio_url_count: 1,
+            audio_inline_count: 0,
+            audio_failed: true,
+        },
+    },
+}));
+assert.strictEqual(undecodedVoiceNoteResendDraft.shouldRoute, true);
+assert.ok(undecodedVoiceNoteResendDraft.reasons.includes('voice_note_public_resend_or_gist_draft'));
 
 const droppedClarificationReopened = manager.classifyNeedsYou(makeAlert({
     suggested_message: 'All good haha. What were you trying to say about your food and energy?',
