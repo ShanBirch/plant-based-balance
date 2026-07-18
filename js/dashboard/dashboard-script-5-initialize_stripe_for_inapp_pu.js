@@ -21725,6 +21725,59 @@ function setCustomExerciseVideoUploadState(exerciseId, exerciseName, status, dat
     return nextState;
 }
 
+let _customExerciseUploadBannerHideTimer = null;
+
+function renderCustomExerciseUploadBanner(exerciseName, percent, status) {
+    const banner = document.getElementById('custom-exercise-upload-banner');
+    if (!banner) return;
+    if (banner.parentElement !== document.body) document.body.appendChild(banner);
+
+    const safePercent = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
+    const title = document.getElementById('custom-exercise-upload-banner-title');
+    const percentLabel = document.getElementById('custom-exercise-upload-banner-percent');
+    const progress = document.getElementById('custom-exercise-upload-banner-progress');
+    const detail = document.getElementById('custom-exercise-upload-banner-detail');
+    const icon = document.getElementById('custom-exercise-upload-banner-icon');
+    const currentStatus = status || 'uploading';
+
+    if (_customExerciseUploadBannerHideTimer) {
+        clearTimeout(_customExerciseUploadBannerHideTimer);
+        _customExerciseUploadBannerHideTimer = null;
+    }
+
+    banner.style.display = 'block';
+    if (title) title.textContent = currentStatus === 'uploaded'
+        ? `Video uploaded for ${exerciseName}`
+        : currentStatus === 'failed'
+            ? `Video upload failed for ${exerciseName}`
+            : `Uploading video for ${exerciseName}`;
+    if (percentLabel) percentLabel.textContent = currentStatus === 'failed' ? 'Failed' : `${currentStatus === 'uploaded' ? 100 : safePercent}%`;
+    if (progress) {
+        progress.style.width = `${currentStatus === 'uploaded' ? 100 : safePercent}%`;
+        progress.style.background = currentStatus === 'failed'
+            ? '#ef4444'
+            : currentStatus === 'uploaded'
+                ? '#4ade80'
+                : 'linear-gradient(90deg,#f59e0b,#fde68a)';
+    }
+    if (detail) detail.textContent = currentStatus === 'uploaded'
+        ? 'Your exercise video is ready.'
+        : currentStatus === 'failed'
+            ? 'Open Add an Exercise to retry the video.'
+            : 'You can keep using Balance while it finishes.';
+    if (icon) {
+        icon.textContent = currentStatus === 'uploaded' ? '✓' : currentStatus === 'failed' ? '!' : '↑';
+        icon.style.background = currentStatus === 'uploaded' ? '#16a34a' : currentStatus === 'failed' ? '#dc2626' : '#f59e0b';
+    }
+
+    if (currentStatus === 'uploaded') {
+        _customExerciseUploadBannerHideTimer = setTimeout(() => {
+            banner.style.display = 'none';
+            _customExerciseUploadBannerHideTimer = null;
+        }, 4500);
+    }
+}
+
 function updateCustomExerciseCachesAfterVideoUpload(exerciseId, exerciseName, videoUrl, storagePath) {
     const updateList = (list) => {
         if (!Array.isArray(list)) return list;
@@ -21817,6 +21870,7 @@ function createExerciseVideoUploadPlaceholderHtml() {
 
 function renderCustomExerciseVideoUploadProgress(exerciseName, percent) {
     const safePercent = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
+    renderCustomExerciseUploadBanner(exerciseName, safePercent, 'uploading');
     document.querySelectorAll('.exercise-logger-card').forEach(card => {
         if (card.dataset.exerciseName !== exerciseName) return;
         const placeholder = card.querySelector('[data-video-upload-placeholder="true"]');
@@ -21826,19 +21880,28 @@ function renderCustomExerciseVideoUploadProgress(exerciseName, percent) {
         if (label) label.textContent = `Uploading video ${safePercent}%`;
         if (progress) progress.style.width = `${safePercent}%`;
     });
+    document.querySelectorAll('[data-custom-exercise-upload-row]').forEach(row => {
+        if (row.dataset.exerciseName !== exerciseName) return;
+        const label = row.querySelector('[data-custom-exercise-upload-label]');
+        const progress = row.querySelector('[data-custom-exercise-upload-progress]');
+        if (label) label.textContent = `Uploading ${safePercent}%`;
+        if (progress) progress.style.width = `${safePercent}%`;
+    });
 }
 
 function renderCustomExerciseVideoUploadComplete(exerciseName, videoUrl) {
+    renderCustomExerciseUploadBanner(exerciseName, 100, 'uploaded');
     document.querySelectorAll('.exercise-logger-card').forEach(card => {
         if (card.dataset.exerciseName !== exerciseName) return;
         const placeholder = card.querySelector('[data-video-upload-placeholder="true"]');
-        if (placeholder) {
+        if (placeholder && videoUrl) {
             placeholder.outerHTML = createExerciseVideoBlockHtml(videoUrl, exerciseName);
         }
     });
 }
 
 function renderCustomExerciseVideoUploadFailed(exerciseName) {
+    renderCustomExerciseUploadBanner(exerciseName, 0, 'failed');
     document.querySelectorAll('.exercise-logger-card').forEach(card => {
         if (card.dataset.exerciseName !== exerciseName) return;
         const placeholder = card.querySelector('[data-video-upload-placeholder="true"]');
@@ -22129,7 +22192,7 @@ function watchNativeCustomExerciseVideoUpload(exerciseId, exerciseName) {
                 progress: 100, videoUrl: result.publicUrl || '', storagePath: result.storagePath || '', completedAt: Date.now()
             });
             updateCustomExerciseCachesAfterVideoUpload(exerciseId, exerciseName, result.publicUrl || '', result.storagePath || '');
-            if (result.publicUrl) renderCustomExerciseVideoUploadComplete(exerciseName, result.publicUrl);
+            renderCustomExerciseVideoUploadComplete(exerciseName, result.publicUrl || '');
             updateCustomExerciseUploadStatus('Video uploaded.');
             loadMyCustomExercises();
             return true;
@@ -22152,6 +22215,10 @@ function watchNativeCustomExerciseVideoUpload(exerciseId, exerciseName) {
 
 function queueCustomExerciseVideoBackgroundUpload(user, savedExercise, videoFile, exerciseName) {
     if (!user?.id || !savedExercise?.id || !videoFile) return;
+
+    setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'uploading', { startedAt: Date.now(), progress: 0 });
+    renderCustomExerciseVideoUploadProgress(exerciseName, 0);
+    loadMyCustomExercises();
 
     // Start after any native confirm/alert has closed so mobile webviews do not
     // pause the request while the video body is being streamed.
@@ -22377,6 +22444,7 @@ async function loadMyCustomExercises() {
             const uploadState = getCustomExerciseVideoUploadState(ex.exercise_name, ex.id);
             const isUploading = uploadState?.status === 'uploading';
             const uploadFailed = uploadState?.status === 'failed';
+            const uploadProgress = Math.max(0, Math.min(100, Math.round(Number(uploadState?.progress) || 0)));
             const iconBg = hasVideo
                 ? 'linear-gradient(135deg, var(--primary), #4ade80)'
                 : isUploading
@@ -22397,7 +22465,20 @@ async function loadMyCustomExercises() {
             const videoActionLabel = uploadFailed ? 'Retry video' : 'Add video';
             const escapedExerciseName = String(ex.exercise_name || '').replace(/'/g, "\\'");
             const videoActionHtml = !hasVideo
-                ? '<button type="button" onclick="addVideoToExistingCustomExercise(\'' + ex.id + '\', \'' + escapedExerciseName + '\')" style="background: #fff7ed; border: 1px solid #fbbf24; color: #92400e; border-radius: 8px; padding: 8px 10px; font-size: 0.78rem; font-weight: 800; cursor: pointer; white-space: nowrap;">' + videoActionLabel + '</button>'
+                ? isUploading
+                    ? '<button type="button" disabled style="background:#f1f5f9; border:1px solid #cbd5e1; color:#64748b; border-radius:8px; padding:8px 10px; font-size:0.78rem; font-weight:800; white-space:nowrap;">Uploading</button>'
+                    : '<button type="button" onclick="addVideoToExistingCustomExercise(\'' + ex.id + '\', \'' + escapedExerciseName + '\')" style="background: #fff7ed; border: 1px solid #fbbf24; color: #92400e; border-radius: 8px; padding: 8px 10px; font-size: 0.78rem; font-weight: 800; cursor: pointer; white-space: nowrap;">' + videoActionLabel + '</button>'
+                : '';
+            const escapedDataExerciseName = String(ex.exercise_name || '')
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            const uploadProgressHtml = isUploading
+                ? '<div data-custom-exercise-upload-row data-exercise-name="' + escapedDataExerciseName + '" style="margin-top:8px;">'
+                    + '<div style="display:flex; justify-content:space-between; gap:8px; margin-bottom:5px; font-size:0.7rem; font-weight:800; color:#7c5b18;">'
+                    + '<span data-custom-exercise-upload-label>Uploading ' + uploadProgress + '%</span><span>You can keep going</span></div>'
+                    + '<div style="height:6px; background:#fdecc8; border-radius:999px; overflow:hidden;"><div data-custom-exercise-upload-progress style="width:' + uploadProgress + '%; height:100%; background:linear-gradient(90deg,#f59e0b,#fbbf24); border-radius:999px; transition:width 180ms ease;"></div></div></div>'
                 : '';
 
             return `
@@ -22410,6 +22491,7 @@ async function loadMyCustomExercises() {
                         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
                             ${muscleLabel}${muscleLabel && equipLabel ? ' &middot; ' : ''}${equipLabel}${metaSuffix}
                         </div>
+                        ${uploadProgressHtml}
                     </div>
                     ${videoActionHtml}
                     <button onclick="deleteCustomExercise('${ex.id}', '${ex.exercise_name.replace(/'/g, "\\'")}')" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 8px; flex-shrink: 0;">

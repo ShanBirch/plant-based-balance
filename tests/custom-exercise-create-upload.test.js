@@ -50,7 +50,7 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=141/,
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=148/,
   'dashboard should bump script 5 so phones fetch the upload progress and background worker flow'
 );
 assert.match(
@@ -60,7 +60,7 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /title:'Add an Exercise'[\s\S]*If a video ever fails[\s\S]*tap Add video beside that exercise/,
+  /title:'Add an Exercise'[\s\S]*finish a saved exercise video later[\s\S]*Upload progress stays on screen/,
   'custom exercise retry should be in the guided feature tour'
 );
 assert.match(
@@ -193,6 +193,36 @@ assert.match(
   workoutScript,
   /function renderCustomExerciseVideoUploadProgress\(exerciseName, percent\)[\s\S]*Uploading video \$\{safePercent\}%/,
   'custom exercise uploads should render XHR progress in the workout card'
+);
+assert.match(
+  dashboardHtml,
+  /id="custom-exercise-upload-banner"[\s\S]*id="custom-exercise-upload-banner-progress"/,
+  'exercise video uploads should have a persistent app-level progress bar'
+);
+assert.match(
+  workoutScript,
+  /function renderCustomExerciseUploadBanner\(exerciseName, percent, status\)[\s\S]*You can keep using Balance while it finishes\./,
+  'the persistent exercise upload card should show live progress and background-use guidance'
+);
+assert.match(
+  workoutScript,
+  /data-custom-exercise-upload-row[\s\S]*data-custom-exercise-upload-progress/,
+  'saved exercise rows should show their current upload percentage'
+);
+assert.match(
+  dashboardHtml,
+  /id="movement-add-exercise-btn"[\s\S]*Add an Exercise[\s\S]*finish an upload later/,
+  'Movement should provide direct access to create and manage custom exercises'
+);
+assert.match(
+  dashboardHtml,
+  /id: 'movement-exercise-upload-progress-v1'[\s\S]*sel: '#movement-add-exercise-btn'/,
+  'Movement exercise uploads should have a returning-user Feature Drop'
+);
+assert.match(
+  dashboardHtml,
+  /sel:'#movement-add-exercise-btn'[\s\S]*Upload progress stays on screen/,
+  'Movement exercise uploads should be included in the guided feature tour'
 );
 assert.match(
   workoutScript,

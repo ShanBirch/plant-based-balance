@@ -7264,9 +7264,38 @@ if (window._pbbIsIOSSafari) {
             </div>
         </button>
 
+        <!-- Custom Exercise Quick Access -->
+        <button id="movement-add-exercise-btn" type="button" onclick="openCreateCustomExerciseModal('library')" style="width:100%; margin:0 0 16px 0; border:1.5px solid rgba(245,158,11,0.45); border-radius:18px; padding:16px; background:linear-gradient(135deg,#fffaf0 0%,#fef3c7 100%); color:#3f2d08; -webkit-text-fill-color:#3f2d08; text-align:left; display:flex; align-items:center; gap:14px; cursor:pointer; box-shadow:0 10px 24px rgba(120,80,20,0.10);">
+            <div style="width:48px; height:48px; border-radius:14px; background:#f59e0b; color:#ffffff; -webkit-text-fill-color:#ffffff; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg viewBox="0 0 24 24" style="width:27px; height:27px; fill:currentColor;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-6 10h-2v2H9v-2H7v-2h2V9h2v2h2v2zm2 2.5v-7l5 3.5-5 3.5z"/></svg>
+            </div>
+            <div style="min-width:0; flex:1;">
+                <div style="font-size:0.76rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#7c5b18; -webkit-text-fill-color:#7c5b18; margin-bottom:4px;">Exercise Library</div>
+                <div style="font-size:1rem; font-weight:900; line-height:1.2; color:#3f2d08; -webkit-text-fill-color:#3f2d08;">Add an Exercise</div>
+                <div style="font-size:0.78rem; color:#5f430b; -webkit-text-fill-color:#5f430b; margin-top:4px;">Create one, add its video, or finish an upload later.</div>
+            </div>
+        </button>
+
         <!-- Dynamic Grid Container -->
         <div id="movement-grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
 
+    </div>
+</div>
+
+<!-- Persistent custom exercise video upload progress -->
+<div id="custom-exercise-upload-banner" role="status" aria-live="polite" style="display:none; position:fixed; left:16px; right:16px; bottom:calc(86px + env(safe-area-inset-bottom, 0px)); z-index:399500; max-width:520px; margin:0 auto; box-sizing:border-box; background:#0f172a; color:#ffffff; -webkit-text-fill-color:#ffffff; border:1px solid rgba(255,255,255,0.14); border-radius:16px; padding:14px 16px; box-shadow:0 16px 40px rgba(15,23,42,0.34);">
+    <div style="display:flex; align-items:flex-start; gap:12px;">
+        <div id="custom-exercise-upload-banner-icon" style="width:36px; height:36px; border-radius:11px; background:#f59e0b; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:1rem; font-weight:900;">↑</div>
+        <div style="min-width:0; flex:1;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                <div id="custom-exercise-upload-banner-title" style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.9rem; font-weight:850; color:#ffffff; -webkit-text-fill-color:#ffffff;">Uploading exercise video</div>
+                <div id="custom-exercise-upload-banner-percent" style="font-size:0.82rem; font-weight:900; color:#fde68a; -webkit-text-fill-color:#fde68a; flex-shrink:0;">0%</div>
+            </div>
+            <div style="height:7px; margin-top:9px; background:rgba(255,255,255,0.18); border-radius:999px; overflow:hidden;">
+                <div id="custom-exercise-upload-banner-progress" style="width:0%; height:100%; background:linear-gradient(90deg,#f59e0b,#fde68a); border-radius:999px; transition:width 180ms ease;"></div>
+            </div>
+            <div id="custom-exercise-upload-banner-detail" style="font-size:0.72rem; line-height:1.35; color:#cbd5e1; -webkit-text-fill-color:#cbd5e1; margin-top:7px;">You can keep using Balance while it finishes.</div>
+        </div>
     </div>
 </div>
 
@@ -12826,13 +12855,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=147';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=148';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=147"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=148"><\/script>');
 }
 </script>
 
@@ -13393,7 +13422,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
     { tab:'movement-tab', sel:'#move-your-way-pilot-card', title:'Move your way', body:'Classes, runs, walks and rides all count. Log the movement, then add a photo or caption if you want to share it.', quick:true, condition:function(){ return !!(window.isMoveYourWayPilotUser && window.isMoveYourWayPilotUser()); } },
       { tab:'movement-tab', sel:'#workout-share-set-btn', fallbackSel:'#today-workout-card', title:'Share a Set', fallbackTitle:'Open a workout to Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", fallbackBody:"Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn') || !!document.getElementById('today-workout-card'); } },
-    { tab:'movement-tab', sel:'#workout-add-exercise-video-btn', fallbackSel:'#feed-composer-card', title:'Add an Exercise', fallbackTitle:'Add an Exercise', body:"Under Film Form Check, tap Add an Exercise to create one without leaving your workout. You can add its demo video now or later. If a video ever fails, open this screen again and tap Add video beside that exercise.", fallbackBody:"Start a workout and tap Add an Exercise under Film Form Check. You can always add or retry its demo video later.", quick: true, condition: function(){ return !!document.getElementById('workout-add-exercise-video-btn') || !!document.getElementById('feed-composer-card'); } },
+    { tab:'movement-tab', sel:'#movement-add-exercise-btn', title:'Add an Exercise', body:"Tap here to create an exercise, add its demo video, or finish a saved exercise video later. Upload progress stays on screen while you keep using Balance.", quick: true, condition: function(){ return !!document.getElementById('movement-add-exercise-btn'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Post-workout Share', body:"Finish a workout, then tap the single Share button to post the workout, a PB, or a photo to Feed." },
     { tab:'movement-tab', sel:'#today-workout-card', title:'One daily workout share reward', body:"Share one workout or PB to Balance Feed for +15 XP, and one to Instagram Feed for another +15 XP each day. More posts can still be shared without extra XP." },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Photo + workout overlays', body:"Choose Photo + workout or Photo + PB after a session. Balance places the result over your gym photo in a clean transparent overlay, then shows you a preview before posting." },
@@ -14505,6 +14534,14 @@ if(!window._pbbIsIOSSafari) {
     body: 'Add an exercise without leaving your workout. If its video did not finish, open Add an Exercise again and tap Add video beside the saved exercise. It will not create a duplicate.',
     fallbackBody: "Start a workout, then tap Add an Exercise under Film Form Check. Your saved exercises stay there until you're ready to add or retry a video.",
     condition: function(){ return !!document.getElementById('workout-add-exercise-video-btn') || !!document.getElementById('today-workout-card'); }
+  });
+  allFeatures.push({
+    id: 'movement-exercise-upload-progress-v1',
+    tab: 'movement-tab',
+    sel: '#movement-add-exercise-btn',
+    title: 'Add exercises from Movement',
+    body: 'Create an exercise or add a video to one you already saved. A live progress bar stays on screen until the video finishes uploading.',
+    condition: function(){ return !!document.getElementById('movement-add-exercise-btn'); }
   });
   allFeatures.push({
     id: 'fitness-diary-day-story-v1',
