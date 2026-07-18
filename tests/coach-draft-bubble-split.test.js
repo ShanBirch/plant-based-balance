@@ -6,6 +6,7 @@ const {
     normalizeCoachAlertOutboundFields,
     normalizeCoachDraftText,
     normalizeGeneratedCoachDraftText,
+    replaceLongDashesWithPhonePunctuation,
     sanitizeVisibleOutboundDmText,
     splitCoachDraftIntoDmBubbles,
     stripLeadingGreeting,
@@ -48,6 +49,16 @@ assert.ok(!/fuck/i.test(sanitizedLeadCopy));
 assert.strictEqual(
     sanitizeVisibleOutboundDmText('yeah sounds good mate'),
     'Yeah sounds good mate'
+);
+
+assert.strictEqual(
+    replaceLongDashesWithPhonePunctuation('Balance—getting structure around food without making life restrictive.'),
+    'Balance, getting structure around food without making life restrictive.'
+);
+
+assert.strictEqual(
+    sanitizeVisibleOutboundDmText('yeah it could suit you – want me to explain it?'),
+    'Yeah it could suit you, want me to explain it?'
 );
 
 assert.strictEqual(

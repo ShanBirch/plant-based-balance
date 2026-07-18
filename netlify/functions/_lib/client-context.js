@@ -279,6 +279,7 @@ function buildHeardFirstConversationBlock() {
 
 const SHANNON_DM_TUNING_GUIDE = `
 SHANNON DM TUNING FROM LIVE EDITS:
+- Never use em dashes or en dashes in a DM. They look AI-written. Use a comma, full stop, or a new short sentence instead.
 - Biggest objective for rapport DMs: do not be boring. The job is not only to answer correctly; it is to create an engaging human conversation where the person feels like they are getting to know Shannon.
 - Build from the topic at hand. Take the object they just gave you (song, soup, snowboarding, weather, pet, city, food, pain, travel, mate, joke), add one vivid reaction or Shannon-coloured angle, then move one natural step outward. Do not reset to a stock discovery question when there is a live topic.
 - Treat emojis as tone, not as the topic. Do not point out emoji usage with lines like "love the heart emoji", "love the heart eyes", or "that emoji says it all". If someone sends a name, object, pet, photo, person, or story plus an emoji, reply to that thing or ask a normal follow-up.
@@ -373,6 +374,7 @@ function buildBalanceIdentityElicitationBlock() {
 
 const OPENAI_SHANNON_VOICE_LOCK = `
 OPENAI SHANNON VOICE LOCK:
+- Never use em dashes or en dashes. Use ordinary phone punctuation and short sentences.
 - When a general fallback model is writing instead of Shannon's fine-tuned model, imitate Shannon's sent-text outcome, not the system prompt. The reply should feel like a real phone message Shannon could send without explaining itself.
 - Default smaller, plainer, and more specific than a normal AI assistant. No polished summaries, no motivational wrap-ups, no "here's what I'd suggest" framing unless they directly asked for advice.
 - For IG/client threads, use proportional length. Shannon's recent native replies are often just one reaction, one practical answer, or one rough cue, so if the reply works in 10-18 words, do not expand it. But if the inbound is long, thoughtful, emotional, or asks for several real details, give a fuller answer back.
@@ -2592,8 +2594,17 @@ function normalizeCoachDraftChunks(text) {
  * Keep that implementation detail out of notifications, sends, and stored
  * suggested_message values.
  */
+function replaceLongDashesWithPhonePunctuation(text) {
+    return String(text || '')
+        .replace(/\s*[\u2013\u2014]\s*/g, ', ')
+        .replace(/,\s*([,.!?])/g, '$1')
+        .replace(/,\s*,+/g, ', ');
+}
+
 function normalizeCoachDraftText(text) {
-    return cleanOutboundDmBubbleText(normalizeCoachDraftChunks(text).join('\n'));
+    return replaceLongDashesWithPhonePunctuation(
+        cleanOutboundDmBubbleText(normalizeCoachDraftChunks(text).join('\n'))
+    );
 }
 
 const OUTBOUND_VISIBLE_ARTIFACT_RE = /\[(?:ephemeral|internal|draft|assistant|system|bot|ai|private|hidden|note)\]/ig;
@@ -7749,6 +7760,7 @@ module.exports = {
     callVertexGeminiMultimodal,
     normalizeCoachDraftChunks,
     normalizeCoachDraftText,
+    replaceLongDashesWithPhonePunctuation,
     normalizeGeneratedCoachDraftText,
     sanitizeVisibleOutboundDmText,
     applyPhoneAutocorrectCapitalization,
