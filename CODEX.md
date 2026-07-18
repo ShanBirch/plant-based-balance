@@ -18,7 +18,7 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 
 - App name: Balance.
 - Use singular "Balance", not "Balances" and not the legacy codename.
-- Public app store name: Balance - Fitness Gamified.
+- Public app store name: Balance: Plant-Based Fitness.
 - Parent brand/domain: plantbased-balance.org.
 - Native bundle ID still uses the old `com.fitgotchi.app` codename. Do not use "FitGotchi" in user-facing copy.
 - Logo asset: `balance_logo.png`, Japanese kanji wa/harmony.

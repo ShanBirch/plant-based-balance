@@ -1,0 +1,106 @@
+name: Publish Store Listings
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_google_play:
+        description: Publish the refreshed Google Play listing
+        required: true
+        type: boolean
+        default: true
+      prepare_app_store:
+        description: Upload metadata and screenshots to an App Store version draft
+        required: true
+        type: boolean
+        default: true
+      ios_version_string:
+        description: App Store version draft to prepare
+        required: true
+        default: "1.7"
+
+jobs:
+  google-play:
+    if: ${{ inputs.publish_google_play == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: Install Fastlane
+        run: gem install fastlane --no-document
+
+      - name: Add the global English listing
+        run: cp -R store-listing/google-play/en-AU store-listing/google-play/en-US
+
+      - name: Write Google Play credentials
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/google-play.json"
+
+      - name: Publish Google Play copy and graphics
+        run: >-
+          fastlane supply
+          --package_name com.fitgotchi.app
+          --json_key "$RUNNER_TEMP/google-play.json"
+          --metadata_path store-listing/google-play
+          --skip_upload_apk true
+          --skip_upload_aab true
+          --skip_upload_changelogs true
+          --skip_upload_metadata false
+          --skip_upload_images false
+          --skip_upload_screenshots false
+
+  app-store:
+    if: ${{ inputs.prepare_app_store == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: Install Fastlane
+        run: gem install fastlane --no-document
+
+      - name: Add the global English listing
+        run: |
+          cp -R store-listing/app-store/en-AU store-listing/app-store/en-US
+          cp -R store-listing/app-store-screenshots/en-AU store-listing/app-store-screenshots/en-US
+
+      - name: Build App Store Connect API credentials
+        env:
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          printf '%s' "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+          jq -n \
+            --arg key_id "$APP_STORE_CONNECT_API_KEY_ID" \
+            --arg issuer_id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --rawfile key "$RUNNER_TEMP/AuthKey.p8" \
+            '{key_id:$key_id, issuer_id:$issuer_id, key:$key, in_house:false}' \
+            > "$RUNNER_TEMP/app-store-api-key.json"
+
+      - name: Prepare App Store copy and screenshots
+        env:
+          IOS_VERSION_STRING: ${{ inputs.ios_version_string }}
+        run: >-
+          fastlane deliver
+          --api_key_path "$RUNNER_TEMP/app-store-api-key.json"
+          --app_identifier com.fitgotchi.app
+          --app_version "$IOS_VERSION_STRING"
+          --metadata_path store-listing/app-store
+          --screenshots_path store-listing/app-store-screenshots
+          --skip_binary_upload true
+          --skip_app_version_update false
+          --skip_metadata false
+          --skip_screenshots false
+          --submit_for_review false
+          --force true
+          --run_precheck_before_submit false

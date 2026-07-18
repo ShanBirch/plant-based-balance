@@ -4275,7 +4275,7 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
     ctx.fillText('Train. Track. Level up.', 124, height - 98);
     ctx.font = '750 27px Arial, sans-serif';
     ctx.fillStyle = 'rgba(255,255,255,0.82)';
-    ctx.fillText('Balance - Fitness Gamified', 124, height - 58);
+    ctx.fillText('Balance: Plant-Based Fitness', 124, height - 58);
 
     return canvas.toDataURL('image/jpeg', 0.92);
 }
