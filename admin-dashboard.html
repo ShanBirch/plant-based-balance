@@ -15853,7 +15853,8 @@
             morning_pulse: 'Morning',
             first_workout: 'First Workout', weekly_checkin: 'Weekly', weekly_digest: 'Digest',
             plateau_reassess: 'Plateau', badge_earned: 'Badge', follow_up_review: 'Needs Attention',
-            subscription_sale: 'Sale', custom_exercise_review: 'Exercise'
+            subscription_sale: 'Sale', custom_exercise_review: 'Exercise',
+            ig_media_review_needed: 'IG Media Review'
         };
         const ALERT_TYPE_ICONS = {
             inactive_client: '😴', unread_message: '💬', incoming_dm: '📨',
@@ -15872,6 +15873,7 @@
         };
         ALERT_TYPE_ICONS.subscription_sale = '$';
         ALERT_TYPE_ICONS.custom_exercise_review = 'EX';
+        ALERT_TYPE_ICONS.ig_media_review_needed = 'VN';
         const PRIORITY_ORDER = ['urgent', 'high', 'medium', 'low'];
         const PRIORITY_LABELS = { urgent: 'Urgent', high: 'High priority', medium: 'Medium priority', low: 'Low priority' };
 
@@ -15889,6 +15891,7 @@
             first_workout:       3,
             badge_earned:        3,   // milestone badges — same urgency as first_workout
             custom_exercise_review: 4,
+            ig_media_review_needed:  1,
             onboarding_welcome:  4,   // new client, first impression
             unread_message:      5,
             plateau_reassess:    6,   // substantive convo, not time-critical

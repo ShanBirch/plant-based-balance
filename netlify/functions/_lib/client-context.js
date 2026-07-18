@@ -4091,6 +4091,55 @@ async function transcribeAudioInlineData(inlineData, index = 0) {
     }
 }
 
+async function verifyAudioTranscriptInlineData(inlineData, candidateText = '') {
+    const candidate = cleanAudioTranscriptText(candidateText, 2000);
+    if (!inlineData?.data || !candidate || !GEMINI_API_KEY) {
+        return {
+            text: candidate,
+            verified: false,
+            model: null,
+            error: !GEMINI_API_KEY ? 'GEMINI_API_KEY not configured for transcript verification' : 'missing audio or candidate transcript',
+        };
+    }
+    try {
+        const { data, model } = await callGeminiModelChain({
+            apiKey: GEMINI_API_KEY,
+            profile: 'coach_fallback',
+            label: 'voice-note-transcript-verification',
+            payload: {
+                contents: [{
+                    role: 'user',
+                    parts: [
+                        {
+                            text: `Independently transcribe this voice message, then correct the candidate transcript below where the audio disagrees. Preserve names, slang, negation, numbers, and fitness terms. Return only JSON in this exact shape: {"transcript":"spoken words"}.\n\nCandidate transcript:\n${candidate}`,
+                        },
+                        { inlineData },
+                    ],
+                }],
+                generationConfig: {
+                    maxOutputTokens: 2048,
+                    temperature: 0,
+                    responseMimeType: 'application/json',
+                },
+            },
+        });
+        const raw = extractCandidateText(data, model).replace(/^```(?:json)?\s*|\s*```$/gi, '').trim();
+        let corrected = '';
+        try { corrected = JSON.parse(raw).transcript || ''; }
+        catch { corrected = raw; }
+        corrected = cleanAudioTranscriptText(corrected, 2000);
+        if (!corrected) throw new Error('transcript verifier returned empty text');
+        return { text: corrected, verified: true, model, error: '' };
+    } catch (error) {
+        return {
+            text: candidate,
+            verified: false,
+            model: null,
+            error: String(error.message || error).slice(0, 480),
+        };
+    }
+}
+
 function guessVideoMimeType(url, contentType) {
     const ct = String(contentType || '').split(';')[0].trim().toLowerCase();
     if ([
@@ -4431,7 +4480,7 @@ function rewriteMediaBatchMessage(message, refs = [], options = {}) {
     return out;
 }
 
-async function buildMessageMediaBatchParts(messages) {
+async function buildMessageMediaBatchParts(messages, options = {}) {
     const rawMessages = Array.isArray(messages)
         ? messages.map(message => normalizeImplicitMediaMarkers(message))
         : [normalizeImplicitMediaMarkers(messages)];
@@ -4471,8 +4520,24 @@ async function buildMessageMediaBatchParts(messages) {
     const audioParts = fetchedAudio
         .filter(Boolean)
         .map(p => ({ inlineData: p }));
+    const transcriptOverrides = Array.isArray(options.audioTranscriptOverrides)
+        ? options.audioTranscriptOverrides
+        : [];
     const audioTranscripts = await Promise.all(
-        fetchedAudio.map((p, index) => p ? transcribeAudioInlineData(p, index) : Promise.resolve({ text: '', error: 'audio fetch failed' }))
+        fetchedAudio.map((p, index) => {
+            const override = transcriptOverrides[index];
+            if (override?.verified === true && cleanAudioTranscriptText(override.text)) {
+                return Promise.resolve({
+                    text: cleanAudioTranscriptText(override.text),
+                    error: '',
+                    model: override.model || 'durable-media-transcript',
+                    verified: true,
+                });
+            }
+            return p
+                ? transcribeAudioInlineData(p, index)
+                : Promise.resolve({ text: '', error: 'audio fetch failed' });
+        })
     );
     const videoParts = fetchedVideos
         .filter(Boolean)
@@ -7831,6 +7896,8 @@ module.exports = {
     buildMessageImageParts,
     buildMessageMediaBatchParts,
     buildMessageMediaParts,
+    transcribeAudioInlineData,
+    verifyAudioTranscriptInlineData,
     fetchVideoAsGeminiFileData,
     buildMediaReviewInfo,
     isMediaReviewRequired,

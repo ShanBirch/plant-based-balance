@@ -70,6 +70,20 @@ const genericVoiceAttachmentText = _test.messageTextForDraft({
 });
 assert.strictEqual(genericVoiceAttachmentText, `[AUDIO:${genericVoiceAttachmentUrl}]`);
 
+const graphDetailVoiceText = _test.messageTextForDraft({
+    value: {
+        id: 'graph-detail-voice',
+        attachments: {
+            data: [{
+                type: 'file',
+                mime_type: 'audio/mp4',
+                file_url: genericVoiceAttachmentUrl,
+            }],
+        },
+    },
+});
+assert.strictEqual(graphDetailVoiceText, `[AUDIO:${genericVoiceAttachmentUrl}]`);
+
 const genericVideoAttachmentUrl = 'https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=video-123';
 const genericVideoAttachmentText = _test.messageTextForDraft({
     igAccountId: '17841400000000000',

@@ -468,6 +468,11 @@
 [functions."scheduled-coach-reply-worker"]
   schedule = "* * * * *"
 
+# Preserve and re-analyze inbound Instagram media whose first CDN download or
+# transcription attempt failed. Drafting stays blocked until media is ready.
+[functions."ig-media-retry-worker"]
+  schedule = "* * * * *"
+
 # Abbey game autoplayer - schedules and fires delayed Shannon turns in
 # Connect 4 / Tic Tac Toe without touching normal DM auto-send.
 [functions."game-autoplay-worker"]

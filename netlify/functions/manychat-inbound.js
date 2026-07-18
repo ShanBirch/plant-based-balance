@@ -32,6 +32,10 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+const {
+    extractMediaReferences,
+    registerInboundMedia,
+} = require('./_lib/ig-message-media');
 const MANYCHAT_WEBHOOK_SECRET = process.env.MANYCHAT_WEBHOOK_SECRET;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const DRAFT_DISPATCH_TIMEOUT_MS = 1200;
@@ -968,9 +972,7 @@ exports.handler = async (event) => {
         } else if (attachment.type === 'audio') {
             messageText = prefix + `[AUDIO:${attachment.url}]`;
         } else if (attachment.type === 'video') {
-            // ig-instant-draft fetches short videos into Gemini inlineData.
-            // If the clip cannot be fetched/decoded, the draft prompt flags
-            // that failure so the AI asks for a resend or gist.
+            // The durable media processor preserves the clip before drafting.
             messageText = prefix + `[VIDEO:${attachment.url}]`;
         }
     }
@@ -1178,11 +1180,30 @@ exports.handler = async (event) => {
     // endpoint acknowledges quickly, then keeps running after this webhook
     // returns to ManyChat.
     try {
-        const draftUrl = `${SITE_URL}/.netlify/functions/ig-instant-draft-background`;
+        const mediaRefs = extractMediaReferences(messageText);
+        let durableMediaReady = false;
+        if (mediaRefs.length) {
+            try {
+                await registerInboundMedia({
+                    igMessageId: messageResult.messageId,
+                    threadId: thread.id,
+                    graphMessageId: null,
+                    messageText,
+                });
+                durableMediaReady = true;
+            } catch (error) {
+                console.warn('[manychat-inbound] durable media registration failed; using immediate draft path:', error.message);
+            }
+        }
+        const draftUrl = durableMediaReady
+            ? `${SITE_URL}/.netlify/functions/ig-media-process-background`
+            : `${SITE_URL}/.netlify/functions/ig-instant-draft-background`;
         const dispatch = fetch(draftUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+            body: JSON.stringify(durableMediaReady ? {
+                igMessageId: messageResult.messageId,
+            } : {
                 threadId: thread.id,
                 subscriberId,
                 channel,

@@ -85,6 +85,22 @@ global.fetch = async (url) => {
         'Ps did a session today but it did not save in the app haha'
     );
 
+    const preservedTranscript = await buildMessageMediaBatchParts([
+        '[AUDIO:https://cdn.example.com/voice.m4a]',
+    ], {
+        audioTranscriptOverrides: [{
+            text: 'This came from the durable verified transcript.',
+            model: 'test-transcriber',
+            verified: true,
+        }],
+    });
+    assert.strictEqual(
+        preservedTranscript.rewrittenMessages[0],
+        '[voice note #1 transcript: This came from the durable verified transcript.]'
+    );
+    assert.strictEqual(preservedTranscript.audioTranscripts[0].model, 'test-transcriber');
+    assert.strictEqual(preservedTranscript.audioTranscripts[0].verified, true);
+
     const photoAndAudio = await buildMessageMediaBatchParts([
         'look at this [PHOTO:https://cdn.example.com/photo.png]',
         '[AUDIO:https://cdn.example.com/voice.m4a]',

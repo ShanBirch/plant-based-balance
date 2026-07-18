@@ -124,6 +124,7 @@ const {
     progressionMilestones,
 } = require('./_lib/lead-health-progression');
 const { hasBusinessCallRequest } = require('./_lib/personal-dm-boundary');
+const { markDraftAnalysis } = require('./_lib/ig-message-media');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const HISTORY_LIMIT = 40;
@@ -2538,7 +2539,7 @@ They sent a long, emotional, or multi-topic message. Do not compress this into a
     };
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, qualifierQuestionProtected = false, botAccount, coachId = null }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, qualifierQuestionProtected = false, botAccount, coachId = null, audioTranscriptOverrides = [] }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -2612,7 +2613,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
         reelContextText,
         reelContextCount,
         reelThumbnailCount,
-    } = await buildMessageMediaBatchParts(mediaSourceMessages);
+    } = await buildMessageMediaBatchParts(mediaSourceMessages, { audioTranscriptOverrides });
     const rewrittenPriorMessages = rewrittenMessages.slice(0, sanitizedPriorInboundMessages.length);
     const rewrittenMessage = rewrittenMessages[rewrittenMessages.length - 1] || promptCurrentMessage;
     // Detect when the message had photo URLs but the fetch failed (Meta CDN
@@ -3488,7 +3489,13 @@ exports.handler = async (event) => {
     try { payload = JSON.parse(event.body || '{}'); }
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
-    const { threadId, messageText, manychatMessageId } = payload;
+    const {
+        threadId,
+        messageText,
+        manychatMessageId,
+        durableMediaIds = [],
+        audioTranscriptOverrides = [],
+    } = payload;
     if (!threadId || !messageText) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing threadId or messageText' }) };
     }
@@ -3935,6 +3942,7 @@ exports.handler = async (event) => {
             qualifierQuestionProtected,
             botAccount,
             coachId: thread.coach_id || null,
+            audioTranscriptOverrides,
         });
     } catch (err) {
         console.error('[ig-draft] draft generation threw after stale-send cleanup:', err.message);
@@ -3954,6 +3962,17 @@ exports.handler = async (event) => {
             learningReelReplyAnchorBlock,
             learningReelEvidenceBlock,
         };
+    }
+
+    if (Array.isArray(durableMediaIds) && durableMediaIds.length) {
+        try {
+            const verifiedDecode = draft.chunks?.length
+                ? (draft.mediaDecode || {})
+                : { ...(draft.mediaDecode || {}), analyzed_kinds: [], analysis_succeeded: false, analysis_complete: false };
+            await markDraftAnalysis(durableMediaIds, verifiedDecode, draft.error || 'draft returned no verified media analysis');
+        } catch (error) {
+            console.warn('[ig-draft] durable media analysis state update failed:', error.message);
+        }
     }
 
     // Display-friendly version of the inbound — strips the giant raw
@@ -4177,6 +4196,8 @@ exports.handler = async (event) => {
             video_url_count: draft.videoUrlCount || 0,
             video_inline_count: draft.videoCount || 0,
             media_decode: draft.mediaDecode || null,
+            durable_media_ids: Array.isArray(durableMediaIds) ? durableMediaIds : [],
+            durable_media_preserved: Array.isArray(durableMediaIds) && durableMediaIds.length > 0,
             media_summary: draft.mediaSummary || null,
             media_review: mediaReview.required ? mediaReview : null,
             context_review: contextReview.required ? contextReview : null,

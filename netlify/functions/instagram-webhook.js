@@ -9,6 +9,10 @@
 
 const crypto = require('crypto');
 const {
+    extractMediaReferences,
+    registerInboundMedia,
+} = require('./_lib/ig-message-media');
+const {
     normalizeMetaIgWebhookEvents,
     sourceKeyForEvent,
     contentTypeFromProduct,
@@ -1287,7 +1291,15 @@ function attachmentText(attachment) {
     const mimeType = String(
         payload.mime_type || payload.content_type || attachment?.mime_type || attachment?.content_type || ''
     ).toLowerCase();
-    const url = cleanUrl(payload.url || payload.media_url || payload.attachment_url || attachment?.url);
+    const url = cleanUrl(
+        payload.url
+        || payload.file_url
+        || payload.media_url
+        || payload.attachment_url
+        || payload.image_data?.url
+        || attachment?.url
+        || attachment?.file_url
+    );
     if (type === 'story_mention') {
         return url ? `mentioned you in a story ${markerForAttachment('story', url)}` : 'mentioned you in a story';
     }
@@ -1328,7 +1340,9 @@ function messageTextForDraft(event) {
     const quickReply = cleanText(message.quick_reply?.payload || message.quick_reply?.text);
     if (quickReply) parts.push(`quick reply: ${quickReply}`);
 
-    const attachments = Array.isArray(message.attachments) ? message.attachments : [];
+    const attachments = Array.isArray(message.attachments)
+        ? message.attachments
+        : (Array.isArray(message.attachments?.data) ? message.attachments.data : []);
     attachments.map(attachmentText).filter(Boolean).forEach(part => parts.push(part));
 
     if (!parts.length && message.sticker_id) parts.push('[sticker]');
@@ -1348,7 +1362,7 @@ async function findDefaultCoachId() {
 async function fetchGraphMessageDetails(messageId, accountId = '') {
     if (!messageId) return null;
     try {
-        return await graphGet(encodeURIComponent(messageId), { fields: 'id,created_time,from,to,message' }, accountId);
+        return await graphGet(encodeURIComponent(messageId), { fields: 'id,created_time,from,to,message,attachments' }, accountId);
     } catch (err) {
         console.warn('[instagram-webhook] graph message detail lookup failed:', err.message);
         return null;
@@ -2091,6 +2105,26 @@ async function dispatchDraft({ thread, messageText, dedupeId }) {
     }
 }
 
+async function dispatchMediaProcessing(igMessageId) {
+    if (!igMessageId) return false;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), DRAFT_DISPATCH_TIMEOUT_MS);
+    try {
+        const response = await fetch(`${SITE_URL}/.netlify/functions/ig-media-process-background`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({ igMessageId }),
+        });
+        return response.ok;
+    } catch (error) {
+        console.warn('[instagram-webhook] durable media dispatch failed:', error.message);
+        return false;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 function newFoodPhotoJobToken() {
     if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
     return crypto.randomBytes(16).toString('hex');
@@ -2498,8 +2532,14 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
             continue;
         }
 
-        const rawMessageText = messageTextForDraft(item);
         const graphMessageId = messageIdFromMessaging(item);
+        let details = null;
+        let rawMessageText = messageTextForDraft(item);
+        if (graphMessageId && /\[(?:voice note|video|photo)\]/i.test(rawMessageText)) {
+            details = await fetchGraphMessageDetails(graphMessageId, item.igAccountId);
+            const detailedText = details ? messageTextForDraft({ value: details }) : '';
+            if (extractMediaReferences(detailedText).length) rawMessageText = detailedText;
+        }
         const contentContext = graphMessageId ? contentContextByMessageId.get(graphMessageId) : null;
         const messageText = contentContext
             ? `${contentContext}\n\nRaw IG message: ${rawMessageText}`
@@ -2519,7 +2559,7 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
         const nowIso = timestampIsoFromMessaging(item) || new Date().toISOString();
         try {
             const payloadUsername = participantUsernameFromMessaging(item, participantId, direction);
-            const details = payloadUsername ? null : await fetchGraphMessageDetails(graphMessageId, item.igAccountId);
+            details = details || (payloadUsername ? null : await fetchGraphMessageDetails(graphMessageId, item.igAccountId));
             const participantUsername = payloadUsername || participantUsernameFromMessageDetails(details, participantId, direction);
             const thread = await upsertGraphThread({
                 participantId,
@@ -2570,7 +2610,19 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
                         messageCreatedAt: nowIso,
                     })
                 ) {
-                    if (await dispatchDraft({ thread, messageText, dedupeId: inserted.dedupeId })) {
+                    const hasMedia = extractMediaReferences(messageText).length > 0;
+                    if (hasMedia) {
+                        await registerInboundMedia({
+                            igMessageId: inserted.messageId,
+                            threadId: thread.id,
+                            graphMessageId,
+                            messageText,
+                        });
+                    }
+                    const dispatched = hasMedia
+                        ? await dispatchMediaProcessing(inserted.messageId)
+                        : await dispatchDraft({ thread, messageText, dedupeId: inserted.dedupeId });
+                    if (dispatched) {
                         summary.drafted++;
                         summary.recoveredDrafts++;
                     }
@@ -2606,7 +2658,25 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
                 if (foodTracking.reason && foodTracking.reason !== 'no_photo') {
                     summary.foodPhotoSkipped++;
                 }
-                if (await dispatchDraft({ thread, messageText, dedupeId: inserted.dedupeId })) {
+                const mediaRefs = extractMediaReferences(messageText);
+                let dispatched = false;
+                if (mediaRefs.length) {
+                    try {
+                        await registerInboundMedia({
+                            igMessageId: inserted.messageId,
+                            threadId: thread.id,
+                            graphMessageId,
+                            messageText,
+                        });
+                        dispatched = await dispatchMediaProcessing(inserted.messageId);
+                    } catch (error) {
+                        console.warn('[instagram-webhook] durable media registration failed; using immediate draft path:', error.message);
+                        dispatched = await dispatchDraft({ thread, messageText, dedupeId: inserted.dedupeId });
+                    }
+                } else {
+                    dispatched = await dispatchDraft({ thread, messageText, dedupeId: inserted.dedupeId });
+                }
+                if (dispatched) {
                     summary.drafted++;
                 }
             } else {
