@@ -5,7 +5,7 @@ import sharp from 'sharp';
 const root = process.cwd();
 const sourceDir = path.join(root, 'store-listing', 'source');
 const outputRoot = path.join(root, 'store-listing');
-const logoPath = path.join(root, 'balance_logo.png');
+const logoPath = path.join(root, 'balance_logo_transparent.png');
 
 const palette = {
   cream: '#F7F1E7',
