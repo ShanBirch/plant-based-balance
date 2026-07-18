@@ -68,6 +68,7 @@ function textSvg({ width, height, eyebrow, lines, y, fill = palette.ink, align =
   const anchor = align === 'start' ? 'start' : 'middle';
   const textX = x ?? (anchor === 'middle' ? width / 2 : width * 0.08);
   const eyebrowSize = Math.round(titleSize * 0.28);
+  const eyebrowY = y - titleSize * 1.22;
   const bodySize = Math.round(titleSize * 0.42);
   const badgeMarkup = badge ? `
     <rect x="${textX - (anchor === 'middle' ? badge.width / 2 : 0)}" y="${badge.y}" width="${badge.width}" height="${badge.height}" rx="${badge.height / 2}" fill="${badge.fill ?? palette.gold}"/>
@@ -80,7 +81,7 @@ function textSvg({ width, height, eyebrow, lines, y, fill = palette.ink, align =
       .body { font-family: Arial, Helvetica, sans-serif; font-size: ${bodySize}px; font-weight: 600; fill: ${fill}; opacity: 0.88; }
       .badge { font-family: Arial, Helvetica, sans-serif; font-size: ${Math.round(titleSize * 0.26)}px; font-weight: 800; letter-spacing: 2px; fill: ${badge?.textFill ?? palette.ink}; }
     </style>
-    <text x="${textX}" y="${y - eyebrowSize * 2.2}" text-anchor="${anchor}" class="eyebrow">${escapeXml(eyebrow)}</text>
+    <text x="${textX}" y="${eyebrowY}" text-anchor="${anchor}" class="eyebrow">${escapeXml(eyebrow)}</text>
     <text x="${textX}" y="${y}" text-anchor="${anchor}" class="title">
       ${lines.map((line, index) => `<tspan x="${textX}" dy="${index === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`).join('')}
     </text>
