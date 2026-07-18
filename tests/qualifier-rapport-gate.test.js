@@ -20,6 +20,7 @@ const {
     isMeaningfulLeadReply,
     countMeaningfulLeadReplies,
     isPrematureChallengeInvite,
+    isUnrequestedOfferInjection,
     isInPersonOrExistingCoachPreference,
     handlesInPersonOrExistingCoachPreference,
     isAppOrWorkoutPlanSupportRequest,
@@ -240,8 +241,8 @@ assert.doesNotMatch(compactCustomData, /story_outreach_history/);
 assert.doesNotMatch(compactCustomData, /long sales rule/);
 assert.match(igDraftSource, /https:\/\/plantbased-balance\.org\/vegan-fitness\.html/);
 assert.match(igDraftSource, /Balance Vegan Fitness Founders Pass: AUD \$99 once/);
-assert.match(igDraftSource, /six-week introduction to coaching with Shannon available in the app/);
-assert.match(igDraftSource, /Instant daily replies and fully customised weekly plan reviews are not included/);
+assert.match(igDraftSource, /six weeks of one-to-one in-app coaching support from Shannon/);
+assert.match(igDraftSource, /Instant daily replies, unlimited access and fully customised weekly plan reviews are not included/);
 assert.match(igDraftSource, /default close happens inside DMs/);
 assert.match(igDraftSource, /Balance no longer uses a free challenge/);
 assert.match(igDraftSource, /quick Founders Pass handoff/);
@@ -761,5 +762,32 @@ assert.strictEqual(
     }),
     false
 );
+
+assert.strictEqual(
+    isUnrequestedOfferInjection({
+        originalDraft: "yeah that's a pretty unreal base haha. what is it like there?",
+        repairedDraft: "yeah that's unreal. the founders pass is $99 once, want me to send the details?",
+        currentMessage: 'yeah this is on my base :)',
+        qualifier: { stage: 'current_state', commercial_stage: 'offer_ready' },
+    }),
+    true,
+    'a repair must not introduce an offer into a casual off-topic reply'
+);
+
+assert.strictEqual(
+    isUnrequestedOfferInjection({
+        originalDraft: 'yeah that food setup sounds hard',
+        repairedDraft: 'the founders pass includes six weeks of support, want me to send the details?',
+        currentMessage: 'can you send me the founders pass details?',
+        qualifier: { stage: 'commitment', commercial_stage: 'buyer_intent' },
+    }),
+    false,
+    'direct buyer intent may move straight to the offer'
+);
+
+const currentIgDraftSource = fs.readFileSync(path.join(__dirname, '..', 'netlify', 'functions', 'ig-instant-draft.js'), 'utf8');
+assert.match(currentIgDraftSource, /isDraftReviewAutoSendSafe\(repairedReview\)/);
+assert.match(currentIgDraftSource, /isUnrequestedOfferInjection\(\{/);
+assert.doesNotMatch(currentIgDraftSource, /doesn['’]?t include weekly 1:1 coaching/i);
 
 console.log('qualifier rapport gate tests passed');

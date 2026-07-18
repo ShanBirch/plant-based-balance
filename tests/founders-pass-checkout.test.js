@@ -20,7 +20,7 @@ test('one-time Founders Pass has a complete purchase and activation path', () =>
     assert.match(page, /data-plan="founders-pass"/);
     assert.match(page, /Six weeks with Shannon in your corner/);
     assert.match(page, /questions, direction and accountability/i);
-    assert.match(page, /not instant daily access or a fully customised weekly service/i);
+    assert.match(page, /not instant or unlimited daily access and not a fully customised weekly plan-review service/i);
     assert.match(guard, /balance_vegan_founders_pass[\s\S]*?unitAmount: 9900[\s\S]*?mode: "payment"/);
     assert.match(checkout, /checkout\.plan\.mode === "subscription"/);
     assert.match(checkout, /payment_intent_data\[metadata\]/);

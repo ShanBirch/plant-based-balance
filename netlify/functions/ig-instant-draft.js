@@ -106,6 +106,7 @@ const {
     countMeaningfulLeadReplies,
     hasEarnedChallengeInviteMoment,
     isPrematureChallengeInvite,
+    isUnrequestedOfferInjection,
     isChallengeOfferWarningText,
 } = require('./_lib/qualifier-engine');
 const {
@@ -628,7 +629,7 @@ function normalizeCocosRepairedDraft(rawText, maxChunks, leadName) {
     return { chunks, joined: chunks.join('\n') };
 }
 
-async function repairCocosDraftFromReview({ draft, repairIssues, reviewContextBlocks, leadName, channelLabel, maxChunks }) {
+async function repairCocosDraftFromReview({ draft, repairIssues, reviewContextBlocks, leadName, channelLabel, maxChunks, currentMessage, qualifier }) {
     const draftText = draftTextFromDraft(draft);
     if (!draftText || !repairIssues?.length) return null;
     const prompt = `You are repairing a Coco's PT Studio ${channelLabel || 'IG'} DM draft before it can auto-send for Shannon.
@@ -659,6 +660,14 @@ ${draftText}`;
     );
     const repaired = normalizeCocosRepairedDraft(rawText, maxChunks || draft.maxChunks || MAX_CHUNKS, leadName);
     if (!repaired.joined || repaired.joined === draftText) return null;
+    if (isUnrequestedOfferInjection({
+        originalDraft: draftText,
+        repairedDraft: repaired.joined,
+        currentMessage,
+        qualifier,
+    })) {
+        return null;
+    }
     return repaired;
 }
 
@@ -892,7 +901,7 @@ async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason =
  */
 const META_AD_FUNNEL_CONTEXT = `
 LEAD ACQUISITION CONTEXT:
-Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, then DMs them first. He initiates the conversation. Some leads also come from Shannon's Meta ads or fitness angles. The primary DM offer is the Balance Vegan Fitness Founders Pass: AUD $99 once for a six-week introduction to coaching with Shannon available in the app for questions, direction and accountability, plus lifetime access to the core Balance app and vegan fitness community. Instant daily replies and fully customised weekly plan reviews are not included. Starter Coaching at AUD $29.99/week is the optional ongoing upgrade. The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The words below trigger offer-inquiry mode:
+Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, then DMs them first. He initiates the conversation. Some leads also come from Shannon's Meta ads or fitness angles. The primary DM offer is the Balance Vegan Fitness Founders Pass: AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and vegan fitness community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included. Starter Coaching at AUD $29.99/week is the optional ongoing higher-touch upgrade. The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The words below trigger offer-inquiry mode:
   1. "What's actually included?"
   2. "Do I need to already be Plant Based?"
   3. "I'm In - save me a spot!"
@@ -1318,12 +1327,12 @@ function buildOneOnOneCoachingBlock() {
     return `
 
 BALANCE VEGAN FITNESS FOUNDERS PASS LINK:
-- The primary DM offer is the Balance Vegan Fitness Founders Pass: AUD $99 once for a six-week introduction to coaching with Shannon available in the app for questions, direction and accountability, plus lifetime access to the core Balance app and vegan fitness community. Instant daily replies and fully customised weekly plan reviews are not included. Starter Coaching is the optional ongoing upgrade. The normal path is explanation, acceptance, and checkout inside DMs.
+- The primary DM offer is the Balance Vegan Fitness Founders Pass: AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and vegan fitness community. This is real personal coaching support, not an app-only product. It does not promise instant daily replies, unlimited access or fully customised weekly plan reviews. Starter Coaching is the optional ongoing higher-touch upgrade. The normal path is explanation, acceptance, and checkout inside DMs.
 - Approved Founders Pass link: ${ONE_ON_ONE_COACHING_URL}
 - When the latest message asks for the offer link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct Founders Pass/details invite, send the approved link in the draft.
 - If the latest message asks to reconnect with Balance, the app/helper, login, password, account access, or any app bug, treat it as support first and do not send the coaching link.
 - Keep the link handoff light, not a brochure: stoked they are keen, here's the link, it has the quick info on the six-week setup, app and community, check it out, then come back to Shannon here if they want to chat through it.
-- Frame it as a $99 once vegan fitness founding membership, not weekly personal coaching. Mention the full app feature rundown only when they ask what is included.
+- Frame it as a $99 once vegan fitness founding membership with six weeks of one-to-one in-app coaching support. Never say it has no 1:1 coaching. Mention the full app feature rundown only when they ask what is included.
 - If they only ask a general help question and have not asked for offer details/link, do not send the link yet. Reply to the question and use a low-pressure statement-led bridge if the Founders Pass might fit.
 - If they ask whether it is local/in-person or mention they already have a PT/trainer, do not send the link yet. Answer that the Founders Pass is an online guided app and vegan community, not in-person training, and check whether that would still suit them.`;
 }
@@ -1387,7 +1396,7 @@ The Founders Pass has already been offered. If they sound keen, ask for details/
         return `
 
 EARNED FOUNDERS PASS BRIDGE:
-This unlinked lead has enough relationship and goal/blocker context, plus at least 3 meaningful lead replies, for a soft bridge if it fits the newest message. Do not send the link yet. Do not make it a brochure. The move is one casual line anchored to what they just said, with the Founders Pass as the natural next step. If they have not asked for the link/details yet, use a statement like "I can send the details through here" rather than a stock yes/no close. Save the app feature rundown for when they ask what is included. If the newest message is a clear no/not-yet signal, hold off and just reply to that.`;
+This unlinked lead has enough relationship and goal/blocker context for a soft bridge if it fits the newest message. Do not send the link yet. Do not make it a brochure. If the newest message is casual or unrelated to fitness, food, health, consistency or the offer, do not pivot and pitch in the same outbound. First reconnect naturally to the relevant goal or blocker and let them answer; offer on the following turn if the opening remains live. Direct buyer intent is the exception. When the newest message is already in the relevant lane, use one casual line anchored to what they just said, with the Founders Pass as the natural next step. If they have not asked for the link/details yet, use a statement like "I can send the details through here" rather than a stock yes/no close. Save the app feature rundown for when they ask what is included. If the newest message is a clear no/not-yet signal, hold off and just reply to that.`;
     }
     return '';
 }
@@ -4376,6 +4385,8 @@ exports.handler = async (event) => {
                     leadName,
                     channelLabel,
                     maxChunks: draft.maxChunks || MAX_CHUNKS,
+                    currentMessage: displayMessage,
+                    qualifier,
                 }), COCOS_DRAFT_REPAIR_TIMEOUT_MS, 'Coco draft repair');
                 if (repaired?.joined) {
                     const repairedReviewResult = await withTimeout(reviewDraftAndUpdateAlert({
@@ -4391,7 +4402,14 @@ exports.handler = async (event) => {
                         meaningfulLeadReplyCount,
                     }), IG_DRAFT_REVIEW_TIMEOUT_MS, 'Coco repaired draft review');
                     const repairedReview = repairedReviewResult?.review || null;
-                    const acceptRepair = !!repairedReview;
+                    const acceptRepair = !!repairedReview
+                        && isDraftReviewAutoSendSafe(repairedReview)
+                        && !isUnrequestedOfferInjection({
+                            originalDraft: originalDraftText,
+                            repairedDraft: repaired.joined,
+                            currentMessage: displayMessage,
+                            qualifier,
+                        });
                     if (acceptRepair) {
                         const baseModel = String(draft.model || 'unknown').replace(/\+cocos-repair$/, '');
                         draft = {

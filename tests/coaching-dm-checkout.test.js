@@ -54,9 +54,9 @@ test('all active DM handoffs use the permanent branded Founders Pass URL', () =>
 test('Founders Pass page sells the one-time membership through guarded hosted checkout', () => {
     assert.match(founders, /Balance Vegan Fitness Founders Pass/);
     assert.match(founders, /AU\$99/);
-    assert.match(founders, /guided six-week/i);
+    assert.match(founders, /six weeks of one-to-one in-app coaching support/i);
     assert.match(founders, /Lifetime core app \+ community access/i);
-    assert.match(founders, /Ongoing personal coaching is optional/i);
+    assert.match(founders, /Ongoing individual plan reviews and adjustments are available separately through Starter Coaching/i);
     assert.match(founders, /id="terms-checkbox"/);
     assert.match(founders, /data-plan="founders-pass"/);
     assert.match(founders, /data-hosted-checkout-only="true"/);

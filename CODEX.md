@@ -24,7 +24,7 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 - Logo asset: `balance_logo.png`, Japanese kanji wa/harmony.
 - Facebook Pixel: `1928402271406692`.
 - Pricing:
-  - Balance Vegan Fitness Founders Pass: AUD $99 once. Six-week introduction to coaching with in-app support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and vegan fitness community. Instant daily replies and fully customised weekly plan reviews are not included.
+  - Balance Vegan Fitness Founders Pass: AUD $99 once. Six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and vegan fitness community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included.
   - App + Group: $20/month.
   - Balance Starter Coaching: $29.99/week, optional upgrade for individual weekly review and adjustment from Shannon.
 
