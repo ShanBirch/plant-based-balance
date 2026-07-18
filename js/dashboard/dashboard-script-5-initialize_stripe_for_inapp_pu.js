@@ -5600,6 +5600,12 @@ function renderWeeklyMealEvolutionHomeCard(state) {
 
     card.dataset.state = state;
     card.style.display = 'block';
+    card.onclick = null;
+    card.onkeydown = null;
+    card.removeAttribute('role');
+    card.removeAttribute('tabindex');
+    card.removeAttribute('aria-label');
+    card.removeAttribute('data-interactive');
     card.innerHTML = `<div class="weekly-meal-evolution-home-card__inner">
         <div class="weekly-meal-evolution-home-card__row">
             <div class="weekly-meal-evolution-home-card__icon" aria-hidden="true">${copy.icon}</div>
@@ -5609,12 +5615,24 @@ function renderWeeklyMealEvolutionHomeCard(state) {
                 <p class="weekly-meal-evolution-home-card__body">${copy.body}</p>
             </div>
         </div>
-        <button type="button" class="weekly-meal-evolution-home-card__action" ${state === 'generating' ? 'disabled aria-busy="true"' : ''}>${copy.action}</button>
+        <div class="weekly-meal-evolution-home-card__action" ${state === 'generating' ? 'aria-busy="true"' : ''}>${copy.action}</div>
     </div>`;
 
-    const button = card.querySelector('.weekly-meal-evolution-home-card__action');
-    if (button && state === 'tailored') button.addEventListener('click', openWeeklyMealEvolutionPlan);
-    if (button && (state === 'ready' || state === 'retry')) button.addEventListener('click', runWeeklyEvolutionBuildFromHome);
+    const activate = state === 'tailored'
+        ? openWeeklyMealEvolutionPlan
+        : (state === 'ready' || state === 'retry') ? runWeeklyEvolutionBuildFromHome : null;
+    if (activate) {
+        card.dataset.interactive = 'true';
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', copy.action);
+        card.onclick = activate;
+        card.onkeydown = event => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            activate();
+        };
+    }
 }
 
 function weeklyEvolutionPlanIsRecent(plan, nowValue) {

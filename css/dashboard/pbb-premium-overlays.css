@@ -30,6 +30,15 @@
     overflow: hidden;
 }
 
+.weekly-meal-evolution-home-card[data-interactive="true"] {
+    cursor: pointer;
+}
+
+.weekly-meal-evolution-home-card[data-interactive="true"]:focus-visible {
+    outline: 3px solid #f5d98a;
+    outline-offset: 3px;
+}
+
 .weekly-meal-evolution-home-card__inner {
     position: relative;
     overflow: hidden;
@@ -110,15 +119,12 @@
     font: inherit;
     font-size: 0.82rem;
     font-weight: 800;
-    cursor: pointer;
+    cursor: inherit;
+    text-align: center;
+    pointer-events: none;
 }
 
-.weekly-meal-evolution-home-card__action:focus-visible {
-    outline: 3px solid #ffffff;
-    outline-offset: 3px;
-}
-
-.weekly-meal-evolution-home-card__action:disabled {
+.weekly-meal-evolution-home-card[data-state="generating"] .weekly-meal-evolution-home-card__action {
     cursor: wait;
     opacity: 0.72;
 }
@@ -151,7 +157,7 @@ html[data-pbb-theme="light"] .weekly-meal-evolution-home-card__body {
     -webkit-text-fill-color: #5f5a52;
 }
 
-html[data-pbb-theme="light"] .weekly-meal-evolution-home-card__action:focus-visible {
+html[data-pbb-theme="light"] .weekly-meal-evolution-home-card[data-interactive="true"]:focus-visible {
     outline-color: #151515;
 }
 

@@ -19,6 +19,13 @@ test('refreshes the card from Home and excludes hydration logs', () => {
     assert.match(mealPlanScript, /pbb_weekly_meal_evolution_attempt_v2_/);
 });
 
+test('makes the whole completed card open the tailored meals', () => {
+    assert.match(mealPlanScript, /state === 'tailored'\s*\? openWeeklyMealEvolutionPlan/);
+    assert.match(mealPlanScript, /card\.onclick = activate/);
+    assert.match(mealPlanScript, /card\.setAttribute\('tabindex', '0'\)/);
+    assert.match(mealPlanScript, /switchWeek\('meal-plan-store', pill\)/);
+});
+
 test('defines explicit dark and light card treatments', () => {
     assert.match(themeCss, /\.weekly-meal-evolution-home-card__inner/);
     assert.match(themeCss, /html\[data-pbb-theme="light"\] \.weekly-meal-evolution-home-card__inner/);
