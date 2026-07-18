@@ -107,6 +107,11 @@ const {
 const {
     resolveMetaIgAccessToken,
 } = require('./_lib/meta-ig-accounts');
+const { recordGrowthOutcome } = require('./_lib/growth-outcomes');
+const {
+    classifyHealthProgressionAttempt,
+    isAutomatedManagerDelivery,
+} = require('./_lib/lead-health-progression');
 const {
     isChallengeOfferWarningText,
 } = require('./_lib/qualifier-engine');
@@ -1750,6 +1755,16 @@ exports.handler = async (event) => {
     const sentChunks = sendResults.filter(r => r.ok);
     const allOk = firstError === null && sentChunks.length === outboundItems.length;
     const sentAtIso = new Date().toISOString();
+    const threadBotAccount = String(
+        alertData.bot_account
+        || threadForSend?.custom_data?.bot_account
+        || threadForSend?.custom_data?.instagram_graph?.bot_account
+        || ''
+    ).trim().toLowerCase();
+    const aiAuthored = !wasEdited || isAutomatedManagerDelivery(source, alertData);
+    const healthProgressionAttempt = (!threadForSend?.linked_user_id && (!threadBotAccount || threadBotAccount === 'shan_n_sunny'))
+        ? classifyHealthProgressionAttempt(replyText, { aiAuthored })
+        : { is_attempt: false, ai_authored: aiAuthored, move_type: 'none', topics: [], evidence: '' };
     const sentVoiceMessages = sentChunks
         .filter(r => r.kind === 'audio' && r.audio)
         .map(r => ({
@@ -1768,12 +1783,13 @@ exports.handler = async (event) => {
 
     // 4. Log every successfully-delivered chunk to ig_messages (so the next
     //    AI draft has the conversation history including our outbound).
+    const loggedOutboundMessageIds = [];
     for (const result of sentChunks) {
         const graphMessageId = shouldUseGraph
             ? (result.response?.message_id || result.response?.id || null)
             : null;
         try {
-            await supabase('ig_messages', {
+            const insertedMessages = await supabase('ig_messages', {
                 method: 'POST',
                 body: [{
                     thread_id: igThreadId,
@@ -1785,8 +1801,9 @@ exports.handler = async (event) => {
                     alert_id: alertId,
                     manychat_message_id: graphMessageId ? `${GRAPH_SUBSCRIBER_PREFIX}${graphMessageId}` : null,
                 }],
-                prefer: 'return=minimal',
+                prefer: 'return=representation',
             });
+            if (insertedMessages?.[0]?.id) loggedOutboundMessageIds.push(insertedMessages[0].id);
         } catch (err) {
             console.warn('[send-ig-reply] ig_messages insert failed (non-fatal):', err.message);
         }
@@ -1853,6 +1870,13 @@ exports.handler = async (event) => {
             }
             : alertData.draft_messages_stale_ignored,
         draft_text: draftJoined || alertData.draft_text,
+        health_progression_attempt: healthProgressionAttempt.is_attempt ? {
+            attempted_at: sentAtIso,
+            ai_authored: healthProgressionAttempt.ai_authored,
+            move_type: healthProgressionAttempt.move_type,
+            topics: healthProgressionAttempt.topics,
+            source,
+        } : undefined,
     };
     if (instagramTypingActions.length > 0) {
         mergedData.instagram_typing_strategy = 'typing_on_between_chunks_v1';
@@ -1919,6 +1943,38 @@ exports.handler = async (event) => {
             await mergeSentLearningReelContext({ alertData, messagesToSend, sentAtIso });
         } catch (err) {
             console.warn('[send-ig-reply] learning reel context merge failed (non-fatal):', err.message);
+        }
+        if (healthProgressionAttempt.is_attempt) {
+            try {
+                await recordGrowthOutcome({
+                    eventType: 'lead_health_progression_attempted',
+                    eventKey: `balance_dm_manager:lead_health_progression_attempted:${alertId}`,
+                    eventFamily: 'sales',
+                    sourceSystem: 'balance_dm_manager',
+                    botAccount: threadBotAccount || 'shan_n_sunny',
+                    fromUsername: threadForSend?.ig_username || alertData.ig_username,
+                    igThreadId,
+                    igMessageId: loggedOutboundMessageIds[0] || null,
+                    coachAlertId: alertId,
+                    eventStatus: 'delivered',
+                    occurredAt: sentAtIso,
+                    score: 0,
+                    attribution: {
+                        move_type: healthProgressionAttempt.move_type,
+                        topics: healthProgressionAttempt.topics,
+                        ai_authored: healthProgressionAttempt.ai_authored,
+                        source,
+                    },
+                    rawPayload: {
+                        final_outbound_text: healthProgressionAttempt.evidence,
+                        was_edited: wasEdited,
+                        qualifier_stage: alertData.qualifier?.stage || null,
+                        commercial_stage: alertData.qualifier?.commercial_stage || null,
+                    },
+                }, supabase);
+            } catch (err) {
+                console.warn('[send-ig-reply] health progression attempt log failed (non-fatal):', err.message);
+            }
         }
     }
 

@@ -116,6 +116,12 @@ const {
     isCocosToShanSunnyVoiceTest,
     resolveCocosShanSunnyVoiceTestReason,
 } = require('./_lib/elevenlabs-voice-message');
+const { recordGrowthOutcome } = require('./_lib/growth-outcomes');
+const {
+    HEALTH_PROGRESSION_EVENT_TYPES,
+    classifyHealthProgressionAnswer,
+    progressionMilestones,
+} = require('./_lib/lead-health-progression');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const HISTORY_LIMIT = 40;
@@ -136,6 +142,69 @@ const IG_DRAFT_REVIEW_TIMEOUT_MS = 7000;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const STORY_OPENER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|your\s+question|this|that|it)|(?:what|wat)\s+(?:do|did)\s+(?:you|u)\s+mean|what\s+you\s+mean|wdym|i'?m\s+confused|not\s+sure\s+what\s+you\s+mean)\b/i;
 const SHORT_STORY_OPENER_CONFUSION_RE = /^(?:sorry|sorry\?|huh\??|pardon\??|what\??|what sorry\??|sorry what\??)$/i;
+
+async function recordHealthProgressionAnswer({ thread, currentMessage, manychatMessageId, botAccount }) {
+    if (!thread?.id || thread.linked_user_id) return null;
+    const recent = await supabaseQuery(
+        `growth_outcome_events?select=id,event_key,event_type,occurred_at,attribution&ig_thread_id=eq.${encodeURIComponent(thread.id)}&event_type=in.(${HEALTH_PROGRESSION_EVENT_TYPES.attempted},${HEALTH_PROGRESSION_EVENT_TYPES.answered})&order=occurred_at.desc&limit=8`
+    );
+    const latestAttempt = recent.find(row => row.event_type === HEALTH_PROGRESSION_EVENT_TYPES.attempted);
+    if (!latestAttempt) return null;
+    const alreadyAnswered = recent.some(row => (
+        row.event_type === HEALTH_PROGRESSION_EVENT_TYPES.answered
+        && row.attribution?.attempt_event_id === latestAttempt.id
+    ));
+    if (alreadyAnswered) return null;
+
+    const classification = classifyHealthProgressionAnswer(currentMessage, latestAttempt.attribution || {});
+    if (!classification.is_answer) return null;
+    return recordGrowthOutcome({
+        eventType: HEALTH_PROGRESSION_EVENT_TYPES.answered,
+        eventKey: `balance_dm_manager:${HEALTH_PROGRESSION_EVENT_TYPES.answered}:${latestAttempt.id}`,
+        eventFamily: 'sales',
+        sourceSystem: 'balance_dm_manager',
+        botAccount: botAccount || 'shan_n_sunny',
+        fromUsername: thread.ig_username,
+        igThreadId: thread.id,
+        eventStatus: 'lead_replied',
+        occurredAt: new Date().toISOString(),
+        score: 0,
+        attribution: {
+            attempt_event_id: latestAttempt.id,
+            attempt_event_key: latestAttempt.event_key,
+            attempt_topics: latestAttempt.attribution?.topics || [],
+            answer_topics: classification.topics,
+            answer_type: classification.answer_type,
+        },
+        rawPayload: {
+            inbound_message_id: manychatMessageId || null,
+            inbound_evidence: classification.evidence,
+        },
+    }, supabaseQuery);
+}
+
+async function recordQualifierProgressionMilestones({ thread, priorQualifier, nextQualifier, botAccount }) {
+    if (!thread?.id || thread.linked_user_id) return [];
+    const milestones = progressionMilestones(priorQualifier || {}, nextQualifier || {});
+    if (!milestones.length) return [];
+    return Promise.all(milestones.map(milestone => recordGrowthOutcome({
+        eventType: milestone.type,
+        eventKey: `ig_qualifier:${milestone.type}:${thread.id}`,
+        eventFamily: 'sales',
+        sourceSystem: 'ig_qualifier',
+        botAccount: botAccount || 'shan_n_sunny',
+        fromUsername: thread.ig_username,
+        igThreadId: thread.id,
+        eventStatus: 'identified',
+        occurredAt: new Date().toISOString(),
+        score: 0,
+        attribution: {
+            qualifier_stage: nextQualifier?.stage || null,
+            commercial_stage: nextQualifier?.commercial_stage || null,
+        },
+        rawPayload: { evidence: milestone.evidence },
+    }, supabaseQuery)));
+}
 
 function graphSubscriberParts(subscriberId = '') {
     const raw = String(subscriberId || '');
@@ -3630,6 +3699,28 @@ exports.handler = async (event) => {
             qualifier = priorQualifier;
             qualifierError = e.message;
             console.warn('[ig-draft] qualifier evaluation failed:', e.message);
+        }
+    }
+
+    if (qualifierEligible && !cocosAutoSendLane) {
+        try {
+            const progressionWrites = [recordHealthProgressionAnswer({
+                thread,
+                currentMessage: qualifierCurrentMessage,
+                manychatMessageId,
+                botAccount: botAccount || 'shan_n_sunny',
+            })];
+            if (qualifierEvaluated) {
+                progressionWrites.push(recordQualifierProgressionMilestones({
+                    thread,
+                    priorQualifier,
+                    nextQualifier: qualifier,
+                    botAccount: botAccount || 'shan_n_sunny',
+                }));
+            }
+            await Promise.all(progressionWrites);
+        } catch (e) {
+            console.warn('[ig-draft] lead health progression tracking failed (non-fatal):', e.message);
         }
     }
 

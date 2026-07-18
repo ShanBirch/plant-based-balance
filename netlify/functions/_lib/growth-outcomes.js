@@ -24,6 +24,13 @@ const DEFAULT_EVENT_SCORES = {
     client_workout_logged: 3,
     client_goal_completed: 10,
     client_retained_30d: 15,
+    lead_health_progression_attempted: 0,
+    lead_health_progression_answered: 0,
+    lead_goal_identified: 0,
+    lead_blocker_identified: 0,
+    lead_problem_qualified: 0,
+    lead_offer_ready: 0,
+    lead_buyer_intent: 0,
 };
 
 const EVENT_FAMILIES = {
@@ -50,6 +57,13 @@ const EVENT_FAMILIES = {
     client_workout_logged: 'retention',
     client_goal_completed: 'retention',
     client_retained_30d: 'retention',
+    lead_health_progression_attempted: 'sales',
+    lead_health_progression_answered: 'sales',
+    lead_goal_identified: 'sales',
+    lead_blocker_identified: 'sales',
+    lead_problem_qualified: 'sales',
+    lead_offer_ready: 'sales',
+    lead_buyer_intent: 'sales',
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

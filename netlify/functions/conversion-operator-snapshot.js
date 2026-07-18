@@ -455,6 +455,49 @@ order by urgency_score desc, updated_at desc nulls last
 limit 240`;
 }
 
+function buildLeadProgressionSql(coachId) {
+    const coach = sqlLiteral(coachId);
+    return `
+with params as (
+    select
+        '${coach}'::uuid as coach_id,
+        (date_trunc('day', now() at time zone 'Australia/Brisbane') at time zone 'Australia/Brisbane') as day_start,
+        ((date_trunc('day', now() at time zone 'Australia/Brisbane') + interval '1 day') at time zone 'Australia/Brisbane') as day_end
+), events as (
+    select e.*
+    from public.growth_outcome_events e
+    join public.ig_threads t on t.id = e.ig_thread_id
+    cross join params p
+    where t.coach_id = p.coach_id
+      and e.occurred_at >= p.day_start
+      and e.occurred_at < p.day_end
+      and e.event_type in (
+          'lead_health_progression_attempted',
+          'lead_health_progression_answered',
+          'lead_goal_identified',
+          'lead_blocker_identified',
+          'lead_problem_qualified',
+          'lead_offer_ready',
+          'lead_buyer_intent'
+      )
+)
+select
+    count(*) filter (where event_type = 'lead_health_progression_attempted')::int as health_moves,
+    count(distinct ig_thread_id) filter (where event_type = 'lead_health_progression_attempted')::int as leads_health_moved,
+    count(*) filter (where event_type = 'lead_health_progression_answered')::int as health_replies,
+    case
+        when count(*) filter (where event_type = 'lead_health_progression_attempted') = 0 then 0
+        else round(100.0 * count(*) filter (where event_type = 'lead_health_progression_answered')
+            / count(*) filter (where event_type = 'lead_health_progression_attempted'))::int
+    end as health_reply_rate,
+    count(*) filter (where event_type = 'lead_goal_identified')::int as goals_identified,
+    count(*) filter (where event_type = 'lead_blocker_identified')::int as blockers_identified,
+    count(*) filter (where event_type = 'lead_problem_qualified')::int as problem_qualified,
+    count(*) filter (where event_type = 'lead_offer_ready')::int as offer_ready,
+    count(*) filter (where event_type = 'lead_buyer_intent')::int as buyer_intent
+from events`;
+}
+
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return json(500, { error: 'Server misconfigured' });
@@ -471,7 +514,10 @@ exports.handler = async (event) => {
     if (coachId !== admin.user?.id) return json(403, { error: 'Forbidden' });
 
     try {
-        const rows = await execSqlJson(buildSnapshotSql(coachId));
+        const [rows, progressionRows] = await Promise.all([
+            execSqlJson(buildSnapshotSql(coachId)),
+            execSqlJson(buildLeadProgressionSql(coachId)),
+        ]);
         const lanes = groupRows(rows);
         const summary = lanes.reduce((acc, lane) => {
             acc[lane.key] = lane.count;
@@ -483,6 +529,17 @@ exports.handler = async (event) => {
             generatedAt: new Date().toISOString(),
             lanes,
             summary,
+            progression: progressionRows[0] || {
+                health_moves: 0,
+                leads_health_moved: 0,
+                health_replies: 0,
+                health_reply_rate: 0,
+                goals_identified: 0,
+                blockers_identified: 0,
+                problem_qualified: 0,
+                offer_ready: 0,
+                buyer_intent: 0,
+            },
             laneOrder: LANE_ORDER,
         });
     } catch (error) {

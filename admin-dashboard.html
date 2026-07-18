@@ -4197,7 +4197,17 @@
 
         function renderConversionOperatorSummary(snapshot) {
             const s = snapshot.summary || {};
+            const p = snapshot.progression || {};
             return [
+                conversionOperatorMetric('AI health moves today', p.health_moves || 0),
+                conversionOperatorMetric('Different leads moved', p.leads_health_moved || 0),
+                conversionOperatorMetric('Leads answering health', p.health_replies || 0),
+                conversionOperatorMetric('Health reply rate', `${p.health_reply_rate || 0}%`),
+                conversionOperatorMetric('Goals named today', p.goals_identified || 0),
+                conversionOperatorMetric('Blockers named today', p.blockers_identified || 0),
+                conversionOperatorMetric('New problem-qualified', p.problem_qualified || 0),
+                conversionOperatorMetric('New offer-ready', p.offer_ready || 0),
+                conversionOperatorMetric('New buyer intent', p.buyer_intent || 0),
                 conversionOperatorMetric('Ready for link', s.ready_for_link || 0),
                 conversionOperatorMetric('Needs check-in', s.needs_check_in || 0),
                 conversionOperatorMetric('Pitch ready', (s.lead_pitch_ready || 0) + (s.pitch_ready || 0)),
