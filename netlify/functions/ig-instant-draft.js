@@ -822,7 +822,7 @@ async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason =
  */
 const META_AD_FUNNEL_CONTEXT = `
 LEAD ACQUISITION CONTEXT:
-Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, then DMs them first. He initiates the conversation. Some leads also come from Shannon's Meta ads or fitness angles. The primary DM offer is the Balance Vegan Fitness Founders Pass: AUD $99 once for a guided six-week kickstart plus lifetime access to the core Balance app and vegan fitness community. Ongoing individual weekly coaching is not included. Starter Coaching at AUD $29.99/week is an optional upgrade when someone explicitly wants Shannon personally reviewing and adjusting their plan each week. The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The words below trigger offer-inquiry mode:
+Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, then DMs them first. He initiates the conversation. Some leads also come from Shannon's Meta ads or fitness angles. The primary DM offer is the Balance Vegan Fitness Founders Pass: AUD $99 once for a six-week introduction to coaching with Shannon available in the app for questions, direction and accountability, plus lifetime access to the core Balance app and vegan fitness community. Instant daily replies and fully customised weekly plan reviews are not included. Starter Coaching at AUD $29.99/week is the optional ongoing upgrade. The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The words below trigger offer-inquiry mode:
   1. "What's actually included?"
   2. "Do I need to already be Plant Based?"
   3. "I'm In - save me a spot!"
@@ -843,7 +843,7 @@ THE OFFERING (for context — never list as a brochure; speak like a friend):
 - The FIRST offer for warm leads is the paid Balance Vegan Fitness Founders Pass, not a free challenge, standalone custom meal plan, workout program, or generic app trial.
 - If they are plant-based / vegan / vegetarian-curious, tailor the coaching explanation around plant-based food support.
 - If they just want fitness, muscle, weight loss, energy, or consistency with no plant-based signal, tailor the coaching explanation around training, food structure, and accountability.
-- When the offer is opened by a direct details/link/"what's included" ask, explain the setup before sending the next step: $99 once, guided six-week kickstart, lifetime core Balance app access, and the vegan fitness community. Be clear that ongoing personal weekly coaching is separate. Move toward the Founders Pass link in DMs. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
+- When the offer is opened by a direct details/link/"what's included" ask, explain the setup before sending the next step: $99 once, six weeks of in-app coaching support from Shannon, lifetime core Balance app access, and the vegan fitness community. Be clear that ongoing weekly plan reviews after the six weeks are separate. Move toward the Founders Pass link in DMs. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
 - If they only ask "what's Balance?" or "what's your app?" while also saying they are already training hard or feeling good, answer in one plain beat and make any coaching mention casual. No feature list or link unless they ask for details.
 - Once they start, the Balance app gives them the guided kickstart, training and food structure, progress tools and community.
 - Shannon checks in once a week only in the optional Starter Coaching upgrade.
@@ -1248,7 +1248,7 @@ function buildOneOnOneCoachingBlock() {
     return `
 
 BALANCE VEGAN FITNESS FOUNDERS PASS LINK:
-- The primary DM offer is the Balance Vegan Fitness Founders Pass: AUD $99 once for a guided six-week kickstart plus lifetime access to the core Balance app and vegan fitness community. Ongoing individual weekly coaching is separate. The normal path is explanation, acceptance, and checkout inside DMs.
+- The primary DM offer is the Balance Vegan Fitness Founders Pass: AUD $99 once for a six-week introduction to coaching with Shannon available in the app for questions, direction and accountability, plus lifetime access to the core Balance app and vegan fitness community. Instant daily replies and fully customised weekly plan reviews are not included. Starter Coaching is the optional ongoing upgrade. The normal path is explanation, acceptance, and checkout inside DMs.
 - Approved Founders Pass link: ${ONE_ON_ONE_COACHING_URL}
 - When the latest message asks for the offer link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct Founders Pass/details invite, send the approved link in the draft.
 - If the latest message asks to reconnect with Balance, the app/helper, login, password, account access, or any app bug, treat it as support first and do not send the coaching link.
@@ -1812,7 +1812,7 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
     if (sentComment) lines.push(`Shannon's native story reply/comment: "${sentComment}"`);
     if (storyUrl) lines.push(`Story URL: ${storyUrl}`);
     if (!thread?.linked_user_id && primaryOffer === 'balance_starter_coaching') {
-        lines.push('Sales context: story outreach lead. Voice priority: no sales script, brochure, or urgency. If real help/food/training/consistency signal appears, bridge to the paid Balance Vegan Fitness Founders Pass ($99 once, six-week kickstart plus lifetime core app and vegan community access). Do not offer a free challenge.');
+        lines.push('Sales context: story outreach lead. Voice priority: no sales script, brochure, or urgency. If real help/food/training/consistency signal appears, bridge to the paid Balance Vegan Fitness Founders Pass ($99 once, six weeks of in-app coaching support from Shannon plus lifetime core app and vegan community access). Do not offer a free challenge.');
     }
 
     return {

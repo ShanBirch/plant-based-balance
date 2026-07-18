@@ -24,7 +24,7 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 - Logo asset: `balance_logo.png`, Japanese kanji wa/harmony.
 - Facebook Pixel: `1928402271406692`.
 - Pricing:
-  - Balance Vegan Fitness Founders Pass: AUD $99 once. Guided six-week kickstart plus lifetime access to the core Balance app and vegan fitness community. Ongoing individual weekly coaching is not included.
+  - Balance Vegan Fitness Founders Pass: AUD $99 once. Six-week introduction to coaching with in-app support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and vegan fitness community. Instant daily replies and fully customised weekly plan reviews are not included.
   - App + Group: $20/month.
   - Balance Starter Coaching: $29.99/week, optional upgrade for individual weekly review and adjustment from Shannon.
 
@@ -50,7 +50,7 @@ Shannon is currently running a live six-week Balance challenge. Keep its partici
 
 Canonical Vegan Fitness Founders Pass signup path:
 
-1. Explain the fit and AUD $99 one-time offer inside the DM. Be clear that ongoing individual weekly coaching is separate.
+1. Explain the fit and AUD $99 one-time offer inside the DM. Be clear that six weeks of in-app coaching support from Shannon are included, while ongoing individual weekly plan reviews and adjustments after the kickstart are separate.
 2. When the lead asks for details, accepts, or says they are ready, send `https://plantbased-balance.org/vegan-fitness.html`.
 3. The branded Founders Pass page gives a clear offer summary and starts a Stripe-hosted one-time Checkout Session after legal acceptance.
 4. Stripe webhook-backed payment is the sale; then onboarding continues through Balance.
