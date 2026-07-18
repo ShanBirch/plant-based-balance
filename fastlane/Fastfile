@@ -1,0 +1,22 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Prepare the plant-based App Store listing without submitting for review"
+  lane :prepare_store_listing do
+    deliver(
+      api_key_path: ENV.fetch("APP_STORE_API_KEY_PATH"),
+      username: "shannonbirch@cocospersonaltraining.com",
+      app_identifier: "com.fitgotchi.app",
+      app_version: ENV.fetch("IOS_VERSION_STRING"),
+      metadata_path: "store-listing/app-store",
+      screenshots_path: "store-listing/app-store-screenshots",
+      skip_binary_upload: true,
+      skip_app_version_update: false,
+      skip_metadata: false,
+      skip_screenshots: false,
+      submit_for_review: false,
+      force: true,
+      run_precheck_before_submit: false
+    )
+  end
+end

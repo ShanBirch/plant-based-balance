@@ -73,19 +73,6 @@ jobs:
 
       - name: Prepare App Store copy and screenshots
         env:
+          APP_STORE_API_KEY_PATH: ${{ runner.temp }}/app-store-api-key.json
           IOS_VERSION_STRING: ${{ inputs.ios_version_string }}
-        run: >-
-          fastlane deliver
-          --api_key_path "$RUNNER_TEMP/app-store-api-key.json"
-          --username shannonbirch@cocospersonaltraining.com
-          --app_identifier com.fitgotchi.app
-          --app_version "$IOS_VERSION_STRING"
-          --metadata_path store-listing/app-store
-          --screenshots_path store-listing/app-store-screenshots
-          --skip_binary_upload true
-          --skip_app_version_update false
-          --skip_metadata false
-          --skip_screenshots false
-          --submit_for_review false
-          --force true
-          --run_precheck_before_submit false
+        run: fastlane ios prepare_store_listing
