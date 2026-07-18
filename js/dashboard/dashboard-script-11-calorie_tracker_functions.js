@@ -2133,7 +2133,9 @@ async function shareMealRecordToFeed(meal, btn) {
         showToast('This meal is already shared to Feed', 'info');
         return null;
     }
-    const initialVeganIssue = typeof window.getVeganMealSafetyIssue === 'function'
+    const shouldEnforceVeganFeed = typeof window.isVeganFeedViewer === 'function'
+        && window.isVeganFeedViewer();
+    const initialVeganIssue = shouldEnforceVeganFeed && typeof window.getVeganMealSafetyIssue === 'function'
         ? window.getVeganMealSafetyIssue(meal)
         : null;
     if (initialVeganIssue) {
@@ -2172,7 +2174,7 @@ async function shareMealRecordToFeed(meal, btn) {
         }
 
         mealForShare = await getFreshMealRecordForFeedShare(mealForShare);
-        const veganIssue = typeof window.getVeganMealSafetyIssue === 'function'
+        const veganIssue = shouldEnforceVeganFeed && typeof window.getVeganMealSafetyIssue === 'function'
             ? window.getVeganMealSafetyIssue(mealForShare)
             : null;
         if (veganIssue) {

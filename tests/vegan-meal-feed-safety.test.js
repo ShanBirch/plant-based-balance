@@ -12,8 +12,13 @@ const trackerSource = fs.readFileSync(
 );
 const migrationSource = [
     '20260717235245_enforce_vegan_feed_meals.sql',
-    '20260718000024_filter_unsafe_meals_from_network_feed.sql'
+    '20260718000024_filter_unsafe_meals_from_network_feed.sql',
+    '20260718001348_scope_vegan_feed_filter_to_viewer.sql'
 ].map(file => fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', file), 'utf8')).join('\n');
+const viewerScopeMigrationSource = fs.readFileSync(
+    path.join(__dirname, '..', 'supabase', 'migrations', '20260718001348_scope_vegan_feed_filter_to_viewer.sql'),
+    'utf8'
+);
 
 test('animal-product meals are rejected from the vegan Feed', () => {
     assert.equal(safety.getVeganMealSafetyIssue({ food_items: [{ name: 'Fried eggs' }] }).key, 'egg');
@@ -33,22 +38,29 @@ test('clearly plant-based alternatives remain shareable', () => {
     ].forEach(foods => assert.equal(safety.getVeganMealSafetyIssue({ foods }), null, foods));
 });
 
-test('legacy unsafe meal cards are hidden but other Feed cards remain visible', () => {
+test('animal-product meal cards are hidden only from vegan viewers', () => {
     const eggs = { media_type: 'meal_card', caption: JSON.stringify({ card_type: 'meal', foods: 'Eggs on toast' }) };
     const coconutYoghurt = { media_type: 'meal_card', caption: JSON.stringify({ card_type: 'meal', foods: 'Coconut yoghurt and oats' }) };
     const workout = { media_type: 'workout_card', caption: 'Upper body PB' };
-    assert.equal(safety.isVeganMealFeedStory(eggs), false);
-    assert.equal(safety.isVeganMealFeedStory(coconutYoghurt), true);
-    assert.equal(safety.isVeganMealFeedStory(workout), true);
+    assert.equal(safety.shouldShowMealFeedStory(eggs, 'vegan'), false);
+    assert.equal(safety.shouldShowMealFeedStory(eggs, 'plant_based'), false);
+    assert.equal(safety.shouldShowMealFeedStory(eggs, 'vegetarian'), true);
+    assert.equal(safety.shouldShowMealFeedStory(eggs, 'omnivore'), true);
+    assert.equal(safety.shouldShowMealFeedStory(eggs, null), true);
+    assert.equal(safety.shouldShowMealFeedStory(coconutYoghurt, 'vegan'), true);
+    assert.equal(safety.shouldShowMealFeedStory(workout, 'vegan'), true);
 });
 
 test('the safety module loads before Feed and blocks meal sharing in the client', () => {
-    const safetyIndex = dashboardSource.indexOf('lib/vegan-meal-safety.js?v=1');
-    const storiesIndex = dashboardSource.indexOf('lib/stories.js?v=69');
+    const safetyIndex = dashboardSource.indexOf('lib/vegan-meal-safety.js?v=2');
+    const storiesIndex = dashboardSource.indexOf('lib/stories.js?v=70');
     assert.ok(safetyIndex >= 0 && storiesIndex > safetyIndex);
-    assert.match(storiesSource, /window\.isVeganMealFeedStory\(story\)/);
+    assert.match(storiesSource, /window\.shouldShowMealFeedStory\(story\)/);
     assert.match(trackerSource, /window\.getVeganMealSafetyIssue\(meal\)/);
+    assert.match(trackerSource, /window\.isVeganFeedViewer\(\)/);
     assert.match(trackerSource, /Balance is a vegan community/);
     assert.match(migrationSource, /enforce_vegan_feed_meal_trigger/);
     assert.match(migrationSource, /balance_vegan_feed_meal_is_safe\(s\.caption\)/);
+    assert.match(viewerScopeMigrationSource, /drop trigger if exists enforce_vegan_feed_meal_trigger/);
+    assert.doesNotMatch(viewerScopeMigrationSource, /balance_vegan_feed_meal_is_safe\(s\.caption\)/);
 });
