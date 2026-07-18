@@ -123,6 +123,10 @@ const {
     buildAlternateIgDeliveryData,
     resolveAlternateIgDeliveryThread,
 } = require('./_lib/ig-thread-routing');
+const {
+    collectAlertInboundText,
+    classifyPersonalDmBoundary,
+} = require('./_lib/personal-dm-boundary');
 
 // Inter-chunk delay. Keep multi-bubble IG/Messenger replies paced like a
 // person typing, not a bot dumping a batch. Dashboard-approved big replies use
@@ -147,6 +151,7 @@ const EDIT_ANALYSIS_BACKGROUND_BUDGET_MS = 7000;
 const INSTAGRAM_GRAPH_TYPING_ACTION_TIMEOUT_MS = 1200;
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
 const PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE = 'Permanent Needs You contacts require Shannon approval before sending.';
+const PERSONAL_DM_BOUNDARY_MESSAGE = 'Personal, flirtatious, or non-business call conversations require Shannon approval before sending.';
 const SEND_TIME_SAFETY_BLOCK_MESSAGE = 'Send-time safety blocked this IG reply. Edit the reply or redraft before sending.';
 const AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES = new Set([
     'auto_send',
@@ -589,6 +594,35 @@ async function stampPermanentNeedsYouAutomatedIgSendBlock({ alertId, alertData =
     } catch (err) {
         console.warn('[send-ig-reply] permanent Needs You block stamp failed:', err.message);
     }
+}
+
+async function stampPersonalDmBoundaryBlock({ alertId, alertData = {}, classification = {} } = {}) {
+    if (!alertId) return;
+    const blockedAt = new Date().toISOString();
+    const reason = classification.reason || 'personal_social_or_flirtation_manual_only';
+    const data = {
+        ...(alertData || {}),
+        client_manager_review_required: true,
+        needs_you_required: true,
+        needs_shannon_approval: true,
+        operator_queue: 'needs_you',
+        needs_you_reason: reason,
+        needs_you_reasons: [
+            ...new Set([
+                ...(Array.isArray(alertData?.needs_you_reasons) ? alertData.needs_you_reasons : []),
+                reason,
+            ]),
+        ],
+        last_send_error: PERSONAL_DM_BOUNDARY_MESSAGE,
+        last_send_error_code: 'personal_dm_boundary_automated_send_blocked',
+        last_send_error_at: blockedAt,
+        outbound_attempted: false,
+    };
+    await supabase(`coach_alerts?id=eq.${alertId}`, {
+        method: 'PATCH',
+        body: { data },
+        prefer: 'return=minimal',
+    });
 }
 
 function resolveGraphMessageTag({ shouldUseGraph, lastInboundAt, source, alertData }) {
@@ -1340,6 +1374,27 @@ exports.handler = async (event) => {
             body: JSON.stringify({ error: 'Reply text became empty after visible-copy cleanup' }),
         };
     }
+    const personalBoundary = classifyPersonalDmBoundary({
+        inboundText: collectAlertInboundText(alertData),
+        outboundText: replyText,
+        linkedUserId: threadForSend?.linked_user_id || alert.client_id || alertData.linked_user_id || null,
+    });
+    if (personalBoundary.requires_manual && isAutomatedPermanentNeedsYouSendSource(source, alertData)) {
+        try {
+            await stampPersonalDmBoundaryBlock({ alertId, alertData, classification: personalBoundary });
+        } catch (err) {
+            console.warn('[send-ig-reply] personal DM boundary stamp failed:', err.message);
+        }
+        return {
+            statusCode: 409,
+            body: JSON.stringify({
+                error: PERSONAL_DM_BOUNDARY_MESSAGE,
+                code: 'personal_dm_boundary_automated_send_blocked',
+                reason: personalBoundary.reason,
+                source,
+            }),
+        };
+    }
     const textIntegrity = validateOutboundTextIntegrity(replyText);
     if (!textIntegrity.ok) {
         const blockedAt = new Date().toISOString();
@@ -2080,6 +2135,7 @@ exports._test = {
     isAppSupportFastFixException,
     isPermanentNeedsYouIgAlert,
     shouldBlockPermanentNeedsYouAutomatedIgSend,
+    stampPersonalDmBoundaryBlock,
     hasClientFacingAiSelfReference,
     isGratitudeCloserText,
     resolveLatestInboundTextForSend,

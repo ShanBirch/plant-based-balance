@@ -513,6 +513,13 @@ function isKayNeedsYouPerson(record = {}) {
 }
 
 function isAlwaysNeedsYouPerson(record = {}) {
+    const source = asPlainObject(record);
+    const customData = asPlainObject(source.custom_data || source);
+    if (
+        customData.needs_you_always === true
+        || customData.manual_review_only === true
+        || customData.permanent_needs_you_draft_only === true
+    ) return true;
     const candidates = alwaysNeedsYouNameCandidates(record);
     return candidates.some(name => {
         const tokens = name.split(/\s+/).filter(Boolean);

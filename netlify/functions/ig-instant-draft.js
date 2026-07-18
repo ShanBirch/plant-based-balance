@@ -122,6 +122,7 @@ const {
     classifyHealthProgressionAnswer,
     progressionMilestones,
 } = require('./_lib/lead-health-progression');
+const { hasBusinessCallRequest } = require('./_lib/personal-dm-boundary');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const HISTORY_LIMIT = 40;
@@ -1333,7 +1334,9 @@ function buildBalanceCallBookingBlock() {
 BALANCE CALL BOOKING:
 - Approved call-booking link: ${BALANCE_CALL_BOOKING_URL}
 - The normal Founders Pass path is explanation, acceptance, and checkout inside DMs. Do not turn warmth or qualification into a phone-call pitch.
-- Use the call link when they directly ask to chat, talk it through, book a call, ask when Shannon is free, clearly say a call would help, remain genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Keep the handoff casual and short, such as "yeah for sure, grab a time that works for you here".
+- A call request counts here only when they explicitly connect it to Balance, coaching, fitness, health, the offer, working with Shannon, or talking through a real buying/coaching decision.
+- A request to video chat, FaceTime, use Discord/WhatsApp, chat socially, see Shannon face-to-face, or talk later after personal/flirty banter is NOT a sales call. Do not accept it, arrange it, move platforms, or promise future personal contact. Leave that decision for Shannon.
+- Use the call link when they ask to talk through the Balance/coaching decision, remain genuinely uncertain after a clear DM explanation, or the situation needs Shannon's professional judgement. Keep the handoff casual and short, such as "yeah for sure, grab a time that works for you here".
 - The booking page lets them choose a phone call, video call, or WhatsApp call. Let them choose there. Do not make them pick a format in the DM or promise a specific platform before they book.
 - Do not send this link just because they are interested in the Founders Pass, have shared a goal, or asked for offer details. Use the regular Founders Pass link in those cases.
 - The booking link is an approved lead handoff. Once the lead has clearly asked for or accepted the call, the normal lead-manager send path can deliver it after its usual thread readback. It is not a Needs You reason by itself.`;
@@ -1437,6 +1440,7 @@ function isBalanceCallBookingLinkText(text) {
 
 function isExplicitCallBookingRequest(text) {
     const s = String(text || '');
+    if (!hasBusinessCallRequest(s)) return false;
     return /\b(?:book|schedule|set up|organise|organize|have|do|jump on|take)\b.{0,48}\b(?:a )?(?:call|chat|phone|video|whatsapp)\b/i.test(s)
         || /\b(?:can|could|would|want to)\b.{0,32}\b(?:call|chat|talk)\b/i.test(s)
         || /\b(?:phone|video|whatsapp)\s+call\b/i.test(s);
@@ -2779,6 +2783,7 @@ ${checkinThreadBlock}
 ${learningReelContextBlock}
 
 CONVERSATION RESPONSIBILITY:
+- BUSINESS/PERSONAL BOUNDARY: Shannon's acquisition inbox is for genuine human rapport that can lead to Balance, not for the system to conduct his dating or private social life. Never flirt back, call someone cute/hot/sexy, accept or arrange a social/video call, move them to Discord/WhatsApp, promise beach/personal photos, say "I'll make it up to you", or imply future personal contact. A social or flirtatious call request is not buyer intent. Do not draft a reply for it as if Shannon accepted. It requires Shannon's manual decision. A coaching/sales call is valid only when the lead explicitly connects the call to Balance, coaching, fitness/health help, the paid offer, or working with Shannon.
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
 - When that answer completes the small thread, do not turn it into another question by default. A practical steer, acknowledgement, or clean pause is often better for active clients.
 - If they just gave their current status, feeling, pain, soreness, or symptom answer, do not ask "how's it feeling today", "how are you feeling", or "still pain?" back at them. Treat it as answered, acknowledge it, then use a statement or practical next step unless a different missing detail changes what Shannon should do.
@@ -3918,6 +3923,7 @@ exports.handler = async (event) => {
         data: {
             client_manager_review_required: permanentNeedsYouClient || undefined,
             needs_you_required: permanentNeedsYouClient || undefined,
+            permanent_needs_you_draft_only: permanentNeedsYouClient || undefined,
             operator_queue: permanentNeedsYouClient ? 'needs_you' : null,
             needs_you_reason: permanentNeedsYouClient ? 'always_needs_you_person' : undefined,
             needs_you_reasons: permanentNeedsYouClient ? ['always_needs_you_person'] : undefined,
@@ -4081,6 +4087,14 @@ exports.handler = async (event) => {
         const newCount = isBlankRegeneration ? previousCount : previousCount + 1;
         const mergedData = {
             ...(existingPending.data || alertRow.data),
+            client_manager_review_required: permanentNeedsYouClient || existingPending.data?.client_manager_review_required || undefined,
+            needs_you_required: permanentNeedsYouClient || existingPending.data?.needs_you_required || undefined,
+            permanent_needs_you_draft_only: permanentNeedsYouClient || existingPending.data?.permanent_needs_you_draft_only || undefined,
+            operator_queue: permanentNeedsYouClient ? 'needs_you' : (existingPending.data?.operator_queue || null),
+            needs_you_reason: permanentNeedsYouClient ? 'always_needs_you_person' : existingPending.data?.needs_you_reason,
+            needs_you_reasons: permanentNeedsYouClient
+                ? [...new Set([...(existingPending.data?.needs_you_reasons || []), 'always_needs_you_person'])]
+                : existingPending.data?.needs_you_reasons,
             message_preview: truncate(messageText, 400),
             last_outbound_message: lastOutboundMessage || existingPending.data?.last_outbound_message || null,
             learning_reels: learningReelHistory.length ? {

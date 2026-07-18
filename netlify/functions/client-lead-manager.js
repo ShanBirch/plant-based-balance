@@ -27,6 +27,10 @@ const {
     coachDmManagerWindowLabel,
     isCoachDmManagerWorkingTime,
 } = require('./_lib/coach-dm-working-hours');
+const {
+    collectAlertInboundText,
+    classifyPersonalDmBoundary,
+} = require('./_lib/personal-dm-boundary');
 
 const MANAGER_SOURCE = 'balance-lead-client-manager';
 const MAX_PER_RUN = 80;
@@ -60,7 +64,13 @@ function alertIdentity(alert = {}) {
         profile_name: data.profile_name || '',
         ig_username: data.ig_username || '',
         username: data.username || data.ig_username || '',
-        custom_data: data.custom_data || {},
+        custom_data: {
+            ...(data.custom_data || {}),
+            needs_you_always: data.needs_you_always === true || data.custom_data?.needs_you_always === true,
+            manual_review_only: data.manual_review_only === true || data.custom_data?.manual_review_only === true,
+            permanent_needs_you_draft_only: data.permanent_needs_you_draft_only === true
+                || data.custom_data?.permanent_needs_you_draft_only === true,
+        },
     };
 }
 
@@ -569,6 +579,24 @@ function classifyNeedsYou(alert = {}) {
     });
 
     if (acquisitionLead) {
+        const manualOnlyData = alertIdentity(alert).custom_data || {};
+        if (
+            manualOnlyData.needs_you_always === true
+            || manualOnlyData.manual_review_only === true
+            || manualOnlyData.permanent_needs_you_draft_only === true
+        ) {
+            reasons.push('always_needs_you_person');
+            labels.push('This person is permanently manual-only');
+        }
+        const personalBoundary = classifyPersonalDmBoundary({
+            inboundText: collectAlertInboundText(data),
+            outboundText: alert.suggested_message || data.draft_text || '',
+            linkedUserId: alert.client_id || data.linked_user_id || null,
+        });
+        if (personalBoundary.requires_manual) {
+            reasons.push(personalBoundary.reason);
+            labels.push(personalBoundary.label);
+        }
         if (leadHasCredibleCurrentDanger(data)) {
             reasons.push('credible_current_danger');
             labels.push('lead shared a credible current danger signal');

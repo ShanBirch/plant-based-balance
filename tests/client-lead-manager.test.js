@@ -592,7 +592,7 @@ assert.strictEqual(schedulePatch.data.client_manager_auto_schedule_reason, 'appr
 const approvedCallBookingHandoff = makeAlert({
     suggested_message: "yeah for sure, grab a time that works for you here: https://plantbased-balance.org/book",
     data: {
-        message_preview: 'could we do a video call?',
+        message_preview: 'could we do a video call to talk through the Founders Pass?',
         approved_link_auto_sendable: true,
         signup_link_manual_only: false,
         signup_link_handoff_url: 'https://plantbased-balance.org/book',
