@@ -2156,7 +2156,11 @@ async function shareMealRecordToFeed(meal, btn) {
     }
 
     try {
-        let mealForShare = meal;
+        // The native quick-meal flow uploads the captured photo while the
+        // rendered meal list can still hold its pre-upload copy. Refresh
+        // before deciding a photo is missing so Feed uses the photo the user
+        // just took instead of unnecessarily opening the device gallery.
+        let mealForShare = await getFreshMealRecordForFeedShare(meal);
         if (!getMealSharePhotoUrl(mealForShare)) {
             showToast('Choose the food photo to use behind your meal details', 'info');
             const selectedPhoto = await pickMealFeedSharePhotoFile();
