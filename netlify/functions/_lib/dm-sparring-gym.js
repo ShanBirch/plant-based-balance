@@ -1194,6 +1194,46 @@ function isRhetoricalQuestionFragment(sentence) {
     return /^(haha+|haha right|hahaha right|right|yeah right|eh|that'?s the goal right|chat bot hey|fair hey|rough hey|wild hey|classic hey|good question|sounds good|seriously|for real|no kidding)$/i.test(s);
 }
 
+function normalizedWords(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/https?:\/\/\S+/g, ' ')
+        .replace(/[^a-z0-9']+/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+}
+
+function hasNearVerbatimLeadEcho({ coachText, leadText, minWords = 5 } = {}) {
+    const coachWords = normalizedWords(coachText);
+    const leadWords = normalizedWords(leadText);
+    if (coachWords.length < minWords || leadWords.length < minWords) return false;
+
+    const coachPhrases = new Set();
+    for (let index = 0; index <= coachWords.length - minWords; index += 1) {
+        coachPhrases.add(coachWords.slice(index, index + minWords).join(' '));
+    }
+    for (let index = 0; index <= leadWords.length - minWords; index += 1) {
+        if (coachPhrases.has(leadWords.slice(index, index + minWords).join(' '))) return true;
+    }
+    return false;
+}
+
+function hasUnsupportedIntroducedEntityEndorsement({ coachText, leadText } = {}) {
+    const lead = String(leadText || '').trim();
+    const coach = String(coachText || '').trim();
+    const introduced = lead.match(/^([A-Z][A-Za-z'’-]*(?:\s+[A-Z][A-Za-z'’-]*){0,3})\s*[!.]/);
+    if (!introduced) return false;
+
+    const entity = introduced[1];
+    const escapedEntity = entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const leadRatesEntity = /\b(?:she|he|they|it)(?:'s|\s+is|\s+are)?\s+(?:very|really|so)\s+(?:good|great|amazing|talented|excellent)\b/i.test(lead)
+        || new RegExp(`\\b${escapedEntity}\\b.{0,30}\\b(?:very|really|so)\\s+(?:good|great|amazing|talented|excellent)\\b`, 'i').test(lead);
+    if (!leadRatesEntity) return false;
+
+    return new RegExp(`\\b${escapedEntity}\\b.{0,45}\\b(?:is|are|'s)\\s+(?:very|really|so)\\s+(?:good|great|amazing|talented|excellent)\\b`, 'i').test(coach);
+}
+
 function detectCoachTurnIssues({ coachText, leadText, qualifier, leadStage = 'qualifying', leadReplyCount } = {}) {
     const text = String(coachText || '').trim();
     const issues = [];
@@ -1228,6 +1268,12 @@ function detectCoachTurnIssues({ coachText, leadText, qualifier, leadStage = 'qu
     if (!text) {
         issues.push('empty_coach_reply');
         return issues;
+    }
+    if (hasNearVerbatimLeadEcho({ coachText: text, leadText })) {
+        issues.push('near_verbatim_parroting');
+    }
+    if (hasUnsupportedIntroducedEntityEndorsement({ coachText: text, leadText })) {
+        issues.push('unsupported_familiarity');
     }
     if (isLeadOptOutOrAccidentalText(leadText)) {
         if (isChallengeOfferWarningText(text)) {

@@ -1506,6 +1506,24 @@ const aiMirror = detectCoachTurnIssues({
 });
 assert.ok(aiMirror.includes('ai_disclosure_risk'));
 
+const introducedArtistParrot = detectCoachTurnIssues({
+    coachText: "haha yeah Alex Sandra is really good, and she's still just starting out sort of. what kind of gigs is she doing right now?",
+    leadText: "Alex Sandra! She's very good, still just starting out sort of",
+    qualifier: null,
+    leadStage: 'qualifying',
+});
+assert.ok(introducedArtistParrot.includes('near_verbatim_parroting'));
+assert.ok(introducedArtistParrot.includes('unsupported_familiarity'));
+
+const honestIntroducedArtistReply = detectCoachTurnIssues({
+    coachText: "oh nice haha, I haven't heard of her before. what kind of gigs is she doing?",
+    leadText: "Alex Sandra! She's very good, still just starting out sort of",
+    qualifier: null,
+    leadStage: 'qualifying',
+});
+assert.ok(!honestIntroducedArtistReply.includes('near_verbatim_parroting'));
+assert.ok(!honestIntroducedArtistReply.includes('unsupported_familiarity'));
+
 const plantExpertLead = "Honestly, hitting macros plant-based isn't hard once you get the hang of it. Did you track micronutrients when you tried it?";
 const plantExpertMiss = detectCoachTurnIssues({
     coachText: "to be honest, i mostly focused on macros back then, so micros weren't something i was tracking as closely. i probably just assumed i was getting enough.",
