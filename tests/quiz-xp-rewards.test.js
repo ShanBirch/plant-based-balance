@@ -28,3 +28,12 @@ test('daily quiz totals 15 XP before the existing challenge multiplier', () => {
   assert.match(dashboard, /\+15 XP earned\. Come back tomorrow!/);
   assert.match(homeQuiz, /var xpAmount = perfect \? 15 : 1;/);
 });
+
+test('completed lesson replays explain that XP was already claimed', () => {
+  const inline = read('lib/learning-inline.js');
+
+  assert.match(inline, /const isXpReplay = result\?\.is_new_lesson === false/);
+  assert.match(inline, /\? 'Review Complete!'/);
+  assert.match(inline, /isXpReplay \? 'Claimed' : '0'/);
+  assert.match(inline, /XP for this lesson was already claimed on your first completion\./);
+});
