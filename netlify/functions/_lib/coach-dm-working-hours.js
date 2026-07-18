@@ -1,6 +1,7 @@
 const COACH_DM_MANAGER_TIME_ZONE = 'Australia/Brisbane';
-const COACH_DM_MANAGER_START_MINUTES = 5 * 60;
-const COACH_DM_MANAGER_END_MINUTES = 2 * 60;
+// Equal start/end means the shared manager window is open all day.
+const COACH_DM_MANAGER_START_MINUTES = 0;
+const COACH_DM_MANAGER_END_MINUTES = 0;
 
 function getBrisbaneMinuteOfDay(date = new Date()) {
     const parts = new Intl.DateTimeFormat('en-AU', {
@@ -61,7 +62,7 @@ function resolveCoachDmManagerScheduledFor(now = new Date(), delayMs = 0) {
 }
 
 function coachDmManagerWindowLabel() {
-    return '05:00-02:00 Australia/Brisbane';
+    return '24 hours Australia/Brisbane';
 }
 
 module.exports = {
