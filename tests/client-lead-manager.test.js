@@ -457,6 +457,67 @@ const aiDetectionStatement = manager.classifyNeedsYou(makeAlert({
 assert.strictEqual(aiDetectionStatement.shouldRoute, true);
 assert.ok(aiDetectionStatement.reasons.includes('ai_suspicion_or_authenticity_question'));
 
+const aiSuspicionFromQualifierEvidence = manager.classifyNeedsYou(makeAlert({
+    data: {
+        message_preview: 'Sorry I just have to ask?',
+        qualifier: {
+            quote_evidence: 'Shan is this an ai bot talking to me or is it you lol?',
+        },
+    },
+}));
+assert.strictEqual(aiSuspicionFromQualifierEvidence.shouldRoute, true);
+assert.ok(aiSuspicionFromQualifierEvidence.reasons.includes('ai_suspicion_or_authenticity_question'));
+
+const publicAiDenialDraft = manager.classifyNeedsYou(makeAlert({
+    suggested_message: "Haha nah I'm not an AI bot, promise. What move are you trying to progress?",
+    data: {
+        message_preview: 'Sorry I just have to ask?',
+    },
+}));
+assert.strictEqual(publicAiDenialDraft.shouldRoute, true);
+assert.ok(publicAiDenialDraft.reasons.includes('public_ai_automation_wording_in_draft'));
+
+const decodedVoiceNoteClarification = manager.classifyNeedsYou(makeAlert({
+    suggested_message: "That last note didn't come through clearly though, what were you saying in that one?",
+    data: {
+        message_preview: 'Never mind ahhah',
+        audio_transcript_count: 2,
+        media_decode: {
+            audio_url_count: 2,
+            audio_inline_count: 2,
+            audio_transcript_count: 2,
+            audio_transcripts: [
+                { text: 'I decided, like, they are not vegan, so it is like, huh?' },
+                { text: 'How can you ask that question if you are vegan?' },
+            ],
+        },
+    },
+}));
+assert.strictEqual(decodedVoiceNoteClarification.shouldRoute, true);
+assert.ok(decodedVoiceNoteClarification.reasons.includes('decoded_voice_note_stale_clarification'));
+assert.ok(decodedVoiceNoteClarification.reasons.includes('dropped_clarification_reopened'));
+
+const droppedClarificationReopened = manager.classifyNeedsYou(makeAlert({
+    suggested_message: 'All good haha. What were you trying to say about your food and energy?',
+    data: {
+        message_preview: 'Never mind ahhah',
+    },
+}));
+assert.strictEqual(droppedClarificationReopened.shouldRoute, true);
+assert.ok(droppedClarificationReopened.reasons.includes('dropped_clarification_reopened'));
+
+const storyCuteFitnessPivot = manager.classifyNeedsYou(makeAlert({
+    suggested_message: 'Cute haha\nAre you into fitness much too?',
+    data: {
+        message_preview: 'Cute',
+        draft_evidence: {
+            story_context: 'IG story reply context: Story caption: Poop. Visible story text: POOP.',
+        },
+    },
+}));
+assert.strictEqual(storyCuteFitnessPivot.shouldRoute, true);
+assert.ok(storyCuteFitnessPivot.reasons.includes('stock_fitness_pivot_from_light_story'));
+
 const imminentDanger = manager.classifyNeedsYou(makeAlert({
     data: {
         message_preview: "I can't keep myself safe tonight and I'm thinking about killing myself",

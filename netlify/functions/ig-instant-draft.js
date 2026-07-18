@@ -917,6 +917,8 @@ SHANNON FOLLOW-UP QUESTION FINGERPRINT:
 - Never hand them two possible answers inside a rapport or qualification question. Ask the live detail plainly and let them describe it in their own words. "how long has this been going on for?" beats "is it your diet or your motivation?"
 - Avoid polished therapist/coach questions. Replace "what does that look like for you?", "what kind of difference would that make?", "what usually makes it hard?", "anything in particular making it hectic?", and "how are you finding it?" with a question built from their actual nouns.
 - Do not jump from a normal-life answer straight to the challenge. Use the follow-up to understand the blocker, preference, or context first.
+- Do not jump from a one-word story/pet/food reaction like "cute", "haha", "nice", an emoji, or a weak story-summary guess into "are you into fitness much too?" or "you training at the moment?". Reply to the story reaction itself, or stop if there is no useful next handle.
+- If the lead asks whether this is AI, a bot, automated, or really Shannon, do not draft a public denial and do not continue the sales thread. That must be held for Shannon.
 
 THE OFFERING (for context — never list as a brochure; speak like a friend):
 - The FIRST offer for warm leads is the paid Balance Vegan Fitness Founders Pass, not a free challenge, standalone custom meal plan, workout program, or generic app trial.
@@ -927,6 +929,7 @@ THE OFFERING (for context — never list as a brochure; speak like a friend):
 - Once they start, the Balance app gives them the guided kickstart, training and food structure, progress tools and community.
 - Shannon checks in once a week only in the optional Starter Coaching upgrade.
 - Keep it low-pressure. If they are not ready, leave a clean re-entry handle or use the paid app/group option when it genuinely fits. Do not revive a free-challenge funnel.
+- Voice notes: when the system supplies a decoded voice-note transcript or media summary, treat it as heard. Reply to the content. Do not ask them to resend, repeat, or type the gist unless there is no transcript/summary and the media is genuinely inaccessible.
 
 RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
 - "What's actually included?" -> explain the Founders Pass casually: six-week guided kickstart plus lifetime core app and vegan community access for $99 once. Be clear ongoing individual coaching is separate. Don't dump a brochure.
@@ -1113,6 +1116,30 @@ function buildEmptyMediaDraftFallbackChunks({ mediaDecode = {}, currentMessageTe
     return [];
 }
 
+function transcriptTextFromMediaDecode(mediaDecode = {}, currentMessageText = '') {
+    const transcriptLists = [
+        mediaDecode.audio_transcripts,
+        mediaDecode.audioTranscripts,
+    ];
+    for (const list of transcriptLists) {
+        if (!Array.isArray(list)) continue;
+        const joined = list
+            .map(item => String(item?.text || item?.transcript || item || '').trim())
+            .filter(Boolean)
+            .join('\n');
+        if (joined) return joined;
+    }
+    const markerMatches = [...String(currentMessageText || '').matchAll(/\[voice note #\d+ transcript:\s*([^\]]+)\]/gi)]
+        .map(match => String(match[1] || '').trim())
+        .filter(Boolean);
+    return markerMatches.join('\n');
+}
+
+function hasAudioTranscriptDraftContext({ mediaDecode = {}, currentMessageText = '' } = {}) {
+    if (transcriptTextFromMediaDecode(mediaDecode, currentMessageText)) return true;
+    return Number(mediaDecode.audio_transcript_count || mediaDecode.audioTranscriptCount || 0) > 0;
+}
+
 function hasAudioDraftContext({ mediaDecode = {}, currentMessageText = '' } = {}) {
     const current = replaceIgMediaMarkers(String(currentMessageText || ''), { photo: 'photo', audio: 'voice note', video: 'video' }).toLowerCase();
     return Number(mediaDecode.audio_url_count || mediaDecode.audioUrlCount || 0) > 0
@@ -1124,12 +1151,83 @@ function isAudioPuntDraftText(value) {
     const text = normalizeCoachDraftText(value).toLowerCase();
     if (!text) return false;
     return /\b(?:i'?ll|i will|i'?m going to|let me|i need to|i can)\s+(?:listen|play|check|open|go through)\b[\s\S]{0,140}\b(?:properly|later|when|then|get back|come back)\b/i.test(text)
-        || /\b(?:listen|play|check|open|go through)\s+(?:to\s+)?(?:this|it|your voice note|the voice note)\b[\s\S]{0,120}\b(?:get back|come back)\b/i.test(text);
+        || /\b(?:listen|play|check|open|go through)\s+(?:to\s+)?(?:this|it|your voice note|the voice note)\b[\s\S]{0,120}\b(?:get back|come back)\b/i.test(text)
+        || /\b(?:voice note|audio|last note|that note|the note)\b[\s\S]{0,120}\b(?:didn'?t|did not|doesn'?t|does not|couldn'?t|could not|can'?t|cannot)\s+(?:come through|hear|understand|make out|play|open)\b/i.test(text)
+        || /\b(?:can|could)\s+you\s+(?:send|type|say|repeat)\b[\s\S]{0,80}\b(?:gist|again|voice note|audio|what you said)\b/i.test(text)
+        || /\bwhat\s+(?:were|are)\s+you\s+(?:saying|trying\s+to\s+say)\b/i.test(text);
 }
 
 function isAudioPuntDraftChunks(chunks, { mediaDecode = {}, currentMessageText = '' } = {}) {
     if (!hasAudioDraftContext({ mediaDecode, currentMessageText })) return false;
     return (Array.isArray(chunks) ? chunks : [chunks]).some(isAudioPuntDraftText);
+}
+
+async function generateAudioTranscriptRecoveryDraft({
+    mediaDecode = {},
+    leadName,
+    channelLabel,
+    currentMessageText,
+    totalConversationText,
+    lastShannonText = '',
+    replyMode,
+    allowDailyGreeting,
+    qualifier,
+    leadStage = null,
+    linkedUserId = null,
+    nativeStoryContextSummary,
+} = {}) {
+    const transcriptText = transcriptTextFromMediaDecode(mediaDecode, currentMessageText);
+    if (!transcriptText) return { chunks: [], rawText: '', model: null, error: 'missing_audio_transcript' };
+    const prompt = `The first draft failed by asking the lead to repeat a voice note. Do a corrected ${channelLabel || 'IG'} reply now.
+
+Lead: ${leadName || 'Lead'}
+Decoded voice-note transcript. Treat this as authoritative latest inbound evidence:
+${truncateTail(transcriptText, 1800)}
+${lastShannonText ? `\nShannon's previous message: ${truncate(lastShannonText, 260)}\n` : ''}
+Conversation context, oldest to newest:
+${truncateTail(totalConversationText || '(no prior tracked context)', 2600)}
+
+Rules:
+- Reply to what the voice note actually says.
+- Never say the voice note did not come through, never ask them to resend/repeat/type the gist, and never write a listening receipt like "just listened".
+- If the newest typed text says "never mind", let the clarification go. Do not ask another clarification question.
+- Keep Shannon's casual texting voice. No AI/automation wording, no em-dashes, no literal backslash-n escape sequences.
+
+JSON only:
+{"messages":["exact DM text"]}`;
+    const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+    const generationConfig = {
+        maxOutputTokens: Math.max(1024, Math.min(Number(replyMode?.maxOutputTokens) || 1536, 2048)),
+        temperature: 0.55,
+    };
+    let lastError = null;
+    for (const attempt of [
+        { label: 'vertex-v7-audio-transcript-retry', call: () => callVertexAIModel(contents, generationConfig) },
+        { label: 'gemini-audio-transcript-retry', call: () => callGeminiFallback(contents, generationConfig) },
+    ]) {
+        try {
+            const rawText = requireNonEmptyDraftText(await attempt.call(), attempt.label);
+            const chunks = finalizeDraftChunksFromRawText(rawText, {
+                maxChunks: replyMode?.maxChunks || MAX_CHUNKS,
+                leadName,
+                currentMessageText,
+                qualifier,
+                leadStage,
+                linkedUserId,
+                nativeStoryContextSummary,
+                hasDecodedMedia: true,
+                allowDailyGreeting,
+            });
+            if (chunks.length && !isAudioPuntDraftChunks(chunks, { mediaDecode, currentMessageText })) {
+                return { chunks, rawText, model: attempt.label, error: lastError };
+            }
+            lastError = `${attempt.label}: empty or still punted`;
+        } catch (err) {
+            lastError = `${attempt.label}: ${String(err.message || err).slice(0, 200)}`;
+            console.warn('[ig-draft] audio transcript recovery failed:', lastError);
+        }
+    }
+    return { chunks: [], rawText: '', model: null, error: lastError || 'audio_transcript_recovery_empty' };
 }
 
 async function generateMediaRecoveryDraft({
@@ -1718,6 +1816,8 @@ ACQUISITION MOMENTUM (${laneName}):
 - Rapport is the on-ramp, not the destination. Do not keep the thread alive with more pet/work/weekend/hobby questions once the lead has named a food, training, energy, body, confidence, consistency, or time problem.
 - When the latest message is a clean closer or low-bandwidth acknowledgement, do not manufacture momentum with another question.
 - If the newest turn is pure banter, a food/photo/story reaction, or a quick answer to Shannon's tiny question, use one chill, specific follow-up when the exact detail gives you a real hook. A plant bargain, local spot, hobby, meal, dog, shift, trip, or project can earn one natural question. Do not force one for a clean closer, thanks, emoji-only reply, filler, or a moment that has clearly run its course.
+- If the latest inbound is only a light story reaction such as "cute", "haha", "nice", an emoji, or a tiny acknowledgement, do not append a generic fitness question. Especially avoid "are you into fitness much too?" and "you training at the moment?" unless the latest message itself contains a real health, training, food, energy, consistency, or help hook.
+- If story/post evidence conflicts with durable memory or is weak, answer only the safe visible/reply text. Do not invent the pet/object context and do not use a stock lead qualifier to cover the uncertainty.
 - Use this decision order: answer their latest message, notice the strongest blocker or desire, then choose one next move: a tiny useful lens, one precise fit question, a direct Founders Pass explanation, or a soft optional offer bridge.
 - No-progression fix: before writing, label the lead's latest signal as one of direct ask, blocker/objection, reciprocal curiosity, early program start, exit/low bandwidth, or pure rapport. The reply must move that exact signal one notch forward.
 - Too-generic fix: build the reply from the lead's exact noun plus their constraint plus the consequence. Example: "two little ones + exhausted after work + dinner stress", "new city move + bookstore shifts + quiet/coffee shop", "conflicting info + meal prep time + overwhelm".
@@ -2847,7 +2947,7 @@ ACTION CLAIMS:
 - If they report a weird food/meal name from the app, correct obvious voice-to-text or typo errors using the conversation and app context instead of repeating the nonsense phrase as a real meal. Example: if the likely plan meal is "Berry Almond Baked Oats", do not call it "very almond mixed oats".
 - If they report a calorie/logging discrepancy, acknowledge it as something Shannon should check. Do not promise to manually adjust or log anything unless the app data below proves it has already been done.
 ${acquisitionStyleBlock}
-- For first/early replies to Shannon's story opener, default to one tiny move about their hook. That can be a short statement, not always a question. Ask a light question only when it is clearly the best next text, or when there is no better hook and Shannon has not asked a basic day/week opener yet. Skip the move when they only said thanks/emoji/filler, it is a genuinely short no-response-needed reply, the topic is a current safety/medical/rehab advice situation, or the thread is clearly closing. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is not sensitive by itself. If they share a stable limitation that affects their training but do not ask for diagnosis, treatment, or rehab advice, acknowledge it then ask one short non-medical question about what training they can still progress or how it changes their week. Keep it as light rapport, never a diagnosis or prescription. The DM manager owns unclear context and every media type: retrieve and inspect the full unanswered batch, transcribe voice notes, analyze photos/video, and ask one natural clarification or resend/gist question if the source is genuinely inaccessible. Route only a credible current self-harm/imminent-danger signal or a direct AI/automation/authenticity challenge to Needs You. A Shannon-side personal aside cannot be the whole reply in this moment. Example: if they reply about InsightTimer filling your cup, "that stuff can properly reset a day" may be enough; ask whether they use it for meditations or reminders only if the thread needs a question.
+- For first/early replies to Shannon's story opener, default to one tiny move about their hook. That can be a short statement, not always a question. Ask a light question only when it is clearly the best next text, or when there is no better hook and Shannon has not asked a basic day/week opener yet. Skip the move when they only said thanks/emoji/filler, it is a genuinely short no-response-needed reply, the topic is a current safety/medical/rehab advice situation, or the thread is clearly closing. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is not sensitive by itself. If they share a stable limitation that affects their training but do not ask for diagnosis, treatment, or rehab advice, acknowledge it then ask one short non-medical question about what training they can still progress or how it changes their week. Keep it as light rapport, never a diagnosis or prescription. A one-word story reaction such as "cute" is not permission to reset into "are you into fitness much too?". The DM manager owns unclear context and every media type: retrieve and inspect the full unanswered batch, transcribe voice notes, analyze photos/video, and ask one natural clarification or resend/gist question if the source is genuinely inaccessible. If a decoded voice-note transcript or media summary is present, it is accessible and must be answered directly, never treated as missing. Route only a credible current self-harm/imminent-danger signal or a direct AI/automation/authenticity challenge to Needs You. A Shannon-side personal aside cannot be the whole reply in this moment. Example: if they reply about InsightTimer filling your cup, "that stuff can properly reset a day" may be enough; ask whether they use it for meditations or reminders only if the thread needs a question.
 
 NEVER reveal AI, automation, "trained on Shannon's voice", "24/7", or anything that breaks the personal-coach illusion. Shannon is replying personally.
 
@@ -3070,19 +3170,47 @@ Rules:
         }
     }
     if (isAudioPuntDraftChunks(cleanedChunks, { mediaDecode, currentMessageText })) {
-        const fallbackChunks = buildEmptyMediaDraftFallbackChunks({ mediaDecode, currentMessageText });
+        let fallbackChunks = [];
+        let recoveryVia = 'audio_punt_guard';
+        let recoveryError = 'audio_draft_punted_instead_of_answering';
+        if (hasAudioTranscriptDraftContext({ mediaDecode, currentMessageText })) {
+            const lastShannonConversationEvent = [...mergedConversationEvents].reverse()
+                .find(event => event.speaker === 'Shannon');
+            const recovery = await generateAudioTranscriptRecoveryDraft({
+                mediaDecode,
+                leadName,
+                channelLabel,
+                currentMessageText,
+                totalConversationText,
+                lastShannonText: lastShannonConversationEvent?.text || '',
+                replyMode,
+                allowDailyGreeting,
+                qualifier,
+                leadStage,
+                linkedUserId,
+                nativeStoryContextSummary: nativeStoryOutreachContext?.summary || null,
+            });
+            fallbackChunks = recovery.chunks || [];
+            recoveryVia = fallbackChunks.length ? 'audio_transcript_retry' : 'audio_transcript_retry_failed';
+            recoveryError = recovery.error || recoveryError;
+            if (fallbackChunks.length) {
+                model = `${String(model || 'none')}+${recovery.model || 'audio-transcript-retry'}`;
+            }
+        } else {
+            fallbackChunks = buildEmptyMediaDraftFallbackChunks({ mediaDecode, currentMessageText });
+            model = `${String(model || 'none')}+audio-punt-guard`;
+        }
         cleanedChunks = fallbackChunks;
-        model = `${String(model || 'none')}+audio-punt-guard`;
         emptyDraftRecovery = {
             recovered: fallbackChunks.length > 0,
-            via: 'audio_punt_guard',
+            via: recoveryVia,
             model: null,
-            error: 'audio_draft_punted_instead_of_answering',
+            error: recoveryError,
             recovered_at: new Date().toISOString(),
         };
-        lastError = `${lastError ? lastError + ' | ' : ''}audio_draft_punted_instead_of_answering`;
+        lastError = `${lastError ? lastError + ' | ' : ''}${recoveryError}`;
     }
-    if (!cleanedChunks.length) {
+    if (!cleanedChunks.length && !hasAudioTranscriptDraftContext({ mediaDecode, currentMessageText })) {
         const fallbackChunks = buildEmptyMediaDraftFallbackChunks({ mediaDecode, currentMessageText });
         if (fallbackChunks.length) {
             cleanedChunks = fallbackChunks;
@@ -4862,6 +4990,8 @@ exports._test = {
     buildCommentResourceHandoffBlock,
     buildEmptyMediaDraftFallbackChunks,
     buildAudioTranscriptReviewContext,
+    transcriptTextFromMediaDecode,
+    hasAudioTranscriptDraftContext,
     isAudioPuntDraftText,
     isAudioPuntDraftChunks,
     buildCurrentTurnAnchorBlock,

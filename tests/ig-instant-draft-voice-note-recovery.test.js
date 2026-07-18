@@ -75,4 +75,47 @@ assert.strictEqual(
     'real replies to voice-note content should not be blocked'
 );
 
+assert.strictEqual(
+    _test.transcriptTextFromMediaDecode({
+        audio_transcripts: [
+            { text: 'I mean, how can you ask that question if you are vegan?' },
+        ],
+    }),
+    'I mean, how can you ask that question if you are vegan?'
+);
+
+assert.strictEqual(
+    _test.hasAudioTranscriptDraftContext({
+        mediaDecode: {
+            audio_url_count: 1,
+            audio_inline_count: 1,
+            audio_transcript_count: 1,
+            audio_transcripts: [
+                { text: 'I mean, how can you ask that question if you are vegan?' },
+            ],
+        },
+    }),
+    true,
+    'decoded voice-note transcripts should be treated as heard context'
+);
+
+assert.strictEqual(
+    _test.isAudioPuntDraftChunks(
+        ["That last note didn't come through clearly though, what were you saying in that one?"],
+        {
+            mediaDecode: {
+                audio_url_count: 1,
+                audio_inline_count: 1,
+                audio_transcript_count: 1,
+                audio_transcripts: [
+                    { text: 'I mean, how can you ask that question if you are vegan?' },
+                ],
+            },
+            currentMessageText: '[voice note #1 transcript: I mean, how can you ask that question if you are vegan?]',
+        }
+    ),
+    true,
+    'stale could-not-hear wording must be blocked when a transcript exists'
+);
+
 console.log('ig instant draft voice-note recovery tests passed');

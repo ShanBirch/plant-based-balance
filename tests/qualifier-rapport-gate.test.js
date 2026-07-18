@@ -78,6 +78,10 @@ assert.strictEqual(
     true
 );
 assert.strictEqual(
+    isUnsafeStockDiscoveryQuestion('are you into fitness much too?'),
+    true
+);
+assert.strictEqual(
     isUnsafeStockDiscoveryQuestion("what's the first thing you need to sort before Hawaii feels real?"),
     true
 );
@@ -159,10 +163,10 @@ const erikaRapportBridge = applyRapportGate({
     currentMessage: '[AUDIO:voice-note]',
     leadReplyCount: 5,
 });
-assert.strictEqual(erikaRapportBridge.is_question_moment, true);
-assert.match(erikaRapportBridge.next_question, /fitness/i);
+assert.strictEqual(erikaRapportBridge.is_question_moment, false);
+assert.strictEqual(erikaRapportBridge.next_question, '');
 assert.doesNotMatch(erikaRapportBridge.next_question, /Denmark|comfort food|ritual/i);
-assert.match(erikaRapportBridge.why_now, /no relevant fitness signal/i);
+assert.match(erikaRapportBridge.why_now, /no specific training hook/i);
 
 const questionFatigue = applyRapportGate({
     qualifier: {

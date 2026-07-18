@@ -611,6 +611,8 @@ function isUnsafeStockDiscoveryQuestion(text) {
         || /\bare you much of a cook\b/i.test(q)
         || /\byou much of a cook\b/i.test(q)
         || /\btakeaway person\b/i.test(q)
+        || /\bare you into fitness\b/i.test(q)
+        || /\bfitness much too\b/i.test(q)
         || /\byou training at the moment\b/i.test(q)
         || /\bwhat do you normally do when you get a bit of time\b/i.test(q)
         || /\bwhat are your goals\b/i.test(q)
@@ -751,9 +753,9 @@ function protectEarnedLeadProgression({ qualifier, currentMessage, leadReplyCoun
     if (!hasUsefulFact(checklist.training_background)) {
         return {
             ...qualifier,
-            next_question: 'are you into fitness much too?',
-            is_question_moment: true,
-            why_now: 'Reciprocal rapport is established but no relevant fitness signal is known. Answer their latest point, then open that next missing fact.',
+            next_question: '',
+            is_question_moment: false,
+            why_now: 'Reciprocal rapport is established but no specific training hook is known. Do not inject a stock fitness question; answer the latest point and let the draft use a thread-specific move.',
         };
     }
 

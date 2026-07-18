@@ -176,6 +176,69 @@ function normalizeStatusText(value = '') {
         .trim();
 }
 
+const AI_AUTHENTICITY_CONCERN_RE = /\b(?:is\s+this\s+(?:a\s*)?(?:ai|a\s*i|bot|robot|chat\s*bot|automated)|are\s+you\s+(?:ai|a\s*i|a\s*bot|a\s*robot|automated|real)|am\s+i\s+talking\s+to\s+(?:ai|a\s*i|a\s*bot|a\s*person|a\s*real\s*person)|ai\s+bot|chatgpt|automated\s+reply|auto\s*reply|scripted\s+reply|generated\s+reply|real\s+person|not\s+really\s+shannon|actually\s+you|is\s+it\s+you|is\s+this\s+you|is\s+this\s+shannon)\b/i;
+const PUBLIC_AI_AUTOMATION_WORDING_RE = /\b(?:ai|a\s*i|bot|robot|chatgpt|automation|automated|auto\s*reply|assistant|model|generated\s+reply|scripted\s+reply)\b/i;
+const LIGHT_STORY_REACTION_RE = /^(?:cute|haha|hahaha|lol|lmao|aww+|aw+|sweet|nice|love|love it|so cute|adorable|omg|haha cute|that'?s cute|that is cute|😂|🤣|😍|🥰|❤️|💕|🔥|👏|🙌|👌|👍|🙏|thanks|thank you|ty|yep|yeah|yes|true|same|fair|cool|ok|okay)[\s!?.😂🤣😍🥰❤️💕🔥👏🙌👌👍🙏]*$/i;
+
+function collectTextCandidatesFromList(list = []) {
+    if (!Array.isArray(list)) return [];
+    return list.map(item => {
+        if (!item || typeof item !== 'object') return item;
+        return item.text || item.message || item.body || item.message_text || item.transcript || '';
+    });
+}
+
+function collectLeadEvidenceTexts(data = {}) {
+    const evidence = data.draft_evidence || {};
+    const qualifier = data.qualifier || {};
+    const contextReview = data.context_review || data.contextReview || {};
+    const decode = data.media_decode || data.mediaDecode || {};
+    return [
+        evidence.current_message,
+        data.message_preview,
+        data.client_message,
+        data.latest_message_text,
+        data.latest_inbound_text,
+        data.current_message_text,
+        data.source_message_text,
+        data.quote_evidence,
+        qualifier.quote_evidence,
+        contextReview.latest_text,
+        ...collectTextCandidatesFromList(data.inbound_message_batch),
+        ...collectTextCandidatesFromList(data.recent_inbound_messages),
+        ...collectTextCandidatesFromList(evidence.prior_unanswered),
+        ...collectTextCandidatesFromList(data.audio_transcripts),
+        ...collectTextCandidatesFromList(decode.audio_transcripts),
+    ].map(value => String(value || '').trim()).filter(Boolean);
+}
+
+function joinedLeadEvidenceText(data = {}) {
+    return collectLeadEvidenceTexts(data).join('\n');
+}
+
+function draftTextFromAlert(alert = {}) {
+    const data = alert.data || {};
+    return [
+        alert.suggested_message,
+        alert.scheduled_reply_text,
+        data.draft_text,
+        ...(Array.isArray(data.draft_messages) ? data.draft_messages : []),
+        data.scheduled_reply_text,
+        data.sent_message,
+        ...(Array.isArray(data.sent_chunks) ? data.sent_chunks : []),
+    ].map(value => String(value || '').trim()).filter(Boolean).join('\n');
+}
+
+function leadHasAiAuthenticityConcern(data = {}) {
+    const text = normalizeStatusText(joinedLeadEvidenceText(data));
+    return !!text && AI_AUTHENTICITY_CONCERN_RE.test(text);
+}
+
+function draftHasPublicAiAutomationWording(alert = {}) {
+    const text = normalizeStatusText(draftTextFromAlert(alert));
+    return !!text && PUBLIC_AI_AUTOMATION_WORDING_RE.test(text);
+}
+
 function latestStatusText(alert = {}) {
     const data = alert.data || {};
     return String(
@@ -221,6 +284,68 @@ function draftRepeatsCurrentStatusQuestion(alert = {}) {
     const data = alert.data || {};
     const draftText = alert.suggested_message || data.draft_text || '';
     return draftAsksRedundantCurrentStatusQuestion(draftText, latestStatusText(alert));
+}
+
+function audioTranscriptTexts(data = {}) {
+    const decode = data.media_decode || data.mediaDecode || {};
+    return [
+        ...collectTextCandidatesFromList(data.audio_transcripts),
+        ...collectTextCandidatesFromList(data.audioTranscripts),
+        ...collectTextCandidatesFromList(decode.audio_transcripts),
+        ...collectTextCandidatesFromList(decode.audioTranscripts),
+    ].map(value => String(value || '').trim()).filter(Boolean);
+}
+
+function hasDecodedAudioTranscript(data = {}) {
+    const decode = data.media_decode || data.mediaDecode || {};
+    if (decode.audio_failed) return false;
+    if (audioTranscriptTexts(data).length > 0) return true;
+    return Number(data.audio_transcript_count || data.audioTranscriptCount || decode.audio_transcript_count || decode.audioTranscriptCount || 0) > 0;
+}
+
+function draftAsksForMissingVoiceNote(alert = {}) {
+    const draft = normalizeStatusText(draftTextFromAlert(alert));
+    if (!draft) return false;
+    return /\b(?:voice note|audio|last note|that note|the note)\b.{0,100}\b(?:didn'?t|did not|doesn'?t|does not|couldn'?t|could not|can'?t|cannot)\s+(?:come through|hear|understand|make out|play|open)\b/i.test(draft)
+        || /\b(?:didn'?t|did not|doesn'?t|does not|couldn'?t|could not|can'?t|cannot)\s+(?:hear|understand|make out|play|open)\b.{0,100}\b(?:voice note|audio|last note|that note|the note)\b/i.test(draft)
+        || /\b(?:can|could)\s+you\s+(?:send|type|say|repeat)\b.{0,80}\b(?:gist|again|voice note|audio|what you said)\b/i.test(draft)
+        || /\bwhat\s+(?:were|are)\s+you\s+(?:saying|trying\s+to\s+say)\b/i.test(draft);
+}
+
+function draftAsksForMissingDecodedVoiceNote(alert = {}) {
+    const data = alert.data || {};
+    return hasDecodedAudioTranscript(data) && draftAsksForMissingVoiceNote(alert);
+}
+
+function latestDropsClarification(data = {}) {
+    const text = normalizeStatusText(latestLeadText(data));
+    if (!text) return false;
+    return /^(?:never\s*mind|nevermind|don'?t\s+worry|dw|all\s+good|forget\s+it|doesn'?t\s+matter|no\s+matter|leave\s+it|drop\s+it)\b/i.test(text);
+}
+
+function draftReopensDroppedClarification(alert = {}) {
+    const data = alert.data || {};
+    if (!latestDropsClarification(data)) return false;
+    const draft = normalizeStatusText(draftTextFromAlert(alert));
+    if (!draft || !/[?]/.test(draftTextFromAlert(alert))) return false;
+    return /\b(?:what\s+(?:were|are|did|do)\s+you\s+(?:saying|trying\s+to\s+say|mean)|what\s+did\s+you\s+mean|what\s+were\s+you\s+trying|can\s+you\s+(?:explain|clarify|send|type|say|repeat)|trying\s+to\s+understand|make\s+sure\s+i\s+got\s+you\s+right)\b/i.test(draft);
+}
+
+function draftForcesStockFitnessPivotFromLightStory(alert = {}) {
+    const data = alert.data || {};
+    const draft = normalizeStatusText(draftTextFromAlert(alert));
+    if (!draft) return false;
+    if (!/\b(?:are\s+you\s+into\s+fitness|fitness\s+much\s+too|you\s+training\s+at\s+the\s+moment|are\s+you\s+training|you\s+train\s+much)\b/i.test(draft)) return false;
+    const latest = latestLeadText(data);
+    const storyContext = [
+        data.draft_evidence?.story_context,
+        data.draft_evidence?.native_story_context,
+        data.story_context,
+        data.native_story_context,
+    ].map(value => String(value || '')).join('\n');
+    const storyOrLightLatest = /\bstory|ig_story|post opener|native story|caption\b/i.test(storyContext)
+        || LIGHT_STORY_REACTION_RE.test(String(latest || '').trim());
+    return storyOrLightLatest && !/\b(?:fitness|training|gym|workout|exercise|run|running|lift|lifting|weight|muscle|vegan|plant.?based|food|meal|protein|energy|tired|motivation|consistency|goal|help|coach|coaching)\b/i.test(normalizeStatusText(latest));
 }
 
 function leadReferencesLearningReel(data = {}) {
@@ -580,6 +705,10 @@ function classifyNeedsYou(alert = {}) {
 
     if (acquisitionLead) {
         const manualOnlyData = alertIdentity(alert).custom_data || {};
+        const acquisitionInboundText = [
+            collectAlertInboundText(data),
+            joinedLeadEvidenceText(data),
+        ].filter(Boolean).join('\n');
         if (
             manualOnlyData.needs_you_always === true
             || manualOnlyData.manual_review_only === true
@@ -589,8 +718,8 @@ function classifyNeedsYou(alert = {}) {
             labels.push('This person is permanently manual-only');
         }
         const personalBoundary = classifyPersonalDmBoundary({
-            inboundText: collectAlertInboundText(data),
-            outboundText: alert.suggested_message || data.draft_text || '',
+            inboundText: acquisitionInboundText,
+            outboundText: draftTextFromAlert(alert),
             linkedUserId: alert.client_id || data.linked_user_id || null,
         });
         if (personalBoundary.requires_manual) {
@@ -601,9 +730,25 @@ function classifyNeedsYou(alert = {}) {
             reasons.push('credible_current_danger');
             labels.push('lead shared a credible current danger signal');
         }
-        if (leadExplicitlyDetectsAi(data)) {
+        if (leadExplicitlyDetectsAi(data) || leadHasAiAuthenticityConcern(data)) {
             reasons.push('ai_suspicion_or_authenticity_question');
             labels.push('lead directly questioned whether the reply is AI or automated');
+        }
+        if (draftHasPublicAiAutomationWording(alert)) {
+            reasons.push('public_ai_automation_wording_in_draft');
+            labels.push('draft mentions AI, bot, automation, or system wording in public copy');
+        }
+        if (draftAsksForMissingDecodedVoiceNote(alert)) {
+            reasons.push('decoded_voice_note_stale_clarification');
+            labels.push('draft asks for a voice-note repeat even though transcript evidence exists');
+        }
+        if (draftReopensDroppedClarification(alert)) {
+            reasons.push('dropped_clarification_reopened');
+            labels.push('lead dropped the clarification, but the draft asks them to explain again');
+        }
+        if (draftForcesStockFitnessPivotFromLightStory(alert)) {
+            reasons.push('stock_fitness_pivot_from_light_story');
+            labels.push('draft pivots from a light story reaction into a stock fitness question');
         }
         const uniqueReasons = [...new Set(reasons.filter(Boolean))];
         const uniqueLabels = [...new Set(labels.filter(Boolean))];
@@ -857,6 +1002,12 @@ exports._test = {
     draftReviewNeedsLeadManualCheck,
     draftReviewOnlyConcernsMedia,
     leadExplicitlyDetectsAi,
+    leadHasAiAuthenticityConcern,
+    draftHasPublicAiAutomationWording,
+    hasDecodedAudioTranscript,
+    draftAsksForMissingDecodedVoiceNote,
+    draftReopensDroppedClarification,
+    draftForcesStockFitnessPivotFromLightStory,
     leadHasCredibleCurrentDanger,
     latestInboundIsMediaOnly,
     buildDraftReviewContextBlocks,
