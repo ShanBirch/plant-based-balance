@@ -2133,6 +2133,13 @@ async function shareMealRecordToFeed(meal, btn) {
         showToast('This meal is already shared to Feed', 'info');
         return null;
     }
+    const initialVeganIssue = typeof window.getVeganMealSafetyIssue === 'function'
+        ? window.getVeganMealSafetyIssue(meal)
+        : null;
+    if (initialVeganIssue) {
+        showToast(`Balance is a vegan community, so meals with ${initialVeganIssue.label} cannot be shared to Feed.`, 'info');
+        return null;
+    }
     const helpers = window.dbHelpers || (typeof dbHelpers !== 'undefined' ? dbHelpers : null);
     if (!helpers || !helpers.stories || typeof helpers.stories.create !== 'function') {
         showToast('Feed is still loading. Try again in a moment.', 'info');
@@ -2165,6 +2172,12 @@ async function shareMealRecordToFeed(meal, btn) {
         }
 
         mealForShare = await getFreshMealRecordForFeedShare(mealForShare);
+        const veganIssue = typeof window.getVeganMealSafetyIssue === 'function'
+            ? window.getVeganMealSafetyIssue(mealForShare)
+            : null;
+        if (veganIssue) {
+            throw new Error(`VEGAN_FEED_BLOCKED:${veganIssue.label}`);
+        }
         const cardPayload = buildMealFeedCardPayload(mealForShare);
         const hasPhoto = !!cardPayload.photo_url;
         if (!hasPhoto) throw new Error('Meal photo was not available after upload');
@@ -2204,7 +2217,13 @@ async function shareMealRecordToFeed(meal, btn) {
         return story;
     } catch (error) {
         console.error('Error sharing meal to feed:', error);
-        showToast('Failed to share meal. Please try again.', 'error');
+        const blockedLabel = String(error && error.message || '').match(/^VEGAN_FEED_BLOCKED:(.+)$/);
+        showToast(
+            blockedLabel
+                ? `Balance is a vegan community, so meals with ${blockedLabel[1]} cannot be shared to Feed.`
+                : 'Failed to share meal. Please try again.',
+            blockedLabel ? 'info' : 'error'
+        );
         if (btn) {
             btn.disabled = false;
             btn.textContent = btn.dataset.originalText || getMealFeedShareButtonText();
