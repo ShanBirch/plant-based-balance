@@ -26,33 +26,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ruby/setup-ruby@v1
+      - uses: actions/setup-node@v4
         with:
-          ruby-version: "3.3"
+          node-version: "22"
 
-      - name: Install Fastlane
-        run: gem install fastlane --no-document
-
-      - name: Add the global English listing
-        run: cp -R store-listing/google-play/en-AU store-listing/google-play/en-US
-
-      - name: Write Google Play credentials
-        env:
-          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-        run: printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/google-play.json"
+      - name: Install Google Play publisher client
+        run: npm install googleapis --no-audit --no-fund --no-save
 
       - name: Publish Google Play copy and graphics
-        run: >-
-          fastlane supply
-          --package_name com.fitgotchi.app
-          --json_key "$RUNNER_TEMP/google-play.json"
-          --metadata_path store-listing/google-play
-          --skip_upload_apk true
-          --skip_upload_aab true
-          --skip_upload_changelogs true
-          --skip_upload_metadata false
-          --skip_upload_images false
-          --skip_upload_screenshots false
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: node scripts/publish-google-play-listing.mjs
 
   app-store:
     if: ${{ inputs.prepare_app_store == true }}
@@ -93,6 +77,7 @@ jobs:
         run: >-
           fastlane deliver
           --api_key_path "$RUNNER_TEMP/app-store-api-key.json"
+          --username shannonbirch@cocospersonaltraining.com
           --app_identifier com.fitgotchi.app
           --app_version "$IOS_VERSION_STRING"
           --metadata_path store-listing/app-store
