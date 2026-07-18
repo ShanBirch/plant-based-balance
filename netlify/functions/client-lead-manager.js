@@ -103,6 +103,7 @@ function getMediaContextCounts(data = {}) {
         photoInline: numberFromAny(data.photo_inline_count, data.image_inline_count, decode.photo_inline_count, decode.image_inline_count),
         audioUrl: numberFromAny(data.audio_url_count, decode.audio_url_count),
         audioInline: numberFromAny(data.audio_inline_count, decode.audio_inline_count),
+        audioTranscript: numberFromAny(data.audio_transcript_count, decode.audio_transcript_count),
         videoUrl: numberFromAny(data.video_url_count, decode.video_url_count),
         videoInline: numberFromAny(data.video_inline_count, decode.video_inline_count),
         reelContext: numberFromAny(data.reel_context_count, decode.reel_context_count),
@@ -117,7 +118,7 @@ function leadMediaContextMissing(data = {}, mediaReview = {}) {
     const counts = getMediaContextCounts(data);
     if (counts.photoFailed || counts.audioFailed || counts.videoFailed) return true;
     if (counts.photoUrl > 0 && counts.photoInline <= 0) return true;
-    if (counts.audioUrl > 0 && counts.audioInline <= 0) return true;
+    if (counts.audioUrl > 0 && (counts.audioInline < counts.audioUrl || counts.audioTranscript < counts.audioUrl)) return true;
     if (counts.videoUrl > 0 && counts.videoInline <= 0 && counts.reelContext <= 0) return true;
     return false;
 }
@@ -177,6 +178,7 @@ function normalizeStatusText(value = '') {
 }
 
 const AI_AUTHENTICITY_CONCERN_RE = /\b(?:is\s+this\s+(?:a\s*)?(?:ai|a\s*i|bot|robot|chat\s*bot|automated)|are\s+you\s+(?:ai|a\s*i|a\s*bot|a\s*robot|automated|real)|am\s+i\s+talking\s+to\s+(?:ai|a\s*i|a\s*bot|a\s*person|a\s*real\s*person)|ai\s+bot|chatgpt|automated\s+reply|auto\s*reply|scripted\s+reply|generated\s+reply|real\s+person|not\s+really\s+shannon|actually\s+you|is\s+it\s+you|is\s+this\s+you|is\s+this\s+shannon)\b/i;
+const SHANNON_IDENTITY_INCONSISTENCY_RE = /\b(?:are\s+you\s+(?:really|actually|even)\s+vegan|do\s+you\s+eat\s+animals|you\s+(?:do\s+not|don'?t)\s+(?:sound|speak|talk)\s+like\s+(?:a\s+)?vegan|because\s+of\s+how\s+you\s+(?:sound|speak|talk)[^\n]{0,50}\bnot\s+(?:even\s+)?vegan|i\s+think\s+you\s+(?:are\s+not|aren'?t)\s+(?:even\s+)?vegan)\b/i;
 const PUBLIC_AI_AUTOMATION_WORDING_RE = /\b(?:ai|a\s*i|bot|robot|chatgpt|automation|automated|auto\s*reply|assistant|model|generated\s+reply|scripted\s+reply)\b/i;
 const LIGHT_STORY_REACTION_RE = /^(?:cute|haha|hahaha|lol|lmao|aww+|aw+|sweet|nice|love|love it|so cute|adorable|omg|haha cute|that'?s cute|that is cute|😂|🤣|😍|🥰|❤️|💕|🔥|👏|🙌|👌|👍|🙏|thanks|thank you|ty|yep|yeah|yes|true|same|fair|cool|ok|okay)[\s!?.😂🤣😍🥰❤️💕🔥👏🙌👌👍🙏]*$/i;
 
@@ -232,6 +234,22 @@ function draftTextFromAlert(alert = {}) {
 function leadHasAiAuthenticityConcern(data = {}) {
     const text = normalizeStatusText(joinedLeadEvidenceText(data));
     return !!text && AI_AUTHENTICITY_CONCERN_RE.test(text);
+}
+
+function leadAudioBatchPartiallyDecoded(data = {}) {
+    const decode = data.media_decode || data.mediaDecode || {};
+    const counts = getMediaContextCounts(data);
+    if (counts.audioUrl <= 0 || decode.analysis_complete === true) return false;
+    const recoveryStarted = counts.audioInline > 0
+        || counts.audioTranscript > 0
+        || decode.analysis_succeeded === true;
+    return recoveryStarted
+        && (counts.audioInline < counts.audioUrl || counts.audioTranscript < counts.audioUrl);
+}
+
+function leadHasShannonIdentityInconsistencyConcern(data = {}) {
+    const text = normalizeStatusText(joinedLeadEvidenceText(data));
+    return !!text && SHANNON_IDENTITY_INCONSISTENCY_RE.test(text);
 }
 
 function draftHasPublicAiAutomationWording(alert = {}) {
@@ -743,6 +761,14 @@ function classifyNeedsYou(alert = {}) {
             reasons.push('ai_suspicion_or_authenticity_question');
             labels.push('lead directly questioned whether the reply is AI or automated');
         }
+        if (leadHasShannonIdentityInconsistencyConcern(data)) {
+            reasons.push('shannon_identity_inconsistency_challenge');
+            labels.push("lead questioned whether Shannon's stated identity matches how he is speaking; Shannon should answer personally");
+        }
+        if (leadAudioBatchPartiallyDecoded(data)) {
+            reasons.push('partial_voice_note_batch');
+            labels.push('voice-note batch is only partly decoded; recover it or route it without asking the lead to repeat');
+        }
         if (draftHasPublicAiAutomationWording(alert)) {
             reasons.push('public_ai_automation_wording_in_draft');
             labels.push('draft mentions AI, bot, automation, or system wording in public copy');
@@ -1016,6 +1042,7 @@ exports._test = {
     draftReviewOnlyConcernsMedia,
     leadExplicitlyDetectsAi,
     leadHasAiAuthenticityConcern,
+    leadHasShannonIdentityInconsistencyConcern,
     draftHasPublicAiAutomationWording,
     hasDecodedAudioTranscript,
     hasVoiceNoteEvidence,
@@ -1030,6 +1057,7 @@ exports._test = {
     resolveAiDraftReviewLimit,
     isAcquisitionLeadAlert,
     leadMediaContextMissing,
+    leadAudioBatchPartiallyDecoded,
     draftReviewPassedForAutoSend,
     approvedLinkHandoffKind,
     hasApprovedCoachingLinkHandoff,

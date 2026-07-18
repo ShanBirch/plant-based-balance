@@ -716,6 +716,12 @@ function isProtectedLeadProgressionQuestion(question) {
         && /\b(plan|planning|prep|structure|routine|consistent|consistency|health|goal|progress|struggl|hard|help|direction|accountability)\b/i.test(text);
 }
 
+function hasCurrentLeadQualificationSignal(currentMessage) {
+    const text = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    if (!text) return false;
+    return /\b(?:active|activity|train|training|workout|gym|weight|fat|muscle|strength|fitness|energy|routine|consistent|consistency|accountability|exercise|running|cardio|health|body|food|meal|nutrition|diet|prep|structure|goal|progress|struggl\w*|stuck|fall(?:ing)? off|fell off|hard to|need help|want help|coaching|coach)\b/i.test(text);
+}
+
 function isUnsafeLeadProgressionTurn(currentMessage) {
     const text = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     if (!text) return true;
@@ -766,6 +772,14 @@ function protectEarnedLeadProgression({ qualifier, currentMessage, leadReplyCoun
     }
     if (replies < 2) return qualifier;
     if (isProtectedLeadProgressionQuestion(qualifier.next_question)) {
+        if (!hasCurrentLeadQualificationSignal(currentMessage)) {
+            return {
+                ...qualifier,
+                is_question_moment: false,
+                next_question: '',
+                why_now: 'No current lead-authored fitness, food-structure, consistency, energy, or help signal. Vegan identity and animal ethics are rapport, not permission to switch into qualification.',
+            };
+        }
         return {
             ...qualifier,
             is_question_moment: true,
@@ -1522,6 +1536,7 @@ module.exports = {
     persistQualifier,
     applyRapportGate,
     protectEarnedLeadProgression,
+    hasCurrentLeadQualificationSignal,
     hasLeadQualificationStopSignal,
     formatPushTitle,
     formatPushBody,

@@ -468,6 +468,25 @@ const aiSuspicionFromQualifierEvidence = manager.classifyNeedsYou(makeAlert({
 assert.strictEqual(aiSuspicionFromQualifierEvidence.shouldRoute, true);
 assert.ok(aiSuspicionFromQualifierEvidence.reasons.includes('ai_suspicion_or_authenticity_question'));
 
+const jennaIdentityChallenge = manager.classifyNeedsYou(makeAlert({
+    data: {
+        message_preview: 'Because of how you speak i think you are not even vegan',
+        inbound_message_batch: [
+            { text: 'Nothing different?' },
+            { text: 'Do you eat animals' },
+            { text: 'Are you vegan?' },
+            { text: 'Because of how you speak i think you are not even vegan' },
+        ],
+    },
+}));
+assert.strictEqual(jennaIdentityChallenge.shouldRoute, true);
+assert.ok(jennaIdentityChallenge.reasons.includes('shannon_identity_inconsistency_challenge'));
+
+const neutralVeganQuestion = manager.classifyNeedsYou(makeAlert({
+    data: { message_preview: 'Are you vegan?' },
+}));
+assert.strictEqual(neutralVeganQuestion.shouldRoute, false, 'a neutral identity question alone should not be over-routed');
+
 const publicAiDenialDraft = manager.classifyNeedsYou(makeAlert({
     suggested_message: "Haha nah I'm not an AI bot, promise. What move are you trying to progress?",
     data: {
@@ -497,6 +516,23 @@ assert.strictEqual(decodedVoiceNoteClarification.shouldRoute, true);
 assert.ok(decodedVoiceNoteClarification.reasons.includes('voice_note_public_resend_or_gist_draft'));
 assert.ok(decodedVoiceNoteClarification.reasons.includes('decoded_voice_note_stale_clarification'));
 assert.ok(decodedVoiceNoteClarification.reasons.includes('dropped_clarification_reopened'));
+
+const partialVoiceNoteBatch = manager.classifyNeedsYou(makeAlert({
+    data: {
+        message_preview: '[AUDIO:https://example.com/third.m4a]',
+        audio_transcript_count: 2,
+        media_decode: {
+            audio_url_count: 3,
+            audio_inline_count: 2,
+            audio_transcript_count: 2,
+            analyzed_kinds: ['audio'],
+            analysis_succeeded: true,
+            analysis_complete: false,
+        },
+    },
+}));
+assert.strictEqual(partialVoiceNoteBatch.shouldRoute, true);
+assert.ok(partialVoiceNoteBatch.reasons.includes('partial_voice_note_batch'));
 
 const undecodedVoiceNoteResendDraft = manager.classifyNeedsYou(makeAlert({
     suggested_message: "I got your voice note but it didn't come through clearly, can you send me the gist quickly?",

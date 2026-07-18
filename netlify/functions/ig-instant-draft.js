@@ -2628,7 +2628,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const hasReelContext = reelContextCount > 0;
     const bareStoryMentionNotification = isBareStoryMentionNotificationText(promptCurrentMessage);
     const photoFetchFailed = hadPhotoUrls && imageParts.length === 0 && !bareStoryMentionNotification;
-    const audioFetchFailed = hadAudioUrls && audioParts.length === 0;
+    const audioFetchFailed = hadAudioUrls && (audioParts.length < audioUrlCount || audioTranscriptCount < audioUrlCount);
     const videoFetchFailed = hadVideoUrls && videoParts.length === 0 && videoFileCount === 0 && !hasReelContext;
     const mediaFailureNotes = [];
     if (photoFetchFailed) {
@@ -3108,8 +3108,10 @@ Rules:
     if (((videoParts.length > 0 || videoFileCount > 0) && mediaGenerationSucceeded) || reelContextCount > 0) analyzedKinds.push('video');
     mediaDecode.analyzed_kinds = analyzedKinds;
     mediaDecode.analysis_succeeded = analyzedKinds.length > 0;
+    mediaDecode.audio_batch_complete = !hadAudioUrls
+        || (audioParts.length >= audioUrlCount && audioTranscriptCount >= audioUrlCount);
     mediaDecode.analysis_complete = (!hadPhotoUrls || analyzedKinds.includes('photo'))
-        && (!hadAudioUrls || analyzedKinds.includes('audio'))
+        && mediaDecode.audio_batch_complete
         && (!hadVideoUrls || analyzedKinds.includes('video'));
     mediaDecode.analysis_model = mediaDecode.analysis_succeeded ? model : null;
     mediaDecode.analyzed_at = mediaDecode.analysis_succeeded ? new Date().toISOString() : null;

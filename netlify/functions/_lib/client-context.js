@@ -3599,7 +3599,7 @@ const PHOTO_MAX_COUNT = 3;
 const PHOTO_MAX_BYTES = 4 * 1024 * 1024;   // 4 MB per image
 const PHOTO_FETCH_TIMEOUT_MS = 8000;
 const AUDIO_MARKER_RE = /\[AUDIO:(https?:\/\/[^\s\]]+)\]/gi;
-const AUDIO_MAX_COUNT = 2;
+const AUDIO_MAX_COUNT = 6;
 const AUDIO_MAX_BYTES = 10 * 1024 * 1024;  // 10 MB per voice note/audio clip
 const AUDIO_FETCH_TIMEOUT_MS = 12000;
 const OPENAI_TRANSCRIPTION_MODEL = process.env.OPENAI_TRANSCRIPTION_MODEL || 'gpt-4o-mini-transcribe';
@@ -4666,8 +4666,9 @@ function audioTranscriptCountFromData(data = {}) {
 function hasUsableAudioTranscript(data = {}) {
     const decode = data.media_decode || data.mediaDecode || {};
     if (decode.audio_failed) return false;
-    if (Number(data.audio_url_count || data.audioUrlCount || decode.audio_url_count || decode.audioUrlCount) <= 0) return false;
-    return audioTranscriptCountFromData(data) > 0;
+    const audioUrlCount = Number(data.audio_url_count || data.audioUrlCount || decode.audio_url_count || decode.audioUrlCount);
+    if (audioUrlCount <= 0) return false;
+    return audioTranscriptCountFromData(data) >= audioUrlCount;
 }
 
 function hasSuccessfulMediaAnalysis(data = {}, kind = '') {
@@ -4768,6 +4769,7 @@ function buildMediaReviewInfo(alertOrData) {
     if (decode.analysis_succeeded || decode.analysis_complete) {
         analyzedKinds.forEach(kind => {
             if (!Object.prototype.hasOwnProperty.call(state.present, kind)) return;
+            if (kind === 'audio' && decode.analysis_complete !== true && !hasUsableAudioTranscript(data)) return;
             state.present[kind] = false;
             state.counts[kind] = 0;
         });
@@ -6018,6 +6020,7 @@ IG/FB LEAD QUALITY CHECK:
 - When qualifier context designates one next-missing-fact question, treat that question as conversion work, not optional curiosity. Preserve one equivalent specific question unless it is unsafe, unsupported, repetitive, or the lead is clearly closing.
 - Prefer statement-led elicitation over question-led intake. Warn if the draft could have used a clear label like "sounds like this is more a structure problem than a motivation problem" but instead asks another broad discovery question.
 - If the latest message answers a health or fitness progression question, reflect that answer in a statement-led turn before asking another qualifier question. If they call it an interview, mention too many questions, or show question fatigue, the next draft must contain no new question unless they asked something that genuinely requires one.
+- After two recent discovery questions, require a statement-led turn and a fresh lead-authored fitness, food-structure, consistency, energy, help, support, safety, or buyer-intent signal before another question. One intervening acknowledgement does not reset this guard. Vegan identity and animal ethics alone are rapport, not qualification permission.
 - Block if a draft offers a free challenge/free entry as the acquisition or conversion path. Balance no longer uses that funnel.
 - Block if the lead asks how to join, asks for the link, asks price/what is included, says they are keen, or accepts the Founders Pass, but the draft slows them down with more rapport instead of moving them forward.
 - Warn if it pitches the Founders Pass before reciprocal rapport, explicit start/info intent, or the earned lead-only window of roughly 3-6 meaningful lead replies plus relationship and goal/blocker context.

@@ -45,6 +45,38 @@ const vagueWarmth = applyRapportGate({
     currentMessage: 'keen haha yeah that sounds cool',
 });
 
+const jennaEthicsDomainSwitch = applyRapportGate({
+    qualifier: {
+        ...base,
+        is_question_moment: true,
+        next_question: 'How do you usually go with food and energy day to day?',
+        meaningful_lead_reply_count: 7,
+        facts: {
+            ...base.facts,
+            personal_context: 'Animal liberation activism and seeing animals as individuals.',
+        },
+    },
+    currentMessage: 'That animals are individuals',
+    leadReplyCount: 7,
+});
+assert.strictEqual(jennaEthicsDomainSwitch.is_question_moment, false);
+assert.strictEqual(jennaEthicsDomainSwitch.next_question, '');
+assert.match(jennaEthicsDomainSwitch.why_now, /Vegan identity and animal ethics are rapport/i);
+
+const currentFoodEnergySignal = applyRapportGate({
+    qualifier: {
+        ...base,
+        is_question_moment: true,
+        next_question: 'Is it more food structure or the week getting messy?',
+        meaningful_lead_reply_count: 3,
+        facts: { ...base.facts },
+    },
+    currentMessage: 'Food is where I keep falling off and my energy is low',
+    leadReplyCount: 3,
+});
+assert.strictEqual(currentFoodEnergySignal.is_question_moment, true);
+assert.match(currentFoodEnergySignal.why_now, /Reciprocal rapport is established/i);
+
 assert.strictEqual(vagueWarmth.stage, 'current_state');
 assert.strictEqual(hasChallengeInviteReadinessSignal('keen haha yeah that sounds cool'), false);
 assert.strictEqual(hasChallengeInviteReadinessSignal('Can I be reconnected with the balance app helper?'), false);
@@ -141,8 +173,8 @@ const earnedFitnessBridge = applyRapportGate({
     currentMessage: 'Honestly pretty cruisy, I love being back on the Gold Coast',
     leadReplyCount: 4,
 });
-assert.strictEqual(earnedFitnessBridge.is_question_moment, true);
-assert.match(earnedFitnessBridge.why_now, /next-missing-fact/i);
+assert.strictEqual(earnedFitnessBridge.is_question_moment, false);
+assert.match(earnedFitnessBridge.why_now, /No current lead-authored/i);
 
 const erikaRapportBridge = applyRapportGate({
     qualifier: {

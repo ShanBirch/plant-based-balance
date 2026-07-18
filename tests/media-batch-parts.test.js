@@ -101,6 +101,15 @@ global.fetch = async (url) => {
     assert.strictEqual(preservedTranscript.audioTranscripts[0].model, 'test-transcriber');
     assert.strictEqual(preservedTranscript.audioTranscripts[0].verified, true);
 
+    const threeVoiceNotes = await buildMessageMediaBatchParts([
+        '[AUDIO:https://cdn.example.com/voice.m4a]',
+        '[AUDIO:https://cdn.example.com/voice.m4a]',
+        '[AUDIO:https://cdn.example.com/voice.m4a]',
+    ]);
+    assert.strictEqual(threeVoiceNotes.audioUrlCount, 3, 'the whole three-note Jenna batch must be collected');
+    assert.strictEqual(threeVoiceNotes.audioParts.length, 3);
+    assert.strictEqual(threeVoiceNotes.audioTranscriptCount, 3);
+
     const photoAndAudio = await buildMessageMediaBatchParts([
         'look at this [PHOTO:https://cdn.example.com/photo.png]',
         '[AUDIO:https://cdn.example.com/voice.m4a]',
@@ -155,6 +164,21 @@ global.fetch = async (url) => {
         },
     });
     assert.strictEqual(analyzedAudioReview.required, false);
+
+    const partialAudioReview = buildMediaReviewInfo({
+        message_preview: '[AUDIO:https://example.com/third.m4a]',
+        audio_transcript_count: 2,
+        media_decode: {
+            audio_url_count: 3,
+            audio_inline_count: 2,
+            audio_transcript_count: 2,
+            analyzed_kinds: ['audio'],
+            analysis_succeeded: true,
+            analysis_complete: false,
+        },
+    });
+    assert.strictEqual(partialAudioReview.required, true, 'one decoded note must not clear a partly decoded batch');
+    assert.deepStrictEqual(partialAudioReview.kinds, ['audio']);
 
     const analyzedVisualReview = buildMediaReviewInfo({
         message_preview: '[PHOTO:https://example.com/photo.jpg] [VIDEO:https://example.com/clip.mp4]',
