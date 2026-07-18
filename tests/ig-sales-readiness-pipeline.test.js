@@ -25,6 +25,7 @@ function qualifier(overrides = {}) {
         facts: {
             ...base.facts,
             current_state: 'training drops when work gets messy',
+            motivation: 'wants to build a consistent training routine',
             history_blockers: 'long shifts disrupt food and training',
         },
         behavior_profile: {
@@ -93,6 +94,44 @@ test('personal hardship and peer curiosity are not automatically sales problems'
         },
         behavior_profile: { primary_need: 'structure' },
     }), false);
+});
+
+test('motivation without a real unsolved blocker stays engaged', () => {
+    const noBlocker = qualifier({
+        facts: {
+            current_state: 'training is part of my life',
+            motivation: 'I want to keep building strength',
+            history_blockers: 'nothing really stops me',
+        },
+    });
+    assert.equal(hasCommercialProblemEvidence(noBlocker), false);
+    assert.equal(deriveCommercialStage({ qualifier: noBlocker }), 'engaged');
+
+    const existingCoach = qualifier({
+        facts: {
+            current_state: 'working toward a strength goal',
+            motivation: 'want to get stronger',
+            history_blockers: 'time makes consistency hard',
+        },
+        behavior_profile: {
+            primary_need: 'structure',
+            protection_pattern: 'existing_support_or_trainer',
+            sales_readiness: 'problem_named',
+        },
+    });
+    assert.equal(hasCommercialProblemEvidence(existingCoach), false);
+    assert.equal(deriveCommercialStage({ qualifier: existingCoach }), 'engaged');
+
+    const declined = qualifier({
+        facts: {
+            current_state: 'trying to train consistently',
+            motivation: 'want more strength',
+            history_blockers: 'work gets in the way',
+            commitment: 'not right now',
+        },
+    });
+    assert.equal(hasCommercialProblemEvidence(declined), false);
+    assert.equal(deriveCommercialStage({ qualifier: declined }), 'engaged');
 });
 
 test('database routing uses strict stages and preserves acquisition capacity', () => {

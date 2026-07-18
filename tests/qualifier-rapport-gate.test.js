@@ -164,6 +164,24 @@ assert.match(erikaRapportBridge.next_question, /fitness/i);
 assert.doesNotMatch(erikaRapportBridge.next_question, /Denmark|comfort food|ritual/i);
 assert.match(erikaRapportBridge.why_now, /no relevant fitness signal/i);
 
+const questionFatigue = applyRapportGate({
+    qualifier: {
+        ...base,
+        meaningful_lead_reply_count: 6,
+        is_question_moment: true,
+        next_question: 'what usually gets in the way?',
+        facts: {
+            ...base.facts,
+            relationship_context: 'Has answered several fitness questions',
+        },
+    },
+    currentMessage: 'haha this interview is going well',
+    leadReplyCount: 6,
+});
+assert.strictEqual(questionFatigue.is_question_moment, false);
+assert.strictEqual(questionFatigue.next_question, '');
+assert.match(questionFatigue.why_now, /question fatigue/i);
+
 const petGriefBridge = applyRapportGate({
     qualifier: {
         ...base,

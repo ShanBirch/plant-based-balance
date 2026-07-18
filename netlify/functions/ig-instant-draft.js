@@ -2606,7 +2606,7 @@ MEDIA CONTEXT RULES:
 UNANSWERED INBOUND BATCH FROM ${leadName} (oldest -> newest):
 ${unansweredBatch.map((m, i) => `${i + 1}. ${m.text}${m.isCurrent ? ' (latest)' : ''}`).join('\n')}
 
-Use this batch as context, not a checklist. First decide what is still live: direct questions, requests, emotional disclosures, health/body-image risk, or new practical blockers. Answer those. Drop earlier details that Shannon already acknowledged, repeated logistics, or banter that would feel stale. If several items are live, pick the 1-3 that matter most and let the rest sit. If the newest item is a photo or voice note, treat it as extra context for the strongest unresolved words unless it clearly starts a new topic.`;
+Use this batch as context, not a checklist. First decide what is still live: direct questions, requests, emotional disclosures, health/body-image risk, or new practical blockers. Answer those. The newest substantive inbound takes control when it opens a fresh topic, especially a Story reply about food, training, health, consistency or accountability. Do not keep answering an older unrelated topic just because it has more history. Drop earlier details that Shannon already acknowledged, repeated logistics, or banter that would feel stale. If several items are live, pick the 1-3 that matter most and let the rest sit. If the newest item is a photo or voice note, treat it as extra context for the strongest unresolved words unless it clearly starts a new topic.`;
 
     const historyText = promptHistory.length === 0
         ? "(no prior tracked messages. This is probably the first captured lead reply after Shannon's native story/post opener, so there may be no visible context.)"
