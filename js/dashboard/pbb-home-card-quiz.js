@@ -1080,7 +1080,7 @@
         var perfect = (correct === total);
         var headline = perfect ? 'Perfect!' : (correct >= total - 1 ? 'So close!' : 'Lesson done');
         var subline = perfect ? 'Every question right' : correct + ' of ' + total + ' correct';
-        var xpAmount = perfect ? 20 : 1;
+        var xpAmount = perfect ? 10 : 1;
         var emoji = perfect ? '&#x1F389;' : (correct >= total - 1 ? '&#x1F44D;' : '&#x1F4AA;');
         var html = ''
             + '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:14px 8px 4px;">'

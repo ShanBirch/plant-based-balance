@@ -17,16 +17,19 @@ test('perfect quizzes award 10 XP in both client and database paths', () => {
   assert.match(migration, /xp_per_lesson INTEGER := 10/);
 });
 
-test('daily quiz totals 20 XP before the existing challenge multiplier', () => {
+test('every fresh perfect quiz awards a flat 10 XP with no stacking', () => {
   const inline = read('lib/learning-inline.js');
   const pointsConfig = read('lib/points-config.js');
   const dashboard = read('dashboard.html');
   const homeQuiz = read('js/dashboard/pbb-home-card-quiz.js');
+  const migration = read('supabase/migrations/20260718070000_fix_quiz_xp_awards.sql');
 
-  assert.match(inline, /dailyQuizBonus = 10 \* _quizXpMultiplier/);
-  assert.match(pointsConfig, /DAILY_QUIZ_BONUS:\s*10/);
-  assert.match(dashboard, /\+20 XP earned\. Come back tomorrow!/);
-  assert.match(homeQuiz, /var xpAmount = perfect \? 20 : 1;/);
+  assert.match(inline, /const expectedQuizXp = LEARNING_XP\.LESSON_COMPLETE;/);
+  assert.doesNotMatch(inline, /dailyQuizBonus = 10/);
+  assert.match(pointsConfig, /DAILY_QUIZ_BONUS:\s*0/);
+  assert.match(dashboard, /\+10 XP earned\. Come back tomorrow!/);
+  assert.match(homeQuiz, /var xpAmount = perfect \? 10 : 1;/);
+  assert.doesNotMatch(migration, /xp_per_lesson \* public\.get_active_challenge_xp_multiplier/);
 });
 
 test('learning quizzes are not silently capped after three completions', () => {

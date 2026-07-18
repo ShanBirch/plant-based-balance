@@ -56,7 +56,7 @@ BEGIN
   is_new_lesson := NOT (p_lesson_id = ANY(progress_record.lessons_completed));
 
   IF score_pct = 100 AND is_new_lesson THEN
-    xp_earned := xp_per_lesson * public.get_active_challenge_xp_multiplier(p_user_id);
+    xp_earned := xp_per_lesson;
   END IF;
 
   INSERT INTO public.lesson_completions (
