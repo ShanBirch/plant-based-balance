@@ -20,6 +20,141 @@
     --pbb-widget-green-soft: rgba(216, 178, 94, 0.18);
 }
 
+/* Weekly meal evolution, Home. Uses the current Balance obsidian/cream/gold system. */
+.weekly-meal-evolution-home-card {
+    margin: 0 25px 14px;
+    padding: 1px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(245, 217, 138, 0.92), rgba(216, 178, 94, 0.28) 48%, rgba(255, 255, 255, 0.14));
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
+    overflow: hidden;
+}
+
+.weekly-meal-evolution-home-card__inner {
+    position: relative;
+    overflow: hidden;
+    padding: 18px;
+    border-radius: 19px;
+    color: #f8f7f2;
+    -webkit-text-fill-color: #f8f7f2;
+    background:
+        radial-gradient(circle at 94% 0%, rgba(245, 217, 138, 0.2), transparent 34%),
+        linear-gradient(145deg, rgba(20, 20, 20, 0.98), rgba(5, 5, 5, 0.98));
+}
+
+.weekly-meal-evolution-home-card__row {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.weekly-meal-evolution-home-card__icon {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    color: #111111;
+    -webkit-text-fill-color: #111111;
+    background: linear-gradient(135deg, #f5d98a, #b8892b);
+    box-shadow: 0 8px 20px rgba(184, 137, 43, 0.25);
+    font-size: 1.35rem;
+}
+
+.weekly-meal-evolution-home-card__content {
+    min-width: 0;
+    flex: 1;
+}
+
+.weekly-meal-evolution-home-card__eyebrow {
+    margin-bottom: 5px;
+    color: #f5d98a;
+    -webkit-text-fill-color: #f5d98a;
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 1.25px;
+    text-transform: uppercase;
+}
+
+.weekly-meal-evolution-home-card__title {
+    margin: 0 0 7px;
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
+    font-size: 1.02rem;
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.weekly-meal-evolution-home-card__body {
+    margin: 0;
+    color: rgba(248, 247, 242, 0.78);
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.78);
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.weekly-meal-evolution-home-card__action {
+    width: 100%;
+    margin-top: 14px;
+    padding: 11px 14px;
+    border: 1px solid rgba(245, 217, 138, 0.48);
+    border-radius: 12px;
+    color: #111111;
+    -webkit-text-fill-color: #111111;
+    background: linear-gradient(135deg, #f5d98a, #d8b25e);
+    box-shadow: 0 8px 20px rgba(184, 137, 43, 0.18);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.weekly-meal-evolution-home-card__action:focus-visible {
+    outline: 3px solid #ffffff;
+    outline-offset: 3px;
+}
+
+.weekly-meal-evolution-home-card__action:disabled {
+    cursor: wait;
+    opacity: 0.72;
+}
+
+html[data-pbb-theme="light"] .weekly-meal-evolution-home-card {
+    background: linear-gradient(135deg, #b8892b, rgba(184, 137, 43, 0.2) 55%, rgba(17, 17, 17, 0.12));
+    box-shadow: 0 14px 32px rgba(57, 47, 31, 0.13);
+}
+
+html[data-pbb-theme="light"] .weekly-meal-evolution-home-card__inner {
+    color: #151515;
+    -webkit-text-fill-color: #151515;
+    background:
+        radial-gradient(circle at 94% 0%, rgba(228, 189, 85, 0.25), transparent 36%),
+        linear-gradient(145deg, #ffffff, #f8f5ee);
+}
+
+html[data-pbb-theme="light"] .weekly-meal-evolution-home-card__eyebrow {
+    color: #795719;
+    -webkit-text-fill-color: #795719;
+}
+
+html[data-pbb-theme="light"] .weekly-meal-evolution-home-card__title {
+    color: #151515;
+    -webkit-text-fill-color: #151515;
+}
+
+html[data-pbb-theme="light"] .weekly-meal-evolution-home-card__body {
+    color: #5f5a52;
+    -webkit-text-fill-color: #5f5a52;
+}
+
+html[data-pbb-theme="light"] .weekly-meal-evolution-home-card__action:focus-visible {
+    outline-color: #151515;
+}
+
 body {
     background:
         radial-gradient(circle at 18% -4%, rgba(216, 178, 94, 0.18), transparent 30%),
@@ -8728,6 +8863,12 @@ html[data-pbb-theme="light"] #cohort-info-modal button[onclick*="openXpGuidePage
 #spotify-now-playing :where(div, button) {
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Keep the weekly meal card action readable after the legacy global button sweep. */
+#weekly-meal-evolution-home-card .weekly-meal-evolution-home-card__action {
+    color: #111111 !important;
+    -webkit-text-fill-color: #111111 !important;
 }
 
 #spotify-now-playing #snp-track {

@@ -29,3 +29,34 @@ test('only flags micronutrients measured on at least three days', () => {
     assert.ok(focus.some(item => item.key === 'calcium'));
     assert.ok(!focus.some(item => item.key === 'b12'));
 });
+
+test('uses one Sunday to Monday build cycle', () => {
+    const sunday = evolution.weeklyCycle('2026-07-19T08:00:00+10:00');
+    const monday = evolution.weeklyCycle('2026-07-20T08:00:00+10:00');
+    assert.equal(sunday.key, '2026-07-20');
+    assert.equal(monday.key, '2026-07-20');
+    assert.equal(sunday.isBuildWindow, true);
+    assert.equal(evolution.weeklyCycle('2026-07-18T08:00:00+10:00').isBuildWindow, false);
+});
+
+test('does not consume the weekly attempt while logging is incomplete', () => {
+    const sunday = '2026-07-19T08:00:00+10:00';
+    const monday = '2026-07-20T08:00:00+10:00';
+    assert.equal(evolution.shouldAutoBuild({ now: sunday, coverage: { eligible: false } }), false);
+    assert.equal(evolution.shouldAutoBuild({ now: monday, coverage: { eligible: true } }), true);
+});
+
+test('retries a failed build after the cooldown and stops after success', () => {
+    const now = '2026-07-20T08:00:00+10:00';
+    assert.equal(evolution.shouldAutoBuild({
+        now, coverage: { eligible: true }, lastAttemptAt: '2026-07-20T05:00:00+10:00'
+    }), false);
+    assert.equal(evolution.shouldAutoBuild({
+        now, coverage: { eligible: true }, lastAttemptAt: '2026-07-19T20:00:00+10:00'
+    }), true);
+    assert.equal(evolution.shouldAutoBuild({
+        now,
+        coverage: { eligible: true },
+        plan: { plan_name: 'Your Evolving Weekly Plan', generated_at: '2026-07-19T09:00:00+10:00' }
+    }), false);
+});

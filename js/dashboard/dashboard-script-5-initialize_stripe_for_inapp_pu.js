@@ -1253,6 +1253,7 @@ function _switchAppTabReal(tabName, btn) {
         if (typeof maybeShowMonthlyRafflePopup === 'function') scheduleDashboardTaskForActiveUser(maybeShowMonthlyRafflePopup, 1800);
         if (typeof checkAndCompleteExpiredChallenges === 'function') scheduleDashboardTaskForActiveUser(checkAndCompleteExpiredChallenges, 1950);
         if (typeof loadAdaptiveAdjustment === 'function') scheduleDashboardTaskForActiveUser(loadAdaptiveAdjustment, 2100);
+        if (typeof refreshWeeklyMealEvolutionHomeCard === 'function') scheduleDashboardTaskForActiveUser(refreshWeeklyMealEvolutionHomeCard, 2250);
     } else if (tabName === 'meals') {
         document.getElementById('view-meals').style.display = 'block';
 
@@ -5528,6 +5529,7 @@ async function loadWeeklyEvolutionHistory(userId) {
         .from('meal_logs')
         .select('meal_date,meal_time,meal_type,meal_description,notes,food_items,calories,protein_g,carbs_g,fat_g,fiber_g,micronutrients')
         .eq('user_id', userId)
+        .neq('meal_type', 'water')
         .gte('meal_date', weeklyEvolutionDateString(start))
         .lte('meal_date', weeklyEvolutionDateString(end))
         .order('meal_date', { ascending: true })
@@ -5543,6 +5545,171 @@ async function loadWeeklyEvolutionPreferences(userId) {
         if (data) return data;
     } catch (e) {}
     try { return JSON.parse(localStorage.getItem('user_food_preferences') || '{}'); } catch (e) { return {}; }
+}
+
+let _weeklyEvolutionHomeRefreshPromise = null;
+let _weeklyEvolutionHomeBuildInProgress = false;
+
+function weeklyEvolutionHomeCard() {
+    return document.getElementById('weekly-meal-evolution-home-card');
+}
+
+function hideWeeklyMealEvolutionHomeCard() {
+    const card = weeklyEvolutionHomeCard();
+    if (!card) return;
+    card.style.display = 'none';
+    card.innerHTML = '';
+    card.removeAttribute('data-state');
+}
+
+function openWeeklyMealEvolutionPlan() {
+    const mealsButton = document.querySelector('.bottom-nav .nav-item[onclick*="meals"]');
+    if (typeof switchAppTab === 'function') switchAppTab('meals', mealsButton);
+    setTimeout(() => {
+        const pill = document.getElementById('browse-plans-pill');
+        if (typeof switchWeek === 'function') switchWeek('meal-plan-store', pill);
+    }, 120);
+}
+
+function renderWeeklyMealEvolutionHomeCard(state) {
+    const card = weeklyEvolutionHomeCard();
+    if (!card) return;
+    const copy = {
+        ready: {
+            icon: '✓', eyebrow: 'Meal tracking complete', title: 'Your next week is ready to tailor',
+            body: 'You tracked enough meals for Balance to shape next week around what you actually eat, with small adjustments toward your targets and two fresh variations.',
+            action: 'Tailor next week'
+        },
+        generating: {
+            icon: '✦', eyebrow: 'Tailoring next week', title: 'Turning your logs into your plan',
+            body: 'Balance is keeping your familiar favourites, adjusting the details around your targets, and adding two fresh variations.',
+            action: 'Building your plan...'
+        },
+        tailored: {
+            icon: '✓', eyebrow: 'Next week is ready', title: 'Your meals, tailored to you',
+            body: 'Because you tracked your meals this week, Balance has tailored next week around what you actually eat. You will keep familiar favourites, get small adjustments to help you hit your targets, and meet two fresh variations along the way.',
+            action: 'View next week'
+        },
+        retry: {
+            icon: '↻', eyebrow: 'Your logs are ready', title: 'Let’s try tailoring next week again',
+            body: 'Your current meal plan is still safe. Tap below and Balance will use this week’s meals to try again.',
+            action: 'Try again'
+        }
+    }[state];
+    if (!copy) return hideWeeklyMealEvolutionHomeCard();
+
+    card.dataset.state = state;
+    card.style.display = 'block';
+    card.innerHTML = `<div class="weekly-meal-evolution-home-card__inner">
+        <div class="weekly-meal-evolution-home-card__row">
+            <div class="weekly-meal-evolution-home-card__icon" aria-hidden="true">${copy.icon}</div>
+            <div class="weekly-meal-evolution-home-card__content">
+                <div class="weekly-meal-evolution-home-card__eyebrow">${copy.eyebrow}</div>
+                <h3 class="weekly-meal-evolution-home-card__title">${copy.title}</h3>
+                <p class="weekly-meal-evolution-home-card__body">${copy.body}</p>
+            </div>
+        </div>
+        <button type="button" class="weekly-meal-evolution-home-card__action" ${state === 'generating' ? 'disabled aria-busy="true"' : ''}>${copy.action}</button>
+    </div>`;
+
+    const button = card.querySelector('.weekly-meal-evolution-home-card__action');
+    if (button && state === 'tailored') button.addEventListener('click', openWeeklyMealEvolutionPlan);
+    if (button && (state === 'ready' || state === 'retry')) button.addEventListener('click', runWeeklyEvolutionBuildFromHome);
+}
+
+function weeklyEvolutionPlanIsRecent(plan, nowValue) {
+    if (!window.weeklyMealEvolution?.isEvolvingPlan(plan)) return false;
+    const generated = new Date(plan?.generated_at || plan?.created_at || 0);
+    const now = new Date(nowValue || Date.now());
+    return Number.isFinite(generated.getTime()) && now >= generated && now - generated < 6.5 * 86400000;
+}
+
+async function loadActiveWeeklyEvolutionPlan(userId) {
+    if (_aiMealPlanCache?.id) return _aiMealPlanCache;
+    const { data, error } = await window.supabaseClient
+        .from('ai_generated_meal_plans')
+        .select('id,plan_name,plan_description,generated_at,created_at,status')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    if (error) throw error;
+    return data || null;
+}
+
+async function runWeeklyEvolutionBuildFromHome() {
+    if (_weeklyEvolutionHomeBuildInProgress || _aiMealPlanGenerationInProgress) return false;
+    const engine = window.weeklyMealEvolution;
+    if (!engine) return false;
+    const cycle = engine.weeklyCycle(new Date());
+    const attemptKey = `pbb_weekly_meal_evolution_attempt_v2_${cycle.key}`;
+    try { localStorage.setItem(attemptKey, new Date().toISOString()); } catch (e) {}
+    _weeklyEvolutionHomeBuildInProgress = true;
+    renderWeeklyMealEvolutionHomeCard('generating');
+    try {
+        const success = await buildNextWeekFromMealHistory({ automatic: true, source: 'home_card' });
+        if (success) {
+            renderWeeklyMealEvolutionHomeCard('tailored');
+            return true;
+        }
+        renderWeeklyMealEvolutionHomeCard('retry');
+        return false;
+    } finally {
+        _weeklyEvolutionHomeBuildInProgress = false;
+    }
+}
+
+async function refreshWeeklyMealEvolutionHomeCard(options = {}) {
+    if (_weeklyEvolutionHomeRefreshPromise) return _weeklyEvolutionHomeRefreshPromise;
+    _weeklyEvolutionHomeRefreshPromise = (async () => {
+        const card = weeklyEvolutionHomeCard();
+        const engine = window.weeklyMealEvolution;
+        if (!card || !engine || !window.supabaseClient) return false;
+        const user = window.currentUser || await waitForCurrentUser();
+        if (!user) return false;
+        try {
+            const access = typeof checkMealPlanAccess === 'function' ? checkMealPlanAccess() : { hasAccess: true };
+            if (!access?.hasAccess) {
+                hideWeeklyMealEvolutionHomeCard();
+                return false;
+            }
+
+            const now = new Date();
+            const plan = options.plan || await loadActiveWeeklyEvolutionPlan(user.id);
+            if (engine.isPlanFreshForCycle(plan, now) || weeklyEvolutionPlanIsRecent(plan, now)) {
+                renderWeeklyMealEvolutionHomeCard('tailored');
+                return true;
+            }
+
+            const history = await loadWeeklyEvolutionHistory(user.id);
+            const coverage = engine.assessHistory(history.meals);
+            const cycle = engine.weeklyCycle(now);
+            if (!cycle.isBuildWindow || !coverage.eligible) {
+                hideWeeklyMealEvolutionHomeCard();
+                return false;
+            }
+
+            renderWeeklyMealEvolutionHomeCard('ready');
+            const attemptKey = `pbb_weekly_meal_evolution_attempt_v2_${cycle.key}`;
+            let lastAttemptAt = '';
+            try { lastAttemptAt = localStorage.getItem(attemptKey) || ''; } catch (e) {}
+            const allowAuto = options.allowAuto !== false;
+            if (allowAuto && engine.shouldAutoBuild({ now, plan, coverage, lastAttemptAt })) {
+                await runWeeklyEvolutionBuildFromHome();
+            }
+            return true;
+        } catch (error) {
+            console.warn('Weekly meal Home card could not refresh:', error);
+            hideWeeklyMealEvolutionHomeCard();
+            return false;
+        }
+    })();
+    try {
+        return await _weeklyEvolutionHomeRefreshPromise;
+    } finally {
+        _weeklyEvolutionHomeRefreshPromise = null;
+    }
 }
 
 async function buildNextWeekFromMealHistory(options) {
@@ -5697,22 +5864,18 @@ async function buildNextWeekFromMealHistory(options) {
 }
 
 function maybeBuildWeeklyPlanAtWeekEnd(plan) {
-    if (!plan || _aiMealPlanGenerationInProgress) return;
-    const now = new Date();
-    if (![0, 1].includes(now.getDay())) return;
-    const generated = new Date(plan.generated_at || 0);
-    if (Number.isFinite(generated.getTime()) && (now - generated) < 5 * 86400000) return;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    const attemptKey = `pbb_weekly_meal_evolution_${weeklyEvolutionDateString(monday)}`;
-    try {
-        if (localStorage.getItem(attemptKey)) return;
-        localStorage.setItem(attemptKey, 'attempted');
-    } catch (e) {}
-    buildNextWeekFromMealHistory({ automatic: true });
+    if (_aiMealPlanGenerationInProgress) return;
+    refreshWeeklyMealEvolutionHomeCard({ allowAuto: true, plan }).catch(error => {
+        console.warn('Weekly meal evolution check failed:', error);
+    });
 }
 
 window.buildNextWeekFromMealHistory = buildNextWeekFromMealHistory;
+window.refreshWeeklyMealEvolutionHomeCard = refreshWeeklyMealEvolutionHomeCard;
+window.openWeeklyMealEvolutionPlan = openWeeklyMealEvolutionPlan;
+window.addEventListener('pbbWeeklyMealEvolutionReady', () => {
+    setTimeout(() => refreshWeeklyMealEvolutionHomeCard(), 150);
+});
 
 /**
  * Generate the next week of the meal plan.
