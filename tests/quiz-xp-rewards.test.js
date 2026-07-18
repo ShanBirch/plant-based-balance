@@ -21,8 +21,10 @@ test('daily quiz totals 15 XP before the existing challenge multiplier', () => {
   const inline = read('lib/learning-inline.js');
   const pointsConfig = read('lib/points-config.js');
   const dashboard = read('dashboard.html');
+  const homeQuiz = read('js/dashboard/pbb-home-card-quiz.js');
 
   assert.match(inline, /dailyQuizBonus = 10 \* _quizXpMultiplier/);
   assert.match(pointsConfig, /DAILY_QUIZ_BONUS:\s*10/);
   assert.match(dashboard, /\+15 XP earned\. Come back tomorrow!/);
+  assert.match(homeQuiz, /var xpAmount = perfect \? 15 : 1;/);
 });
