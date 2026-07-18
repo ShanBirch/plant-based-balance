@@ -39,7 +39,21 @@ test('store visuals use approved phone dimensions and no character assets', asyn
 
     assert.equal(appleFiles.length, 6);
     assert.equal(playFiles.length, 6);
+    const expectedCampaign = [
+        '01-coach.png',
+        '02-challenges.png',
+        '03-vegan-meals.png',
+        '04-training.png',
+        '05-community.png',
+        '06-progress.png',
+    ];
+    assert.deepEqual(appleFiles, expectedCampaign);
+    assert.deepEqual(playFiles, expectedCampaign);
     assert.doesNotMatch([...appleFiles, ...playFiles].join(' '), /character|fitgotchi|tamagotchi/i);
+
+    const manifest = JSON.parse(read('store-listing/manifest.json'));
+    assert.match(manifest.sourcePolicy, /real supplied photography/i);
+    assert.match(manifest.sourcePolicy, /redacted/i);
 
     for (const file of appleFiles) {
         const meta = await sharp(path.join(appleDir, file)).metadata();

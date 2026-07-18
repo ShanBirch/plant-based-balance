@@ -1,0 +1,39 @@
+{
+  "campaign": "Balance plant-based fitness and community",
+  "generatedAt": "2026-07-18",
+  "generator": "scripts/generate-store-listing-assets.mjs",
+  "sources": {
+    "coachPhoto": "store-listing/source/shannon-coaching.jpg",
+    "trainingPhoto": "store-listing/source/shannon-training.jpg",
+    "challengeScreenshot": "store-listing/source/challenge-home.jpg",
+    "veganMealPhoto": "images/meals/sweet_potato_black_bean_tacos.png",
+    "appFrames": "store-listing/source/*.jpg"
+  },
+  "sourcePolicy": "Real supplied photography and real app screens only. No generated or altered faces. Feed identity and comments are redacted.",
+  "exports": {
+    "googlePlay": {
+      "directory": "store-listing/google-play/en-AU/images/phoneScreenshots",
+      "dimensions": "1080x1920",
+      "files": [
+        "01-coach.png",
+        "02-challenges.png",
+        "03-vegan-meals.png",
+        "04-training.png",
+        "05-community.png",
+        "06-progress.png"
+      ]
+    },
+    "appStore": {
+      "directory": "store-listing/app-store-screenshots/en-AU",
+      "dimensions": "1290x2796",
+      "files": [
+        "01-coach.png",
+        "02-challenges.png",
+        "03-vegan-meals.png",
+        "04-training.png",
+        "05-community.png",
+        "06-progress.png"
+      ]
+    }
+  }
+}
