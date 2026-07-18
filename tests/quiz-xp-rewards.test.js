@@ -36,6 +36,7 @@ test('learning quizzes are not silently capped after three completions', () => {
   assert.doesNotMatch(config, /DAILY_LESSON_LIMIT/);
   assert.doesNotMatch(migration, /daily_limit_reached/);
   assert.match(migration, /'lessons_remaining_today', NULL/);
+  assert.match(migration, /ON CONFLICT \(user_id, lesson_id, public\.to_date_immutable\(completed_at\)\)/);
 });
 
 test('completed lesson replays explain that XP was already claimed', () => {

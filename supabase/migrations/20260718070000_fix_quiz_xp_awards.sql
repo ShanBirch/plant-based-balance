@@ -67,7 +67,7 @@ BEGIN
     p_user_id, p_lesson_id, p_unit_id, p_module_id,
     p_games_played, p_games_correct, score_pct, xp_earned
   )
-  ON CONFLICT (user_id, lesson_id, (completed_at::DATE)) DO UPDATE
+  ON CONFLICT (user_id, lesson_id, public.to_date_immutable(completed_at)) DO UPDATE
   SET games_played = EXCLUDED.games_played,
       games_correct = EXCLUDED.games_correct,
       score_percentage = EXCLUDED.score_percentage;
