@@ -5866,7 +5866,7 @@ function applyLeadProgressionQuestionProtection(review, {
         .filter(Boolean)
         .join(' ');
     const questionSuppression = /\b(?:question|curiosity|over-question|same-topic|thread[- ]keeping|follow[- ]?up)\b/i.test(reviewText);
-    const independentProblem = /\b(?:unsupported|invented|context loss|non[- ]?sequitur|ignored latest|medical|diagnos|safety|automation|generic voice|several|multiple)\b/i.test(reviewText);
+    const independentProblem = /\b(?:unsupported|invented|context loss|non[- ]?sequitur|ignored latest|medical|diagnos|safety|automation|generic voice|several|multiple|repetitive|repeat(?:ed|ing)?|re-asks?|already answered|no (?:current )?(?:blocker|problem|issue)|question fatigue|interview|interrogat)\b/i.test(reviewText);
     if (!questionSuppression || independentProblem) return base;
 
     return {

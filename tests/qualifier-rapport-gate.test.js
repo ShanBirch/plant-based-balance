@@ -186,6 +186,61 @@ assert.strictEqual(questionFatigue.is_question_moment, false);
 assert.strictEqual(questionFatigue.next_question, '');
 assert.match(questionFatigue.why_now, /question fatigue/i);
 
+const answeredQualification = applyRapportGate({
+    qualifier: {
+        ...base,
+        meaningful_lead_reply_count: 7,
+        is_question_moment: true,
+        next_question: 'what move are you trying to progress right now?',
+        facts: {
+            ...base.facts,
+            relationship_context: 'Detailed training conversation',
+            current_state: 'Protects her back and stops any movement that stresses it',
+        },
+    },
+    currentMessage: 'So far all the exercises I do are good. My back hasn\'t flared. I hope this answers your question',
+    leadReplyCount: 7,
+});
+assert.strictEqual(answeredQualification.is_question_moment, false);
+assert.strictEqual(answeredQualification.next_question, '');
+assert.match(answeredQualification.why_now, /already answered|no current blocker/i);
+
+const noCurrentBlocker = applyRapportGate({
+    qualifier: {
+        ...base,
+        meaningful_lead_reply_count: 5,
+        is_question_moment: true,
+        next_question: 'what usually gets in the way?',
+        facts: {
+            ...base.facts,
+            relationship_context: 'Regular gym conversation',
+        },
+    },
+    currentMessage: 'Everything is good right now, no current issues with training',
+    leadReplyCount: 5,
+});
+assert.strictEqual(noCurrentBlocker.is_question_moment, false);
+assert.strictEqual(noCurrentBlocker.next_question, '');
+assert.match(noCurrentBlocker.why_now, /no current blocker/i);
+
+const newerProblemOverridesOldNoBlocker = applyRapportGate({
+    qualifier: {
+        ...base,
+        meaningful_lead_reply_count: 6,
+        is_question_moment: true,
+        next_question: 'what part of food keeps falling off?',
+        facts: {
+            ...base.facts,
+            relationship_context: 'Ongoing training conversation',
+            history_blockers: 'No current training blocker',
+        },
+    },
+    currentMessage: 'food is where I keep falling off now, I need help with it',
+    leadReplyCount: 6,
+});
+assert.strictEqual(newerProblemOverridesOldNoBlocker.is_question_moment, true);
+assert.match(newerProblemOverridesOldNoBlocker.next_question, /food/i);
+
 const petGriefBridge = applyRapportGate({
     qualifier: {
         ...base,

@@ -55,6 +55,27 @@ test('progression protection does not hide independent review problems', () => {
     assert.equal(review.deterministic_guard, undefined);
 });
 
+test('progression protection does not override an already-answered warning', () => {
+    const review = applyLeadProgressionQuestionProtection({
+        verdict: 'warn',
+        confidence: 0.95,
+        summary: 'The draft re-asks a qualification question the lead already answered.',
+        issues: ['Repeated question after the lead said there is no current blocker.'],
+        suggested_fix: 'Acknowledge the answer and stop probing.',
+        context_loss_suspected: false,
+        notification_required: false,
+    }, {
+        draftText: 'That totally answers it. What move are you trying to progress right now?',
+        alertType: 'ig_incoming_dm',
+        qualifier,
+        linkedUserId: null,
+        meaningfulLeadReplyCount: 7,
+    });
+
+    assert.equal(review.verdict, 'warn');
+    assert.equal(review.deterministic_guard, undefined);
+});
+
 test('learned editing style cannot disable lead progression', () => {
     const softened = softenAbsoluteLearnedInstruction(
         'Do not turn low-stakes Instagram banter into coaching or discovery unless they ask for help.'

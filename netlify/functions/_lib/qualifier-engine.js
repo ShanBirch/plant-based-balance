@@ -723,6 +723,23 @@ function isUnsafeLeadProgressionTurn(currentMessage) {
     return /\b(?:vet|put (?:him|her|them) down|passed away|died|dying|funeral|grief|grieving|terminal|cancer|hospital|emergency|suicid|self[- ]?harm)\b/i.test(text);
 }
 
+function hasLeadQualificationStopSignal({ currentMessage, qualifier } = {}) {
+    const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    const facts = qualifier?.facts || {};
+    const factText = [facts.current_state, facts.history_blockers]
+        .filter(Boolean)
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const answeredSignal = /\b(?:hope (?:this|that) answers(?: your question)?|(?:this|that) answers(?: your question)?|does (?:this|that) answer(?: your question)?|i (?:already|just) answered|as i (?:said|mentioned)|like i (?:said|mentioned))\b/i.test(message);
+    const noBlockerPattern = /\b(?:all|every(?:thing| exercise)|the exercises?) (?:i (?:do|am doing) )?(?:are|is|feel|feels) (?:all )?(?:good|fine|okay|ok)|\b(?:my )?(?:back|body|training|routine|food|diet) (?:has not|hasn't|isn't|is not|doesn't|does not) (?:flared?|flaring|hurt(?:ing)?|bother(?:ing)?|stopping|an issue|a problem)|\b(?:no|not) (?:real |current |actual |major )?(?:issue|problem|blocker|struggle)|\bnothing (?:really )?(?:stops|disrupts|gets in the way)|\beverything(?:'s| is) (?:good|fine|okay|ok)\b/i;
+    const freshProblemSignal = /\b(?:struggl\w*|stuck|fall(?:ing)? off|fell off|hard to|difficult|keeps? getting in the way|need help|want help|could use help|not working|can'?t stick|cannot stick|plateau|flaring|hurting|bothering)\b/i.test(message);
+    const noCurrentBlocker = noBlockerPattern.test(message)
+        || (!freshProblemSignal && noBlockerPattern.test(factText));
+
+    return answeredSignal || noCurrentBlocker;
+}
+
 function protectEarnedLeadProgression({ qualifier, currentMessage, leadReplyCount } = {}) {
     if (!qualifier || TERMINAL_STAGES.has(qualifier.stage)) return qualifier;
     const replies = Math.max(0, Number(leadReplyCount || qualifier.meaningful_lead_reply_count || 0));
@@ -737,6 +754,14 @@ function protectEarnedLeadProgression({ qualifier, currentMessage, leadReplyCoun
             is_question_moment: false,
             next_question: '',
             why_now: 'The lead signalled question fatigue. Reflect or answer in a statement-led turn and give them space.',
+        };
+    }
+    if (hasLeadQualificationStopSignal({ currentMessage, qualifier })) {
+        return {
+            ...qualifier,
+            is_question_moment: false,
+            next_question: '',
+            why_now: 'The lead already answered the qualification point or stated there is no current blocker. Acknowledge it in a statement-led turn and stop probing.',
         };
     }
     if (replies < 2) return qualifier;
@@ -1497,6 +1522,7 @@ module.exports = {
     persistQualifier,
     applyRapportGate,
     protectEarnedLeadProgression,
+    hasLeadQualificationStopSignal,
     formatPushTitle,
     formatPushBody,
     summarizeForFcmData,
