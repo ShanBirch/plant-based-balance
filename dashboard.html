@@ -11933,7 +11933,7 @@ if(!window._pbbIsIOSSafari) {
         <!-- Weekly/Monthly Calendar -->
         <div style="padding: 0 25px 25px 25px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="color: var(--primary); margin: 0; font-size: 1.1rem;">Your Predictions</h3>
+                <h3 id="calendar-period-heading" style="color: var(--primary); margin: 0; font-size: 1.1rem;">Your Predictions</h3>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <div class="calendar-view-toggle" id="calendar-view-toggle">
                         <button class="toggle-btn active" data-view="weekly" onclick="switchCalendarView('weekly')">Week</button>
@@ -18493,6 +18493,9 @@ if(!window._pbbIsIOSSafari) {
         // Update nav icon label
         const nLabel = document.getElementById('nav-cycle-label');
         if (nLabel) nLabel.textContent = 'Calendar';
+
+        const calendarHeading = document.getElementById('calendar-period-heading');
+        if (calendarHeading) calendarHeading.textContent = 'Your Week';
         
         // Adjust CSS directly to hide female sections immediately
         const style = document.createElement('style');

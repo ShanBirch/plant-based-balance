@@ -9776,6 +9776,11 @@ function applyGenderTheme() {
 function applyGenderSpecificUI() {
     const isMale = isMaleUser();
 
+    const calendarHeading = document.getElementById('calendar-period-heading');
+    if (calendarHeading) {
+        calendarHeading.textContent = isMale ? 'Your Week' : 'Your Predictions';
+    }
+
     // Elements to hide for males (by ID)
     const femaleOnlyElements = [
         'check-in-period-section',     // Period flow check-in
