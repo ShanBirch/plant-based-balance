@@ -6,6 +6,7 @@ const {
     freshQualifier,
     normalizeQualifier,
     normalizeBridgePlan,
+    normalizeConversationPsychology,
     buildQualifierRelationshipBlock,
 } = require('../netlify/functions/_lib/qualifier-engine');
 
@@ -38,6 +39,25 @@ assert.strictEqual(normalizeBridgePlan({
     direct_fitness_question_allowed: true,
 }).direct_fitness_question_allowed, true);
 
+const psychology = normalizeConversationPsychology({
+    need_right_now: 'confidence',
+    change_talk_strength: 'moderate',
+    confidence_signal: 'low',
+    friction_type: 'overwhelm',
+    allowed_move: 'affirm',
+    change_talk_evidence: 'I really want to get back into it',
+    confidence_evidence: 'I never stick with anything',
+    desired_direction: 'feel active again',
+    current_pattern: 'stops when the week gets chaotic',
+});
+assert.strictEqual(psychology.need_right_now, 'confidence');
+assert.strictEqual(psychology.allowed_move, 'affirm');
+assert.strictEqual(psychology.change_talk_strength, 'moderate');
+assert.strictEqual(normalizeConversationPsychology({
+    need_right_now: 'diagnose_them',
+    allowed_move: 'pressure',
+}).allowed_move, 'reflect', 'unsafe or unknown psychology moves must fall back to reflection');
+
 const normalized = normalizeQualifier({
     bridge_plan: plan,
     facts: {},
@@ -47,11 +67,15 @@ assert.deepStrictEqual(normalized.bridge_plan, plan);
 const relationshipBlock = buildQualifierRelationshipBlock({
     ...normalized,
     bridge_plan: plan,
+    conversation_psychology: psychology,
 });
 assert(relationshipBlock.includes('Private subtle bridge plan'));
 assert(relationshipBlock.includes('life_rhythm -> fitness_context'));
 assert(relationshipBlock.includes('Direct fitness question allowed: no'));
 assert(relationshipBlock.includes('planning only, do not recite'));
+assert(relationshipBlock.includes('Private ethical conversation psychology'));
+assert(relationshipBlock.includes('Need right now: confidence'));
+assert(relationshipBlock.includes('Never use it to pressure an offer'));
 
 const qualifierSource = fs.readFileSync(
     path.join(__dirname, '../netlify/functions/_lib/qualifier-engine.js'),
@@ -60,6 +84,9 @@ const qualifierSource = fs.readFileSync(
 assert(qualifierSource.includes('SUBTLE BRIDGE PLANNING'));
 assert(qualifierSource.includes('move at most one step per lead turn'));
 assert(qualifierSource.includes('"direct_fitness_question_allowed": false'));
+assert(qualifierSource.includes('ETHICAL CONVERSATION PSYCHOLOGY'));
+assert(qualifierSource.includes('never diagnose personality, trauma, mental health'));
+assert(qualifierSource.includes('"change_talk_strength": "none"'));
 
 const draftSource = fs.readFileSync(
     path.join(__dirname, '../netlify/functions/ig-instant-draft.js'),
@@ -67,5 +94,6 @@ const draftSource = fs.readFileSync(
 );
 assert(draftSource.includes('Follow the private subtle bridge plan one adjacent step at a time'));
 assert(draftSource.includes('If the bridge plan says direct fitness question allowed = no'));
+assert(draftSource.includes('psychology layer cannot authorize a pitch'));
 
 console.log('lead subtle bridge-plan tests passed');

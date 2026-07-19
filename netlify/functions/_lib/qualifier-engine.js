@@ -887,6 +887,43 @@ const BRIDGE_PLAN_MOVES = new Set([
     'direct_bridge',
 ]);
 
+const PSYCHOLOGY_NEEDS = new Set([
+    'heard',
+    'clarity',
+    'confidence',
+    'autonomy',
+    'practical_direction',
+    'celebration',
+    'space',
+    'unknown',
+]);
+
+const CHANGE_TALK_STRENGTHS = new Set(['none', 'weak', 'moderate', 'strong']);
+const CONFIDENCE_SIGNALS = new Set(['unknown', 'low', 'mixed', 'high']);
+const FRICTION_TYPES = new Set([
+    'time',
+    'energy',
+    'knowledge',
+    'confidence',
+    'environment',
+    'accountability',
+    'injury_limit',
+    'overwhelm',
+    'none',
+    'unknown',
+]);
+const PSYCHOLOGY_MOVES = new Set([
+    'reflect',
+    'affirm',
+    'reframe',
+    'evoke',
+    'clarify',
+    'offer_tiny_idea',
+    'bridge',
+    'invite',
+    'pause',
+]);
+
 function normalizeBridgePlan(raw = {}) {
     const source = raw && typeof raw === 'object' ? raw : {};
     const currentStage = BRIDGE_PLAN_STAGES.has(source.current_stage) ? source.current_stage : 'social_topic';
@@ -911,6 +948,25 @@ function normalizeBridgePlan(raw = {}) {
     };
 }
 
+function normalizeConversationPsychology(raw = {}) {
+    const source = raw && typeof raw === 'object' ? raw : {};
+    return {
+        need_right_now: PSYCHOLOGY_NEEDS.has(source.need_right_now) ? source.need_right_now : 'unknown',
+        change_talk_strength: CHANGE_TALK_STRENGTHS.has(source.change_talk_strength)
+            ? source.change_talk_strength
+            : 'none',
+        confidence_signal: CONFIDENCE_SIGNALS.has(source.confidence_signal)
+            ? source.confidence_signal
+            : 'unknown',
+        friction_type: FRICTION_TYPES.has(source.friction_type) ? source.friction_type : 'unknown',
+        allowed_move: PSYCHOLOGY_MOVES.has(source.allowed_move) ? source.allowed_move : 'reflect',
+        change_talk_evidence: cleanProfileText(source.change_talk_evidence, 180),
+        confidence_evidence: cleanProfileText(source.confidence_evidence, 180),
+        desired_direction: cleanProfileText(source.desired_direction, 140),
+        current_pattern: cleanProfileText(source.current_pattern, 140),
+    };
+}
+
 function freshQualifier({ hookContext = null } = {}) {
     return {
         stage: 'current_state',
@@ -930,6 +986,7 @@ function freshQualifier({ hookContext = null } = {}) {
         commercial_stage: 'engaged',
         commercial_reason: 'Conversation started; no qualified sales evidence yet.',
         bridge_plan: normalizeBridgePlan(),
+        conversation_psychology: normalizeConversationPsychology(),
         next_question: '',
         why_now: "first captured reply in this thread, likely after Shannon's unseen story/post opener. Keep rapport first and wait for a real health, fitness, or help signal before pushing a move.",
         quote_evidence: null,
@@ -967,6 +1024,7 @@ function normalizeQualifier(raw) {
         commercial_stage: normalizeCommercialStage(raw.commercial_stage),
         commercial_reason: cleanProfileText(raw.commercial_reason, 180),
         bridge_plan: normalizeBridgePlan(raw.bridge_plan),
+        conversation_psychology: normalizeConversationPsychology(raw.conversation_psychology),
         next_question: typeof raw.next_question === 'string' ? raw.next_question.trim() : '',
         why_now: typeof raw.why_now === 'string' ? raw.why_now.trim() : '',
         quote_evidence: typeof raw.quote_evidence === 'string' ? raw.quote_evidence.trim() : null,
@@ -1139,6 +1197,12 @@ SUBTLE BRIDGE PLANNING: do not jump from a social topic to "are you into fitness
 
 BRIDGE PLAN PARAMETERS: maintain bridge_plan on every evaluation. current_anchor is the exact human topic currently alive. current_stage is social_topic, life_rhythm, health_adjacent, fitness_context, goal_blocker, or offer_context. destination is the next honest commercially relevant stage, usually fitness_context first. next_adjacent_step is private planning, not necessarily copy to send now. move_this_turn is hold, deepen_anchor, advance_one_step, or direct_bridge. distance_to_fitness is 3 for purely social, 2 for life rhythm, 1 for health-adjacent, and 0 once fitness context is explicit. direct_fitness_question_allowed is true only when the lead's own newest words already contain a clear fitness, training, movement, food-structure, energy, health, consistency, or help signal. Otherwise use an adjacent statement or stay human. This gives the system measurable direction without making the lead feel processed.
 
+ETHICAL CONVERSATION PSYCHOLOGY: use a motivational-interviewing spirit: partnership, acceptance, compassion, and evocation. Help the lead hear and clarify their own reasons rather than installing motivation or arguing them into change. Detect only what their actual words support. Change talk includes desire ("I want"), ability ("I could"), reasons ("I'd feel better"), need ("I need"), commitment ("I will"), and taking steps. Sustain talk or hesitation is a reason to reflect, preserve autonomy, or clarify, never to push harder. Confidence is separate from desire: someone can want change strongly while doubting they can do it.
+
+PSYCHOLOGY PARAMETERS: maintain conversation_psychology on every evaluation. need_right_now is heard, clarity, confidence, autonomy, practical_direction, celebration, space, or unknown. change_talk_strength is none, weak, moderate, or strong. confidence_signal is unknown, low, mixed, or high. friction_type is time, energy, knowledge, confidence, environment, accountability, injury_limit, overwhelm, none, or unknown. allowed_move is reflect, affirm, reframe, evoke, clarify, offer_tiny_idea, bridge, invite, or pause. Store short exact evidence for change talk and confidence, plus the grounded desired_direction and current_pattern when both are present. A discrepancy is useful only as a gentle reflection of their own words, never as guilt, confrontation, or pressure.
+
+PSYCHOLOGY SAFETY: never diagnose personality, trauma, mental health, attachment, motives, or unconscious beliefs. Never exploit pain, body image, grief, fear, loneliness, medical issues, financial stress, or low confidence. Never manufacture urgency, scarcity, shame, obligation, reciprocity debt, or social proof. Do not use persuasion tricks to override a no, hesitation, or autonomy signal. The psychology state chooses how to be helpful and human, not how to manipulate a sale. Offer and invite permissions still come only from the commercial and bridge gates.
+
 RAPPORT HAS A JOB: do not collect facts just to tick boxes. Build normal human back-and-forth, then use their own words to connect the chat toward health, fitness, energy, confidence, food, training, or consistency when it genuinely fits. If relationship_context is blank and their latest message has no health/fitness/food/energy/help signal, usually set is_question_moment=false and let Shannon keep chatting. But once they name a clear blocker, goal, low-energy pattern, consistency issue, or practical help need, stop pen-palling and move one step toward help: a tiny useful lens, a precise fit question, or an earned soft Founders Pass bridge. Do not treat playful "send help" as an offer request by itself. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
 
 EARN THE NEXT RESPONSE: every suggested next move should give the lead a reason to reply. It must do at least one of these: answer their direct question, mirror the most specific hook, add one tiny useful lens, or ask one precise question about the real blocker/preference/objection they just raised. Generic validation plus a broad question is a failed turn.
@@ -1190,6 +1254,7 @@ CURRENT STATE FOR THIS LEAD (${leadName}, channel: ${channelLabel}):
   behavior_profile:
 ${behaviorProfileText}
   bridge_plan: ${JSON.stringify(normalizeBridgePlan(currentQualifier.bridge_plan))}
+  conversation_psychology: ${JSON.stringify(normalizeConversationPsychology(currentQualifier.conversation_psychology))}
   facts so far:
 ${factsSummary}
 
@@ -1256,6 +1321,17 @@ OUTPUT JSON ONLY — no commentary, no code fences:
     "distance_to_fitness": 3,
     "evidence": "...",
     "direct_fitness_question_allowed": false
+  },
+  "conversation_psychology": {
+    "need_right_now": "heard",
+    "change_talk_strength": "none",
+    "confidence_signal": "unknown",
+    "friction_type": "unknown",
+    "allowed_move": "reflect",
+    "change_talk_evidence": "...",
+    "confidence_evidence": "...",
+    "desired_direction": "...",
+    "current_pattern": "..."
   },
   "challenge_route": "...",
   "behavior_profile": { "primary_need": "...", "protection_pattern": "...", "autonomy_sensitivity": "...", "sales_readiness": "...", "identity_signal": "...", "best_next_move": "..." },
@@ -1389,6 +1465,9 @@ async function evaluateQualifier({ thread, history, currentMessage, draftText, l
     };
     const behaviorProfile = mergeBehaviorProfiles(prior.behavior_profile, parsed.behavior_profile);
     const bridgePlan = normalizeBridgePlan(parsed.bridge_plan || prior.bridge_plan);
+    const conversationPsychology = normalizeConversationPsychology(
+        parsed.conversation_psychology || prior.conversation_psychology
+    );
 
     let next = normalizeQualifier({
         stage: parsed.stage || prior.stage,
@@ -1398,6 +1477,7 @@ async function evaluateQualifier({ thread, history, currentMessage, draftText, l
         commercial_stage: parsed.commercial_stage || prior.commercial_stage,
         commercial_reason: parsed.commercial_reason || prior.commercial_reason,
         bridge_plan: bridgePlan,
+        conversation_psychology: conversationPsychology,
         next_question: parsed.next_question || prior.next_question,
         why_now: parsed.why_now || prior.why_now,
         quote_evidence: parsed.quote_evidence ?? prior.quote_evidence,
@@ -1579,6 +1659,25 @@ function buildQualifierRelationshipBlock(qualifier) {
             bridge.evidence ? `Evidence: ${bridge.evidence}` : '',
         ].filter(Boolean).join('\n'));
     }
+    const psychology = normalizeConversationPsychology(qualifier.conversation_psychology);
+    if (
+        psychology.need_right_now !== 'unknown'
+        || psychology.change_talk_strength !== 'none'
+        || psychology.friction_type !== 'unknown'
+    ) {
+        lines.push('Private ethical conversation psychology (never diagnose or recite):\n' + [
+            `Need right now: ${psychology.need_right_now}`,
+            `Change talk: ${psychology.change_talk_strength}`,
+            `Confidence: ${psychology.confidence_signal}`,
+            `Friction: ${psychology.friction_type}`,
+            `Allowed move: ${psychology.allowed_move}`,
+            psychology.change_talk_evidence ? `Change-talk evidence: ${psychology.change_talk_evidence}` : '',
+            psychology.confidence_evidence ? `Confidence evidence: ${psychology.confidence_evidence}` : '',
+            psychology.desired_direction ? `Their desired direction: ${psychology.desired_direction}` : '',
+            psychology.current_pattern ? `Their current pattern: ${psychology.current_pattern}` : '',
+            'Use this to support autonomy and evoke their own thinking. Never use it to pressure an offer.',
+        ].filter(Boolean).join('\n'));
+    }
     if (qualifier.next_question && qualifier.is_question_moment) {
         lines.push(`Suggested relationship move: ${qualifier.next_question}`);
     }
@@ -1595,6 +1694,7 @@ module.exports = {
     freshQualifier,
     normalizeQualifier,
     normalizeBridgePlan,
+    normalizeConversationPsychology,
     normalizeBehaviorProfile,
     normalizeCommercialStage,
     deriveCommercialStage,
