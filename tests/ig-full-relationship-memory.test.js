@@ -8,6 +8,7 @@ const {
     fallbackRelationshipSummary,
     buildRelationshipMemoryBlock,
     countConversationEpisodes,
+    needsMemoryExtraction,
 } = require('../netlify/functions/extract-ig-thread-memory')._test;
 
 const prompt = buildExtractorPrompt({
@@ -70,6 +71,19 @@ assert.strictEqual(countConversationEpisodes([
     { created_at: '2026-07-05T01:00:00.000Z' },
 ], '2026-07-01T01:00:00.000Z'), 1);
 
+assert.strictEqual(needsMemoryExtraction({
+    last_inbound_at: '2026-07-05T01:00:00.000Z',
+    last_memory_extracted_at: null,
+}), true);
+assert.strictEqual(needsMemoryExtraction({
+    last_inbound_at: '2026-07-05T01:00:00.000Z',
+    last_memory_extracted_at: '2026-07-05T02:00:00.000Z',
+}), false);
+assert.strictEqual(needsMemoryExtraction({
+    last_inbound_at: '2026-07-05T03:00:00.000Z',
+    last_memory_extracted_at: '2026-07-05T02:00:00.000Z',
+}), true);
+
 const extractorSource = fs.readFileSync(
     path.join(__dirname, '../netlify/functions/extract-ig-thread-memory.js'),
     'utf8'
@@ -77,6 +91,7 @@ const extractorSource = fs.readFileSync(
 assert(extractorSource.includes('loadEveryPage('));
 assert(extractorSource.includes('MEMORY_BATCH_SIZE'));
 assert(!extractorSource.includes('HISTORY_LOOKBACK'));
+assert(!extractorSource.includes('&or=(last_memory_extracted_at.is.null'));
 
 const draftSource = fs.readFileSync(
     path.join(__dirname, '../netlify/functions/ig-instant-draft.js'),

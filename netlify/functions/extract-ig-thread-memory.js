@@ -28,6 +28,7 @@ const RUNNING_NOTES_CAP = 50;          // max lines kept in running_notes
 const HISTORY_PAGE_SIZE = 500;         // paginate until the canonical history is exhausted
 const MEMORY_BATCH_SIZE = 80;          // bounded model input, carried forward as a rolling summary
 const RELATIONSHIP_MEMORY_VERSION = 2;
+const THREAD_SCAN_PAGE_SIZE = 200;
 const EXTRACT_AFTER_HOURS = 0;         // 0 = always run for any thread with new inbound; bump if too aggressive
 const MAX_THREADS_PER_RUN = 30;        // cap so a single cron firing doesn't burn quota
 
@@ -75,6 +76,29 @@ async function loadEveryPage(basePath, pageSize = HISTORY_PAGE_SIZE) {
         if (page.length < pageSize) break;
     }
     return rows;
+}
+
+function needsMemoryExtraction(thread) {
+    if (!thread?.last_inbound_at) return false;
+    if (!thread.last_memory_extracted_at) return true;
+    const inboundAt = Date.parse(thread.last_inbound_at);
+    const extractedAt = Date.parse(thread.last_memory_extracted_at);
+    return Number.isFinite(inboundAt)
+        && (!Number.isFinite(extractedAt) || inboundAt > extractedAt);
+}
+
+async function loadCandidateThreads(cutoff = null) {
+    const candidates = [];
+    const select = 'id,channel,profile_name,ig_username,lead_stage,goals,communication_style,running_notes,injuries_limits,personal_context,last_memory_extracted_at,last_inbound_at,linked_user_id,coach_id,custom_data';
+    const cutoffFilter = cutoff ? `&last_inbound_at=gte.${encodeURIComponent(cutoff)}` : '';
+    for (let offset = 0; candidates.length < MAX_THREADS_PER_RUN; offset += THREAD_SCAN_PAGE_SIZE) {
+        const page = await supabaseQuery(
+            `ig_threads?select=${select}&last_inbound_at=not.is.null${cutoffFilter}&order=last_inbound_at.desc,id.asc&limit=${THREAD_SCAN_PAGE_SIZE}&offset=${offset}`
+        );
+        candidates.push(...page.filter(needsMemoryExtraction));
+        if (page.length < THREAD_SCAN_PAGE_SIZE) break;
+    }
+    return candidates.slice(0, MAX_THREADS_PER_RUN);
 }
 
 async function callGeminiJSON(prompt) {
@@ -597,27 +621,17 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: JSON.stringify({ skipped: 'no_ai_key' }) };
     }
 
-    // Find threads with inbound activity since their last extraction. Anything
-    // never extracted has last_memory_extracted_at = NULL and matches the
-    // is.null condition. The PostgREST `or=` lets us combine "never extracted"
-    // OR "extracted but new inbound since" in one query.
+    // Find threads with inbound activity since their last extraction. The
+    // timestamp comparison is deliberately done in JS: PostgREST filter
+    // values are literals, so `last_inbound_at.gt.last_memory_extracted_at`
+    // attempts to parse the column name as a timestamp and fails.
     const cutoff = EXTRACT_AFTER_HOURS > 0
         ? new Date(Date.now() - EXTRACT_AFTER_HOURS * 60 * 60 * 1000).toISOString()
         : null;
 
-    let threadsQuery =
-        `ig_threads?select=id,channel,profile_name,ig_username,lead_stage,goals,communication_style,running_notes,injuries_limits,personal_context,last_memory_extracted_at,last_inbound_at,linked_user_id,coach_id,custom_data` +
-        `&last_inbound_at=not.is.null` +
-        `&or=(last_memory_extracted_at.is.null,last_inbound_at.gt.last_memory_extracted_at)` +
-        `&order=last_inbound_at.desc` +
-        `&limit=${MAX_THREADS_PER_RUN}`;
-    if (cutoff) {
-        threadsQuery += `&last_inbound_at=gte.${cutoff}`;
-    }
-
     let threads;
     try {
-        threads = await supabaseQuery(threadsQuery);
+        threads = await loadCandidateThreads(cutoff);
     } catch (err) {
         console.error('[ig-memory] thread query failed:', err.message);
         return { statusCode: 500, body: JSON.stringify({ error: 'Thread query failed' }) };
@@ -651,5 +665,6 @@ exports._test = {
     fallbackRelationshipSummary,
     buildRelationshipMemoryBlock,
     countConversationEpisodes,
+    needsMemoryExtraction,
 };
 exports.buildRelationshipMemoryBlock = buildRelationshipMemoryBlock;
