@@ -970,6 +970,86 @@ function normalizeCoachInstructionsForPrompt(value) {
     return buildCoachInstructionsWithEditLearning(manual, autoBullets) || String(value || '').trim();
 }
 
+function normalizePublicProfileResearchItem(value, maxChars = 220) {
+    if (typeof value === 'string') return truncate(value.replace(/\s+/g, ' ').trim(), maxChars);
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return '';
+    const primary = value.fact
+        || value.observation
+        || value.theme
+        || value.hook
+        || value.question
+        || value.text
+        || value.detail
+        || value.label;
+    const evidence = value.evidence || value.anchor || value.source_detail;
+    const cleanPrimary = String(primary || '').replace(/\s+/g, ' ').trim();
+    const cleanEvidence = String(evidence || '').replace(/\s+/g, ' ').trim();
+    if (!cleanPrimary) return '';
+    return truncate(cleanEvidence ? `${cleanPrimary} (visible anchor: ${cleanEvidence})` : cleanPrimary, maxChars);
+}
+
+function normalizePublicProfileResearchList(value, maxItems = 6) {
+    const list = Array.isArray(value) ? value : (value ? [value] : []);
+    return list
+        .map(item => normalizePublicProfileResearchItem(item))
+        .filter(Boolean)
+        .slice(0, maxItems);
+}
+
+function resolvePublicProfileResearch(source = {}) {
+    const root = source && typeof source === 'object' && !Array.isArray(source) ? source : {};
+    const preferences = root.preferences && typeof root.preferences === 'object' ? root.preferences : {};
+    const customData = root.custom_data && typeof root.custom_data === 'object'
+        ? root.custom_data
+        : (root.customData && typeof root.customData === 'object' ? root.customData : {});
+    const candidates = [
+        root.public_profile_research,
+        root.instagram_public_profile,
+        preferences.instagram_public_profile,
+        preferences.public_profile_research,
+        customData.public_profile_research,
+        customData.instagram_public_profile,
+    ];
+    return candidates.find(item => item && typeof item === 'object' && !Array.isArray(item)) || null;
+}
+
+function buildPublicProfileResearchBlock(source = {}) {
+    const research = resolvePublicProfileResearch(source);
+    if (!research) return '';
+
+    const visibleFacts = normalizePublicProfileResearchList(
+        research.visible_facts || research.bio_facts || research.observed_facts,
+        8
+    );
+    const themes = normalizePublicProfileResearchList(
+        research.content_themes || research.recurring_themes,
+        6
+    );
+    const hooks = normalizePublicProfileResearchList(
+        research.conversation_hooks || research.specific_hooks || research.hooks,
+        6
+    );
+    const avoidQuestions = normalizePublicProfileResearchList(
+        research.avoid_questions || research.obvious_questions_to_avoid,
+        8
+    );
+    if (!visibleFacts.length && !themes.length && !hooks.length && !avoidQuestions.length) return '';
+
+    const lines = [];
+    const observedAt = String(research.observed_at || research.refreshed_at || research.updated_at || '').trim();
+    const username = String(research.username || '').replace(/^@/, '').trim();
+    if (username) lines.push(`Instagram: @${truncate(username, 80)}`);
+    if (observedAt) lines.push(`Observed at: ${truncate(observedAt, 80)}`);
+    if (visibleFacts.length) lines.push(`Visible profile facts: ${visibleFacts.join('; ')}`);
+    if (themes.length) lines.push(`Recurring content themes: ${themes.join('; ')}`);
+    if (hooks.length) lines.push(`Natural conversation hooks: ${hooks.join('; ')}`);
+    if (avoidQuestions.length) lines.push(`Questions already answered by the profile, do not ask: ${avoidQuestions.join('; ')}`);
+
+    return `\n\nPUBLIC INSTAGRAM PROFILE RESEARCH (sourced from visible public bio/posts, not confirmed conversation facts):
+${lines.join('\n')}
+Use this to avoid blind or obvious questions and to choose a relevant, natural handle. Do not mention that the profile was researched, recite several observations, infer sensitive traits, or present an observation as something they personally told Shannon. The newest direct message or correction always wins; if the profile may be stale, phrase the hook lightly or wait for confirmation.`;
+}
+
 function buildMemoryBlock(memory) {
     if (!memory) return '';
     const parts = [];
@@ -996,6 +1076,7 @@ function buildMemoryBlock(memory) {
     if (coachInstructions) {
         block += `\n\nCOACH'S INSTRUCTIONS FOR YOU ON THIS CLIENT (directives Shannon wrote about how to handle this person â€” these override any conflicting cues from memory or general voice):\n${coachInstructions}`;
     }
+    block += buildPublicProfileResearchBlock(memory);
     return block;
 }
 
@@ -1128,7 +1209,7 @@ function buildClientProfileBlock({ clientName = 'Client', profile = {}, customDa
         ? 'Use confirmed sex/cycle details only when relevant. Still follow the client wording, the relationship history, and Shannon-specific instructions first.'
         : `${clientName}'s sex is not confirmed. You may treat first name, pronouns, and conversation context as weak clues only. Do not state or rely on a man/woman assumption. Do not ask just to fill a profile. If sex, cycle, hormones, or pronouns matter for the reply, ask a casual clarifying question or wait for Shannon/client confirmation.`;
 
-    return `\n\nCLIENT PROFILE:\n${lines.join('\n')}\nGuidance: ${guidance}`;
+    return `\n\nCLIENT PROFILE:\n${lines.join('\n')}\nGuidance: ${guidance}${buildPublicProfileResearchBlock(custom)}`;
 }
 
 // ============================================================
@@ -7841,6 +7922,8 @@ module.exports = {
     shouldBypassKayNeedsYouForProgramUpdateOrAppFix,
     shouldBypassKayNeedsYouForAlert,
     buildMemoryBlock,
+    resolvePublicProfileResearch,
+    buildPublicProfileResearchBlock,
     normalizeSex,
     loadClientProfileFacts,
     buildClientProfileBlock,

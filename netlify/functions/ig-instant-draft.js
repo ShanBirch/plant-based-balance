@@ -3815,7 +3815,15 @@ exports.handler = async (event) => {
     if (thread.linked_user_id && thread.coach_id) {
         try {
             const memory = await loadClientMemory(thread.coach_id, thread.linked_user_id);
-            memoryBlock = buildMemoryBlock(memory);
+            // The dispatcher mirrors profile research into client_memory.preferences,
+            // but also carry the thread snapshot directly so an IG reply keeps its
+            // context if that best-effort mirror is delayed.
+            memoryBlock = buildMemoryBlock(memory ? {
+                ...memory,
+                public_profile_research: thread.custom_data?.public_profile_research || null,
+            } : {
+                public_profile_research: thread.custom_data?.public_profile_research || null,
+            });
         } catch (e) { /* non-critical */ }
     }
     // Fall back to the thread's own running memory (populated by the
