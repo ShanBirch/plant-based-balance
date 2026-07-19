@@ -12,7 +12,8 @@
  * (when the lead has linked_user_id) and falls back to these thread-level
  * fields for cold leads.
  *
- * Schedule: see netlify.toml [functions."extract-ig-thread-memory"].
+ * The scheduled dispatcher invokes extract-ig-thread-memory-background so a
+ * full-history bootstrap has Netlify's background-function execution window.
  */
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -80,6 +81,8 @@ async function loadEveryPage(basePath, pageSize = HISTORY_PAGE_SIZE) {
 
 function needsMemoryExtraction(thread) {
     if (!thread?.last_inbound_at) return false;
+    const compaction = safeObject(safeObject(thread.custom_data).relationship_memory_compaction);
+    if (Number(compaction.version || 0) < RELATIONSHIP_MEMORY_VERSION) return true;
     if (!thread.last_memory_extracted_at) return true;
     const inboundAt = Date.parse(thread.last_inbound_at);
     const extractedAt = Date.parse(thread.last_memory_extracted_at);

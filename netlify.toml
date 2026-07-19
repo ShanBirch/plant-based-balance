@@ -389,7 +389,7 @@
 # client_memory, so buildMemoryBlock works against either source.
 # Extracted memory is injected into the IG-draft prompt for cold leads
 # who haven't yet signed up to the app.
-[functions."extract-ig-thread-memory"]
+[functions."schedule-ig-thread-memory"]
   schedule = "29 */4 * * *"
 
 # Daily message learning - nightly safety net for sent client/lead DMs.

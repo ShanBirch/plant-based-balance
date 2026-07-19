@@ -78,10 +78,17 @@ assert.strictEqual(needsMemoryExtraction({
 assert.strictEqual(needsMemoryExtraction({
     last_inbound_at: '2026-07-05T01:00:00.000Z',
     last_memory_extracted_at: '2026-07-05T02:00:00.000Z',
+    custom_data: { relationship_memory_compaction: { version: 2 } },
 }), false);
 assert.strictEqual(needsMemoryExtraction({
     last_inbound_at: '2026-07-05T03:00:00.000Z',
     last_memory_extracted_at: '2026-07-05T02:00:00.000Z',
+    custom_data: { relationship_memory_compaction: { version: 2 } },
+}), true);
+assert.strictEqual(needsMemoryExtraction({
+    last_inbound_at: '2026-07-05T01:00:00.000Z',
+    last_memory_extracted_at: '2026-07-05T02:00:00.000Z',
+    custom_data: {},
 }), true);
 
 const extractorSource = fs.readFileSync(
@@ -100,7 +107,19 @@ const draftSource = fs.readFileSync(
 assert(draftSource.includes('buildRelationshipMemoryBlock(thread)'));
 
 const netlifyConfig = fs.readFileSync(path.join(__dirname, '../netlify.toml'), 'utf8');
-assert(netlifyConfig.includes('[functions."extract-ig-thread-memory"]'));
+assert(netlifyConfig.includes('[functions."schedule-ig-thread-memory"]'));
 assert(netlifyConfig.includes('schedule = "29 */4 * * *"'));
+
+const backgroundSource = fs.readFileSync(
+    path.join(__dirname, '../netlify/functions/extract-ig-thread-memory-background.js'),
+    'utf8'
+);
+assert(backgroundSource.includes("require('./extract-ig-thread-memory')"));
+
+const schedulerSource = fs.readFileSync(
+    path.join(__dirname, '../netlify/functions/schedule-ig-thread-memory.js'),
+    'utf8'
+);
+assert(schedulerSource.includes('/.netlify/functions/extract-ig-thread-memory-background'));
 
 console.log('ig full relationship memory tests passed');
