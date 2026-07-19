@@ -6,6 +6,7 @@
 let mealCameraSource = 'widget'; // Track where camera was opened from
 let mealCameraStream = null; // Camera stream (legacy, no longer used)
 let capturedMealFile = null; // Captured meal photo file
+const mealCapturedPhotoFallbacks = new Map(); // Original photos awaiting a successful upload
 let selectedMealType = 'breakfast'; // Default meal type
 let selectedInputMethod = null; // 'photo', 'text', or 'voice'
 let isRecordingVoice = false;
@@ -811,6 +812,18 @@ async function _processSingleQuickMeal(data) {
             mealTime: data.mealTime || (loggedAt ? loggedAt.toTimeString().split(' ')[0] : null),
             analysisTimestamp: loggedAt ? loggedAt.toISOString() : null
         });
+
+        if (!nativePhotoUrl && savedMeal && savedMeal[0]?.id) {
+            const photoDataUrl = getNativeQuickMealPhotoDataUrl(data);
+            if (photoDataUrl) {
+                try {
+                    const originalPhotoFile = await nativeQuickMealPhotoDataUrlToFile(photoDataUrl, data.timestamp);
+                    rememberMealCapturedPhotoFallback(savedMeal[0], originalPhotoFile);
+                } catch (fallbackError) {
+                    console.warn('Could not retain native meal photo for Feed retry:', fallbackError);
+                }
+            }
+        }
 
         // Award XP — quick meals deserve points just like regular meals
         if (savedMeal && savedMeal[0]?.id) {
@@ -1924,6 +1937,27 @@ function getMealSharePhotoUrl(meal) {
     return '';
 }
 
+function rememberMealCapturedPhotoFallback(meal, file) {
+    if (!meal || !meal.id || !file) return;
+    mealCapturedPhotoFallbacks.set(String(meal.id), file);
+
+    // Keep this short-lived recovery cache bounded on long-running sessions.
+    while (mealCapturedPhotoFallbacks.size > 8) {
+        const oldestKey = mealCapturedPhotoFallbacks.keys().next().value;
+        mealCapturedPhotoFallbacks.delete(oldestKey);
+    }
+}
+
+function getMealCapturedPhotoFallback(meal) {
+    if (!meal || !meal.id) return null;
+    return mealCapturedPhotoFallbacks.get(String(meal.id)) || null;
+}
+
+function clearMealCapturedPhotoFallback(meal) {
+    if (!meal || !meal.id) return;
+    mealCapturedPhotoFallbacks.delete(String(meal.id));
+}
+
 function getMealPhotoUrlForSave(mealData) {
     if (!mealData) return '';
     return getMealSharePhotoUrl({
@@ -2162,6 +2196,19 @@ async function shareMealRecordToFeed(meal, btn) {
         // just took instead of unnecessarily opening the device gallery.
         let mealForShare = await getFreshMealRecordForFeedShare(meal);
         if (!getMealSharePhotoUrl(mealForShare)) {
+            const capturedPhoto = getMealCapturedPhotoFallback(mealForShare);
+            if (capturedPhoto) {
+                if (btn) btn.textContent = 'Uploading meal photo...';
+                try {
+                    mealForShare = await attachPhotoToMealForFeedShare(mealForShare, capturedPhoto);
+                    clearMealCapturedPhotoFallback(mealForShare);
+                } catch (capturedPhotoError) {
+                    throw new Error('MEAL_CAPTURED_PHOTO_UPLOAD_FAILED', { cause: capturedPhotoError });
+                }
+            }
+        }
+
+        if (!getMealSharePhotoUrl(mealForShare)) {
             showToast('Choose the food photo to use behind your meal details', 'info');
             const selectedPhoto = await pickMealFeedSharePhotoFile();
             if (!selectedPhoto) {
@@ -2223,11 +2270,15 @@ async function shareMealRecordToFeed(meal, btn) {
         return story;
     } catch (error) {
         console.error('Error sharing meal to feed:', error);
-        const blockedLabel = String(error && error.message || '').match(/^VEGAN_FEED_BLOCKED:(.+)$/);
+        const errorMessage = String(error && error.message || '');
+        const blockedLabel = errorMessage.match(/^VEGAN_FEED_BLOCKED:(.+)$/);
+        const capturedPhotoUploadFailed = errorMessage === 'MEAL_CAPTURED_PHOTO_UPLOAD_FAILED';
         showToast(
             blockedLabel
                 ? `Balance is a vegan community, so meals with ${blockedLabel[1]} cannot be shared to Feed.`
-                : 'Failed to share meal. Please try again.',
+                : capturedPhotoUploadFailed
+                    ? 'That meal photo is still uploading. Tap Share again in a moment.'
+                    : 'Failed to share meal. Please try again.',
             blockedLabel ? 'info' : 'error'
         );
         if (btn) {
@@ -3666,6 +3717,10 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
             mealType: (id.startsWith('water_') || mealCameraSource === 'water') ? 'water' : selectedMealType,
             mealDescription: descriptionToUse
         });
+
+        if (!photoUrl && savedMeal && savedMeal[0]?.id && (compressedFile || originalFile)) {
+            rememberMealCapturedPhotoFallback(savedMeal[0], compressedFile || originalFile);
+        }
 
         // Award points
         if (photoUrl && savedMeal && savedMeal[0]?.id) {

@@ -19,7 +19,7 @@ function extractFunction(name, nextFunctionName) {
 }
 
 test('dashboard loads the refreshed meal share logic', () => {
-    assert.match(dashboardSource, /dashboard-script-11-calorie_tracker_functions\.js\?v=25/g);
+    assert.match(dashboardSource, /dashboard-script-11-calorie_tracker_functions\.js\?v=26/g);
 });
 
 test('meal Feed shares attach a missing photo before creating the story', async () => {
@@ -38,6 +38,8 @@ test('meal Feed shares attach a missing photo before creating the story', async 
             }
         },
         getMealSharePhotoUrl: meal => meal.photo_url || '',
+        getMealCapturedPhotoFallback: () => null,
+        clearMealCapturedPhotoFallback: () => {},
         pickMealFeedSharePhotoFile: async () => ({ type: 'image/jpeg' }),
         attachPhotoToMealForFeedShare: async meal => {
             attachCalls += 1;
@@ -83,6 +85,8 @@ test('meal Feed shares reuse the freshly saved camera photo without opening the 
             }
         },
         getMealSharePhotoUrl: meal => meal.photo_url || '',
+        getMealCapturedPhotoFallback: () => null,
+        clearMealCapturedPhotoFallback: () => {},
         pickMealFeedSharePhotoFile: async () => {
             pickerCalls += 1;
             return { type: 'image/jpeg' };
@@ -116,6 +120,57 @@ test('meal Feed shares reuse the freshly saved camera photo without opening the 
     assert.equal(attachCalls, 0);
     assert.equal(createdStoryData.media_url, 'https://images.example/just-taken-meal.jpg');
     assert.equal(createdStoryData.thumbnail_url, 'https://images.example/just-taken-meal.jpg');
+});
+
+test('meal Feed share retries the original captured photo instead of opening Android Photos', async () => {
+    let createdStoryData = null;
+    let pickerCalls = 0;
+    let clearedFallback = false;
+    const capturedFile = { type: 'image/jpeg', name: 'captured-meal.jpg' };
+    const context = {
+        window: {
+            currentUser: { id: 'user-1' },
+            dbHelpers: {
+                stories: {
+                    create: async (_userId, storyData) => {
+                        createdStoryData = storyData;
+                        return { id: 'story-1', points_awarded: 15 };
+                    }
+                }
+            }
+        },
+        getMealSharePhotoUrl: meal => meal.photo_url || '',
+        getMealCapturedPhotoFallback: () => capturedFile,
+        clearMealCapturedPhotoFallback: () => { clearedFallback = true; },
+        pickMealFeedSharePhotoFile: async () => {
+            pickerCalls += 1;
+            return { type: 'image/jpeg' };
+        },
+        attachPhotoToMealForFeedShare: async (meal, file) => {
+            assert.equal(file, capturedFile);
+            return { ...meal, photo_url: 'https://images.example/retried-captured-meal.jpg' };
+        },
+        getFreshMealRecordForFeedShare: async meal => meal,
+        buildMealFeedCardPayload: meal => ({ photo_url: meal.photo_url }),
+        isMealSharedToFeed: () => false,
+        markMealSharedToFeed: () => {},
+        markMealFeedShareUsedToday: () => {},
+        loadPhotoFeed: () => {},
+        showToast: () => {},
+        console,
+        Error
+    };
+
+    vm.runInNewContext(
+        `${extractFunction('shareMealRecordToFeed', 'getLatestMealFromRenderedListForFeedShare')}\nthis.shareMealRecordToFeed = shareMealRecordToFeed;`,
+        context
+    );
+
+    const story = await context.shareMealRecordToFeed({ id: 'meal-1', meal_type: 'breakfast' }, null);
+    assert.equal(story.id, 'story-1');
+    assert.equal(pickerCalls, 0);
+    assert.equal(clearedFallback, true);
+    assert.equal(createdStoryData.media_url, 'https://images.example/retried-captured-meal.jpg');
 });
 
 test('the chosen share photo is uploaded and persisted on the meal', async () => {
