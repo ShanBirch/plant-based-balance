@@ -128,6 +128,9 @@ const { markDraftAnalysis } = require('./_lib/ig-message-media');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const HISTORY_LIMIT = 40;
+const CONVERSATION_EPISODE_HARD_GAP_MS = 72 * 60 * 60 * 1000;
+const CONVERSATION_EPISODE_REOPEN_GAP_MS = 18 * 60 * 60 * 1000;
+const STORY_EPISODE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_CHUNKS = 3;
 const DEEP_REPLY_MAX_CHUNKS = 4;
 const DEEP_REPLY_MAX_OUTPUT_TOKENS = 8192;
@@ -1958,6 +1961,128 @@ function latestNativeStoryOutreachMemory(thread) {
     return history[history.length - 1] || null;
 }
 
+function conversationEventTime(event) {
+    const value = Date.parse(event?.created_at || event?.createdAt || '');
+    return Number.isFinite(value) ? value : null;
+}
+
+function normalizeConversationEvent(event, index) {
+    const createdAtMs = conversationEventTime(event);
+    if (createdAtMs == null) return null;
+    return { ...event, _episode_index: index, _created_at_ms: createdAtMs };
+}
+
+function normalizedConversationText(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+function detectConversationEpisode({ events = [], storyOutreachSummary = null, now = new Date() } = {}) {
+    const nowMs = Date.parse(now instanceof Date ? now.toISOString() : now) || Date.now();
+    const timeline = (Array.isArray(events) ? events : [])
+        .map(normalizeConversationEvent)
+        .filter(Boolean)
+        .sort((a, b) => a._created_at_ms - b._created_at_ms || a._episode_index - b._episode_index);
+
+    if (timeline.length === 0) {
+        return {
+            isNewEpisode: false,
+            reason: 'no_tracked_history',
+            startedAt: null,
+            currentEvents: [],
+            relationshipEvents: [],
+        };
+    }
+
+    let boundaryIndex = 0;
+    let reason = 'continuous_thread';
+    for (let i = 1; i < timeline.length; i += 1) {
+        const gapMs = timeline[i]._created_at_ms - timeline[i - 1]._created_at_ms;
+        if (gapMs >= CONVERSATION_EPISODE_HARD_GAP_MS) {
+            boundaryIndex = i;
+            reason = 'long_silence';
+            continue;
+        }
+        if (gapMs >= CONVERSATION_EPISODE_REOPEN_GAP_MS && timeline[i].direction === 'out') {
+            boundaryIndex = i;
+            reason = 'shannon_reopened_after_pause';
+        }
+    }
+
+    const storySentAt = Date.parse(storyOutreachSummary?.sent_at || storyOutreachSummary?.captured_at || '');
+    const storyWasSent = storyOutreachSummary
+        && storyOutreachSummary.context_reliable !== false
+        && (
+            !!storyOutreachSummary.sent_at
+            || storyOutreachSummary.sent === true
+            || /^(sent|verified)$/i.test(String(storyOutreachSummary.send_status || ''))
+        );
+    if (
+        storyWasSent
+        && Number.isFinite(storySentAt)
+        && storySentAt <= nowMs
+        && nowMs - storySentAt <= STORY_EPISODE_MAX_AGE_MS
+    ) {
+        const sentCommentKey = normalizedConversationText(storyOutreachSummary.sent_comment);
+        let storyBoundaryIndex = sentCommentKey
+            ? timeline.findLastIndex(event => (
+                event.direction === 'out'
+                && normalizedConversationText(event.text) === sentCommentKey
+                && Math.abs(event._created_at_ms - storySentAt) <= 30 * 60 * 1000
+            ))
+            : -1;
+        if (storyBoundaryIndex < 0) {
+            storyBoundaryIndex = timeline.findIndex(event => event._created_at_ms >= storySentAt);
+        }
+        if (storyBoundaryIndex > 0 && storyBoundaryIndex >= boundaryIndex) {
+            boundaryIndex = storyBoundaryIndex;
+            reason = 'fresh_story_opener';
+        }
+    }
+
+    const cleanEvent = ({ _episode_index, _created_at_ms, ...event }) => event;
+    return {
+        isNewEpisode: boundaryIndex > 0,
+        reason,
+        startedAt: timeline[boundaryIndex]?.created_at || timeline[boundaryIndex]?.createdAt || null,
+        currentEvents: timeline.slice(boundaryIndex).map(cleanEvent),
+        relationshipEvents: timeline.slice(0, boundaryIndex).map(cleanEvent),
+    };
+}
+
+function conversationEpisodeReasonLabel(reason) {
+    if (reason === 'fresh_story_opener') return 'a fresh Story opener started this chat';
+    if (reason === 'shannon_reopened_after_pause') return 'Shannon deliberately reopened the relationship after a pause';
+    if (reason === 'long_silence') return 'a long silence separates this chat from the earlier conversation';
+    return 'this is the current continuous conversation';
+}
+
+function buildConversationEpisodeTimeline({ episode, formatEvent } = {}) {
+    const currentEvents = Array.isArray(episode?.currentEvents) ? episode.currentEvents : [];
+    const relationshipEvents = Array.isArray(episode?.relationshipEvents) ? episode.relationshipEvents : [];
+    const render = typeof formatEvent === 'function'
+        ? formatEvent
+        : event => `${event?.speaker || 'Unknown'}: ${event?.text || ''}`;
+    const currentText = currentEvents.length
+        ? currentEvents.map(render).join('\n')
+        : '(the just-arrived message below is the first message in this episode)';
+    const relationshipText = relationshipEvents.length
+        ? `\n\nOLDER RELATIONSHIP HISTORY (known facts and continuity only, not an active conversational agenda):\n${relationshipEvents.map(render).join('\n')}`
+        : '';
+
+    return `CURRENT CONVERSATION EPISODE (${conversationEpisodeReasonLabel(episode?.reason)}):
+${currentText}
+
+EPISODE ENGAGEMENT RULES:
+- The current episode controls the reply, question rhythm, topic, tone, and next move.
+- Older relationship history can supply stable facts, preferences, goals, injuries, client status, safety rules, prior purchases, and things already answered.
+- Do not continue an old question sequence, qualifier, offer, objection, support loop, joke, or unfinished topic unless the current episode explicitly returns to it.
+- A new episode does not erase commercial stage or client status, but old sales momentum is not permission to pitch in a fresh unrelated chat.
+- Never re-ask a known fact just because the episode is new.${relationshipText}`;
+}
+
 function buildNativeStoryOutreachContextBlock(thread, leadName) {
     const latest = latestNativeStoryOutreachMemory(thread);
     if (!latest) return { block: '', summary: null };
@@ -1992,6 +2117,10 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
         story_content_type: contentType || null,
         shared_from_username: sharedFrom || null,
         sent_comment: sentComment || null,
+        sent: latest.sent === true,
+        sent_at: compactStoryMemoryText(latest.sent_at, 80) || null,
+        send_status: compactStoryMemoryText(latest.send_status, 80) || null,
+        context_reliable: latest.context_reliable !== false,
         captured_at: capturedAt || null,
         lead_origin: compactStoryMemoryText(latest.lead_origin || customData.lead_origin || leadAcquisition?.source || '', 120) || null,
         offer_path: primaryOffer || null,
@@ -2564,7 +2693,23 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const acquisitionStyleBlock = buildAcquisitionStyleBlock({ leadStage, linkedUserId });
     const cocosRewardLearningBlock = isSalesLeadThread ? await loadCocosRewardLearningBlock(botAccount) : '';
 
-    const priorInboundMessages = Array.isArray(recentInboundMessages) ? recentInboundMessages : [];
+    const promptNow = new Date();
+    const promptNowText = formatCoachLocalTimestamp(promptNow);
+    const igEpisode = detectConversationEpisode({
+        events: [
+            ...(Array.isArray(history) ? history : []),
+            { direction: 'in', text: currentMessage, created_at: promptNow.toISOString() },
+        ],
+        storyOutreachSummary: nativeStoryOutreachContext?.summary || null,
+        now: promptNow,
+    });
+    const episodeStartMs = Date.parse(igEpisode.startedAt || '');
+    const priorInboundMessages = (Array.isArray(recentInboundMessages) ? recentInboundMessages : [])
+        .filter(message => {
+            if (!igEpisode.isNewEpisode || !Number.isFinite(episodeStartMs)) return true;
+            const createdAtMs = conversationEventTime(message);
+            return createdAtMs == null || createdAtMs >= episodeStartMs;
+        });
     const promptCurrentMessage = sanitizeIgStoryReplyContextText(currentMessage);
     const currentMessageKey = normalizedIgLeadMessageKey(promptCurrentMessage);
     const storyReplyPromptContextBlock = buildIgStoryReplyPromptContextBlock({
@@ -2689,8 +2834,6 @@ MEDIA CONTEXT RULES:
         .join('\n\n');
     const currentMessageText = rewrittenMessage;
     const replyMode = resolveReplyMode({ currentMessageText, recentInboundMessages: sanitizedPriorInboundMessages, history, leadStage, linkedUserId, onboardingPhase });
-    const promptNow = new Date();
-    const promptNowText = formatCoachLocalTimestamp(promptNow);
     const unansweredBatch = [
         ...sanitizedPriorInboundMessages.map((m, index) => ({
             text: String(rewrittenPriorMessages[index] || m?.text || '').trim(),
@@ -2812,15 +2955,29 @@ Treat this as the SAME relationship as the ${channelLabel} thread below. Don't a
         const tb = Date.parse(b.created_at || '') || 0;
         return ta - tb;
     });
-    const totalConversationText = mergedConversationEvents.length === 0
-        ? "(no prior tracked messages. This is probably the first captured lead reply after Shannon's native story/post opener, so there may be no visible context.)"
-        : mergedConversationEvents.map((event, i) => formatTimedConversationLine({
+    const conversationEpisode = detectConversationEpisode({
+        events: mergedConversationEvents,
+        storyOutreachSummary: nativeStoryOutreachContext?.summary || null,
+        now: promptNow,
+    });
+    const episodeEvents = [
+        ...conversationEpisode.relationshipEvents,
+        ...conversationEpisode.currentEvents,
+    ];
+    const previousTimestampByEvent = new Map();
+    episodeEvents.forEach((event, index) => {
+        previousTimestampByEvent.set(event, episodeEvents[index - 1]?.created_at);
+    });
+    const totalConversationText = buildConversationEpisodeTimeline({
+        episode: conversationEpisode,
+        formatEvent: event => formatTimedConversationLine({
             speaker: `${event.speaker} (${event.channel})`,
             text: event.text,
             createdAt: event.created_at,
-            previousCreatedAt: mergedConversationEvents[i - 1]?.created_at,
+            previousCreatedAt: previousTimestampByEvent.get(event),
             now: promptNow,
-        })).join('\n');
+        }),
+    });
     const exerciseLibrarySupportBlock = buildExerciseLibrarySupportBlock({
         currentMessage: currentMessageText,
         conversationText: totalConversationText,
@@ -3091,7 +3248,7 @@ Rules:
             } catch (err2) {
                 console.error('[ig-draft] Gemini fallback failed:', err2.message);
                 lastError = `${lastError ? lastError + ' | ' : ''}gemini: ${err2.message.slice(0, 200)}`;
-                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, currentTurnAnchorBlock, storyReplyPromptContextBlock, mediaContextPromptBlock, learningReelContextBlock, learningReelReplyAnchorBlock, learningReelEvidenceBlock };
+                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, conversationEpisode, currentTurnAnchorBlock, storyReplyPromptContextBlock, mediaContextPromptBlock, learningReelContextBlock, learningReelReplyAnchorBlock, learningReelEvidenceBlock };
             }
         }
     }
@@ -3258,6 +3415,7 @@ Rules:
         mediaDecode,
         mediaSummary,
         timeline: totalConversationText,
+        conversationEpisode,
         currentTurnAnchorBlock,
         storyReplyPromptContextBlock,
         nativeStoryOutreachContextBlock: nativeStoryOutreachContext?.block || '',
@@ -3986,6 +4144,7 @@ exports.handler = async (event) => {
     const displaySourceMessage = sanitizeIgStoryReplyContextText(messageText);
     const displaySourceMessageKey = normalizedIgLeadMessageKey(displaySourceMessage);
     const displayMessage = replaceIgMediaMarkers(displaySourceMessage);
+    const displayEpisodeStartMs = Date.parse(draft.conversationEpisode?.startedAt || '');
     const displayRecentInboundMessages = recentInboundMessages.map(m => {
         const rawText = String(m?.text || '').trim();
         return {
@@ -3995,6 +4154,10 @@ exports.handler = async (event) => {
         };
     }).filter(m => {
         if (!m.text) return false;
+        if (draft.conversationEpisode?.isNewEpisode && Number.isFinite(displayEpisodeStartMs)) {
+            const createdAtMs = conversationEventTime(m);
+            if (createdAtMs != null && createdAtMs < displayEpisodeStartMs) return false;
+        }
         if (!m.storyReplyContext || !displaySourceMessageKey) return true;
         return normalizedIgLeadMessageKey(m.text) !== displaySourceMessageKey;
     });
@@ -4158,6 +4321,9 @@ exports.handler = async (event) => {
             linked_client_name: linkedClientName || null,
             display_name_source: linkedClientName ? 'linked_user' : 'ig_thread',
             lead_stage: effectiveLeadStage || thread.lead_stage || 'new',
+            conversation_episode_started_at: draft.conversationEpisode?.startedAt || null,
+            conversation_episode_reason: draft.conversationEpisode?.reason || 'continuous_thread',
+            conversation_episode_new: draft.conversationEpisode?.isNewEpisode === true,
             auto_send_enabled_at_draft: autoSendEnabled,
             auto_send_default_reason: cocosAutoSendLane ? 'cocos_auto_lane' : undefined,
             auto_send_allow_immediate: voiceReplyTestLane || approvedCoachingLinkHandoff || undefined,
@@ -4986,6 +5152,8 @@ exports._test = {
     sanitizeIgStoryReplyContextText,
     stripObviousMediaReceiptPreamble,
     buildNativeStoryOutreachContextBlock,
+    detectConversationEpisode,
+    buildConversationEpisodeTimeline,
     isSalesAcquisitionThread,
     buildAcquisitionStyleBlock,
     buildAcquisitionMomentumBlock,
