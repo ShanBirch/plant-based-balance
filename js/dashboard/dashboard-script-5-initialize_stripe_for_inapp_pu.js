@@ -20749,7 +20749,7 @@ const SHANNON_FILMED_EXERCISES = new Set([
     'Barbell Squat', 'Bench Cable Chest Press', 'Bent Over Barbell Row', 'Bicep Curl Pause',
     'Bicyle Kicks', 'Both At Once Bicep Curls', 'Buglarian Lunges', 'Bulgarian Lunge Concentric',
     'Bulgarian Lunge Eccentric', 'Bulgarian Lunge Hold', 'Bulgarian Pause',
-    'Cable 2 Handed Striaght Arm Lat Pulldown', 'Cable Bicep Curls', 'Cable Chest Flys',
+    'Cable 2 Handed Striaght Arm Lat Pulldown', 'Cable Bicep Curls', 'Cable Chest Press',
     'Cable Close Grip Row', 'Cable Cross Shoulder Raise', 'Cable Crunch', 'Cable Lat Pulldown',
     'Cable Lateral Shoulder Raise', 'Cable Row', 'Chest Fly', 'Close Dumbell Chest Press',
     'Close Grip Barbell Row', 'Close Grip Barbell Shoulder Press', 'Close Grip Chest Press',

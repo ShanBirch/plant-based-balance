@@ -2433,7 +2433,7 @@ const EXERCISE_VIDEOS = {
   "Bulgarian Pause": "https://f005.backblazeb2.com/file/shannonsvideos/Bulgarian%20Pause.mp4",
   "Cable 2 Handed Striaght Arm Lat Pulldown": "https://f005.backblazeb2.com/file/shannonsvideos/Cable%202%20Handed%20Striaght%20Arm%20Lat%20Pulldown.mp4",
   "Cable Bicep Curls": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-bicep-curls.mp4",
-  "Cable Chest Flys": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-chest-flyes.mp4",
+  "Cable Chest Press": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-chest-flyes.mp4",
   "Cable Cross Shoulder Raise": "https://f005.backblazeb2.com/file/shannonsvideos/Cable%20Cross%20Shoulder%20Raise.mp4"
 ,
   "Dumbell Lateral Shoulder Raise": "https://f005.backblazeb2.com/file/shannonsvideos/Dumbell%20Lateral%20Shoulder%20Raise.mp4",
@@ -2592,3 +2592,11 @@ const EXERCISE_VIDEOS = {
   "EZ Curl Bar Bicep Curls": "https://f005.backblazeb2.com/file/shannonsvideos/21%20Bicep%20Curls.mp4",
   "Cable Bench Tricep Pushdown": "https://f005.backblazeb2.com/file/shannonsvideos/Tricep%20Pulldowns.mp4"
 };
+
+// Keep historical workouts saved under the old mislabeled name playable without
+// showing that incorrect name as a separate exercise in library searches.
+Object.defineProperty(EXERCISE_VIDEOS, "Cable Chest Flys", {
+  value: EXERCISE_VIDEOS["Cable Chest Press"],
+  enumerable: false,
+  configurable: true
+});

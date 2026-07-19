@@ -11,7 +11,7 @@ const ASSETS = [
   './lib/auth-guard.js?v=8',
   './lib/native-push.js?v=38',
   './login.html',
-  './exercise_videos.js?v=20260628-pushup-progression',
+  './exercise_videos.js?v=20260719-cable-chest-press',
   './workout_library.js',
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=11',
