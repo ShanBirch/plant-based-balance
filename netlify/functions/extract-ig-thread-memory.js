@@ -4,8 +4,8 @@
  * Mirror of extract-client-memory.js but scoped to ig_threads (cold IG/FB
  * leads who haven't signed up to the app yet). Runs every 4 hours; for each
  * thread with new inbound activity since its last extraction, asks Gemini to
- * pull durable facts out of the recent conversation and updates the thread's
- * memory columns.
+ * compress the complete canonical conversation history into durable facts and
+ * a relationship summary, then incrementally fold in later messages.
  *
  * Storage: same column shape as client_memory so buildMemoryBlock works
  * unchanged on either source. The IG-draft prompt prefers client_memory
@@ -25,7 +25,9 @@ const { callOpenAIModelChain } = require('./_lib/ai-router');
 // keys (returns 429 RESOURCE_EXHAUSTED disguised as a rate limit).
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const RUNNING_NOTES_CAP = 50;          // max lines kept in running_notes
-const HISTORY_LOOKBACK = 30;           // recent ig_messages to feed into the prompt
+const HISTORY_PAGE_SIZE = 500;         // paginate until the canonical history is exhausted
+const MEMORY_BATCH_SIZE = 80;          // bounded model input, carried forward as a rolling summary
+const RELATIONSHIP_MEMORY_VERSION = 2;
 const EXTRACT_AFTER_HOURS = 0;         // 0 = always run for any thread with new inbound; bump if too aggressive
 const MAX_THREADS_PER_RUN = 30;        // cap so a single cron firing doesn't burn quota
 
@@ -61,6 +63,20 @@ async function supabaseQuery(path, options = {}) {
     try { return JSON.parse(text); } catch { return []; }
 }
 
+function safeObject(value) {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+async function loadEveryPage(basePath, pageSize = HISTORY_PAGE_SIZE) {
+    const rows = [];
+    for (let offset = 0; ; offset += pageSize) {
+        const page = await supabaseQuery(`${basePath}&limit=${pageSize}&offset=${offset}`);
+        rows.push(...page);
+        if (page.length < pageSize) break;
+    }
+    return rows;
+}
+
 async function callGeminiJSON(prompt) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured');
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
@@ -70,7 +86,7 @@ async function callGeminiJSON(prompt) {
         body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             generationConfig: {
-                maxOutputTokens: 1024,
+                maxOutputTokens: 1536,
                 temperature: 0.2,
                 responseMimeType: 'application/json',
             },
@@ -96,7 +112,7 @@ function buildMemoryPayload(prompt) {
     return {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
-            maxOutputTokens: 1024,
+            maxOutputTokens: 1536,
             temperature: 0.2,
             responseMimeType: 'application/json',
         },
@@ -158,7 +174,7 @@ function stripPhotoMarkers(text) {
         .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '[video]');
 }
 
-function buildExtractorPrompt({ leadName, channel, leadStage, existing, conversation }) {
+function buildExtractorPrompt({ leadName, channel, leadStage, existing, existingRelationshipSummary = '', conversation }) {
     const lastNotes = tailLines(existing.running_notes, 15) || '(none)';
     const channelLabel = channel === 'messenger' ? 'Facebook Messenger' : 'Instagram';
     return `You extract durable facts about an inbound coaching lead from their ${channelLabel} DM transcripts. Read the full conversation (both sides) for context — but apply strict rules for what becomes a stored fact.
@@ -175,7 +191,10 @@ Personal context: ${existing.personal_context || '(none)'}
 Recent notes (last 15 lines):
 ${lastNotes}
 
-CONVERSATION (oldest → newest. "Coach" is Shannon; the other speaker is ${leadName}):
+COMPRESSED UNDERSTANDING OF EARLIER CONVERSATIONS:
+${existingRelationshipSummary || '(none yet, this may be the full-history bootstrap)'}
+
+CONVERSATION BATCH (oldest → newest. "Coach" is Shannon; the other speaker is ${leadName}):
 ${conversation}
 
 ══════════════════════════════════════════════════════════════
@@ -204,6 +223,8 @@ CORRECTIONS WIN: If the lead later corrects or contradicts something earlier in 
 
 Return ONLY valid JSON. Omit any field with nothing new to say. Never fabricate.
 
+RELATIONSHIP SUMMARY PRIORITY: Return one COMPLETE replacement summary that combines the earlier compressed understanding with this batch. It should help Shannon remember who this person is and what their previous conversations were about without treating old topics as an active agenda. Preserve meaningful conversation themes, decisions, corrections, promises, boundaries, what was offered or declined, support issues and outcomes, and genuine open loops. Attribute facts correctly. Keep it concise, specific, and under 1,800 characters.
+
 MEMORY QUALITY PRIORITY: Shannon wants memory that prevents dumb repeat questions. Capture small but useful details the lead explicitly shares: available equipment, tools/toys/pet details, app/device state, food/cooking setup, household setup, routines, upcoming plans, preferences, things already tried, and what worked or did not work. If a future reply should treat it as known, store it.
 
 PERSONAL CONTEXT PRIORITY: Shannon wants durable human details, not just funnel facts. Capture work/study, shift rhythm, partner/kids/family members and names, dogs/pets and names, household setup, location, cooking/food setup, support network, what they genuinely love, what ticks them off or stresses them, hobbies, sport/training background, real-life routine, and challenge hesitation when the lead explicitly shares them. These belong in personal_context_updates and concise dated new_notes. Never invent names, relationships, loves, or frustrations from Shannon's questions.
@@ -213,7 +234,8 @@ PERSONAL CONTEXT PRIORITY: Shannon wants durable human details, not just funnel 
   "goal_updates": "COMPLETE updated goals string (only if lead newly stated/confirmed a goal), otherwise omit",
   "style_updates": "COMPLETE updated communication_style string (only after ≥3 lead messages show the pattern), otherwise omit",
   "injury_updates": "COMPLETE updated injuries_limits string (only if lead mentioned), otherwise omit",
-  "personal_context_updates": "COMPLETE updated personal_context string (lifestyle/job/family/loves/stressors/funnel signals only if lead mentioned), otherwise omit"
+  "personal_context_updates": "COMPLETE updated personal_context string (lifestyle/job/family/loves/stressors/funnel signals only if lead mentioned), otherwise omit",
+  "conversation_summary_updates": "COMPLETE compressed understanding of the person and important previous conversations, including outcomes and genuine open loops"
 }
 
 Examples of good new_notes:
@@ -272,17 +294,99 @@ function mergeMemory(existing, extracted) {
     return { next, changed };
 }
 
+function mergeRelationshipSummary(existingSummary, extracted) {
+    const next = typeof extracted?.conversation_summary_updates === 'string'
+        ? extracted.conversation_summary_updates.replace(/\s+/g, ' ').trim()
+        : '';
+    return (next || String(existingSummary || '').trim()).slice(0, 3000);
+}
+
+function fallbackRelationshipSummary(memory) {
+    const parts = [];
+    if (memory?.goals) parts.push(`Goals: ${memory.goals}`);
+    if (memory?.personal_context) parts.push(`Person/context: ${memory.personal_context}`);
+    if (memory?.injuries_limits) parts.push(`Injuries/limits: ${memory.injuries_limits}`);
+    const notes = tailLines(memory?.running_notes, 12);
+    if (notes) parts.push(`Previous conversation notes: ${notes.replace(/\n+/g, '; ')}`);
+    return parts.join(' ').slice(0, 3000);
+}
+
+function buildRelationshipMemoryBlock(threadOrMemory) {
+    const source = safeObject(threadOrMemory);
+    const customData = safeObject(source.custom_data || source.customData);
+    const compaction = safeObject(
+        source.relationship_memory_compaction
+        || customData.relationship_memory_compaction
+    );
+    const summary = String(compaction.summary || '').trim();
+    if (!summary) return '';
+    return `\nFULL RELATIONSHIP MEMORY (compressed from ${Number(compaction.messages_compacted || 0) || 'all known'} canonical messages across ${Number(compaction.conversation_episodes || 0) || 'multiple'} conversation episodes):
+${summary}
+Use this for recognition and continuity. It is older relationship knowledge, not permission to continue a stale topic, question sequence, support loop, or offer. The current conversation episode still controls the reply.`;
+}
+
+function countConversationEpisodes(messages, previousLastMessageAt = null) {
+    const gapMs = 72 * 60 * 60 * 1000;
+    let count = 0;
+    let previous = previousLastMessageAt ? Date.parse(previousLastMessageAt) : null;
+    for (const message of messages || []) {
+        const current = Date.parse(message?.created_at || '');
+        if (!Number.isFinite(current)) continue;
+        if (previous == null || current - previous >= gapMs) count += 1;
+        previous = current;
+    }
+    return count;
+}
+
+async function extractConversationBatches({
+    messages,
+    leadName,
+    channel,
+    leadStage,
+    existingMemory,
+    existingRelationshipSummary = '',
+    isLinked = false,
+}) {
+    let memory = existingMemory;
+    let relationshipSummary = String(existingRelationshipSummary || '');
+    const fields = new Set();
+    for (let start = 0; start < messages.length; start += MEMORY_BATCH_SIZE) {
+        const batch = messages.slice(start, start + MEMORY_BATCH_SIZE);
+        const conversation = batch.map(message => {
+            const speaker = message.direction === 'in' ? leadName : 'Coach';
+            const channelTag = isLinked ? (message.source === 'ig' ? ' [IG]' : ' [App]') : '';
+            return `${speaker}${channelTag}: ${stripPhotoMarkers(message.text)}`;
+        }).join('\n');
+        const prompt = buildExtractorPrompt({
+            leadName,
+            channel,
+            leadStage,
+            existing: memory,
+            existingRelationshipSummary: relationshipSummary,
+            conversation,
+        });
+        const extracted = await callMemoryJSON(prompt);
+        Object.keys(extracted || {}).forEach(field => fields.add(field));
+        memory = mergeMemory(memory, extracted).next;
+        relationshipSummary = mergeRelationshipSummary(relationshipSummary, extracted)
+            || fallbackRelationshipSummary(memory);
+    }
+    return { memory, relationshipSummary, fields: [...fields] };
+}
+
 // Pull recent in-app DMs between the linked client and their coach so the
 // IG-side extractor sees the full cross-channel conversation. Returns a list
 // shaped like ig_messages (direction, text, created_at) so it can be merged
 // into a single timeline. Empty array on missing args or any failure.
-async function loadInAppDms(clientId, coachId, limit) {
+async function loadInAppDms(clientId, coachId, since = null) {
     if (!clientId || !coachId) return [];
     try {
-        const rows = await supabaseQuery(
-            `nudges?select=sender_id,message,created_at&or=(and(sender_id.eq.${clientId},receiver_id.eq.${coachId}),and(sender_id.eq.${coachId},receiver_id.eq.${clientId}))&order=created_at.desc&limit=${limit}`
+        const sinceFilter = since ? `&created_at=gte.${encodeURIComponent(since)}` : '';
+        const rows = await loadEveryPage(
+            `nudges?select=id,sender_id,message,created_at&or=(and(sender_id.eq.${clientId},receiver_id.eq.${coachId}),and(sender_id.eq.${coachId},receiver_id.eq.${clientId}))${sinceFilter}&order=created_at.asc,id.asc`
         );
-        return rows.reverse().map(m => ({
+        return rows.map(m => ({
+            id: m.id,
             direction: m.sender_id === clientId ? 'in' : 'out',
             text: m.message,
             created_at: m.created_at,
@@ -292,6 +396,14 @@ async function loadInAppDms(clientId, coachId, limit) {
         console.warn('[ig-memory] loadInAppDms failed:', e.message);
         return [];
     }
+}
+
+async function loadIgDms(threadId, since = null) {
+    const sinceFilter = since ? `&created_at=gte.${encodeURIComponent(since)}` : '';
+    const rows = await loadEveryPage(
+        `ig_messages?select=id,direction,text,created_at&thread_id=eq.${encodeURIComponent(threadId)}${sinceFilter}&order=created_at.asc,id.asc`
+    );
+    return rows.map(message => ({ ...message, source: 'ig' }));
 }
 
 // Read the existing client_memory row for a linked client. Shape matches the
@@ -320,19 +432,30 @@ async function processThread(thread) {
         ? thread.profile_name
         : (thread.ig_username || (isLinked ? 'Client' : 'Lead'));
 
-    // Pull the IG-side history. For linked threads we also pull recent in-app
-    // DMs so the extractor sees one continuous conversation across channels.
-    const igMessages = await supabaseQuery(
-        `ig_messages?select=direction,text,created_at&thread_id=eq.${thread.id}&order=created_at.asc&limit=${HISTORY_LOOKBACK}`
-    );
-    const tagged = igMessages.map(m => ({ ...m, source: 'ig' }));
-
-    let combined = tagged;
-    if (isLinked) {
-        const appMessages = await loadInAppDms(thread.linked_user_id, thread.coach_id, HISTORY_LOOKBACK);
-        combined = tagged.concat(appMessages)
-            .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
-            .slice(-HISTORY_LOOKBACK);
+    const customData = safeObject(thread.custom_data);
+    const priorCompaction = safeObject(customData.relationship_memory_compaction);
+    const hasCurrentCompaction = Number(priorCompaction.version || 0) >= RELATIONSHIP_MEMORY_VERSION;
+    const since = hasCurrentCompaction ? priorCompaction.last_compacted_at || null : null;
+    const [igMessages, appMessages] = await Promise.all([
+        loadIgDms(thread.id, since),
+        isLinked ? loadInAppDms(thread.linked_user_id, thread.coach_id, since) : Promise.resolve([]),
+    ]);
+    let combined = igMessages.concat(appMessages).sort((a, b) => {
+        const timeCompare = String(a.created_at || '').localeCompare(String(b.created_at || ''));
+        if (timeCompare !== 0) return timeCompare;
+        return `${a.source}:${a.id || ''}`.localeCompare(`${b.source}:${b.id || ''}`);
+    });
+    if (hasCurrentCompaction) {
+        const checkpointKey = String(priorCompaction.last_compacted_event_key || '');
+        const checkpointIndex = checkpointKey
+            ? combined.findIndex(message => `${message.source}:${message.id || message.created_at}` === checkpointKey)
+            : -1;
+        if (checkpointIndex >= 0) {
+            combined = combined.slice(checkpointIndex + 1);
+        } else if (priorCompaction.last_compacted_at) {
+            const checkpointMs = Date.parse(priorCompaction.last_compacted_at);
+            combined = combined.filter(message => Date.parse(message.created_at || '') > checkpointMs);
+        }
     }
     if (combined.length === 0) {
         // No messages to extract from. Still bump last_memory_extracted_at so
@@ -347,12 +470,6 @@ async function processThread(thread) {
         return { skipped: 'no_messages' };
     }
 
-    const conversation = combined.map(m => {
-        const speaker = m.direction === 'in' ? speakerName : 'Coach';
-        const channelTag = isLinked ? (m.source === 'ig' ? ' [IG]' : ' [App]') : '';
-        return `${speaker}${channelTag}: ${stripPhotoMarkers(m.text)}`;
-    }).join('\n');
-
     // For linked clients, base the prompt on the unified client_memory row —
     // that's the single source of truth from this point on. For cold leads,
     // keep using the ig_threads memory columns.
@@ -360,23 +477,58 @@ async function processThread(thread) {
         ? await loadClientMemoryRow(thread.coach_id, thread.linked_user_id)
         : thread;
 
-    const prompt = buildExtractorPrompt({
-        leadName: speakerName,
-        channel: thread.channel,
-        leadStage: thread.lead_stage,
-        existing,
-        conversation,
-    });
-
-    let extracted;
+    let compacted;
     try {
-        extracted = await callMemoryJSON(prompt);
+        compacted = await extractConversationBatches({
+            messages: combined,
+            leadName: speakerName,
+            channel: thread.channel,
+            leadStage: thread.lead_stage,
+            existingMemory: existing,
+            existingRelationshipSummary: hasCurrentCompaction ? priorCompaction.summary : '',
+            isLinked,
+        });
     } catch (err) {
         console.warn(`[ig-memory] thread ${thread.id} extraction failed: ${err.message}`);
         return { error: err.message };
     }
 
-    const { next, changed } = mergeMemory(existing, extracted);
+    const next = compacted.memory;
+    const memoryFields = [
+        'goals',
+        'communication_style',
+        'running_notes',
+        'injuries_limits',
+        'personal_context',
+    ];
+    const changed = memoryFields.some(key => next[key] !== existing[key]);
+    const relationshipSummary = compacted.relationshipSummary;
+    const newest = combined[combined.length - 1];
+    const compaction = {
+        version: RELATIONSHIP_MEMORY_VERSION,
+        summary: relationshipSummary,
+        messages_compacted: (hasCurrentCompaction ? Number(priorCompaction.messages_compacted || 0) : 0) + combined.length,
+        conversation_episodes: (hasCurrentCompaction ? Number(priorCompaction.conversation_episodes || 0) : 0)
+            + countConversationEpisodes(combined, hasCurrentCompaction ? priorCompaction.last_compacted_at : null),
+        last_compacted_at: newest?.created_at || new Date().toISOString(),
+        last_compacted_event_key: newest ? `${newest.source}:${newest.id || newest.created_at}` : null,
+        updated_at: new Date().toISOString(),
+        source: isLinked ? 'full_ig_and_app_history' : 'full_ig_history',
+    };
+    let latestCustomData = customData;
+    try {
+        const latestRows = await supabaseQuery(
+            `ig_threads?select=custom_data&id=eq.${encodeURIComponent(thread.id)}&limit=1`
+        );
+        latestCustomData = safeObject(latestRows[0]?.custom_data);
+    } catch (error) { /* best-effort; retain the input snapshot */ }
+    const threadPatch = {
+        last_memory_extracted_at: new Date().toISOString(),
+        custom_data: {
+            ...latestCustomData,
+            relationship_memory_compaction: compaction,
+        },
+    };
 
     if (isLinked) {
         // Linked client → unified write into client_memory. Always bump
@@ -405,17 +557,17 @@ async function processThread(thread) {
         try {
             await supabaseQuery(`ig_threads?id=eq.${thread.id}`, {
                 method: 'PATCH',
-                body: { last_memory_extracted_at: new Date().toISOString() },
+                body: threadPatch,
                 prefer: 'return=minimal',
             });
         } catch (err) {
             console.warn(`[ig-memory] linked thread timestamp update failed for ${thread.id}: ${err.message}`);
         }
-        return { changed, fields: Object.keys(extracted), target: 'client_memory' };
+        return { changed, fields: compacted.fields, target: 'client_memory', relationshipMemory: compaction };
     }
 
     // Cold lead → keep writing to ig_threads memory columns.
-    const patch = { last_memory_extracted_at: new Date().toISOString() };
+    const patch = { ...threadPatch };
     if (changed) {
         patch.goals = next.goals;
         patch.communication_style = next.communication_style;
@@ -433,7 +585,7 @@ async function processThread(thread) {
         console.warn(`[ig-memory] thread ${thread.id} update failed: ${err.message}`);
         return { error: err.message };
     }
-    return { changed, fields: Object.keys(extracted), target: 'ig_threads' };
+    return { changed, fields: compacted.fields, target: 'ig_threads', relationshipMemory: compaction };
 }
 
 exports.handler = async (event) => {
@@ -454,7 +606,7 @@ exports.handler = async (event) => {
         : null;
 
     let threadsQuery =
-        `ig_threads?select=id,channel,profile_name,ig_username,lead_stage,goals,communication_style,running_notes,injuries_limits,personal_context,last_memory_extracted_at,last_inbound_at,linked_user_id,coach_id` +
+        `ig_threads?select=id,channel,profile_name,ig_username,lead_stage,goals,communication_style,running_notes,injuries_limits,personal_context,last_memory_extracted_at,last_inbound_at,linked_user_id,coach_id,custom_data` +
         `&last_inbound_at=not.is.null` +
         `&or=(last_memory_extracted_at.is.null,last_inbound_at.gt.last_memory_extracted_at)` +
         `&order=last_inbound_at.desc` +
@@ -485,3 +637,13 @@ exports.handler = async (event) => {
         body: JSON.stringify({ processed, changed, errors, total_candidates: threads.length }),
     };
 };
+
+exports._test = {
+    buildExtractorPrompt,
+    mergeMemory,
+    mergeRelationshipSummary,
+    fallbackRelationshipSummary,
+    buildRelationshipMemoryBlock,
+    countConversationEpisodes,
+};
+exports.buildRelationshipMemoryBlock = buildRelationshipMemoryBlock;

@@ -125,6 +125,7 @@ const {
 } = require('./_lib/lead-health-progression');
 const { hasBusinessCallRequest } = require('./_lib/personal-dm-boundary');
 const { markDraftAnalysis } = require('./_lib/ig-message-media');
+const { buildRelationshipMemoryBlock } = require('./extract-ig-thread-memory');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const HISTORY_LIMIT = 40;
@@ -3829,6 +3830,10 @@ exports.handler = async (event) => {
             personal_context: thread.personal_context,
             coach_instructions: thread.coach_instructions,
         });
+    }
+    const relationshipMemoryBlock = buildRelationshipMemoryBlock(thread);
+    if (relationshipMemoryBlock) {
+        memoryBlock = [memoryBlock, relationshipMemoryBlock].filter(Boolean).join('\n');
     }
 
     let profileBlock = '';
