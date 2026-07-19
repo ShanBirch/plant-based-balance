@@ -17,6 +17,7 @@ const {
     SUPABASE_URL,
     SUPABASE_SERVICE_KEY,
     supabaseQuery,
+    isAlwaysNeedsYouPerson,
 } = require('./_lib/client-context');
 
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
@@ -151,7 +152,7 @@ async function verifyAdminToken(event) {
 async function loadThread(threadId) {
     if (!threadId) return null;
     const rows = await supabaseQuery(
-        `ig_threads?select=id,subscriber_id,channel,custom_data&id=eq.${encodeURIComponent(threadId)}&limit=1`
+        `ig_threads?select=id,subscriber_id,channel,ig_username,profile_name,custom_data&id=eq.${encodeURIComponent(threadId)}&limit=1`
     );
     return rows[0] || null;
 }
@@ -167,7 +168,7 @@ async function loadMessage(messageId) {
 async function loadAlert(alertId) {
     if (!alertId) return null;
     const rows = await supabaseQuery(
-        `coach_alerts?select=id,alert_type,created_at,status,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
+        `coach_alerts?select=id,alert_type,client_name,created_at,status,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
     );
     return rows[0] || null;
 }
@@ -178,6 +179,19 @@ function isAlertCapabilityReactionRequest({ admin, action, alertId, body }) {
     if (!alertId || action !== 'react') return false;
     if (String(body.messageId || body.igMessageId || '').trim()) return false;
     return true;
+}
+
+function shouldBlockPermanentNeedsYouAutomatedReaction({
+    alertCapabilityMode,
+    action,
+    alert = {},
+    thread = {},
+}) {
+    if (!alertCapabilityMode || action !== 'react') return false;
+    const alertData = safeObject(alert.data);
+    return isAlwaysNeedsYouPerson(alert)
+        || isAlwaysNeedsYouPerson(alertData)
+        || isAlwaysNeedsYouPerson(thread);
 }
 
 function shouldSendSeenReceiptAfterAction(action) {
@@ -385,6 +399,17 @@ exports.handler = async (event = {}) => {
     if (thread.channel !== 'instagram') {
         return json(409, { error: 'Graph sender actions are only available for Instagram threads' });
     }
+    if (shouldBlockPermanentNeedsYouAutomatedReaction({
+        alertCapabilityMode,
+        action,
+        alert,
+        thread,
+    })) {
+        return json(409, {
+            error: 'Permanent Needs You contacts require Shannon approval before reacting.',
+            code: 'permanent_needs_you_automated_reaction_blocked',
+        });
+    }
 
     const recipientId = resolveThreadGraphRecipientId(thread);
     const accountId = resolveThreadGraphAccountId(thread);
@@ -496,5 +521,6 @@ exports._test = {
     isAlertCapabilityReactionRequest,
     resolveThreadGraphRecipientId,
     resolveThreadGraphAccountId,
+    shouldBlockPermanentNeedsYouAutomatedReaction,
     shouldSendSeenReceiptAfterAction,
 };

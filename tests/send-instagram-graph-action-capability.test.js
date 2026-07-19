@@ -14,6 +14,51 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    instagramAction.shouldBlockPermanentNeedsYouAutomatedReaction({
+        alertCapabilityMode: true,
+        action: 'react',
+        alert: {
+            client_name: 'Francesca',
+            data: {
+                ig_username: 'cavazzanafrancesca',
+                permanent_needs_you_draft_only: true,
+            },
+        },
+        thread: { custom_data: {} },
+    }),
+    true,
+    'cron reactions must be blocked for Fra and other permanent Needs You contacts'
+);
+
+assert.strictEqual(
+    instagramAction.shouldBlockPermanentNeedsYouAutomatedReaction({
+        alertCapabilityMode: false,
+        action: 'react',
+        alert: {
+            client_name: 'Francesca',
+            data: { permanent_needs_you_draft_only: true },
+        },
+        thread: { custom_data: {} },
+    }),
+    false,
+    'manual admin reactions remain available for permanent Needs You contacts'
+);
+
+assert.strictEqual(
+    instagramAction.shouldBlockPermanentNeedsYouAutomatedReaction({
+        alertCapabilityMode: true,
+        action: 'unreact',
+        alert: {
+            client_name: 'Francesca',
+            data: { permanent_needs_you_draft_only: true },
+        },
+        thread: { custom_data: {} },
+    }),
+    false,
+    'the guard does not prevent a manual cleanup path from removing a reaction'
+);
+
+assert.strictEqual(
     instagramAction.isAlertCapabilityReactionRequest({
         admin: { ok: false, error: 'missing_admin_token' },
         action: 'mark_seen',
