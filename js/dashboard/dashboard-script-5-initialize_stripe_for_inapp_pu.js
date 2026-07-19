@@ -14486,6 +14486,10 @@ function normalizeHistoryCache(historyData) {
     });
 }
 
+function normalizeWorkoutExerciseHistoryKey(name) {
+    return String(name || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+}
+
 async function preloadWorkoutHistoryForExercises(userId, exerciseNames) {
     if (!userId || !Array.isArray(exerciseNames) || exerciseNames.length === 0) {
         window.workoutHistoryCache = [];
@@ -14495,8 +14499,15 @@ async function preloadWorkoutHistoryForExercises(userId, exerciseNames) {
     try {
         const rawHistory = await dbHelpers.workouts.getLatestHistoryForExercises(userId, exerciseNames);
         const normalized = normalizeHistoryCache(rawHistory);
-        window.workoutHistoryCache = normalized;
-        return normalized;
+        const previous = normalizeHistoryCache(window.workoutHistoryCache || []);
+        const requestedKeys = new Set(exerciseNames.map(normalizeWorkoutExerciseHistoryKey));
+        const loadedKeys = new Set(normalized.map(row => normalizeWorkoutExerciseHistoryKey(row.exercise)));
+        const preserved = previous.filter(row => {
+            const key = normalizeWorkoutExerciseHistoryKey(row.exercise);
+            return !requestedKeys.has(key) || !loadedKeys.has(key);
+        });
+        window.workoutHistoryCache = [...preserved, ...normalized];
+        return window.workoutHistoryCache;
     } catch (error) {
         console.error('Failed to load previous exercise sessions', error);
         return window.workoutHistoryCache || [];
@@ -14509,7 +14520,8 @@ function getPreviousStats(name, set) {
     const history = window.workoutHistoryCache || [];
 
     // Filter history for this specific exercise
-    const exerciseHistory = history.filter(h => h.exercise === name);
+    const exerciseKey = normalizeWorkoutExerciseHistoryKey(name);
+    const exerciseHistory = history.filter(h => normalizeWorkoutExerciseHistoryKey(h.exercise) === exerciseKey);
 
     if (exerciseHistory.length === 0) return 'New';
 
@@ -14528,7 +14540,8 @@ function getPreviousStats(name, set) {
 function findPreviousSetData(name) {
     // Use cached history from DB to find most recent data for this exercise
     const history = window.workoutHistoryCache || [];
-    const exerciseHistory = history.filter(h => h.exercise === name);
+    const exerciseKey = normalizeWorkoutExerciseHistoryKey(name);
+    const exerciseHistory = history.filter(h => normalizeWorkoutExerciseHistoryKey(h.exercise) === exerciseKey);
 
     if (exerciseHistory.length === 0) return null;
 
@@ -14544,7 +14557,8 @@ function findPreviousSetData(name) {
 // Get full previous workout summary for an exercise (all sets from last session)
 function getPreviousWorkoutSummary(exerciseName) {
     const history = window.workoutHistoryCache || [];
-    const exerciseHistory = history.filter(h => h.exercise === exerciseName);
+    const exerciseKey = normalizeWorkoutExerciseHistoryKey(exerciseName);
+    const exerciseHistory = history.filter(h => normalizeWorkoutExerciseHistoryKey(h.exercise) === exerciseKey);
 
     if (exerciseHistory.length === 0) return null;
 
@@ -14615,7 +14629,8 @@ function getExerciseMaxWeight(exerciseName) {
 
     // Fallback to history cache
     const history = window.workoutHistoryCache || [];
-    const exerciseHistory = history.filter(h => h.exercise === exerciseName);
+    const exerciseKey = normalizeWorkoutExerciseHistoryKey(exerciseName);
+    const exerciseHistory = history.filter(h => normalizeWorkoutExerciseHistoryKey(h.exercise) === exerciseKey);
 
     if (exerciseHistory.length === 0) return null;
 

@@ -37,8 +37,18 @@ assert.ok(
     supabaseSource.includes('async getLatestHistoryForExercises(userId, exerciseNames)') &&
         supabaseSource.includes(".select('workout_date')") &&
         supabaseSource.includes(".eq('workout_date', latestDate)") &&
-        supabaseSource.includes(".order('set_number', { ascending: true })"),
+        supabaseSource.includes(".order('set_number', { ascending: true })") &&
+        supabaseSource.includes('const results = await Promise.allSettled(') &&
+        supabaseSource.includes('for (let attempt = 0; attempt < 2; attempt += 1)') &&
+        supabaseSource.includes('failedCachedRows'),
     'previous-set prefill must fetch the complete latest session for every requested exercise'
+);
+
+assert.ok(
+    workoutSource.includes('function normalizeWorkoutExerciseHistoryKey(name)') &&
+        workoutSource.includes('window.workoutHistoryCache = [...preserved, ...normalized];') &&
+        workoutSource.includes('normalizeWorkoutExerciseHistoryKey(h.exercise) === exerciseKey'),
+    'a partial mobile history response must preserve other exercise history and tolerate harmless name formatting differences'
 );
 
 assert.ok(
@@ -50,13 +60,13 @@ assert.ok(
 
 assert.ok(
     dashboardSource.includes('script_part_2.js?v=11') &&
-        dashboardSource.includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=147') &&
+    dashboardSource.includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=149') &&
         dashboardSource.includes('pbb-deferred-workoutbuilder.js?v=9') &&
         dashboardSource.includes('pbb-deferred-savedworkouts.js?v=6') &&
-        loaderSource.includes('lib/supabase.js?v=13') &&
-        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v258'") &&
-        serviceWorkerSource.includes('./lib/supabase.js?v=13') &&
-        serviceWorkerSource.includes('./js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=147'),
+        loaderSource.includes('lib/supabase.js?v=14') &&
+        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v259'") &&
+        serviceWorkerSource.includes('./lib/supabase.js?v=14') &&
+        serviceWorkerSource.includes('./js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=149'),
     'phones must fetch the repaired PB and previous-session code instead of cached versions'
 );
 

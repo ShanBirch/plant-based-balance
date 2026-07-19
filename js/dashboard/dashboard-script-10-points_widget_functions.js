@@ -4354,6 +4354,10 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
         photoDataUrls: options.photoDataUrls || null
     });
 
+    if (typeof options.onSharePrepared === 'function') {
+        options.onSharePrepared();
+    }
+
     if (await shareBalanceCardWithNativeBridge(dataUrl, safeTarget)) {
         showToast(`Opening Instagram ${safeTarget === 'story' ? 'Story' : 'Feed'}...`, 'success');
         return true;
@@ -4461,6 +4465,18 @@ function markWorkoutInstagramShareCompleted(target) {
     renderWorkoutInstagramShareButton(safeTarget);
 }
 
+function clearWorkoutInstagramShareCompleted(target) {
+    const safeTarget = target === 'feed' ? 'feed' : 'story';
+    workoutInstagramShareCompleted[safeTarget] = false;
+    const key = getWorkoutInstagramShareStorageKey();
+    if (key) {
+        try {
+            localStorage.setItem(key, JSON.stringify(workoutInstagramShareCompleted));
+        } catch (_) {}
+    }
+    renderWorkoutInstagramShareButton(safeTarget);
+}
+
 async function shareWorkoutCardToInstagram(target) {
     if (!canUseBalanceInstagramShareTest()) {
         showToast('Instagram sharing is in test mode for now.', 'info');
@@ -4509,8 +4525,14 @@ async function shareWorkoutCardToInstagram(target) {
         }
 
         const cardPayload = buildWorkoutShareCardPayload();
-        const opened = await shareBalanceCardToInstagram(cardPayload, safeTarget, { photoDataUrl: cachedWorkoutShareBase64 });
-        if (opened) markWorkoutInstagramShareCompleted(safeTarget);
+        // Persist the handoff before iOS backgrounds/suspends the web view.
+        // The native plugin can successfully open Instagram before its
+        // promise continuation gets another chance to run in JavaScript.
+        const opened = await shareBalanceCardToInstagram(cardPayload, safeTarget, {
+            photoDataUrl: cachedWorkoutShareBase64,
+            onSharePrepared: () => markWorkoutInstagramShareCompleted(safeTarget)
+        });
+        if (!opened) clearWorkoutInstagramShareCompleted(safeTarget);
         if (opened && safeTarget === 'feed') {
             const xpResult = await awardBalanceSocialShareXP(
                 'workout',
@@ -4523,6 +4545,7 @@ async function shareWorkoutCardToInstagram(target) {
             );
         }
     } catch (error) {
+        clearWorkoutInstagramShareCompleted(safeTarget);
         console.error('Error sharing workout card to Instagram:', error);
         showToast('Could not open Instagram share. Please try again.', 'error');
     } finally {
