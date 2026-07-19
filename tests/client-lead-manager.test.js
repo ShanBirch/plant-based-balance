@@ -569,6 +569,39 @@ const storyCuteFitnessPivot = manager.classifyNeedsYou(makeAlert({
 assert.strictEqual(storyCuteFitnessPivot.shouldRoute, true);
 assert.ok(storyCuteFitnessPivot.reasons.includes('stock_fitness_pivot_from_light_story'));
 
+const alreadyAnsweredTrainingDetail = manager.classifyNeedsYou(makeAlert({
+    suggested_message: "Yeah pretty much, I'm into it. What's your main focus lately?",
+    data: {
+        message_preview: 'Into fitness?',
+        recent_inbound_messages: [
+            { text: "I focus on everything except chest, upper traps, and abs. My biggest priority now is bringing up my quads and glutes." },
+        ],
+    },
+}));
+assert.strictEqual(alreadyAnsweredTrainingDetail.shouldRoute, true);
+assert.ok(alreadyAnsweredTrainingDetail.reasons.includes('already_answered_training_detail_question'));
+
+const leadConstraintProblemHunt = manager.classifyNeedsYou(makeAlert({
+    suggested_message: "Damn, that's a lot to juggle. If you could only fix one thing to get started, what would make it easiest right now, time or money?",
+    data: {
+        message_preview: "Im going through setbacks with being sick, partner financially dependant on me and other obstacles",
+        recent_inbound_messages: [
+            { text: "Yeah. I'll need help later. But I just need to gather the time and money to get myself started" },
+        ],
+    },
+}));
+assert.strictEqual(leadConstraintProblemHunt.shouldRoute, true);
+assert.ok(leadConstraintProblemHunt.reasons.includes('lead_no_blocker_or_constraint_problem_hunt'));
+
+const noBlockerFallbackQuestion = manager.classifyNeedsYou(makeAlert({
+    suggested_message: 'No that is honestly perfect. With the week-to-week horse schedule, do you ever need a recovery or training fallback plan?',
+    data: {
+        message_preview: 'No not really, I eat every couple of hours and have snacks prepped.',
+    },
+}));
+assert.strictEqual(noBlockerFallbackQuestion.shouldRoute, true);
+assert.ok(noBlockerFallbackQuestion.reasons.includes('lead_no_blocker_or_constraint_problem_hunt'));
+
 const imminentDanger = manager.classifyNeedsYou(makeAlert({
     data: {
         message_preview: "I can't keep myself safe tonight and I'm thinking about killing myself",

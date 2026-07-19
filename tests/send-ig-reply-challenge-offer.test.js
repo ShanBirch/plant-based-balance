@@ -7,6 +7,7 @@ const {
     isGratitudeCloserText,
     resolveLatestInboundTextForSend,
     validateSendTimeOutboundSafety,
+    joinSentChunkTexts,
     validateOutboundTextIntegrity,
 } = require('../netlify/functions/send-ig-reply')._test;
 
@@ -61,6 +62,14 @@ assert.strictEqual(validateSendTimeOutboundSafety({
     messagesToSend: ['No worries at all'],
     latestInboundText: 'Thanks!!!',
 }).ok, true);
+
+assert.strictEqual(
+    joinSentChunkTexts([
+        { text: 'Nice, that focus actually makes heaps of sense.' },
+        { text: 'Are you into fitness much too?' },
+    ], 'fallback'),
+    'Nice, that focus actually makes heaps of sense.\n\nAre you into fitness much too?'
+);
 
 assert.strictEqual(
     validateOutboundTextIntegrity('Hahaha ?? what did you train?').code,

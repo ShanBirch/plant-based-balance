@@ -375,6 +375,49 @@ function draftForcesStockFitnessPivotFromLightStory(alert = {}) {
     return storyOrLightLatest && !/\b(?:fitness|training|gym|workout|exercise|run|running|lift|lifting|weight|muscle|vegan|plant.?based|food|meal|protein|energy|tired|motivation|consistency|goal|help|coach|coaching)\b/i.test(normalizeStatusText(latest));
 }
 
+function leadAlreadyGaveTrainingDetail(data = {}) {
+    const text = normalizeStatusText(joinedLeadEvidenceText(data));
+    if (!text) return false;
+    const hasTrainingVerb = /\b(?:train|training|workout|gym|lifting|running|focus|priority|bring up|progress|sets?|reps?|form|failure|technique|upper|lower)\b/i.test(text);
+    const bodyPartMatches = text.match(/\b(?:quads?|glutes?|chest|traps?|abs?|legs?|hamstrings?|shoulders?|back|arms?|biceps?|triceps?|calves?|pull ups?|push ups?)\b/gi) || [];
+    const hasExerciseTerm = /\b(?:squat|deadlift|bench|press|lunge|hip thrust|pull ?up|push ?up|rdl|row|curl)\b/i.test(text);
+    return (hasTrainingVerb && bodyPartMatches.length > 0) || bodyPartMatches.length >= 2 || hasExerciseTerm;
+}
+
+function draftAsksAlreadyAnsweredTrainingQuestion(alert = {}) {
+    const data = alert.data || {};
+    if (!leadAlreadyGaveTrainingDetail(data)) return false;
+    const draft = normalizeStatusText(draftTextFromAlert(alert));
+    if (!draft || !/[?]/.test(draftTextFromAlert(alert))) return false;
+    return /\b(?:are\s+you\s+into\s+fitness|fitness\s+much\s+too|you\s+training\s+at\s+the\s+moment|are\s+you\s+training|you\s+train\s+much|what'?s\s+your\s+main\s+focus|main\s+focus\s+lately|what\s+move\s+are\s+you\s+trying\s+to\s+progress)\b/i.test(draft);
+}
+
+function leadGaveNoBlockerOrNotNowSignal(data = {}) {
+    const text = normalizeStatusText(joinedLeadEvidenceText(data));
+    if (!text) return false;
+    return /\b(?:no|nah)\s+not\s+really\b/i.test(text)
+        || /\b(?:no|not)\s+(?:real|current|actual|major|much of a)?\s*(?:issue|problem|blocker|struggle|setback)\b/i.test(text)
+        || /\bnothing\s+(?:really\s+)?(?:stops|disrupts|gets in the way)\b/i.test(text)
+        || /\bi'?ll\s+need\s+help\s+later\b/i.test(text)
+        || /\bneed\s+to\s+gather\s+(?:the\s+)?(?:time|money)\b/i.test(text)
+        || /\b(?:time\s+and\s+money|money\s+and\s+time)\b/i.test(text)
+        || /\b(?:sick|unwell|setbacks?|financially\s+depend(?:e|a)nt|obstacles?)\b/i.test(text);
+}
+
+function draftHuntsForProblemAfterStopSignal(alert = {}) {
+    const data = alert.data || {};
+    if (!leadGaveNoBlockerOrNotNowSignal(data)) return false;
+    const rawDraft = draftTextFromAlert(alert);
+    if (!/[?]/.test(rawDraft)) return false;
+    const draft = normalizeStatusText(rawDraft);
+    return /\bif\s+you\s+could\s+only\s+fix\s+one\s+thing\b/i.test(draft)
+        || /\bwhat\s+would\s+make\s+it\s+easiest\b/i.test(draft)
+        || /\btime\s+or\s+money\b/i.test(draft)
+        || /\bdo\s+you\s+ever\s+need\b.{0,80}\b(?:fallback|plan|structure|help)\b/i.test(draft)
+        || /\b(?:fallback|backup)\s+plan\b/i.test(draft)
+        || /\bwhat\b.{0,80}\b(?:blocker|problem|issue|gets?\s+in\s+the\s+way|making\s+it\s+hard|makes\s+it\s+hard|hardest)\b/i.test(draft);
+}
+
 function leadReferencesLearningReel(data = {}) {
     return referencesLearningReelFollowUpText(latestLeadText(data));
 }
@@ -789,6 +832,14 @@ function classifyNeedsYou(alert = {}) {
             reasons.push('stock_fitness_pivot_from_light_story');
             labels.push('draft pivots from a light story reaction into a stock fitness question');
         }
+        if (draftAsksAlreadyAnsweredTrainingQuestion(alert)) {
+            reasons.push('already_answered_training_detail_question');
+            labels.push('lead already gave training detail, but the draft asks a generic fitness/focus question');
+        }
+        if (draftHuntsForProblemAfterStopSignal(alert)) {
+            reasons.push('lead_no_blocker_or_constraint_problem_hunt');
+            labels.push('lead gave a no-blocker, not-now, sickness, time, or money constraint, but the draft keeps hunting for a problem');
+        }
         const uniqueReasons = [...new Set(reasons.filter(Boolean))];
         const uniqueLabels = [...new Set(labels.filter(Boolean))];
         return {
@@ -1050,6 +1101,10 @@ exports._test = {
     draftAsksForMissingDecodedVoiceNote,
     draftReopensDroppedClarification,
     draftForcesStockFitnessPivotFromLightStory,
+    leadAlreadyGaveTrainingDetail,
+    draftAsksAlreadyAnsweredTrainingQuestion,
+    leadGaveNoBlockerOrNotNowSignal,
+    draftHuntsForProblemAfterStopSignal,
     leadHasCredibleCurrentDanger,
     latestInboundIsMediaOnly,
     buildDraftReviewContextBlocks,

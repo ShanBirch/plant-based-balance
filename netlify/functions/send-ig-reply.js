@@ -228,6 +228,15 @@ function validateSendTimeOutboundSafety({ messagesToSend = [], latestInboundText
     return { ok: true };
 }
 
+function joinSentChunkTexts(sentChunks = [], fallbackText = '') {
+    const joined = (Array.isArray(sentChunks) ? sentChunks : [])
+        .map(result => normalizeGeneratedCoachDraftText(result?.text || '').trim())
+        .filter(Boolean)
+        .join('\n\n')
+        .trim();
+    return joined || normalizeGeneratedCoachDraftText(fallbackText || '').trim();
+}
+
 async function stampSendTimeSafetyBlock({ alertId, alertData = {}, guard = {}, chunksTotal = 1 } = {}) {
     if (!alertId) return;
     const blockedAt = new Date().toISOString();
@@ -1810,6 +1819,7 @@ exports.handler = async (event) => {
     const sentChunks = sendResults.filter(r => r.ok);
     const allOk = firstError === null && sentChunks.length === outboundItems.length;
     const sentAtIso = new Date().toISOString();
+    const sentMessageText = joinSentChunkTexts(sentChunks, replyText);
     const threadBotAccount = String(
         alertData.bot_account
         || threadForSend?.custom_data?.bot_account
@@ -1882,7 +1892,7 @@ exports.handler = async (event) => {
     //    error into data, and fire a notification so he knows.
     const mergedData = {
         ...withoutSendClaim(alertData),
-        sent_message: replyText,
+        sent_message: sentMessageText || replyText,
         was_edited: wasEdited,
         sent_at: sentAtIso,
         sent_via: source,
@@ -2086,13 +2096,13 @@ exports.handler = async (event) => {
             alert,
             alertData: mergedData,
             alertId,
-            replyText,
+            replyText: sentMessageText || replyText,
             channel,
         });
         await runEditAnalysisWithSendBudget({
             alertId,
             draftText: draftJoined || draftText,
-            sentMessage: replyText,
+            sentMessage: sentMessageText || replyText,
             source,
         }, {
             budgetMs: editAnalysisBudgetForSend({ source, deliveryPacing }),
@@ -2140,5 +2150,6 @@ exports._test = {
     isGratitudeCloserText,
     resolveLatestInboundTextForSend,
     validateSendTimeOutboundSafety,
+    joinSentChunkTexts,
     validateOutboundTextIntegrity,
 };

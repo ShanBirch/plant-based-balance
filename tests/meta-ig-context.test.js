@@ -1,4 +1,6 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 
 const {
     normalizeMetaIgWebhookEvents,
@@ -185,5 +187,9 @@ assert.strictEqual(accountMap['17841499999999999'].autoDraftMessages, true);
 assert.strictEqual(accountMap['17841499999999999'].autoSendMessages, true);
 assert.strictEqual(buildGraphSubscriberId('17841499999999999', '555222111'), 'ig_graph:17841499999999999:555222111');
 assert.deepStrictEqual(legacyGraphSubscriberIds('555222111'), ['meta_ig:555222111', 'ig_graph:555222111']);
+
+const metaContextSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/meta-ig-context.js'), 'utf8');
+assert.doesNotMatch(metaContextSource, /30-day challenge/i);
+assert.match(metaContextSource, /paid Founders Pass/i);
 
 console.log('meta ig context tests passed');

@@ -293,7 +293,7 @@ Return JSON only:
   "summary": "one sentence describing what Shannon posted",
   "visible_text": "any readable text on the image/video, or empty string",
   "topics": ["short topic", "short topic"],
-  "offer_angle": "how this could naturally connect to Balance or the 30-day challenge, if at all",
+  "offer_angle": "how this could naturally connect to Balance or the paid Founders Pass, if at all",
   "reply_context": "short context line an AI draft should know before replying to someone who reacted"
 }
 
