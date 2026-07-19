@@ -634,7 +634,13 @@ exports.handler = async (event) => {
 
     return {
         statusCode: 200,
-        body: JSON.stringify({ processed, changed, errors, total_candidates: threads.length }),
+        body: JSON.stringify({
+            relationship_memory_version: RELATIONSHIP_MEMORY_VERSION,
+            processed,
+            changed,
+            errors,
+            total_candidates: threads.length,
+        }),
     };
 };
 
