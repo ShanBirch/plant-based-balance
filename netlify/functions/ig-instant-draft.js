@@ -1872,6 +1872,23 @@ ACQUISITION STYLE:
 - The preferred late bridge is the Founders Pass in DMs: connect the offer to their exact situation, offer the details, and send the approved Founders Pass link when they ask or accept. Use the call path only for an explicit talk request, genuine unresolved uncertainty, or a situation needing Shannon's judgement.`;
 }
 
+function buildConversationLanePolicyBlock({ linkedUserId } = {}) {
+    if (!linkedUserId) {
+        return `
+
+LEAD CONVERSATION MODE:
+- This is an acquisition relationship. Earn the next response when there is a real opening, without interrogating. A reply can earn it through recognition, humour, a direct answer, a useful reflection, a specific reaction, or one purposeful question.
+- Be a little more question-led than with clients, but every question needs a relationship, qualification, support, objection, or offer reason. Never ask merely to keep the chat alive.`;
+    }
+    return `
+
+CLIENT RELATIONSHIP MODE (HARD LANE SEPARATION):
+- This person is linked to Balance, so treat them as an existing client even if lead_stage is stale. Do not apply acquisition momentum, qualification pressure, or the lead rule that every turn should earn another response.
+- The relationship is already established. Default to being chill: answer, coach, reassure, celebrate, banter, give one useful direction, react, or leave a clean pause.
+- Do not append a question just to keep the conversation open. Ask one only when the missing answer materially changes Shannon's coaching/support decision, or the client has naturally opened a topic worth exploring.
+- A client's answer can simply be enough. Do not turn it into the next question in a ladder. This is not a ban on questions; it is a ban on lead-style progression pressure in client chats.`;
+}
+
 function replaceIgMediaMarkers(text, { photo = '📷 photo', audio = '🎙️ voice note', video = '🎥 video' } = {}) {
     return replaceVideoMarkers(
         replaceAudioMarkers(
@@ -2692,6 +2709,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const accountExperimentBlock = isSalesLeadThread ? buildAccountExperimentBlock(botAccount) : '';
     const acquisitionMomentumBlock = buildAcquisitionMomentumBlock({ botAccount, leadStage, linkedUserId });
     const acquisitionStyleBlock = buildAcquisitionStyleBlock({ leadStage, linkedUserId });
+    const conversationLanePolicyBlock = buildConversationLanePolicyBlock({ linkedUserId });
     const cocosRewardLearningBlock = isSalesLeadThread ? await loadCocosRewardLearningBlock(botAccount) : '';
 
     const promptNow = new Date();
@@ -3056,6 +3074,7 @@ ${heardFirstConversation}
 ${shannonDmTuning}
 ${identityElicitation}
 ${openAiShannonVoice}
+${conversationLanePolicyBlock}
 ${accountExperimentBlock}
 ${acquisitionMomentumBlock}
 ${cocosRewardLearningBlock}
@@ -5170,6 +5189,7 @@ exports._test = {
     isSalesAcquisitionThread,
     buildAcquisitionStyleBlock,
     buildAcquisitionMomentumBlock,
+    buildConversationLanePolicyBlock,
     suppressAlreadyKnownContextQuestionsInDraftChunks,
     suppressPetSpeciesGuessingInDraftChunks,
     suppressStoryLocationQuestionsInDraftChunks,
