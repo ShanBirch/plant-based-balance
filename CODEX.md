@@ -90,6 +90,7 @@ Current strategic priority: build the AI-operated business layer around Balance:
 
 ## Non-Negotiables
 
+- Before using Chrome or any browser automation, check the 24-hour Instagram browser shift dispatcher's lease/run state through its database, API, or control state without connecting to the browser. If the dispatcher is active, its state is uncertain, or Shannon says he is using the browser, do not connect to, navigate, recover, or take over that browser. Prefer an installed plugin or direct API. If browser use is still necessary, explain why and ask Shannon for permission first.
 - Never reveal AI to clients or prospects. Public copy must not mention AI, automation, Gemini, Vertex, models, smart coaching, or "trained on Shannon's voice".
 - The lead/client DM manager owns every normal unlinked-lead reply. Shannon should not receive lead handoffs for media, missing context, medical or emotional language, draft uncertainty, or ordinary judgment calls. The manager must retrieve and analyze voice notes, audio, photos, video, Reels, and Story context, then respond in Shannon's voice. The only unlinked-lead send holds are a credible current self-harm/imminent-danger signal or the lead directly detecting/questioning AI, automation, bots, scripted/generated replies, or whether it is really Shannon.
 - Position the service as personal coaching from Shannon.
