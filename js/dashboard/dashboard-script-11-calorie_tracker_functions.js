@@ -2101,7 +2101,7 @@ function pickMealFeedSharePhotoFile() {
 
         input.type = 'file';
         input.accept = 'image/*';
-        input.setAttribute('aria-label', 'Choose food photo for Feed share');
+        input.setAttribute('aria-label', 'Choose food photo for meal share');
         input.style.position = 'fixed';
         input.style.left = '-9999px';
         input.style.width = '1px';
@@ -2385,9 +2385,42 @@ async function shareMealRecordToInstagram(meal, btn, target = 'story') {
     }
 
     try {
-        const mealForShare = await getFreshMealRecordForFeedShare(meal);
+        let mealForShare = await getFreshMealRecordForFeedShare(meal);
+
+        // Instagram meal shares are designed as a full-bleed photo with the
+        // meal name, ingredients, calories and macros layered over it. Builder
+        // meals often start from exact barcode/text items and therefore have no
+        // photo yet, so collect one here before rendering instead of falling
+        // back to the generic no-photo card.
+        if (!getMealSharePhotoUrl(mealForShare)) {
+            const capturedPhoto = getMealCapturedPhotoFallback(mealForShare);
+            if (capturedPhoto) {
+                if (btn) btn.textContent = 'Uploading meal photo...';
+                mealForShare = await attachPhotoToMealForFeedShare(mealForShare, capturedPhoto);
+                clearMealCapturedPhotoFallback(mealForShare);
+            }
+        }
+
+        if (!getMealSharePhotoUrl(mealForShare)) {
+            showToast('Choose the meal photo for your Instagram layout', 'info');
+            const selectedPhoto = await pickMealFeedSharePhotoFile();
+            if (!selectedPhoto) {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = btn.dataset.originalText || getMealInstagramShareButtonText();
+                    btn.style.opacity = '1';
+                }
+                return false;
+            }
+
+            if (btn) btn.textContent = 'Uploading photo...';
+            mealForShare = await attachPhotoToMealForFeedShare(mealForShare, selectedPhoto);
+        }
+
+        mealForShare = await getFreshMealRecordForFeedShare(mealForShare);
         const cardPayload = buildMealFeedCardPayload(mealForShare);
         const photoDataUrl = await getMealInstagramPhotoDataUrl(cardPayload);
+        if (!photoDataUrl) throw new Error('Meal photo was not available for the Instagram layout');
         const safeTarget = target === 'feed' ? 'feed' : 'story';
         const opened = await window.shareBalanceCardToInstagram(cardPayload, safeTarget, {
             photoDataUrl

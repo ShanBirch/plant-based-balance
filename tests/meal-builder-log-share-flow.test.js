@@ -8,6 +8,14 @@ const builderSource = fs.readFileSync(
     path.join(root, 'js', 'dashboard', 'dashboard-script-meal-builder.js'),
     'utf8'
 );
+const calorieTrackerSource = fs.readFileSync(
+    path.join(root, 'js', 'dashboard', 'dashboard-script-11-calorie_tracker_functions.js'),
+    'utf8'
+);
+const shareRendererSource = fs.readFileSync(
+    path.join(root, 'js', 'dashboard', 'dashboard-script-10-points_widget_functions.js'),
+    'utf8'
+);
 const baseStyles = fs.readFileSync(
     path.join(root, 'css', 'dashboard', 'dashboard-style-1.css'),
     'utf8'
@@ -19,10 +27,10 @@ const premiumStyles = fs.readFileSync(
 const serviceWorkerSource = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 
 assert.ok(
-    dashboardSource.includes('id="meal-builder-combine-cta"') &&
-        dashboardSource.includes('One meal, separate items?') &&
-        dashboardSource.includes('total the macros, then log and share it as one meal'),
-    'the Nutrition tracker must make the multi-item meal path obvious before users log ingredients separately'
+    !dashboardSource.includes('id="meal-builder-combine-cta"') &&
+        !dashboardSource.includes('One meal, separate items?') &&
+        dashboardSource.includes('onclick="openMealBuilder()" title="Build a meal"'),
+    'the Nutrition tracker must keep Build-a-Meal on its existing icon without a duplicate callout card'
 );
 
 assert.ok(
@@ -53,26 +61,36 @@ assert.ok(
 );
 
 assert.ok(
-    dashboardSource.includes("id: 'build-meal-log-share-v1'") &&
-        dashboardSource.includes("sel: '#meal-builder-combine-cta'") &&
-        dashboardSource.includes("title:'Combine a full meal'") &&
-        dashboardSource.includes("sel:'#meal-builder-combine-cta"),
-    'both returning-user Feature Drops and the guided tour must teach the combined-meal flow'
+    dashboardSource.includes("id: 'build-meal-icon-ig-layout-v1'") &&
+        dashboardSource.includes("sel: '.meal-icon-btn[onclick*=\"openMealBuilder\"]'") &&
+        dashboardSource.includes("title:'Build and share a full meal'") &&
+        dashboardSource.includes("sel:'.meal-icon-btn[onclick*=\"openMealBuilder\"]"),
+    'both returning-user Feature Drops and the guided tour must teach the icon-based meal flow'
 );
 
 assert.ok(
-    baseStyles.includes('.meal-builder-combine-cta') &&
+    !baseStyles.includes('.meal-builder-combine-cta') &&
+        !premiumStyles.includes('.meal-builder-combine-cta') &&
         baseStyles.includes('.meal-builder-footer-actions') &&
-        premiumStyles.includes('html[data-pbb-theme="light"] .meal-builder-combine-cta') &&
         premiumStyles.includes('html[data-pbb-theme="light"] .meal-builder-save-only-btn'),
-    'the new controls must have explicit base and light-theme contrast styling'
+    'the removed callout must leave no dead styles while the builder actions retain light-theme contrast'
+);
+
+assert.ok(
+    calorieTrackerSource.includes("showToast('Choose the meal photo for your Instagram layout', 'info');") &&
+        calorieTrackerSource.includes('mealForShare = await attachPhotoToMealForFeedShare(mealForShare, selectedPhoto);') &&
+        calorieTrackerSource.includes("if (!photoDataUrl) throw new Error('Meal photo was not available for the Instagram layout');") &&
+        shareRendererSource.includes("if (cardType === 'meal' && primaryPhotoDataUrl)") &&
+        shareRendererSource.includes('await pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, target);'),
+    'Instagram sharing must attach a meal photo and render the designed full-bleed nutrition layout over it'
 );
 
 assert.ok(
     dashboardSource.includes('dashboard-style-1.css?v=67') &&
         dashboardSource.includes('pbb-premium-overlays.css?v=90') &&
         dashboardSource.includes('dashboard-script-meal-builder.js?v=2') &&
-        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v260'"),
+        dashboardSource.includes('dashboard-script-11-calorie_tracker_functions.js?v=27') &&
+        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v261'"),
     'phones must fetch the new meal-builder UI, behavior, and styles'
 );
 

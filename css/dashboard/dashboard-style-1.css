@@ -5359,67 +5359,6 @@
         transform: translateY(0);
     }
 
-    .meal-builder-combine-cta {
-        width: min(100%, 560px);
-        margin: 0 auto 25px;
-        padding: 13px 14px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        border: 1px solid rgba(123, 168, 131, 0.32);
-        border-radius: 16px;
-        background: linear-gradient(135deg, rgba(123, 168, 131, 0.14), rgba(59, 130, 246, 0.08));
-        color: var(--text-main);
-        -webkit-text-fill-color: var(--text-main);
-        text-align: left;
-        font-family: inherit;
-        cursor: pointer;
-    }
-
-    .meal-builder-combine-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 11px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        background: var(--primary);
-        color: #fff;
-        -webkit-text-fill-color: #fff;
-        font-size: 1.45rem;
-        font-weight: 800;
-    }
-
-    .meal-builder-combine-copy {
-        min-width: 0;
-        display: flex;
-        flex: 1;
-        flex-direction: column;
-        gap: 3px;
-    }
-
-    .meal-builder-combine-copy strong {
-        color: var(--text-main);
-        -webkit-text-fill-color: var(--text-main);
-        font-size: 0.9rem;
-        line-height: 1.2;
-    }
-
-    .meal-builder-combine-copy small {
-        color: var(--text-muted);
-        -webkit-text-fill-color: var(--text-muted);
-        font-size: 0.75rem;
-        line-height: 1.35;
-    }
-
-    .meal-builder-combine-arrow {
-        color: var(--text-muted);
-        -webkit-text-fill-color: var(--text-muted);
-        flex-shrink: 0;
-        font-size: 1.55rem;
-    }
-
     /* Recent Meals Modal */
     .recent-meals-modal {
         position: fixed;

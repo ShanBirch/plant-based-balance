@@ -19,7 +19,68 @@ function extractFunction(name, nextFunctionName) {
 }
 
 test('dashboard loads the refreshed meal share logic', () => {
-    assert.match(dashboardSource, /dashboard-script-11-calorie_tracker_functions\.js\?v=26/g);
+    assert.match(dashboardSource, /dashboard-script-11-calorie_tracker_functions\.js\?v=27/g);
+});
+
+test('Instagram meal shares collect a photo and send the designed photo-backed card', async () => {
+    let pickerCalls = 0;
+    let attachedFile = null;
+    let instagramCall = null;
+    const selectedFile = { type: 'image/jpeg', name: 'finished-meal.jpg' };
+    const context = {
+        window: {
+            currentUser: { id: 'user-1' },
+            shareBalanceCardToInstagram: async (payload, target, options) => {
+                instagramCall = { payload, target, options };
+                return true;
+            },
+            awardBalanceSocialShareXP: async () => ({ success: true })
+        },
+        getFreshMealRecordForFeedShare: async meal => meal,
+        getMealSharePhotoUrl: meal => meal.photo_url || '',
+        getMealCapturedPhotoFallback: () => null,
+        clearMealCapturedPhotoFallback: () => {},
+        pickMealFeedSharePhotoFile: async () => {
+            pickerCalls += 1;
+            return selectedFile;
+        },
+        attachPhotoToMealForFeedShare: async (meal, file) => {
+            attachedFile = file;
+            return { ...meal, photo_url: 'https://images.example/finished-meal.jpg' };
+        },
+        buildMealFeedCardPayload: meal => ({
+            card_type: 'meal',
+            photo_url: meal.photo_url,
+            calories: 612,
+            protein: 38,
+            carbs: 74,
+            fat: 19
+        }),
+        getMealInstagramPhotoDataUrl: async payload => payload.photo_url ? 'data:image/jpeg;base64,meal' : '',
+        markMealInstagramShareUsedToday: () => {},
+        getMealInstagramShareButtonText: () => 'IG Feed',
+        showToast: () => {},
+        console
+    };
+
+    vm.runInNewContext(
+        `${extractFunction('shareMealRecordToInstagram', 'closeMealFeedSharePrompt')}\nthis.shareMealRecordToInstagram = shareMealRecordToInstagram;`,
+        context
+    );
+
+    const opened = await context.shareMealRecordToInstagram(
+        { id: 'meal-1', meal_type: 'dinner' },
+        null,
+        'feed'
+    );
+
+    assert.equal(opened, true);
+    assert.equal(pickerCalls, 1);
+    assert.equal(attachedFile, selectedFile);
+    assert.equal(instagramCall.target, 'feed');
+    assert.equal(instagramCall.payload.card_type, 'meal');
+    assert.equal(instagramCall.payload.photo_url, 'https://images.example/finished-meal.jpg');
+    assert.equal(instagramCall.options.photoDataUrl, 'data:image/jpeg;base64,meal');
 });
 
 test('meal Feed shares attach a missing photo before creating the story', async () => {

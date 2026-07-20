@@ -2255,7 +2255,7 @@ if(!window._pbbIsIOSSafari) {
         <div class="view-section" id="calorie-tracker">
             <div style="padding: 25px;">
                 <!-- Log Meal Buttons - Camera, Gallery, Barcode, Text, Build, Recent -->
-                <div style="text-align: center; margin: 0 0 14px 0; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+                <div style="text-align: center; margin: 0 0 25px 0; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
                     <button class="meal-icon-btn" onclick="openMealCameraDirect('tracker')" title="Take a photo">
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
@@ -2315,15 +2315,6 @@ if(!window._pbbIsIOSSafari) {
                         </svg>
                     </button>
                 </div>
-
-                <button id="meal-builder-combine-cta" class="meal-builder-combine-cta" onclick="openMealBuilder()" type="button">
-                    <span class="meal-builder-combine-icon" aria-hidden="true">+</span>
-                    <span class="meal-builder-combine-copy">
-                        <strong>One meal, separate items?</strong>
-                        <small>Combine barcodes, photos or typed foods, total the macros, then log and share it as one meal.</small>
-                    </span>
-                    <span class="meal-builder-combine-arrow" aria-hidden="true">&#8250;</span>
-                </button>
 
                 <!-- Daily Summary Card -->
                 <div class="calorie-tracker-summary">
@@ -13420,7 +13411,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'[title="Scan barcode"]', title:'Barcode scanner', body:"Scan any food packaging barcode to instantly pull up its nutrition info and log it." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealTextInput"],[title="Type your meal"]', title:'Type your meal', body:"Prefer to type? Describe your meal in words and the AI will log the calories and macros for you." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openQuickManualEntry"],.camera-btn-widget[onclick*="openQuickManualEntry"],[title="Quick log calories & macros"]', title:'Quick log calories & macros', body:"Already know the numbers? Tap Quick Log to enter calories and macros directly. It is the fastest way to track something when you do not need AI, a photo, or a barcode." },
-    { tab:'meals', sel:'#meal-builder-combine-cta,.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"],[title="Build a meal"]', title:'Combine a full meal', body:"When a meal has separate parts, add each barcode, photo or typed food here. Balance totals everything, logs one complete meal, then lets you share it to Feed or Instagram." },
+    { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"],[title="Build a meal"]', title:'Build and share a full meal', body:"When a meal has separate parts, tap Build-a-Meal. Add each barcode, photo or typed food, log the complete meal, then choose Feed or Instagram. Instagram places the meal details over your food photo." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openRecentMealsModal"],.camera-btn-widget[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Use Recent & saved meals to re-log food you have already tracked. Tap the clock, pick the meal, and it drops back into today." },
     { tab:'meals', sel:'#meals-log-list,.meal-log-card', title:'Share meals to Feed', body:"Share any logged meal to Feed. The first meal share each day earns +15 XP, and later shares still post without extra XP.", quick: true },
     { tab:'meals', sel:'#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn', title:'Two shares, two rewards', body:"Share food to Balance Feed for +15 XP, then share it to Instagram Feed for another +15 XP. One does not block the other.", quick: true },
@@ -14394,12 +14385,12 @@ if(!window._pbbIsIOSSafari) {
       body: "Prefer to type? Describe your meal in words and the AI will log the calories and macros for you."
     },
     {
-      id: 'build-meal-log-share-v1',
+      id: 'build-meal-icon-ig-layout-v1',
       tab: 'meals',
       subtab: 'calorie-tracker',
-      sel: '#meal-builder-combine-cta',
-      title: 'Combine, log and share one meal',
-      body: "Logging separate ingredients? Open this first, add each barcode, photo or typed food, and Balance will total it as one meal. When you log it, choose Feed or Instagram from the share prompt."
+      sel: '.meal-icon-btn[onclick*="openMealBuilder"]',
+      title: 'Build, log and share one meal',
+      body: "Use the Build-a-Meal icon for meals with separate ingredients. Add each item, log the complete meal, then choose Feed or Instagram. For Instagram, choose your meal photo and Balance adds the designed nutrition layout over it."
     },
     {
       id: 'feed-composer-text-media-v1',
@@ -17563,7 +17554,7 @@ document.write('<script src="js/dashboard/dashboard-script-10-points_widget_func
             }
 
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=26';
+            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=27';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -17623,7 +17614,7 @@ document.write('<script src="js/dashboard/dashboard-script-10-points_widget_func
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=26" data-pbb-calorie-tracker="1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=27" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js?v=2" data-pbb-meal-builder="1"><\/script>');
     }
 })();
