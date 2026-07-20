@@ -131,10 +131,6 @@ async function prepareFeedSource() {
 async function challengeCard() {
   const cropped = await sharp(path.join(sourceDir, 'challenge-home.jpg'))
     .extract({ left: 34, top: 282, width: 522, height: 214 })
-    .composite([{ input: svg(522, 214, `
-      <rect x="120" y="100" width="268" height="42" rx="21" fill="#4F8A63"/>
-      <text x="254" y="128" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="800" fill="white" letter-spacing="1">COACH-LED CHALLENGE</text>
-    `) }])
     .jpeg({ quality: 96 })
     .toBuffer();
   return cropped;
@@ -295,7 +291,7 @@ async function renderProgress(spec) {
   const pbLeft = Math.round(spec.width * 0.47);
   const pbTop = Math.round(spec.height * 0.43);
   const proof = svg(spec.width, spec.height, `
-    <rect x="${spec.width * 0.1}" y="${spec.height * 0.86}" width="${spec.width * 0.8}" height="${spec.height * 0.085}" rx="${spec.width * 0.045}" fill="${palette.goldLight}"/>
+    <rect x="${spec.width * 0.05}" y="${spec.height * 0.86}" width="${spec.width * 0.9}" height="${spec.height * 0.085}" rx="${spec.width * 0.045}" fill="${palette.goldLight}"/>
     <text x="${spec.width * 0.5}" y="${spec.height * 0.912}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="${spec.width * 0.035}" font-weight="900" fill="${palette.ink}">PLANS • PERSONAL BESTS • MOMENTUM</text>
   `);
   return sharp(backgroundSvg(spec.width, spec.height, 'green')).composite([

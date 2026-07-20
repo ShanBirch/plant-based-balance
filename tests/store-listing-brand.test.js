@@ -67,3 +67,10 @@ test('store visuals use approved phone dimensions and no character assets', asyn
     const feature = await sharp(path.join(root, 'store-listing', 'google-play', 'en-AU', 'images', 'featureGraphic.png')).metadata();
     assert.deepEqual([feature.width, feature.height], [1024, 500]);
 });
+
+test('store visual generator keeps listing callouts readable and authentic', () => {
+    const generator = read('scripts/generate-store-listing-assets.mjs');
+
+    assert.doesNotMatch(generator, />COACH-LED CHALLENGE<\/text>/);
+    assert.match(generator, /x="\$\{spec\.width \* 0\.05\}"[^>]+width="\$\{spec\.width \* 0\.9\}"/);
+});
