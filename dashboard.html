@@ -1849,13 +1849,13 @@ if(!window._pbbIsIOSSafari) {
 
     <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=9"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=10"><\/script>');
     document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=25"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=10"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=21"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=9');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=10');
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=25');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=10');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=21');
@@ -13396,7 +13396,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#weekly-meal-evolution-home-card', title:'Next week, tailored to you', body:"Track a useful week of meals and Balance will keep the foods you enjoy, make small adjustments toward your targets, and introduce two fresh variations for next week.", quick: true, condition: function(){ var c = document.getElementById('weekly-meal-evolution-home-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
     { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Sunday board day can earn 5 XP if you are down from last Sunday, plus 5 XP for sharing the review card to Feed.", quick: true },
-    { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
+    { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, take front, side, and back photos for 10 XP. Review each photo, then use it or retake it before moving to the next angle.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#progress-photo-share-feed-btn,#weekly-progress-photo-done-card', title:'Share progress photos', body:"After your Monday progress photos are saved, share them to Feed for an extra 20 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-done-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#weekly-checkin-card', title:'Weekly Review', body:"A shimmering gold review card shows the person's onboarding goal, weekly progress, check-ins, mood signals, and one clear action to set next week goals.", quick: true, condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
@@ -14182,6 +14182,14 @@ if(!window._pbbIsIOSSafari) {
       sel: '#weekly-progress-photo-card',
       title: 'Weekly progress photos',
       body: "Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP. The card stays up until Tuesday morning or until your set is saved.",
+      condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; }
+    },
+    {
+      id: 'weekly-progress-photo-review-v1',
+      tab: 'dashboard',
+      sel: '#weekly-progress-photo-card',
+      title: 'Review before you save',
+      body: "After each weekly progress photo, check the full photo and choose Use photo or Retake before moving to the next angle.",
       condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; }
     },
     {

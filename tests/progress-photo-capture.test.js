@@ -36,8 +36,27 @@ assert.ok(
 
 assert.ok(
     progressSource.includes('input.onchange = handleProgressPhotoSelect') &&
-        progressSource.includes('continueProgressPhotoShotFlow(index, file)'),
-    'progress photo file input should restore the legacy handler and continue the guided three-shot flow'
+        progressSource.includes('renderProgressPhotoShotReview(index, file)'),
+    'progress photo file input should restore the legacy handler and open the review step'
+);
+
+assert.ok(
+    progressSource.includes('function renderProgressPhotoShotReview(index, file)') &&
+        progressSource.includes('id="progress-photo-review-retake"') &&
+        progressSource.includes('id="progress-photo-review-accept"'),
+    'each captured progress photo should show preview controls to retake or accept it'
+);
+
+assert.ok(
+    /revokeProgressPhotoReviewUrl\(\);\s+captureProgressPhotoShot\(index\);/.test(progressSource) &&
+        /revokeProgressPhotoReviewUrl\(\);\s+continueProgressPhotoShotFlow\(index, file\);/.test(progressSource),
+    'retake should reopen the current angle while accept should continue the three-shot flow'
+);
+
+assert.ok(
+    dashboardSource.includes("id: 'weekly-progress-photo-review-v1'") &&
+        dashboardSource.includes('choose Use photo or Retake before moving to the next angle'),
+    'the photo review change should be announced in the feature reveal'
 );
 
 console.log('progress photo capture tests passed');

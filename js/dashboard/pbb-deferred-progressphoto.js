@@ -569,9 +569,17 @@ let progressPhotoCaptureState = null;
     }
 
     function closeProgressPhotoShotGuide() {
+        revokeProgressPhotoReviewUrl();
         progressPhotoCaptureState = null;
         const overlay = document.getElementById('progress-photo-shot-guide');
         if (overlay) overlay.style.display = 'none';
+    }
+
+    function revokeProgressPhotoReviewUrl() {
+        const reviewUrl = progressPhotoCaptureState?.reviewUrl;
+        if (!reviewUrl) return;
+        try { URL.revokeObjectURL(reviewUrl); } catch (error) {}
+        progressPhotoCaptureState.reviewUrl = null;
     }
 
     function renderProgressPhotoShotGuide(index) {
@@ -626,6 +634,63 @@ let progressPhotoCaptureState = null;
         renderProgressPhotoShotGuide(0);
     }
 
+    function renderProgressPhotoShotReview(index, file) {
+        if (!progressPhotoCaptureState || !file) return;
+
+        const overlay = getProgressPhotoShotOverlay();
+        const shot = PROGRESS_PHOTO_SHOTS[index] || PROGRESS_PHOTO_SHOTS[0];
+        const isLastShot = index === PROGRESS_PHOTO_SHOTS.length - 1;
+        const nextShot = PROGRESS_PHOTO_SHOTS[index + 1];
+        revokeProgressPhotoReviewUrl();
+
+        let reviewUrl = '';
+        try {
+            reviewUrl = URL.createObjectURL(file);
+            progressPhotoCaptureState.reviewUrl = reviewUrl;
+        } catch (error) {
+            console.warn('Could not create progress photo preview:', error);
+        }
+
+        const acceptLabel = isLastShot
+            ? 'Use photo and save set'
+            : 'Use photo, take ' + nextShot.title.toLowerCase();
+
+        overlay.innerHTML = ''
+            + '<div class="progress-photo-review-panel" style="width:100%; max-width:420px; max-height:100%; color:#fff; display:flex; flex-direction:column;">'
+            + '<div class="progress-photo-review-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;">'
+            + '<div>'
+            + '<div style="font-size:0.78rem; color:rgba(255,255,255,0.62); font-weight:800; text-transform:uppercase;">Review photo</div>'
+            + '<div style="font-size:1.35rem; line-height:1.15; font-weight:800; margin-top:5px;">Keep this ' + shot.title.toLowerCase() + ' photo?</div>'
+            + '</div>'
+            + '<button type="button" id="progress-photo-review-close" aria-label="Close progress photo review" style="flex:0 0 auto; width:42px; height:42px; border-radius:50%; border:none; background:rgba(255,255,255,0.12); color:#fff; font-size:1.45rem; line-height:1; display:flex; align-items:center; justify-content:center;">&times;</button>'
+            + '</div>'
+            + '<div style="min-height:0; flex:1; display:flex; align-items:center; justify-content:center; background:#000; border:1px solid rgba(255,255,255,0.14); border-radius:16px; overflow:hidden;">'
+            + (reviewUrl
+                ? '<img src="' + reviewUrl + '" alt="' + shot.title + ' progress photo preview" style="display:block; width:100%; max-height:55vh; object-fit:contain;">'
+                : '<div style="padding:32px 20px; color:rgba(255,255,255,0.7); text-align:center;">Preview unavailable. Retake the photo to try again.</div>')
+            + '</div>'
+            + '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;">'
+            + '<button type="button" id="progress-photo-review-retake" style="min-height:52px; border:1px solid rgba(255,255,255,0.28); border-radius:14px; background:rgba(255,255,255,0.1); color:#fff; padding:13px 12px; font-size:0.95rem; font-weight:800;">Retake</button>'
+            + '<button type="button" id="progress-photo-review-accept" style="min-height:52px; border:none; border-radius:14px; background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; padding:13px 12px; font-size:0.95rem; font-weight:800;">' + acceptLabel + '</button>'
+            + '</div>'
+            + '<div style="text-align:center; color:rgba(255,255,255,0.58); font-size:0.82rem; margin-top:12px;">Photo ' + (index + 1) + ' of ' + PROGRESS_PHOTO_SHOTS.length + '</div>'
+            + '</div>';
+
+        const closeBtn = document.getElementById('progress-photo-review-close');
+        const retakeBtn = document.getElementById('progress-photo-review-retake');
+        const acceptBtn = document.getElementById('progress-photo-review-accept');
+        if (closeBtn) closeBtn.onclick = closeProgressPhotoShotGuide;
+        if (retakeBtn) retakeBtn.onclick = function() {
+            revokeProgressPhotoReviewUrl();
+            captureProgressPhotoShot(index);
+        };
+        if (acceptBtn) acceptBtn.onclick = function() {
+            revokeProgressPhotoReviewUrl();
+            continueProgressPhotoShotFlow(index, file);
+        };
+        overlay.style.display = 'flex';
+    }
+
     function getProgressPhotoNextShotIndex() {
         if (!progressPhotoCaptureState || !Array.isArray(progressPhotoCaptureState.shots)) return -1;
         return progressPhotoCaptureState.shots.findIndex(function(shot) {
@@ -644,7 +709,7 @@ let progressPhotoCaptureState = null;
                 restoreCurrentGuide();
                 return;
             }
-            continueProgressPhotoShotFlow(index, file);
+            renderProgressPhotoShotReview(index, file);
         };
         input.click();
         return true;
@@ -690,7 +755,7 @@ let progressPhotoCaptureState = null;
                     restoreCurrentGuide();
                     return;
                 }
-                continueProgressPhotoShotFlow(index, file);
+                renderProgressPhotoShotReview(index, file);
             }, shot.label, {
                 forceWebCamera: true,
                 defaultTimerSeconds: 10
@@ -948,7 +1013,7 @@ let progressPhotoCaptureState = null;
         if (!file) return;
         const activeShotIndex = getProgressPhotoNextShotIndex();
         if (activeShotIndex >= 0) {
-            continueProgressPhotoShotFlow(activeShotIndex, file);
+            renderProgressPhotoShotReview(activeShotIndex, file);
         } else {
             await saveProgressPhotoSet([{ meta: PROGRESS_PHOTO_SHOTS[0], file }]);
         }
@@ -996,7 +1061,7 @@ let progressPhotoCaptureState = null;
         if (card) card.style.display = 'none';
         const activeShotIndex = getProgressPhotoNextShotIndex();
         if (activeShotIndex >= 0) {
-            continueProgressPhotoShotFlow(activeShotIndex, file);
+            renderProgressPhotoShotReview(activeShotIndex, file);
             return;
         }
         await saveProgressPhotoSet([{ meta: PROGRESS_PHOTO_SHOTS[0], file }]);
