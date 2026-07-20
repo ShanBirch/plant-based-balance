@@ -5359,6 +5359,67 @@
         transform: translateY(0);
     }
 
+    .meal-builder-combine-cta {
+        width: min(100%, 560px);
+        margin: 0 auto 25px;
+        padding: 13px 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid rgba(123, 168, 131, 0.32);
+        border-radius: 16px;
+        background: linear-gradient(135deg, rgba(123, 168, 131, 0.14), rgba(59, 130, 246, 0.08));
+        color: var(--text-main);
+        -webkit-text-fill-color: var(--text-main);
+        text-align: left;
+        font-family: inherit;
+        cursor: pointer;
+    }
+
+    .meal-builder-combine-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: var(--primary);
+        color: #fff;
+        -webkit-text-fill-color: #fff;
+        font-size: 1.45rem;
+        font-weight: 800;
+    }
+
+    .meal-builder-combine-copy {
+        min-width: 0;
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .meal-builder-combine-copy strong {
+        color: var(--text-main);
+        -webkit-text-fill-color: var(--text-main);
+        font-size: 0.9rem;
+        line-height: 1.2;
+    }
+
+    .meal-builder-combine-copy small {
+        color: var(--text-muted);
+        -webkit-text-fill-color: var(--text-muted);
+        font-size: 0.75rem;
+        line-height: 1.35;
+    }
+
+    .meal-builder-combine-arrow {
+        color: var(--text-muted);
+        -webkit-text-fill-color: var(--text-muted);
+        flex-shrink: 0;
+        font-size: 1.55rem;
+    }
+
     /* Recent Meals Modal */
     .recent-meals-modal {
         position: fixed;
@@ -5930,6 +5991,31 @@
         background: #fff;
     }
 
+    .meal-builder-explainer {
+        margin-bottom: 14px;
+        padding: 12px 14px;
+        border: 1px solid rgba(123, 168, 131, 0.28);
+        border-radius: 13px;
+        background: rgba(123, 168, 131, 0.1);
+        color: var(--text-main);
+        -webkit-text-fill-color: var(--text-main);
+        font-size: 0.8rem;
+        line-height: 1.45;
+    }
+
+    .meal-builder-explainer strong {
+        display: block;
+        margin-bottom: 2px;
+        color: var(--text-main);
+        -webkit-text-fill-color: var(--text-main);
+    }
+
+    .meal-builder-footer-actions {
+        display: grid;
+        grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+        gap: 9px;
+    }
+
     .meal-builder-save-btn {
         width: 100%;
         padding: 14px 20px;
@@ -5950,6 +6036,34 @@
     .meal-builder-save-btn:disabled {
         opacity: 0.4;
         cursor: not-allowed;
+    }
+
+    .meal-builder-save-only-btn {
+        width: 100%;
+        padding: 14px 12px;
+        border: 1px solid var(--primary);
+        border-radius: 14px;
+        background: transparent;
+        color: var(--primary);
+        -webkit-text-fill-color: var(--primary);
+        font-family: inherit;
+        font-size: 0.86rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .meal-builder-save-only-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    .meal-builder-footer-note {
+        margin: 8px 0 0;
+        color: var(--text-muted);
+        -webkit-text-fill-color: var(--text-muted);
+        font-size: 0.72rem;
+        line-height: 1.3;
+        text-align: center;
     }
 
     /* Meal Builder Text-Input Mini-Modal */

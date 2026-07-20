@@ -7484,6 +7484,62 @@ html[data-pbb-theme="light"] .meal-builder-item-name {
     -webkit-text-fill-color: #151515 !important;
 }
 
+.meal-builder-combine-cta,
+.meal-builder-explainer {
+    background: linear-gradient(135deg, rgba(245, 217, 138, 0.11), rgba(255, 255, 255, 0.035)) !important;
+    border-color: rgba(245, 217, 138, 0.2) !important;
+    color: #f8f7f2 !important;
+    -webkit-text-fill-color: #f8f7f2 !important;
+}
+
+.meal-builder-combine-copy strong,
+.meal-builder-explainer strong {
+    color: #f8f7f2 !important;
+    -webkit-text-fill-color: #f8f7f2 !important;
+}
+
+.meal-builder-combine-copy small,
+.meal-builder-combine-arrow,
+.meal-builder-footer-note {
+    color: rgba(248, 247, 242, 0.7) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.7) !important;
+}
+
+.meal-builder-save-only-btn {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(245, 217, 138, 0.45) !important;
+    color: #f5d98a !important;
+    -webkit-text-fill-color: #f5d98a !important;
+}
+
+html[data-pbb-theme="light"] .meal-builder-combine-cta,
+html[data-pbb-theme="light"] .meal-builder-explainer {
+    background: linear-gradient(135deg, rgba(245, 217, 138, 0.2), rgba(255, 255, 255, 0.84)) !important;
+    border-color: rgba(184, 137, 43, 0.22) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .meal-builder-combine-copy strong,
+html[data-pbb-theme="light"] .meal-builder-explainer strong {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .meal-builder-combine-copy small,
+html[data-pbb-theme="light"] .meal-builder-combine-arrow,
+html[data-pbb-theme="light"] .meal-builder-footer-note {
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] .meal-builder-save-only-btn {
+    background: rgba(255, 255, 255, 0.76) !important;
+    border-color: rgba(184, 137, 43, 0.42) !important;
+    color: #6f531e !important;
+    -webkit-text-fill-color: #6f531e !important;
+}
+
 html[data-pbb-theme="light"] .meal-builder-close,
 html[data-pbb-theme="light"] .meal-builder-text-close,
 html[data-pbb-theme="light"] .meal-builder-total-label,

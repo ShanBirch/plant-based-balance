@@ -121,7 +121,7 @@
                 '<line x1="12" y1="8" x2="12" y2="16"></line>' +
                 '<line x1="8" y1="12" x2="16" y2="12"></line>' +
                 '</svg>' +
-                '<p>No items yet.<br><span style="font-size:0.8rem;">Add items below to build your meal.</span></p>' +
+                '<p>No items yet.<br><span style="font-size:0.8rem;">Scan or add each ingredient separately. Nothing is logged until the full meal is ready.</span></p>' +
                 '</div>';
             return;
         }
@@ -156,10 +156,11 @@
     }
 
     function updateSaveButtonState() {
-        var btn = document.getElementById('meal-builder-save-btn');
-        if (!btn) return;
         var ready = builderState.items.length > 0 && !builderState.isAdding;
-        btn.disabled = !ready;
+        var logBtn = document.getElementById('meal-builder-save-btn');
+        var saveBtn = document.getElementById('meal-builder-save-only-btn');
+        if (logBtn) logBtn.disabled = !ready;
+        if (saveBtn) saveBtn.disabled = !ready;
     }
 
     // ─────────────────────────────────────────────
@@ -888,11 +889,15 @@
     }
 
     // ─────────────────────────────────────────────
-    // Save the built meal to user_saved_meals
+    // Save the built meal for later, or log it now as one combined meal.
+    // Logging uses the normal meal pipeline so the existing Feed / Instagram
+    // share prompt appears after the complete meal is saved.
     // ─────────────────────────────────────────────
 
-    window.saveBuiltMeal = async function () {
+    window.saveBuiltMeal = async function (options) {
         if (builderState.items.length === 0 || builderState.isAdding) return;
+
+        var logNow = !!(options && options.logNow);
 
         var nameEl = document.getElementById('meal-builder-name');
         var name = (nameEl && nameEl.value.trim()) || suggestMealName();
@@ -912,43 +917,77 @@
             return;
         }
 
-        var saveBtn = document.getElementById('meal-builder-save-btn');
-        if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+        var logBtn = document.getElementById('meal-builder-save-btn');
+        var saveOnlyBtn = document.getElementById('meal-builder-save-only-btn');
+        if (logBtn) logBtn.disabled = true;
+        if (saveOnlyBtn) saveOnlyBtn.disabled = true;
+        if (logNow && logBtn) logBtn.textContent = 'Logging meal...';
+        if (!logNow && saveOnlyBtn) saveOnlyBtn.textContent = 'Saving...';
 
         try {
-            var row = {
-                user_id: userId,
-                name: name.substring(0, 60),
-                food_items: builderState.items,
-                calories: builderState.totals.calories,
-                protein_g: builderState.totals.protein_g,
-                carbs_g: builderState.totals.carbs_g,
-                fat_g: builderState.totals.fat_g,
-                fiber_g: builderState.totals.fiber_g,
-                micronutrients: builderState.micronutrients || {}
-            };
+            if (logNow) {
+                if (typeof saveMealLogWithType !== 'function') {
+                    throw new Error('Meal logger is not ready yet');
+                }
 
-            var resp = await window.supabaseClient
-                .from('user_saved_meals')
-                .insert(row)
-                .select();
+                // A camera or barcode launched from the builder normally clears
+                // this one-shot flag itself. Clear it defensively so the finished
+                // meal cannot be intercepted and added back into its own builder.
+                window._builderInterceptNextQuickMeal = false;
 
-            if (resp.error) throw resp.error;
+                var mealType = typeof autoDetectMealType === 'function' ? autoDetectMealType() : 'snack';
+                await saveMealLogWithType({
+                    foodItems: builderState.items,
+                    totals: builderState.totals,
+                    micronutrients: builderState.micronutrients || {},
+                    confidence: 'high',
+                    inputMethod: 'builder',
+                    mealType: mealType,
+                    mealDescription: name.substring(0, 60),
+                    notes: 'Built meal: ' + name.substring(0, 60)
+                });
+            } else {
+                var row = {
+                    user_id: userId,
+                    name: name.substring(0, 60),
+                    food_items: builderState.items,
+                    calories: builderState.totals.calories,
+                    protein_g: builderState.totals.protein_g,
+                    carbs_g: builderState.totals.carbs_g,
+                    fat_g: builderState.totals.fat_g,
+                    fiber_g: builderState.totals.fiber_g,
+                    micronutrients: builderState.micronutrients || {}
+                };
+
+                var resp = await window.supabaseClient
+                    .from('user_saved_meals')
+                    .insert(row)
+                    .select();
+
+                if (resp.error) throw resp.error;
+
+                // Invalidate and refresh both saved-meal caches.
+                window._savedMealsCache = null;
+                refreshNativeSavedMealsCache();
+            }
 
             closeMealBuilder();
-            showBuilderToast('"' + name.substring(0, 30) + '" saved!', 'success');
-
-            // Invalidate the saved-meals cache so the next open of the Recent
-            // Meals modal shows this newly saved meal without a stale list.
-            window._savedMealsCache = null;
-
-            // Refresh the native saved-meals cache so the app shortcut overlay
-            // can show the new meal without reopening the WebView.
-            refreshNativeSavedMealsCache();
+            if (logNow) {
+                try { if (typeof recalculateDailyNutrition === 'function') await recalculateDailyNutrition(); } catch (e) {}
+                try { if (typeof loadTodayNutrition === 'function') await loadTodayNutrition(); } catch (e) {}
+                try { if (typeof loadMicronutrientInsights === 'function') await loadMicronutrientInsights(); } catch (e) {}
+                try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch (e) {}
+                showBuilderToast('"' + name.substring(0, 30) + '" logged. Choose where to share below.', 'success');
+            } else {
+                showBuilderToast('"' + name.substring(0, 30) + '" saved for later!', 'success');
+            }
         } catch (err) {
-            console.error('Error saving built meal:', err);
-            showBuilderToast('Could not save meal. Please try again.', 'error');
-            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Meal'; }
+            console.error(logNow ? 'Error logging built meal:' : 'Error saving built meal:', err);
+            showBuilderToast(logNow ? 'Could not log meal. Please try again.' : 'Could not save meal. Please try again.', 'error');
+            updateSaveButtonState();
+        } finally {
+            if (logBtn) logBtn.textContent = 'Log meal & choose share';
+            if (saveOnlyBtn) saveOnlyBtn.textContent = 'Save for later';
         }
     };
 
