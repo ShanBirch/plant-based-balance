@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v261'; // v261: Build-a-Meal icon flow and photo-backed Instagram layout
+const CACHE_NAME = 'pbb-app-v261'; // v261: photo-backed meal sharing with return confirmation
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

@@ -1804,6 +1804,124 @@ function getMealInstagramShareButtonText() {
     return isMealInstagramShareUsedToday() ? 'IG Feed' : `IG Feed (+${MEAL_FEED_SHARE_XP} XP)`;
 }
 
+const PBB_PENDING_MEAL_INSTAGRAM_SHARE_KEY = 'pbbPendingMealInstagramShare';
+let pbbMealInstagramReturnFinalizing = false;
+
+function readPendingMealInstagramShare() {
+    try {
+        const raw = localStorage.getItem(PBB_PENDING_MEAL_INSTAGRAM_SHARE_KEY);
+        if (!raw) return null;
+        const receipt = JSON.parse(raw);
+        if (!receipt || !receipt.mealId || !receipt.startedAt) return null;
+        if ((Date.now() - Number(receipt.startedAt)) > (30 * 60 * 1000)) {
+            localStorage.removeItem(PBB_PENDING_MEAL_INSTAGRAM_SHARE_KEY);
+            return null;
+        }
+        return receipt;
+    } catch (_) {
+        return null;
+    }
+}
+
+function writePendingMealInstagramShare(receipt) {
+    try {
+        localStorage.setItem(PBB_PENDING_MEAL_INSTAGRAM_SHARE_KEY, JSON.stringify(receipt));
+    } catch (_) {}
+}
+
+function queuePendingMealInstagramShare(mealId, target) {
+    writePendingMealInstagramShare({
+        mealId: String(mealId),
+        target: target === 'feed' ? 'feed' : 'story',
+        userId: String(window.currentUser?.id || ''),
+        startedAt: Date.now(),
+        leftBalance: false
+    });
+}
+
+function clearPendingMealInstagramShare() {
+    try {
+        localStorage.removeItem(PBB_PENDING_MEAL_INSTAGRAM_SHARE_KEY);
+    } catch (_) {}
+}
+
+function markPendingMealInstagramShareLeftBalance() {
+    const receipt = readPendingMealInstagramShare();
+    if (!receipt) return;
+    receipt.leftBalance = true;
+    writePendingMealInstagramShare(receipt);
+}
+
+function refreshMealInstagramShareButtons() {
+    document.querySelectorAll(
+        '#mealDetailIgStoryBtn,#mealBreakdownIgBtn,#meal-feed-share-prompt button[onclick*="sharePendingMealToInstagram"]'
+    ).forEach(button => {
+        if (!button) return;
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.textContent = getMealInstagramShareButtonText();
+    });
+}
+
+async function finalizePendingMealInstagramShare(options = {}) {
+    const receipt = readPendingMealInstagramShare();
+    if (!receipt || pbbMealInstagramReturnFinalizing || document.visibilityState === 'hidden') return null;
+    if (!options.force && !receipt.leftBalance) return null;
+    if (!window.currentUser?.id || !window.db?.points?.awardPoints) return null;
+    if (receipt.userId && String(window.currentUser.id) !== String(receipt.userId)) {
+        clearPendingMealInstagramShare();
+        return null;
+    }
+
+    pbbMealInstagramReturnFinalizing = true;
+    try {
+        let xpResult = null;
+        if (receipt.target === 'feed' && typeof window.awardBalanceSocialShareXP === 'function') {
+            xpResult = await window.awardBalanceSocialShareXP('meal', 'instagram_feed', receipt.mealId);
+            if (xpResult == null) return null;
+            if (xpResult?.success) markMealInstagramShareUsedToday();
+        }
+
+        clearPendingMealInstagramShare();
+        refreshMealInstagramShareButtons();
+        if (receipt.target === 'feed') {
+            showToast(
+                xpResult?.success
+                    ? `Meal shared to Instagram! +${MEAL_FEED_SHARE_XP} XP`
+                    : `Meal shared to Instagram. Today's +${MEAL_FEED_SHARE_XP} XP is already claimed.`,
+                'success'
+            );
+        } else {
+            showToast('Meal shared to Instagram Story!', 'success');
+        }
+        return xpResult || { success: true };
+    } catch (error) {
+        console.warn('Could not finish the Instagram meal-share receipt yet:', error);
+        return null;
+    } finally {
+        pbbMealInstagramReturnFinalizing = false;
+    }
+}
+
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') {
+        markPendingMealInstagramShareLeftBalance();
+        return;
+    }
+    setTimeout(() => finalizePendingMealInstagramShare(), 180);
+});
+
+window.addEventListener('focus', function() {
+    const receipt = readPendingMealInstagramShare();
+    if (!receipt) return;
+    const shareSheetHadTimeToOpen = (Date.now() - Number(receipt.startedAt)) > 500;
+    setTimeout(() => finalizePendingMealInstagramShare({
+        force: receipt.leftBalance || shareSheetHadTimeToOpen
+    }), 180);
+});
+
+window.finalizePendingMealInstagramShare = finalizePendingMealInstagramShare;
+
 function isMealSharedToFeed(mealId) {
     if (!mealId) return false;
     if (getMealFeedSharedSet().has(String(mealId))) return true;
@@ -2423,26 +2541,37 @@ async function shareMealRecordToInstagram(meal, btn, target = 'story') {
         if (!photoDataUrl) throw new Error('Meal photo was not available for the Instagram layout');
         const safeTarget = target === 'feed' ? 'feed' : 'story';
         const opened = await window.shareBalanceCardToInstagram(cardPayload, safeTarget, {
-            photoDataUrl
+            photoDataUrl,
+            onSharePrepared: () => {
+                if (typeof queuePendingMealInstagramShare === 'function') {
+                    queuePendingMealInstagramShare(mealForShare.id, safeTarget);
+                }
+            }
         });
-        if (!opened) return false;
+        if (!opened) {
+            if (typeof clearPendingMealInstagramShare === 'function') clearPendingMealInstagramShare();
+            return false;
+        }
 
         let xpResult = null;
-        if (safeTarget === 'feed' && typeof window.awardBalanceSocialShareXP === 'function') {
-            xpResult = await window.awardBalanceSocialShareXP('meal', 'instagram_feed', mealForShare.id);
-            if (xpResult?.success) markMealInstagramShareUsedToday();
+        const nativeInstagramHandoff = typeof isBalanceNativeInstagramSurface === 'function'
+            && isBalanceNativeInstagramSurface();
+        const pendingReceipt = typeof readPendingMealInstagramShare === 'function'
+            ? readPendingMealInstagramShare()
+            : null;
+        if (!nativeInstagramHandoff || pendingReceipt?.leftBalance) {
+            if (typeof finalizePendingMealInstagramShare === 'function') {
+                xpResult = await finalizePendingMealInstagramShare({ force: true });
+            } else if (safeTarget === 'feed' && typeof window.awardBalanceSocialShareXP === 'function') {
+                xpResult = await window.awardBalanceSocialShareXP('meal', 'instagram_feed', mealForShare.id);
+                if (xpResult?.success) markMealInstagramShareUsedToday();
+            }
         }
         if (btn) {
             btn.textContent = safeTarget === 'feed'
-                ? (xpResult?.success ? 'IG Feed +15 XP' : 'Opening IG Feed')
+                ? (xpResult?.success ? 'IG Feed +15 XP' : 'Return to Balance for XP')
                 : 'Opening IG Story';
             btn.style.opacity = '1';
-        }
-        if (safeTarget === 'feed') {
-            showToast(
-                xpResult?.success ? 'Meal shared to Instagram Feed! +15 XP' : 'Meal opened in Instagram. Today\'s food IG XP is already claimed.',
-                'success'
-            );
         }
         return true;
     } catch (error) {

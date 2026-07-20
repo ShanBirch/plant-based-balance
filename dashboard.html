@@ -13415,6 +13415,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openRecentMealsModal"],.camera-btn-widget[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Use Recent & saved meals to re-log food you have already tracked. Tap the clock, pick the meal, and it drops back into today." },
     { tab:'meals', sel:'#meals-log-list,.meal-log-card', title:'Share meals to Feed', body:"Share any logged meal to Feed. The first meal share each day earns +15 XP, and later shares still post without extra XP.", quick: true },
     { tab:'meals', sel:'#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn', title:'Two shares, two rewards', body:"Share food to Balance Feed for +15 XP, then share it to Instagram Feed for another +15 XP. One does not block the other.", quick: true },
+    { tab:'meals', sel:'#mealBreakdownIgBtn,#meals-log-list,.meal-log-card', title:'Instagram share confirmation', body:"After sharing a meal to Instagram, return to Balance to see the confirmation and your +15 XP reward.", quick: true },
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#weekly-meal-evolution-btn', fallbackSel:'#browse-plans-pill', title:'A plan that learns your meals', fallbackTitle:'Open your meal plan', body:"At the end of each week, Balance keeps the meals you actually eat, adds two small variations, and suggests simple ways to cover nutrition gaps.", fallbackBody:"Open your meal plan to build next week from the meals you actually ate.", action:function(){ try { var pill=document.getElementById('browse-plans-pill'); if(typeof switchWeek==='function') switchWeek('meal-plan-store', pill); } catch(e){} } },
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Profile settings', body:"Open Profile when you need settings, dietary requirements, password changes, character customisation, or to replay this tour later." },
@@ -14484,6 +14485,14 @@ if(!window._pbbIsIOSSafari) {
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({
+    id: 'meal-instagram-return-confirmation-v1',
+    tab: 'meals',
+    subtab: 'calorie-tracker',
+    sel: '#mealBreakdownIgBtn,#meals-log-list,.meal-log-card',
+    title: 'Instagram share confirmation',
+    body: 'Share a meal photo to Instagram, then return to Balance to see the confirmation and your +15 XP reward.'
+  });
   allFeatures.push({
     id: 'activity-photo-overlay-feed-share-v1',
     tab: 'movement-tab',
