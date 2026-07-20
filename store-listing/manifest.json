@@ -1,12 +1,15 @@
 {
-  "campaign": "Balance plant-based fitness and community",
-  "generatedAt": "2026-07-18",
+  "campaign": "Balance Founders Pass, plant-based fitness and real community",
+  "generatedAt": "2026-07-20",
   "generator": "scripts/generate-store-listing-assets.mjs",
   "sources": {
     "coachPhoto": "store-listing/source/shannon-coaching.jpg",
     "trainingPhoto": "store-listing/source/shannon-training.jpg",
     "challengeScreenshot": "store-listing/source/challenge-home.jpg",
     "veganMealPhoto": "images/meals/sweet_potato_black_bean_tacos.png",
+    "communityMealWin": "store-listing/source/community-meal-win.jpg",
+    "communityMilestoneWin": "store-listing/source/community-milestone-win.jpg",
+    "communityWorkoutWin": "store-listing/source/community-workout-win.jpg",
     "appFrames": "store-listing/source/*.jpg"
   },
   "sourcePolicy": "Real supplied photography and real app screens only. No generated or altered faces. Feed identity and comments are redacted.",
@@ -16,11 +19,12 @@
       "dimensions": "1080x1920",
       "files": [
         "01-coach.png",
-        "02-challenges.png",
-        "03-vegan-meals.png",
+        "02-founders-pass.png",
+        "03-community.png",
         "04-training.png",
-        "05-community.png",
-        "06-progress.png"
+        "05-vegan-meals.png",
+        "06-progress.png",
+        "07-challenges.png"
       ]
     },
     "appStore": {
@@ -28,11 +32,12 @@
       "dimensions": "1290x2796",
       "files": [
         "01-coach.png",
-        "02-challenges.png",
-        "03-vegan-meals.png",
+        "02-founders-pass.png",
+        "03-community.png",
         "04-training.png",
-        "05-community.png",
-        "06-progress.png"
+        "05-vegan-meals.png",
+        "06-progress.png",
+        "07-challenges.png"
       ]
     }
   }

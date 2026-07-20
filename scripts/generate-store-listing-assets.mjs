@@ -22,11 +22,12 @@ const palette = {
 
 const slides = [
   { slug: 'coach', layout: 'coach' },
-  { slug: 'challenges', layout: 'challenges' },
-  { slug: 'vegan-meals', layout: 'meals' },
-  { slug: 'training', layout: 'training' },
+  { slug: 'founders-pass', layout: 'founders' },
   { slug: 'community', layout: 'community' },
+  { slug: 'training', layout: 'training' },
+  { slug: 'vegan-meals', layout: 'meals' },
   { slug: 'progress', layout: 'progress' },
+  { slug: 'challenges', layout: 'challenges' },
 ];
 
 function escapeXml(value) {
@@ -64,7 +65,7 @@ function backgroundSvg(width, height, variant = 'cream') {
   `);
 }
 
-function textSvg({ width, height, eyebrow, lines, y, fill = palette.ink, align = 'middle', x, titleSize, lineHeight, body, bodyY, badge }) {
+function textSvg({ width, height, eyebrow, lines, y, fill = palette.ink, eyebrowFill = palette.goldLight, align = 'middle', x, titleSize, lineHeight, body, bodyY, badge }) {
   const anchor = align === 'start' ? 'start' : 'middle';
   const textX = x ?? (anchor === 'middle' ? width / 2 : width * 0.08);
   const eyebrowSize = Math.round(titleSize * 0.28);
@@ -76,7 +77,7 @@ function textSvg({ width, height, eyebrow, lines, y, fill = palette.ink, align =
   ` : '';
   return svg(width, height, `
     <style>
-      .eyebrow { font-family: Arial, Helvetica, sans-serif; font-size: ${eyebrowSize}px; font-weight: 800; letter-spacing: ${Math.max(3, eyebrowSize * 0.16)}px; fill: ${palette.goldLight}; }
+      .eyebrow { font-family: Arial, Helvetica, sans-serif; font-size: ${eyebrowSize}px; font-weight: 800; letter-spacing: ${Math.max(3, eyebrowSize * 0.16)}px; fill: ${eyebrowFill}; }
       .title { font-family: Arial, Helvetica, sans-serif; font-size: ${titleSize}px; font-weight: 900; letter-spacing: -${Math.max(1, titleSize * 0.025)}px; fill: ${fill}; }
       .body { font-family: Arial, Helvetica, sans-serif; font-size: ${bodySize}px; font-weight: 600; fill: ${fill}; opacity: 0.88; }
       .badge { font-family: Arial, Helvetica, sans-serif; font-size: ${Math.round(titleSize * 0.26)}px; font-weight: 800; letter-spacing: 2px; fill: ${badge?.textFill ?? palette.ink}; }
@@ -101,6 +102,23 @@ async function roundedImage(input, width, height, radius, options = {}) {
 
 async function fullPhoto(input, width, height, position = 'centre') {
   return sharp(input).resize(width, height, { fit: 'cover', position }).jpeg({ quality: 94 }).toBuffer();
+}
+
+async function communityTile(fileName, width, height, label) {
+  const cropped = await sharp(path.join(sourceDir, fileName))
+    .resize(width, height, { fit: 'cover', position: 'centre' })
+    .png()
+    .toBuffer();
+  const radius = Math.round(width * 0.08);
+  const border = Math.max(5, Math.round(width * 0.014));
+  const overlay = svg(width, height, `
+    <defs><linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0.7" stop-color="#090A0D" stop-opacity="0"/><stop offset="1" stop-color="#090A0D" stop-opacity="0.9"/></linearGradient></defs>
+    <rect x="${border / 2}" y="${border / 2}" width="${width - border}" height="${height - border}" rx="${radius}" fill="none" stroke="${palette.goldLight}" stroke-width="${border}"/>
+    <rect width="100%" height="100%" rx="${radius}" fill="url(#fade)"/>
+    <text x="${width * 0.5}" y="${height * 0.935}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="${Math.round(width * 0.075)}" font-weight="900" letter-spacing="${Math.round(width * 0.008)}" fill="${palette.white}">${escapeXml(label)}</text>
+  `);
+  const mask = svg(width, height, `<rect width="100%" height="100%" rx="${radius}" fill="white"/>`);
+  return sharp(cropped).composite([{ input: overlay }, { input: mask, blend: 'dest-in' }]).png().toBuffer();
 }
 
 function frameSvg(width, height, left, top, frameWidth, frameHeight, radius, color = palette.goldLight) {
@@ -160,6 +178,52 @@ async function renderCoach(spec) {
   });
   return sharp(photo).composite([
     { input: overlay }, { input: logo, left: Math.round(spec.width * 0.07), top: Math.round(spec.height * 0.035) }, { input: copy },
+  ]).png().toBuffer();
+}
+
+async function renderFounders(spec) {
+  const title = textSvg({
+    width: spec.width, height: spec.height, eyebrow: 'BALANCE FOUNDERS PASS',
+    lines: ['Six weeks together.', 'Balance for life.'], y: Math.round(spec.height * 0.105),
+    fill: palette.white, titleSize: Math.round(spec.width * 0.069), lineHeight: Math.round(spec.width * 0.081),
+  });
+  const photoWidth = Math.round(spec.width * 0.42);
+  const photoHeight = Math.round(spec.height * 0.43);
+  const photoLeft = Math.round(spec.width * 0.055);
+  const photoTop = Math.round(spec.height * 0.315);
+  const photo = await roundedImage(path.join(sourceDir, 'shannon-coaching.jpg'), photoWidth, photoHeight, Math.round(spec.width * 0.04), { fit: 'cover', position: 'right' });
+  const cardX = spec.width * 0.48;
+  const cardY = spec.height * 0.305;
+  const cardW = spec.width * 0.465;
+  const cardH = spec.height * 0.46;
+  const offer = svg(spec.width, spec.height, `
+    <style>
+      .offer-kicker { font-family: Arial, Helvetica, sans-serif; font-size: ${Math.round(spec.width * 0.024)}px; font-weight: 900; letter-spacing: ${Math.round(spec.width * 0.003)}px; fill: ${palette.gold}; }
+      .offer-head { font-family: Arial, Helvetica, sans-serif; font-size: ${Math.round(spec.width * 0.036)}px; font-weight: 900; fill: ${palette.ink}; }
+      .offer-body { font-family: Arial, Helvetica, sans-serif; font-size: ${Math.round(spec.width * 0.025)}px; font-weight: 650; fill: ${palette.ink}; opacity: 0.82; }
+      .price { font-family: Arial, Helvetica, sans-serif; font-size: ${Math.round(spec.width * 0.034)}px; font-weight: 900; fill: ${palette.ink}; letter-spacing: ${Math.round(spec.width * 0.002)}px; }
+      .footer { font-family: Arial, Helvetica, sans-serif; font-size: ${Math.round(spec.width * 0.029)}px; font-weight: 900; fill: ${palette.ink}; letter-spacing: ${Math.round(spec.width * 0.0015)}px; }
+    </style>
+    <rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="${spec.width * 0.045}" fill="${palette.white}"/>
+    <rect x="${cardX + cardW * 0.09}" y="${cardY + cardH * 0.07}" width="${cardW * 0.55}" height="${spec.width * 0.07}" rx="${spec.width * 0.035}" fill="${palette.goldLight}"/>
+    <text x="${cardX + cardW * 0.365}" y="${cardY + cardH * 0.07 + spec.width * 0.047}" text-anchor="middle" class="price">$99 ONCE</text>
+    ${[
+      ['6 WEEKS', 'of 1-to-1 in-app support'],
+      ['LIFETIME', 'core Balance app access'],
+      ['COMMUNITY', 'vegan fitness community'],
+    ].map((item, index) => {
+      const y = cardY + cardH * (0.31 + index * 0.23);
+      return `<text x="${cardX + cardW * 0.09}" y="${y}" class="offer-kicker">${item[0]}</text>
+        <text x="${cardX + cardW * 0.09}" y="${y + spec.width * 0.042}" class="offer-body">${item[1]}</text>`;
+    }).join('')}
+    <rect x="${spec.width * 0.07}" y="${spec.height * 0.82}" width="${spec.width * 0.86}" height="${spec.height * 0.09}" rx="${spec.width * 0.045}" fill="${palette.goldLight}"/>
+    <text x="${spec.width * 0.5}" y="${spec.height * 0.875}" text-anchor="middle" class="footer">QUESTIONS • DIRECTION • ACCOUNTABILITY</text>
+  `);
+  return sharp(backgroundSvg(spec.width, spec.height, 'purple')).composite([
+    { input: title },
+    { input: frameSvg(spec.width, spec.height, photoLeft, photoTop, photoWidth, photoHeight, Math.round(spec.width * 0.04)) },
+    { input: photo, left: photoLeft, top: photoTop },
+    { input: offer },
   ]).png().toBuffer();
 }
 
@@ -247,30 +311,27 @@ async function renderTraining(spec) {
 }
 
 async function renderCommunity(spec) {
-  const feed = await prepareFeedSource();
-  const feedMeta = await sharp(feed).metadata();
-  const feedCrop = await sharp(feed).extract({
-    left: 0,
-    top: Math.round(feedMeta.height * 0.08),
-    width: feedMeta.width,
-    height: Math.round(feedMeta.height * 0.84),
-  }).jpeg({ quality: 96 }).toBuffer();
-  const phoneWidth = Math.round(spec.width * 0.73);
-  const phoneHeight = Math.round(phoneWidth * 1.45);
-  const screen = await roundedImage(feedCrop, phoneWidth, phoneHeight, Math.round(spec.width * 0.04), { fit: 'cover', position: 'bottom' });
-  const left = Math.round((spec.width - phoneWidth) / 2);
-  const top = Math.round(spec.height * 0.31);
   const title = textSvg({
-    width: spec.width, height: spec.height, eyebrow: 'PLANT-BASED COMMUNITY', lines: ['Your people', 'celebrate every win.'],
-    y: Math.round(spec.height * 0.105), fill: palette.ink, titleSize: Math.round(spec.width * 0.07), lineHeight: Math.round(spec.width * 0.082),
+    width: spec.width, height: spec.height, eyebrow: 'REAL PEOPLE. REAL MOMENTUM.', lines: ['Meals. Milestones.', 'Showing up together.'],
+    y: Math.round(spec.height * 0.105), fill: palette.ink, eyebrowFill: palette.gold, titleSize: Math.round(spec.width * 0.068), lineHeight: Math.round(spec.width * 0.08),
   });
+  const tileWidth = Math.round(spec.width * 0.41);
+  const tileHeight = Math.round(spec.height * 0.49);
+  const meal = await communityTile('community-meal-win.jpg', tileWidth, tileHeight, 'MEALS');
+  const milestone = await communityTile('community-milestone-win.jpg', tileWidth, tileHeight, 'MILESTONES');
+  const workout = await communityTile('community-workout-win.jpg', tileWidth, tileHeight, 'WORKOUTS');
+  const mealTilted = await sharp(meal).rotate(-5, { background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
+  const workoutTilted = await sharp(workout).rotate(5, { background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
   const badge = svg(spec.width, spec.height, `
-    <rect x="${spec.width * 0.16}" y="${spec.height * 0.865}" width="${spec.width * 0.68}" height="${spec.width * 0.1}" rx="${spec.width * 0.05}" fill="${palette.ink}"/>
-    <text x="${spec.width * 0.5}" y="${spec.height * 0.865 + spec.width * 0.065}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="${spec.width * 0.033}" font-weight="800" fill="${palette.white}" letter-spacing="1">SHARE • SUPPORT • KEEP GOING</text>
+    <rect x="${spec.width * 0.12}" y="${spec.height * 0.86}" width="${spec.width * 0.76}" height="${spec.width * 0.1}" rx="${spec.width * 0.05}" fill="${palette.ink}"/>
+    <text x="${spec.width * 0.5}" y="${spec.height * 0.86 + spec.width * 0.065}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="${spec.width * 0.031}" font-weight="800" fill="${palette.white}" letter-spacing="1">POST • SUPPORT • CELEBRATE</text>
   `);
   return sharp(backgroundSvg(spec.width, spec.height, 'cream')).composite([
-    { input: title }, { input: frameSvg(spec.width, spec.height, left, top, phoneWidth, phoneHeight, Math.round(spec.width * 0.04), palette.gold) },
-    { input: screen, left, top }, { input: badge },
+    { input: title },
+    { input: mealTilted, left: Math.round(spec.width * 0.01), top: Math.round(spec.height * 0.34) },
+    { input: workoutTilted, left: Math.round(spec.width * 0.58), top: Math.round(spec.height * 0.35) },
+    { input: milestone, left: Math.round(spec.width * 0.295), top: Math.round(spec.height * 0.30) },
+    { input: badge },
   ]).png().toBuffer();
 }
 
@@ -304,7 +365,7 @@ async function renderProgress(spec) {
 }
 
 async function renderSlide(slide, index, spec) {
-  const renderers = { coach: renderCoach, challenges: renderChallenges, meals: renderMeals, training: renderTraining, community: renderCommunity, progress: renderProgress };
+  const renderers = { coach: renderCoach, founders: renderFounders, challenges: renderChallenges, meals: renderMeals, training: renderTraining, community: renderCommunity, progress: renderProgress };
   const buffer = await renderers[slide.layout](spec);
   const fileName = `${String(index + 1).padStart(2, '0')}-${slide.slug}.png`;
   const destination = path.join(outputRoot, spec.directory, fileName);
@@ -346,6 +407,8 @@ const specs = [
 
 const outputs = [];
 for (const spec of specs) {
+  const outputDirectory = path.join(outputRoot, spec.directory);
+  await fs.rm(outputDirectory, { recursive: true, force: true });
   for (const [index, slide] of slides.entries()) outputs.push(await renderSlide(slide, index, spec));
 }
 outputs.push(await renderFeatureGraphic());
