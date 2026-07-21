@@ -2341,7 +2341,7 @@ const EXERCISE_VIDEOS = {
   "Hollow Hold to Arch Hold": "https://f005.backblazeb2.com/file/shannonsvideos/Hollow%20Body%20Hold.mp4",
   "Cable Single Arm Row": "https://f005.backblazeb2.com/file/shannonsvideos/Single%20Arm%20Cable%20Row.mp4",
   "Dumbbell Bent Over Reverse Fly": "https://f005.backblazeb2.com/file/shannonsvideos/Dumbbell%20Lying%20Down%20Reverse%20Fly.mp4",
-  "Machine Seated Row": "https://f005.backblazeb2.com/file/shannonsvideos/Lat%20Machine%20Parallel%20Grip%20Row.mp4",
+  "2 Handed Grip Lat Pull Down": "https://f005.backblazeb2.com/file/shannonsvideos/Lat%20Machine%20Parallel%20Grip%20Row.mp4",
   "Dumbbell Incline Row": "https://f005.backblazeb2.com/file/shannonsvideos/Dumbbell%20Incline%20Bench%20Row.mp4",
   "Dumbbell Flat Bench Fly": "https://f005.backblazeb2.com/file/shannonsvideos/Dumbbell%20Flat%20Bench%20Chest%20Fly.mp4",
   "Dumbbell Flat Bench Press": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-bench-press.mp4",
