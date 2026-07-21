@@ -54,7 +54,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -382,7 +384,9 @@ public class MainActivity extends BridgeActivity {
         if ("story".equals(target)) {
             intent = new Intent("com.instagram.share.ADD_TO_STORY");
             intent.setPackage("com.instagram.android");
-            intent.setDataAndType(imageUri, mimeType);
+            // Instagram's Story activity advertises image/* rather than every
+            // concrete image subtype on all app/device versions.
+            intent.setDataAndType(imageUri, "image/*");
             intent.putExtra("top_background_color", "#0f3d2e");
             intent.putExtra("bottom_background_color", "#f5c45c");
             intent.putExtra("content_url", "https://plantbased-balance.org/bio");
@@ -396,6 +400,41 @@ public class MainActivity extends BridgeActivity {
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.setClipData(ClipData.newUri(getContentResolver(), "Balance share", imageUri));
         return intent;
+    }
+
+    /**
+     * Launch an Instagram composer and report the real result to JavaScript.
+     * resolveActivity() can return null for Instagram's private composer even
+     * when startActivity() accepts this explicit-package intent.
+     */
+    private boolean launchInstagramShareIntent(Intent intent) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            try {
+                startActivity(intent);
+                return true;
+            } catch (Exception ignored) {
+                return false;
+            }
+        }
+
+        CountDownLatch launched = new CountDownLatch(1);
+        AtomicBoolean success = new AtomicBoolean(false);
+        runOnUiThread(() -> {
+            try {
+                startActivity(intent);
+                success.set(true);
+            } catch (Exception ignored) {
+                success.set(false);
+            } finally {
+                launched.countDown();
+            }
+        });
+        try {
+            return launched.await(3, TimeUnit.SECONDS) && success.get();
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 
     /**
@@ -1073,16 +1112,8 @@ public class MainActivity extends BridgeActivity {
                 String mimeType = mimeTypeFromDataUrl(dataUrl);
                 Uri imageUri = cacheShareImageDataUrl(dataUrl, safeTarget);
                 Intent intent = buildInstagramShareIntent(imageUri, mimeType, safeTarget);
-                if (intent.resolveActivity(getPackageManager()) == null) {
-                    return false;
-                }
                 grantUriPermission("com.instagram.android", imageUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                runOnUiThread(() -> {
-                    try {
-                        startActivity(intent);
-                    } catch (Exception ignored) {}
-                });
-                return true;
+                return launchInstagramShareIntent(intent);
             } catch (Exception e) {
                 return false;
             }
