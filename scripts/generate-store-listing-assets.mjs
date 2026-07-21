@@ -22,10 +22,9 @@ const palette = {
 
 const slides = [
   { slug: 'coach', layout: 'coach' },
-  { slug: 'founders-pass', layout: 'founders' },
   { slug: 'community', layout: 'community' },
   { slug: 'training', layout: 'training' },
-  { slug: 'vegan-meals', layout: 'meals' },
+  { slug: 'plant-based-meals', layout: 'meals' },
   { slug: 'progress', layout: 'progress' },
   { slug: 'challenges', layout: 'challenges' },
 ];
@@ -210,7 +209,7 @@ async function renderFounders(spec) {
     ${[
       ['6 WEEKS', 'of 1-to-1 in-app support'],
       ['LIFETIME', 'core Balance app access'],
-      ['COMMUNITY', 'vegan fitness community'],
+      ['COMMUNITY', 'plant-based fitness community'],
     ].map((item, index) => {
       const y = cardY + cardH * (0.31 + index * 0.23);
       return `<text x="${cardX + cardW * 0.09}" y="${y}" class="offer-kicker">${item[0]}</text>
@@ -269,7 +268,7 @@ async function renderMeals(spec) {
     <rect width="100%" height="100%" fill="url(#shade)"/>
   `);
   const title = textSvg({
-    width: spec.width, height: spec.height, eyebrow: 'VEGAN NUTRITION', lines: ['Eat for strength.', 'Without guessing.'],
+    width: spec.width, height: spec.height, eyebrow: 'PLANT-BASED NUTRITION', lines: ['Eat for strength.', 'Without guessing.'],
     y: Math.round(spec.height * 0.115), fill: palette.white, titleSize: Math.round(spec.width * 0.072), lineHeight: Math.round(spec.width * 0.083),
   });
   const phoneWidth = Math.round(spec.width * 0.5);
@@ -281,7 +280,7 @@ async function renderMeals(spec) {
   const callout = svg(spec.width, spec.height, `
     <style>.pill { font-family: Arial, Helvetica, sans-serif; font-size: ${Math.round(spec.width * 0.031)}px; font-weight: 800; fill: ${palette.ink}; }</style>
     <rect x="${spec.width * 0.04}" y="${spec.height * 0.67}" width="${spec.width * 0.42}" height="${spec.height * 0.18}" rx="${spec.width * 0.05}" fill="${palette.white}" opacity="0.96"/>
-    <text x="${spec.width * 0.11}" y="${spec.height * 0.72}" class="pill">✓ Vegan meal plans</text>
+    <text x="${spec.width * 0.11}" y="${spec.height * 0.72}" class="pill">✓ Plant-based meal plans</text>
     <text x="${spec.width * 0.11}" y="${spec.height * 0.765}" class="pill">✓ Nutrition tracking</text>
     <text x="${spec.width * 0.11}" y="${spec.height * 0.81}" class="pill">✓ Easy food logging</text>
   `);
@@ -365,7 +364,7 @@ async function renderProgress(spec) {
 }
 
 async function renderSlide(slide, index, spec) {
-  const renderers = { coach: renderCoach, founders: renderFounders, challenges: renderChallenges, meals: renderMeals, training: renderTraining, community: renderCommunity, progress: renderProgress };
+  const renderers = { coach: renderCoach, challenges: renderChallenges, meals: renderMeals, training: renderTraining, community: renderCommunity, progress: renderProgress };
   const buffer = await renderers[slide.layout](spec);
   const fileName = `${String(index + 1).padStart(2, '0')}-${slide.slug}.png`;
   const destination = path.join(outputRoot, spec.directory, fileName);

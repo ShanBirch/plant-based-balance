@@ -13,11 +13,11 @@ The full proposed listing copy is in `app-store/en-AU` and `google-play/en-AU`. 
 ## Screenshot order
 
 1. Coach Shannon and real support
-2. Coach-led six-week challenges
-3. Vegan meal planning and nutrition
-4. Training with direction
-5. Plant-based community wins
-6. Weekly planning and progress
+2. Plant-based community wins
+3. Training with direction
+4. Plant-based meal planning and nutrition
+5. Weekly planning and progress
+6. Coach-led six-week challenges
 
 The app frames came from the July 18, 2026 real-app screen recording. The coaching and training photography came from Shannon's supplied photo library. The challenge card came from Shannon's July 18 app screenshot, and the meal presentation uses the vegan sweet potato and black bean tacos already supplied with Balance. No faces were generated or altered.
 

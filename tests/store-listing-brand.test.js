@@ -37,16 +37,15 @@ test('store visuals use approved phone dimensions and no character assets', asyn
     const appleFiles = fs.readdirSync(appleDir).filter((file) => file.endsWith('.png')).sort();
     const playFiles = fs.readdirSync(playDir).filter((file) => file.endsWith('.png')).sort();
 
-    assert.equal(appleFiles.length, 7);
-    assert.equal(playFiles.length, 7);
+    assert.equal(appleFiles.length, 6);
+    assert.equal(playFiles.length, 6);
     const expectedCampaign = [
         '01-coach.png',
-        '02-founders-pass.png',
-        '03-community.png',
-        '04-training.png',
-        '05-vegan-meals.png',
-        '06-progress.png',
-        '07-challenges.png',
+        '02-community.png',
+        '03-training.png',
+        '04-plant-based-meals.png',
+        '05-progress.png',
+        '06-challenges.png',
     ];
     assert.deepEqual(appleFiles, expectedCampaign);
     assert.deepEqual(playFiles, expectedCampaign);
@@ -74,10 +73,10 @@ test('store visual generator keeps listing callouts readable and authentic', () 
 
     assert.doesNotMatch(generator, />COACH-LED CHALLENGE<\/text>/);
     assert.match(generator, /x="\$\{spec\.width \* 0\.05\}"[^>]+width="\$\{spec\.width \* 0\.9\}"/);
-    assert.match(generator, /\$99 ONCE/);
-    assert.match(generator, /of 1-to-1 in-app support/);
-    assert.match(generator, /core Balance app access/);
-    assert.match(generator, /vegan fitness community/);
+    assert.doesNotMatch(generator, /\{ slug: 'founders-pass'/);
+    assert.match(generator, /PLANT-BASED NUTRITION/);
+    assert.match(generator, /Plant-based meal plans/);
+    assert.doesNotMatch(generator, />[^<]*vegan[^<]*<\/text>/i);
     assert.match(generator, /community-meal-win\.jpg/);
     assert.match(generator, /community-milestone-win\.jpg/);
     assert.match(generator, /community-workout-win\.jpg/);

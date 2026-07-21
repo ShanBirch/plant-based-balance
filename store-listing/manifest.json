@@ -1,6 +1,6 @@
 {
   "campaign": "Balance Founders Pass, plant-based fitness and real community",
-  "generatedAt": "2026-07-20",
+  "generatedAt": "2026-07-22",
   "generator": "scripts/generate-store-listing-assets.mjs",
   "sources": {
     "coachPhoto": "store-listing/source/shannon-coaching.jpg",
@@ -19,12 +19,11 @@
       "dimensions": "1080x1920",
       "files": [
         "01-coach.png",
-        "02-founders-pass.png",
-        "03-community.png",
-        "04-training.png",
-        "05-vegan-meals.png",
-        "06-progress.png",
-        "07-challenges.png"
+        "02-community.png",
+        "03-training.png",
+        "04-plant-based-meals.png",
+        "05-progress.png",
+        "06-challenges.png"
       ]
     },
     "appStore": {
@@ -32,12 +31,11 @@
       "dimensions": "1290x2796",
       "files": [
         "01-coach.png",
-        "02-founders-pass.png",
-        "03-community.png",
-        "04-training.png",
-        "05-vegan-meals.png",
-        "06-progress.png",
-        "07-challenges.png"
+        "02-community.png",
+        "03-training.png",
+        "04-plant-based-meals.png",
+        "05-progress.png",
+        "06-challenges.png"
       ]
     }
   }
