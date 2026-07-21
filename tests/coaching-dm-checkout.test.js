@@ -33,6 +33,15 @@ test('DM coaching page goes directly to hosted Stripe Checkout', () => {
     assert.match(coaching, /\$99\.99<span>\/week<\/span>/);
 });
 
+test('What I Offer presents the Founders Pass as the primary offer', () => {
+    assert.match(coaching, /The Founders Pass is the main offer at AUD \$99 once/);
+    assert.match(coaching, /six weeks of one-to-one in-app coaching support from Shannon/i);
+    assert.match(coaching, /lifetime access to the core Balance app and vegan fitness community/i);
+    assert.match(coaching, /href="vegan-fitness\.html#join">Get the Founders Pass<\/a>/);
+    assert.match(coaching, /Starter Coaching is there if you later want Shannon personally reviewing and adjusting your plan each week/);
+    assert.doesNotMatch(coaching, /The main offer is AUD \$29\.99\/week/);
+});
+
 test('all active DM handoffs use the permanent branded Founders Pass URL', () => {
     const files = [
         'netlify/edge-functions/sales-bot.js',
