@@ -60,7 +60,7 @@ const campaigns = [
     accent: colours.violet,
     composition: 'stack',
     primaryText: "The Balance Vegan Fitness Founders Pass is simple: pay AU$99 once, get six weeks of one-to-one in-app coaching support from me, then keep lifetime access to the core Balance app and vegan fitness community. No sales call needed. Message me for the details.",
-    headline: 'Six weeks with Shannon. Balance for life.',
+    headline: 'Six weeks with Shannon. Lifetime core access.',
     description: 'The Vegan Fitness Founders Pass',
   },
   {
@@ -248,6 +248,7 @@ const campaignPlan = {
   adSet: 'Broad Australia | 24-54 | IG Direct',
   ads: exportsList.map((x, index) => ({
     name: `A${index + 1} | ${x.headline}`,
+    rollout: index < 3 ? 'phase_1_launch' : 'phase_2_reserve',
     creative: { feed: path.basename(x.feedPath), story: path.basename(x.storyPath) },
     primaryText: x.primaryText,
     headline: x.headline,
@@ -258,6 +259,11 @@ const campaignPlan = {
     greeting: "Hey, glad you reached out. What made the Founders Pass catch your eye?",
     quickReplies: ["What’s included?", "Is this right for me?", "I’m ready to start"],
     followUpExpectation: "Shannon will reply here and help you work out the best next step.",
+  },
+  rollout: {
+    phase1: ['A1 | Six weeks with Shannon, AU$99 once', 'A2 | Stop restarting. Build a rhythm.', 'A3 | Six weeks with Shannon. Lifetime core access.'],
+    phase1Days: 7,
+    phase2: 'Introduce one reserve ad at a time to replace the weakest phase-one route. Do not split AU$20 per day across all six ads at launch.',
   },
   decisionRules: [
     'Do not edit during the first 72 hours unless delivery or tracking is broken.',

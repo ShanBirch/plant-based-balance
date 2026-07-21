@@ -32,6 +32,7 @@
   "ads": [
     {
       "name": "A1 | Six weeks with Shannon, AU$99 once",
+      "rollout": "phase_1_launch",
       "creative": {
         "feed": "01-coach-in-your-corner-feed-1080x1350.png",
         "story": "01-coach-in-your-corner-story-1080x1920.png"
@@ -43,6 +44,7 @@
     },
     {
       "name": "A2 | Stop restarting. Build a rhythm.",
+      "rollout": "phase_1_launch",
       "creative": {
         "feed": "02-stop-restarting-feed-1080x1350.png",
         "story": "02-stop-restarting-story-1080x1920.png"
@@ -53,18 +55,20 @@
       "callToAction": "Send message"
     },
     {
-      "name": "A3 | Six weeks with Shannon. Balance for life.",
+      "name": "A3 | Six weeks with Shannon. Lifetime core access.",
+      "rollout": "phase_1_launch",
       "creative": {
         "feed": "03-six-weeks-lifetime-access-feed-1080x1350.png",
         "story": "03-six-weeks-lifetime-access-story-1080x1920.png"
       },
       "primaryText": "The Balance Vegan Fitness Founders Pass is simple: pay AU$99 once, get six weeks of one-to-one in-app coaching support from me, then keep lifetime access to the core Balance app and vegan fitness community. No sales call needed. Message me for the details.",
-      "headline": "Six weeks with Shannon. Balance for life.",
+      "headline": "Six weeks with Shannon. Lifetime core access.",
       "description": "The Vegan Fitness Founders Pass",
       "callToAction": "Send message"
     },
     {
       "name": "A4 | Plant-based fitness, made clearer",
+      "rollout": "phase_2_reserve",
       "creative": {
         "feed": "04-plant-based-clarity-feed-1080x1350.png",
         "story": "04-plant-based-clarity-story-1080x1920.png"
@@ -76,6 +80,7 @@
     },
     {
       "name": "A5 | Vegan fitness is better together",
+      "rollout": "phase_2_reserve",
       "creative": {
         "feed": "05-not-doing-it-alone-feed-1080x1350.png",
         "story": "05-not-doing-it-alone-story-1080x1920.png"
@@ -87,6 +92,7 @@
     },
     {
       "name": "A6 | Vegan fitness, built by someone who gets it",
+      "rollout": "phase_2_reserve",
       "creative": {
         "feed": "06-built-by-shannon-feed-1080x1350.png",
         "story": "06-built-by-shannon-story-1080x1920.png"
@@ -105,6 +111,15 @@
       "I’m ready to start"
     ],
     "followUpExpectation": "Shannon will reply here and help you work out the best next step."
+  },
+  "rollout": {
+    "phase1": [
+      "A1 | Six weeks with Shannon, AU$99 once",
+      "A2 | Stop restarting. Build a rhythm.",
+      "A3 | Six weeks with Shannon. Lifetime core access."
+    ],
+    "phase1Days": 7,
+    "phase2": "Introduce one reserve ad at a time to replace the weakest phase-one route. Do not split AU$20 per day across all six ads at launch."
   },
   "decisionRules": [
     "Do not edit during the first 72 hours unless delivery or tracking is broken.",
