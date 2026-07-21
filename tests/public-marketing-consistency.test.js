@@ -1,0 +1,76 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+
+const root = path.join(__dirname, '..');
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const visibleText = (file) => read(file)
+    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<!--([\s\S]*?)-->/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const corePages = [
+    'bio.html',
+    'balance.html',
+    'clients.html',
+    'coaching.html',
+    'journey.html',
+    'vegan-fitness.html',
+    'book.html',
+    'index.html',
+    'client-agreement.html',
+    'terms.html',
+    'refund-policy.html'
+];
+
+test('public journey consistently routes the primary action to the Founders Pass', () => {
+    assert.match(read('bio.html'), /class="hub-button primary" href="vegan-fitness\.html"/);
+    assert.match(read('clients.html'), /class="nav-button primary" href="vegan-fitness\.html">Founders Pass/);
+    assert.match(read('journey.html'), /class="nav-button primary" href="vegan-fitness\.html">Founders Pass/);
+    assert.match(read('balance.html'), /class="btn primary" href="vegan-fitness\.html">Get the Founders Pass/);
+    assert.match(visibleText('book.html'), /You do not need a call to join the Founders Pass/);
+});
+
+test('offer facts agree across marketing and legal pages', () => {
+    const founders = visibleText('vegan-fitness.html');
+    const coaching = visibleText('coaching.html');
+    const agreement = visibleText('client-agreement.html');
+    const terms = visibleText('terms.html');
+    const refunds = visibleText('refund-policy.html');
+
+    for (const content of [founders, coaching]) {
+        assert.match(content, /(?:AU|AUD)?\$99 once/i);
+        assert.match(content, /six weeks of one-to-one in-app coaching support/i);
+        assert.match(content, /lifetime access to the core Balance app and vegan fitness community/i);
+    }
+
+    assert.match(agreement, /does not include instant replies, unlimited daily one-to-one access or fully customised weekly plan reviews/i);
+    assert.match(coaching, /Starter Coaching.*\$29\.99 \/week/s);
+    assert.match(terms, /Balance Vegan Fitness Founders Pass/);
+    assert.match(refunds, /Founders Pass is a one-time purchase/);
+});
+
+test('Shannon story agrees wherever it appears', () => {
+    assert.match(visibleText('journey.html'), /plant-based from birth/i);
+    assert.match(visibleText('journey.html'), /five years as a vegan/i);
+    assert.match(visibleText('vegan-fitness.html'), /raised vegetarian from birth and have been vegan for five years/i);
+    assert.doesNotMatch(visibleText('journey.html'), /building Balance/i);
+});
+
+test('public marketing copy does not expose automation, the legacy codename or em dashes', () => {
+    for (const file of corePages) {
+        const copy = visibleText(file);
+        assert.doesNotMatch(copy, /\bAI\b|artificial intelligence/i, file);
+        assert.doesNotMatch(copy, /FitGotchi/i, file);
+        assert.doesNotMatch(copy, /—/, file);
+    }
+});
+
+test('retired legacy offer pages are forced onto the aligned pages', () => {
+    const netlify = read('netlify.toml');
+    assert.match(netlify, /from = "\/shop\.html"[\s\S]*?to = "\/coaching\.html"[\s\S]*?status = 301[\s\S]*?force = true/);
+    assert.match(netlify, /from = "\/success-stories\.html"[\s\S]*?to = "\/clients\.html"[\s\S]*?status = 301[\s\S]*?force = true/);
+});
