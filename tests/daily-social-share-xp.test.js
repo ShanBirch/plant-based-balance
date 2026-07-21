@@ -17,6 +17,14 @@ assert.match(shareUi, /PB shared to Balance Feed! \+15 XP/);
 assert.match(shareUi, /PB shared to Instagram Feed! \+15 XP/);
 assert.match(shareUi, /Today\\'s workout Feed XP is already claimed/);
 assert.match(shareUi, /Today\\'s workout IG Feed XP is already claimed/);
+assert.match(shareUi, /pbbWorkoutSharedToFeedDay_/);
+assert.match(shareUi, /timeZone: 'Australia\/Brisbane'/);
+assert.match(shareUi, /isWorkoutFeedShareUsedToday\(\) \? 'Balance Feed' : 'Balance Feed \(\+15 XP\)'/);
+assert.match(shareUi, /Daily workout share XP is already used/);
+assert.match(shareUi, /markWorkoutFeedShareUsedToday\(\)/);
+assert.match(shareUi, /getTransactions\(window\.currentUser\.id, 100\)/);
+assert.match(shareUi, /transaction\?\.transaction_type === 'earn_workout_feed_share'/);
+assert.doesNotMatch(shareUi, /Photo \+ PB to Feed \(\+1 XP\)/);
 
 assert.match(dashboard, /The first activity share each day earns \+15 XP in Balance Feed/);
 assert.match(dashboard, /id: 'daily-workout-pb-share-xp-v1'/);

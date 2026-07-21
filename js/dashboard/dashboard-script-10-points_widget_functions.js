@@ -2013,6 +2013,70 @@ let workoutPhotoBase64 = null;
 let pendingWorkoutShareType = null;
 let workoutPointsEarnedThisSession = { story: false, groupchat: false };
 let workoutInstagramShareCompleted = { story: false, feed: false };
+let workoutFeedShareMarkedStorageKey = '';
+
+function getWorkoutFeedShareDayKey(date = new Date()) {
+    try {
+        const parts = new Intl.DateTimeFormat('en-AU', {
+            timeZone: 'Australia/Brisbane',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).formatToParts(date);
+        const byType = {};
+        parts.forEach(part => { byType[part.type] = part.value; });
+        if (byType.year && byType.month && byType.day) {
+            return `${byType.year}-${byType.month}-${byType.day}`;
+        }
+    } catch (_) {}
+    return new Date(date).toISOString().slice(0, 10);
+}
+
+function getWorkoutFeedShareUsedStorageKey() {
+    const userId = window.currentUser?.id || 'anonymous';
+    return `pbbWorkoutSharedToFeedDay_${userId}_${getWorkoutFeedShareDayKey()}`;
+}
+
+function isWorkoutFeedShareUsedToday() {
+    const storageKey = getWorkoutFeedShareUsedStorageKey();
+    if (workoutFeedShareMarkedStorageKey === storageKey) return true;
+    try {
+        return localStorage.getItem(storageKey) === '1';
+    } catch (_) {
+        return false;
+    }
+}
+
+function markWorkoutFeedShareUsedToday() {
+    workoutPointsEarnedThisSession.story = true;
+    workoutFeedShareMarkedStorageKey = getWorkoutFeedShareUsedStorageKey();
+    try {
+        localStorage.setItem(workoutFeedShareMarkedStorageKey, '1');
+    } catch (_) {}
+}
+
+function getWorkoutFeedShareButtonLabel() {
+    return isWorkoutFeedShareUsedToday() ? 'Balance Feed' : 'Balance Feed (+15 XP)';
+}
+
+async function syncWorkoutFeedShareUsedToday() {
+    if (isWorkoutFeedShareUsedToday()) return true;
+    if (!window.currentUser?.id || !window.db?.points?.getTransactions) return false;
+
+    try {
+        const transactions = await window.db.points.getTransactions(window.currentUser.id, 100);
+        const referenceType = `workout_feed_share:${getWorkoutFeedShareDayKey()}`;
+        const usedToday = Array.isArray(transactions) && transactions.some(transaction => (
+            transaction?.transaction_type === 'earn_workout_feed_share'
+            && transaction?.reference_type === referenceType
+        ));
+        if (usedToday) markWorkoutFeedShareUsedToday();
+        return usedToday;
+    } catch (error) {
+        console.warn('Could not sync daily workout Feed XP state:', error);
+        return false;
+    }
+}
 
 // Cached workout-share photo captured once and reused for Balance Feed and
 // Instagram so the user does not have to take it twice.
@@ -2599,13 +2663,20 @@ function resetWorkoutShareUI() {
         cardBtn.style.opacity = '1';
         cardBtn.style.background = 'linear-gradient(135deg, #ffffff, #f0fdf4)';
         cardBtn.style.border = 'none';
-        cardBtn.innerHTML = '<span style="font-size: 1.3rem;">📢</span><span style="font-size: 0.95rem;">Balance Feed (+15 XP)</span>';
+        cardBtn.innerHTML = `<span style="font-size: 1.3rem;">📢</span><span style="font-size: 0.95rem;">${getWorkoutFeedShareButtonLabel()}</span>`;
     }
 
     renderWorkoutInstagramShareButton('story');
     renderWorkoutInstagramShareButton('feed');
     updateWorkoutInstagramShareVisibility();
     renderPostWorkoutShareMenu();
+    syncWorkoutFeedShareUsedToday().then(function(usedToday) {
+        if (!usedToday) return;
+        const currentCardBtn = document.getElementById('share-workout-card-btn');
+        const currentCardLabel = currentCardBtn?.querySelector('span:last-child');
+        if (currentCardLabel) currentCardLabel.textContent = getWorkoutFeedShareButtonLabel();
+        renderPostWorkoutShareMenu();
+    });
 }
 window.resetWorkoutShareUI = resetWorkoutShareUI;
 
@@ -2633,9 +2704,10 @@ async function preparePostWorkoutCompositePreview() {
         if (shareButton) {
             shareButton.disabled = false;
             shareButton.setAttribute('onclick', 'sharePendingPostWorkoutCompositeToFeed()');
+            const feedRewardLabel = isWorkoutFeedShareUsedToday() ? '' : ' (+15 XP)';
             shareButton.innerHTML = pending.cardPayload.card_type === 'pb'
-                ? '<span style="font-size:1.3rem;">🏆</span><span style="font-size:0.95rem;">Photo + PB to Feed (+1 XP)</span>'
-                : '<span style="font-size:1.3rem;">📢</span><span style="font-size:0.95rem;">Photo + workout to Feed (+15 XP)</span>';
+                ? `<span style="font-size:1.3rem;">🏆</span><span style="font-size:0.95rem;">Photo + PB to Feed${feedRewardLabel}</span>`
+                : `<span style="font-size:1.3rem;">📢</span><span style="font-size:0.95rem;">Photo + workout to Feed${feedRewardLabel}</span>`;
         }
         if (igOptions) igOptions.style.display = pending.cardPayload.card_type === 'pb' ? 'none' : 'grid';
         setPostWorkoutShareStatus('Preview ready. Check the overlay, then post it to Feed.', 'info');
@@ -2892,17 +2964,20 @@ function renderPostWorkoutShareMenu() {
     const data = typeof completedWorkoutDataForShare !== 'undefined' ? completedWorkoutDataForShare : null;
     const pbs = data && Array.isArray(data.newPBs) ? data.newPBs : [];
     const isBusy = !!postWorkoutShareBusy;
+    const rewardDetail = isWorkoutFeedShareUsedToday()
+        ? ' Daily workout share XP is already used.'
+        : ' First workout or PB share today earns +15 XP.';
 
     menu.appendChild(createPostWorkoutShareOption({
         title: postWorkoutShareCompleted.workout ? 'Photo + workout shared' : (postWorkoutShareBusy === 'workout-photo' ? 'Preparing workout overlay...' : 'Photo + workout'),
-        detail: data ? 'Take a gym photo and place your workout summary over it.' : 'No completed workout ready.',
+        detail: data ? 'Take a gym photo and place your workout summary over it.' + rewardDetail : 'No completed workout ready.',
         disabled: !data || isBusy || postWorkoutShareCompleted.workout,
         onClick: function() { beginPostWorkoutCompositeShare(buildWorkoutShareCardPayload(), 'workout'); }
     }));
 
     menu.appendChild(createPostWorkoutShareOption({
         title: postWorkoutShareCompleted.workout ? 'Workout shared' : (postWorkoutShareBusy === 'workout' ? 'Sharing workout...' : 'Share workout'),
-        detail: data ? 'Post your workout summary to Feed.' : 'No completed workout ready.',
+        detail: data ? 'Post your workout summary to Feed.' + rewardDetail : 'No completed workout ready.',
         disabled: !data || isBusy || postWorkoutShareCompleted.workout,
         onClick: sharePostWorkoutWorkoutToFeed
     }));
@@ -2913,13 +2988,13 @@ function renderPostWorkoutShareMenu() {
             const value = typeof pbbFormatPBShareValue === 'function' ? pbbFormatPBShareValue(pb) : '';
             menu.appendChild(createPostWorkoutShareOption({
                 title: postWorkoutShareCompleted.pbs[key] ? 'Photo + PB shared' : (postWorkoutShareBusy === 'pb:' + key ? 'Preparing PB overlay...' : 'Photo + PB: ' + (pb.exercise || 'Personal best')),
-                detail: value ? value + ' over your gym photo.' : 'Place this personal best over a gym photo.',
+                detail: (value ? value + ' over your gym photo.' : 'Place this personal best over a gym photo.') + rewardDetail,
                 disabled: isBusy || !!postWorkoutShareCompleted.pbs[key],
                 onClick: function() { beginPostWorkoutCompositeShare(buildPBShareCardPayload(pb), 'pb', index); }
             }));
             menu.appendChild(createPostWorkoutShareOption({
                 title: postWorkoutShareCompleted.pbs[key] ? 'PB shared' : (postWorkoutShareBusy === 'pb:' + key ? 'Sharing PB...' : 'Share PB: ' + (pb.exercise || 'Personal best')),
-                detail: value || 'Post this personal best to Feed.',
+                detail: (value || 'Post this personal best to Feed.') + rewardDetail,
                 disabled: isBusy || !!postWorkoutShareCompleted.pbs[key],
                 onClick: function() { sharePostWorkoutPBToFeed(index); }
             }));
@@ -2934,7 +3009,7 @@ function renderPostWorkoutShareMenu() {
 
     menu.appendChild(createPostWorkoutShareOption({
         title: postWorkoutShareCompleted.photo ? 'Photo shared' : (postWorkoutShareBusy === 'photo' ? 'Posting photo...' : 'Share photo'),
-        detail: data ? 'Take a workout photo and post it to Feed.' : 'No completed workout ready.',
+        detail: data ? 'Take a workout photo and post it to Feed.' + rewardDetail : 'No completed workout ready.',
         disabled: !data || isBusy || postWorkoutShareCompleted.photo,
         onClick: sharePostWorkoutPhotoToFeed
     }));
@@ -2943,14 +3018,14 @@ function renderPostWorkoutShareMenu() {
 }
 
 async function awardPostWorkoutFeedShareXP(photoTimestamp, photoHash) {
-    if (workoutPointsEarnedThisSession.story) return null;
+    if (isWorkoutFeedShareUsedToday()) return null;
     if (!isWorkoutDurationEligibleForShareXP(false)) return null;
     const result = await awardBalanceSocialShareXP(
         'workout',
         'balance_feed',
         getCompletedWorkoutSocialShareReferenceId()
     );
-    if (result?.success || result?.alreadyAwarded) workoutPointsEarnedThisSession.story = true;
+    if (result?.success || result?.alreadyAwarded) markWorkoutFeedShareUsedToday();
     return result;
 }
 
@@ -4400,6 +4475,11 @@ async function awardBalanceSocialShareXP(shareKind, shareDestination, referenceI
         if (typeof window.triggerXPBarRainbow === 'function') window.triggerXPBarRainbow();
         if (typeof window.refreshChallengeProgress === 'function') window.refreshChallengeProgress();
     }
+    if (shareKind === 'workout'
+        && shareDestination === 'balance_feed'
+        && (result?.success || result?.alreadyAwarded)) {
+        markWorkoutFeedShareUsedToday();
+    }
     return result;
 }
 window.awardBalanceSocialShareXP = awardBalanceSocialShareXP;
@@ -4840,7 +4920,7 @@ async function handleWorkoutCardPhotoCaptureFromFile(file) {
 
         if (btn) {
             btn.disabled = false;
-            btn.querySelector('span:last-child').textContent = 'Balance Feed (+15 XP)';
+            btn.querySelector('span:last-child').textContent = getWorkoutFeedShareButtonLabel();
         }
     }
 

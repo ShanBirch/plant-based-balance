@@ -18,7 +18,7 @@ assert.match(dashboard, /new Intl\.DateTimeFormat\('en-AU',[\s\S]*weekday: 'long
 assert.match(dashboard, /pbb-premium-overlays\.css\?v=87/, 'phones should fetch the updated header styling');
 assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=149/, 'phones should fetch the profile-to-header name sync');
 assert.match(profileScript, /window\.updateHomeWelcome\(context\.name\)/, 'loaded profile data should replace the cached welcome name');
-assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v261'/, 'the app shell cache should advance for the new header');
+assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v262'/, 'the app shell cache should advance for the new header');
 
 assert.match(premiumCss, /\.home-welcome-block\s*\{[\s\S]*min-width:\s*0[\s\S]*flex-direction:\s*column/, 'the content greeting should use a clean two-line stack');
 assert.match(premiumCss, /\.home-welcome-title\s*\{[\s\S]*text-overflow:\s*ellipsis[\s\S]*white-space:\s*nowrap/, 'long names should not collide with account controls');
