@@ -18,5 +18,20 @@ assert.match(stories, /The archive trigger is the server-side source of truth/);
 assert.match(migration, /COALESCE\(NEW\.source, ''\) <> 'feed_workout_share'/);
 assert.match(migration, /increment_user_points\(NEW\.user_id, 15\)/);
 assert.match(migration, /award_workout_feed_share_xp_on_insert/);
+assert.match(
+  awardPoints,
+  /if \(type === 'social_share' \|\| type === 'workout_feed_share'\)/,
+  'legacy Share a Set awards must use the atomic social-share RPC'
+);
+assert.match(
+  awardPoints,
+  /const shareKind = type === 'workout_feed_share' \? 'workout' : body\.shareKind;[\s\S]*const shareDestination = type === 'workout_feed_share' \? 'balance_feed' : body\.shareDestination;/,
+  'legacy workout Feed awards must resolve to the same daily workout Balance Feed key'
+);
+assert.match(
+  migration,
+  /CREATE UNIQUE INDEX[\s\S]*ON public\.point_transactions \(user_id, transaction_type, reference_type\)[\s\S]*reference_type LIKE 'workout_feed_share:%'/,
+  'the shared daily workout Feed key must remain database-unique'
+);
 
 console.log('Share a Set Feed XP contract ok');

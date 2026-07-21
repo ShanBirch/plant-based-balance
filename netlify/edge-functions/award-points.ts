@@ -201,9 +201,13 @@ export default async (request: Request, context: Context): Promise<Response> => 
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    if (type === 'social_share') {
-      const shareKind = body.shareKind;
-      const shareDestination = body.shareDestination;
+    // Route the legacy Share a Set request through the same atomic RPC as the
+    // workout-card Feed reward. The media archive trigger also writes the same
+    // canonical daily transaction key, so every workout Feed entry point now
+    // competes for one insert before any XP balance is incremented.
+    if (type === 'social_share' || type === 'workout_feed_share') {
+      const shareKind = type === 'workout_feed_share' ? 'workout' : body.shareKind;
+      const shareDestination = type === 'workout_feed_share' ? 'balance_feed' : body.shareDestination;
       if (!shareKind || !['meal', 'activity', 'workout'].includes(shareKind)
           || !shareDestination || !['balance_feed', 'instagram_feed'].includes(shareDestination)) {
         return new Response(JSON.stringify({
