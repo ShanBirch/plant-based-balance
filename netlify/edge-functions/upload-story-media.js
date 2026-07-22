@@ -69,6 +69,7 @@ function validateWorkoutVideoUpload(file, fileBuffer, source) {
 
 const B2_UPLOAD_MAX_ATTEMPTS = 3;
 const B2_UPLOAD_ATTEMPT_TIMEOUT_MS = 8000;
+const DEFAULT_SUPABASE_URL = 'https://hzapaorxqboevxnumxkv.supabase.co';
 
 function isRetryableB2UploadFailure(status, errorText = '') {
     const code = Number(status || 0);
@@ -93,6 +94,60 @@ async function fetchB2WithTimeout(url, options, timeoutMs = B2_UPLOAD_ATTEMPT_TI
     } finally {
         clearTimeout(timeoutId);
     }
+}
+
+function getRuntimeEnv(name) {
+    try {
+        if (globalThis.Netlify?.env?.get) return globalThis.Netlify.env.get(name) || '';
+    } catch (_) {}
+    try {
+        if (globalThis.Deno?.env?.get) return Deno.env.get(name) || '';
+    } catch (_) {}
+    return '';
+}
+
+function encodeStoragePath(path) {
+    return String(path || '')
+        .split('/')
+        .filter(Boolean)
+        .map(segment => encodeURIComponent(segment))
+        .join('/');
+}
+
+async function uploadStoryMediaToSupabase(fileBuffer, options = {}) {
+    const serviceKey = getRuntimeEnv('SUPABASE_SERVICE_ROLE_KEY')
+        || getRuntimeEnv('SUPABASE_SERVICE_KEY');
+    const supabaseUrl = (getRuntimeEnv('SUPABASE_URL')
+        || getRuntimeEnv('VITE_SUPABASE_URL')
+        || DEFAULT_SUPABASE_URL).replace(/\/+$/, '');
+    if (!serviceKey) throw new Error('Supabase storage fallback is not configured');
+
+    const storagePath = `${options.userId}/stories/${options.storyId}.${options.fileExtension}`;
+    const encodedPath = encodeStoragePath(storagePath);
+    const uploadResponse = await fetch(`${supabaseUrl}/storage/v1/object/story-media/${encodedPath}`, {
+        method: 'POST',
+        headers: {
+            apikey: serviceKey,
+            Authorization: `Bearer ${serviceKey}`,
+            'Content-Type': options.contentType || 'application/octet-stream',
+            'x-upsert': 'true'
+        },
+        body: fileBuffer
+    });
+    if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text().catch(() => '');
+        throw new Error(`Supabase storage fallback ${uploadResponse.status}: ${errorText}`);
+    }
+
+    return {
+        success: true,
+        url: `${supabaseUrl}/storage/v1/object/public/story-media/${encodedPath}`,
+        fileName: storagePath,
+        fileId: '',
+        contentType: options.contentType || 'application/octet-stream',
+        size: fileBuffer.byteLength,
+        storageProvider: 'supabase'
+    };
 }
 
 export default async (request, context) => {
@@ -221,10 +276,21 @@ export default async (request, context) => {
         }
 
         if (!uploadData) {
-            console.error('Upload to B2 failed after retries:', lastUploadError);
-            return jsonResponse(502, {
-                error: 'Failed to upload file'
-            });
+            console.error('Upload to B2 failed after retries, using Supabase fallback:', lastUploadError);
+            try {
+                const fallbackUpload = await uploadStoryMediaToSupabase(fileBuffer, {
+                    userId,
+                    storyId,
+                    fileExtension,
+                    contentType: file.type
+                });
+                return jsonResponse(200, fallbackUpload);
+            } catch (fallbackError) {
+                console.error('Supabase story-media fallback failed:', fallbackError);
+                return jsonResponse(502, {
+                    error: 'Failed to upload file'
+                });
+            }
         }
 
         // 5. Construct public URL
