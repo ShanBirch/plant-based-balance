@@ -67,6 +67,23 @@ function validateWorkoutVideoUpload(file, fileBuffer, source) {
     return null;
 }
 
+const B2_UPLOAD_MAX_ATTEMPTS = 3;
+
+function isRetryableB2UploadFailure(status, errorText = '') {
+    const code = Number(status || 0);
+    const detail = String(errorText || '').toLowerCase();
+    return code === 0
+        || code === 401
+        || code === 408
+        || code === 429
+        || code >= 500
+        || /expired_auth_token|service_unavailable|too_many_requests|request_timeout/.test(detail);
+}
+
+function waitForB2UploadRetry(attempt) {
+    return new Promise(resolve => setTimeout(resolve, Math.min(1200, 250 * attempt)));
+}
+
 export default async (request, context) => {
     // Only allow POST
     if (request.method !== "POST") {
@@ -118,27 +135,7 @@ export default async (request, context) => {
         const authData = await authResponse.json();
         const { authorizationToken, apiUrl, downloadUrl } = authData;
 
-        // 2. Get upload URL
-        const uploadUrlResponse = await fetch(`${apiUrl}/b2api/v2/b2_get_upload_url`, {
-            method: 'POST',
-            headers: {
-                'Authorization': authorizationToken,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ bucketId: B2_BUCKET_ID })
-        });
-
-        if (!uploadUrlResponse.ok) {
-            const errorText = await uploadUrlResponse.text();
-            console.error('Failed to get upload URL:', errorText);
-            return jsonResponse(500, {
-                error: 'Failed to get upload URL'
-            });
-        }
-
-        const { uploadUrl, authorizationToken: uploadToken } = await uploadUrlResponse.json();
-
-        // 3. Prepare file for upload
+        // 2. Prepare file for upload
         const fileBuffer = await file.arrayBuffer();
         const videoValidationError = validateWorkoutVideoUpload(file, fileBuffer, source);
         if (videoValidationError) {
@@ -153,30 +150,71 @@ export default async (request, context) => {
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const sha1Hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-        // 4. Upload file to B2
-        const uploadResponse = await fetch(uploadUrl, {
-            method: 'POST',
-            headers: {
-                'Authorization': uploadToken,
-                'X-Bz-File-Name': encodeURIComponent(fileName),
-                'Content-Type': file.type || 'application/octet-stream',
-                'Content-Length': fileBuffer.byteLength.toString(),
-                'X-Bz-Content-Sha1': sha1Hash,
-                'X-Bz-Info-Author': `user-${userId}`,
-                'X-Bz-Info-story-id': storyId
-            },
-            body: fileBuffer
-        });
+        // 3. Get a fresh upload URL for each attempt. B2 upload hosts and
+        // tokens can fail transiently; one failed host should not make a Feed
+        // post surface a red error toast to the member.
+        let uploadData = null;
+        let lastUploadError = '';
+        for (let attempt = 1; attempt <= B2_UPLOAD_MAX_ATTEMPTS && !uploadData; attempt += 1) {
+            try {
+                const uploadUrlResponse = await fetch(`${apiUrl}/b2api/v2/b2_get_upload_url`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': authorizationToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ bucketId: B2_BUCKET_ID })
+                });
 
-        if (!uploadResponse.ok) {
-            const errorText = await uploadResponse.text();
-            console.error('Upload to B2 failed:', errorText);
-            return jsonResponse(500, {
+                if (!uploadUrlResponse.ok) {
+                    const errorText = await uploadUrlResponse.text();
+                    lastUploadError = `get_upload_url ${uploadUrlResponse.status}: ${errorText}`;
+                    if (attempt >= B2_UPLOAD_MAX_ATTEMPTS || !isRetryableB2UploadFailure(uploadUrlResponse.status, errorText)) {
+                        break;
+                    }
+                    await waitForB2UploadRetry(attempt);
+                    continue;
+                }
+
+                const { uploadUrl, authorizationToken: uploadToken } = await uploadUrlResponse.json();
+                const uploadResponse = await fetch(uploadUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': uploadToken,
+                        'X-Bz-File-Name': encodeURIComponent(fileName),
+                        'Content-Type': file.type || 'application/octet-stream',
+                        'Content-Length': fileBuffer.byteLength.toString(),
+                        'X-Bz-Content-Sha1': sha1Hash,
+                        'X-Bz-Info-Author': `user-${userId}`,
+                        'X-Bz-Info-story-id': storyId
+                    },
+                    body: fileBuffer
+                });
+
+                if (uploadResponse.ok) {
+                    uploadData = await uploadResponse.json();
+                    break;
+                }
+
+                const errorText = await uploadResponse.text();
+                lastUploadError = `upload ${uploadResponse.status}: ${errorText}`;
+                if (attempt >= B2_UPLOAD_MAX_ATTEMPTS || !isRetryableB2UploadFailure(uploadResponse.status, errorText)) {
+                    break;
+                }
+            } catch (error) {
+                lastUploadError = error?.message || String(error);
+                if (attempt >= B2_UPLOAD_MAX_ATTEMPTS) break;
+            }
+
+            await waitForB2UploadRetry(attempt);
+        }
+
+        if (!uploadData) {
+            console.error('Upload to B2 failed after retries:', lastUploadError);
+            return jsonResponse(502, {
                 error: 'Failed to upload file'
             });
         }
-
-        const uploadData = await uploadResponse.json();
 
         // 5. Construct public URL
         const publicUrl = `${downloadUrl}/file/${B2_BUCKET_NAME}/${fileName}`;
