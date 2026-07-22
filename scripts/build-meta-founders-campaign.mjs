@@ -77,7 +77,9 @@ const campaigns = [
     price: 'FOUNDERS PASS  •  AU$99 ONCE',
     cta: 'SEND MESSAGE',
     accent: colours.coral,
-    composition: 'phone',
+    frameAccent: colours.gold,
+    composition: 'gold-frame',
+    proofFit: 'contain',
     primaryText: "Plant-based fitness does not need more noise. Balance puts training, vegan nutrition and progress tools together, with six weeks of coaching support from me when you need direction. The Founders Pass is AU$99 once and includes lifetime core app and community access. Message “BALANCE” for details.",
     headline: 'Plant-based fitness, made clearer',
     description: 'Training, nutrition, progress and support',
@@ -93,7 +95,10 @@ const campaigns = [
     cta: 'MESSAGE “BALANCE”',
     accent: colours.gold,
     composition: 'proof',
-    photoCrop: { top: 205, height: 1350 },
+    communitySections: {
+      photo: { top: 205, height: 1375 },
+      comments: { top: 1550, height: 510 },
+    },
     primaryText: "Balance is more than a workout tracker. It is a plant-based community where training, progress and support live together. The Founders Pass includes six weeks with me in your corner, then lifetime access to the core app and community. AU$99 once. Message “BALANCE” to see what is included.",
     headline: 'Plant-based fitness is better together',
     description: 'Join the Balance founding members',
@@ -191,10 +196,45 @@ async function proofPhotoBuffer(item, width, height) {
     const cropHeight = Math.min(item.photoCrop.height || metadata.height - top, metadata.height - top);
     source = source.extract({ left: 0, top, width: metadata.width, height: cropHeight });
   }
-  const photo = await source.resize(width - 28, height - 28, { fit: 'cover', position: 'centre' }).png().toBuffer();
+  const photo = await source.resize(width - 28, height - 28, {
+    fit: item.proofFit || 'cover',
+    position: 'centre',
+    background: '#F8F4EA',
+  }).png().toBuffer();
+  const frameAccent = item.frameAccent || item.accent;
   const mask = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect width="${width}" height="${height}" rx="34" fill="#fff"/></svg>`);
   return sharp({ create: { width, height, channels: 4, background: '#1A101F' } })
-    .composite([{ input: photo, left: 14, top: 14 }, { input: Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="5" width="${width - 10}" height="${height - 10}" rx="30" fill="none" stroke="${item.accent}" stroke-width="6"/></svg>`) }, { input: mask, blend: 'dest-in' }])
+    .composite([{ input: photo, left: 14, top: 14 }, { input: Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="5" width="${width - 10}" height="${height - 10}" rx="30" fill="none" stroke="${frameAccent}" stroke-width="6"/></svg>`) }, { input: mask, blend: 'dest-in' }])
+    .png().toBuffer();
+}
+
+async function communityProofBuffer(item, width, height) {
+  const sourcePath = path.join(ROOT, item.source);
+  const metadata = await sharp(sourcePath).metadata();
+  const inset = 14;
+  const innerW = width - inset * 2;
+  const innerH = height - inset * 2;
+  const commentsH = Math.round(innerH * 0.25);
+  const photoH = innerH - commentsH;
+  const photoCrop = item.communitySections.photo;
+  const commentsCrop = item.communitySections.comments;
+  const photo = await sharp(sourcePath)
+    .extract({ left: 0, top: photoCrop.top, width: metadata.width, height: photoCrop.height })
+    .resize(innerW, photoH, { fit: 'cover', position: 'top' })
+    .png().toBuffer();
+  const comments = await sharp(sourcePath)
+    .extract({ left: 0, top: commentsCrop.top, width: metadata.width, height: commentsCrop.height })
+    .resize(innerW, commentsH, { fit: 'contain', position: 'top', background: '#FFFFFF' })
+    .png().toBuffer();
+  const mask = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect width="${width}" height="${height}" rx="34" fill="#fff"/></svg>`);
+  const frame = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="5" width="${width - 10}" height="${height - 10}" rx="30" fill="none" stroke="${item.accent}" stroke-width="6"/></svg>`);
+  return sharp({ create: { width, height, channels: 4, background: '#FFFFFF' } })
+    .composite([
+      { input: photo, left: inset, top: inset },
+      { input: comments, left: inset, top: inset + photoH },
+      { input: frame },
+      { input: mask, blend: 'dest-in' },
+    ])
     .png().toBuffer();
 }
 
@@ -214,7 +254,7 @@ function copyPanelSvg(width, height, item, layout) {
     <text x="${x}" y="${priceY}" fill="${item.accent}" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 34 : 31}" font-weight="900" letter-spacing="1">${esc(item.price)}</text>
     <rect x="${x}" y="${ctaY}" width="${tall ? 440 : 410}" height="${tall ? 74 : 68}" rx="${tall ? 37 : 34}" fill="${item.accent}"/>
     <text x="${x + (tall ? 220 : 205)}" y="${ctaY + (tall ? 49 : 45)}" fill="${colours.ink}" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 25 : 23}" font-weight="900" text-anchor="middle" letter-spacing="1">${esc(item.cta)}</text>
-    <text x="${footerX}" y="${height - (tall ? 60 : 44)}" fill="#FFFFFF" fill-opacity=".72" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 24 : 20}" font-weight="700">BALANCE • FITNESS GAMIFIED</text>
+    <text x="${footerX}" y="${height - (tall ? 60 : 44)}" fill="#FFFFFF" fill-opacity=".72" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 24 : 20}" font-weight="700">BALANCE - PLANT BASED FITNESS</text>
   </svg>`);
 }
 
@@ -244,6 +284,17 @@ async function renderPhone(item, width, height) {
   return sharp(baseSvg(width, height, item)).composite([
     { input: phone, left: width - phoneW - (tall ? 30 : 26), top: phoneTop },
     { input: copyPanelSvg(width, height, item, { panelY, footerX: tall ? 70 : 64 }) },
+  ]).png().toBuffer();
+}
+
+async function renderGoldFrame(item, width, height) {
+  const tall = height > 1500;
+  const frameW = tall ? 520 : 430;
+  const frameH = tall ? 1040 : 860;
+  const framed = await proofPhotoBuffer(item, frameW, frameH);
+  return sharp(baseSvg(width, height, item)).composite([
+    { input: framed, left: width - frameW - (tall ? 30 : 26), top: tall ? 760 : 450 },
+    { input: copyPanelSvg(width, height, item, { panelY: tall ? 245 : 215, footerX: tall ? 70 : 64 }) },
   ]).png().toBuffer();
 }
 
@@ -280,12 +331,12 @@ async function renderGallery(item, width, height) {
 
 async function renderProof(item, width, height) {
   const tall = height > 1500;
-  const proofW = tall ? 880 : 560;
-  const proofH = tall ? 940 : 700;
-  const proof = await proofPhotoBuffer(item, proofW, proofH);
+  const proofW = tall ? 760 : 560;
+  const proofH = tall ? 1180 : 780;
+  const proof = await communityProofBuffer(item, proofW, proofH);
   return sharp(baseSvg(width, height, item)).composite([
-    { input: proof, left: tall ? 100 : width - proofW - 25, top: tall ? 105 : 620 },
-    { input: copyPanelSvg(width, height, item, { panelY: tall ? 1180 : 190, footerX: tall ? 70 : 64 }) },
+    { input: proof, left: tall ? 160 : width - proofW - 25, top: tall ? 125 : 560 },
+    { input: copyPanelSvg(width, height, item, { panelY: tall ? 1370 : 190, footerX: tall ? 70 : 64 }) },
   ]).png().toBuffer();
 }
 
@@ -293,6 +344,7 @@ async function render(item, width, height) {
   if (item.composition === 'portrait' || item.composition === 'founder') return renderPortrait(item, width, height);
   if (item.composition === 'stack') return renderStack(item, width, height);
   if (item.composition === 'gallery') return renderGallery(item, width, height);
+  if (item.composition === 'gold-frame') return renderGoldFrame(item, width, height);
   if (item.composition === 'proof') return renderProof(item, width, height);
   return renderPhone(item, width, height);
 }
