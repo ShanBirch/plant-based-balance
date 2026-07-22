@@ -16,18 +16,21 @@ const topPostAward = read('netlify/functions/award-feed-top-post.js');
 
 test('How to Earn XP matches current Learn rewards', () => {
   assert.match(learning, /LESSON_COMPLETE:\s*10/);
+  assert.match(learning, /MIND_LESSON_COMPLETE:\s*20/);
   assert.match(learning, /UNIT_COMPLETE_BONUS:\s*20/);
   assert.match(learning, /MODULE_COMPLETE_BONUS:\s*100/);
 
   assert.match(guideScript, /amount: '\+10', title: 'New lesson complete'/);
+  assert.match(guideScript, /amount: '\+20', title: 'Mind lesson complete'/);
   assert.match(guideScript, /amount: '\+20', title: 'Unit complete'/);
   assert.match(guideScript, /amount: '\+100', title: 'Entire topic complete'/);
-  assert.match(guideScript, /amount: '\+10', title: 'Daily quiz'[^\n]*fresh daily quiz/);
+  assert.match(guideScript, /amount: '\+10\/\+20', title: 'Daily quiz'[^\n]*Mind quizzes earn 20 XP/);
 
   assert.match(standaloneGuide, />\+10<\/span><span><strong>New lesson complete/);
+  assert.match(standaloneGuide, />\+20<\/span><span><strong>Mind lesson complete/);
   assert.match(standaloneGuide, />\+20<\/span><span><strong>Unit complete/);
   assert.match(standaloneGuide, />\+100<\/span><span><strong>Entire topic complete/);
-  assert.match(standaloneGuide, />\+10<\/span><span><strong>Daily quiz[^\n]*fresh daily quiz/);
+  assert.match(standaloneGuide, />\+10\/\+20<\/span><span><strong>Daily quiz[^\n]*Mind quizzes earn 20 XP/);
 });
 
 test('How to Earn XP matches current social and progress rewards', () => {
@@ -53,8 +56,8 @@ test('fast route totals and mobile script versions are current', () => {
   assert.match(dashboard, /Log an accepted meal[^\r\n]*\+33 XP/);
   assert.match(dashboard, /Log a workout[^\r\n]*\+31 XP/);
   assert.match(dashboard, /fresh daily quiz[^\r\n]*\+12 XP/);
-  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=33/g);
-  assert.match(dashboard, /lib\/learning-inline\.js\?v=11/g);
+  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=34/g);
+  assert.match(dashboard, /lib\/learning-inline\.js\?v=12/g);
 });
 
 test('public XP guides do not expose internal automation wording or stale Health IQ rewards', () => {

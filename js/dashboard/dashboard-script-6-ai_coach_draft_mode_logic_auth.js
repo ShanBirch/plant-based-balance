@@ -5294,9 +5294,10 @@ const CHALLENGE_XP_INFO_GROUPS = [
         title: 'Health IQ',
         rows: [
             { amount: '+10', title: 'New lesson complete', body: 'Score 100% on a fresh Health IQ lesson.' },
+            { amount: '+20', title: 'Mind lesson complete', body: 'Score 100% on a fresh lesson in the Mind section.' },
             { amount: '+20', title: 'Unit complete', body: 'Finish all lessons in a unit.' },
             { amount: '+100', title: 'Entire topic complete', body: 'Finish every unit in a topic such as Body, Fuel, or Mind.' },
-            { amount: '+10', title: 'Daily quiz', body: 'Score 100% on a fresh daily quiz. This is the lesson reward, not an extra bonus.' },
+            { amount: '+10/+20', title: 'Daily quiz', body: 'Score 100% on a fresh daily quiz. Mind quizzes earn 20 XP, all other sections earn 10 XP.' },
             { amount: 'Bonus', title: 'Health IQ level-ups', body: 'Level bonuses are +5, +10, +15, +20, +25, +30, +40, +50, then +100 XP.' },
         ],
     },

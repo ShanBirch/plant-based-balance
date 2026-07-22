@@ -227,6 +227,9 @@
             document.getElementById('daily-quiz-icon').textContent = moduleEmojis[module.id] || '📚';
             document.getElementById('daily-quiz-lesson-title').textContent = lesson.title;
             document.getElementById('daily-quiz-lesson-context').textContent = module.title + ' \u2022 ' + unit.title;
+            const xpReward = module.id === 'mind' ? 20 : 10;
+            const xpRewardEl = document.getElementById('daily-quiz-xp-reward');
+            if (xpRewardEl) xpRewardEl.textContent = '+' + xpReward + ' XP';
 
             card.onclick = function() {
                 window.startInlineHomeLesson(lesson.id);
@@ -266,9 +269,13 @@
     /**
      * Called after daily quiz is completed to update dashboard card
      */
-    window.refreshDailyQuizCard = function() {
+    window.refreshDailyQuizCard = function(xpEarned) {
         const card = document.getElementById('daily-quiz-card');
         const doneCard = document.getElementById('daily-quiz-done-card');
+        const xpEarnedEl = document.getElementById('daily-quiz-xp-earned');
+        if (xpEarnedEl && Number(xpEarned) > 0) {
+            xpEarnedEl.textContent = '+' + Number(xpEarned) + ' XP earned. Come back tomorrow!';
+        }
         if (card) {
             card.style.transition = 'opacity 0.5s, transform 0.5s';
             card.style.opacity = '0';
