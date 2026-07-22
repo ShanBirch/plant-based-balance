@@ -51,14 +51,18 @@ const campaigns = [
   {
     id: '03-six-weeks-lifetime-access',
     boardId: 'offer-stack',
-    sources: ['photos/balance-character-shot.jpg', 'photos/balance-nutrition-shot.jpg', 'photos/balance-feed-shot.jpg'],
+    sources: [
+      { source: 'assets/campaigns/founders-pass-meta-2026-07-22/source/balance-home-screen.png', fit: 'cover' },
+      { source: 'assets/campaigns/founders-pass-meta-2026-07-22/source/balance-logo-screen.png', fit: 'contain' },
+      { source: 'assets/campaigns/founders-pass-meta-2026-07-22/source/balance-nutrition-screen.png', fit: 'cover' },
+    ],
     eyebrow: 'ONE SIMPLE FOUNDING MEMBER OFFER',
     title: ['6 WEEKS WITH SHANNON.', 'LIFETIME CORE ACCESS.'],
     body: ['Coaching support', 'Core app + plant-based community'],
     price: 'AU$99 ONCE',
     cta: 'GET THE DETAILS IN DMS',
     accent: colours.violet,
-    composition: 'stack',
+    composition: 'gallery',
     primaryText: "The Balance Vegan Fitness Founders Pass is simple: pay AU$99 once, get six weeks of one-to-one in-app coaching support from me, then keep lifetime access to the core Balance app and plant-based community. No sales call needed. Message me for the details.",
     headline: 'Six weeks with Shannon. Lifetime core access.',
     description: 'The Vegan Fitness Founders Pass',
@@ -66,14 +70,14 @@ const campaigns = [
   {
     id: '04-plant-based-clarity',
     boardId: 'nutrition-clarity',
-    source: 'photos/balance-nutrition-shot.jpg',
+    source: 'assets/campaigns/founders-pass-meta-2026-07-22/source/balance-nutrition-screen.png',
     eyebrow: 'PLANT-BASED FITNESS, MADE CLEARER',
     title: ['TRAIN WITH PURPOSE.', 'EAT WITH CLARITY.'],
     body: ['Vegan nutrition and progress tools', 'with Shannon there for direction'],
     price: 'FOUNDERS PASS  •  AU$99 ONCE',
     cta: 'SEND MESSAGE',
     accent: colours.coral,
-    composition: 'phone-light',
+    composition: 'phone',
     primaryText: "Plant-based fitness does not need more noise. Balance puts training, vegan nutrition and progress tools together, with six weeks of coaching support from me when you need direction. The Founders Pass is AU$99 once and includes lifetime core app and community access. Message “BALANCE” for details.",
     headline: 'Plant-based fitness, made clearer',
     description: 'Training, nutrition, progress and support',
@@ -81,16 +85,15 @@ const campaigns = [
   {
     id: '05-not-doing-it-alone',
     boardId: 'community',
-    source: 'photos/balance-feed-shot.jpg',
+    source: 'assets/campaigns/founders-pass-meta-2026-07-22/source/shane-strength-day.png',
     eyebrow: 'BUILT FOR THE PLANT-BASED COMMUNITY',
     title: ['PROGRESS IS EASIER', 'WHEN IT IS SHARED.'],
     body: ['Train, learn and keep moving', 'A community that gets it'],
     price: 'AU$99 ONCE',
     cta: 'MESSAGE “BALANCE”',
     accent: colours.gold,
-    composition: 'feed',
-    phonePosition: 'bottom',
-    phoneCropTop: 620,
+    composition: 'proof',
+    photoCrop: { top: 205, height: 1350 },
     primaryText: "Balance is more than a workout tracker. It is a plant-based community where training, progress and support live together. The Founders Pass includes six weeks with me in your corner, then lifetime access to the core app and community. AU$99 once. Message “BALANCE” to see what is included.",
     headline: 'Plant-based fitness is better together',
     description: 'Join the Balance founding members',
@@ -145,10 +148,53 @@ async function phoneBuffer(source, width, height, position = 'top', cropTop = 0)
     const metadata = await image.metadata();
     image = image.extract({ left: 0, top: Math.min(cropTop, metadata.height - 1), width: metadata.width, height: metadata.height - Math.min(cropTop, metadata.height - 1) });
   }
-  const screen = await image.resize(width - 24, height - 24, { fit: 'cover', position }).png().toBuffer();
-  const mask = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="${width}" height="${height}" rx="46" fill="#fff"/></svg>`);
+  const bezel = Math.max(22, Math.round(width * 0.055));
+  const screen = await image.resize(width - bezel * 2, height - bezel * 2, { fit: 'cover', position }).png().toBuffer();
+  const chrome = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="2" width="${width - 4}" height="${height - 4}" rx="58" fill="none" stroke="#302A35" stroke-width="4"/>
+    <rect x="${Math.round(width / 2 - 54)}" y="${Math.round(bezel * 0.42)}" width="108" height="20" rx="10" fill="#08060A"/>
+    <circle cx="${Math.round(width / 2 + 35)}" cy="${Math.round(bezel * 0.42 + 10)}" r="4" fill="#463D4D"/>
+    <rect x="0" y="${Math.round(height * 0.22)}" width="7" height="86" rx="3" fill="#413A46"/>
+    <rect x="${width - 7}" y="${Math.round(height * 0.29)}" width="7" height="120" rx="3" fill="#413A46"/>
+  </svg>`);
+  const mask = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="${width}" height="${height}" rx="58" fill="#fff"/></svg>`);
   return sharp({ create: { width, height, channels: 4, background: '#0B0710' } })
-    .composite([{ input: screen, left: 12, top: 12 }, { input: mask, blend: 'dest-in' }])
+    .composite([{ input: screen, left: bezel, top: bezel }, { input: chrome }, { input: mask, blend: 'dest-in' }])
+    .png().toBuffer();
+}
+
+async function framedCanvasBuffer(entry, width, height, angle = 0) {
+  const frame = 18;
+  const matte = 18;
+  const imageWidth = width - (frame + matte) * 2;
+  const imageHeight = height - (frame + matte) * 2;
+  const photo = await sharp(path.join(ROOT, entry.source))
+    .resize(imageWidth, imageHeight, { fit: entry.fit || 'cover', position: 'centre', background: '#0B0710' })
+    .png().toBuffer();
+  const shell = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <defs><filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="16" stdDeviation="15" flood-color="#000" flood-opacity=".48"/></filter><linearGradient id="wood" x1="0" x2="1"><stop stop-color="#7D5523"/><stop offset=".45" stop-color="#E3B85B"/><stop offset="1" stop-color="#6A431B"/></linearGradient></defs>
+    <rect x="14" y="14" width="${width - 28}" height="${height - 28}" rx="24" fill="#000" opacity=".7" filter="url(#shadow)"/>
+    <rect x="8" y="8" width="${width - 16}" height="${height - 16}" rx="22" fill="url(#wood)"/>
+    <rect x="${frame}" y="${frame}" width="${width - frame * 2}" height="${height - frame * 2}" rx="14" fill="#FFF8E9"/>
+  </svg>`);
+  const card = await sharp({ create: { width, height, channels: 4, background: '#00000000' } })
+    .composite([{ input: shell }, { input: photo, left: frame + matte, top: frame + matte }])
+    .png().toBuffer();
+  return angle ? sharp(card).rotate(angle, { background: '#00000000' }).png().toBuffer() : card;
+}
+
+async function proofPhotoBuffer(item, width, height) {
+  let source = sharp(path.join(ROOT, item.source));
+  if (item.photoCrop) {
+    const metadata = await source.metadata();
+    const top = Math.min(item.photoCrop.top || 0, metadata.height - 1);
+    const cropHeight = Math.min(item.photoCrop.height || metadata.height - top, metadata.height - top);
+    source = source.extract({ left: 0, top, width: metadata.width, height: cropHeight });
+  }
+  const photo = await source.resize(width - 28, height - 28, { fit: 'cover', position: 'centre' }).png().toBuffer();
+  const mask = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect width="${width}" height="${height}" rx="34" fill="#fff"/></svg>`);
+  return sharp({ create: { width, height, channels: 4, background: '#1A101F' } })
+    .composite([{ input: photo, left: 14, top: 14 }, { input: Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="5" width="${width - 10}" height="${height - 10}" rx="30" fill="none" stroke="${item.accent}" stroke-width="6"/></svg>`) }, { input: mask, blend: 'dest-in' }])
     .png().toBuffer();
 }
 
@@ -161,13 +207,14 @@ function copyPanelSvg(width, height, item, layout) {
   const bodyY = panelY + item.title.length * titleGap + 36;
   const priceY = bodyY + 130;
   const ctaY = priceY + 68;
+  const footerX = Number.isFinite(layout.footerX) ? layout.footerX : width - x - 360;
   return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
     ${linesSvg(item.title, x, panelY, titleSize, titleGap, colours.white, 900)}
     ${linesSvg(item.body, x, bodyY, tall ? 31 : 27, tall ? 43 : 38, colours.cream, 500)}
     <text x="${x}" y="${priceY}" fill="${item.accent}" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 34 : 31}" font-weight="900" letter-spacing="1">${esc(item.price)}</text>
     <rect x="${x}" y="${ctaY}" width="${tall ? 440 : 410}" height="${tall ? 74 : 68}" rx="${tall ? 37 : 34}" fill="${item.accent}"/>
     <text x="${x + (tall ? 220 : 205)}" y="${ctaY + (tall ? 49 : 45)}" fill="${colours.ink}" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 25 : 23}" font-weight="900" text-anchor="middle" letter-spacing="1">${esc(item.cta)}</text>
-    <text x="${width - x - 360}" y="${height - (tall ? 60 : 44)}" fill="#FFFFFF" fill-opacity=".72" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 24 : 20}" font-weight="700">BALANCE • FITNESS GAMIFIED</text>
+    <text x="${footerX}" y="${height - (tall ? 60 : 44)}" fill="#FFFFFF" fill-opacity=".72" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 24 : 20}" font-weight="700">BALANCE • FITNESS GAMIFIED</text>
   </svg>`);
 }
 
@@ -189,14 +236,14 @@ async function renderPortrait(item, width, height) {
 
 async function renderPhone(item, width, height) {
   const tall = height > 1500;
-  const phoneW = tall ? 620 : 500;
-  const phoneH = tall ? 930 : 790;
+  const phoneW = tall ? 520 : 430;
+  const phoneH = tall ? 1040 : 860;
   const phone = await phoneBuffer(item.source, phoneW, phoneH, item.phonePosition || 'top', item.phoneCropTop || 0);
   const panelY = tall ? 245 : 215;
-  const phoneTop = tall ? 780 : 470;
+  const phoneTop = tall ? 760 : 450;
   return sharp(baseSvg(width, height, item)).composite([
-    { input: phone, left: width - phoneW - (tall ? -20 : 40), top: phoneTop },
-    { input: copyPanelSvg(width, height, item, { panelY }) },
+    { input: phone, left: width - phoneW - (tall ? 30 : 26), top: phoneTop },
+    { input: copyPanelSvg(width, height, item, { panelY, footerX: tall ? 70 : 64 }) },
   ]).png().toBuffer();
 }
 
@@ -213,9 +260,40 @@ async function renderStack(item, width, height) {
   ]).png().toBuffer();
 }
 
+async function renderGallery(item, width, height) {
+  const tall = height > 1500;
+  const sideSize = tall ? [330, 560] : [292, 500];
+  const centreSize = tall ? [390, 650] : [342, 570];
+  const left = await framedCanvasBuffer(item.sources[0], sideSize[0], sideSize[1], -7);
+  const centre = await framedCanvasBuffer(item.sources[1], centreSize[0], centreSize[1], 0);
+  const right = await framedCanvasBuffer(item.sources[2], sideSize[0], sideSize[1], 7);
+  const positions = tall
+    ? [{ left: 30, top: 1120 }, { left: 345, top: 990 }, { left: 722, top: 1120 }]
+    : [{ left: 6, top: 775 }, { left: 364, top: 680 }, { left: 772, top: 775 }];
+  return sharp(baseSvg(width, height, item)).composite([
+    { input: left, ...positions[0] },
+    { input: right, ...positions[2] },
+    { input: centre, ...positions[1] },
+    { input: copyPanelSvg(width, height, item, { panelY: tall ? 250 : 190 }) },
+  ]).png().toBuffer();
+}
+
+async function renderProof(item, width, height) {
+  const tall = height > 1500;
+  const proofW = tall ? 880 : 560;
+  const proofH = tall ? 940 : 700;
+  const proof = await proofPhotoBuffer(item, proofW, proofH);
+  return sharp(baseSvg(width, height, item)).composite([
+    { input: proof, left: tall ? 100 : width - proofW - 25, top: tall ? 105 : 620 },
+    { input: copyPanelSvg(width, height, item, { panelY: tall ? 1180 : 190, footerX: tall ? 70 : 64 }) },
+  ]).png().toBuffer();
+}
+
 async function render(item, width, height) {
   if (item.composition === 'portrait' || item.composition === 'founder') return renderPortrait(item, width, height);
   if (item.composition === 'stack') return renderStack(item, width, height);
+  if (item.composition === 'gallery') return renderGallery(item, width, height);
+  if (item.composition === 'proof') return renderProof(item, width, height);
   return renderPhone(item, width, height);
 }
 
