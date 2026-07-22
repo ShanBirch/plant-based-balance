@@ -2790,15 +2790,19 @@ async function sharePendingPostWorkoutCompositeToFeed() {
         });
         const compositeFile = postWorkoutShareFileFromDataUrl(compositeDataUrl, 'balance-workout-overlay.jpg');
         const tempStoryId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
-        const formData = new FormData();
-        formData.append('file', compositeFile);
-        formData.append('userId', window.currentUser.id);
-        formData.append('storyId', tempStoryId);
-        formData.append('source', 'workout_share_photo_overlay');
-
-        const uploadResponse = await fetch('/api/upload-story-media', { method: 'POST', body: formData });
-        if (!uploadResponse.ok) throw new Error('Upload failed');
-        const uploadData = await uploadResponse.json();
+        if (typeof uploadStoryMediaToBackblaze !== 'function') {
+            throw new Error('Feed uploader is still loading. Please try again.');
+        }
+        // Canvas-created files can fail when iOS WKWebView sends them through
+        // a multipart FormData relay. Use the Feed's authenticated direct B2
+        // uploader, which already selects the native-safe XHR transport.
+        const uploadData = await uploadStoryMediaToBackblaze(compositeFile, {
+            userId: window.currentUser.id,
+            storyId: tempStoryId,
+            source: 'feed_workout_photo_overlay',
+            preferDirectUpload: true
+        });
+        if (!uploadData?.url) throw new Error('The overlay upload was not confirmed.');
         const storyPayload = Object.assign({}, pending.cardPayload, {
             share_style: 'photo_overlay',
             share_caption: pending.type === 'pb' ? 'Personal best, captured in the moment.' : 'Workout complete, captured in the moment.'

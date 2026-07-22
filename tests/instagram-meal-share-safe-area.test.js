@@ -13,6 +13,6 @@ assert.match(shareScript, /const contentBottom\s*=\s*height - instagramSafeBotto
 assert.match(shareScript, /const macroY\s*=\s*Math\.max\(y \+ 116, contentBottom - 202\)/);
 assert.match(shareScript, /MEAL SHARED/);
 assert.match(shareScript, /Fuel\. Track\. Level up\.|BALANCE/);
-assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=32/);
+assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=33/);
 
 console.log('Instagram meal share safe-area tests passed');
