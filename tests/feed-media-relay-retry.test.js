@@ -28,7 +28,8 @@ assert.strictEqual(isRetryableB2UploadFailure(500, ''), true);
 assert.strictEqual(isRetryableB2UploadFailure(503, 'service_unavailable'), true);
 assert.strictEqual(isRetryableB2UploadFailure(429, 'too_many_requests'), true);
 assert.strictEqual(isRetryableB2UploadFailure(401, 'expired_auth_token'), true);
-assert.strictEqual(isRetryableB2UploadFailure(400, 'bad_request'), false);
-assert.strictEqual(isRetryableB2UploadFailure(403, 'unauthorized'), false);
+assert.strictEqual(isRetryableB2UploadFailure(400, 'bad_request'), true);
+assert.strictEqual(isRetryableB2UploadFailure(403, 'unauthorized'), true);
+assert.strictEqual(isRetryableB2UploadFailure(413, 'file_too_large'), false);
 
 console.log('feed media relay retry contract passed');

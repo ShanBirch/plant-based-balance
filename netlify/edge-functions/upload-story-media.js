@@ -72,11 +72,11 @@ const B2_UPLOAD_MAX_ATTEMPTS = 3;
 function isRetryableB2UploadFailure(status, errorText = '') {
     const code = Number(status || 0);
     const detail = String(errorText || '').toLowerCase();
-    return code === 0
-        || code === 401
-        || code === 408
-        || code === 429
-        || code >= 500
+    // The relay has already validated the file before reaching B2. In live
+    // traffic B2 occasionally returns a one-off 4xx from an upload host/token
+    // and accepts the identical bytes on a fresh host immediately after. Only
+    // a real payload-size rejection is permanent here.
+    return code !== 413
         || /expired_auth_token|service_unavailable|too_many_requests|request_timeout/.test(detail);
 }
 
