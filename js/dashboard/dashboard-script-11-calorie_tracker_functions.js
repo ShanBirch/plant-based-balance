@@ -2586,8 +2586,33 @@ async function shareMealRecordToInstagram(meal, btn, target = 'story') {
     }
 }
 
-function closeMealFeedSharePrompt() {
+function setMealFeedSharePromptBusy(isBusy, statusText) {
     const prompt = document.getElementById('meal-feed-share-prompt');
+    if (!prompt) return;
+
+    prompt.dataset.busy = isBusy ? 'true' : 'false';
+    prompt.setAttribute('aria-busy', isBusy ? 'true' : 'false');
+    prompt.querySelectorAll('button').forEach(button => {
+        button.disabled = !!isBusy;
+        button.style.cursor = isBusy ? 'wait' : 'pointer';
+        button.style.opacity = isBusy ? '0.55' : '1';
+    });
+
+    const progress = prompt.querySelector('[data-meal-share-progress]');
+    const progressLabel = prompt.querySelector('[data-meal-share-progress-label]');
+    if (progress) progress.style.display = isBusy ? 'block' : 'none';
+    if (progressLabel && statusText) progressLabel.textContent = statusText;
+
+    if (isBusy && prompt._dismissTimer) {
+        clearTimeout(prompt._dismissTimer);
+        prompt._dismissTimer = null;
+    }
+}
+
+function closeMealFeedSharePrompt(force) {
+    const prompt = document.getElementById('meal-feed-share-prompt');
+    if (prompt && prompt.dataset.busy === 'true' && force !== true) return;
+    if (prompt && prompt._dismissTimer) clearTimeout(prompt._dismissTimer);
     if (prompt) prompt.remove();
 }
 
@@ -2595,12 +2620,42 @@ window.closeMealFeedSharePrompt = closeMealFeedSharePrompt;
 
 window.sharePendingMealToFeed = async function(btn) {
     const meal = window._pbbPendingMealFeedShare;
-    await shareMealRecordToFeed(meal, btn);
+    let sharedSuccessfully = false;
+    setMealFeedSharePromptBusy(true, 'Uploading photo and preparing your Feed post...');
+    try {
+        const story = await shareMealRecordToFeed(meal, btn);
+        if (story) {
+            sharedSuccessfully = true;
+            setMealFeedSharePromptBusy(true, 'Meal ready and shared');
+            setTimeout(() => closeMealFeedSharePrompt(true), 700);
+        }
+        return story;
+    } finally {
+        const prompt = document.getElementById('meal-feed-share-prompt');
+        if (!sharedSuccessfully && prompt && prompt.parentNode) {
+            setMealFeedSharePromptBusy(false, 'Upload paused. Tap Feed to try again.');
+        }
+    }
 };
 
 window.sharePendingMealToInstagram = async function(btn) {
     const meal = window._pbbPendingMealFeedShare;
-    await shareMealRecordToInstagram(meal, btn, 'feed');
+    let sharedSuccessfully = false;
+    setMealFeedSharePromptBusy(true, 'Uploading photo and preparing Instagram...');
+    try {
+        const shared = await shareMealRecordToInstagram(meal, btn, 'feed');
+        if (shared) {
+            sharedSuccessfully = true;
+            setMealFeedSharePromptBusy(true, 'Meal ready for Instagram');
+            setTimeout(() => closeMealFeedSharePrompt(true), 700);
+        }
+        return shared;
+    } finally {
+        const prompt = document.getElementById('meal-feed-share-prompt');
+        if (!sharedSuccessfully && prompt && prompt.parentNode) {
+            setMealFeedSharePromptBusy(false, 'Upload paused. Choose where to share again.');
+        }
+    }
 };
 
 function showMealFeedSharePrompt(meal) {
@@ -2616,6 +2671,9 @@ function showMealFeedSharePrompt(meal) {
     const shortLabel = foodLabel.length > 72 ? foodLabel.slice(0, 69) + '...' : foodLabel;
     const prompt = document.createElement('div');
     prompt.id = 'meal-feed-share-prompt';
+    prompt.dataset.busy = 'false';
+    prompt.setAttribute('role', 'status');
+    prompt.setAttribute('aria-live', 'polite');
     prompt.style.cssText = 'position:fixed;left:14px;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:10030;background:#ffffff;border:1px solid #dbeafe;border-radius:16px;box-shadow:0 18px 42px rgba(15,23,42,0.22);padding:14px;font-family:inherit;';
     const feedButtonLabel = feedEarnsXp ? `Feed +${MEAL_FEED_SHARE_XP} XP` : 'Feed';
     const feedButtonHtml = `<button type="button" onclick="sharePendingMealToFeed(this)" style="border:none;background:#046a38;color:white;border-radius:999px;padding:11px 12px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">${feedButtonLabel}</button>`;
@@ -2634,9 +2692,17 @@ function showMealFeedSharePrompt(meal) {
             ${feedButtonHtml}
             <button type="button" onclick="sharePendingMealToInstagram(this)" style="border:none;background:#be185d;color:white;border-radius:999px;padding:11px 12px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">${getMealInstagramShareButtonText()}</button>
         </div>
+        <div data-meal-share-progress style="display:none;margin-top:11px;">
+            <div data-meal-share-progress-label style="font-size:0.72rem;font-weight:800;color:#475569;margin-bottom:6px;">Uploading photo...</div>
+            <div style="height:6px;background:#e2e8f0;border-radius:999px;overflow:hidden;">
+                <div style="height:100%;width:42%;border-radius:999px;background:linear-gradient(90deg,#046a38,#22c55e,#046a38);background-size:200% 100%;animation:pbbMealShareProgress 1.15s linear infinite;"></div>
+            </div>
+        </div>
+        <style>@keyframes pbbMealShareProgress{0%{transform:translateX(-105%);background-position:100% 0}100%{transform:translateX(245%);background-position:-100% 0}}@media (prefers-reduced-motion:reduce){#meal-feed-share-prompt [data-meal-share-progress] div div{animation-duration:2.4s}}</style>
     `;
     document.body.appendChild(prompt);
-    setTimeout(function() {
+    prompt._dismissTimer = setTimeout(function() {
+        prompt._dismissTimer = null;
         if (document.getElementById('meal-feed-share-prompt') === prompt) closeMealFeedSharePrompt();
     }, 12000);
 }

@@ -19,7 +19,18 @@ function extractFunction(name, nextFunctionName) {
 }
 
 test('dashboard loads the refreshed meal share logic', () => {
-    assert.match(dashboardSource, /dashboard-script-11-calorie_tracker_functions\.js\?v=27/g);
+    assert.match(dashboardSource, /dashboard-script-11-calorie_tracker_functions\.js\?v=28/g);
+});
+
+test('meal share prompt stays visible and locks every action while its photo uploads', () => {
+    assert.match(trackerSource, /function setMealFeedSharePromptBusy\(isBusy, statusText\)/);
+    assert.match(trackerSource, /prompt\.querySelectorAll\('button'\)\.forEach\(button =>/);
+    assert.match(trackerSource, /button\.disabled = !!isBusy/);
+    assert.match(trackerSource, /data-meal-share-progress/);
+    assert.match(trackerSource, /pbbMealShareProgress 1\.15s linear infinite/);
+    assert.match(trackerSource, /if \(prompt && prompt\.dataset\.busy === 'true' && force !== true\) return/);
+    assert.match(trackerSource, /if \(isBusy && prompt\._dismissTimer\)/);
+    assert.match(trackerSource, /setMealFeedSharePromptBusy\(true, 'Uploading photo and preparing your Feed post\.\.\.'\)/);
 });
 
 test('Instagram meal shares collect a photo and send the designed photo-backed card', async () => {
