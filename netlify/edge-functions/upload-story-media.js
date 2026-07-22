@@ -68,6 +68,7 @@ function validateWorkoutVideoUpload(file, fileBuffer, source) {
 }
 
 const B2_UPLOAD_MAX_ATTEMPTS = 3;
+const B2_UPLOAD_ATTEMPT_TIMEOUT_MS = 8000;
 
 function isRetryableB2UploadFailure(status, errorText = '') {
     const code = Number(status || 0);
@@ -82,6 +83,16 @@ function isRetryableB2UploadFailure(status, errorText = '') {
 
 function waitForB2UploadRetry(attempt) {
     return new Promise(resolve => setTimeout(resolve, Math.min(1200, 250 * attempt)));
+}
+
+async function fetchB2WithTimeout(url, options, timeoutMs = B2_UPLOAD_ATTEMPT_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+        clearTimeout(timeoutId);
+    }
 }
 
 export default async (request, context) => {
@@ -157,7 +168,7 @@ export default async (request, context) => {
         let lastUploadError = '';
         for (let attempt = 1; attempt <= B2_UPLOAD_MAX_ATTEMPTS && !uploadData; attempt += 1) {
             try {
-                const uploadUrlResponse = await fetch(`${apiUrl}/b2api/v2/b2_get_upload_url`, {
+                const uploadUrlResponse = await fetchB2WithTimeout(`${apiUrl}/b2api/v2/b2_get_upload_url`, {
                     method: 'POST',
                     headers: {
                         'Authorization': authorizationToken,
@@ -177,7 +188,7 @@ export default async (request, context) => {
                 }
 
                 const { uploadUrl, authorizationToken: uploadToken } = await uploadUrlResponse.json();
-                const uploadResponse = await fetch(uploadUrl, {
+                const uploadResponse = await fetchB2WithTimeout(uploadUrl, {
                     method: 'POST',
                     headers: {
                         'Authorization': uploadToken,

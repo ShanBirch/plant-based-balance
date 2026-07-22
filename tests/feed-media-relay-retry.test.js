@@ -9,8 +9,11 @@ const source = fs.readFileSync(
 );
 
 assert.match(source, /const B2_UPLOAD_MAX_ATTEMPTS = 3/);
+assert.match(source, /const B2_UPLOAD_ATTEMPT_TIMEOUT_MS = 8000/);
 assert.match(source, /for \(let attempt = 1; attempt <= B2_UPLOAD_MAX_ATTEMPTS && !uploadData; attempt \+= 1\)/);
 assert.match(source, /get a fresh upload URL for each attempt/i);
+assert.match(source, /fetchB2WithTimeout\(`\$\{apiUrl\}\/b2api\/v2\/b2_get_upload_url`/);
+assert.match(source, /fetchB2WithTimeout\(uploadUrl/);
 assert.match(source, /return jsonResponse\(502, \{/);
 
 const helpersSource = source.slice(0, source.indexOf('export default'));
