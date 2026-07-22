@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v263'; // v263: use the iPhone-safe uploader for workout photo overlays
+const CACHE_NAME = 'pbb-app-v264'; // v264: load typed barcode entry for Build-a-Meal
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

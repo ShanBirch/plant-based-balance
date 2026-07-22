@@ -13412,6 +13412,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealTextInput"],[title="Type your meal"]', title:'Type your meal', body:"Prefer to type? Describe your meal in words and the AI will log the calories and macros for you." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openQuickManualEntry"],.camera-btn-widget[onclick*="openQuickManualEntry"],[title="Quick log calories & macros"]', title:'Quick log calories & macros', body:"Already know the numbers? Tap Quick Log to enter calories and macros directly. It is the fastest way to track something when you do not need AI, a photo, or a barcode." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"],[title="Build a meal"]', title:'Build and share a full meal', body:"When a meal has separate parts, tap Build-a-Meal. Add each barcode, photo or typed food, log the complete meal, then choose Feed or Instagram. Instagram places the meal details over your food photo." },
+    { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"],[title="Build a meal"]', title:'Type saved barcodes into a meal', body:"Open Build-a-Meal and tap Type code to paste a barcode you saved earlier. Balance looks up the product and adds it to the combined meal without needing the packaging or camera." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openRecentMealsModal"],.camera-btn-widget[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Use Recent & saved meals to re-log food you have already tracked. Tap the clock, pick the meal, and it drops back into today." },
     { tab:'meals', sel:'#meals-log-list,.meal-log-card', title:'Share meals to Feed', body:"Share any logged meal to Feed. The first meal share each day earns +15 XP, and later shares still post without extra XP.", quick: true },
     { tab:'meals', sel:'#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn', title:'Two shares, two rewards', body:"Share food to Balance Feed for +15 XP, then share it to Instagram Feed for another +15 XP. One does not block the other.", quick: true },
@@ -14400,6 +14401,14 @@ if(!window._pbbIsIOSSafari) {
       sel: '.meal-icon-btn[onclick*="openMealBuilder"]',
       title: 'Build, log and share one meal',
       body: "Use the Build-a-Meal icon for meals with separate ingredients. Add each item, log the complete meal, then choose Feed or Instagram. For Instagram, choose your meal photo and Balance adds the designed nutrition layout over it."
+    },
+    {
+      id: 'meal-builder-typed-barcode-v1',
+      tab: 'meals',
+      subtab: 'calorie-tracker',
+      sel: '.meal-icon-btn[onclick*="openMealBuilder"]',
+      title: 'Add a saved barcode',
+      body: "Building a meal ahead of time? Open Build-a-Meal, tap Type code, then paste a barcode from your notes. Balance adds the product without needing the packaging or camera."
     },
     {
       id: 'feed-composer-text-media-v1',
@@ -17254,7 +17263,20 @@ if(!window._pbbIsIOSSafari) {
                             <line x1="13" y1="8" x2="13" y2="16" stroke-width="1"></line>
                             <line x1="17" y1="8" x2="17" y2="16"></line>
                         </svg>
-                        <span>Barcode</span>
+                        <span>Scan</span>
+                    </button>
+                    <button class="meal-builder-add-btn" data-builder-barcode-type="1" onclick="addBuilderItemViaTypedBarcode()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                            <line x1="7" y1="8" x2="7" y2="8"></line>
+                            <line x1="11" y1="8" x2="11" y2="8"></line>
+                            <line x1="15" y1="8" x2="15" y2="8"></line>
+                            <line x1="7" y1="12" x2="7" y2="12"></line>
+                            <line x1="11" y1="12" x2="11" y2="12"></line>
+                            <line x1="15" y1="12" x2="15" y2="12"></line>
+                            <line x1="7" y1="16" x2="15" y2="16"></line>
+                        </svg>
+                        <span>Type code</span>
                     </button>
                     <button class="meal-builder-add-btn" onclick="addBuilderItemViaText()">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -17298,6 +17320,33 @@ if(!window._pbbIsIOSSafari) {
         ></textarea>
         <button class="meal-builder-text-submit" id="meal-builder-text-submit" onclick="submitBuilderTextItem()" disabled>
             Add
+        </button>
+    </div>
+</div>
+
+<!-- Meal Builder Typed Barcode Mini-Modal -->
+<div id="meal-builder-barcode-modal" class="meal-builder-text-modal" onclick="if(event.target===this)closeBuilderBarcodeInput()">
+    <div class="meal-builder-text-container">
+        <div class="meal-builder-text-header">
+            <h4>Type a barcode</h4>
+            <button class="meal-builder-text-close" onclick="closeBuilderBarcodeInput()">&times;</button>
+        </div>
+        <p style="margin:0 0 12px; color:var(--text-muted); font-size:0.85rem; line-height:1.4;">Paste a barcode you saved earlier. You do not need the packaging with you.</p>
+        <input
+            id="meal-builder-barcode-input"
+            class="meal-builder-text-input"
+            type="text"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            autocomplete="off"
+            maxlength="32"
+            aria-label="Saved barcode number"
+            placeholder="Paste or type barcode number"
+            style="min-height:0; resize:none;"
+        />
+        <p id="meal-builder-barcode-status" aria-live="polite" style="min-height:1.2em; margin:9px 2px 0; color:var(--text-muted); font-size:0.8rem;"></p>
+        <button class="meal-builder-text-submit" id="meal-builder-barcode-submit" onclick="submitBuilderBarcodeItem()" disabled>
+            Look up &amp; add
         </button>
     </div>
 </div>
@@ -17542,7 +17591,7 @@ document.write('<script src="js/dashboard/dashboard-script-10-points_widget_func
             }
 
             var mb = document.createElement('script');
-            mb.src = 'js/dashboard/dashboard-script-meal-builder.js?v=2';
+            mb.src = 'js/dashboard/dashboard-script-meal-builder.js?v=3';
             mb.dataset.pbbMealBuilder = '1';
             mb.onload = function() {
                 if (window._crumb) window._crumb('meal_builder_loaded');
@@ -17632,7 +17681,7 @@ document.write('<script src="js/dashboard/dashboard-script-10-points_widget_func
         }, { once: true });
     } else {
         document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=28" data-pbb-calorie-tracker="1"><\/script>');
-        document.write('<script src="js/dashboard/dashboard-script-meal-builder.js?v=2" data-pbb-meal-builder="1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-meal-builder.js?v=3" data-pbb-meal-builder="1"><\/script>');
     }
 })();
 </script>

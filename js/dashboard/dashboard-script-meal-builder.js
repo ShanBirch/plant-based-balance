@@ -60,6 +60,7 @@
         // builder.
         window._builderInterceptNextQuickMeal = false;
         closeBuilderTextInput();
+        closeBuilderBarcodeInput();
         cancelBuilderPortionPrompt();
     };
 
@@ -661,6 +662,70 @@
     window.handleBuilderPhotoFile = handleBuilderPhotoFile;
     window.handleBuilderBarcodeProduct = handleBuilderBarcodeProduct;
 
+    window.addBuilderItemViaTypedBarcode = function () {
+        if (builderState.isAdding) return;
+        var modal = document.getElementById('meal-builder-barcode-modal');
+        var input = document.getElementById('meal-builder-barcode-input');
+        var submit = document.getElementById('meal-builder-barcode-submit');
+        var status = document.getElementById('meal-builder-barcode-status');
+        if (!modal || !input || !submit) return;
+
+        input.value = '';
+        input.disabled = false;
+        submit.disabled = true;
+        submit.textContent = 'Look up & add';
+        if (status) status.textContent = '';
+        modal.classList.add('visible');
+        setTimeout(function () { input.focus(); }, 150);
+    };
+
+    function closeBuilderBarcodeInput() {
+        var modal = document.getElementById('meal-builder-barcode-modal');
+        if (modal) modal.classList.remove('visible');
+    }
+    window.closeBuilderBarcodeInput = closeBuilderBarcodeInput;
+
+    window.submitBuilderBarcodeItem = async function () {
+        var input = document.getElementById('meal-builder-barcode-input');
+        var submit = document.getElementById('meal-builder-barcode-submit');
+        var status = document.getElementById('meal-builder-barcode-status');
+        if (!input || !submit) return;
+
+        var code = input.value.replace(/\D/g, '');
+        input.value = code;
+        if (code.length < 6) {
+            if (status) status.textContent = 'Enter at least 6 digits.';
+            return;
+        }
+
+        builderState.isAdding = true;
+        updateSaveButtonState();
+        input.disabled = true;
+        submit.disabled = true;
+        submit.textContent = 'Looking up...';
+        if (status) status.textContent = 'Looking up product...';
+
+        try {
+            var response = await fetch('/.netlify/functions/barcode-lookup?code=' + encodeURIComponent(code));
+            var result = await response.json().catch(function () { return null; });
+            if (!response.ok || !result || !result.success || !result.product || !result.product.hasUsableNutrition) {
+                throw new Error((result && result.error) || 'Product not found');
+            }
+
+            closeBuilderBarcodeInput();
+            handleBuilderBarcodeProduct(result.product, 1, 'servings', 0);
+        } catch (err) {
+            console.error('Builder typed barcode lookup failed:', err);
+            if (status) status.textContent = 'Product not found. Check the number or add it with Text.';
+        } finally {
+            builderState.isAdding = false;
+            updateSaveButtonState();
+            input.disabled = false;
+            submit.textContent = 'Look up & add';
+            submit.disabled = input.value.replace(/\D/g, '').length < 6;
+        }
+    };
+
     // Both the Photo and Barcode builder buttons go through this single
     // entry point. We call the exact same camera the homepage /
     // nutrition tab camera icon uses (openMealCameraDirect('widget')),
@@ -850,6 +915,23 @@
             input.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !submit.disabled) {
                     submit.click();
+                }
+            });
+        }
+
+        var barcodeInput = document.getElementById('meal-builder-barcode-input');
+        var barcodeSubmit = document.getElementById('meal-builder-barcode-submit');
+        var barcodeStatus = document.getElementById('meal-builder-barcode-status');
+        if (barcodeInput && barcodeSubmit) {
+            barcodeInput.addEventListener('input', function () {
+                var digits = barcodeInput.value.replace(/\D/g, '');
+                barcodeSubmit.disabled = digits.length < 6;
+                if (barcodeStatus) barcodeStatus.textContent = '';
+            });
+            barcodeInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !barcodeSubmit.disabled) {
+                    e.preventDefault();
+                    barcodeSubmit.click();
                 }
             });
         }

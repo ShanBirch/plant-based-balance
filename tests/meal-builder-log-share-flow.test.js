@@ -62,10 +62,21 @@ assert.ok(
 
 assert.ok(
     dashboardSource.includes("id: 'build-meal-icon-ig-layout-v1'") &&
+        dashboardSource.includes("id: 'meal-builder-typed-barcode-v1'") &&
         dashboardSource.includes("sel: '.meal-icon-btn[onclick*=\"openMealBuilder\"]'") &&
         dashboardSource.includes("title:'Build and share a full meal'") &&
         dashboardSource.includes("sel:'.meal-icon-btn[onclick*=\"openMealBuilder\"]"),
     'both returning-user Feature Drops and the guided tour must teach the icon-based meal flow'
+);
+
+assert.ok(
+    dashboardSource.includes('data-builder-barcode-type="1"') &&
+        dashboardSource.includes('id="meal-builder-barcode-input"') &&
+        dashboardSource.includes('onclick="submitBuilderBarcodeItem()"') &&
+        builderSource.includes("fetch('/.netlify/functions/barcode-lookup?code='") &&
+        builderSource.includes("handleBuilderBarcodeProduct(result.product, 1, 'servings', 0)") &&
+        builderSource.includes('window.addBuilderItemViaTypedBarcode'),
+    'Build-a-Meal must let users paste or type a saved barcode without opening the camera'
 );
 
 assert.ok(
@@ -88,9 +99,9 @@ assert.ok(
 assert.ok(
     dashboardSource.includes('dashboard-style-1.css?v=67') &&
         dashboardSource.includes('pbb-premium-overlays.css?v=90') &&
-        dashboardSource.includes('dashboard-script-meal-builder.js?v=2') &&
+        dashboardSource.includes('dashboard-script-meal-builder.js?v=3') &&
         dashboardSource.includes('dashboard-script-11-calorie_tracker_functions.js?v=28') &&
-        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v263'"),
+        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v264'"),
     'phones must fetch the new meal-builder UI, behavior, and styles'
 );
 
