@@ -1,0 +1,13 @@
+{
+  "duration": 10,
+  "assertions": [
+    { "kind": "appearsBy", "selector": "#card-quiz", "bySec": 0.75 },
+    { "kind": "appearsBy", "selector": "#card-community", "bySec": 2.1 },
+    { "kind": "appearsBy", "selector": "#card-progress", "bySec": 3.65 },
+    { "kind": "appearsBy", "selector": "#card-workout", "bySec": 5.2 },
+    { "kind": "appearsBy", "selector": "#balance-logo", "bySec": 8.1 },
+    { "kind": "before", "a": "#card-quiz", "b": "#balance-logo" },
+    { "kind": "staysInFrame", "selector": ".app-card" },
+    { "kind": "keepsMoving", "withinSelector": "#balance-motion", "maxStaticSec": 1.25 }
+  ]
+}

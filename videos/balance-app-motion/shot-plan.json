@@ -1,0 +1,269 @@
+{
+  "category": "logo-reveal",
+  "duration_s": 10,
+  "fps": 30,
+  "canvas": {
+    "w": 1080,
+    "h": 1920,
+    "aspect": "9:16"
+  },
+  "style": "Fast premium product motion with tactile real-app cards, clean editorial labels, soft dimensional shadows, and one accumulating-card motif. Deep plum carries the app world; ivory and gold open the final brand frame. Energetic and polished, never frantic.",
+  "palette": [
+    "#0C0714",
+    "#21122F",
+    "#6F42C1",
+    "#F7B51E",
+    "#4D8F51",
+    "#F7F2E8",
+    "#FFFFFF"
+  ],
+  "font": "Inter",
+  "beats": [
+    0.35,
+    1.55,
+    1.9,
+    3.05,
+    3.4,
+    3.78,
+    4.12,
+    4.55,
+    4.88,
+    6.05,
+    6.55,
+    7.15,
+    7.65,
+    8.45,
+    9.25
+  ],
+  "export": "mp4",
+  "asset_needs": [
+    {
+      "role": "quiz_ui",
+      "kind": "image",
+      "source": "../.media/images/image_001.jpg",
+      "treatment": "none"
+    },
+    {
+      "role": "community_ui",
+      "kind": "image",
+      "source": "../.media/images/image_002.jpg",
+      "treatment": "none"
+    },
+    {
+      "role": "workouts_ui",
+      "kind": "image",
+      "source": "../.media/images/image_003.jpg",
+      "treatment": "none"
+    },
+    {
+      "role": "progress_character_ui_and_weekly_goals_crop",
+      "kind": "image",
+      "source": "../.media/images/image_004.jpg",
+      "treatment": "none"
+    },
+    {
+      "role": "brand_logo",
+      "kind": "logo",
+      "source": "../.media/images/logo_001.png",
+      "treatment": "none"
+    }
+  ],
+  "shot_brief": "Four real Balance app cards arrive one by one and remain as a growing physical stack: quiz, community, weekly step-by-step progress, then workouts. Each interaction earns a terse editorial verb and a tactile click. At 6.55 seconds the full stack becomes the only pattern interrupt, tightening and compressing until its rectangular mass scale-swaps into the circular Balance mark. The final ivory brand frame holds the logo, 'Balance, Fitness Gamified', and 'Join Balance' long enough to register. No narration; sparse interface clicks and transition whooshes carry the rhythm.",
+  "content": {
+    "block": "logo-outro",
+    "supporting_blocks": [
+      "caption-editorial-emphasis",
+      "shimmer-sweep"
+    ],
+    "rules": [
+      "rules/scale-swap-transition",
+      "rules/3d-text-depth-layers"
+    ],
+    "logo": "../.media/images/logo_001.png",
+    "tagline": "Balance, Fitness Gamified",
+    "url": "Join Balance",
+    "customize": {
+      "reuse": "Use logo-outro for 7.65-10.00, replacing its logo, tagline, URL pill, palette, and timings. Borrow caption-editorial-emphasis for the four feature verbs and shimmer-sweep only for the workout completion accent. Hand-author only the preceding app-card accumulation because no catalog block covers a four-screen product montage.",
+      "hero_frame": {
+        "background": "#F7F2E8",
+        "logo_center": [
+          540,
+          790
+        ],
+        "logo_box": [
+          420,
+          420
+        ],
+        "tagline_center": [
+          540,
+          1140
+        ],
+        "tagline_max_width": 850,
+        "cta_center": [
+          540,
+          1320
+        ],
+        "cta_size": [
+          330,
+          94
+        ],
+        "safe_zone": {
+          "left": 72,
+          "right": 72,
+          "top": 150,
+          "bottom": 250
+        }
+      },
+      "card_system": {
+        "frame": [
+          146,
+          238,
+          788,
+          1320
+        ],
+        "corner_radius": 58,
+        "border": "1px solid rgba(255,255,255,0.16)",
+        "shadow": "0 34px 90px rgba(0,0,0,0.42)",
+        "image_fit": "cover",
+        "label_position": [
+          540,
+          1660
+        ],
+        "label_style": "68px Inter 800, uppercase, 0.12em tracking, #F7F2E8",
+        "resting_stack_offsets": [
+          [
+            -54,
+            -42,
+            -4
+          ],
+          [
+            -28,
+            -22,
+            -2
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            28,
+            24,
+            2
+          ]
+        ]
+      },
+      "motion": {
+        "card_entry": "scale_punch from 0.82 with y=120, opacity=0, duration=0.42, ease=back.out(1.45); previous card eases to its resting stack offset over 0.34s",
+        "interaction": "scale_pulse the touched control for 0.18s, add an 18px radial accent flash, then hold the readable app state for at least 0.55s",
+        "feature_label": "caption-editorial-emphasis word_reveal over 0.22s; gold underline_sweep over 0.24s; fade_out 0.18s before the next card arrives",
+        "stack_compress": "From 6.55-7.38, cards snap into exact registration while scaling from 1 to 0.24 and rotating to 0 degrees with power4.inOut; preserve visible colored edges until the last 0.12s",
+        "logo_swap": "At 7.38-7.82 apply rules/scale-swap-transition: card stack scales through 0.18 while the raster logo mask-reveals from scale 0.72 to 1 with a soft gold glow bloom; no SVG path draw",
+        "final_lockup": "Logo hold_breath at 1.012 scale; tagline fade_blur + word_reveal; CTA pill scale_grow; a restrained 0.55s shimmer-sweep crosses the CTA once"
+      },
+      "transitions": {
+        "between_product_cards": "No full-frame transition; the incoming card overtakes the existing stack on a diagonal 24px parallax, maintaining the accumulation motif.",
+        "pattern_interrupt": "At 6.55 the card entries stop, the plum background opens to ivory through a circular mask centered on the compressing stack, and the stack becomes the logo. This is the sole structural pattern interrupt.",
+        "end": "Clean hold from 9.48-10.00; no exit animation."
+      },
+      "timeline": [
+        {
+          "start": 0,
+          "end": 1.55,
+          "visual": "Deep-plum field. Quiz card punches into the hero frame. At 0.35 the 'Athletic & Strong' answer compresses and flashes green; LEARN appears below. Card remains readable, then shifts into the back-left stack position.",
+          "asset": "../.media/images/image_001.jpg"
+        },
+        {
+          "start": 1.55,
+          "end": 3.05,
+          "visual": "Community card overtakes from lower right while the quiz remains as a visible edge. At 1.90 the Challenge Friend region pulses; CONNECT appears and underlines in gold. The card settles into the growing stack.",
+          "asset": "../.media/images/image_002.jpg"
+        },
+        {
+          "start": 3.05,
+          "end": 4.55,
+          "visual": "Character/Home capture arrives. Crop anchors on the Today/Week progress area while the avatar remains partially visible above. Native overlay rows labeled 1, 2, 3 tick on at 3.40, 3.78, and 4.12; PROGRESS appears at the final tick.",
+          "asset": "../.media/images/image_004.jpg"
+        },
+        {
+          "start": 4.55,
+          "end": 6.55,
+          "visual": "Movement card arrives frontmost. At 4.88 Today's Workout pulses, then a compact completion badge and check draw on at 6.05 with a single shimmer sweep; TRAIN appears. All four card edges are now visible.",
+          "asset": "../.media/images/image_003.jpg"
+        },
+        {
+          "start": 6.55,
+          "end": 7.65,
+          "visual": "The accumulated cards align, compress, and lose their offsets. The background changes only here: a circular ivory reveal expands from the stack as it scale-swaps into the Balance logo.",
+          "asset": "../.media/images/logo_001.png"
+        },
+        {
+          "start": 7.65,
+          "end": 10,
+          "visual": "Logo-outro hero frame. Logo settles at 7.82, tagline enters at 8.45, and the Join Balance pill enters at 9.25. CTA shimmer ends by 9.48; lockup holds clean to frame 300.",
+          "asset": "../.media/images/logo_001.png"
+        }
+      ],
+      "audio": {
+        "music": "none_required; preserve headroom for an editor-added compact electronic bed",
+        "cues": [
+          {
+            "time": 0.35,
+            "asset": "../.media/audio/sfx/sfx_002.mp3",
+            "usage": "quiz selection click, -9 dB"
+          },
+          {
+            "time": 1.48,
+            "asset": "../.media/audio/sfx/sfx_001.mp3",
+            "usage": "short incoming-card whoosh, -14 dB, trim to 0.34s"
+          },
+          {
+            "time": 1.9,
+            "asset": "../.media/audio/sfx/sfx_002.mp3",
+            "usage": "community interaction click, -11 dB"
+          },
+          {
+            "time": 2.98,
+            "asset": "../.media/audio/sfx/sfx_001.mp3",
+            "usage": "short incoming-card whoosh, -14 dB, trim to 0.34s"
+          },
+          {
+            "time": 3.4,
+            "asset": "../.media/audio/sfx/sfx_002.mp3",
+            "usage": "first step tick, -14 dB"
+          },
+          {
+            "time": 3.78,
+            "asset": "../.media/audio/sfx/sfx_002.mp3",
+            "usage": "second step tick, -13 dB"
+          },
+          {
+            "time": 4.12,
+            "asset": "../.media/audio/sfx/sfx_002.mp3",
+            "usage": "final step tick, -10 dB"
+          },
+          {
+            "time": 4.48,
+            "asset": "../.media/audio/sfx/sfx_001.mp3",
+            "usage": "short incoming-card whoosh, -14 dB, trim to 0.34s"
+          },
+          {
+            "time": 6.05,
+            "asset": "../.media/audio/sfx/sfx_002.mp3",
+            "usage": "workout completion click, -8 dB"
+          },
+          {
+            "time": 7.15,
+            "asset": "../.media/audio/sfx/sfx_001.mp3",
+            "usage": "reverse-feeling compression swell into logo impact, -8 dB"
+          },
+          {
+            "time": 9.25,
+            "asset": "../.media/audio/sfx/sfx_002.mp3",
+            "usage": "soft CTA confirmation click, -15 dB"
+          }
+        ]
+      }
+    }
+  }
+}
