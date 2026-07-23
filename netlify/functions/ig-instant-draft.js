@@ -1933,6 +1933,49 @@ function extractIgStoryReplyText(text) {
     return 'replied to your story';
 }
 
+function isQuestionLikeText(text = '') {
+    const value = String(text || '').trim();
+    if (!value) return false;
+    return /\?/.test(value)
+        || /^(?:who|what|when|where|why|how|can|could|would|will|do|does|did|is|are|am|should|have|has|was|were)\b/i.test(value);
+}
+
+function isLowContentIgStoryReply(text = '') {
+    if (!isIgStoryReplyContextText(text)) return false;
+    const reply = extractIgStoryReplyText(text);
+    if (!reply || reply === 'replied to your story' || isQuestionLikeText(reply)) return false;
+
+    const hasLettersOrNumbers = /[\p{L}\p{N}]/u.test(reply);
+    if (!hasLettersOrNumbers) return true;
+
+    const normalized = reply
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}' ]+/gu, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const wordCount = normalized ? normalized.split(' ').length : 0;
+    if (!normalized || wordCount > 5) return false;
+    return /^(?:love (?:this|it)|so good|this is (?:so )?(?:good|great|amazing)|(?:looks? )?(?:amazing|beautiful|great|good|cute|nice|unreal)|fire|wow+|haha+|lol+|thanks|thank you|legend)$/.test(normalized);
+}
+
+function buildLowContentStoryAcknowledgement(text = '') {
+    const reply = extractIgStoryReplyText(text);
+    return /[\p{L}\p{N}]/u.test(reply) ? 'thanks ❤️' : '❤️';
+}
+
+function buildLowContentStoryReplyPolicyBlock({ currentMessage = '', recentInboundMessages = [] } = {}) {
+    const unanswered = [...(Array.isArray(recentInboundMessages) ? recentInboundMessages : []), { text: currentMessage }]
+        .map(message => String(message?.text || '').trim())
+        .filter(Boolean);
+    if (!unanswered.length || !unanswered.every(isLowContentIgStoryReply)) return '';
+    return `
+
+LOW-CONTENT STORY REACTION (HARD RULE):
+- Their entire unanswered batch is only an emoji or tiny praise reacting to Shannon's Story. They did not ask a question or share anything substantive.
+- Do not start a conversation, ask a follow-up, mention the Story subject, qualify them, or pitch.
+- Return exactly one tiny acknowledgement: a love heart for emoji-only input, or "thanks ❤️" for tiny written praise.`;
+}
+
 function extractIgStoryContextForPrompt(text) {
     const raw = String(text || '');
     if (!isIgStoryReplyContextText(raw)) return '';
@@ -2740,6 +2783,10 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
         currentMessage,
         recentInboundMessages: priorInboundMessages,
     });
+    const lowContentStoryReplyPolicyBlock = buildLowContentStoryReplyPolicyBlock({
+        currentMessage,
+        recentInboundMessages: priorInboundMessages,
+    });
     const sanitizedPriorInboundMessages = priorInboundMessages.map(m => {
         const rawText = String(m?.text || '').trim();
         return {
@@ -3147,6 +3194,7 @@ ${oneOnOneCoachingBlock}
 ${balanceCallBookingBlock}
 ${unansweredBatchBlock}
 ${storyReplyPromptContextBlock}
+${lowContentStoryReplyPolicyBlock}
 ${mediaContextPromptBlock}
 ${learningReelReplyAnchorBlock}
 
@@ -3410,6 +3458,10 @@ Rules:
                 recovered_at: new Date().toISOString(),
             };
         }
+    }
+    if (lowContentStoryReplyPolicyBlock) {
+        cleanedChunks = [buildLowContentStoryAcknowledgement(currentMessage)];
+        model = `${String(model || 'none')}+low-content-story-reaction`;
     }
     const shadowDraftInput = (model === 'vertex-v7' && !hasInlineMedia) ? {
         contents: textContents,
@@ -5194,11 +5246,15 @@ exports._test = {
     buildAcquisitionStyleBlock,
     buildAcquisitionMomentumBlock,
     buildConversationLanePolicyBlock,
+    buildLowContentStoryAcknowledgement,
+    buildLowContentStoryReplyPolicyBlock,
     suppressAlreadyKnownContextQuestionsInDraftChunks,
     suppressPetSpeciesGuessingInDraftChunks,
     suppressStoryLocationQuestionsInDraftChunks,
     hasKnownStoryLocationContext,
     isBareStoryMentionNotificationText,
+    isLowContentIgStoryReply,
+    isQuestionLikeText,
     suppressBareStoryMentionClarifierInDraftChunks,
     getCocosAutoContextBypass,
     getBalanceAutoContextBypass,
