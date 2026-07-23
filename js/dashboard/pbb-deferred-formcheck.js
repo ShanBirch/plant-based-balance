@@ -1125,11 +1125,14 @@
     function getWorkoutFeedShareSuccessMessage(result) {
         const pointsAwarded = Number(result && result.pointsAwarded ? result.pointsAwarded : 0);
         const dailyLimitReached = !!(result && result.awardResult && result.awardResult.dailyLimitReached);
+        if (dailyLimitReached) {
+            return pointsAwarded > 0
+                ? `Posted to Feed! +${pointsAwarded} XP. Daily +15 XP already claimed.`
+                : 'Posted to Feed! Daily +15 XP already claimed.';
+        }
         return pointsAwarded > 0
             ? `Posted to Feed! +${pointsAwarded} XP`
-            : dailyLimitReached
-                ? 'Posted to Feed! Share a Set XP is once per day.'
-                : 'Posted to Feed!';
+            : 'Posted to Feed!';
     }
 
     function refreshWorkoutFeedShareAfterPost() {
