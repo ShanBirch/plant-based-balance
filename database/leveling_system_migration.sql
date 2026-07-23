@@ -1,6 +1,6 @@
 -- Migration: Leveling System
 -- Purpose: Add level calculation functions based on lifetime points
--- 99 levels total, takes ~10 months of daily use to max out
+-- Levels continue indefinitely on an accelerating XP curve
 -- Created: January 2026
 
 -- ============================================================
@@ -25,7 +25,7 @@ CREATE OR REPLACE FUNCTION calculate_user_level(p_lifetime_points INTEGER)
 RETURNS JSON AS $$
 DECLARE
   v_level INTEGER := 1;
-  v_max_level INTEGER := 99;
+  v_lifetime_points INTEGER := GREATEST(COALESCE(p_lifetime_points, 0), 0);
   v_points_needed INTEGER;
   v_current_level_points INTEGER;
   v_next_level_points INTEGER;
@@ -35,9 +35,9 @@ DECLARE
   v_title TEXT;
 BEGIN
   -- Find the highest level the user has reached
-  WHILE v_level < v_max_level LOOP
+  LOOP
     v_points_needed := get_points_for_level(v_level + 1);
-    IF p_lifetime_points < v_points_needed THEN
+    IF v_lifetime_points < v_points_needed THEN
       EXIT;
     END IF;
     v_level := v_level + 1;
@@ -45,19 +45,13 @@ BEGIN
 
   v_current_level_points := get_points_for_level(v_level);
 
-  IF v_level < v_max_level THEN
-    v_next_level_points := get_points_for_level(v_level + 1);
-  ELSE
-    v_next_level_points := v_current_level_points;
-  END IF;
+  v_next_level_points := get_points_for_level(v_level + 1);
 
   -- Calculate progress to next level
-  v_points_into_level := p_lifetime_points - v_current_level_points;
+  v_points_into_level := v_lifetime_points - v_current_level_points;
   v_points_needed_for_next := v_next_level_points - v_current_level_points;
 
-  IF v_level >= v_max_level THEN
-    v_progress := 100;
-  ELSIF v_points_needed_for_next > 0 THEN
+  IF v_points_needed_for_next > 0 THEN
     v_progress := LEAST(100, FLOOR((v_points_into_level::NUMERIC / v_points_needed_for_next) * 100));
   ELSE
     v_progress := 0;
@@ -87,7 +81,7 @@ BEGIN
     'points_into_level', v_points_into_level,
     'points_needed_for_next', v_points_needed_for_next,
     'progress', v_progress,
-    'is_max_level', v_level >= v_max_level
+    'is_max_level', FALSE
   );
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;

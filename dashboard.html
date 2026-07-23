@@ -13373,6 +13373,7 @@ if(!window._pbbIsIOSSafari) {
 <script>
 (function(){
   const steps = [
+    { tab:'dashboard', sel:'#tamagotchi-stats-bar', fallbackSel:'#balance-level-bar', title:'Levels keep going', fallbackTitle:'Levels keep going', body:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.', fallbackBody:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.' },
     { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity twice', body:'The first activity share each day earns +15 XP in Balance Feed and another +15 XP in Instagram Story. Later activity shares still work without extra XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
     { tab:'movement-tab', sel:'#activity-share-photo-btn', title:'Take a photo or choose one', body:'When you share an activity, tap Add a photo to open your camera or choose one from your gallery. Balance puts your activity stats straight on it for Feed.', condition: function(){ return !!document.getElementById('activity-share-photo-btn'); } },
     { tab:'dashboard', sel:'#fitbit-imported-activity-card', title:'Your walk is ready to share', body:'When Fitbit or your connected health app records a walk, run or ride, Balance brings it to Home ready for a photo and Feed share.', quick:true, condition: function(){ return !!document.getElementById('fitbit-imported-activity-card'); } },
@@ -14124,6 +14125,16 @@ if(!window._pbbIsIOSSafari) {
   // -------------------------------------------------------
 
   var allFeatures = [
+    {
+      id: 'unlimited-level-progression-v1',
+      tab: 'dashboard',
+      sel: '#tamagotchi-stats-bar',
+      fallbackSel: '#balance-level-bar',
+      title: 'Levels keep going',
+      fallbackTitle: 'Levels keep going',
+      body: 'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.',
+      fallbackBody: 'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.'
+    },
     {
       id: 'move-your-way-shannon-pilot-v1',
       tab: 'movement-tab',

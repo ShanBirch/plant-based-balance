@@ -222,17 +222,18 @@
         const CURVE_MULTIPLIER = 0.07;
         const CURVE_EXPONENT = 2.4;
         const LINEAR_BONUS = 0.7;
-        const MAX_LEVEL = 99;
 
         function getPointsForLevel(level) {
             if (level <= 1) return 0;
             return Math.floor(CURVE_MULTIPLIER * Math.pow(level, CURVE_EXPONENT) + LINEAR_BONUS * level);
         }
 
+        const parsedLifetimePoints = Number(lifetimePoints);
+        const safeLifetimePoints = Number.isFinite(parsedLifetimePoints) ? Math.max(0, parsedLifetimePoints) : 0;
         let level = 1;
-        while (level < MAX_LEVEL) {
+        while (true) {
             const pointsNeeded = getPointsForLevel(level + 1);
-            if (lifetimePoints < pointsNeeded) break;
+            if (safeLifetimePoints < pointsNeeded) break;
             level++;
         }
 

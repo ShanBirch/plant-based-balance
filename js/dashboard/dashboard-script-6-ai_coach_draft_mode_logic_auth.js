@@ -9253,7 +9253,6 @@ let feedLevelLeaderboardLoading = false;
 let feedLevelLeaderboardLastEventToggleAt = 0;
 
 function getFeedLevelFallbackInfo(lifetimePoints) {
-    const maxLevel = 99;
     const multiplier = 0.07;
     const exponent = 2.4;
     const linearBonus = 0.7;
@@ -9262,7 +9261,9 @@ function getFeedLevelFallbackInfo(lifetimePoints) {
         return Math.floor(multiplier * Math.pow(level, exponent) + linearBonus * level);
     };
     let level = 1;
-    while (level < maxLevel && Number(lifetimePoints || 0) >= pointsForLevel(level + 1)) level++;
+    const parsedLifetimePoints = Number(lifetimePoints);
+    const safeLifetimePoints = Number.isFinite(parsedLifetimePoints) ? Math.max(0, parsedLifetimePoints) : 0;
+    while (safeLifetimePoints >= pointsForLevel(level + 1)) level++;
     return { level };
 }
 

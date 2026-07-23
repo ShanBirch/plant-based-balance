@@ -3,7 +3,6 @@
 // ==========================================
 
 const POINTS_FOR_FREE_WEEK = 200;
-const MAX_LEVEL = 99;
 const LEVEL_CURVE_MULTIPLIER = 0.07;
 const LEVEL_CURVE_EXPONENT = 2.4;
 const LEVEL_LINEAR_BONUS = 0.7;
@@ -39,19 +38,21 @@ function getPointsForLevel(level) {
 
 // Calculate user's current level from lifetime points
 function calculateLevel(lifetimePoints) {
+    const parsedLifetimePoints = Number(lifetimePoints);
+    const safeLifetimePoints = Number.isFinite(parsedLifetimePoints) ? Math.max(0, parsedLifetimePoints) : 0;
     let level = 1;
 
-    while (level < MAX_LEVEL) {
+    while (true) {
         const pointsNeeded = getPointsForLevel(level + 1);
-        if (lifetimePoints < pointsNeeded) break;
+        if (safeLifetimePoints < pointsNeeded) break;
         level++;
     }
 
     const currentLevelPoints = getPointsForLevel(level);
-    const nextLevelPoints = level < MAX_LEVEL ? getPointsForLevel(level + 1) : currentLevelPoints;
-    const pointsIntoLevel = lifetimePoints - currentLevelPoints;
+    const nextLevelPoints = getPointsForLevel(level + 1);
+    const pointsIntoLevel = safeLifetimePoints - currentLevelPoints;
     const pointsNeededForNext = nextLevelPoints - currentLevelPoints;
-    const progress = level >= MAX_LEVEL ? 100 : Math.min(100, Math.floor((pointsIntoLevel / pointsNeededForNext) * 100));
+    const progress = Math.min(100, Math.floor((pointsIntoLevel / pointsNeededForNext) * 100));
 
     return {
         level,
@@ -60,7 +61,7 @@ function calculateLevel(lifetimePoints) {
         pointsIntoLevel,
         pointsNeededForNext,
         progress,
-        isMaxLevel: level >= MAX_LEVEL
+        isMaxLevel: false
     };
 }
 
@@ -895,9 +896,7 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
                 const pointsIntoLevel = newLevelData.pointsIntoLevel || 0;
                 const pointsNeeded = newLevelData.pointsNeededForNext || 1;
                 const nextLevel = newLevel + 1;
-                xpText.textContent = newLevel >= 99
-                    ? 'MAX LEVEL!'
-                    : `${pointsIntoLevel} / ${pointsNeeded} XP to Level ${nextLevel}`;
+                xpText.textContent = `${pointsIntoLevel} / ${pointsNeeded} XP to Level ${nextLevel}`;
             }, 1000);
         }
 

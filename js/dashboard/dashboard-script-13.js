@@ -426,7 +426,8 @@
                 if (!pointsData) return;
             }
 
-            const lifetimePoints = pointsData.lifetime_points || 0;
+            const parsedLifetimePoints = Number(pointsData.lifetime_points);
+            const lifetimePoints = Number.isFinite(parsedLifetimePoints) ? Math.max(0, parsedLifetimePoints) : 0;
             const currentStreak = pointsData.current_streak || 0;
 
             // Guard: Don't overwrite valid cached level with default level 1.
@@ -442,7 +443,7 @@
 
             // Calculate actual level using app's logic
             let level = 1;
-            while (level < 99) {
+            while (true) {
                 if (lifetimePoints < getXPForLevel(level + 1)) break;
                 level++;
             }
@@ -477,16 +478,11 @@
             if (rankEl) rankEl.textContent = currentEvolution.title;
 
             // Progress calculation
-            if (level < 99) {
-                const range = nextLevelXP - currentLevelXP;
-                const progress = lifetimePoints - currentLevelXP;
-                const percent = Math.min(100, Math.max(0, (progress / range) * 100));
-                if (xpBarEl) xpBarEl.style.width = percent + '%';
-                if (xpTextEl) xpTextEl.textContent = `${lifetimePoints - currentLevelXP} / ${range} XP to Level ${level + 1}`;
-            } else {
-                if (xpBarEl) xpBarEl.style.width = '100%';
-                if (xpTextEl) xpTextEl.textContent = `${lifetimePoints} XP (MAX)`;
-            }
+            const range = nextLevelXP - currentLevelXP;
+            const progress = lifetimePoints - currentLevelXP;
+            const percent = Math.min(100, Math.max(0, (progress / range) * 100));
+            if (xpBarEl) xpBarEl.style.width = percent + '%';
+            if (xpTextEl) xpTextEl.textContent = `${lifetimePoints - currentLevelXP} / ${range} XP to Level ${level + 1}`;
 
             // Apply rare/evolution skin overrides if active
             let activeRareSkinId = localStorage.getItem('active_rare_skin');
