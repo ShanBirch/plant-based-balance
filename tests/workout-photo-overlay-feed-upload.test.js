@@ -28,9 +28,9 @@ assert.ok(
     'workout photo overlays must not use the unreliable iOS multipart relay'
 );
 assert.ok(
-    dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=33') &&
-        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v263'") &&
-        serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=33'),
+    dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=34') &&
+        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v265'") &&
+        serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=34'),
     'phones must fetch the repaired overlay share path'
 );
 

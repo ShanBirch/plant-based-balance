@@ -5266,7 +5266,7 @@ const CHALLENGE_XP_INFO_GROUPS = [
             { amount: '+15', title: 'Workout or PB Balance Feed share', body: 'Share one workout or PB to Balance Feed per Brisbane day.' },
             { amount: '+15', title: 'Workout or PB Instagram Feed share', body: 'Share one workout or PB to Instagram Feed per Brisbane day.' },
             { amount: '+15', title: 'Activity Balance Feed share', body: 'Share one tracked walk, run, ride, or activity to Balance Feed per Brisbane day.' },
-            { amount: '+15', title: 'Activity Instagram Feed share', body: 'Share one tracked walk, run, ride, or activity to Instagram Feed per Brisbane day.' },
+            { amount: '+15', title: 'Activity Instagram Story share', body: 'Share one tracked walk, run, ride, or activity to Instagram Story per Brisbane day.' },
             { amount: '+10', title: 'Workout milestone share', body: 'Share an eligible workout milestone card once.' },
             { amount: '+15', title: 'Exercise contribution', body: 'Add an approved video-backed exercise to the shared library.' },
             { amount: 'Score', title: 'Workout challenges', body: 'Some challenge types score workouts, weight lifted, reps, or calories instead of direct XP.' },

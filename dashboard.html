@@ -8668,7 +8668,7 @@ if(!window._pbbIsIOSSafari) {
                     <span id="activity-share-btn-text">Balance Feed (+15 XP)</span>
                 </button>
                 <button id="activity-share-instagram-btn" onclick="shareActivityCardToInstagram()" style="width:100%; background:white; color:#be185d; padding:14px 8px; border-radius:12px; font-weight:800; cursor:pointer; border:none; display:flex; align-items:center; justify-content:center; gap:6px; font-size:0.88rem;">
-                    <span id="activity-share-instagram-btn-text">IG Feed (+15 XP)</span>
+                    <span id="activity-share-instagram-btn-text">IG Story (+15 XP)</span>
                 </button>
             </div>
         </div>
@@ -13373,7 +13373,7 @@ if(!window._pbbIsIOSSafari) {
 <script>
 (function(){
   const steps = [
-    { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity twice', body:'The first activity share each day earns +15 XP in Balance Feed and another +15 XP in Instagram Feed. Later activity posts still share without extra XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
+    { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity twice', body:'The first activity share each day earns +15 XP in Balance Feed and another +15 XP in Instagram Story. Later activity shares still work without extra XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
     { tab:'movement-tab', sel:'#activity-share-photo-btn', title:'Take a photo or choose one', body:'When you share an activity, tap Add a photo to open your camera or choose one from your gallery. Balance puts your activity stats straight on it for Feed.', condition: function(){ return !!document.getElementById('activity-share-photo-btn'); } },
     { tab:'dashboard', sel:'#fitbit-imported-activity-card', title:'Your walk is ready to share', body:'When Fitbit or your connected health app records a walk, run or ride, Balance brings it to Home ready for a photo and Feed share.', quick:true, condition: function(){ return !!document.getElementById('fitbit-imported-activity-card'); } },
     { tab:'movement-tab', sel:'#log-activity-card', title:'Balance records your route', body:'Open Log Activity, choose a walk, run, ride or hike, then start Balance GPS. Balance records the route itself and can place it over your activity photo.', condition: function(){ return !!document.getElementById('log-activity-card'); } },
@@ -14511,14 +14511,14 @@ if(!window._pbbIsIOSSafari) {
     body: 'Share a meal photo to Instagram, then return to Balance to see the confirmation and your +15 XP reward.'
   });
   allFeatures.push({
-    id: 'activity-photo-overlay-feed-share-v1',
+    id: 'activity-instagram-story-share-v1',
     tab: 'movement-tab',
     sel: '#activity-share-section',
     fallbackSel: '#move-your-way-pilot-card',
     title: 'Share your walk or run',
     fallbackTitle: 'Share your walk or run',
-    body: 'After logging an activity, add a photo and share it to Balance Feed for +15 XP, then Instagram Feed for another +15 XP.',
-    fallbackBody: 'Log a walk, run, ride or class in Movement, then share it to Balance Feed and Instagram Feed for separate +15 XP rewards.',
+    body: 'After logging an activity, add a photo and share it to Balance Feed for +15 XP, then Instagram Story for another +15 XP.',
+    fallbackBody: 'Log a walk, run, ride or class in Movement, then share it to Balance Feed and Instagram Story for separate +15 XP rewards.',
     condition: function(){ return !!document.getElementById('activity-share-section') || !!document.getElementById('move-your-way-pilot-card'); }
   });
   allFeatures.push({
@@ -14632,8 +14632,8 @@ if(!window._pbbIsIOSSafari) {
     sel: '#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn',
     fallbackSel: '#share-nutrition-btn',
     title: 'Two shares, two XP rewards',
-    body: "Food, walks, runs, and workouts can now earn +15 XP in Balance Feed and another +15 XP in Instagram Feed. Share to both to claim both rewards.",
-    fallbackBody: "Share eligible food, activities, and workouts to Balance Feed for +15 XP, then Instagram Feed for another +15 XP.",
+    body: "Eligible shares earn +15 XP in Balance Feed and another +15 XP on Instagram. Activity cards open straight in Instagram Story.",
+    fallbackBody: "Share eligible food, activities, and workouts to Balance Feed for +15 XP, then share on Instagram for another +15 XP.",
     condition: function(){ return !!document.querySelector('#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn,#share-nutrition-btn'); }
   });
   allFeatures.push({
@@ -16078,13 +16078,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=34';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=35';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=34"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=35"><\/script>');
 }
 </script>
 
@@ -17545,13 +17545,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=33';
+s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=34';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=33"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=34"><\/script>');
 }
 </script>
 

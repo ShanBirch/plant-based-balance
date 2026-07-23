@@ -44,7 +44,7 @@ test('How to Earn XP matches current social and progress rewards', () => {
   for (const guide of [guideScript, standaloneGuide]) {
     assert.match(guide, /Meal Instagram Feed share/);
     assert.match(guide, /Workout or PB Instagram Feed share/);
-    assert.match(guide, /Activity Instagram Feed share/);
+    assert.match(guide, /Activity Instagram Story share/);
     assert.match(guide, /First Feed reaction/);
     assert.match(guide, /Yesterday's top post/);
     assert.match(guide, /Share weekly progress/);
@@ -56,7 +56,7 @@ test('fast route totals and mobile script versions are current', () => {
   assert.match(dashboard, /Log an accepted meal[^\r\n]*\+33 XP/);
   assert.match(dashboard, /Log a workout[^\r\n]*\+31 XP/);
   assert.match(dashboard, /fresh daily quiz[^\r\n]*\+12 XP/);
-  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=34/g);
+  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=35/g);
   assert.match(dashboard, /lib\/learning-inline\.js\?v=12/g);
 });
 

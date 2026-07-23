@@ -47,15 +47,16 @@ assert.match(mealUi, /awardBalanceSocialShareXP\('meal', 'instagram_feed', recei
 assert.match(mealUi, /sharePendingMealToInstagram[\s\S]*shareMealRecordToInstagram\(meal, btn, 'feed'\)/);
 
 assert.match(dashboard, /id="activity-share-btn"[\s\S]*Balance Feed \(\+15 XP\)/);
-assert.match(dashboard, /id="activity-share-instagram-btn"[\s\S]*IG Feed \(\+15 XP\)/);
+assert.match(dashboard, /id="activity-share-instagram-btn"[\s\S]*IG Story \(\+15 XP\)/);
+assert.match(shareUi, /shareActivityCardToInstagram[\s\S]*buildActivityShareCardPayload\(\),[\s\S]*'story'/);
 assert.match(dashboard, /id="share-workout-card-btn"[\s\S]*Balance Feed \(\+15 XP\)/);
 assert.match(dashboard, /id="share-workout-ig-feed-btn"[\s\S]*Feed \(\+15 XP\)/);
 assert.match(dashboard, /id:\s*'independent-balance-instagram-share-xp-v1'/);
 assert.match(dashboard, /title:'Two shares, two rewards'/);
-assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=33/);
+assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=34/);
 assert.match(shareUi, /onSharePrepared:\s*\(\)\s*=>\s*markWorkoutInstagramShareCompleted\(safeTarget\)/);
 assert.match(shareUi, /if \(!opened\) clearWorkoutInstagramShareCompleted\(safeTarget\)/);
-assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=27/);
+assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=28/);
 assert.match(coachContext, /food and workout shares earn \+15 XP[\s\S]*another independent \+15 XP in Instagram Feed/);
 assert.match(dashboard, /id:\s*'daily-workout-pb-share-xp-v1'/);
 assert.match(dashboard, /title:'One daily workout share reward'/);

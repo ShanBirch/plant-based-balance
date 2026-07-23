@@ -6026,11 +6026,11 @@ function showActivitySuccess(data) {
         noXpHint.style.display = 'block';
     }
 
-    // Activity shares always earn 5 XP. Venue verification remains useful for the activity log, not this reward.
+    // Activity shares earn independent daily XP in Balance and on Instagram.
     xpStatus.style.display = 'block';
     xpStatus.style.background = 'rgba(68, 255, 68, 0.2)';
     xpStatus.style.border = '2px solid rgba(68, 255, 68, 0.5)';
-    xpStatus.innerHTML = '<div style="font-weight:700;">Balance Feed +15 XP, Instagram Feed +15 XP</div>';
+    xpStatus.innerHTML = '<div style="font-weight:700;">Balance Feed +15 XP, Instagram Story +15 XP</div>';
     noXpHint.style.display = 'none';
 
     // Reset share button
@@ -6042,7 +6042,7 @@ function showActivitySuccess(data) {
         instagramBtn.disabled = false;
         instagramBtn.style.opacity = '1';
         const instagramLabel = document.getElementById('activity-share-instagram-btn-text');
-        if (instagramLabel) instagramLabel.textContent = 'IG Feed (+15 XP)';
+        if (instagramLabel) instagramLabel.textContent = 'IG Story (+15 XP)';
     }
     const sharePhotoLabel = document.getElementById('activity-share-photo-btn-text');
     if (sharePhotoLabel) {
@@ -6194,7 +6194,7 @@ async function shareActivityCardToInstagram() {
     try {
         const opened = await shareBalanceCardToInstagram(
             buildActivityShareCardPayload(),
-            'feed',
+            'story',
             { photoDataUrl: savedActivityData.photoBase64 || null }
         );
         if (!opened) return false;
@@ -6204,22 +6204,24 @@ async function shareActivityCardToInstagram() {
             'instagram_feed',
             getActivitySocialShareReferenceId()
         );
-        if (label) label.textContent = xpResult?.success ? 'IG Feed shared (+15 XP)' : 'IG Feed opened';
+        // `instagram_feed` is the legacy backend key for the independent Instagram XP lane.
+        // The user-facing destination for activity cards is Instagram Story.
+        if (label) label.textContent = xpResult?.success ? 'IG Story shared (+15 XP)' : 'IG Story opened';
         showToast(
-            xpResult?.success ? 'Activity shared to Instagram Feed! +15 XP' : 'Activity opened in Instagram. Its IG Feed XP is already claimed.',
+            xpResult?.success ? 'Activity shared to Instagram Story! +15 XP' : 'Activity opened in Instagram Story. Today\'s Instagram XP is already claimed.',
             'success'
         );
         return true;
     } catch (error) {
         console.error('Error sharing activity to Instagram:', error);
-        showToast('Could not open Instagram Feed. Please try again.', 'error');
+        showToast('Could not open Instagram Story. Please try again.', 'error');
         return false;
     } finally {
         if (btn) {
             btn.disabled = false;
             btn.style.opacity = '1';
         }
-        if (label && label.textContent === 'Preparing...') label.textContent = 'IG Feed (+15 XP)';
+        if (label && label.textContent === 'Preparing...') label.textContent = 'IG Story (+15 XP)';
     }
 }
 window.shareActivityCardToInstagram = shareActivityCardToInstagram;
