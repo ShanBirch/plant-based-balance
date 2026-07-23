@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learn Fitness for Life | Balance</title>
+    <meta name="description" content="Explore 200+ bite-sized Balance lessons across movement, plant-based nutrition, neuroscience, training, hormones, longevity and muscle growth. Learn, quiz yourself and earn XP.">
+    <meta property="og:title" content="Learn Fitness for Life | Balance">
+    <meta property="og:description" content="Build the knowledge behind lasting progress with 200+ interactive lessons and quizzes inside Balance.">
+    <meta property="og:image" content="https://plantbased-balance.org/balance_logo.png">
+    <meta property="og:url" content="https://plantbased-balance.org/learning.html">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#0f1923">
+    <link rel="canonical" href="https://plantbased-balance.org/learning.html">
+    <link rel="icon" type="image/png" href="balance_logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --green: #00d4aa;
+            --green-soft: rgba(0, 212, 170, 0.12);
+            --dark: #0f1923;
+            --dark-deep: #0a1119;
+            --card: #182433;
+            --card-light: #202e3e;
+            --text: #edf3f6;
+            --muted: #93a3b2;
+            --line: rgba(255, 255, 255, 0.08);
+        }
+
+        html { scroll-behavior: smooth; }
+        body {
+            min-width: 320px;
+            overflow-x: hidden;
+            background: var(--dark);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+        }
+        a { color: inherit; }
+
+        .site-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            padding: 18px 40px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(15, 25, 35, 0.92);
+            backdrop-filter: blur(14px);
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            text-decoration: none;
+        }
+        .brand img { width: 34px; height: 34px; border-radius: 9px; }
+        .nav-links { display: flex; align-items: center; gap: 22px; }
+        .nav-links a {
+            color: var(--muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        .nav-links a:hover, .nav-links a[aria-current="page"] { color: var(--text); }
+        .nav-links .nav-cta {
+            padding: 10px 20px;
+            border-radius: 999px;
+            background: var(--green);
+            color: #07110e;
+            font-weight: 700;
+        }
+        .nav-links .nav-cta:hover { color: #07110e; opacity: 0.88; }
+
+        .hero {
+            position: relative;
+            isolation: isolate;
+            min-height: 700px;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+            padding: 104px 24px 90px;
+            text-align: center;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            z-index: -2;
+            inset: 0;
+            background:
+                radial-gradient(circle at 18% 18%, rgba(121, 134, 203, 0.18), transparent 32%),
+                radial-gradient(circle at 82% 26%, rgba(0, 212, 170, 0.16), transparent 30%),
+                linear-gradient(180deg, var(--dark-deep), var(--dark));
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            inset: 0;
+            opacity: 0.28;
+            background-image: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+            background-size: 52px 52px;
+            mask-image: linear-gradient(to bottom, black, transparent 85%);
+        }
+        .hero-inner { width: min(900px, 100%); }
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            padding: 7px 15px;
+            border: 1px solid rgba(0, 212, 170, 0.3);
+            border-radius: 999px;
+            background: var(--green-soft);
+            color: var(--green);
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        h1, h2, h3 { font-family: 'Montserrat', sans-serif; }
+        h1 {
+            max-width: 860px;
+            margin: 0 auto 24px;
+            font-size: clamp(2.7rem, 7vw, 5.4rem);
+            font-weight: 900;
+            letter-spacing: -0.045em;
+            line-height: 1.02;
+        }
+        h1 span { color: var(--green); }
+        .hero-lead {
+            max-width: 680px;
+            margin: 0 auto 36px;
+            color: #aab7c3;
+            font-size: clamp(1.05rem, 2vw, 1.25rem);
+        }
+        .button-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 13px; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 54px;
+            padding: 14px 27px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+            font-weight: 700;
+            text-decoration: none;
+            transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+        }
+        .btn:hover { transform: translateY(-2px); background: rgba(255,255,255,0.1); }
+        .btn.primary { border-color: var(--green); background: var(--green); color: #06110d; }
+        .btn.primary:hover { opacity: 0.88; }
+        .hero-proof {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            max-width: 760px;
+            margin: 62px auto 0;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            background: var(--line);
+        }
+        .proof-item { padding: 19px 12px; background: rgba(15, 25, 35, 0.82); }
+        .proof-item strong { display: block; color: var(--green); font-family: 'Montserrat', sans-serif; font-size: 1.3rem; }
+        .proof-item span { color: var(--muted); font-size: 0.78rem; }
+
+        .section { width: min(1160px, 100%); margin: 0 auto; padding: 92px 24px; }
+        .section-heading { max-width: 690px; margin: 0 auto 48px; text-align: center; }
+        .section-kicker { color: var(--green); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+        h2 { margin: 10px 0 14px; font-size: clamp(2rem, 4.5vw, 3.2rem); line-height: 1.12; letter-spacing: -0.025em; }
+        .section-heading p, .section-copy { color: var(--muted); font-size: 1.03rem; }
+
+        .worlds-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; }
+        .world-card {
+            grid-column: span 4;
+            position: relative;
+            min-height: 250px;
+            overflow: hidden;
+            padding: 28px;
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            background: linear-gradient(145deg, var(--card-light), var(--card));
+        }
+        .world-card:nth-child(1), .world-card:nth-child(2) { grid-column: span 6; }
+        .world-card::after {
+            content: '';
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            right: -55px;
+            bottom: -65px;
+            border-radius: 50%;
+            background: var(--accent);
+            opacity: 0.14;
+            filter: blur(2px);
+        }
+        .world-icon {
+            width: 52px;
+            height: 52px;
+            display: grid;
+            place-items: center;
+            margin-bottom: 24px;
+            border-radius: 15px;
+            background: color-mix(in srgb, var(--accent) 18%, transparent);
+            font-size: 1.55rem;
+        }
+        .world-label { color: var(--accent); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+        .world-card h3 { margin: 5px 0 9px; font-size: 1.35rem; }
+        .world-card p { color: var(--muted); font-size: 0.92rem; }
+        .world-topics { margin-top: 16px; color: #c4ced6; font-size: 0.78rem; font-weight: 600; }
+
+        .experience-wrap {
+            border-top: 1px solid rgba(0, 212, 170, 0.13);
+            border-bottom: 1px solid rgba(0, 212, 170, 0.13);
+            background: linear-gradient(135deg, #0b2923, var(--dark) 64%);
+        }
+        .experience {
+            display: grid;
+            grid-template-columns: 0.9fr 1.1fr;
+            gap: 76px;
+            align-items: center;
+        }
+        .experience h2 { margin-top: 10px; }
+        .experience .section-copy { margin-bottom: 28px; }
+        .check-list { display: grid; gap: 14px; list-style: none; }
+        .check-list li { display: flex; gap: 12px; color: #c8d2da; }
+        .check-list li::before { content: '✓'; color: var(--green); font-weight: 900; }
+        .phone-card {
+            width: min(410px, 100%);
+            margin: 0 auto;
+            padding: 14px;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 34px;
+            background: #080d13;
+            box-shadow: 0 35px 80px rgba(0,0,0,0.38);
+        }
+        .lesson-screen { overflow: hidden; border-radius: 23px; background: #f4f7f8; color: #17212b; }
+        .lesson-head { padding: 22px 21px 18px; background: #7986cb; color: white; }
+        .lesson-meta { display: flex; justify-content: space-between; gap: 16px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
+        .lesson-head h3 { margin: 18px 0 5px; font-size: 1.35rem; }
+        .lesson-head p { font-size: 0.85rem; opacity: 0.88; }
+        .progress-track { height: 7px; margin-top: 17px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,0.27); }
+        .progress-track span { display: block; width: 68%; height: 100%; border-radius: inherit; background: white; }
+        .lesson-body { padding: 22px; }
+        .lesson-body .question { margin-bottom: 14px; font-weight: 800; line-height: 1.35; }
+        .answer { margin-top: 9px; padding: 13px 14px; border: 1px solid #dfe5e8; border-radius: 12px; background: white; color: #40505c; font-size: 0.84rem; }
+        .answer.correct { border-color: #00a987; background: #e9faf5; color: #08755f; font-weight: 700; }
+        .lesson-reward { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; color: #667680; font-size: 0.78rem; font-weight: 700; }
+        .xp-chip { padding: 7px 11px; border-radius: 999px; background: #fff3d2; color: #a26600; }
+
+        .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; counter-reset: learning-step; }
+        .step {
+            position: relative;
+            min-height: 250px;
+            padding: 30px;
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            background: var(--card);
+            counter-increment: learning-step;
+        }
+        .step::before {
+            content: '0' counter(learning-step);
+            display: inline-grid;
+            place-items: center;
+            width: 43px;
+            height: 43px;
+            margin-bottom: 33px;
+            border-radius: 13px;
+            background: var(--green-soft);
+            color: var(--green);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+        }
+        .step h3 { margin-bottom: 10px; font-size: 1.2rem; }
+        .step p { color: var(--muted); font-size: 0.92rem; }
+
+        .iq-card {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 32px;
+            align-items: center;
+            padding: 36px;
+            border: 1px solid rgba(0, 212, 170, 0.25);
+            border-radius: 26px;
+            background: linear-gradient(120deg, rgba(0,212,170,0.12), rgba(121,134,203,0.1));
+        }
+        .iq-card h3 { margin: 6px 0 9px; font-size: clamp(1.5rem, 3vw, 2.15rem); }
+        .iq-card p { max-width: 670px; color: #a9b7c2; }
+        .iq-level { min-width: 170px; text-align: center; }
+        .iq-level strong { display: block; color: var(--green); font-family: 'Montserrat', sans-serif; font-size: 2.5rem; line-height: 1; }
+        .iq-level span { color: var(--muted); font-size: 0.82rem; font-weight: 700; }
+
+        .cta-band { padding: 100px 24px; text-align: center; }
+        .cta-band-inner { width: min(760px, 100%); margin: 0 auto; }
+        .cta-band p { max-width: 620px; margin: 0 auto 34px; color: var(--muted); font-size: 1.05rem; }
+        .fine-print { margin-top: 18px; color: #6f8190; font-size: 0.8rem; }
+
+        footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 18px;
+            padding: 32px 40px;
+            border-top: 1px solid var(--line);
+        }
+        footer p, .footer-links a { color: var(--muted); font-size: 0.84rem; }
+        .footer-links { display: flex; flex-wrap: wrap; gap: 22px; }
+        .footer-links a { text-decoration: none; }
+        .footer-links a:hover { color: var(--text); }
+
+        @media (max-width: 900px) {
+            .world-card, .world-card:nth-child(1), .world-card:nth-child(2) { grid-column: span 6; }
+            .world-card:last-child { grid-column: 4 / span 6; }
+            .experience { grid-template-columns: 1fr; gap: 48px; }
+            .experience-copy { max-width: 680px; margin: 0 auto; text-align: center; }
+            .check-list { width: fit-content; margin: 0 auto; text-align: left; }
+        }
+        @media (max-width: 680px) {
+            .site-nav { padding: 15px 18px; }
+            .nav-links a:not(.nav-cta) { display: none; }
+            .nav-links { gap: 12px; }
+            .nav-links .nav-cta { padding: 9px 15px; }
+            .hero { min-height: 0; padding-top: 78px; }
+            .hero-proof { grid-template-columns: 1fr 1fr; }
+            .world-card, .world-card:nth-child(1), .world-card:nth-child(2), .world-card:last-child { grid-column: 1 / -1; min-height: 0; }
+            .steps { grid-template-columns: 1fr; }
+            .step { min-height: 0; }
+            .iq-card { grid-template-columns: 1fr; text-align: center; }
+            footer { justify-content: center; padding: 28px 20px; text-align: center; }
+            .footer-links { justify-content: center; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            *, *::before, *::after { transition: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="site-nav" aria-label="Main navigation">
+        <a class="brand" href="/">
+            <img src="balance_logo.png" alt="Balance logo">
+            <span>Balance</span>
+        </a>
+        <div class="nav-links">
+            <a href="learning.html" aria-current="page">Learning</a>
+            <a href="vegan-fitness.html">Founders Pass</a>
+            <a class="nav-cta" href="#start">Try Balance Free</a>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="hero-inner">
+                <span class="eyebrow">Balance Learning</span>
+                <h1>Build the knowledge behind <span>lasting progress.</span></h1>
+                <p class="hero-lead">Fitness gets easier when you understand what your body and brain are actually doing. Learn in quick, interactive lessons, test yourself, earn XP and turn useful science into better everyday choices.</p>
+                <div class="button-row">
+                    <a class="btn primary" href="#worlds">Explore What You’ll Learn</a>
+                    <a class="btn" href="dashboard.html">Open Balance</a>
+                </div>
+                <div class="hero-proof" aria-label="Learning library highlights">
+                    <div class="proof-item"><strong>7</strong><span>learning worlds</span></div>
+                    <div class="proof-item"><strong>44</strong><span>topic units</span></div>
+                    <div class="proof-item"><strong>200+</strong><span>bite-sized lessons</span></div>
+                    <div class="proof-item"><strong>6</strong><span>quiz formats</span></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="worlds">
+            <div class="section-heading">
+                <span class="section-kicker">Seven learning worlds</span>
+                <h2>Understand the whole picture.</h2>
+                <p>Move from the foundations of your body to the science of food, behaviour, training and long-term health. Pick what matters to you or work through it at your own pace.</p>
+            </div>
+            <div class="worlds-grid">
+                <article class="world-card" style="--accent:#e57373">
+                    <div class="world-icon" aria-hidden="true">🦴</div>
+                    <span class="world-label">Body</span>
+                    <h3>Anatomy &amp; Movement</h3>
+                    <p>Understand how your body works, moves and adapts, so training stops feeling like guesswork.</p>
+                    <div class="world-topics">Muscle basics · Core · Kinetic chains · Posture · Smart training</div>
+                </article>
+                <article class="world-card" style="--accent:#81c784">
+                    <div class="world-icon" aria-hidden="true">🍎</div>
+                    <span class="world-label">Fuel</span>
+                    <h3>Plant-Based Nutrition &amp; Energy</h3>
+                    <p>Learn how food becomes energy, what your body needs and how to fuel your goals without nutrition confusion.</p>
+                    <div class="world-topics">Macros · Micronutrients · Meal timing · Emotional eating · Supplements</div>
+                </article>
+                <article class="world-card" style="--accent:#7986cb">
+                    <div class="world-icon" aria-hidden="true">🧠</div>
+                    <span class="world-label">Mind</span>
+                    <h3>Brain &amp; Adaptation</h3>
+                    <p>Discover how your predictive brain creates habits, identity and resistance to change.</p>
+                    <div class="world-topics">Neuroscience · Body budgeting · Habits · Identity · Behaviour change</div>
+                </article>
+                <article class="world-card" style="--accent:#9575cd">
+                    <div class="world-icon" aria-hidden="true">❤️</div>
+                    <span class="world-label">Longevity</span>
+                    <h3>Health Span &amp; Prevention</h3>
+                    <p>Learn the science-backed habits that support metabolic health and more healthy years.</p>
+                    <div class="world-topics">Aging · Metabolic health · Disease prevention · Sleep · Stress</div>
+                </article>
+                <article class="world-card" style="--accent:#ff7043">
+                    <div class="world-icon" aria-hidden="true">🏋️</div>
+                    <span class="world-label">Workouts</span>
+                    <h3>Training Science &amp; Programming</h3>
+                    <p>Master the principles behind strength, muscle growth, cardio and better program design.</p>
+                    <div class="world-topics">Adaptation · Strength · Hypertrophy · Cardio · HIIT</div>
+                </article>
+                <article class="world-card" style="--accent:#f06292">
+                    <div class="world-icon" aria-hidden="true">⚗️</div>
+                    <span class="world-label">Hormones</span>
+                    <h3>Signalling &amp; Metabolism</h3>
+                    <p>Understand how hormones influence energy, stress, recovery, metabolism and adaptation.</p>
+                    <div class="world-topics">Cortisol · Insulin · Thyroid · Recovery · Sex hormones</div>
+                </article>
+                <article class="world-card" style="--accent:#ffb74d">
+                    <div class="world-icon" aria-hidden="true">🔥</div>
+                    <span class="world-label">Growth</span>
+                    <h3>Muscle-Group Science</h3>
+                    <p>Go deeper into the anatomy and mechanics that actually grow each major muscle group.</p>
+                    <div class="world-topics">Glutes · Chest · Back · Shoulders · Arms · Legs · Core</div>
+                </article>
+            </div>
+        </section>
+
+        <div class="experience-wrap">
+            <section class="section experience">
+                <div class="experience-copy">
+                    <span class="section-kicker">Learn by doing</span>
+                    <h2>Not another wall of health articles.</h2>
+                    <p class="section-copy">Each lesson turns one useful idea into a quick interactive challenge. You can test a claim, solve a real-life scenario, match concepts or put a process in the right order.</p>
+                    <ul class="check-list">
+                        <li>Swipe true or false</li>
+                        <li>Match connected ideas</li>
+                        <li>Build steps in the right sequence</li>
+                        <li>Fill the blank and choose all that apply</li>
+                        <li>Practice with real-world scenarios</li>
+                    </ul>
+                </div>
+                <div class="phone-card" aria-label="Example interactive Balance lesson">
+                    <div class="lesson-screen">
+                        <div class="lesson-head">
+                            <div class="lesson-meta"><span>Mind · Lesson 4</span><span>+20 XP</span></div>
+                            <h3>Training the Predictive Brain</h3>
+                            <p>Why consistency transforms behaviour</p>
+                            <div class="progress-track" aria-label="Lesson progress: 68 percent"><span></span></div>
+                        </div>
+                        <div class="lesson-body">
+                            <p class="question">Why does repeating a healthy behaviour make it feel easier over time?</p>
+                            <div class="answer">You develop more willpower</div>
+                            <div class="answer correct">Your brain gets better at predicting it</div>
+                            <div class="answer">The behaviour needs less recovery</div>
+                            <div class="lesson-reward"><span>Question 4 of 6</span><span class="xp-chip">Health IQ rising</span></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <section class="section">
+            <div class="section-heading">
+                <span class="section-kicker">Small lessons, real momentum</span>
+                <h2>Learn a little. Use it everywhere.</h2>
+                <p>The Learning section fits around the rest of Balance, so gaining knowledge feels like another part of your progress, not homework.</p>
+            </div>
+            <div class="steps">
+                <article class="step">
+                    <h3>Choose what matters today</h3>
+                    <p>Follow your curiosity across nutrition, mindset, training and health, or continue the next lesson in a topic you have already started.</p>
+                </article>
+                <article class="step">
+                    <h3>Test your understanding</h3>
+                    <p>Short quizzes make you retrieve and apply the idea instead of simply scrolling past it.</p>
+                </article>
+                <article class="step">
+                    <h3>Earn XP as you learn</h3>
+                    <p>Completed lessons add to your Balance progress and Health IQ, giving useful learning the same satisfying feedback as your other healthy habits.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section" style="padding-top:0">
+            <div class="iq-card">
+                <div>
+                    <span class="section-kicker">Health IQ progression</span>
+                    <h3>From curious to enlightened.</h3>
+                    <p>Your Health IQ level grows as you complete lessons. Move through ten stages, unlock bonus XP and see your knowledge build alongside your fitness.</p>
+                </div>
+                <div class="iq-level" aria-label="Ten Health IQ levels">
+                    <strong>10</strong>
+                    <span>levels to master</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="cta-band" id="start">
+            <div class="cta-band-inner">
+                <span class="section-kicker">Start learning inside Balance</span>
+                <h2>Train your brain while you train your body.</h2>
+                <p>Download Balance free, take your first quick lesson and start earning XP for understanding the choices that move you forward.</p>
+                <div class="button-row">
+                    <a class="btn primary" href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161">Download on iOS</a>
+                    <a class="btn primary" href="https://play.google.com/store/apps/details?id=com.fitgotchi.app">Download on Android</a>
+                    <a class="btn" href="vegan-fitness.html">See the Founders Pass</a>
+                </div>
+                <p class="fine-print">Learning is currently self-paced and quiz-based. Complete lessons whenever they suit you.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2026 Shannon Birch. All rights reserved.</p>
+        <div class="footer-links">
+            <a href="/">Home</a>
+            <a href="vegan-fitness.html">Founders Pass</a>
+            <a href="clients.html">Results</a>
+            <a href="blog.html">Blog</a>
+            <a href="privacy.html">Privacy</a>
+            <a href="contact.html">Support</a>
+        </div>
+    </footer>
+</body>
+</html>
