@@ -1,53 +1,49 @@
 <template id="balance-motion-template">
-  <div id="balance-motion" data-composition-id="balance-motion" data-start="0" data-duration="10" data-fps="30" data-width="1080" data-height="1920">
+  <div id="balance-motion" data-composition-id="balance-motion" data-start="0" data-duration="15" data-fps="30" data-width="1080" data-height="1920">
     <div class="scene-fill deep-bg"></div>
     <div id="orb-a" class="orb orb-a" data-layout-ignore></div>
     <div id="orb-b" class="orb orb-b" data-layout-ignore></div>
     <div class="ghost-word" data-layout-ignore>BALANCE</div>
-    <div class="top-rule" data-layout-ignore></div>
-    <div class="micro micro-top">YOUR FITNESS, IN MOTION</div>
+    <div class="top-rule" data-layout-ignore data-layout-allow-occlusion="true"></div>
+    <div class="micro micro-top" data-layout-allow-occlusion="true">YOUR FITNESS. ONE CLEAR PATH.</div>
 
-    <div id="card-quiz" class="app-card card-quiz">
-      <div class="phone-glass"></div>
-      <img id="quiz-screen" src=".media/images/image_001.jpg" alt="Balance quiz screen" />
-      <div id="quiz-touch" class="touch touch-green"></div>
-      <div class="card-index">01</div>
-    </div>
-    <div id="label-learn" class="feature-label"><span>LEARN</span><i></i></div>
+    <section id="scene-plan" class="feature-scene">
+      <div class="app-card"><img class="focus-bottom" src=".media/images/home-goals-challenge.jpg" alt="Balance weekly goals" /></div>
+      <div class="copy-card"><small>PLAN</small><strong>A clear focus,<br />every week.</strong></div>
+    </section>
 
-    <div id="card-community" class="app-card card-community">
-      <div class="phone-glass"></div>
-      <img id="community-screen" src=".media/images/image_002.jpg" alt="Balance community feed" />
-      <div id="community-touch" class="touch touch-gold"></div>
-      <div class="card-index">02</div>
-    </div>
-    <div id="label-connect" class="feature-label"><span>CONNECT</span><i></i></div>
+    <section id="scene-learn" class="feature-scene">
+      <div class="app-card"><img src=".media/images/learn-topics.jpg" alt="Balance learning topics" /></div>
+      <div class="copy-card"><small>LEARN</small><strong>Know what moves<br />you forward.</strong></div>
+    </section>
 
-    <div id="card-progress" class="app-card card-progress">
-      <div class="phone-glass"></div>
-      <img id="progress-screen" src=".media/images/image_004.jpg" alt="Balance progress screen" />
-      <div class="goals-panel">
-        <div id="goal-one" class="goal-row"><b>1</b><span>Choose this week’s focus</span><em>✓</em></div>
-        <div id="goal-two" class="goal-row"><b>2</b><span>Follow the next step</span><em>✓</em></div>
-        <div id="goal-three" class="goal-row"><b>3</b><span>Build your momentum</span><em>✓</em></div>
-      </div>
-      <div class="card-index">03</div>
-    </div>
-    <div id="label-progress" class="feature-label"><span>PROGRESS</span><i></i></div>
+    <section id="scene-share" class="feature-scene share-scene">
+      <div id="share-walk" class="app-card share-card"><img src=".media/images/feed-walk.jpg" alt="Walk shared to Balance" /></div>
+      <div id="share-food" class="app-card share-card"><img src=".media/images/feed-food.jpg" alt="Food shared to Balance" /></div>
+      <div id="share-workout" class="app-card share-card"><img src=".media/images/feed-workout.jpg" alt="Workout shared to Balance" /></div>
+      <div class="copy-card"><small>SHARE</small><strong>Meals. Walks. Workouts.<br />Together.</strong></div>
+    </section>
 
-    <div id="card-workout" class="app-card card-workout">
-      <div class="phone-glass"></div>
-      <img id="workout-screen" src=".media/images/image_003.jpg" alt="Balance workouts screen" />
-      <div id="workout-complete" class="complete-badge"><span>✓</span><strong>WORKOUT COMPLETE</strong></div>
-      <div id="workout-shimmer" class="shimmer" data-layout-ignore></div>
-      <div class="card-index">04</div>
-    </div>
-    <div id="label-train" class="feature-label"><span>TRAIN</span><i></i></div>
+    <section id="scene-track" class="feature-scene">
+      <div class="app-card"><img src=".media/images/nutrition-tracker.jpg" alt="Balance nutrition tracker" /></div>
+      <div class="copy-card"><small>TRACK</small><strong>Nutrition without<br />the guesswork.</strong></div>
+    </section>
+
+    <section id="scene-train" class="feature-scene">
+      <div class="app-card"><img src=".media/images/movement-coach.jpg" alt="Train with Coach Shannon" /></div>
+      <div class="copy-card"><small>TRAIN</small><strong>Your coach in<br />your corner.</strong></div>
+    </section>
+
+    <section id="scene-compete" class="feature-scene">
+      <div class="app-card"><img class="focus-top" src=".media/images/challenge-friends.jpg" alt="Balance challenge with friends" /></div>
+      <div class="copy-card"><small>COMPETE</small><strong>With friends.<br />Stay motivated.</strong></div>
+    </section>
 
     <div id="brand-bg" class="brand-bg" data-layout-allow-overflow="true"></div>
     <div id="brand-lockup" class="brand-lockup">
       <div id="logo-glow" class="logo-glow" data-layout-ignore></div>
       <img id="balance-logo" src=".media/images/logo_001.png" alt="Balance harmony logo" />
+      <div id="brand-promise">EVERYTHING YOU NEED<br />TO STAY CONSISTENT.</div>
       <div id="brand-name">BALANCE</div>
       <div id="brand-tagline">Fitness Gamified</div>
       <div id="brand-cta"><span>JOIN BALANCE</span><i data-layout-allow-overflow="true"></i></div>
@@ -55,75 +51,74 @@
 
     <style>
       #balance-motion {
-        --bg: #0C0714;
-        --surface: #21122F;
-        --purple: #6F42C1;
-        --gold: #F7B51E;
-        --green: #4D8F51;
-        --ivory: #F7F2E8;
-        --ink: #160D20;
+        --bg: #0c0714;
+        --surface: #21122f;
+        --purple: #6f42c1;
+        --gold: #f7b51e;
+        --ivory: #f7f2e8;
+        --ink: #160d20;
         position: relative;
         width: 1080px;
         height: 1920px;
         overflow: hidden;
         font-family: "Montserrat", sans-serif;
-        color: #FFFFFF;
+        color: #fff;
         isolation: isolate;
       }
       #balance-motion * { box-sizing: border-box; }
       .scene-fill { position: absolute; inset: 0; }
-      .deep-bg { background-color: #0C0714; }
-      .orb { position: absolute; border-radius: 999px; filter: blur(16px); opacity: 0.22; }
-      .orb-a { width: 620px; height: 620px; left: -250px; top: 210px; background: radial-gradient(circle, rgba(111,66,193,0.9), rgba(111,66,193,0)); }
-      .orb-b { width: 720px; height: 720px; right: -360px; bottom: 40px; background: radial-gradient(circle, rgba(247,181,30,0.65), rgba(247,181,30,0)); }
-      .ghost-word { position: absolute; left: -46px; top: 610px; font: 400 238px/1 "League Gothic", sans-serif; letter-spacing: 0.03em; color: rgba(247,242,232,0.12); transform: rotate(-90deg); transform-origin: center; }
-      .top-rule { position: absolute; left: 74px; right: 74px; top: 135px; height: 3px; background-color: #F7B51E; opacity: 0.7; }
-      .micro { position: absolute; z-index: 20; font: 700 24px/1 "Space Mono", monospace; letter-spacing: 0.16em; color: #F7F2E8; }
+      .deep-bg { background-color: var(--bg); }
+      .orb { position: absolute; border-radius: 999px; filter: blur(18px); opacity: 0.22; }
+      .orb-a { width: 680px; height: 680px; left: -310px; top: 160px; background: radial-gradient(circle, rgba(111,66,193,.95), rgba(111,66,193,0)); }
+      .orb-b { width: 780px; height: 780px; right: -390px; bottom: -80px; background: radial-gradient(circle, rgba(247,181,30,.72), rgba(247,181,30,0)); }
+      .ghost-word { position: absolute; left: -90px; top: 700px; font: 400 250px/1 "League Gothic", sans-serif; letter-spacing: .03em; color: rgba(247,242,232,.09); transform: rotate(-90deg); transform-origin: center; }
+      .top-rule { position: absolute; z-index: 20; left: 74px; right: 74px; top: 136px; height: 3px; background-color: var(--gold); opacity: .75; }
+      .micro { position: absolute; z-index: 20; font: 800 24px/1 "Montserrat", sans-serif; letter-spacing: .12em; color: var(--ivory); white-space: nowrap; }
       .micro-top { left: 74px; top: 88px; }
+      .feature-scene { position: absolute; z-index: 4; inset: 0; opacity: 0; visibility: hidden; }
       .app-card {
         position: absolute;
-        z-index: 4;
-        left: 146px;
-        top: 238px;
-        width: 788px;
-        height: 1320px;
+        left: 190px;
+        top: 190px;
+        width: 700px;
+        height: 1390px;
         overflow: hidden;
         border-radius: 58px;
-        border: 3px solid rgba(255,255,255,0.18);
-        background-color: #21122F;
-        box-shadow: 0 34px 90px rgba(0,0,0,0.48);
+        border: 3px solid rgba(255,255,255,.22);
+        background-color: var(--surface);
+        box-shadow: 0 38px 100px rgba(0,0,0,.52);
         transform-origin: 50% 50%;
       }
-      .app-card img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
-      .phone-glass { position: absolute; inset: 0; z-index: 3; border-radius: 55px; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.08), inset 0 70px 120px rgba(255,255,255,0.035); pointer-events: none; }
-      .card-index { position: absolute; z-index: 8; top: 34px; right: 34px; width: 74px; height: 54px; border-radius: 27px; background-color: rgba(12,7,20,0.82); display: grid; place-items: center; color: #F7B51E; font: 700 24px/1 "Space Mono", monospace; border: 2px solid rgba(247,181,30,0.5); }
-      .card-quiz img { object-position: center center; }
-      .card-community img { object-position: center top; }
-      .card-progress img { object-position: center top; }
-      .card-workout img { object-position: center top; }
-      .touch { position: absolute; z-index: 7; width: 210px; height: 110px; border-radius: 58px; border: 7px solid; opacity: 0; box-shadow: 0 0 0 18px rgba(255,255,255,0.05); }
-      .touch-green { left: 288px; top: 510px; border-color: #4D8F51; }
-      .touch-gold { left: 62px; top: 130px; width: 650px; height: 150px; border-color: #F7B51E; }
-      .feature-label { position: absolute; z-index: 12; left: 0; right: 0; top: 1638px; display: flex; flex-direction: column; align-items: center; gap: 18px; pointer-events: none; opacity: 0; }
-      .feature-label span { font-size: 92px; line-height: 0.95; font-weight: 900; letter-spacing: 0.08em; color: #F7F2E8; text-shadow: 0 10px 35px rgba(0,0,0,0.38); }
-      .feature-label i { display: block; width: 260px; height: 10px; border-radius: 8px; background-color: #F7B51E; transform-origin: left center; }
-      .goals-panel { position: absolute; z-index: 7; left: 48px; right: 48px; bottom: 70px; display: flex; flex-direction: column; gap: 18px; padding: 28px; border-radius: 34px; background-color: rgba(12,7,20,0.9); border: 2px solid rgba(247,181,30,0.4); }
-      .goal-row { display: grid; grid-template-columns: 58px 1fr 44px; align-items: center; gap: 16px; min-height: 82px; padding: 12px 20px; border-radius: 22px; background-color: #21122F; color: #F7F2E8; font-size: 30px; font-weight: 700; opacity: 0; }
-      .goal-row b { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 24px; background-color: #6F42C1; font: 700 23px/1 "Space Mono", monospace; }
-      .goal-row em { color: #F7B51E; font-style: normal; font-size: 36px; }
-      .complete-badge { position: absolute; z-index: 8; left: 90px; right: 90px; bottom: 90px; min-height: 124px; display: flex; align-items: center; justify-content: center; gap: 22px; border-radius: 62px; background-color: #F7B51E; color: #160D20; box-shadow: 0 20px 50px rgba(247,181,30,0.32); opacity: 0; }
-      .complete-badge span { display: grid; place-items: center; width: 62px; height: 62px; border-radius: 50%; background-color: #160D20; color: #F7F2E8; font-size: 38px; }
-      .complete-badge strong { font-size: 34px; font-weight: 900; letter-spacing: 0.05em; }
-      .shimmer { position: absolute; z-index: 9; top: -100px; left: -260px; width: 170px; height: 1540px; background: linear-gradient(90deg, rgba(247,242,232,0), rgba(247,242,232,0.7), rgba(247,242,232,0)); transform: rotate(16deg); opacity: 0; }
-      .brand-bg { position: absolute; z-index: 30; left: 50%; top: 50%; width: 1220px; height: 1220px; margin: -610px 0 0 -610px; border-radius: 50%; background-color: #F7F2E8; transform: scale(0); }
-      .brand-lockup { position: absolute; z-index: 34; inset: 0; display: flex; flex-direction: column; align-items: center; padding: 510px 80px 210px; color: #160D20; pointer-events: none; }
-      .logo-glow { position: absolute; top: 500px; left: 335px; width: 410px; height: 410px; border-radius: 50%; background: radial-gradient(circle, rgba(247,181,30,0.42), rgba(247,181,30,0)); opacity: 0; }
-      #balance-logo { width: 420px; height: 420px; object-fit: contain; border-radius: 50%; opacity: 0; }
-      #brand-name { margin-top: 72px; font-size: 116px; line-height: 0.9; font-weight: 900; letter-spacing: -0.045em; white-space: nowrap; opacity: 0; }
-      #brand-tagline { margin-top: 32px; font: 700 52px/1.1 "Space Mono", monospace; letter-spacing: 0.01em; color: #4B355A; opacity: 0; }
-      #brand-cta { position: relative; margin-top: 70px; width: 360px; height: 104px; display: grid; place-items: center; overflow: hidden; border-radius: 54px; background-color: #160D20; color: #F7F2E8; opacity: 0; }
-      #brand-cta span { position: relative; z-index: 2; font-size: 28px; font-weight: 900; letter-spacing: 0.08em; }
-      #brand-cta i { position: absolute; top: -30px; left: -110px; width: 80px; height: 170px; background-color: rgba(247,181,30,0.55); transform: rotate(18deg); }
+      .app-card::after { content: ""; position: absolute; inset: 0; border-radius: 55px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.08), inset 0 70px 120px rgba(255,255,255,.035); pointer-events: none; }
+      .app-card img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+      .app-card img.focus-bottom { object-position: center bottom; }
+      .app-card img.focus-top { object-position: center top; }
+      .copy-card {
+        position: absolute;
+        z-index: 12;
+        left: 82px;
+        right: 82px;
+        bottom: 160px;
+        min-height: 238px;
+        padding: 36px 46px 38px;
+        border-radius: 42px;
+        background-color: rgba(12,7,20,.94);
+        border: 2px solid rgba(247,181,30,.55);
+        box-shadow: 0 28px 70px rgba(0,0,0,.48);
+      }
+      .copy-card small { display: block; margin-bottom: 16px; color: var(--gold); font: 700 25px/1 "Space Mono", monospace; letter-spacing: .18em; }
+      .copy-card strong { display: block; color: var(--ivory); font-size: 60px; line-height: 1.02; font-weight: 900; letter-spacing: -.035em; }
+      .share-card { width: 610px; height: 1260px; left: 235px; top: 218px; }
+      .brand-bg { position: absolute; z-index: 30; left: 50%; top: 50%; width: 1250px; height: 1250px; margin: -625px 0 0 -625px; border-radius: 50%; background-color: var(--ivory); transform: scale(0); }
+      .brand-lockup { position: absolute; z-index: 34; inset: 0; color: var(--ink); pointer-events: none; opacity: 0; visibility: hidden; }
+      .logo-glow { position: absolute; top: 350px; left: 335px; width: 410px; height: 410px; border-radius: 50%; background: radial-gradient(circle, rgba(247,181,30,.48), rgba(247,181,30,0)); opacity: 0; }
+      #balance-logo { position: absolute; left: 345px; top: 340px; width: 390px; height: 390px; object-fit: contain; border-radius: 50%; }
+      #brand-promise { position: absolute; left: 120px; right: 120px; top: 790px; text-align: center; font: 700 35px/1.25 "Space Mono", monospace; letter-spacing: .08em; color: #5a4168; }
+      #brand-name { position: absolute; left: 0; right: 0; top: 940px; text-align: center; font-size: 118px; line-height: .9; font-weight: 900; letter-spacing: -.045em; white-space: nowrap; }
+      #brand-tagline { position: absolute; left: 0; right: 0; top: 1090px; text-align: center; font: 700 48px/1.1 "Space Mono", monospace; color: #4b355a; }
+      #brand-cta { position: absolute; left: 360px; top: 1235px; width: 360px; height: 104px; display: grid; place-items: center; overflow: hidden; border-radius: 54px; background-color: var(--ink); color: var(--ivory); }
+      #brand-cta span { position: relative; z-index: 2; font-size: 28px; font-weight: 900; letter-spacing: .08em; }
+      #brand-cta i { display: none; }
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
@@ -131,63 +126,50 @@
       window.__timelines = window.__timelines || {};
       const tl = gsap.timeline({ paused: true });
 
-      tl.fromTo(".micro-top", { autoAlpha: 0, x: -40 }, { autoAlpha: 1, x: 0, duration: 0.45, ease: "expo.out" }, 0.15);
-      tl.fromTo(".top-rule", { scaleX: 0, transformOrigin: "left center" }, { scaleX: 1, duration: 0.52, ease: "power3.out" }, 0.18);
-      tl.to("#orb-a", { x: 46, y: -34, scale: 1.07, duration: 2.4, yoyo: true, repeat: 3, ease: "sine.inOut" }, 0.15);
-      tl.to("#orb-b", { x: -36, y: 30, rotation: 8, duration: 2.35, yoyo: true, repeat: 3, ease: "sine.inOut" }, 0.2);
+      tl.fromTo("#orb-a", { x: 0, y: 0, scale: 1 }, { x: 52, y: -38, scale: 1.08, duration: 2.5, yoyo: true, repeat: 5, ease: "sine.inOut" }, .1);
+      tl.fromTo("#orb-b", { x: 0, y: 0, rotation: 0 }, { x: -42, y: 34, rotation: 8, duration: 2.4, yoyo: true, repeat: 5, ease: "sine.inOut" }, .14);
 
-      tl.fromTo("#card-quiz", { autoAlpha: 0, x: -150, y: 120, scale: 0.82, rotation: -6 }, { autoAlpha: 1, x: 0, y: 0, scale: 1, rotation: 0, duration: 0.48, ease: "back.out(1.45)" }, 0.18);
-      tl.fromTo("#quiz-touch", { autoAlpha: 0, scale: 0.55 }, { autoAlpha: 1, scale: 1, duration: 0.18, ease: "power4.out" }, 0.35);
-      tl.to("#quiz-touch", { scale: 1.12, opacity: 0.2, duration: 0.34, ease: "sine.out" }, 0.53);
-      tl.fromTo("#label-learn", { autoAlpha: 0, y: 54, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.3, ease: "expo.out" }, 0.58);
-      tl.fromTo("#label-learn i", { scaleX: 0 }, { scaleX: 1, duration: 0.24, ease: "power3.out" }, 0.69);
+      const enterScene = (id, at, fromX) => {
+        tl.set(id, { autoAlpha: 1 }, at);
+        tl.fromTo(`${id} .app-card`, { autoAlpha: 0, x: fromX, y: 105, scale: .84, rotation: fromX < 0 ? -5 : 5 }, { autoAlpha: 1, x: 0, y: 0, scale: 1, rotation: 0, duration: .48, ease: "back.out(1.35)" }, at);
+        tl.fromTo(`${id} .copy-card`, { autoAlpha: 0, y: 72, scale: .9 }, { autoAlpha: 1, y: 0, scale: 1, duration: .38, ease: "expo.out" }, at + .35);
+        tl.fromTo(`${id} .copy-card small`, { autoAlpha: 0, x: -28 }, { autoAlpha: 1, x: 0, duration: .26, ease: "power4.out" }, at + .47);
+      };
+      const exitScene = (id, at, toX) => {
+        tl.fromTo(`${id} .copy-card`, { autoAlpha: 1, y: 0, scale: 1 }, { autoAlpha: 0, y: -36, scale: 1, duration: .2, ease: "power2.in" }, at);
+        tl.fromTo(`${id} .app-card`, { autoAlpha: 1, x: 0, y: 0, scale: 1, rotation: 0 }, { autoAlpha: 0, x: toX, y: -70, scale: .88, rotation: toX < 0 ? -4 : 4, duration: .36, ease: "power3.in" }, at);
+        tl.set(id, { autoAlpha: 0 }, at + .38);
+      };
 
-      tl.to("#card-quiz", { x: -54, y: -42, rotation: -4, scale: 0.94, duration: 0.38, ease: "power3.inOut" }, 1.55);
-      tl.to("#card-quiz .card-index", { opacity: 0, duration: 0.12, ease: "power2.in" }, 1.55);
-      tl.to("#label-learn", { opacity: 0, y: -28, duration: 0.2, ease: "power2.in" }, 1.55);
-      tl.fromTo("#card-community", { autoAlpha: 0, x: 160, y: 125, scale: 0.82, rotation: 7 }, { autoAlpha: 1, x: 0, y: 0, scale: 1, rotation: 0, duration: 0.46, ease: "back.out(1.35)" }, 1.55);
-      tl.fromTo("#community-touch", { autoAlpha: 0, scale: 0.74 }, { autoAlpha: 1, scale: 1, duration: 0.18, ease: "power4.out" }, 1.9);
-      tl.to("#community-touch", { opacity: 0.12, scale: 1.05, duration: 0.34, ease: "sine.out" }, 2.08);
-      tl.fromTo("#label-connect", { autoAlpha: 0, x: 110 }, { autoAlpha: 1, x: 0, duration: 0.3, ease: "expo.out" }, 2.05);
-      tl.fromTo("#label-connect i", { scaleX: 0 }, { scaleX: 1, duration: 0.24, ease: "circ.out" }, 2.16);
+      enterScene("#scene-plan", .18, -150);
+      exitScene("#scene-plan", 1.9, -140);
 
-      tl.to("#card-quiz", { x: -72, y: -62, rotation: -5, scale: 0.89, duration: 0.38, ease: "power3.inOut" }, 3.05);
-      tl.to("#card-community", { x: -28, y: -22, rotation: -2, scale: 0.94, duration: 0.38, ease: "power2.inOut" }, 3.05);
-      tl.to("#card-community .card-index", { opacity: 0, duration: 0.12, ease: "power2.in" }, 3.05);
-      tl.to("#label-connect", { opacity: 0, x: -80, duration: 0.2, ease: "power2.in" }, 3.05);
-      tl.fromTo("#card-progress", { autoAlpha: 0, x: -170, y: 130, scale: 0.82, rotation: -6 }, { autoAlpha: 1, x: 0, y: 0, scale: 1, rotation: 0, duration: 0.46, ease: "back.out(1.4)" }, 3.05);
-      tl.fromTo("#goal-one", { autoAlpha: 0, x: -46 }, { autoAlpha: 1, x: 0, duration: 0.24, ease: "power4.out" }, 3.4);
-      tl.fromTo("#goal-two", { autoAlpha: 0, x: 52 }, { autoAlpha: 1, x: 0, duration: 0.24, ease: "circ.out" }, 3.78);
-      tl.fromTo("#goal-three", { autoAlpha: 0, scale: 0.86 }, { autoAlpha: 1, scale: 1, duration: 0.25, ease: "back.out(1.8)" }, 4.12);
-      tl.fromTo("#label-progress", { autoAlpha: 0, y: 58 }, { autoAlpha: 1, y: 0, duration: 0.28, ease: "expo.out" }, 4.15);
-      tl.fromTo("#label-progress i", { scaleX: 0 }, { scaleX: 1, duration: 0.22, ease: "power4.out" }, 4.23);
+      enterScene("#scene-learn", 1.9, 150);
+      tl.fromTo("#scene-learn .app-card", { scale: 1 }, { scale: 1.025, duration: 1.25, ease: "sine.inOut" }, 2.35);
+      exitScene("#scene-learn", 3.65, 140);
 
-      tl.to("#card-quiz", { x: -86, y: -74, rotation: -5.5, scale: 0.84, duration: 0.38, ease: "power3.inOut" }, 4.55);
-      tl.to("#card-community", { x: -50, y: -42, rotation: -3, scale: 0.89, duration: 0.38, ease: "power2.inOut" }, 4.55);
-      tl.to("#card-progress", { x: 28, y: 24, rotation: 2, scale: 0.94, duration: 0.38, ease: "sine.inOut" }, 4.55);
-      tl.to(["#card-progress .card-index", "#card-progress .goals-panel"], { opacity: 0, duration: 0.14, ease: "power2.in" }, 4.55);
-      tl.to("#label-progress", { opacity: 0, y: -24, duration: 0.2, ease: "power2.in" }, 4.55);
-      tl.fromTo("#card-workout", { autoAlpha: 0, x: 165, y: 130, scale: 0.82, rotation: 7 }, { autoAlpha: 1, x: 0, y: 0, scale: 1, rotation: 0, duration: 0.48, ease: "back.out(1.45)" }, 4.55);
-      tl.fromTo("#label-train", { autoAlpha: 0, x: 95 }, { autoAlpha: 1, x: 0, duration: 0.3, ease: "expo.out" }, 5.12);
-      tl.fromTo("#label-train i", { scaleX: 0 }, { scaleX: 1, duration: 0.24, ease: "power3.out" }, 5.23);
-      tl.fromTo("#workout-complete", { autoAlpha: 0, scale: 0.72, y: 30 }, { autoAlpha: 1, scale: 1, y: 0, duration: 0.34, ease: "back.out(2)" }, 6.05);
-      tl.fromTo("#workout-shimmer", { autoAlpha: 0, x: 0 }, { autoAlpha: 0.78, x: 1320, duration: 0.52, ease: "power2.inOut" }, 6.08);
-      tl.to("#workout-shimmer", { opacity: 0, duration: 0.08 }, 6.52);
+      tl.set("#scene-share", { autoAlpha: 1 }, 3.65);
+      tl.fromTo("#share-walk", { autoAlpha: 0, x: -170, y: 120, scale: .8, rotation: -8 }, { autoAlpha: 1, x: -90, y: -20, scale: .91, rotation: -6, duration: .44, ease: "back.out(1.4)" }, 3.65);
+      tl.fromTo("#share-food", { autoAlpha: 0, x: 160, y: 120, scale: .8, rotation: 8 }, { autoAlpha: 1, x: 85, y: 10, scale: .92, rotation: 6, duration: .44, ease: "back.out(1.4)" }, 4.08);
+      tl.fromTo("#share-workout", { autoAlpha: 0, y: 140, scale: .8 }, { autoAlpha: 1, y: 0, scale: 1, duration: .46, ease: "back.out(1.45)" }, 4.5);
+      tl.fromTo("#scene-share .copy-card", { autoAlpha: 0, y: 72, scale: .9 }, { autoAlpha: 1, y: 0, scale: 1, duration: .38, ease: "expo.out" }, 4.78);
+      tl.fromTo("#scene-share .copy-card small", { autoAlpha: 0, x: -28 }, { autoAlpha: 1, x: 0, duration: .26, ease: "power4.out" }, 4.9);
+      exitScene("#scene-share", 5.95, -150);
 
-      tl.fromTo("#brand-bg", { scale: 0 }, { scale: 2.8, duration: 0.86, ease: "power4.inOut" }, 6.55);
-      tl.to(["#card-workout .card-index", "#workout-complete"], { opacity: 0, duration: 0.14, ease: "power2.in" }, 6.55);
-      tl.to(["#card-quiz", "#card-community", "#card-progress", "#card-workout"], { x: 0, y: -65, rotation: 0, scale: 0.22, borderRadius: "50%", duration: 0.76, stagger: 0.035, ease: "power4.inOut" }, 6.55);
-      tl.to(["#label-train", ".micro-top", ".top-rule"], { opacity: 0, duration: 0.24, ease: "power2.in" }, 6.58);
-      tl.to(["#card-quiz", "#card-community", "#card-progress", "#card-workout"], { opacity: 0, scale: 0.12, duration: 0.2, ease: "power3.in" }, 7.35);
+      enterScene("#scene-track", 5.95, 150);
+      exitScene("#scene-track", 7.7, 140);
 
-      tl.fromTo("#logo-glow", { autoAlpha: 0, scale: 0.5 }, { autoAlpha: 1, scale: 1.25, duration: 0.58, ease: "sine.out" }, 7.38);
-      tl.fromTo("#balance-logo", { autoAlpha: 0, scale: 0.72, rotation: -8 }, { autoAlpha: 1, scale: 1, rotation: 0, duration: 0.52, ease: "back.out(1.35)" }, 7.42);
-      tl.to("#balance-logo", { scale: 1.012, duration: 0.62, yoyo: true, repeat: 2, ease: "sine.inOut" }, 7.95);
-      tl.fromTo("#brand-name", { autoAlpha: 0, y: 42, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.46, ease: "expo.out" }, 8.28);
-      tl.fromTo("#brand-tagline", { autoAlpha: 0, y: 24, filter: "blur(12px)" }, { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.44, ease: "power3.out" }, 8.45);
-      tl.fromTo("#brand-cta", { autoAlpha: 0, scale: 0.72, y: 24 }, { autoAlpha: 1, scale: 1, y: 0, duration: 0.38, ease: "back.out(1.65)" }, 9.25);
-      tl.fromTo("#brand-cta i", { x: 0 }, { x: 560, duration: 0.52, ease: "power2.inOut" }, 9.27);
-      tl.to("#logo-glow", { opacity: 0.55, scale: 1.05, duration: 0.48, ease: "sine.inOut" }, 9.48);
+      enterScene("#scene-train", 7.7, -150);
+      tl.fromTo("#scene-train .app-card", { scale: 1 }, { scale: 1.025, duration: 1.2, ease: "sine.inOut" }, 8.15);
+      exitScene("#scene-train", 9.45, -140);
+
+      enterScene("#scene-compete", 9.45, 150);
+      exitScene("#scene-compete", 11.25, 140);
+
+      tl.fromTo("#brand-bg", { scale: 0 }, { scale: 2.85, duration: .86, ease: "power4.inOut" }, 11.18);
+      tl.fromTo("#brand-lockup", { autoAlpha: 0 }, { autoAlpha: 1, duration: .5, ease: "power3.out" }, 11.72);
+      tl.fromTo("#logo-glow", { autoAlpha: 0 }, { autoAlpha: .8, duration: .5, ease: "sine.out" }, 11.72);
+      tl.fromTo("#brand-lockup", { autoAlpha: 1 }, { autoAlpha: 1, duration: 2.77, ease: "none" }, 12.22);
 
       window.__timelines["balance-motion"] = tl;
       tl.seek(0);

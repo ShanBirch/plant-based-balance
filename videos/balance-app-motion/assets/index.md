@@ -1,11 +1,12 @@
 # Balance motion assets
 
-- quiz_ui -> `../.media/images/image_001.jpg`, ingested from `photos/balance-quiz-shot.jpg`
-- community_ui -> `../.media/images/image_002.jpg`, ingested from `photos/balance-feed-shot.jpg`
-- workouts_ui -> `../.media/images/image_003.jpg`, ingested from `photos/balance-movement-shot.jpg`
-- progress_character_ui -> `../.media/images/image_004.jpg`, ingested from `photos/balance-character-shot.jpg`
-- weekly_goals_ui -> use the Today/Week portion of `../.media/images/image_004.jpg` with native step overlays
+- weekly_goals_ui -> `../.media/images/home-goals-challenge.jpg`, supplied Balance screenshot
+- learning_topics_ui -> `../.media/images/learn-topics.jpg`, supplied Balance screenshot
+- community_walk_ui -> `../.media/images/feed-walk.jpg`, supplied Balance screenshot
+- community_food_ui -> `../.media/images/feed-food.jpg`, supplied Balance screenshot
+- community_workout_ui -> `../.media/images/feed-workout.jpg`, supplied Balance screenshot
+- nutrition_tracker_ui -> `../.media/images/nutrition-tracker.jpg`, supplied Balance screenshot
+- coach_training_ui -> `../.media/images/movement-coach.jpg`, supplied Balance screenshot
+- friend_challenge_ui -> `../.media/images/challenge-friends.jpg`, supplied Balance screenshot
 - brand_logo -> `../.media/images/logo_001.png`, ingested from `balance_logo_transparent.png`
-- transition_whoosh -> `../.media/audio/sfx/sfx_001.mp3`, bundled HyperFrames sound effect
-- interface_click -> `../.media/audio/sfx/sfx_002.mp3`, bundled HyperFrames sound effect
 

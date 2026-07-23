@@ -1,13 +1,15 @@
 {
-  "duration": 10,
+  "duration": 15,
   "assertions": [
-    { "kind": "appearsBy", "selector": "#card-quiz", "bySec": 0.75 },
-    { "kind": "appearsBy", "selector": "#card-community", "bySec": 2.1 },
-    { "kind": "appearsBy", "selector": "#card-progress", "bySec": 3.65 },
-    { "kind": "appearsBy", "selector": "#card-workout", "bySec": 5.2 },
-    { "kind": "appearsBy", "selector": "#balance-logo", "bySec": 8.1 },
-    { "kind": "before", "a": "#card-quiz", "b": "#balance-logo" },
+    { "kind": "appearsBy", "selector": "#scene-plan", "bySec": 0.7 },
+    { "kind": "appearsBy", "selector": "#scene-learn", "bySec": 2.5 },
+    { "kind": "appearsBy", "selector": "#scene-share", "bySec": 4.2 },
+    { "kind": "appearsBy", "selector": "#scene-track", "bySec": 6.5 },
+    { "kind": "appearsBy", "selector": "#scene-train", "bySec": 8.2 },
+    { "kind": "appearsBy", "selector": "#scene-compete", "bySec": 10.0 },
+    { "kind": "appearsBy", "selector": "#balance-logo", "bySec": 12.5 },
+    { "kind": "before", "a": "#scene-plan", "b": "#balance-logo" },
     { "kind": "staysInFrame", "selector": ".app-card" },
-    { "kind": "keepsMoving", "withinSelector": "#balance-motion", "maxStaticSec": 1.25 }
+    { "kind": "keepsMoving", "withinSelector": "#balance-motion", "maxStaticSec": 1.6 }
   ]
 }
