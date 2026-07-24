@@ -58,6 +58,7 @@ function resolvePersonalVoiceReplyPlan({
     qualifier = {},
     meaningfulLeadReplyCount = 0,
     hasRecentVoiceMessage = false,
+    inboundVoiceMessage = false,
 } = {}) {
     if (isAiAuthenticityQuestion(currentMessage)) {
         return {
@@ -70,9 +71,20 @@ function resolvePersonalVoiceReplyPlan({
         };
     }
 
-    const eligible = channel === 'instagram'
+    const isUnlinkedInstagramLead = channel === 'instagram' && !linkedUserId;
+    if (isUnlinkedInstagramLead && inboundVoiceMessage) {
+        return {
+            useSyntheticVoice: hasInstagramGraphRoute,
+            reason: hasInstagramGraphRoute ? 'lead_continuing_voice_note_lane' : '',
+            syntheticVoiceForbidden: false,
+            manualNativeVoiceRecommended: !hasInstagramGraphRoute,
+            manualNativeVoiceReason: hasInstagramGraphRoute ? '' : 'inbound_voice_requires_manual_route',
+            manualNativeVoiceScript: '',
+        };
+    }
+
+    const eligible = isUnlinkedInstagramLead
         && hasInstagramGraphRoute
-        && !linkedUserId
         && !hasRecentVoiceMessage
         && Number(meaningfulLeadReplyCount || 0) >= 2
         && hasPersonalGoalOrBlockerSignal(currentMessage)

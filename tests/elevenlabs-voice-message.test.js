@@ -170,12 +170,52 @@ assert.strictEqual(
     false
 );
 
+const continuingVoicePlan = voice.resolvePersonalVoiceReplyPlan({
+    channel: 'instagram',
+    hasInstagramGraphRoute: true,
+    currentMessage: '[voice note]',
+    inboundVoiceMessage: true,
+    meaningfulLeadReplyCount: 0,
+    hasRecentVoiceMessage: true,
+});
+assert.strictEqual(continuingVoicePlan.useSyntheticVoice, true);
+assert.strictEqual(continuingVoicePlan.reason, 'lead_continuing_voice_note_lane');
+
+const manualVoiceFallbackPlan = voice.resolvePersonalVoiceReplyPlan({
+    channel: 'instagram',
+    hasInstagramGraphRoute: false,
+    currentMessage: '[voice note]',
+    inboundVoiceMessage: true,
+});
+assert.strictEqual(manualVoiceFallbackPlan.useSyntheticVoice, false);
+assert.strictEqual(manualVoiceFallbackPlan.manualNativeVoiceRecommended, true);
+assert.strictEqual(manualVoiceFallbackPlan.manualNativeVoiceReason, 'inbound_voice_requires_manual_route');
+
+assert.strictEqual(
+    igDraft.hasInboundVoiceNoteInUnansweredBatch({
+        currentMessage: '[AUDIO:https://cdn.example.com/latest.m4a]',
+    }),
+    true
+);
+assert.strictEqual(
+    igDraft.hasInboundVoiceNoteInUnansweredBatch({
+        currentMessage: 'and one more thing',
+        recentInboundMessages: [{ text: '[AUDIO:https://cdn.example.com/first.m4a]' }],
+    }),
+    true
+);
+assert.strictEqual(
+    igDraft.hasInboundVoiceNoteInUnansweredBatch({ currentMessage: 'typed message only' }),
+    false
+);
+
 const aiQuestionPlan = voice.resolvePersonalVoiceReplyPlan({
     channel: 'instagram',
     hasInstagramGraphRoute: true,
     currentMessage: 'Are you AI or is this really Shannon?',
     qualifier: { facts: { current_state: 'looking for support' } },
     meaningfulLeadReplyCount: 4,
+    inboundVoiceMessage: true,
 });
 assert.strictEqual(aiQuestionPlan.useSyntheticVoice, false);
 assert.strictEqual(aiQuestionPlan.syntheticVoiceForbidden, true);

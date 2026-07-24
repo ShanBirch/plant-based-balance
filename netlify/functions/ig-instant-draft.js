@@ -1379,6 +1379,23 @@ async function hasRecentOutboundVoiceMessage(threadId, cooldownDays = 30) {
     }
 }
 
+function hasInboundVoiceNoteInUnansweredBatch({ currentMessage = '', recentInboundMessages = [] } = {}) {
+    const messages = [
+        ...(Array.isArray(recentInboundMessages) ? recentInboundMessages : []).map(message => message?.text),
+        currentMessage,
+    ];
+    return messages.some(value => {
+        const raw = String(value || '');
+        if (extractAudioUrls(raw).length > 0) return true;
+        const marked = replaceIgMediaMarkers(raw, {
+            photo: '[detected inbound photo]',
+            audio: '[detected inbound audio]',
+            video: '[detected inbound video]',
+        });
+        return marked.includes('[detected inbound audio]');
+    });
+}
+
 /**
  * Cross-channel: when an IG/FB lead has been linked to an app account,
  * pull recent in-app DMs between coach and client so the IG draft sees
@@ -4280,6 +4297,10 @@ exports.handler = async (event) => {
     );
 
     const recentOutboundVoiceMessage = await hasRecentOutboundVoiceMessage(thread.id, 30);
+    const inboundVoiceMessage = hasInboundVoiceNoteInUnansweredBatch({
+        currentMessage: messageText,
+        recentInboundMessages,
+    });
     const personalVoicePlan = resolvePersonalVoiceReplyPlan({
         channel,
         hasInstagramGraphRoute,
@@ -4288,6 +4309,7 @@ exports.handler = async (event) => {
         qualifier,
         meaningfulLeadReplyCount,
         hasRecentVoiceMessage: recentOutboundVoiceMessage,
+        inboundVoiceMessage,
     });
     const outboundVoiceMessage = !personalVoicePlan.syntheticVoiceForbidden
         && (voiceReplyTestLane || personalVoicePlan.useSyntheticVoice);
@@ -4558,11 +4580,12 @@ exports.handler = async (event) => {
             meta_ad_fast_lane: metaAdFastLane || undefined,
             outbound_voice_message: outboundVoiceMessage || undefined,
             outbound_voice_message_reason: outboundVoiceMessageReason || undefined,
+            inbound_voice_message: inboundVoiceMessage || undefined,
             elevenlabs_voice_id: outboundVoiceMessage ? 'UHnJrglEof8vTMenwnVm' : undefined,
             elevenlabs_voice_name: outboundVoiceMessage ? 'Shannon Balance Professional 20260606' : undefined,
             personal_voice_note_policy: personalVoicePlan.useSyntheticVoice ? {
-                trigger: 'lead_goal_or_blocker',
-                cooldown_days: 30,
+                trigger: inboundVoiceMessage ? 'lead_voice_note_lane' : 'lead_goal_or_blocker',
+                cooldown_days: inboundVoiceMessage ? 0 : 30,
                 synthetic: true,
                 never_for_ai_authenticity: true,
             } : undefined,
@@ -4744,6 +4767,7 @@ exports.handler = async (event) => {
             meta_ad_fast_lane: metaAdFastLane || existingPending.data?.meta_ad_fast_lane || undefined,
             outbound_voice_message: coalescedOutboundVoiceMessage || undefined,
             outbound_voice_message_reason: coalescedOutboundVoiceMessage ? coalescedOutboundVoiceReason : undefined,
+            inbound_voice_message: inboundVoiceMessage || existingPending.data?.inbound_voice_message || undefined,
             elevenlabs_voice_id: coalescedOutboundVoiceMessage
                 ? (existingPending.data?.elevenlabs_voice_id || 'UHnJrglEof8vTMenwnVm')
                 : undefined,
@@ -4751,8 +4775,8 @@ exports.handler = async (event) => {
                 ? (existingPending.data?.elevenlabs_voice_name || 'Shannon Balance Professional 20260606')
                 : undefined,
             personal_voice_note_policy: personalVoicePlan.useSyntheticVoice ? {
-                trigger: 'lead_goal_or_blocker',
-                cooldown_days: 30,
+                trigger: inboundVoiceMessage ? 'lead_voice_note_lane' : 'lead_goal_or_blocker',
+                cooldown_days: inboundVoiceMessage ? 0 : 30,
                 synthetic: true,
                 never_for_ai_authenticity: true,
             } : existingPending.data?.personal_voice_note_policy,
@@ -5208,6 +5232,13 @@ exports.handler = async (event) => {
             label: 'permanent Needs You client',
         };
     }
+    if (!autoHoldReason && autoSendEnabled
+        && personalVoicePlan.manualNativeVoiceReason === 'inbound_voice_requires_manual_route') {
+        autoHoldReason = {
+            code: 'voice_reply_route_unavailable',
+            label: 'voice reply needs a native Instagram send',
+        };
+    }
     if (!autoHoldReason && autoSendEnabled && isDirectGraphManual) {
         autoHoldReason = {
             code: 'manual_ig',
@@ -5468,4 +5499,5 @@ exports._test = {
     normalizeIgAutoTimingSuggestion,
     isCocosToShanSunnyVoiceTest,
     buildPersonalVoiceNoteDraftingBlock,
+    hasInboundVoiceNoteInUnansweredBatch,
 };
