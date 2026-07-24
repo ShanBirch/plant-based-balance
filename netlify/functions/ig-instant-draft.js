@@ -1749,9 +1749,23 @@ function isCocosBotAccount(value) {
     return normalizeBotAccount(value) === 'cocos_pt_studio';
 }
 
-function getCocosCodexReviewHold({ cocosAutoSendLane, voiceReplyTestLane, approvedCoachingLinkHandoff } = {}) {
+function isCurrentMetaAdInbound({ customData = {}, manychatMessageId = '' } = {}) {
+    const routing = customData && typeof customData.current_inbound_routing === 'object'
+        ? customData.current_inbound_routing
+        : {};
+    if (String(routing.source || '').toLowerCase() !== 'meta_ads') return false;
+    const routedMessageId = String(routing.message_id || '').trim();
+    const inboundMessageId = String(manychatMessageId || '').replace(/^ig_graph:/i, '').trim();
+    if (routedMessageId && inboundMessageId) {
+        return routedMessageId === inboundMessageId || String(manychatMessageId || '').endsWith(routedMessageId);
+    }
+    const receivedAtMs = Date.parse(routing.received_at || '');
+    return Number.isFinite(receivedAtMs) && (Date.now() - receivedAtMs) <= (15 * 60 * 1000);
+}
+
+function getCocosCodexReviewHold({ cocosAutoSendLane, voiceReplyTestLane, approvedCoachingLinkHandoff, metaAdFastLane } = {}) {
     if (!cocosAutoSendLane) return null;
-    if (voiceReplyTestLane || approvedCoachingLinkHandoff) return null;
+    if (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane) return null;
     return {
         code: 'codex_conversation_review',
         label: 'conversational reply waits for Codex review',
@@ -3789,8 +3803,12 @@ exports.handler = async (event) => {
             customData: thread.custom_data,
         })
         : '';
+    const metaAdFastLane = isCurrentMetaAdInbound({
+        customData: thread.custom_data,
+        manychatMessageId,
+    });
     const balanceAutoSendCandidate = !!thread.auto_send_enabled;
-    const autoSendEnabled = cocosAutoSendLane || voiceReplyTestLane;
+    const autoSendEnabled = cocosAutoSendLane || voiceReplyTestLane || metaAdFastLane;
 
     // Idempotency — when ManyChat supplied a message_id, reuse it. Otherwise
     // fall back to thread+timestamp (less robust but better than nothing
@@ -3815,7 +3833,8 @@ exports.handler = async (event) => {
                 && !existingData.auto_send_stopped
                 && (!cocosAutoSendLane
                     || existingData.outbound_voice_message === true
-                    || existingData.approved_link_auto_sendable === true);
+                    || existingData.approved_link_auto_sendable === true
+                    || existingData.meta_ad_fast_lane === true);
             const existingReplyText = existingAlert.suggested_message
                 || existingAlert.scheduled_reply_text
                 || existingData.draft_text
@@ -4431,11 +4450,12 @@ exports.handler = async (event) => {
             conversation_episode_reason: draft.conversationEpisode?.reason || 'continuous_thread',
             conversation_episode_new: draft.conversationEpisode?.isNewEpisode === true,
             auto_send_enabled_at_draft: autoSendEnabled,
-            auto_send_default_reason: cocosAutoSendLane ? 'cocos_auto_lane' : undefined,
+            auto_send_default_reason: metaAdFastLane ? 'meta_ad_fast_lane' : (cocosAutoSendLane ? 'cocos_auto_lane' : undefined),
             auto_send_allow_immediate: false,
-            auto_send_fast_lane_delay_ms: (voiceReplyTestLane || approvedCoachingLinkHandoff)
+            auto_send_fast_lane_delay_ms: (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane)
                 ? IG_FAST_LANE_DELAY_MS
                 : undefined,
+            meta_ad_fast_lane: metaAdFastLane || undefined,
             outbound_voice_message: voiceReplyTestLane || undefined,
             outbound_voice_message_reason: voiceReplyTestReason || undefined,
             elevenlabs_voice_id: voiceReplyTestLane ? 'UHnJrglEof8vTMenwnVm' : undefined,
@@ -4600,11 +4620,12 @@ exports.handler = async (event) => {
             algorithm_scope: botAccount || existingPending.data?.algorithm_scope || 'balance_default',
             algorithm_fork: algorithmFork,
             auto_send_enabled_at_draft: autoSendEnabled,
-            auto_send_default_reason: cocosAutoSendLane ? 'cocos_auto_lane' : existingPending.data?.auto_send_default_reason,
+            auto_send_default_reason: metaAdFastLane ? 'meta_ad_fast_lane' : (cocosAutoSendLane ? 'cocos_auto_lane' : existingPending.data?.auto_send_default_reason),
             auto_send_allow_immediate: false,
-            auto_send_fast_lane_delay_ms: (voiceReplyTestLane || approvedCoachingLinkHandoff)
+            auto_send_fast_lane_delay_ms: (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane)
                 ? IG_FAST_LANE_DELAY_MS
                 : existingPending.data?.auto_send_fast_lane_delay_ms || undefined,
+            meta_ad_fast_lane: metaAdFastLane || existingPending.data?.meta_ad_fast_lane || undefined,
             outbound_voice_message: voiceReplyTestLane || existingPending.data?.outbound_voice_message || undefined,
             outbound_voice_message_reason: voiceReplyTestLane
                 ? voiceReplyTestReason
@@ -5048,6 +5069,7 @@ exports.handler = async (event) => {
             cocosAutoSendLane,
             voiceReplyTestLane,
             approvedCoachingLinkHandoff,
+            metaAdFastLane,
         });
     }
     if (!autoHoldReason && autoSendEnabled && blockedStage) {
@@ -5291,6 +5313,7 @@ exports._test = {
     getBalanceAutoContextBypass,
     getAutoDmHoldReason,
     getCocosCodexReviewHold,
+    isCurrentMetaAdInbound,
     collectCocosAutoRepairIssues,
     shouldAttemptCocosDraftRepair,
     normalizeCocosRepairedDraft,

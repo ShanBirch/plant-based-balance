@@ -1215,6 +1215,31 @@ function messageFromMessaging(event) {
     return {};
 }
 
+function normalizeMetaAdReferral(event) {
+    const item = safeObject(event?.item);
+    const value = safeObject(event?.value);
+    const message = messageFromMessaging(event);
+    const candidates = [
+        item.referral,
+        value.referral,
+        message.referral,
+        safeObject(item.postback).referral,
+        safeObject(value.postback).referral,
+    ].map(safeObject).filter(candidate => Object.keys(candidate).length > 0);
+    const referral = candidates[0] || {};
+    const source = String(referral.source || referral.referral_source || '').trim();
+    const adId = normalizeId(referral.ad_id || referral.adId || safeObject(referral.ads_context_data).ad_id);
+    const isAdsSource = /^(?:ads?|meta_ads?|instagram_ads?)$/i.test(source);
+    if (!adId && !isAdsSource) return null;
+    return {
+        source: 'meta_ads',
+        platform_source: source || 'ADS',
+        ad_id: adId || null,
+        ref: String(referral.ref || referral.referral_code || '').trim().slice(0, 500) || null,
+        referer_uri: cleanUrl(referral.referer_uri || referral.referrer_uri || referral.url) || null,
+    };
+}
+
 function messageIdFromMessaging(event) {
     const message = messageFromMessaging(event);
     return normalizeId(message.mid || message.id || event?.value?.message_id || extractMessageId(event?.item));
@@ -1645,7 +1670,17 @@ async function processContentInteractions(payload) {
     return { summary, byMessageId };
 }
 
-function mergeGraphCustomData(priorCustomData, { participantId, igAccountId, nowIso, messageId, participantUsername, accountConfig = {} }) {
+function mergeGraphCustomData(priorCustomData, {
+    participantId,
+    igAccountId,
+    nowIso,
+    messageId,
+    participantUsername,
+    accountConfig = {},
+    direction = 'in',
+    metaAdReferral = null,
+    attributionOnly = false,
+}) {
     const base = {
         ...safeObject(priorCustomData),
     };
@@ -1666,7 +1701,7 @@ function mergeGraphCustomData(priorCustomData, { participantId, igAccountId, now
         last_graph_seen_at: nowIso,
         send_ready: true,
     };
-    return {
+    const result = {
         ...base,
         bot_account: accountConfig.botAccount || base.bot_account || null,
         owner_ig_user_id: igAccountId || base.owner_ig_user_id || null,
@@ -1675,6 +1710,39 @@ function mergeGraphCustomData(priorCustomData, { participantId, igAccountId, now
         delivery_channel: 'instagram_graph',
         instagram_graph: graphData,
     };
+    if (direction === 'in') {
+        const priorAd = safeObject(base.meta_ad_attribution);
+        const pendingReferralAtMs = Date.parse(priorAd.last_referral_at || '');
+        const canConsumePendingReferral = !attributionOnly
+            && priorAd.awaiting_message === true
+            && Number.isFinite(pendingReferralAtMs)
+            && (Date.parse(nowIso) - pendingReferralAtMs) <= (30 * 60 * 1000);
+        const effectiveReferral = metaAdReferral || (canConsumePendingReferral ? priorAd : null);
+        if (metaAdReferral || canConsumePendingReferral) {
+            result.meta_ad_attribution = {
+                ...priorAd,
+                ...(effectiveReferral || {}),
+                source: 'meta_ads',
+                first_referral_at: priorAd.first_referral_at || nowIso,
+                last_referral_at: metaAdReferral ? nowIso : (priorAd.last_referral_at || nowIso),
+                last_message_id: attributionOnly ? (priorAd.last_message_id || null) : (messageId || null),
+                awaiting_message: attributionOnly,
+            };
+            result.latest_paid_acquisition = 'meta_ads';
+            if (!result.acquisition_source || result.acquisition_source === 'instagram_graph') {
+                result.acquisition_source = 'meta_ads';
+            }
+        }
+        if (!attributionOnly) {
+            result.current_inbound_routing = {
+                source: effectiveReferral ? 'meta_ads' : 'instagram_graph',
+                message_id: messageId || null,
+                received_at: nowIso,
+                ad_id: effectiveReferral?.ad_id || null,
+            };
+        }
+    }
+    return result;
 }
 
 async function findThreadByGraphParticipantId(participantId, selectColumns) {
@@ -1811,7 +1879,18 @@ function shouldUseGraphUsernameForProfileName(currentProfileName) {
     return !currentProfileName || /^IG user \d+$/i.test(String(currentProfileName).trim());
 }
 
-async function upsertGraphThread({ participantId, participantUsername, igAccountId, direction, nowIso, messageId, messageText, defaultCoachId }) {
+async function upsertGraphThread({
+    participantId,
+    participantUsername,
+    igAccountId,
+    direction,
+    nowIso,
+    messageId,
+    messageText,
+    defaultCoachId,
+    metaAdReferral = null,
+    attributionOnly = false,
+}) {
     const accountConfig = resolveMetaIgAccountConfig(igAccountId || '');
     const accountAutoSendEnabled = accountConfig.autoSendMessages === true;
     const subscriberId = buildGraphSubscriberId(igAccountId, participantId) || `${GRAPH_SUBSCRIBER_PREFIX}${participantId}`;
@@ -1836,7 +1915,17 @@ async function upsertGraphThread({ participantId, participantUsername, igAccount
         || await findThreadByGraphParticipantId(participantId, selectColumns)
         || null;
     const priorCustomData = safeObject(current?.custom_data);
-    const customData = mergeGraphCustomData(priorCustomData, { participantId, igAccountId, nowIso, messageId, participantUsername, accountConfig });
+    const customData = mergeGraphCustomData(priorCustomData, {
+        participantId,
+        igAccountId,
+        nowIso,
+        messageId,
+        participantUsername,
+        accountConfig,
+        direction,
+        metaAdReferral,
+        attributionOnly,
+    });
     if (exactGraphThread?.id && current?.id && exactGraphThread.id !== current.id) {
         customData.instagram_graph = {
             ...safeObject(customData.instagram_graph),
@@ -1852,11 +1941,11 @@ async function upsertGraphThread({ participantId, participantUsername, igAccount
             custom_data: customData,
             updated_at: nowIso,
         };
-        if (direction === 'out') {
+        if (!attributionOnly && direction === 'out') {
             if (!current.last_outbound_at || isAtOrAfterTimestamp(nowIso, current.last_outbound_at)) {
                 patch.last_outbound_at = nowIso;
             }
-        } else if (!current.last_inbound_at || isAtOrAfterTimestamp(nowIso, current.last_inbound_at)) {
+        } else if (!attributionOnly && (!current.last_inbound_at || isAtOrAfterTimestamp(nowIso, current.last_inbound_at))) {
             patch.last_inbound_at = nowIso;
         }
         if (current.subscriber_id !== subscriberId && isGraphSubscriberId(current.subscriber_id)) {
@@ -1895,8 +1984,8 @@ async function upsertGraphThread({ participantId, participantUsername, igAccount
             ig_username: participantUsername || null,
             profile_name: profileName,
             custom_data: customData,
-            last_inbound_at: direction === 'in' ? nowIso : null,
-            last_outbound_at: direction === 'out' ? nowIso : null,
+            last_inbound_at: !attributionOnly && direction === 'in' ? nowIso : null,
+            last_outbound_at: !attributionOnly && direction === 'out' ? nowIso : null,
             lead_stage: 'new',
             auto_send_enabled: accountAutoSendEnabled,
         }],
@@ -2524,10 +2613,11 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
     if (!events.length) return { processed: 0, inserted: 0, drafted: 0, skipped: 0, recoveredDrafts: 0, foodPhotoQueued: 0, foodPhotoAcked: 0, foodPhotoOffers: 0, foodPhotoEnabled: 0 };
 
     const defaultCoachId = await findDefaultCoachId();
-    const summary = { processed: 0, inserted: 0, drafted: 0, skipped: 0, recoveredDrafts: 0, outboundCleared: 0, foodPhotoQueued: 0, foodPhotoAcked: 0, foodPhotoSkipped: 0, foodPhotoOffers: 0, foodPhotoEnabled: 0 };
+    const summary = { processed: 0, inserted: 0, drafted: 0, skipped: 0, adAttributed: 0, recoveredDrafts: 0, outboundCleared: 0, foodPhotoQueued: 0, foodPhotoAcked: 0, foodPhotoSkipped: 0, foodPhotoOffers: 0, foodPhotoEnabled: 0 };
 
     for (const item of events) {
-        if (!['messages', 'message_echoes'].includes(item.field) && !messageFromMessaging(item).mid) {
+        const metaAdReferral = normalizeMetaAdReferral(item);
+        if (!['messages', 'message_echoes'].includes(item.field) && !messageFromMessaging(item).mid && !metaAdReferral) {
             summary.skipped++;
             continue;
         }
@@ -2544,11 +2634,6 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
         const messageText = contentContext
             ? `${contentContext}\n\nRaw IG message: ${rawMessageText}`
             : rawMessageText;
-        if (!messageText) {
-            summary.skipped++;
-            continue;
-        }
-
         const direction = directionForMessaging(item);
         const participantId = normalizeId(participantIdForMessaging(item, direction));
         if (!participantId) {
@@ -2557,6 +2642,33 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
         }
 
         const nowIso = timestampIsoFromMessaging(item) || new Date().toISOString();
+        if (!messageText && metaAdReferral && direction === 'in') {
+            try {
+                const participantUsername = participantUsernameFromMessaging(item, participantId, direction);
+                const thread = await upsertGraphThread({
+                    participantId,
+                    participantUsername,
+                    igAccountId: item.igAccountId,
+                    direction,
+                    nowIso,
+                    messageId: graphMessageId,
+                    messageText: '',
+                    defaultCoachId,
+                    metaAdReferral,
+                    attributionOnly: true,
+                });
+                if (thread?.id) summary.adAttributed++;
+                else summary.skipped++;
+            } catch (err) {
+                console.warn('[instagram-webhook] ad referral attribution failed:', err.message);
+                summary.skipped++;
+            }
+            continue;
+        }
+        if (!messageText) {
+            summary.skipped++;
+            continue;
+        }
         try {
             const payloadUsername = participantUsernameFromMessaging(item, participantId, direction);
             details = details || (payloadUsername ? null : await fetchGraphMessageDetails(graphMessageId, item.igAccountId));
@@ -2570,7 +2682,9 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
                 messageId: graphMessageId,
                 messageText,
                 defaultCoachId,
+                metaAdReferral,
             });
+            if (metaAdReferral) summary.adAttributed++;
             if (!thread?.id) {
                 summary.skipped++;
                 continue;
@@ -2798,6 +2912,8 @@ exports._test = {
     timestampIsoFromMessaging,
     shouldProcessContentContextEvent,
     participantUsernameFromMessaging,
+    normalizeMetaAdReferral,
+    mergeGraphCustomData,
     normalizeCommentKeyword,
     commentKeywordForPrivateReply,
     commentGiveawayCampaignsFromConfig,

@@ -2,6 +2,8 @@ const assert = require('assert');
 
 const instantDraft = require('../netlify/functions/ig-instant-draft')._test;
 const sendIgReply = require('../netlify/functions/send-ig-reply')._test;
+const instagramWebhook = require('../netlify/functions/instagram-webhook')._test;
+const scheduledWorker = require('../netlify/functions/scheduled-coach-reply-worker')._test;
 
 const held = instantDraft.getCocosCodexReviewHold({
     cocosAutoSendLane: true,
@@ -14,6 +16,13 @@ assert.equal(instantDraft.getCocosCodexReviewHold({
     cocosAutoSendLane: true,
     voiceReplyTestLane: true,
     approvedCoachingLinkHandoff: false,
+}), null);
+
+assert.equal(instantDraft.getCocosCodexReviewHold({
+    cocosAutoSendLane: true,
+    voiceReplyTestLane: false,
+    approvedCoachingLinkHandoff: false,
+    metaAdFastLane: true,
 }), null);
 
 assert.equal(instantDraft.getCocosCodexReviewHold({
@@ -49,5 +58,108 @@ const voiceTypingDelay = sendIgReply.resolveFirstItemTypingDelayMs({
 });
 assert(voiceTypingDelay >= 1800 && voiceTypingDelay <= 4200);
 assert(voiceTypingDelay > textTypingDelay);
+
+const adReferral = instagramWebhook.normalizeMetaAdReferral({
+    item: {
+        referral: {
+            source: 'ADS',
+            ad_id: '2385000012345',
+            ref: 'balance_founders_reel',
+        },
+    },
+});
+assert.equal(adReferral.source, 'meta_ads');
+assert.equal(adReferral.ad_id, '2385000012345');
+
+assert.equal(instagramWebhook.normalizeMetaAdReferral({
+    item: { referral: { source: 'SHORTLINK', ref: 'profile_link' } },
+}), null);
+
+const adThreadData = instagramWebhook.mergeGraphCustomData({
+    acquisition_source: 'native_story_outreach',
+}, {
+    participantId: 'lead-1',
+    igAccountId: 'account-1',
+    nowIso: '2026-07-24T03:00:00.000Z',
+    messageId: 'mid-ad-1',
+    participantUsername: 'vegan_runner',
+    direction: 'in',
+    metaAdReferral: adReferral,
+});
+assert.equal(adThreadData.acquisition_source, 'native_story_outreach');
+assert.equal(adThreadData.latest_paid_acquisition, 'meta_ads');
+assert.equal(adThreadData.current_inbound_routing.source, 'meta_ads');
+assert.equal(adThreadData.current_inbound_routing.message_id, 'mid-ad-1');
+
+assert.equal(instantDraft.isCurrentMetaAdInbound({
+    customData: adThreadData,
+    manychatMessageId: 'ig_graph:mid-ad-1',
+}), true);
+assert.equal(instantDraft.isCurrentMetaAdInbound({
+    customData: adThreadData,
+    manychatMessageId: 'ig_graph:different-message',
+}), false);
+
+const laterOrganicData = instagramWebhook.mergeGraphCustomData(adThreadData, {
+    participantId: 'lead-1',
+    igAccountId: 'account-1',
+    nowIso: '2026-07-24T04:00:00.000Z',
+    messageId: 'mid-organic-2',
+    participantUsername: 'vegan_runner',
+    direction: 'in',
+});
+assert.equal(laterOrganicData.current_inbound_routing.source, 'instagram_graph');
+assert.equal(instantDraft.isCurrentMetaAdInbound({
+    customData: laterOrganicData,
+    manychatMessageId: 'ig_graph:mid-organic-2',
+}), false);
+
+const referralOnlyData = instagramWebhook.mergeGraphCustomData({}, {
+    participantId: 'lead-2',
+    igAccountId: 'account-1',
+    nowIso: '2026-07-24T05:00:00.000Z',
+    messageId: null,
+    direction: 'in',
+    metaAdReferral: adReferral,
+    attributionOnly: true,
+});
+assert.equal(referralOnlyData.meta_ad_attribution.awaiting_message, true);
+
+const referralConsumedData = instagramWebhook.mergeGraphCustomData(referralOnlyData, {
+    participantId: 'lead-2',
+    igAccountId: 'account-1',
+    nowIso: '2026-07-24T05:02:00.000Z',
+    messageId: 'mid-after-referral',
+    direction: 'in',
+});
+assert.equal(referralConsumedData.current_inbound_routing.source, 'meta_ads');
+assert.equal(referralConsumedData.meta_ad_attribution.awaiting_message, false);
+
+assert.equal(scheduledWorker.buildAutoSendReviewHold({
+    alert_type: 'ig_incoming_dm',
+    data: {
+        channel: 'instagram',
+        scheduled_via: 'auto_send',
+        meta_ad_fast_lane: true,
+        draft_review: {
+            verdict: 'pass',
+            notification_required: false,
+            context_loss_suspected: false,
+        },
+    },
+}), null);
+
+assert.equal(scheduledWorker.buildAutoSendReviewHold({
+    alert_type: 'ig_incoming_dm',
+    data: {
+        channel: 'instagram',
+        scheduled_via: 'auto_send',
+        meta_ad_fast_lane: true,
+        draft_review: {
+            verdict: 'block',
+            summary: 'unsafe draft',
+        },
+    },
+}).code, 'draft_review');
 
 console.log('ig-hybrid-fast-lane tests passed');

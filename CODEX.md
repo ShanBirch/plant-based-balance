@@ -153,6 +153,7 @@ Two major message paths share the approval-gate pattern:
 
 - In-app client DM -> `nudges` insert -> DB trigger -> `instant-coach-draft.js` -> `coach_alerts` -> data-only FCM -> Android inline reply -> `send-coach-reply.js`.
 - Instagram Graph inbound -> `instagram-webhook.js` -> `ig-instant-draft.js` -> `coach_alerts` with `data.channel='instagram'` and usually `data.delivery_channel='instagram_graph'` -> same approval push -> `send-coach-reply.js` routes to `send-ig-reply.js`.
+- A first inbound carrying a verified Meta `ADS` referral is the paid-ad fast lane: persist its ad/referral attribution on the thread, run the normal media/context/safety review, and schedule a passing draft for four minutes later. Never send it instantly. The fast lane is message-scoped, so later replies and conversations opened by the 24-hour Story/feed dispatcher return to the normal Codex DM-manager cadence. A historic ad origin alone never grants a later message fast-lane delivery.
 - ManyChat inbound still exists as a legacy/backstop path via `manychat-inbound.js`, mainly while old IG threads gain Graph identity and for Facebook Messenger if Shannon keeps it.
 - PB celebration path starts from `pb_history` insert and uses the same approval shape.
 
