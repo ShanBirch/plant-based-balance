@@ -5968,6 +5968,54 @@ function applyLeadProgressionQuestionProtection(review, {
     };
 }
 
+function applyLeadSalesSuspicionGuard(review, {
+    draftText,
+    contextBlocks,
+    alertType,
+    qualifier,
+    linkedUserId,
+} = {}) {
+    const base = review || normalizeDraftReviewPayload({
+        verdict: 'pass',
+        confidence: 0,
+        summary: 'Draft matches the available context.',
+    });
+    if (!['ig_incoming_dm', 'fb_incoming_dm'].includes(alertType) || linkedUserId) return base;
+
+    const currentMessage = extractJustArrivedReviewMessage(contextBlocks);
+    const behavior = qualifier?.behavior_profile || {};
+    const currentSalesSuspicion = /\b(?:are you|r u|you(?:'re| are)|is this|this is)\s+(?:just\s+)?(?:trying to|gonna|going to|about to)?\s*(?:sell|pitch|market)\b|\btrying to sell me\b|\bsell me (?:a|the|some)\b|\b(?:sales|selling|marketing) (?:pitch|funnel|script)\b|\bis this (?:a|some) (?:pitch|sales thing)\b/i.test(currentMessage);
+    const directBuyerIntent = /\b(?:send (?:me )?(?:the )?(?:link|details)|how do i (?:join|start|sign up)|i(?:'m| am) (?:in|ready)|i want to (?:join|start|work with you)|price|pricing|what(?:'s| is) included)\b/i.test(currentMessage);
+    const directHelpIntent = /\b(?:i(?:\s+\w+){0,3}\s+need help|can you help|could you help|help me|where do i start|what should i do)\b/i.test(currentMessage);
+    const persistentSalesSensitivity = behavior.protection_pattern === 'hates_being_sold_to'
+        && behavior.sales_readiness !== 'link_ready'
+        && qualifier?.commercial_stage !== 'buyer_intent'
+        && !directBuyerIntent
+        && !directHelpIntent;
+    if (!currentSalesSuspicion && !persistentSalesSensitivity) return base;
+
+    const draft = normalizeCoachDraftText(draftText || '').replace(/\s+/g, ' ').trim();
+    const pushesConversation = LEAD_NEXT_QUESTION_RE.test(draft) || LEAD_NEXT_INVITE_RE.test(draft);
+    if (!pushesConversation) return base;
+
+    return {
+        ...base,
+        verdict: 'block',
+        confidence: Math.max(Number(base.confidence) || 0, 0.99),
+        summary: 'The draft keeps qualifying after the lead showed concern about being sold to.',
+        issues: normalizeDraftReviewIssues([
+            ...(Array.isArray(base.issues) ? base.issues : []),
+            'Sales-suspicion autonomy hold: no new fitness question, offer, link, or continuation hook.',
+        ]),
+        suggested_fix: 'Answer the concern honestly if it is still live, acknowledge their latest detail in one short statement, then leave space. Do not ask another fitness question or mention the offer unless they explicitly ask for help, details, a link, or how to start.',
+        context_loss_suspected: false,
+        notification_required: true,
+        notification_reason: 'sales_suspicion_progression',
+        reviewer_model: `${base.reviewer_model || DRAFT_REVIEW_MODEL}+sales-suspicion-guard`,
+        deterministic_guard: 'lead_sales_suspicion_autonomy_hold',
+    };
+}
+
 function shouldDraftReviewTriggerContextReview(review) {
     if (!review) return false;
     if (review.context_loss_suspected) return true;
@@ -6103,6 +6151,7 @@ IG/FB LEAD QUALITY CHECK:
 - When qualifier context designates one next-missing-fact question, treat that question as conversion work, not optional curiosity. Preserve one equivalent specific question unless it is unsafe, unsupported, repetitive, or the lead is clearly closing.
 - Prefer statement-led elicitation over question-led intake. Warn if the draft could have used a clear label like "sounds like this is more a structure problem than a motivation problem" but instead asks another broad discovery question.
 - If the latest message answers a health or fitness progression question, reflect that answer in a statement-led turn before asking another qualifier question. If they call it an interview, mention too many questions, or show question fatigue, the next draft must contain no new question unless they asked something that genuinely requires one.
+- If they ask whether Shannon is trying to sell or pitch them something, answer plainly and back off. The next reply must not contain a fitness question, offer, link, or another continuation hook. Keep this autonomy hold through later ordinary fitness sharing; only their explicit request for help, details, a link, signup, or how to start reopens progression.
 - After two recent discovery questions, require a statement-led turn and a fresh lead-authored fitness, food-structure, consistency, energy, help, support, safety, or buyer-intent signal before another question. One intervening acknowledgement does not reset this guard. Vegan identity and animal ethics alone are rapport, not qualification permission.
 - Block if a draft offers a free challenge/free entry as the acquisition or conversion path. Balance no longer uses that funnel.
 - Block if the lead asks how to join, asks for the link, asks price/what is included, says they are keen, or accepts the Founders Pass, but the draft slows them down with more rapport instead of moving them forward.
@@ -6275,11 +6324,18 @@ async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contex
         contextBlocks,
         alertType,
     });
-    const contextReview = mergeDraftReviewContextReview(directQuestionGuardedReview, existingContextReview);
-    if (alertId && directQuestionGuardedReview) {
-        await updateAlertDraftReview(alertId, directQuestionGuardedReview, contextReview);
+    const salesSuspicionGuardedReview = applyLeadSalesSuspicionGuard(directQuestionGuardedReview, {
+        draftText,
+        contextBlocks,
+        alertType,
+        qualifier,
+        linkedUserId,
+    });
+    const contextReview = mergeDraftReviewContextReview(salesSuspicionGuardedReview, existingContextReview);
+    if (alertId && salesSuspicionGuardedReview) {
+        await updateAlertDraftReview(alertId, salesSuspicionGuardedReview, contextReview);
     }
-    return { review: directQuestionGuardedReview, contextReview };
+    return { review: salesSuspicionGuardedReview, contextReview };
 }
 
 function isDraftReviewAutoSendSafe(review) {
@@ -7908,6 +7964,7 @@ module.exports = {
     applyLeadStoryReplyQuestionGuard,
     applyLeadDirectQuestionCoverageGuard,
     applyLeadProgressionQuestionProtection,
+    applyLeadSalesSuspicionGuard,
     isAppProblemSupportRequest,
     getAppProblemAutoSendHoldReason,
     mergeDraftReviewContextReview,

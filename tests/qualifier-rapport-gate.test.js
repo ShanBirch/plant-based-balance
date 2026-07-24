@@ -218,6 +218,70 @@ assert.strictEqual(questionFatigue.is_question_moment, false);
 assert.strictEqual(questionFatigue.next_question, '');
 assert.match(questionFatigue.why_now, /question fatigue/i);
 
+const salesSuspicion = applyRapportGate({
+    qualifier: {
+        ...base,
+        meaningful_lead_reply_count: 4,
+        is_question_moment: true,
+        next_question: 'what is the hardest part of cardio right now?',
+        facts: {
+            ...base.facts,
+            relationship_context: 'Talking about fitness and cardio',
+        },
+    },
+    currentMessage: 'Are you trying to sell me a pt course or something 😅',
+    leadReplyCount: 4,
+});
+assert.strictEqual(salesSuspicion.is_question_moment, false);
+assert.strictEqual(salesSuspicion.next_question, '');
+assert.match(salesSuspicion.why_now, /sales pitch|preserve autonomy/i);
+
+const salesSensitivityPersistsThroughFitnessAnswer = applyRapportGate({
+    qualifier: {
+        ...base,
+        meaningful_lead_reply_count: 5,
+        is_question_moment: true,
+        next_question: 'what usually makes it easiest to start building cardio again?',
+        behavior_profile: {
+            ...base.behavior_profile,
+            protection_pattern: 'hates_being_sold_to',
+            autonomy_sensitivity: 'high',
+            sales_readiness: 'protection_named',
+        },
+        facts: {
+            ...base.facts,
+            relationship_context: 'Former long-distance runner rebuilding cardio',
+        },
+    },
+    currentMessage: 'I used to be a long distance runner but now stairs are a fight',
+    leadReplyCount: 5,
+});
+assert.strictEqual(salesSensitivityPersistsThroughFitnessAnswer.is_question_moment, false);
+assert.strictEqual(salesSensitivityPersistsThroughFitnessAnswer.next_question, '');
+assert.match(salesSensitivityPersistsThroughFitnessAnswer.why_now, /still protecting|rapport/i);
+
+const explicitHelpClearsSalesSensitivityHold = applyRapportGate({
+    qualifier: {
+        ...base,
+        meaningful_lead_reply_count: 6,
+        is_question_moment: true,
+        next_question: 'what kind of help would make restarting feel manageable?',
+        behavior_profile: {
+            ...base.behavior_profile,
+            protection_pattern: 'hates_being_sold_to',
+            autonomy_sensitivity: 'high',
+            sales_readiness: 'protection_named',
+        },
+        facts: {
+            ...base.facts,
+            relationship_context: 'Former runner rebuilding cardio',
+        },
+    },
+    currentMessage: 'I actually need help figuring out where to start',
+    leadReplyCount: 6,
+});
+assert.strictEqual(explicitHelpClearsSalesSensitivityHold.is_question_moment, true);
+
 const answeredQualification = applyRapportGate({
     qualifier: {
         ...base,

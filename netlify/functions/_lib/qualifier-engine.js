@@ -722,6 +722,12 @@ function hasCurrentLeadQualificationSignal(currentMessage) {
     return /\b(?:active|activity|train|training|workout|gym|weight|fat|muscle|strength|fitness|energy|routine|consistent|consistency|accountability|exercise|running|cardio|health|body|food|meal|nutrition|diet|prep|structure|goal|progress|struggl\w*|stuck|fall(?:ing)? off|fell off|hard to|need help|want help|coaching|coach)\b/i.test(text);
 }
 
+function hasSalesSuspicionSignal(currentMessage) {
+    const text = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    if (!text) return false;
+    return /\b(?:are you|r u|you(?:'re| are)|is this|this is)\s+(?:just\s+)?(?:trying to|gonna|going to|about to)?\s*(?:sell|pitch|market)\b|\btrying to sell me\b|\bsell me (?:a|the|some)\b|\b(?:sales|selling|marketing) (?:pitch|funnel|script)\b|\bis this (?:a|some) (?:pitch|sales thing)\b|\bdo you actually care or\b/i.test(text);
+}
+
 function isUnsafeLeadProgressionTurn(currentMessage) {
     const text = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     if (!text) return true;
@@ -749,6 +755,22 @@ function hasLeadQualificationStopSignal({ currentMessage, qualifier } = {}) {
 function protectEarnedLeadProgression({ qualifier, currentMessage, leadReplyCount } = {}) {
     if (!qualifier || TERMINAL_STAGES.has(qualifier.stage)) return qualifier;
     const replies = Math.max(0, Number(leadReplyCount || qualifier.meaningful_lead_reply_count || 0));
+    const behavior = normalizeBehaviorProfile(qualifier.behavior_profile);
+    const salesSuspicion = hasSalesSuspicionSignal(currentMessage);
+    const salesSensitivityHold = behavior.protection_pattern === 'hates_being_sold_to'
+        && behavior.sales_readiness !== 'link_ready'
+        && !hasDirectBuyerIntent(currentMessage)
+        && !hasHumanHelpIntent(currentMessage);
+    if (salesSuspicion || salesSensitivityHold) {
+        return {
+            ...qualifier,
+            is_question_moment: false,
+            next_question: '',
+            why_now: salesSuspicion
+                ? 'The lead questioned whether this is a sales pitch. Answer plainly, preserve autonomy, and leave space.'
+                : 'The lead is still protecting against being sold to. Treat fitness sharing as rapport, not permission to resume qualification.',
+        };
+    }
     if (isUnsafeLeadProgressionTurn(currentMessage)) {
         return qualifier.is_question_moment
             ? { ...qualifier, is_question_moment: false, next_question: '' }
@@ -1289,13 +1311,13 @@ NOW DECIDE:
 
 4. **challenge_route**: keep this legacy field as the offer angle. Use 'vegan' if they mention plant-based / vegan / vegetarian / dietary curiosity. Use 'generic' if they want fitness / weight / energy with no diet preference. Use 'undecided' if not enough signal.
 
-5. **behavior_profile**: update the behavior profile from the newest message and recent history. Preserve prior fields unless the lead clearly updates the read. Good examples: "I know what to do, I just never stick to it" -> primary_need=accountability, protection_pattern=already_knows_what_to_do, sales_readiness=identity_confirmed. "I have tried so many plans" -> protection_pattern=fear_of_failing_again or skeptical_of_another_plan. "I hate being sold stuff" -> protection_pattern=hates_being_sold_to and autonomy_sensitivity=high. "Can you send me the details?" -> sales_readiness=link_ready. "not right now" -> sales_readiness=not_now. Do not infer medical, trauma, or personality claims.
+5. **behavior_profile**: update the behavior profile from the newest message and recent history. Preserve prior fields unless the lead clearly updates the read. Good examples: "I know what to do, I just never stick to it" -> primary_need=accountability, protection_pattern=already_knows_what_to_do, sales_readiness=identity_confirmed. "I have tried so many plans" -> protection_pattern=fear_of_failing_again or skeptical_of_another_plan. "I hate being sold stuff" or "are you trying to sell me something?" -> protection_pattern=hates_being_sold_to and autonomy_sensitivity=high. Keep that protection active through later ordinary fitness sharing; only direct help, details, link, signup, or start intent reopens qualification or offer progression. "Can you send me the details?" -> sales_readiness=link_ready. "not right now" -> sales_readiness=not_now. Do not infer medical, trauma, or personality claims.
 
 6. **commercial_stage** and **commercial_reason**: apply the four-stage commercial definition above. Problem-qualified requires both the lead's personal health/fitness goal and a real current blocker in their own words. Motivation alone is not a blocker. "Nothing really stops me", "training is part of life", existing coach/program support, and a prior decline or not-now stay engaged unless the lead later shows direct buyer intent. commercial_reason must cite the lead's own personal buying/problem evidence in under 18 words. If there is no such evidence, say that the conversation is engaged but not commercially qualified. Never use reply count or warmth score as the reason.
 
 7. **next_question**: legacy field name. Prefer a statement-led next move when this turn naturally supports one. One sentence max, Australian casual, normal phone autocorrect casing, no greetings, no em-dashes. An earned Founders Pass offer should be a casual fit bridge plus a low-pressure details handle, not an app explainer. The move should either keep a real thread-specific hook alive, bridge their own words toward health/fitness, help them self-identify what they need help with, or softly invite them into the Founders Pass once enough lead-only context has been earned. Use declarative elicitation before questions: "sounds like food is the bit that keeps derailing the week", "seems like you do better with structure than winging it", or "you are probably past needing more random tips". Let them confirm, correct, or add the missing detail. Do not ask routine survey questions. Do not push a move just because the checklist is thin. First/early replies to Shannon's story opener can use one tiny relevant move about their hook, like how they use the app/tool/routine, where the place is, what the food was, or how the session went, but that move can be a statement. Set is_question_moment=true only when this turn genuinely needs a hook move; set it false when a short acknowledgement, banter line, or statement is enough. If there is no specific hook and Shannon has not asked a basic day/week opener, a simple day/week check-in is acceptable. Only skip the move when they only said thanks/emoji/filler, it is a genuinely short no-response-needed reply, the topic is a current safety/medical/rehab advice situation, or the thread is clearly closing. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is not sensitive by itself. When they share a stable limitation that affects their training but do not ask for diagnosis, treatment, or rehab advice, set is_question_moment=true and use one non-medical training-context question about what they can still progress or how it affects their week. Treat it as normal rapport, never a diagnosis, prescription, or pitch off vulnerability. A Shannon personal aside alone is not enough there, but do not force a question mark just to keep them replying. No health/fitness/help bridge is required for this first story-reply move. If Shannon asked whether they were okay after a sad animal/pet story and they answer that they are okay but the animals are not, do not ask what happened to the animals. If a move is useful, bridge through vegan/animal-values context instead, such as how long they have been vegan/plant-based or what got them into it; later, bridge to how they go with fitness before offering the Founders Pass. If the latest message is banter with enough relationship context, a direct answer to Shannon's last question, or there is no clear health/fitness/help bridge, set is_question_moment=false and next_question="". If the latest message is an in-person/local/PT/current-trainer preference, make the next move about that preference first, not the offer link. If at least 3 meaningful lead replies plus real context have been earned, prefer a contextual Founders Pass bridge like "the founders pass could give you a proper six-week starting rhythm without another weekly bill" over asking another personal-history question. Vary this wording to match the lead's exact situation and do not hardcode that example. If stage is "pitched" and they have not accepted yet, only use a tiny next-step move if needed, like "I can send the link through here". If stage is "won", set is_question_moment=false and make next_question the approved Founders Pass link handoff, not another intake question. Do not mark "pitched" just because they are friendly or vaguely interested; wait for a real help/start/offer signal or an earned soft bridge.
 
-After a lead answers a health or fitness progression question, use a reflection or statement-led turn before another qualifier question. If they call it an interview, mention too many questions, or show question fatigue, set is_question_moment=false and next_question="".
+After a lead answers a health or fitness progression question, use a reflection or statement-led turn before another qualifier question. If they call it an interview, mention too many questions, show question fatigue, or ask whether Shannon is trying to sell or pitch them something, set is_question_moment=false and next_question="". A later ordinary fitness answer does not clear sales suspicion. Keep the next turn statement-led and leave space until they explicitly ask for help, details, a link, or how to start.
 
 8. **why_now**: 1-2 sentences explaining the timing, citing a specific phrase from THE LEAD'S WORDS. Format: "She wrote 'X', which signals Y. Now's the moment because Z." Be concrete. If is_question_moment is false, why_now explains why we're holding off ("she just vented about her boss, validate first").
 
@@ -1709,6 +1731,7 @@ module.exports = {
     applyRapportGate,
     protectEarnedLeadProgression,
     hasCurrentLeadQualificationSignal,
+    hasSalesSuspicionSignal,
     hasLeadQualificationStopSignal,
     formatPushTitle,
     formatPushBody,
