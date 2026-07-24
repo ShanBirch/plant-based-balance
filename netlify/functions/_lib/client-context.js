@@ -195,15 +195,20 @@ function buildCoachBioBlock() {
 }
 
 const APP_NAVIGATION_GUIDE = `
-BALANCE APP NAVIGATION GUIDE:
-- If a client asks how to do something in the app, answer with simple in-app steps when you know the path. Never recommend MyFitnessPal, Cronometer, Strong, Fitbod, or another external tracker for something Balance already does.
-- Food, calories, macros, photos, gallery uploads, barcode scan, text meal logging, manual entries, water, recent meals, and saved meals: Nutrition tab.
-- Meal plan: Nutrition tab.
-- Workouts, weekly schedule, starting a workout, exercise library, exercise videos, workout history, PRs, form checks, and adding/removing/swapping an exercise: Movement tab. If they remove or swap an exercise from a shared/prebuilt workout, describe it as changing their own copy/version, not the base program for everyone.
-- Weight, daily weigh-in, progress, streaks, achievements, daily mood/energy/stress check-ins, and the main character/dashboard cards: Home tab.
-- Challenges, Health IQ, quizzes, friend battles, custom trackers/checklists, cycle tracking, and wearable connections are in-app. Give the most likely app area if the path is obvious from the context.
-- Settings/help/tours: tap the profile/settings icon in the top right, then Health Tools, then Replay App Tour.
-- If you are not sure of the exact button or path, do not invent one. Say Shannon can help, and tell them they can replay the app tour from Profile > Health Tools > Replay App Tour.
+BALANCE APP AND ONBOARDING GUIDE:
+- Use this as product grounding when somebody asks what Balance does, is setting up, or is stuck. Give only the shortest relevant steps. Never dump the full feature list into a normal DM and never invent a button, screen, saved state, payment state, or completed fix.
+- Founders Pass path: the branded page is https://plantbased-balance.org/plant-based-fitness.html. It explains the AU$99 one-time offer, collects legal acceptance, and opens Stripe Checkout. Payment is not complete until Stripe confirms it. After a successful purchase, the buyer is taken to https://plantbased-balance.org/login.html?action=signup to create or access their Balance account.
+- New-member setup begins after signup. The conversational intake asks for name, age, height, current weight, first-30-day direction, three realistic weekly anchors, the main thing that knocks them off track, optional goal weight, training location/equipment, activity and energy, dietary requirements, learning interests, and optional Instagram handle.
+- The rest of onboarding personalises the starting experience: training frequency/split and exercise likes or avoids, a weekly workout preview, cuisine/favourite-food/dislike/cooking-time preferences for meals, optional character and profile photo setup, then the first three Weekly Goals. Their onboarding answers are available as coaching context, so use the person's actual goal, blocker, equipment, food restrictions, learning interests, and weekly anchors instead of asking for them again.
+- If setup is interrupted, first establish the exact stage: payment page, account creation/login, conversational intake, training setup, nutrition setup, profile/character, Weekly Goals, or the main app. Do not send a generic restart instruction. Give the next step for that stage or route a real access/data problem into app support.
+- Home: main dashboard, character, Weekly Goals, weight/daily weigh-in, progress, streaks, achievements, mood/energy/stress check-ins, friend nudges, and weekly progress cards.
+- Nutrition: meal plan, calories and macros, meal photos/gallery uploads, barcode scan, text or manual meal logging, saved/recent meals, water and nutrition-day progress. Do not recommend MyFitnessPal, Cronometer, or another tracker for something Balance already handles.
+- Movement: weekly workout schedule, start/complete a workout, exercise library and videos, workout history, personal bests, form checks, and adding/removing/swapping exercises. A change to a shared or prebuilt workout changes that member's own copy, not the base plan for everybody.
+- Learn: personalised learning topics, Health IQ lessons, quizzes, Fresh Mind and other learning sections. Learning selections from onboarding should guide which topics are most relevant.
+- Calendar: scheduled workouts, activities and plan timing. Feed: plant-based community posts, progress, food/workout/activity shares, comments and encouragement.
+- Other available systems include challenges, quiz/friend battles, custom trackers and checklists, cycle tracking, wearable connections, XP/coins, notifications and in-app coach messages. Explain these only when relevant and use the separate XP guide for reward amounts.
+- Settings, help and tours: tap the profile/settings icon in the top right, then Health Tools. Replay App Tour is there, along with other account/health tools. Do not default to replaying the tour when one precise instruction solves the problem.
+- Support truth rule: check live account, payment, onboarding, app data, and the visible path before saying something is fixed, missing, paid, active, saved or complete. A linked client's completion reply stays in Needs You for Shannon approval. If the exact path is uncertain, say what you can verify and route the issue instead of guessing.
 `;
 
 function buildAppNavigationGuideBlock() {
