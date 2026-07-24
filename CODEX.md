@@ -168,6 +168,14 @@ Voice match feedback loop:
 - Dismissed: `status='dismissed'`, optional `data.dismiss_reason`. Counts denominator only.
 - Score is sent-as-drafted divided by sent plus dismissed, rolling 30 days, bucketed overall, per alert type, and per client.
 
+Approved ElevenLabs Instagram voice-note recipe:
+
+- Shannon approved the conversational test set created on 2026-07-24 as the reference sound for future generated Instagram DM voice notes.
+- Use the professional Shannon voice ID `UHnJrglEof8vTMenwnVm` with `eleven_multilingual_v2`. The approved settings are stability `0.42`, similarity boost `0.78`, style `0.12`, and speaker boost enabled. Production may keep its transport-required audio format; local previews used `mp3_44100_128`.
+- Aim for roughly 20 to 26 seconds. Write two to four loose spoken sentences, not Reel copy. Include only two or three natural hesitations or self-corrections across the whole note, such as `um`, `ah`, `yeah`, `like`, `you know`, or a small repeated thought. Vary their placement so notes do not share a template.
+- Shape: recognise one exact thing they said, reflect or normalise it, give one useful thought or next step, then stop. Use contractions, commas, short pauses, and occasional fragments. Do not use stage directions, polished presenter phrasing, a list read aloud, or filler in every sentence.
+- The approved examples sounded spontaneous because they were specific and slightly imperfect, not because they were packed with verbal filler. Preserve that balance whenever generating a new note.
+
 DM question discipline:
 
 - Do not ask for a status the client or lead just gave. If they say "just pain when I walk" or "not great", the better Shannon-style reply is usually a short acknowledgement or statement, such as "ahhh that's not good fra", not "how's it feeling today, still pain when you walk?"
