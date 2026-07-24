@@ -1,14 +1,16 @@
 {
   "duration": 15,
   "assertions": [
-    { "kind": "appearsBy", "selector": "#scene-plan", "bySec": 0.7 },
-    { "kind": "appearsBy", "selector": "#scene-learn", "bySec": 2.5 },
-    { "kind": "appearsBy", "selector": "#scene-share", "bySec": 4.2 },
-    { "kind": "appearsBy", "selector": "#scene-track", "bySec": 6.5 },
-    { "kind": "appearsBy", "selector": "#scene-train", "bySec": 8.2 },
-    { "kind": "appearsBy", "selector": "#scene-compete", "bySec": 10.0 },
+    { "kind": "appearsBy", "selector": "#scene-home", "bySec": 0.7 },
+    { "kind": "appearsBy", "selector": "#scene-goals", "bySec": 2.1 },
+    { "kind": "appearsBy", "selector": "#scene-learn", "bySec": 3.5 },
+    { "kind": "appearsBy", "selector": "#scene-share", "bySec": 4.8 },
+    { "kind": "appearsBy", "selector": "#scene-activity", "bySec": 6.4 },
+    { "kind": "appearsBy", "selector": "#activity-steps", "bySec": 8.1 },
+    { "kind": "appearsBy", "selector": "#scene-train", "bySec": 8.9 },
+    { "kind": "appearsBy", "selector": "#scene-challenge", "bySec": 10.3 },
     { "kind": "appearsBy", "selector": "#balance-logo", "bySec": 12.5 },
-    { "kind": "before", "a": "#scene-plan", "b": "#balance-logo" },
+    { "kind": "before", "a": "#scene-home", "b": "#balance-logo" },
     { "kind": "staysInFrame", "selector": ".app-card" },
     { "kind": "keepsMoving", "withinSelector": "#balance-motion", "maxStaticSec": 1.6 }
   ]

@@ -22,6 +22,7 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 - Parent brand/domain: plantbased-balance.org.
 - Native bundle ID still uses the old `com.fitgotchi.app` codename. Do not use "FitGotchi" in user-facing copy.
 - Logo asset: `balance_logo.png`, Japanese kanji wa/harmony.
+- Default video logo treatment: whenever the Balance logo appears in a video or Reel, animate a tasteful gold glimmer sweep over it unless Shannon explicitly asks for a different treatment.
 - Facebook Pixel: `1928402271406692`.
 - Pricing:
   - Balance Vegan Fitness Founders Pass: AUD $99 once. Six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and vegan fitness community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included.

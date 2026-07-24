@@ -6,7 +6,7 @@
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
     <style>
       * { box-sizing: border-box; }
-      html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #0C0714; }
+      html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #F7F2E8; }
       #balance-root { position: relative; width: 1080px; height: 1920px; overflow: hidden; }
     </style>
   </head>
@@ -14,17 +14,23 @@
     <div id="balance-root" data-composition-id="balance-root" data-start="0" data-duration="15" data-fps="30" data-width="1080" data-height="1920">
       <div id="balance-motion-host" class="clip" data-composition-id="balance-motion" data-composition-src="compositions/index.html" data-start="0" data-duration="15" data-track-index="1" data-width="1080" data-height="1920"></div>
 
-      <audio id="audio-plan-click" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="0.35" data-duration="0.4" data-track-index="10" data-volume="0.32"></audio>
-      <audio id="audio-learn-whoosh" class="clip" src=".media/audio/sfx/sfx_001.mp3" data-start="1.9" data-duration="0.34" data-track-index="11" data-volume="0.2"></audio>
-      <audio id="audio-learn-click" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="2.35" data-duration="0.4" data-track-index="10" data-volume="0.24"></audio>
-      <audio id="audio-share-whoosh" class="clip" src=".media/audio/sfx/sfx_001.mp3" data-start="3.65" data-duration="0.5" data-track-index="11" data-volume="0.24"></audio>
-      <audio id="audio-share-click-one" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="4.08" data-duration="0.4" data-track-index="10" data-volume="0.2"></audio>
-      <audio id="audio-share-click-two" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="4.5" data-duration="0.4" data-track-index="12" data-volume="0.28"></audio>
-      <audio id="audio-track-whoosh" class="clip" src=".media/audio/sfx/sfx_001.mp3" data-start="5.95" data-duration="0.4" data-track-index="11" data-volume="0.2"></audio>
-      <audio id="audio-track-click" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="6.55" data-duration="0.4" data-track-index="10" data-volume="0.3"></audio>
-      <audio id="audio-train-whoosh" class="clip" src=".media/audio/sfx/sfx_001.mp3" data-start="7.7" data-duration="0.4" data-track-index="11" data-volume="0.2"></audio>
-      <audio id="audio-compete-whoosh" class="clip" src=".media/audio/sfx/sfx_001.mp3" data-start="9.45" data-duration="0.4" data-track-index="11" data-volume="0.22"></audio>
-      <audio id="audio-compete-click" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="10.02" data-duration="0.4" data-track-index="10" data-volume="0.34"></audio>
+      <audio id="audio-home-click" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="0.35" data-duration="0.4" data-track-index="10" data-volume="0.32"></audio>
+      <audio id="audio-goals-whoosh" class="clip" src=".media/audio/sfx/sfx_001.mp3" data-start="1.55" data-duration="0.4" data-track-index="11" data-volume="0.2"></audio>
+      <audio id="audio-goals-click" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="1.95" data-duration="0.4" data-track-index="10" data-volume="0.24"></audio>
+      <audio id="audio-learn-whoosh" class="clip" src=".media/audio/sfx/sfx_001.mp3" data-start="2.9" data-duration="0.4" data-track-index="11" data-volume="0.2"></audio>
+      <audio id="audio-learn-click" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="3.3" data-duration="0.4" data-track-index="10" data-volume="0.24"></audio>
+      <audio id="audio-share-whoosh" class="clip" src=".media/audio/sfx/sfx_001.mp3" data-start="4.25" data-duration="0.5" data-track-index="11" data-volume="0.24"></audio>
+      <audio id="audio-share-click-one" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="4.53" data-duration="0.4" data-track-index="10" data-volume="0.2"></audio>
+      <audio id="audio-share-click-two" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="4.81" data-duration="0.4" data-track-index="12" data-volume="0.28"></audio>
+      <audio id="audio-activity-whoosh" class="clip" src=".media/audio/sfx/sfx_001.mp3" data-start="5.95" data-duration="0.5" data-track-index="11" data-volume="0.22"></audio>
+      <audio id="audio-activity-burn" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="6.2" data-duration="0.4" data-track-index="10" data-volume="0.22"></audio>
+      <audio id="audio-activity-volume" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="6.65" data-duration="0.4" data-track-index="10" data-volume="0.22"></audio>
+      <audio id="audio-activity-sleep" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="7.1" data-duration="0.4" data-track-index="10" data-volume="0.22"></audio>
+      <audio id="audio-activity-calories" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="7.55" data-duration="0.4" data-track-index="10" data-volume="0.22"></audio>
+      <audio id="audio-activity-steps" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="8.0" data-duration="0.4" data-track-index="10" data-volume="0.3"></audio>
+      <audio id="audio-train-whoosh" class="clip" src=".media/audio/sfx/sfx_001.mp3" data-start="8.3" data-duration="0.4" data-track-index="11" data-volume="0.2"></audio>
+      <audio id="audio-challenge-whoosh" class="clip" src=".media/audio/sfx/sfx_001.mp3" data-start="9.75" data-duration="0.4" data-track-index="11" data-volume="0.24"></audio>
+      <audio id="audio-challenge-click" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="10.2" data-duration="0.4" data-track-index="10" data-volume="0.28"></audio>
       <audio id="audio-logo-impact" class="clip" src=".media/audio/sfx/sfx_001.mp3" data-start="11.25" data-duration="0.6" data-track-index="11" data-volume="0.42"></audio>
       <audio id="audio-cta-click" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="13.58" data-duration="0.4" data-track-index="10" data-volume="0.18"></audio>
     </div>

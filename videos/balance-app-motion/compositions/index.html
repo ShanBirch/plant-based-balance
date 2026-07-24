@@ -3,12 +3,17 @@
     <div class="scene-fill deep-bg"></div>
     <div id="orb-a" class="orb orb-a" data-layout-ignore></div>
     <div id="orb-b" class="orb orb-b" data-layout-ignore></div>
-    <div class="ghost-word" data-layout-ignore>BALANCE</div>
+    <div class="ghost-logo" data-layout-ignore></div>
     <div class="top-rule" data-layout-ignore data-layout-allow-occlusion="true"></div>
     <div class="micro micro-top" data-layout-allow-occlusion="true">YOUR FITNESS. ONE CLEAR PATH.</div>
 
-    <section id="scene-plan" class="feature-scene">
-      <div class="app-card"><img class="focus-bottom" src=".media/images/home-goals-challenge.jpg" alt="Balance weekly goals" /></div>
+    <section id="scene-home" class="feature-scene">
+      <div class="app-card"><img src=".media/images/image_005.jpg" alt="Balance home screen" /></div>
+      <div class="copy-card"><small>HOME</small><strong>Your whole plan.<br />One place.</strong></div>
+    </section>
+
+    <section id="scene-goals" class="feature-scene">
+      <div class="app-card"><img src=".media/images/image_006.jpg" alt="Balance weekly goals" /></div>
       <div class="copy-card"><small>PLAN</small><strong>A clear focus,<br />every week.</strong></div>
     </section>
 
@@ -24,9 +29,18 @@
       <div class="copy-card"><small>SHARE</small><strong>Meals. Walks. Workouts.<br />Together.</strong></div>
     </section>
 
-    <section id="scene-track" class="feature-scene">
-      <div class="app-card"><img src=".media/images/nutrition-tracker.jpg" alt="Balance nutrition tracker" /></div>
-      <div class="copy-card"><small>TRACK</small><strong>Nutrition without<br />the guesswork.</strong></div>
+    <section id="scene-challenge" class="feature-scene">
+      <div class="app-card"><img src=".media/images/image_007.jpg" alt="Balance challenge leaderboard with friends" /></div>
+      <div class="copy-card"><small>COMPETE</small><strong>With friends.<br />Stay motivated.</strong></div>
+    </section>
+
+    <section id="scene-activity" class="feature-scene activity-scene">
+      <div id="activity-burn" class="app-card activity-card"><img src=".media/images/image_008.jpg" alt="Balance calories burned activity insights" /></div>
+      <div id="activity-volume" class="app-card activity-card"><img src=".media/images/image_010.jpg" alt="Balance lifting volume activity insights" /></div>
+      <div id="activity-sleep" class="app-card activity-card"><img src=".media/images/image_011.jpg" alt="Balance sleep activity insights" /></div>
+      <div id="activity-calories" class="app-card activity-card"><img src=".media/images/image_012.jpg" alt="Balance daily calories activity insights" /></div>
+      <div id="activity-steps" class="app-card activity-card"><img src=".media/images/image_009.jpg" alt="Balance daily steps activity insights" /></div>
+      <div class="copy-card"><small>TRACK</small><strong>Your activity.<br />Clearly tracked.</strong></div>
     </section>
 
     <section id="scene-train" class="feature-scene">
@@ -34,27 +48,21 @@
       <div class="copy-card"><small>TRAIN</small><strong>Your coach in<br />your corner.</strong></div>
     </section>
 
-    <section id="scene-compete" class="feature-scene">
-      <div class="app-card"><img class="focus-top" src=".media/images/challenge-friends.jpg" alt="Balance challenge with friends" /></div>
-      <div class="copy-card"><small>COMPETE</small><strong>With friends.<br />Stay motivated.</strong></div>
-    </section>
-
     <div id="brand-bg" class="brand-bg" data-layout-allow-overflow="true"></div>
     <div id="brand-lockup" class="brand-lockup">
       <div id="logo-glow" class="logo-glow" data-layout-ignore></div>
       <img id="balance-logo" src=".media/images/logo_001.png" alt="Balance harmony logo" />
-      <div id="brand-promise">EVERYTHING YOU NEED<br />TO STAY CONSISTENT.</div>
+      <div id="logo-glimmer" aria-hidden="true" data-layout-ignore><i></i></div>
       <div id="brand-name">BALANCE</div>
-      <div id="brand-tagline">Fitness Gamified</div>
       <div id="brand-cta"><span>JOIN BALANCE</span><i data-layout-allow-overflow="true"></i></div>
     </div>
 
     <style>
       #balance-motion {
-        --bg: #0c0714;
-        --surface: #21122f;
-        --purple: #6f42c1;
-        --gold: #f7b51e;
+        --bg: #f7f2e8;
+        --surface: #fff9ed;
+        --purple: #d8a43a;
+        --gold: #a96f00;
         --ivory: #f7f2e8;
         --ink: #160d20;
         position: relative;
@@ -62,18 +70,18 @@
         height: 1920px;
         overflow: hidden;
         font-family: "Montserrat", sans-serif;
-        color: #fff;
+        color: var(--ink);
         isolation: isolate;
       }
       #balance-motion * { box-sizing: border-box; }
       .scene-fill { position: absolute; inset: 0; }
       .deep-bg { background-color: var(--bg); }
       .orb { position: absolute; border-radius: 999px; filter: blur(18px); opacity: 0.22; }
-      .orb-a { width: 680px; height: 680px; left: -310px; top: 160px; background: radial-gradient(circle, rgba(111,66,193,.95), rgba(111,66,193,0)); }
-      .orb-b { width: 780px; height: 780px; right: -390px; bottom: -80px; background: radial-gradient(circle, rgba(247,181,30,.72), rgba(247,181,30,0)); }
-      .ghost-word { position: absolute; left: -90px; top: 700px; font: 400 250px/1 "League Gothic", sans-serif; letter-spacing: .03em; color: rgba(247,242,232,.09); transform: rotate(-90deg); transform-origin: center; }
+      .orb-a { width: 680px; height: 680px; left: -310px; top: 160px; background: radial-gradient(circle, rgba(247,181,30,.52), rgba(247,181,30,0)); }
+      .orb-b { width: 780px; height: 780px; right: -390px; bottom: -80px; background: radial-gradient(circle, rgba(190,126,0,.36), rgba(190,126,0,0)); }
+      .ghost-logo { position: absolute; left: 130px; top: 470px; width: 820px; height: 820px; background: center / contain no-repeat url(".media/images/logo_001.png"); opacity: .065; filter: sepia(1) saturate(.7); }
       .top-rule { position: absolute; z-index: 20; left: 74px; right: 74px; top: 136px; height: 3px; background-color: var(--gold); opacity: .75; }
-      .micro { position: absolute; z-index: 20; font: 800 24px/1 "Montserrat", sans-serif; letter-spacing: .12em; color: var(--ivory); white-space: nowrap; }
+      .micro { position: absolute; z-index: 20; font: 800 24px/1 "Montserrat", sans-serif; letter-spacing: .12em; color: var(--ink); white-space: nowrap; }
       .micro-top { left: 74px; top: 88px; }
       .feature-scene { position: absolute; z-index: 4; inset: 0; opacity: 0; visibility: hidden; }
       .app-card {
@@ -84,12 +92,12 @@
         height: 1390px;
         overflow: hidden;
         border-radius: 58px;
-        border: 3px solid rgba(255,255,255,.22);
+        border: 3px solid rgba(169,111,0,.28);
         background-color: var(--surface);
-        box-shadow: 0 38px 100px rgba(0,0,0,.52);
+        box-shadow: 0 38px 100px rgba(92,56,6,.24);
         transform-origin: 50% 50%;
       }
-      .app-card::after { content: ""; position: absolute; inset: 0; border-radius: 55px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.08), inset 0 70px 120px rgba(255,255,255,.035); pointer-events: none; }
+      .app-card::after { content: ""; position: absolute; inset: 0; border-radius: 55px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.58), inset 0 70px 120px rgba(255,255,255,.12); pointer-events: none; }
       .app-card img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
       .app-card img.focus-bottom { object-position: center bottom; }
       .app-card img.focus-top { object-position: center top; }
@@ -102,21 +110,22 @@
         min-height: 238px;
         padding: 36px 46px 38px;
         border-radius: 42px;
-        background-color: rgba(12,7,20,.94);
-        border: 2px solid rgba(247,181,30,.55);
-        box-shadow: 0 28px 70px rgba(0,0,0,.48);
+        background-color: rgba(255,249,237,.97);
+        border: 2px solid rgba(169,111,0,.66);
+        box-shadow: 0 28px 70px rgba(92,56,6,.25);
       }
       .copy-card small { display: block; margin-bottom: 16px; color: var(--gold); font: 700 25px/1 "Space Mono", monospace; letter-spacing: .18em; }
-      .copy-card strong { display: block; color: var(--ivory); font-size: 60px; line-height: 1.02; font-weight: 900; letter-spacing: -.035em; }
+      .copy-card strong { display: block; color: var(--ink); font-size: 60px; line-height: 1.02; font-weight: 900; letter-spacing: -.035em; }
       .share-card { width: 610px; height: 1260px; left: 235px; top: 218px; }
+      .activity-card { opacity: 0; visibility: hidden; }
       .brand-bg { position: absolute; z-index: 30; left: 50%; top: 50%; width: 1250px; height: 1250px; margin: -625px 0 0 -625px; border-radius: 50%; background-color: var(--ivory); transform: scale(0); }
       .brand-lockup { position: absolute; z-index: 34; inset: 0; color: var(--ink); pointer-events: none; opacity: 0; visibility: hidden; }
-      .logo-glow { position: absolute; top: 350px; left: 335px; width: 410px; height: 410px; border-radius: 50%; background: radial-gradient(circle, rgba(247,181,30,.48), rgba(247,181,30,0)); opacity: 0; }
-      #balance-logo { position: absolute; left: 345px; top: 340px; width: 390px; height: 390px; object-fit: contain; border-radius: 50%; }
-      #brand-promise { position: absolute; left: 120px; right: 120px; top: 790px; text-align: center; font: 700 35px/1.25 "Space Mono", monospace; letter-spacing: .08em; color: #5a4168; }
-      #brand-name { position: absolute; left: 0; right: 0; top: 940px; text-align: center; font-size: 118px; line-height: .9; font-weight: 900; letter-spacing: -.045em; white-space: nowrap; }
-      #brand-tagline { position: absolute; left: 0; right: 0; top: 1090px; text-align: center; font: 700 48px/1.1 "Space Mono", monospace; color: #4b355a; }
-      #brand-cta { position: absolute; left: 360px; top: 1235px; width: 360px; height: 104px; display: grid; place-items: center; overflow: hidden; border-radius: 54px; background-color: var(--ink); color: var(--ivory); }
+      .logo-glow { position: absolute; top: 570px; left: 335px; width: 410px; height: 410px; border-radius: 50%; background: radial-gradient(circle, rgba(247,181,30,.48), rgba(247,181,30,0)); opacity: 0; }
+      #balance-logo { position: absolute; left: 345px; top: 560px; width: 390px; height: 390px; object-fit: contain; border-radius: 50%; }
+      #logo-glimmer { position: absolute; left: 345px; top: 560px; width: 390px; height: 390px; overflow: hidden; border-radius: 50%; mix-blend-mode: multiply; }
+      #logo-glimmer i { position: absolute; left: 0; top: -60px; width: 112px; height: 510px; background: linear-gradient(90deg, rgba(216,164,58,0), rgba(216,164,58,.3) 30%, rgba(255,221,125,.82) 52%, rgba(216,164,58,.28) 72%, rgba(216,164,58,0)); filter: blur(7px); transform: translateX(-180px) rotate(14deg); }
+      #brand-name { position: absolute; left: 0; right: 0; top: 1030px; text-align: center; font-size: 118px; line-height: .9; font-weight: 900; letter-spacing: -.045em; white-space: nowrap; }
+      #brand-cta { position: absolute; left: 360px; top: 1230px; width: 360px; height: 104px; display: grid; place-items: center; overflow: hidden; border-radius: 54px; background-color: var(--ink); color: var(--ivory); }
       #brand-cta span { position: relative; z-index: 2; font-size: 28px; font-weight: 900; letter-spacing: .08em; }
       #brand-cta i { display: none; }
     </style>
@@ -141,35 +150,55 @@
         tl.set(id, { autoAlpha: 0 }, at + .38);
       };
 
-      enterScene("#scene-plan", .18, -150);
-      exitScene("#scene-plan", 1.9, -140);
+      enterScene("#scene-home", .18, -150);
+      exitScene("#scene-home", 1.55, -140);
 
-      enterScene("#scene-learn", 1.9, 150);
-      tl.fromTo("#scene-learn .app-card", { scale: 1 }, { scale: 1.025, duration: 1.25, ease: "sine.inOut" }, 2.35);
-      exitScene("#scene-learn", 3.65, 140);
+      enterScene("#scene-goals", 1.55, 150);
+      exitScene("#scene-goals", 2.9, 140);
 
-      tl.set("#scene-share", { autoAlpha: 1 }, 3.65);
-      tl.fromTo("#share-walk", { autoAlpha: 0, x: -170, y: 120, scale: .8, rotation: -8 }, { autoAlpha: 1, x: -90, y: -20, scale: .91, rotation: -6, duration: .44, ease: "back.out(1.4)" }, 3.65);
-      tl.fromTo("#share-food", { autoAlpha: 0, x: 160, y: 120, scale: .8, rotation: 8 }, { autoAlpha: 1, x: 85, y: 10, scale: .92, rotation: 6, duration: .44, ease: "back.out(1.4)" }, 4.08);
-      tl.fromTo("#share-workout", { autoAlpha: 0, y: 140, scale: .8 }, { autoAlpha: 1, y: 0, scale: 1, duration: .46, ease: "back.out(1.45)" }, 4.5);
-      tl.fromTo("#scene-share .copy-card", { autoAlpha: 0, y: 72, scale: .9 }, { autoAlpha: 1, y: 0, scale: 1, duration: .38, ease: "expo.out" }, 4.78);
-      tl.fromTo("#scene-share .copy-card small", { autoAlpha: 0, x: -28 }, { autoAlpha: 1, x: 0, duration: .26, ease: "power4.out" }, 4.9);
+      enterScene("#scene-learn", 2.9, -150);
+      exitScene("#scene-learn", 4.25, -140);
+
+      tl.set("#scene-share", { autoAlpha: 1 }, 4.25);
+      tl.fromTo("#share-walk", { autoAlpha: 0, x: -170, y: 120, scale: .8, rotation: -8 }, { autoAlpha: 1, x: -90, y: -20, scale: .91, rotation: -6, duration: .38, ease: "back.out(1.4)" }, 4.25);
+      tl.fromTo("#share-food", { autoAlpha: 0, x: 160, y: 120, scale: .8, rotation: 8 }, { autoAlpha: 1, x: 85, y: 10, scale: .92, rotation: 6, duration: .38, ease: "back.out(1.4)" }, 4.53);
+      tl.fromTo("#share-workout", { autoAlpha: 0, y: 140, scale: .8 }, { autoAlpha: 1, y: 0, scale: 1, duration: .4, ease: "back.out(1.45)" }, 4.81);
+      tl.fromTo("#scene-share .copy-card", { autoAlpha: 0, y: 72, scale: .9 }, { autoAlpha: 1, y: 0, scale: 1, duration: .32, ease: "expo.out" }, 4.95);
+      tl.fromTo("#scene-share .copy-card small", { autoAlpha: 0, x: -28 }, { autoAlpha: 1, x: 0, duration: .22, ease: "power4.out" }, 5.03);
       exitScene("#scene-share", 5.95, -150);
 
-      enterScene("#scene-track", 5.95, 150);
-      exitScene("#scene-track", 7.7, 140);
+      tl.set("#scene-activity", { autoAlpha: 1 }, 5.95);
+      tl.fromTo("#scene-activity .copy-card", { autoAlpha: 0, y: 72, scale: .9 }, { autoAlpha: 1, y: 0, scale: 1, duration: .3, ease: "expo.out" }, 6.08);
+      tl.fromTo("#scene-activity .copy-card small", { autoAlpha: 0, x: -28 }, { autoAlpha: 1, x: 0, duration: .22, ease: "power4.out" }, 6.16);
 
-      enterScene("#scene-train", 7.7, -150);
-      tl.fromTo("#scene-train .app-card", { scale: 1 }, { scale: 1.025, duration: 1.2, ease: "sine.inOut" }, 8.15);
-      exitScene("#scene-train", 9.45, -140);
+      const activityCards = ["#activity-burn", "#activity-volume", "#activity-sleep", "#activity-calories", "#activity-steps"];
+      const activityStarts = [5.95, 6.4, 6.85, 7.3, 7.75];
+      activityCards.forEach((card, index) => {
+        const at = activityStarts[index];
+        const fromX = index % 2 === 0 ? 155 : -155;
+        tl.fromTo(card, { autoAlpha: 0, x: fromX, y: 95, scale: .84, rotation: fromX < 0 ? -4 : 4 }, { autoAlpha: 1, x: 0, y: 0, scale: 1, rotation: 0, duration: .3, ease: "back.out(1.3)" }, at);
+        if (index < activityCards.length - 1) {
+          tl.fromTo(card, { autoAlpha: 1, x: 0, y: 0, scale: 1, rotation: 0 }, { autoAlpha: 0, x: -fromX, y: -55, scale: .9, rotation: fromX < 0 ? 3 : -3, duration: .2, ease: "power3.in" }, at + .35);
+        }
+      });
+      tl.fromTo("#scene-activity .copy-card", { autoAlpha: 1, y: 0, scale: 1 }, { autoAlpha: 0, y: -36, scale: 1, duration: .18, ease: "power2.in" }, 8.1);
+      tl.fromTo("#activity-steps", { autoAlpha: 1, x: 0, y: 0, scale: 1, rotation: 0 }, { autoAlpha: 0, x: 140, y: -70, scale: .88, rotation: 4, duration: .2, ease: "power3.in" }, 8.1);
+      tl.set("#scene-activity", { autoAlpha: 0 }, 8.3);
 
-      enterScene("#scene-compete", 9.45, 150);
-      exitScene("#scene-compete", 11.25, 140);
+      enterScene("#scene-train", 8.3, -150);
+      exitScene("#scene-train", 9.75, -140);
+
+      enterScene("#scene-challenge", 9.75, 150);
+      exitScene("#scene-challenge", 11.25, 140);
 
       tl.fromTo("#brand-bg", { scale: 0 }, { scale: 2.85, duration: .86, ease: "power4.inOut" }, 11.18);
       tl.fromTo("#brand-lockup", { autoAlpha: 0 }, { autoAlpha: 1, duration: .5, ease: "power3.out" }, 11.72);
       tl.fromTo("#logo-glow", { autoAlpha: 0 }, { autoAlpha: .8, duration: .5, ease: "sine.out" }, 11.72);
-      tl.fromTo("#brand-lockup", { autoAlpha: 1 }, { autoAlpha: 1, duration: 2.77, ease: "none" }, 12.22);
+      tl.fromTo("#logo-glimmer i", { x: -180 }, { x: 570, duration: .9, ease: "power2.inOut" }, 12.08);
+      tl.fromTo("#logo-glow", { scale: .96, autoAlpha: .55 }, { scale: 1.08, autoAlpha: .9, duration: .45, repeat: 1, yoyo: true, ease: "sine.inOut" }, 12.22);
+      tl.fromTo("#logo-glimmer i", { x: -180 }, { x: 570, duration: .9, ease: "power2.inOut" }, 13.62);
+      tl.fromTo("#logo-glow", { scale: .96, autoAlpha: .55 }, { scale: 1.08, autoAlpha: .9, duration: .45, repeat: 1, yoyo: true, ease: "sine.inOut" }, 13.62);
+      tl.fromTo("#brand-cta", { autoAlpha: 1 }, { autoAlpha: 1, duration: 2.77, ease: "none" }, 12.22);
 
       window.__timelines["balance-motion"] = tl;
       tl.seek(0);
