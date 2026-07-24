@@ -89,12 +89,12 @@ assert.strictEqual(
     false
 );
 
-const immediateTiming = igDraft.normalizeIgAutoTimingSuggestion({
+const reviewedTiming = igDraft.normalizeIgAutoTimingSuggestion({
     timingSuggestion: { delay_ms: 30 * 60 * 1000, label: '30m', reason: 'normal timing' },
     allowImmediate: true,
 });
-assert.strictEqual(immediateTiming.action, 'send_now');
-assert.strictEqual(immediateTiming.delay_ms, 0);
+assert.strictEqual(reviewedTiming.action, 'schedule');
+assert.strictEqual(reviewedTiming.delay_ms, 30 * 60 * 1000);
 
 const normalTiming = igDraft.normalizeIgAutoTimingSuggestion({
     timingSuggestion: { delay_ms: 0, label: 'now', reason: 'normal timing' },
@@ -135,5 +135,45 @@ assert.deepStrictEqual(
         sampleRate: 16000,
     }
 );
+
+const personalVoicePlan = voice.resolvePersonalVoiceReplyPlan({
+    channel: 'instagram',
+    hasInstagramGraphRoute: true,
+    currentMessage: "I've been struggling to stay consistent and I want to get stronger",
+    qualifier: {
+        facts: {
+            current_state: 'struggling to stay consistent with training',
+            motivation: 'wants to get stronger',
+        },
+    },
+    meaningfulLeadReplyCount: 2,
+    hasRecentVoiceMessage: false,
+});
+assert.strictEqual(personalVoicePlan.useSyntheticVoice, true);
+assert.strictEqual(personalVoicePlan.reason, 'lead_shared_meaningful_goal_or_blocker');
+
+assert.strictEqual(
+    voice.resolvePersonalVoiceReplyPlan({
+        channel: 'instagram',
+        hasInstagramGraphRoute: true,
+        currentMessage: 'I want to get stronger but consistency is hard',
+        qualifier: { facts: { current_state: 'consistency is hard' } },
+        meaningfulLeadReplyCount: 3,
+        hasRecentVoiceMessage: true,
+    }).useSyntheticVoice,
+    false
+);
+
+const aiQuestionPlan = voice.resolvePersonalVoiceReplyPlan({
+    channel: 'instagram',
+    hasInstagramGraphRoute: true,
+    currentMessage: 'Are you AI or is this really Shannon?',
+    qualifier: { facts: { current_state: 'looking for support' } },
+    meaningfulLeadReplyCount: 4,
+});
+assert.strictEqual(aiQuestionPlan.useSyntheticVoice, false);
+assert.strictEqual(aiQuestionPlan.syntheticVoiceForbidden, true);
+assert.strictEqual(aiQuestionPlan.manualNativeVoiceRecommended, true);
+assert.match(aiQuestionPlan.manualNativeVoiceScript, /use a bit of help organising my inbox/i);
 
 console.log('elevenlabs voice message tests passed');

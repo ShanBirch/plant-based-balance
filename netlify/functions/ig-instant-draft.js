@@ -116,6 +116,7 @@ const {
 const {
     isCocosToShanSunnyVoiceTest,
     resolveCocosShanSunnyVoiceTestReason,
+    resolvePersonalVoiceReplyPlan,
 } = require('./_lib/elevenlabs-voice-message');
 const { recordGrowthOutcome } = require('./_lib/growth-outcomes');
 const {
@@ -1362,6 +1363,20 @@ async function loadIgHistory(threadId, currentText) {
         .filter(r => !(r.direction === 'in' && r.text === currentText))
         .reverse();
     return prior;
+}
+
+async function hasRecentOutboundVoiceMessage(threadId, cooldownDays = 30) {
+    if (!threadId) return false;
+    const since = new Date(Date.now() - (cooldownDays * 24 * 60 * 60 * 1000)).toISOString();
+    try {
+        const rows = await supabaseQuery(
+            `ig_messages?select=id&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.out&source=eq.instagram_graph_voice_send&created_at=gte.${encodeURIComponent(since)}&limit=1`
+        );
+        return Array.isArray(rows) && rows.length > 0;
+    } catch (err) {
+        console.warn('[ig-draft] recent outbound voice lookup failed; keeping voice note off:', err.message || err);
+        return true;
+    }
 }
 
 /**
@@ -4248,6 +4263,22 @@ exports.handler = async (event) => {
         && /next missing fact|next-missing-fact|no relevant fitness signal/i.test(String(qualifier?.why_now || ''))
     );
 
+    const recentOutboundVoiceMessage = await hasRecentOutboundVoiceMessage(thread.id, 30);
+    const personalVoicePlan = resolvePersonalVoiceReplyPlan({
+        channel,
+        hasInstagramGraphRoute,
+        linkedUserId: thread.linked_user_id,
+        currentMessage: qualifierCurrentMessage,
+        qualifier,
+        meaningfulLeadReplyCount,
+        hasRecentVoiceMessage: recentOutboundVoiceMessage,
+    });
+    const outboundVoiceMessage = !personalVoicePlan.syntheticVoiceForbidden
+        && (voiceReplyTestLane || personalVoicePlan.useSyntheticVoice);
+    const outboundVoiceMessageReason = voiceReplyTestLane
+        ? voiceReplyTestReason
+        : personalVoicePlan.reason;
+
     let draft;
     try {
         draft = metaAdFastLane ? buildMetaAdFoundersPassFirstReply(messageText) : await generateDraft({
@@ -4508,10 +4539,20 @@ exports.handler = async (event) => {
                 ? IG_FAST_LANE_DELAY_MS
                 : undefined,
             meta_ad_fast_lane: metaAdFastLane || undefined,
-            outbound_voice_message: voiceReplyTestLane || undefined,
-            outbound_voice_message_reason: voiceReplyTestReason || undefined,
-            elevenlabs_voice_id: voiceReplyTestLane ? 'UHnJrglEof8vTMenwnVm' : undefined,
-            elevenlabs_voice_name: voiceReplyTestLane ? 'Shannon Balance Professional 20260606' : undefined,
+            outbound_voice_message: outboundVoiceMessage || undefined,
+            outbound_voice_message_reason: outboundVoiceMessageReason || undefined,
+            elevenlabs_voice_id: outboundVoiceMessage ? 'UHnJrglEof8vTMenwnVm' : undefined,
+            elevenlabs_voice_name: outboundVoiceMessage ? 'Shannon Balance Professional 20260606' : undefined,
+            personal_voice_note_policy: personalVoicePlan.useSyntheticVoice ? {
+                trigger: 'lead_goal_or_blocker',
+                cooldown_days: 30,
+                synthetic: true,
+                never_for_ai_authenticity: true,
+            } : undefined,
+            synthetic_voice_note_forbidden: personalVoicePlan.syntheticVoiceForbidden || undefined,
+            manual_native_voice_note_recommended: personalVoicePlan.manualNativeVoiceRecommended || undefined,
+            manual_native_voice_note_reason: personalVoicePlan.manualNativeVoiceReason || undefined,
+            manual_native_voice_note_script: personalVoicePlan.manualNativeVoiceScript || undefined,
             manychat_message_id: manychatMessageId || null,
             message_preview: truncate(displaySourceMessage, 400),
             last_outbound_message: lastOutboundMessage,
@@ -4628,6 +4669,12 @@ exports.handler = async (event) => {
         const previousCount = (existingPending.data && existingPending.data.coalesced_count) || 1;
         const isBlankRegeneration = regenerateExistingBlankAlert?.id === existingPending.id;
         const newCount = isBlankRegeneration ? previousCount : previousCount + 1;
+        const coalescedOutboundVoiceMessage = personalVoicePlan.syntheticVoiceForbidden
+            ? false
+            : (outboundVoiceMessage || existingPending.data?.outbound_voice_message || false);
+        const coalescedOutboundVoiceReason = outboundVoiceMessageReason
+            || existingPending.data?.outbound_voice_message_reason
+            || '';
         const mergedData = {
             ...(existingPending.data || alertRow.data),
             client_manager_review_required: permanentNeedsYouClient || existingPending.data?.client_manager_review_required || undefined,
@@ -4678,16 +4725,24 @@ exports.handler = async (event) => {
                 ? IG_FAST_LANE_DELAY_MS
                 : existingPending.data?.auto_send_fast_lane_delay_ms || undefined,
             meta_ad_fast_lane: metaAdFastLane || existingPending.data?.meta_ad_fast_lane || undefined,
-            outbound_voice_message: voiceReplyTestLane || existingPending.data?.outbound_voice_message || undefined,
-            outbound_voice_message_reason: voiceReplyTestLane
-                ? voiceReplyTestReason
-                : existingPending.data?.outbound_voice_message_reason || undefined,
-            elevenlabs_voice_id: voiceReplyTestLane
-                ? 'UHnJrglEof8vTMenwnVm'
-                : existingPending.data?.elevenlabs_voice_id || undefined,
-            elevenlabs_voice_name: voiceReplyTestLane
-                ? 'Shannon Balance Professional 20260606'
-                : existingPending.data?.elevenlabs_voice_name || undefined,
+            outbound_voice_message: coalescedOutboundVoiceMessage || undefined,
+            outbound_voice_message_reason: coalescedOutboundVoiceMessage ? coalescedOutboundVoiceReason : undefined,
+            elevenlabs_voice_id: coalescedOutboundVoiceMessage
+                ? (existingPending.data?.elevenlabs_voice_id || 'UHnJrglEof8vTMenwnVm')
+                : undefined,
+            elevenlabs_voice_name: coalescedOutboundVoiceMessage
+                ? (existingPending.data?.elevenlabs_voice_name || 'Shannon Balance Professional 20260606')
+                : undefined,
+            personal_voice_note_policy: personalVoicePlan.useSyntheticVoice ? {
+                trigger: 'lead_goal_or_blocker',
+                cooldown_days: 30,
+                synthetic: true,
+                never_for_ai_authenticity: true,
+            } : existingPending.data?.personal_voice_note_policy,
+            synthetic_voice_note_forbidden: personalVoicePlan.syntheticVoiceForbidden || undefined,
+            manual_native_voice_note_recommended: personalVoicePlan.manualNativeVoiceRecommended || undefined,
+            manual_native_voice_note_reason: personalVoicePlan.manualNativeVoiceReason || undefined,
+            manual_native_voice_note_script: personalVoicePlan.manualNativeVoiceScript || undefined,
             draft_messages: draft.chunks,
             draft_text: draft.joined,
             draft_model: draft.model,

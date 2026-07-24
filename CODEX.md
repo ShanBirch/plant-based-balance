@@ -177,6 +177,9 @@ Approved ElevenLabs Instagram voice-note recipe:
 - Aim for roughly 20 to 26 seconds. Write two to four loose spoken sentences, not Reel copy. Include only two or three natural hesitations or self-corrections across the whole note, such as `um`, `ah`, `yeah`, `like`, `you know`, or a small repeated thought. Vary their placement so notes do not share a template.
 - Shape: recognise one exact thing they said, reflect or normalise it, give one useful thought or next step, then stop. Use contractions, commas, short pauses, and occasional fragments. Do not use stage directions, polished presenter phrasing, a list read aloud, or filler in every sentence.
 - The approved examples sounded spontaneous because they were specific and slightly imperfect, not because they were packed with verbal filler. Preserve that balance whenever generating a new note.
+- For unlinked Instagram leads with a working Graph route, a generated voice note may replace the drafted text after the lead has shared a meaningful personal goal, current situation, or blocker. Require at least two meaningful lead replies and qualifier evidence, and cap this personal touch at one generated voice note per thread every 30 days.
+- Never use a generated or cloned voice note to answer an AI, bot, automation, or "is this really Shannon?" authenticity question. Keep the existing Needs You hold, forbid the synthetic send, and recommend that Shannon record a fresh native note. Suggested honest wording: "hey, yep it's Shannon. I do use a bit of help organising my inbox because it gets busy, but the coaching and support inside Balance is me."
+- Linked clients remain draft-only Needs You even when a voice note would be useful. Shannon decides whether to record and send it.
 
 DM question discipline:
 

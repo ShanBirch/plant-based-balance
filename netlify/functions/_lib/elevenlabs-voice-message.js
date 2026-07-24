@@ -3,9 +3,13 @@ const { createHash, randomUUID } = require('crypto');
 const DEFAULT_SHANNON_PROFESSIONAL_VOICE_ID = 'UHnJrglEof8vTMenwnVm';
 const DEFAULT_MODEL_ID = 'eleven_multilingual_v2';
 const DEFAULT_OUTPUT_FORMAT = 'pcm_16000';
+const DEFAULT_STABILITY = 0.42;
+const DEFAULT_SIMILARITY_BOOST = 0.78;
+const DEFAULT_STYLE = 0.12;
 const MAX_TTS_CHARS = 3500;
 const SHAN_N_SUNNY_GRAPH_ACCOUNT_IDS = new Set(['17841415641641750']);
 const COCOS_GRAPH_ACCOUNT_IDS = new Set(['17841435394720504', '26328183736859579']);
+const MANUAL_AI_AUTHENTICITY_VOICE_SCRIPT = "hey, yep it's Shannon. I do use a bit of help organising my inbox because it gets busy, but the coaching and support inside Balance is me.";
 
 function cleanString(value, max = 500) {
     return String(value || '').trim().slice(0, max);
@@ -26,6 +30,62 @@ function safeObject(value) {
 
 function normalizeAccountKey(value) {
     return String(value || '').trim().replace(/^@+/, '').toLowerCase();
+}
+
+function isAiAuthenticityQuestion(text = '') {
+    const value = String(text || '').trim().toLowerCase();
+    if (!value) return false;
+    return /\b(are\s+(you|u)\s+(an?\s+)?(ai|bot|robot)|is\s+this\s+(an?\s+)?(ai|bot|automated)|am\s+i\s+(talking|speaking|chatting)\s+to\s+(an?\s+)?(ai|bot)|is\s+this\s+(really\s+)?shannon|real\s+person|human\s+or\s+(ai|bot))\b/i.test(value);
+}
+
+function hasPersonalGoalOrBlockerSignal(text = '') {
+    const value = String(text || '').trim();
+    if (value.length < 18) return false;
+    return /\b(my goal|i(?:'m| am) trying|i want to|i need to|hoping to|would love to|struggl|stuck|keep falling|fall off|can(?:'t| not) stay|consisten|motivat|overwhelm|no time|busy|energy|confidence|lose weight|build muscle|get stronger|feel better|healthier|food|training)\b/i.test(value);
+}
+
+function hasQualifierPersonalEvidence(qualifier = {}) {
+    const facts = safeObject(qualifier.facts);
+    return [facts.current_state, facts.motivation, facts.history_blockers]
+        .some(value => cleanString(value, 500).length >= 12);
+}
+
+function resolvePersonalVoiceReplyPlan({
+    channel = '',
+    hasInstagramGraphRoute = false,
+    linkedUserId = null,
+    currentMessage = '',
+    qualifier = {},
+    meaningfulLeadReplyCount = 0,
+    hasRecentVoiceMessage = false,
+} = {}) {
+    if (isAiAuthenticityQuestion(currentMessage)) {
+        return {
+            useSyntheticVoice: false,
+            reason: '',
+            syntheticVoiceForbidden: true,
+            manualNativeVoiceRecommended: true,
+            manualNativeVoiceReason: 'ai_authenticity_question',
+            manualNativeVoiceScript: MANUAL_AI_AUTHENTICITY_VOICE_SCRIPT,
+        };
+    }
+
+    const eligible = channel === 'instagram'
+        && hasInstagramGraphRoute
+        && !linkedUserId
+        && !hasRecentVoiceMessage
+        && Number(meaningfulLeadReplyCount || 0) >= 2
+        && hasPersonalGoalOrBlockerSignal(currentMessage)
+        && hasQualifierPersonalEvidence(qualifier);
+
+    return {
+        useSyntheticVoice: eligible,
+        reason: eligible ? 'lead_shared_meaningful_goal_or_blocker' : '',
+        syntheticVoiceForbidden: false,
+        manualNativeVoiceRecommended: false,
+        manualNativeVoiceReason: '',
+        manualNativeVoiceScript: '',
+    };
 }
 
 function preserveInitialCase(original, replacement) {
@@ -244,9 +304,9 @@ async function generateElevenLabsSpeech({ text, voiceId, modelId, outputFormat, 
                 text,
                 model_id: modelId || DEFAULT_MODEL_ID,
                 voice_settings: {
-                    stability: Number.isFinite(Number(alertData.elevenlabs_stability)) ? Number(alertData.elevenlabs_stability) : 0.5,
-                    similarity_boost: Number.isFinite(Number(alertData.elevenlabs_similarity_boost)) ? Number(alertData.elevenlabs_similarity_boost) : 0.75,
-                    style: Number.isFinite(Number(alertData.elevenlabs_style)) ? Number(alertData.elevenlabs_style) : 0,
+                    stability: Number.isFinite(Number(alertData.elevenlabs_stability)) ? Number(alertData.elevenlabs_stability) : DEFAULT_STABILITY,
+                    similarity_boost: Number.isFinite(Number(alertData.elevenlabs_similarity_boost)) ? Number(alertData.elevenlabs_similarity_boost) : DEFAULT_SIMILARITY_BOOST,
+                    style: Number.isFinite(Number(alertData.elevenlabs_style)) ? Number(alertData.elevenlabs_style) : DEFAULT_STYLE,
                     use_speaker_boost: alertData.elevenlabs_speaker_boost == null
                         ? true
                         : parseBoolean(alertData.elevenlabs_speaker_boost, true),
@@ -403,11 +463,15 @@ module.exports = {
     buildTtsText,
     createVoiceMessageAudio,
     isCocosToShanSunnyVoiceTest,
+    isAiAuthenticityQuestion,
     parseBoolean,
+    resolvePersonalVoiceReplyPlan,
     resolveCocosShanSunnyVoiceTestReason,
     resolveOutboundVoiceMessageConfig,
     _test: {
         isVoiceMessageRequested,
+        hasPersonalGoalOrBlockerSignal,
+        hasQualifierPersonalEvidence,
         normalizeAccountKey,
         normalizeShannonVoiceContractions,
         resolveCocosShanSunnyVoiceTestReason,
