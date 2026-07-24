@@ -112,7 +112,7 @@ export default async (request, context) => {
             subscriptionMetadata: subscriptionData.metadata,
             paymentMetadata: purchaseMetadata,
             successUrl: checkoutOrigin + `/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan.balancePlan)}&amount=${(plan.unitAmount / 100).toFixed(2)}&bump=${bump && plan.allowBump ? "true" : "false"}`,
-            cancelUrl: checkoutOrigin + (plan.balancePlan === "founders_pass_lifetime" ? "/vegan-fitness.html#join" : "/plantbasedswitch.html"),
+            cancelUrl: checkoutOrigin + (plan.balancePlan === "founders_pass_lifetime" ? "/plant-based-fitness.html#join" : "/plantbasedswitch.html"),
             metadata: {
                 checkout_email: checkoutEmail,
                 balance_product: plan.balanceProduct,

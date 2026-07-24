@@ -33,4 +33,4 @@ sharing, activity tracking, coaching, and friendly competition.
 - 15 seconds.
 - Keep all critical text clear of the Instagram top header, bottom caption area, and right-side action rail.
 - Public-facing copy must not mention AI or automation.
-- End on the Balance logo, centred "BALANCE" wordmark, and "Join Balance" call to action.
+- End on the gold-glimmer Balance logo and the exact offer lockup: "FOUNDERS PASS", "AU$99 ONCE", "6 WEEKS WITH SHANNON", "LIFETIME CORE ACCESS".

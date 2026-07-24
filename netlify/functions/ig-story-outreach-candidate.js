@@ -34,9 +34,9 @@ const STORY_OUTREACH_SALES_CONTEXT = {
     acquisition_source: 'native_story_outreach',
     primary_offer: 'balance_vegan_founders_pass',
     offer_price: 'AUD $99 once',
-    offer_access: 'six weeks of in-app coaching support from Shannon plus lifetime core app and vegan fitness community access',
+    offer_access: 'six weeks of in-app coaching support from Shannon plus lifetime core app and plant-based community access',
     first_touch_rule: 'story reply is rapport only; no coaching, checkout, or link pitch',
-    dm_rule: 'when they reply and show help, food, training, consistency, or enough relationship context, bridge to the Vegan Fitness Founders Pass and close through DMs; Starter Coaching is an optional upgrade, calls are escalation only, and there is no free-challenge funnel',
+    dm_rule: 'when they reply and show help, food, training, consistency, or enough relationship context, bridge to the Plant-Based Fitness Founders Pass and close through DMs; Starter Coaching is an optional upgrade, calls are escalation only, and there is no free-challenge funnel',
 };
 const STORY_NO_REPLY_COMMENT_LIMIT = 4;
 const STORY_NO_REPLY_COOLDOWN_DAYS = 30;

@@ -7,11 +7,12 @@ const root = path.join(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
 test('one-time Founders Pass has a complete purchase and activation path', () => {
-    const page = read('vegan-fitness.html');
+    const page = read('plant-based-fitness.html');
     const guard = read('netlify/edge-functions/lib/checkout-guard.js');
     const checkout = read('netlify/edge-functions/create-checkout-session.js');
     const claim = read('netlify/edge-functions/claim-founders-pass.js');
     const webhook = read('netlify/edge-functions/stripe-webhook.js');
+    const purchaseTracker = read('netlify/edge-functions/track-purchase.js');
     const login = read('login.html');
     const success = read('success.html');
     const config = read('netlify.toml');
@@ -25,12 +26,16 @@ test('one-time Founders Pass has a complete purchase and activation path', () =>
     assert.match(checkout, /checkout\.plan\.mode === "subscription"/);
     assert.match(checkout, /payment_intent_data\[metadata\]/);
     assert.match(checkout, /founders_pass_lifetime/);
+    assert.match(checkout, /\/plant-based-fitness\.html#join/);
     assert.match(claim, /payment_status !== "paid"/);
     assert.match(claim, /This purchase does not match the signed-in account/);
     assert.match(claim, /subscription_plan: FOUNDERS_PLAN/);
     assert.match(webhook, /recordFoundersPassSale/);
+    assert.match(webhook, /sendCAPIEvent\('Purchase'/);
+    assert.match(purchaseTracker, /sendCAPIEvent\('Purchase'/);
     assert.match(login, /claimPendingFoundersPass/);
     assert.match(success, /balance_founders_pass_session_id/);
+    assert.match(success, /fbq\('track', 'Purchase'/);
     assert.match(config, /function = "claim-founders-pass"/);
     assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.founders_pass_purchases/);
     assert.match(migration, /ENABLE ROW LEVEL SECURITY/);

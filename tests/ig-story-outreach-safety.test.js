@@ -221,7 +221,7 @@ const starterSalesMemory = buildStoryOutreachMemory({
 });
 assert.strictEqual(starterSalesMemory.lead_origin, 'native_story_outreach');
 assert.strictEqual(starterSalesMemory.offer_path, 'balance_vegan_founders_pass');
-assert.match(starterSalesMemory.sales_context.dm_rule, /Vegan Fitness Founders Pass/);
+assert.match(starterSalesMemory.sales_context.dm_rule, /Plant-Based Fitness Founders Pass/);
 
 const mirrorSelfieSafety = assessStoryCommentSafety({
     storyOwner: 'mirror.selfie',

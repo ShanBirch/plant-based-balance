@@ -107,8 +107,8 @@ const BALANCE_CHECKOUT_PLANS = Object.freeze({
     }),
     balance_vegan_founders_pass: Object.freeze({
         token: "balance_vegan_founders_pass",
-        productName: "Balance Vegan Fitness Founders Pass",
-        productDescription: "Six-week guided kickstart plus lifetime access to the core Balance app and vegan fitness community",
+        productName: "Balance Plant-Based Fitness Founders Pass",
+        productDescription: "Six-week guided kickstart plus lifetime access to the core Balance app and plant-based community",
         unitAmount: 9900,
         interval: null,
         balanceProduct: "balance_vegan_founders_pass",

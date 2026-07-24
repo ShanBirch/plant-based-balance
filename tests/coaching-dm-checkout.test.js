@@ -6,7 +6,7 @@ const test = require('node:test');
 const root = path.join(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const coaching = read('coaching.html');
-const founders = read('vegan-fitness.html');
+const founders = read('plant-based-fitness.html');
 const checkout = read('checkout.js');
 const success = read('success.html');
 const bookingPage = read('book.html');
@@ -36,8 +36,8 @@ test('DM coaching page goes directly to hosted Stripe Checkout', () => {
 test('What I Offer presents the Founders Pass as the primary offer', () => {
     assert.match(coaching, /The Founders Pass is the main offer at AUD \$99 once/);
     assert.match(coaching, /six weeks of one-to-one in-app coaching support from Shannon/i);
-    assert.match(coaching, /lifetime access to the core Balance app and vegan fitness community/i);
-    assert.match(coaching, /href="vegan-fitness\.html#join">Get the Founders Pass<\/a>/);
+    assert.match(coaching, /lifetime access to the core Balance app and plant-based community/i);
+    assert.match(coaching, /href="plant-based-fitness\.html#join">Get the Founders Pass<\/a>/);
     assert.match(coaching, /Starter Coaching is there if you later want Shannon personally reviewing and adjusting your plan each week/);
     assert.doesNotMatch(coaching, /The main offer is AUD \$29\.99\/week/);
 });
@@ -55,13 +55,13 @@ test('all active DM handoffs use the permanent branded Founders Pass URL', () =>
 
     for (const file of files) {
         const source = read(file);
-        assert.match(source, /https:\/\/plantbased-balance\.org\/vegan-fitness\.html/, file);
+        assert.match(source, /https:\/\/plantbased-balance\.org\/plant-based-fitness\.html/, file);
         assert.doesNotMatch(source, /https:\/\/future-balance\.netlify\.app\/coaching\.html/, file);
     }
 });
 
 test('Founders Pass page sells the one-time membership through guarded hosted checkout', () => {
-    assert.match(founders, /Balance Vegan Fitness Founders Pass/);
+    assert.match(founders, /Balance Plant-Based Fitness Founders Pass/);
     assert.match(founders, /AU\$99/);
     assert.match(founders, /six weeks of one-to-one in-app coaching support/i);
     assert.match(founders, /Lifetime core app \+ community access/i);

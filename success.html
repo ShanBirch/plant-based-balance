@@ -182,8 +182,8 @@
                 const signupLink = document.getElementById('success-signup-link');
                 const loginLink = document.getElementById('success-login-link');
                 const sessionId = urlParams.get('session_id') || '';
-                if (planName) planName.textContent = 'Balance Vegan Fitness Founders Pass';
-                if (readyCopy) readyCopy.textContent = 'Once your setup is complete, your six-week kickstart, core Balance app, and vegan fitness community access are ready.';
+                if (planName) planName.textContent = 'Balance Plant-Based Fitness Founders Pass';
+                if (readyCopy) readyCopy.textContent = 'Once your setup is complete, your six-week kickstart, core Balance app, and plant-based community access are ready.';
                 if (nextCopy) nextCopy.textContent = 'Now connect your lifetime membership to your Balance account.';
                 if (sessionId) {
                     sessionStorage.setItem('balance_founders_pass_session_id', sessionId);
@@ -318,7 +318,7 @@
 
                 let workout = workoutLabels[fullProfile.equipment] || 'Bodyweight Strength';
 
-                const packagePlan = isFoundersPass ? 'Vegan Fitness Founders Pass' : isAppCommunityPlan ? 'App + Community Monthly' : isCoachingCallsPlan ? 'Coaching + Calls Weekly' : 'Starter Coaching Weekly';
+                const packagePlan = isFoundersPass ? 'Plant-Based Fitness Founders Pass' : isAppCommunityPlan ? 'App + Community Monthly' : isCoachingCallsPlan ? 'Coaching + Calls Weekly' : 'Starter Coaching Weekly';
 
                 const payload = {
                     emailValue: email, // Named for Zapier consistency

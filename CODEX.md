@@ -25,7 +25,7 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 - Default video logo treatment: whenever the Balance logo appears in a video or Reel, animate a tasteful gold glimmer sweep over it unless Shannon explicitly asks for a different treatment.
 - Facebook Pixel: `1928402271406692`.
 - Pricing:
-  - Balance Vegan Fitness Founders Pass: AUD $99 once. Six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and vegan fitness community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included.
+  - Balance Plant-Based Fitness Founders Pass: AUD $99 once. Six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included.
   - App + Group: $20/month.
   - Balance Starter Coaching: $29.99/week, optional upgrade for individual weekly review and adjustment from Shannon.
 
@@ -40,19 +40,19 @@ The real funnel:
 1. Instagram/Facebook outreach, content, referrals, or ads create a conversation.
 2. Lead lands in IG/FB DMs with Shannon.
 3. The DM flow builds rapport, identifies the live goal/blocker, and qualifies fit without interrogating.
-4. When earned, offer the Balance Vegan Fitness Founders Pass at AUD $99 once and complete the sale through DMs.
+4. When earned, offer the Balance Plant-Based Fitness Founders Pass at AUD $99 once and complete the sale through DMs.
 5. Send the Founders Pass details/checkout link in the DM when they ask or accept. Do not require a call.
 6. Offer a short call only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. The call is an escalation lane, not the default close.
 7. If they explicitly want Shannon personally reviewing and adjusting their plan each week, offer Starter Coaching at $29.99/week as the optional upgrade.
 
-Critical: Balance no longer uses a free 30-day challenge as its acquisition or conversion path. DMs are the primary sales surface, and the Vegan Fitness Founders Pass is the primary offer. Starter Coaching is the optional higher-touch upgrade.
+Critical: Balance no longer uses a free 30-day challenge as its acquisition or conversion path. DMs are the primary sales surface, and the Plant-Based Fitness Founders Pass is the primary offer. Starter Coaching is the optional higher-touch upgrade.
 
 Shannon is currently running a live six-week Balance challenge. Keep its participant experience, daily proof, recap, and challenge Story automations active. It is current client/community delivery and social proof, not the default lead-acquisition offer. Do not confuse it with the retired free 30-day funnel or invite unlinked leads into it as the normal DM close.
 
-Canonical Vegan Fitness Founders Pass signup path:
+Canonical Plant-Based Fitness Founders Pass signup path:
 
 1. Explain the fit and AUD $99 one-time offer inside the DM. Be clear that six weeks of in-app coaching support from Shannon are included, while ongoing individual weekly plan reviews and adjustments after the kickstart are separate.
-2. When the lead asks for details, accepts, or says they are ready, send `https://plantbased-balance.org/vegan-fitness.html`.
+2. When the lead asks for details, accepts, or says they are ready, send `https://plantbased-balance.org/plant-based-fitness.html`.
 3. The branded Founders Pass page gives a clear offer summary and starts a Stripe-hosted one-time Checkout Session after legal acceptance.
 4. Stripe webhook-backed payment is the sale; then onboarding continues through Balance.
 

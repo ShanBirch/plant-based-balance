@@ -8,7 +8,7 @@ const SITE_URL = Deno.env.get("URL") || "https://plantbased-balance.org";
 const STARTER_COACHING_PRODUCT = "Balance Starter Coaching";
 const APP_COMMUNITY_PRODUCT = "Balance App + Community";
 const COACHING_CALLS_PRODUCT = "Balance Coaching + Calls";
-const FOUNDERS_PASS_PRODUCT = "Balance Vegan Fitness Founders Pass";
+const FOUNDERS_PASS_PRODUCT = "Balance Plant-Based Fitness Founders Pass";
 const FOUNDERS_PASS_PRODUCT_TYPE = "balance_vegan_founders_pass";
 const FOUNDERS_PASS_PLAN = "founders_pass_lifetime";
 

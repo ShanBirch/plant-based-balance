@@ -62,7 +62,7 @@ assert(
 assert(
     checkout.includes("'app-monthly': { amount: 1999, label: 'Balance App + Community', successPlan: 'app_community_monthly' }") &&
     checkout.includes("'coaching-calls': { amount: 9999, label: 'Balance Coaching + Calls', successPlan: 'coaching_calls_weekly' }") &&
-    checkout.includes("'founders-pass': { amount: 9900, label: 'Balance Vegan Fitness Founders Pass', successPlan: 'founders_pass_lifetime' }") &&
+    checkout.includes("'founders-pass': { amount: 9900, label: 'Balance Plant-Based Fitness Founders Pass', successPlan: 'founders_pass_lifetime' }") &&
     checkout.includes("walletAvailable && btn.dataset.hostedCheckoutOnly !== 'true' && !isBumpChecked") &&
     checkout.includes('plan=${encodeURIComponent(successPlan)}'),
     'wallet checkout should preserve the selected plan and route order bumps through hosted Checkout'

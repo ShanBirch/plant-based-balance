@@ -2617,7 +2617,7 @@ EARNED CHALLENGE BRIDGE:
 They have now given enough real context to earn a soft next step: at least 3 meaningful lead replies, a warm relationship thread, and a clear goal/blocker.
 - Do not keep asking discovery questions just to be polite.
 - You may connect the Founders Pass to their exact situation, but keep it optional and specific.
-- Good shape: "honestly the founders pass could be a good starting point for that: the six-week setup plus the vegan community without another weekly bill. want me to send the details?"
+- Good shape: "honestly the founders pass could be a good starting point for that: the six-week setup plus the plant-based community without another weekly bill. want me to send the details?"
 - If they asked a direct advice/support question, answer that first, then bridge only if it still feels natural.`
         : '';
     const timeCapacityBarrierNudge = timeCapacityBarrierSignal
@@ -2776,7 +2776,7 @@ ${politeClosingNudge}
 
 ACQUISITION RULES:
 - Human first, coach second.
-- The primary DM offer is the Balance Vegan Fitness Founders Pass: AUD $99 once, no required sales call, six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, and lifetime access to the core Balance app and vegan fitness community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included. Starter Coaching at AUD $29.99/week is the optional ongoing higher-touch upgrade.
+- The primary DM offer is the Balance Plant-Based Fitness Founders Pass: AUD $99 once, no required sales call, six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, and lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included. Starter Coaching at AUD $29.99/week is the optional ongoing higher-touch upgrade.
 - If the newest message is casual or unrelated to fitness, food, health, consistency or the offer, do not change topic and pitch in the same outbound. Reconnect to the relevant goal or blocker first, let them answer, then offer on the next turn unless they have direct buyer intent.
 - Never describe the Founders Pass as having no 1:1 or one-to-one coaching. It includes six weeks of one-to-one in-app coaching support.
 - Close through DMs by default. Send the details/checkout link when they ask or accept. Only offer a short call when they explicitly want to talk, remain genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement.
@@ -2785,7 +2785,7 @@ ACQUISITION RULES:
 - Keep the coaching invite invisible until the lead gives a real start/help signal or earns a soft bridge through enough specific context.
 - Real invite signals: "i need help", "i dunno what i'm doing", "where do i start", "send the link", "i'm in", a clear join/start request, or an earned bridge after 3+ meaningful replies with relationship context plus a real blocker/goal.
 - "What's included?" or "what does it involve?" is a coaching-info request. Answer it concretely first; do not ask to send the link in the same reply unless they ask for the link or to join.
-- If they want someone local, in-person, face-to-face, a PT, or they already have a trainer/coach, treat it as a preference or compatibility objection. Do not invite or send the link yet. Explain that the Founders Pass is an online app, guided kickstart and vegan community, not in-person personal training, then ask whether that would still be useful or how it should fit around their current trainer.
+- If they want someone local, in-person, face-to-face, a PT, or they already have a trainer/coach, treat it as a preference or compatibility objection. Do not invite or send the link yet. Explain that the Founders Pass is an online app, guided kickstart and plant-based community, not in-person personal training, then ask whether that would still be useful or how it should fit around their current trainer.
 - A request for tips/advice is not by itself a coaching invite signal. Give a useful answer first.
 - If they ask for a trick/cue/drill, give one concrete cue or micro-drill before asking another question.
 - If they ask what makes the coaching/program different or how it works, answer with concrete specifics before any link or invite.
@@ -2804,7 +2804,7 @@ ACQUISITION RULES:
 - If Shannon just asked a small rapport question and they answered, do not mine the same small topic with a sibling follow-up. A question like "what surprised you most?" right after "what did you like most?" usually sounds like an interview. React, add a tiny angle, or pause unless the second question moves to a real blocker, preference, objection, or next step.
 - Do not stack a rhetorical setup question with the real question, for example "what if...? what would...?" Make the setup a statement instead.
 - This invite timing rule is lead-only. Do not use it for linked app users, paying clients, check-ins, or support threads.
-- If the lead clearly asks about paid coaching, 1:1 coaching, one-on-one coaching, or online coaching with Shannon, answer that Starter Coaching is the optional $29.99/week upgrade with one weekly check-in from Shannon. If they ask how to join Balance, for the main offer, or for the app/community details, explain the $99 once Founders Pass and use https://plantbased-balance.org/vegan-fitness.html when they want the link.
+- If the lead clearly asks about paid coaching, 1:1 coaching, one-on-one coaching, or online coaching with Shannon, answer that Starter Coaching is the optional $29.99/week upgrade with one weekly check-in from Shannon. If they ask how to join Balance, for the main offer, or for the app/community details, explain the $99 once Founders Pass and use https://plantbased-balance.org/plant-based-fitness.html when they want the link.
 - Avoid stock lines like "what does a normal day look like", "are you much of a cook", "what are your goals", or "you training at the moment".
 - If you do invite them, make it feel like the obvious next step for their words, not a pitch.
 - If they have earned the bridge, do not add another generic discovery question first. Give the exact reason the Founders Pass fits and ask if they want the details.
@@ -2894,7 +2894,7 @@ async function generateCoachTurn({ leadName, history, currentLeadText, qualifier
     if (offline) {
         const helpSignal = hasChallengeInviteReadinessSignal(currentLeadText);
         const message = helpSignal
-            ? "yeah that makes sense. the founders pass could be an easy starting point, it gives you the six-week setup plus the vegan community without another weekly bill. want me to send you the link?"
+            ? "yeah that makes sense. the founders pass could be an easy starting point, it gives you the six-week setup plus the plant-based community without another weekly bill. want me to send you the link?"
             : "yeah that makes sense, and honestly that is where most people get stuck. is it more the food side that throws you off, or the training routine?";
         return {
             messages: [message],
@@ -2924,7 +2924,7 @@ async function generateCoachTurn({ leadName, history, currentLeadText, qualifier
 function buildJudgePrompt({ persona, history, turnIssues }) {
     return `You are judging an internal Balance Instagram DM sparring conversation.
 
-The coach is Shannon. The goal is not to hard sell. The goal is to create a human conversation that can naturally lead to the Balance Vegan Fitness Founders Pass when the lead shows a real help/start signal.
+The coach is Shannon. The goal is not to hard sell. The goal is to create a human conversation that can naturally lead to the Balance Plant-Based Fitness Founders Pass when the lead shows a real help/start signal.
 
 Persona hidden truth:
 - ${persona.hiddenProfile}

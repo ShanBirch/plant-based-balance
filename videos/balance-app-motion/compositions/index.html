@@ -50,8 +50,12 @@
       <div id="logo-glow" class="logo-glow" data-layout-ignore></div>
       <img id="balance-logo" src=".media/images/logo_001.png" alt="Balance harmony logo" />
       <div id="logo-glimmer" aria-hidden="true" data-layout-ignore><i></i></div>
-      <div id="brand-name">BALANCE</div>
-      <div id="brand-cta"><span>JOIN BALANCE</span><i data-layout-allow-overflow="true"></i></div>
+      <div id="brand-offer">
+        <div class="offer-kicker">FOUNDERS PASS</div>
+        <div class="offer-price">AU$99 ONCE</div>
+        <div class="offer-detail">6 WEEKS WITH SHANNON</div>
+        <div class="offer-detail">LIFETIME CORE ACCESS</div>
+      </div>
     </div>
 
     <style>
@@ -114,14 +118,15 @@
       .activity-card { opacity: 0; visibility: hidden; }
       .brand-bg { position: absolute; z-index: 30; left: 50%; top: 50%; width: 1250px; height: 1250px; margin: -625px 0 0 -625px; border-radius: 50%; background-color: var(--ivory); transform: scale(0); }
       .brand-lockup { position: absolute; z-index: 34; inset: 0; color: var(--ink); pointer-events: none; opacity: 0; visibility: hidden; }
-      .logo-glow { position: absolute; top: 570px; left: 335px; width: 410px; height: 410px; border-radius: 50%; background: radial-gradient(circle, rgba(247,181,30,.48), rgba(247,181,30,0)); opacity: 0; }
-      #balance-logo { position: absolute; left: 345px; top: 560px; width: 390px; height: 390px; object-fit: contain; border-radius: 50%; }
-      #logo-glimmer { position: absolute; left: 345px; top: 560px; width: 390px; height: 390px; overflow: hidden; border-radius: 50%; mix-blend-mode: multiply; }
+      .logo-glow { position: absolute; top: 390px; left: 360px; width: 360px; height: 360px; border-radius: 50%; background: radial-gradient(circle, rgba(247,181,30,.48), rgba(247,181,30,0)); opacity: 0; }
+      #balance-logo { position: absolute; left: 370px; top: 400px; width: 340px; height: 340px; object-fit: contain; border-radius: 50%; }
+      #logo-glimmer { position: absolute; left: 370px; top: 400px; width: 340px; height: 340px; overflow: hidden; border-radius: 50%; mix-blend-mode: multiply; }
       #logo-glimmer i { position: absolute; left: 0; top: -60px; width: 112px; height: 510px; background: linear-gradient(90deg, rgba(216,164,58,0), rgba(216,164,58,.3) 30%, rgba(255,221,125,.82) 52%, rgba(216,164,58,.28) 72%, rgba(216,164,58,0)); filter: blur(7px); transform: translateX(-180px) rotate(14deg); }
-      #brand-name { position: absolute; left: 0; right: 0; top: 1030px; text-align: center; font-size: 118px; line-height: .9; font-weight: 900; letter-spacing: -.045em; white-space: nowrap; }
-      #brand-cta { position: absolute; left: 360px; top: 1230px; width: 360px; height: 104px; display: grid; place-items: center; overflow: hidden; border-radius: 54px; background-color: var(--ink); color: var(--ivory); }
-      #brand-cta span { position: relative; z-index: 2; font-size: 28px; font-weight: 900; letter-spacing: .08em; }
-      #brand-cta i { display: none; }
+      #brand-offer { position: absolute; left: 105px; right: 105px; top: 825px; text-align: center; }
+      #brand-offer > div { display: block; }
+      .offer-kicker { color: var(--gold); font: 800 37px/1 "Space Mono", monospace; letter-spacing: .15em; }
+      .offer-price { margin-top: 26px; color: var(--ink); font-size: 112px; line-height: .95; font-weight: 900; letter-spacing: -.045em; }
+      .offer-detail { margin-top: 31px; color: var(--ink); font-size: 48px; line-height: 1.08; font-weight: 850; letter-spacing: .025em; }
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
@@ -192,7 +197,7 @@
       tl.fromTo("#logo-glow", { scale: .96, autoAlpha: .55 }, { scale: 1.08, autoAlpha: .9, duration: .45, repeat: 1, yoyo: true, ease: "sine.inOut" }, 12.22);
       tl.fromTo("#logo-glimmer i", { x: -180 }, { x: 570, duration: .9, ease: "power2.inOut" }, 13.62);
       tl.fromTo("#logo-glow", { scale: .96, autoAlpha: .55 }, { scale: 1.08, autoAlpha: .9, duration: .45, repeat: 1, yoyo: true, ease: "sine.inOut" }, 13.62);
-      tl.fromTo("#brand-cta", { autoAlpha: 1 }, { autoAlpha: 1, duration: 2.77, ease: "none" }, 12.22);
+      tl.fromTo("#brand-offer > div", { autoAlpha: 0, y: 28 }, { autoAlpha: 1, y: 0, duration: .34, stagger: .14, ease: "power3.out" }, 11.92);
 
       window.__timelines["balance-motion"] = tl;
       tl.seek(0);

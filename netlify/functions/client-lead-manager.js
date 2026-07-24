@@ -36,7 +36,7 @@ const MANAGER_SOURCE = 'balance-lead-client-manager';
 const MAX_PER_RUN = 80;
 const DEFAULT_AI_DRAFT_REVIEWS_PER_RUN = 8;
 const DM_ALERT_TYPES = ['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm'];
-const APPROVED_COACHING_URL = 'https://plantbased-balance.org/vegan-fitness.html';
+const APPROVED_COACHING_URL = 'https://plantbased-balance.org/plant-based-fitness.html';
 const LEGACY_APPROVED_COACHING_URL = 'https://plantbased-balance.org/coaching.html';
 const APPROVED_BOOKING_URL = 'https://plantbased-balance.org/book';
 const APPROVED_COACHING_LINK_SEND_DELAY_MS = 2 * 60 * 1000;
@@ -597,10 +597,10 @@ function buildApprovedCoachingAutoSchedulePatch(alert = {}, now = new Date()) {
     const data = alert.data || {};
     const handoffKind = approvedLinkHandoffKind(alert);
     const isCallBooking = handoffKind === 'call_booking';
-    const handoffLabel = isCallBooking ? 'call-booking link' : 'Vegan Fitness Founders Pass link';
+    const handoffLabel = isCallBooking ? 'call-booking link' : 'Plant-Based Fitness Founders Pass link';
     const scheduleReason = isCallBooking
         ? 'Client/lead manager approved the call-booking link handoff; accelerated sales follow-up.'
-        : 'Client/lead manager approved the Vegan Fitness Founders Pass link handoff; accelerated sales follow-up.';
+        : 'Client/lead manager approved the Plant-Based Fitness Founders Pass link handoff; accelerated sales follow-up.';
     const autoScheduleReason = isCallBooking ? 'approved_call_booking_link_handoff' : 'approved_starter_coaching_link_handoff';
     const nowIso = now.toISOString();
     const scheduledFor = new Date(now.getTime() + APPROVED_COACHING_LINK_SEND_DELAY_MS).toISOString();
@@ -989,7 +989,7 @@ async function scheduleApprovedCoachingHandoff(alert) {
         scheduled_for: patch.scheduled_for,
         reason: approvedLinkHandoffKind(alert) === 'call_booking'
             ? 'approved call-booking link handoff'
-            : 'approved Vegan Fitness Founders Pass link handoff',
+            : 'approved Plant-Based Fitness Founders Pass link handoff',
     };
 }
 

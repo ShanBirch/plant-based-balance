@@ -534,6 +534,18 @@
   force = true
 
 [[redirects]]
+  from = "/vegan-fitness.html"
+  to = "/plant-based-fitness.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/vegan-fitness"
+  to = "/plant-based-fitness.html"
+  status = 301
+  force = true
+
+[[redirects]]
   from = "/shop"
   to = "/coaching.html"
   status = 301

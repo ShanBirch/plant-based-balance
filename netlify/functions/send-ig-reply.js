@@ -474,7 +474,7 @@ async function notifyChallengeOfferSent({ alert, alertData, alertId, replyText, 
             body: JSON.stringify({
                 recipientId: alert.coach_id,
                 senderId: alert.client_id || alertData.linked_user_id || alertData.subscriber_id || '',
-                senderName: `Vegan Fitness Founders Pass offer sent: ${leadName}`,
+                senderName: `Plant-Based Fitness Founders Pass offer sent: ${leadName}`,
                 messageText: truncateText(replyText, 180),
                 type: 'dm_message',
                 alertId,
@@ -484,7 +484,7 @@ async function notifyChallengeOfferSent({ alert, alertData, alertId, replyText, 
                 channelLabel: channel === 'messenger' ? 'Balance FB' : 'Balance IG',
                 url: './admin-dashboard.html?tab=cocos',
                 challengeOfferWarning: '1',
-                    challengeOfferLabel: 'Vegan Fitness Founders Pass offer sent',
+                    challengeOfferLabel: 'Plant-Based Fitness Founders Pass offer sent',
             }),
         }).catch(e => console.warn('[send-ig-reply] challenge-offer sent push failed:', e.message));
     } catch (err) {

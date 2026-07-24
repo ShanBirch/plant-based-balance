@@ -18,7 +18,7 @@ const corePages = [
     'clients.html',
     'coaching.html',
     'journey.html',
-    'vegan-fitness.html',
+    'plant-based-fitness.html',
     'book.html',
     'index.html',
     'client-agreement.html',
@@ -27,15 +27,15 @@ const corePages = [
 ];
 
 test('public journey consistently routes the primary action to the Founders Pass', () => {
-    assert.match(read('bio.html'), /class="hub-button primary" href="vegan-fitness\.html"/);
-    assert.match(read('clients.html'), /class="nav-button primary" href="vegan-fitness\.html">Founders Pass/);
-    assert.match(read('journey.html'), /class="nav-button primary" href="vegan-fitness\.html">Founders Pass/);
-    assert.match(read('balance.html'), /class="btn primary" href="vegan-fitness\.html">Get the Founders Pass/);
+    assert.match(read('bio.html'), /class="hub-button primary" href="plant-based-fitness\.html"/);
+    assert.match(read('clients.html'), /class="nav-button primary" href="plant-based-fitness\.html">Founders Pass/);
+    assert.match(read('journey.html'), /class="nav-button primary" href="plant-based-fitness\.html">Founders Pass/);
+    assert.match(read('balance.html'), /class="btn primary" href="plant-based-fitness\.html">Get the Founders Pass/);
     assert.match(visibleText('book.html'), /You do not need a call to join the Founders Pass/);
 });
 
 test('offer facts agree across marketing and legal pages', () => {
-    const founders = visibleText('vegan-fitness.html');
+    const founders = visibleText('plant-based-fitness.html');
     const coaching = visibleText('coaching.html');
     const agreement = visibleText('client-agreement.html');
     const terms = visibleText('terms.html');
@@ -44,19 +44,20 @@ test('offer facts agree across marketing and legal pages', () => {
     for (const content of [founders, coaching]) {
         assert.match(content, /(?:AU|AUD)?\$99 once/i);
         assert.match(content, /six weeks of one-to-one in-app coaching support/i);
-        assert.match(content, /lifetime access to the core Balance app and vegan fitness community/i);
+        assert.match(content, /lifetime access to the core Balance app and plant-based community/i);
     }
 
     assert.match(agreement, /does not include instant replies, unlimited daily one-to-one access or fully customised weekly plan reviews/i);
     assert.match(coaching, /Starter Coaching.*\$29\.99 \/week/s);
-    assert.match(terms, /Balance Vegan Fitness Founders Pass/);
+    assert.match(terms, /Balance Plant-Based Fitness Founders Pass/);
     assert.match(refunds, /Founders Pass is a one-time purchase/);
+    assert.match(founders, /FOUNDERS PASS AU\$99 ONCE 6 WEEKS WITH SHANNON LIFETIME CORE ACCESS/);
 });
 
 test('Shannon story agrees wherever it appears', () => {
     assert.match(visibleText('journey.html'), /plant-based from birth/i);
     assert.match(visibleText('journey.html'), /five years as a vegan/i);
-    assert.match(visibleText('vegan-fitness.html'), /raised vegetarian from birth and have been vegan for five years/i);
+    assert.match(visibleText('plant-based-fitness.html'), /raised vegetarian from birth and have been vegan for five years/i);
     assert.doesNotMatch(visibleText('journey.html'), /building Balance/i);
 });
 
