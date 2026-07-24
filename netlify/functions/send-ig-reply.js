@@ -149,6 +149,8 @@ const EDIT_ANALYSIS_RESPONSE_BUDGET_MS = 1600;
 const EDIT_ANALYSIS_ADMIN_BUDGET_MS = 4500;
 const EDIT_ANALYSIS_BACKGROUND_BUDGET_MS = 7000;
 const INSTAGRAM_GRAPH_TYPING_ACTION_TIMEOUT_MS = 1200;
+const FIRST_ITEM_TYPING_MIN_MS = 1800;
+const FIRST_ITEM_TYPING_MAX_MS = 4200;
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
 const PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE = 'Permanent Needs You contacts require Shannon approval before sending.';
 const PERSONAL_DM_BOUNDARY_MESSAGE = 'Personal, flirtatious, or non-business call conversations require Shannon approval before sending.';
@@ -742,6 +744,14 @@ function resolveChunkGaps(messages, pacing) {
 
     const scale = (budget - floorTotal) / Math.max(1, total - floorTotal);
     return gaps.map(gap => Math.round(floor + ((gap - floor) * scale)));
+}
+
+function resolveFirstItemTypingDelayMs({ kind = 'text', text = '', random = Math.random } = {}) {
+    const length = String(text || '').trim().length;
+    const base = kind === 'audio' ? 2600 : 1800;
+    const perCharMs = kind === 'audio' ? 6 : 9;
+    const jitter = Math.floor(Math.max(0, Math.min(1, Number(random()) || 0)) * 700);
+    return clampNumber(base + (length * perCharMs) + jitter, FIRST_ITEM_TYPING_MIN_MS, FIRST_ITEM_TYPING_MAX_MS);
 }
 
 function editAnalysisBudgetForSend({ source, deliveryPacing } = {}) {
@@ -1751,7 +1761,24 @@ exports.handler = async (event) => {
     const deliveryTransport = shouldUseGraph ? 'instagram_graph' : 'manychat';
     for (let i = 0; i < outboundItems.length; i++) {
         let typingStartedForChunk = false;
-        if (i > 0) {
+        if (i === 0 && shouldUseGraph) {
+            const firstItem = outboundItems[0];
+            const firstTypingDelayMs = resolveFirstItemTypingDelayMs({
+                kind: firstItem.kind,
+                text: firstItem.text,
+            });
+            const typingAction = await sendInstagramGraphTypingAction({
+                channel,
+                recipientId: graphRecipientId,
+                accountId: graphAccountId,
+                action: 'typing_on',
+                beforeChunkIndex: 1,
+                gapMs: firstTypingDelayMs,
+            });
+            if (typingAction.attempted) instagramTypingActions.push(typingAction);
+            typingStartedForChunk = !!typingAction.ok;
+            await sleep(firstTypingDelayMs);
+        } else if (i > 0) {
             const gapMs = plannedChunkGapsMs[i - 1] || chunkPacing.minMs || CHUNK_GAP_MIN_MS;
             sentChunkGapsMs.push(gapMs);
             if (shouldUseGraph) {
@@ -1944,7 +1971,7 @@ exports.handler = async (event) => {
         } : undefined,
     };
     if (instagramTypingActions.length > 0) {
-        mergedData.instagram_typing_strategy = 'typing_on_between_chunks_v1';
+        mergedData.instagram_typing_strategy = 'typing_on_before_each_item_v2';
         mergedData.instagram_typing_actions = instagramTypingActions;
     }
     if (wasEdited && editReason) mergedData.edit_reason = editReason;
@@ -2135,6 +2162,7 @@ exports._test = {
     resolveThreadGraphRecipientId,
     resolveChunkPacing,
     resolveChunkGaps,
+    resolveFirstItemTypingDelayMs,
     resolveOutboundVoiceMessageConfig,
     isInstagramAudioUnsupportedError,
     isCocosAlertData,
