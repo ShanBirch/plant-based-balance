@@ -77,6 +77,7 @@ const campaigns = [
     cta: 'SEND MESSAGE',
     accent: colours.terracotta,
     frameAccent: colours.gold,
+    priceSize: 27,
     composition: 'gold-frame',
     proofFit: 'contain',
     primaryText: 'Plant-based fitness does not need more noise. Balance puts training, nutrition and progress tools together, with small, clear steps and six weeks of coaching support from me when you need direction. The Founders Pass is AU$99 once and includes lifetime core app and community access. Message “BALANCE” for details.',
@@ -240,6 +241,8 @@ async function communityProofBuffer(item, width, height) {
 function copyPanelSvg(width, height, item, layout) {
   const tall = height > 1500;
   const x = tall ? 70 : 64;
+  const ctaX = Number.isFinite(layout.ctaX) ? layout.ctaX : x;
+  const ctaWidth = tall ? 440 : 410;
   const panelY = layout.panelY;
   const titleSize = tall ? 66 : 58;
   const titleGap = tall ? 72 : 64;
@@ -250,9 +253,9 @@ function copyPanelSvg(width, height, item, layout) {
   return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
     ${linesSvg(item.title, x, panelY, titleSize, titleGap, colours.ink, 900)}
     ${linesSvg(item.body, x, bodyY, tall ? 31 : 27, tall ? 43 : 38, '#5B4A3A', 500)}
-    <text x="${x}" y="${priceY}" fill="${item.accent}" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 34 : 31}" font-weight="900" letter-spacing="1">${esc(item.price)}</text>
-    <rect x="${x}" y="${ctaY}" width="${tall ? 440 : 410}" height="${tall ? 74 : 68}" rx="${tall ? 37 : 34}" fill="${item.accent}"/>
-    <text x="${x + (tall ? 220 : 205)}" y="${ctaY + (tall ? 49 : 45)}" fill="${colours.ink}" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 25 : 23}" font-weight="900" text-anchor="middle" letter-spacing="1">${esc(item.cta)}</text>
+    <text x="${x}" y="${priceY}" fill="${item.accent}" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 34 : (item.priceSize || 31)}" font-weight="900" letter-spacing="1">${esc(item.price)}</text>
+    <rect x="${ctaX}" y="${ctaY}" width="${ctaWidth}" height="${tall ? 74 : 68}" rx="${tall ? 37 : 34}" fill="${item.accent}"/>
+    <text x="${ctaX + ctaWidth / 2}" y="${ctaY + (tall ? 49 : 45)}" fill="${colours.ink}" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 25 : 23}" font-weight="900" text-anchor="middle" letter-spacing="1">${esc(item.cta)}</text>
     <text x="${footerX}" y="${height - (tall ? 60 : 44)}" fill="${colours.ink}" fill-opacity=".68" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 24 : 20}" font-weight="700">BALANCE: PLANT-BASED FITNESS</text>
   </svg>`);
 }
@@ -318,8 +321,8 @@ async function renderGallery(item, width, height) {
   const centre = await framedCanvasBuffer(item.sources[1], centreSize[0], centreSize[1], 0);
   const right = await framedCanvasBuffer(item.sources[2], sideSize[0], sideSize[1], 7);
   const positions = tall
-    ? [{ left: 30, top: 1120 }, { left: 345, top: 990 }, { left: 722, top: 1120 }]
-    : [{ left: 6, top: 775 }, { left: 364, top: 680 }, { left: 772, top: 775 }];
+    ? [{ left: 30, top: 1120 }, { left: 345, top: 990 }, { left: 654, top: 1120 }]
+    : [{ left: 6, top: 775 }, { left: 364, top: 680 }, { left: 723, top: 775 }];
   return sharp(baseSvg(width, height, item)).composite([
     { input: left, ...positions[0] },
     { input: right, ...positions[2] },
@@ -334,8 +337,8 @@ async function renderProof(item, width, height) {
   const proofH = tall ? 1050 : 780;
   const proof = await communityProofBuffer(item, proofW, proofH);
   return sharp(baseSvg(width, height, item)).composite([
-    { input: proof, left: tall ? 190 : width - proofW - 25, top: tall ? 125 : 560 },
-    { input: copyPanelSvg(width, height, item, { panelY: tall ? 1240 : 190, footerX: tall ? 70 : 64 }) },
+    { input: proof, left: tall ? 190 : width - proofW - 25, top: tall ? 125 : 500 },
+    { input: copyPanelSvg(width, height, item, { panelY: tall ? 1240 : 190, footerX: tall ? 70 : 64, ctaX: tall ? 70 : 40 }) },
   ]).png().toBuffer();
 }
 
