@@ -153,6 +153,7 @@ const FIRST_ITEM_TYPING_MIN_MS = 1800;
 const FIRST_ITEM_TYPING_MAX_MS = 4200;
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
 const PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE = 'Permanent Needs You contacts require Shannon approval before sending.';
+const LINKED_CLIENT_AUTOMATED_SEND_MESSAGE = 'Linked Instagram clients require Shannon approval from Needs You before sending.';
 const PERSONAL_DM_BOUNDARY_MESSAGE = 'Personal, flirtatious, or non-business call conversations require Shannon approval before sending.';
 const SEND_TIME_SAFETY_BLOCK_MESSAGE = 'Send-time safety blocked this IG reply. Edit the reply or redraft before sending.';
 const AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES = new Set([
@@ -744,6 +745,48 @@ function resolveChunkGaps(messages, pacing) {
 
     const scale = (budget - floorTotal) / Math.max(1, total - floorTotal);
     return gaps.map(gap => Math.round(floor + ((gap - floor) * scale)));
+}
+
+function isLinkedClientIgAlert({ alert = {}, alertData = {}, thread = null } = {}) {
+    const data = alertData || alert.data || {};
+    return !!(thread?.linked_user_id || alert.client_id || data.linked_user_id || data.client_id);
+}
+
+function shouldBlockLinkedClientAutomatedIgSend({ alert = {}, alertData = {}, thread = null, source = '' } = {}) {
+    const data = alertData || alert.data || {};
+    return isLinkedClientIgAlert({ alert, alertData: data, thread })
+        && isAutomatedPermanentNeedsYouSendSource(source, data);
+}
+
+async function stampLinkedClientAutomatedIgSendBlock({ alertId, alertData = {} } = {}) {
+    if (!alertId) return;
+    const blockedAt = new Date().toISOString();
+    const reason = 'linked_client_requires_shannon_approval';
+    const data = {
+        ...(alertData || {}),
+        client_manager_review_required: true,
+        needs_you_required: true,
+        needs_shannon_approval: true,
+        linked_client_manual_review: true,
+        permanent_needs_you_draft_only: true,
+        operator_queue: 'needs_you',
+        needs_you_reason: reason,
+        needs_you_reasons: [
+            ...new Set([
+                ...(Array.isArray(alertData?.needs_you_reasons) ? alertData.needs_you_reasons : []),
+                reason,
+            ]),
+        ],
+        last_send_error: LINKED_CLIENT_AUTOMATED_SEND_MESSAGE,
+        last_send_error_code: 'linked_client_automated_send_blocked',
+        last_send_error_at: blockedAt,
+        outbound_attempted: false,
+    };
+    await supabase(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
+        method: 'PATCH',
+        body: { data },
+        prefer: 'return=minimal',
+    });
 }
 
 function resolveFirstItemTypingDelayMs({ kind = 'text', text = '', random = Math.random } = {}) {
@@ -1367,6 +1410,21 @@ exports.handler = async (event) => {
         } catch (err) {
             console.warn('[send-ig-reply] stale send error cleanup failed:', err.message);
         }
+    }
+    if (shouldBlockLinkedClientAutomatedIgSend({ alert, alertData, thread: threadForSend, source })) {
+        try {
+            await stampLinkedClientAutomatedIgSendBlock({ alertId, alertData });
+        } catch (err) {
+            console.warn('[send-ig-reply] linked-client Needs You block stamp failed:', err.message);
+        }
+        return {
+            statusCode: 409,
+            body: JSON.stringify({
+                error: LINKED_CLIENT_AUTOMATED_SEND_MESSAGE,
+                code: 'linked_client_automated_send_blocked',
+                source,
+            }),
+        };
     }
     if (shouldBlockPermanentNeedsYouAutomatedIgSend({ alert, alertData, thread: threadForSend, source })) {
         await stampPermanentNeedsYouAutomatedIgSendBlock({ alertId, alertData });
@@ -2173,6 +2231,8 @@ exports._test = {
     isAppSupportFastFixException,
     isPermanentNeedsYouIgAlert,
     shouldBlockPermanentNeedsYouAutomatedIgSend,
+    isLinkedClientIgAlert,
+    shouldBlockLinkedClientAutomatedIgSend,
     stampPersonalDmBoundaryBlock,
     hasClientFacingAiSelfReference,
     isGratitudeCloserText,

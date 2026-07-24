@@ -100,6 +100,52 @@ assert.equal(instantDraft.isCurrentMetaAdInbound({
     manychatMessageId: 'ig_graph:different-message',
 }), false);
 
+assert.equal(instantDraft.isMetaAdFastLaneEligible({
+    linkedUserId: null,
+    customData: adThreadData,
+    manychatMessageId: 'ig_graph:mid-ad-1',
+}), true);
+assert.equal(instantDraft.isMetaAdFastLaneEligible({
+    linkedUserId: 'client-user-1',
+    customData: adThreadData,
+    manychatMessageId: 'ig_graph:mid-ad-1',
+}), false);
+
+const linkedClientAlert = {
+    client_id: 'client-user-1',
+    data: {
+        channel: 'instagram',
+        linked_user_id: 'client-user-1',
+    },
+};
+assert.equal(sendIgReply.shouldBlockLinkedClientAutomatedIgSend({
+    alert: linkedClientAlert,
+    alertData: linkedClientAlert.data,
+    thread: { linked_user_id: 'client-user-1' },
+    source: 'balance_lead_client_manager_cron',
+}), true);
+assert.equal(sendIgReply.shouldBlockLinkedClientAutomatedIgSend({
+    alert: linkedClientAlert,
+    alertData: linkedClientAlert.data,
+    thread: { linked_user_id: 'client-user-1' },
+    source: 'admin_dashboard',
+}), false);
+assert.equal(sendIgReply.shouldBlockLinkedClientAutomatedIgSend({
+    alert: { data: { channel: 'instagram' } },
+    alertData: { channel: 'instagram' },
+    thread: { linked_user_id: null },
+    source: 'balance_lead_client_manager_cron',
+}), false);
+assert.equal(sendIgReply.shouldBlockLinkedClientAutomatedIgSend({
+    alert: linkedClientAlert,
+    alertData: {
+        ...linkedClientAlert.data,
+        scheduled_via: 'auto_send',
+    },
+    thread: { linked_user_id: 'client-user-1' },
+    source: 'scheduled_worker',
+}), true);
+
 const laterOrganicData = instagramWebhook.mergeGraphCustomData(adThreadData, {
     participantId: 'lead-1',
     igAccountId: 'account-1',

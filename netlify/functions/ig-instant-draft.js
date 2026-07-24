@@ -1763,6 +1763,11 @@ function isCurrentMetaAdInbound({ customData = {}, manychatMessageId = '' } = {}
     return Number.isFinite(receivedAtMs) && (Date.now() - receivedAtMs) <= (15 * 60 * 1000);
 }
 
+function isMetaAdFastLaneEligible({ linkedUserId = null, customData = {}, manychatMessageId = '' } = {}) {
+    if (linkedUserId) return false;
+    return isCurrentMetaAdInbound({ customData, manychatMessageId });
+}
+
 function getCocosCodexReviewHold({ cocosAutoSendLane, voiceReplyTestLane, approvedCoachingLinkHandoff, metaAdFastLane } = {}) {
     if (!cocosAutoSendLane) return null;
     if (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane) return null;
@@ -3803,12 +3808,15 @@ exports.handler = async (event) => {
             customData: thread.custom_data,
         })
         : '';
-    const metaAdFastLane = isCurrentMetaAdInbound({
+    const linkedClientNeedsYou = !!thread.linked_user_id;
+    const metaAdFastLane = isMetaAdFastLaneEligible({
+        linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
         manychatMessageId,
     });
     const balanceAutoSendCandidate = !!thread.auto_send_enabled;
-    const autoSendEnabled = cocosAutoSendLane || voiceReplyTestLane || metaAdFastLane;
+    const autoSendEnabled = !linkedClientNeedsYou
+        && (cocosAutoSendLane || voiceReplyTestLane || metaAdFastLane);
 
     // Idempotency — when ManyChat supplied a message_id, reuse it. Otherwise
     // fall back to thread+timestamp (less robust but better than nothing
@@ -3919,6 +3927,10 @@ exports.handler = async (event) => {
         });
     const permanentNeedsYouClient = isAlwaysNeedsYouPerson(permanentNeedsYouIdentity)
         && !kayProgramOrFixBypass;
+    const draftOnlyNeedsYouClient = linkedClientNeedsYou || permanentNeedsYouClient;
+    const draftOnlyNeedsYouReason = linkedClientNeedsYou
+        ? 'linked_client_requires_shannon_approval'
+        : 'always_needs_you_person';
     const history = await loadIgHistory(threadId, messageText);
 
     let memoryBlock = '';
@@ -4399,18 +4411,20 @@ exports.handler = async (event) => {
         suggested_message: draft.joined || null,
         status: 'pending',
         data: {
-            client_manager_review_required: permanentNeedsYouClient || undefined,
-            needs_you_required: permanentNeedsYouClient || undefined,
-            permanent_needs_you_draft_only: permanentNeedsYouClient || undefined,
-            operator_queue: permanentNeedsYouClient ? 'needs_you' : null,
-            needs_you_reason: permanentNeedsYouClient ? 'always_needs_you_person' : undefined,
-            needs_you_reasons: permanentNeedsYouClient ? ['always_needs_you_person'] : undefined,
-            codex_review: permanentNeedsYouClient ? {
+            client_manager_review_required: draftOnlyNeedsYouClient || undefined,
+            needs_you_required: draftOnlyNeedsYouClient || undefined,
+            needs_shannon_approval: draftOnlyNeedsYouClient || undefined,
+            permanent_needs_you_draft_only: draftOnlyNeedsYouClient || undefined,
+            linked_client_manual_review: linkedClientNeedsYou || undefined,
+            operator_queue: draftOnlyNeedsYouClient ? 'needs_you' : null,
+            needs_you_reason: draftOnlyNeedsYouClient ? draftOnlyNeedsYouReason : undefined,
+            needs_you_reasons: draftOnlyNeedsYouClient ? [draftOnlyNeedsYouReason] : undefined,
+            codex_review: draftOnlyNeedsYouClient ? {
                 source: 'balance-combined-dm-manager',
                 decision: 'client_manager_review_required',
                 queue: 'needs_you',
                 needs_shannon_approval: true,
-                reason: 'always_needs_you_person',
+                reason: draftOnlyNeedsYouReason,
                 evidence_ids: [
                     thread.id ? `ig_threads:${thread.id}` : '',
                     thread.linked_user_id ? `users:${thread.linked_user_id}` : '',
@@ -5314,6 +5328,7 @@ exports._test = {
     getAutoDmHoldReason,
     getCocosCodexReviewHold,
     isCurrentMetaAdInbound,
+    isMetaAdFastLaneEligible,
     collectCocosAutoRepairIssues,
     shouldAttemptCocosDraftRepair,
     normalizeCocosRepairedDraft,

@@ -193,7 +193,7 @@ Auto-send:
 - `client_memory.auto_send_enabled BOOLEAN DEFAULT FALSE`.
 - Shared helper: `maybeAutoSendDraft(...)` in `netlify/functions/_lib/client-context.js`.
 - When enabled, draft producers can skip the approve-gate, insert the DM, mark alert sent, and send Shannon a low-key confirmation push.
-- Safe IG/FB lead replies are owned and sent by the DM manager after its live-thread review. Per-client auto-send settings remain separate and default off for new linked clients.
+- Safe IG/FB lead replies are owned and sent by the DM manager after its live-thread review. Linked IG/FB clients are always draft-only: route them to Needs You and require Shannon's approval before any outbound. Paid-ad attribution, per-client auto-send settings, scheduled workers, and the DM manager must never bypass that linked-client boundary. A support worker may investigate and repair a client issue immediately, but its client-facing completion reply still requires Shannon's approval.
 
 Memory extractor:
 
