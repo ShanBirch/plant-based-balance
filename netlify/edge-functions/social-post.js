@@ -1,7 +1,7 @@
 const DEFAULT_SITE_URL = 'https://plantbased-balance.org';
 const DEFAULT_GRAPH_BASE = 'https://graph.instagram.com';
 const DEFAULT_IG_USER_ID = '17841415641641750';
-const CONTENT_ID = '2026-07-12-small-wins';
+const CONTENT_ID = '2026-07-24-build-your-back';
 const REQUIRED_IDEMPOTENCY_KEY = `${CONTENT_ID}-instagram-feed`;
 
 function clean(value, max = 5000) {
@@ -37,13 +37,26 @@ function igUserId() {
     return clean(env('SHAN_N_SUNNY_IG_USER_ID') || env('INSTAGRAM_GRAPH_ACCOUNT_ID') || env('IG_GRAPH_BUSINESS_ACCOUNT_ID') || env('META_IG_USER_ID') || DEFAULT_IG_USER_ID, 120);
 }
 
-function postPlan(request) {
+function legacyPostPlan(request) {
     const base = siteUrl(request);
     return {
         contentId: CONTENT_ID,
         kind: 'carousel',
         caption: `Small wins beat motivation.\n\nOn a hard day, you don’t need to do everything perfectly.\n\n10 minutes. One walk. One decent meal.\n\nThe version you can repeat beats the perfect plan you abandon.\n\nSave this for the next rough day.\nGet back in Balance.`,
         images: [1, 2, 3, 4].map(number => `${base}/social-assets/2026-07-12-small-wins/small-wins-share-reference-slide-${String(number).padStart(2, '0')}.jpg`),
+    };
+}
+
+function postPlan(request) {
+    const base = siteUrl(request);
+    return {
+        contentId: CONTENT_ID,
+        kind: 'carousel',
+        caption: `Your back is not one muscle, so stop treating it like one.\n\nThe erector spinae help extend and control your spine. Your lats connect your arms to your torso. Your glutes share force through the hips. Your abdominal wall helps keep the whole thing organised.\n\nStart with controlled positions, then progressively add resistance. Pick one movement from each group and build from there.\n\nIf pain is sharp, worsening, or comes with numbness or weakness, get it assessed instead of training through it.\n\nWant help fitting this into your actual week? Comment BACK below.\n\n#HumpDayHacks #BackStrength #StrengthTraining #PlantBasedFitness #GetBackInBalance`,
+        media: Array.from({ length: 20 }, (_, index) => ({
+            type: 'video',
+            url: `${base}/social-assets/2026-07-24-build-your-back/slide-${String(index + 1).padStart(2, '0')}.mp4`,
+        })),
     };
 }
 
@@ -99,12 +112,12 @@ async function graph(path, method, params = {}) {
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function waitForContainer(id, token) {
-    for (let attempt = 0; attempt < 15; attempt += 1) {
+    for (let attempt = 0; attempt < 45; attempt += 1) {
         const status = await graph(id, 'GET', { fields: 'status_code,status', access_token: token });
         const code = clean(status.status_code || status.status, 80).toUpperCase();
         if (code === 'FINISHED') return status;
         if (code === 'ERROR' || code === 'EXPIRED') throw new Error(`Instagram container ${id} is ${code.toLowerCase()}`);
-        await sleep(1500);
+        await sleep(2000);
     }
     throw new Error(`Instagram container ${id} did not finish in time`);
 }
@@ -114,20 +127,24 @@ async function validatePlan(request) {
     const token = await accessToken();
     if (!token) throw new Error('Instagram access token is unavailable');
     const account = await graph(igUserId(), 'GET', { fields: 'id,username', access_token: token });
-    const images = await Promise.all(plan.images.map(async url => {
-        const response = await fetch(url, { method: 'HEAD' });
-        return { url, ok: response.ok, contentType: clean(response.headers.get('content-type') || '', 100) };
+    const media = await Promise.all(plan.media.map(async item => {
+        const response = await fetch(item.url, { method: 'HEAD' });
+        return { ...item, ok: response.ok, contentType: clean(response.headers.get('content-type') || '', 100) };
     }));
-    if (images.some(image => !image.ok || !image.contentType.startsWith('image/'))) throw new Error('One or more carousel images are not publicly fetchable');
-    return { plan, token, account, images };
+    if (media.some(item => !item.ok || (item.type === 'video' ? item.contentType !== 'video/mp4' : !item.contentType.startsWith('image/')))) {
+        throw new Error('One or more carousel media items are not publicly fetchable with the expected content type');
+    }
+    return { plan, token, account, media };
 }
 
 async function publishCarousel(validation) {
     const { plan, token } = validation;
     const children = [];
-    for (const imageUrl of plan.images) {
+    for (const item of plan.media) {
         const child = await graph(`${igUserId()}/media`, 'POST', {
-            image_url: imageUrl,
+            ...(item.type === 'video'
+                ? { media_type: 'VIDEO', video_url: item.url }
+                : { image_url: item.url }),
             is_carousel_item: true,
             access_token: token,
         });
@@ -167,7 +184,7 @@ export default async request => {
     if (clean(body.idempotencyKey, 200) !== REQUIRED_IDEMPOTENCY_KEY) return json(400, { ok: false, error: 'invalid_idempotency_key' });
     try {
         const validation = await validatePlan(request);
-        if (mode === 'dry_run') return json(200, { ok: true, mode, account: validation.account, plan: validation.plan, images: validation.images });
+        if (mode === 'dry_run') return json(200, { ok: true, mode, account: validation.account, plan: validation.plan, media: validation.media });
         const result = await publishCarousel(validation);
         return json(200, { ok: true, mode, contentId: CONTENT_ID, account: validation.account, result });
     } catch (error) {
