@@ -19,6 +19,7 @@ Premium, tactile app-product motion with the confidence of a training dashboard 
 - Feature verbs and final lockup: Montserrat, weight 900.
 - Small progress labels and metadata: Space Mono, weight 700.
 - Minimum Instagram Reel sizes: 60px headlines, 35px supporting copy, 24px labels.
+- Feature copy stays inside the Instagram-safe centre-left area, above the bottom caption region and left of the action rail.
 
 ## Motion Rules
 

@@ -31,5 +31,6 @@ sharing, activity tracking, coaching, and friendly competition.
 
 - Vertical 9:16 Instagram Reel.
 - 15 seconds.
+- Keep all critical text clear of the Instagram top header, bottom caption area, and right-side action rail.
 - Public-facing copy must not mention AI or automation.
 - End on the Balance logo, centred "BALANCE" wordmark, and "Join Balance" call to action.
