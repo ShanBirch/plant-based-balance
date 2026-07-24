@@ -21,3 +21,26 @@ build/
 .idea/
 *.log
 artifacts/dm-sparring/
+
+# Agent task sandboxes and local orchestration state
+.agents/
+.claude/worktrees/
+.codex-worktrees/
+.codex-artifacts/
+.codex-merge-backup/
+.codex-remote-attachments/
+.codex-test-server.*
+.playwright-cli/
+
+# Generated task output and temporary working files
+output/
+work/
+tmp/
+*.pid
+
+# Generated media previews and native sync output
+videos/**/renders/
+videos/**/snapshots/
+android/capacitor-cordova-android-plugins/
+ios/capacitor-cordova-ios-plugins/
+ios/App/App/public/
