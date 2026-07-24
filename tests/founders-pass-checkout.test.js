@@ -34,10 +34,20 @@ test('one-time Founders Pass has a complete purchase and activation path', () =>
     assert.match(webhook, /sendCAPIEvent\('Purchase'/);
     assert.match(purchaseTracker, /sendCAPIEvent\('Purchase'/);
     assert.match(login, /claimPendingFoundersPass/);
+    assert.match(login, /Set up your Balance account/);
+    assert.match(login, /same email you used at checkout/i);
+    assert.match(login, /OPEN MY FOUNDERS PASS/);
     assert.match(success, /balance_founders_pass_session_id/);
     assert.match(success, /fbq\('track', 'Purchase'/);
     assert.match(config, /function = "claim-founders-pass"/);
     assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.founders_pass_purchases/);
     assert.match(migration, /ENABLE ROW LEVEL SECURITY/);
     assert.match(migration, /GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public\.founders_pass_purchases TO service_role/);
+});
+
+test('Founders Pass onboarding captures the real-world blocker behind consistency', () => {
+    const onboarding = read('js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js');
+    assert.match(onboarding, /Let\\'s set up your goals one small answer at a time/);
+    assert.match(onboarding, /key: 'main_blocker'[\s\S]*?What usually knocks you off track when life gets messy/);
+    assert.match(onboarding, /setWizardFieldValue\('wizard-main-blocker', answers\.main_blocker\)/);
 });

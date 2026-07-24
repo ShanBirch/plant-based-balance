@@ -2818,7 +2818,21 @@ They sent a long, emotional, or multi-topic message. Do not compress this into a
     };
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, qualifierQuestionProtected = false, botAccount, coachId = null, audioTranscriptOverrides = [] }) {
+function buildPersonalVoiceNoteDraftingBlock(enabled) {
+    if (!enabled) return '';
+    return `
+
+PERSONAL VOICE NOTE MODE:
+This exact draft will be spoken in Shannon's approved voice-note voice, not sent as ordinary text.
+- Write 2 to 4 natural spoken sentences, usually 45 to 75 words (roughly 20 to 26 seconds aloud). Do not shrink it into an ultra-short clip.
+- Sound like Shannon thinking with them in the moment: relaxed Australian phrasing, contractions, small pauses, and an occasional "um", "ah", "like", or "you know" only where it genuinely fits.
+- Vary the hesitation placement. Never use the same filler pattern every time, stack fillers, or make the note sound scripted.
+- A slight self-correction or repeated thought is welcome when natural. Keep the useful coaching point clear.
+- Use punctuation to create breathing room. Do not write stage directions, labels, SSML, ad-read copy, or a polished motivational monologue.
+- Prefer one fuller message bubble so the audio reads as one connected note. Return to concise text for links, prices, or detailed instructions.`;
+}
+
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, qualifierQuestionProtected = false, botAccount, coachId = null, audioTranscriptOverrides = [], personalVoiceNoteMode = false }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -2837,6 +2851,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const shannonDmTuning = buildShannonDmTuningBlock();
     const identityElicitation = buildBalanceIdentityElicitationBlock();
     const openAiShannonVoice = buildOpenAIShannonVoiceBlock();
+    const personalVoiceNoteDraftingBlock = buildPersonalVoiceNoteDraftingBlock(personalVoiceNoteMode);
     const isSalesLeadThread = isSalesAcquisitionThread({ leadStage, linkedUserId });
     const accountExperimentBlock = isSalesLeadThread ? buildAccountExperimentBlock(botAccount) : '';
     const acquisitionMomentumBlock = buildAcquisitionMomentumBlock({ botAccount, leadStage, linkedUserId });
@@ -3210,6 +3225,7 @@ ${heardFirstConversation}
 ${shannonDmTuning}
 ${identityElicitation}
 ${openAiShannonVoice}
+${personalVoiceNoteDraftingBlock}
 ${conversationLanePolicyBlock}
 ${accountExperimentBlock}
 ${acquisitionMomentumBlock}
@@ -4309,6 +4325,7 @@ exports.handler = async (event) => {
             botAccount,
             coachId: thread.coach_id || null,
             audioTranscriptOverrides,
+            personalVoiceNoteMode: outboundVoiceMessage,
         });
     } catch (err) {
         console.error('[ig-draft] draft generation threw after stale-send cleanup:', err.message);
@@ -5450,4 +5467,5 @@ exports._test = {
     buildNativeStoryConfusionRepairBlock,
     normalizeIgAutoTimingSuggestion,
     isCocosToShanSunnyVoiceTest,
+    buildPersonalVoiceNoteDraftingBlock,
 };

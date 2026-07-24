@@ -7123,7 +7123,7 @@ const WIZARD_CHAT_STEPS = [
     {
         key: 'goal_setup_ready',
         type: 'start',
-        question: 'Let\'s set up your goals. Ready to go?',
+        question: 'Let\'s set up your goals one small answer at a time. You can change anything later. Ready to go?',
         options: [
             { value: 'lets_go', label: 'Let\'s go' }
         ]
@@ -7184,6 +7184,13 @@ const WIZARD_CHAT_STEPS = [
             { value: 'message_coach', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.message_coach },
             { value: 'share_workout_feed', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.share_workout_feed }
         ]
+    },
+    {
+        key: 'main_blocker',
+        type: 'text',
+        question: 'What usually knocks you off track when life gets messy?',
+        placeholder: 'Time, stress, all-or-nothing thinking, not knowing what to do...',
+        minLength: 3
     },
     { key: 'goal_weight', type: 'measurement', measurement: 'weight', question: getWizardGoalWeightQuestion, placeholder: getWizardGoalWeightPlaceholder, optional: true },
     {

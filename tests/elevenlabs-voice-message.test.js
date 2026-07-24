@@ -4,6 +4,12 @@ const voice = require('../netlify/functions/_lib/elevenlabs-voice-message');
 const igDraft = require('../netlify/functions/ig-instant-draft')._test;
 const sendIg = require('../netlify/functions/send-ig-reply')._test;
 
+const personalVoicePrompt = igDraft.buildPersonalVoiceNoteDraftingBlock(true);
+assert.match(personalVoicePrompt, /20 to 26 seconds/i);
+assert.match(personalVoicePrompt, /occasional "um", "ah", "like", or "you know"/i);
+assert.match(personalVoicePrompt, /Vary the hesitation placement/i);
+assert.strictEqual(igDraft.buildPersonalVoiceNoteDraftingBlock(false), '');
+
 assert.strictEqual(
     voice.isCocosToShanSunnyVoiceTest({
         botAccount: 'shan_n_sunny',
