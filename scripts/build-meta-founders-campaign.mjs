@@ -6,15 +6,14 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const OUT = path.join(ROOT, 'output', 'meta-founders-pass-campaign-2026-07-22');
 
 const colours = {
-  ink: '#130B1B',
-  plum: '#241130',
-  purple: '#7C3AED',
-  violet: '#A855F7',
-  gold: '#FFB21A',
-  cream: '#FFF7E8',
+  ink: '#241A12',
+  paper: '#F7F2E8',
+  cream: '#FFF9ED',
+  gold: '#D8A43A',
+  deepGold: '#A96F00',
   white: '#FFFFFF',
-  green: '#45D6A0',
-  coral: '#FF6D74',
+  sage: '#72806A',
+  terracotta: '#B76D47',
 };
 
 const campaigns = [
@@ -22,31 +21,31 @@ const campaigns = [
     id: '01-coach-in-your-corner',
     boardId: 'coach-in-corner',
     source: 'photos/shannon-portrait.jpg',
-    eyebrow: 'VEGAN FITNESS FOUNDERS PASS',
-    title: ['A REAL COACH', 'IN YOUR CORNER.'],
-    body: ['Six weeks of coaching support', 'Lifetime core app + community access'],
+    eyebrow: 'BALANCE: PLANT-BASED FITNESS',
+    title: ['YOU HAVE NOT FAILED.', 'THE PLAN WAS WRONG.'],
+    body: ['Coaching built around your brain,', 'your experiences and real life'],
     price: 'AU$99 ONCE',
     cta: 'SEND MESSAGE',
-    accent: colours.gold,
+    accent: colours.deepGold,
     composition: 'portrait',
-    primaryText: "Getting fit should not mean figuring everything out alone. The Balance Founders Pass gives you six weeks of one-to-one in-app support from me for questions, direction and accountability, plus lifetime access to the core app and plant-based community. AU$99 once. Send me “BALANCE” and I’ll help you work out if it fits.",
-    headline: 'Six weeks with Shannon, AU$99 once',
-    description: 'Lifetime core Balance app + plant-based community access',
+    primaryText: 'You have not failed. The plan was wrong. It was not built around your brain, what you have been through, or what you are dealing with now. Inside Balance, I coach plant-based people with small, clear steps that fit their current starting point. The Founders Pass is AU$99 once. Message “BALANCE” and I will show you what is included.',
+    headline: 'You have not failed. The plan was wrong.',
+    description: 'Plant-based coaching built around real life',
   },
   {
     id: '02-stop-restarting',
     boardId: 'stop-restarting',
     source: 'photos/what-i-offer-portrait.jpg',
-    eyebrow: 'CONSISTENCY > PERFECTION',
-    title: ['STOP RESTARTING.', 'BUILD A RHYTHM.'],
-    body: ['Training, direction and accountability', 'that can fit around real life'],
+    eyebrow: 'YOUR BRAIN LEARNS THROUGH REPETITION',
+    title: ['SMALL STEPS.', 'A RHYTHM THAT LASTS.'],
+    body: ['Make the next helpful action', 'easier to repeat'],
     price: 'FOUNDERS PASS  •  AU$99 ONCE',
     cta: 'MESSAGE “BALANCE”',
-    accent: colours.green,
+    accent: colours.sage,
     composition: 'portrait',
-    primaryText: "Another perfect plan is not the answer if it only lasts a week. Balance brings your training, progress and support into one place, with six weeks of coaching support from me to help you build a rhythm you can actually keep. Message “BALANCE” for the Founders Pass details.",
-    headline: 'Stop restarting. Build a rhythm.',
-    description: 'Six weeks of support + lifetime core access',
+    primaryText: 'Real change is not about finding more motivation or forcing more effort. Your brain learns through repetition, and your environment shapes what gets repeated. Balance gives plant-based people small, clear steps and six weeks of support to build a rhythm that fits real life. Message “BALANCE” for the Founders Pass details.',
+    headline: 'Small steps. A rhythm that lasts.',
+    description: 'Change made clearer for plant-based people',
   },
   {
     id: '03-six-weeks-lifetime-access',
@@ -61,11 +60,11 @@ const campaigns = [
     body: ['Coaching support', 'Core app + plant-based community'],
     price: 'AU$99 ONCE',
     cta: 'GET THE DETAILS IN DMS',
-    accent: colours.violet,
+    accent: colours.gold,
     composition: 'gallery',
-    primaryText: "The Balance Vegan Fitness Founders Pass is simple: pay AU$99 once, get six weeks of one-to-one in-app coaching support from me, then keep lifetime access to the core Balance app and plant-based community. No sales call needed. Message me for the details.",
+    primaryText: 'The Balance: Plant-Based Fitness Founders Pass is simple. Pay AU$99 once, get six weeks of one-to-one in-app coaching support from me, then keep lifetime access to the core Balance app and plant-based community. Message “BALANCE” and I will show you what is included.',
     headline: 'Six weeks with Shannon. Lifetime core access.',
-    description: 'The Vegan Fitness Founders Pass',
+    description: 'The Balance: Plant-Based Fitness Founders Pass',
   },
   {
     id: '04-plant-based-clarity',
@@ -73,14 +72,14 @@ const campaigns = [
     source: 'assets/campaigns/founders-pass-meta-2026-07-22/source/balance-nutrition-screen.png',
     eyebrow: 'PLANT-BASED FITNESS, MADE CLEARER',
     title: ['TRAIN WITH PURPOSE.', 'EAT WITH CLARITY.'],
-    body: ['Vegan nutrition and progress tools', 'with Shannon there for direction'],
+    body: ['Plant-based nutrition and progress tools', 'with Shannon there for direction'],
     price: 'FOUNDERS PASS  •  AU$99 ONCE',
     cta: 'SEND MESSAGE',
-    accent: colours.coral,
+    accent: colours.terracotta,
     frameAccent: colours.gold,
     composition: 'gold-frame',
     proofFit: 'contain',
-    primaryText: "Plant-based fitness does not need more noise. Balance puts training, vegan nutrition and progress tools together, with six weeks of coaching support from me when you need direction. The Founders Pass is AU$99 once and includes lifetime core app and community access. Message “BALANCE” for details.",
+    primaryText: 'Plant-based fitness does not need more noise. Balance puts training, nutrition and progress tools together, with small, clear steps and six weeks of coaching support from me when you need direction. The Founders Pass is AU$99 once and includes lifetime core app and community access. Message “BALANCE” for details.',
     headline: 'Plant-based fitness, made clearer',
     description: 'Training, nutrition, progress and support',
   },
@@ -99,7 +98,7 @@ const campaigns = [
       photo: { top: 205, height: 1375 },
       comments: { top: 1550, height: 510 },
     },
-    primaryText: "Balance is more than a workout tracker. It is a plant-based community where training, progress and support live together. The Founders Pass includes six weeks with me in your corner, then lifetime access to the core app and community. AU$99 once. Message “BALANCE” to see what is included.",
+    primaryText: 'Your environment shapes what gets repeated. Balance gives you a plant-based community where training, progress and support live together. The Founders Pass includes six weeks with me in your corner, then lifetime access to the core app and community. AU$99 once. Message “BALANCE” to see what is included.',
     headline: 'Plant-based fitness is better together',
     description: 'Join the Balance founding members',
   },
@@ -108,14 +107,14 @@ const campaigns = [
     boardId: 'founder',
     source: 'photos/shannon-portrait.jpg',
     eyebrow: 'BUILT BY SHANNON BIRCH',
-    title: ['VEGAN.', 'EXERCISE SCIENTIST.', 'IN YOUR CORNER.'],
-    body: ['Real coaching support inside', 'a fitness app built for our community'],
+    title: ['PLANT-BASED.', 'BRAIN-AWARE.', 'BUILT FOR REAL LIFE.'],
+    body: ['Coaching from an exercise scientist', 'inside a community that gets it'],
     price: 'FOUNDERS PASS  •  AU$99 ONCE',
     cta: 'START THE CONVERSATION',
-    accent: colours.green,
+    accent: colours.sage,
     composition: 'founder',
-    primaryText: "I built Balance because vegan fitness should feel less lonely and less complicated. I’m an exercise scientist, former gym owner and vegan coach. The Founders Pass gives you six weeks of coaching support with me, plus lifetime core app and plant-based community access for AU$99 once. Send me a message and I’ll talk you through it.",
-    headline: 'Vegan fitness, built by someone who gets it',
+    primaryText: 'I built Balance because plant-based fitness should feel less lonely and less complicated. I am an exercise scientist and former gym owner, and I coach change through small, clear steps that fit real life. The Founders Pass gives you six weeks of coaching support with me, plus lifetime core app and plant-based community access for AU$99 once. Message “BALANCE” and I will talk you through it.',
+    headline: 'Plant-based fitness, built for real life',
     description: 'Meet Shannon and the Balance Founders Pass',
   },
 ];
@@ -124,7 +123,7 @@ function esc(value) {
   return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function linesSvg(lines, x, y, size, gap, fill = colours.white, weight = 900, anchor = 'start') {
+function linesSvg(lines, x, y, size, gap, fill = colours.ink, weight = 900, anchor = 'start') {
   return lines.map((line, i) => `<text x="${x}" y="${y + i * gap}" fill="${fill}" font-family="Arial, Helvetica, sans-serif" font-size="${size}" font-weight="${weight}" text-anchor="${anchor}" letter-spacing="-1.5">${esc(line)}</text>`).join('');
 }
 
@@ -132,14 +131,14 @@ function baseSvg(width, height, item) {
   const tall = height > 1500;
   return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
     <defs>
-      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${colours.ink}"/><stop offset="0.6" stop-color="${colours.plum}"/><stop offset="1" stop-color="#34124D"/></linearGradient>
-      <radialGradient id="glow"><stop stop-color="${item.accent}" stop-opacity=".34"/><stop offset="1" stop-color="${item.accent}" stop-opacity="0"/></radialGradient>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${colours.cream}"/><stop offset="0.62" stop-color="${colours.paper}"/><stop offset="1" stop-color="#EADCC2"/></linearGradient>
+      <radialGradient id="glow"><stop stop-color="${item.accent}" stop-opacity=".18"/><stop offset="1" stop-color="${item.accent}" stop-opacity="0"/></radialGradient>
     </defs>
     <rect width="${width}" height="${height}" fill="url(#bg)"/>
     <circle cx="${width * 0.86}" cy="${height * 0.1}" r="${width * 0.55}" fill="url(#glow)"/>
-    <circle cx="${width * 0.06}" cy="${height * 0.92}" r="${width * 0.45}" fill="url(#glow)" opacity=".35"/>
+    <circle cx="${width * 0.06}" cy="${height * 0.92}" r="${width * 0.45}" fill="url(#glow)" opacity=".55"/>
     <rect x="0" y="0" width="${width}" height="12" fill="${item.accent}"/>
-    <text x="${tall ? 70 : 64}" y="${tall ? 100 : 82}" fill="${item.accent}" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 27 : 24}" font-weight="800" letter-spacing="2.8">${esc(item.eyebrow)}</text>
+    <text x="${tall ? 70 : 64}" y="${tall ? 100 : 82}" fill="${colours.deepGold}" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 27 : 24}" font-weight="800" letter-spacing="2.8">${esc(item.eyebrow)}</text>
   </svg>`);
 }
 
@@ -203,7 +202,7 @@ async function proofPhotoBuffer(item, width, height) {
   }).png().toBuffer();
   const frameAccent = item.frameAccent || item.accent;
   const mask = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect width="${width}" height="${height}" rx="34" fill="#fff"/></svg>`);
-  return sharp({ create: { width, height, channels: 4, background: '#1A101F' } })
+  return sharp({ create: { width, height, channels: 4, background: colours.cream } })
     .composite([{ input: photo, left: 14, top: 14 }, { input: Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="5" width="${width - 10}" height="${height - 10}" rx="30" fill="none" stroke="${frameAccent}" stroke-width="6"/></svg>`) }, { input: mask, blend: 'dest-in' }])
     .png().toBuffer();
 }
@@ -249,12 +248,12 @@ function copyPanelSvg(width, height, item, layout) {
   const ctaY = priceY + 68;
   const footerX = Number.isFinite(layout.footerX) ? layout.footerX : width - x - 360;
   return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-    ${linesSvg(item.title, x, panelY, titleSize, titleGap, colours.white, 900)}
-    ${linesSvg(item.body, x, bodyY, tall ? 31 : 27, tall ? 43 : 38, colours.cream, 500)}
+    ${linesSvg(item.title, x, panelY, titleSize, titleGap, colours.ink, 900)}
+    ${linesSvg(item.body, x, bodyY, tall ? 31 : 27, tall ? 43 : 38, '#5B4A3A', 500)}
     <text x="${x}" y="${priceY}" fill="${item.accent}" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 34 : 31}" font-weight="900" letter-spacing="1">${esc(item.price)}</text>
     <rect x="${x}" y="${ctaY}" width="${tall ? 440 : 410}" height="${tall ? 74 : 68}" rx="${tall ? 37 : 34}" fill="${item.accent}"/>
     <text x="${x + (tall ? 220 : 205)}" y="${ctaY + (tall ? 49 : 45)}" fill="${colours.ink}" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 25 : 23}" font-weight="900" text-anchor="middle" letter-spacing="1">${esc(item.cta)}</text>
-    <text x="${footerX}" y="${height - (tall ? 60 : 44)}" fill="#FFFFFF" fill-opacity=".72" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 24 : 20}" font-weight="700">BALANCE - PLANT BASED FITNESS</text>
+    <text x="${footerX}" y="${height - (tall ? 60 : 44)}" fill="${colours.ink}" fill-opacity=".68" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 24 : 20}" font-weight="700">BALANCE: PLANT-BASED FITNESS</text>
   </svg>`);
 }
 
@@ -263,9 +262,9 @@ async function renderPortrait(item, width, height) {
   const photoW = tall ? width : Math.round(width * 0.52);
   const photoH = tall ? Math.round(height * 0.56) : height;
   const photo = await coverBuffer(item.source, photoW, photoH, 'centre');
-  const shade = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="s" x1="0" x2="1"><stop stop-color="#130B1B"/><stop offset=".47" stop-color="#130B1B" stop-opacity=".96"/><stop offset=".73" stop-color="#130B1B" stop-opacity=".16"/><stop offset="1" stop-color="#130B1B" stop-opacity="0"/></linearGradient><linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset=".6" stop-color="#130B1B" stop-opacity="0"/><stop offset="1" stop-color="#130B1B"/></linearGradient></defs><rect width="${width}" height="${height}" fill="url(#s)"/><rect width="${width}" height="${height}" fill="url(#b)"/></svg>`);
+  const shade = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="s" x1="0" x2="1"><stop stop-color="#FFF9ED"/><stop offset=".47" stop-color="#FFF9ED" stop-opacity=".97"/><stop offset=".73" stop-color="#FFF9ED" stop-opacity=".18"/><stop offset="1" stop-color="#FFF9ED" stop-opacity="0"/></linearGradient><linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset=".6" stop-color="#FFF9ED" stop-opacity="0"/><stop offset="1" stop-color="#F7F2E8"/></linearGradient></defs><rect width="${width}" height="${height}" fill="url(#s)"/><rect width="${width}" height="${height}" fill="url(#b)"/></svg>`);
   const panelY = tall ? 1120 : 245;
-  const eyebrow = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><text x="${tall ? 70 : 64}" y="${tall ? 100 : 82}" fill="${item.accent}" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 27 : 24}" font-weight="800" letter-spacing="2.8">${esc(item.eyebrow)}</text></svg>`);
+  const eyebrow = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><text x="${tall ? 70 : 64}" y="${tall ? 100 : 82}" fill="${colours.deepGold}" font-family="Arial, Helvetica, sans-serif" font-size="${tall ? 27 : 24}" font-weight="800" letter-spacing="2.8">${esc(item.eyebrow)}</text></svg>`);
   return sharp(baseSvg(width, height, item)).composite([
     { input: photo, left: tall ? 0 : width - photoW, top: tall ? 110 : 0 },
     { input: shade },
@@ -331,12 +330,12 @@ async function renderGallery(item, width, height) {
 
 async function renderProof(item, width, height) {
   const tall = height > 1500;
-  const proofW = tall ? 760 : 560;
-  const proofH = tall ? 1180 : 780;
+  const proofW = tall ? 700 : 560;
+  const proofH = tall ? 1050 : 780;
   const proof = await communityProofBuffer(item, proofW, proofH);
   return sharp(baseSvg(width, height, item)).composite([
-    { input: proof, left: tall ? 160 : width - proofW - 25, top: tall ? 125 : 560 },
-    { input: copyPanelSvg(width, height, item, { panelY: tall ? 1370 : 190, footerX: tall ? 70 : 64 }) },
+    { input: proof, left: tall ? 190 : width - proofW - 25, top: tall ? 125 : 560 },
+    { input: copyPanelSvg(width, height, item, { panelY: tall ? 1240 : 190, footerX: tall ? 70 : 64 }) },
   ]).png().toBuffer();
 }
 
@@ -360,10 +359,10 @@ for (const item of campaigns) {
 }
 
 const campaignPlan = {
-  name: 'BAL | Founders Pass | IG DM | AU | 2026-07-22',
+  name: 'BAL | Plant-Based Founders Pass | Brain Angle | IG DM | AU | 2026-07-24',
   status: 'PAUSED',
   objective: 'Instagram Direct conversations',
-  offer: 'Balance Vegan Fitness Founders Pass, AU$99 once',
+  offer: 'Balance: Plant-Based Fitness Founders Pass, AU$99 once',
   conversionLocation: 'Instagram Direct',
   optimization: 'Conversations',
   audience: {
@@ -378,22 +377,30 @@ const campaignPlan = {
   adSet: 'Broad Australia | 24-54 | IG Direct',
   ads: exportsList.map((x, index) => ({
     name: `A${index + 1} | ${x.headline}`,
-    rollout: index < 3 ? 'phase_1_launch' : 'phase_2_reserve',
+    rollout: [0, 3, 4].includes(index) ? 'phase_1_launch' : 'phase_2_reserve',
     creative: { feed: path.basename(x.feedPath), story: path.basename(x.storyPath) },
     primaryText: x.primaryText,
     headline: x.headline,
     description: x.description,
     callToAction: 'Send message',
-  })),
+  })).concat({
+    name: 'V1 | You have not failed. The plan was wrong.',
+    rollout: 'phase_1_launch',
+    creative: { reels: 'balance-founders-pass-brain-ad-cream-gold-final.mp4' },
+    primaryText: 'You have not failed. The plan was wrong. It was not built around your brain, what you have been through, or what you are dealing with now. Your brain learns through repetition, and your environment shapes what gets repeated. Inside Balance, I coach plant-based people with small, clear steps built around their current starting point. The Founders Pass is a one-off payment of AU$99. Message “BALANCE” and I will show you what is included.',
+    headline: 'Change built around your real life',
+    description: 'Balance: Plant-Based Fitness Founders Pass',
+    callToAction: 'Send message',
+  }),
   dmWelcome: {
     greeting: "Hey, glad you reached out. What made the Founders Pass catch your eye?",
     quickReplies: ["What’s included?", "Is this right for me?", "I’m ready to start"],
     followUpExpectation: "Shannon will reply here and help you work out the best next step.",
   },
   rollout: {
-    phase1: ['A1 | Six weeks with Shannon, AU$99 once', 'A2 | Stop restarting. Build a rhythm.', 'A3 | Six weeks with Shannon. Lifetime core access.'],
+    phase1: ['A1 | You have not failed. The plan was wrong.', 'A4 | Plant-based fitness, made clearer', 'A5 | Plant-based fitness is better together', 'V1 | You have not failed. The plan was wrong.'],
     phase1Days: 7,
-    phase2: 'Introduce one reserve ad at a time to replace the weakest phase-one route. Do not split AU$20 per day across all six ads at launch.',
+    phase2: 'Introduce one reserve ad at a time to replace the weakest launch route. Do not run every creative at once on an AU$20 daily budget.',
   },
   decisionRules: [
     'Do not edit during the first 72 hours unless delivery or tracking is broken.',
@@ -406,7 +413,7 @@ const campaignPlan = {
 await fs.writeFile(path.join(OUT, 'campaign-plan.json'), `${JSON.stringify(campaignPlan, null, 2)}\n`);
 
 const cards = exportsList.map((x, i) => `<article><img src="${path.basename(x.feedPath)}" alt="${esc(x.headline)}"><div><span>AD ${i + 1}</span><h2>${esc(x.headline)}</h2><p>${esc(x.primaryText)}</p><p><strong>Headline:</strong> ${esc(x.headline)}</p><p><strong>Description:</strong> ${esc(x.description)}</p></div></article>`).join('');
-const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Balance Founders Pass Meta Campaign</title><style>body{margin:0;background:#0e0714;color:#fff;font:16px/1.55 Arial,sans-serif}header{padding:48px max(24px,5vw);background:linear-gradient(135deg,#241130,#130b1b)}h1{font-size:clamp(36px,6vw,76px);line-height:.95;margin:12px 0}header p{max-width:760px;color:#e9dff0}main{padding:36px max(20px,4vw);display:grid;gap:36px}article{display:grid;grid-template-columns:minmax(280px,520px) 1fr;gap:36px;align-items:start;background:#1d1028;border:1px solid #432653;border-radius:24px;padding:20px}img{width:100%;border-radius:14px}span{color:#ffb21a;font-weight:900;letter-spacing:2px}h2{font-size:34px;line-height:1.05}p{color:#ddd0e5}@media(max-width:800px){article{grid-template-columns:1fr}header{padding-top:30px}}</style></head><body><header><span>READY FOR REVIEW</span><h1>Balance Founders Pass<br>Meta Campaign</h1><p>Six distinct message-led creative routes. Campaign defaults to PAUSED, AU$20 per day, Australia broad 24–54, Instagram Direct conversations.</p></header><main>${cards}</main></body></html>`;
+const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Balance Founders Pass Meta Campaign</title><style>body{margin:0;background:#f7f2e8;color:#241a12;font:16px/1.55 Arial,sans-serif}header{padding:48px max(24px,5vw);background:linear-gradient(135deg,#fff9ed,#eadcc2);border-bottom:8px solid #d8a43a}h1{font-size:clamp(36px,6vw,76px);line-height:.95;margin:12px 0}header p{max-width:760px;color:#5b4a3a}main{padding:36px max(20px,4vw);display:grid;gap:36px}article{display:grid;grid-template-columns:minmax(280px,520px) 1fr;gap:36px;align-items:start;background:#fff9ed;border:1px solid #d8a43a;border-radius:24px;padding:20px;box-shadow:0 18px 44px #6b4d241c}img{width:100%;border-radius:14px}span{color:#a96f00;font-weight:900;letter-spacing:2px}h2{font-size:34px;line-height:1.05}p{color:#5b4a3a}@media(max-width:800px){article{grid-template-columns:1fr}header{padding-top:30px}}</style></head><body><header><span>READY FOR REVIEW</span><h1>Balance: Plant-Based Fitness<br>Founders Pass</h1><p>Brain-aware change, small clear steps, and plant-based community support. Campaign defaults to PAUSED, AU$20 per day, Australia broad 24–54, Instagram Direct conversations.</p></header><main>${cards}</main></body></html>`;
 await fs.writeFile(path.join(OUT, 'review.html'), html);
 
 console.log(JSON.stringify({ outDir: OUT, exports: exportsList.map(x => ({ id: x.id, boardId: x.boardId, feedPath: x.feedPath, storyPath: x.storyPath })) }, null, 2));

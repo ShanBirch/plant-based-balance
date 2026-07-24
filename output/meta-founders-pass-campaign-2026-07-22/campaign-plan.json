@@ -1,8 +1,8 @@
 {
-  "name": "BAL | Founders Pass | IG DM | AU | 2026-07-22",
+  "name": "BAL | Plant-Based Founders Pass | Brain Angle | IG DM | AU | 2026-07-24",
   "status": "PAUSED",
   "objective": "Instagram Direct conversations",
-  "offer": "Balance Vegan Fitness Founders Pass, AU$99 once",
+  "offer": "Balance: Plant-Based Fitness Founders Pass, AU$99 once",
   "conversionLocation": "Instagram Direct",
   "optimization": "Conversations",
   "audience": {
@@ -31,75 +31,86 @@
   "adSet": "Broad Australia | 24-54 | IG Direct",
   "ads": [
     {
-      "name": "A1 | Six weeks with Shannon, AU$99 once",
+      "name": "A1 | You have not failed. The plan was wrong.",
       "rollout": "phase_1_launch",
       "creative": {
         "feed": "01-coach-in-your-corner-feed-1080x1350.png",
         "story": "01-coach-in-your-corner-story-1080x1920.png"
       },
-      "primaryText": "Getting fit should not mean figuring everything out alone. The Balance Founders Pass gives you six weeks of one-to-one in-app support from me for questions, direction and accountability, plus lifetime access to the core app and plant-based community. AU$99 once. Send me “BALANCE” and I’ll help you work out if it fits.",
-      "headline": "Six weeks with Shannon, AU$99 once",
-      "description": "Lifetime core Balance app + plant-based community access",
+      "primaryText": "You have not failed. The plan was wrong. It was not built around your brain, what you have been through, or what you are dealing with now. Inside Balance, I coach plant-based people with small, clear steps that fit their current starting point. The Founders Pass is AU$99 once. Message “BALANCE” and I will show you what is included.",
+      "headline": "You have not failed. The plan was wrong.",
+      "description": "Plant-based coaching built around real life",
       "callToAction": "Send message"
     },
     {
-      "name": "A2 | Stop restarting. Build a rhythm.",
-      "rollout": "phase_1_launch",
+      "name": "A2 | Small steps. A rhythm that lasts.",
+      "rollout": "phase_2_reserve",
       "creative": {
         "feed": "02-stop-restarting-feed-1080x1350.png",
         "story": "02-stop-restarting-story-1080x1920.png"
       },
-      "primaryText": "Another perfect plan is not the answer if it only lasts a week. Balance brings your training, progress and support into one place, with six weeks of coaching support from me to help you build a rhythm you can actually keep. Message “BALANCE” for the Founders Pass details.",
-      "headline": "Stop restarting. Build a rhythm.",
-      "description": "Six weeks of support + lifetime core access",
+      "primaryText": "Real change is not about finding more motivation or forcing more effort. Your brain learns through repetition, and your environment shapes what gets repeated. Balance gives plant-based people small, clear steps and six weeks of support to build a rhythm that fits real life. Message “BALANCE” for the Founders Pass details.",
+      "headline": "Small steps. A rhythm that lasts.",
+      "description": "Change made clearer for plant-based people",
       "callToAction": "Send message"
     },
     {
       "name": "A3 | Six weeks with Shannon. Lifetime core access.",
-      "rollout": "phase_1_launch",
+      "rollout": "phase_2_reserve",
       "creative": {
         "feed": "03-six-weeks-lifetime-access-feed-1080x1350.png",
         "story": "03-six-weeks-lifetime-access-story-1080x1920.png"
       },
-      "primaryText": "The Balance Vegan Fitness Founders Pass is simple: pay AU$99 once, get six weeks of one-to-one in-app coaching support from me, then keep lifetime access to the core Balance app and plant-based community. No sales call needed. Message me for the details.",
+      "primaryText": "The Balance: Plant-Based Fitness Founders Pass is simple. Pay AU$99 once, get six weeks of one-to-one in-app coaching support from me, then keep lifetime access to the core Balance app and plant-based community. Message “BALANCE” and I will show you what is included.",
       "headline": "Six weeks with Shannon. Lifetime core access.",
-      "description": "The Vegan Fitness Founders Pass",
+      "description": "The Balance: Plant-Based Fitness Founders Pass",
       "callToAction": "Send message"
     },
     {
       "name": "A4 | Plant-based fitness, made clearer",
-      "rollout": "phase_2_reserve",
+      "rollout": "phase_1_launch",
       "creative": {
         "feed": "04-plant-based-clarity-feed-1080x1350.png",
         "story": "04-plant-based-clarity-story-1080x1920.png"
       },
-      "primaryText": "Plant-based fitness does not need more noise. Balance puts training, vegan nutrition and progress tools together, with six weeks of coaching support from me when you need direction. The Founders Pass is AU$99 once and includes lifetime core app and community access. Message “BALANCE” for details.",
+      "primaryText": "Plant-based fitness does not need more noise. Balance puts training, nutrition and progress tools together, with small, clear steps and six weeks of coaching support from me when you need direction. The Founders Pass is AU$99 once and includes lifetime core app and community access. Message “BALANCE” for details.",
       "headline": "Plant-based fitness, made clearer",
       "description": "Training, nutrition, progress and support",
       "callToAction": "Send message"
     },
     {
       "name": "A5 | Plant-based fitness is better together",
-      "rollout": "phase_2_reserve",
+      "rollout": "phase_1_launch",
       "creative": {
         "feed": "05-not-doing-it-alone-feed-1080x1350.png",
         "story": "05-not-doing-it-alone-story-1080x1920.png"
       },
-      "primaryText": "Balance is more than a workout tracker. It is a plant-based community where training, progress and support live together. The Founders Pass includes six weeks with me in your corner, then lifetime access to the core app and community. AU$99 once. Message “BALANCE” to see what is included.",
+      "primaryText": "Your environment shapes what gets repeated. Balance gives you a plant-based community where training, progress and support live together. The Founders Pass includes six weeks with me in your corner, then lifetime access to the core app and community. AU$99 once. Message “BALANCE” to see what is included.",
       "headline": "Plant-based fitness is better together",
       "description": "Join the Balance founding members",
       "callToAction": "Send message"
     },
     {
-      "name": "A6 | Vegan fitness, built by someone who gets it",
+      "name": "A6 | Plant-based fitness, built for real life",
       "rollout": "phase_2_reserve",
       "creative": {
         "feed": "06-built-by-shannon-feed-1080x1350.png",
         "story": "06-built-by-shannon-story-1080x1920.png"
       },
-      "primaryText": "I built Balance because vegan fitness should feel less lonely and less complicated. I’m an exercise scientist, former gym owner and vegan coach. The Founders Pass gives you six weeks of coaching support with me, plus lifetime core app and plant-based community access for AU$99 once. Send me a message and I’ll talk you through it.",
-      "headline": "Vegan fitness, built by someone who gets it",
+      "primaryText": "I built Balance because plant-based fitness should feel less lonely and less complicated. I am an exercise scientist and former gym owner, and I coach change through small, clear steps that fit real life. The Founders Pass gives you six weeks of coaching support with me, plus lifetime core app and plant-based community access for AU$99 once. Message “BALANCE” and I will talk you through it.",
+      "headline": "Plant-based fitness, built for real life",
       "description": "Meet Shannon and the Balance Founders Pass",
+      "callToAction": "Send message"
+    },
+    {
+      "name": "V1 | You have not failed. The plan was wrong.",
+      "rollout": "phase_1_launch",
+      "creative": {
+        "reels": "balance-founders-pass-brain-ad-cream-gold-final.mp4"
+      },
+      "primaryText": "You have not failed. The plan was wrong. It was not built around your brain, what you have been through, or what you are dealing with now. Your brain learns through repetition, and your environment shapes what gets repeated. Inside Balance, I coach plant-based people with small, clear steps built around their current starting point. The Founders Pass is a one-off payment of AU$99. Message “BALANCE” and I will show you what is included.",
+      "headline": "Change built around your real life",
+      "description": "Balance: Plant-Based Fitness Founders Pass",
       "callToAction": "Send message"
     }
   ],
@@ -114,12 +125,13 @@
   },
   "rollout": {
     "phase1": [
-      "A1 | Six weeks with Shannon, AU$99 once",
-      "A2 | Stop restarting. Build a rhythm.",
-      "A3 | Six weeks with Shannon. Lifetime core access."
+      "A1 | You have not failed. The plan was wrong.",
+      "A4 | Plant-based fitness, made clearer",
+      "A5 | Plant-based fitness is better together",
+      "V1 | You have not failed. The plan was wrong."
     ],
     "phase1Days": 7,
-    "phase2": "Introduce one reserve ad at a time to replace the weakest phase-one route. Do not split AU$20 per day across all six ads at launch."
+    "phase2": "Introduce one reserve ad at a time to replace the weakest launch route. Do not run every creative at once on an AU$20 daily budget."
   },
   "decisionRules": [
     "Do not edit during the first 72 hours unless delivery or tracking is broken.",
