@@ -57,5 +57,7 @@ test('Founders Pass onboarding captures the real-world blocker behind consistenc
     assert.match(onboarding, /function getWizardRecommendedStarterFrequency/);
     assert.match(onboarding, /function selectWizardRoutineWindow/);
     assert.match(onboarding, /function selectWizardStarterMinutes/);
+    assert.match(onboarding, /Your chosen starting routine/);
+    assert.match(onboarding, /you chose \$\{displayedFrequency\}/);
     assert.match(onboarding, /Change anything below if another choice suits you better/);
 });

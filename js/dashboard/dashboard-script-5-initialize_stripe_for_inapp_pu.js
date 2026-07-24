@@ -11245,6 +11245,8 @@ function renderWizardStarterRoutineRecommendation() {
     const container = document.getElementById('wizard-starter-routine-summary');
     if (!container) return;
     const routine = getWizardStarterRoutine();
+    const displayedFrequency = wizardTrainingFrequency || routine.frequency;
+    const frequencyWasChanged = !!wizardTrainingFrequency && wizardTrainingFrequency !== routine.frequency;
     const reasonParts = [];
     if (routine.capacityLabel) reasonParts.push(`you said ${routine.capacityLabel.toLowerCase()}`);
     if (routine.competingPriorities) reasonParts.push(`you described the week as "${routine.competingPriorities}"`);
@@ -11255,13 +11257,16 @@ function renderWizardStarterRoutineRecommendation() {
 
     container.innerHTML = '';
     const title = document.createElement('strong');
-    title.textContent = 'Balance suggests starting here';
+    title.textContent = frequencyWasChanged ? 'Your chosen starting routine' : 'Balance suggests starting here';
     const plan = document.createElement('div');
     plan.style.cssText = 'font-size:1.02rem; font-weight:800; color:#5f4516; margin:5px 0 4px;';
-    plan.textContent = `${routine.frequency} x ${routine.minutes}-minute sessions - ${routine.windowLabel}`;
+    plan.textContent = `${displayedFrequency} x ${routine.minutes}-minute sessions - ${routine.windowLabel}`;
     const detail = document.createElement('div');
     detail.style.cssText = 'font-size:0.78rem; line-height:1.45; color:#705b33;';
-    detail.textContent = `Why: ${reason}.${belowMaximum} Keep the minimum light until following through feels normal, then progress one thing at a time. Change anything below if another choice suits you better.`;
+    const overrideText = frequencyWasChanged
+        ? ` Balance suggested ${routine.frequency} from your answers, and you chose ${displayedFrequency}.`
+        : '';
+    detail.textContent = `Why: ${reason}.${belowMaximum}${overrideText} Keep the minimum light until following through feels normal, then progress one thing at a time. Change anything below if another choice suits you better.`;
     container.append(title, plan, detail);
 
     const windowSelect = document.getElementById('wizard-routine-window-choice');
@@ -11271,7 +11276,7 @@ function renderWizardStarterRoutineRecommendation() {
         btn.style.background = selected ? '#9b711d' : '#fffaf0';
         btn.style.color = selected ? '#fff' : '#5f4516';
     });
-    if (!wizardTrainingFrequency) selectTrainingFrequency(routine.frequency);
+    if (!wizardTrainingFrequency) selectTrainingFrequency(routine.frequency, { skipRoutineRender: true });
 }
 
 function saveWizardRoutineChoice(key, value) {
@@ -11301,7 +11306,7 @@ function selectWizardStarterMinutes(minutes) {
     saveWizardRoutineChoice('starter_session_minutes', String(value));
 }
 
-function selectTrainingFrequency(num) {
+function selectTrainingFrequency(num, options = {}) {
     wizardTrainingFrequency = num;
     document.getElementById('wizard-training-frequency').value = num;
 
@@ -11333,6 +11338,7 @@ function selectTrainingFrequency(num) {
 
     applyWizardTrainingDays(suggestedDays);
     updateDaysCounter();
+    if (!options.skipRoutineRender) renderWizardStarterRoutineRecommendation();
 }
 
 function toggleTrainingDay(day) {
