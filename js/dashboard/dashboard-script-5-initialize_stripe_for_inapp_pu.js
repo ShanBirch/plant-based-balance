@@ -7119,6 +7119,43 @@ function parseWizardMeasurementInput(step, raw) {
     return null;
 }
 
+const WIZARD_WEEKLY_CAPACITY_LABELS = {
+    one_or_two: '1-2 reliable windows',
+    three: '3 reliable windows',
+    four_plus: '4+ reliable windows',
+    varies: 'It changes week to week'
+};
+
+const WIZARD_ROUTINE_WINDOW_LABELS = {
+    before_day: 'Before the day starts',
+    midday: 'Lunch or midday',
+    after_work: 'After work or school',
+    evening: 'Later in the evening',
+    varies: 'It changes day to day'
+};
+
+function getWizardRecommendedStarterFrequency(answers = wizardChatAnswers || {}) {
+    if (answers.weekly_capacity === 'three') return 3;
+    if (answers.weekly_capacity === 'four_plus') return 3;
+    return 2;
+}
+
+function getWizardStarterRoutine(answers = wizardChatAnswers || {}) {
+    const minutes = Math.max(10, Math.min(30, Number(answers.starter_session_minutes) || 15));
+    return {
+        frequency: getWizardRecommendedStarterFrequency(answers),
+        minutes,
+        windowLabel: WIZARD_ROUTINE_WINDOW_LABELS[answers.routine_window] || 'The easiest repeatable time',
+        capacityLabel: WIZARD_WEEKLY_CAPACITY_LABELS[answers.weekly_capacity] || '',
+        competingPriorities: String(answers.competing_priorities || '').trim()
+    };
+}
+
+function getWizardStarterRoutineSummary(answers = wizardChatAnswers || {}) {
+    const routine = getWizardStarterRoutine(answers);
+    return `${routine.frequency} x ${routine.minutes}-minute sessions, around ${routine.windowLabel.toLowerCase()}`;
+}
+
 const WIZARD_CHAT_STEPS = [
     {
         key: 'goal_setup_ready',
@@ -7191,6 +7228,49 @@ const WIZARD_CHAT_STEPS = [
         question: 'What usually knocks you off track when life gets messy?',
         placeholder: 'Time, stress, all-or-nothing thinking, not knowing what to do...',
         minLength: 3
+    },
+    {
+        key: 'competing_priorities',
+        type: 'text',
+        question: 'What does a normal week actually have to fit around?',
+        prelude: 'This is where most plans get it wrong. We will build around your real life, not an imaginary quiet week.',
+        placeholder: 'Work hours, kids, study, caring, travel, shift work...',
+        minLength: 3
+    },
+    {
+        key: 'weekly_capacity',
+        type: 'choice',
+        question: 'On a busy but normal week, how many training windows could you genuinely protect?',
+        options: [
+            { value: 'one_or_two', label: WIZARD_WEEKLY_CAPACITY_LABELS.one_or_two },
+            { value: 'three', label: WIZARD_WEEKLY_CAPACITY_LABELS.three },
+            { value: 'four_plus', label: WIZARD_WEEKLY_CAPACITY_LABELS.four_plus },
+            { value: 'varies', label: WIZARD_WEEKLY_CAPACITY_LABELS.varies }
+        ]
+    },
+    {
+        key: 'routine_window',
+        type: 'choice',
+        question: 'Which time is least likely to get stolen by everything else?',
+        options: [
+            { value: 'before_day', label: WIZARD_ROUTINE_WINDOW_LABELS.before_day },
+            { value: 'midday', label: WIZARD_ROUTINE_WINDOW_LABELS.midday },
+            { value: 'after_work', label: WIZARD_ROUTINE_WINDOW_LABELS.after_work },
+            { value: 'evening', label: WIZARD_ROUTINE_WINDOW_LABELS.evening },
+            { value: 'varies', label: WIZARD_ROUTINE_WINDOW_LABELS.varies }
+        ]
+    },
+    {
+        key: 'starter_session_minutes',
+        type: 'choice',
+        question: 'On your busiest normal day, what size session would still feel easy to finish?',
+        prelude: 'We start lighter than your maximum. The first win is teaching your brain that this is something you follow through on.',
+        options: [
+            { value: '10', label: '10 minutes' },
+            { value: '15', label: '15 minutes' },
+            { value: '20', label: '20 minutes' },
+            { value: '30', label: '30 minutes' }
+        ]
     },
     { key: 'goal_weight', type: 'measurement', measurement: 'weight', question: getWizardGoalWeightQuestion, placeholder: getWizardGoalWeightPlaceholder, optional: true },
     {
@@ -7842,7 +7922,7 @@ function askWizardChatQuestion(options = {}) {
     const step = getWizardChatStep();
     if (!step) {
         wizardChatComplete = true;
-        wizardChatMessages = [{ role: 'coach', text: 'Perfect. I have enough to set your first plan up properly. Next we will lock in your training week.' }];
+        wizardChatMessages = [{ role: 'coach', text: `Perfect. Based on your real week, I would start with ${getWizardStarterRoutineSummary()}. We will keep that minimum light until following through feels normal, then progress it. It is a suggestion, so you can change the frequency and exact days next.` }];
         renderWizardChatMessages();
         renderWizardChatProgress();
         renderWizardChatControls();
@@ -8083,6 +8163,11 @@ function saveWizardChatIntakeToInputs() {
     setWizardFieldValue('wizard-weekly-goal-focus-labels', JSON.stringify(weeklyGoalFocusLabels));
     setWizardFieldValue('wizard-chat-freeform', JSON.stringify(wizardChatFreeformAnswers || {}));
     setWizardFieldValue('wizard-main-blocker', answers.main_blocker);
+    setWizardFieldValue('wizard-competing-priorities', answers.competing_priorities);
+    setWizardFieldValue('wizard-weekly-capacity', answers.weekly_capacity);
+    setWizardFieldValue('wizard-routine-window', answers.routine_window);
+    setWizardFieldValue('wizard-starter-session-minutes', answers.starter_session_minutes);
+    setWizardFieldValue('wizard-recommended-frequency', getWizardRecommendedStarterFrequency(answers));
     setWizardFieldValue('wizard-why-now', answers.why_now);
     setWizardFieldValue('wizard-long-term-goal', answers.long_term_goal);
     setWizardFieldValue('wizard-independence-goal', answers.independence_goal);
@@ -9720,6 +9805,10 @@ function updateWizardUI() {
         renderWizardWeeklyGoalRoutine();
     }
 
+    if(currentWizardStep === 4) {
+        renderWizardStarterRoutineRecommendation();
+    }
+
     if(currentWizardStep === 6) {
         renderWizardExercisePreferenceChips();
     }
@@ -10251,6 +10340,11 @@ async function wizardNext() {
             .filter(item => item.label);
         const goalCatcher = {
             main_blocker: document.getElementById('wizard-main-blocker')?.value.trim() || '',
+            competing_priorities: document.getElementById('wizard-competing-priorities')?.value.trim() || '',
+            weekly_capacity: document.getElementById('wizard-weekly-capacity')?.value || '',
+            routine_window: document.getElementById('wizard-routine-window')?.value || '',
+            starter_session_minutes: parseInt(document.getElementById('wizard-starter-session-minutes')?.value || '0', 10) || null,
+            recommended_training_frequency: parseInt(document.getElementById('wizard-recommended-frequency')?.value || '0', 10) || null,
             why_now: document.getElementById('wizard-why-now')?.value.trim() || '',
             long_term_goal: document.getElementById('wizard-long-term-goal')?.value.trim() || '',
             independence_goal: document.getElementById('wizard-independence-goal')?.value.trim() || '',
@@ -10288,6 +10382,11 @@ async function wizardNext() {
             onboarding_chat_freeform: onboardingChatFreeform,
             goal_catcher: goalCatcher,
             main_blocker: goalCatcher.main_blocker,
+            competing_priorities: goalCatcher.competing_priorities,
+            weekly_capacity: goalCatcher.weekly_capacity,
+            routine_window: goalCatcher.routine_window,
+            starter_session_minutes: goalCatcher.starter_session_minutes,
+            recommended_training_frequency: goalCatcher.recommended_training_frequency,
             why_now: goalCatcher.why_now,
             long_term_goal: goalCatcher.long_term_goal,
             independence_goal: goalCatcher.independence_goal
@@ -11140,6 +11239,66 @@ function applyWizardTrainingDays(days) {
     if (hiddenInput) {
         hiddenInput.value = Array.from(wizardSelectedDays).join(',');
     }
+}
+
+function renderWizardStarterRoutineRecommendation() {
+    const container = document.getElementById('wizard-starter-routine-summary');
+    if (!container) return;
+    const routine = getWizardStarterRoutine();
+    const reasonParts = [];
+    if (routine.capacityLabel) reasonParts.push(`you said ${routine.capacityLabel.toLowerCase()}`);
+    if (routine.competingPriorities) reasonParts.push(`you described the week as "${routine.competingPriorities}"`);
+    const reason = reasonParts.join(', and ') || 'it leaves deliberate room for a messy week';
+    const belowMaximum = wizardChatAnswers.weekly_capacity === 'four_plus'
+        ? ' We are suggesting less than your maximum at first so the plan stays repeatable.'
+        : '';
+
+    container.innerHTML = '';
+    const title = document.createElement('strong');
+    title.textContent = 'Balance suggests starting here';
+    const plan = document.createElement('div');
+    plan.style.cssText = 'font-size:1.02rem; font-weight:800; color:#5f4516; margin:5px 0 4px;';
+    plan.textContent = `${routine.frequency} x ${routine.minutes}-minute sessions - ${routine.windowLabel}`;
+    const detail = document.createElement('div');
+    detail.style.cssText = 'font-size:0.78rem; line-height:1.45; color:#705b33;';
+    detail.textContent = `Why: ${reason}.${belowMaximum} Keep the minimum light until following through feels normal, then progress one thing at a time. Change anything below if another choice suits you better.`;
+    container.append(title, plan, detail);
+
+    const windowSelect = document.getElementById('wizard-routine-window-choice');
+    if (windowSelect) windowSelect.value = wizardChatAnswers.routine_window || 'varies';
+    document.querySelectorAll('.starter-minutes-btn').forEach(btn => {
+        const selected = parseInt(btn.dataset.minutes, 10) === routine.minutes;
+        btn.style.background = selected ? '#9b711d' : '#fffaf0';
+        btn.style.color = selected ? '#fff' : '#5f4516';
+    });
+    if (!wizardTrainingFrequency) selectTrainingFrequency(routine.frequency);
+}
+
+function saveWizardRoutineChoice(key, value) {
+    wizardChatAnswers[key] = value;
+    const inputIds = {
+        routine_window: 'wizard-routine-window',
+        starter_session_minutes: 'wizard-starter-session-minutes'
+    };
+    setWizardFieldValue(inputIds[key], value);
+    let existingData = {};
+    try { existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
+    existingData[key] = key === 'starter_session_minutes' ? Number(value) : value;
+    if (existingData.goal_catcher && typeof existingData.goal_catcher === 'object') {
+        existingData.goal_catcher[key] = existingData[key];
+    }
+    sessionStorage.setItem('userProfile', JSON.stringify(existingData));
+    renderWizardStarterRoutineRecommendation();
+}
+
+function selectWizardRoutineWindow(value) {
+    if (!WIZARD_ROUTINE_WINDOW_LABELS[value]) return;
+    saveWizardRoutineChoice('routine_window', value);
+}
+
+function selectWizardStarterMinutes(minutes) {
+    const value = Math.max(10, Math.min(30, Number(minutes) || 15));
+    saveWizardRoutineChoice('starter_session_minutes', String(value));
 }
 
 function selectTrainingFrequency(num) {

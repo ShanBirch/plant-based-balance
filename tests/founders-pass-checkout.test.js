@@ -50,4 +50,12 @@ test('Founders Pass onboarding captures the real-world blocker behind consistenc
     assert.match(onboarding, /Let\\'s set up your goals one small answer at a time/);
     assert.match(onboarding, /key: 'main_blocker'[\s\S]*?What usually knocks you off track when life gets messy/);
     assert.match(onboarding, /setWizardFieldValue\('wizard-main-blocker', answers\.main_blocker\)/);
+    assert.match(onboarding, /key: 'competing_priorities'[\s\S]*?What does a normal week actually have to fit around/);
+    assert.match(onboarding, /key: 'weekly_capacity'[\s\S]*?how many training windows could you genuinely protect/);
+    assert.match(onboarding, /key: 'routine_window'[\s\S]*?least likely to get stolen/);
+    assert.match(onboarding, /key: 'starter_session_minutes'[\s\S]*?what size session would still feel easy to finish/i);
+    assert.match(onboarding, /function getWizardRecommendedStarterFrequency/);
+    assert.match(onboarding, /function selectWizardRoutineWindow/);
+    assert.match(onboarding, /function selectWizardStarterMinutes/);
+    assert.match(onboarding, /Change anything below if another choice suits you better/);
 });

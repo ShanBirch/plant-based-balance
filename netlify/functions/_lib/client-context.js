@@ -198,7 +198,7 @@ const APP_NAVIGATION_GUIDE = `
 BALANCE APP AND ONBOARDING GUIDE:
 - Use this as product grounding when somebody asks what Balance does, is setting up, or is stuck. Give only the shortest relevant steps. Never dump the full feature list into a normal DM and never invent a button, screen, saved state, payment state, or completed fix.
 - Founders Pass path: the branded page is https://plantbased-balance.org/plant-based-fitness.html. It explains the AU$99 one-time offer, collects legal acceptance, and opens Stripe Checkout. Payment is not complete until Stripe confirms it. After a successful purchase, the buyer is taken to https://plantbased-balance.org/login.html?action=signup to create or access their Balance account.
-- New-member setup begins after signup. The conversational intake asks for name, age, height, current weight, first-30-day direction, three realistic weekly anchors, the main thing that knocks them off track, optional goal weight, training location/equipment, activity and energy, dietary requirements, learning interests, and optional Instagram handle.
+- New-member setup begins after signup. The conversational intake asks for name, age, height, current weight, first-30-day direction, three realistic weekly anchors, the main thing that knocks them off track, real competing priorities such as work/kids/study/caring, reliable weekly capacity, the least-disrupted time window, an intentionally easy starter-session length, optional goal weight, training location/equipment, activity and energy, dietary requirements, learning interests, and optional Instagram handle.
 - The rest of onboarding personalises the starting experience: training frequency/split and exercise likes or avoids, a weekly workout preview, cuisine/favourite-food/dislike/cooking-time preferences for meals, optional character and profile photo setup, then the first three Weekly Goals. Their onboarding answers are available as coaching context, so use the person's actual goal, blocker, equipment, food restrictions, learning interests, and weekly anchors instead of asking for them again.
 - If setup is interrupted, first establish the exact stage: payment page, account creation/login, conversational intake, training setup, nutrition setup, profile/character, Weekly Goals, or the main app. Do not send a generic restart instruction. Give the next step for that stage or route a real access/data problem into app support.
 - Home: main dashboard, character, Weekly Goals, weight/daily weigh-in, progress, streaks, achievements, mood/energy/stress check-ins, friend nudges, and weekly progress cards.
@@ -209,6 +209,8 @@ BALANCE APP AND ONBOARDING GUIDE:
 - Other available systems include challenges, quiz/friend battles, custom trackers and checklists, cycle tracking, wearable connections, XP/coins, notifications and in-app coach messages. Explain these only when relevant and use the separate XP guide for reward amounts.
 - Settings, help and tours: tap the profile/settings icon in the top right, then Health Tools. Replay App Tour is there, along with other account/health tools. Do not default to replaying the tour when one precise instruction solves the problem.
 - Support truth rule: check live account, payment, onboarding, app data, and the visible path before saying something is fixed, missing, paid, active, saved or complete. A linked client's completion reply stays in Needs You for Shannon approval. If the exact path is uncertain, say what you can verify and route the issue instead of guessing.
+- Balance change method: do not sell "more motivation" or make inflated neuroscience claims. Explain that the brain gets better at predicting and automating what it repeatedly sees the person do. First map the real week and the competing demands likely to win, then suggest a minimum action so light it can still happen on a messy day. Explain why the suggestion fits their answers and let the person make the final decision about frequency, time and days. Keep that chosen minimum steady long enough to build evidence and identity around following through, then progress one variable at a time, usually frequency, duration, difficulty, or load.
+- If a lead asks how the brain angle works, answer in two or three casual sentences, connect it to their actual life, then ask at most one useful question. A good first question is: "what does a normal week actually have to fit around?" Follow with the least-disrupted time or realistic capacity only when the answer changes the recommendation. Never diagnose them or claim the method literally rewires the subconscious on a guaranteed timeline.
 `;
 
 function buildAppNavigationGuideBlock() {
@@ -1192,6 +1194,11 @@ function buildClientProfileBlock({ clientName = 'Client', profile = {}, customDa
     };
     addGoalLine('thirty_day_win', '30-day win');
     addGoalLine('main_blocker', 'Main blocker');
+    addGoalLine('competing_priorities', 'Competing priorities');
+    addGoalLine('weekly_capacity', 'Reliable weekly capacity');
+    addGoalLine('routine_window', 'Least-disrupted routine window');
+    addGoalLine('starter_session_minutes', 'Starter session minutes');
+    addGoalLine('recommended_training_frequency', 'Recommended starting frequency');
     addGoalLine('why_now', 'Why now');
     addGoalLine('long_term_goal', 'Long-term goal');
     addGoalLine('independence_goal', 'Independence goal');
@@ -3662,6 +3669,10 @@ async function loadOnboardingPhase(coachId, clientId, { windowHours = 72 } = {})
         }
         if (pd.goalBodyType) phase.onboardingFacts.push(`Body type goal: ${pd.goalBodyType}`);
         if (pd.training_frequency) phase.onboardingFacts.push(`Training frequency: ${pd.training_frequency}x/week`);
+        if (pd.recommended_training_frequency) phase.onboardingFacts.push(`Recommended starting frequency: ${pd.recommended_training_frequency}x/week`);
+        if (pd.starter_session_minutes) phase.onboardingFacts.push(`Starter session: ${pd.starter_session_minutes} minutes`);
+        if (pd.routine_window) phase.onboardingFacts.push(`Least-disrupted routine window: ${pd.routine_window}`);
+        if (pd.competing_priorities) phase.onboardingFacts.push(`Competing priorities: ${pd.competing_priorities}`);
         if (pd.equipment_access) phase.onboardingFacts.push(`Equipment: ${pd.equipment_access}`);
         const exercisePrefs = pd.exercise_preferences || {};
         if (Array.isArray(exercisePrefs.liked_exercises) && exercisePrefs.liked_exercises.length) {

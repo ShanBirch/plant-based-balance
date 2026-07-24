@@ -12,8 +12,21 @@ test('DM drafting knowledge covers the paid handoff and real onboarding stages',
     assert.match(guide, /login\.html\?action=signup/);
     assert.match(guide, /three realistic weekly anchors/i);
     assert.match(guide, /main thing that knocks them off track/i);
+    assert.match(guide, /real competing priorities such as work\/kids\/study\/caring/i);
+    assert.match(guide, /intentionally easy starter-session length/i);
     assert.match(guide, /payment page, account creation\/login, conversational intake/i);
     assert.match(guide, /training setup, nutrition setup, profile\/character, Weekly Goals/i);
+});
+
+test('DM drafting knowledge explains the brain angle without taking control away', () => {
+    const guide = buildAppNavigationGuideBlock();
+
+    assert.match(guide, /brain gets better at predicting and automating what it repeatedly sees the person do/i);
+    assert.match(guide, /minimum action so light it can still happen on a messy day/i);
+    assert.match(guide, /let the person make the final decision/i);
+    assert.match(guide, /progress one variable at a time/i);
+    assert.match(guide, /Never diagnose them/i);
+    assert.match(guide, /what does a normal week actually have to fit around/i);
 });
 
 test('DM drafting knowledge maps every primary app tab and avoids invented fixes', () => {

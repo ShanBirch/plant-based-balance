@@ -13392,7 +13392,7 @@ if(!window._pbbIsIOSSafari) {
       } },
     { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'6-Week Challenge', body:"The 6-week challenge sits under your character on Home. Tap it to open the leaderboard or check how to earn XP.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you as it levels up with you.", quick: true, condition: function(){ return !(typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden()); } },
-    { tab:'dashboard', sel:'#weekly-goals-card', title:'Weekly goals', body:"Choose up to 3 goals for the week. Balance tracks the exact signals you picked and carries the results into Weekly Wrapped.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
+    { tab:'dashboard', sel:'#weekly-goals-card', title:'Weekly goals', body:"Start with targets light enough to repeat in a messy week. Keep the minimum steady until it feels normal, then progress one thing at a time. Balance tracks what you picked and carries it into Weekly Wrapped.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#next-obvious-steps-card', title:'Next steps', body:"Balance now gives you three clear actions for the day, aligned to your weekly goals and linked straight to the right part of the app.", quick: true, condition: function(){ try { return window.pbbNextSteps && window.pbbNextSteps.isPreviewEligible && window.pbbNextSteps.isPreviewEligible() && !!document.querySelector('#next-obvious-steps-card .next-step-action'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#weekly-meal-evolution-home-card', title:'Next week, tailored to you', body:"Track a useful week of meals and Balance will keep the foods you enjoy, make small adjustments toward your targets, and introduce two fresh variations for next week.", quick: true, condition: function(){ var c = document.getElementById('weekly-meal-evolution-home-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
@@ -14238,6 +14238,21 @@ if(!window._pbbIsIOSSafari) {
       title: 'Weekly Goals',
       body: "Pick up to 3 goals for the week. Choose body, training, food, recovery, Health IQ, or community, then watch progress build into your Wrapped.",
       condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; }
+    },
+    {
+      id: 'repeatable-start-v1',
+      tab: 'dashboard',
+      sel: '#weekly-goals-card',
+      title: 'Your repeatable start',
+      body: "Balance suggests a light starting routine from the week you described, but you choose the final frequency, time and days. Keep your minimum steady until following through feels normal, then build from there.",
+      condition: function(){
+        var c = document.getElementById('weekly-goals-card');
+        if (!c || c.style.display === 'none') return false;
+        try {
+          var p = JSON.parse(localStorage.getItem('userProfile') || '{}');
+          return !!(p.starter_session_minutes && p.recommended_training_frequency);
+        } catch(e) { return false; }
+      }
     },
     {
       id: 'next-obvious-steps-private-preview-v1',
@@ -15498,6 +15513,11 @@ if(!window._pbbIsIOSSafari) {
                 <input type="hidden" id="wizard-weekly-goal-focus-labels" value="">
                 <input type="hidden" id="wizard-chat-freeform" value="">
                 <input type="hidden" id="wizard-main-blocker" value="">
+                <input type="hidden" id="wizard-competing-priorities" value="">
+                <input type="hidden" id="wizard-weekly-capacity" value="">
+                <input type="hidden" id="wizard-routine-window" value="">
+                <input type="hidden" id="wizard-starter-session-minutes" value="">
+                <input type="hidden" id="wizard-recommended-frequency" value="">
                 <input type="hidden" id="wizard-why-now" value="">
                 <input type="hidden" id="wizard-long-term-goal" value="">
                 <input type="hidden" id="wizard-independence-goal" value="">
@@ -15734,7 +15754,28 @@ if(!window._pbbIsIOSSafari) {
             <div class="wizard-slide" id="slide-4" style="display:none;">
                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🏋️</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Design Your Training Week</h3>
-                <p style="text-align:center; color:#666; margin-bottom:20px;">How many days per week do you want to train?</p>
+                <p style="text-align:center; color:#666; margin-bottom:14px;">Here is a suggested start from the week you described. You make the final call.</p>
+
+                <div id="wizard-starter-routine-summary" style="margin:0 0 18px; padding:14px 15px; border:1px solid #d7aa45; border-radius:12px; background:linear-gradient(135deg,#fffaf0,#f6e6bd); color:#5f4516; box-shadow:0 5px 16px rgba(154,112,27,0.12);"></div>
+
+                <label for="wizard-routine-window-choice" style="display:block; color:#5f4516; font-size:0.82rem; font-weight:700; margin-bottom:6px;">Best routine time</label>
+                <select id="wizard-routine-window-choice" onchange="selectWizardRoutineWindow(this.value)" style="width:100%; padding:11px 12px; margin-bottom:14px; border:1px solid #d7aa45; border-radius:10px; background:#fffaf0; color:#3f3017; font-weight:600;">
+                    <option value="before_day">Before the day starts</option>
+                    <option value="midday">Lunch or midday</option>
+                    <option value="after_work">After work or school</option>
+                    <option value="evening">Later in the evening</option>
+                    <option value="varies">It changes day to day</option>
+                </select>
+
+                <p style="color:#5f4516; font-size:0.82rem; font-weight:700; margin-bottom:7px;">Easy starting session</p>
+                <div style="display:flex; justify-content:center; gap:7px; flex-wrap:wrap; margin-bottom:17px;">
+                    <button type="button" onclick="selectWizardStarterMinutes(10)" class="starter-minutes-btn" data-minutes="10" style="padding:8px 11px; border:1px solid #d7aa45; border-radius:999px; background:#fffaf0; color:#5f4516; font-weight:700; cursor:pointer;">10 min</button>
+                    <button type="button" onclick="selectWizardStarterMinutes(15)" class="starter-minutes-btn" data-minutes="15" style="padding:8px 11px; border:1px solid #d7aa45; border-radius:999px; background:#fffaf0; color:#5f4516; font-weight:700; cursor:pointer;">15 min</button>
+                    <button type="button" onclick="selectWizardStarterMinutes(20)" class="starter-minutes-btn" data-minutes="20" style="padding:8px 11px; border:1px solid #d7aa45; border-radius:999px; background:#fffaf0; color:#5f4516; font-weight:700; cursor:pointer;">20 min</button>
+                    <button type="button" onclick="selectWizardStarterMinutes(30)" class="starter-minutes-btn" data-minutes="30" style="padding:8px 11px; border:1px solid #d7aa45; border-radius:999px; background:#fffaf0; color:#5f4516; font-weight:700; cursor:pointer;">30 min</button>
+                </div>
+
+                <p style="text-align:center; color:#666; margin-bottom:10px; font-weight:600;">Suggested frequency, tap to change</p>
 
                 <!-- Frequency Selector -->
                 <div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-bottom:20px;">
