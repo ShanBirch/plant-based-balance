@@ -26,8 +26,10 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 - Facebook Pixel: `1928402271406692`.
 - Pricing:
   - Balance Plant-Based Fitness Founders Pass: AUD $99 once. Six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included.
-  - App + Group: $20/month.
-  - Balance Starter Coaching: $29.99/week, optional upgrade for individual weekly review and adjustment from Shannon.
+  - Balance App + Community: AUD $19.99/month for self-directed ongoing app/community access, tailored workout structure and Weekly Goals, without weekly one-to-one review.
+  - Balance Starter Coaching: AUD $29.99/week for one weekly check-in plus workout and food review/adjustments from Shannon.
+  - Balance Coaching + Calls: AUD $99.99/week for Starter Coaching plus one weekly live call and deeper review.
+  - Route by fit instead of forcing the Founders Pass: guided kickstart/reset -> Founders Pass; self-directed app/community -> App + Community; personalised weekly review/adjustments -> Starter Coaching; regular live calls/deeper support -> Coaching + Calls. Use `https://plantbased-balance.org/coaching.html` for recurring-plan comparison and checkout.
 
 ## Strategy
 

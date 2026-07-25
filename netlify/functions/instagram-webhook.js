@@ -25,6 +25,7 @@ const {
     normalizeCoachDraftText,
     fireCoachEditAnalysis,
     isAlwaysNeedsYouPerson,
+    insertCoachAlert,
 } = require('./_lib/client-context');
 const {
     resolveMetaIgAccountConfig,
@@ -2167,10 +2168,14 @@ async function linkContentInteractionToGraphMessage({ graphMessageId, threadId, 
 }
 
 async function dispatchDraft({ thread, messageText, dedupeId }) {
+    // Persist an actionable shell before any model/provider work starts. If
+    // the background draft worker or its AI provider fails, the inbound still
+    // appears in Needs You and the reconcile pass can retry the empty draft.
+    await ensureInboundAlertShell({ thread, messageText, dedupeId });
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), DRAFT_DISPATCH_TIMEOUT_MS);
     try {
-        await fetch(`${SITE_URL}/.netlify/functions/ig-instant-draft-background`, {
+        const response = await fetch(`${SITE_URL}/.netlify/functions/ig-instant-draft-background`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             signal: controller.signal,
@@ -2185,6 +2190,11 @@ async function dispatchDraft({ thread, messageText, dedupeId }) {
                 customData: thread.custom_data || {},
             }),
         });
+        if (!response.ok) {
+            const details = await response.text().catch(() => '');
+            console.warn('[instagram-webhook] draft dispatch returned non-OK:', response.status, details.slice(0, 220));
+            return false;
+        }
         return true;
     } catch (err) {
         console.warn('[instagram-webhook] draft dispatch failed:', err.message);
@@ -2192,6 +2202,45 @@ async function dispatchDraft({ thread, messageText, dedupeId }) {
     } finally {
         clearTimeout(timeout);
     }
+}
+
+async function ensureInboundAlertShell({ thread, messageText, dedupeId }) {
+    if (!thread?.id || !dedupeId) return { alertId: null, deduped: true };
+    const leadName = String(thread.profile_name || thread.ig_username || 'Instagram lead').trim();
+    const preview = String(messageText || '').replace(/\s+/g, ' ').trim().slice(0, 400);
+    const graph = safeObject(thread.custom_data?.instagram_graph);
+    return insertCoachAlert({
+        client_id: thread.linked_user_id || null,
+        client_name: leadName,
+        coach_id: thread.coach_id || null,
+        alert_type: 'ig_incoming_dm',
+        priority: 'high',
+        title: `${leadName} just DM'd on Instagram`,
+        description: `"${preview.slice(0, 200)}"`,
+        suggested_message: null,
+        status: 'pending',
+        data: {
+            channel: 'instagram',
+            delivery_channel: 'instagram_graph',
+            subscriber_id: thread.subscriber_id || null,
+            ig_thread_id: thread.id,
+            ig_username: thread.ig_username || null,
+            profile_name: thread.profile_name || null,
+            lead_stage: thread.lead_stage || 'new',
+            manychat_message_id: dedupeId,
+            message_preview: preview,
+            draft_messages: [],
+            draft_text: '',
+            draft_model: 'pending',
+            draft_error: 'draft_generation_pending',
+            drafted_at: null,
+            ig_graph_recipient_id: graph.ig_graph_user_id || null,
+            ig_graph_account_id: graph.ig_account_id || graph.account_id || graph.owner_id || null,
+            instagram_graph: Object.keys(graph).length ? graph : null,
+            alert_shell_created_at: new Date().toISOString(),
+            alert_shell_source: 'instagram_webhook_before_draft',
+        },
+    }, `ig_incoming_dm:${dedupeId}`);
 }
 
 async function dispatchMediaProcessing(igMessageId) {
@@ -2435,9 +2484,11 @@ async function shouldRecoverMissingDraftForDedupedInbound({ thread, dedupeId, me
     const idempotencyKey = `ig_incoming_dm:${dedupeId}`;
     try {
         const exactRows = await supabase(
-            `coach_alerts?select=id,status&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
+            `coach_alerts?select=id,status,suggested_message,scheduled_reply_text,data&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
         );
-        if (exactRows.length) return false;
+        if (exactRows.length) {
+            return alertNeedsDraftRecovery(exactRows[0]);
+        }
     } catch (err) {
         console.warn('[instagram-webhook] reconcile exact alert lookup failed:', err.message);
         return false;
@@ -2452,6 +2503,17 @@ async function shouldRecoverMissingDraftForDedupedInbound({ thread, dedupeId, me
         console.warn('[instagram-webhook] reconcile active alert lookup failed:', err.message);
         return false;
     }
+}
+
+function alertNeedsDraftRecovery(alert = {}) {
+    const data = safeObject(alert.data);
+    const hasDraft = !!String(
+        alert.suggested_message
+        || alert.scheduled_reply_text
+        || data.draft_text
+        || ''
+    ).trim();
+    return alert.status === 'pending' && !hasDraft;
 }
 
 function relatedThreadIdsForGraphEcho({ thread, threadId }) {
@@ -2925,6 +2987,7 @@ exports._test = {
     buildGoldCoastWebsiteUrl,
     buildGoldCoastWebsitePrivateReply,
     commentPrivateReplyDedupeId,
+    alertNeedsDraftRecovery,
 };
 
 exports._internal = {

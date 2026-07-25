@@ -38,3 +38,15 @@ test('DM drafting knowledge maps every primary app tab and avoids invented fixes
     assert.match(guide, /check live account, payment, onboarding, app data/i);
     assert.match(guide, /instead of guessing/i);
 });
+
+test('DM drafting knowledge knows all active packages and routes personalised coaching by fit', () => {
+    const guide = buildAppNavigationGuideBlock();
+
+    assert.match(guide, /App \+ Community, AU\$19\.99\/month/i);
+    assert.match(guide, /Starter Coaching, AU\$29\.99\/week/i);
+    assert.match(guide, /Coaching \+ Calls, AU\$99\.99\/week/i);
+    assert.match(guide, /personalised, individual, one-to-one or weekly plan adjustment usually fits Starter Coaching/i);
+    assert.match(guide, /regular calls, deeper live support.+fits Coaching \+ Calls/i);
+    assert.match(guide, /coaching\.html/);
+    assert.match(guide, /Do not dump all four packages/i);
+});

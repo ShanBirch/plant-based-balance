@@ -70,5 +70,20 @@ assert.strictEqual(
     webhookTest.timestampIsoFromMessaging({ item: { message: { created_time: '2026-05-25T01:02:03+0000' } }, value: {} }),
     '2026-05-25T01:02:03.000Z'
 );
+assert.strictEqual(webhookTest.alertNeedsDraftRecovery({
+    status: 'pending',
+    suggested_message: null,
+    data: { draft_text: '', draft_error: 'draft_generation_pending' },
+}), true);
+assert.strictEqual(webhookTest.alertNeedsDraftRecovery({
+    status: 'pending',
+    suggested_message: 'yeah absolutely',
+    data: { draft_text: 'yeah absolutely' },
+}), false);
+assert.strictEqual(webhookTest.alertNeedsDraftRecovery({
+    status: 'sent',
+    suggested_message: null,
+    data: { draft_text: '' },
+}), false);
 
 console.log('meta ig reconcile inbox tests passed');
