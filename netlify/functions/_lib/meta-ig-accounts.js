@@ -1,5 +1,33 @@
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 
+// Stable account routing belongs in the deployed resolver so every function
+// sees the same ownership without consuming the Lambda environment budget.
+// Access tokens remain in Netlify/Supabase secrets; these are lookup keys only.
+const BUILT_IN_ACCOUNT_MAP = Object.freeze({
+    '17841415641641750': Object.freeze({
+        ownerId: '17841415641641750',
+        accountId: '17841415641641750',
+        botAccount: 'shan_n_sunny',
+        accessToken: '',
+        accessTokenEnv: '',
+        tokenSecretKey: 'meta_ig_access_token_17841415641641750',
+        autoDraftMessages: true,
+        autoDraftStoryReplies: null,
+        autoSendMessages: true,
+    }),
+    '17841422424052111': Object.freeze({
+        ownerId: '17841422424052111',
+        accountId: '17841422424052111',
+        botAccount: 'goldcoast_ai_solutions',
+        accessToken: '',
+        accessTokenEnv: '',
+        tokenSecretKey: 'meta_ig_access_token_goldcoast_ai_solutions',
+        autoDraftMessages: null,
+        autoDraftStoryReplies: null,
+        autoSendMessages: null,
+    }),
+});
+
 function cleanString(value, max = 500) {
     return String(value || '').trim().slice(0, max);
 }
@@ -87,7 +115,10 @@ function getMetaIgAccountMap() {
         || '';
     if (raw === cachedRawMap && cachedMap) return cachedMap;
     cachedRawMap = raw;
-    cachedMap = parseMetaIgAccountMap(raw);
+    cachedMap = {
+        ...BUILT_IN_ACCOUNT_MAP,
+        ...parseMetaIgAccountMap(raw),
+    };
     return cachedMap;
 }
 
@@ -220,6 +251,7 @@ module.exports = {
     buildGraphSubscriberId,
     legacyGraphSubscriberIds,
     _test: {
+        BUILT_IN_ACCOUNT_MAP,
         sanitizeEnvSuffix,
         accountTokenEnvCandidates,
         accountSecretKeyCandidates,

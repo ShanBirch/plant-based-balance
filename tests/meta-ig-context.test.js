@@ -11,6 +11,7 @@ const {
 } = require('../netlify/functions/_lib/meta-ig-context');
 const {
     parseMetaIgAccountMap,
+    resolveMetaIgAccountConfig,
     buildGraphSubscriberId,
     legacyGraphSubscriberIds,
 } = require('../netlify/functions/_lib/meta-ig-accounts');
@@ -185,6 +186,14 @@ assert.strictEqual(accountMap['17841499999999999'].botAccount, 'cocos_pt_studio'
 assert.strictEqual(accountMap['17841499999999999'].accessTokenEnv, 'META_IG_COCOS_ACCESS_TOKEN');
 assert.strictEqual(accountMap['17841499999999999'].autoDraftMessages, true);
 assert.strictEqual(accountMap['17841499999999999'].autoSendMessages, true);
+const shannonAccount = resolveMetaIgAccountConfig('17841415641641750');
+assert.strictEqual(shannonAccount.botAccount, 'shan_n_sunny');
+assert.strictEqual(shannonAccount.tokenSecretKey, 'meta_ig_access_token_17841415641641750');
+assert.strictEqual(shannonAccount.autoDraftMessages, true);
+assert.strictEqual(shannonAccount.autoSendMessages, true);
+const goldCoastAccount = resolveMetaIgAccountConfig('17841422424052111');
+assert.strictEqual(goldCoastAccount.botAccount, 'goldcoast_ai_solutions');
+assert.strictEqual(goldCoastAccount.tokenSecretKey, 'meta_ig_access_token_goldcoast_ai_solutions');
 assert.strictEqual(buildGraphSubscriberId('17841499999999999', '555222111'), 'ig_graph:17841499999999999:555222111');
 assert.deepStrictEqual(legacyGraphSubscriberIds('555222111'), ['meta_ig:555222111', 'ig_graph:555222111']);
 
