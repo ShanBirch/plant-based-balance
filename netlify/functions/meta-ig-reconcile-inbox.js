@@ -114,6 +114,23 @@ function addAccount(accounts, ownerId, hints = {}) {
         ownerId: cleanOwnerId,
         accountId: cleanOwnerId,
         botAccount: existing.botAccount || resolved.botAccount || hints.botAccount || null,
+        lastActivityAt: newestIso(existing.lastActivityAt, hints.lastActivityAt),
+    });
+}
+
+function newestIso(left, right) {
+    const leftMs = Date.parse(left || '');
+    const rightMs = Date.parse(right || '');
+    if (!Number.isFinite(leftMs)) return Number.isFinite(rightMs) ? right : null;
+    if (!Number.isFinite(rightMs)) return left;
+    return rightMs > leftMs ? right : left;
+}
+
+function sortAccountsByRecentActivity(accounts = []) {
+    return [...accounts].sort((left, right) => {
+        const leftMs = Date.parse(left?.lastActivityAt || '') || 0;
+        const rightMs = Date.parse(right?.lastActivityAt || '') || 0;
+        return rightMs - leftMs;
     });
 }
 
@@ -121,22 +138,23 @@ async function discoverRecentGraphAccounts(accounts) {
     const sinceIso = new Date(Date.now() - LOOKBACK_HOURS * 60 * 60 * 1000).toISOString();
     try {
         const rows = await supabaseQuery(
-            `ig_graph_webhook_events?select=ig_account_id&ig_account_id=not.is.null&created_at=gte.${encodeURIComponent(sinceIso)}&order=created_at.desc&limit=200`
+            `ig_graph_webhook_events?select=ig_account_id,created_at&ig_account_id=not.is.null&created_at=gte.${encodeURIComponent(sinceIso)}&order=created_at.desc&limit=200`
         );
-        rows.forEach(row => addAccount(accounts, row.ig_account_id));
+        rows.forEach(row => addAccount(accounts, row.ig_account_id, { lastActivityAt: row.created_at }));
     } catch (err) {
         console.warn('[meta-ig-reconcile-inbox] recent webhook account discovery failed:', err.message);
     }
 
     try {
         const rows = await supabaseQuery(
-            `ig_threads?select=custom_data&channel=eq.instagram&updated_at=gte.${encodeURIComponent(sinceIso)}&order=updated_at.desc&limit=200`
+            `ig_threads?select=custom_data,updated_at&channel=eq.instagram&updated_at=gte.${encodeURIComponent(sinceIso)}&order=updated_at.desc&limit=200`
         );
         rows.forEach(row => {
             const data = row?.custom_data && typeof row.custom_data === 'object' ? row.custom_data : {};
             const graph = data.instagram_graph && typeof data.instagram_graph === 'object' ? data.instagram_graph : {};
             addAccount(accounts, data.owner_ig_user_id || data.ig_graph_account_id || graph.account_id || graph.owner_id || graph.ig_account_id, {
                 botAccount: data.bot_account || graph.bot_account || null,
+                lastActivityAt: row.updated_at,
             });
         });
     } catch (err) {
@@ -161,7 +179,9 @@ async function configuredAccounts() {
         }
     });
     await discoverRecentGraphAccounts(accounts);
-    return [...accounts.values()].filter(account => cleanId(account.ownerId));
+    return sortAccountsByRecentActivity(
+        [...accounts.values()].filter(account => cleanId(account.ownerId))
+    );
 }
 
 function normalizeEdgeRows(value) {
@@ -495,4 +515,6 @@ exports._test = {
     messageIsRecent,
     isScheduledInvocation,
     isAuthorized,
+    newestIso,
+    sortAccountsByRecentActivity,
 };

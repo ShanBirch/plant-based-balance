@@ -1891,6 +1891,10 @@ function isMetaAdFastLaneEligible({ linkedUserId = null, customData = {}, manych
     return isCurrentMetaAdInbound({ customData, manychatMessageId });
 }
 
+function isBalanceLeadAutoSendEnabled({ linkedUserId = null, threadAutoSendEnabled = false } = {}) {
+    return !linkedUserId && threadAutoSendEnabled === true;
+}
+
 function getCocosCodexReviewHold({ cocosAutoSendLane, voiceReplyTestLane, approvedCoachingLinkHandoff, metaAdFastLane } = {}) {
     if (!cocosAutoSendLane) return null;
     if (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane) return null;
@@ -3958,9 +3962,12 @@ exports.handler = async (event) => {
         customData: thread.custom_data,
         currentMessage: messageText,
     });
-    const balanceAutoSendCandidate = !!thread.auto_send_enabled;
+    const balanceLeadAutoSendLane = isBalanceLeadAutoSendEnabled({
+        linkedUserId: thread.linked_user_id,
+        threadAutoSendEnabled: thread.auto_send_enabled,
+    });
     const autoSendEnabled = !linkedClientNeedsYou
-        && (cocosAutoSendLane || voiceReplyTestLane || metaAdFastLane);
+        && (balanceLeadAutoSendLane || cocosAutoSendLane || voiceReplyTestLane || metaAdFastLane);
 
     // Idempotency — when ManyChat supplied a message_id, reuse it. Otherwise
     // fall back to thread+timestamp (less robust but better than nothing
@@ -4631,7 +4638,9 @@ exports.handler = async (event) => {
             conversation_episode_reason: draft.conversationEpisode?.reason || 'continuous_thread',
             conversation_episode_new: draft.conversationEpisode?.isNewEpisode === true,
             auto_send_enabled_at_draft: autoSendEnabled,
-            auto_send_default_reason: metaAdFastLane ? 'meta_ad_fast_lane' : (cocosAutoSendLane ? 'cocos_auto_lane' : undefined),
+            auto_send_default_reason: metaAdFastLane
+                ? 'meta_ad_fast_lane'
+                : (balanceLeadAutoSendLane ? 'balance_ai_coach_lane' : (cocosAutoSendLane ? 'cocos_auto_lane' : undefined)),
             auto_send_allow_immediate: false,
             auto_send_fast_lane_delay_ms: (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane)
                 ? IG_FAST_LANE_DELAY_MS
@@ -4819,7 +4828,11 @@ exports.handler = async (event) => {
             algorithm_scope: botAccount || existingPending.data?.algorithm_scope || 'balance_default',
             algorithm_fork: algorithmFork,
             auto_send_enabled_at_draft: autoSendEnabled,
-            auto_send_default_reason: metaAdFastLane ? 'meta_ad_fast_lane' : (cocosAutoSendLane ? 'cocos_auto_lane' : existingPending.data?.auto_send_default_reason),
+            auto_send_default_reason: metaAdFastLane
+                ? 'meta_ad_fast_lane'
+                : (balanceLeadAutoSendLane
+                    ? 'balance_ai_coach_lane'
+                    : (cocosAutoSendLane ? 'cocos_auto_lane' : existingPending.data?.auto_send_default_reason)),
             auto_send_allow_immediate: false,
             auto_send_fast_lane_delay_ms: (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane)
                 ? IG_FAST_LANE_DELAY_MS
@@ -5369,8 +5382,8 @@ exports.handler = async (event) => {
             console.warn('[ig-draft] auto schedule failed, falling back to approve-gate:', e.message);
         }
     }
-    if (!autoHandled && balanceAutoSendCandidate && !cocosAutoSendLane) {
-        console.log(`[ig-draft] Balance auto-send deferred to Codex manager review for thread ${thread.id}`);
+    if (!autoHandled && balanceLeadAutoSendLane && !cocosAutoSendLane) {
+        console.log(`[ig-draft] Balance AI coach did not auto-schedule thread ${thread.id}; preserving its explicit hold for review`);
     }
 
     // Auto DMs now always schedule through schedule-coach-reply.
@@ -5529,6 +5542,7 @@ exports._test = {
     getBalanceAutoContextBypass,
     getAutoDmHoldReason,
     getCocosCodexReviewHold,
+    isBalanceLeadAutoSendEnabled,
     isCurrentMetaAdInbound,
     isMetaAdFastLaneEligible,
     resolveMetaAdFlowVariant,

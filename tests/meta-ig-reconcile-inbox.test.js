@@ -86,4 +86,18 @@ assert.strictEqual(webhookTest.alertNeedsDraftRecovery({
     data: { draft_text: '' },
 }), false);
 
+assert.deepStrictEqual(
+    reconcileTest.sortAccountsByRecentActivity([
+        { ownerId: 'older', lastActivityAt: '2026-07-25T01:00:00.000Z' },
+        { ownerId: 'configured-without-activity' },
+        { ownerId: 'fresh', lastActivityAt: '2026-07-25T21:17:46.000Z' },
+    ]).map(account => account.ownerId),
+    ['fresh', 'older', 'configured-without-activity'],
+    'the inbox account with the newest live DM must be polled before quiet configured accounts'
+);
+assert.strictEqual(
+    reconcileTest.newestIso('2026-07-25T20:00:00.000Z', '2026-07-25T21:17:46.000Z'),
+    '2026-07-25T21:17:46.000Z'
+);
+
 console.log('meta ig reconcile inbox tests passed');

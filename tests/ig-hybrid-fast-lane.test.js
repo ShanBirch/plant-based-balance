@@ -5,6 +5,19 @@ const sendIgReply = require('../netlify/functions/send-ig-reply')._test;
 const instagramWebhook = require('../netlify/functions/instagram-webhook')._test;
 const scheduledWorker = require('../netlify/functions/scheduled-coach-reply-worker')._test;
 
+assert.equal(instantDraft.isBalanceLeadAutoSendEnabled({
+    linkedUserId: null,
+    threadAutoSendEnabled: true,
+}), true, 'an explicitly enabled unlinked Balance lead belongs to the AI coach send lane');
+assert.equal(instantDraft.isBalanceLeadAutoSendEnabled({
+    linkedUserId: 'client-user-1',
+    threadAutoSendEnabled: true,
+}), false, 'linked clients remain approval-only even when an old thread toggle is true');
+assert.equal(instantDraft.isBalanceLeadAutoSendEnabled({
+    linkedUserId: null,
+    threadAutoSendEnabled: false,
+}), false, 'a disabled lead thread remains out of auto-send');
+
 const held = instantDraft.getCocosCodexReviewHold({
     cocosAutoSendLane: true,
     voiceReplyTestLane: false,
