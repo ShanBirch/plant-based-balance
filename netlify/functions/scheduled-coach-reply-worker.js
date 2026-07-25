@@ -41,6 +41,9 @@ const {
 // kicking in, it's either a worker outage or someone schedule-bombed the API.
 const MAX_PER_RUN = 25;
 const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
+const BALANCE_BOT_ACCOUNT = 'shan_n_sunny';
+const SIMPLE_OPENER_RE = /^(yo+|yoo+|hey+|heya+|hi+|hello+|hiya+|morning+|afternoon+|evening+|haha+|hahaha+|lol+|sup|what'?s up|whats up|thanks?|thank you|cheers|nice|sick|love it|haha yeah|yeah|yea|yep|yess?|yes|nah|no worries)[!?.\s]*$/i;
+const RISKY_REPLY_RE = /\b(challenge|join|joined|sign\s*up|signup|link|price|cost|program|plan|meal|workout|coach|coaching|injur|injury|pain|hurt|sore|hospital|doctor|medical|sorry|grief|death|died|anxiety|depress|sad|trauma|pregnan|calorie|macro|eating disorder)\b/i;
 const DEFAULT_COACHING_URL = 'https://plantbased-balance.org/plant-based-fitness.html';
 const AUTOMATED_PERMANENT_NEEDS_YOU_SCHEDULE_SOURCES = new Set([
     'auto_send',
@@ -247,8 +250,28 @@ function hasCocosAutoContextBypass(data = {}) {
         || /review did not finish|review timeout|timed out/.test(summary);
 }
 
+function hasBalanceSafeOpenerContextBypass(data = {}) {
+    const botAccount = String(data.bot_account || data.instagram_graph?.bot_account || '').replace(/^@+/, '').toLowerCase();
+    const isBalance = botAccount === BALANCE_BOT_ACCOUNT || data.auto_send_default_reason === 'balance_ai_coach_lane';
+    const bypass = data.auto_send_context_bypass || {};
+    if (!isBalance || bypass.allowed !== true || bypass.reason !== 'safe_first_captured_opener') return false;
+    if (data.linked_client_manual_review === true || data.permanent_needs_you_draft_only === true) return false;
+    const review = data.draft_review || {};
+    const issues = Array.isArray(review.issues) ? review.issues.filter(Boolean) : [];
+    if (String(review.verdict || '').toLowerCase() !== 'pass' || issues.length) return false;
+    const inbound = String(data.message_preview || '').trim();
+    const draft = String(data.draft_text || '').trim();
+    return !!inbound
+        && SIMPLE_OPENER_RE.test(inbound)
+        && !!draft
+        && draft.length <= 260
+        && !RISKY_REPLY_RE.test(inbound)
+        && !RISKY_REPLY_RE.test(draft);
+}
+
 function hasAutoContextBypass(data = {}) {
     if (hasCocosAutoContextBypass(data)) return true;
+    if (hasBalanceSafeOpenerContextBypass(data)) return true;
     const bypass = data.auto_send_context_bypass || {};
     const reason = String(bypass.reason || '').toLowerCase();
     if (bypass.allowed !== true || !reason.startsWith('soft_review_timeout')) return false;
@@ -553,6 +576,7 @@ exports._test = {
     isAppSupportFastFixException,
     buildPermanentNeedsYouHold,
     hasCocosAutoContextBypass,
+    hasBalanceSafeOpenerContextBypass,
     hasAutoContextBypass,
     repairMissingScheduledLinkHandoff,
     getNewerInstagramInbound,

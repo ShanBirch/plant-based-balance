@@ -245,4 +245,41 @@ assert.equal(scheduledWorker.buildAutoSendReviewHold({
     },
 }).code, 'draft_review');
 
+const balanceSafeOpenerData = {
+    channel: 'instagram',
+    scheduled_via: 'auto_send',
+    bot_account: 'shan_n_sunny',
+    auto_send_default_reason: 'balance_ai_coach_lane',
+    message_preview: 'Yo',
+    draft_text: 'Morning haha what’s up?',
+    context_review: {
+        required: true,
+        reasons: [
+            'first_captured_reply_with_hidden_context',
+            'reference_heavy_reply_without_tracked_context',
+            'draft_review_none',
+        ],
+    },
+    draft_review: {
+        verdict: 'pass',
+        issues: [],
+        notification_required: true,
+        context_loss_suspected: true,
+    },
+    auto_send_context_bypass: {
+        allowed: true,
+        reason: 'safe_first_captured_opener',
+        draft_review_reason: 'passed_safe_opener',
+    },
+};
+assert.equal(scheduledWorker.hasBalanceSafeOpenerContextBypass(balanceSafeOpenerData), true);
+assert.equal(scheduledWorker.buildAutoSendReviewHold({
+    alert_type: 'ig_incoming_dm',
+    data: balanceSafeOpenerData,
+}), null, 'scheduled worker honors the reviewed Balance safe-opener bypass');
+assert.equal(scheduledWorker.hasBalanceSafeOpenerContextBypass({
+    ...balanceSafeOpenerData,
+    draft_text: 'Join my coaching program with this link',
+}), false, 'scheduled worker rejects risky text even with a stored bypass');
+
 console.log('ig-hybrid-fast-lane tests passed');
