@@ -37,8 +37,10 @@ const SYNC_SECRET = process.env.META_IG_SYNC_SECRET
 const LOOKBACK_HOURS = readInt(process.env.META_IG_RECONCILE_LOOKBACK_HOURS, 48, 1, 168);
 const CONVERSATION_LIMIT = readInt(process.env.META_IG_RECONCILE_CONVERSATION_LIMIT, 10, 1, 50);
 const MESSAGE_LIMIT = readInt(process.env.META_IG_RECONCILE_MESSAGE_LIMIT, 12, 1, 25);
-const MAX_MESSAGES_PER_RUN = readInt(process.env.META_IG_RECONCILE_MAX_MESSAGES, 40, 1, 200);
-const MAX_PAGES = readInt(process.env.META_IG_RECONCILE_MAX_PAGES, 2, 1, 6);
+// This is a missed-webhook safety net, not a historical backfill. Keep the
+// default pass inside Netlify's request window so it reaches draft recovery.
+const MAX_MESSAGES_PER_RUN = readInt(process.env.META_IG_RECONCILE_MAX_MESSAGES, 12, 1, 200);
+const MAX_PAGES = readInt(process.env.META_IG_RECONCILE_MAX_PAGES, 1, 1, 6);
 const MAX_RUNTIME_MS = readInt(process.env.META_IG_RECONCILE_MAX_RUNTIME_MS, 24000, 5000, 55000);
 
 function json(statusCode, body) {
