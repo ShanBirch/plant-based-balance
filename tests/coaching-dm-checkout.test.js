@@ -117,6 +117,9 @@ test('website sales chat uses the working OpenAI provider and shared compatibili
     assert.match(salesBot, /OPENAI_API_KEY/);
     assert.match(salesBot, /callOpenAIGeminiCompat/);
     assert.match(salesBot, /profile:\s*"coach_fallback"/);
+    assert.match(salesBot, /Personalized\/personalised coaching plan/);
+    assert.match(salesBot, /means Starter Coaching at AUD \$29\.99\/week/);
+    assert.match(salesBot, /Do not lead with Founders Pass/);
     assert.doesNotMatch(salesBot, /generativelanguage\.googleapis\.com/);
     assert.doesNotMatch(salesBot, /GEMINI_API_KEY/);
 });
