@@ -120,6 +120,46 @@ assert.strictEqual(
     assert.strictEqual(collected.conversationsScanned, 2);
     assert.strictEqual(collected.errors.length, 1, 'one inaccessible conversation is recorded');
     assert.deepStrictEqual(collected.replayMessages.map(message => message.id), ['krish-yo'], 'later valid DMs still replay');
+
+    let inlineFallbackCalls = 0;
+    const inlineCollected = await reconcileTest.collectRecentConversationMessages({
+        conversations: [{
+            id: 'inline-conversation',
+            updated_time: '2026-07-25T21:17:46.000Z',
+            messages: { data: [{ id: 'inline-yo', created_time: '2026-07-25T21:17:46.000Z', message: 'Yo' }] },
+        }],
+        token: 'test-token',
+        messageLimit: 12,
+        maxMessages: 40,
+        cutoffMs: Date.parse('2026-07-24T22:00:00.000Z'),
+        startedAt: 0,
+        now: () => 1,
+        fetchMessages: async () => {
+            inlineFallbackCalls += 1;
+            return [];
+        },
+    });
+    assert.strictEqual(inlineFallbackCalls, 0, 'inline conversation messages avoid slow per-thread Graph calls');
+    assert.deepStrictEqual(inlineCollected.replayMessages.map(message => message.id), ['inline-yo']);
+
+    let replayPayload = null;
+    const provided = await reconcileTest.processProvidedReplay({
+        replay_account_id: '17841415641641750',
+        replay_messages: [{
+            id: 'krish-yo',
+            created_time: '2026-07-25T21:17:46.000Z',
+            from: { id: '943978798707085', username: 'krishhh.dutt' },
+            to: { data: [{ id: '17841415641641750' }] },
+            message: 'Yo',
+        }],
+    }, async payload => {
+        replayPayload = payload;
+        return { processed: 1, inserted: 1, drafted: 1 };
+    });
+    assert.strictEqual(provided.ok, true);
+    assert.strictEqual(provided.provided_replay, true);
+    assert.strictEqual(replayPayload.entry[0].messaging[0].message.mid, 'krish-yo');
+    assert.strictEqual(replayPayload.entry[0].messaging[0].sender.username, 'krishhh.dutt');
     console.log('meta ig reconcile inbox tests passed');
 })().catch(error => {
     console.error(error);

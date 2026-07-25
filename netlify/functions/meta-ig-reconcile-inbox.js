@@ -213,13 +213,13 @@ async function graphGet(path, params, token) {
     return parsed;
 }
 
-async function fetchConversationPages({ accountId, token, limit, maxPages }) {
+async function fetchConversationPages({ accountId, token, limit, maxPages, messageLimit }) {
     const conversations = [];
     let after = '';
     for (let page = 0; page < maxPages; page += 1) {
         const data = await graphGet(`${accountId}/conversations`, {
             platform: 'instagram',
-            fields: 'id,updated_time,participants',
+            fields: `id,updated_time,participants,messages.limit(${messageLimit}){id,created_time,from,to,message,attachments}`,
             limit,
             after,
         }, token);
@@ -382,19 +382,22 @@ async function collectRecentConversationMessages({
         if (now() - startedAt > MAX_RUNTIME_MS) break;
         if (conversation.updated_time && timestampMs(conversation.updated_time) < cutoffMs) continue;
         conversationsScanned += 1;
-        let messages;
-        try {
-            messages = await fetchMessages({
-                conversationId: conversation.id,
-                token,
-                limit: messageLimit,
-            });
-        } catch (err) {
-            errors.push({
-                conversation_id: cleanId(conversation.id) || null,
-                error: String(err?.message || err || 'conversation_fetch_failed').slice(0, 500),
-            });
-            continue;
+        const hasInlineMessages = Object.prototype.hasOwnProperty.call(conversation || {}, 'messages');
+        let messages = hasInlineMessages ? normalizeEdgeRows(conversation.messages) : null;
+        if (!hasInlineMessages) {
+            try {
+                messages = await fetchMessages({
+                    conversationId: conversation.id,
+                    token,
+                    limit: messageLimit,
+                });
+            } catch (err) {
+                errors.push({
+                    conversation_id: cleanId(conversation.id) || null,
+                    error: String(err?.message || err || 'conversation_fetch_failed').slice(0, 500),
+                });
+                continue;
+            }
         }
         const recent = messages.filter(message => messageIsRecent(message, cutoffMs));
         messagesSeen += recent.length;
@@ -438,6 +441,7 @@ async function reconcileAccount({ account, body, startedAt }) {
         token,
         limit: conversationLimit,
         maxPages,
+        messageLimit,
     });
     const collected = await collectRecentConversationMessages({
         conversations,
@@ -474,6 +478,60 @@ async function reconcileAccount({ account, body, startedAt }) {
     return summary;
 }
 
+async function processProvidedReplay(body = {}, processor = instagramWebhookInternal?.processGraphMessages) {
+    const accountId = cleanId(body.replay_account_id ?? body.replayAccountId);
+    const supplied = Array.isArray(body.replay_messages ?? body.replayMessages)
+        ? (body.replay_messages ?? body.replayMessages).slice(0, 25)
+        : [];
+    if (!accountId || !supplied.length) return null;
+    if (typeof processor !== 'function') {
+        return { ok: false, error: 'instagram_webhook_processor_missing', accounts: [] };
+    }
+    const payload = buildWebhookPayloadFromMessages({ accountId, messages: supplied });
+    const replayed = payload.entry[0]?.messaging?.length || 0;
+    if (!replayed) {
+        return { ok: false, error: 'provided_replay_messages_invalid', accounts: [] };
+    }
+    const account = resolveMetaIgAccountConfig(accountId);
+    const graph = await processor(payload, new Map(), {
+        recoverMissingDrafts: true,
+        source: 'meta_ig_reconcile_provided_replay',
+    });
+    const summary = {
+        account_id: accountId,
+        bot_account: account.botAccount || null,
+        conversations_scanned: 0,
+        conversation_errors: [],
+        messages_seen: supplied.length,
+        messages_replayed: replayed,
+        graph: {
+            processed: graph.processed || 0,
+            inserted: graph.inserted || 0,
+            drafted: graph.drafted || 0,
+            skipped: graph.skipped || 0,
+            recoveredDrafts: graph.recoveredDrafts || 0,
+            outboundCleared: graph.outboundCleared || 0,
+        },
+        provided_replay: true,
+        error: null,
+    };
+    return {
+        ok: true,
+        provided_replay: true,
+        accounts: [summary],
+        totals: {
+            conversations_scanned: 0,
+            messages_seen: summary.messages_seen,
+            messages_replayed: summary.messages_replayed,
+            inserted: summary.graph.inserted,
+            drafted: summary.graph.drafted,
+            recoveredDrafts: summary.graph.recoveredDrafts,
+            skipped: summary.graph.skipped,
+            outboundCleared: summary.graph.outboundCleared,
+        },
+    };
+}
+
 async function reconcile(body = {}) {
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
         return { ok: false, error: 'supabase_env_missing', accounts: [] };
@@ -481,6 +539,8 @@ async function reconcile(body = {}) {
     if (!instagramWebhookInternal?.processGraphMessages) {
         return { ok: false, error: 'instagram_webhook_processor_missing', accounts: [] };
     }
+    const providedReplay = await processProvidedReplay(body);
+    if (providedReplay) return providedReplay;
     const startedAt = Date.now();
     const accounts = await configuredAccounts();
     const summaries = [];
@@ -554,6 +614,7 @@ exports._test = {
     isScheduledInvocation,
     isAuthorized,
     collectRecentConversationMessages,
+    processProvidedReplay,
     newestIso,
     sortAccountsByRecentActivity,
 };
