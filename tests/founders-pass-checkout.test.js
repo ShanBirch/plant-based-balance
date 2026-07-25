@@ -60,4 +60,19 @@ test('Founders Pass onboarding captures the real-world blocker behind consistenc
     assert.match(onboarding, /Your chosen starting routine/);
     assert.match(onboarding, /you chose \$\{displayedFrequency\}/);
     assert.match(onboarding, /Change anything below if another choice suits you better/);
+    assert.match(onboarding, /function getWizardUnavailableTrainingDays/);
+    assert.match(onboarding, /filter\(day => !unavailable\.has\(day\)\)/);
+    assert.match(onboarding, /competingPriorities\.replace\(\/\[\.\!\?\]\+\$\//);
+});
+
+test('meal-plan and Weekly Goals routes use durable production fields', () => {
+    const dashboard = read('dashboard.html');
+    const weeklyGoals = read('js/dashboard/pbb-deferred-weeklygoals.js');
+    const migration = read('supabase/migrations/20260725020647_create_user_food_preferences.sql');
+
+    assert.match(dashboard, /id="browse-plans-pill"[\s\S]*?onclick="openAiMealPlanView\(this\)"/);
+    assert.doesNotMatch(weeklyGoals, /select\('id,workout_name,template_name,created_at,workout_type'\)/);
+    assert.match(migration, /CREATE TABLE public\.user_food_preferences/);
+    assert.match(migration, /ALTER TABLE public\.user_food_preferences ENABLE ROW LEVEL SECURITY/);
+    assert.match(migration, /WITH CHECK \(auth\.uid\(\) = user_id\)/);
 });

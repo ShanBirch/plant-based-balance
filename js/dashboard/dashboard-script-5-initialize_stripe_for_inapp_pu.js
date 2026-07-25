@@ -11271,7 +11271,23 @@ function wizardCopyLink() {
 
 // ========== WORKOUT CALENDAR FUNCTIONS ==========
 
-function getWizardSuggestedTrainingDays(num) {
+function getWizardUnavailableTrainingDays(competingPriorities) {
+    const text = String(competingPriorities || '').toLowerCase();
+    const aliases = {
+        monday: ['monday', 'mondays', 'mon'],
+        tuesday: ['tuesday', 'tuesdays', 'tue', 'tues'],
+        wednesday: ['wednesday', 'wednesdays', 'wed'],
+        thursday: ['thursday', 'thursdays', 'thu', 'thur', 'thurs'],
+        friday: ['friday', 'fridays', 'fri'],
+        saturday: ['saturday', 'saturdays', 'sat'],
+        sunday: ['sunday', 'sundays', 'sun']
+    };
+    return new Set(Object.entries(aliases)
+        .filter(([, values]) => values.some(value => new RegExp(`\\b${value}\\b`, 'i').test(text)))
+        .map(([day]) => day));
+}
+
+function getWizardSuggestedTrainingDays(num, competingPriorities) {
     const suggestions = {
         2: ['monday', 'thursday'],
         3: ['monday', 'wednesday', 'friday'],
@@ -11280,7 +11296,16 @@ function getWizardSuggestedTrainingDays(num) {
         6: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
         7: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
     };
-    return (suggestions[num] || []).slice();
+    const unavailable = getWizardUnavailableTrainingDays(
+        competingPriorities === undefined ? wizardChatAnswers.competing_priorities : competingPriorities
+    );
+    const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const selected = (suggestions[num] || []).filter(day => !unavailable.has(day));
+    for (const day of dayOrder) {
+        if (selected.length >= num) break;
+        if (!unavailable.has(day) && !selected.includes(day)) selected.push(day);
+    }
+    return selected.sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
 }
 
 function formatWizardTrainingDays(days) {
@@ -11319,7 +11344,10 @@ function renderWizardStarterRoutineRecommendation() {
     const frequencyWasChanged = !!wizardTrainingFrequency && wizardTrainingFrequency !== routine.frequency;
     const reasonParts = [];
     if (routine.capacityLabel) reasonParts.push(`you said ${routine.capacityLabel.toLowerCase()}`);
-    if (routine.competingPriorities) reasonParts.push(`you described the week as "${routine.competingPriorities}"`);
+    if (routine.competingPriorities) {
+        const priorities = routine.competingPriorities.replace(/[.!?]+$/, '');
+        reasonParts.push(`you described the week as "${priorities}"`);
+    }
     const reason = reasonParts.join(', and ') || 'it leaves deliberate room for a messy week';
     const belowMaximum = wizardChatAnswers.weekly_capacity === 'four_plus'
         ? ' We are suggesting less than your maximum at first so the plan stays repeatable.'

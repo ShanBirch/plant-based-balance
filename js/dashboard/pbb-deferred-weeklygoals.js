@@ -633,7 +633,7 @@
         .order('workout_date', { ascending: true })
         .range(from, to)),
       safeQuery('custom workouts', () => supabase.from('workouts')
-        .select('id,workout_name,template_name,created_at,workout_type')
+        .select('id,template_name,created_at,workout_type')
         .eq('user_id', userId)
         .eq('workout_type', 'custom_template')
         .gte('created_at', startIso)
