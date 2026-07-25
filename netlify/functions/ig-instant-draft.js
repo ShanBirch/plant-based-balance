@@ -956,6 +956,7 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
         ? 'lifetime access to the core app and community.'
         : 'lifetime access to the core app and plant-based community.';
     const chunks = [
+        broadFlow ? 'Hey, yeah of course. Here is the quick version 👇' :
         `Hey, glad you messaged. Here is a quick look inside Balance so you can actually see what I mean 👇\n${FOUNDERS_PASS_APP_PREVIEW_URL}`,
         `${productLine}${fitLine}\n\nThe Founders Pass is AU$99 once. You get six weeks of one-to-one in-app support with me, then ${accessLine}\n\nYou can see everything included and start here: ${checkoutUrl}`,
     ];

@@ -26,6 +26,7 @@ test('broad ad route stays broad through the first DM and link handoff', () => {
     const reply = buildMetaAdFoundersPassFirstReply("What's included?", { flowVariant: 'broad_pain' });
     assert.equal(reply.flowVariant, 'broad_pain');
     assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian/i);
+    assert.doesNotMatch(reply.joined, /balance-founders-pass-dm-preview\.mp4/);
     assert.match(reply.joined, /future-balance\.netlify\.app\/fitness-coaching\.html/);
 });
 
