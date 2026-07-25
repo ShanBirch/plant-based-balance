@@ -489,6 +489,11 @@ body:has(#onboarding-wizard.active) #guest-signup-modal {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    pointer-events: none;
+}
+
+#fitgotchi-story-overlay.active .story-speech-area {
+    pointer-events: auto;
 }
 
 /* Individual speech bubble */

@@ -67,10 +67,14 @@ test('Founders Pass onboarding captures the real-world blocker behind consistenc
 
 test('meal-plan and Weekly Goals routes use durable production fields', () => {
     const dashboard = read('dashboard.html');
+    const dashboardStyle = read('css/dashboard/dashboard-style-2.css');
     const weeklyGoals = read('js/dashboard/pbb-deferred-weeklygoals.js');
     const migration = read('supabase/migrations/20260725020647_create_user_food_preferences.sql');
 
     assert.match(dashboard, /id="browse-plans-pill"[\s\S]*?onclick="openAiMealPlanView\(this\)"/);
+    assert.doesNotMatch(dashboard, /id="story-preload-models"[\s\S]{0,500}?document\.write/);
+    assert.match(dashboardStyle, /\.story-speech-area[\s\S]*?pointer-events: none/);
+    assert.match(dashboardStyle, /#fitgotchi-story-overlay\.active \.story-speech-area[\s\S]*?pointer-events: auto/);
     assert.doesNotMatch(weeklyGoals, /select\('id,workout_name,template_name,created_at,workout_type'\)/);
     assert.match(migration, /CREATE TABLE public\.user_food_preferences/);
     assert.match(migration, /ALTER TABLE public\.user_food_preferences ENABLE ROW LEVEL SECURITY/);
