@@ -1725,6 +1725,31 @@ function replyTimingHasDirectQuestion(text) {
     return /\?/.test(t) || /\b(what about you|where are you|what are you|how about you|do you|did you|are you|can you|could you|what should|how do i|where do i)\b/i.test(t);
 }
 
+function replyTimingActiveBackAndForth(alert) {
+    const data = alert?.data || {};
+    const lastOutboundAt = Date.parse(data.last_outbound_message?.created_at || data.ig_last_outbound_at || '');
+    if (!Number.isFinite(lastOutboundAt)) return null;
+
+    const inboundBatch = Array.isArray(data.inbound_message_batch) ? data.inbound_message_batch : [];
+    const recentInbound = Array.isArray(data.recent_inbound_messages) ? data.recent_inbound_messages : [];
+    const inboundTimes = inboundBatch.concat(recentInbound)
+        .map(message => Date.parse(message?.created_at || ''))
+        .filter(timestamp => Number.isFinite(timestamp) && timestamp >= lastOutboundAt)
+        .sort((a, b) => a - b);
+    if (!inboundTimes.length) return null;
+
+    const latestInboundAt = inboundTimes[inboundTimes.length - 1];
+    const responseGapMs = inboundTimes[0] - lastOutboundAt;
+    const exchangeSpanMs = latestInboundAt - lastOutboundAt;
+    if (responseGapMs > 10 * 60 * 1000 || exchangeSpanMs > 20 * 60 * 1000) return null;
+
+    return {
+        inbound_count: inboundTimes.length,
+        response_gap_ms: responseGapMs,
+        exchange_span_ms: exchangeSpanMs,
+    };
+}
+
 function replyTimingClampDelay(delayMs, minMs, maxMs) {
     const n = Number(delayMs);
     if (!Number.isFinite(n)) return minMs;
@@ -1844,6 +1869,7 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
     const directQuestion = replyTimingHasDirectQuestion(inboundText);
     const lowStakesRapport = smallTalkIntent && !supportFastIntent && !hotIntent;
     const lowSignalLongReply = replyLen >= 220 && inboundLen <= 160;
+    const activeBackAndForth = isManyChat ? replyTimingActiveBackAndForth(alert) : null;
 
     let delayMs = 15 * 60 * 1000;
     let reason = 'balanced pace, keeps it human without letting the thread cool';
@@ -1881,6 +1907,12 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
         delayMs = 5 * 60 * 1000;
         reason = 'onboarding needs quick back-and-forth while they are setting up';
         confidence = 0.76;
+    } else if (activeBackAndForth) {
+        delayMs = activeBackAndForth.inbound_count >= 2 ? 2 * 60 * 1000 : 5 * 60 * 1000;
+        reason = activeBackAndForth.inbound_count >= 2
+            ? 'active rapid back-and-forth, keep pace with the live conversation'
+            : 'active back-and-forth, reply while the conversation is live';
+        confidence = 0.9;
     } else if (isLead && lowStakesRapport) {
         delayMs = directQuestion ? 30 * 60 * 1000 : 45 * 60 * 1000;
         if (lowSignalLongReply) delayMs = Math.max(delayMs, 60 * 60 * 1000);
@@ -1915,7 +1947,7 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
     }
 
     const learnedTiming = replyTimingLearnedProfile(alert);
-    if (learnedTiming && alert.priority !== 'urgent' && !hotIntent) {
+    if (learnedTiming && alert.priority !== 'urgent' && !hotIntent && !activeBackAndForth) {
         if (supportFastIntent) {
             if (learnedTiming.delay_ms <= delayMs) {
                 delayMs = learnedTiming.delay_ms;
@@ -1975,6 +2007,9 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
             active_onboarding: isOnboarding,
             post_onboarding_client: isConverted,
             low_signal_long_reply: lowSignalLongReply,
+            active_back_and_forth: !!activeBackAndForth,
+            active_exchange_inbound_count: activeBackAndForth?.inbound_count || 0,
+            active_exchange_response_gap_ms: activeBackAndForth?.response_gap_ms ?? null,
             reply_chars: replyLen,
             inbound_chars: inboundLen,
             learned_timing: learnedTiming ? {

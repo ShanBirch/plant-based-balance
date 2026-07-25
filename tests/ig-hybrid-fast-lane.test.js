@@ -93,6 +93,16 @@ const legacyImmediateTiming = instantDraft.normalizeIgAutoTimingSuggestion({
 assert.equal(legacyImmediateTiming.action, 'schedule');
 assert.equal(legacyImmediateTiming.delay_ms, 15 * 60 * 1000);
 
+const activeExchangeTiming = instantDraft.normalizeIgAutoTimingSuggestion({
+    timingSuggestion: {
+        delay_ms: 2 * 60 * 1000,
+        reason: 'active rapid back-and-forth',
+        signals: { active_back_and_forth: true },
+    },
+});
+assert.equal(activeExchangeTiming.action, 'schedule');
+assert.equal(activeExchangeTiming.delay_ms, 2 * 60 * 1000);
+
 const textTypingDelay = sendIgReply.resolveFirstItemTypingDelayMs({
     kind: 'text',
     text: 'quick reply',

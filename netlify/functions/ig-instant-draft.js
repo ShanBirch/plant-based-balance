@@ -432,9 +432,14 @@ function formatAutoDelayLabel(delayMs) {
 
 function normalizeIgAutoTimingSuggestion({ timingSuggestion, delayMs, timingLabel, fastLaneDelayMs = null }) {
     const requestedFastLaneDelayMs = Number(fastLaneDelayMs);
-    const useFastLaneDelay = Number.isFinite(requestedFastLaneDelayMs) && requestedFastLaneDelayMs > 0;
+    const activeExchangeDelayMs = timingSuggestion?.signals?.active_back_and_forth === true
+        ? Number(timingSuggestion?.delay_ms)
+        : NaN;
+    const useExplicitFastLane = Number.isFinite(requestedFastLaneDelayMs) && requestedFastLaneDelayMs > 0;
+    const useActiveExchangeFastLane = Number.isFinite(activeExchangeDelayMs) && activeExchangeDelayMs > 0;
+    const useFastLaneDelay = useExplicitFastLane || useActiveExchangeFastLane;
     const rawDelay = useFastLaneDelay
-        ? requestedFastLaneDelayMs
+        ? (useExplicitFastLane ? requestedFastLaneDelayMs : activeExchangeDelayMs)
         : Number(timingSuggestion?.delay_ms ?? delayMs ?? IG_AUTO_SEND_DEFAULT_DELAY_MS);
     const minDelayMs = useFastLaneDelay ? IG_FAST_LANE_MIN_DELAY_MS : IG_AUTO_SEND_MIN_DELAY_MS;
     const normalizedDelayMs = Number.isFinite(rawDelay)

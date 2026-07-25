@@ -50,4 +50,27 @@ const lowStakes = buildReplyTimingSuggestion(makeLeadAlert({
 assert.strictEqual(lowStakes.delay_ms, 30 * 60 * 1000);
 assert.strictEqual(lowStakes.signals.low_stakes_rapport, true);
 
+const activeExchange = makeLeadAlert({
+    inbound: 'Bro you are ripped',
+    qualifier: { stage: 'current_state', warmth_score: 55 },
+    suggested: 'Hahaha appreciate it. You alive or still in full hungover gremlin mode?',
+});
+activeExchange.data.last_outbound_message = {
+    text: "Morning haha what's up?",
+    created_at: '2026-07-25T23:07:58.368Z',
+};
+activeExchange.data.inbound_message_batch = [
+    { text: 'Just in bed hbu', created_at: '2026-07-25T23:08:06.614Z' },
+    { text: 'Hungover lol', created_at: '2026-07-25T23:08:12.600Z' },
+    { text: 'Bro you are ripped', created_at: '2026-07-25T23:08:50.790Z' },
+];
+activeExchange.data.response_timing_profile = {
+    general: { scope: 'general', sample_count: 60, median_delay_ms: 15 * 60 * 1000 },
+    recommendation_delay_ms: 15 * 60 * 1000,
+};
+const activeExchangeTiming = buildReplyTimingSuggestion(activeExchange);
+assert.strictEqual(activeExchangeTiming.delay_ms, 2 * 60 * 1000);
+assert.strictEqual(activeExchangeTiming.signals.active_back_and_forth, true);
+assert.match(activeExchangeTiming.reason, /active rapid back-and-forth/);
+
 console.log('reply timing conversion tests passed');
