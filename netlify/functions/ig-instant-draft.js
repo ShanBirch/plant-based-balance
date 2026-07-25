@@ -750,7 +750,6 @@ function getBalanceAutoContextBypass({ balanceAutoSendLane, contextReview, draft
     const reasons = (Array.isArray(contextReview.reasons) ? contextReview.reasons : [contextReview.reason])
         .filter(Boolean)
         .map(v => String(v));
-    if (!reasons.length || reasons.some(reason => !BALANCE_SOFT_CONTEXT_REASONS.has(reason))) return null;
 
     const latestText = normalizeCoachDraftText(currentMessage || contextReview.latest_text || '').trim();
     const draftText = draftTextFromDraft(draft);
@@ -758,8 +757,10 @@ function getBalanceAutoContextBypass({ balanceAutoSendLane, contextReview, draft
         && COCOS_SIMPLE_OPENER_RE.test(latestText)
         && String(draftReview?.verdict || '').toLowerCase() === 'pass'
         && !(Array.isArray(draftReview?.issues) && draftReview.issues.filter(Boolean).length);
+    const onlySoftReasons = reasons.length > 0
+        && reasons.every(reason => BALANCE_SOFT_CONTEXT_REASONS.has(reason));
     const reviewTimeoutOnly = isReviewTimeoutOnly(draftReview);
-    if (!simpleFirstCapturedReply && !reviewTimeoutOnly) return null;
+    if (!simpleFirstCapturedReply && !(onlySoftReasons && reviewTimeoutOnly)) return null;
     const hasTrackedContext = contextReview.tracked_outbound_context === true;
     const contextIndependent = contextReview.context_dependent === false;
     if (!simpleFirstCapturedReply && !hasTrackedContext && !contextIndependent) return null;

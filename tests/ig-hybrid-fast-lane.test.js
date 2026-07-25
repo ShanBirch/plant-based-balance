@@ -22,7 +22,11 @@ assert.deepStrictEqual(instantDraft.getBalanceAutoContextBypass({
     balanceAutoSendLane: true,
     contextReview: {
         required: true,
-        reasons: ['first_captured_reply_with_hidden_context'],
+        reasons: [
+            'first_captured_reply_with_hidden_context',
+            'reference_heavy_reply_without_tracked_context',
+            'draft_review_none',
+        ],
         tracked_outbound_context: false,
         context_dependent: true,
     },
