@@ -910,7 +910,15 @@ async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason =
  * Update this block when the ad's quick-replies or offering structure changes.
  */
 const FOUNDERS_PASS_APP_PREVIEW_URL = 'https://plantbased-balance.org/assets/balance-founders-pass-dm-preview.mp4';
-const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/plant-based-fitness.html';
+const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/plant-based-fitness.html?utm_source=instagram&utm_medium=dm&utm_campaign=founders_pass_plant_based&utm_content=dm_handoff';
+const FOUNDERS_PASS_BROAD_CHECKOUT_URL = 'https://plantbased-balance.org/fitness-coaching.html?utm_source=instagram&utm_medium=dm&utm_campaign=founders_pass_broad_pain&utm_content=dm_handoff';
+
+function foundersPassCheckoutUrlForMessage(message = '') {
+    const text = String(message || '').toLowerCase();
+    const plantBasedSignal = /plant[ -]?based|vegan|vegetarian|food|nutrition/.test(text);
+    const broadPainSignal = /start(?:ing)? again|follow(?:ing)? through|busy|work|kids|shift|real life|routine|consisten|where do i start/.test(text);
+    return broadPainSignal && !plantBasedSignal ? FOUNDERS_PASS_BROAD_CHECKOUT_URL : FOUNDERS_PASS_CHECKOUT_URL;
+}
 
 function buildMetaAdFoundersPassFirstReply(currentMessage = '') {
     const text = String(currentMessage || '').toLowerCase();
@@ -918,9 +926,10 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '') {
     const fitLine = asksFit
         ? '\n\nIt is built for plant-based people who want clear training, food structure and support that still works when life gets messy.'
         : '';
+    const checkoutUrl = foundersPassCheckoutUrlForMessage(currentMessage);
     const chunks = [
         `Hey, glad you messaged. Here is a quick look inside Balance so you can actually see what I mean 👇\n${FOUNDERS_PASS_APP_PREVIEW_URL}`,
-        `Balance brings your weekly plan, plant-based nutrition, progress, learning and community into one place.${fitLine}\n\nThe Founders Pass is AU$99 once. You get six weeks of one-to-one in-app support with me, then lifetime access to the core app and plant-based community.\n\nYou can see everything included and start here: ${FOUNDERS_PASS_CHECKOUT_URL}`,
+        `Balance brings your weekly plan, plant-based nutrition, progress, learning and community into one place.${fitLine}\n\nThe Founders Pass is AU$99 once. You get six weeks of one-to-one in-app support with me, then lifetime access to the core app and plant-based community.\n\nYou can see everything included and start here: ${checkoutUrl}`,
     ];
     return {
         chunks,
@@ -971,6 +980,7 @@ THE OFFERING (for context — never list as a brochure; speak like a friend):
 - The FIRST offer for warm leads is the paid Balance Plant-Based Fitness Founders Pass, not a free challenge, standalone custom meal plan, workout program, or generic app trial.
 - If they are plant-based / vegan / vegetarian-curious, tailor the coaching explanation around plant-based food support.
 - If they just want fitness, muscle, weight loss, energy, or consistency with no plant-based signal, tailor the coaching explanation around training, food structure, and accountability.
+- Link attribution matters. For plant-based, vegan or nutrition-led conversations use ${FOUNDERS_PASS_CHECKOUT_URL}. For broad conversations about restarting, follow-through, busy weeks or fitting training around life use ${FOUNDERS_PASS_BROAD_CHECKOUT_URL}. Both pages disclose that Balance uses plant-based nutrition. Never remove the UTM parameters.
 - When the offer is opened by a direct details/link/"what's included" ask, explain the setup before sending the next step: $99 once, six weeks of in-app coaching support from Shannon, lifetime core Balance app access, and the plant-based community. For ad-attributed first enquiries, lead with this app preview so they can see the product: https://plantbased-balance.org/assets/balance-founders-pass-dm-preview.mp4. Be clear that ongoing weekly plan reviews after the six weeks are separate. Move toward the Founders Pass link in DMs. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
 - If they only ask "what's Balance?" or "what's your app?" while also saying they are already training hard or feeling good, answer in one plain beat and make any coaching mention casual. No feature list or link unless they ask for details.
 - Once they start, the Balance app gives them the guided kickstart, training and food structure, progress tools and community.
@@ -1512,7 +1522,7 @@ function challengeUrlForRoute(route) {
     return ONE_ON_ONE_COACHING_URL;
 }
 
-const ONE_ON_ONE_COACHING_URL = 'https://plantbased-balance.org/plant-based-fitness.html';
+const ONE_ON_ONE_COACHING_URL = FOUNDERS_PASS_CHECKOUT_URL;
 const BALANCE_CALL_BOOKING_URL = 'https://plantbased-balance.org/book';
 
 function buildOneOnOneCoachingBlock() {
@@ -1521,6 +1531,7 @@ function buildOneOnOneCoachingBlock() {
 BALANCE PLANT-BASED FITNESS FOUNDERS PASS LINK:
 - The primary DM offer is the Balance Plant-Based Fitness Founders Pass: AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. It does not promise instant daily replies, unlimited access or fully customised weekly plan reviews. Starter Coaching is the optional ongoing higher-touch upgrade. The normal path is explanation, acceptance, and checkout inside DMs.
 - Approved Founders Pass link: ${ONE_ON_ONE_COACHING_URL}
+- Broad pain alternative: ${FOUNDERS_PASS_BROAD_CHECKOUT_URL}. Use this when their thread is about restarting, consistency, follow-through, work, kids, shifts or fitting training around real life and there is no plant-based signal. Never remove the UTM parameters.
 - When the latest message asks for the offer link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct Founders Pass/details invite, send the approved link in the draft.
 - If the latest message asks to reconnect with Balance, the app/helper, login, password, account access, or any app bug, treat it as support first and do not send the coaching link.
 - Keep the link handoff light, not a brochure: stoked they are keen, here's the link, it has the quick info on the six-week setup, app and community, check it out, then come back to Shannon here if they want to chat through it.

@@ -26,11 +26,16 @@ test('one-time Founders Pass has a complete purchase and activation path', () =>
     assert.match(checkout, /checkout\.plan\.mode === "subscription"/);
     assert.match(checkout, /payment_intent_data\[metadata\]/);
     assert.match(checkout, /founders_pass_lifetime/);
-    assert.match(checkout, /\/plant-based-fitness\.html#join/);
+    assert.match(checkout, /safeReturnPath/);
+    assert.match(checkout, /"\/plant-based-fitness\.html", "\/fitness-coaching\.html"/);
+    assert.match(checkout, /`\$\{cancelPath\}#join`/);
     assert.match(claim, /payment_status !== "paid"/);
     assert.match(claim, /This purchase does not match the signed-in account/);
     assert.match(claim, /subscription_plan: FOUNDERS_PLAN/);
     assert.match(webhook, /recordFoundersPassSale/);
+    assert.match(webhook, /event_type: "purchase_completed"/);
+    assert.match(webhook, /utm_content: cleanString\(session\?\.metadata\?\.utm_content/);
+    assert.match(webhook, /page_variant: cleanString\(session\?\.metadata\?\.landing_page_variant/);
     assert.match(webhook, /sendCAPIEvent\('Purchase'/);
     assert.match(purchaseTracker, /sendCAPIEvent\('Purchase'/);
     assert.match(login, /claimPendingFoundersPass/);
@@ -43,6 +48,26 @@ test('one-time Founders Pass has a complete purchase and activation path', () =>
     assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.founders_pass_purchases/);
     assert.match(migration, /ENABLE ROW LEVEL SECURITY/);
     assert.match(migration, /GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public\.founders_pass_purchases TO service_role/);
+});
+
+test('Founders Pass experiment has two honest measured landing experiences', () => {
+    const plantPage = read('plant-based-fitness.html');
+    const broadPage = read('fitness-coaching.html');
+    const analytics = read('analytics.js');
+    const eventLogger = read('netlify/functions/log-lp-event.js');
+
+    assert.match(plantPage, /data-landing-variant="plant_based_control"/);
+    assert.match(broadPage, /data-landing-variant="broad_pain"/);
+    assert.match(broadPage, /plant-based nutrition/i);
+    assert.match(broadPage, /data-plan="founders-pass"/);
+    assert.match(plantPage, /<script src="analytics\.js"><\/script>/);
+    assert.match(broadPage, /<script src="analytics\.js"><\/script>/);
+    assert.match(analytics, /balance_first_touch/);
+    assert.match(analytics, /balance_last_touch/);
+    assert.match(analytics, /campaign_id/);
+    assert.match(analytics, /checkout_click/);
+    assert.match(eventLogger, /checkout_started/);
+    assert.match(eventLogger, /onboarding_completed/);
 });
 
 test('Founders Pass onboarding captures the real-world blocker behind consistency', () => {

@@ -13,7 +13,13 @@ const SUPABASE_URL =
 const SUPABASE_SERVICE_KEY =
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
-const ALLOWED_EVENT_TYPES = new Set(['page_view', 'scroll', 'click', 'time_on_page']);
+const ALLOWED_EVENT_TYPES = new Set([
+    'page_view', 'scroll', 'click', 'time_on_page', 'cta_click', 'dm_click',
+    'checkout_click', 'checkout_started', 'checkout_error', 'video_play',
+    'lead_created', 'purchase', 'signup', 'onboarding_started',
+    'onboarding_completed', 'weekly_goals_set', 'meal_plan_created',
+    'first_workout_planned', 'first_workout_completed'
+]);
 const MAX_STR = 500;
 
 function corsHeaders() {
@@ -34,6 +40,10 @@ function trim(value, max = MAX_STR) {
 function intOrNull(value) {
     const n = Number(value);
     return Number.isFinite(n) ? Math.trunc(n) : null;
+}
+
+function objectOrEmpty(value) {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 
 exports.handler = async (event) => {
@@ -61,8 +71,12 @@ exports.handler = async (event) => {
         if (!e || !ALLOWED_EVENT_TYPES.has(e.event_type)) continue;
         if (!e.session_id || !e.landing_page) continue;
         rows.push({
+            event_id: trim(e.event_id, 80),
             session_id: trim(e.session_id, 64),
+            visitor_id: trim(e.visitor_id, 80),
             landing_page: trim(e.landing_page, 64),
+            page_variant: trim(e.page_variant, 64),
+            page_url: trim(e.page_url, 1000),
             event_type: trim(e.event_type, 32),
             target: trim(e.target, 200),
             target_text: trim(e.target_text, 200),
@@ -75,8 +89,14 @@ exports.handler = async (event) => {
             utm_source: trim(e.utm_source, 128),
             utm_medium: trim(e.utm_medium, 128),
             utm_campaign: trim(e.utm_campaign, 128),
+            utm_term: trim(e.utm_term, 128),
+            utm_content: trim(e.utm_content, 128),
+            fbclid: trim(e.fbclid, 500),
+            fbc: trim(e.fbc, 500),
+            fbp: trim(e.fbp, 500),
             referrer: trim(e.referrer, 500),
             user_agent: trim(e.user_agent, 200),
+            metadata: objectOrEmpty(e.metadata),
         });
     }
     if (rows.length === 0) {

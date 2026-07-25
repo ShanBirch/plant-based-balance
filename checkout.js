@@ -394,6 +394,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         utm_data: utmData,
                         fbc: getCookie('_fbc'),
                         fbp: getCookie('_fbp'),
+                        returnPath: window.location.pathname,
+                        pageVariant: document.body?.dataset?.landingVariant || 'general',
                         compliance: window.BalanceCompliance?.getContext('checkout_session_created', {
                             plan_key: plan,
                             metadata: {
@@ -406,12 +408,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const session = await response.json();
                 if (session.error) {
+                     window.trackBalanceEvent?.('checkout_error', { plan, message: session.error.message });
                      alert("Checkout Error: " + session.error.message);
                      btn.innerText = "Try Again";
                 } else {
+                     window.trackBalanceEvent?.('checkout_started', { plan, session_id: session.sessionId });
                      stripe.redirectToCheckout({ sessionId: session.sessionId });
                 }
             } catch (err) {
+                window.trackBalanceEvent?.('checkout_error', { plan, message: err?.message || 'request_failed' });
                 console.error("Backend Checkout Error", err);
                 alert("System Error. Please try again.");
             }

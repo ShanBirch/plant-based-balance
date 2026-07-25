@@ -389,3 +389,14 @@ Do not default to building more consumer app features. The highest-value work is
 - Better follow-up timing.
 - Better conversion visibility.
 - Reducing Shannon's manual DM and coaching workload without exposing automation.
+
+## Measurement Standard
+
+Shannon wants data collected on every meaningful growth, sales, onboarding, and product change from 2026-07-26 onward.
+
+- Before launch, record the hypothesis, variant name, primary KPI, diagnostic metrics, guardrail, and decision date.
+- Every campaign destination must preserve first-touch and last-touch attribution with UTMs, Meta click/ad identifiers when available, a durable visitor id, and a session id.
+- Every funnel should emit first-party events for the meaningful progression points, not only page views. For paid acquisition this includes landing view, CTA, DM/link handoff, checkout start, purchase, account creation, onboarding start/completion, weekly goals, meal plan, first planned workout, and first completed workout.
+- Use stable experiment and event names. Do not change a live definition halfway through a comparison.
+- Choose winners using business outcomes and lead quality. Cheap clicks, views, or DMs are diagnostic metrics, not final success metrics.
+- No new ad, landing-page variant, checkout path, onboarding change, or automated DM flow is considered ready until its measurement path has been verified.

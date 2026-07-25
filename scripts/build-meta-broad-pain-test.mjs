@@ -145,6 +145,11 @@ const plan = {
     adSet: 'Use one broad Australia ad set. Do not create separate interest or plant-based ad sets.',
     testAds: ['Existing plant-based control', ...ads.map((ad) => ad.id)],
   },
+  destinations: {
+    plantBasedControl: 'https://plantbased-balance.org/plant-based-fitness.html?utm_source=instagram&utm_medium=paid_social&utm_campaign=founders_pass_test_20260726&utm_content=plant_based_control',
+    broadPainChallengers: 'https://plantbased-balance.org/fitness-coaching.html?utm_source=instagram&utm_medium=paid_social&utm_campaign=founders_pass_test_20260726&utm_content={{ad.name}}&campaign_id={{campaign.id}}&adset_id={{adset.id}}&ad_id={{ad.id}}&placement={{placement}}',
+    dmRule: 'When the lead asks for the link, preserve the plant-based versus broad-pain route and all attribution parameters.',
+  },
   fate: {
     focus: 'Adults who keep restarting, struggle to follow through, or cannot fit rigid plans around real life.',
     authority: 'Shannon as the coach, supported by real Balance app and training imagery.',

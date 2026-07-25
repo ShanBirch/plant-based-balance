@@ -595,6 +595,25 @@ async function recordFoundersPassSale(context, stripeEvent, session) {
     const amountMinor = Math.max(0, Number(session.amount_total || 9900));
     const currency = cleanCurrency(session.currency || "aud");
     const purchasedAt = isoFromStripeTimestamp(session.created) || new Date().toISOString();
+    const attribution = {
+        utm_source: cleanString(session?.metadata?.utm_source, 128) || null,
+        utm_medium: cleanString(session?.metadata?.utm_medium, 128) || null,
+        utm_campaign: cleanString(session?.metadata?.utm_campaign, 128) || null,
+        utm_term: cleanString(session?.metadata?.utm_term, 128) || null,
+        utm_content: cleanString(session?.metadata?.utm_content, 128) || null,
+        campaign_id: cleanString(session?.metadata?.campaign_id, 128) || null,
+        adset_id: cleanString(session?.metadata?.adset_id, 128) || null,
+        ad_id: cleanString(session?.metadata?.ad_id, 128) || null,
+        placement: cleanString(session?.metadata?.placement, 128) || null,
+        site_source_name: cleanString(session?.metadata?.site_source_name, 128) || null,
+        page_variant: cleanString(session?.metadata?.landing_page_variant, 64) || null,
+        landing_url: cleanString(session?.metadata?.landing_url, 500) || null,
+        visitor_id: cleanString(session?.metadata?.visitor_id, 100) || null,
+        analytics_session_id: cleanString(session?.metadata?.session_id, 100) || null,
+        fbclid: cleanString(session?.metadata?.fbclid, 500) || null,
+        fbc: cleanString(session?.metadata?.fbc, 500) || null,
+        fbp: cleanString(session?.metadata?.fbp, 500) || null,
+    };
     const existingUsers = await supabaseRequest(
         `users?select=id,name,email&email=eq.${encodeURIComponent(email)}&limit=1`
     );
@@ -621,10 +640,46 @@ async function recordFoundersPassSale(context, stripeEvent, session) {
                     product_type: FOUNDERS_PASS_PRODUCT_TYPE,
                     access_type: "lifetime_core_app_community",
                     stripe_event_id: stripeEvent.id,
+                    attribution,
                 },
             },
         }
     );
+
+    try {
+        await supabaseRequest("growth_outcome_events?on_conflict=event_key", {
+            method: "POST",
+            prefer: "resolution=merge-duplicates,return=minimal",
+            body: [{
+                event_key: `stripe_checkout:${session.id}:founders_pass_purchase`,
+                event_type: "purchase_completed",
+                event_family: "revenue",
+                event_status: "paid",
+                source_system: "stripe_webhook",
+                email,
+                email_key: email,
+                client_id: user?.id || null,
+                campaign_slug: attribution.utm_campaign,
+                landing_url: attribution.landing_url,
+                utm_source: attribution.utm_source,
+                utm_medium: attribution.utm_medium,
+                utm_campaign: attribution.utm_campaign,
+                score: 100,
+                score_breakdown: { default_score: 100, score: 100, reason: "paid_founders_pass" },
+                attribution,
+                raw_payload: {
+                    stripe_event_id: stripeEvent.id,
+                    stripe_checkout_session_id: session.id,
+                    stripe_payment_intent_id: normalizeStripeId(session.payment_intent) || null,
+                    amount_minor: amountMinor,
+                    currency,
+                },
+                occurred_at: purchasedAt,
+            }],
+        });
+    } catch (error) {
+        console.warn("[stripe-sync] founders purchase growth outcome failed:", error.message || error);
+    }
 
     if (user?.id) {
         await supabaseRequest(`users?id=eq.${encodeURIComponent(user.id)}`, {

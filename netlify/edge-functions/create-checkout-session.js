@@ -8,6 +8,11 @@ import {
 
 const STRIPE_API_VERSION = "2026-02-25.clover";
 
+function safeReturnPath(value, fallback) {
+    const allowed = new Set(["/plant-based-fitness.html", "/fitness-coaching.html"]);
+    return allowed.has(value) ? value : fallback;
+}
+
 function appendMetadata(params, prefix, metadata) {
     Object.entries(metadata || {}).forEach(([key, value]) => {
         if (value === undefined || value === null) return;
@@ -68,9 +73,10 @@ export default async (request, context) => {
 
     try {
         const body = await request.json();
-        const { priceId, isTrial, trialDays, referralCode, email, bump, fbc, fbp, utm_data, compliance } = body;
+        const { priceId, isTrial, trialDays, referralCode, email, bump, fbc, fbp, utm_data, compliance, returnPath, pageVariant } = body;
         const checkoutOrigin = assertSameSiteCheckoutRequest(request);
         const plan = getBalanceCheckoutPlan(priceId);
+        const cancelPath = safeReturnPath(returnPath, "/plant-based-fitness.html");
         assertAcceptedCheckoutTerms(compliance);
         const checkoutEmail = cleanCheckoutEmail(email, { required: false });
         const complianceMetadata = compliance?.metadata || {};
@@ -112,7 +118,7 @@ export default async (request, context) => {
             subscriptionMetadata: subscriptionData.metadata,
             paymentMetadata: purchaseMetadata,
             successUrl: checkoutOrigin + `/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan.balancePlan)}&amount=${(plan.unitAmount / 100).toFixed(2)}&bump=${bump && plan.allowBump ? "true" : "false"}`,
-            cancelUrl: checkoutOrigin + (plan.balancePlan === "founders_pass_lifetime" ? "/plant-based-fitness.html#join" : "/plantbasedswitch.html"),
+            cancelUrl: checkoutOrigin + (plan.balancePlan === "founders_pass_lifetime" ? `${cancelPath}#join` : "/plantbasedswitch.html"),
             metadata: {
                 checkout_email: checkoutEmail,
                 balance_product: plan.balanceProduct,
@@ -122,6 +128,8 @@ export default async (request, context) => {
                 price_token: priceId || "",
                 product_type: plan.balanceProduct,
                 access_type: plan.mode === "payment" ? "lifetime_core_app_community" : "recurring_membership",
+                landing_page_variant: pageVariant || "general",
+                landing_return_path: cancelPath,
                 fbc: fbc || "",
                 fbp: fbp || "",
                 ...utm_data,

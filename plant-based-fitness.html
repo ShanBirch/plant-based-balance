@@ -346,7 +346,7 @@
         @keyframes progressIn { from { transform: scaleX(0); } to { transform: scaleX(1); } }
     </style>
 </head>
-<body>
+<body data-landing-page="plant-based-founders-pass" data-landing-variant="plant_based_control">
     <header class="topbar">
         <a class="brand" href="balance.html"><span class="brand-icon"><img src="balance_logo.png" alt="Balance"></span><span>Balance</span></a>
         <div class="nav-actions"><a class="nav-link" href="balance.html">Explore Balance</a><a class="top-link" href="#join">Get Founders Pass</a></div>
@@ -360,7 +360,7 @@
                     <h1>Your training plan. <span>Your people.</span> One payment.</h1>
                     <p class="hero-copy">Join the Balance plant-based fitness community. Get six weeks of one-to-one in-app coaching support from Shannon, plus lifetime access to the core Balance app and plant-based community.</p>
                     <div class="price-line"><div class="price">AU$99</div><div class="price-note">once, founding members only</div></div>
-                    <a class="cta" href="#join">Claim my Founders Pass</a>
+                    <a class="cta" href="#join" data-track="cta_click">Claim my Founders Pass</a>
                     <p class="micro">Six weeks with Shannon in your corner. Lifetime core app + community access.</p>
                 </div>
                 <div class="phone-stage reveal" aria-label="Preview of the Balance app">
@@ -469,7 +469,7 @@
                     <div id="checkout-terms-container">
                         <label><input type="checkbox" id="terms-checkbox"><span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>, <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>, <a href="client-agreement.html" target="_blank" rel="noopener">Client Agreement</a> and <a href="refund-policy.html" target="_blank" rel="noopener">Refund Policy</a>.</span></label>
                     </div>
-                    <button class="cta checkout-btn" data-plan="founders-pass" data-hosted-checkout-only="true" type="button">Get my Founders Pass</button>
+                    <button class="cta checkout-btn" data-plan="founders-pass" data-hosted-checkout-only="true" data-track="checkout_click" type="button">Get my Founders Pass</button>
                     <p class="secure-note">Secure Stripe checkout. AU$99 is due today.</p>
                 </div>
             </div>
@@ -479,6 +479,7 @@
     <footer>
         <div class="wrap footer-row"><span>© 2026 Balance. Gold Coast, Australia.</span><div class="footer-links"><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="refund-policy.html">Refunds</a><a href="contact.html">Contact</a></div></div>
     </footer>
+    <script src="analytics.js"></script>
     <script src="checkout.js"></script>
     <script>
         (function () {
