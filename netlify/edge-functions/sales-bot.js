@@ -74,18 +74,9 @@ STRICT RULES:
 4. If they are ready, ask permission to send the Founders Pass link or send it when they request the link.
 `;
 
-        const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`;
+        const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${API_KEY}`;
 
         const contents = [];
-        contents.push({
-            role: "user",
-            parts: [{ text: "SYSTEM_INSTRUCTION: " + systemInstruction }]
-        });
-        contents.push({
-            role: "model",
-            parts: [{ text: "Understood." }]
-        });
-
         history.forEach(h => {
             contents.push({
                 role: h.role === 'bot' ? 'model' : 'user',
@@ -99,10 +90,12 @@ STRICT RULES:
         });
 
         const payload = {
+            system_instruction: {
+                parts: [{ text: systemInstruction }]
+            },
             contents,
             generationConfig: {
-                maxOutputTokens: 300,
-                temperature: 0.7
+                maxOutputTokens: 300
             }
         };
 

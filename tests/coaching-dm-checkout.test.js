@@ -15,6 +15,7 @@ const bookingStyles = read('booking.css');
 const netlifyConfig = read('netlify.toml');
 const adminAi = read('netlify/edge-functions/admin-ai-coach.ts');
 const migration = read('supabase/migrations/20260716100000_standardise_ig_coaching_checkout_url.sql');
+const salesBot = read('netlify/edge-functions/sales-bot.js');
 
 test('DM coaching page goes directly to hosted Stripe Checkout', () => {
     assert.match(coaching, /href="#plan-checkout"/);
@@ -110,4 +111,11 @@ test('the paid acupressure bonus has every diagram it references', () => {
     for (const diagram of diagrams) {
         assert.ok(fs.existsSync(path.join(root, 'assets', 'acupressure', diagram)), diagram);
     }
+});
+
+test('website sales chat uses a stable current Gemini request shape', () => {
+    assert.match(salesBot, /gemini-3\.5-flash-lite:generateContent/);
+    assert.match(salesBot, /system_instruction/);
+    assert.doesNotMatch(salesBot, /SYSTEM_INSTRUCTION:/);
+    assert.doesNotMatch(salesBot, /temperature:\s*0\.7/);
 });
