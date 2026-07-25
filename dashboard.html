@@ -13402,8 +13402,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"],[title="Build a meal"]', title:'Type saved barcodes into a meal', body:"Open Build-a-Meal and tap Type code to paste a barcode you saved earlier. Balance looks up the product and adds it to the combined meal without needing the packaging or camera." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openRecentMealsModal"],.camera-btn-widget[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Use Recent & saved meals to re-log food you have already tracked. Tap the clock, pick the meal, and it drops back into today." },
     { tab:'meals', sel:'#meals-log-list,.meal-log-card', title:'Share meals to Feed', body:"Share any logged meal to Feed. The first meal share each day earns +15 XP, and later shares still post without extra XP.", quick: true },
-    { tab:'meals', sel:'#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn', title:'Two shares, two rewards', body:"Share food to Balance Feed for +15 XP, then share it to Instagram Feed for another +15 XP. One does not block the other.", quick: true },
-    { tab:'meals', sel:'#mealBreakdownIgBtn,#meals-log-list,.meal-log-card', title:'Instagram share confirmation', body:"After sharing a meal to Instagram, return to Balance to see the confirmation and your +15 XP reward.", quick: true },
+    { tab:'meals', sel:'#meal-feed-share-prompt', fallbackSel:'#meals-log-list,.meal-log-card', title:'Share meals to both', fallbackTitle:'Share meals to both', body:"After tracking food, share it to Balance Feed and Instagram Story. The share tray stays open after the first one so you can tap the other.", fallbackBody:"Track a meal, then use the share tray to post it to Balance Feed and Instagram Story. Sharing to one keeps the other option ready.", quick: true },
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#weekly-meal-evolution-btn', fallbackSel:'#browse-plans-pill', title:'A plan that learns your meals', fallbackTitle:'Open your meal plan', body:"At the end of each week, Balance keeps the meals you actually eat, adds two small variations, and suggests simple ways to cover nutrition gaps.", fallbackBody:"Open your meal plan to build next week from the meals you actually ate.", action:function(){ try { var pill=document.getElementById('browse-plans-pill'); if(typeof switchWeek==='function') switchWeek('meal-plan-store', pill); } catch(e){} } },
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Profile settings', body:"Open Profile when you need settings, dietary requirements, password changes, character customisation, or to replay this tour later." },
@@ -14514,6 +14513,18 @@ if(!window._pbbIsIOSSafari) {
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({
+    id: 'meal-feed-and-instagram-story-share-v1',
+    tab: 'meals',
+    subtab: 'calorie-tracker',
+    sel: '#meal-feed-share-prompt',
+    fallbackSel: '#meals-log-list,.meal-log-card',
+    title: 'Share meals to both',
+    fallbackTitle: 'Share meals to both',
+    body: 'After tracking food, share it to Balance Feed and Instagram Story. The share tray stays open after the first one so you can tap the other.',
+    fallbackBody: 'Track a meal, then use the share tray to post it to Balance Feed and Instagram Story. Sharing to one keeps the other option ready.',
+    condition: function(){ return !!document.querySelector('#meal-feed-share-prompt,#meals-log-list,.meal-log-card'); }
+  });
   allFeatures.push({
     id: 'meal-instagram-return-confirmation-v1',
     tab: 'meals',
@@ -17658,7 +17669,7 @@ document.write('<script src="js/dashboard/dashboard-script-10-points_widget_func
             }
 
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=28';
+        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=29';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -17718,7 +17729,7 @@ document.write('<script src="js/dashboard/dashboard-script-10-points_widget_func
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=28" data-pbb-calorie-tracker="1"><\/script>');
+      document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=29" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js?v=3" data-pbb-meal-builder="1"><\/script>');
     }
 })();
