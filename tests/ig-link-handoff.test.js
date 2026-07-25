@@ -22,12 +22,13 @@ assert.strictEqual(
 );
 assert.strictEqual(isSignupLinkHandoffText('want me to send you the details?'), false);
 assert.strictEqual(isBalanceCallBookingLinkText('sweet, grab a time here: https://plantbased-balance.org/book'), true);
-assert.strictEqual(isExplicitCallBookingRequest('could we do a WhatsApp call?'), true);
+assert.strictEqual(isExplicitCallBookingRequest('could we do a WhatsApp call about Balance?'), true);
+assert.strictEqual(isExplicitCallBookingRequest('could we do a WhatsApp call?'), false);
 assert.strictEqual(isExplicitCallBookingRequest('yeah I want coaching details'), false);
 
 const approvedCallBooking = buildLeadOnboardingHandoffData({
     draftText: "yeah for sure, grab a time that works for you here https://plantbased-balance.org/book",
-    currentMessage: 'could we do a video call?',
+    currentMessage: 'could we do a video call about Balance?',
     qualifier: { stage: 'qualifying' },
     leadStage: 'qualifying',
     linkedUserId: null,
@@ -78,7 +79,7 @@ const repairedChunks = finalizeDraftChunksFromRawText(
         currentMessageText: 'yeah sounds good',
     }
 );
-assert.match(repairedChunks.join('\n'), /https:\/\/plantbased-balance\.org\/vegan-fitness\.html/);
+assert.match(repairedChunks.join('\n'), /https:\/\/plantbased-balance\.org\/plant-based-fitness\.html/);
 
 const supportChunks = finalizeDraftChunksFromRawText(
     JSON.stringify({ messages: ["sounds good mate", "here's the link, check it out and download the app"] }),

@@ -387,6 +387,25 @@
     return ids;
   }
 
+  function readOnboardingWeeklyGoalFocusIds() {
+    const ids = [];
+    const addItems = list => {
+      if (!Array.isArray(list)) return;
+      list.forEach(item => {
+        const id = typeof item === 'string' ? item : item && item.id;
+        if (id && GOAL_BY_ID[id] && !ids.includes(id)) ids.push(id);
+      });
+    };
+
+    readProfileSources().forEach(profile => {
+      addItems(profile.weekly_goal_focus);
+      addItems(profile.onboarding_weekly_goal_focus);
+    });
+    addItems(parseJsonSafe(localStorage.getItem('onboardingWeeklyGoalFocusIds'), []));
+    addItems(parseJsonSafe(localStorage.getItem('onboardingWeeklyGoalFocus'), []));
+    return ids;
+  }
+
   function suggestWeeklyGoalsFromOnboarding() {
     const suggested = [];
     const addGoal = goalId => {
@@ -394,6 +413,10 @@
       const goal = normalizeGoal(GOAL_BY_ID[goalId]);
       if (goal) suggested.push(goal);
     };
+
+    // Explicitly chosen onboarding anchors come first. Broader goal intent only
+    // fills any slots the person left open.
+    readOnboardingWeeklyGoalFocusIds().forEach(addGoal);
 
     readOnboardingGoalIntentIds().forEach(intentId => {
       (ONBOARDING_INTENT_TO_WEEKLY_GOALS[intentId] || []).forEach(addGoal);

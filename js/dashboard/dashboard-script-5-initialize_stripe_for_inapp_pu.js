@@ -9738,6 +9738,10 @@ function updateWizardUI() {
         }
     }
 
+    // The content panel is the scroll container on small phones. Reset it for
+    // each new screen so the next recommendation never opens halfway down.
+    if (wizardContent && isChangingSlides) wizardContent.scrollTop = 0;
+
     if (wizardContent && isChangingSlides) {
         wizardSlideTransitionTimer = setTimeout(() => {
             document.querySelectorAll('#onboarding-wizard .wizard-slide.slide-exit').forEach(slide => {
@@ -11104,7 +11108,7 @@ window.startTransferredClientFlow = async function() {
                 try {
                     if (typeof startFeatureTour === 'function') {
                         try { localStorage.removeItem('featureTourComplete'); } catch (e) {}
-                        startFeatureTour(true);
+                        startFeatureTour();
                     }
                 } catch (e) { console.warn('startFeatureTour failed:', e); }
             }, 5000);
@@ -11306,6 +11310,23 @@ function selectWizardStarterMinutes(minutes) {
     saveWizardRoutineChoice('starter_session_minutes', String(value));
 }
 
+function updateWizardFrequencyTip() {
+    const tips = {
+        2: 'Perfect for beginners or busy schedules',
+        3: 'Great balance of training and recovery',
+        4: 'Ideal for building strength with good recovery',
+        5: 'Dedicated training with rest built in',
+        6: 'Serious training - we\'ll ensure proper recovery',
+        7: 'Every day! We\'ll include active recovery days'
+    };
+    const selectedDays = Array.from(wizardSelectedDays);
+    const selectedText = selectedDays.length
+        ? `${formatWizardTrainingDays(selectedDays)} selected. Tap any day to change.`
+        : '';
+    const tip = document.getElementById('freq-tip');
+    if (tip) tip.textContent = [tips[wizardTrainingFrequency], selectedText].filter(Boolean).join('. ');
+}
+
 function selectTrainingFrequency(num, options = {}) {
     wizardTrainingFrequency = num;
     document.getElementById('wizard-training-frequency').value = num;
@@ -11323,20 +11344,9 @@ function selectTrainingFrequency(num, options = {}) {
         }
     });
 
-    // Update tip text
-    const tips = {
-        2: 'Perfect for beginners or busy schedules',
-        3: 'Great balance of training and recovery',
-        4: 'Ideal for building strength with good recovery',
-        5: 'Dedicated training with rest built in',
-        6: 'Serious training - we\'ll ensure proper recovery',
-        7: 'Every day! We\'ll include active recovery days'
-    };
     const suggestedDays = getWizardSuggestedTrainingDays(num);
-    const suggestedText = suggestedDays.length ? `${formatWizardTrainingDays(suggestedDays)} selected. Tap any day to change.` : '';
-    document.getElementById('freq-tip').textContent = [tips[num], suggestedText].filter(Boolean).join('. ');
-
     applyWizardTrainingDays(suggestedDays);
+    updateWizardFrequencyTip();
     updateDaysCounter();
     if (!options.skipRoutineRender) renderWizardStarterRoutineRecommendation();
 }
@@ -11364,6 +11374,7 @@ function toggleTrainingDay(day) {
     }
 
     document.getElementById('wizard-training-days').value = Array.from(wizardSelectedDays).join(',');
+    updateWizardFrequencyTip();
     updateDaysCounter();
 }
 
@@ -11519,6 +11530,12 @@ function renderWizardCalendarPreview() {
     instruction.style.cssText = 'text-align:center; font-size:13px; color:rgba(255,255,255,0.7); margin-bottom:12px;';
     instruction.textContent = 'Tap any day to change the workout';
     frag.appendChild(instruction);
+
+    const starterMinutes = Math.max(10, Math.min(30, Number(document.getElementById('wizard-starter-session-minutes')?.value) || 15));
+    const starterMinimum = document.createElement('div');
+    starterMinimum.style.cssText = 'margin:0 0 12px; padding:10px 12px; border-radius:10px; background:rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.3); color:rgba(255,255,255,0.88); font-size:12px; line-height:1.45;';
+    starterMinimum.innerHTML = `<strong style="color:#f4d67a;">Your ${starterMinutes}-minute minimum:</strong> on a busy day, do the first ${starterMinutes} minutes. The full session is there when you have more.`;
+    frag.appendChild(starterMinimum);
 
     // Create day rows
     allDays.forEach((day, idx) => {
@@ -12061,7 +12078,7 @@ async function finishOnboarding() {
         try {
             if (typeof startFeatureTour === 'function') {
                 try { localStorage.removeItem('featureTourComplete'); } catch(e){}
-                startFeatureTour(true);
+                startFeatureTour();
             }
         } catch (e) { console.warn('startFeatureTour failed:', e); }
     }, 5000);
