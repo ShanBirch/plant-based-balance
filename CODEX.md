@@ -60,6 +60,13 @@ Canonical Plant-Based Fitness Founders Pass signup path:
 
 Do not send a raw, temporary Stripe Checkout Session URL in DMs. The stable branded Founders Pass URL keeps the offer understandable, preserves legal/attribution handling, and then hands payment to Stripe securely.
 
+Current paid-acquisition positioning test:
+
+- Keep two distinct end-to-end acquisition flows. `plant_based_control` uses plant-based positioning from ad through landing page and DM handoff. `broad_pain` uses general fitness, restarting, follow-through and real-life scheduling language with no plant-based positioning in the ad, landing page or route-specific DM handoff.
+- The broad route uses `https://future-balance.netlify.app/fitness-coaching.html` so the visible destination does not inject the plant-based domain into that test. The plant-based route continues to use `https://plantbased-balance.org/plant-based-fitness.html`.
+- Do not blend the two routes based only on a later generic message. Preserve the Meta ad referral variant and attribution through checkout and purchase. Configure broad creative IDs in `META_BROAD_AD_IDS` when the reviewed broad ads are created.
+- This is a positioning experiment, not a permanent company rebrand. Keep the current plant-based site and domain live while the data is collected.
+
 Revenue operating loop:
 
 - The Warm Lead Money Queue is the exact commercial worklist inside `ig_next_actions`; it is not a second inbox and never authorizes a blind send.

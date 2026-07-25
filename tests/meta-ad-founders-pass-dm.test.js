@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { buildMetaAdFoundersPassFirstReply } = require('../netlify/functions/ig-instant-draft')._test;
+const { buildMetaAdFoundersPassFirstReply, resolveMetaAdFlowVariant } = require('../netlify/functions/ig-instant-draft')._test;
 
 test('first ad-attributed DM sends the app preview and canonical offer', () => {
     const reply = buildMetaAdFoundersPassFirstReply("What's included?");
@@ -20,6 +20,24 @@ test('fit quick reply receives a concise fit statement', () => {
     const reply = buildMetaAdFoundersPassFirstReply('Is this right for me?');
     assert.match(reply.joined, /built for plant-based people/i);
     assert.doesNotMatch(reply.joined, /vegan fitness community/i);
+});
+
+test('broad ad route stays broad through the first DM and link handoff', () => {
+    const reply = buildMetaAdFoundersPassFirstReply("What's included?", { flowVariant: 'broad_pain' });
+    assert.equal(reply.flowVariant, 'broad_pain');
+    assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian/i);
+    assert.match(reply.joined, /future-balance\.netlify\.app\/fitness-coaching\.html/);
+});
+
+test('Meta referral hint preserves the broad route independently of message wording', () => {
+    const variant = resolveMetaAdFlowVariant({
+        customData: {
+            meta_ad_attribution: { ref: 'balance_broad_pain_b2' },
+            current_inbound_routing: { source: 'meta_ads', ad_id: 'example-ad-id' },
+        },
+        currentMessage: 'Can I see what is included?',
+    });
+    assert.equal(variant, 'broad_pain');
 });
 
 test('campaign package remains paused and points to the deployed funnel assets', () => {

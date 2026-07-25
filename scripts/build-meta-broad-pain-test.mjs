@@ -24,7 +24,7 @@ const ads = [
     eyebrow: 'IF YOU KEEP HAVING TO START AGAIN',
     title: ['YOU DO NOT NEED', 'A HARDER PLAN.'],
     body: ['You need one that still works', 'when real life shows up.'],
-    primaryText: "If your routine only works when life is quiet, it is not the right routine yet. Balance helps you build training and plant-based nutrition around the week you actually have, with clear steps and Shannon in your corner. The Founders Pass is AU$99 once. Message 'BALANCE' and I will show you what is included.",
+    primaryText: "If your routine only works when life is quiet, it is not the right routine yet. Balance helps you build training around the week you actually have, with clear steps and Shannon in your corner. The Founders Pass is AU$99 once. Message 'BALANCE' and I will show you what is included.",
     headline: 'Stop starting over',
     description: 'A fitness plan built for real life',
   },
@@ -36,7 +36,7 @@ const ads = [
     eyebrow: 'KNOWING WHAT TO DO IS NOT THE PROBLEM',
     title: ['THE HARD PART IS', 'FOLLOWING', 'THROUGH.'],
     body: ['Clear next steps.', 'A coach in your corner.'],
-    primaryText: "You probably do not need another list of exercises or another perfect meal plan. You need a clear next step, support when the week changes, and a way back without guilt. That is what we build inside Balance. It includes training, plant-based nutrition and six weeks with Shannon. AU$99 once. Message 'BALANCE' for the details.",
+    primaryText: "You probably do not need another list of exercises or another perfect meal plan. You need a clear next step, support when the week changes, and a way back without guilt. That is what we build inside Balance. It includes training, nutrition tools and six weeks with Shannon. AU$99 once. Message 'BALANCE' for the details.",
     headline: 'Turn knowing into doing',
     description: 'Clear steps and personal support',
   },
@@ -116,7 +116,7 @@ async function render(ad, width, height) {
     ${textLines(ad.body, margin, bodyY, story ? 31 : 25, story ? 43 : 36, C.brown, 500)}
     ${story ? '' : `<rect x="${margin}" y="${ctaY - 8}" width="470" height="72" rx="36" fill="${C.gold}"/><text x="${margin + 235}" y="${ctaY + 38}" fill="${C.ink}" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="900" text-anchor="middle" letter-spacing="1">MESSAGE 'BALANCE'</text>`}
     <text x="${margin}" y="${story ? 1840 : 1300}" fill="${C.deepGold}" font-family="Arial, Helvetica, sans-serif" font-size="${story ? 31 : 25}" font-weight="900">FOUNDERS PASS  ·  AU$99 ONCE</text>
-    <text x="${story ? 650 : margin}" y="${story ? 1886 : 1330}" fill="${C.ink}" fill-opacity=".7" font-family="Arial, Helvetica, sans-serif" font-size="${story ? 22 : 18}" font-weight="700">BALANCE: PLANT-BASED FITNESS</text>
+    <text x="${story ? 650 : margin}" y="${story ? 1886 : 1330}" fill="${C.ink}" fill-opacity=".7" font-family="Arial, Helvetica, sans-serif" font-size="${story ? 22 : 18}" font-weight="700">BALANCE FITNESS COACHING</text>
     ${story ? `<rect x="70" y="1680" width="470" height="76" rx="38" fill="${C.gold}"/><text x="305" y="1729" fill="${C.ink}" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="900" text-anchor="middle" letter-spacing="1">MESSAGE 'BALANCE'</text>` : ''}
     <rect x="${story ? margin : 580}" y="${story ? 780 : 390}" width="${story ? 980 : 460}" height="${story ? 860 : 890}" rx="46" fill="${C.gold}" opacity=".06"/>
     <rect x="${margin}" y="${story ? 1768 : 1220}" width="${copyWidth}" height="2" fill="${C.gold}" opacity=".5"/>
@@ -147,13 +147,13 @@ const plan = {
   },
   destinations: {
     plantBasedControl: 'https://plantbased-balance.org/plant-based-fitness.html?utm_source=instagram&utm_medium=paid_social&utm_campaign=founders_pass_test_20260726&utm_content=plant_based_control',
-    broadPainChallengers: 'https://plantbased-balance.org/fitness-coaching.html?utm_source=instagram&utm_medium=paid_social&utm_campaign=founders_pass_test_20260726&utm_content={{ad.name}}&campaign_id={{campaign.id}}&adset_id={{adset.id}}&ad_id={{ad.id}}&placement={{placement}}',
-    dmRule: 'When the lead asks for the link, preserve the plant-based versus broad-pain route and all attribution parameters.',
+    broadPainChallengers: 'https://future-balance.netlify.app/fitness-coaching.html?utm_source=instagram&utm_medium=paid_social&utm_campaign=founders_pass_test_20260726&utm_content={{ad.name}}&campaign_id={{campaign.id}}&adset_id={{adset.id}}&ad_id={{ad.id}}&placement={{placement}}',
+    dmRule: 'Keep the broad route free of plant-based positioning. Preserve the route and all attribution parameters when the lead asks for the link.',
   },
   fate: {
     focus: 'Adults who keep restarting, struggle to follow through, or cannot fit rigid plans around real life.',
     authority: 'Shannon as the coach, supported by real Balance app and training imagery.',
-    tribe: 'Busy people who want structure and support. Plant-based is disclosed in the offer, not forced into every cold hook.',
+    tribe: 'Busy people who want structure, support and a realistic way to keep going.',
     emotion: 'Relief from self-blame, then confidence that the next step can be manageable.',
   },
   measurement: {
@@ -181,7 +181,7 @@ const plan = {
 await fs.writeFile(path.join(OUT, 'campaign-plan.json'), `${JSON.stringify(plan, null, 2)}\n`);
 
 const cards = exportsList.map((ad, index) => `<article><img src="${ad.feed}" alt="${esc(ad.headline)}"><div><span>CHALLENGER ${index + 1}</span><h2>${esc(ad.headline)}</h2><p class="angle">${esc(ad.angle)}</p><p>${esc(ad.primaryText)}</p><p><strong>Headline:</strong> ${esc(ad.headline)}</p><p><strong>Description:</strong> ${esc(ad.description)}</p></div></article>`).join('');
-const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Balance Broad Pain Test</title><style>body{margin:0;background:#f7f2e8;color:#241a12;font:16px/1.55 Arial,sans-serif}header{padding:48px max(24px,5vw);background:linear-gradient(135deg,#fff9ed,#eadcc2);border-bottom:8px solid #d8a43a}h1{font-size:clamp(38px,6vw,76px);line-height:.96;margin:14px 0}header p{max-width:850px;color:#5b4a3a;font-size:18px}main{padding:36px max(20px,4vw);display:grid;gap:36px}article{display:grid;grid-template-columns:minmax(280px,520px) 1fr;gap:36px;align-items:start;background:#fff9ed;border:1px solid #d8a43a;border-radius:24px;padding:20px;box-shadow:0 18px 44px #6b4d241c}img{width:100%;border-radius:14px;background:#fff}.angle{color:#a96f00;font-weight:800}span{color:#a96f00;font-weight:900;letter-spacing:2px}h2{font-size:34px;line-height:1.05}p{color:#5b4a3a}@media(max-width:800px){article{grid-template-columns:1fr}header{padding-top:30px}}</style></head><body><header><span>PAUSED FOR YOUR REVIEW</span><h1>Broad audience.<br>Specific pain points.</h1><p>These three challengers are designed to run beside one existing plant-based control in the same broad Australia ad set. The product stays honest: each caption identifies Balance as training plus plant-based nutrition. Nothing here is approved to run until you choose it.</p></header><main>${cards}</main></body></html>`;
+const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Balance Broad Pain Test</title><style>body{margin:0;background:#f7f2e8;color:#241a12;font:16px/1.55 Arial,sans-serif}header{padding:48px max(24px,5vw);background:linear-gradient(135deg,#fff9ed,#eadcc2);border-bottom:8px solid #d8a43a}h1{font-size:clamp(38px,6vw,76px);line-height:.96;margin:14px 0}header p{max-width:850px;color:#5b4a3a;font-size:18px}main{padding:36px max(20px,4vw);display:grid;gap:36px}article{display:grid;grid-template-columns:minmax(280px,520px) 1fr;gap:36px;align-items:start;background:#fff9ed;border:1px solid #d8a43a;border-radius:24px;padding:20px;box-shadow:0 18px 44px #6b4d241c}img{width:100%;border-radius:14px;background:#fff}.angle{color:#a96f00;font-weight:800}span{color:#a96f00;font-weight:900;letter-spacing:2px}h2{font-size:34px;line-height:1.05}p{color:#5b4a3a}@media(max-width:800px){article{grid-template-columns:1fr}header{padding-top:30px}}</style></head><body><header><span>PAUSED FOR YOUR REVIEW</span><h1>Broad audience.<br>Specific pain points.</h1><p>These three challengers are the fully broad Balance route. The ads, landing page and DM handoff stay focused on restarting, follow-through and fitting training around real life. Nothing here is approved to run until you choose it.</p></header><main>${cards}</main></body></html>`;
 await fs.writeFile(path.join(OUT, 'review.html'), html);
 
 console.log(JSON.stringify({ outDir: OUT, review: path.join(OUT, 'review.html'), ads: exportsList.map(({ id, feed, story }) => ({ id, feed, story })) }, null, 2));

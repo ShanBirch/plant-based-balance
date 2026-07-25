@@ -909,27 +909,55 @@ async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason =
  *
  * Update this block when the ad's quick-replies or offering structure changes.
  */
-const FOUNDERS_PASS_APP_PREVIEW_URL = 'https://plantbased-balance.org/assets/balance-founders-pass-dm-preview.mp4';
+const FOUNDERS_PASS_APP_PREVIEW_URL = 'https://future-balance.netlify.app/assets/balance-founders-pass-dm-preview.mp4';
 const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/plant-based-fitness.html?utm_source=instagram&utm_medium=dm&utm_campaign=founders_pass_plant_based&utm_content=dm_handoff';
-const FOUNDERS_PASS_BROAD_CHECKOUT_URL = 'https://plantbased-balance.org/fitness-coaching.html?utm_source=instagram&utm_medium=dm&utm_campaign=founders_pass_broad_pain&utm_content=dm_handoff';
+const FOUNDERS_PASS_BROAD_CHECKOUT_URL = 'https://future-balance.netlify.app/fitness-coaching.html?utm_source=instagram&utm_medium=dm&utm_campaign=founders_pass_broad_pain&utm_content=dm_handoff';
 
-function foundersPassCheckoutUrlForMessage(message = '') {
-    const text = String(message || '').toLowerCase();
-    const plantBasedSignal = /plant[ -]?based|vegan|vegetarian|food|nutrition/.test(text);
+function resolveMetaAdFlowVariant({ customData = {}, currentMessage = '' } = {}) {
+    const broadAdIds = new Set(String(process.env.META_BROAD_AD_IDS || '')
+        .split(',')
+        .map(value => value.trim())
+        .filter(Boolean));
+    const routing = customData?.current_inbound_routing || {};
+    const attribution = customData?.meta_ad_attribution || {};
+    const adId = String(routing.ad_id || attribution.ad_id || '').trim();
+    const referralHint = `${attribution.ref || ''} ${attribution.referer_uri || ''}`.toLowerCase();
+    if ((adId && broadAdIds.has(adId)) || /broad[_ -]?pain|balance[_ -]?general|fitness[_ -]?coaching/.test(referralHint)) {
+        return 'broad_pain';
+    }
+    if (/plant[ -]?based|vegan|vegetarian/.test(referralHint)) return 'plant_based_control';
+    const text = String(currentMessage || '').toLowerCase();
+    const plantBasedSignal = /plant[ -]?based|vegan|vegetarian/.test(text);
     const broadPainSignal = /start(?:ing)? again|follow(?:ing)? through|busy|work|kids|shift|real life|routine|consisten|where do i start/.test(text);
-    return broadPainSignal && !plantBasedSignal ? FOUNDERS_PASS_BROAD_CHECKOUT_URL : FOUNDERS_PASS_CHECKOUT_URL;
+    return broadPainSignal && !plantBasedSignal ? 'broad_pain' : 'plant_based_control';
 }
 
-function buildMetaAdFoundersPassFirstReply(currentMessage = '') {
+function foundersPassCheckoutUrlForMessage(message = '', customData = {}) {
+    return resolveMetaAdFlowVariant({ customData, currentMessage: message }) === 'broad_pain'
+        ? FOUNDERS_PASS_BROAD_CHECKOUT_URL
+        : FOUNDERS_PASS_CHECKOUT_URL;
+}
+
+function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {}, flowVariant = '' } = {}) {
     const text = String(currentMessage || '').toLowerCase();
     const asksFit = /right for me|would this suit|is this for me|good fit/.test(text);
+    const resolvedVariant = flowVariant || resolveMetaAdFlowVariant({ customData, currentMessage });
+    const broadFlow = resolvedVariant === 'broad_pain';
     const fitLine = asksFit
-        ? '\n\nIt is built for plant-based people who want clear training, food structure and support that still works when life gets messy.'
+        ? (broadFlow
+            ? '\n\nIt is built for people who want clear training, food structure and support that still works when life gets messy.'
+            : '\n\nIt is built for plant-based people who want clear training, food structure and support that still works when life gets messy.')
         : '';
-    const checkoutUrl = foundersPassCheckoutUrlForMessage(currentMessage);
+    const checkoutUrl = broadFlow ? FOUNDERS_PASS_BROAD_CHECKOUT_URL : FOUNDERS_PASS_CHECKOUT_URL;
+    const productLine = broadFlow
+        ? 'Balance brings your weekly plan, training, progress, learning and community into one place.'
+        : 'Balance brings your weekly plan, plant-based nutrition, progress, learning and community into one place.';
+    const accessLine = broadFlow
+        ? 'lifetime access to the core app and community.'
+        : 'lifetime access to the core app and plant-based community.';
     const chunks = [
         `Hey, glad you messaged. Here is a quick look inside Balance so you can actually see what I mean 👇\n${FOUNDERS_PASS_APP_PREVIEW_URL}`,
-        `Balance brings your weekly plan, plant-based nutrition, progress, learning and community into one place.${fitLine}\n\nThe Founders Pass is AU$99 once. You get six weeks of one-to-one in-app support with me, then lifetime access to the core app and plant-based community.\n\nYou can see everything included and start here: ${checkoutUrl}`,
+        `${productLine}${fitLine}\n\nThe Founders Pass is AU$99 once. You get six weeks of one-to-one in-app support with me, then ${accessLine}\n\nYou can see everything included and start here: ${checkoutUrl}`,
     ];
     return {
         chunks,
@@ -944,6 +972,7 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '') {
         reelContextCount: 0,
         reelThumbnailCount: 0,
         mediaDecode: {},
+        flowVariant: resolvedVariant,
         timeline: '',
         conversationEpisode: null,
         currentTurnAnchorBlock: '',
@@ -980,7 +1009,7 @@ THE OFFERING (for context — never list as a brochure; speak like a friend):
 - The FIRST offer for warm leads is the paid Balance Plant-Based Fitness Founders Pass, not a free challenge, standalone custom meal plan, workout program, or generic app trial.
 - If they are plant-based / vegan / vegetarian-curious, tailor the coaching explanation around plant-based food support.
 - If they just want fitness, muscle, weight loss, energy, or consistency with no plant-based signal, tailor the coaching explanation around training, food structure, and accountability.
-- Link attribution matters. For plant-based, vegan or nutrition-led conversations use ${FOUNDERS_PASS_CHECKOUT_URL}. For broad conversations about restarting, follow-through, busy weeks or fitting training around life use ${FOUNDERS_PASS_BROAD_CHECKOUT_URL}. Both pages disclose that Balance uses plant-based nutrition. Never remove the UTM parameters.
+- Link attribution matters. For the plant-based ad route use ${FOUNDERS_PASS_CHECKOUT_URL}. For the broad ad route use ${FOUNDERS_PASS_BROAD_CHECKOUT_URL}. The broad route must not introduce plant-based, vegan or vegetarian positioning in its ad reply, landing handoff or follow-up unless the lead independently asks about it. Preserve the route selected by the ad referral and never remove the UTM parameters.
 - When the offer is opened by a direct details/link/"what's included" ask, explain the setup before sending the next step: $99 once, six weeks of in-app coaching support from Shannon, lifetime core Balance app access, and the plant-based community. For ad-attributed first enquiries, lead with this app preview so they can see the product: https://plantbased-balance.org/assets/balance-founders-pass-dm-preview.mp4. Be clear that ongoing weekly plan reviews after the six weeks are separate. Move toward the Founders Pass link in DMs. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
 - If they only ask "what's Balance?" or "what's your app?" while also saying they are already training hard or feeling good, answer in one plain beat and make any coaching mention casual. No feature list or link unless they ask for details.
 - Once they start, the Balance app gives them the guided kickstart, training and food structure, progress tools and community.
@@ -1525,7 +1554,20 @@ function challengeUrlForRoute(route) {
 const ONE_ON_ONE_COACHING_URL = FOUNDERS_PASS_CHECKOUT_URL;
 const BALANCE_CALL_BOOKING_URL = 'https://plantbased-balance.org/book';
 
-function buildOneOnOneCoachingBlock() {
+function buildOneOnOneCoachingBlock(flowVariant = 'plant_based_control') {
+    if (flowVariant === 'broad_pain') {
+        return `
+
+BALANCE FOUNDERS PASS LINK:
+- This thread belongs to the broad Balance acquisition route. Keep the offer focused on fitness structure, follow-through, realistic routines, food guidance, coaching support and community. Do not introduce plant-based, vegan or vegetarian positioning unless the lead independently asks about it.
+- The Founders Pass is AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and community. It does not promise instant daily replies, unlimited access or fully customised weekly plan reviews.
+- Approved broad-route link: ${FOUNDERS_PASS_BROAD_CHECKOUT_URL}
+- Preserve the broad route and its UTM parameters. Do not switch to the plant-based landing page from a later generic message.
+- When the latest message asks for the offer link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct Founders Pass/details invite, send the approved broad-route link in the draft.
+- Keep the handoff light and personal. Explain the six-week setup, app and community only to the level the lead asked for.
+- If they only ask a general help question and have not asked for offer details/link, answer the question first and use a low-pressure statement-led bridge only when the offer genuinely fits.
+- If they ask whether it is local/in-person or mention they already have a trainer, answer that the Founders Pass is an online guided app and community, not in-person training, and check whether that would still suit them.`;
+    }
     return `
 
 BALANCE PLANT-BASED FITNESS FOUNDERS PASS LINK:
@@ -2860,7 +2902,7 @@ This exact draft will be spoken in Shannon's approved voice-note voice, not sent
 - Prefer one fuller message bubble so the audio reads as one connected note. Return to concise text for links, prices, or detailed instructions.`;
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, qualifierQuestionProtected = false, botAccount, coachId = null, audioTranscriptOverrides = [], personalVoiceNoteMode = false }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, qualifierQuestionProtected = false, botAccount, coachId = null, audioTranscriptOverrides = [], personalVoiceNoteMode = false, adFlowVariant = 'plant_based_control' }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -3079,7 +3121,7 @@ Use this batch as context, not a checklist. First decide what is still live: dir
     const isOnboardedOrPostFunnel = !isSalesLeadThread;
     const funnelContext = isOnboardedOrPostFunnel ? '' : META_AD_FUNNEL_CONTEXT;
     const challengeNextStepBlock = isOnboardedOrPostFunnel ? '' : buildChallengeNextStepBlock(qualifier, currentMessageText);
-    const oneOnOneCoachingBlock = isOnboardedOrPostFunnel ? '' : buildOneOnOneCoachingBlock();
+    const oneOnOneCoachingBlock = isOnboardedOrPostFunnel ? '' : buildOneOnOneCoachingBlock(adFlowVariant);
     const balanceCallBookingBlock = isOnboardedOrPostFunnel ? '' : buildBalanceCallBookingBlock();
     const qualifierRelationshipBlock = buildQualifierRelationshipBlock(qualifier);
 
@@ -3911,6 +3953,10 @@ exports.handler = async (event) => {
         customData: thread.custom_data,
         manychatMessageId,
     });
+    const metaAdFlowVariant = resolveMetaAdFlowVariant({
+        customData: thread.custom_data,
+        currentMessage: messageText,
+    });
     const balanceAutoSendCandidate = !!thread.auto_send_enabled;
     const autoSendEnabled = !linkedClientNeedsYou
         && (cocosAutoSendLane || voiceReplyTestLane || metaAdFastLane);
@@ -4330,7 +4376,7 @@ exports.handler = async (event) => {
 
     let draft;
     try {
-        draft = metaAdFastLane ? buildMetaAdFoundersPassFirstReply(messageText) : await generateDraft({
+        draft = metaAdFastLane ? buildMetaAdFoundersPassFirstReply(messageText, { customData: thread.custom_data, flowVariant: metaAdFlowVariant }) : await generateDraft({
             leadName,
             leadBlock,
             profileBlock,
@@ -4359,6 +4405,7 @@ exports.handler = async (event) => {
             coachId: thread.coach_id || null,
             audioTranscriptOverrides,
             personalVoiceNoteMode: outboundVoiceMessage,
+            adFlowVariant: metaAdFlowVariant,
         });
     } catch (err) {
         console.error('[ig-draft] draft generation threw after stale-send cleanup:', err.message);
@@ -4589,6 +4636,7 @@ exports.handler = async (event) => {
                 ? IG_FAST_LANE_DELAY_MS
                 : undefined,
             meta_ad_fast_lane: metaAdFastLane || undefined,
+            meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : metaAdFlowVariant,
             outbound_voice_message: outboundVoiceMessage || undefined,
             outbound_voice_message_reason: outboundVoiceMessageReason || undefined,
             inbound_voice_message: inboundVoiceMessage || undefined,
@@ -4776,6 +4824,7 @@ exports.handler = async (event) => {
                 ? IG_FAST_LANE_DELAY_MS
                 : existingPending.data?.auto_send_fast_lane_delay_ms || undefined,
             meta_ad_fast_lane: metaAdFastLane || existingPending.data?.meta_ad_fast_lane || undefined,
+            meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : (metaAdFlowVariant || existingPending.data?.meta_ad_flow_variant || undefined),
             outbound_voice_message: coalescedOutboundVoiceMessage || undefined,
             outbound_voice_message_reason: coalescedOutboundVoiceMessage ? coalescedOutboundVoiceReason : undefined,
             inbound_voice_message: inboundVoiceMessage || existingPending.data?.inbound_voice_message || undefined,
@@ -5481,6 +5530,7 @@ exports._test = {
     getCocosCodexReviewHold,
     isCurrentMetaAdInbound,
     isMetaAdFastLaneEligible,
+    resolveMetaAdFlowVariant,
     buildMetaAdFoundersPassFirstReply,
     collectCocosAutoRepairIssues,
     shouldAttemptCocosDraftRepair,

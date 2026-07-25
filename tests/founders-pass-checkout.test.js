@@ -58,7 +58,8 @@ test('Founders Pass experiment has two honest measured landing experiences', () 
 
     assert.match(plantPage, /data-landing-variant="plant_based_control"/);
     assert.match(broadPage, /data-landing-variant="broad_pain"/);
-    assert.match(broadPage, /plant-based nutrition/i);
+    assert.doesNotMatch(broadPage, /plant[ -]?based|vegan|vegetarian/i);
+    assert.match(broadPage, /future-balance\.netlify\.app\/fitness-coaching\.html/);
     assert.match(broadPage, /data-plan="founders-pass"/);
     assert.match(plantPage, /<script src="analytics\.js"><\/script>/);
     assert.match(broadPage, /<script src="analytics\.js"><\/script>/);

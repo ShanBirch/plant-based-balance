@@ -52,9 +52,9 @@ Decide which ad message, landing experience, DM path, and onboarding flow produc
 | Route | Variant | Purpose |
 | --- | --- | --- |
 | `/plant-based-fitness.html` | `plant_based_control` | Control message for people already identifying with plant-based fitness |
-| `/fitness-coaching.html` | `broad_pain` | Challenger message for restarting, follow-through and busy-life pain while clearly disclosing the plant-based product |
+| `/fitness-coaching.html` | `broad_pain` | Fully broad challenger for restarting, follow-through and busy-life pain, with no plant-based positioning in the ad, landing page or DM handoff |
 
-Run both routes against the same AU$99 Founders Pass and broad Australia ad set. Keep the offer, budget and DM objective stable so the message route is the main experimental difference.
+Run both routes against the same AU$99 Founders Pass and broad Australia ad set. Keep the offer, budget and DM objective stable so the message route is the main experimental difference. The control keeps the plant-based identity end to end. The challenger stays broad end to end. Do not blend the copy after the click or inside DMs.
 
 ## Launch checklist
 
