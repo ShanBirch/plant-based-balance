@@ -1,3 +1,5 @@
+import { callOpenAIGeminiCompat } from "./lib/openai-responses.mjs";
+
 export default async (request, context) => {
     const corsHeaders = {
         'Access-Control-Allow-Origin': '*',
@@ -18,9 +20,9 @@ export default async (request, context) => {
         const userMessage = body.message || "";
         const history = body.history || [];
 
-        const API_KEY = globalThis.Netlify?.env?.get?.("GEMINI_API_KEY") || Deno.env.get("GEMINI_API_KEY");
+        const API_KEY = globalThis.Netlify?.env?.get?.("OPENAI_API_KEY") || Deno.env.get("OPENAI_API_KEY");
         if (!API_KEY) {
-            console.error("Missing GEMINI_API_KEY");
+            console.error("Missing OPENAI_API_KEY");
             return new Response(JSON.stringify({ error: "Server configuration error" }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -74,9 +76,15 @@ STRICT RULES:
 4. If they are ready, ask permission to send the Founders Pass link or send it when they request the link.
 `;
 
-        const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${API_KEY}`;
-
         const contents = [];
+        contents.push({
+            role: "user",
+            parts: [{ text: "SYSTEM_INSTRUCTION: " + systemInstruction }]
+        });
+        contents.push({
+            role: "model",
+            parts: [{ text: "Understood." }]
+        });
         history.forEach(h => {
             contents.push({
                 role: h.role === 'bot' ? 'model' : 'user',
@@ -90,28 +98,17 @@ STRICT RULES:
         });
 
         const payload = {
-            system_instruction: {
-                parts: [{ text: systemInstruction }]
-            },
             contents,
             generationConfig: {
                 maxOutputTokens: 300
             }
         };
 
-        const response = await fetch(apiEndpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+        const result = await callOpenAIGeminiCompat(payload, {
+            profile: "coach_fallback",
+            label: "website-sales-chat",
         });
-
-        if (!response.ok) {
-            const errText = await response.text();
-            console.error("Gemini API Error:", errText);
-            throw new Error(`Gemini API Error: ${response.status}`);
-        }
-
-        const data = await response.json();
+        const data = result.data;
         const candidate = data.candidates?.[0];
         const parts = candidate?.content?.parts || [];
         const reply = parts.map(p => p?.text || '').join('') || "Thinking...";

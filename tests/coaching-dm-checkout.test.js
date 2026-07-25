@@ -113,9 +113,10 @@ test('the paid acupressure bonus has every diagram it references', () => {
     }
 });
 
-test('website sales chat uses a stable current Gemini request shape', () => {
-    assert.match(salesBot, /gemini-3\.5-flash-lite:generateContent/);
-    assert.match(salesBot, /system_instruction/);
-    assert.doesNotMatch(salesBot, /SYSTEM_INSTRUCTION:/);
-    assert.doesNotMatch(salesBot, /temperature:\s*0\.7/);
+test('website sales chat uses the working OpenAI provider and shared compatibility wrapper', () => {
+    assert.match(salesBot, /OPENAI_API_KEY/);
+    assert.match(salesBot, /callOpenAIGeminiCompat/);
+    assert.match(salesBot, /profile:\s*"coach_fallback"/);
+    assert.doesNotMatch(salesBot, /generativelanguage\.googleapis\.com/);
+    assert.doesNotMatch(salesBot, /GEMINI_API_KEY/);
 });
