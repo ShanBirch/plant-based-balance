@@ -18,6 +18,26 @@ assert.equal(instantDraft.isBalanceLeadAutoSendEnabled({
     threadAutoSendEnabled: false,
 }), false, 'a disabled lead thread remains out of auto-send');
 
+assert.deepStrictEqual(instantDraft.getBalanceAutoContextBypass({
+    balanceAutoSendLane: true,
+    contextReview: {
+        required: true,
+        reasons: ['first_captured_reply_with_hidden_context'],
+        tracked_outbound_context: false,
+        context_dependent: true,
+    },
+    draft: { joined: 'Morning haha what’s up?' },
+    draftReview: { verdict: 'pass', issues: [], context_loss_suspected: true },
+    currentMessage: 'Yo',
+})?.reason, 'safe_first_captured_opener', 'a reviewed harmless opener can proceed without the old manager');
+assert.equal(instantDraft.getBalanceAutoContextBypass({
+    balanceAutoSendLane: true,
+    contextReview: { required: true, reasons: ['first_captured_reply_with_hidden_context'] },
+    draft: { joined: 'Join my coaching program with this link' },
+    draftReview: { verdict: 'pass', issues: [] },
+    currentMessage: 'Yo',
+}), null, 'a risky first-captured draft remains held');
+
 const held = instantDraft.getCocosCodexReviewHold({
     cocosAutoSendLane: true,
     voiceReplyTestLane: false,

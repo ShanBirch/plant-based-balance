@@ -552,7 +552,10 @@ const COCOS_SIMPLE_OPENER_RE = /^(yo+|yoo+|hey+|heya+|hi+|hello+|hiya+|morning+|
 const COCOS_RISKY_REPLY_RE = /\b(challenge|join|joined|sign\s*up|signup|link|price|cost|program|plan|meal|workout|coach|coaching|injur|injury|pain|hurt|sore|hospital|doctor|medical|sorry|grief|death|died|anxiety|depress|sad|trauma|pregnan|calorie|macro|eating disorder)\b/i;
 const COCOS_DRAFT_REVIEW_TIMEOUT_MS = 12000;
 const COCOS_DRAFT_REPAIR_TIMEOUT_MS = 9000;
-const BALANCE_SOFT_CONTEXT_REASONS = new Set(['draft_review_timeout']);
+const BALANCE_SOFT_CONTEXT_REASONS = new Set([
+    'first_captured_reply_with_hidden_context',
+    'draft_review_timeout',
+]);
 
 function draftTextFromDraft(draft) {
     if (!draft) return '';
@@ -748,21 +751,28 @@ function getBalanceAutoContextBypass({ balanceAutoSendLane, contextReview, draft
         .filter(Boolean)
         .map(v => String(v));
     if (!reasons.length || reasons.some(reason => !BALANCE_SOFT_CONTEXT_REASONS.has(reason))) return null;
-    if (!isReviewTimeoutOnly(draftReview)) return null;
 
     const latestText = normalizeCoachDraftText(currentMessage || contextReview.latest_text || '').trim();
     const draftText = draftTextFromDraft(draft);
+    const simpleFirstCapturedReply = reasons.includes('first_captured_reply_with_hidden_context')
+        && COCOS_SIMPLE_OPENER_RE.test(latestText)
+        && String(draftReview?.verdict || '').toLowerCase() === 'pass'
+        && !(Array.isArray(draftReview?.issues) && draftReview.issues.filter(Boolean).length);
+    const reviewTimeoutOnly = isReviewTimeoutOnly(draftReview);
+    if (!simpleFirstCapturedReply && !reviewTimeoutOnly) return null;
     const hasTrackedContext = contextReview.tracked_outbound_context === true;
     const contextIndependent = contextReview.context_dependent === false;
-    if (!hasTrackedContext && !contextIndependent) return null;
+    if (!simpleFirstCapturedReply && !hasTrackedContext && !contextIndependent) return null;
     if (!latestText || latestText.length > 260 || COCOS_RISKY_REPLY_RE.test(latestText)) return null;
     if (!draftText || draftText.length > 260 || COCOS_RISKY_REPLY_RE.test(draftText)) return null;
 
     return {
         allowed: true,
-        reason: contextIndependent ? 'soft_review_timeout_context_independent' : 'soft_review_timeout_tracked_context',
+        reason: simpleFirstCapturedReply
+            ? 'safe_first_captured_opener'
+            : (contextIndependent ? 'soft_review_timeout_context_independent' : 'soft_review_timeout_tracked_context'),
         context_reasons: reasons,
-        draft_review_reason: 'review_timeout',
+        draft_review_reason: simpleFirstCapturedReply ? 'passed_safe_opener' : 'review_timeout',
     };
 }
 
@@ -3985,19 +3995,39 @@ exports.handler = async (event) => {
             const existingAlert = existing[0];
             const existingData = existingAlert.data || {};
             const clearedContextHold = resolveStaleContextAutoHold({ existingAlert, existingData });
-            const existingScheduleData = clearedContextHold?.data || existingData;
+            const existingReplyText = existingAlert.suggested_message
+                || existingAlert.scheduled_reply_text
+                || existingData.draft_text
+                || '';
+            const storedBalanceContextBypass = existingData.auto_send_review_hold?.code === 'context_review'
+                ? getBalanceAutoContextBypass({
+                    balanceAutoSendLane: balanceLeadAutoSendLane,
+                    contextReview: existingData.context_review,
+                    draft: { joined: existingReplyText },
+                    draftReview: existingData.draft_review,
+                    currentMessage: existingData.message_preview,
+                })
+                : null;
+            const existingScheduleData = storedBalanceContextBypass?.allowed
+                ? {
+                    ...existingData,
+                    auto_send_review_hold: null,
+                    auto_send_context_bypass: {
+                        ...storedBalanceContextBypass,
+                        allowed_at: new Date().toISOString(),
+                    },
+                    auto_send_review_hold_cleared_at: new Date().toISOString(),
+                    auto_send_review_hold_cleared_reason: 'safe_first_captured_opener',
+                }
+                : (clearedContextHold?.data || existingData);
             const canResumeAutoSchedule = autoSendEnabled
                 && existingAlert.status === 'pending'
-                && (!existingData.auto_send_review_hold || !!clearedContextHold)
+                && (!existingData.auto_send_review_hold || !!clearedContextHold || !!storedBalanceContextBypass?.allowed)
                 && !existingData.auto_send_stopped
                 && (!cocosAutoSendLane
                     || existingData.outbound_voice_message === true
                     || existingData.approved_link_auto_sendable === true
                     || existingData.meta_ad_fast_lane === true);
-            const existingReplyText = existingAlert.suggested_message
-                || existingAlert.scheduled_reply_text
-                || existingData.draft_text
-                || '';
             if (existingAlert.status === 'pending' && !existingReplyText) {
                 regenerateExistingBlankAlert = existingAlert;
                 console.warn(`[ig-draft] duplicate alert ${existingAlert.id} has an empty draft, regenerating`);
@@ -5238,13 +5268,11 @@ exports.handler = async (event) => {
         });
     }
 
-    // Direct auto-DM path is only for isolated test lanes. Balance IG/FB
-    // replies must first pass through the Codex lead/client manager, which
-    // stamps codex_review; the scheduled worker promotes only those approved
-    // rows into the auto lane.
+    // Balance-owned unlinked leads schedule through the AI coach worker.
+    // Linked clients and explicit safety/review holds remain approval-only.
     let autoHandled = false;
     const blockedStage = ['churned'].includes(effectiveLeadStage);
-    const balanceAutoSendLane = false;
+    const balanceAutoSendLane = balanceLeadAutoSendLane;
     const cocosContextBypass = getCocosAutoContextBypass({
         cocosAutoSendLane,
         contextReview: effectiveContextReview,
