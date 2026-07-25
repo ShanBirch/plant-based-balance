@@ -100,4 +100,28 @@ assert.strictEqual(
     '2026-07-25T21:17:46.000Z'
 );
 
-console.log('meta ig reconcile inbox tests passed');
+(async () => {
+    const collected = await reconcileTest.collectRecentConversationMessages({
+        conversations: [
+            { id: 'stale-inaccessible', updated_time: '2026-07-25T22:10:00.000Z' },
+            { id: 'krish-valid', updated_time: '2026-07-25T21:17:46.000Z' },
+        ],
+        token: 'test-token',
+        messageLimit: 12,
+        maxMessages: 40,
+        cutoffMs: Date.parse('2026-07-24T22:00:00.000Z'),
+        startedAt: 0,
+        now: () => 1,
+        fetchMessages: async ({ conversationId }) => {
+            if (conversationId === 'stale-inaccessible') throw new Error('Graph 400 unsupported object');
+            return [{ id: 'krish-yo', created_time: '2026-07-25T21:17:46.000Z', message: 'Yo' }];
+        },
+    });
+    assert.strictEqual(collected.conversationsScanned, 2);
+    assert.strictEqual(collected.errors.length, 1, 'one inaccessible conversation is recorded');
+    assert.deepStrictEqual(collected.replayMessages.map(message => message.id), ['krish-yo'], 'later valid DMs still replay');
+    console.log('meta ig reconcile inbox tests passed');
+})().catch(error => {
+    console.error(error);
+    process.exitCode = 1;
+});

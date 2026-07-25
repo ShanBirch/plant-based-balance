@@ -364,6 +364,49 @@ function messageIsRecent(message, cutoffMs) {
     return created >= cutoffMs;
 }
 
+async function collectRecentConversationMessages({
+    conversations = [],
+    token,
+    messageLimit,
+    maxMessages,
+    cutoffMs,
+    startedAt,
+    fetchMessages = fetchConversationMessages,
+    now = () => Date.now(),
+}) {
+    const replayMessages = [];
+    const errors = [];
+    let conversationsScanned = 0;
+    let messagesSeen = 0;
+    for (const conversation of conversations) {
+        if (now() - startedAt > MAX_RUNTIME_MS) break;
+        if (conversation.updated_time && timestampMs(conversation.updated_time) < cutoffMs) continue;
+        conversationsScanned += 1;
+        let messages;
+        try {
+            messages = await fetchMessages({
+                conversationId: conversation.id,
+                token,
+                limit: messageLimit,
+            });
+        } catch (err) {
+            errors.push({
+                conversation_id: cleanId(conversation.id) || null,
+                error: String(err?.message || err || 'conversation_fetch_failed').slice(0, 500),
+            });
+            continue;
+        }
+        const recent = messages.filter(message => messageIsRecent(message, cutoffMs));
+        messagesSeen += recent.length;
+        for (const message of recent) {
+            replayMessages.push(message);
+            if (replayMessages.length >= maxMessages) break;
+        }
+        if (replayMessages.length >= maxMessages) break;
+    }
+    return { replayMessages, errors, conversationsScanned, messagesSeen };
+}
+
 async function reconcileAccount({ account, body, startedAt }) {
     const accountId = cleanId(account.ownerId);
     const lookbackHours = readInt(body.lookback_hours ?? body.lookbackHours, LOOKBACK_HOURS, 1, 168);
@@ -378,6 +421,7 @@ async function reconcileAccount({ account, body, startedAt }) {
         account_id: accountId,
         bot_account: account.botAccount || null,
         conversations_scanned: 0,
+        conversation_errors: [],
         messages_seen: 0,
         messages_replayed: 0,
         graph: { processed: 0, inserted: 0, drafted: 0, skipped: 0, outboundCleared: 0 },
@@ -395,24 +439,18 @@ async function reconcileAccount({ account, body, startedAt }) {
         limit: conversationLimit,
         maxPages,
     });
-    const replayMessages = [];
-    for (const conversation of conversations) {
-        if (Date.now() - startedAt > MAX_RUNTIME_MS) break;
-        if (conversation.updated_time && timestampMs(conversation.updated_time) < cutoffMs) continue;
-        summary.conversations_scanned += 1;
-        const messages = await fetchConversationMessages({
-            conversationId: conversation.id,
-            token,
-            limit: messageLimit,
-        });
-        const recent = messages.filter(message => messageIsRecent(message, cutoffMs));
-        summary.messages_seen += recent.length;
-        for (const message of recent) {
-            replayMessages.push(message);
-            if (replayMessages.length >= maxMessages) break;
-        }
-        if (replayMessages.length >= maxMessages) break;
-    }
+    const collected = await collectRecentConversationMessages({
+        conversations,
+        token,
+        messageLimit,
+        maxMessages,
+        cutoffMs,
+        startedAt,
+    });
+    const replayMessages = collected.replayMessages;
+    summary.conversations_scanned = collected.conversationsScanned;
+    summary.messages_seen = collected.messagesSeen;
+    summary.conversation_errors = collected.errors;
 
     const payload = buildWebhookPayloadFromMessages({
         accountId,
@@ -515,6 +553,7 @@ exports._test = {
     messageIsRecent,
     isScheduledInvocation,
     isAuthorized,
+    collectRecentConversationMessages,
     newestIso,
     sortAccountsByRecentActivity,
 };
