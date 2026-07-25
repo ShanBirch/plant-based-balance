@@ -17,6 +17,18 @@ assert.equal(instantDraft.isBalanceLeadAutoSendEnabled({
     linkedUserId: null,
     threadAutoSendEnabled: false,
 }), false, 'a disabled lead thread remains out of auto-send');
+assert.equal(instantDraft.isCanceledLatestRecoveryCandidate({
+    status: 'canceled',
+    data: { cancel_reason: 'superseded_by_new_message' },
+    autoSendEnabled: true,
+    isLatestInbound: true,
+}), true, 'an out-of-order worker may revive the canonical latest inbound');
+assert.equal(instantDraft.isCanceledLatestRecoveryCandidate({
+    status: 'canceled',
+    data: { cancel_reason: 'superseded_by_new_message' },
+    autoSendEnabled: true,
+    isLatestInbound: false,
+}), false, 'a genuinely superseded alert remains canceled');
 
 assert.deepStrictEqual(instantDraft.getBalanceAutoContextBypass({
     balanceAutoSendLane: true,

@@ -1906,6 +1906,21 @@ function isBalanceLeadAutoSendEnabled({ linkedUserId = null, threadAutoSendEnabl
     return !linkedUserId && threadAutoSendEnabled === true;
 }
 
+function isCanceledLatestRecoveryCandidate({ status, data = {}, autoSendEnabled, isLatestInbound } = {}) {
+    return autoSendEnabled === true
+        && status === 'canceled'
+        && data.cancel_reason === 'superseded_by_new_message'
+        && isLatestInbound === true;
+}
+
+async function isLatestInboundMessageForThread({ threadId, manychatMessageId }) {
+    if (!threadId || !manychatMessageId) return false;
+    const rows = await supabaseQuery(
+        `ig_messages?select=manychat_message_id&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.in&order=created_at.desc,id.desc&limit=1`
+    );
+    return String(rows?.[0]?.manychat_message_id || '') === String(manychatMessageId);
+}
+
 function getCocosCodexReviewHold({ cocosAutoSendLane, voiceReplyTestLane, approvedCoachingLinkHandoff, metaAdFastLane } = {}) {
     if (!cocosAutoSendLane) return null;
     if (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane) return null;
@@ -3994,7 +4009,45 @@ exports.handler = async (event) => {
         );
         if (existing.length > 0) {
             const existingAlert = existing[0];
-            const existingData = existingAlert.data || {};
+            let existingData = existingAlert.data || {};
+            let latestInboundConfirmed = false;
+            if (autoSendEnabled
+                && existingAlert.status === 'canceled'
+                && existingData.cancel_reason === 'superseded_by_new_message') {
+                try {
+                    latestInboundConfirmed = await isLatestInboundMessageForThread({ threadId, manychatMessageId });
+                } catch (err) {
+                    console.warn(`[ig-draft] latest-inbound recovery check failed for ${existingAlert.id}:`, err.message);
+                }
+            }
+            if (isCanceledLatestRecoveryCandidate({
+                status: existingAlert.status,
+                data: existingData,
+                autoSendEnabled,
+                isLatestInbound: latestInboundConfirmed,
+            })) {
+                const recoveredAt = new Date().toISOString();
+                existingData = {
+                    ...existingData,
+                    cancel_reason: null,
+                    canceled_at: null,
+                    recovered_latest_inbound_at: recoveredAt,
+                    recovered_latest_inbound_reason: 'out_of_order_draft_completion',
+                };
+                const recovered = await supabaseQuery(
+                    `coach_alerts?id=eq.${encodeURIComponent(existingAlert.id)}&status=eq.canceled`,
+                    {
+                        method: 'PATCH',
+                        body: { status: 'pending', data: existingData },
+                        prefer: 'return=representation',
+                    }
+                );
+                if (recovered?.[0]) {
+                    existingAlert.status = 'pending';
+                    existingAlert.data = existingData;
+                    console.warn(`[ig-draft] revived latest canceled alert ${existingAlert.id} after out-of-order draft completion`);
+                }
+            }
             const clearedContextHold = resolveStaleContextAutoHold({ existingAlert, existingData });
             const existingReplyText = existingAlert.suggested_message
                 || existingAlert.scheduled_reply_text
@@ -5572,6 +5625,7 @@ exports._test = {
     getAutoDmHoldReason,
     getCocosCodexReviewHold,
     isBalanceLeadAutoSendEnabled,
+    isCanceledLatestRecoveryCandidate,
     isCurrentMetaAdInbound,
     isMetaAdFastLaneEligible,
     resolveMetaAdFlowVariant,
