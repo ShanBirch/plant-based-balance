@@ -200,7 +200,8 @@ BALANCE APP AND ONBOARDING GUIDE:
 - Founders Pass path: the branded page is https://plantbased-balance.org/plant-based-fitness.html. It explains the AU$99 one-time offer, collects legal acceptance, and opens Stripe Checkout. Payment is not complete until Stripe confirms it. After a successful purchase, the buyer is taken to https://plantbased-balance.org/login.html?action=signup to create or access their Balance account.
 - New-member setup begins after signup. The conversational intake asks for name, age, height, current weight, first-30-day direction, three realistic weekly anchors, the main thing that knocks them off track, real competing priorities such as work/kids/study/caring, reliable weekly capacity, the least-disrupted time window, an intentionally easy starter-session length, optional goal weight, training location/equipment, activity and energy, dietary requirements, learning interests, and optional Instagram handle.
 - The rest of onboarding personalises the starting experience: training frequency/split and exercise likes or avoids, a weekly workout preview, cuisine/favourite-food/dislike/cooking-time preferences for meals, optional character and profile photo setup, then the first three Weekly Goals. Their onboarding answers are available as coaching context, so use the person's actual goal, blocker, equipment, food restrictions, learning interests, and weekly anchors instead of asking for them again.
-- First coaching touch after completed setup: verify the saved state before writing. If fewer than three current Weekly Goals are saved, reflect their chosen starter routine and ask only whether they have picked their three Weekly Goals on Home. If all three are saved, acknowledge that and ask which chosen day will be their first session. Do not ask for their schedule, training frequency, preferred time, competing priorities, or starter duration again when onboarding already contains them. Give the member the suggestion and reason, while leaving the final days, time and frequency under their control.
+- First coaching touch after completed setup: verify the saved state before writing. Welcome them, truthfully reflect whether their meal plan and three current Weekly Goals are ready, and ask only how setup went or about the missing item. Do not ask for their schedule, training frequency, preferred time, competing priorities, or starter duration again when onboarding already contains them. Give the member the suggestion and reason, while leaving the final days, time and frequency under their control.
+- The deterministic in-app welcome is sent once after completed setup. Wait for the member's response before moving on. If they are stuck, solve the setup issue first. If their first reply clearly confirms setup and Weekly Goals are sorted, automatically send only: "yeah nice 🙌 when are you thinking you’ll get your first session done?" If they already name a day or time, acknowledge that instead of asking it again. Let them keep the final choice.
 - A new member's first meal plan should be prepared from their saved calorie and macro targets before the welcome is queued, but only after the saved food preferences pass the template safety check. Restrictions or dislikes that need individual handling stay held for Shannon's review. Only say a plan is ready when an active meal plan exists. If it does not, investigate or route the generation issue instead of telling them to wait, regenerate repeatedly, or use another nutrition app.
 - If setup is interrupted, first establish the exact stage: payment page, account creation/login, conversational intake, training setup, nutrition setup, profile/character, Weekly Goals, or the main app. Do not send a generic restart instruction. Give the next step for that stage or route a real access/data problem into app support.
 - Home: main dashboard, character, Weekly Goals, weight/daily weigh-in, progress, streaks, achievements, mood/energy/stress check-ins, friend nudges, and weekly progress cards.
@@ -874,18 +875,24 @@ async function maybeAutoSendDraft({
     siteUrl,
     sendConfirmationPush = true,
     pushTitlePrefix = 'ðŸ“¤ Auto-sent',
+    forceSend = false,
 }) {
     if (!coachId || !clientId || !alertId) return false;
     draftText = normalizeGeneratedCoachDraftText(draftText);
     if (!draftText || !draftText.trim()) return false;
 
-    let enabled = false;
-    try {
-        enabled = await isAutoSendEnabled(coachId, clientId);
-    } catch (e) {
-        return false;
+    const deterministicAlertTypes = new Set(['onboarding_welcome', 'onboarding_first_session']);
+    if (forceSend && !deterministicAlertTypes.has(alertType)) return false;
+
+    if (!forceSend) {
+        let enabled = false;
+        try {
+            enabled = await isAutoSendEnabled(coachId, clientId);
+        } catch (e) {
+            return false;
+        }
+        if (!enabled) return false;
     }
-    if (!enabled) return false;
 
     const sentAt = new Date().toISOString();
 
@@ -917,7 +924,7 @@ async function maybeAutoSendDraft({
             sent_message: draftText,
             was_edited: false,
             sent_at: sentAt,
-            sent_via: 'auto_send',
+            sent_via: forceSend ? 'deterministic_onboarding_auto_send' : 'auto_send',
             auto_sent_alert_type: alertType || existingData.milestone || 'unknown',
         };
         await supabaseQuery(`coach_alerts?id=eq.${alertId}`, {

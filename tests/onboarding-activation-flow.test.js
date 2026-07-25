@@ -8,6 +8,7 @@ const contextPath = path.join(__dirname, '../netlify/functions/_lib/client-conte
 const onboardingSource = fs.readFileSync(onboardingPath, 'utf8');
 const contextSource = fs.readFileSync(contextPath, 'utf8');
 const { _buildWelcomeDraft } = require('../netlify/functions/onboarding-welcome-draft');
+const { _isClearOnboardingSetupConfirmation } = require('../netlify/functions/instant-coach-draft');
 
 test('completed onboarding prepares the first active meal plan before coach assignment', () => {
     assert.match(onboardingSource, /async function ensureInitialOnboardingMealPlan\(\)/);
@@ -34,7 +35,7 @@ test('the curated starter plan is held when preferences need an individual safet
     );
 });
 
-test('first coaching touch uses saved routine and asks for missing Weekly Goals', () => {
+test('first coaching touch welcomes the member and asks for missing Weekly Goals', () => {
     const draft = _buildWelcomeDraft('Taylor Smith', {
         weeklyGoals: [],
         mealPlanReady: true,
@@ -43,15 +44,13 @@ test('first coaching touch uses saved routine and asks for missing Weekly Goals'
         routineWindow: 'after_work',
     }).text;
 
-    assert.match(draft, /^Hey Taylor, you're in/);
+    assert.match(draft, /^hey Taylor, saw you made it in/);
     assert.match(draft, /meal plan is ready in Nutrition/);
-    assert.match(draft, /Monday and Thursday/);
-    assert.match(draft, /15-minute minimum/);
-    assert.match(draft, /picked your three Weekly Goals on Home yet\?/);
-    assert.doesNotMatch(draft, /How are you doing/);
+    assert.match(draft, /picked your three weekly goals on Home yet\?/);
+    assert.doesNotMatch(draft, /first session/);
 });
 
-test('first coaching touch moves to first-session timing when Weekly Goals are saved', () => {
+test('first coaching touch waits for a response when Weekly Goals are saved', () => {
     const draft = _buildWelcomeDraft('Taylor', {
         weeklyGoals: [{ id: 'one' }, { id: 'two' }, { id: 'three' }],
         mealPlanReady: true,
@@ -60,8 +59,9 @@ test('first coaching touch moves to first-session timing when Weekly Goals are s
         routineWindow: 'before_day',
     }).text;
 
-    assert.match(draft, /Which day are you thinking for your first session\?/);
-    assert.doesNotMatch(draft, /have you picked your three Weekly Goals/);
+    assert.match(draft, /meal plan and weekly goals are all sorted/);
+    assert.match(draft, /how did you go with setup\?/);
+    assert.doesNotMatch(draft, /first session/);
 });
 
 test('welcome is honest when the meal plan needs a food-preference review', () => {
@@ -81,4 +81,25 @@ test('DM grounding keeps activation questions state-based and user-controlled', 
     assert.match(contextSource, /First coaching touch after completed setup:/);
     assert.match(contextSource, /leaving the final days, time and frequency under their control/);
     assert.match(contextSource, /Only say a plan is ready when an active meal plan exists/);
+});
+
+test('clear first reply after the fixed welcome unlocks the automatic first-session question', () => {
+    const lastOutboundText = 'hey Taylor, saw you made it in 🙌 welcome. looks like your meal plan and weekly goals are all sorted. how did you go with setup?';
+
+    assert.equal(_isClearOnboardingSetupConfirmation({ message: 'yep all sorted', lastOutboundText }), true);
+    assert.equal(_isClearOnboardingSetupConfirmation({ message: 'yeah, got it', lastOutboundText }), true);
+});
+
+test('stuck, ambiguous, media, or already-timed onboarding replies stay out of the fixed follow-up', () => {
+    const lastOutboundText = 'hey Taylor, saw you made it in 🙌 welcome. your meal plan is ready in Nutrition. have you picked your three weekly goals on Home yet?';
+
+    assert.equal(_isClearOnboardingSetupConfirmation({ message: 'not yet, where are they?', lastOutboundText }), false);
+    assert.equal(_isClearOnboardingSetupConfirmation({ message: 'yeah, I will train Monday', lastOutboundText }), false);
+    assert.equal(_isClearOnboardingSetupConfirmation({ message: '[AUDIO: https://example.com/note.m4a]', lastOutboundText }), false);
+    assert.equal(_isClearOnboardingSetupConfirmation({ message: 'yep', lastOutboundText: 'How did training go?' }), false);
+});
+
+test('a pending meal-plan review does not claim the whole setup is complete', () => {
+    const lastOutboundText = "hey Taylor, saw you made it in 🙌 welcome. i'm just checking your meal plan against your food preferences. have you picked your three weekly goals on Home yet?";
+    assert.equal(_isClearOnboardingSetupConfirmation({ message: 'yes', lastOutboundText }), false);
 });

@@ -110,6 +110,29 @@ function isSimpleReply(message) {
     return false;
 }
 
+function isClearOnboardingSetupConfirmation({ message, lastOutboundText }) {
+    const reply = String(message || '').trim().toLowerCase().replace(/[’]/g, "'");
+    const prior = String(lastOutboundText || '').trim().toLowerCase().replace(/[’]/g, "'");
+
+    // This deterministic branch belongs only to the first reply after the
+    // fixed in-app welcome. Once the follow-up is sent it no longer matches,
+    // so later acknowledgements cannot accidentally retrigger it.
+    if (!prior.includes('saw you made it in') || !prior.includes('welcome')) return false;
+    if (!reply || reply.length > 240 || /\[(?:photo|video|audio):/i.test(reply)) return false;
+
+    // A meal-plan review is still in progress, so "yes" only confirms the
+    // Weekly Goals question — it does not mean the whole setup is finished.
+    if (prior.includes("i'm just checking your meal plan")) return false;
+
+    // Anything unclear, negative, stuck, or already answering the session-
+    // timing question stays in the normal coaching/support reply path.
+    const needsHelpOrIsIncomplete = /(?:^|\b)(?:no|nope|nah|not yet|haven't|havent|hasn't|hasnt|can't|cant|cannot|couldn't|couldnt|stuck|help|missing|issue|problem|later|not done|didn't|didnt)(?:\b|$)|\?|\b(?:where|how do|how can|what do)\b/i;
+    const alreadySharedTiming = /\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tonight|tomorrow|morning|afternoon|evening|weekend|first session|first workout|at \d{1,2}(?::\d{2})?)\b/i;
+    if (needsHelpOrIsIncomplete.test(reply) || alreadySharedTiming.test(reply)) return false;
+
+    return /(?:^|\b)(?:yes|yep|yup|yeah|yea|all set|all sorted|sorted|done|got it|found it|set them|set both|all good|went well|easy)(?:\b|$)/i.test(reply);
+}
+
 function replaceVideoMarkers(text, replacer) {
     return String(text || '').replace(/\[(?:VIDEO|video):\s*(https?:\/\/[^\s\]"']+)\]/gi, (_, url) => replacer(url));
 }
@@ -730,7 +753,7 @@ exports.handler = async (event) => {
     }
 
     // 4. Short-circuit for trivial replies and queue form-check videos.
-    const simple = isSimpleReply(messageText) && !activeCheckinThread;
+    let simple = isSimpleReply(messageText) && !activeCheckinThread;
     const isFormCheck = /\bform check request\b/i.test(messageText) && /\[(?:VIDEO|video):\s*https?:\/\//i.test(messageText);
 
     let draftText = '';
@@ -789,6 +812,23 @@ exports.handler = async (event) => {
         conversationHistory,
         clientId: senderId,
     });
+    const onboardingFirstSessionFollowup = isClearOnboardingSetupConfirmation({
+        message: messageText,
+        lastOutboundText: lastOutboundMessage?.text,
+    });
+    if (onboardingFirstSessionFollowup) {
+        // Shannon explicitly approved this one-question onboarding step. It
+        // waits for a clear setup confirmation and uses fixed wording.
+        simple = false;
+        draftText = 'yeah nice 🙌 when are you thinking you’ll get your first session done?';
+        draftModel = 'deterministic-onboarding-first-session';
+        draftBaseModel = draftModel;
+        draftEvidence = {
+            source_mode: 'deterministic_onboarding_followup',
+            current_message: truncate(messageText, 400),
+            last_outbound_message: lastOutboundMessage,
+        };
+    }
 
     // Lifecycle stage drives the coloured dot Shannon scans on the push +
     // alert card. For in-app DMs the sender IS the user, so we resolve
@@ -805,7 +845,7 @@ exports.handler = async (event) => {
             currentMessage: messageText,
         });
 
-    if (!simple && !isFormCheck) {
+    if (!simple && !isFormCheck && !onboardingFirstSessionFollowup) {
         try {
             const [memory, onboardingPhase, igContext, coachDayNotes] = await Promise.all([
                 loadClientMemory(receiverId, senderId),
@@ -936,6 +976,7 @@ exports.handler = async (event) => {
             checkin_thread_context: activeCheckinThread,
             draft_evidence: draftEvidence,
             lifecycle,
+            onboarding_first_session_followup: onboardingFirstSessionFollowup || undefined,
         },
     };
 
@@ -1031,9 +1072,11 @@ exports.handler = async (event) => {
             clientId: senderId,
             clientName,
             alertId,
-            alertType: 'incoming_dm',
+            alertType: onboardingFirstSessionFollowup ? 'onboarding_first_session' : 'incoming_dm',
             draftText,
             siteUrl: SITE_URL,
+            sendConfirmationPush: !onboardingFirstSessionFollowup,
+            forceSend: onboardingFirstSessionFollowup,
             pushTitlePrefix: '💬 Auto-replied',
         });
     }
@@ -1094,3 +1137,5 @@ exports.handler = async (event) => {
         }),
     };
 };
+
+exports._isClearOnboardingSetupConfirmation = isClearOnboardingSetupConfirmation;

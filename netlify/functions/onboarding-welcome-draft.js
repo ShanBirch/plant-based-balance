@@ -160,43 +160,24 @@ async function seedMemoryFromInvitation({ coachId, clientId }) {
 // Draft generation
 // ============================================================
 
-const ROUTINE_WINDOW_LABELS = {
-    before_day: 'before the day starts',
-    midday: 'around lunch or midday',
-    after_work: 'after work or school',
-    evening: 'later in the evening',
-    varies: 'around the easiest window each day',
-};
-
-function joinNatural(items) {
-    if (!items.length) return '';
-    if (items.length === 1) return items[0];
-    return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
-}
-
-function buildRoutineSentence(facts) {
-    const parts = [];
-    const days = joinNatural((facts.trainingDays || []).map(day => day.charAt(0).toUpperCase() + day.slice(1)));
-    if (days) parts.push(days);
-    else if (facts.trainingFrequency) parts.push(`${facts.trainingFrequency} sessions a week`);
-    if (facts.starterSessionMinutes) parts.push(`a ${facts.starterSessionMinutes}-minute minimum`);
-    if (facts.routineWindow) parts.push(ROUTINE_WINDOW_LABELS[facts.routineWindow] || String(facts.routineWindow).replace(/_/g, ' '));
-    return parts.length ? `You chose ${joinNatural(parts)}.` : '';
-}
-
 function buildWelcomeDraft(clientName, facts = {}) {
     const firstName = (clientName || '').split(/\s+/)[0] || 'there';
     const goalsAreSet = Array.isArray(facts.weeklyGoals) && facts.weeklyGoals.length >= 3;
-    const mealPlanLine = facts.mealPlanReady
-        ? ' Your first meal plan is ready in Nutrition.'
-        : facts.mealPlanNeedsReview
-            ? ' I’m checking your meal plan against your food preferences before I point you to it.'
-            : '';
-    const routineLine = buildRoutineSentence(facts);
-    const nextQuestion = goalsAreSet
-        ? 'Which day are you thinking for your first session?'
-        : 'First thing, have you picked your three Weekly Goals on Home yet?';
-    const text = `Hey ${firstName}, you're in 🙌${mealPlanLine} ${routineLine} ${nextQuestion}`
+    let setupLine = '';
+    if (facts.mealPlanReady && goalsAreSet) {
+        setupLine = 'looks like your meal plan and weekly goals are all sorted. how did you go with setup?';
+    } else if (facts.mealPlanNeedsReview) {
+        setupLine = goalsAreSet
+            ? 'your weekly goals are sorted. i’m just checking your meal plan against your food preferences. how did you go with setup?'
+            : 'i’m just checking your meal plan against your food preferences. have you picked your three weekly goals on Home yet?';
+    } else if (facts.mealPlanReady) {
+        setupLine = 'your meal plan is ready in Nutrition. have you picked your three weekly goals on Home yet?';
+    } else if (goalsAreSet) {
+        setupLine = 'your weekly goals are sorted. have you found your meal plan in Nutrition yet?';
+    } else {
+        setupLine = 'have you found your meal plan in Nutrition and picked your three weekly goals on Home yet?';
+    }
+    const text = `hey ${firstName}, saw you made it in 🙌 welcome. ${setupLine}`
         .replace(/\s+/g, ' ')
         .trim();
     return { text, model: 'static-template' };
@@ -341,8 +322,8 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: 'Alert insert failed', details: err.message }) };
     }
 
-    // 5. Auto-send for trusted clients, otherwise push the approve-gate
-    //    notification.
+    // 5. This one fixed, state-checked onboarding message sends immediately.
+    //    Ordinary coaching replies keep the normal per-client approval gate.
     let autoSent = false;
     if (draftText && alertId) {
         autoSent = await maybeAutoSendDraft({
@@ -354,6 +335,8 @@ exports.handler = async (event) => {
             draftText,
             siteUrl: SITE_URL,
             pushTitlePrefix: '👋 Auto-welcomed',
+            sendConfirmationPush: false,
+            forceSend: true,
         });
     }
 

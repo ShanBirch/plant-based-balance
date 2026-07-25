@@ -98,7 +98,7 @@ Current strategic priority: build the AI-operated business layer around Balance:
 - Position the service as personal coaching from Shannon.
 - Approved public-facing framing: "weekly check-ins with Shannon", "Shannon in your corner", "ongoing support".
 - No em dashes in user-facing copy. Use commas, periods, colons, parentheses, or rewrite.
-- Auto-send is off by default for new clients. Turn it on per client only after enough voice-match confidence.
+- Auto-send is off by default for new clients. The only onboarding exceptions are the fixed, state-checked in-app welcome sent once after onboarding completes and the fixed first-session question sent only after the member's first clear setup-confirming reply. A stuck, negative, ambiguous, media, or already-timed reply stays in the normal approval path, as do all later coaching replies until that client has enough voice-match confidence.
 - Shannon's coaching voice varies by gender and individual. The system must observe Shannon's actual sent messages before trusting automation.
 - Push directly to `main` when shipping. No PR ceremony unless Shannon explicitly asks. Treat pushing `main` for Netlify deploy as the default ship path.
 - Auto-ship by default after making repo changes: once Codex completes and verifies an edit Shannon asked for, commit the focused change and push it to `origin/main` without waiting for Shannon to say "push". This applies to code, docs, migrations, Netlify functions, app assets, and instruction updates.
