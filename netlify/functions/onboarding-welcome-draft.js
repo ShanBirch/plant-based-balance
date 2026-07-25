@@ -4,9 +4,9 @@
  * Fires the moment a client is assigned to a coach (coach_clients INSERT).
  * See database/coach_clients_onboarding_trigger.sql.
  *
- * Drops a short, fixed welcome template ("Hey {name}, thanks so much for
- * joining us...") onto Shannon's lockscreen with the inline-reply action
- * pre-filled — same UX as every other coach_draft_ready notification.
+ * Drops a short, state-based welcome onto Shannon's lockscreen. It reflects
+ * the member's saved routine, Weekly Goals and verified meal-plan state, with
+ * the inline-reply action pre-filled like every other coach draft.
  */
 
 const {
@@ -25,7 +25,17 @@ const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 // ============================================================
 
 async function loadOnboardingFacts(clientId) {
-    const facts = { name: 'Client', onboarding: [] };
+    const facts = {
+        name: 'Client',
+        onboarding: [],
+        weeklyGoals: [],
+        mealPlanReady: false,
+        mealPlanNeedsReview: false,
+        trainingDays: [],
+        trainingFrequency: null,
+        routineWindow: null,
+        starterSessionMinutes: null,
+    };
 
     try {
         const users = await supabaseQuery(`users?select=id,name,email,sex,program_start_date&id=eq.${clientId}&limit=1`);
@@ -47,6 +57,13 @@ async function loadOnboardingFacts(clientId) {
         }
         if (pd.goalBodyType) facts.onboarding.push(`Body type goal: ${pd.goalBodyType}`);
         if (pd.training_frequency) facts.onboarding.push(`Training frequency: ${pd.training_frequency}x/week`);
+        facts.trainingFrequency = Number(pd.training_frequency || pd.recommended_training_frequency) || null;
+        facts.trainingDays = String(pd.training_days || '')
+            .split(',')
+            .map(day => day.trim())
+            .filter(Boolean);
+        facts.routineWindow = pd.routine_window || pd.goal_catcher?.routine_window || null;
+        facts.starterSessionMinutes = Number(pd.starter_session_minutes || pd.goal_catcher?.starter_session_minutes) || null;
         if (pd.equipment_access) facts.onboarding.push(`Equipment: ${pd.equipment_access}`);
         const exercisePrefs = pd.exercise_preferences || {};
         if (Array.isArray(exercisePrefs.liked_exercises) && exercisePrefs.liked_exercises.length) {
@@ -58,6 +75,38 @@ async function loadOnboardingFacts(clientId) {
         if (pd.dietary_preference) facts.onboarding.push(`Diet: ${pd.dietary_preference}`);
         if (pd.activity_level) facts.onboarding.push(`Activity level: ${pd.activity_level}`);
         if (pd.profile) facts.onboarding.push(`Profile: ${pd.profile}`);
+    } catch (e) { /* non-critical */ }
+
+    try {
+        const weeklyRows = await supabaseQuery(
+            `weekly_goals?select=selected_goals,week_start,week_end,status&user_id=eq.${clientId}&order=week_start.desc&limit=1`
+        );
+        facts.weeklyGoals = Array.isArray(weeklyRows[0]?.selected_goals)
+            ? weeklyRows[0].selected_goals
+            : [];
+    } catch (e) { /* non-critical */ }
+
+    try {
+        const plans = await supabaseQuery(
+            `ai_generated_meal_plans?select=id,plan_name,status,created_at&user_id=eq.${clientId}&status=eq.active&order=created_at.desc&limit=1`
+        );
+        facts.mealPlanReady = !!plans[0]?.id;
+        facts.mealPlanName = plans[0]?.plan_name || null;
+    } catch (e) { /* non-critical */ }
+
+    try {
+        const foodRows = await supabaseQuery(
+            `user_food_preferences?select=dietary_requirements,allergies,dislikes&user_id=eq.${clientId}&limit=1`
+        );
+        const food = foodRows[0] || {};
+        const requirements = Array.isArray(food.dietary_requirements) ? food.dietary_requirements : [];
+        const allergies = Array.isArray(food.allergies) ? food.allergies : [];
+        const dislikes = Array.isArray(food.dislikes) ? food.dislikes : [];
+        const safeRequirements = new Set(['vegan', 'plant_based', 'vegetarian', 'dairy_free', 'egg_free', 'shellfish_free', 'halal', 'kosher']);
+        const safeAllergies = new Set(['dairy', 'egg', 'eggs', 'shellfish', 'fish', 'meat']);
+        facts.mealPlanNeedsReview = requirements.some(value => !safeRequirements.has(String(value).toLowerCase()))
+            || allergies.some(value => !safeAllergies.has(String(value).toLowerCase()))
+            || dislikes.some(value => String(value || '').trim());
     } catch (e) { /* non-critical */ }
 
     return facts;
@@ -111,9 +160,45 @@ async function seedMemoryFromInvitation({ coachId, clientId }) {
 // Draft generation
 // ============================================================
 
-function buildWelcomeDraft(clientName) {
+const ROUTINE_WINDOW_LABELS = {
+    before_day: 'before the day starts',
+    midday: 'around lunch or midday',
+    after_work: 'after work or school',
+    evening: 'later in the evening',
+    varies: 'around the easiest window each day',
+};
+
+function joinNatural(items) {
+    if (!items.length) return '';
+    if (items.length === 1) return items[0];
+    return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+function buildRoutineSentence(facts) {
+    const parts = [];
+    const days = joinNatural((facts.trainingDays || []).map(day => day.charAt(0).toUpperCase() + day.slice(1)));
+    if (days) parts.push(days);
+    else if (facts.trainingFrequency) parts.push(`${facts.trainingFrequency} sessions a week`);
+    if (facts.starterSessionMinutes) parts.push(`a ${facts.starterSessionMinutes}-minute minimum`);
+    if (facts.routineWindow) parts.push(ROUTINE_WINDOW_LABELS[facts.routineWindow] || String(facts.routineWindow).replace(/_/g, ' '));
+    return parts.length ? `You chose ${joinNatural(parts)}.` : '';
+}
+
+function buildWelcomeDraft(clientName, facts = {}) {
     const firstName = (clientName || '').split(/\s+/)[0] || 'there';
-    const text = `Hey ${firstName}, thanks so much for joining us. I'm Coach Shannon — I built this app this year. If you ever need anything or have any suggestions for the app, let me know. How are you doing?`;
+    const goalsAreSet = Array.isArray(facts.weeklyGoals) && facts.weeklyGoals.length >= 3;
+    const mealPlanLine = facts.mealPlanReady
+        ? ' Your first meal plan is ready in Nutrition.'
+        : facts.mealPlanNeedsReview
+            ? ' I’m checking your meal plan against your food preferences before I point you to it.'
+            : '';
+    const routineLine = buildRoutineSentence(facts);
+    const nextQuestion = goalsAreSet
+        ? 'Which day are you thinking for your first session?'
+        : 'First thing, have you picked your three Weekly Goals on Home yet?';
+    const text = `Hey ${firstName}, you're in 🙌${mealPlanLine} ${routineLine} ${nextQuestion}`
+        .replace(/\s+/g, ' ')
+        .trim();
     return { text, model: 'static-template' };
 }
 
@@ -210,7 +295,7 @@ exports.handler = async (event) => {
     }
 
     // 3. Draft
-    const { text: draftText, model: draftModel } = buildWelcomeDraft(clientName);
+    const { text: draftText, model: draftModel } = buildWelcomeDraft(clientName, onboardingFacts);
 
     // 4. Insert alert
     const alertRow = {
@@ -218,9 +303,11 @@ exports.handler = async (event) => {
         client_name: clientName,
         coach_id: coachId,
         alert_type: 'onboarding_welcome',
-        priority: 'medium',
-        title: `👋 ${clientName} joined — welcome them`,
-        description: `New client assigned${assignedAt ? ` ${new Date(assignedAt).toISOString().slice(0,10)}` : ''}. Draft a warm opener.`,
+        priority: 'high',
+        title: onboardingFacts.mealPlanNeedsReview
+            ? `🍽️ ${clientName} joined, meal plan review needed`
+            : `👋 ${clientName} joined, welcome them`,
+        description: `New client assigned${assignedAt ? ` ${new Date(assignedAt).toISOString().slice(0,10)}` : ''}. ${onboardingFacts.mealPlanNeedsReview ? 'Check the saved food preferences before preparing their meal plan.' : 'Send the state-based welcome.'}`,
         suggested_message: draftText || null,
         status: 'pending',
         data: {
@@ -228,6 +315,12 @@ exports.handler = async (event) => {
             assigned_at: assignedAt || new Date().toISOString(),
             draft_model: draftModel,
             onboarding_facts: onboardingFacts.onboarding,
+            weekly_goals_count: onboardingFacts.weeklyGoals.length,
+            meal_plan_ready: onboardingFacts.mealPlanReady,
+            meal_plan_needs_review: onboardingFacts.mealPlanNeedsReview,
+            training_days: onboardingFacts.trainingDays,
+            routine_window: onboardingFacts.routineWindow,
+            starter_session_minutes: onboardingFacts.starterSessionMinutes,
             drafted_at: new Date().toISOString(),
         },
     };
@@ -273,3 +366,5 @@ exports.handler = async (event) => {
         body: JSON.stringify({ alert_id: alertId, draft_model: draftModel, draft_generated: !!draftText, auto_sent: autoSent }),
     };
 };
+
+exports._buildWelcomeDraft = buildWelcomeDraft;

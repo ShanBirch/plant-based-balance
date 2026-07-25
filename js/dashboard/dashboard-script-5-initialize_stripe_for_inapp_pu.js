@@ -5468,7 +5468,19 @@ async function generateAiMealPlan() {
         if (statusEl) statusEl.textContent = 'Pulling your nutrition targets...';
         if (progressEl) progressEl.style.width = '15%';
 
-        const targets = await window.getUserNutritionTargets(window.supabaseClient, user.id);
+        const [targets, foodPreferences] = await Promise.all([
+            window.getUserNutritionTargets(window.supabaseClient, user.id),
+            loadWeeklyEvolutionPreferences(user.id)
+        ]);
+
+        if (mealPlanNeedsPreferenceReview(foodPreferences)) {
+            window._onboardingMealPlanReviewRequired = true;
+            if (statusEl) statusEl.textContent = 'Your food preferences need a quick check before we build this plan.';
+            if (progressEl) progressEl.style.width = '0%';
+            console.warn('[meal-plan] held for preference review instead of generating an unsafe template');
+            if (!wasMealPlanGenerationInProgress) _aiMealPlanGenerationInProgress = false;
+            return;
+        }
 
         if (statusEl) statusEl.textContent = 'Plating up your 4-week plan...';
         if (progressEl) progressEl.style.width = '45%';
@@ -5512,6 +5524,62 @@ async function generateAiMealPlan() {
     }
 
     if (!wasMealPlanGenerationInProgress) _aiMealPlanGenerationInProgress = false;
+}
+
+function mealPlanNeedsPreferenceReview(preferences = {}) {
+    const safeVeganRequirements = new Set([
+        'vegan', 'plant_based', 'vegetarian', 'dairy_free', 'egg_free',
+        'shellfish_free', 'halal', 'kosher'
+    ]);
+    const requirements = Array.isArray(preferences.dietary_requirements)
+        ? preferences.dietary_requirements.map(value => String(value || '').trim().toLowerCase()).filter(Boolean)
+        : [];
+    const allergies = Array.isArray(preferences.allergies)
+        ? preferences.allergies.map(value => String(value || '').trim().toLowerCase()).filter(Boolean)
+        : [];
+    const dislikes = Array.isArray(preferences.dislikes)
+        ? preferences.dislikes.map(value => String(value || '').trim()).filter(Boolean)
+        : [];
+    const veganSafeAllergies = new Set(['dairy', 'egg', 'eggs', 'shellfish', 'fish', 'meat']);
+
+    return requirements.some(value => !safeVeganRequirements.has(value))
+        || allergies.some(value => !veganSafeAllergies.has(value))
+        || dislikes.length > 0;
+}
+
+async function ensureInitialOnboardingMealPlan() {
+    const user = window.currentUser || await waitForCurrentUser();
+    if (!user || !window.supabaseClient) return { status: 'no_user' };
+
+    try {
+        const existing = await window.supabaseClient
+            .from('ai_generated_meal_plans')
+            .select('id,plan_name,status')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        if (existing.error) throw existing.error;
+        if (existing.data?.id) return { status: 'ready', planId: existing.data.id };
+
+        await generateAiMealPlan();
+
+        const generated = await window.supabaseClient
+            .from('ai_generated_meal_plans')
+            .select('id,plan_name,status')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        if (generated.error) throw generated.error;
+        if (generated.data?.id) return { status: 'generated', planId: generated.data.id };
+        return { status: 'not_ready' };
+    } catch (error) {
+        console.warn('[onboarding] initial meal plan preparation failed:', error);
+        return { status: 'failed', error: error?.message || String(error) };
+    }
 }
 
 // Image generation functionality removed
@@ -8473,7 +8541,7 @@ window.toggleWizardChip = toggleWizardChip;
 
 // Persist food preferences gathered from slides 2/7/8/9 to localStorage and (best-effort) Supabase.
 // Mirrors the schema in user_food_preferences and the shape consumed by generate-meal-plan.ts.
-function saveWizardFoodPreferences() {
+async function saveWizardFoodPreferences() {
     // Slide 2's chip multi-select is the canonical source. Fall back to legacy single-string
     // localStorage value for users mid-migration.
     let dietaryRequirements = Array.from(wizardDietaryRequirements);
@@ -8513,12 +8581,10 @@ function saveWizardFoodPreferences() {
     try {
         const userId = window.currentUser?.id || window.currentUser?.user_id;
         if (userId && window.supabaseClient) {
-            window.supabaseClient
+            const { error } = await window.supabaseClient
                 .from('user_food_preferences')
-                .upsert({ user_id: userId, ...prefs }, { onConflict: 'user_id' })
-                .then(({ error }) => {
-                    if (error) console.warn('user_food_preferences upsert failed:', error);
-                });
+                .upsert({ user_id: userId, ...prefs }, { onConflict: 'user_id' });
+            if (error) console.warn('user_food_preferences upsert failed:', error);
         }
     } catch (e) { /* ignore — localStorage is the source of truth offline */ }
 
@@ -10610,7 +10676,7 @@ async function wizardNext() {
     // Steps 8, 9, 10: Food preferences (cuisines, favorites/dislikes, allergies/cook-time).
     // All optional - selections live in module state via toggleWizardChip; persist on slide 10.
     if(currentWizardStep === 10) {
-        const prefs = saveWizardFoodPreferences();
+        const prefs = await saveWizardFoodPreferences();
         let existingData = {};
         try { existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
         existingData.food_preferences = prefs;
@@ -12285,6 +12351,12 @@ async function finishOnboarding() {
 
     // Sync quiz data to database
     await syncQuizDataToDb();
+
+    // Prepare the first plant-based meal plan before the coaching welcome is
+    // queued. This lets Shannon's first message truthfully point the member to
+    // Nutrition, while a generation failure still allows onboarding to finish.
+    const initialMealPlan = await ensureInitialOnboardingMealPlan();
+    console.log('[onboarding] initial meal plan state:', initialMealPlan.status);
 
     // Mark onboarding complete in the database so it persists across browsers/sessions
     if (window.currentUser) {
