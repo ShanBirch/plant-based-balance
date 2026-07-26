@@ -263,6 +263,23 @@ assert.strictEqual(
     false,
     'ordinary style repairs may still use one useful question'
 );
+assert.deepStrictEqual(
+    instantDraft.normalizeQuestionFreeRepairedDraft({
+        chunks: [
+            'hahaha sorry, I was just messing around about the helmet.',
+            'definitely Nordic Viking though 😂',
+            'Are you keeping the horn vibe only?',
+        ],
+    }),
+    {
+        chunks: [
+            'hahaha sorry, I was just messing around about the helmet.',
+            'definitely Nordic Viking though 😂',
+        ],
+        joined: 'hahaha sorry, I was just messing around about the helmet.\ndefinitely Nordic Viking though 😂',
+    },
+    'question-free repairs should deterministically remove follow-up question bubbles'
+);
 
 const earnedChallengeBridgeIssues = instantDraft.collectCocosAutoRepairIssues({
     draft: {

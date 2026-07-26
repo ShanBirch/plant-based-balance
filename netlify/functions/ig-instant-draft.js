@@ -666,6 +666,21 @@ function normalizeCocosRepairedDraft(rawText, maxChunks, leadName) {
     return { chunks, joined: chunks.join('\n') };
 }
 
+function normalizeQuestionFreeRepairedDraft(repaired) {
+    const chunks = (Array.isArray(repaired?.chunks) ? repaired.chunks : [])
+        .flatMap(chunk => String(chunk || '').split(/\n+/))
+        .map(chunk => chunk.trim())
+        .filter(Boolean)
+        .map(chunk => chunk
+            .split(/(?<=[.!?])\s+/)
+            .map(sentence => sentence.trim())
+            .filter(sentence => sentence && !isQuestionLikeText(sentence))
+            .join(' ')
+            .trim())
+        .filter(Boolean);
+    return { chunks, joined: chunks.join('\n') };
+}
+
 async function repairCocosDraftFromReview({ draft, repairIssues, reviewContextBlocks, leadName, channelLabel, maxChunks, currentMessage, qualifier, businessName = "Coco's PT Studio" }) {
     const draftText = draftTextFromDraft(draft);
     if (!draftText || !repairIssues?.length) return null;
@@ -702,7 +717,10 @@ ${draftText}`;
         [{ role: 'user', parts: [{ text: prompt }] }],
         { maxOutputTokens: Math.min(1200, Math.max(500, (maxChunks || MAX_CHUNKS) * 280)), temperature: 0.35 }
     );
-    const repaired = normalizeCocosRepairedDraft(rawText, maxChunks || draft.maxChunks || MAX_CHUNKS, leadName);
+    let repaired = normalizeCocosRepairedDraft(rawText, maxChunks || draft.maxChunks || MAX_CHUNKS, leadName);
+    if (questionFreeRepair) {
+        repaired = normalizeQuestionFreeRepairedDraft(repaired);
+    }
     if (!repaired.joined || repaired.joined === draftText) return null;
     if (isUnrequestedOfferInjection({
         originalDraft: draftText,
@@ -5240,7 +5258,8 @@ exports.handler = async (event) => {
                     const repairedReview = repairedReviewResult?.review || null;
                     const acceptRepair = !!repairedReview
                         && isDraftReviewAutoSendSafe(repairedReview)
-                        && (!repairRequiresQuestionFreeReply(repairIssues) || !repaired.joined.includes('?'))
+                        && (!repairRequiresQuestionFreeReply(repairIssues)
+                            || repaired.chunks.every(chunk => !isQuestionLikeText(chunk)))
                         && !isUnrequestedOfferInjection({
                             originalDraft: originalDraftText,
                             repairedDraft: repaired.joined,
@@ -5680,6 +5699,7 @@ exports._test = {
     shouldAttemptCocosDraftRepair,
     repairRequiresQuestionFreeReply,
     normalizeCocosRepairedDraft,
+    normalizeQuestionFreeRepairedDraft,
     reviewLooksLikePureContextGap,
     isSignupLinkHandoffText,
     isBalanceCallBookingLinkText,
