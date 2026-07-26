@@ -47,7 +47,7 @@ const directChallengeQuestion = buildReplyTimingSuggestion(makeLeadAlert({
     qualifier: { stage: 'current_state', warmth_score: 45 },
     suggested: 'Yeah, it is a simple six-week structure for training, food and support.',
 }));
-assert.strictEqual(directChallengeQuestion.delay_ms, 60 * 1000);
+assert.strictEqual(directChallengeQuestion.delay_ms, 0);
 assert.strictEqual(directChallengeQuestion.signals.direct_challenge_question, true);
 
 const lowStakes = buildReplyTimingSuggestion(makeLeadAlert({

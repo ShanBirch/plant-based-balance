@@ -1893,8 +1893,8 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
             : 'offer thread is active, keep the conversion warm';
         confidence = 0.86;
     } else if (isLead && directChallengeQuestion) {
-        delayMs = 60 * 1000;
-        reason = 'direct challenge question, answer while buying curiosity is live';
+        delayMs = 0;
+        reason = 'direct challenge question, queue immediately while buying curiosity is live';
         confidence = 0.9;
     } else if (alert.priority === 'urgent') {
         delayMs = supportFastIntent || hotIntent ? 0 : 5 * 60 * 1000;

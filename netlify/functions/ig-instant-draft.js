@@ -148,7 +148,7 @@ const IG_AUTO_SEND_MIN_DELAY_MS = 15 * 60 * 1000;
 const IG_AUTO_SEND_MAX_DELAY_MS = 8 * 60 * 60 * 1000;
 const IG_FAST_LANE_DELAY_MS = 4 * 60 * 1000;
 const IG_FAST_LANE_MIN_DELAY_MS = 2 * 60 * 1000;
-const IG_DIRECT_CHALLENGE_MIN_DELAY_MS = 60 * 1000;
+const IG_DIRECT_CHALLENGE_MIN_DELAY_MS = 0;
 const IG_DRAFT_REVIEW_TIMEOUT_MS = 7000;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const STORY_OPENER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|your\s+question|this|that|it)|(?:what|wat)\s+(?:do|did)\s+(?:you|u)\s+mean|what\s+you\s+mean|wdym|i'?m\s+confused|not\s+sure\s+what\s+you\s+mean)\b/i;
@@ -441,7 +441,9 @@ function normalizeIgAutoTimingSuggestion({ timingSuggestion, delayMs, timingLabe
         : NaN;
     const useExplicitFastLane = Number.isFinite(requestedFastLaneDelayMs) && requestedFastLaneDelayMs > 0;
     const useActiveExchangeFastLane = Number.isFinite(activeExchangeDelayMs) && activeExchangeDelayMs > 0;
-    const useDirectChallengeLane = Number.isFinite(directChallengeDelayMs) && directChallengeDelayMs > 0;
+    const useDirectChallengeLane = timingSuggestion?.signals?.direct_challenge_question === true
+        && Number.isFinite(directChallengeDelayMs)
+        && directChallengeDelayMs >= 0;
     const useFastLaneDelay = useDirectChallengeLane || useExplicitFastLane || useActiveExchangeFastLane;
     const rawDelay = useDirectChallengeLane
         ? directChallengeDelayMs

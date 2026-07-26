@@ -127,14 +127,14 @@ assert.equal(activeExchangeTiming.delay_ms, 2 * 60 * 1000);
 
 const directChallengeTiming = instantDraft.normalizeIgAutoTimingSuggestion({
     timingSuggestion: {
-        delay_ms: 60 * 1000,
+        delay_ms: 0,
         reason: 'direct challenge question',
         signals: { direct_challenge_question: true },
     },
     fastLaneDelayMs: 4 * 60 * 1000,
 });
-assert.equal(directChallengeTiming.action, 'schedule');
-assert.equal(directChallengeTiming.delay_ms, 60 * 1000, 'challenge interest outranks the generic four-minute test delay');
+assert.equal(directChallengeTiming.action, 'send_now');
+assert.equal(directChallengeTiming.delay_ms, 0, 'challenge interest queues immediately instead of using the generic four-minute test delay');
 
 const textTypingDelay = sendIgReply.resolveFirstItemTypingDelayMs({
     kind: 'text',
