@@ -2946,7 +2946,8 @@ function buildPersonalVoiceNoteDraftingBlock(enabled) {
 PERSONAL VOICE NOTE MODE:
 This exact draft will be spoken in Shannon's approved voice-note voice, not sent as ordinary text.
 - Write 2 to 4 natural spoken sentences, usually 45 to 75 words (roughly 20 to 26 seconds aloud). Do not shrink it into an ultra-short clip.
-- Sound like Shannon thinking with them in the moment: relaxed Australian phrasing, contractions, small pauses, and an occasional "um", "ah", "like", or "you know" only where it genuinely fits.
+- Sound like Shannon thinking with them in the moment: relaxed Australian phrasing, contractions, and small punctuation-led breathing pauses.
+- Include one or two spoken hesitations across the whole note. At least one must be a natural "um" or "ah"; the other may be "like", "you know", or a slight self-correction. Never omit all hesitation markers.
 - Vary the hesitation placement. Never use the same filler pattern every time, stack fillers, or make the note sound scripted.
 - A slight self-correction or repeated thought is welcome when natural. Keep the useful coaching point clear.
 - Use punctuation to create breathing room. Do not write stage directions, labels, SSML, ad-read copy, or a polished motivational monologue.

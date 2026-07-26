@@ -220,6 +220,26 @@ function resolveOutboundVoiceMessageConfig(alertData = {}, { shouldUseGraph = fa
     };
 }
 
+function ensureNaturalVoiceHesitation(text = '') {
+    const value = String(text || '').trim();
+    if (!value || /\b(?:um+|ah+)\b/i.test(value)) return value;
+
+    const paragraphBreak = value.indexOf('\n\n');
+    if (paragraphBreak >= 0) {
+        return `${value.slice(0, paragraphBreak + 2)}Um... ${value.slice(paragraphBreak + 2)}`;
+    }
+    const sentenceBreak = value.search(/[.!?]\s+(?=[A-Za-z])/);
+    if (sentenceBreak >= 0) {
+        const splitAt = sentenceBreak + 1;
+        return `${value.slice(0, splitAt)} Um...${value.slice(splitAt)}`;
+    }
+    const comma = value.indexOf(',');
+    if (comma >= 8) {
+        return `${value.slice(0, comma + 1)} um...${value.slice(comma + 1)}`;
+    }
+    return `Ah... ${value}`;
+}
+
 function buildTtsText(messages = []) {
     const text = (Array.isArray(messages) ? messages : [messages])
         .map(value => String(value || '').trim())
@@ -228,7 +248,8 @@ function buildTtsText(messages = []) {
         .replace(/[^\S\n]+\n/g, '\n')
         .replace(/\n{3,}/g, '\n\n')
         .trim();
-    return normalizeShannonVoiceContractions(text).slice(0, MAX_TTS_CHARS);
+    return ensureNaturalVoiceHesitation(normalizeShannonVoiceContractions(text))
+        .slice(0, MAX_TTS_CHARS);
 }
 
 function resolveAudioUploadFormat(outputFormat, contentType = '') {
@@ -473,6 +494,7 @@ module.exports = {
     DEFAULT_SHANNON_PROFESSIONAL_VOICE_ID,
     DEFAULT_OUTPUT_FORMAT,
     buildTtsText,
+    ensureNaturalVoiceHesitation,
     createVoiceMessageAudio,
     isCocosToShanSunnyVoiceTest,
     isAiAuthenticityQuestion,

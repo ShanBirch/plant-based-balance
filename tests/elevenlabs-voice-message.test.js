@@ -6,7 +6,8 @@ const sendIg = require('../netlify/functions/send-ig-reply')._test;
 
 const personalVoicePrompt = igDraft.buildPersonalVoiceNoteDraftingBlock(true);
 assert.match(personalVoicePrompt, /20 to 26 seconds/i);
-assert.match(personalVoicePrompt, /occasional "um", "ah", "like", or "you know"/i);
+assert.match(personalVoicePrompt, /At least one must be a natural "um" or "ah"/i);
+assert.match(personalVoicePrompt, /punctuation-led breathing pauses/i);
 assert.match(personalVoicePrompt, /Vary the hesitation placement/i);
 assert.strictEqual(igDraft.buildPersonalVoiceNoteDraftingBlock(false), '');
 
@@ -110,14 +111,24 @@ assert.strictEqual(normalTiming.delay_ms, 15 * 60 * 1000);
 
 assert.strictEqual(
     voice.buildTtsText(['hey there', 'second bubble']),
-    'hey there\n\nsecond bubble'
+    'hey there\n\nUm... second bubble'
+);
+
+assert.strictEqual(
+    voice.ensureNaturalVoiceHesitation('Yeah, um, that makes sense. Keep it simple.'),
+    'Yeah, um, that makes sense. Keep it simple.'
+);
+
+assert.match(
+    voice.ensureNaturalVoiceHesitation('That makes sense. Keep the next step simple.'),
+    /\. Um\.\.\. Keep/
 );
 
 assert.strictEqual(
     voice.buildTtsText([
         'I would not overthink it. It is useful if you can repeat it. Do not make it ten new rules. You cannot keep that up.',
     ]),
-    "I wouldn't overthink it. It's useful if you can repeat it. Don't make it ten new rules. You can't keep that up."
+    "I wouldn't overthink it. Um... It's useful if you can repeat it. Don't make it ten new rules. You can't keep that up."
 );
 
 assert.strictEqual(
