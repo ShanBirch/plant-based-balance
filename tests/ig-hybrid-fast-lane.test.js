@@ -89,6 +89,28 @@ assert.equal(instantDraft.getAutoDmHoldReason({
     allowTestLaneDraftReviewWarning: true,
 })?.code, 'draft_review', 'context-loss warnings still stop the test lane');
 
+assert.equal(instantDraft.getAutoDmHoldReason({
+    draft: { joined: 'Yeah the evening crowd would do it. Once you are in, you actually love it.' },
+    draftReview: {
+        verdict: 'warn',
+        summary: 'Safe reply, but the style could be tighter.',
+        notification_required: false,
+        context_loss_suspected: false,
+    },
+    allowBalanceLeadDraftReviewWarning: true,
+}), null, 'a non-blocking style warning does not stall an unlinked Balance lead');
+
+assert.equal(instantDraft.getAutoDmHoldReason({
+    draft: { joined: 'A reply with uncertain context.' },
+    draftReview: {
+        verdict: 'warn',
+        summary: 'Tracked context may be incomplete.',
+        notification_required: true,
+        context_loss_suspected: true,
+    },
+    allowBalanceLeadDraftReviewWarning: true,
+})?.code, 'draft_review', 'context and notification warnings still hold an unlinked Balance lead');
+
 assert.equal(instantDraft.getCocosCodexReviewHold({
     cocosAutoSendLane: true,
     voiceReplyTestLane: false,
@@ -315,6 +337,22 @@ assert.equal(scheduledWorker.buildAutoSendReviewHold({
         },
     },
 }), null, 'worker does not re-hold a safe style warning in the explicit Cocos test lane');
+
+assert.equal(scheduledWorker.buildAutoSendReviewHold({
+    alert_type: 'ig_incoming_dm',
+    data: {
+        channel: 'instagram',
+        scheduled_via: 'auto_send',
+        auto_send_default_reason: 'balance_ai_coach_lane',
+        auto_send_enabled_at_draft: true,
+        auto_send_review_hold: { code: 'draft_review', label: 'style could be tighter' },
+        draft_review: {
+            verdict: 'warn',
+            notification_required: false,
+            context_loss_suspected: false,
+        },
+    },
+}), null, 'worker does not re-hold a safe style warning for an unlinked Balance lead');
 
 const balanceSafeOpenerData = {
     channel: 'instagram',

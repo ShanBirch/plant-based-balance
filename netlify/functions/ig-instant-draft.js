@@ -655,6 +655,12 @@ function shouldAttemptCocosDraftRepair({ cocosAutoSendLane, balanceAutoSendLane,
     return Array.isArray(repairIssues) && repairIssues.length > 0;
 }
 
+function isNonBlockingDraftStyleWarning(draftReview) {
+    return String(draftReview?.verdict || '').toLowerCase() === 'warn'
+        && draftReview?.notification_required !== true
+        && draftReview?.context_loss_suspected !== true;
+}
+
 function repairRequiresQuestionFreeReply(repairIssues) {
     const issueText = (Array.isArray(repairIssues) ? repairIssues : [])
         .filter(Boolean)
@@ -838,7 +844,7 @@ function getBalanceAutoContextBypass({ balanceAutoSendLane, contextReview, draft
     };
 }
 
-function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData, allowTestLaneDraftReviewWarning = false }) {
+function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData, allowTestLaneDraftReviewWarning = false, allowBalanceLeadDraftReviewWarning = false }) {
     const effectiveContextBypass = contextBypass || cocosContextBypass;
     const appProblemHold = getAppProblemAutoSendHoldReason({
         currentMessage,
@@ -888,11 +894,9 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
             label: 'coaching invite needs human readiness first',
         };
     }
-    const testLaneStyleWarning = allowTestLaneDraftReviewWarning
-        && String(draftReview?.verdict || '').toLowerCase() === 'warn'
-        && draftReview?.notification_required !== true
-        && draftReview?.context_loss_suspected !== true;
-    if (draftReview && !isDraftReviewAutoSendSafe(draftReview) && !effectiveContextBypass?.allowed && !testLaneStyleWarning) {
+    const nonBlockingStyleWarning = (allowTestLaneDraftReviewWarning || allowBalanceLeadDraftReviewWarning)
+        && isNonBlockingDraftStyleWarning(draftReview);
+    if (draftReview && !isDraftReviewAutoSendSafe(draftReview) && !effectiveContextBypass?.allowed && !nonBlockingStyleWarning) {
         return {
             code: 'draft_review',
             label: draftReview?.summary || 'AI draft needs Shannon review',
@@ -3983,6 +3987,7 @@ exports._test = {
     getBalanceAutoContextBypass,
     getAutoDmHoldReason,
     getCocosCodexReviewHold,
+    isNonBlockingDraftStyleWarning,
     isSignupLinkHandoffText,
     buildLeadOnboardingHandoffData,
     normalizeIgAutoTimingSuggestion,
@@ -5274,7 +5279,8 @@ exports.handler = async (event) => {
                     }), IG_DRAFT_REVIEW_TIMEOUT_MS, 'Coco repaired draft review');
                     const repairedReview = repairedReviewResult?.review || null;
                     const acceptRepair = !!repairedReview
-                        && isDraftReviewAutoSendSafe(repairedReview)
+                        && (isDraftReviewAutoSendSafe(repairedReview)
+                            || (balanceLeadAutoSendLane && isNonBlockingDraftStyleWarning(repairedReview)))
                         && (!effectiveOutboundVoiceMessage || inspectVoiceScriptQuality(repaired.joined).valid)
                         && !hasFirstPersonHealthClaim(repaired.joined)
                         && (!repairRequiresQuestionFreeReply(repairIssues)
@@ -5450,6 +5456,7 @@ exports.handler = async (event) => {
             contextBypass: autoContextBypass,
             alertData: currentAlertData,
             allowTestLaneDraftReviewWarning: voiceReplyTestLane,
+            allowBalanceLeadDraftReviewWarning: balanceAutoSendLane,
         })
         : null;
     if (!autoHoldReason) {

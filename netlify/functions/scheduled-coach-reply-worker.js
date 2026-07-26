@@ -150,14 +150,17 @@ function buildAutoSendReviewHold(alert) {
     const igUsername = String(data.ig_username || data.instagram_graph?.ig_username || data.instagram_graph?.username || '').replace(/^@+/, '').toLowerCase();
     const isCocosToShanSunnyTest = data.outbound_voice_message_reason === 'cocos_pt_studio_to_shan_n_sunny_test'
         || (botAccount === 'shan_n_sunny' && igUsername === 'cocos_pt_studio');
-    const safeTestLaneStyleWarning = isCocosToShanSunnyTest
+    const isBalanceLeadAutoSend = !data.linked_user_id
+        && (data.auto_send_default_reason === 'balance_ai_coach_lane'
+            || data.auto_send_enabled_at_draft === true);
+    const safeAutoLaneStyleWarning = (isCocosToShanSunnyTest || isBalanceLeadAutoSend)
         && String(review?.verdict || '').toLowerCase() === 'warn'
         && review?.notification_required !== true
         && review?.context_loss_suspected !== true;
     const existingHold = data.auto_send_review_hold;
     const mediaReview = buildMediaReviewInfo(alert);
     const contextReview = buildContextReviewInfo(alert);
-    if (existingHold?.code && !['media_review', 'context_review'].includes(existingHold.code) && !safeTestLaneStyleWarning) return existingHold;
+    if (existingHold?.code && !['media_review', 'context_review'].includes(existingHold.code) && !safeAutoLaneStyleWarning) return existingHold;
     if (mediaReview.required) {
         return {
             code: 'media_review',
@@ -182,7 +185,7 @@ function buildAutoSendReviewHold(alert) {
             label: review.summary || 'AI draft needs Shannon review',
         };
     }
-    if (!softContextBypass && !safeTestLaneStyleWarning && (review.verdict !== 'pass' || review.notification_required || review.context_loss_suspected)) {
+    if (!softContextBypass && !safeAutoLaneStyleWarning && (review.verdict !== 'pass' || review.notification_required || review.context_loss_suspected)) {
         return {
             code: 'draft_review',
             label: review.summary || 'AI draft needs Shannon review',
