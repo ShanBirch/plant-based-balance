@@ -41,6 +41,29 @@ test('routes explicit flirtation even when no call is requested', () => {
     assert.ok(result.reasons.includes('flirtation_or_personal_relationship_manual_only'));
 });
 
+test('stops automated replies when a lead sexually escalates before attempting a call', () => {
+    const inbound = [
+        'Im horny hungover and hungry',
+        'Yeh bro',
+        'Hello',
+    ].join('\n');
+    const result = boundary.classifyPersonalDmBoundary({
+        inboundText: inbound,
+        outboundText: 'Haha yeh I am here',
+    });
+    assert.equal(boundary.hasSexualPersonalEscalation(inbound), true);
+    assert.equal(result.requires_manual, true);
+    assert.equal(result.reason, 'sexual_or_personal_escalation_manual_only');
+});
+
+test('does not confuse ordinary coaching language about libido with sexual escalation', () => {
+    const result = boundary.classifyPersonalDmBoundary({
+        inboundText: 'my libido has been low since changing my diet',
+        outboundText: 'we can look at recovery and nutrition first',
+    });
+    assert.equal(result.requires_manual, false);
+});
+
 test('collects decoded voice-note text for the same boundary check', () => {
     const inbound = boundary.collectAlertInboundText({
         message_preview: '[AUDIO:https://example.com/voice.m4a]',

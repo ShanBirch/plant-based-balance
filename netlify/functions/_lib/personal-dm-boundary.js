@@ -50,6 +50,12 @@ function hasFlirtationSignal(value) {
     return /\b(?:flirt(?:ing|y)?|thought you were cute|think (?:i'm|im|i am|you(?:'re| are)) cute|you(?:'re| are) (?:cute|gorgeous|hot|sexy|handsome)|i(?:'m| am) (?:cute|pretty|gorgeous|hot|sexy)|cute awkward|awkward cute|ador(?:e|ing) you|date me|go on a date|kiss(?:ing)? you|attracted to you|seeing you at the beach|send me (?:some )?(?:beach )?photos?|see (?:your|the) cute .*face)\b/i.test(text);
 }
 
+function hasSexualPersonalEscalation(value) {
+    const text = cleanText(value);
+    if (!text) return false;
+    return /\b(?:horny|turned on|sext(?:ing)?|send (?:me )?nudes?|naked (?:pic|photo)|sexual(?:ly)?|hook up|sleep with you|come over|come to bed)\b/i.test(text);
+}
+
 function hasAutomatedPersonalReciprocation(value) {
     const text = cleanText(value);
     if (!text) return false;
@@ -62,6 +68,7 @@ function classifyPersonalDmBoundary({ inboundText = '', outboundText = '', linke
     const outbound = cleanText(outboundText);
     const businessCall = hasBusinessCallRequest(inbound);
     const personalCall = hasPersonalCallRequest(inbound);
+    const sexualEscalation = hasSexualPersonalEscalation(inbound) || hasSexualPersonalEscalation(outbound);
     const flirtation = hasFlirtationSignal(inbound) || hasFlirtationSignal(outbound);
     const personalReciprocation = hasAutomatedPersonalReciprocation(outbound);
 
@@ -70,6 +77,13 @@ function classifyPersonalDmBoundary({ inboundText = '', outboundText = '', linke
             requires_manual: true,
             reason: 'personal_social_call_manual_only',
             label: 'Personal or social call request is not a Balance sales call',
+        };
+    }
+    if (sexualEscalation && !businessCall) {
+        return {
+            requires_manual: true,
+            reason: 'sexual_or_personal_escalation_manual_only',
+            label: 'Sexual or personal escalation requires Shannon and stops AI replies',
         };
     }
     if (flirtation || (personalReciprocation && !businessCall)) {
@@ -89,6 +103,7 @@ module.exports = {
     hasBusinessCallRequest,
     hasPersonalCallRequest,
     hasFlirtationSignal,
+    hasSexualPersonalEscalation,
     hasAutomatedPersonalReciprocation,
     classifyPersonalDmBoundary,
 };
