@@ -440,16 +440,22 @@ function normalizeIgAutoTimingSuggestion({ timingSuggestion, delayMs, timingLabe
     const activeExchangeDelayMs = timingSuggestion?.signals?.active_back_and_forth === true
         ? Number(timingSuggestion?.delay_ms)
         : NaN;
+    const liveFitnessHelpDelayMs = timingSuggestion?.signals?.live_fitness_help_intent === true
+        ? Number(timingSuggestion?.delay_ms)
+        : NaN;
     const useExplicitFastLane = Number.isFinite(requestedFastLaneDelayMs) && requestedFastLaneDelayMs > 0;
     const useActiveExchangeFastLane = Number.isFinite(activeExchangeDelayMs) && activeExchangeDelayMs > 0;
+    const useLiveFitnessHelpFastLane = Number.isFinite(liveFitnessHelpDelayMs) && liveFitnessHelpDelayMs > 0;
     const useDirectChallengeLane = timingSuggestion?.signals?.direct_challenge_question === true
         && Number.isFinite(directChallengeDelayMs)
         && directChallengeDelayMs >= 0;
-    const useFastLaneDelay = useDirectChallengeLane || useExplicitFastLane || useActiveExchangeFastLane;
+    const useFastLaneDelay = useDirectChallengeLane || useExplicitFastLane || useActiveExchangeFastLane || useLiveFitnessHelpFastLane;
     const rawDelay = useDirectChallengeLane
         ? directChallengeDelayMs
         : useFastLaneDelay
-        ? (useExplicitFastLane ? requestedFastLaneDelayMs : activeExchangeDelayMs)
+        ? (useExplicitFastLane
+            ? requestedFastLaneDelayMs
+            : (useActiveExchangeFastLane ? activeExchangeDelayMs : liveFitnessHelpDelayMs))
         : Number(timingSuggestion?.delay_ms ?? delayMs ?? IG_AUTO_SEND_DEFAULT_DELAY_MS);
     const minDelayMs = useDirectChallengeLane
         ? IG_DIRECT_CHALLENGE_MIN_DELAY_MS

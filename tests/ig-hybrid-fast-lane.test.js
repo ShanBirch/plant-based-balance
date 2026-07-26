@@ -147,6 +147,16 @@ const activeExchangeTiming = instantDraft.normalizeIgAutoTimingSuggestion({
 assert.equal(activeExchangeTiming.action, 'schedule');
 assert.equal(activeExchangeTiming.delay_ms, 2 * 60 * 1000);
 
+const liveFitnessHelpTiming = instantDraft.normalizeIgAutoTimingSuggestion({
+    timingSuggestion: {
+        delay_ms: 5 * 60 * 1000,
+        reason: 'lead shared a live fitness blocker',
+        signals: { live_fitness_help_intent: true },
+    },
+});
+assert.equal(liveFitnessHelpTiming.action, 'schedule');
+assert.equal(liveFitnessHelpTiming.delay_ms, 5 * 60 * 1000);
+
 const directChallengeTiming = instantDraft.normalizeIgAutoTimingSuggestion({
     timingSuggestion: {
         delay_ms: 0,
