@@ -115,6 +115,7 @@ const {
 } = require('./_lib/coach-actions');
 const {
     isCocosToShanSunnyVoiceTest,
+    inspectVoiceScriptQuality,
     resolveCocosShanSunnyVoiceTestReason,
     resolvePersonalVoiceReplyPlan,
 } = require('./_lib/elevenlabs-voice-message');
@@ -606,7 +607,7 @@ function reviewLooksLikePureContextGap(review) {
     return /\b(context[-_ ]?loss|missing[-_ ]?source[-_ ]?context|missing[-_ ]?context|open (?:the )?(?:source )?dm|source dm|tracked dm context may be incomplete)\b/.test(haystack);
 }
 
-function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount }) {
+function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, voiceNoteMode = false }) {
     const issues = [];
     const draftText = draftTextFromDraft(draft);
     const challengeOfferAllowed = hasChallengeInviteReadinessSignal(currentMessage)
@@ -636,6 +637,12 @@ function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarnin
     }
     if (prematureChallengeInvite) {
         issues.push('Draft invites coaching before the person has shown enough readiness or 3 meaningful lead replies. Keep rapport moving instead.');
+    }
+    if (voiceNoteMode) {
+        const voiceQuality = inspectVoiceScriptQuality(draftText);
+        voiceQuality.issues.forEach(issue => {
+            issues.push(`Voice-note quality: ${issue}. Rewrite it as 45 to 75 natural spoken words.`);
+        });
     }
     return [...new Set(issues.map(issue => truncate(String(issue || '').replace(/\s+/g, ' ').trim(), 220)).filter(Boolean))];
 }
@@ -2983,10 +2990,12 @@ function buildPersonalVoiceNoteDraftingBlock(enabled) {
 
 PERSONAL VOICE NOTE MODE:
 This exact draft will be spoken in Shannon's approved voice-note voice, not sent as ordinary text.
-- Write 2 to 4 natural spoken sentences, usually 45 to 75 words (roughly 20 to 26 seconds aloud). Do not shrink it into an ultra-short clip.
+- Write 2 to 4 natural spoken sentences and stay inside 45 to 75 words (roughly 20 to 26 seconds aloud). The sender hard-blocks shorter or longer scripts, so do not shrink it into an ultra-short clip.
 - Sound like Shannon thinking with them in the moment: relaxed Australian phrasing, contractions, and small punctuation-led breathing pauses.
 - Include one or two spoken hesitations across the whole note. At least one must be a natural "um" or "ah"; the other may be "like", "you know", or a slight self-correction. Never omit all hesitation markers.
 - Vary the hesitation placement. Never use the same filler pattern every time, stack fillers, or make the note sound scripted.
+- Do not default to a neat single "Haha" opener. Only laugh when the moment is genuinely funny; when a laugh fits, use rough phone-native spellings such as "hahahah", "hahahahah", or "ahahaha", and vary the opening across notes.
+- Do not start every voice note with a laugh, "um", or "ah". Open on the exact thing they said whenever that sounds more human.
 - A slight self-correction or repeated thought is welcome when natural. Keep the useful coaching point clear.
 - Use punctuation to create breathing room. Do not write stage directions, labels, SSML, ad-read copy, or a polished motivational monologue.
 - Prefer one fuller message bubble so the audio reads as one connected note. Return to concise text for links, prices, or detailed instructions.`;
@@ -5208,6 +5217,8 @@ exports.handler = async (event) => {
                 draft_review_summary: reviewSummary,
             };
         }
+        const effectiveOutboundVoiceMessage = !personalVoicePlan.syntheticVoiceForbidden
+            && (outboundVoiceMessage || !!existingPending?.data?.outbound_voice_message);
         const repairIssues = collectCocosAutoRepairIssues({
             draft,
             draftReview,
@@ -5217,6 +5228,7 @@ exports.handler = async (event) => {
             leadStage: effectiveLeadStage,
             linkedUserId: thread.linked_user_id,
             meaningfulLeadReplyCount,
+            voiceNoteMode: effectiveOutboundVoiceMessage,
         });
         const autoDraftRepairField = cocosAutoSendLane ? 'cocos_auto_repair' : 'balance_auto_repair';
         const autoDraftRepairBusinessName = cocosAutoSendLane ? "Coco's PT Studio" : 'Balance';
@@ -5263,6 +5275,7 @@ exports.handler = async (event) => {
                     const repairedReview = repairedReviewResult?.review || null;
                     const acceptRepair = !!repairedReview
                         && isDraftReviewAutoSendSafe(repairedReview)
+                        && (!effectiveOutboundVoiceMessage || inspectVoiceScriptQuality(repaired.joined).valid)
                         && !hasFirstPersonHealthClaim(repaired.joined)
                         && (!repairRequiresQuestionFreeReply(repairIssues)
                             || repaired.chunks.every(chunk => !isQuestionLikeText(chunk)))

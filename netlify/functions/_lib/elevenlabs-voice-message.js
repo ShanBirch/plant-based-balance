@@ -7,6 +7,8 @@ const DEFAULT_STABILITY = 0.42;
 const DEFAULT_SIMILARITY_BOOST = 0.78;
 const DEFAULT_STYLE = 0.12;
 const MAX_TTS_CHARS = 3500;
+const MIN_VOICE_NOTE_WORDS = 45;
+const MAX_VOICE_NOTE_WORDS = 75;
 const SHAN_N_SUNNY_GRAPH_ACCOUNT_IDS = new Set(['17841415641641750']);
 const COCOS_GRAPH_ACCOUNT_IDS = new Set(['17841435394720504', '26328183736859579']);
 const MANUAL_AI_AUTHENTICITY_VOICE_SCRIPT = "hey, yep it's Shannon. I do use a bit of help organising my inbox because it gets busy, but the coaching and support inside Balance is me.";
@@ -252,6 +254,30 @@ function buildTtsText(messages = []) {
         .slice(0, MAX_TTS_CHARS);
 }
 
+function countVoiceScriptWords(text = '') {
+    return (String(text || '').match(/[A-Za-z0-9]+(?:['’][A-Za-z0-9]+)*/g) || []).length;
+}
+
+function inspectVoiceScriptQuality(text = '') {
+    const value = String(text || '').trim();
+    const wordCount = countVoiceScriptWords(value);
+    const issues = [];
+    if (wordCount < MIN_VOICE_NOTE_WORDS) {
+        issues.push(`voice note is ${wordCount} words; minimum is ${MIN_VOICE_NOTE_WORDS}`);
+    }
+    if (wordCount > MAX_VOICE_NOTE_WORDS) {
+        issues.push(`voice note is ${wordCount} words; maximum is ${MAX_VOICE_NOTE_WORDS}`);
+    }
+    if (/^haha\b/i.test(value)) {
+        issues.push('voice note opens with a polished single "Haha"');
+    }
+    return {
+        valid: issues.length === 0,
+        wordCount,
+        issues,
+    };
+}
+
 function resolveAudioUploadFormat(outputFormat, contentType = '') {
     const format = cleanString(outputFormat || DEFAULT_OUTPUT_FORMAT, 80).toLowerCase();
     const pcmMatch = format.match(/^pcm_(\d{4,6})$/);
@@ -437,6 +463,13 @@ async function uploadVoiceNoteToB2({ buffer, contentType = 'audio/mpeg', extensi
 
 async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supabaseQuery }) {
     const text = buildTtsText(messages);
+    const quality = inspectVoiceScriptQuality(text);
+    if (!quality.valid) {
+        const error = new Error(`Voice script quality failed: ${quality.issues.join('; ')}`);
+        error.code = 'voice_script_quality_failed';
+        error.voiceScriptQuality = quality;
+        throw error;
+    }
     const config = {
         voiceId: resolveVoiceId(alertData),
         modelId: resolveModelId(alertData),
@@ -493,7 +526,10 @@ function isCocosToShanSunnyVoiceTest(input = {}) {
 module.exports = {
     DEFAULT_SHANNON_PROFESSIONAL_VOICE_ID,
     DEFAULT_OUTPUT_FORMAT,
+    MIN_VOICE_NOTE_WORDS,
+    MAX_VOICE_NOTE_WORDS,
     buildTtsText,
+    inspectVoiceScriptQuality,
     ensureNaturalVoiceHesitation,
     createVoiceMessageAudio,
     isCocosToShanSunnyVoiceTest,
