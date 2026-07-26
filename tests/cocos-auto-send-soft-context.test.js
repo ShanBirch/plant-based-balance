@@ -297,6 +297,18 @@ assert.strictEqual(
 );
 assert.strictEqual(
     instantDraft.shouldAttemptCocosDraftRepair({
+        cocosAutoSendLane: false,
+        balanceAutoSendLane: true,
+        mediaReview: { required: false },
+        baseContextReview: { required: false },
+        draft: { joined: 'what does a normal day look like for you?' },
+        repairIssues,
+    }),
+    true,
+    'Balance auto lane should repair review-caught but repairable drafts before holding'
+);
+assert.strictEqual(
+    instantDraft.shouldAttemptCocosDraftRepair({
         cocosAutoSendLane: true,
         mediaReview: { required: true },
         baseContextReview: { required: false },

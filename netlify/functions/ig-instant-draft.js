@@ -640,8 +640,8 @@ function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarnin
     return [...new Set(issues.map(issue => truncate(String(issue || '').replace(/\s+/g, ' ').trim(), 220)).filter(Boolean))];
 }
 
-function shouldAttemptCocosDraftRepair({ cocosAutoSendLane, mediaReview, baseContextReview, draft, repairIssues }) {
-    if (!cocosAutoSendLane) return false;
+function shouldAttemptCocosDraftRepair({ cocosAutoSendLane, balanceAutoSendLane, mediaReview, baseContextReview, draft, repairIssues }) {
+    if (!cocosAutoSendLane && !balanceAutoSendLane) return false;
     if (!draftTextFromDraft(draft)) return false;
     if (mediaReview?.required) return false;
     if (baseContextReview?.required) return false;
@@ -658,10 +658,10 @@ function normalizeCocosRepairedDraft(rawText, maxChunks, leadName) {
     return { chunks, joined: chunks.join('\n') };
 }
 
-async function repairCocosDraftFromReview({ draft, repairIssues, reviewContextBlocks, leadName, channelLabel, maxChunks, currentMessage, qualifier }) {
+async function repairCocosDraftFromReview({ draft, repairIssues, reviewContextBlocks, leadName, channelLabel, maxChunks, currentMessage, qualifier, businessName = "Coco's PT Studio" }) {
     const draftText = draftTextFromDraft(draft);
     if (!draftText || !repairIssues?.length) return null;
-    const prompt = `You are repairing a Coco's PT Studio ${channelLabel || 'IG'} DM draft before it can auto-send for Shannon.
+    const prompt = `You are repairing a ${businessName} ${channelLabel || 'IG'} DM draft before it can auto-send for Shannon.
 
 Return ONLY valid JSON in this format:
 {"messages":["chunk 1","chunk 2 if needed"]}
@@ -669,7 +669,7 @@ Return ONLY valid JSON in this format:
 Repair rules:
 - Fix every issue below, then keep the reply natural enough that Shannon would be happy sending it untouched.
 - Answer the latest inbound message first. If the latest message is simple, a short simple reply is better than a coaching paragraph.
-- Keep Shannon's casual lower-case texting style. No corporate tone, no AI talk, no mention of auto-send, review, rules, or Coco's as a system.
+- Keep Shannon's casual lower-case texting style. No corporate tone, no AI talk, and no mention of auto-send, review, rules, or the business as a system.
 - One natural question max. Skip the question when a reaction or direct answer is enough.
 - Shannon follow-up shape: tiny acknowledgement plus one concrete question from their exact newest detail, for example "why by April?", "how long has this been going on for?", "when did that start?", "what part first?", or "how did that go?". Keep it open enough for them to answer naturally, never a choice menu. Avoid broad therapist-style questions.
 - Do not pitch, link, or offer the challenge unless the latest message clearly asks how to join or asks for the link.
@@ -700,7 +700,7 @@ ${draftText}`;
     return repaired;
 }
 
-async function persistCocosDraftRepair({ alertId, currentAlertData, draft, repairMeta, challengeOfferWarning }) {
+async function persistCocosDraftRepair({ alertId, currentAlertData, draft, repairMeta, challengeOfferWarning, repairField = 'cocos_auto_repair' }) {
     if (!alertId || !draft?.joined) return currentAlertData || {};
     try {
         const rows = await supabaseQuery(`coach_alerts?select=data&id=eq.${encodeURIComponent(alertId)}&limit=1`);
@@ -714,7 +714,7 @@ async function persistCocosDraftRepair({ alertId, currentAlertData, draft, repai
             draft_reply_mode: draft.replyMode || latest.draft_reply_mode || 'standard',
             draft_max_chunks: draft.maxChunks || latest.draft_max_chunks || MAX_CHUNKS,
             challenge_offer_warning: challengeOfferWarning || null,
-            cocos_auto_repair: repairMeta,
+            [repairField]: repairMeta,
         };
         if (repairMeta?.status === 'accepted' && !repairMeta?.auto_hold_code) {
             merged.auto_send_review_hold = null;
@@ -729,7 +729,7 @@ async function persistCocosDraftRepair({ alertId, currentAlertData, draft, repai
         });
         return merged;
     } catch (err) {
-        console.warn('[ig-draft] Coco draft repair alert update failed:', err.message);
+        console.warn('[ig-draft] draft repair alert update failed:', err.message);
         return currentAlertData || {};
     }
 }
@@ -5180,8 +5180,11 @@ exports.handler = async (event) => {
             linkedUserId: thread.linked_user_id,
             meaningfulLeadReplyCount,
         });
+        const autoDraftRepairField = cocosAutoSendLane ? 'cocos_auto_repair' : 'balance_auto_repair';
+        const autoDraftRepairBusinessName = cocosAutoSendLane ? "Coco's PT Studio" : 'Balance';
         if (shouldAttemptCocosDraftRepair({
             cocosAutoSendLane,
+            balanceAutoSendLane: balanceLeadAutoSendLane,
             mediaReview,
             baseContextReview: contextReview,
             draft,
@@ -5204,7 +5207,8 @@ exports.handler = async (event) => {
                     maxChunks: draft.maxChunks || MAX_CHUNKS,
                     currentMessage: displayMessage,
                     qualifier,
-                }), COCOS_DRAFT_REPAIR_TIMEOUT_MS, 'Coco draft repair');
+                    businessName: autoDraftRepairBusinessName,
+                }), COCOS_DRAFT_REPAIR_TIMEOUT_MS, `${autoDraftRepairBusinessName} draft repair`);
                 if (repaired?.joined) {
                     const repairedReviewResult = await withTimeout(reviewDraftAndUpdateAlert({
                         alertId,
@@ -5262,14 +5266,15 @@ exports.handler = async (event) => {
                             draft,
                             repairMeta,
                             challengeOfferWarning,
+                            repairField: autoDraftRepairField,
                         });
-                        console.log(`[ig-draft] Coco auto draft repaired and rechecked for alert ${alertId}: ${draftReview.verdict}`);
+                        console.log(`[ig-draft] ${autoDraftRepairBusinessName} auto draft repaired and rechecked for alert ${alertId}: ${draftReview.verdict}`);
                     } else {
                         currentAlertData = await persistCocosDraftRepair({
                             alertId,
                             currentAlertData: {
                                 ...(currentAlertData || {}),
-                                cocos_auto_repair: {
+                                [autoDraftRepairField]: {
                                     status: 'rejected',
                                     attempted_at: new Date().toISOString(),
                                     issues: repairIssues,
@@ -5296,16 +5301,17 @@ exports.handler = async (event) => {
                                 } : null,
                             },
                             challengeOfferWarning,
+                            repairField: autoDraftRepairField,
                         });
                     }
                 }
             } catch (err) {
-                console.warn('[ig-draft] Coco draft repair failed:', err.message);
+                console.warn(`[ig-draft] ${autoDraftRepairBusinessName} draft repair failed:`, err.message);
                 currentAlertData = await persistCocosDraftRepair({
                     alertId,
                     currentAlertData: {
                         ...(currentAlertData || {}),
-                        cocos_auto_repair: {
+                        [autoDraftRepairField]: {
                             status: 'failed',
                             attempted_at: new Date().toISOString(),
                             issues: repairIssues,
@@ -5322,6 +5328,7 @@ exports.handler = async (event) => {
                         before_review: beforeReview,
                     },
                     challengeOfferWarning,
+                    repairField: autoDraftRepairField,
                 });
             }
         }
