@@ -782,7 +782,7 @@ function getBalanceAutoContextBypass({ balanceAutoSendLane, contextReview, draft
     };
 }
 
-function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData }) {
+function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData, allowTestLaneDraftReviewWarning = false }) {
     const effectiveContextBypass = contextBypass || cocosContextBypass;
     const appProblemHold = getAppProblemAutoSendHoldReason({
         currentMessage,
@@ -832,7 +832,11 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
             label: 'coaching invite needs human readiness first',
         };
     }
-    if (draftReview && !isDraftReviewAutoSendSafe(draftReview) && !effectiveContextBypass?.allowed) {
+    const testLaneStyleWarning = allowTestLaneDraftReviewWarning
+        && String(draftReview?.verdict || '').toLowerCase() === 'warn'
+        && draftReview?.notification_required !== true
+        && draftReview?.context_loss_suspected !== true;
+    if (draftReview && !isDraftReviewAutoSendSafe(draftReview) && !effectiveContextBypass?.allowed && !testLaneStyleWarning) {
         return {
             code: 'draft_review',
             label: draftReview?.summary || 'AI draft needs Shannon review',
@@ -5371,6 +5375,7 @@ exports.handler = async (event) => {
             meaningfulLeadReplyCount,
             contextBypass: autoContextBypass,
             alertData: currentAlertData,
+            allowTestLaneDraftReviewWarning: voiceReplyTestLane,
         })
         : null;
     if (!autoHoldReason) {

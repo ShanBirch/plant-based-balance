@@ -67,6 +67,28 @@ assert.equal(instantDraft.getCocosCodexReviewHold({
     approvedCoachingLinkHandoff: false,
 }), null);
 
+assert.equal(instantDraft.getAutoDmHoldReason({
+    draft: { joined: 'A safe but slightly generic test reply.' },
+    draftReview: {
+        verdict: 'warn',
+        summary: 'Style could be tighter.',
+        notification_required: false,
+        context_loss_suspected: false,
+    },
+    allowTestLaneDraftReviewWarning: true,
+}), null, 'the explicit Cocos to Shan n Sunny test lane may send a safe style warning');
+
+assert.equal(instantDraft.getAutoDmHoldReason({
+    draft: { joined: 'A risky test reply.' },
+    draftReview: {
+        verdict: 'warn',
+        summary: 'Context may be missing.',
+        notification_required: false,
+        context_loss_suspected: true,
+    },
+    allowTestLaneDraftReviewWarning: true,
+})?.code, 'draft_review', 'context-loss warnings still stop the test lane');
+
 assert.equal(instantDraft.getCocosCodexReviewHold({
     cocosAutoSendLane: true,
     voiceReplyTestLane: false,
