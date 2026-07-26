@@ -4480,11 +4480,12 @@ exports.handler = async (event) => {
         hasRecentVoiceMessage: recentOutboundVoiceMessage,
         inboundVoiceMessage,
     });
+    // Internal accounts exercise the same voice eligibility as real leads.
+    // The Cocos -> Shan n Sunny flag opens the auto-reply test lane, but it
+    // must not make a first informational reply feel unnaturally intimate.
     const outboundVoiceMessage = !personalVoicePlan.syntheticVoiceForbidden
-        && (voiceReplyTestLane || personalVoicePlan.useSyntheticVoice);
-    const outboundVoiceMessageReason = voiceReplyTestLane
-        ? voiceReplyTestReason
-        : personalVoicePlan.reason;
+        && personalVoicePlan.useSyntheticVoice;
+    const outboundVoiceMessageReason = personalVoicePlan.reason;
 
     let draft;
     try {

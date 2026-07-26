@@ -158,6 +158,22 @@ const personalVoicePlan = voice.resolvePersonalVoiceReplyPlan({
 assert.strictEqual(personalVoicePlan.useSyntheticVoice, true);
 assert.strictEqual(personalVoicePlan.reason, 'lead_shared_meaningful_goal_or_blocker');
 
+const informationalFirstReplyPlan = voice.resolvePersonalVoiceReplyPlan({
+    channel: 'instagram',
+    hasInstagramGraphRoute: true,
+    currentMessage: 'Hey can you tell me about your challenge?',
+    qualifier: {
+        facts: {
+            current_state: 'asking about the challenge',
+            motivation: 'wants to get stronger',
+        },
+    },
+    meaningfulLeadReplyCount: 12,
+    hasRecentVoiceMessage: false,
+});
+assert.strictEqual(informationalFirstReplyPlan.useSyntheticVoice, false);
+assert.strictEqual(informationalFirstReplyPlan.reason, '');
+
 assert.strictEqual(
     voice.resolvePersonalVoiceReplyPlan({
         channel: 'instagram',

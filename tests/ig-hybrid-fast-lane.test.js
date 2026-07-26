@@ -305,7 +305,8 @@ assert.equal(scheduledWorker.buildAutoSendReviewHold({
     data: {
         channel: 'instagram',
         scheduled_via: 'auto_send',
-        outbound_voice_message_reason: 'cocos_pt_studio_to_shan_n_sunny_test',
+        bot_account: 'shan_n_sunny',
+        ig_username: 'cocos_pt_studio',
         auto_send_review_hold: { code: 'draft_review', label: 'style could be tighter' },
         draft_review: {
             verdict: 'warn',

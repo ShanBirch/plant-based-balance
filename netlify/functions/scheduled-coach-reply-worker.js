@@ -146,7 +146,10 @@ function buildAutoSendReviewHold(alert) {
     const softContextBypass = hasAutoContextBypass(data);
     if (data.auto_send_review_approved_at) return null;
     const review = data.draft_review;
-    const isCocosToShanSunnyTest = data.outbound_voice_message_reason === 'cocos_pt_studio_to_shan_n_sunny_test';
+    const botAccount = String(data.bot_account || data.instagram_graph?.bot_account || '').replace(/^@+/, '').toLowerCase();
+    const igUsername = String(data.ig_username || data.instagram_graph?.ig_username || data.instagram_graph?.username || '').replace(/^@+/, '').toLowerCase();
+    const isCocosToShanSunnyTest = data.outbound_voice_message_reason === 'cocos_pt_studio_to_shan_n_sunny_test'
+        || (botAccount === 'shan_n_sunny' && igUsername === 'cocos_pt_studio');
     const safeTestLaneStyleWarning = isCocosToShanSunnyTest
         && String(review?.verdict || '').toLowerCase() === 'warn'
         && review?.notification_required !== true
