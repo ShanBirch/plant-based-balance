@@ -42,6 +42,14 @@ const explicitLink = buildReplyTimingSuggestion(makeLeadAlert({
 assert.strictEqual(explicitLink.delay_ms, 0);
 assert.strictEqual(explicitLink.signals.hot_intent, true);
 
+const directChallengeQuestion = buildReplyTimingSuggestion(makeLeadAlert({
+    inbound: 'Hey can you tell me about your challenge?',
+    qualifier: { stage: 'current_state', warmth_score: 45 },
+    suggested: 'Yeah, it is a simple six-week structure for training, food and support.',
+}));
+assert.strictEqual(directChallengeQuestion.delay_ms, 60 * 1000);
+assert.strictEqual(directChallengeQuestion.signals.direct_challenge_question, true);
+
 const lowStakes = buildReplyTimingSuggestion(makeLeadAlert({
     inbound: 'haha how are you?',
     qualifier: { stage: 'current_state', warmth_score: 35 },

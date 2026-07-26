@@ -125,6 +125,17 @@ const activeExchangeTiming = instantDraft.normalizeIgAutoTimingSuggestion({
 assert.equal(activeExchangeTiming.action, 'schedule');
 assert.equal(activeExchangeTiming.delay_ms, 2 * 60 * 1000);
 
+const directChallengeTiming = instantDraft.normalizeIgAutoTimingSuggestion({
+    timingSuggestion: {
+        delay_ms: 60 * 1000,
+        reason: 'direct challenge question',
+        signals: { direct_challenge_question: true },
+    },
+    fastLaneDelayMs: 4 * 60 * 1000,
+});
+assert.equal(directChallengeTiming.action, 'schedule');
+assert.equal(directChallengeTiming.delay_ms, 60 * 1000, 'challenge interest outranks the generic four-minute test delay');
+
 const textTypingDelay = sendIgReply.resolveFirstItemTypingDelayMs({
     kind: 'text',
     text: 'quick reply',
@@ -288,6 +299,21 @@ assert.equal(scheduledWorker.buildAutoSendReviewHold({
         },
     },
 }).code, 'draft_review');
+
+assert.equal(scheduledWorker.buildAutoSendReviewHold({
+    alert_type: 'ig_incoming_dm',
+    data: {
+        channel: 'instagram',
+        scheduled_via: 'auto_send',
+        outbound_voice_message_reason: 'cocos_pt_studio_to_shan_n_sunny_test',
+        auto_send_review_hold: { code: 'draft_review', label: 'style could be tighter' },
+        draft_review: {
+            verdict: 'warn',
+            notification_required: false,
+            context_loss_suspected: false,
+        },
+    },
+}), null, 'worker does not re-hold a safe style warning in the explicit Cocos test lane');
 
 const balanceSafeOpenerData = {
     channel: 'instagram',

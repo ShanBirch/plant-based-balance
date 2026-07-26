@@ -1725,6 +1725,12 @@ function replyTimingHasDirectQuestion(text) {
     return /\?/.test(t) || /\b(what about you|where are you|what are you|how about you|do you|did you|are you|can you|could you|what should|how do i|where do i)\b/i.test(t);
 }
 
+function replyTimingHasDirectChallengeQuestion(text) {
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!t || !/\bchallenge\b/i.test(t)) return false;
+    return /\b(?:tell me|explain|what(?:'s| is| does)|how (?:does|do|is)|can you tell|more (?:about|info)|details?)\b/i.test(t);
+}
+
 function replyTimingActiveBackAndForth(alert) {
     const data = alert?.data || {};
     const lastOutboundAt = Date.parse(data.last_outbound_message?.created_at || data.ig_last_outbound_at || '');
@@ -1867,6 +1873,7 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
     const supportFastIntent = fixSupportIntent || programSupportIntent;
     const smallTalkIntent = replyTimingHasSmallTalkIntent(inboundText);
     const directQuestion = replyTimingHasDirectQuestion(inboundText);
+    const directChallengeQuestion = replyTimingHasDirectChallengeQuestion(inboundText);
     const lowStakesRapport = smallTalkIntent && !supportFastIntent && !hotIntent;
     const lowSignalLongReply = replyLen >= 220 && inboundLen <= 160;
     const activeBackAndForth = isManyChat ? replyTimingActiveBackAndForth(alert) : null;
@@ -1885,6 +1892,10 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
             ? 'offer thread plus start-now intent, speed matters'
             : 'offer thread is active, keep the conversion warm';
         confidence = 0.86;
+    } else if (isLead && directChallengeQuestion) {
+        delayMs = 60 * 1000;
+        reason = 'direct challenge question, answer while buying curiosity is live';
+        confidence = 0.9;
     } else if (alert.priority === 'urgent') {
         delayMs = supportFastIntent || hotIntent ? 0 : 5 * 60 * 1000;
         reason = supportFastIntent
@@ -1947,7 +1958,7 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
     }
 
     const learnedTiming = replyTimingLearnedProfile(alert);
-    if (learnedTiming && alert.priority !== 'urgent' && !hotIntent && !activeBackAndForth) {
+    if (learnedTiming && alert.priority !== 'urgent' && !hotIntent && !activeBackAndForth && !directChallengeQuestion) {
         if (supportFastIntent) {
             if (learnedTiming.delay_ms <= delayMs) {
                 delayMs = learnedTiming.delay_ms;
@@ -2003,6 +2014,7 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
             program_support_intent: programSupportIntent,
             small_talk_intent: smallTalkIntent,
             direct_question: directQuestion,
+            direct_challenge_question: directChallengeQuestion,
             low_stakes_rapport: lowStakesRapport,
             active_onboarding: isOnboarding,
             post_onboarding_client: isConverted,

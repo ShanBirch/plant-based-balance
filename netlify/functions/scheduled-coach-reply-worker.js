@@ -145,10 +145,16 @@ function buildAutoSendReviewHold(alert) {
     if (!isManyChatDm) return null;
     const softContextBypass = hasAutoContextBypass(data);
     if (data.auto_send_review_approved_at) return null;
+    const review = data.draft_review;
+    const isCocosToShanSunnyTest = data.outbound_voice_message_reason === 'cocos_pt_studio_to_shan_n_sunny_test';
+    const safeTestLaneStyleWarning = isCocosToShanSunnyTest
+        && String(review?.verdict || '').toLowerCase() === 'warn'
+        && review?.notification_required !== true
+        && review?.context_loss_suspected !== true;
     const existingHold = data.auto_send_review_hold;
     const mediaReview = buildMediaReviewInfo(alert);
     const contextReview = buildContextReviewInfo(alert);
-    if (existingHold?.code && !['media_review', 'context_review'].includes(existingHold.code)) return existingHold;
+    if (existingHold?.code && !['media_review', 'context_review'].includes(existingHold.code) && !safeTestLaneStyleWarning) return existingHold;
     if (mediaReview.required) {
         return {
             code: 'media_review',
@@ -161,7 +167,6 @@ function buildAutoSendReviewHold(alert) {
             label: contextReview.label || 'tracked DM context may be incomplete',
         };
     }
-    const review = data.draft_review;
     if (!review) {
         return {
             code: 'draft_review_pending',
@@ -174,7 +179,7 @@ function buildAutoSendReviewHold(alert) {
             label: review.summary || 'AI draft needs Shannon review',
         };
     }
-    if (!softContextBypass && (review.verdict !== 'pass' || review.notification_required || review.context_loss_suspected)) {
+    if (!softContextBypass && !safeTestLaneStyleWarning && (review.verdict !== 'pass' || review.notification_required || review.context_loss_suspected)) {
         return {
             code: 'draft_review',
             label: review.summary || 'AI draft needs Shannon review',
