@@ -253,6 +253,16 @@ const repairIssues = instantDraft.collectCocosAutoRepairIssues({
 
 assert.ok(repairIssues.some(issue => /Reviewer summary/.test(issue)), 'review issues should feed the Coco repair prompt');
 assert.ok(repairIssues.some(issue => /stock discovery/i.test(issue)), 'stock questions should feed the Coco repair prompt');
+assert.strictEqual(
+    instantDraft.repairRequiresQuestionFreeReply(repairIssues),
+    true,
+    'question-fatigue reviews should force a question-free repair'
+);
+assert.strictEqual(
+    instantDraft.repairRequiresQuestionFreeReply(['Reviewer suggested fix: make the wording warmer.']),
+    false,
+    'ordinary style repairs may still use one useful question'
+);
 
 const earnedChallengeBridgeIssues = instantDraft.collectCocosAutoRepairIssues({
     draft: {

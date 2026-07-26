@@ -648,6 +648,14 @@ function shouldAttemptCocosDraftRepair({ cocosAutoSendLane, balanceAutoSendLane,
     return Array.isArray(repairIssues) && repairIssues.length > 0;
 }
 
+function repairRequiresQuestionFreeReply(repairIssues) {
+    const issueText = (Array.isArray(repairIssues) ? repairIssues : [])
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+    return /\b(question fatigue|extra question|new question|follow-up question|fresh question|repeats? (?:a |the )?(?:prior |previous )?question|already (?:answered|explained)|reaction(?:\/acknowledgement)? (?:would be|is) enough|simple reaction(?:\/acknowledgement)?(?: would be| is)? enough)\b/.test(issueText);
+}
+
 function normalizeCocosRepairedDraft(rawText, maxChunks, leadName) {
     const parsed = parseDraftChunks(rawText, maxChunks || MAX_CHUNKS);
     const chunks = splitCoachDraftIntoDmBubbles(
@@ -661,6 +669,13 @@ function normalizeCocosRepairedDraft(rawText, maxChunks, leadName) {
 async function repairCocosDraftFromReview({ draft, repairIssues, reviewContextBlocks, leadName, channelLabel, maxChunks, currentMessage, qualifier, businessName = "Coco's PT Studio" }) {
     const draftText = draftTextFromDraft(draft);
     if (!draftText || !repairIssues?.length) return null;
+    const questionFreeRepair = repairRequiresQuestionFreeReply(repairIssues);
+    const questionRule = questionFreeRepair
+        ? '- Do not ask a question or add a continuation hook. End after the direct answer, clarification, reaction, or acknowledgement.'
+        : '- One natural question max. Skip the question when a reaction or direct answer is enough.';
+    const followUpRule = questionFreeRepair
+        ? '- The reviewer identified question fatigue or an already-answered point. Do not use a question mark anywhere in the repaired reply.'
+        : '- Shannon follow-up shape: tiny acknowledgement plus one concrete question from their exact newest detail, for example "why by April?", "how long has this been going on for?", "when did that start?", "what part first?", or "how did that go?". Keep it open enough for them to answer naturally, never a choice menu. Avoid broad therapist-style questions.';
     const prompt = `You are repairing a ${businessName} ${channelLabel || 'IG'} DM draft before it can auto-send for Shannon.
 
 Return ONLY valid JSON in this format:
@@ -670,8 +685,8 @@ Repair rules:
 - Fix every issue below, then keep the reply natural enough that Shannon would be happy sending it untouched.
 - Answer the latest inbound message first. If the latest message is simple, a short simple reply is better than a coaching paragraph.
 - Keep Shannon's casual lower-case texting style. No corporate tone, no AI talk, and no mention of auto-send, review, rules, or the business as a system.
-- One natural question max. Skip the question when a reaction or direct answer is enough.
-- Shannon follow-up shape: tiny acknowledgement plus one concrete question from their exact newest detail, for example "why by April?", "how long has this been going on for?", "when did that start?", "what part first?", or "how did that go?". Keep it open enough for them to answer naturally, never a choice menu. Avoid broad therapist-style questions.
+${questionRule}
+${followUpRule}
 - Do not pitch, link, or offer the challenge unless the latest message clearly asks how to join or asks for the link.
 - No em dashes.
 
@@ -5225,6 +5240,7 @@ exports.handler = async (event) => {
                     const repairedReview = repairedReviewResult?.review || null;
                     const acceptRepair = !!repairedReview
                         && isDraftReviewAutoSendSafe(repairedReview)
+                        && (!repairRequiresQuestionFreeReply(repairIssues) || !repaired.joined.includes('?'))
                         && !isUnrequestedOfferInjection({
                             originalDraft: originalDraftText,
                             repairedDraft: repaired.joined,
@@ -5662,6 +5678,7 @@ exports._test = {
     buildMetaAdFoundersPassFirstReply,
     collectCocosAutoRepairIssues,
     shouldAttemptCocosDraftRepair,
+    repairRequiresQuestionFreeReply,
     normalizeCocosRepairedDraft,
     reviewLooksLikePureContextGap,
     isSignupLinkHandoffText,
