@@ -10,8 +10,8 @@ assert.match(personalVoicePrompt, /At least one must be a natural "um" or "ah"/i
 assert.match(personalVoicePrompt, /punctuation-led breathing pauses/i);
 assert.match(personalVoicePrompt, /Vary the hesitation placement/i);
 assert.match(personalVoicePrompt, /hard-blocks shorter or longer scripts/i);
-assert.match(personalVoicePrompt, /Do not default to a neat single "Haha" opener/i);
-assert.match(personalVoicePrompt, /hahahahah/i);
+assert.match(personalVoicePrompt, /Never write laughter into a generated voice note/i);
+assert.match(personalVoicePrompt, /any imitation of a chuckle/i);
 assert.strictEqual(igDraft.buildPersonalVoiceNoteDraftingBlock(false), '');
 
 assert.strictEqual(
@@ -162,11 +162,13 @@ assert.strictEqual(voice.inspectVoiceScriptQuality(words(45)).valid, true);
 assert.strictEqual(voice.inspectVoiceScriptQuality(words(75)).valid, true);
 assert.strictEqual(voice.inspectVoiceScriptQuality(words(76)).valid, false);
 assert.strictEqual(
-    voice.inspectVoiceScriptQuality(`Haha, ${words(50)}`).issues.some(issue => /single "Haha"/.test(issue)),
+    voice.inspectVoiceScriptQuality(`Haha, ${words(50)}`).issues.some(issue => /written laughter/.test(issue)),
     true
 );
-assert.strictEqual(voice.inspectVoiceScriptQuality(`hahahahah, ${words(50)}`).valid, true);
-assert.strictEqual(voice.inspectVoiceScriptQuality(`ahahaha, ${words(50)}`).valid, true);
+assert.strictEqual(voice.inspectVoiceScriptQuality(`hahahahah, ${words(50)}`).valid, false);
+assert.strictEqual(voice.inspectVoiceScriptQuality(`ahahaha, ${words(50)}`).valid, false);
+assert.strictEqual(voice.inspectVoiceScriptQuality(`${words(20)} lol ${words(30)}`).valid, false);
+assert.strictEqual(voice.inspectVoiceScriptQuality(`That's genuinely funny, ${words(50)}`).valid, true);
 
 const shortVoiceRepairIssues = igDraft.collectCocosAutoRepairIssues({
     draft: { joined: 'ah yeah, that makes sense' },

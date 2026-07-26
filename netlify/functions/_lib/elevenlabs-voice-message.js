@@ -258,6 +258,10 @@ function countVoiceScriptWords(text = '') {
     return (String(text || '').match(/[A-Za-z0-9]+(?:['’][A-Za-z0-9]+)*/g) || []).length;
 }
 
+function hasWrittenLaughter(text = '') {
+    return /\b(?:ha|hah[a-z]*|ahah[a-z]*|heh[a-z]*|lol+|lmao)\b/i.test(String(text || ''));
+}
+
 function inspectVoiceScriptQuality(text = '') {
     const value = String(text || '').trim();
     const wordCount = countVoiceScriptWords(value);
@@ -268,8 +272,8 @@ function inspectVoiceScriptQuality(text = '') {
     if (wordCount > MAX_VOICE_NOTE_WORDS) {
         issues.push(`voice note is ${wordCount} words; maximum is ${MAX_VOICE_NOTE_WORDS}`);
     }
-    if (/^haha\b/i.test(value)) {
-        issues.push('voice note opens with a polished single "Haha"');
+    if (hasWrittenLaughter(value)) {
+        issues.push('voice note contains written laughter');
     }
     return {
         valid: issues.length === 0,
@@ -542,6 +546,7 @@ module.exports = {
         isVoiceMessageRequested,
         hasPersonalGoalOrBlockerSignal,
         hasQualifierPersonalEvidence,
+        hasWrittenLaughter,
         normalizeAccountKey,
         normalizeShannonVoiceContractions,
         resolveCocosShanSunnyVoiceTestReason,
