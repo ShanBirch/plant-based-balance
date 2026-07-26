@@ -1977,8 +1977,8 @@ function isMetaAdFastLaneEligible({ linkedUserId = null, customData = {}, manych
     return isCurrentMetaAdInbound({ customData, manychatMessageId });
 }
 
-function isBalanceLeadAutoSendEnabled({ linkedUserId = null, threadAutoSendEnabled = false } = {}) {
-    return !linkedUserId && threadAutoSendEnabled === true;
+function isBalanceLeadAutoSendEnabled({ linkedUserId = null, threadAutoSendEnabled = false, metaAdFastLane = false } = {}) {
+    return !linkedUserId && threadAutoSendEnabled === true && metaAdFastLane === true;
 }
 
 function isCanceledLatestRecoveryCandidate({ status, data = {}, autoSendEnabled, isLatestInbound } = {}) {
@@ -4070,6 +4070,7 @@ exports.handler = async (event) => {
     const balanceLeadAutoSendLane = isBalanceLeadAutoSendEnabled({
         linkedUserId: thread.linked_user_id,
         threadAutoSendEnabled: thread.auto_send_enabled,
+        metaAdFastLane,
     });
     const autoSendEnabled = !linkedClientNeedsYou
         && (balanceLeadAutoSendLane || cocosAutoSendLane || voiceReplyTestLane || metaAdFastLane);
@@ -4804,7 +4805,7 @@ exports.handler = async (event) => {
             auto_send_enabled_at_draft: autoSendEnabled,
             auto_send_default_reason: metaAdFastLane
                 ? 'meta_ad_fast_lane'
-                : (balanceLeadAutoSendLane ? 'balance_ai_coach_lane' : (cocosAutoSendLane ? 'cocos_auto_lane' : undefined)),
+                : (cocosAutoSendLane ? 'cocos_auto_lane' : undefined),
             auto_send_allow_immediate: false,
             auto_send_fast_lane_delay_ms: (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane)
                 ? IG_FAST_LANE_DELAY_MS
@@ -4994,9 +4995,7 @@ exports.handler = async (event) => {
             auto_send_enabled_at_draft: autoSendEnabled,
             auto_send_default_reason: metaAdFastLane
                 ? 'meta_ad_fast_lane'
-                : (balanceLeadAutoSendLane
-                    ? 'balance_ai_coach_lane'
-                    : (cocosAutoSendLane ? 'cocos_auto_lane' : existingPending.data?.auto_send_default_reason)),
+                : (cocosAutoSendLane ? 'cocos_auto_lane' : undefined),
             auto_send_allow_immediate: false,
             auto_send_fast_lane_delay_ms: (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane)
                 ? IG_FAST_LANE_DELAY_MS
@@ -5417,8 +5416,8 @@ exports.handler = async (event) => {
         });
     }
 
-    // Balance-owned unlinked leads schedule through the AI coach worker.
-    // Linked clients and explicit safety/review holds remain approval-only.
+    // Only a verified current Meta ad first inbound uses the AI coach fast lane.
+    // Normal unlinked leads stay pending for manager review; linked clients stay approval-only.
     let autoHandled = false;
     const blockedStage = ['churned'].includes(effectiveLeadStage);
     const balanceAutoSendLane = balanceLeadAutoSendLane;

@@ -8,10 +8,17 @@ const scheduledWorker = require('../netlify/functions/scheduled-coach-reply-work
 assert.equal(instantDraft.isBalanceLeadAutoSendEnabled({
     linkedUserId: null,
     threadAutoSendEnabled: true,
-}), true, 'an explicitly enabled unlinked Balance lead belongs to the AI coach send lane');
+    metaAdFastLane: true,
+}), true, 'an explicitly enabled current Meta ad lead belongs to the AI coach fast lane');
+assert.equal(instantDraft.isBalanceLeadAutoSendEnabled({
+    linkedUserId: null,
+    threadAutoSendEnabled: true,
+    metaAdFastLane: false,
+}), false, 'a normal unlinked Balance lead stays in the manager review lane');
 assert.equal(instantDraft.isBalanceLeadAutoSendEnabled({
     linkedUserId: 'client-user-1',
     threadAutoSendEnabled: true,
+    metaAdFastLane: true,
 }), false, 'linked clients remain approval-only even when an old thread toggle is true');
 assert.equal(instantDraft.isBalanceLeadAutoSendEnabled({
     linkedUserId: null,
