@@ -280,6 +280,16 @@ assert.deepStrictEqual(
     },
     'question-free repairs should deterministically remove follow-up question bubbles'
 );
+assert.strictEqual(
+    instantDraft.hasFirstPersonHealthClaim("if it's not flaring my back, I'm full send"),
+    true,
+    'auto-repair should reject invented first-person health claims'
+);
+assert.strictEqual(
+    instantDraft.hasFirstPersonHealthClaim('definitely Nordic Viking though 😂'),
+    false,
+    'ordinary rapport wording should remain eligible'
+);
 
 const earnedChallengeBridgeIssues = instantDraft.collectCocosAutoRepairIssues({
     draft: {

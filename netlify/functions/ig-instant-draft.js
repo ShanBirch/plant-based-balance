@@ -656,6 +656,10 @@ function repairRequiresQuestionFreeReply(repairIssues) {
     return /\b(question fatigue|extra question|new question|follow-up question|fresh question|repeats? (?:a |the )?(?:prior |previous )?question|already (?:answered|explained)|reaction(?:\/acknowledgement)? (?:would be|is) enough|simple reaction(?:\/acknowledgement)?(?: would be| is)? enough)\b/.test(issueText);
 }
 
+function hasFirstPersonHealthClaim(text) {
+    return /\b(?:i|i'm|i’ve|i've|ive|my)\b[^.!?\n]{0,90}\b(?:back|injur(?:y|ed|ies)?|pain|hurt(?:ing)?|sore|flar(?:e|ing)|medical|diagnos(?:is|ed)|surgery|rehab)\b/i.test(String(text || ''));
+}
+
 function normalizeCocosRepairedDraft(rawText, maxChunks, leadName) {
     const parsed = parseDraftChunks(rawText, maxChunks || MAX_CHUNKS);
     const chunks = splitCoachDraftIntoDmBubbles(
@@ -700,6 +704,7 @@ Repair rules:
 - Fix every issue below, then keep the reply natural enough that Shannon would be happy sending it untouched.
 - Answer the latest inbound message first. If the latest message is simple, a short simple reply is better than a coaching paragraph.
 - Keep Shannon's casual lower-case texting style. No corporate tone, no AI talk, and no mention of auto-send, review, rules, or the business as a system.
+- Never invent a first-person health, injury, pain, body, medical, family, pet, location, experience, or preference fact about Shannon. If it is not explicitly verified in the supplied context, leave it out.
 ${questionRule}
 ${followUpRule}
 - Do not pitch, link, or offer the challenge unless the latest message clearly asks how to join or asks for the link.
@@ -5258,6 +5263,7 @@ exports.handler = async (event) => {
                     const repairedReview = repairedReviewResult?.review || null;
                     const acceptRepair = !!repairedReview
                         && isDraftReviewAutoSendSafe(repairedReview)
+                        && !hasFirstPersonHealthClaim(repaired.joined)
                         && (!repairRequiresQuestionFreeReply(repairIssues)
                             || repaired.chunks.every(chunk => !isQuestionLikeText(chunk)))
                         && !isUnrequestedOfferInjection({
@@ -5698,6 +5704,7 @@ exports._test = {
     collectCocosAutoRepairIssues,
     shouldAttemptCocosDraftRepair,
     repairRequiresQuestionFreeReply,
+    hasFirstPersonHealthClaim,
     normalizeCocosRepairedDraft,
     normalizeQuestionFreeRepairedDraft,
     reviewLooksLikePureContextGap,
