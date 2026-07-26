@@ -1725,6 +1725,14 @@ function replyTimingHasDirectQuestion(text) {
     return /\?/.test(t) || /\b(what about you|where are you|what are you|how about you|do you|did you|are you|can you|could you|what should|how do i|where do i)\b/i.test(t);
 }
 
+function replyTimingHasLiveFitnessHelpIntent(text) {
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!t) return false;
+    const fitnessContext = /\b(gym|fitness|workout|training|exercise|routine|motivation|consistent|consistency)\b/i.test(t);
+    const liveFriction = /\b(struggl|stuck|overthink|insecurity|uncomfortable|crowd|can['\u2019]?t|cant|hard to|difficult|need (?:my )?motivation|lost (?:my )?motivation|get back into|back into (?:a |the )?routine|time keeps|energy keeps)\b/i.test(t);
+    return fitnessContext && liveFriction;
+}
+
 function replyTimingHasDirectChallengeQuestion(text) {
     const t = String(text || '').replace(/\s+/g, ' ').trim();
     if (!t || !/\bchallenge\b/i.test(t)) return false;
@@ -1871,6 +1879,7 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
     const fixSupportIntent = replyTimingHasFixSupportIntent(inboundText);
     const programSupportIntent = replyTimingHasProgramSupportIntent(inboundText);
     const supportFastIntent = fixSupportIntent || programSupportIntent;
+    const liveFitnessHelpIntent = isLead && replyTimingHasLiveFitnessHelpIntent(inboundText);
     const smallTalkIntent = replyTimingHasSmallTalkIntent(inboundText);
     const directQuestion = replyTimingHasDirectQuestion(inboundText);
     const directChallengeQuestion = replyTimingHasDirectChallengeQuestion(inboundText);
@@ -1908,6 +1917,10 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
             ? 'fix/help/support message, fast reply matters more than human pacing'
             : 'program or app support request, reply while it is actionable';
         confidence = 0.82;
+    } else if (liveFitnessHelpIntent) {
+        delayMs = 5 * 60 * 1000;
+        reason = 'lead shared a live fitness blocker, reply while the help moment is open';
+        confidence = 0.84;
     } else if (hotIntent) {
         delayMs = 0;
         reason = hotIntent
@@ -1958,7 +1971,7 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
     }
 
     const learnedTiming = replyTimingLearnedProfile(alert);
-    if (learnedTiming && alert.priority !== 'urgent' && !hotIntent && !activeBackAndForth && !directChallengeQuestion) {
+    if (learnedTiming && alert.priority !== 'urgent' && !hotIntent && !activeBackAndForth && !directChallengeQuestion && !liveFitnessHelpIntent) {
         if (supportFastIntent) {
             if (learnedTiming.delay_ms <= delayMs) {
                 delayMs = learnedTiming.delay_ms;
@@ -2012,6 +2025,7 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
             hot_intent: hotIntent,
             fix_support_intent: fixSupportIntent,
             program_support_intent: programSupportIntent,
+            live_fitness_help_intent: liveFitnessHelpIntent,
             small_talk_intent: smallTalkIntent,
             direct_question: directQuestion,
             direct_challenge_question: directChallengeQuestion,

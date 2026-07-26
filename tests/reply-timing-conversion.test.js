@@ -58,6 +58,20 @@ const lowStakes = buildReplyTimingSuggestion(makeLeadAlert({
 assert.strictEqual(lowStakes.delay_ms, 30 * 60 * 1000);
 assert.strictEqual(lowStakes.signals.low_stakes_rapport, true);
 
+const liveGymBlocker = makeLeadAlert({
+    inbound: "I need my motivation back for the gym. I've struggled to get back into the routine and the evening crowd makes me uncomfortable.",
+    qualifier: { stage: 'current_state', warmth_score: 78 },
+    suggested: 'Yeah the evening crowd would do it. Once you are in, you actually love it.',
+});
+liveGymBlocker.data.response_timing_profile = {
+    person: { scope: 'person', sample_count: 23, median_delay_ms: 30 * 60 * 1000 },
+    recommendation_delay_ms: 30 * 60 * 1000,
+};
+const liveGymBlockerTiming = buildReplyTimingSuggestion(liveGymBlocker);
+assert.strictEqual(liveGymBlockerTiming.delay_ms, 5 * 60 * 1000);
+assert.strictEqual(liveGymBlockerTiming.signals.live_fitness_help_intent, true);
+assert.match(liveGymBlockerTiming.reason, /live fitness blocker/);
+
 const activeExchange = makeLeadAlert({
     inbound: 'Bro you are ripped',
     qualifier: { stage: 'current_state', warmth_score: 55 },
