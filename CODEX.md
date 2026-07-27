@@ -214,9 +214,10 @@ Auto-send:
 
 Proactive Instagram client inactivity check-ins:
 
-- Current, non-test Balance clients with a uniquely linked Instagram thread may receive at most three native Instagram check-ins for one uninterrupted no-login episode: first at 72 hours, second at day 7, and a final open-door close at day 14.
-- Do not start touch one after day 7. This prevents a newly enabled or recovered worker from chasing historically dormant clients. A later login creates a new inactivity episode; a reply after any inactivity touch ends the current automated series.
-- Never send the first touch on Saturday or Sunday in Australia/Brisbane. Weekend-due work rolls to 9:00am Monday. All three touches send only on weekdays between 8:30am and 6:30pm Brisbane time.
+- Current, non-test Balance clients with a uniquely linked Instagram thread may receive at most three native Instagram check-ins for one uninterrupted no-login episode: first after 3 Australia/Brisbane business days, second after 7 business days, and a final open-door close after 14 business days.
+- Saturday and Sunday do not advance the inactivity count at all. For example, a Friday login reaches business day 1 on Monday and business day 3 on Wednesday. Later touches also keep at least three business days between verified sends.
+- Do not start touch one after business day 7. This prevents a newly enabled or recovered worker from chasing historically dormant clients. A later login creates a new inactivity episode; a reply after any inactivity touch ends the current automated series.
+- All three touches send only on weekdays between 8:30am and 6:30pm Brisbane time.
 - These are proactive native Instagram DMs owned by the 24-hour browser dispatcher, not Graph API replies and not in-app `nudges`. They bypass Needs You approval only for the exact leased `client_inactivity_checkin` action. Normal client inbounds, coaching, support, media, voice notes, and all other client messages remain under their existing approval rules.
 - Before sending, require a current active coaching, paid-membership, or live-challenge relationship; a linked Instagram thread; no unanswered or recent Instagram conversation; no manual/suppression flag; and no competing queue owner. Francesca/Fra and Lara Lessmann remain permanent browser exclusions.
 - Each send requires native Sent/composer evidence plus a unique canonical `ig_messages` outbound echo. Complete it through `complete_ig_client_inactivity_checkin` so the exact action and a genuine `conversion_operator_events.action='check_in_done'` receipt are written atomically. Three verified unanswered touches end outreach until the client returns.
