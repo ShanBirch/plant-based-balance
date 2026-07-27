@@ -28,6 +28,7 @@ const {
     normalizeGeneratedCoachDraftText,
     sanitizeVisibleOutboundDmText,
     fireCoachEditAnalysis,
+    isClientManagerAutoReplyEnabled,
     isAlwaysNeedsYouPerson,
     shouldBypassKayNeedsYouForAlert,
 } = require('./_lib/client-context');
@@ -254,16 +255,24 @@ function isCurrentClientAlert(alert = {}, liveThread = null) {
     );
 }
 
+function isManagerOwnedClientAutoReply(alert = {}, source = '', liveThread = null) {
+    return String(source || '').trim().toLowerCase() === 'balance_lead_client_manager_cron'
+        && !!liveThread?.linked_user_id
+        && isClientManagerAutoReplyEnabled(liveThread)
+        && isClientManagerAutoReplyEnabled(alert.data || {});
+}
+
 function shouldBlockCurrentClientAutomatedSend(alert = {}, source = '', liveThread = null) {
     return isAutomatedPermanentNeedsYouSendSource(source, alert.data || {})
-        && isCurrentClientAlert(alert, liveThread);
+        && isCurrentClientAlert(alert, liveThread)
+        && !isManagerOwnedClientAutoReply(alert, source, liveThread);
 }
 
 async function loadLiveIgThreadClientState(alert = {}) {
     const threadId = alert.data?.ig_thread_id;
     if (!threadId) return null;
     const rows = await supabase(
-        `ig_threads?select=id,linked_user_id&id=eq.${encodeURIComponent(threadId)}&limit=1`
+        `ig_threads?select=id,linked_user_id,custom_data&id=eq.${encodeURIComponent(threadId)}&limit=1`
     );
     return rows?.[0] || null;
 }
@@ -479,7 +488,10 @@ exports.handler = async (event) => {
             source,
         }) };
     }
-    if (shouldBlockPermanentNeedsYouAutomatedSend(alert, source)) {
+    if (
+        !isManagerOwnedClientAutoReply(alert, source, liveThread)
+        && shouldBlockPermanentNeedsYouAutomatedSend(alert, source)
+    ) {
         await stampPermanentNeedsYouAutomatedSendBlock(alert);
         return { statusCode: 409, body: JSON.stringify({
             error: PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE,
@@ -665,5 +677,6 @@ exports._test = {
     isPermanentNeedsYouAlert,
     shouldBlockPermanentNeedsYouAutomatedSend,
     isCurrentClientAlert,
+    isManagerOwnedClientAutoReply,
     shouldBlockCurrentClientAutomatedSend,
 };

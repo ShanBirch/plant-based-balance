@@ -60,6 +60,10 @@ assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ profile_name: 'Natalie
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'nat_balance' }), false);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Miranda' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'miranda_balance' }), true);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({
+    client_name: 'Miranda',
+    custom_data: { client_manager_auto_reply_enabled: true },
+}), false);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Monica' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'monica_balance' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Dani' }), true);
@@ -120,6 +124,22 @@ const miranda = manager.classifyNeedsYou(makeAlert({
 }));
 assert.strictEqual(miranda.shouldRoute, true);
 assert.ok(miranda.reasons.includes('always_needs_you_person'));
+
+const managerOwnedMiranda = manager.classifyNeedsYou(makeAlert({
+    client_id: 'client-miranda',
+    client_name: 'Miranda',
+    suggested_message: 'hey',
+    data: {
+        channel: 'instagram',
+        lead_stage: 'paying',
+        last_outbound_message: 'hey, hope you are feeling better',
+        client_manager_auto_reply_enabled: true,
+        custom_data: { client_manager_auto_reply_enabled: true },
+    },
+}));
+assert.strictEqual(managerOwnedMiranda.shouldRoute, false);
+assert.ok(!managerOwnedMiranda.reasons.includes('linked_client_requires_shannon_approval'));
+assert.ok(!managerOwnedMiranda.reasons.includes('always_needs_you_person'));
 
 const permanentStamp = manager.buildNeedsYouData(makeAlert({
     alert_type: 'incoming_dm',

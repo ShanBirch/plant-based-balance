@@ -101,6 +101,7 @@ const {
     sanitizeVisibleOutboundDmText,
     splitCoachDraftIntoDmBubbles,
     fireCoachEditAnalysis,
+    isClientManagerAutoReplyEnabled,
     isAlwaysNeedsYouPerson,
     shouldBypassKayNeedsYouForAlert,
 } = require('./_lib/client-context');
@@ -752,10 +753,18 @@ function isLinkedClientIgAlert({ alert = {}, alertData = {}, thread = null } = {
     return !!(thread?.linked_user_id || alert.client_id || data.linked_user_id || data.client_id);
 }
 
+function isManagerOwnedLinkedClientIgSend({ alertData = {}, thread = null, source = '' } = {}) {
+    return String(source || '').trim().toLowerCase() === 'balance_lead_client_manager_cron'
+        && !!thread?.linked_user_id
+        && isClientManagerAutoReplyEnabled(thread)
+        && isClientManagerAutoReplyEnabled(alertData);
+}
+
 function shouldBlockLinkedClientAutomatedIgSend({ alert = {}, alertData = {}, thread = null, source = '' } = {}) {
     const data = alertData || alert.data || {};
     return isLinkedClientIgAlert({ alert, alertData: data, thread })
-        && isAutomatedPermanentNeedsYouSendSource(source, data);
+        && isAutomatedPermanentNeedsYouSendSource(source, data)
+        && !isManagerOwnedLinkedClientIgSend({ alertData: data, thread, source });
 }
 
 async function stampLinkedClientAutomatedIgSendBlock({ alertId, alertData = {} } = {}) {
@@ -1453,7 +1462,10 @@ exports.handler = async (event) => {
             }),
         };
     }
-    if (shouldBlockPermanentNeedsYouAutomatedIgSend({ alert, alertData, thread: threadForSend, source })) {
+    if (
+        !isManagerOwnedLinkedClientIgSend({ alertData, thread: threadForSend, source })
+        && shouldBlockPermanentNeedsYouAutomatedIgSend({ alert, alertData, thread: threadForSend, source })
+    ) {
         await stampPermanentNeedsYouAutomatedIgSendBlock({ alertId, alertData });
         return {
             statusCode: 409,
@@ -2259,6 +2271,7 @@ exports._test = {
     isPermanentNeedsYouIgAlert,
     shouldBlockPermanentNeedsYouAutomatedIgSend,
     isLinkedClientIgAlert,
+    isManagerOwnedLinkedClientIgSend,
     shouldBlockLinkedClientAutomatedIgSend,
     stampPersonalDmBoundaryBlock,
     hasClientFacingAiSelfReference,

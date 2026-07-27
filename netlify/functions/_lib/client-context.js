@@ -527,9 +527,19 @@ function isKayNeedsYouPerson(record = {}) {
     });
 }
 
+function isClientManagerAutoReplyEnabled(record = {}) {
+    const source = asPlainObject(record);
+    const customData = asPlainObject(source.custom_data || source.customData);
+    const instagramGraph = asPlainObject(customData.instagram_graph);
+    return source.client_manager_auto_reply_enabled === true
+        || customData.client_manager_auto_reply_enabled === true
+        || instagramGraph.client_manager_auto_reply_enabled === true;
+}
+
 function isAlwaysNeedsYouPerson(record = {}) {
     const source = asPlainObject(record);
     const customData = asPlainObject(source.custom_data || source);
+    if (isClientManagerAutoReplyEnabled(record)) return false;
     if (
         customData.needs_you_always === true
         || customData.manual_review_only === true
@@ -8013,6 +8023,7 @@ module.exports = {
     recentlyMessaged,
     isTestAccount,
     isAiAutomationOptedOut,
+    isClientManagerAutoReplyEnabled,
     isAlwaysNeedsYouPerson,
     isKayNeedsYouPerson,
     isProgramUpdateOrAppFixContext,

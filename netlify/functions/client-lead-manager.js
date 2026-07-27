@@ -10,6 +10,7 @@ const {
     supabaseQuery,
     buildMediaReviewInfo,
     buildContextReviewInfo,
+    isClientManagerAutoReplyEnabled,
     isAlwaysNeedsYouPerson,
     shouldBypassKayNeedsYouForAlert,
     reviewDraftAndUpdateAlert,
@@ -66,6 +67,8 @@ function alertIdentity(alert = {}) {
         username: data.username || data.ig_username || '',
         custom_data: {
             ...(data.custom_data || {}),
+            client_manager_auto_reply_enabled: data.client_manager_auto_reply_enabled === true
+                || data.custom_data?.client_manager_auto_reply_enabled === true,
             needs_you_always: data.needs_you_always === true || data.custom_data?.needs_you_always === true,
             manual_review_only: data.manual_review_only === true || data.custom_data?.manual_review_only === true,
             permanent_needs_you_draft_only: data.permanent_needs_you_draft_only === true
@@ -774,7 +777,7 @@ function classifyNeedsYou(alert = {}) {
     });
 
     const currentClientId = alert.client_id || data.linked_user_id || null;
-    if (currentClientId) {
+    if (currentClientId && !isClientManagerAutoReplyEnabled(alertIdentity(alert))) {
         reasons.push('linked_client_requires_shannon_approval');
         labels.push('current client reply needs Shannon approval');
     } else if (data.linked_client_status_lookup_failed === true) {
@@ -982,7 +985,7 @@ async function hydrateLiveLinkedClient(alert = {}) {
     if (!threadId) return alert;
     try {
         const rows = await supabaseQuery(
-            `ig_threads?select=id,linked_user_id&id=eq.${encodeURIComponent(threadId)}&limit=1`
+            `ig_threads?select=id,linked_user_id,custom_data&id=eq.${encodeURIComponent(threadId)}&limit=1`
         );
         const thread = rows?.[0] || null;
         if (!thread) {
@@ -992,13 +995,37 @@ async function hydrateLiveLinkedClient(alert = {}) {
             };
         }
         if (!thread.linked_user_id) return alert;
+        const managerAutoReplyEnabled = isClientManagerAutoReplyEnabled(thread);
+        const existingCustomData = data.custom_data && typeof data.custom_data === 'object'
+            ? data.custom_data
+            : {};
         return {
             ...alert,
             client_id: thread.linked_user_id,
             data: {
                 ...data,
+                custom_data: {
+                    ...existingCustomData,
+                    ...(thread.custom_data || {}),
+                    client_manager_auto_reply_enabled: managerAutoReplyEnabled,
+                },
                 linked_user_id: thread.linked_user_id,
-                linked_client_manual_review: true,
+                client_manager_auto_reply_enabled: managerAutoReplyEnabled,
+                linked_client_manual_review: managerAutoReplyEnabled ? false : true,
+                client_manager_review_required: managerAutoReplyEnabled ? false : data.client_manager_review_required,
+                needs_you_required: managerAutoReplyEnabled ? false : data.needs_you_required,
+                needs_shannon_approval: managerAutoReplyEnabled ? false : data.needs_shannon_approval,
+                permanent_needs_you_draft_only: managerAutoReplyEnabled ? false : data.permanent_needs_you_draft_only,
+                operator_queue: managerAutoReplyEnabled ? null : data.operator_queue,
+                needs_you_reason: managerAutoReplyEnabled ? null : data.needs_you_reason,
+                needs_you_reasons: managerAutoReplyEnabled
+                    ? (Array.isArray(data.needs_you_reasons)
+                        ? data.needs_you_reasons.filter(reason => ![
+                            'linked_client_requires_shannon_approval',
+                            'always_needs_you_person',
+                        ].includes(String(reason)))
+                        : [])
+                    : data.needs_you_reasons,
                 linked_client_status_checked_at: new Date().toISOString(),
             },
         };

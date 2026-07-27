@@ -67,6 +67,24 @@ const currentClientAlert = {
     },
 };
 
+const managerOwnedMirandaAlert = {
+    alert_type: 'ig_incoming_dm',
+    client_id: 'client-miranda',
+    client_name: 'Miranda',
+    data: {
+        channel: 'instagram',
+        ig_thread_id: 'thread-miranda',
+        linked_user_id: 'client-miranda',
+        client_manager_auto_reply_enabled: true,
+        custom_data: { client_manager_auto_reply_enabled: true },
+    },
+};
+const managerOwnedMirandaThread = {
+    id: 'thread-miranda',
+    linked_user_id: 'client-miranda',
+    custom_data: { client_manager_auto_reply_enabled: true },
+};
+
 assert.strictEqual(
     sendCoach.shouldBlockCurrentClientAutomatedSend(currentClientAlert, 'scheduled_worker'),
     true,
@@ -98,6 +116,50 @@ assert.strictEqual(
     }),
     true,
     'final Instagram transport must block every linked client from manager sending'
+);
+assert.strictEqual(
+    sendCoach.shouldBlockCurrentClientAutomatedSend(
+        managerOwnedMirandaAlert,
+        'balance_lead_client_manager_cron',
+        managerOwnedMirandaThread
+    ),
+    false,
+    'the manager may send for an explicitly opted-in linked client'
+);
+assert.strictEqual(
+    sendCoach.shouldBlockCurrentClientAutomatedSend(
+        {
+            ...managerOwnedMirandaAlert,
+            data: { ...managerOwnedMirandaAlert.data, scheduled_via: 'auto_send' },
+        },
+        'scheduled_worker',
+        managerOwnedMirandaThread
+    ),
+    true,
+    'the linked-client exception must not open the scheduled worker lane'
+);
+assert.strictEqual(
+    sendIg.shouldBlockLinkedClientAutomatedIgSend({
+        alert: managerOwnedMirandaAlert,
+        alertData: managerOwnedMirandaAlert.data,
+        thread: managerOwnedMirandaThread,
+        source: 'balance_lead_client_manager_cron',
+    }),
+    false,
+    'the final Instagram transport may send only for the manager-owned exception'
+);
+assert.strictEqual(
+    sendIg.shouldBlockLinkedClientAutomatedIgSend({
+        alert: {
+            ...managerOwnedMirandaAlert,
+            data: { ...managerOwnedMirandaAlert.data, scheduled_via: 'auto_send' },
+        },
+        alertData: { ...managerOwnedMirandaAlert.data, scheduled_via: 'auto_send' },
+        thread: managerOwnedMirandaThread,
+        source: 'scheduled_worker',
+    }),
+    true,
+    'the final Instagram transport still blocks scheduled-worker delivery'
 );
 
 assert.strictEqual(

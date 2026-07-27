@@ -46,6 +46,7 @@ const {
     buildHeardFirstConversationBlock,
     buildDailyGreetingPolicyBlock,
     shouldAllowDailyGreeting,
+    isClientManagerAutoReplyEnabled,
     isAlwaysNeedsYouPerson,
     isKayNeedsYouPerson,
     isProgramUpdateOrAppFixContext,
@@ -4088,7 +4089,9 @@ exports.handler = async (event) => {
             customData: thread.custom_data,
         })
         : '';
-    const linkedClientNeedsYou = !!thread.linked_user_id;
+    const clientManagerAutoReplyEnabled = !!thread.linked_user_id
+        && isClientManagerAutoReplyEnabled(thread);
+    const linkedClientNeedsYou = !!thread.linked_user_id && !clientManagerAutoReplyEnabled;
     const metaAdFirstInbound = isMetaAdFastLaneEligible({
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
@@ -4114,7 +4117,7 @@ exports.handler = async (event) => {
         metaAdFastLane,
         exerciseConversationFastLane,
     });
-    const autoSendEnabled = !linkedClientNeedsYou
+    const autoSendEnabled = !thread.linked_user_id
         && (balanceLeadAutoSendLane || cocosAutoSendLane || voiceReplyTestLane || metaAdFastLane);
 
     // Idempotency — when ManyChat supplied a message_id, reuse it. Otherwise
@@ -4784,6 +4787,10 @@ exports.handler = async (event) => {
         suggested_message: draft.joined || null,
         status: 'pending',
         data: {
+            client_manager_auto_reply_enabled: clientManagerAutoReplyEnabled || undefined,
+            custom_data: clientManagerAutoReplyEnabled ? {
+                client_manager_auto_reply_enabled: true,
+            } : undefined,
             client_manager_review_required: draftOnlyNeedsYouClient || undefined,
             needs_you_required: draftOnlyNeedsYouClient || undefined,
             needs_shannon_approval: draftOnlyNeedsYouClient || undefined,
@@ -4990,16 +4997,35 @@ exports.handler = async (event) => {
             || '';
         const mergedData = {
             ...(existingPending.data || alertRow.data),
-            client_manager_review_required: draftOnlyNeedsYouClient || existingPending.data?.client_manager_review_required || undefined,
-            needs_you_required: draftOnlyNeedsYouClient || existingPending.data?.needs_you_required || undefined,
-            needs_shannon_approval: draftOnlyNeedsYouClient || existingPending.data?.needs_shannon_approval || undefined,
-            linked_client_manual_review: linkedClientNeedsYou || existingPending.data?.linked_client_manual_review || undefined,
-            permanent_needs_you_draft_only: draftOnlyNeedsYouClient || existingPending.data?.permanent_needs_you_draft_only || undefined,
-            operator_queue: draftOnlyNeedsYouClient ? 'needs_you' : (existingPending.data?.operator_queue || null),
-            needs_you_reason: draftOnlyNeedsYouClient ? draftOnlyNeedsYouReason : existingPending.data?.needs_you_reason,
+            client_manager_auto_reply_enabled: clientManagerAutoReplyEnabled || undefined,
+            custom_data: clientManagerAutoReplyEnabled ? {
+                ...(existingPending.data?.custom_data || {}),
+                client_manager_auto_reply_enabled: true,
+            } : existingPending.data?.custom_data,
+            client_manager_review_required: draftOnlyNeedsYouClient
+                ? true
+                : (clientManagerAutoReplyEnabled ? undefined : existingPending.data?.client_manager_review_required),
+            needs_you_required: draftOnlyNeedsYouClient
+                ? true
+                : (clientManagerAutoReplyEnabled ? undefined : existingPending.data?.needs_you_required),
+            needs_shannon_approval: draftOnlyNeedsYouClient
+                ? true
+                : (clientManagerAutoReplyEnabled ? undefined : existingPending.data?.needs_shannon_approval),
+            linked_client_manual_review: linkedClientNeedsYou
+                ? true
+                : (clientManagerAutoReplyEnabled ? undefined : existingPending.data?.linked_client_manual_review),
+            permanent_needs_you_draft_only: draftOnlyNeedsYouClient
+                ? true
+                : (clientManagerAutoReplyEnabled ? undefined : existingPending.data?.permanent_needs_you_draft_only),
+            operator_queue: draftOnlyNeedsYouClient
+                ? 'needs_you'
+                : (clientManagerAutoReplyEnabled ? null : (existingPending.data?.operator_queue || null)),
+            needs_you_reason: draftOnlyNeedsYouClient
+                ? draftOnlyNeedsYouReason
+                : (clientManagerAutoReplyEnabled ? undefined : existingPending.data?.needs_you_reason),
             needs_you_reasons: draftOnlyNeedsYouClient
                 ? [...new Set([...(existingPending.data?.needs_you_reasons || []), draftOnlyNeedsYouReason])]
-                : existingPending.data?.needs_you_reasons,
+                : (clientManagerAutoReplyEnabled ? undefined : existingPending.data?.needs_you_reasons),
             codex_review: draftOnlyNeedsYouClient ? {
                 ...(existingPending.data?.codex_review || {}),
                 source: 'balance-combined-dm-manager',
@@ -5013,7 +5039,7 @@ exports.handler = async (event) => {
                 ].filter(Boolean),
                 reviewed_at: new Date().toISOString(),
                 automation_id: 'balance-combined-dm-manager',
-            } : existingPending.data?.codex_review,
+            } : (clientManagerAutoReplyEnabled ? undefined : existingPending.data?.codex_review),
             message_preview: truncate(messageText, 400),
             last_outbound_message: lastOutboundMessage || existingPending.data?.last_outbound_message || null,
             learning_reels: learningReelHistory.length ? {
