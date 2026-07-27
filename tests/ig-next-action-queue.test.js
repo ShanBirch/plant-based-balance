@@ -69,6 +69,16 @@ test('Story discovery can prioritize an exact unanswered inbound without becomin
     assert.match(migration, /status IN \('needs_you', 'blocked'\)/i);
     assert.match(migration, /GRANT EXECUTE[\s\S]+TO service_role/i);
     assert.doesNotMatch(migration, /GRANT EXECUTE[\s\S]+TO authenticated/i);
+
+    const holdGuard = fs.readFileSync(
+        path.join(__dirname, '..', 'supabase', 'migrations', '20260727231226_preserve_story_preempt_reply_holds.sql'),
+        'utf8'
+    );
+    assert.match(holdGuard, /dm_manager_review_hold_preserved/i);
+    assert.match(holdGuard, /coalesce\(v_action\.receipt, '\{\}'::jsonb\) <> '\{\}'::jsonb/i);
+    assert.match(holdGuard, /source_alert_hold_preserved/i);
+    assert.match(holdGuard, /needs_shannon_approval/i);
+    assert.match(holdGuard, /REVOKE ALL[\s\S]+unchecked[\s\S]+service_role/i);
 });
 
 test('a new action version archives and clears the older operator receipt', () => {
