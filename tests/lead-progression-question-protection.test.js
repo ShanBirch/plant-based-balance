@@ -12,7 +12,7 @@ const qualifier = {
     meaningful_lead_reply_count: 4,
 };
 
-test('question-only review warnings cannot delete an earned progression move', () => {
+test('question-only review warnings remain authoritative for manager repair', () => {
     const review = applyLeadProgressionQuestionProtection({
         verdict: 'warn',
         confidence: 0.86,
@@ -30,8 +30,8 @@ test('question-only review warnings cannot delete an earned progression move', (
         meaningfulLeadReplyCount: 4,
     });
 
-    assert.equal(review.verdict, 'pass');
-    assert.equal(review.deterministic_guard, 'lead_next_missing_fact_protected');
+    assert.equal(review.verdict, 'warn');
+    assert.equal(review.deterministic_guard, undefined);
 });
 
 test('progression protection does not hide independent review problems', () => {
@@ -76,10 +76,10 @@ test('progression protection does not override an already-answered warning', () 
     assert.equal(review.deterministic_guard, undefined);
 });
 
-test('learned editing style cannot disable lead progression', () => {
+test('learned manager cautions are preserved instead of softened into qualification pressure', () => {
     const softened = softenAbsoluteLearnedInstruction(
         'Do not turn low-stakes Instagram banter into coaching or discovery unless they ask for help.'
     );
-    assert.match(softened, /next-missing-fact/i);
-    assert.match(softened, /do not wait for them to ask for help/i);
+    assert.match(softened, /Do not turn low-stakes Instagram banter into coaching or discovery unless they ask for help/i);
+    assert.doesNotMatch(softened, /next-missing-fact|do not wait for them to ask for help/i);
 });

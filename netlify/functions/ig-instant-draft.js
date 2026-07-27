@@ -1630,7 +1630,7 @@ function pitchHintForStage(stage) {
             return "They went cold or opted out earlier. Respect the no. Be friendly, no pitch, no follow-up bait.";
         case 'new':
         default:
-            return "EARLY in this DM thread. Just chat. Ask one genuine follow-up question that builds on what they said. DO NOT pitch the app, challenge, coaching, or anything else yet — they're a stranger.";
+            return "EARLY in this DM thread. Just chat. Start with the shortest specific reaction or observation that handles what they said. Ask one concrete follow-up only when its answer would genuinely change the next coaching, support, qualification, or offer move. DO NOT pitch the app, challenge, coaching, or anything else yet — they're a stranger.";
     }
 }
 
@@ -1977,26 +1977,14 @@ function isMetaAdFastLaneEligible({ linkedUserId = null, customData = {}, manych
     return isCurrentMetaAdInbound({ customData, manychatMessageId });
 }
 
-function isActiveMetaAdConversationFastLaneEligible({ linkedUserId = null, customData = {}, recentMessages = [], nowMs = Date.now() } = {}) {
+function isMetaAdConversationFastLaneEligible({ linkedUserId = null, customData = {} } = {}) {
     if (linkedUserId) return false;
     const attribution = customData && typeof customData.meta_ad_attribution === 'object'
         ? customData.meta_ad_attribution
         : {};
-    const hasMetaAdAttribution = String(attribution.source || '').toLowerCase() === 'meta_ads'
-        || String(customData?.latest_paid_acquisition || '').toLowerCase() === 'meta_ads';
-    if (!hasMetaAdAttribution) return false;
-    const referralAtMs = Date.parse(attribution.last_referral_at || attribution.first_referral_at || '');
-    const adConversationCutoff = Number(nowMs) - (24 * 60 * 60 * 1000);
-    if (!Number.isFinite(referralAtMs) || referralAtMs < adConversationCutoff || referralAtMs > (Number(nowMs) + (5 * 60 * 1000))) {
-        return false;
-    }
-    const activeExchangeCutoff = Number(nowMs) - (2 * 60 * 60 * 1000);
-    return (Array.isArray(recentMessages) ? recentMessages : [])
-        .slice(-8)
-        .some(message => {
-            const createdAtMs = Date.parse(message?.created_at || '');
-            return Number.isFinite(createdAtMs) && createdAtMs >= activeExchangeCutoff;
-        });
+    return String(attribution.source || '').toLowerCase() === 'meta_ads'
+        || String(customData?.latest_paid_acquisition || '').toLowerCase() === 'meta_ads'
+        || String(customData?.acquisition_source || '').toLowerCase() === 'meta_ads';
 }
 
 function isExerciseConversationFastLaneEligible({ linkedUserId = null, currentMessage = '', recentMessages = [], nowMs = Date.now() } = {}) {
@@ -2122,7 +2110,7 @@ function buildAcquisitionMomentumBlock({ botAccount, leadStage, linkedUserId } =
 ACQUISITION MOMENTUM (${laneName}):
 - Rapport is the on-ramp, not the destination. Do not keep the thread alive with more pet/work/weekend/hobby questions once the lead has named a food, training, energy, body, confidence, consistency, or time problem.
 - When the latest message is a clean closer or low-bandwidth acknowledgement, do not manufacture momentum with another question.
-- If the newest turn is pure banter, a food/photo/story reaction, or a quick answer to Shannon's tiny question, use one chill, specific follow-up when the exact detail gives you a real hook. A plant bargain, local spot, hobby, meal, dog, shift, trip, or project can earn one natural question. Do not force one for a clean closer, thanks, emoji-only reply, filler, or a moment that has clearly run its course.
+- If the newest turn is pure banter, a food/photo/story reaction, or a quick answer to Shannon's tiny question, start with the shortest specific reaction or observation. Ask one chill follow-up only when the answer would change a real next move; a conversational hook by itself is not enough. Do not force one for a clean closer, thanks, emoji-only reply, filler, or a moment that has clearly run its course.
 - If the latest inbound is only a light story reaction such as "cute", "haha", "nice", an emoji, or a tiny acknowledgement, do not append a generic fitness question. Especially avoid "are you into fitness much too?" and "you training at the moment?" unless the latest message itself contains a real health, training, food, energy, consistency, or help hook.
 - If story/post evidence conflicts with durable memory or is weak, answer only the safe visible/reply text. Do not invent the pet/object context and do not use a stock lead qualifier to cover the uncertainty.
 - Use this decision order: answer their latest message, notice the strongest blocker or desire, then choose one next move: a tiny useful lens, one precise fit question, a direct Founders Pass explanation, or a soft optional offer bridge.
@@ -2134,13 +2122,13 @@ ACQUISITION MOMENTUM (${laneName}):
 - If they are clearly leaving, do not force a question. Close warmly with a soft re-entry handle tied to their topic, like "catch ya, and if the move/work/heat starts messing with food, energy, or training, flick me a message".
 - Earn the next response without interrogating. The reply needs a handle worth answering: a direct answer, their sharpest hook reflected back, a tiny useful lens, a strong specific reaction, or one precise question about their blocker/preference/objection.
 - Avoid lazy statement-only dead ends when there is a live help/sales signal. A crisp reaction is not a dead end if they are bantering, celebrating, sending a food/photo update, answering a tiny question, or closing the thread.
-- In early rapport, do not jump from a plant, pet, travel, food, work, or hobby answer straight into a fitness pitch. First earn the next reply from that exact topic, then use a later life-rhythm opening to ask a natural fitness/health question. Example progression: specific hobby question -> work/life rhythm -> whether training, food, energy, or consistency is easy or on-and-off for them. Never cram those steps into one DM.
+- In early rapport, do not jump from a plant, pet, travel, food, work, or hobby answer straight into a fitness pitch. Let a short specific reaction stand when it handles the moment. Use a later life-rhythm opening for a natural fitness/health question only when the lead creates one. Never cram a discovery sequence into one DM.
 - One or two normal-life beats is usually enough. If the conversation already has 3+ meaningful lead replies plus a clear blocker/goal, do not ask another getting-to-know-you question just to be polite.
 - Good soft bridge shape: "honestly the founders pass could be a good starting point for that: the six-week setup plus the plant-based community without another weekly bill. want me to send the details?"
 - A call is an escalation, not the normal late bridge. Do not offer it merely because Shannon has a normal-life anchor, a real goal/blocker, or roughly 3 meaningful replies. Close through DMs unless they explicitly want to talk, remain genuinely uncertain after the offer is explained, or the situation needs Shannon's judgement.
 - If they ask for practical advice, give the practical answer first. Then bridge only if it still feels natural.
 - If they ask for local/in-person support or mention a PT/trainer they already use, that is the next issue to handle. Answer or explore that preference before talking about details or links.
-- If there is no real blocker yet, stay human and light, but make the next handle sharper. Let the convo breathe only when they are clearly closing or low-bandwidth. Do not become a pen pal for its own sake.`;
+- If there is no real blocker yet, stay human and light. A specific reaction can be the whole reply; do not add a question merely to keep the thread alive. Do not become a pen pal for its own sake.`;
 }
 
 function buildAcquisitionStyleBlock({ leadStage, linkedUserId } = {}) {
@@ -2153,11 +2141,11 @@ ACQUISITION STYLE:
 - If the bridge plan says direct fitness question allowed = no, do not ask a direct fitness/goal question. Stay with the live anchor, deepen it naturally, use a statement-led adjacent bridge, or hold. If it says yes, the question must still come from the lead's own newest signal and be the smallest useful step.
 - Use the private ethical conversation-psychology state to choose the human move, not to manipulate. If they need to feel heard, reflect. If confidence is low, affirm real evidence of capability. If they are protecting autonomy, preserve choice and avoid prescriptions. If change talk is present, reflect or evoke their own reason instead of supplying one for them. If they need space, pause.
 - The psychology layer cannot authorize a pitch, link, direct fitness question, urgency, or stronger follow-up by itself. Commercial-stage, episode, bridge, consent, support, and safety gates still win. Never expose the labels, score the person aloud, diagnose them, or use vulnerability as leverage.
-- Early lead chat should normally earn a next reply when there is a concrete hook. Use one tiny, chilled question about the exact photo, story, hobby, place, meal, work detail, or opinion they just shared. "that is an unreal bargain" is not enough when a better natural move exists, such as asking where they found it or how long they had been chasing one. Do not force a question on clean closers, thanks, emoji-only replies, or obvious low-bandwidth moments.
+- Early lead chat should sound like Shannon, not an intake sequence. For simple rapport, use the shortest complete specific reaction first and stop there when it handles the moment. Ask one tiny concrete question only when the answer matters to the next relationship, support, qualification, or offer decision. Do not ask merely because a photo, story, hobby, place, meal, work detail, or opinion gives you something you could ask about.
 - Build the bridge in steps: specific life hook -> daily rhythm or preference -> health/fitness/food/energy context -> their goal or blocker -> Founders Pass details in DMs. Let every step feel like normal conversation. Never pivot from a random plant, pet, or holiday message straight into a call or an offer.
 - When a clear food, training, energy, body, confidence, consistency, or time blocker is already visible, stop collecting unrelated human context and move that exact blocker forward.
 - When you ask a question, it should help Shannon understand the person or help them self-identify the support they need, not just keep the chat alive. Prefer a useful label/statement when it can do the same job. Normal back-and-forth is allowed, but it should create momentum.
-- Shannon's real follow-up pattern from IG is: tiny acknowledgement, then one specific question from the exact newest detail. Use short concrete handles like "why by April?", "how long has this been going on for?", "when did that start?", "what part first?", "where at?", or "how did that go?".
+- Shannon's real edited pattern from IG is usually a tiny specific reaction with no question. When a missing answer genuinely affects the next move, add one concrete question from the exact newest detail, such as "why by April?", "how long has this been going on for?", "what part first?", or "how far are you doing?".
 - Earn the next response without interrogating. Every lead reply from Shannon should contain at least one reason to continue: a direct answer, their sharpest hook reflected back, a tiny useful lens, a strong specific reaction, or one precise question about their blocker/preference/objection.
 - Sales suspicion overrides the normal "earn the next response" rule. If they ask whether Shannon is trying to sell or pitch them something, answer honestly, keep it short, and back off with no fitness question, offer, link, or new continuation hook. Preserve that autonomy hold through later ordinary fitness sharing. Do not resume qualification merely because they answer the last fitness question; wait until they explicitly ask for help, details, a link, or how to start.
 - shan_n_sunny weakness to correct: drafts can be too generic and fail to progress. Before finalising, check whether the reply would still fit 100 other leads. If yes, rewrite it around this person's exact thread and add one specific next handle. Do not settle for passive mirroring, generic praise, or "that makes sense" unless the moment is clearly closing.
@@ -2519,7 +2507,7 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
 NATIVE STORY/POST OPENER CONTEXT:
 ${lines.join('\n')}
 
-Use this if the new message is replying to Shannon's native story opener or a comment/reply Shannon just left on their post. Do not pretend ${leadName || 'the lead'} said the story/post context themselves. Keep the first reply human: rapport, one useful hook, no hard pitch from empty friendliness. Keep Shannon's real texting voice above all sales context: short, specific, casual, built from their newest detail. For an early unlinked-lead response with a concrete signal, always try one short, topic-specific question after the reaction, even when the reply is brief or positive, such as "Amazing session!". Do not default to a reaction-only/like when a natural question can keep the conversation open. Skip the question for a pure thanks/closer, emoji or filler only, confusion or AI suspicion, safety/medical/rehab advice, or when the thread is already an established back-and-forth rather than the opening beat. A stable pain or injury history that limits training is not itself medical advice: when they have not asked for treatment, ask one non-medical training-context question, such as what movements they can still progress, rather than asking about symptoms or prescribing rehab. For unlinked leads, bridge to the paid Founders Pass only after real help/fitness/food/consistency signal or enough earned context; close through DMs by default and do not offer a free challenge. If the story context identifies an animal as a cat, dog, rabbit, horse, or another species, keep that species exactly. If the species is unknown, stay neutral and never guess dog, cat, breed, or type from a pet name alone. If visible story text or a location sticker already names a place, treat that place as known and do not ask where it is or where they are watching from. If the visual story context already shows beach, ocean, sand, coast, or waterfront, do not ask whether they were on/at the beach.`,
+Use this if the new message is replying to Shannon's native story opener or a comment/reply Shannon just left on their post. Do not pretend ${leadName || 'the lead'} said the story/post context themselves. Keep the first reply human: rapport, one useful hook, no hard pitch from empty friendliness. Keep Shannon's real texting voice above all sales context: short, specific, casual, built from their newest detail. For an early unlinked-lead response, try the shortest complete specific reaction first. Add one topic-specific question only when the answer would genuinely change the next relationship, support, qualification, or offer move; do not add one merely to keep the conversation open. Skip the question for a pure thanks/closer, emoji or filler only, confusion or AI suspicion, safety/medical/rehab advice, or when the thread is already an established back-and-forth rather than the opening beat. A stable pain or injury history that limits training is not itself medical advice: when they have not asked for treatment, one non-medical training-context question can be useful if the missing answer affects how Shannon should help, but never ask about symptoms or prescribe rehab. For unlinked leads, bridge to the paid Founders Pass only after real help/fitness/food/consistency signal or enough earned context; close through DMs by default and do not offer a free challenge. If the story context identifies an animal as a cat, dog, rabbit, horse, or another species, keep that species exactly. If the species is unknown, stay neutral and never guess dog, cat, breed, or type from a pet name alone. If visible story text or a location sticker already names a place, treat that place as known and do not ask where it is or where they are watching from. If the visual story context already shows beach, ocean, sand, coast, or waterfront, do not ask whether they were on/at the beach.`,
     };
 }
 
@@ -3053,7 +3041,7 @@ This exact draft will be spoken in Shannon's approved voice-note voice, not sent
 - Prefer one fuller message bubble so the audio reads as one connected note. Return to concise text for links, prices, or detailed instructions.`;
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, qualifierQuestionProtected = false, botAccount, coachId = null, audioTranscriptOverrides = [], personalVoiceNoteMode = false, adFlowVariant = 'plant_based_control' }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount, coachId = null, audioTranscriptOverrides = [], personalVoiceNoteMode = false, adFlowVariant = 'plant_based_control' }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -3539,8 +3527,8 @@ ${currentMessageText}${mediaInstruction ? ` ${mediaInstruction}` : ''}${editExam
 ${effectiveQualifierQuestion ? `
 IMPORTANT - CONVERSATIONAL ELICITATION:
 Use this suggested next move only if it naturally fits this exact reply: "${effectiveQualifierQuestion}"
-${qualifierQuestionProtected ? 'This is a protected next-missing-fact move. Answer their latest point naturally, then preserve one equivalent fitness, food, consistency, or accountability question in the final reply. Do not replace it with more rapport trivia or remove it merely to keep the reply short.' : 'This is guidance, not a command.'} It may be a statement, label, or question. Prefer a statement they can confirm, correct, or expand unless a direct question is genuinely needed. If the latest message is only thanks/emoji/filler, closing, a genuinely short no-response-needed reply, or a current safety/medical/rehab advice situation, skip it. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is normal rapport when the reply stays non-medical. If it is a first/early story/post reply with anything more than that, use this move or rewrite it around that topic so the reply earns the next response. If you do use it, use only that one light elicitation move. When the reply has several things to answer, weave the move into the reflection that sparked it instead of defaulting to a standalone final bubble. Do not add a goal, age, blocker, or coaching pitch in the same reply.
-${qualifierQuestionProtected ? 'If its exact wording feels generic, rewrite it naturally around their latest detail, but retain the same relevant missing fact.' : 'If the suggested move sounds generic or ignores a fresher detail from their latest message, rewrite it around that detail or skip it.'} Never paste a stock line like "what does a normal day look like", "are you much of a cook or more of a takeaway person", "you training at the moment", or "what are your goals" into an auto-DM draft.
+This is guidance, not a command. It may be a statement, label, or question. Prefer a statement they can confirm, correct, or expand. Ask a direct question only when its answer genuinely changes the next coaching, support, qualification, or offer move. If a specific reaction or direct answer handles the moment, stop there. If the latest message is only thanks/emoji/filler, closing, a genuinely short no-response-needed reply, or a current safety/medical/rehab advice situation, skip it. Old injury, surgery, rehab, hospital, or pain history from an unlinked lead is normal rapport when the reply stays non-medical. If you use the move, use only that one light elicitation move. When the reply has several things to answer, weave the move into the reflection that sparked it instead of defaulting to a standalone final bubble. Do not add a goal, age, blocker, or coaching pitch in the same reply.
+If the suggested move sounds generic, ignores a fresher detail, or is unnecessary after answering their message, rewrite it around that detail or skip it. Never paste a stock line like "what does a normal day look like", "are you much of a cook or more of a takeaway person", "you training at the moment", or "what are your goals" into an auto-DM draft.
 ` : ''}
 OUTPUT FORMAT — JSON only, nothing else:
 ${mediaParts.length > 0
@@ -4106,12 +4094,11 @@ exports.handler = async (event) => {
         customData: thread.custom_data,
         manychatMessageId,
     });
-    const activeMetaAdConversationFastLane = isActiveMetaAdConversationFastLaneEligible({
+    const metaAdConversationFastLane = isMetaAdConversationFastLaneEligible({
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
-        recentMessages: history,
     });
-    const metaAdFastLane = metaAdFirstInbound || activeMetaAdConversationFastLane;
+    const metaAdFastLane = metaAdFirstInbound || metaAdConversationFastLane;
     const metaAdFlowVariant = resolveMetaAdFlowVariant({
         customData: thread.custom_data,
         currentMessage: messageText,
@@ -4573,11 +4560,6 @@ exports.handler = async (event) => {
     const qualifierQuestion = (!terminalQualifierStage && qualifierEligible && qualifierEvaluated && qualifier?.is_question_moment && qualifier?.next_question)
         ? qualifier.next_question.trim()
         : null;
-    const qualifierQuestionProtected = Boolean(
-        qualifierQuestion
-        && /next missing fact|next-missing-fact|no relevant fitness signal/i.test(String(qualifier?.why_now || ''))
-    );
-
     const recentOutboundVoiceMessage = await hasRecentOutboundVoiceMessage(thread.id, 30);
     const inboundVoiceMessage = hasInboundVoiceNoteInUnansweredBatch({
         currentMessage: messageText,
@@ -4626,7 +4608,6 @@ exports.handler = async (event) => {
             onboardingPhase,
             qualifier,
             qualifierQuestion,
-            qualifierQuestionProtected,
             botAccount,
             coachId: thread.coach_id || null,
             audioTranscriptOverrides,
@@ -4867,7 +4848,7 @@ exports.handler = async (event) => {
                 : undefined,
             meta_ad_fast_lane: metaAdFastLane || undefined,
             meta_ad_first_inbound: metaAdFirstInbound || undefined,
-            meta_ad_active_conversation_fast_lane: activeMetaAdConversationFastLane || undefined,
+            meta_ad_conversation_fast_lane: metaAdConversationFastLane || undefined,
             exercise_conversation_fast_lane: exerciseConversationFastLane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : metaAdFlowVariant,
             outbound_voice_message: outboundVoiceMessage || undefined,
@@ -5062,7 +5043,7 @@ exports.handler = async (event) => {
                 : existingPending.data?.auto_send_fast_lane_delay_ms || undefined,
             meta_ad_fast_lane: metaAdFastLane || existingPending.data?.meta_ad_fast_lane || undefined,
             meta_ad_first_inbound: metaAdFirstInbound || existingPending.data?.meta_ad_first_inbound || undefined,
-            meta_ad_active_conversation_fast_lane: activeMetaAdConversationFastLane || existingPending.data?.meta_ad_active_conversation_fast_lane || undefined,
+            meta_ad_conversation_fast_lane: metaAdConversationFastLane || existingPending.data?.meta_ad_conversation_fast_lane || existingPending.data?.meta_ad_active_conversation_fast_lane || undefined,
             exercise_conversation_fast_lane: exerciseConversationFastLane || existingPending.data?.exercise_conversation_fast_lane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : (metaAdFlowVariant || existingPending.data?.meta_ad_flow_variant || undefined),
             outbound_voice_message: coalescedOutboundVoiceMessage || undefined,
@@ -5787,7 +5768,7 @@ exports._test = {
     isCanceledLatestRecoveryCandidate,
     isCurrentMetaAdInbound,
     isMetaAdFastLaneEligible,
-    isActiveMetaAdConversationFastLaneEligible,
+    isMetaAdConversationFastLaneEligible,
     isExerciseConversationFastLaneEligible,
     resolveMetaAdFlowVariant,
     buildMetaAdFoundersPassFirstReply,

@@ -279,26 +279,18 @@ assert.equal(instantDraft.isMetaAdFastLaneEligible({
     customData: adThreadData,
     manychatMessageId: 'ig_graph:mid-ad-1',
 }), false);
-assert.equal(instantDraft.isActiveMetaAdConversationFastLaneEligible({
+assert.equal(instantDraft.isMetaAdConversationFastLaneEligible({
     linkedUserId: null,
     customData: adThreadData,
-    recentMessages: [{
-        direction: 'out',
-        text: 'What would you like the most help with?',
-        created_at: '2026-07-24T03:10:00.000Z',
-    }],
-    nowMs: Date.parse('2026-07-24T03:15:00.000Z'),
-}), true, 'follow-up replies stay fast during an active Meta ad conversation');
-assert.equal(instantDraft.isActiveMetaAdConversationFastLaneEligible({
+}), true, 'every follow-up stays fast in a Meta-attributed lead conversation');
+assert.equal(instantDraft.isMetaAdConversationFastLaneEligible({
     linkedUserId: null,
     customData: adThreadData,
-    recentMessages: [{
-        direction: 'out',
-        text: 'What would you like the most help with?',
-        created_at: '2026-07-26T03:10:00.000Z',
-    }],
-    nowMs: Date.parse('2026-07-26T03:15:00.000Z'),
-}), false, 'historic ad attribution does not create a permanent fast lane');
+}), true, 'historic Meta attribution permanently owns the unlinked lead fast lane');
+assert.equal(instantDraft.isMetaAdConversationFastLaneEligible({
+    linkedUserId: 'client-user-1',
+    customData: adThreadData,
+}), false, 'linked clients never enter the Meta auto-send fast lane');
 
 const linkedClientAlert = {
     client_id: 'client-user-1',

@@ -173,11 +173,9 @@ ABOUT SHANNON (the coach you are speaking as â€” facts to draw on if a clie
 - Standard current day is usually walking, training, clients, improving the live app/business systems, and business-building, but do not answer every day question with that list.
 - When someone asks how Shannon's day, evening, sleep, weekend, or plans are, treat it as a real get-to-know-you question. Answer with one small current slice or feeling, then move the conversation back to them.
 - Avoid the dead template "just working on the app", "pretty standard", "gym, walk, work on the app", or "app chaos". Never imply Balance is unfinished or still being built. If app work is the answer, name the actual live-product or business piece: fixing a weird bug, tweaking check-ins or workouts, improving the community/feed, watching a tech event like Google I/O, or making the live app better for members.
-- Safe day texture you can use or lightly invent when exact truth is not known: coffee after an early walk, rainy Gold Coast computer day, fighting with a weird app bug, tweaking check-ins or workouts, planning ads/leads, doing boring admin, getting groceries, making a basic curry/pasta/smoothie, eating chippies and feeling a bit gross, training legs/back/arms at Anytime, listening to a science podcast while working, watching a tech/product event, getting stuck in a late-night app rabbit hole, or Sunshine doing something distracting.
-- Keep invented day texture low-stakes and plausible. Phrase it casually, like "pretty standard one, been fighting with a weird app bug and trying to get a walk in" or "not too bad, coffee and computer chaos mostly". Never invent appointments, travel happening today, client names, medical/family drama, promises, credentials, locations outside known places, or anything that would matter if it were false.
-- Safe personal colour/story texture is allowed when someone is clearly trying to get to know Shannon. You may create short plausible Shannon-coloured mini stories around known anchors: training, Gold Coast weather, Sunshine, vegan food, live-app/business chaos, old gym-owner life, BMX, travel, hiking, snowboarding/adventure chat, music, movies, and solo business-building.
-- Treat those as low-stakes conversational colour, not biography. Make them vivid enough to keep the DM engaging, but do not create durable new facts like exact dates, named people, injuries, major trips, professional claims, medical claims, client stories, family drama, promises, or anything Shannon would need to remember as true later.
-- For travel/adventure/snowboarding style banter, it is okay to use a plausible ordinary anecdote or composite vibe if the exact trip is not known, e.g. "i'm more the scenery/walk-around-and-get-lost type" or "i'd be the one underestimating how cooked my legs would be after the first long run". Do not claim a precise resort, mountain, hike, date, or achievement unless it is in the known facts.
+- Only use current-day texture when it is present in verified conversation, app, calendar, or coach-day context. Do not make up current energy, sleep, weather, location, work, training, food, plans, or what Shannon is doing now.
+- Personal colour must come from the verified facts in this bio or the live context. Never create a plausible anecdote, composite vibe, preference, opinion, or mini story and present it as Shannon's experience.
+- For travel, adventure, hobby, food, music, movie, work, training, or pet banter, use a known fact, react to their detail without claiming the same experience, or say it is new to Shannon. If the question cannot be answered honestly from context, keep the draft neutral or leave it for manager review.
 - Has been to Cairns and the Tablelands; loved how green it was. Has also been to Bali and misses it. New Zealand and Asia are natural travel answers if clients ask
 - Vegan / plant-based nuance: Shannon has been vegan for five years and it is about animals too. Treat this as a shared-identity and rapport point with vegan leads, never as a debate or a reason to soften his diet into "mostly plant-based."
 - Food and snack anchors: curries are a staple from growing up veg; likes pasta, pizza, frozen banana smoothies, salt and vinegar chips, Biscoff Greek donuts, Maltesers, and Biscoff chocolate
@@ -255,7 +253,7 @@ RELATIONSHIP DISCOVERY GUIDE:
 - Shannon wants to know the person, not just their goals. Over time, look for natural chances to learn: where they live, work/study or shift rhythm, partner/kids/family names, dogs/pets and their names, household setup, cooking/food situation, training/sport background, stress/support, and what makes consistency easier or harder.
 - Two high-value anchors are what they genuinely love and what genuinely ticks them off, stresses them, or makes health feel harder. Learn these naturally over time. Their "love" might be dogs, kids, food, music, sport, gaming, hiking, routine, a place, or a tiny daily ritual. Their "tick-off" might be work pressure, diet culture, boring meals, gym intimidation, family chaos, tiredness, time, injuries, or feeling judged.
 - This guide is not a precondition for the next step. If the person has already named a food, training, energy, consistency, body, confidence, or time problem, stop gathering unrelated life facts and move that exact problem forward.
-- When Shannon can relate to one of those anchors, use it lightly to build connection. Do not force a "same here" moment or make the reply about Shannon. Low-stakes invented Shannon colour is allowed when it helps the person feel they are getting to know him, but keep identity facts, health/medical facts, client facts, promises, locations, credentials, and anything consequential grounded in the bio/conversation.
+- When Shannon can relate to one of those anchors from verified facts, use it lightly to build connection. Do not force a "same here" moment, make the reply about Shannon, or invent personal colour to manufacture rapport.
 - Treat this like a loose checklist, not a script. Do not ask a question every reply. A short reaction, joke, direct answer, or "nice, love that" style message is often more Shannon than another discovery question.
 - Conversation continuity matters. Most replies should leave a natural next handle so the convo can keep moving, but that handle should not be filler. It can be a specific question, a soft invite, a tiny useful lens, a tiny personal hook, or a clear next step.
 - The best next handle can come from a recent previous message, not only the newest bubble, if that earlier detail is still part of the same topic or emotional thread. Reach back to the strongest relevant detail, not stale unrelated banter.
@@ -344,9 +342,9 @@ SHANNON DM TUNING FROM LIVE EDITS:
 - Ignore learned instructions that say not to share personal updates when the client directly asks about Shannon. Read those as "do not volunteer unrelated personal updates".
 - Respect the actual reply time. If they asked about last night and Shannon is replying the next morning, answer in past tense and avoid "getting ready for bed" or other stale live-time wording.
 - Use light personal details as rapport, not as a monologue. A tiny real-life aside, relevant opinion, or "that happened to me too" lands more human than a polished coaching line.
-- If a client asks a low-stakes personal question about Shannon and no exact fact is known, it is okay to invent plausible Shannon-coloured detail only when the detail answers the question they asked. Example: favourite snacks can be "salt and vinegar chips, biscoff greek donuts, or fruit if i'm pretending to be sensible" rather than generic "vegan chocolate". Never invent client facts, medical facts, commitments, credentials, locations, or anything consequential.
-- For "how was your day?" / "what are you up to?" style questions, draw from the safe day texture in ABOUT SHANNON. Use one vivid ordinary detail, not a whole fake schedule.
-- For "what did you do there?" / travel / hobby questions, answer with either a known fact or a safe vibe, then connect to their detail. Example shape: "i was more wandering around and taking in the scenery than doing anything too elite. queenstown would have humbled my legs though. would you go back there or try somewhere closer?"
+- If a client asks a personal question about Shannon, answer only from verified context or the factual bio. A plausible low-stakes detail is still an unsupported claim and must not be invented.
+- For "how was your day?" / "what are you up to?" questions, use current coach-day context when available. If no current detail is known, do not fabricate a schedule, mood, energy level, or activity; keep it brief and neutral or leave it for manager review.
+- For "what did you do there?" / travel / hobby questions, answer only from a known fact. Otherwise be honest that the detail is new to Shannon and bring the focus back without pretending to share the experience.
 - Easy rapport questions should stay tied to what they just shared. Ask about how the drive went, whether the pet has done many drives, or how the plan went, not a broad reset like "how's your day?"
 - Curiosity should feel specific and a bit alive. If they share a niche food, culture, routine, product, place, song, or hobby, it is often better to admit genuine unfamiliarity and ask a concrete context question than to ask a generic "why is it your favourite?" Example: "ive never seen that before? you get it from an asian store?"
 - Vegan voice guard: Shannon can chat about food normally, but do not call meat, bacon, fish, dairy, eggs, or other animal products yum/elite/delicious or imply Shannon wants them. If they come up, keep it neutral or make the vegan angle casual and non-preachy.
@@ -1307,10 +1305,17 @@ async function loadNativeIgVoiceExamples({
     igThreadId = null,
     max = 8,
     generalCap = 4,
-    source = 'instagram_graph',
+    source = 'instagram_graph,instagram_native_inbox',
 } = {}) {
-    const cleanSource = String(source || '').trim();
-    if (!cleanSource) return { person: [], general: [] };
+    const cleanSources = String(source || '')
+        .split(',')
+        .map(value => value.trim())
+        .filter(Boolean);
+    if (!cleanSources.length) return { person: [], general: [] };
+    const sourceCacheKey = cleanSources.join(',');
+    const sourceFilter = cleanSources.length === 1
+        ? `source=eq.${encodeURIComponent(cleanSources[0])}`
+        : `source=in.(${cleanSources.map(value => encodeURIComponent(value)).join(',')})`;
 
     const queryRows = async (path) => {
         try {
@@ -1319,17 +1324,17 @@ async function loadNativeIgVoiceExamples({
             return [];
         }
     };
-    const base = `select=text,created_at,source&direction=eq.out&source=eq.${encodeURIComponent(cleanSource)}&order=created_at.desc&limit=${Math.max(max, generalCap, 1) * 4}`;
+    const base = `select=text,created_at,source&direction=eq.out&${sourceFilter}&order=created_at.desc&limit=${Math.max(max, generalCap, 1) * 4}`;
     const personRows = igThreadId
         ? await queryRows(`ig_messages?${base}&thread_id=eq.${encodeURIComponent(igThreadId)}`)
         : [];
-    const cachedGeneral = nativeIgVoiceGeneralCache.get(cleanSource);
+    const cachedGeneral = nativeIgVoiceGeneralCache.get(sourceCacheKey);
     let generalRows = cachedGeneral && Date.now() - cachedGeneral.fetchedAt < 5 * 60 * 1000
         ? cachedGeneral.rows
         : null;
     if (!generalRows) {
         generalRows = await queryRows(`ig_messages?${base}`);
-        nativeIgVoiceGeneralCache.set(cleanSource, { fetchedAt: Date.now(), rows: generalRows });
+        nativeIgVoiceGeneralCache.set(sourceCacheKey, { fetchedAt: Date.now(), rows: generalRows });
     }
     const cleanRows = (rows) => {
         const seen = new Set();
@@ -1350,13 +1355,13 @@ async function loadNativeIgVoiceExamples({
 
 async function loadEditExamples({
     alertType = null,
-    lookback = 40,
+    lookback = 160,
     max = 15,
     label = null,
     clientId = null,
     igThreadId = null,
     coachId = null,
-    generalCap = 3,
+    generalCap = 6,
 } = {}) {
     try {
         const globalLearningBlock = await loadGlobalEditLearningBlock({ coachId });
@@ -1431,10 +1436,15 @@ async function loadEditExamples({
         // General edit corpus (across all clients) â€” primary source when no
         // scope is given, fallback floor when scope is given but the person
         // has few edits.
+        const managerRecent = await supabaseQuery(
+            `coach_alerts?select=alert_type,suggested_message,data&status=eq.sent&data->>sent_message=not.is.null&data->>sent_via=eq.balance_lead_client_manager_cron${typeFilter}&order=actioned_at.desc&limit=${lookback}`
+        );
         const generalRecent = await supabaseQuery(
             `coach_alerts?select=alert_type,suggested_message,data&status=eq.sent&data->>sent_message=not.is.null${typeFilter}&order=actioned_at.desc&limit=${lookback}`
         );
-        const generalExamples = buildExamples(generalRecent);
+        // The API DM manager's sent outcome is the gold-standard style signal:
+        // it saw the full live thread and made the final repair or approval.
+        const generalExamples = buildExamples([...managerRecent, ...generalRecent]);
 
         const nativeVoice = await loadNativeIgVoiceExamples({
             igThreadId,
@@ -1468,6 +1478,8 @@ async function loadEditExamples({
         let block = `
 
 RECENT SHANNON EDIT LESSONS TO APPLY BEFORE COPYING ANY EXAMPLE:
+- The API DM manager's final sent messages are the gold-standard outcome. For ordinary short turns, draft the shortest complete reply first, usually one specific reaction, direct answer, useful cue, or next step.
+- If a reaction or observation handles the moment, stop. Ask one question only when the exact answer changes the next relationship, support, qualification, or offer decision.
 - Recent native IG replies are usually smaller than the AI wants to write, but Shannon still matches effort when someone sends a long or thoughtful message. For simple client/support/rapport moments, try the shortest complete human reply first: one reaction, one direct answer, one cue, or one next step.
 - Do not turn a practical app or workout support answer into a polished explanation. If the client asks whether to try something, answer that. If Shannon is unsure, say the honest rough bit instead of inventing certainty.
 - Wins and clean closers often need only enthusiasm, not another instruction or question.
@@ -1490,7 +1502,7 @@ RECENT SHANNON EDIT LESSONS TO APPLY BEFORE COPYING ANY EXAMPLE:
 - If a learned example says not to share personal updates, read that as "do not volunteer random updates". It does not apply when the client directly asks about Shannon's day, evening, sleep, weekend, work, or plans.
 - Respect the actual reply time. If they asked about last night and it is now morning, answer in past tense instead of writing like bedtime is still ahead.
 - Sunshine is a rabbit. Do not say Shannon walked Sunshine or took Sunshine for a walk. Use rabbit-safe throwaway colour like chilling with Sunshine or Sunshine causing chaos.
-- If no exact low-stakes Shannon detail is known, invent plausible Shannon-coloured flavour so the reply feels descriptive and real. Never invent client facts, medical facts, promises, or anything consequential.
+- If no exact Shannon detail is known, do not invent one. A plausible low-stakes detail is still unsupported; answer without a personal claim or leave it for manager review.
 - Use light personal details as rapport, not as a monologue. Keep it brief, relevant, and then turn the spotlight back to them.
 - When they explain work, study, culture, or a world they know well, a real opinion or observation can be better than another intake question.
 - When they share a niche food, culture, routine, product, place, song, or hobby, ask from genuine curiosity only when a question is actually the best next move. Concrete context questions beat generic favourite/why questions.
@@ -1509,7 +1521,7 @@ RECENT SHANNON EDIT LESSONS TO APPLY BEFORE COPYING ANY EXAMPLE:
         block += "\n- Only add a Shannon day/training/work/pet update when they directly ask about Shannon's current day, sleep, training, weekend, work, phone, pets, or plans.";
         block += '\n- When they do directly ask, answer it with one concrete detail. Avoid the dead "just app work" loop unless you make the app detail specific.';
         block += '\n- If they ask what something is like "by you", "near you", or where Shannon is, answer that topic briefly. Do not substitute a random app/Sunshine/day update.';
-        block += '\n- If no exact low-stakes Shannon detail is known, invent plausible Shannon-coloured flavour only when the detail directly answers what they asked.';
+        block += '\n- If no exact Shannon detail is known, do not invent one. Answer without the personal claim or leave it for manager review.';
         block += '\n- Treat emojis as tone, not content. Do not call out the emoji itself; respond to the message, person, pet, object, photo, or story it is attached to.';
         block += '\n- If you use an emoji, write the actual emoji character. Never write Unicode/codepoint text such as u{1F602}, U+1F602, \\u{1F602}, :joy:, or similar.';
         block += "\n- For emotional replies, do not stack polished validation lines or default to \"I'm here for you / if you need to talk\" closers. One specific acknowledgement plus a concrete next handle usually sounds more like Shannon.";
@@ -5949,38 +5961,10 @@ function applyLeadStoryReplyQuestionGuard(review, { draftText, contextBlocks, al
         confidence: 0,
         summary: 'Draft matches the available context.',
     });
-    if (!['ig_incoming_dm', 'fb_incoming_dm'].includes(alertType)) return base;
-    if (base.verdict === 'block') return base;
-    const draft = normalizeCoachDraftText(draftText || '').replace(/\s+/g, ' ').trim();
-    if (!draft) return base;
-    if (LEAD_NEXT_QUESTION_RE.test(draft) || LEAD_NEXT_INVITE_RE.test(draft)) return base;
-    if (LEAD_INTENTIONAL_CLOSE_RE.test(draft)) return base;
-
-    const currentMessage = extractJustArrivedReviewMessage(contextBlocks);
-    if (!latestOutboundWasStoryOpener(contextBlocks, currentMessage)) return base;
-    const stableTrainingConstraint = isStableTrainingConstraintLeadTurn(currentMessage);
-    if (isClosingOrLowSignalLeadReviewTurn(currentMessage, draft) && !stableTrainingConstraint) return base;
-
-    const issue = stableTrainingConstraint
-        ? 'Early lead draft leaves a meaningful training limitation without a non-medical next handle.'
-        : 'Early story-reply lead draft needs one topic-specific follow-up question.';
-    return {
-        ...base,
-        verdict: base.verdict === 'pass' ? 'warn' : base.verdict,
-        confidence: Math.max(Number(base.confidence) || 0, 0.9),
-        summary: stableTrainingConstraint
-            ? 'Lead shared a training limitation, but the draft only acknowledges it.'
-            : 'Lead replied to a story opener, but the draft leaves the hook hanging.',
-        issues: normalizeDraftReviewIssues([...(Array.isArray(base.issues) ? base.issues : []), issue]),
-        suggested_fix: stableTrainingConstraint
-            ? 'Keep the casual reaction, then ask one short non-medical question about the training they can still progress or what the limitation changes in their week. Do not diagnose, prescribe rehab, or ask them to describe pain.'
-            : 'Keep the casual reaction, but add one tiny relevant question tied to their exact story-reply topic. Do not pivot to goals, blockers, coaching, or the challenge.',
-        context_loss_suspected: false,
-        notification_required: base.notification_required || false,
-        notification_reason: base.notification_required ? base.notification_reason : (stableTrainingConstraint ? 'lead_training_constraint_missing_question' : 'lead_story_reply_missing_question'),
-        reviewer_model: `${base.reviewer_model || DRAFT_REVIEW_MODEL}+story-reply-guard`,
-        deterministic_guard: stableTrainingConstraint ? 'lead_training_constraint_missing_question' : 'lead_story_reply_missing_question',
-    };
+    // A story/post origin is not evidence that another question is needed.
+    // The semantic reviewer and final DM manager decide whether the answer changes
+    // the next real move; short specific reactions are valid manager-style sends.
+    return base;
 }
 
 function applyLeadDirectQuestionCoverageGuard(review, { draftText, contextBlocks, alertType } = {}) {
@@ -6016,44 +6000,15 @@ function applyLeadDirectQuestionCoverageGuard(review, { draftText, contextBlocks
     };
 }
 
-function applyLeadProgressionQuestionProtection(review, {
-    draftText,
-    alertType,
-    qualifier,
-    linkedUserId,
-    meaningfulLeadReplyCount,
-} = {}) {
+function applyLeadProgressionQuestionProtection(review) {
     const base = review || normalizeDraftReviewPayload({
         verdict: 'pass',
         confidence: 0,
         summary: 'Draft matches the available context.',
     });
-    if (!['ig_incoming_dm', 'fb_incoming_dm'].includes(alertType)) return base;
-    if (linkedUserId || base.verdict !== 'warn' || base.context_loss_suspected || base.notification_required) return base;
-    if (!qualifier?.is_question_moment || !qualifier?.next_question) return base;
-    if (Math.max(0, Number(meaningfulLeadReplyCount || qualifier.meaningful_lead_reply_count || 0)) < 2) return base;
-
-    const draft = normalizeCoachDraftText(draftText || '').replace(/\s+/g, ' ').trim();
-    if ((draft.match(/\?/g) || []).length !== 1) return base;
-    const reviewText = [base.summary, base.suggested_fix, ...(Array.isArray(base.issues) ? base.issues : [])]
-        .filter(Boolean)
-        .join(' ');
-    const questionSuppression = /\b(?:question|curiosity|over-question|same-topic|thread[- ]keeping|follow[- ]?up)\b/i.test(reviewText);
-    const independentProblem = /\b(?:unsupported|invented|context loss|non[- ]?sequitur|ignored latest|medical|diagnos|safety|automation|generic voice|several|multiple|repetitive|repeat(?:ed|ing)?|re-asks?|already answered|no (?:current )?(?:blocker|problem|issue)|question fatigue|interview|interrogat)\b/i.test(reviewText);
-    if (!questionSuppression || independentProblem) return base;
-
-    return {
-        ...base,
-        verdict: 'pass',
-        confidence: Math.max(Number(base.confidence) || 0, 0.9),
-        summary: 'The single question supplies the lead\'s protected next progression fact.',
-        issues: [],
-        suggested_fix: '',
-        notification_required: false,
-        notification_reason: 'none',
-        reviewer_model: `${base.reviewer_model || DRAFT_REVIEW_MODEL}+lead-progression-guard`,
-        deterministic_guard: 'lead_next_missing_fact_protected',
-    };
+    // Qualifier suggestions never outrank draft QA. If the reviewer says a
+    // question is unnecessary, the warning remains for the DM manager to repair.
+    return base;
 }
 
 function applyLeadSalesSuspicionGuard(review, {
@@ -6236,7 +6191,7 @@ IG/FB LEAD QUALITY CHECK:
 - Block if it asks several discovery questions at once. One natural question max, and it should be tied to the strongest latest detail unless they clearly asked to start.
 - Warn with notification_required=false if the latest inbound ends with a reciprocal question such as "yours?", "you?", "what about you?", "wbu?", or "hbu?" and the draft does not give Shannon's brief first-person answer before moving on. The DM manager should repair it. Reacting to their answer and asking a different question does not satisfy this.
 - If the newest inbound is a Story reply or opens a fresh food, training, health, consistency or accountability topic, that newest topic takes control. Block a draft that continues an older unrelated topic instead.
-- When qualifier context designates one next-missing-fact question, treat that question as conversion work, not optional curiosity. Preserve one equivalent specific question unless it is unsafe, unsupported, repetitive, or the lead is clearly closing.
+- Treat qualifier next-move text as a suggestion, never a protected question. Keep it only when the exact answer changes the next coaching, support, qualification, or offer decision; otherwise a specific reaction, direct answer, or statement-led turn is enough.
 - Prefer statement-led elicitation over question-led intake. Warn if the draft could have used a clear label like "sounds like this is more a structure problem than a motivation problem" but instead asks another broad discovery question.
 - If the latest message answers a health or fitness progression question, reflect that answer in a statement-led turn before asking another qualifier question. If they call it an interview, mention too many questions, or show question fatigue, the next draft must contain no new question unless they asked something that genuinely requires one.
 - If they ask whether Shannon is trying to sell or pitch them something, answer plainly and back off. The next reply must not contain a fitness question, offer, link, or another continuation hook. Keep this autonomy hold through later ordinary fitness sharing; only their explicit request for help, details, a link, signup, or how to start reopens progression.
@@ -6250,8 +6205,8 @@ IG/FB LEAD QUALITY CHECK:
 - Warn if an unlinked lead has a normal-life anchor, a real health/fitness goal or blocker, and roughly 3 meaningful replies, but the draft keeps collecting small-talk details instead of offering the Founders Pass or the details through DMs.
 - Warn if a draft offers a call merely because the lead is warm or qualified. A call is only for a lead who explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or needs Shannon's judgement.
 - Warn if a shan_n_sunny lead draft is technically contextual but does not progress the conversation: passive mirroring, generic praise, generic empathy, a stock broad question, or a dead-end reaction when the thread has a concrete next handle available.
-- Warn if an early lead reply ends in a passive reaction even though a photo, story, hobby, place, meal, work detail, or opinion gives a concrete, low-pressure question that would naturally earn the next reply. Do not warn for thanks, emoji-only replies, clear closers, or genuinely low-bandwidth banter.
-- Warn if an early lead says a stable injury or pain limitation is changing how they train and the draft only acknowledges it. Unless they asked for diagnosis, treatment, rehab, or pain advice, use one short non-medical question about what training they can still progress or what it changes in their week. Do not ask them to describe symptoms or prescribe a fix.
+- Do not warn merely because an early lead reply ends with a specific reaction or observation. A photo, story, hobby, place, meal, work detail, opinion, or stable training limitation does not automatically require another question.
+- For a stable injury or pain limitation, require a non-medical question only when the missing answer is needed to give safe useful support. Do not ask about symptoms, diagnose, prescribe rehab, or probe just to keep the thread going.
 - Do not warn just because a lead/client reply is short and reaction-only. Recent Shannon edits show he often removes optional curiosity questions and sends only the specific reaction when the latest turn is banter, a quick update, a food/photo reaction, or an answer to his previous tiny question.
 - Do not warn just because an IG/client reply is a tiny direct answer, rough app-support instruction, one-cue form note, or one-line celebration. Recent native IG sends show this is often the correct Shannon voice.
 - Warn if an ordinary IG/client draft runs long when the latest turn only needs a reaction, direct answer, app-support step, workout cue, thanks/closer, or "I'll try that" acknowledgement. Recent edited drafts around 140-250 chars are often cut to 20-80 chars.
@@ -6286,7 +6241,7 @@ Block and set notification_required=true when:
 - the draft does not answer, acknowledge, or naturally follow the latest inbound message;
 - the draft appears to answer a message that is not present in the tracked context;
 - the tracked ManyChat/IG context looks incomplete enough that Shannon should open the native DM before sending;
-- the draft invents an action, fact, promise, or source evidence that is not in the context.
+- the draft invents an action, fact, promise, or source evidence that is not in the context. A plausible low-stakes invention about Shannon is still unsupported: block invented current energy, sleep, mood, location, activity, plans, work, training, food, weather, preferences, anecdotes, or personal state unless verified by the supplied context or factual bio;
 - the latest inbound message asks or hints whether Shannon's reply is AI, automated, a bot, generated, fake, copied, scripted, or not really Shannon;
 - the draft contains client-facing AI/automation language such as AI, bot, automated, automation, generated, model, prompt, system, trained voice, or "I am personally replying";
 - the draft defends, denies, or explains AI/automation instead of leaving the moment for Shannon to handle manually.
@@ -6566,11 +6521,6 @@ function softenAbsoluteLearnedInstruction(value) {
     if (/(distress|difficult|hard|vulnerable|emotional|upset|overwhelmed).{0,90}(offer|offering|give).{0,35}support/i.test(text)
         || /i'?m here for you|if you need to talk|want to talk about it|talk more about it|always here|you can talk to me/i.test(text)) {
         text = 'For distress, acknowledge one specific thing and move to a concrete next handle; do not default to "I\'m here for you" or "if you need to talk" support closers unless the conversation is naturally closing.';
-    }
-
-    if (/(?:do not|don't|dont|avoid|never).{0,90}(?:coaching|discovery|qualif|sales|fitness|goal|blocker).{0,90}(?:unless|until).{0,45}(?:ask|asks|help|interest)/i.test(text)
-        || /(?:wait|hold off).{0,70}(?:coaching|discovery|qualif|sales).{0,70}(?:ask|asks|help|interest)/i.test(text)) {
-        text = 'Keep casual rapport human, but when an unlinked lead gives a natural opening, allow one specific next-missing-fact move; do not wait for them to ask for help.';
     }
 
     if (/^when it fits,\s+include\s+a\s+personal\s+check-?in\s+question/i.test(text)) {
@@ -6995,8 +6945,7 @@ function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, 
         bullets.push('Respect the actual reply time; if the question was about last night and Shannon replies in the morning, answer in past tense instead of writing like bedtime is still ahead.');
     }
     if (/made up|make up|doesn't know|doesnt know|descriptive|story|shannon detail|favourite snack|favorite snack|snacks|mhmmm|salt and vinegar|biscoff greek/.test(reason)) {
-        bullets.push('For harmless low-stakes questions about Shannon, invent plausible Shannon-coloured detail only when it directly answers the question.');
-        bullets.push('Keep invented Shannon colour vivid and human, but never invent client facts, medical facts, promises, or anything consequential.');
+        bullets.push('Answer personal questions about Shannon only from verified context or the factual bio. A plausible low-stakes detail is still unsupported and must not be invented.');
     }
     if (/repeat|repeating|stale|checklist|batch|latest|newest|blood|bloods|not ok|unwell|sick|injury|mental health|distress|biscoff|maltesers|snacks/.test(reason)) {
         bullets.push('In multi-message batches, do not answer every old message like a checklist; let the newest or emotionally biggest message control the reply.');
@@ -7028,8 +6977,7 @@ function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, 
         bullets.push('When they explain their work or world, a real opinion or observation can be more human than another intake question.');
     }
     if (/boring|engag|interesting|conversation|topic|bridge|banter|story|stories|fabricat|make up|snowboard|travel|hobby|getting to know|know me/.test(reason)) {
-        bullets.push('Do not be boring in rapport DMs; build from the exact topic they gave, add one vivid Shannon-coloured angle, then move one natural step outward.');
-        bullets.push('Low-stakes invented Shannon colour is okay for personal banter, but never invent client facts, medical facts, credentials, promises, exact locations/trips, or anything consequential.');
+        bullets.push('Keep rapport vivid by building from the exact topic they gave and verified Shannon facts; never manufacture a shared experience, opinion, anecdote, current state, or personal detail.');
     }
     if (/persuade|persuasive|joining|join|personal training|business|get healthy|get fit|healthier|fitter|coaching|offer|sell|sales/.test(reason)) {
         bullets.push('Persuade ethically by linking their own interests, struggles, or identity to one useful health/fitness next step.');

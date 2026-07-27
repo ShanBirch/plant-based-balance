@@ -42,9 +42,8 @@ const asideOnly = applyLeadStoryReplyQuestionGuard(passReview, {
     alertType: 'ig_incoming_dm',
 });
 
-assert.strictEqual(asideOnly.verdict, 'warn');
-assert.strictEqual(asideOnly.deterministic_guard, 'lead_story_reply_missing_question');
-assert.ok(/topic/i.test(asideOnly.suggested_fix), asideOnly.suggested_fix);
+assert.strictEqual(asideOnly.verdict, 'pass');
+assert.strictEqual(asideOnly.deterministic_guard, undefined);
 
 const withQuestion = applyLeadStoryReplyQuestionGuard(passReview, {
     draftText: 'they do hey. do you use it more for meditations or the little reminders?',
@@ -60,8 +59,8 @@ const shortButNotDeadEnd = applyLeadStoryReplyQuestionGuard(passReview, {
     alertType: 'ig_incoming_dm',
 });
 
-assert.strictEqual(shortButNotDeadEnd.verdict, 'warn');
-assert.strictEqual(shortButNotDeadEnd.deterministic_guard, 'lead_story_reply_missing_question');
+assert.strictEqual(shortButNotDeadEnd.verdict, 'pass');
+assert.strictEqual(shortButNotDeadEnd.deterministic_guard, undefined);
 
 const lowSignalThanks = applyLeadStoryReplyQuestionGuard(passReview, {
     draftText: 'no worries at all',
@@ -77,8 +76,8 @@ const shortPositivePostReply = applyLeadStoryReplyQuestionGuard(passReview, {
     alertType: 'ig_incoming_dm',
 });
 
-assert.strictEqual(shortPositivePostReply.verdict, 'warn');
-assert.strictEqual(shortPositivePostReply.deterministic_guard, 'lead_story_reply_missing_question');
+assert.strictEqual(shortPositivePostReply.verdict, 'pass');
+assert.strictEqual(shortPositivePostReply.deterministic_guard, undefined);
 
 const shortPostReplyWithQuestion = applyLeadStoryReplyQuestionGuard(passReview, {
     draftText: 'love that. what did you train?',
@@ -94,8 +93,8 @@ const oldInjuryHistory = applyLeadStoryReplyQuestionGuard(passReview, {
     alertType: 'ig_incoming_dm',
 });
 
-assert.strictEqual(oldInjuryHistory.verdict, 'warn');
-assert.strictEqual(oldInjuryHistory.deterministic_guard, 'lead_story_reply_missing_question');
+assert.strictEqual(oldInjuryHistory.verdict, 'pass');
+assert.strictEqual(oldInjuryHistory.deterministic_guard, undefined);
 
 const currentInjuryAdvice = applyLeadStoryReplyQuestionGuard(passReview, {
     draftText: 'ahh that sounds rough, hope it settles soon',
@@ -111,9 +110,8 @@ const stableTrainingConstraint = applyLeadStoryReplyQuestionGuard(passReview, {
     alertType: 'ig_incoming_dm',
 });
 
-assert.strictEqual(stableTrainingConstraint.verdict, 'warn');
-assert.strictEqual(stableTrainingConstraint.deterministic_guard, 'lead_training_constraint_missing_question');
-assert.match(stableTrainingConstraint.suggested_fix, /non-medical/i);
+assert.strictEqual(stableTrainingConstraint.verdict, 'pass');
+assert.strictEqual(stableTrainingConstraint.deterministic_guard, undefined);
 
 const oldStoryContext = applyLeadStoryReplyQuestionGuard(passReview, {
     draftText: 'that sounds full on but makes sense',
