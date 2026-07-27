@@ -5,11 +5,14 @@ const igDraft = require('../netlify/functions/ig-instant-draft')._test;
 const sendIg = require('../netlify/functions/send-ig-reply')._test;
 
 const personalVoicePrompt = igDraft.buildPersonalVoiceNoteDraftingBlock(true);
-assert.match(personalVoicePrompt, /20 to 26 seconds/i);
-assert.match(personalVoicePrompt, /At least one must be a natural "um" or "ah"/i);
+assert.match(personalVoicePrompt, /five Cocos voice clips Shannon approved/i);
+assert.match(personalVoicePrompt, /at least 34 words/i);
+assert.match(personalVoicePrompt, /There is no strict maximum/i);
+assert.match(personalVoicePrompt, /3 to 4 imperfect thinking beats/i);
+assert.match(personalVoicePrompt, /At least one must be a natural "um", "ah", or "ahh"/i);
 assert.match(personalVoicePrompt, /punctuation-led breathing pauses/i);
 assert.match(personalVoicePrompt, /Vary the hesitation placement/i);
-assert.match(personalVoicePrompt, /hard-blocks shorter or longer scripts/i);
+assert.match(personalVoicePrompt, /do not pad or cut a natural reply/i);
 assert.match(personalVoicePrompt, /Never write laughter into a generated voice note/i);
 assert.match(personalVoicePrompt, /any imitation of a chuckle/i);
 assert.strictEqual(igDraft.buildPersonalVoiceNoteDraftingBlock(false), '');
@@ -80,6 +83,9 @@ assert.strictEqual(voiceConfig.enabled, true);
 assert.strictEqual(voiceConfig.available, true);
 assert.strictEqual(voiceConfig.voiceId, voice.DEFAULT_SHANNON_PROFESSIONAL_VOICE_ID);
 assert.strictEqual(voiceConfig.outputFormat, voice.DEFAULT_OUTPUT_FORMAT);
+assert.strictEqual(voice.DEFAULT_STABILITY, 0.5);
+assert.strictEqual(voice.DEFAULT_SIMILARITY_BOOST, 0.75);
+assert.strictEqual(voice.DEFAULT_STYLE, 0);
 
 const blockedVoiceConfig = sendIg.resolveOutboundVoiceMessageConfig(
     { outbound_voice_message: true },
@@ -157,24 +163,44 @@ assert.deepStrictEqual(
 );
 
 const words = count => Array.from({ length: count }, (_, index) => `word${index + 1}`).join(' ');
-assert.strictEqual(voice.inspectVoiceScriptQuality(words(44)).valid, false);
-assert.strictEqual(voice.inspectVoiceScriptQuality(words(45)).valid, true);
-assert.strictEqual(voice.inspectVoiceScriptQuality(words(75)).valid, true);
-assert.strictEqual(voice.inspectVoiceScriptQuality(words(76)).valid, false);
+const voiceWords = count => `Um, yeah, honestly, ${words(Math.max(0, count - 3))}`;
+assert.strictEqual(voice.inspectVoiceScriptQuality(voiceWords(33)).valid, false);
+assert.strictEqual(voice.inspectVoiceScriptQuality(voiceWords(34)).valid, true);
+assert.strictEqual(voice.inspectVoiceScriptQuality(voiceWords(80)).valid, true);
 assert.strictEqual(
-    voice.inspectVoiceScriptQuality(`Haha, ${words(50)}`).issues.some(issue => /written laughter/.test(issue)),
+    voice.inspectVoiceScriptQuality(`Haha, ${words(40)}`).issues.some(issue => /written laughter/.test(issue)),
     true
 );
-assert.strictEqual(voice.inspectVoiceScriptQuality(`hahahahah, ${words(50)}`).valid, false);
-assert.strictEqual(voice.inspectVoiceScriptQuality(`ahahaha, ${words(50)}`).valid, false);
-assert.strictEqual(voice.inspectVoiceScriptQuality(`${words(20)} lol ${words(30)}`).valid, false);
-assert.strictEqual(voice.inspectVoiceScriptQuality(`That's genuinely funny, ${words(50)}`).valid, true);
+assert.strictEqual(voice.inspectVoiceScriptQuality(`hahahahah, ${words(40)}`).valid, false);
+assert.strictEqual(voice.inspectVoiceScriptQuality(`ahahaha, ${words(40)}`).valid, false);
+assert.strictEqual(voice.inspectVoiceScriptQuality(`${words(20)} lol ${words(20)}`).valid, false);
+assert.strictEqual(voice.inspectVoiceScriptQuality(`Um, yeah, honestly, that's genuinely funny, ${words(35)}`).valid, true);
+assert.strictEqual(voice.inspectVoiceScriptQuality(`Yeah, honestly, ${words(40)}`).valid, false);
+assert.strictEqual(voice.inspectVoiceScriptQuality(`Um, yeah, ${words(40)}`).valid, false);
+assert.strictEqual(voice.inspectVoiceScriptQuality(`Um, ${words(40)}`).valid, false);
+
+const approvedCocosScripts = [
+    "Hey, um, okay, proper voice test number one. I'm just speaking a bit more naturally this time, because that really short one sounded a bit strange. So, yeah, this should sound a lot more like me.",
+    "Alright, ahh, test number two. I think the pauses make a pretty big difference, you know, when it sounds like I'm actually thinking while I'm talking. So, um, let's see how this one comes through.",
+    "Okay, so, um, imagine you've just replied to one of my ads and said you're struggling to stay consistent. I'd probably say, yeah, honestly, that makes sense. It's usually not that you don't know what to do, it's more having something simple enough to keep doing.",
+    "Yeah, honestly, I get that. Um, when work gets busy, training and food are usually the first things that start moving around. So I wouldn't try to make everything perfect, I'd just get the basic rhythm feeling easy again first.",
+    "Alright, last one. Ahh, I reckon the longer voice notes sound better because there's enough room for the voice to settle in a bit. Anyway, um, have a listen to these five and we can keep whichever style actually sounds the most like me.",
+];
+assert.deepStrictEqual(
+    approvedCocosScripts.map(script => voice.inspectVoiceScriptQuality(script).wordCount),
+    [36, 35, 46, 40, 44]
+);
+assert.deepStrictEqual(
+    approvedCocosScripts.map(script => voice.inspectVoiceScriptQuality(script).thinkingBeatCount),
+    [3, 4, 4, 3, 4]
+);
+approvedCocosScripts.forEach(script => assert.strictEqual(voice.inspectVoiceScriptQuality(script).valid, true));
 
 const shortVoiceRepairIssues = igDraft.collectCocosAutoRepairIssues({
     draft: { joined: 'ah yeah, that makes sense' },
     voiceNoteMode: true,
 });
-assert.strictEqual(shortVoiceRepairIssues.some(issue => /minimum is 45/i.test(issue)), true);
+assert.strictEqual(shortVoiceRepairIssues.some(issue => /minimum is 34/i.test(issue)), true);
 
 const personalVoicePlan = voice.resolvePersonalVoiceReplyPlan({
     channel: 'instagram',

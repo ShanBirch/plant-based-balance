@@ -649,7 +649,7 @@ function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarnin
     if (voiceNoteMode) {
         const voiceQuality = inspectVoiceScriptQuality(draftText);
         voiceQuality.issues.forEach(issue => {
-            issues.push(`Voice-note quality: ${issue}. Rewrite it as 45 to 75 natural spoken words.`);
+            issues.push(`Voice-note quality: ${issue}. Rewrite it with at least 34 natural spoken words and the approved imperfect spoken cadence.`);
         });
     }
     return [...new Set(issues.map(issue => truncate(String(issue || '').replace(/\s+/g, ' ').trim(), 220)).filter(Boolean))];
@@ -3032,9 +3032,9 @@ function buildPersonalVoiceNoteDraftingBlock(enabled) {
 
 PERSONAL VOICE NOTE MODE:
 This exact draft will be spoken in Shannon's approved voice-note voice, not sent as ordinary text.
-- Write 2 to 4 natural spoken sentences and stay inside 45 to 75 words (roughly 20 to 26 seconds aloud). The sender hard-blocks shorter or longer scripts, so do not shrink it into an ultra-short clip.
+- Match the five Cocos voice clips Shannon approved on 2026-07-24. Write at least 34 words so the voice has room to settle. There is no strict maximum: stay proportional to what they shared and do not pad or cut a natural reply to hit a duration.
 - Sound like Shannon thinking with them in the moment: relaxed Australian phrasing, contractions, and small punctuation-led breathing pauses.
-- Include one or two spoken hesitations across the whole note. At least one must be a natural "um" or "ah"; the other may be "like", "you know", or a slight self-correction. Never omit all hesitation markers.
+- Include 3 to 4 imperfect thinking beats across the whole note, as the approved scripts did. At least one must be a natural "um", "ah", or "ahh"; the others may be "okay", "yeah", "honestly", "anyway", "alright", "like", "you know", or a slight self-correction.
 - Vary the hesitation placement. Never use the same filler pattern every time, stack fillers, or make the note sound scripted.
 - Never write laughter into a generated voice note. Do not use "haha", stretched laughter, "ahaha", "hehe", "lol", "lmao", or any imitation of a chuckle anywhere in the script. Use the wording and cadence to carry warmth or humour instead.
 - Do not start every voice note with "um" or "ah". Open on the exact thing they said whenever that sounds more human.

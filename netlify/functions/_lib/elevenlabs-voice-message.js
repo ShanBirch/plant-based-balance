@@ -3,12 +3,12 @@ const { createHash, randomUUID } = require('crypto');
 const DEFAULT_SHANNON_PROFESSIONAL_VOICE_ID = 'UHnJrglEof8vTMenwnVm';
 const DEFAULT_MODEL_ID = 'eleven_multilingual_v2';
 const DEFAULT_OUTPUT_FORMAT = 'pcm_16000';
-const DEFAULT_STABILITY = 0.42;
-const DEFAULT_SIMILARITY_BOOST = 0.78;
-const DEFAULT_STYLE = 0.12;
+// Exact settings from the five Cocos clips Shannon approved on 2026-07-24.
+const DEFAULT_STABILITY = 0.5;
+const DEFAULT_SIMILARITY_BOOST = 0.75;
+const DEFAULT_STYLE = 0;
 const MAX_TTS_CHARS = 3500;
-const MIN_VOICE_NOTE_WORDS = 45;
-const MAX_VOICE_NOTE_WORDS = 75;
+const MIN_VOICE_NOTE_WORDS = 34;
 const SHAN_N_SUNNY_GRAPH_ACCOUNT_IDS = new Set(['17841415641641750']);
 const COCOS_GRAPH_ACCOUNT_IDS = new Set(['17841435394720504', '26328183736859579']);
 const MANUAL_AI_AUTHENTICITY_VOICE_SCRIPT = "hey, yep it's Shannon. I do use a bit of help organising my inbox because it gets busy, but the coaching and support inside Balance is me.";
@@ -262,15 +262,29 @@ function hasWrittenLaughter(text = '') {
     return /\b(?:ha|hah[a-z]*|ahah[a-z]*|heh[a-z]*|lol+|lmao)\b/i.test(String(text || ''));
 }
 
+function countVoiceThinkingBeats(text = '') {
+    // Avoid counting "like" here because ordinary comparisons such as
+    // "sounds like me" are not spoken imperfections.
+    return (String(text || '').match(/\b(?:um+|ah+|okay|yeah|honestly|anyway|alright|you know|i mean)\b/gi) || []).length;
+}
+
+function hasCoreVoiceHesitation(text = '') {
+    return /\b(?:um+|ah+)\b/i.test(String(text || ''));
+}
+
 function inspectVoiceScriptQuality(text = '') {
     const value = String(text || '').trim();
     const wordCount = countVoiceScriptWords(value);
+    const thinkingBeatCount = countVoiceThinkingBeats(value);
     const issues = [];
     if (wordCount < MIN_VOICE_NOTE_WORDS) {
         issues.push(`voice note is ${wordCount} words; minimum is ${MIN_VOICE_NOTE_WORDS}`);
     }
-    if (wordCount > MAX_VOICE_NOTE_WORDS) {
-        issues.push(`voice note is ${wordCount} words; maximum is ${MAX_VOICE_NOTE_WORDS}`);
+    if (!hasCoreVoiceHesitation(value)) {
+        issues.push('voice note needs at least one natural um or ah');
+    }
+    if (thinkingBeatCount < 3) {
+        issues.push(`voice note has ${thinkingBeatCount} thinking beat${thinkingBeatCount === 1 ? '' : 's'}; minimum is 3`);
     }
     if (hasWrittenLaughter(value)) {
         issues.push('voice note contains written laughter');
@@ -278,6 +292,7 @@ function inspectVoiceScriptQuality(text = '') {
     return {
         valid: issues.length === 0,
         wordCount,
+        thinkingBeatCount,
         issues,
     };
 }
@@ -530,8 +545,10 @@ function isCocosToShanSunnyVoiceTest(input = {}) {
 module.exports = {
     DEFAULT_SHANNON_PROFESSIONAL_VOICE_ID,
     DEFAULT_OUTPUT_FORMAT,
+    DEFAULT_STABILITY,
+    DEFAULT_SIMILARITY_BOOST,
+    DEFAULT_STYLE,
     MIN_VOICE_NOTE_WORDS,
-    MAX_VOICE_NOTE_WORDS,
     buildTtsText,
     inspectVoiceScriptQuality,
     ensureNaturalVoiceHesitation,
@@ -547,6 +564,8 @@ module.exports = {
         hasPersonalGoalOrBlockerSignal,
         hasQualifierPersonalEvidence,
         hasWrittenLaughter,
+        countVoiceThinkingBeats,
+        hasCoreVoiceHesitation,
         normalizeAccountKey,
         normalizeShannonVoiceContractions,
         resolveCocosShanSunnyVoiceTestReason,
