@@ -279,6 +279,26 @@ assert.equal(instantDraft.isMetaAdFastLaneEligible({
     customData: adThreadData,
     manychatMessageId: 'ig_graph:mid-ad-1',
 }), false);
+assert.equal(instantDraft.isActiveMetaAdConversationFastLaneEligible({
+    linkedUserId: null,
+    customData: adThreadData,
+    recentMessages: [{
+        direction: 'out',
+        text: 'What would you like the most help with?',
+        created_at: '2026-07-24T03:10:00.000Z',
+    }],
+    nowMs: Date.parse('2026-07-24T03:15:00.000Z'),
+}), true, 'follow-up replies stay fast during an active Meta ad conversation');
+assert.equal(instantDraft.isActiveMetaAdConversationFastLaneEligible({
+    linkedUserId: null,
+    customData: adThreadData,
+    recentMessages: [{
+        direction: 'out',
+        text: 'What would you like the most help with?',
+        created_at: '2026-07-26T03:10:00.000Z',
+    }],
+    nowMs: Date.parse('2026-07-26T03:15:00.000Z'),
+}), false, 'historic ad attribution does not create a permanent fast lane');
 
 const linkedClientAlert = {
     client_id: 'client-user-1',

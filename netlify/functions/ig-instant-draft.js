@@ -1977,6 +1977,28 @@ function isMetaAdFastLaneEligible({ linkedUserId = null, customData = {}, manych
     return isCurrentMetaAdInbound({ customData, manychatMessageId });
 }
 
+function isActiveMetaAdConversationFastLaneEligible({ linkedUserId = null, customData = {}, recentMessages = [], nowMs = Date.now() } = {}) {
+    if (linkedUserId) return false;
+    const attribution = customData && typeof customData.meta_ad_attribution === 'object'
+        ? customData.meta_ad_attribution
+        : {};
+    const hasMetaAdAttribution = String(attribution.source || '').toLowerCase() === 'meta_ads'
+        || String(customData?.latest_paid_acquisition || '').toLowerCase() === 'meta_ads';
+    if (!hasMetaAdAttribution) return false;
+    const referralAtMs = Date.parse(attribution.last_referral_at || attribution.first_referral_at || '');
+    const adConversationCutoff = Number(nowMs) - (24 * 60 * 60 * 1000);
+    if (!Number.isFinite(referralAtMs) || referralAtMs < adConversationCutoff || referralAtMs > (Number(nowMs) + (5 * 60 * 1000))) {
+        return false;
+    }
+    const activeExchangeCutoff = Number(nowMs) - (2 * 60 * 60 * 1000);
+    return (Array.isArray(recentMessages) ? recentMessages : [])
+        .slice(-8)
+        .some(message => {
+            const createdAtMs = Date.parse(message?.created_at || '');
+            return Number.isFinite(createdAtMs) && createdAtMs >= activeExchangeCutoff;
+        });
+}
+
 function isExerciseConversationFastLaneEligible({ linkedUserId = null, currentMessage = '', recentMessages = [], nowMs = Date.now() } = {}) {
     if (linkedUserId) return false;
     const text = String(currentMessage || '').replace(/\s+/g, ' ').trim();
@@ -4079,11 +4101,17 @@ exports.handler = async (event) => {
         })
         : '';
     const linkedClientNeedsYou = !!thread.linked_user_id;
-    const metaAdFastLane = isMetaAdFastLaneEligible({
+    const metaAdFirstInbound = isMetaAdFastLaneEligible({
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
         manychatMessageId,
     });
+    const activeMetaAdConversationFastLane = isActiveMetaAdConversationFastLaneEligible({
+        linkedUserId: thread.linked_user_id,
+        customData: thread.custom_data,
+        recentMessages: history,
+    });
+    const metaAdFastLane = metaAdFirstInbound || activeMetaAdConversationFastLane;
     const metaAdFlowVariant = resolveMetaAdFlowVariant({
         customData: thread.custom_data,
         currentMessage: messageText,
@@ -4574,7 +4602,7 @@ exports.handler = async (event) => {
 
     let draft;
     try {
-        draft = metaAdFastLane ? buildMetaAdFoundersPassFirstReply(messageText, { customData: thread.custom_data, flowVariant: metaAdFlowVariant }) : await generateDraft({
+        draft = metaAdFirstInbound ? buildMetaAdFoundersPassFirstReply(messageText, { customData: thread.custom_data, flowVariant: metaAdFlowVariant }) : await generateDraft({
             leadName,
             leadBlock,
             profileBlock,
@@ -4838,6 +4866,8 @@ exports.handler = async (event) => {
                 ? IG_FAST_LANE_DELAY_MS
                 : undefined,
             meta_ad_fast_lane: metaAdFastLane || undefined,
+            meta_ad_first_inbound: metaAdFirstInbound || undefined,
+            meta_ad_active_conversation_fast_lane: activeMetaAdConversationFastLane || undefined,
             exercise_conversation_fast_lane: exerciseConversationFastLane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : metaAdFlowVariant,
             outbound_voice_message: outboundVoiceMessage || undefined,
@@ -5031,6 +5061,8 @@ exports.handler = async (event) => {
                 ? IG_FAST_LANE_DELAY_MS
                 : existingPending.data?.auto_send_fast_lane_delay_ms || undefined,
             meta_ad_fast_lane: metaAdFastLane || existingPending.data?.meta_ad_fast_lane || undefined,
+            meta_ad_first_inbound: metaAdFirstInbound || existingPending.data?.meta_ad_first_inbound || undefined,
+            meta_ad_active_conversation_fast_lane: activeMetaAdConversationFastLane || existingPending.data?.meta_ad_active_conversation_fast_lane || undefined,
             exercise_conversation_fast_lane: exerciseConversationFastLane || existingPending.data?.exercise_conversation_fast_lane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : (metaAdFlowVariant || existingPending.data?.meta_ad_flow_variant || undefined),
             outbound_voice_message: coalescedOutboundVoiceMessage || undefined,
@@ -5755,6 +5787,7 @@ exports._test = {
     isCanceledLatestRecoveryCandidate,
     isCurrentMetaAdInbound,
     isMetaAdFastLaneEligible,
+    isActiveMetaAdConversationFastLaneEligible,
     isExerciseConversationFastLaneEligible,
     resolveMetaAdFlowVariant,
     buildMetaAdFoundersPassFirstReply,
