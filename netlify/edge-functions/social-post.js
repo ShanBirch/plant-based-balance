@@ -1,8 +1,8 @@
-const DEFAULT_SITE_URL = 'https://plantbased-balance.org';
 const DEFAULT_GRAPH_BASE = 'https://graph.instagram.com';
 const DEFAULT_IG_USER_ID = '17841415641641750';
-const CONTENT_ID = '2026-07-24-build-your-back';
-const REQUIRED_IDEMPOTENCY_KEY = `${CONTENT_ID}-instagram-feed`;
+const CONTENT_ID = '2026-07-28-single-leg-rdl';
+const REQUIRED_IDEMPOTENCY_KEY = `${CONTENT_ID}-instagram-reel`;
+const RECEIPT_KEY = `social_publish_receipt_${CONTENT_ID.replace(/-/g, '_')}`;
 
 function clean(value, max = 5000) {
     return String(value || '').trim().slice(0, max);
@@ -20,10 +20,6 @@ function env(name) {
     return clean(netlifyValue || Deno.env.get(name) || '', 5000);
 }
 
-function siteUrl(request) {
-    return clean(env('URL') || env('SITE_URL') || new URL(request.url).origin || DEFAULT_SITE_URL, 300).replace(/\/+$/, '');
-}
-
 function graphBase() {
     return clean(env('META_IG_GRAPH_BASE') || env('IG_GRAPH_BASE') || DEFAULT_GRAPH_BASE, 200).replace(/\/+$/, '');
 }
@@ -37,26 +33,28 @@ function igUserId() {
     return clean(env('SHAN_N_SUNNY_IG_USER_ID') || env('INSTAGRAM_GRAPH_ACCOUNT_ID') || env('IG_GRAPH_BUSINESS_ACCOUNT_ID') || env('META_IG_USER_ID') || DEFAULT_IG_USER_ID, 120);
 }
 
-function legacyPostPlan(request) {
-    const base = siteUrl(request);
+function postPlan() {
     return {
         contentId: CONTENT_ID,
-        kind: 'carousel',
-        caption: `Small wins beat motivation.\n\nOn a hard day, you don’t need to do everything perfectly.\n\n10 minutes. One walk. One decent meal.\n\nThe version you can repeat beats the perfect plan you abandon.\n\nSave this for the next rough day.\nGet back in Balance.`,
-        images: [1, 2, 3, 4].map(number => `${base}/social-assets/2026-07-12-small-wins/small-wins-share-reference-slide-${String(number).padStart(2, '0')}.jpg`),
-    };
-}
-
-function postPlan(request) {
-    const base = siteUrl(request);
-    return {
-        contentId: CONTENT_ID,
-        kind: 'carousel',
-        caption: `Your back is not one muscle, so stop treating it like one.\n\nThe erector spinae help extend and control your spine. Your lats connect your arms to your torso. Your glutes share force through the hips. Your abdominal wall helps keep the whole thing organised.\n\nStart with controlled positions, then progressively add resistance. Pick one movement from each group and build from there.\n\nIf pain is sharp, worsening, or comes with numbness or weakness, get it assessed instead of training through it.\n\nWant help fitting this into your actual week? Comment BACK below.\n\n#HumpDayHacks #BackStrength #StrengthTraining #PlantBasedFitness #GetBackInBalance`,
-        media: Array.from({ length: 20 }, (_, index) => ({
+        kind: 'reel',
+        account: 'shan_n_sunny',
+        caption: `Three common errors with single-leg RDLs:\n\n1. Turning the hinge into a squat.\n2. Chasing depth by opening the pelvis.\n3. Letting the dumbbell drift away.\n\nSteady knee. Hips controlled. Weight close.\n\nIf the movement causes sharp or persistent pain, don’t force the range; get it assessed.\n\nSave this for your next lower-body session.\n\n#SingleLegRDL #RDL #StrengthTraining #ExerciseTechnique #PlantBasedFitness`,
+        media: {
             type: 'video',
-            url: `${base}/social-assets/2026-07-24-build-your-back/slide-${String(index + 1).padStart(2, '0')}.mp4`,
-        })),
+            mime: 'video/mp4',
+            width: 1080,
+            height: 1920,
+            durationSeconds: 59.14,
+            url: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/codex-social-publish/2026-07-28/1785194529452-70660893-3d72-453e-a5e4-f8c549515aff-single-leg-rdl-reel-final.mp4',
+        },
+        cover: {
+            mime: 'image/jpeg',
+            width: 1080,
+            height: 1920,
+            fullCoverChecked: true,
+            profileGridChecked: true,
+            url: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/codex-social-publish/2026-07-28/1785195028203-33f28d9d-9d6f-433b-9ba7-2ef8449803e2-single-leg-rdl-cover-phone.jpg',
+        },
     };
 }
 
@@ -70,16 +68,38 @@ function authorized(request, body) {
     return Boolean(expected && supplied && expected === supplied);
 }
 
+function serviceConfig() {
+    return {
+        url: clean(env('SUPABASE_URL') || env('VITE_SUPABASE_URL'), 300).replace(/\/+$/, ''),
+        key: clean(env('SUPABASE_SERVICE_ROLE_KEY') || env('SUPABASE_SERVICE_KEY'), 5000),
+    };
+}
+
 async function privateSecret(key) {
-    const supabaseUrl = clean(env('SUPABASE_URL') || env('VITE_SUPABASE_URL'), 300).replace(/\/+$/, '');
-    const serviceKey = clean(env('SUPABASE_SERVICE_ROLE_KEY') || env('SUPABASE_SERVICE_KEY'), 5000);
-    if (!supabaseUrl || !serviceKey) return '';
-    const response = await fetch(`${supabaseUrl}/rest/v1/app_private_secrets?select=value&key=eq.${encodeURIComponent(key)}&limit=1`, {
-        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    const config = serviceConfig();
+    if (!config.url || !config.key) return '';
+    const response = await fetch(`${config.url}/rest/v1/app_private_secrets?select=value&key=eq.${encodeURIComponent(key)}&limit=1`, {
+        headers: { apikey: config.key, Authorization: `Bearer ${config.key}` },
     });
     if (!response.ok) return '';
     const rows = await response.json().catch(() => []);
     return clean(rows?.[0]?.value || '', 5000);
+}
+
+async function setPrivateSecret(key, value) {
+    const config = serviceConfig();
+    if (!config.url || !config.key) throw new Error('Supabase receipt storage is unavailable');
+    const response = await fetch(`${config.url}/rest/v1/app_private_secrets?on_conflict=key`, {
+        method: 'POST',
+        headers: {
+            apikey: config.key,
+            Authorization: `Bearer ${config.key}`,
+            'Content-Type': 'application/json',
+            Prefer: 'resolution=merge-duplicates,return=minimal',
+        },
+        body: JSON.stringify([{ key, value }]),
+    });
+    if (!response.ok) throw new Error(`Supabase receipt storage failed: ${response.status}`);
 }
 
 async function accessToken() {
@@ -122,70 +142,69 @@ async function waitForContainer(id, token) {
     throw new Error(`Instagram container ${id} did not finish in time`);
 }
 
-async function validatePlan(request) {
-    const plan = postPlan(request);
+async function validatePlan() {
+    const plan = postPlan();
     const token = await accessToken();
     if (!token) throw new Error('Instagram access token is unavailable');
     const account = await graph(igUserId(), 'GET', { fields: 'id,username', access_token: token });
-    const media = await Promise.all(plan.media.map(async item => {
-        const response = await fetch(item.url, { method: 'HEAD' });
-        return { ...item, ok: response.ok, contentType: clean(response.headers.get('content-type') || '', 100) };
-    }));
-    if (media.some(item => !item.ok || (item.type === 'video' ? item.contentType !== 'video/mp4' : !item.contentType.startsWith('image/')))) {
-        throw new Error('One or more carousel media items are not publicly fetchable with the expected content type');
-    }
-    return { plan, token, account, media };
+    const [mediaResponse, coverResponse] = await Promise.all([
+        fetch(plan.media.url, { method: 'HEAD' }),
+        fetch(plan.cover.url, { method: 'HEAD' }),
+    ]);
+    const media = { ...plan.media, ok: mediaResponse.ok, contentType: clean(mediaResponse.headers.get('content-type') || '', 100) };
+    const cover = { ...plan.cover, ok: coverResponse.ok, contentType: clean(coverResponse.headers.get('content-type') || '', 100) };
+    if (!media.ok || media.contentType !== 'video/mp4') throw new Error('Reel video is not publicly fetchable as video/mp4');
+    if (!cover.ok || !cover.contentType.startsWith('image/')) throw new Error('Reel cover is not publicly fetchable as an image');
+    if (!cover.fullCoverChecked || !cover.profileGridChecked) throw new Error('Reel cover QA is incomplete');
+    return { plan, token, account, media, cover };
 }
 
-async function publishCarousel(validation) {
+async function publishReel(validation) {
     const { plan, token } = validation;
-    const children = [];
-    for (const item of plan.media) {
-        const child = await graph(`${igUserId()}/media`, 'POST', {
-            ...(item.type === 'video'
-                ? { media_type: 'VIDEO', video_url: item.url }
-                : { image_url: item.url }),
-            is_carousel_item: true,
-            access_token: token,
-        });
-        const childId = clean(child.id, 120);
-        if (!childId) throw new Error('Instagram did not return a child media container');
-        await waitForContainer(childId, token);
-        children.push(childId);
+    const priorReceipt = await privateSecret(RECEIPT_KEY);
+    if (priorReceipt) {
+        let parsed = {};
+        try { parsed = JSON.parse(priorReceipt); } catch {}
+        return { alreadyPublished: true, ...parsed };
     }
-    const parent = await graph(`${igUserId()}/media`, 'POST', {
-        media_type: 'CAROUSEL',
-        children: children.join(','),
+    const container = await graph(`${igUserId()}/media`, 'POST', {
+        media_type: 'REELS',
+        video_url: plan.media.url,
+        cover_url: plan.cover.url,
         caption: plan.caption,
+        share_to_feed: true,
         access_token: token,
     });
-    const creationId = clean(parent.id, 120);
-    if (!creationId) throw new Error('Instagram did not return a carousel container');
+    const creationId = clean(container.id, 120);
+    if (!creationId) throw new Error('Instagram did not return a Reel container');
     await waitForContainer(creationId, token);
     const published = await graph(`${igUserId()}/media_publish`, 'POST', { creation_id: creationId, access_token: token });
     const mediaId = clean(published.id, 120);
-    const media = mediaId ? await graph(mediaId, 'GET', { fields: 'id,permalink,timestamp,media_product_type', access_token: token }) : {};
-    return { creationId, childContainerIds: children, mediaId, permalink: clean(media.permalink || '', 700), timestamp: clean(media.timestamp || '', 100) };
+    const media = mediaId ? await graph(mediaId, 'GET', { fields: 'id,permalink,timestamp,media_product_type,thumbnail_url', access_token: token }) : {};
+    const receipt = {
+        creationId,
+        mediaId,
+        permalink: clean(media.permalink || '', 700),
+        timestamp: clean(media.timestamp || '', 100),
+        mediaProductType: clean(media.media_product_type || '', 100),
+        thumbnailUrl: clean(media.thumbnail_url || '', 1000),
+        requestedCoverUrl: plan.cover.url,
+    };
+    await setPrivateSecret(RECEIPT_KEY, JSON.stringify(receipt));
+    return receipt;
 }
 
 export default async request => {
     if (request.method !== 'POST') return json(405, { ok: false, error: 'method_not_allowed' });
     const body = await readBody(request);
-    if (!authorized(request, body)) {
-        return json(401, {
-            ok: false,
-            error: 'unauthorized',
-            tokenConfigured: Boolean(env('CROSSPOST_ADMIN_TOKEN')),
-            tokenSupplied: Boolean(clean(request.headers.get('x-crosspost-token') || body.token || '', 5000)),
-        });
-    }
+    if (!authorized(request, body)) return json(401, { ok: false, error: 'unauthorized' });
     const mode = clean(body.mode || 'dry_run', 30);
     if (!['dry_run', 'publish'].includes(mode)) return json(400, { ok: false, error: 'invalid_mode' });
     if (clean(body.idempotencyKey, 200) !== REQUIRED_IDEMPOTENCY_KEY) return json(400, { ok: false, error: 'invalid_idempotency_key' });
     try {
-        const validation = await validatePlan(request);
-        if (mode === 'dry_run') return json(200, { ok: true, mode, account: validation.account, plan: validation.plan, media: validation.media });
-        const result = await publishCarousel(validation);
+        const validation = await validatePlan();
+        if (mode === 'dry_run') return json(200, { ok: true, mode, account: validation.account, plan: validation.plan, media: validation.media, cover: validation.cover });
+        const result = await publishReel(validation);
         return json(200, { ok: true, mode, contentId: CONTENT_ID, account: validation.account, result });
     } catch (error) {
         return json(502, { ok: false, mode, error: clean(error.message || 'publish_failed', 700) });
