@@ -76,13 +76,20 @@ const managerOwnedMirandaAlert = {
         ig_thread_id: 'thread-miranda',
         linked_user_id: 'client-miranda',
         client_manager_auto_reply_enabled: true,
-        custom_data: { client_manager_auto_reply_enabled: true },
+        client_manager_browser_dispatch_enabled: true,
+        custom_data: {
+            client_manager_auto_reply_enabled: true,
+            client_manager_browser_dispatch_enabled: true,
+        },
     },
 };
 const managerOwnedMirandaThread = {
     id: 'thread-miranda',
     linked_user_id: 'client-miranda',
-    custom_data: { client_manager_auto_reply_enabled: true },
+    custom_data: {
+        client_manager_auto_reply_enabled: true,
+        client_manager_browser_dispatch_enabled: true,
+    },
 };
 
 assert.strictEqual(
@@ -161,6 +168,72 @@ assert.strictEqual(
     true,
     'the final Instagram transport still blocks scheduled-worker delivery'
 );
+assert.strictEqual(
+    sendIg.isManagerOwnedLinkedClientBrowserDispatch({
+        alertData: managerOwnedMirandaAlert.data,
+        thread: managerOwnedMirandaThread,
+        source: 'balance_lead_client_manager_cron',
+        lastInboundAt: new Date(Date.now() - (25 * 60 * 60 * 1000)).toISOString(),
+    }),
+    true,
+    'the manager-owned Miranda reply may hand off to browser dispatch after the 24-hour API window'
+);
+assert.strictEqual(
+    sendIg.isManagerOwnedLinkedClientBrowserDispatch({
+        alertData: managerOwnedMirandaAlert.data,
+        thread: managerOwnedMirandaThread,
+        source: 'balance_lead_client_manager_cron',
+        lastInboundAt: new Date(Date.now() - (8 * 24 * 60 * 60 * 1000)).toISOString(),
+    }),
+    true,
+    'native browser dispatch remains available when the inbound is older than Meta Human Agent seven-day coverage'
+);
+assert.strictEqual(
+    sendIg.isManagerOwnedLinkedClientBrowserDispatch({
+        alertData: managerOwnedMirandaAlert.data,
+        thread: managerOwnedMirandaThread,
+        source: 'balance_lead_client_manager_cron',
+        lastInboundAt: new Date(Date.now() - (23 * 60 * 60 * 1000)).toISOString(),
+    }),
+    false,
+    'the browser dispatcher must not compete while Miranda is still inside the API window'
+);
+assert.strictEqual(
+    sendIg.isManagerOwnedLinkedClientBrowserDispatch({
+        alertData: managerOwnedMirandaAlert.data,
+        thread: {
+            ...managerOwnedMirandaThread,
+            last_outbound_at: new Date().toISOString(),
+        },
+        source: 'balance_lead_client_manager_cron',
+        lastInboundAt: new Date(Date.now() - (25 * 60 * 60 * 1000)).toISOString(),
+    }),
+    false,
+    'a newer Shannon outbound cancels browser fallback even when the old inbound is outside the API window'
+);
+assert.strictEqual(
+    sendIg.isManagerOwnedLinkedClientBrowserDispatch({
+        alertData: managerOwnedMirandaAlert.data,
+        thread: {
+            ...managerOwnedMirandaThread,
+            custom_data: { client_manager_auto_reply_enabled: true },
+        },
+        source: 'balance_lead_client_manager_cron',
+        lastInboundAt: new Date(Date.now() - (25 * 60 * 60 * 1000)).toISOString(),
+    }),
+    false,
+    'browser dispatch still requires the separate live Miranda fallback flag'
+);
+const browserDispatchData = sendIg.markManagerBrowserDispatchFallback(managerOwnedMirandaAlert.data, {
+    alertId: 'alert-miranda',
+    actionId: 'action-miranda',
+    lastInboundAt: new Date(Date.now() - (25 * 60 * 60 * 1000)).toISOString(),
+    requestedAt: '2026-07-27T03:30:00.000Z',
+});
+assert.strictEqual(browserDispatchData.delivery_channel, 'instagram_browser_dispatcher');
+assert.strictEqual(browserDispatchData.manual_ig_required, false);
+assert.strictEqual(browserDispatchData.browser_dispatch_owner, 'browser_dispatcher');
+assert.strictEqual(browserDispatchData.browser_dispatch_action_id, 'action-miranda');
 
 assert.strictEqual(
     sendCoach.shouldBlockPermanentNeedsYouAutomatedSend(fraAlert, 'scheduled_worker'),

@@ -47,6 +47,7 @@ const {
     buildDailyGreetingPolicyBlock,
     shouldAllowDailyGreeting,
     isClientManagerAutoReplyEnabled,
+    isClientManagerBrowserDispatchEnabled,
     isAlwaysNeedsYouPerson,
     isKayNeedsYouPerson,
     isProgramUpdateOrAppFixContext,
@@ -4091,6 +4092,8 @@ exports.handler = async (event) => {
         : '';
     const clientManagerAutoReplyEnabled = !!thread.linked_user_id
         && isClientManagerAutoReplyEnabled(thread);
+    const clientManagerBrowserDispatchEnabled = clientManagerAutoReplyEnabled
+        && isClientManagerBrowserDispatchEnabled(thread);
     const linkedClientNeedsYou = !!thread.linked_user_id && !clientManagerAutoReplyEnabled;
     const metaAdFirstInbound = isMetaAdFastLaneEligible({
         linkedUserId: thread.linked_user_id,
@@ -4788,8 +4791,10 @@ exports.handler = async (event) => {
         status: 'pending',
         data: {
             client_manager_auto_reply_enabled: clientManagerAutoReplyEnabled || undefined,
+            client_manager_browser_dispatch_enabled: clientManagerBrowserDispatchEnabled || undefined,
             custom_data: clientManagerAutoReplyEnabled ? {
                 client_manager_auto_reply_enabled: true,
+                client_manager_browser_dispatch_enabled: clientManagerBrowserDispatchEnabled || undefined,
             } : undefined,
             client_manager_review_required: draftOnlyNeedsYouClient || undefined,
             needs_you_required: draftOnlyNeedsYouClient || undefined,
@@ -4998,9 +5003,11 @@ exports.handler = async (event) => {
         const mergedData = {
             ...(existingPending.data || alertRow.data),
             client_manager_auto_reply_enabled: clientManagerAutoReplyEnabled || undefined,
+            client_manager_browser_dispatch_enabled: clientManagerBrowserDispatchEnabled || undefined,
             custom_data: clientManagerAutoReplyEnabled ? {
                 ...(existingPending.data?.custom_data || {}),
                 client_manager_auto_reply_enabled: true,
+                client_manager_browser_dispatch_enabled: clientManagerBrowserDispatchEnabled || undefined,
             } : existingPending.data?.custom_data,
             client_manager_review_required: draftOnlyNeedsYouClient
                 ? true

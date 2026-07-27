@@ -11,6 +11,7 @@ const {
     buildMediaReviewInfo,
     buildContextReviewInfo,
     isClientManagerAutoReplyEnabled,
+    isClientManagerBrowserDispatchEnabled,
     isAlwaysNeedsYouPerson,
     shouldBypassKayNeedsYouForAlert,
     reviewDraftAndUpdateAlert,
@@ -69,6 +70,8 @@ function alertIdentity(alert = {}) {
             ...(data.custom_data || {}),
             client_manager_auto_reply_enabled: data.client_manager_auto_reply_enabled === true
                 || data.custom_data?.client_manager_auto_reply_enabled === true,
+            client_manager_browser_dispatch_enabled: data.client_manager_browser_dispatch_enabled === true
+                || data.custom_data?.client_manager_browser_dispatch_enabled === true,
             needs_you_always: data.needs_you_always === true || data.custom_data?.needs_you_always === true,
             manual_review_only: data.manual_review_only === true || data.custom_data?.manual_review_only === true,
             permanent_needs_you_draft_only: data.permanent_needs_you_draft_only === true
@@ -996,6 +999,8 @@ async function hydrateLiveLinkedClient(alert = {}) {
         }
         if (!thread.linked_user_id) return alert;
         const managerAutoReplyEnabled = isClientManagerAutoReplyEnabled(thread);
+        const managerBrowserDispatchEnabled = managerAutoReplyEnabled
+            && isClientManagerBrowserDispatchEnabled(thread);
         const existingCustomData = data.custom_data && typeof data.custom_data === 'object'
             ? data.custom_data
             : {};
@@ -1008,9 +1013,11 @@ async function hydrateLiveLinkedClient(alert = {}) {
                     ...existingCustomData,
                     ...(thread.custom_data || {}),
                     client_manager_auto_reply_enabled: managerAutoReplyEnabled,
+                    client_manager_browser_dispatch_enabled: managerBrowserDispatchEnabled,
                 },
                 linked_user_id: thread.linked_user_id,
                 client_manager_auto_reply_enabled: managerAutoReplyEnabled,
+                client_manager_browser_dispatch_enabled: managerBrowserDispatchEnabled,
                 linked_client_manual_review: managerAutoReplyEnabled ? false : true,
                 client_manager_review_required: managerAutoReplyEnabled ? false : data.client_manager_review_required,
                 needs_you_required: managerAutoReplyEnabled ? false : data.needs_you_required,

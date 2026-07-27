@@ -102,6 +102,7 @@ const {
     splitCoachDraftIntoDmBubbles,
     fireCoachEditAnalysis,
     isClientManagerAutoReplyEnabled,
+    isClientManagerBrowserDispatchEnabled,
     isAlwaysNeedsYouPerson,
     shouldBypassKayNeedsYouForAlert,
 } = require('./_lib/client-context');
@@ -505,6 +506,18 @@ function isHumanAgentWindow(lastInboundAt, nowMs = Date.now()) {
     return hours !== null && hours > 24 && hours <= 24 * 7;
 }
 
+function isOutsideStandardMessagingWindow(lastInboundAt, nowMs = Date.now()) {
+    const hours = hoursSinceIso(lastInboundAt, nowMs);
+    return hours !== null && hours > 24;
+}
+
+function hasUnansweredLatestInbound(thread = {}, lastInboundAt = '') {
+    const inboundMs = Date.parse(lastInboundAt || thread.last_inbound_at || '');
+    if (!Number.isFinite(inboundMs)) return false;
+    const outboundMs = Date.parse(thread.last_outbound_at || '');
+    return !Number.isFinite(outboundMs) || inboundMs > outboundMs;
+}
+
 function isHumanApprovedSource(source, alertData = {}) {
     const rawSource = String(source || '').trim().toLowerCase();
     const scheduledVia = String(alertData.scheduled_via || '').trim().toLowerCase();
@@ -758,6 +771,136 @@ function isManagerOwnedLinkedClientIgSend({ alertData = {}, thread = null, sourc
         && !!thread?.linked_user_id
         && isClientManagerAutoReplyEnabled(thread)
         && isClientManagerAutoReplyEnabled(alertData);
+}
+
+function isManagerOwnedLinkedClientBrowserDispatch({
+    alertData = {},
+    thread = null,
+    source = '',
+    lastInboundAt = '',
+} = {}) {
+    return isManagerOwnedLinkedClientIgSend({ alertData, thread, source })
+        && isClientManagerBrowserDispatchEnabled(thread)
+        && hasUnansweredLatestInbound(thread, lastInboundAt)
+        && isOutsideStandardMessagingWindow(lastInboundAt);
+}
+
+function markManagerBrowserDispatchFallback(data = {}, {
+    alertId = '',
+    actionId = '',
+    lastInboundAt = '',
+    requestedAt = new Date().toISOString(),
+} = {}) {
+    const graph = safeObject(data.instagram_graph);
+    return {
+        ...data,
+        delivery_channel: 'instagram_browser_dispatcher',
+        manual_ig_required: false,
+        manual_reason: null,
+        browser_dispatch_required: true,
+        browser_dispatch_owner: 'browser_dispatcher',
+        browser_dispatch_reason: 'instagram_api_window_closed',
+        browser_dispatch_requested_at: requestedAt,
+        browser_dispatch_action_id: actionId || null,
+        browser_dispatch_alert_id: alertId || null,
+        human_agent_required: true,
+        human_agent_approved: false,
+        last_send_error: 'Instagram API window closed. Handed to the native browser dispatcher.',
+        last_send_error_code: 'browser_dispatch_required',
+        last_send_error_at: requestedAt,
+        instagram_graph: {
+            ...graph,
+            last_inbound_at: lastInboundAt || graph.last_inbound_at || null,
+            human_agent_required: true,
+            human_agent_approved: false,
+            send_ready: false,
+        },
+    };
+}
+
+async function handoffManagerOwnedLinkedClientToBrowser({
+    alertId = '',
+    alertData = {},
+    thread = null,
+    source = '',
+    lastInboundAt = '',
+} = {}) {
+    if (!isManagerOwnedLinkedClientBrowserDispatch({ alertData, thread, source, lastInboundAt })) {
+        return { used: false, data: null, action: null };
+    }
+
+    const requestedAt = new Date().toISOString();
+    const threadId = thread?.id || alertData.ig_thread_id || '';
+    const actions = threadId ? await supabase(
+        `ig_next_actions?select=id,thread_id,ig_username,owner,status,action_type,priority,reason,action_version&thread_id=eq.${encodeURIComponent(threadId)}&limit=1`
+    ) : [];
+    const action = actions?.[0] || null;
+    if (!action || action.owner !== 'dm_manager' || action.action_type !== 'reply_inbound') {
+        return {
+            used: false,
+            data: {
+                ...markHumanAgentManualFallback(alertData, { lastInboundAt }),
+                last_send_error: 'Instagram API window closed, but the DM action could not be safely handed to the browser dispatcher.',
+                last_send_error_code: 'browser_dispatch_handoff_unavailable',
+                last_send_error_at: requestedAt,
+            },
+            action,
+        };
+    }
+
+    const reason = {
+        ...safeObject(action.reason),
+        browser_dispatch_required: true,
+        transport_owner: 'browser_dispatcher',
+        browser_dispatch_reason: 'instagram_api_window_closed',
+        source_alert_id: alertId || null,
+        requested_at: requestedAt,
+    };
+    const updated = await supabase(
+        `ig_next_actions?id=eq.${encodeURIComponent(action.id)}&owner=eq.dm_manager&action_type=eq.reply_inbound&status=in.(ready,waiting,claimed)`,
+        {
+            method: 'PATCH',
+            body: {
+                owner: 'browser_dispatcher',
+                status: 'ready',
+                due_at: requestedAt,
+                safe_after: null,
+                reason,
+                claim_owner: null,
+                claim_token: null,
+                claim_run_id: null,
+                claim_expires_at: null,
+                completed_at: null,
+                receipt: {},
+                action_version: Number(action.action_version || 0) + 1,
+            },
+            prefer: 'return=representation',
+        }
+    );
+    const handedOffAction = updated?.[0] || null;
+    if (!handedOffAction) {
+        return {
+            used: false,
+            data: {
+                ...markHumanAgentManualFallback(alertData, { lastInboundAt }),
+                last_send_error: 'Instagram API window closed, but the browser-dispatch lease transfer lost its ownership check.',
+                last_send_error_code: 'browser_dispatch_handoff_conflict',
+                last_send_error_at: requestedAt,
+            },
+            action,
+        };
+    }
+
+    return {
+        used: true,
+        action: handedOffAction,
+        data: markManagerBrowserDispatchFallback(alertData, {
+            alertId,
+            actionId: handedOffAction.id,
+            lastInboundAt,
+            requestedAt,
+        }),
+    };
 }
 
 function shouldBlockLinkedClientAutomatedIgSend({ alert = {}, alertData = {}, thread = null, source = '' } = {}) {
@@ -1554,8 +1697,8 @@ exports.handler = async (event) => {
             || String(alertData.subscriber_id || '').startsWith(GRAPH_SUBSCRIBER_PREFIX)
         );
         const currentThreadId = alertData.ig_thread_id || threadForSend?.id || '';
-        graphLastInboundAt = shouldUseGraph
-            ? (alertData.ig_last_inbound_at || alertData.last_inbound_at || threadForSend?.last_inbound_at || await loadThreadLastInboundAt(currentThreadId))
+        graphLastInboundAt = channel === 'instagram'
+            ? (threadForSend?.last_inbound_at || alertData.ig_last_inbound_at || alertData.last_inbound_at || await loadThreadLastInboundAt(currentThreadId))
             : '';
         graphNeedsHumanAgent = shouldUseGraph && isHumanAgentWindow(graphLastInboundAt);
     };
@@ -1590,6 +1733,68 @@ exports.handler = async (event) => {
             await recomputeGraphRouting();
         } else {
             alternateDelivery = resolution || null;
+        }
+    }
+    if (isManagerOwnedLinkedClientBrowserDispatch({
+        alertData,
+        thread: threadForSend,
+        source,
+        lastInboundAt: graphLastInboundAt,
+    })) {
+        try {
+            const browserHandoff = await handoffManagerOwnedLinkedClientToBrowser({
+                alertId,
+                alertData,
+                thread: threadForSend,
+                source,
+                lastInboundAt: graphLastInboundAt,
+            });
+            if (browserHandoff.data) {
+                await supabase(`coach_alerts?id=eq.${alertId}`, {
+                    method: 'PATCH',
+                    body: { data: browserHandoff.data },
+                    prefer: 'return=minimal',
+                });
+            }
+            return {
+                statusCode: 409,
+                body: JSON.stringify({
+                    error: browserHandoff.data?.last_send_error || HUMAN_AGENT_NOT_APPROVED_MESSAGE,
+                    code: browserHandoff.used
+                        ? 'browser_dispatch_queued'
+                        : (browserHandoff.data?.last_send_error_code || 'browser_dispatch_handoff_unavailable'),
+                    browser_dispatch_required: browserHandoff.used,
+                    browser_dispatch_action_id: browserHandoff.action?.id || null,
+                    manual_ig_required: !browserHandoff.used,
+                }),
+            };
+        } catch (error) {
+            console.warn('[send-ig-reply] browser-dispatch handoff failed:', error.message);
+            const failedAt = new Date().toISOString();
+            const failedData = {
+                ...markHumanAgentManualFallback(alertData, { lastInboundAt: graphLastInboundAt }),
+                last_send_error: 'Instagram API window closed, but the browser-dispatch handoff failed before ownership transferred.',
+                last_send_error_code: 'browser_dispatch_handoff_failed',
+                last_send_error_at: failedAt,
+            };
+            try {
+                await supabase(`coach_alerts?id=eq.${alertId}`, {
+                    method: 'PATCH',
+                    body: { data: failedData },
+                    prefer: 'return=minimal',
+                });
+            } catch (stampError) {
+                console.warn('[send-ig-reply] browser-dispatch failure stamp failed:', stampError.message);
+            }
+            return {
+                statusCode: 409,
+                body: JSON.stringify({
+                    error: failedData.last_send_error,
+                    code: 'browser_dispatch_handoff_failed',
+                    browser_dispatch_required: false,
+                    manual_ig_required: true,
+                }),
+            };
         }
     }
     if (isManualGraphOnly(alertData)) {
@@ -2272,6 +2477,8 @@ exports._test = {
     shouldBlockPermanentNeedsYouAutomatedIgSend,
     isLinkedClientIgAlert,
     isManagerOwnedLinkedClientIgSend,
+    isManagerOwnedLinkedClientBrowserDispatch,
+    markManagerBrowserDispatchFallback,
     shouldBlockLinkedClientAutomatedIgSend,
     stampPersonalDmBoundaryBlock,
     hasClientFacingAiSelfReference,

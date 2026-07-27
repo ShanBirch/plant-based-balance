@@ -536,6 +536,15 @@ function isClientManagerAutoReplyEnabled(record = {}) {
         || instagramGraph.client_manager_auto_reply_enabled === true;
 }
 
+function isClientManagerBrowserDispatchEnabled(record = {}) {
+    const source = asPlainObject(record);
+    const customData = asPlainObject(source.custom_data || source.customData);
+    const instagramGraph = asPlainObject(customData.instagram_graph);
+    return source.client_manager_browser_dispatch_enabled === true
+        || customData.client_manager_browser_dispatch_enabled === true
+        || instagramGraph.client_manager_browser_dispatch_enabled === true;
+}
+
 function isAlwaysNeedsYouPerson(record = {}) {
     const source = asPlainObject(record);
     const customData = asPlainObject(source.custom_data || source);
@@ -8024,6 +8033,7 @@ module.exports = {
     isTestAccount,
     isAiAutomationOptedOut,
     isClientManagerAutoReplyEnabled,
+    isClientManagerBrowserDispatchEnabled,
     isAlwaysNeedsYouPerson,
     isKayNeedsYouPerson,
     isProgramUpdateOrAppFixContext,
