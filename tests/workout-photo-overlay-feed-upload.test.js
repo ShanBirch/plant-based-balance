@@ -1,6 +1,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
 const root = path.join(__dirname, '..');
 const pointsSource = fs.readFileSync(
@@ -32,15 +33,59 @@ assert.ok(
     'workout photo overlays must not use the unreliable iOS multipart relay'
 );
 assert.ok(
-    rendererSource.includes("if (cardType !== 'workout' && cardType !== 'pb')") &&
+    rendererSource.includes("if (cardType !== 'workout' && cardType !== 'pb' && cardType !== 'activity')") &&
         rendererSource.includes('ctx.fillRect(0, 0, width, height);'),
-    'workout and PB photo overlays must skip the full-frame dark tint'
+    'workout, PB, and activity photo overlays must skip the full-frame dark tint'
 );
 assert.ok(
-    dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=35') &&
-        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v266'") &&
-        serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=35'),
+    dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=36') &&
+        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v267'") &&
+        serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=36'),
     'phones must fetch the repaired overlay share path'
 );
 
-console.log('workout photo overlay Feed upload contract passed');
+(async () => {
+    const fullFrameDraws = [];
+    const gradient = { addColorStop() {} };
+    const context = {
+        fillStyle: '',
+        createLinearGradient() { return gradient; },
+        fillRect(x, y, width, height) {
+            if (x === 0 && y === 0 && width === 1080 && height === 1350) {
+                fullFrameDraws.push(this.fillStyle);
+            }
+        }
+    };
+    const canvas = {
+        getContext() { return context; },
+        toDataURL() { return 'data:image/jpeg;base64,activity-card'; }
+    };
+    const sandbox = {
+        document: { createElement() { return canvas; } },
+        console: { warn() {} },
+        pbbShareLoadImage: async () => ({}),
+        pbbShareDrawCoverImage() {},
+        pbbShareDrawFullBleedActivityCard: async () => {},
+        pbbShareDrawFullBleedWorkoutCard: async () => {},
+        pbbShareDrawFullBleedMealCard: async () => {}
+    };
+    vm.runInNewContext(
+        `${rendererSource}; this.renderBalanceShareCardImage = renderBalanceShareCardImage;`,
+        sandbox
+    );
+
+    await sandbox.renderBalanceShareCardImage(
+        { card_type: 'activity', activity_label: 'Walk' },
+        { target: 'feed', photoDataUrl: 'data:image/jpeg;base64,photo' }
+    );
+
+    assert.strictEqual(
+        fullFrameDraws.length,
+        1,
+        'activity photos should receive the base canvas draw only, with no extra full-frame dark tint'
+    );
+    console.log('workout and activity photo overlay contract passed');
+})().catch(error => {
+    console.error(error);
+    process.exitCode = 1;
+});

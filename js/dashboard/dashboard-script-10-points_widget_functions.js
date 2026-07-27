@@ -4209,9 +4209,9 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
         try {
             const photo = await pbbShareLoadImage(primaryPhotoDataUrl);
             pbbShareDrawCoverImage(ctx, photo, 0, 0, width, height);
-            // Workout and PB overlays keep the original photo brightness. Their
-            // local lower fade already gives the white stats enough contrast.
-            if (cardType !== 'workout' && cardType !== 'pb') {
+            // Workout, PB, and activity overlays keep the original photo
+            // brightness. Their local fades give the white stats enough contrast.
+            if (cardType !== 'workout' && cardType !== 'pb' && cardType !== 'activity') {
                 ctx.fillStyle = cardType === 'meal'
                     ? 'rgba(4, 12, 9, 0.18)'
                     : 'rgba(4, 12, 9, 0.56)';
