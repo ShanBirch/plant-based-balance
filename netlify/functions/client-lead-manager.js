@@ -668,6 +668,7 @@ function shouldAutoScheduleCleanLeadCloudFallback(alert = {}, classification = {
     const review = normalizeDraftReview(data);
     const reviewIssues = Array.isArray(review.issues) ? review.issues.filter(Boolean) : [];
     const contextReview = buildContextReviewInfo(alert);
+    const mediaReview = buildMediaReviewInfo(alert);
     const draftText = normalizeCoachDraftText(alert.suggested_message || data.draft_text || '').trim();
     const commercialStage = String(data.qualifier?.commercial_stage || '').toLowerCase();
     const appProblemHold = getAppProblemAutoSendHoldReason({
@@ -678,8 +679,8 @@ function shouldAutoScheduleCleanLeadCloudFallback(alert = {}, classification = {
 
     if (!data.ig_thread_id || !draftText || !draftReviewPassedForAutoSend(data)) return false;
     if (reviewIssues.length > 0 || contextReview.required === true) return false;
-    if (leadMediaContextMissing(data, buildMediaReviewInfo(alert))) return false;
-    if (hasVoiceNoteEvidence(data) || getMediaContextCounts(data).audioUrl > 0) return false;
+    if (mediaReview.hasMedia || leadMediaContextMissing(data, mediaReview)) return false;
+    if (hasVoiceNoteEvidence(data) || Object.values(getMediaContextCounts(data)).some(value => value === true || Number(value) > 0)) return false;
     if (appProblemHold) return false;
     if (data.client_manager_review_required === true
         || data.needs_you_required === true
@@ -732,6 +733,71 @@ function buildCleanLeadCloudFallbackSchedulePatch(alert = {}, now = new Date()) 
             },
         },
     };
+}
+
+function latestAlertEvidenceAt(alert = {}) {
+    const data = alert.data || {};
+    const candidates = [
+        alert.created_at,
+        data.drafted_at,
+        data.alert_shell_created_at,
+        data.source_inbound_created_at,
+        data.last_inbound_at,
+        ...(Array.isArray(data.inbound_message_batch)
+            ? data.inbound_message_batch.map(item => item?.created_at)
+            : []),
+    ];
+    const timestamps = candidates
+        .map(value => Date.parse(String(value || '')))
+        .filter(Number.isFinite);
+    return timestamps.length ? new Date(Math.max(...timestamps)).toISOString() : null;
+}
+
+async function completeCloudFallbackController(action, {
+    runId,
+    alertId,
+    safeAfter = new Date().toISOString(),
+    receipt = {},
+} = {}) {
+    return supabaseQuery('rpc/complete_ig_next_action', {
+        method: 'POST',
+        body: {
+            p_action_id: action.id,
+            p_claim_token: action.claim_token,
+            p_status: 'waiting',
+            p_safe_after: safeAfter,
+            p_receipt: {
+                run_id: runId,
+                alert_id: alertId,
+                cloud_dm_manager_fallback: true,
+                outbound_attempted: false,
+                ...receipt,
+            },
+        },
+        prefer: 'return=representation',
+    });
+}
+
+async function cloudFallbackControllerMatchesAlert(action, alert) {
+    const threadId = String(alert.data?.ig_thread_id || '').trim();
+    const evidenceAt = latestAlertEvidenceAt(alert);
+    if (!threadId || !evidenceAt || !action?.source_message_id || action.action_type !== 'reply_inbound') return false;
+
+    const sourceRows = await supabaseQuery(
+        `ig_messages?id=eq.${encodeURIComponent(action.source_message_id)}&select=id,thread_id,direction,created_at&limit=1`
+    );
+    const source = sourceRows?.[0];
+    if (!source
+        || source.thread_id !== threadId
+        || String(source.direction || '').toLowerCase() !== 'in'
+        || Date.parse(source.created_at) > (Date.parse(evidenceAt) + (2 * 60 * 1000))) return false;
+
+    const newerRows = await supabaseQuery(
+        `ig_messages?thread_id=eq.${encodeURIComponent(threadId)}`
+        + `&created_at=gt.${encodeURIComponent(source.created_at)}`
+        + '&select=id,direction,created_at&order=created_at.desc&limit=1'
+    );
+    return !newerRows?.length;
 }
 
 function formatReviewList(items, mapper) {
@@ -1182,6 +1248,37 @@ async function scheduleCleanLeadCloudFallback(alert) {
     const action = claimed?.[0] || null;
     if (!action?.id || !action?.claim_token || action.thread_id !== threadId) return null;
 
+    let controllerMatches = false;
+    try {
+        controllerMatches = await cloudFallbackControllerMatchesAlert(action, alert);
+    } catch (error) {
+        try {
+            await completeCloudFallbackController(action, {
+                runId,
+                alertId: alert.id,
+                receipt: {
+                    decision: 'cloud_controller_validation_failed',
+                    error: String(error.message || error).slice(0, 500),
+                },
+            });
+        } catch (releaseError) {
+            console.warn('[client-lead-manager] failed to release controller after validation error:', releaseError.message);
+        }
+        throw error;
+    }
+    if (!controllerMatches) {
+        await completeCloudFallbackController(action, {
+            runId,
+            alertId: alert.id,
+            receipt: {
+                decision: 'cloud_schedule_stale_alert',
+                conversation_move: 'none',
+                progression_deferred_reason: 'controller_source_does_not_match_alert_or_newer_message_exists',
+            },
+        });
+        return null;
+    }
+
     const patch = buildCleanLeadCloudFallbackSchedulePatch(alert);
     let scheduled = null;
     try {
@@ -1193,23 +1290,13 @@ async function scheduleCleanLeadCloudFallback(alert) {
         scheduled = rows?.[0] || null;
     } catch (error) {
         try {
-            await supabaseQuery('rpc/complete_ig_next_action', {
-                method: 'POST',
-                body: {
-                    p_action_id: action.id,
-                    p_claim_token: action.claim_token,
-                    p_status: 'waiting',
-                    p_safe_after: new Date().toISOString(),
-                    p_receipt: {
-                        run_id: runId,
-                        alert_id: alert.id,
-                        cloud_dm_manager_fallback: true,
-                        outbound_attempted: false,
-                        decision: 'cloud_schedule_failed',
-                        error: String(error.message || error).slice(0, 500),
-                    },
+            await completeCloudFallbackController(action, {
+                runId,
+                alertId: alert.id,
+                receipt: {
+                    decision: 'cloud_schedule_failed',
+                    error: String(error.message || error).slice(0, 500),
                 },
-                prefer: 'return=representation',
             });
         } catch (releaseError) {
             console.warn('[client-lead-manager] failed to release controller after schedule error:', releaseError.message);
@@ -1220,28 +1307,19 @@ async function scheduleCleanLeadCloudFallback(alert) {
     const safeAfter = scheduled
         ? new Date(new Date(patch.scheduled_for).getTime() + (2 * 60 * 1000)).toISOString()
         : new Date().toISOString();
-    const completion = await supabaseQuery('rpc/complete_ig_next_action', {
-        method: 'POST',
-        body: {
-            p_action_id: action.id,
-            p_claim_token: action.claim_token,
-            p_status: 'waiting',
-            p_safe_after: safeAfter,
-            p_receipt: {
-                run_id: runId,
-                alert_id: alert.id,
-                scheduled_for: scheduled ? patch.scheduled_for : null,
-                scheduled_reply_text: scheduled ? patch.scheduled_reply_text : null,
-                cloud_dm_manager_fallback: true,
-                outbound_attempted: false,
-                conversation_move: scheduled ? 'scheduled_reply' : 'none',
-                decision: scheduled ? 'cloud_reply_scheduled' : 'cloud_schedule_conflict',
-                progression_deferred_reason: scheduled
-                    ? 'awaiting_scheduled_worker_and_canonical_readback'
-                    : 'alert_was_no_longer_pending',
-            },
+    const completion = await completeCloudFallbackController(action, {
+        runId,
+        alertId: alert.id,
+        safeAfter,
+        receipt: {
+            scheduled_for: scheduled ? patch.scheduled_for : null,
+            scheduled_reply_text: scheduled ? patch.scheduled_reply_text : null,
+            conversation_move: scheduled ? 'scheduled_reply' : 'none',
+            decision: scheduled ? 'cloud_reply_scheduled' : 'cloud_schedule_conflict',
+            progression_deferred_reason: scheduled
+                ? 'awaiting_scheduled_worker_and_canonical_readback'
+                : 'alert_was_no_longer_pending',
         },
-        prefer: 'return=representation',
     });
     if (!scheduled) return null;
     return {
@@ -1389,6 +1467,7 @@ exports._test = {
     shouldAutoScheduleApprovedCoachingHandoff,
     buildApprovedCoachingAutoSchedulePatch,
     containsCommercialDecisionText,
+    latestAlertEvidenceAt,
     shouldAutoScheduleCleanLeadCloudFallback,
     buildCleanLeadCloudFallbackSchedulePatch,
     draftAsksRedundantCurrentStatusQuestion,

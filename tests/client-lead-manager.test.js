@@ -800,6 +800,20 @@ assert.strictEqual(cleanCloudFallbackPatch.data.cloud_dm_manager_fallback, true)
 assert.strictEqual(cleanCloudFallbackPatch.data.client_manager_auto_schedule_reason, 'clean_unlinked_lead_cloud_fallback');
 assert.strictEqual(manager.containsCommercialDecisionText('normal gym chat'), false);
 assert.strictEqual(manager.containsCommercialDecisionText('I reckon Balance would suit you, want me to send the details?'), true);
+assert.strictEqual(
+    manager.latestAlertEvidenceAt({
+        created_at: '2026-07-28T00:00:00.000Z',
+        data: {
+            drafted_at: '2026-07-28T00:00:10.000Z',
+            inbound_message_batch: [
+                { created_at: '2026-07-28T00:00:05.000Z' },
+                { created_at: '2026-07-28T00:00:12.000Z' },
+            ],
+        },
+    }),
+    '2026-07-28T00:00:12.000Z'
+);
+assert.strictEqual(manager.latestAlertEvidenceAt({ data: {} }), null);
 
 for (const unsafeFallback of [
     makeAlert({
@@ -816,6 +830,16 @@ for (const unsafeFallback of [
         data: {
             ig_thread_id: 'thread-voice',
             audio_url_count: 1,
+            draft_review: { verdict: 'pass', confidence: 0.9, issues: [] },
+        },
+    }),
+    makeAlert({
+        suggested_message: 'that reel is heartbreaking hey',
+        data: {
+            ig_thread_id: 'thread-decoded-video',
+            video_url_count: 1,
+            reel_context_count: 1,
+            media_decode: { analysis_complete: true, video_url_count: 1, reel_context_count: 1 },
             draft_review: { verdict: 'pass', confidence: 0.9, issues: [] },
         },
     }),
