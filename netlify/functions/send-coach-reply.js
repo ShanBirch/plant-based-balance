@@ -551,7 +551,7 @@ exports.handler = async (event) => {
             const res = await fetch(`${SITE_URL}/.netlify/functions/send-ig-reply`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ alertId, replyText, draftText, source, editReason, timingSuggestion }),
+                body: JSON.stringify({ alertId, replyText, draftText, source, editReason, timingSuggestion, forceText }),
             });
             const text = await res.text();
             return { statusCode: res.status, body: text || JSON.stringify({ ok: res.ok }) };
