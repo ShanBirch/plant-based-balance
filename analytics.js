@@ -4,7 +4,8 @@
 
     const ATTRIBUTION_KEYS = [
         'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
-        'fbclid', 'gclid', 'campaign_id', 'adset_id', 'ad_id', 'placement', 'site_source_name'
+        'fbclid', 'gclid', 'campaign_id', 'adset_id', 'ad_id', 'creative_id',
+        'placement', 'site_source_name', 'meta_ad_name', 'meta_ref'
     ];
     const FIRST_TOUCH_KEY = 'balance_first_touch';
     const LAST_TOUCH_KEY = 'balance_last_touch';
@@ -62,7 +63,6 @@
         const first = safeParse(localStorage.getItem(FIRST_TOUCH_KEY), {});
         const last = safeParse(localStorage.getItem(LAST_TOUCH_KEY), {});
         const session = safeParse(sessionStorage.getItem('utm_data'), {});
-        const details = cleanMetadata(metadata);
         return {
             ...last,
             ...session,
@@ -109,6 +109,7 @@
     function eventPayload(eventType, metadata) {
         const attribution = getAttribution();
         const fb = window.getFBParams();
+        const details = cleanMetadata(metadata);
         return {
             event_id: randomId('event'),
             event_type: eventType,
@@ -137,8 +138,11 @@
                 campaign_id: attribution.campaign_id || null,
                 adset_id: attribution.adset_id || null,
                 ad_id: attribution.ad_id || null,
+                creative_id: attribution.creative_id || null,
                 placement: attribution.placement || null,
                 site_source_name: attribution.site_source_name || null,
+                meta_ad_name: attribution.meta_ad_name || null,
+                meta_ref: attribution.meta_ref || null,
                 ...details,
             }),
         };

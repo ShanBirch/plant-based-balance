@@ -1228,16 +1228,44 @@ function normalizeMetaAdReferral(event) {
         safeObject(value.postback).referral,
     ].map(safeObject).filter(candidate => Object.keys(candidate).length > 0);
     const referral = candidates[0] || {};
+    const adsContext = safeObject(referral.ads_context_data);
+    const refererUri = cleanUrl(referral.referer_uri || referral.referrer_uri || referral.url) || null;
+    const referralCode = String(referral.ref || referral.referral_code || '').trim().slice(0, 500) || null;
+    const trackingSources = [];
+    if (refererUri) {
+        try {
+            trackingSources.push(new URL(refererUri).searchParams);
+        } catch {
+            // Ignore malformed referral URLs. The direct payload fields remain authoritative.
+        }
+    }
+    if (referralCode && referralCode.includes('=')) {
+        trackingSources.push(new URLSearchParams(referralCode.replace(/^\?/, '')));
+    }
+    const trackingParam = (...keys) => {
+        for (const params of trackingSources) {
+            for (const key of keys) {
+                const candidate = String(params.get(key) || '').trim();
+                if (candidate) return candidate.slice(0, 500);
+            }
+        }
+        return '';
+    };
     const source = String(referral.source || referral.referral_source || '').trim();
-    const adId = normalizeId(referral.ad_id || referral.adId || safeObject(referral.ads_context_data).ad_id);
+    const adId = normalizeId(referral.ad_id || referral.adId || adsContext.ad_id || trackingParam('ad_id'));
     const isAdsSource = /^(?:ads?|meta_ads?|instagram_ads?)$/i.test(source);
     if (!adId && !isAdsSource) return null;
     return {
         source: 'meta_ads',
         platform_source: source || 'ADS',
         ad_id: adId || null,
-        ref: String(referral.ref || referral.referral_code || '').trim().slice(0, 500) || null,
-        referer_uri: cleanUrl(referral.referer_uri || referral.referrer_uri || referral.url) || null,
+        campaign_id: normalizeId(referral.campaign_id || referral.campaignId || adsContext.campaign_id || trackingParam('campaign_id')) || null,
+        adset_id: normalizeId(referral.adset_id || referral.ad_set_id || referral.adsetId || adsContext.adset_id || adsContext.ad_set_id || trackingParam('adset_id', 'ad_set_id')) || null,
+        creative_id: normalizeId(referral.creative_id || referral.ad_creative_id || referral.creativeId || adsContext.creative_id || adsContext.ad_creative_id || trackingParam('creative_id', 'ad_creative_id')) || null,
+        placement: String(referral.placement || adsContext.placement || trackingParam('placement') || '').trim().slice(0, 200) || null,
+        ad_name: String(referral.ad_name || referral.ad_title || adsContext.ad_name || adsContext.ad_title || trackingParam('ad_name') || '').trim().slice(0, 500) || null,
+        ref: referralCode,
+        referer_uri: refererUri,
     };
 }
 
@@ -1740,6 +1768,10 @@ function mergeGraphCustomData(priorCustomData, {
                 message_id: messageId || null,
                 received_at: nowIso,
                 ad_id: effectiveReferral?.ad_id || null,
+                campaign_id: effectiveReferral?.campaign_id || null,
+                adset_id: effectiveReferral?.adset_id || null,
+                creative_id: effectiveReferral?.creative_id || null,
+                placement: effectiveReferral?.placement || null,
             };
         }
     }

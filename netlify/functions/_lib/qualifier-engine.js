@@ -217,7 +217,7 @@ function normalizeBehaviorProfile(raw = {}) {
 function hasDirectBuyerIntent(value) {
     const text = String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
     if (!text) return false;
-    return /^(?:how much|price\??|pricing\??|cost\??|what(?:'s| is) included\??|send (?:me )?(?:the )?(?:link|details)\b)/i.test(text)
+    return /^(?:how much|price\??|pricing\??|cost\??|what(?:'s| is) (?:actually )?included\??|what do i get\??|send (?:me )?(?:the )?(?:link|details)\b)/i.test(text)
         || /\b(?:can|could) you send (?:me )?(?:the )?(?:link|details)\b/i.test(text)
         || /\b(?:can|could|how do|where do) i (?:join|start|sign up|get (?:the )?(?:link|details))\b/i.test(text)
         || /\b(?:i(?:'m| am)|im) (?:in|keen|ready)(?:\b| to (?:join|start|sign up))/i.test(text)

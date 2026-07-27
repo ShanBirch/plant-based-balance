@@ -104,6 +104,7 @@ const {
     buildQualifierRelationshipBlock,
     cleanFactValue,
     isUnsafeStockDiscoveryQuestion,
+    hasDirectBuyerIntent,
     hasChallengeInviteReadinessSignal,
     countMeaningfulLeadReplies,
     hasEarnedChallengeInviteMoment,
@@ -1020,38 +1021,86 @@ function resolveMetaAdFlowVariant({ customData = {}, currentMessage = '' } = {})
     return broadPainSignal && !plantBasedSignal ? 'broad_pain' : 'plant_based_control';
 }
 
-function foundersPassCheckoutUrlForMessage(message = '', customData = {}) {
-    return resolveMetaAdFlowVariant({ customData, currentMessage: message }) === 'broad_pain'
+function buildMetaAdCheckoutUrl({ customData = {}, flowVariant = '', currentMessage = '' } = {}) {
+    const resolvedVariant = flowVariant || resolveMetaAdFlowVariant({ customData, currentMessage });
+    const baseUrl = resolvedVariant === 'broad_pain'
         ? FOUNDERS_PASS_BROAD_CHECKOUT_URL
         : FOUNDERS_PASS_CHECKOUT_URL;
+    const routing = customData?.current_inbound_routing || {};
+    const attribution = customData?.meta_ad_attribution || {};
+    const values = {
+        campaign_id: routing.campaign_id || attribution.campaign_id,
+        adset_id: routing.adset_id || attribution.adset_id || attribution.ad_set_id,
+        ad_id: routing.ad_id || attribution.ad_id,
+        creative_id: routing.creative_id || attribution.creative_id || attribution.ad_creative_id,
+        placement: routing.placement || attribution.placement,
+        meta_ad_name: attribution.ad_name || attribution.ad_title,
+        meta_ref: attribution.ref,
+    };
+    const url = new URL(baseUrl);
+    Object.entries(values).forEach(([key, value]) => {
+        const cleaned = String(value || '').replace(/\s+/g, ' ').trim().slice(0, 500);
+        if (cleaned) url.searchParams.set(key, cleaned);
+    });
+    return url.toString();
+}
+
+function foundersPassCheckoutUrlForMessage(message = '', customData = {}, flowVariant = '') {
+    return buildMetaAdCheckoutUrl({ customData, flowVariant, currentMessage: message });
+}
+
+function resolveMetaAdFirstReplyIntent(currentMessage = '') {
+    const text = String(currentMessage || '').toLowerCase().replace(/[’]/g, "'");
+    if (/right for me|would this suit|is this for me|good fit|would it work for me/.test(text)) return 'fit';
+    if (/do i need to (?:already )?be plant[ -]?based|already plant[ -]?based|not plant[ -]?based|vegan already|already vegan/.test(text)) {
+        return 'plant_based_requirement';
+    }
+    if (/\b(i'?m in|im in|ready to start|ready|let'?s do it|lets do it|sign me up|save me a spot|send (?:me )?(?:the )?link|how do i start|where do i start|start now)\b/.test(text)) {
+        return 'ready';
+    }
+    if (/\b(what(?:'s| is) (?:actually )?included|what do i get|inclusions?|details|tell me more|show me what(?:'s| is) included)\b/.test(text)) {
+        return 'inclusions';
+    }
+    return 'overview';
 }
 
 function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {}, flowVariant = '' } = {}) {
-    const text = String(currentMessage || '').toLowerCase();
-    const asksFit = /right for me|would this suit|is this for me|good fit/.test(text);
     const resolvedVariant = flowVariant || resolveMetaAdFlowVariant({ customData, currentMessage });
     const broadFlow = resolvedVariant === 'broad_pain';
-    const fitLine = asksFit
-        ? (broadFlow
-            ? '\n\nIt is built for people who want clear training, food structure and support that still works when life gets messy.'
-            : '\n\nIt is built for plant-based people who want clear training, food structure and support that still works when life gets messy.')
-        : '';
-    const checkoutUrl = broadFlow ? FOUNDERS_PASS_BROAD_CHECKOUT_URL : FOUNDERS_PASS_CHECKOUT_URL;
+    const intent = resolveMetaAdFirstReplyIntent(currentMessage);
+    const checkoutUrl = foundersPassCheckoutUrlForMessage(currentMessage, customData, resolvedVariant);
     const productLine = broadFlow
         ? 'Balance brings your weekly plan, training, progress, learning and community into one place.'
         : 'Balance brings your weekly plan, plant-based nutrition, progress, learning and community into one place.';
     const accessLine = broadFlow
         ? 'lifetime access to the core app and community.'
         : 'lifetime access to the core app and plant-based community.';
+    const supportScope = `The Founders Pass is AU$99 once. You get six weeks of one-to-one in-app support with me for questions, direction and accountability, then ${accessLine} Ongoing individual weekly plan reviews and adjustments are separate.`;
+    let answer;
+    if (intent === 'fit') {
+        const fitAudience = broadFlow
+            ? 'It is a good fit if you want clear training, food structure and support that still works when life gets messy.'
+            : 'It is a good fit if you want plant-based training, food structure and support that still works when life gets messy.';
+        answer = `${fitAudience}\n\n${supportScope}\n\nTell me what has been tripping you up and I will be straight with you about the fit.`;
+    } else if (intent === 'plant_based_requirement') {
+        answer = `No, you do not need to already be fully plant-based. Balance can meet you where you are and help you build the training and food structure step by step.\n\n${supportScope}`;
+    } else if (intent === 'ready') {
+        answer = `Love it. ${supportScope}\n\nYou can see the quick setup and start here: ${checkoutUrl}`;
+    } else if (intent === 'inclusions') {
+        answer = `${productLine}\n\n${supportScope}\n\nYou can see the full inclusions and start here: ${checkoutUrl}`;
+    } else {
+        answer = `${productLine}\n\n${supportScope}\n\nIf you want, I can help you work out whether it suits what you are trying to change.`;
+    }
     const chunks = [
-        broadFlow ? 'Hey, yeah of course. Here is the quick version 👇' :
-        `Hey, glad you messaged. Here is a quick look inside Balance so you can actually see what I mean 👇\n${FOUNDERS_PASS_APP_PREVIEW_URL}`,
-        `${productLine}${fitLine}\n\nThe Founders Pass is AU$99 once. You get six weeks of one-to-one in-app support with me, then ${accessLine}\n\nYou can see everything included and start here: ${checkoutUrl}`,
+        broadFlow
+            ? 'Hey, yeah of course. Here is the quick version.'
+            : `Hey, glad you messaged. Here is a quick look inside Balance so you can actually see what I mean.\n${FOUNDERS_PASS_APP_PREVIEW_URL}`,
+        answer,
     ];
     return {
         chunks,
         joined: chunks.join('\n\n'),
-        model: 'deterministic_meta_ad_founders_pass_v1',
+        model: 'deterministic_meta_ad_founders_pass_v2',
         replyMode: 'campaign_first_reply',
         maxChunks: 2,
         error: null,
@@ -1062,6 +1111,8 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
         reelThumbnailCount: 0,
         mediaDecode: {},
         flowVariant: resolvedVariant,
+        firstReplyIntent: intent,
+        checkoutUrl: ['ready', 'inclusions'].includes(intent) ? checkoutUrl : null,
         timeline: '',
         conversationEpisode: null,
         currentTurnAnchorBlock: '',
@@ -1070,6 +1121,20 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
         learningReelContextBlock: '',
         learningReelReplyAnchorBlock: '',
         learningReelEvidenceBlock: '',
+    };
+}
+
+function buildMetaAdFirstReplyApproval({ metaAdFirstInbound = false, draft = null } = {}) {
+    if (!metaAdFirstInbound || draft?.replyMode !== 'campaign_first_reply') return null;
+    return {
+        required: false,
+        code: draft.checkoutUrl ? 'approved_meta_ad_buyer_handoff' : 'approved_meta_ad_first_reply',
+        dot: '🟢',
+        label: draft.checkoutUrl ? 'approved Meta ad checkout handoff' : 'approved Meta ad first reply',
+        reason: draft.checkoutUrl
+            ? 'The verified Meta ad lead directly asked for details or to start, so the attributed checkout handoff is allowed.'
+            : 'The verified Meta ad first reply answers the selected prompt without sending a checkout link.',
+        detected_at: new Date().toISOString(),
     };
 }
 
@@ -1212,6 +1277,7 @@ function finalizeDraftChunksFromRawText(rawText, {
     qualifier = null,
     leadStage = null,
     linkedUserId = null,
+    checkoutUrl = '',
     nativeStoryContextSummary = null,
     knownContextText = '',
     hasDecodedMedia = false,
@@ -1225,6 +1291,7 @@ function finalizeDraftChunksFromRawText(rawText, {
         qualifier,
         leadStage,
         linkedUserId,
+        checkoutUrl,
     });
     const suppressClientLinkHandoff = (chunks) => suppressExistingClientSignupLinkHandoffInDraftChunks(chunks, {
         leadStage,
@@ -1636,22 +1703,25 @@ function pitchHintForStage(stage) {
     }
 }
 
-function challengeUrlForRoute(route) {
-    return ONE_ON_ONE_COACHING_URL;
+function challengeUrlForRoute(route, checkoutUrl = '') {
+    return checkoutUrl || ONE_ON_ONE_COACHING_URL;
 }
 
 const ONE_ON_ONE_COACHING_URL = FOUNDERS_PASS_CHECKOUT_URL;
 const BALANCE_CALL_BOOKING_URL = 'https://plantbased-balance.org/book';
 
-function buildOneOnOneCoachingBlock(flowVariant = 'plant_based_control') {
+function buildOneOnOneCoachingBlock(flowVariant = 'plant_based_control', checkoutUrl = '') {
+    const approvedCheckoutUrl = checkoutUrl || (flowVariant === 'broad_pain'
+        ? FOUNDERS_PASS_BROAD_CHECKOUT_URL
+        : ONE_ON_ONE_COACHING_URL);
     if (flowVariant === 'broad_pain') {
         return `
 
 BALANCE FOUNDERS PASS LINK:
 - This thread belongs to the broad Balance acquisition route. Keep the offer focused on fitness structure, follow-through, realistic routines, food guidance, coaching support and community. Do not introduce plant-based, vegan or vegetarian positioning unless the lead independently asks about it.
 - The Founders Pass is AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and community. It does not promise instant daily replies, unlimited access or fully customised weekly plan reviews.
-- Approved broad-route link: ${FOUNDERS_PASS_BROAD_CHECKOUT_URL}
-- Preserve the broad route and its UTM parameters. Do not switch to the plant-based landing page from a later generic message.
+- Approved broad-route link: ${approvedCheckoutUrl}
+- This exact URL carries the stored Meta attribution. Do not shorten it, rebuild it, remove its parameters or switch to the plant-based landing page from a later generic message.
 - When the latest message asks for the offer link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct Founders Pass/details invite, send the approved broad-route link in the draft.
 - Keep the handoff light and personal. Explain the six-week setup, app and community only to the level the lead asked for.
 - If they only ask a general help question and have not asked for offer details/link, answer the question first and use a low-pressure statement-led bridge only when the offer genuinely fits.
@@ -1661,7 +1731,8 @@ BALANCE FOUNDERS PASS LINK:
 
 BALANCE PLANT-BASED FITNESS FOUNDERS PASS LINK:
 - The primary DM offer is the Balance Plant-Based Fitness Founders Pass: AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. It does not promise instant daily replies, unlimited access or fully customised weekly plan reviews. Starter Coaching is the optional ongoing higher-touch upgrade. The normal path is explanation, acceptance, and checkout inside DMs.
-- Approved Founders Pass link: ${ONE_ON_ONE_COACHING_URL}
+- Approved Founders Pass link: ${approvedCheckoutUrl}
+- This exact URL carries the stored Meta attribution. Do not shorten it, rebuild it or remove its parameters.
 - Broad pain alternative: ${FOUNDERS_PASS_BROAD_CHECKOUT_URL}. Use this when their thread is about restarting, consistency, follow-through, work, kids, shifts or fitting training around real life and there is no plant-based signal. Never remove the UTM parameters.
 - When the latest message asks for the offer link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct Founders Pass/details invite, send the approved link in the draft.
 - If the latest message asks to reconnect with Balance, the app/helper, login, password, account access, or any app bug, treat it as support first and do not send the coaching link.
@@ -1685,7 +1756,7 @@ BALANCE CALL BOOKING:
 - The booking link is an approved lead handoff. Once the lead has clearly asked for or accepted the call, the normal lead-manager send path can deliver it after its usual thread readback. It is not a Needs You reason by itself.`;
 }
 
-function buildChallengeNextStepBlock(qualifier, currentMessageText = '') {
+function buildChallengeNextStepBlock(qualifier, currentMessageText = '', checkoutUrl = '') {
     if (!qualifier || typeof qualifier !== 'object') return '';
     if (isAppReconnectOrAccountSupportRequest(currentMessageText)) {
         return `
@@ -1699,7 +1770,7 @@ The newest message is about Balance/app/helper reconnection, account access, log
 - If no fix evidence is available yet, write as Shannon taking ownership: he will check it properly and get it sorted, then confirm once fixed.
 - Do not mention AI, automation, or an assistant. Keep the wording as Shannon personally helping them get sorted.`;
     }
-    const url = challengeUrlForRoute(qualifier.challenge_route || 'generic');
+    const url = challengeUrlForRoute(qualifier.challenge_route || 'generic', checkoutUrl);
     if (qualifier.stage === 'won' && isCurrentChallengeHandoffMoment({ qualifier, currentMessage: currentMessageText })) {
         return `
 
@@ -1774,7 +1845,7 @@ function isSignupLinkHandoffText(text) {
 }
 
 function isApprovedChallengeBioLinkText(text) {
-    return /https?:\/\/(?:(?:www\.)?plantbased-balance\.org\/(?:vegan-fitness|coaching)\.html|future-balance\.netlify\.app\/coaching\.html)\b/i.test(String(text || ''));
+    return /https?:\/\/(?:(?:www\.)?plantbased-balance\.org\/(?:vegan-fitness|coaching|plant-based-fitness)\.html|future-balance\.netlify\.app\/(?:coaching|fitness-coaching)\.html)\b/i.test(String(text || ''));
 }
 
 function isBalanceCallBookingLinkText(text) {
@@ -1795,6 +1866,7 @@ function isPositiveChallengeLinkConfirmationText(text) {
 
 function isCurrentChallengeHandoffMoment({ qualifier, currentMessage } = {}) {
     if (isAppReconnectOrAccountSupportRequest(currentMessage)) return false;
+    if (hasDirectBuyerIntent(currentMessage)) return true;
     if (hasChallengeInviteReadinessSignal(currentMessage)) return true;
     const stage = String(qualifier?.stage || '').toLowerCase();
     return ['pitched', 'won'].includes(stage) && isPositiveChallengeLinkConfirmationText(currentMessage);
@@ -1843,7 +1915,7 @@ function suppressExistingClientSignupLinkHandoffInDraftChunks(chunks, { leadStag
     return cleaned;
 }
 
-function repairMissingChallengeBioLinkChunks(chunks, { maxChunks = MAX_CHUNKS, currentMessageText = '', qualifier = null, leadStage = null, linkedUserId = null } = {}) {
+function repairMissingChallengeBioLinkChunks(chunks, { maxChunks = MAX_CHUNKS, currentMessageText = '', qualifier = null, leadStage = null, linkedUserId = null, checkoutUrl = '' } = {}) {
     const list = Array.isArray(chunks) ? chunks.map(c => String(c || '').trim()).filter(Boolean) : [];
     if (!list.length) return list;
     if (isExistingClientThread({ leadStage, linkedUserId })) return list;
@@ -1854,7 +1926,7 @@ function repairMissingChallengeBioLinkChunks(chunks, { maxChunks = MAX_CHUNKS, c
     const allowed = isCurrentChallengeHandoffMoment({ qualifier, currentMessage: currentMessageText });
     if (!allowed) return list;
 
-    const url = challengeUrlForRoute(qualifier?.challenge_route || 'generic');
+    const url = challengeUrlForRoute(qualifier?.challenge_route || 'generic', checkoutUrl);
     if (list.length < maxChunks) return [...list, url];
 
     const next = [...list];
@@ -1882,6 +1954,9 @@ function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linke
     if (!isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId })) return null;
     const draftHasLinkDrop = isSignupLinkHandoffText(draftText);
     const acceptedCoaching = isCurrentChallengeHandoffMoment({ qualifier, currentMessage });
+    const visibleHandoffUrl = (String(draftText || '').match(/https?:\/\/\S+/gi) || [])
+        .map(url => url.replace(/[),.!?]+$/, ''))
+        .find(url => isApprovedChallengeBioLinkText(url)) || '';
     if (!draftHasLinkDrop && !acceptedCoaching) return null;
 
     if (isApprovedChallengeBioHandoffAllowed({ draftText, qualifier, currentMessage })) {
@@ -1891,7 +1966,7 @@ function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linke
             operator_queue: null,
             style_note: 'Approved coaching link handoff can send once the lead has accepted or asked for the next step.',
             signup_link_manual_only: false,
-            signup_link_handoff_url: ONE_ON_ONE_COACHING_URL,
+            signup_link_handoff_url: visibleHandoffUrl || ONE_ON_ONE_COACHING_URL,
             approved_link_auto_sendable: true,
             codex_review: {
                 source: 'ig-instant-draft',
@@ -3043,7 +3118,7 @@ This exact draft will be spoken in Shannon's approved voice-note voice, not sent
 - Prefer one fuller message bubble so the audio reads as one connected note. Return to concise text for links, prices, or detailed instructions.`;
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount, coachId = null, audioTranscriptOverrides = [], personalVoiceNoteMode = false, adFlowVariant = 'plant_based_control' }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount, coachId = null, audioTranscriptOverrides = [], personalVoiceNoteMode = false, adFlowVariant = 'plant_based_control', checkoutUrl = '' }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -3261,8 +3336,8 @@ Use this batch as context, not a checklist. First decide what is still live: dir
     // still 'new' — linked_user_id is the truth, the column lags.
     const isOnboardedOrPostFunnel = !isSalesLeadThread;
     const funnelContext = isOnboardedOrPostFunnel ? '' : META_AD_FUNNEL_CONTEXT;
-    const challengeNextStepBlock = isOnboardedOrPostFunnel ? '' : buildChallengeNextStepBlock(qualifier, currentMessageText);
-    const oneOnOneCoachingBlock = isOnboardedOrPostFunnel ? '' : buildOneOnOneCoachingBlock(adFlowVariant);
+    const challengeNextStepBlock = isOnboardedOrPostFunnel ? '' : buildChallengeNextStepBlock(qualifier, currentMessageText, checkoutUrl);
+    const oneOnOneCoachingBlock = isOnboardedOrPostFunnel ? '' : buildOneOnOneCoachingBlock(adFlowVariant, checkoutUrl);
     const balanceCallBookingBlock = isOnboardedOrPostFunnel ? '' : buildBalanceCallBookingBlock();
     const qualifierRelationshipBlock = buildQualifierRelationshipBlock(qualifier);
 
@@ -3668,6 +3743,7 @@ Rules:
         qualifier,
         leadStage,
         linkedUserId,
+        checkoutUrl,
         nativeStoryContextSummary: nativeStoryOutreachContext?.summary || null,
         knownContextText: totalConversationText,
         hasDecodedMedia,
@@ -4109,6 +4185,11 @@ exports.handler = async (event) => {
         customData: thread.custom_data,
         currentMessage: messageText,
     });
+    const metaAdCheckoutUrl = foundersPassCheckoutUrlForMessage(
+        messageText,
+        thread.custom_data,
+        metaAdFlowVariant
+    );
     const exerciseConversationFastLane = isExerciseConversationFastLaneEligible({
         linkedUserId: thread.linked_user_id,
         currentMessage: messageText,
@@ -4619,6 +4700,7 @@ exports.handler = async (event) => {
             audioTranscriptOverrides,
             personalVoiceNoteMode: outboundVoiceMessage,
             adFlowVariant: metaAdFlowVariant,
+            checkoutUrl: metaAdCheckoutUrl,
         });
     } catch (err) {
         console.error('[ig-draft] draft generation threw after stale-send cleanup:', err.message);
@@ -4745,6 +4827,8 @@ exports.handler = async (event) => {
         leadStage: effectiveLeadStage,
     });
     let challengeOfferWarning = buildChallengeOfferWarning({ draftText: draft.joined, qualifier, currentMessage: displayMessage });
+    challengeOfferWarning = buildMetaAdFirstReplyApproval({ metaAdFirstInbound, draft })
+        || challengeOfferWarning;
     const leadOnboardingHandoffData = buildLeadOnboardingHandoffData({
         draftText: draft.joined,
         qualifier,
@@ -4863,6 +4947,9 @@ exports.handler = async (event) => {
             meta_ad_conversation_fast_lane: metaAdConversationFastLane || undefined,
             exercise_conversation_fast_lane: exerciseConversationFastLane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : metaAdFlowVariant,
+            meta_ad_first_reply_intent: metaAdFirstInbound ? draft.firstReplyIntent : undefined,
+            meta_ad_checkout_url: draft.checkoutUrl || undefined,
+            meta_ad_attribution: metaAdFastLane ? (thread.custom_data?.meta_ad_attribution || undefined) : undefined,
             outbound_voice_message: outboundVoiceMessage || undefined,
             outbound_voice_message_reason: outboundVoiceMessageReason || undefined,
             inbound_voice_message: inboundVoiceMessage || undefined,
@@ -5095,6 +5182,11 @@ exports.handler = async (event) => {
             meta_ad_conversation_fast_lane: metaAdConversationFastLane || existingPending.data?.meta_ad_conversation_fast_lane || existingPending.data?.meta_ad_active_conversation_fast_lane || undefined,
             exercise_conversation_fast_lane: exerciseConversationFastLane || existingPending.data?.exercise_conversation_fast_lane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : (metaAdFlowVariant || existingPending.data?.meta_ad_flow_variant || undefined),
+            meta_ad_first_reply_intent: metaAdFirstInbound ? draft.firstReplyIntent : existingPending.data?.meta_ad_first_reply_intent,
+            meta_ad_checkout_url: draft.checkoutUrl || existingPending.data?.meta_ad_checkout_url || undefined,
+            meta_ad_attribution: metaAdFastLane
+                ? (thread.custom_data?.meta_ad_attribution || existingPending.data?.meta_ad_attribution || undefined)
+                : existingPending.data?.meta_ad_attribution,
             outbound_voice_message: coalescedOutboundVoiceMessage || undefined,
             outbound_voice_message_reason: coalescedOutboundVoiceMessage ? coalescedOutboundVoiceReason : undefined,
             inbound_voice_message: inboundVoiceMessage || existingPending.data?.inbound_voice_message || undefined,
@@ -5820,7 +5912,10 @@ exports._test = {
     isMetaAdConversationFastLaneEligible,
     isExerciseConversationFastLaneEligible,
     resolveMetaAdFlowVariant,
+    resolveMetaAdFirstReplyIntent,
+    buildMetaAdCheckoutUrl,
     buildMetaAdFoundersPassFirstReply,
+    buildMetaAdFirstReplyApproval,
     collectCocosAutoRepairIssues,
     shouldAttemptCocosDraftRepair,
     repairRequiresQuestionFreeReply,

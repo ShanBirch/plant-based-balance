@@ -234,11 +234,23 @@ const adReferral = instagramWebhook.normalizeMetaAdReferral({
             source: 'ADS',
             ad_id: '2385000012345',
             ref: 'balance_founders_reel',
+            campaign_id: '2385000000001',
+            adset_id: '2385000000002',
+            ads_context_data: {
+                creative_id: '2385000000003',
+                ad_title: 'A1 Brain Angle',
+            },
+            placement: 'instagram_reels',
         },
     },
 });
 assert.equal(adReferral.source, 'meta_ads');
 assert.equal(adReferral.ad_id, '2385000012345');
+assert.equal(adReferral.campaign_id, '2385000000001');
+assert.equal(adReferral.adset_id, '2385000000002');
+assert.equal(adReferral.creative_id, '2385000000003');
+assert.equal(adReferral.placement, 'instagram_reels');
+assert.equal(adReferral.ad_name, 'A1 Brain Angle');
 
 assert.equal(instagramWebhook.normalizeMetaAdReferral({
     item: { referral: { source: 'SHORTLINK', ref: 'profile_link' } },
@@ -259,6 +271,9 @@ assert.equal(adThreadData.acquisition_source, 'native_story_outreach');
 assert.equal(adThreadData.latest_paid_acquisition, 'meta_ads');
 assert.equal(adThreadData.current_inbound_routing.source, 'meta_ads');
 assert.equal(adThreadData.current_inbound_routing.message_id, 'mid-ad-1');
+assert.equal(adThreadData.current_inbound_routing.campaign_id, '2385000000001');
+assert.equal(adThreadData.current_inbound_routing.adset_id, '2385000000002');
+assert.equal(adThreadData.current_inbound_routing.creative_id, '2385000000003');
 
 assert.equal(instantDraft.isCurrentMetaAdInbound({
     customData: adThreadData,
