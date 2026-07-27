@@ -429,12 +429,11 @@
 # Automated YouTube reel outreach is intentionally disabled. The function is
 # also hard-stopped in its handler so a manual invocation cannot send a reel.
 
-# Client/lead manager - routes permanent people, media, AI suspicion,
-# confused replies, and missing context into Needs You. Runs every 20 minutes
-# to keep hot Starter Coaching handoffs moving without over-polling.
-# Code gates work to 05:00-02:00 Brisbane; the 02:00-04:59 block is paused.
+# Client/lead manager - routes genuine holds into Needs You and provides a
+# cloud fallback for clean reviewed unlinked-lead replies when the local
+# final-review manager is unavailable. Runs 24 hours a day.
 [functions."client-lead-manager"]
-  schedule = "*/20 * * * *"
+  schedule = "*/10 * * * *"
 
 # Support Radar - daily human-support pass across app activity + chats.
 # Creates only high-signal Needs You check-ins, capped and deduped.

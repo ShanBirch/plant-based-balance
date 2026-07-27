@@ -11,6 +11,10 @@ assert.strictEqual(manager.resolveAiDraftReviewLimit('0'), 0);
 assert.strictEqual(manager.resolveAiDraftReviewLimit('3'), 3);
 assert.strictEqual(manager.resolveAiDraftReviewLimit('200'), 80);
 assert.strictEqual(manager.resolveAiDraftReviewLimit('bad'), 8);
+assert.strictEqual(manager.resolveCleanLeadCloudFallbackLimit(undefined), 8);
+assert.strictEqual(manager.resolveCleanLeadCloudFallbackLimit('0'), 0);
+assert.strictEqual(manager.resolveCleanLeadCloudFallbackLimit('4'), 4);
+assert.strictEqual(manager.resolveCleanLeadCloudFallbackLimit('200'), 80);
 
 function makeAlert(overrides = {}) {
     return {
@@ -757,6 +761,94 @@ assert.strictEqual(schedulePatch.scheduled_for, '2026-06-22T00:02:00.000Z');
 assert.strictEqual(schedulePatch.data.scheduled_via, 'auto_send');
 assert.strictEqual(schedulePatch.data.auto_send_review_approved_by, 'balance-lead-client-manager');
 assert.strictEqual(schedulePatch.data.client_manager_auto_schedule_reason, 'approved_starter_coaching_link_handoff');
+assert.strictEqual(
+    manager.shouldAutoScheduleCleanLeadCloudFallback(approvedCoachingHandoff, approvedCoachingClassification),
+    false,
+    'approved sales handoffs keep their dedicated accelerated path'
+);
+
+const cleanCloudFallbackLead = makeAlert({
+    suggested_message: 'yeah getting the bag ready the night before should take the thinking out of it',
+    data: {
+        ig_thread_id: 'thread-clean-lead',
+        message_preview: 'I think I just overthink going to the gym',
+        qualifier: { commercial_stage: 'problem_qualified' },
+        draft_review: {
+            verdict: 'pass',
+            confidence: 0.91,
+            issues: [],
+            notification_required: false,
+            context_loss_suspected: false,
+            reviewed_at: '2026-07-28T00:00:00.000Z',
+        },
+    },
+});
+const cleanCloudFallbackClassification = manager.classifyNeedsYou(cleanCloudFallbackLead);
+assert.strictEqual(cleanCloudFallbackClassification.shouldRoute, false);
+assert.strictEqual(
+    manager.shouldAutoScheduleCleanLeadCloudFallback(cleanCloudFallbackLead, cleanCloudFallbackClassification),
+    true
+);
+const cleanCloudFallbackPatch = manager.buildCleanLeadCloudFallbackSchedulePatch(
+    cleanCloudFallbackLead,
+    new Date('2026-07-28T00:00:00.000Z')
+);
+assert.strictEqual(cleanCloudFallbackPatch.status, 'scheduled');
+assert.strictEqual(cleanCloudFallbackPatch.scheduled_for, '2026-07-28T00:04:00.000Z');
+assert.strictEqual(cleanCloudFallbackPatch.data.scheduled_via, 'auto_send');
+assert.strictEqual(cleanCloudFallbackPatch.data.cloud_dm_manager_fallback, true);
+assert.strictEqual(cleanCloudFallbackPatch.data.client_manager_auto_schedule_reason, 'clean_unlinked_lead_cloud_fallback');
+assert.strictEqual(manager.containsCommercialDecisionText('normal gym chat'), false);
+assert.strictEqual(manager.containsCommercialDecisionText('I reckon Balance would suit you, want me to send the details?'), true);
+
+for (const unsafeFallback of [
+    makeAlert({
+        client_id: 'linked-client',
+        suggested_message: 'yep sounds good',
+        data: { ig_thread_id: 'thread-linked', draft_review: { verdict: 'pass', confidence: 0.9, issues: [] } },
+    }),
+    makeAlert({
+        suggested_message: 'here is the link https://example.com',
+        data: { ig_thread_id: 'thread-url', draft_review: { verdict: 'pass', confidence: 0.9, issues: [] } },
+    }),
+    makeAlert({
+        suggested_message: 'tell me more',
+        data: {
+            ig_thread_id: 'thread-voice',
+            audio_url_count: 1,
+            draft_review: { verdict: 'pass', confidence: 0.9, issues: [] },
+        },
+    }),
+    makeAlert({
+        suggested_message: 'want me to send the details?',
+        data: {
+            ig_thread_id: 'thread-buyer',
+            qualifier: { commercial_stage: 'buyer_intent' },
+            draft_review: { verdict: 'pass', confidence: 0.9, issues: [] },
+        },
+    }),
+    makeAlert({
+        suggested_message: 'Honestly, this is exactly what I help with inside Balance.',
+        data: {
+            ig_thread_id: 'thread-unflagged-offer',
+            qualifier: { commercial_stage: 'problem_qualified' },
+            draft_review: { verdict: 'pass', confidence: 0.9, issues: [] },
+        },
+    }),
+    makeAlert({
+        suggested_message: 'try logging in again',
+        data: {
+            ig_thread_id: 'thread-support',
+            message_preview: 'the Balance app login is not working',
+            draft_review: { verdict: 'pass', confidence: 0.9, issues: [] },
+        },
+    }),
+]) {
+    assert.strictEqual(
+        manager.shouldAutoScheduleCleanLeadCloudFallback(unsafeFallback, manager.classifyNeedsYou(unsafeFallback)),
+        false
+    );
+}
 
 const approvedCallBookingHandoff = makeAlert({
     suggested_message: "yeah for sure, grab a time that works for you here: https://plantbased-balance.org/book",

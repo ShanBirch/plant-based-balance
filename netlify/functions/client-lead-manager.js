@@ -1,9 +1,11 @@
 /**
- * client-lead-manager - scheduled Needs You router.
+ * client-lead-manager - scheduled Needs You router and clean-lead fallback.
  *
  * Runs over pending DM alerts and stamps the cases Shannon explicitly needs
  * to inspect. For unlinked leads, Needs You is deliberately limited to a
  * credible current danger signal or an explicit AI/authenticity challenge.
+ * Clean reviewed unlinked-lead text may be scheduled through the shared
+ * controller when the deeper local manager is unavailable.
  */
 
 const {
@@ -26,7 +28,6 @@ const {
     classifyExerciseLibrarySupport,
 } = require('./_lib/exercise-library-search');
 const {
-    coachDmManagerWindowLabel,
     isCoachDmManagerWorkingTime,
 } = require('./_lib/coach-dm-working-hours');
 const {
@@ -42,6 +43,8 @@ const APPROVED_COACHING_URL = 'https://plantbased-balance.org/plant-based-fitnes
 const LEGACY_APPROVED_COACHING_URL = 'https://plantbased-balance.org/coaching.html';
 const APPROVED_BOOKING_URL = 'https://plantbased-balance.org/book';
 const APPROVED_COACHING_LINK_SEND_DELAY_MS = 2 * 60 * 1000;
+const CLEAN_LEAD_CLOUD_FALLBACK_SEND_DELAY_MS = 4 * 60 * 1000;
+const DEFAULT_CLEAN_LEAD_CLOUD_FALLBACK_LIMIT = 8;
 
 function parseNonNegativeInteger(value, fallback) {
     const n = Number(value);
@@ -51,6 +54,10 @@ function parseNonNegativeInteger(value, fallback) {
 
 function resolveAiDraftReviewLimit(value = process.env.CLIENT_LEAD_MANAGER_AI_REVIEW_LIMIT) {
     return Math.min(MAX_PER_RUN, parseNonNegativeInteger(value, DEFAULT_AI_DRAFT_REVIEWS_PER_RUN));
+}
+
+function resolveCleanLeadCloudFallbackLimit(value = process.env.CLIENT_LEAD_MANAGER_CLOUD_FALLBACK_LIMIT) {
+    return Math.min(MAX_PER_RUN, parseNonNegativeInteger(value, DEFAULT_CLEAN_LEAD_CLOUD_FALLBACK_LIMIT));
 }
 
 function normalizeDraftReview(data = {}) {
@@ -647,6 +654,86 @@ function buildApprovedCoachingAutoSchedulePatch(alert = {}, now = new Date()) {
     };
 }
 
+function containsCommercialDecisionText(...values) {
+    const text = values.map(value => String(value || '')).join(' ').toLowerCase();
+    return /founders? pass|plant-based fitness|inside balance|join balance|sign\s*up|checkout|\$\s*99|99\s*(?:once|one[- ]?time)|one[- ]?time (?:price|payment)|lifetime access|six weeks? (?:with me|of coaching|support)|work with me|coaching (?:offer|package|program)|send you (?:the )?(?:details|link)|want me to send|book (?:a )?call|booking link|how (?:do|can) i (?:join|start)|ready to (?:join|start)/i.test(text);
+}
+
+function shouldAutoScheduleCleanLeadCloudFallback(alert = {}, classification = {}) {
+    if (!alert || alert.status !== 'pending') return false;
+    if (classification?.shouldRoute || !isAcquisitionLeadAlert(alert)) return false;
+    if (hasApprovedCoachingLinkHandoff(alert)) return false;
+
+    const data = alert.data || {};
+    const review = normalizeDraftReview(data);
+    const reviewIssues = Array.isArray(review.issues) ? review.issues.filter(Boolean) : [];
+    const contextReview = buildContextReviewInfo(alert);
+    const draftText = normalizeCoachDraftText(alert.suggested_message || data.draft_text || '').trim();
+    const commercialStage = String(data.qualifier?.commercial_stage || '').toLowerCase();
+    const appProblemHold = getAppProblemAutoSendHoldReason({
+        currentMessage: latestLeadText(data),
+        draftText,
+        alertData: data,
+    });
+
+    if (!data.ig_thread_id || !draftText || !draftReviewPassedForAutoSend(data)) return false;
+    if (reviewIssues.length > 0 || contextReview.required === true) return false;
+    if (leadMediaContextMissing(data, buildMediaReviewInfo(alert))) return false;
+    if (hasVoiceNoteEvidence(data) || getMediaContextCounts(data).audioUrl > 0) return false;
+    if (appProblemHold) return false;
+    if (data.client_manager_review_required === true
+        || data.needs_you_required === true
+        || data.needs_shannon_approval === true
+        || data.linked_client_manual_review === true
+        || data.permanent_needs_you_draft_only === true) return false;
+    if (data.sales_moment === true
+        || data.call_booking_handoff === true
+        || ['offer_ready', 'buyer_intent'].includes(commercialStage)) return false;
+    if (containsCommercialDecisionText(draftText, latestLeadText(data))) return false;
+    if (/https?:\/\/\S+/i.test(draftText)) return false;
+    if (String(data.draft_reply_mode || '').toLowerCase() === 'voice') return false;
+    return true;
+}
+
+function buildCleanLeadCloudFallbackSchedulePatch(alert = {}, now = new Date()) {
+    const data = alert.data || {};
+    const nowIso = now.toISOString();
+    const scheduledFor = new Date(now.getTime() + CLEAN_LEAD_CLOUD_FALLBACK_SEND_DELAY_MS).toISOString();
+    const replyText = normalizeCoachDraftText(alert.suggested_message || data.draft_text || '').trim();
+    return {
+        status: 'scheduled',
+        scheduled_for: scheduledFor,
+        scheduled_reply_text: replyText,
+        scheduled_at: nowIso,
+        data: {
+            ...data,
+            scheduled_via: 'auto_send',
+            scheduled_was_edited: false,
+            scheduled_send_in_ms: CLEAN_LEAD_CLOUD_FALLBACK_SEND_DELAY_MS,
+            schedule_reason: 'Cloud DM manager fallback approved a clean unlinked-lead reply after draft and safety review.',
+            auto_send_review_approved_at: nowIso,
+            auto_send_review_approved_by: MANAGER_SOURCE,
+            client_manager_auto_scheduled_at: nowIso,
+            client_manager_auto_schedule_reason: 'clean_unlinked_lead_cloud_fallback',
+            cloud_dm_manager_fallback: true,
+            reply_timing_choice: {
+                action: 'schedule',
+                chosen_delay_ms: CLEAN_LEAD_CLOUD_FALLBACK_SEND_DELAY_MS,
+                chosen_at: nowIso,
+                source: 'auto_send',
+            },
+            reply_timing_suggestion: {
+                action: 'schedule',
+                delay_ms: CLEAN_LEAD_CLOUD_FALLBACK_SEND_DELAY_MS,
+                label: '4 min',
+                reason: 'Cloud fallback reviewed the clean lead reply and preserved a short human pacing window.',
+                confidence: 0.9,
+                signals: { clean_unlinked_lead_cloud_fallback: true },
+            },
+        },
+    };
+}
+
 function formatReviewList(items, mapper) {
     const rows = (Array.isArray(items) ? items : [])
         .map(mapper)
@@ -1078,11 +1165,106 @@ async function scheduleApprovedCoachingHandoff(alert) {
     };
 }
 
-async function runClientLeadManager({ limit = MAX_PER_RUN, aiDraftReviewLimit = resolveAiDraftReviewLimit() } = {}) {
+async function scheduleCleanLeadCloudFallback(alert) {
+    const threadId = String(alert.data?.ig_thread_id || '').trim();
+    const runId = `client-lead-manager-cloud:${alert.id}:${Date.now()}`;
+    const claimed = await supabaseQuery('rpc/claim_ig_next_actions', {
+        method: 'POST',
+        body: {
+            p_owner: 'dm_manager',
+            p_limit: 1,
+            p_lease_seconds: 120,
+            p_run_id: runId,
+            p_thread_ids: [threadId],
+        },
+        prefer: 'return=representation',
+    });
+    const action = claimed?.[0] || null;
+    if (!action?.id || !action?.claim_token || action.thread_id !== threadId) return null;
+
+    const patch = buildCleanLeadCloudFallbackSchedulePatch(alert);
+    let scheduled = null;
+    try {
+        const rows = await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alert.id)}&status=eq.pending`, {
+            method: 'PATCH',
+            body: patch,
+            prefer: 'return=representation',
+        });
+        scheduled = rows?.[0] || null;
+    } catch (error) {
+        try {
+            await supabaseQuery('rpc/complete_ig_next_action', {
+                method: 'POST',
+                body: {
+                    p_action_id: action.id,
+                    p_claim_token: action.claim_token,
+                    p_status: 'waiting',
+                    p_safe_after: new Date().toISOString(),
+                    p_receipt: {
+                        run_id: runId,
+                        alert_id: alert.id,
+                        cloud_dm_manager_fallback: true,
+                        outbound_attempted: false,
+                        decision: 'cloud_schedule_failed',
+                        error: String(error.message || error).slice(0, 500),
+                    },
+                },
+                prefer: 'return=representation',
+            });
+        } catch (releaseError) {
+            console.warn('[client-lead-manager] failed to release controller after schedule error:', releaseError.message);
+        }
+        throw error;
+    }
+
+    const safeAfter = scheduled
+        ? new Date(new Date(patch.scheduled_for).getTime() + (2 * 60 * 1000)).toISOString()
+        : new Date().toISOString();
+    const completion = await supabaseQuery('rpc/complete_ig_next_action', {
+        method: 'POST',
+        body: {
+            p_action_id: action.id,
+            p_claim_token: action.claim_token,
+            p_status: 'waiting',
+            p_safe_after: safeAfter,
+            p_receipt: {
+                run_id: runId,
+                alert_id: alert.id,
+                scheduled_for: scheduled ? patch.scheduled_for : null,
+                scheduled_reply_text: scheduled ? patch.scheduled_reply_text : null,
+                cloud_dm_manager_fallback: true,
+                outbound_attempted: false,
+                conversation_move: scheduled ? 'scheduled_reply' : 'none',
+                decision: scheduled ? 'cloud_reply_scheduled' : 'cloud_schedule_conflict',
+                progression_deferred_reason: scheduled
+                    ? 'awaiting_scheduled_worker_and_canonical_readback'
+                    : 'alert_was_no_longer_pending',
+            },
+        },
+        prefer: 'return=representation',
+    });
+    if (!scheduled) return null;
+    return {
+        id: alert.id,
+        action_id: action.id,
+        client_name: alert.client_name || patch.data.profile_name || patch.data.ig_username || null,
+        scheduled_for: patch.scheduled_for,
+        controller_status: completion?.status || completion?.[0]?.status || 'waiting',
+        reason: 'clean unlinked-lead cloud fallback',
+    };
+}
+
+async function runClientLeadManager({
+    limit = MAX_PER_RUN,
+    aiDraftReviewLimit = resolveAiDraftReviewLimit(),
+    cleanLeadCloudFallbackLimit = resolveCleanLeadCloudFallbackLimit(),
+} = {}) {
     const alerts = await loadPendingDmAlerts(limit);
     const routed = [];
     const autoScheduled = [];
+    const cloudFallbackScheduled = [];
     let autoScheduleFailed = 0;
+    let cloudFallbackFailed = 0;
     let aiDraftReviewsAttempted = 0;
     let aiDraftReviewsSkipped = 0;
     const maxAiDraftReviews = parseNonNegativeInteger(aiDraftReviewLimit, DEFAULT_AI_DRAFT_REVIEWS_PER_RUN);
@@ -1112,6 +1294,17 @@ async function runClientLeadManager({ limit = MAX_PER_RUN, aiDraftReviewLimit = 
                 autoScheduleFailed++;
                 console.warn('[client-lead-manager] approved coaching handoff schedule failed:', error.message);
             }
+            continue;
+        }
+        if (cloudFallbackScheduled.length < cleanLeadCloudFallbackLimit
+            && shouldAutoScheduleCleanLeadCloudFallback(reviewedAlert, classification)) {
+            try {
+                const scheduled = await scheduleCleanLeadCloudFallback(reviewedAlert);
+                if (scheduled) cloudFallbackScheduled.push(scheduled);
+            } catch (error) {
+                cloudFallbackFailed++;
+                console.warn('[client-lead-manager] clean lead cloud fallback schedule failed:', error.message);
+            }
         }
     }
     return {
@@ -1119,33 +1312,20 @@ async function runClientLeadManager({ limit = MAX_PER_RUN, aiDraftReviewLimit = 
         routed: routed.length,
         auto_scheduled: autoScheduled.length,
         auto_schedule_failed: autoScheduleFailed,
+        cloud_fallback_scheduled: cloudFallbackScheduled.length,
+        cloud_fallback_failed: cloudFallbackFailed,
+        cloud_fallback_limit: cleanLeadCloudFallbackLimit,
         ai_draft_reviews_attempted: aiDraftReviewsAttempted,
         ai_draft_review_limit: maxAiDraftReviews,
         ai_draft_reviews_skipped: aiDraftReviewsSkipped,
         routed_alerts: routed,
         auto_scheduled_alerts: autoScheduled,
+        cloud_fallback_scheduled_alerts: cloudFallbackScheduled,
     };
 }
 
 exports.handler = async () => {
     try {
-        const now = new Date();
-        if (!isCoachDmManagerWorkingTime(now)) {
-            const checkedAt = now.toISOString();
-            console.info('[client-lead-manager] paused outside working window', JSON.stringify({
-                at: checkedAt,
-                working_window: coachDmManagerWindowLabel(),
-            }));
-            return {
-                statusCode: 200,
-                body: JSON.stringify({
-                    ok: true,
-                    paused: true,
-                    checked_at: checkedAt,
-                    working_window: coachDmManagerWindowLabel(),
-                }),
-            };
-        }
         const result = await runClientLeadManager();
         console.info('[client-lead-manager] scheduled run complete', JSON.stringify({
             at: new Date().toISOString(),
@@ -1153,6 +1333,9 @@ exports.handler = async () => {
             routed: result.routed,
             auto_scheduled: result.auto_scheduled,
             auto_schedule_failed: result.auto_schedule_failed,
+            cloud_fallback_scheduled: result.cloud_fallback_scheduled,
+            cloud_fallback_failed: result.cloud_fallback_failed,
+            cloud_fallback_limit: result.cloud_fallback_limit,
             ai_draft_reviews_attempted: result.ai_draft_reviews_attempted,
             ai_draft_review_limit: result.ai_draft_review_limit,
             ai_draft_reviews_skipped: result.ai_draft_reviews_skipped,
@@ -1196,6 +1379,7 @@ exports._test = {
     buildDraftReviewContextBlocks,
     shouldRunDraftReview,
     resolveAiDraftReviewLimit,
+    resolveCleanLeadCloudFallbackLimit,
     isAcquisitionLeadAlert,
     leadMediaContextMissing,
     leadAudioBatchPartiallyDecoded,
@@ -1204,6 +1388,9 @@ exports._test = {
     hasApprovedCoachingLinkHandoff,
     shouldAutoScheduleApprovedCoachingHandoff,
     buildApprovedCoachingAutoSchedulePatch,
+    containsCommercialDecisionText,
+    shouldAutoScheduleCleanLeadCloudFallback,
+    buildCleanLeadCloudFallbackSchedulePatch,
     draftAsksRedundantCurrentStatusQuestion,
     draftRepeatsCurrentStatusQuestion,
     isCoachDmManagerWorkingTime,
