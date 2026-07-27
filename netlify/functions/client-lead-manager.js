@@ -773,6 +773,15 @@ function classifyNeedsYou(alert = {}) {
         alertData: data,
     });
 
+    const currentClientId = alert.client_id || data.linked_user_id || null;
+    if (currentClientId) {
+        reasons.push('linked_client_requires_shannon_approval');
+        labels.push('current client reply needs Shannon approval');
+    } else if (data.linked_client_status_lookup_failed === true) {
+        reasons.push('linked_client_status_lookup_failed');
+        labels.push('client status could not be verified safely');
+    }
+
     if (acquisitionLead) {
         const manualOnlyData = alertIdentity(alert).custom_data || {};
         const acquisitionInboundText = [
@@ -910,8 +919,11 @@ function classifyNeedsYou(alert = {}) {
 
 function buildNeedsYouData(alert, classification) {
     const data = alert.data || {};
-    const permanentDraftOnly = classification.reasons.includes('always_needs_you_person');
-    const reason = permanentDraftOnly ? 'always_needs_you_person' : classification.label;
+    const linkedClientDraftOnly = classification.reasons.includes('linked_client_requires_shannon_approval');
+    const permanentDraftOnly = linkedClientDraftOnly || classification.reasons.includes('always_needs_you_person');
+    const reason = linkedClientDraftOnly
+        ? 'linked_client_requires_shannon_approval'
+        : (permanentDraftOnly ? 'always_needs_you_person' : classification.label);
     const existingReview = data.codex_review && typeof data.codex_review === 'object'
         ? data.codex_review
         : {};
@@ -930,12 +942,16 @@ function buildNeedsYouData(alert, classification) {
         needs_you_reasons: classification.reasons,
         needs_you_label: classification.label,
         permanent_needs_you_draft_only: permanentDraftOnly || data.permanent_needs_you_draft_only || false,
+        linked_client_manual_review: linkedClientDraftOnly || data.linked_client_manual_review || undefined,
+        linked_user_id: alert.client_id || data.linked_user_id || undefined,
         outbound_attempted: permanentDraftOnly ? false : data.outbound_attempted,
         operator_queue: 'needs_you',
         codex_review: {
             ...existingReview,
             source: MANAGER_SOURCE,
-            decision: permanentDraftOnly ? 'needs_you_permanent_person_draft_only' : 'client_manager_review_required',
+            decision: linkedClientDraftOnly
+                ? 'needs_you_linked_client_draft_only'
+                : (permanentDraftOnly ? 'needs_you_permanent_person_draft_only' : 'client_manager_review_required'),
             queue: 'needs_you',
             needs_shannon_approval: true,
             reason,
@@ -958,6 +974,41 @@ async function loadPendingDmAlerts(limit = MAX_PER_RUN) {
     return supabaseQuery(
         `coach_alerts?select=id,created_at,client_id,client_name,coach_id,alert_type,title,description,suggested_message,status,data&status=eq.pending&alert_type=in.(${types})&order=created_at.asc&limit=${limit}`
     );
+}
+
+async function hydrateLiveLinkedClient(alert = {}) {
+    const data = alert.data || {};
+    const threadId = data.ig_thread_id;
+    if (!threadId) return alert;
+    try {
+        const rows = await supabaseQuery(
+            `ig_threads?select=id,linked_user_id&id=eq.${encodeURIComponent(threadId)}&limit=1`
+        );
+        const thread = rows?.[0] || null;
+        if (!thread) {
+            return {
+                ...alert,
+                data: { ...data, linked_client_status_lookup_failed: true },
+            };
+        }
+        if (!thread.linked_user_id) return alert;
+        return {
+            ...alert,
+            client_id: thread.linked_user_id,
+            data: {
+                ...data,
+                linked_user_id: thread.linked_user_id,
+                linked_client_manual_review: true,
+                linked_client_status_checked_at: new Date().toISOString(),
+            },
+        };
+    } catch (error) {
+        console.warn('[client-lead-manager] linked-client status lookup failed:', error.message);
+        return {
+            ...alert,
+            data: { ...data, linked_client_status_lookup_failed: true },
+        };
+    }
 }
 
 async function stampNeedsYouAlert(alert, classification) {
@@ -1001,7 +1052,8 @@ async function runClientLeadManager({ limit = MAX_PER_RUN, aiDraftReviewLimit = 
     let aiDraftReviewsAttempted = 0;
     let aiDraftReviewsSkipped = 0;
     const maxAiDraftReviews = parseNonNegativeInteger(aiDraftReviewLimit, DEFAULT_AI_DRAFT_REVIEWS_PER_RUN);
-    for (const alert of alerts) {
+    for (const loadedAlert of alerts) {
+        const alert = await hydrateLiveLinkedClient(loadedAlert);
         const needsDraftReview = shouldRunDraftReview(alert);
         const approvedSalesHandoff = needsDraftReview && hasApprovedCoachingLinkHandoff(alert);
         const canRunDraftReview = needsDraftReview
@@ -1121,4 +1173,5 @@ exports._test = {
     draftAsksRedundantCurrentStatusQuestion,
     draftRepeatsCurrentStatusQuestion,
     isCoachDmManagerWorkingTime,
+    hydrateLiveLinkedClient,
 };

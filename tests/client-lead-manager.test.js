@@ -109,6 +109,8 @@ const nat = manager.classifyNeedsYou(makeAlert({
     data: { lead_stage: 'paying' },
 }));
 assert.ok(!nat.reasons.includes('always_needs_you_person'));
+assert.strictEqual(nat.shouldRoute, true, 'every current client must be routed to Needs You');
+assert.ok(nat.reasons.includes('linked_client_requires_shannon_approval'));
 
 const miranda = manager.classifyNeedsYou(makeAlert({
     alert_type: 'incoming_dm',
@@ -128,11 +130,11 @@ const permanentStamp = manager.buildNeedsYouData(makeAlert({
 assert.strictEqual(permanentStamp.needs_you_required, true);
 assert.strictEqual(permanentStamp.operator_queue, 'needs_you');
 assert.strictEqual(permanentStamp.needs_shannon_approval, true);
-assert.strictEqual(permanentStamp.needs_you_reason, 'always_needs_you_person');
+assert.strictEqual(permanentStamp.needs_you_reason, 'linked_client_requires_shannon_approval');
 assert.strictEqual(permanentStamp.permanent_needs_you_draft_only, true);
 assert.strictEqual(permanentStamp.outbound_attempted, false);
-assert.strictEqual(permanentStamp.codex_review.reason, 'always_needs_you_person');
-assert.strictEqual(permanentStamp.codex_review.decision, 'needs_you_permanent_person_draft_only');
+assert.strictEqual(permanentStamp.codex_review.reason, 'linked_client_requires_shannon_approval');
+assert.strictEqual(permanentStamp.codex_review.decision, 'needs_you_linked_client_draft_only');
 
 const mirandaAppDeflection = manager.classifyNeedsYou(makeAlert({
     alert_type: 'incoming_dm',
@@ -201,7 +203,8 @@ const kayProgramUpdate = manager.classifyNeedsYou(makeAlert({
         message_preview: 'Can you update my program for next week?',
     },
 }));
-assert.strictEqual(kayProgramUpdate.shouldRoute, false, 'Kay program updates should bypass the permanent Needs You route');
+assert.strictEqual(kayProgramUpdate.shouldRoute, true, 'current-client program updates still require Shannon approval');
+assert.ok(kayProgramUpdate.reasons.includes('linked_client_requires_shannon_approval'));
 
 const kayUnverifiedAppFix = manager.classifyNeedsYou(makeAlert({
     alert_type: 'incoming_dm',
@@ -229,7 +232,8 @@ const kayVerifiedAppFix = manager.classifyNeedsYou(makeAlert({
         app_problem_fix_verified_at: '2026-07-02T08:00:00.000Z',
     },
 }));
-assert.strictEqual(kayVerifiedAppFix.shouldRoute, false, 'Kay verified app fixes should bypass the permanent Needs You route');
+assert.strictEqual(kayVerifiedAppFix.shouldRoute, true, 'verified app fixes still require Shannon approval before the reply is sent');
+assert.ok(kayVerifiedAppFix.reasons.includes('linked_client_requires_shannon_approval'));
 
 assert.strictEqual(
     manager.draftAsksRedundantCurrentStatusQuestion(
@@ -345,7 +349,7 @@ const decodedClientPhoto = manager.classifyNeedsYou(makeAlert({
         },
     },
 }));
-assert.strictEqual(decodedClientPhoto.shouldRoute, false, 'client media stays with the DM manager');
+assert.strictEqual(decodedClientPhoto.shouldRoute, true, 'decoded client media still ends in Needs You with a draft');
 
 const visibleLeadReel = manager.classifyNeedsYou(makeAlert({
     data: {
@@ -633,7 +637,7 @@ const unresolvedClientMediaDraft = manager.classifyNeedsYou(makeAlert({
         },
     },
 }));
-assert.strictEqual(unresolvedClientMediaDraft.shouldRoute, false, 'client media failures stay with the DM manager recovery path');
+assert.strictEqual(unresolvedClientMediaDraft.shouldRoute, true, 'client media failures remain visible in Needs You');
 
 const contextLoss = manager.classifyNeedsYou(makeAlert({
     data: {
@@ -842,6 +846,12 @@ assert.strictEqual(stamped.codex_review.queue, 'needs_you');
 
 const instantDraftSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/instant-coach-draft.js'), 'utf8');
 assert.ok(
+    instantDraftSource.includes("const currentClientNeedsYou = true")
+        && instantDraftSource.includes("needs_you_reason: currentClientNeedsYouReason")
+        && instantDraftSource.includes("if (!currentClientNeedsYou && !simple"),
+    'every in-app current-client message must generate a Needs You draft and stay out of auto-send'
+);
+assert.ok(
     instantDraftSource.includes('!permanentNeedsYouClient && !mediaReview.required'),
     'in-app client DM auto-send should be blocked for permanent Needs You clients'
 );
@@ -860,6 +870,12 @@ assert.ok(
     igDraftSource.includes('const permanentNeedsYouIdentity = {')
         && igDraftSource.includes('isAlwaysNeedsYouPerson(permanentNeedsYouIdentity)'),
     'IG permanent Needs You routing should not depend on the thread already being linked to an app user'
+);
+assert.ok(
+    igDraftSource.includes('client_manager_review_required: draftOnlyNeedsYouClient')
+        && igDraftSource.includes('needs_shannon_approval: draftOnlyNeedsYouClient')
+        && igDraftSource.includes('linked_client_manual_review: linkedClientNeedsYou'),
+    'coalesced lead alerts must be upgraded to linked-client Needs You routing'
 );
 assert.ok(
     clientContextSource.includes('Do not warn just because a lead/client reply is short and reaction-only'),

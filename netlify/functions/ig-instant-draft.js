@@ -4990,14 +4990,30 @@ exports.handler = async (event) => {
             || '';
         const mergedData = {
             ...(existingPending.data || alertRow.data),
-            client_manager_review_required: permanentNeedsYouClient || existingPending.data?.client_manager_review_required || undefined,
-            needs_you_required: permanentNeedsYouClient || existingPending.data?.needs_you_required || undefined,
-            permanent_needs_you_draft_only: permanentNeedsYouClient || existingPending.data?.permanent_needs_you_draft_only || undefined,
-            operator_queue: permanentNeedsYouClient ? 'needs_you' : (existingPending.data?.operator_queue || null),
-            needs_you_reason: permanentNeedsYouClient ? 'always_needs_you_person' : existingPending.data?.needs_you_reason,
-            needs_you_reasons: permanentNeedsYouClient
-                ? [...new Set([...(existingPending.data?.needs_you_reasons || []), 'always_needs_you_person'])]
+            client_manager_review_required: draftOnlyNeedsYouClient || existingPending.data?.client_manager_review_required || undefined,
+            needs_you_required: draftOnlyNeedsYouClient || existingPending.data?.needs_you_required || undefined,
+            needs_shannon_approval: draftOnlyNeedsYouClient || existingPending.data?.needs_shannon_approval || undefined,
+            linked_client_manual_review: linkedClientNeedsYou || existingPending.data?.linked_client_manual_review || undefined,
+            permanent_needs_you_draft_only: draftOnlyNeedsYouClient || existingPending.data?.permanent_needs_you_draft_only || undefined,
+            operator_queue: draftOnlyNeedsYouClient ? 'needs_you' : (existingPending.data?.operator_queue || null),
+            needs_you_reason: draftOnlyNeedsYouClient ? draftOnlyNeedsYouReason : existingPending.data?.needs_you_reason,
+            needs_you_reasons: draftOnlyNeedsYouClient
+                ? [...new Set([...(existingPending.data?.needs_you_reasons || []), draftOnlyNeedsYouReason])]
                 : existingPending.data?.needs_you_reasons,
+            codex_review: draftOnlyNeedsYouClient ? {
+                ...(existingPending.data?.codex_review || {}),
+                source: 'balance-combined-dm-manager',
+                decision: 'client_manager_review_required',
+                queue: 'needs_you',
+                needs_shannon_approval: true,
+                reason: draftOnlyNeedsYouReason,
+                evidence_ids: [
+                    thread.id ? `ig_threads:${thread.id}` : '',
+                    thread.linked_user_id ? `users:${thread.linked_user_id}` : '',
+                ].filter(Boolean),
+                reviewed_at: new Date().toISOString(),
+                automation_id: 'balance-combined-dm-manager',
+            } : existingPending.data?.codex_review,
             message_preview: truncate(messageText, 400),
             last_outbound_message: lastOutboundMessage || existingPending.data?.last_outbound_message || null,
             learning_reels: learningReelHistory.length ? {

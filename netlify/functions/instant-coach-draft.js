@@ -752,8 +752,9 @@ exports.handler = async (event) => {
         console.warn('[instant-draft] active check-in thread lookup failed:', e.message);
     }
 
-    // 4. Short-circuit for trivial replies and queue form-check videos.
-    let simple = isSimpleReply(messageText) && !activeCheckinThread;
+    // Every in-app sender is a current client. Even a short/trivial message
+    // needs a useful draft in Needs You and must not enter automated transport.
+    let simple = false;
     const isFormCheck = /\bform check request\b/i.test(messageText) && /\[(?:VIDEO|video):\s*https?:\/\//i.test(messageText);
 
     let draftText = '';
@@ -844,6 +845,8 @@ exports.handler = async (event) => {
             record: permanentNeedsYouIdentity,
             currentMessage: messageText,
         });
+    const currentClientNeedsYou = true;
+    const currentClientNeedsYouReason = 'current_client_requires_shannon_approval';
 
     if (!simple && !isFormCheck && !onboardingFirstSessionFollowup) {
         try {
@@ -931,24 +934,29 @@ exports.handler = async (event) => {
         suggested_message: draftText || null,
         status: 'pending',
         data: {
-            client_manager_review_required: permanentNeedsYouClient || undefined,
-            needs_you_required: permanentNeedsYouClient || undefined,
-            operator_queue: permanentNeedsYouClient ? 'needs_you' : null,
-            needs_you_reason: permanentNeedsYouClient ? 'always_needs_you_person' : undefined,
-            needs_you_reasons: permanentNeedsYouClient ? ['always_needs_you_person'] : undefined,
-            codex_review: permanentNeedsYouClient ? {
+            client_manager_review_required: currentClientNeedsYou,
+            needs_you_required: currentClientNeedsYou,
+            needs_shannon_approval: currentClientNeedsYou,
+            permanent_needs_you_draft_only: currentClientNeedsYou,
+            operator_queue: 'needs_you',
+            needs_you_reason: currentClientNeedsYouReason,
+            needs_you_reasons: [
+                currentClientNeedsYouReason,
+                ...(permanentNeedsYouClient ? ['always_needs_you_person'] : []),
+            ],
+            codex_review: {
                 source: 'balance-client-dm-manager',
-                decision: 'client_manager_review_required',
+                decision: 'needs_you_current_client_draft_only',
                 queue: 'needs_you',
                 needs_shannon_approval: true,
-                reason: 'always_needs_you_person',
+                reason: currentClientNeedsYouReason,
                 evidence_ids: [
                     `nudges:${nudgeId}`,
                     senderId ? `users:${senderId}` : '',
                 ].filter(Boolean),
                 reviewed_at: new Date().toISOString(),
                 automation_id: 'balance-client-dm-manager',
-            } : undefined,
+            },
             nudge_id: nudgeId,
             message_preview: truncate(messageText, 400),
             last_outbound_message: lastOutboundMessage,
@@ -1025,8 +1033,11 @@ exports.handler = async (event) => {
             client_manager_review_required: true,
             needs_you_required: true,
             operator_queue: 'needs_you',
-            needs_you_reason: appProblemAutoHold.label,
-            needs_you_reasons: [appProblemAutoHold.code],
+            needs_you_reason: currentClientNeedsYouReason,
+            needs_you_reasons: [...new Set([
+                ...(alertRow.data.needs_you_reasons || []),
+                appProblemAutoHold.code,
+            ])],
             auto_send_review_hold: {
                 ...appProblemAutoHold,
                 held_at: nowIso,
@@ -1038,7 +1049,8 @@ exports.handler = async (event) => {
                 decision: 'client_manager_review_required',
                 queue: 'needs_you',
                 needs_shannon_approval: true,
-                reason: appProblemAutoHold.label,
+                reason: currentClientNeedsYouReason,
+                detail: appProblemAutoHold.label,
                 reviewed_at: nowIso,
                 automation_id: 'balance-client-dm-manager',
             },
@@ -1066,7 +1078,7 @@ exports.handler = async (event) => {
     if (!simple && !isFormCheck && appProblemAutoHold) {
         console.log(`[instant-draft] auto-send blocked for app problem support alert ${alertId}: ${appProblemAutoHold.code}`);
     }
-    if (!simple && !isFormCheck && !permanentNeedsYouClient && !mediaReview.required && !appProblemAutoHold && draftText && alertId) {
+    if (!currentClientNeedsYou && !simple && !isFormCheck && !permanentNeedsYouClient && !mediaReview.required && !appProblemAutoHold && draftText && alertId) {
         autoSent = await maybeAutoSendDraft({
             coachId: receiverId,
             clientId: senderId,

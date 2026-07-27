@@ -46,6 +46,7 @@ const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm', 'follow_up_
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const HUMAN_AGENT_MANUAL_ONLY_MESSAGE = 'Meta Human Agent 7-day replies must be sent by a human agent, so Send Later is disabled for this draft.';
 const PERMANENT_NEEDS_YOU_SEND_LATER_MESSAGE = 'Permanent Needs You contacts require Shannon approval, so Send Later is disabled for this draft.';
+const CURRENT_CLIENT_AUTOMATED_SCHEDULE_MESSAGE = 'Current clients require Shannon approval from Needs You before any reply is scheduled.';
 const AUTOMATED_PERMANENT_NEEDS_YOU_SCHEDULE_SOURCES = new Set([
     'auto_send',
     'balance_lead_client_manager_cron',
@@ -175,6 +176,62 @@ function shouldBlockPermanentNeedsYouSchedule(alert = {}, source = '') {
         && !isAppSupportFastFixException(data)
         && !shouldBypassKayNeedsYouForAlert({ alert })
         && isPermanentNeedsYouAlert(alert);
+}
+
+function isCurrentClientAlert(alert = {}, liveThread = null) {
+    const data = safeObject(alert.data);
+    return !!(
+        liveThread?.linked_user_id
+        || alert.client_id
+        || data.linked_user_id
+        || data.linked_client_manual_review === true
+        || data.needs_you_reason === 'linked_client_requires_shannon_approval'
+    );
+}
+
+function shouldBlockCurrentClientAutomatedSchedule(alert = {}, source = '', liveThread = null) {
+    return isAutomatedPermanentNeedsYouScheduleSource(source)
+        && isCurrentClientAlert(alert, liveThread);
+}
+
+async function loadLiveIgThreadClientState(alert = {}) {
+    const threadId = safeObject(alert.data).ig_thread_id;
+    if (!threadId) return null;
+    const rows = await supabase(
+        `ig_threads?select=id,linked_user_id&id=eq.${encodeURIComponent(threadId)}&limit=1`
+    );
+    return rows?.[0] || null;
+}
+
+async function stampCurrentClientAutomatedScheduleBlock(alert = {}, liveThread = null) {
+    if (!alert.id) return;
+    const blockedAt = new Date().toISOString();
+    const data = safeObject(alert.data);
+    const reason = 'linked_client_requires_shannon_approval';
+    const nextData = {
+        ...data,
+        linked_user_id: liveThread?.linked_user_id || alert.client_id || data.linked_user_id || undefined,
+        client_manager_review_required: true,
+        needs_you_required: true,
+        needs_shannon_approval: true,
+        linked_client_manual_review: true,
+        permanent_needs_you_draft_only: true,
+        operator_queue: 'needs_you',
+        needs_you_reason: reason,
+        needs_you_reasons: [...new Set([
+            ...(Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : []),
+            reason,
+        ])],
+        last_send_error: CURRENT_CLIENT_AUTOMATED_SCHEDULE_MESSAGE,
+        last_send_error_code: 'current_client_automated_schedule_blocked',
+        last_send_error_at: blockedAt,
+        outbound_attempted: false,
+    };
+    await supabase(`coach_alerts?id=eq.${encodeURIComponent(alert.id)}`, {
+        method: 'PATCH',
+        body: { data: nextData },
+        prefer: 'return=minimal',
+    });
 }
 
 async function stampPermanentNeedsYouScheduleBlock(alert = {}) {
@@ -370,7 +427,7 @@ exports.handler = async (event) => {
     let alert;
     try {
         const rows = await supabase(
-            `coach_alerts?select=id,status,data,coach_id,client_id,client_name,suggested_message&id=eq.${alertId}&limit=1`
+            `coach_alerts?select=id,status,data,coach_id,client_id,client_name,suggested_message,alert_type&id=eq.${alertId}&limit=1`
         );
         alert = rows[0];
     } catch (e) {
@@ -384,6 +441,38 @@ exports.handler = async (event) => {
         return { statusCode: 409, body: JSON.stringify({
             error: 'Alert already actioned',
             status: alert.status,
+        }) };
+    }
+    let liveThread = null;
+    if (isAutomatedPermanentNeedsYouScheduleSource(source) && safeObject(alert.data).ig_thread_id) {
+        try {
+            liveThread = await loadLiveIgThreadClientState(alert);
+        } catch (error) {
+            console.warn('[schedule-coach-reply] linked-client status lookup failed:', error.message);
+            if (isCurrentClientAlert(alert)) {
+                await stampCurrentClientAutomatedScheduleBlock(alert);
+                return { statusCode: 409, body: JSON.stringify({
+                    error: CURRENT_CLIENT_AUTOMATED_SCHEDULE_MESSAGE,
+                    code: 'current_client_automated_schedule_blocked',
+                }) };
+            }
+            return { statusCode: 503, body: JSON.stringify({
+                error: 'Client status could not be verified, so the automated schedule was stopped.',
+                code: 'current_client_status_unverified',
+            }) };
+        }
+        if (!liveThread && !isCurrentClientAlert(alert)) {
+            return { statusCode: 409, body: JSON.stringify({
+                error: 'Instagram thread could not be verified, so the automated schedule was stopped.',
+                code: 'current_client_status_unverified',
+            }) };
+        }
+    }
+    if (shouldBlockCurrentClientAutomatedSchedule(alert, source, liveThread)) {
+        await stampCurrentClientAutomatedScheduleBlock(alert, liveThread);
+        return { statusCode: 409, body: JSON.stringify({
+            error: CURRENT_CLIENT_AUTOMATED_SCHEDULE_MESSAGE,
+            code: 'current_client_automated_schedule_blocked',
         }) };
     }
     if (requiresHumanAgentManualSend(alert)) {
@@ -497,4 +586,6 @@ exports._test = {
     isAppSupportFastFixException,
     shouldBlockPermanentNeedsYouSchedule,
     resolveCoachDmManagerScheduledFor,
+    isCurrentClientAlert,
+    shouldBlockCurrentClientAutomatedSchedule,
 };

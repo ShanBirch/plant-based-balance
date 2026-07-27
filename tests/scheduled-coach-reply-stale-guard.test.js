@@ -4,6 +4,28 @@ const originalFetch = global.fetch;
 const worker = require('../netlify/functions/scheduled-coach-reply-worker')._test;
 
 async function run() {
+    assert.deepStrictEqual(
+        await worker.buildCurrentClientNeedsYouHold({
+            id: 'current-client-alert',
+            client_id: 'client-current',
+            data: { scheduled_via: 'auto_send' },
+        }),
+        {
+            code: 'linked_client_requires_shannon_approval',
+            label: 'current client reply needs Shannon approval',
+            linked_user_id: 'client-current',
+        },
+        'scheduled worker must hold current clients before transport'
+    );
+    assert.strictEqual(
+        await worker.buildCurrentClientNeedsYouHold({
+            client_id: 'client-current',
+            data: { scheduled_via: 'admin_dashboard' },
+        }),
+        null,
+        'scheduled worker must allow replies Shannon explicitly scheduled'
+    );
+
     const alert = {
         id: 'scheduled-alert',
         created_at: '2026-07-13T02:25:29.604Z',

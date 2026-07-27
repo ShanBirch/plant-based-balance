@@ -181,6 +181,7 @@ function normalizeTimingSuggestion(value) {
 
 const IN_APP_DM_ALERT_TYPES = ['incoming_dm', 'unread_message'];
 const PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE = 'Permanent Needs You contacts require Shannon approval before sending.';
+const CURRENT_CLIENT_AUTOMATED_SEND_MESSAGE = 'Current clients require Shannon approval from Needs You before sending.';
 const AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES = new Set([
     'auto_send',
     'balance_lead_client_manager_cron',
@@ -240,6 +241,62 @@ function shouldBlockPermanentNeedsYouAutomatedSend(alert = {}, source = '') {
         && !isAppSupportFastFixException(data)
         && !shouldBypassKayNeedsYouForAlert({ alert })
         && isPermanentNeedsYouAlert(alert);
+}
+
+function isCurrentClientAlert(alert = {}, liveThread = null) {
+    const data = alert.data || {};
+    return !!(
+        liveThread?.linked_user_id
+        || alert.client_id
+        || data.linked_user_id
+        || data.linked_client_manual_review === true
+        || data.needs_you_reason === 'linked_client_requires_shannon_approval'
+    );
+}
+
+function shouldBlockCurrentClientAutomatedSend(alert = {}, source = '', liveThread = null) {
+    return isAutomatedPermanentNeedsYouSendSource(source, alert.data || {})
+        && isCurrentClientAlert(alert, liveThread);
+}
+
+async function loadLiveIgThreadClientState(alert = {}) {
+    const threadId = alert.data?.ig_thread_id;
+    if (!threadId) return null;
+    const rows = await supabase(
+        `ig_threads?select=id,linked_user_id&id=eq.${encodeURIComponent(threadId)}&limit=1`
+    );
+    return rows?.[0] || null;
+}
+
+async function stampCurrentClientAutomatedSendBlock(alert = {}, liveThread = null) {
+    if (!alert.id) return;
+    const blockedAt = new Date().toISOString();
+    const sourceData = alert.data || {};
+    const reason = 'linked_client_requires_shannon_approval';
+    const data = {
+        ...sourceData,
+        linked_user_id: liveThread?.linked_user_id || alert.client_id || sourceData.linked_user_id || undefined,
+        client_manager_review_required: true,
+        needs_you_required: true,
+        needs_shannon_approval: true,
+        linked_client_manual_review: true,
+        permanent_needs_you_draft_only: true,
+        operator_queue: 'needs_you',
+        needs_you_reason: reason,
+        needs_you_reasons: [...new Set([
+            ...(Array.isArray(sourceData.needs_you_reasons) ? sourceData.needs_you_reasons : []),
+            reason,
+        ])],
+        last_send_error: CURRENT_CLIENT_AUTOMATED_SEND_MESSAGE,
+        last_send_error_code: 'current_client_automated_send_blocked',
+        last_send_error_at: blockedAt,
+        outbound_attempted: false,
+    };
+    await supabase(`coach_alerts?id=eq.${encodeURIComponent(alert.id)}`, {
+        method: 'PATCH',
+        body: { data },
+        prefer: 'return=minimal',
+    });
 }
 
 async function stampPermanentNeedsYouAutomatedSendBlock(alert = {}) {
@@ -386,6 +443,40 @@ exports.handler = async (event) => {
         return { statusCode: 409, body: JSON.stringify({
             error: 'Alert already actioned',
             status: alert.status,
+        }) };
+    }
+    let liveThread = null;
+    if (isAutomatedPermanentNeedsYouSendSource(source, alert.data || {}) && alert.data?.ig_thread_id) {
+        try {
+            liveThread = await loadLiveIgThreadClientState(alert);
+        } catch (error) {
+            console.warn('[send-coach-reply] linked-client status lookup failed:', error.message);
+            if (isCurrentClientAlert(alert)) {
+                await stampCurrentClientAutomatedSendBlock(alert);
+                return { statusCode: 409, body: JSON.stringify({
+                    error: CURRENT_CLIENT_AUTOMATED_SEND_MESSAGE,
+                    code: 'current_client_automated_send_blocked',
+                    source,
+                }) };
+            }
+            return { statusCode: 503, body: JSON.stringify({
+                error: 'Client status could not be verified, so the automated send was stopped.',
+                code: 'current_client_status_unverified',
+            }) };
+        }
+        if (!liveThread && !isCurrentClientAlert(alert)) {
+            return { statusCode: 409, body: JSON.stringify({
+                error: 'Instagram thread could not be verified, so the automated send was stopped.',
+                code: 'current_client_status_unverified',
+            }) };
+        }
+    }
+    if (shouldBlockCurrentClientAutomatedSend(alert, source, liveThread)) {
+        await stampCurrentClientAutomatedSendBlock(alert, liveThread);
+        return { statusCode: 409, body: JSON.stringify({
+            error: CURRENT_CLIENT_AUTOMATED_SEND_MESSAGE,
+            code: 'current_client_automated_send_blocked',
+            source,
         }) };
     }
     if (shouldBlockPermanentNeedsYouAutomatedSend(alert, source)) {
@@ -573,4 +664,6 @@ exports._test = {
     isAppSupportFastFixException,
     isPermanentNeedsYouAlert,
     shouldBlockPermanentNeedsYouAutomatedSend,
+    isCurrentClientAlert,
+    shouldBlockCurrentClientAutomatedSend,
 };

@@ -55,6 +55,51 @@ const fraAppSupportFixAlert = {
     },
 };
 
+const currentClientAlert = {
+    alert_type: 'ig_incoming_dm',
+    client_id: 'client-current',
+    client_name: 'Current Client',
+    data: {
+        channel: 'instagram',
+        ig_thread_id: 'thread-current',
+        linked_user_id: 'client-current',
+        scheduled_via: 'auto_send',
+    },
+};
+
+assert.strictEqual(
+    sendCoach.shouldBlockCurrentClientAutomatedSend(currentClientAlert, 'scheduled_worker'),
+    true,
+    'general send endpoint must block every current client from automated sending'
+);
+assert.strictEqual(
+    sendCoach.shouldBlockCurrentClientAutomatedSend({
+        ...currentClientAlert,
+        data: { ...currentClientAlert.data, scheduled_via: 'admin_dashboard' },
+    }, 'admin_dashboard_alert_send'),
+    false,
+    'Shannon can still approve and send a current-client draft manually'
+);
+assert.strictEqual(
+    scheduleReply.shouldBlockCurrentClientAutomatedSchedule(currentClientAlert, 'auto_send'),
+    true,
+    'automated scheduling must be blocked for every current client'
+);
+assert.strictEqual(
+    scheduleReply.shouldBlockCurrentClientAutomatedSchedule(currentClientAlert, 'admin_dashboard'),
+    false,
+    'Shannon-approved Send Later remains available for current clients'
+);
+assert.strictEqual(
+    sendIg.shouldBlockLinkedClientAutomatedIgSend({
+        alert: currentClientAlert,
+        alertData: currentClientAlert.data,
+        source: 'balance_lead_client_manager_cron',
+    }),
+    true,
+    'final Instagram transport must block every linked client from manager sending'
+);
+
 assert.strictEqual(
     sendCoach.shouldBlockPermanentNeedsYouAutomatedSend(fraAlert, 'scheduled_worker'),
     true,

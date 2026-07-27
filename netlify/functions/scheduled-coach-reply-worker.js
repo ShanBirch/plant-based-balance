@@ -258,6 +258,50 @@ function hasCocosAutoContextBypass(data = {}) {
         || /review did not finish|review timeout|timed out/.test(summary);
 }
 
+async function buildCurrentClientNeedsYouHold(alert = {}) {
+    if (!isAutomatedPermanentNeedsYouScheduledAlert(alert)) return null;
+    const data = alert.data || {};
+    let linkedUserId = alert.client_id || data.linked_user_id || null;
+    const threadId = String(data.ig_thread_id || '').trim();
+    if (threadId) {
+        try {
+            const rows = await supabase(
+                `ig_threads?select=id,linked_user_id&id=eq.${encodeURIComponent(threadId)}&limit=1`
+            );
+            const thread = rows?.[0] || null;
+            if (!thread && !linkedUserId) {
+                return {
+                    code: 'current_client_status_unverified',
+                    label: 'client status could not be verified safely',
+                };
+            }
+            linkedUserId = thread?.linked_user_id || linkedUserId;
+        } catch (error) {
+            console.warn(`[scheduled-worker] linked-client status lookup failed for ${alert.id}:`, error.message);
+            if (linkedUserId) {
+                return {
+                    code: 'linked_client_requires_shannon_approval',
+                    label: 'current client reply needs Shannon approval',
+                    linked_user_id: linkedUserId,
+                };
+            }
+            return {
+                code: 'current_client_status_unverified',
+                label: 'client status could not be verified safely',
+            };
+        }
+    }
+    if (!linkedUserId && data.linked_client_manual_review !== true
+        && data.needs_you_reason !== 'linked_client_requires_shannon_approval') {
+        return null;
+    }
+    return {
+        code: 'linked_client_requires_shannon_approval',
+        label: 'current client reply needs Shannon approval',
+        linked_user_id: linkedUserId || undefined,
+    };
+}
+
 function hasBalanceSafeOpenerContextBypass(data = {}) {
     const botAccount = String(data.bot_account || data.instagram_graph?.bot_account || '').replace(/^@+/, '').toLowerCase();
     const isBalance = botAccount === BALANCE_BOT_ACCOUNT || data.auto_send_default_reason === 'balance_ai_coach_lane';
@@ -419,28 +463,43 @@ async function fireAlert(alert) {
         return { ok: false, error: 'empty_scheduled_text' };
     }
 
-    const autoHold = buildPermanentNeedsYouHold(alert) || buildAutoSendReviewHold(alert);
+    const currentClientHold = await buildCurrentClientNeedsYouHold(alert);
+    const autoHold = currentClientHold || buildPermanentNeedsYouHold(alert) || buildAutoSendReviewHold(alert);
     if (autoHold) {
         const heldAt = new Date().toISOString();
         const isPermanentNeedsYouHold = autoHold.code === 'always_needs_you_person';
+        const isCurrentClientHold = autoHold.code === 'linked_client_requires_shannon_approval';
+        const isNeedsYouHold = isPermanentNeedsYouHold
+            || isCurrentClientHold
+            || autoHold.code === 'current_client_status_unverified';
+        const needsYouReason = isCurrentClientHold
+            ? 'linked_client_requires_shannon_approval'
+            : autoHold.code;
         try {
             await supabase(`coach_alerts?id=eq.${alert.id}`, {
                 method: 'PATCH',
                 body: {
                     data: {
                         ...(alert.data || {}),
-                        ...(isPermanentNeedsYouHold ? {
+                        ...(isNeedsYouHold ? {
+                            linked_user_id: autoHold.linked_user_id || alert.client_id || alert.data?.linked_user_id || undefined,
                             client_manager_review_required: true,
                             needs_you_required: true,
+                            needs_shannon_approval: true,
+                            linked_client_manual_review: isCurrentClientHold || alert.data?.linked_client_manual_review || undefined,
                             operator_queue: 'needs_you',
-                            needs_you_reason: 'always_needs_you_person',
+                            needs_you_reason: needsYouReason,
                             needs_you_reasons: [
                                 ...new Set([
                                     ...(Array.isArray(alert.data?.needs_you_reasons) ? alert.data.needs_you_reasons : []),
-                                    'always_needs_you_person',
+                                    needsYouReason,
                                 ]),
                             ],
-                            permanent_needs_you_draft_only: true,
+                            permanent_needs_you_draft_only: isCurrentClientHold
+                                || isPermanentNeedsYouHold
+                                || alert.data?.permanent_needs_you_draft_only
+                                || undefined,
+                            outbound_attempted: false,
                         } : {}),
                         auto_send_review_hold: {
                             ...autoHold,
@@ -583,6 +642,7 @@ exports._test = {
     isAutomatedPermanentNeedsYouScheduledAlert,
     isAppSupportFastFixException,
     buildPermanentNeedsYouHold,
+    buildCurrentClientNeedsYouHold,
     hasCocosAutoContextBypass,
     hasBalanceSafeOpenerContextBypass,
     hasAutoContextBypass,

@@ -1390,6 +1390,33 @@ exports.handler = async (event) => {
     let threadForSend = rawAlertData.ig_thread_id
         ? await loadIgThreadForSend(rawAlertData.ig_thread_id)
         : null;
+    if (rawAlertData.ig_thread_id
+        && isAutomatedPermanentNeedsYouSendSource(source, rawAlertData)
+        && !threadForSend) {
+        if (isLinkedClientIgAlert({ alert, alertData: rawAlertData })) {
+            try {
+                await stampLinkedClientAutomatedIgSendBlock({ alertId, alertData: rawAlertData });
+            } catch (err) {
+                console.warn('[send-ig-reply] known-client Needs You block stamp failed:', err.message);
+            }
+            return {
+                statusCode: 409,
+                body: JSON.stringify({
+                    error: LINKED_CLIENT_AUTOMATED_SEND_MESSAGE,
+                    code: 'linked_client_automated_send_blocked',
+                    source,
+                }),
+            };
+        }
+        return {
+            statusCode: 503,
+            body: JSON.stringify({
+                error: 'Client status could not be verified, so the automated Instagram send was stopped.',
+                code: 'current_client_status_unverified',
+                source,
+            }),
+        };
+    }
     const requestedThreadForSend = threadForSend;
     const requestedIgThreadId = rawAlertData.ig_thread_id || requestedThreadForSend?.id || '';
     let alternateDelivery = null;
