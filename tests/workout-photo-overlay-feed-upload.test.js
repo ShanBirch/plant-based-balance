@@ -13,8 +13,12 @@ const serviceWorkerSource = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 const functionStart = pointsSource.indexOf('async function sharePendingPostWorkoutCompositeToFeed()');
 const functionEnd = pointsSource.indexOf('\nfunction getPostWorkoutShareViewportBottom()', functionStart);
 const shareSource = pointsSource.slice(functionStart, functionEnd);
+const rendererStart = pointsSource.indexOf('async function renderBalanceShareCardImage(');
+const rendererEnd = pointsSource.indexOf('\nasync function shareBalanceCardImageExternally(', rendererStart);
+const rendererSource = pointsSource.slice(rendererStart, rendererEnd);
 
 assert.ok(functionStart >= 0 && functionEnd > functionStart, 'photo overlay Feed share function must exist');
+assert.ok(rendererStart >= 0 && rendererEnd > rendererStart, 'photo overlay renderer must exist');
 assert.ok(
     shareSource.includes('uploadStoryMediaToBackblaze(compositeFile') &&
         shareSource.includes("source: 'feed_workout_photo_overlay'") &&
@@ -28,9 +32,14 @@ assert.ok(
     'workout photo overlays must not use the unreliable iOS multipart relay'
 );
 assert.ok(
-    dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=34') &&
-        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v265'") &&
-        serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=34'),
+    rendererSource.includes("if (cardType !== 'workout' && cardType !== 'pb')") &&
+        rendererSource.includes('ctx.fillRect(0, 0, width, height);'),
+    'workout and PB photo overlays must skip the full-frame dark tint'
+);
+assert.ok(
+    dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=35') &&
+        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v266'") &&
+        serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=35'),
     'phones must fetch the repaired overlay share path'
 );
 
