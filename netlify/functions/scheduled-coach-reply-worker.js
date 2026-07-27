@@ -32,11 +32,6 @@ const {
     isAlwaysNeedsYouPerson,
     shouldBypassKayNeedsYouForAlert,
 } = require('./_lib/client-context');
-const {
-    coachDmManagerWindowLabel,
-    isCoachDmManagerWorkingTime,
-} = require('./_lib/coach-dm-working-hours');
-
 // Hard cap per run. Realistic backlog should be 0-3. If we ever see this
 // kicking in, it's either a worker outage or someone schedule-bombed the API.
 const MAX_PER_RUN = 25;
@@ -569,23 +564,6 @@ exports.handler = async () => {
     }
 
     const nowIso = new Date().toISOString();
-    if (!isCoachDmManagerWorkingTime(new Date(nowIso))) {
-        console.info('[scheduled-worker] paused outside working window', JSON.stringify({
-            at: nowIso,
-            working_window: coachDmManagerWindowLabel(),
-        }));
-        return {
-            statusCode: 200,
-            body: JSON.stringify({
-                checked_at: nowIso,
-                paused: true,
-                working_window: coachDmManagerWindowLabel(),
-                due: 0,
-                fired: 0,
-            }),
-        };
-    }
-
     let due = [];
     try {
         due = await supabase(
@@ -648,5 +626,4 @@ exports._test = {
     hasAutoContextBypass,
     repairMissingScheduledLinkHandoff,
     getNewerInstagramInbound,
-    isCoachDmManagerWorkingTime,
 };

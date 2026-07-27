@@ -463,7 +463,7 @@
 # due (one cheap status=scheduled query, no further work), so per-minute is
 # safe on Netlify's quota. Backed by coach_alerts.scheduled_for + an atomic
 # claim flip ('scheduled' -> 'pending') so concurrent runs don't double-fire.
-# Code gates work to 05:00-02:00 Brisbane; due replies wait through 02:00-04:59.
+# Delivery runs 24 hours so the 24-hour DM manager cannot create an overnight backlog.
 [functions."scheduled-coach-reply-worker"]
   schedule = "* * * * *"
 
