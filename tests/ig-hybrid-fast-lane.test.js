@@ -15,6 +15,44 @@ assert.equal(instantDraft.isBalanceLeadAutoSendEnabled({
     threadAutoSendEnabled: true,
     metaAdFastLane: false,
 }), false, 'a normal unlinked Balance lead stays in the manager review lane');
+assert.equal(instantDraft.isExerciseConversationFastLaneEligible({
+    linkedUserId: null,
+    currentMessage: 'I have been struggling to get back to the gym this week',
+}), true, 'a clear exercise conversation is eligible for the fast lane');
+assert.equal(instantDraft.isExerciseConversationFastLaneEligible({
+    linkedUserId: null,
+    currentMessage: 'What are you up to today?',
+}), false, 'ordinary small talk is not treated as an exercise conversation');
+assert.equal(instantDraft.isExerciseConversationFastLaneEligible({
+    linkedUserId: null,
+    currentMessage: 'Yeah definitely',
+    recentMessages: [{
+        direction: 'out',
+        text: 'Has getting back to the gym been the hardest part?',
+        created_at: '2026-07-27T01:45:00.000Z',
+    }],
+    nowMs: Date.parse('2026-07-27T02:00:00.000Z'),
+}), true, 'short replies keep the fast lane during an active exercise conversation');
+assert.equal(instantDraft.isExerciseConversationFastLaneEligible({
+    linkedUserId: null,
+    currentMessage: 'Please stop messaging me',
+    recentMessages: [{
+        direction: 'out',
+        text: 'How has training been?',
+        created_at: '2026-07-27T01:59:00.000Z',
+    }],
+    nowMs: Date.parse('2026-07-27T02:00:00.000Z'),
+}), false, 'an opt-out never inherits the exercise fast lane');
+assert.equal(instantDraft.isExerciseConversationFastLaneEligible({
+    linkedUserId: 'client-user-1',
+    currentMessage: 'My workout felt strong today',
+}), false, 'linked client exercise messages remain approval-only');
+assert.equal(instantDraft.isBalanceLeadAutoSendEnabled({
+    linkedUserId: null,
+    threadAutoSendEnabled: true,
+    metaAdFastLane: false,
+    exerciseConversationFastLane: true,
+}), true, 'an explicitly enabled exercise lead belongs to the AI coach fast lane');
 assert.equal(instantDraft.isBalanceLeadAutoSendEnabled({
     linkedUserId: 'client-user-1',
     threadAutoSendEnabled: true,
@@ -104,8 +142,8 @@ assert.equal(instantDraft.getAutoDmHoldReason({
         notification_required: false,
         context_loss_suspected: false,
     },
-    allowBalanceLeadDraftReviewWarning: true,
-}), null, 'a non-blocking style warning does not stall an unlinked Balance lead');
+    allowBalanceLeadDraftReviewWarning: false,
+})?.code, 'draft_review', 'a Balance fast-lane reply must receive a clean reviewer pass');
 
 assert.equal(instantDraft.getAutoDmHoldReason({
     draft: { joined: 'A reply with uncertain context.' },
@@ -360,7 +398,7 @@ assert.equal(scheduledWorker.buildAutoSendReviewHold({
     data: {
         channel: 'instagram',
         scheduled_via: 'auto_send',
-        auto_send_default_reason: 'balance_ai_coach_lane',
+        auto_send_default_reason: 'balance_exercise_fast_lane',
         auto_send_enabled_at_draft: true,
         auto_send_review_hold: { code: 'draft_review', label: 'style could be tighter' },
         draft_review: {
@@ -369,7 +407,7 @@ assert.equal(scheduledWorker.buildAutoSendReviewHold({
             context_loss_suspected: false,
         },
     },
-}), null, 'worker does not re-hold a safe style warning for an unlinked Balance lead');
+})?.code, 'draft_review', 'worker re-holds a warning for a Balance exercise fast-lane reply');
 
 const balanceSafeOpenerData = {
     channel: 'instagram',

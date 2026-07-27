@@ -1977,8 +1977,28 @@ function isMetaAdFastLaneEligible({ linkedUserId = null, customData = {}, manych
     return isCurrentMetaAdInbound({ customData, manychatMessageId });
 }
 
-function isBalanceLeadAutoSendEnabled({ linkedUserId = null, threadAutoSendEnabled = false, metaAdFastLane = false } = {}) {
-    return !linkedUserId && threadAutoSendEnabled === true && metaAdFastLane === true;
+function isExerciseConversationFastLaneEligible({ linkedUserId = null, currentMessage = '', recentMessages = [], nowMs = Date.now() } = {}) {
+    if (linkedUserId) return false;
+    const text = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    if (!text) return false;
+    if (/\b(?:stop|unsubscribe|do not message|don['\u2019]?t message|leave me alone)\b/i.test(text)) return false;
+    const exercisePattern = /\b(?:gym|fitness|workouts?|working out|exercise(?:s|d|ing)?|training|strength training|weight training|lifting|cardio|mobility|reps?|squats?|deadlifts?|bench press|leg day|upper body|lower body|push day|pull day|running|runner|treadmill|pilates|yoga)\b/i;
+    if (exercisePattern.test(text)) return true;
+    const activeConversationCutoff = Number(nowMs) - (2 * 60 * 60 * 1000);
+    return (Array.isArray(recentMessages) ? recentMessages : [])
+        .slice(-8)
+        .some(message => {
+            const createdAtMs = Date.parse(message?.created_at || '');
+            return Number.isFinite(createdAtMs)
+                && createdAtMs >= activeConversationCutoff
+                && exercisePattern.test(String(message?.text || ''));
+        });
+}
+
+function isBalanceLeadAutoSendEnabled({ linkedUserId = null, threadAutoSendEnabled = false, metaAdFastLane = false, exerciseConversationFastLane = false } = {}) {
+    return !linkedUserId
+        && threadAutoSendEnabled === true
+        && (metaAdFastLane === true || exerciseConversationFastLane === true);
 }
 
 function isCanceledLatestRecoveryCandidate({ status, data = {}, autoSendEnabled, isLatestInbound } = {}) {
@@ -4042,6 +4062,7 @@ exports.handler = async (event) => {
             }),
         };
     }
+    const history = await loadIgHistory(threadId, messageText);
     const botAccount = thread.custom_data?.bot_account || thread.custom_data?.instagram_graph?.bot_account || '';
     const algorithmFork = algorithmForkForBotAccount(botAccount);
     const cocosAutoSendLane = isCocosBotAccount(botAccount);
@@ -4067,10 +4088,16 @@ exports.handler = async (event) => {
         customData: thread.custom_data,
         currentMessage: messageText,
     });
+    const exerciseConversationFastLane = isExerciseConversationFastLaneEligible({
+        linkedUserId: thread.linked_user_id,
+        currentMessage: messageText,
+        recentMessages: history,
+    });
     const balanceLeadAutoSendLane = isBalanceLeadAutoSendEnabled({
         linkedUserId: thread.linked_user_id,
         threadAutoSendEnabled: thread.auto_send_enabled,
         metaAdFastLane,
+        exerciseConversationFastLane,
     });
     const autoSendEnabled = !linkedClientNeedsYou
         && (balanceLeadAutoSendLane || cocosAutoSendLane || voiceReplyTestLane || metaAdFastLane);
@@ -4246,8 +4273,6 @@ exports.handler = async (event) => {
     const draftOnlyNeedsYouReason = linkedClientNeedsYou
         ? 'linked_client_requires_shannon_approval'
         : 'always_needs_you_person';
-    const history = await loadIgHistory(threadId, messageText);
-
     let memoryBlock = '';
     // For converted leads, prefer the in-app client_memory (richer signal,
     // includes workout/mood/diet history alongside conversation).
@@ -4805,12 +4830,15 @@ exports.handler = async (event) => {
             auto_send_enabled_at_draft: autoSendEnabled,
             auto_send_default_reason: metaAdFastLane
                 ? 'meta_ad_fast_lane'
-                : (cocosAutoSendLane ? 'cocos_auto_lane' : undefined),
+                : (exerciseConversationFastLane
+                    ? 'balance_exercise_fast_lane'
+                    : (cocosAutoSendLane ? 'cocos_auto_lane' : undefined)),
             auto_send_allow_immediate: false,
-            auto_send_fast_lane_delay_ms: (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane)
+            auto_send_fast_lane_delay_ms: (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane || exerciseConversationFastLane)
                 ? IG_FAST_LANE_DELAY_MS
                 : undefined,
             meta_ad_fast_lane: metaAdFastLane || undefined,
+            exercise_conversation_fast_lane: exerciseConversationFastLane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : metaAdFlowVariant,
             outbound_voice_message: outboundVoiceMessage || undefined,
             outbound_voice_message_reason: outboundVoiceMessageReason || undefined,
@@ -4995,12 +5023,15 @@ exports.handler = async (event) => {
             auto_send_enabled_at_draft: autoSendEnabled,
             auto_send_default_reason: metaAdFastLane
                 ? 'meta_ad_fast_lane'
-                : (cocosAutoSendLane ? 'cocos_auto_lane' : undefined),
+                : (exerciseConversationFastLane
+                    ? 'balance_exercise_fast_lane'
+                    : (cocosAutoSendLane ? 'cocos_auto_lane' : undefined)),
             auto_send_allow_immediate: false,
-            auto_send_fast_lane_delay_ms: (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane)
+            auto_send_fast_lane_delay_ms: (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane || exerciseConversationFastLane)
                 ? IG_FAST_LANE_DELAY_MS
                 : existingPending.data?.auto_send_fast_lane_delay_ms || undefined,
             meta_ad_fast_lane: metaAdFastLane || existingPending.data?.meta_ad_fast_lane || undefined,
+            exercise_conversation_fast_lane: exerciseConversationFastLane || existingPending.data?.exercise_conversation_fast_lane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : (metaAdFlowVariant || existingPending.data?.meta_ad_flow_variant || undefined),
             outbound_voice_message: coalescedOutboundVoiceMessage || undefined,
             outbound_voice_message_reason: coalescedOutboundVoiceMessage ? coalescedOutboundVoiceReason : undefined,
@@ -5284,8 +5315,7 @@ exports.handler = async (event) => {
                     }), IG_DRAFT_REVIEW_TIMEOUT_MS, 'Coco repaired draft review');
                     const repairedReview = repairedReviewResult?.review || null;
                     const acceptRepair = !!repairedReview
-                        && (isDraftReviewAutoSendSafe(repairedReview)
-                            || (balanceLeadAutoSendLane && isNonBlockingDraftStyleWarning(repairedReview)))
+                        && isDraftReviewAutoSendSafe(repairedReview)
                         && (!effectiveOutboundVoiceMessage || inspectVoiceScriptQuality(repaired.joined).valid)
                         && !hasFirstPersonHealthClaim(repaired.joined)
                         && (!repairRequiresQuestionFreeReply(repairIssues)
@@ -5416,8 +5446,9 @@ exports.handler = async (event) => {
         });
     }
 
-    // Only a verified current Meta ad first inbound uses the AI coach fast lane.
-    // Normal unlinked leads stay pending for manager review; linked clients stay approval-only.
+    // Verified current Meta ad openings and clear exercise conversations use the AI coach fast lane.
+    // They still require a clean reviewer pass. Other leads stay pending for manager review;
+    // linked clients stay approval-only.
     let autoHandled = false;
     const blockedStage = ['churned'].includes(effectiveLeadStage);
     const balanceAutoSendLane = balanceLeadAutoSendLane;
@@ -5461,7 +5492,7 @@ exports.handler = async (event) => {
             contextBypass: autoContextBypass,
             alertData: currentAlertData,
             allowTestLaneDraftReviewWarning: voiceReplyTestLane,
-            allowBalanceLeadDraftReviewWarning: balanceAutoSendLane,
+            allowBalanceLeadDraftReviewWarning: false,
         })
         : null;
     if (!autoHoldReason) {
@@ -5724,6 +5755,7 @@ exports._test = {
     isCanceledLatestRecoveryCandidate,
     isCurrentMetaAdInbound,
     isMetaAdFastLaneEligible,
+    isExerciseConversationFastLaneEligible,
     resolveMetaAdFlowVariant,
     buildMetaAdFoundersPassFirstReply,
     collectCocosAutoRepairIssues,
