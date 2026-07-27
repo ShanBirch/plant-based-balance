@@ -56,6 +56,21 @@ test('migration keeps the queue server-only and uses an atomic claim lease', () 
     assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.claim_ig_next_actions[\s\S]+TO service_role/i);
 });
 
+test('Story discovery can prioritize an exact unanswered inbound without becoming a second sender', () => {
+    const migration = fs.readFileSync(
+        path.join(__dirname, '..', 'supabase', 'migrations', '20260727230625_prioritize_story_viewer_unanswered_inbound.sql'),
+        'utf8'
+    );
+    assert.match(migration, /ORDER BY created_at DESC, id DESC/i);
+    assert.match(migration, /observed_message_is_stale/i);
+    assert.match(migration, /dm_manager_already_claimed/i);
+    assert.match(migration, /owner = 'dm_manager'/i);
+    assert.match(migration, /story_viewer_unanswered_preempt/i);
+    assert.match(migration, /status IN \('needs_you', 'blocked'\)/i);
+    assert.match(migration, /GRANT EXECUTE[\s\S]+TO service_role/i);
+    assert.doesNotMatch(migration, /GRANT EXECUTE[\s\S]+TO authenticated/i);
+});
+
 test('a new action version archives and clears the older operator receipt', () => {
     const migration = fs.readFileSync(
         path.join(__dirname, '..', 'supabase', 'migrations', '20260717214000_harden_operator_queue_receipts_and_founders_metrics.sql'),

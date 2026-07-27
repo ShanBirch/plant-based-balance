@@ -78,11 +78,24 @@ async function seedStoryActions(rows = []) {
     return results;
 }
 
+async function prioritizeStoryViewerUnansweredInbound({ threadId, observedMessageId = null, runId = null } = {}) {
+    if (!threadId) throw new Error('Instagram thread id is required');
+    return supabaseQuery('rpc/prioritize_story_viewer_unanswered_inbound', {
+        method: 'POST',
+        body: {
+            p_thread_id: threadId,
+            p_observed_message_id: observedMessageId || null,
+            p_run_id: runId ? String(runId).slice(0, 180) : null,
+        },
+    });
+}
+
 module.exports = {
     OWNERS,
     claimNextActions,
     cleanOwner,
     completeNextAction,
+    prioritizeStoryViewerUnansweredInbound,
     seedStoryActions,
     _test: { clampInteger },
 };
