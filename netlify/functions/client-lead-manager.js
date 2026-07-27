@@ -764,7 +764,7 @@ async function completeCloudFallbackController(action, {
         body: {
             p_action_id: action.id,
             p_claim_token: action.claim_token,
-            p_status: 'waiting',
+            p_status: 'cooldown',
             p_safe_after: safeAfter,
             p_receipt: {
                 run_id: runId,
