@@ -9,7 +9,13 @@ const {
     validateSendTimeOutboundSafety,
     joinSentChunkTexts,
     validateOutboundTextIntegrity,
+    shouldForceTextDelivery,
 } = require('../netlify/functions/send-ig-reply')._test;
+
+assert.strictEqual(shouldForceTextDelivery({ forceText: true }), true);
+assert.strictEqual(shouldForceTextDelivery({ force_text: true }), true);
+assert.strictEqual(shouldForceTextDelivery({ deliveryMode: 'text' }), true);
+assert.strictEqual(shouldForceTextDelivery({ deliveryMode: 'voice' }), false);
 
 assert.strictEqual(isCocosAlertData({ bot_account: 'cocos_pt_studio' }), true);
 assert.strictEqual(isCocosAlertData({ algorithm_fork: 'cocos_acquisition_v1' }), true);

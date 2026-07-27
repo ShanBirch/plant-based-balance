@@ -425,6 +425,9 @@ exports.handler = async (event) => {
     // the original draft. Feeds the voice-match learning corpus.
     const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
     const timingSuggestion = normalizeTimingSuggestion(body.timingSuggestion || body.reply_timing_suggestion);
+    const forceText = body.forceText === true
+        || body.force_text === true
+        || String(body.deliveryMode || body.delivery_mode || '').toLowerCase() === 'text';
 
     if (!alertId || !replyTextInput) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing alertId or replyText' }) };
@@ -520,7 +523,7 @@ exports.handler = async (event) => {
             const res = await fetch(`${SITE_URL}/.netlify/functions/send-whatsapp-reply`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ alertId, replyText, draftText, source, editReason, timingSuggestion }),
+                body: JSON.stringify({ alertId, replyText, draftText, source, editReason, timingSuggestion, forceText }),
             });
             const text = await res.text();
             return { statusCode: res.status, body: text || JSON.stringify({ ok: res.ok }) };

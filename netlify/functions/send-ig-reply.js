@@ -154,6 +154,12 @@ const INSTAGRAM_GRAPH_TYPING_ACTION_TIMEOUT_MS = 1200;
 const FIRST_ITEM_TYPING_MIN_MS = 1800;
 const FIRST_ITEM_TYPING_MAX_MS = 4200;
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
+
+function shouldForceTextDelivery(body = {}) {
+    return body.forceText === true
+        || body.force_text === true
+        || String(body.deliveryMode || body.delivery_mode || '').toLowerCase() === 'text';
+}
 const PERMANENT_NEEDS_YOU_AUTOMATED_SEND_MESSAGE = 'Permanent Needs You contacts require Shannon approval before sending.';
 const LINKED_CLIENT_AUTOMATED_SEND_MESSAGE = 'Linked Instagram clients require Shannon approval from Needs You before sending.';
 const PERSONAL_DM_BOUNDARY_MESSAGE = 'Personal, flirtatious, or non-business call conversations require Shannon approval before sending.';
@@ -1514,6 +1520,7 @@ exports.handler = async (event) => {
     const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
     const timingSuggestion = normalizeTimingSuggestion(body.timingSuggestion || body.reply_timing_suggestion);
     const deliveryPacing = body.deliveryPacing === 'human_long_reply_v1' ? 'human_long_reply_v1' : 'default';
+    const forceText = shouldForceTextDelivery(body);
     const draftReviewOverride = [body.draftReviewOverride, body.draft_review_override, body.sendAnyway, body.send_anyway]
         .some(value => envFlagEnabled(value));
 
@@ -2011,7 +2018,10 @@ exports.handler = async (event) => {
     }
     const chunkPacing = resolveChunkPacing(messagesToSend.length, deliveryPacing);
     const plannedChunkGapsMs = resolveChunkGaps(messagesToSend, chunkPacing);
-    const voiceMessageConfig = resolveOutboundVoiceMessageConfig(alertData, { shouldUseGraph, channel });
+    const voiceMessageConfig = resolveOutboundVoiceMessageConfig(
+        forceText ? { ...alertData, outbound_voice_message: false } : alertData,
+        { shouldUseGraph, channel }
+    );
     if (voiceMessageConfig.enabled && !voiceMessageConfig.available) {
         return {
             statusCode: 409,
@@ -2234,8 +2244,12 @@ exports.handler = async (event) => {
         delivery_transport: deliveryTransport,
         ...buildAlternateIgDeliveryData(alternateDelivery || {}),
         delivery_payload_kind: voiceMessageConfig.enabled ? 'audio' : 'text',
-        outbound_voice_message: voiceMessageConfig.enabled ? true : (alertData.outbound_voice_message || undefined),
-        outbound_voice_message_reason: voiceMessageConfig.reason || alertData.outbound_voice_message_reason || undefined,
+        outbound_voice_message: voiceMessageConfig.enabled
+            ? true
+            : (forceText ? false : (alertData.outbound_voice_message || undefined)),
+        outbound_voice_message_reason: forceText
+            ? 'manager_forced_text_delivery'
+            : (voiceMessageConfig.reason || alertData.outbound_voice_message_reason || undefined),
         sent_voice_messages: sentVoiceMessages.length ? sentVoiceMessages : undefined,
         voice_delivery_fallback: null,
         instagram_seen_receipt: seenReceipt,
@@ -2455,6 +2469,7 @@ exports.handler = async (event) => {
 };
 
 exports._test = {
+    shouldForceTextDelivery,
     enrichAlertDataWithThreadGraph,
     isHumanAgentApprovalError,
     isHumanAgentWindow,
