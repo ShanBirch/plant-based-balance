@@ -65,3 +65,13 @@ Run both routes against the same AU$99 Founders Pass and broad Australia ad set.
 5. Verify account creation and onboarding events can be joined to the purchase.
 6. Record the start date and freeze the test for the first 72 hours unless delivery or tracking is broken.
 7. Review at seven days or once each creative has meaningful spend, whichever is later.
+
+## Earned share celebration launch
+
+- Launch date: 2026-07-28.
+- Variant: `earned_share_celebration_v1`.
+- Hypothesis: a brief earned celebration in Balance Feed, bolder Instagram artwork, and Instagram-safe content spacing will increase completed workout, PB, and activity shares without increasing share failures.
+- Primary KPI: completed social shares per eligible completed workout, PB, or activity.
+- Diagnostics: Balance Feed post views, reactions and comments; Instagram share-sheet opens and confirmed-return rewards; destination split; creative variant recorded with social-share rewards.
+- Guardrail: upload, render, native-share, or share-sheet failure rate must not increase.
+- Decision date: 2026-08-11, using the prior 14 days as the baseline and the first 14 live days as the comparison window.

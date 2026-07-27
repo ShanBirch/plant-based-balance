@@ -3438,6 +3438,8 @@ function pbbGetWorkoutShareDurationText() {
     return durationText || '00:00';
 }
 
+const PBB_SHARE_CREATIVE_VARIANT = 'earned_share_celebration_v1';
+
 function buildWorkoutShareCardPayload() {
     if (!completedWorkoutDataForShare) return null;
 
@@ -3483,6 +3485,7 @@ function buildWorkoutShareCardPayload() {
 
     return {
         card_type: 'workout',
+        share_variant: PBB_SHARE_CREATIVE_VARIANT,
         workout_name: data.workoutName || 'Workout',
         duration: data.duration || pbbGetWorkoutShareDurationText(),
         exercises: exercises,
@@ -3504,6 +3507,7 @@ function buildPBShareCardPayload(pbData) {
             : (pbData.previous != null ? pbData.previous : (improvement ? value - improvement : null)));
     return {
         card_type: 'pb',
+        share_variant: PBB_SHARE_CREATIVE_VARIANT,
         pb_history_id: pbData.pbHistoryId || pbData.historyId || pbData.id || null,
         exercise: pbData.exercise_name || pbData.exercise || 'Personal best',
         pb_type: pbType,
@@ -3598,6 +3602,45 @@ function pbbShareDrawMetricBox(ctx, x, y, w, h, label, value, fill) {
     ctx.fillStyle = '#111827';
     ctx.font = '900 34px Arial, sans-serif';
     pbbShareWrapText(ctx, value, x + 24, y + 90, w - 48, 36, 1);
+}
+
+function pbbShareDrawCelebrationAccents(ctx, width, height, options = {}) {
+    const target = options.target === 'feed' ? 'feed' : 'story';
+    const intensity = options.intensity === 'major' ? 'major' : 'standard';
+    const safeTop = target === 'feed' ? 64 : 220;
+    const centreX = width - 142;
+    const centreY = safeTop + 90;
+    const colours = intensity === 'major'
+        ? ['#fbbf24', '#fde68a', '#ffffff', '#34d399']
+        : ['#f5c45c', '#ffffff', '#5eead4'];
+    const particleCount = intensity === 'major' ? 22 : 14;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    for (let i = 0; i < particleCount; i++) {
+        const angle = ((Math.PI * 2) / particleCount) * i + 0.18;
+        const distance = 50 + ((i * 37) % 126);
+        const particleX = centreX + Math.cos(angle) * distance;
+        const particleY = centreY + Math.sin(angle) * distance * 0.68;
+        const length = 10 + ((i * 11) % 24);
+        ctx.save();
+        ctx.translate(particleX, particleY);
+        ctx.rotate(angle);
+        ctx.fillStyle = colours[i % colours.length];
+        ctx.globalAlpha = 0.5 + ((i % 3) * 0.16);
+        pbbShareFillRoundRect(ctx, -2, -length / 2, 4 + (i % 2) * 3, length, 4, ctx.fillStyle);
+        ctx.restore();
+    }
+
+    ctx.strokeStyle = intensity === 'major' ? 'rgba(251,191,36,0.42)' : 'rgba(245,196,92,0.28)';
+    ctx.lineWidth = 3;
+    [62, 92, 124].forEach((radius, index) => {
+        ctx.globalAlpha = 0.72 - (index * 0.18);
+        ctx.beginPath();
+        ctx.arc(centreX, centreY, radius, -0.58, 1.05);
+        ctx.stroke();
+    });
+    ctx.restore();
 }
 
 function pbbShareDrawNutritionCard(ctx, cardPayload, panelX, panelY, panelW, panelH) {
@@ -3721,27 +3764,34 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
     ctx.fillStyle = lowerGradient;
     ctx.fillRect(0, 0, width, height);
 
+    const isMajorCelebration = cardType === 'pb' || !!(cardPayload.pbs && cardPayload.pbs.length);
+    pbbShareDrawCelebrationAccents(ctx, width, height, {
+        target,
+        intensity: isMajorCelebration ? 'major' : 'standard'
+    });
+
     if (cardType === 'workout') {
         const backdropY = target === 'feed' ? height - 790 : height - 920;
         const backdropH = target === 'feed' ? 640 : 760;
         pbbShareFillRoundRect(ctx, 40, backdropY, width - 80, backdropH, 38, 'rgba(2, 6, 23, 0.28)');
     }
 
+    const brandTop = target === 'feed' ? 48 : 228;
     try {
         const logo = await pbbShareLoadImage('balance_logo_transparent.png');
         ctx.save();
         ctx.globalAlpha = 0.94;
-        ctx.drawImage(logo, 64, 48, 82, 82);
+        ctx.drawImage(logo, 64, brandTop, 82, 82);
         ctx.restore();
     } catch (error) {
         console.warn('Could not draw transparent Balance logo:', error);
     }
     ctx.fillStyle = '#ffffff';
     ctx.font = '900 34px Arial, sans-serif';
-    ctx.fillText('BALANCE', 164, 94);
+    ctx.fillText('BALANCE', 164, brandTop + 46);
     ctx.fillStyle = 'rgba(255,255,255,0.74)';
     ctx.font = '750 21px Arial, sans-serif';
-    ctx.fillText('SHOW UP. KEEP THE RECEIPTS.', 164, 126);
+    ctx.fillText('SHOW UP. KEEP THE RECEIPTS.', 164, brandTop + 78);
 
     ctx.save();
     ctx.shadowColor = 'rgba(0, 0, 0, 0.82)';
@@ -3974,6 +4024,7 @@ async function pbbShareDrawFullBleedActivityCard(ctx, cardPayload, width, height
     gradient.addColorStop(1, 'rgba(3, 7, 18, 0.84)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
+    pbbShareDrawCelebrationAccents(ctx, width, height, { target, intensity: 'standard' });
 
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.72)';
@@ -4470,11 +4521,15 @@ window.pbbShareImageUrlToDataUrl = pbbShareImageUrlToDataUrl;
 
 async function awardBalanceSocialShareXP(shareKind, shareDestination, referenceId) {
     if (!window.currentUser?.id || !window.db?.points?.awardPoints) return null;
+    const metadata = { shareKind, shareDestination };
+    if (shareKind === 'workout' || shareKind === 'activity' || shareKind === 'pb') {
+        metadata.creativeVariant = PBB_SHARE_CREATIVE_VARIANT;
+    }
     const result = await window.db.points.awardPoints(
         window.currentUser.id,
         'social_share',
         referenceId,
-        { shareKind, shareDestination }
+        metadata
     );
     if (result?.success) {
         if (typeof window.refreshLevelDisplay === 'function') window.refreshLevelDisplay();
@@ -4885,6 +4940,7 @@ async function handleWorkoutCardPhotoCaptureFromFile(file) {
 
         const cardPayload = {
             card_type: 'workout',
+            share_variant: PBB_SHARE_CREATIVE_VARIANT,
             workout_name: data.workoutName || 'Workout',
             duration: data.duration || pbbGetWorkoutShareDurationText(),
             exercises: exercises,
@@ -6062,6 +6118,7 @@ function buildActivityShareCardPayload() {
     if (!savedActivityData) return null;
     const cardPayload = {
         card_type: 'activity',
+        share_variant: PBB_SHARE_CREATIVE_VARIANT,
         activity_type: savedActivityData.activity_type,
         activity_label: savedActivityData.activity_label,
         duration: savedActivityData.duration + ' min',

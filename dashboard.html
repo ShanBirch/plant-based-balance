@@ -509,7 +509,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=39',
             'lib/native-iap.js',
-            'lib/stories.js?v=71',
+            'lib/stories.js?v=72',
             'lib/ai-opponents.js',
             'lib/games.js?v=3',
             'lib/nutrition-calculator.js',
@@ -530,7 +530,7 @@ if (window._pbbIsIOSSafari) {
 } else {
     document.write('<script src="lib/vegan-meal-safety.js?v=2"><\/script>');
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=71"><\/script>');
+    document.write('<script src="lib/stories.js?v=72"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=3"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -592,6 +592,23 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=67">
 
 <script>if(window._crumb)window._crumb('head_complete');</script>
+<style id="balance-earned-celebration-styles">
+  .balance-share-celebration-host { isolation:isolate; }
+  .balance-share-celebration-host > :not(.balance-earned-celebration) { position:relative; z-index:1; }
+  .balance-earned-celebration { position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  .balance-earned-ring { position:absolute; width:46%; aspect-ratio:1; right:-8%; top:-7%; border:2px solid rgba(253,230,138,0.52); border-radius:50%; opacity:0; animation:balance-earned-ring 1.05s cubic-bezier(.16,.84,.32,1) 80ms both; }
+  .balance-earned-celebration.is-major .balance-earned-ring { width:62%; right:-14%; top:-13%; border-width:3px; }
+  .balance-earned-glimmer { position:absolute; inset:-25% auto -25% -45%; width:24%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.38),transparent); transform:skewX(-18deg); animation:balance-earned-glimmer 1.15s cubic-bezier(.2,.75,.25,1) 180ms both; }
+  .balance-earned-particle { position:absolute; left:var(--x); top:var(--y); width:5px; height:17px; border-radius:999px; background:var(--celebration-colour); box-shadow:0 0 12px rgba(255,255,255,0.28); opacity:0; transform:translate(0,0) rotate(var(--twist)) scale(.4); animation:balance-earned-particle .92s cubic-bezier(.16,.84,.32,1) var(--delay) both; }
+  .balance-earned-celebration.is-major .balance-earned-particle { width:6px; height:21px; }
+  @keyframes balance-earned-ring { 0% { opacity:0; transform:scale(.28); } 36% { opacity:.85; } 100% { opacity:0; transform:scale(1.5); } }
+  @keyframes balance-earned-glimmer { 0% { left:-45%; opacity:0; } 20% { opacity:1; } 100% { left:125%; opacity:0; } }
+  @keyframes balance-earned-particle { 0% { opacity:0; transform:translate(0,0) rotate(var(--twist)) scale(.4); } 20% { opacity:1; } 100% { opacity:0; transform:translate(var(--dx),var(--dy)) rotate(calc(var(--twist) + 150deg)) scale(1); } }
+  @media (prefers-reduced-motion: reduce) {
+    .balance-earned-ring,.balance-earned-glimmer,.balance-earned-particle { animation:none !important; opacity:.28; }
+    .balance-earned-glimmer { display:none; }
+  }
+</style>
 </head>
 <body>
 <script>if(window._crumb)window._crumb('body_start');</script>
@@ -13418,6 +13435,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#today-workout-card', title:'Post-workout Share', body:"Finish a workout, then tap the single Share button to post the workout, a PB, or a photo to Feed." },
     { tab:'movement-tab', sel:'#today-workout-card', title:'One daily workout share reward', body:"Share one workout or PB to Balance Feed for +15 XP, and one to Instagram Feed for another +15 XP each day. More posts can still be shared without extra XP." },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Photo + workout overlays', body:"Choose Photo + workout or Photo + PB after a session. Balance places the result over your gym photo in a clean transparent overlay, then shows you a preview before posting." },
+    { tab:'friends', sel:'.feed-post-card', fallbackSel:'#feed-composer-card', title:'Your wins now land bigger', fallbackTitle:'Your wins now land bigger', body:'Workout, activity and PB posts now play a quick gold celebration in Balance Feed. Instagram share cards also use bolder earned details and safer spacing.', fallbackBody:'Share a workout, activity or PB to see its quick gold celebration in Feed. Instagram cards now use bolder earned details too.' },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Milestone celebrations', body:"When you hit bigger workout count or streak milestones, Balance pops up a celebration card you can share to Feed for +10 XP.", quick: true },
     { tab:'dashboard', sel:'#weekly-progress-photo-card,#weekly-progress-photo-done-card', title:'Progress photos to Instagram', body:"After your weekly progress photos save, tap IG Story to share a Balance progress card straight to Instagram.", condition: function(){ return !!document.querySelector('#weekly-progress-photo-card,#weekly-progress-photo-done-card'); } },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
@@ -14532,6 +14550,16 @@ if(!window._pbbIsIOSSafari) {
     sel: '#mealBreakdownIgBtn,#meals-log-list,.meal-log-card',
     title: 'Instagram share confirmation',
     body: 'Share a meal photo to Instagram, then return to Balance to see the confirmation and your +15 XP reward.'
+  });
+  allFeatures.push({
+    id: 'earned-share-celebrations-v1',
+    tab: 'friends',
+    sel: '.feed-post-card',
+    fallbackSel: '#feed-composer-card',
+    title: 'Your wins now land bigger',
+    fallbackTitle: 'Your wins now land bigger',
+    body: 'Workout, activity and PB posts now play a quick gold celebration in Balance Feed. Instagram share cards also use bolder earned details and safer spacing.',
+    fallbackBody: 'Share a workout, activity or PB to see its quick gold celebration in Feed. Instagram cards now use bolder earned details too.'
   });
   allFeatures.push({
     id: 'activity-instagram-story-share-v1',
@@ -17594,13 +17622,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=36';
+s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=37';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=36"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=37"><\/script>');
 }
 </script>
 
