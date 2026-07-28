@@ -16,7 +16,7 @@ if (/Could not open Instagram directly/.test(script)) {
     throw new Error('Native Instagram failure must not dead-end with the old direct-open error');
 }
 
-if (!/dashboard-script-10-points_widget_functions\.js\?v=33/.test(dashboard)) {
+if (!/dashboard-script-10-points_widget_functions\.js\?v=38/.test(dashboard)) {
     throw new Error('Dashboard must load the cache-busted Instagram fallback script');
 }
 

@@ -3438,7 +3438,7 @@ function pbbGetWorkoutShareDurationText() {
     return durationText || '00:00';
 }
 
-const PBB_SHARE_CREATIVE_VARIANT = 'earned_share_celebration_v1';
+const PBB_SHARE_CREATIVE_VARIANT = 'earned_share_motion_v1';
 
 function buildWorkoutShareCardPayload() {
     if (!completedWorkoutDataForShare) return null;
@@ -4445,6 +4445,189 @@ async function shareBalanceCardImageExternally(dataUrl, target, text) {
     return true;
 }
 
+function pbbShareBlobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error || new Error('Could not prepare motion share'));
+        reader.readAsDataURL(blob);
+    });
+}
+
+function pbbSharePickVideoMimeType() {
+    if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') return '';
+    const candidates = [
+        'video/mp4;codecs=avc1.42E01E',
+        'video/mp4',
+        'video/webm;codecs=vp9',
+        'video/webm;codecs=vp8',
+        'video/webm'
+    ];
+    return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
+
+function pbbShareDrawMotionFrame(ctx, image, width, height, progress, target, major) {
+    const eased = 1 - Math.pow(1 - Math.min(1, progress), 3);
+    const scale = 1 + (eased * 0.018);
+    const drawW = width * scale;
+    const drawH = height * scale;
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(image, (width - drawW) / 2, (height - drawH) / 2, drawW, drawH);
+
+    const introFade = Math.max(0, 1 - (progress / 0.24));
+    if (introFade > 0) {
+        ctx.fillStyle = `rgba(2, 6, 23, ${introFade * 0.46})`;
+        ctx.fillRect(0, 0, width, height);
+    }
+
+    const burstProgress = Math.min(1, Math.max(0, (progress - 0.05) / 0.32));
+    const burstFade = Math.min(1, Math.max(0, (0.52 - progress) / 0.18));
+    if (burstProgress > 0 && burstFade > 0) {
+        const originX = width * 0.82;
+        const originY = target === 'feed' ? 154 : 310;
+        const colours = major
+            ? ['#fbbf24', '#fde68a', '#ffffff', '#34d399']
+            : ['#f5c45c', '#ffffff', '#5eead4'];
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        for (let i = 0; i < (major ? 28 : 20); i++) {
+            const angle = ((Math.PI * 2) / (major ? 28 : 20)) * i + 0.16;
+            const distance = burstProgress * (74 + ((i * 43) % 190));
+            const x = originX + Math.cos(angle) * distance;
+            const y = originY + Math.sin(angle) * distance * 0.72 + (burstProgress * burstProgress * 38);
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle + (burstProgress * 2.4));
+            ctx.globalAlpha = burstFade * (0.62 + ((i % 3) * 0.14));
+            pbbShareFillRoundRect(ctx, -3, -10, 6 + (i % 2) * 3, 20 + (i % 4) * 5, 5, colours[i % colours.length]);
+            ctx.restore();
+        }
+        ctx.restore();
+    }
+
+    const sweepProgress = Math.min(1, Math.max(0, (progress - 0.12) / 0.42));
+    if (sweepProgress > 0 && sweepProgress < 1) {
+        const sweepX = -360 + (width + 720) * sweepProgress;
+        ctx.save();
+        ctx.translate(sweepX, 0);
+        ctx.rotate(-0.16);
+        const sweep = ctx.createLinearGradient(-170, 0, 170, 0);
+        sweep.addColorStop(0, 'rgba(245,196,92,0)');
+        sweep.addColorStop(0.46, 'rgba(253,230,138,0.08)');
+        sweep.addColorStop(0.5, 'rgba(255,255,255,0.42)');
+        sweep.addColorStop(0.54, 'rgba(253,230,138,0.1)');
+        sweep.addColorStop(1, 'rgba(245,196,92,0)');
+        ctx.fillStyle = sweep;
+        ctx.fillRect(-170, -220, 340, height + 440);
+        ctx.restore();
+    }
+}
+
+async function renderBalanceShareCardVideo(cardPayload, options = {}) {
+    const target = options.target === 'feed' ? 'feed' : 'story';
+    const mimeType = pbbSharePickVideoMimeType();
+    if (!mimeType || typeof document === 'undefined') throw new Error('Motion sharing is not supported on this phone');
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080;
+    canvas.height = target === 'feed' ? 1350 : 1920;
+    if (typeof canvas.captureStream !== 'function') throw new Error('Motion sharing is not supported on this phone');
+    const ctx = canvas.getContext('2d');
+    const stillDataUrl = await renderBalanceShareCardImage(cardPayload, options);
+    const stillImage = await pbbShareLoadImage(stillDataUrl);
+    const stream = canvas.captureStream(30);
+    const chunks = [];
+    const recorderOptions = { mimeType, videoBitsPerSecond: target === 'feed' ? 3200000 : 4200000 };
+    const recorder = new MediaRecorder(stream, recorderOptions);
+    const durationMs = 4200;
+    const major = cardPayload.card_type === 'pb' || !!(cardPayload.pbs && cardPayload.pbs.length);
+
+    const completion = new Promise((resolve, reject) => {
+        const safetyTimer = setTimeout(() => {
+            try { if (recorder.state !== 'inactive') recorder.stop(); } catch (e) {}
+            reject(new Error('Motion share timed out'));
+        }, durationMs + 3500);
+        recorder.ondataavailable = event => {
+            if (event.data && event.data.size > 0) chunks.push(event.data);
+        };
+        recorder.onerror = event => {
+            clearTimeout(safetyTimer);
+            reject(event.error || new Error('Could not record motion share'));
+        };
+        recorder.onstop = () => {
+            clearTimeout(safetyTimer);
+            stream.getTracks().forEach(track => track.stop());
+            if (!chunks.length) {
+                reject(new Error('Motion share was empty'));
+                return;
+            }
+            resolve(new Blob(chunks, { type: recorder.mimeType || mimeType }));
+        };
+    });
+
+    const startedAt = performance.now();
+    const drawFrame = now => {
+        const elapsed = now - startedAt;
+        const progress = Math.min(1, elapsed / durationMs);
+        pbbShareDrawMotionFrame(ctx, stillImage, canvas.width, canvas.height, progress, target, major);
+        if (progress < 1 && recorder.state !== 'inactive') {
+            requestAnimationFrame(drawFrame);
+        } else if (recorder.state !== 'inactive') {
+            recorder.stop();
+        }
+    };
+
+    pbbShareDrawMotionFrame(ctx, stillImage, canvas.width, canvas.height, 0, target, major);
+    recorder.start(250);
+    requestAnimationFrame(drawFrame);
+    return completion;
+}
+
+async function shareBalanceCardVideoExternally(blob, target) {
+    const mimeType = blob.type || 'video/mp4';
+    const extension = mimeType.includes('webm') ? 'webm' : (mimeType.includes('quicktime') ? 'mov' : 'mp4');
+    const file = new File([blob], `balance-${target || 'share'}-${Date.now()}.${extension}`, { type: mimeType });
+    const shareData = {
+        title: 'Balance',
+        text: target === 'story' ? 'Share this to your Instagram Story' : 'Share this to your Instagram Feed',
+        files: [file]
+    };
+    if (!navigator.share || (navigator.canShare && !navigator.canShare(shareData))) return null;
+    try {
+        await navigator.share(shareData);
+        showToast('Share sheet opened. Choose Instagram to post it.', 'success');
+        return true;
+    } catch (error) {
+        if (error && error.name === 'AbortError') return false;
+        console.warn('Motion share sheet failed:', error);
+        return null;
+    }
+}
+
+async function shareBalanceCardVideoWithNativeBridge(blob, safeTarget) {
+    const dataUrl = await pbbShareBlobToDataUrl(blob);
+    const androidShare = window.NativePermissions && window.NativePermissions.shareVideoToInstagram;
+    if (typeof androidShare === 'function') {
+        try {
+            const opened = androidShare.call(window.NativePermissions, dataUrl, safeTarget);
+            if (opened === true || opened === 'true') return true;
+        } catch (error) {
+            console.warn('Android Instagram motion share failed:', error);
+        }
+    }
+
+    const iosShare = getBalanceInstagramSharePlugin();
+    if (iosShare && typeof iosShare.shareVideoToInstagram === 'function') {
+        try {
+            const result = await iosShare.shareVideoToInstagram({ dataUrl, target: safeTarget });
+            if (result && (result.opened === true || result.success === true)) return true;
+        } catch (error) {
+            console.warn('iOS Instagram motion share failed:', error);
+        }
+    }
+    return false;
+}
+
 async function shareBalanceCardWithNativeBridge(dataUrl, safeTarget) {
     const androidShare = window.NativePermissions && window.NativePermissions.shareImageToInstagram;
     if (typeof androidShare === 'function') {
@@ -4481,15 +4664,40 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
     }
 
     const safeTarget = target === 'feed' ? 'feed' : 'story';
-    const dataUrl = await renderBalanceShareCardImage(cardPayload, {
+    const renderOptions = {
         target: safeTarget,
         photoDataUrl: options.photoDataUrl || null,
         photoDataUrls: options.photoDataUrls || null
-    });
+    };
+    let preparedNotified = false;
+    const notifyPrepared = () => {
+        if (preparedNotified) return;
+        preparedNotified = true;
+        if (typeof options.onSharePrepared === 'function') options.onSharePrepared();
+    };
+    const motionEligible = options.animate !== false
+        && ['workout', 'pb', 'activity'].includes(String(cardPayload.card_type || ''));
 
-    if (typeof options.onSharePrepared === 'function') {
-        options.onSharePrepared();
+    if (motionEligible) {
+        try {
+            showToast('Making your motion card...', 'info');
+            const videoBlob = await renderBalanceShareCardVideo(cardPayload, renderOptions);
+            notifyPrepared();
+            if (await shareBalanceCardVideoWithNativeBridge(videoBlob, safeTarget)) {
+                showToast(`Opening Instagram ${safeTarget === 'story' ? 'Story' : 'Feed'}...`, 'success');
+                return true;
+            }
+            const sharedExternally = await shareBalanceCardVideoExternally(videoBlob, safeTarget);
+            if (sharedExternally === true) return true;
+            if (sharedExternally === false) return false;
+        } catch (motionError) {
+            console.warn('Motion card unavailable, using still share:', motionError);
+        }
     }
+
+    const dataUrl = await renderBalanceShareCardImage(cardPayload, renderOptions);
+
+    notifyPrepared();
 
     if (await shareBalanceCardWithNativeBridge(dataUrl, safeTarget)) {
         showToast(`Opening Instagram ${safeTarget === 'story' ? 'Story' : 'Feed'}...`, 'success');
@@ -4517,6 +4725,7 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
 
 window.shareBalanceCardToInstagram = shareBalanceCardToInstagram;
 window.renderBalanceShareCardImage = renderBalanceShareCardImage;
+window.renderBalanceShareCardVideo = renderBalanceShareCardVideo;
 window.pbbShareImageUrlToDataUrl = pbbShareImageUrlToDataUrl;
 
 async function awardBalanceSocialShareXP(shareKind, shareDestination, referenceId) {

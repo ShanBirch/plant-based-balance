@@ -15,14 +15,15 @@ assert.ok(stories.includes("renderBalanceEarnedCelebration('workout', { major: !
 
 assert.ok(points.includes('function pbbShareDrawCelebrationAccents('), 'Instagram canvas accents must exist');
 assert.ok(points.includes("const brandTop = target === 'feed' ? 48 : 228"), 'Instagram Story branding must stay below top chrome');
-assert.ok(points.includes("const PBB_SHARE_CREATIVE_VARIANT = 'earned_share_celebration_v1'"), 'share creative variant must stay stable');
+assert.ok(points.includes("const PBB_SHARE_CREATIVE_VARIANT = 'earned_share_motion_v1'"), 'share creative variant must stay stable');
 assert.ok(points.includes('metadata.creativeVariant = PBB_SHARE_CREATIVE_VARIANT'), 'completed share rewards must record the creative variant');
 
 assert.ok(dashboard.includes("id: 'earned-share-celebrations-v1'"), 'returning users need a Feature Drop');
-assert.ok(dashboard.includes("title:'Your wins now land bigger'"), 'new users need the guided tour step');
+assert.ok(dashboard.includes("title:'Your wins now move'"), 'new users need the guided tour step');
 assert.ok(dashboard.includes('lib/stories.js?v=72'), 'Feed renderer cache key must be bumped');
-assert.ok(dashboard.includes('dashboard-script-10-points_widget_functions.js?v=37'), 'share renderer cache key must be bumped');
-assert.ok(serviceWorker.includes("const CACHE_NAME = 'pbb-app-v268'"), 'service worker cache must be bumped');
-assert.ok(serviceWorker.includes('dashboard-script-10-points_widget_functions.js?v=37'), 'service worker must precache the new renderer');
+assert.ok(dashboard.includes("id: 'instagram-motion-share-v1'"), 'returning users need the motion share Feature Drop');
+assert.ok(dashboard.includes('dashboard-script-10-points_widget_functions.js?v=38'), 'share renderer cache key must be bumped');
+assert.ok(serviceWorker.includes("const CACHE_NAME = 'pbb-app-v269'"), 'service worker cache must be bumped');
+assert.ok(serviceWorker.includes('dashboard-script-10-points_widget_functions.js?v=38'), 'service worker must precache the new renderer');
 
 console.log('earned share celebration contract passed');

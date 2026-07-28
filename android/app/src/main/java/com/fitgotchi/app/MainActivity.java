@@ -379,14 +379,34 @@ public class MainActivity extends BridgeActivity {
         return FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", tempFile);
     }
 
-    private Intent buildInstagramShareIntent(Uri imageUri, String mimeType, String target) {
+    private Uri cacheShareVideoDataUrl(String dataUrl, String target) throws Exception {
+        if (dataUrl == null || !dataUrl.startsWith("data:video/")) {
+            throw new IllegalArgumentException("Expected video data URL");
+        }
+        int comma = dataUrl.indexOf(',');
+        if (comma < 0) {
+            throw new IllegalArgumentException("Malformed data URL");
+        }
+
+        String mimeType = mimeTypeFromDataUrl(dataUrl);
+        String extension = mimeType.contains("webm") ? ".webm" : ".mp4";
+        String safeTarget = "story".equals(target) ? "story" : "feed";
+        File tempFile = new File(getCacheDir(), "balance_instagram_motion_" + safeTarget + extension);
+        byte[] bytes = Base64.decode(dataUrl.substring(comma + 1), Base64.DEFAULT);
+        try (FileOutputStream out = new FileOutputStream(tempFile, false)) {
+            out.write(bytes);
+        }
+        return FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", tempFile);
+    }
+
+    private Intent buildInstagramShareIntent(Uri mediaUri, String mimeType, String target) {
         Intent intent;
         if ("story".equals(target)) {
             intent = new Intent("com.instagram.share.ADD_TO_STORY");
             intent.setPackage("com.instagram.android");
-            // Instagram's Story activity advertises image/* rather than every
-            // concrete image subtype on all app/device versions.
-            intent.setDataAndType(imageUri, "image/*");
+            // Instagram's Story activity advertises broad media families rather
+            // than every concrete subtype on all app/device versions.
+            intent.setDataAndType(mediaUri, mimeType.startsWith("video/") ? "video/*" : "image/*");
             intent.putExtra("top_background_color", "#0f3d2e");
             intent.putExtra("bottom_background_color", "#f5c45c");
             intent.putExtra("content_url", "https://plantbased-balance.org/bio");
@@ -394,11 +414,11 @@ public class MainActivity extends BridgeActivity {
             intent = new Intent(Intent.ACTION_SEND);
             intent.setPackage("com.instagram.android");
             intent.setType(mimeType);
-            intent.putExtra(Intent.EXTRA_STREAM, imageUri);
+            intent.putExtra(Intent.EXTRA_STREAM, mediaUri);
         }
 
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        intent.setClipData(ClipData.newUri(getContentResolver(), "Balance share", imageUri));
+        intent.setClipData(ClipData.newUri(getContentResolver(), "Balance share", mediaUri));
         return intent;
     }
 
@@ -1113,6 +1133,21 @@ public class MainActivity extends BridgeActivity {
                 Uri imageUri = cacheShareImageDataUrl(dataUrl, safeTarget);
                 Intent intent = buildInstagramShareIntent(imageUri, mimeType, safeTarget);
                 grantUriPermission("com.instagram.android", imageUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                return launchInstagramShareIntent(intent);
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        /** Share a generated Balance motion card into Instagram. */
+        @JavascriptInterface
+        public boolean shareVideoToInstagram(String dataUrl, String target) {
+            String safeTarget = "story".equals(target) ? "story" : "feed";
+            try {
+                String mimeType = mimeTypeFromDataUrl(dataUrl);
+                Uri videoUri = cacheShareVideoDataUrl(dataUrl, safeTarget);
+                Intent intent = buildInstagramShareIntent(videoUri, mimeType, safeTarget);
+                grantUriPermission("com.instagram.android", videoUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 return launchInstagramShareIntent(intent);
             } catch (Exception e) {
                 return false;

@@ -75,3 +75,13 @@ Run both routes against the same AU$99 Founders Pass and broad Australia ad set.
 - Diagnostics: Balance Feed post views, reactions and comments; Instagram share-sheet opens and confirmed-return rewards; destination split; creative variant recorded with social-share rewards.
 - Guardrail: upload, render, native-share, or share-sheet failure rate must not increase.
 - Decision date: 2026-08-11, using the prior 14 days as the baseline and the first 14 live days as the comparison window.
+
+## Earned motion share launch
+
+- Launch date: 2026-07-28.
+- Variant: `earned_share_motion_v1`.
+- Hypothesis: a 4.2-second photo-and-results motion card will increase completed Instagram workout, PB, and activity shares over the still-card baseline.
+- Primary KPI: confirmed Instagram shares per eligible completed workout, PB, or activity.
+- Diagnostics: motion render success, native video handoff, share-sheet handoff, still fallback rate, destination split, and Feed engagement on the matching Balance post.
+- Guardrail: users must always retain the still-card fallback, and median time from share tap to composer opening should remain under eight seconds.
+- Decision date: 2026-08-11, comparing the motion variant with the prior still-card window.
