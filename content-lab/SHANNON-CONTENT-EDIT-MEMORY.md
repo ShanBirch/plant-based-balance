@@ -20,6 +20,15 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - For food and coaching education, prefer relevant real photography, recognisable food imagery or concise typography over abstract stand-ins.
 - If a visual makes the idea stranger or less clear, remove it.
 
+### Balance carousel logo shimmer
+
+- Balance carousel posts default to five-second MP4 slides rather than still-only delivery, including photo-first coaching carousels, unless Shannon explicitly requests still images.
+- Use the approved large bottom-right Balance kanji/ring watermark with the white disc removed.
+- Keep the base mark quiet black at about 17% opacity. Run two brief diagonal gold passes through the logo mask beginning at 1.20 and 3.55 seconds, each lasting 0.65 seconds, then return completely to black.
+- The shimmer belongs to the logo itself. Do not substitute a corner sparkle, moving gold bar, permanent gold logo, pulse, rotation, particles or whole-slide glow.
+- Composite copy above the watermark and keep the mark and sheen clear of Shannon's face and head.
+- Carousel preview pages must play the final MP4 slides inline; poster JPGs alone cannot prove the shimmer.
+
 ### Shannon's face is protected
 
 - Never place text, captions, cards, diagrams, badges, logos, CTAs or decorative motion over Shannon's face, mouth, eyes, jawline, hairline or head silhouette.
@@ -42,3 +51,4 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 | 2026-07-29 | Post 2 should use photos of me from the Photos of Shannon folder. | Use the approved real-Shannon library first for Shannon-led coaching and food carousels, with distinct professional and candid sources. | Feed carousels, coaching posts |
 | 2026-07-29 | The fibre-and-volume slide looks strange because of the random big circles. | Ban unexplained decorative shapes; every visual must communicate a recognisable idea or be removed. | Carousels, Stories, Reel graphics |
 | 2026-07-29 | Take notes whenever I give edit feedback so the system learns. | Append explicit feedback here and update the relevant skill or automation contract before closing the edit. | All content production |
+| 2026-07-29 | Our carousel posts use the shimmering Balance logo; check the carousel skill. | Deliver Balance carousels as playable five-second MP4 slides using the exact published two-pass watermark shimmer, with stills only as posters/review fallbacks. | Feed carousels, carousel previews |

@@ -15,7 +15,7 @@ Cadence: nine feed posts across seven days, supported by daily Stories. Feed pub
 | Date and time | Job | Format | Hook | CTA | Production status |
 | --- | --- | --- | --- | --- | --- |
 | Mon 3 Aug, 8:15am | BELIEF | Science Reel | Hunger isn't a simple fuel gauge. Your brain helps construct it. | Comment `HUNGER` | Revised spoken script awaiting approval |
-| Mon 3 Aug, 6:15pm | COACH | 8-slide real-photo carousel | Build a meal that gives your brain better fullness evidence. | Save | Real-Shannon revision ready for review |
+| Mon 3 Aug, 6:15pm | COACH | 8-slide real-photo video carousel | Build a meal that gives your brain better fullness evidence. | Save | Real-Shannon shimmer revision ready for review |
 | Tue 4 Aug, 6:15pm | PROOF | Photo-backed proof post | Structure beats white-knuckling hunger. | Soft coaching invitation | Source and copy locked |
 | Wed 5 Aug, 8:15am | BELIEF | Science Reel | Dopamine isn't just pleasure. It helps teach the brain what is worth repeating. | Follow | Primary source selection required |
 | Wed 5 Aug, 6:15pm | COACH | Carousel | Reward the start, not only the finish. | Save | Brief ready |
@@ -129,6 +129,8 @@ Visual direction:
 - Keep all text, rules, page labels and logos clear of Shannon's face and head.
 - Use eight visibly distinct moments: four professional and four candid; no exact or near-duplicate sources.
 - Do not use abstract circles, rings or decorative geometry to stand in for fibre, volume or another teaching concept. A visual element must communicate a recognisable idea; otherwise use the real photo and concise copy.
+- Deliver every slide as a five-second 1080×1350 MP4 using the approved large Balance watermark: quiet black at about 17% opacity, then two diagonal gold passes through the kanji/ring mask beginning at 1.20 and 3.55 seconds. Keep still JPGs only as posters and review fallbacks.
+- The shimmer stays behind the copy and clear of Shannon's face/head. Remove the white logo disc; reject a small corner sparkle, permanent gold mark, pulse, rotation or generic glint.
 
 Caption:
 
