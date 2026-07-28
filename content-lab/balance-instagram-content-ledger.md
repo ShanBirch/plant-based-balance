@@ -2,7 +2,7 @@
 
 Canonical content memory for `@shan_n_sunny`.
 
-Last reconciled: 2026-07-28 from Instagram-owned media records, local publish receipts and the previous Balance daily-content ledger.
+Last reconciled: 2026-07-29 from Instagram-owned media records, local publish receipts and the previous Balance daily-content ledger.
 
 ## Status Key
 
@@ -52,6 +52,7 @@ Times are Australia/Brisbane. Job and campaign labels are retrospective where th
 
 | Date | Job | Campaign or lane | Hook | Format | CTA or role | Instagram |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-07-29 08:16 | BELIEF | Predictive brain | Did you actually choose it — or did your brain explain it afterwards? | Reel | Choice blindness and behaviour change | [Reel](https://www.instagram.com/reel/DbWlsZgjYIz/) |
 | 2026-07-28 08:59 | COACH | Scapula technique | Sick of wondering whether every exercise you do is wrong? | Carousel | Education | [Post](https://www.instagram.com/p/DbUGAPvFDmv/) |
 | 2026-07-27 14:36 | BELIEF | Predictive brain | Look at your hand. How do you know it’s yours? | Reel | Body ownership and change | [Reel](https://www.instagram.com/reel/DbSHuKTiYiG/) |
 | 2026-07-27 05:36 | PROOF | Challenge week 4 | Week 4 of 6 complete. | Reel | Community proof | [Reel](https://www.instagram.com/reel/DbRJ9dsAmOA/) |
