@@ -15,7 +15,7 @@ Cadence: nine feed posts across seven days, supported by daily Stories. Feed pub
 | Date and time | Job | Format | Hook | CTA | Production status |
 | --- | --- | --- | --- | --- | --- |
 | Mon 3 Aug, 8:15am | BELIEF | Science Reel | Hunger isn't a simple fuel gauge. Your brain helps construct it. | Comment `HUNGER` | Revised spoken script awaiting approval |
-| Mon 3 Aug, 6:15pm | COACH | 8-slide carousel | Build a meal that gives your brain better fullness evidence. | Save | Copy and layout locked |
+| Mon 3 Aug, 6:15pm | COACH | 8-slide real-photo carousel | Build a meal that gives your brain better fullness evidence. | Save | Real-Shannon revision ready for review |
 | Tue 4 Aug, 6:15pm | PROOF | Photo-backed proof post | Structure beats white-knuckling hunger. | Soft coaching invitation | Source and copy locked |
 | Wed 5 Aug, 8:15am | BELIEF | Science Reel | Dopamine isn't just pleasure. It helps teach the brain what is worth repeating. | Follow | Primary source selection required |
 | Wed 5 Aug, 6:15pm | COACH | Carousel | Reward the start, not only the finish. | Save | Brief ready |
@@ -114,14 +114,21 @@ Title: `Hungry again? Build a better meal.`
 
 Slides:
 
-1. `HUNGRY AGAIN? BUILD A BETTER MEAL.` Supporting line: `Five useful pieces. No food morality.`
-2. `1. START WITH A PROTEIN ANCHOR.` Supporting line: `Tofu, tempeh, seitan, lentils, beans or edamame.`
-3. `2. ADD FIBRE AND VOLUME.` Supporting line: `Vegetables, fruit, legumes and whole grains help the meal feel like a meal.`
-4. `3. ADD USEFUL CARBS.` Supporting line: `Rice, oats, bread, potatoes or pasta can support training and make the plan easier to live with.`
-5. `4. MAKE IT SATISFYING.` Supporting line: `Flavour, texture and enough food matter. Sad diet food isn't a personality test.`
-6. `5. KNOW WHAT COMES NEXT.` Supporting line: `A planned snack or next meal beats negotiating with yourself when you are starving.`
-7. `THIS ISN'T ABOUT TRICKING YOUR BRAIN.` Supporting line: `It's about giving your body and brain clearer, more useful evidence.`
-8. `BUILD THE NEXT MEAL. NOT THE PERFECT DIET.` Supporting line: `Save this for the next time hunger feels like a personal failure.`
+1. `HUNGRY AGAIN AN HOUR LATER?` Supporting line: `Build the meal differently.` Photo: `_DSC7913.jpg` (professional).
+2. `START WITH A PROTEIN ANCHOR.` Supporting line: `Tofu, tempeh, beans, lentils or seitan.` Photo: `_DSC7646.jpg` (professional).
+3. `ADD FIBRE AND VOLUME.` Supporting line: `Fruit, vegetables, legumes and whole grains.` Photo: `PXL_20250503_031259916.MP.jpg` (candid).
+4. `ADD CARBS YOU ACTUALLY ENJOY.` Supporting line: `Rice, oats, bread, potatoes or pasta.` Photo: `_DSC7824.jpg` (professional).
+5. `MAKE THE MEAL SATISFYING.` Supporting line: `Flavour, texture and enough food matter.` Photo: `PXL_20250403_180713957.MP.jpg` (candid).
+6. `KNOW WHAT COMES NEXT.` Supporting line: `Plan the next meal or snack.` Photo: `_DSC7997.jpg` (professional).
+7. `THIS ISN'T ABOUT TRICKING YOUR BRAIN.` Supporting line: `It's clearer evidence for your body.` Photo: `PXL_20240824_230042109.PORTRAIT.jpg` (candid).
+8. `BUILD THE NEXT MEAL.` Supporting line: `Not the perfect diet. Save this.` Photo: `PXL_20240928_004404024.MP.jpg` (candid with Sunshine).
+
+Visual direction:
+
+- Use each Shannon photo full bleed with a local translucent copy panel placed in genuine negative space.
+- Keep all text, rules, page labels and logos clear of Shannon's face and head.
+- Use eight visibly distinct moments: four professional and four candid; no exact or near-duplicate sources.
+- Do not use abstract circles, rings or decorative geometry to stand in for fibre, volume or another teaching concept. A visual element must communicate a recognisable idea; otherwise use the real photo and concise copy.
 
 Caption:
 
