@@ -74,7 +74,7 @@ Revised spoken script awaiting approval:
 >
 > So stop trying to win a fistfight with it. Build meals that fill you up, make the next bit easier, and adjust the plan when it's clearly not fucking working.
 >
-> Comment HUNGER and I'll send you the paper.
+> Comment HUNGER below and I'll send you the paper.
 
 Production brief:
 
