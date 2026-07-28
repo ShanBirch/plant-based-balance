@@ -188,7 +188,13 @@ Reject or rewrite the idea if:
 
 ### Exercise and coaching
 
-- Use Shannon's real exercise footage where possible.
+- Use Shannon's existing real exercise footage by default. New filming is the exception, not a weekly requirement.
+- Search the confirmed Shannon library first with `node content-lab/src/exercise-video-catalog.js --shannon-only --query="<movement or problem>" --json`. The checked-in manifest contains 219 unique Shannon exercise clips from `balance-social/app-exercise-videos/`, with 177 alternate files in `balance-social/reels-ready/videos/`.
+- Never use the separate `shannonsvideos` bucket-root collection in a Shan n Sunny feed Reel: its demonstrators are generic/other people. It can remain an internal exercise-reference source, but it is not Shannon proof footage.
+- Then inspect the completed-reel inventory and existing local Reel artifacts for an unused clip, deliberate sequel or stronger angle.
+- Treat Google Photos as an ingestion source, not something the daily production job should scrape interactively. When Shannon approves a shared album/export, copy useful originals into the confirmed Shannon Backblaze folder once, refresh `content-lab/data/shannon-exercise-library.json`, and let every later automation use the stable indexed URL.
+- Ask Shannon to film only after the confirmed Shannon library, existing local assets and approved Google Photos imports have no technically suitable clip for the chosen coaching claim.
+- Before choosing a clip, download/probe the actual file and confirm it shows the landmarks, full movement path and clean usable repetitions required by the coaching claim.
 - Lead with a problem, mistake, benefit or decision.
 - Show what to look for, why it matters and how to adjust it.
 - Make the post saveable.

@@ -1,0 +1,4296 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-28T21:32:19.153Z",
+  "classification": {
+    "performer": "shannon",
+    "safeForShanFeed": true,
+    "basis": "Folder-level identity audit with evenly distributed visual frame sampling on 2026-07-29.",
+    "excludedCollection": "The separate shannonsvideos bucket-root catalogue contains generic/other demonstrators and is not eligible."
+  },
+  "sourceFolders": [
+    {
+      "prefix": "balance-social/app-exercise-videos/",
+      "collection": "app_exercise_videos",
+      "classification": "shannon_confirmed_collection"
+    },
+    {
+      "prefix": "balance-social/reels-ready/videos/",
+      "collection": "reels_ready_videos",
+      "classification": "shannon_confirmed_collection"
+    }
+  ],
+  "summary": {
+    "sourceFiles": 396,
+    "uniqueExercises": 219,
+    "alternateFiles": 177,
+    "folderCounts": {
+      "app_exercise_videos": 219,
+      "reels_ready_videos": 177
+    }
+  },
+  "entries": [
+    {
+      "exercise": "Ab Roller",
+      "normalizedKey": "ab-roller",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/ab-roller.mp4",
+      "fileName": "balance-social/app-exercise-videos/ab-roller.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 533905,
+      "uploadedAt": "2026-06-05T00:32:01.864Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/ab-roller.mp4",
+          "fileName": "balance-social/reels-ready/videos/ab-roller.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 835390,
+          "uploadedAt": "2026-06-04T12:11:56.773Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Ab Roller Crunch",
+      "normalizedKey": "ab-roller-crunch",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/ab-roller-crunch.mp4",
+      "fileName": "balance-social/app-exercise-videos/ab-roller-crunch.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1001765,
+      "uploadedAt": "2026-06-05T00:36:07.675Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/ab-roller-crunch.mp4",
+          "fileName": "balance-social/reels-ready/videos/ab-roller-crunch.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2147313,
+          "uploadedAt": "2026-06-04T12:16:43.300Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Ab Roller Knee Tuck",
+      "normalizedKey": "ab-roller-knee-tuck",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/ab-roller-knee-tuck.mp4",
+      "fileName": "balance-social/app-exercise-videos/ab-roller-knee-tuck.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 735324,
+      "uploadedAt": "2026-06-05T00:36:14.423Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/ab-roller-knee-tuck.mp4",
+          "fileName": "balance-social/reels-ready/videos/ab-roller-knee-tuck.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1511739,
+          "uploadedAt": "2026-06-04T13:12:15.241Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Ab Roller Pike",
+      "normalizedKey": "ab-roller-pike",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/ab-roller-pike.mp4",
+      "fileName": "balance-social/app-exercise-videos/ab-roller-pike.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1031775,
+      "uploadedAt": "2026-06-05T00:36:19.851Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/ab-roller-pike.mp4",
+          "fileName": "balance-social/reels-ready/videos/ab-roller-pike.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2095819,
+          "uploadedAt": "2026-06-04T12:17:00.129Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Alternating Box Pistol Squats",
+      "normalizedKey": "alternating-box-pistol-squats",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/alternating-box-pistol-squats.mp4",
+      "fileName": "balance-social/app-exercise-videos/alternating-box-pistol-squats.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 9522059,
+      "uploadedAt": "2026-06-25T10:05:16.556Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Alternating Lat Pulldown",
+      "normalizedKey": "alternating-lat-pulldown",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/alternating-lat-pulldown.mp4",
+      "fileName": "balance-social/app-exercise-videos/alternating-lat-pulldown.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1405100,
+      "uploadedAt": "2026-06-05T00:27:47.506Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/alternating-lat-pulldown.mp4",
+          "fileName": "balance-social/reels-ready/videos/alternating-lat-pulldown.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2329658,
+          "uploadedAt": "2026-06-04T13:05:19.135Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Back Bend",
+      "normalizedKey": "back-bend",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/back-bend.mp4",
+      "fileName": "balance-social/app-exercise-videos/back-bend.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 511728,
+      "uploadedAt": "2026-06-05T00:32:52.259Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/back-bend.mp4",
+          "fileName": "balance-social/reels-ready/videos/back-bend.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 768157,
+          "uploadedAt": "2026-06-04T12:12:39.020Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Band Pull Aparts",
+      "normalizedKey": "band-pull-aparts",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/band-pull-aparts.mp4",
+      "fileName": "balance-social/app-exercise-videos/band-pull-aparts.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 667779,
+      "uploadedAt": "2026-06-05T00:36:24.896Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/band-pull-aparts.mp4",
+          "fileName": "balance-social/reels-ready/videos/band-pull-aparts.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1556332,
+          "uploadedAt": "2026-06-04T12:17:06.660Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Banded Clams",
+      "normalizedKey": "banded-clams",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/banded-clams.mp4",
+      "fileName": "balance-social/app-exercise-videos/banded-clams.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 765322,
+      "uploadedAt": "2026-06-05T00:36:29.502Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/banded-clams.mp4",
+          "fileName": "balance-social/reels-ready/videos/banded-clams.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1815138,
+          "uploadedAt": "2026-06-04T12:17:12.087Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Banded Hip Thrusters",
+      "normalizedKey": "banded-hip-thrusters",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/banded-hip-thrusters.mp4",
+      "fileName": "balance-social/app-exercise-videos/banded-hip-thrusters.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 877068,
+      "uploadedAt": "2026-06-05T00:36:34.788Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/banded-hip-thrusters.mp4",
+          "fileName": "balance-social/reels-ready/videos/banded-hip-thrusters.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2112418,
+          "uploadedAt": "2026-06-04T12:17:18.587Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Banded Press",
+      "normalizedKey": "banded-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/banded-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/banded-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 838070,
+      "uploadedAt": "2026-06-05T00:36:42.292Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/banded-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/banded-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1802418,
+          "uploadedAt": "2026-06-04T13:12:32.409Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Banded Rdls",
+      "normalizedKey": "banded-rdls",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/banded-rdls.mp4",
+      "fileName": "balance-social/app-exercise-videos/banded-rdls.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 582299,
+      "uploadedAt": "2026-06-05T00:36:47.475Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/banded-rdls.mp4",
+          "fileName": "balance-social/reels-ready/videos/banded-rdls.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1368111,
+          "uploadedAt": "2026-06-04T12:17:32.357Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Banded Squats",
+      "normalizedKey": "banded-squats",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/banded-squats.mp4",
+      "fileName": "balance-social/app-exercise-videos/banded-squats.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 661037,
+      "uploadedAt": "2026-06-05T00:36:51.920Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/banded-squats.mp4",
+          "fileName": "balance-social/reels-ready/videos/banded-squats.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1421243,
+          "uploadedAt": "2026-06-04T12:17:38.005Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Barbell Back Squats",
+      "normalizedKey": "barbell-back-squats",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/barbell-back-squats.mp4",
+      "fileName": "balance-social/app-exercise-videos/barbell-back-squats.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 11963321,
+      "uploadedAt": "2026-06-25T10:05:40.648Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Barbell Bench Press",
+      "normalizedKey": "barbell-bench-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/barbell-bench-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/barbell-bench-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 4589263,
+      "uploadedAt": "2026-06-25T10:05:59.026Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/barbell-bench-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/barbell-bench-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1866016,
+          "uploadedAt": "2026-06-04T12:09:47.836Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Barbell Farmers Walks",
+      "normalizedKey": "barbell-farmers-walks",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/barbell-farmers-walks.mp4",
+      "fileName": "balance-social/app-exercise-videos/barbell-farmers-walks.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1980284,
+      "uploadedAt": "2026-06-25T10:06:08.213Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Barbell Hip Thruster",
+      "normalizedKey": "barbell-hip-thruster",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/barbell-hip-thruster.mp4",
+      "fileName": "balance-social/app-exercise-videos/barbell-hip-thruster.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 2499284,
+      "uploadedAt": "2026-06-05T00:37:00.990Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/barbell-hip-thruster.mp4",
+          "fileName": "balance-social/reels-ready/videos/barbell-hip-thruster.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 6023581,
+          "uploadedAt": "2026-06-04T13:17:58.650Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Barbell Millitary Press",
+      "normalizedKey": "barbell-millitary-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/barbell-millitary-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/barbell-millitary-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 6401351,
+      "uploadedAt": "2026-06-25T10:06:22.246Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Barbell Reverse Lunges Glute Dominant",
+      "normalizedKey": "barbell-reverse-lunges-glute-dominant",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/barbell-reverse-lunges-glute-dominant.mp4",
+      "fileName": "balance-social/app-exercise-videos/barbell-reverse-lunges-glute-dominant.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 10216361,
+      "uploadedAt": "2026-06-25T10:06:45.614Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Barbell Reverse Lunges Quad Dominant",
+      "normalizedKey": "barbell-reverse-lunges-quad-dominant",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/barbell-reverse-lunges-quad-dominant.mp4",
+      "fileName": "balance-social/app-exercise-videos/barbell-reverse-lunges-quad-dominant.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 3491117,
+      "uploadedAt": "2026-06-25T10:07:05.595Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Barbell Roll Out Plank",
+      "normalizedKey": "barbell-roll-out-plank",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/barbell-roll-out-plank.mp4",
+      "fileName": "balance-social/app-exercise-videos/barbell-roll-out-plank.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 7838347,
+      "uploadedAt": "2026-06-25T10:07:20.527Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Barbell Romanian Deadlift",
+      "normalizedKey": "barbell-romanian-deadlift",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/barbell-romanian-deadlift.mp4",
+      "fileName": "balance-social/app-exercise-videos/barbell-romanian-deadlift.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 905993,
+      "uploadedAt": "2026-06-05T00:33:07.110Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/barbell-romanian-deadlift.mp4",
+          "fileName": "balance-social/reels-ready/videos/barbell-romanian-deadlift.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1514347,
+          "uploadedAt": "2026-06-04T12:12:56.165Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Barbell Single Leg Rdl",
+      "normalizedKey": "barbell-single-leg-rdl",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/barbell-single-leg-rdl.mp4",
+      "fileName": "balance-social/app-exercise-videos/barbell-single-leg-rdl.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 905993,
+      "uploadedAt": "2026-06-05T00:40:11.882Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/barbell-single-leg-rdl.mp4",
+          "fileName": "balance-social/reels-ready/videos/barbell-single-leg-rdl.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1514347,
+          "uploadedAt": "2026-06-04T12:21:40.991Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Barbell Squat",
+      "normalizedKey": "barbell-squat",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/barbell-squat.mp4",
+      "fileName": "balance-social/app-exercise-videos/barbell-squat.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1270220,
+      "uploadedAt": "2026-06-05T00:33:12.631Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/barbell-squat.mp4",
+          "fileName": "balance-social/reels-ready/videos/barbell-squat.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2100617,
+          "uploadedAt": "2026-06-04T13:09:42.468Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Barbell Static Reverse Lunges Glute Dominant",
+      "normalizedKey": "barbell-static-reverse-lunges-glute-dominant",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/barbell-static-reverse-lunges-glute-dominant.mp4",
+      "fileName": "balance-social/app-exercise-videos/barbell-static-reverse-lunges-glute-dominant.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 7108028,
+      "uploadedAt": "2026-06-25T10:07:47.392Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Barbell Upright Row",
+      "normalizedKey": "barbell-upright-row",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/barbell-upright-row.mp4",
+      "fileName": "balance-social/app-exercise-videos/barbell-upright-row.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 9245468,
+      "uploadedAt": "2026-06-25T10:08:08.316Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Bench Bodyweight Movement",
+      "normalizedKey": "bench-bodyweight-movement",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/bench-bodyweight-movement.mp4",
+      "fileName": "balance-social/app-exercise-videos/bench-bodyweight-movement.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 3756249,
+      "uploadedAt": "2026-06-05T00:26:05.221Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/bench-bodyweight-movement.mp4",
+          "fileName": "balance-social/reels-ready/videos/bench-bodyweight-movement.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 8634646,
+          "uploadedAt": "2026-06-04T13:03:07.068Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Bench Cable Chest Press",
+      "normalizedKey": "bench-cable-chest-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/bench-cable-chest-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/bench-cable-chest-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1023616,
+      "uploadedAt": "2026-06-05T00:30:23.441Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/bench-cable-chest-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/bench-cable-chest-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1615826,
+          "uploadedAt": "2026-06-04T13:07:27.744Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Bench Kneeling Hip Openers",
+      "normalizedKey": "bench-kneeling-hip-openers",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/bench-kneeling-hip-openers.mp4",
+      "fileName": "balance-social/app-exercise-videos/bench-kneeling-hip-openers.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 5334972,
+      "uploadedAt": "2026-06-25T10:08:35.852Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Bench Lying Movement",
+      "normalizedKey": "bench-lying-movement",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/bench-lying-movement.mp4",
+      "fileName": "balance-social/app-exercise-videos/bench-lying-movement.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 4093248,
+      "uploadedAt": "2026-06-05T00:26:19.290Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/bench-lying-movement.mp4",
+          "fileName": "balance-social/reels-ready/videos/bench-lying-movement.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 9684809,
+          "uploadedAt": "2026-06-04T12:03:40.602Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Bench Or Floor Bodyweight Movement",
+      "normalizedKey": "bench-or-floor-bodyweight-movement",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/bench-or-floor-bodyweight-movement.mp4",
+      "fileName": "balance-social/app-exercise-videos/bench-or-floor-bodyweight-movement.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 4774420,
+      "uploadedAt": "2026-06-05T00:27:08.783Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/bench-or-floor-bodyweight-movement.mp4",
+          "fileName": "balance-social/reels-ready/videos/bench-or-floor-bodyweight-movement.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 10720482,
+          "uploadedAt": "2026-06-04T13:04:51.787Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Bench Supported Goblet Bicep Curl",
+      "normalizedKey": "bench-supported-goblet-bicep-curl",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/bench-supported-goblet-bicep-curl.mp4",
+      "fileName": "balance-social/app-exercise-videos/bench-supported-goblet-bicep-curl.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 571907,
+      "uploadedAt": "2026-06-05T00:40:16.647Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/bench-supported-goblet-bicep-curl.mp4",
+          "fileName": "balance-social/reels-ready/videos/bench-supported-goblet-bicep-curl.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1158946,
+          "uploadedAt": "2026-06-04T12:21:45.961Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Bent Over Barbell Row",
+      "normalizedKey": "bent-over-barbell-row",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/bent-over-barbell-row.mp4",
+      "fileName": "balance-social/app-exercise-videos/bent-over-barbell-row.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 913061,
+      "uploadedAt": "2026-06-05T00:28:41.447Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/bent-over-barbell-row.mp4",
+          "fileName": "balance-social/reels-ready/videos/bent-over-barbell-row.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1751710,
+          "uploadedAt": "2026-06-04T12:07:57.164Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Bicep Curls",
+      "normalizedKey": "bicep-curls",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/21-bicep-curls.mp4",
+      "fileName": "balance-social/app-exercise-videos/21-bicep-curls.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1374181,
+      "uploadedAt": "2026-06-05T00:29:18.214Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/21-bicep-curls.mp4",
+          "fileName": "balance-social/reels-ready/videos/21-bicep-curls.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2024571,
+          "uploadedAt": "2026-06-04T13:06:44.701Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Bicycle Kicks",
+      "normalizedKey": "bicycle-kicks",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/bicycle-kicks.mp4",
+      "fileName": "balance-social/app-exercise-videos/bicycle-kicks.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 746277,
+      "uploadedAt": "2026-06-05T00:37:07.318Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/bicycle-kicks.mp4",
+          "fileName": "balance-social/reels-ready/videos/bicycle-kicks.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1408107,
+          "uploadedAt": "2026-06-04T12:17:57.308Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Box Reverse Lunge Promoting Ankle Dorsi Flexion",
+      "normalizedKey": "box-reverse-lunge-promoting-ankle-dorsi-flexion",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/box-reverse-lunge-promoting-ankle-dorsi-flexion.mp4",
+      "fileName": "balance-social/app-exercise-videos/box-reverse-lunge-promoting-ankle-dorsi-flexion.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 6306094,
+      "uploadedAt": "2026-06-25T10:08:51.549Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Bulgarian Lunges",
+      "normalizedKey": "bulgarian-lunges",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/bulgarian-lunges.mp4",
+      "fileName": "balance-social/app-exercise-videos/bulgarian-lunges.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 593302,
+      "uploadedAt": "2026-06-05T00:37:12.028Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/bulgarian-lunges.mp4",
+          "fileName": "balance-social/reels-ready/videos/bulgarian-lunges.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1275336,
+          "uploadedAt": "2026-06-04T13:18:14.053Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Cable 2 Handed Straight Arm Lat Pulldown",
+      "normalizedKey": "cable-2-handed-straight-arm-lat-pulldown",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-2-handed-straight-arm-lat-pulldown.mp4",
+      "fileName": "balance-social/app-exercise-videos/cable-2-handed-straight-arm-lat-pulldown.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1425681,
+      "uploadedAt": "2026-06-05T00:27:55.532Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/cable-2-handed-straight-arm-lat-pulldown.mp4",
+          "fileName": "balance-social/reels-ready/videos/cable-2-handed-straight-arm-lat-pulldown.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2275374,
+          "uploadedAt": "2026-06-04T12:07:05.017Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Cable Bent Over Rear Delt Flys",
+      "normalizedKey": "cable-bent-over-rear-delt-flys",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-bent-over-rear-delt-flys.mp4",
+      "fileName": "balance-social/app-exercise-videos/cable-bent-over-rear-delt-flys.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 8567452,
+      "uploadedAt": "2026-06-25T10:09:08.621Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Cable Bicep Curls",
+      "normalizedKey": "cable-bicep-curls",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-bicep-curls.mp4",
+      "fileName": "balance-social/app-exercise-videos/cable-bicep-curls.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 798568,
+      "uploadedAt": "2026-06-05T00:29:24.783Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/cable-bicep-curls.mp4",
+          "fileName": "balance-social/reels-ready/videos/cable-bicep-curls.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1430439,
+          "uploadedAt": "2026-06-04T12:08:42.728Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Cable Bodyweight Upper Body Movement",
+      "normalizedKey": "cable-bodyweight-upper-body-movement",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-bodyweight-upper-body-movement.mp4",
+      "fileName": "balance-social/app-exercise-videos/cable-bodyweight-upper-body-movement.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 2830924,
+      "uploadedAt": "2026-06-05T00:25:24.336Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/cable-bodyweight-upper-body-movement.mp4",
+          "fileName": "balance-social/reels-ready/videos/cable-bodyweight-upper-body-movement.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 6388632,
+          "uploadedAt": "2026-06-04T12:00:48.169Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Cable Chest Flyes",
+      "normalizedKey": "cable-chest-flyes",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-chest-flyes.mp4",
+      "fileName": "balance-social/app-exercise-videos/cable-chest-flyes.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1377247,
+      "uploadedAt": "2026-06-05T00:30:29.571Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/cable-chest-flyes.mp4",
+          "fileName": "balance-social/reels-ready/videos/cable-chest-flyes.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2197224,
+          "uploadedAt": "2026-06-04T12:10:05.872Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Cable Chest Press",
+      "normalizedKey": "cable-chest-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-chest-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/cable-chest-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1377247,
+      "uploadedAt": "2026-06-05T00:40:21.528Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/cable-chest-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/cable-chest-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2197224,
+          "uploadedAt": "2026-06-04T13:20:56.846Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Cable Close Grip Row",
+      "normalizedKey": "cable-close-grip-row",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-close-grip-row.mp4",
+      "fileName": "balance-social/app-exercise-videos/cable-close-grip-row.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1129012,
+      "uploadedAt": "2026-06-05T00:28:48.081Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/cable-close-grip-row.mp4",
+          "fileName": "balance-social/reels-ready/videos/cable-close-grip-row.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1983358,
+          "uploadedAt": "2026-06-04T13:06:15.996Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Cable Cross Shoulder Raise",
+      "normalizedKey": "cable-cross-shoulder-raise",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-cross-shoulder-raise.mp4",
+      "fileName": "balance-social/app-exercise-videos/cable-cross-shoulder-raise.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1470813,
+      "uploadedAt": "2026-06-05T00:34:22.698Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/cable-cross-shoulder-raise.mp4",
+          "fileName": "balance-social/reels-ready/videos/cable-cross-shoulder-raise.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2322348,
+          "uploadedAt": "2026-06-04T13:11:02.684Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Cable Crunch",
+      "normalizedKey": "cable-crunch",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-crunch.mp4",
+      "fileName": "balance-social/app-exercise-videos/cable-crunch.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1144267,
+      "uploadedAt": "2026-06-05T00:32:07.849Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/cable-crunch.mp4",
+          "fileName": "balance-social/reels-ready/videos/cable-crunch.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1909620,
+          "uploadedAt": "2026-06-04T12:12:01.276Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Cable Lat Pulldown",
+      "normalizedKey": "cable-lat-pulldown",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-lat-pulldown.mp4",
+      "fileName": "balance-social/app-exercise-videos/cable-lat-pulldown.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1425681,
+      "uploadedAt": "2026-06-05T00:22:26.798Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/cable-lat-pulldown.mp4",
+          "fileName": "balance-social/reels-ready/videos/cable-lat-pulldown.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2275374,
+          "uploadedAt": "2026-06-04T11:56:12.781Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Cable Lateral Shoulder Raise",
+      "normalizedKey": "cable-lateral-shoulder-raise",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-lateral-shoulder-raise.mp4",
+      "fileName": "balance-social/app-exercise-videos/cable-lateral-shoulder-raise.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1153074,
+      "uploadedAt": "2026-06-05T00:34:30.418Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/cable-lateral-shoulder-raise.mp4",
+          "fileName": "balance-social/reels-ready/videos/cable-lateral-shoulder-raise.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2038165,
+          "uploadedAt": "2026-06-04T12:14:36.654Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Cable Pullover",
+      "normalizedKey": "cable-pullover",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-pullover.mp4",
+      "fileName": "balance-social/app-exercise-videos/cable-pullover.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1314636,
+      "uploadedAt": "2026-06-05T00:40:28.445Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/cable-pullover.mp4",
+          "fileName": "balance-social/reels-ready/videos/cable-pullover.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2115362,
+          "uploadedAt": "2026-06-04T12:22:01.797Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Cable Row",
+      "normalizedKey": "cable-row",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/cable-row.mp4",
+      "fileName": "balance-social/app-exercise-videos/cable-row.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 948850,
+      "uploadedAt": "2026-06-05T00:22:36.214Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/cable-row.mp4",
+          "fileName": "balance-social/reels-ready/videos/cable-row.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1727219,
+          "uploadedAt": "2026-06-04T12:58:54.627Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Chest Fly",
+      "normalizedKey": "chest-fly",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/chest-fly.mp4",
+      "fileName": "balance-social/app-exercise-videos/chest-fly.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1149646,
+      "uploadedAt": "2026-06-05T00:22:45.102Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/chest-fly.mp4",
+          "fileName": "balance-social/reels-ready/videos/chest-fly.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1856069,
+          "uploadedAt": "2026-06-04T11:56:36.592Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Chin Up",
+      "normalizedKey": "chin-up",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/chin-up.mp4",
+      "fileName": "balance-social/app-exercise-videos/chin-up.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1695870,
+      "uploadedAt": "2026-06-05T00:22:52.428Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/chin-up.mp4",
+          "fileName": "balance-social/reels-ready/videos/chin-up.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2831974,
+          "uploadedAt": "2026-06-04T12:59:08.907Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Close Dumbbell Chest Press",
+      "normalizedKey": "close-dumbbell-chest-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/close-dumbbell-chest-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/close-dumbbell-chest-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 816903,
+      "uploadedAt": "2026-06-05T00:30:36.716Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/close-dumbbell-chest-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/close-dumbbell-chest-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1616022,
+          "uploadedAt": "2026-06-04T13:07:42.799Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Close Grip Barbell Row",
+      "normalizedKey": "close-grip-barbell-row",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/close-grip-barbell-row.mp4",
+      "fileName": "balance-social/app-exercise-videos/close-grip-barbell-row.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 754645,
+      "uploadedAt": "2026-06-05T00:22:57.819Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/close-grip-barbell-row.mp4",
+          "fileName": "balance-social/reels-ready/videos/close-grip-barbell-row.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1490182,
+          "uploadedAt": "2026-06-04T11:56:50.105Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Close Grip Barbell Shoulder Press",
+      "normalizedKey": "close-grip-barbell-shoulder-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/close-grip-barbell-shoulder-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/close-grip-barbell-shoulder-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1186835,
+      "uploadedAt": "2026-06-05T00:23:05.513Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/close-grip-barbell-shoulder-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/close-grip-barbell-shoulder-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2018610,
+          "uploadedAt": "2026-06-04T11:56:59.001Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Close Grip Chest Press",
+      "normalizedKey": "close-grip-chest-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/close-grip-chest-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/close-grip-chest-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 809578,
+      "uploadedAt": "2026-06-05T00:35:35.609Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/close-grip-chest-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/close-grip-chest-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1388461,
+          "uploadedAt": "2026-06-04T12:16:01.829Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Close Grip Chest Press 2",
+      "normalizedKey": "close-grip-chest-press-2",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/close-grip-chest-press-2.mp4",
+      "fileName": "balance-social/app-exercise-videos/close-grip-chest-press-2.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 974419,
+      "uploadedAt": "2026-06-05T00:23:10.697Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/close-grip-chest-press-2.mp4",
+          "fileName": "balance-social/reels-ready/videos/close-grip-chest-press-2.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1636176,
+          "uploadedAt": "2026-06-04T11:57:06.564Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Close Grip Dumbbell Bench Press",
+      "normalizedKey": "close-grip-dumbbell-bench-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/close-grip-dumbbell-bench-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/close-grip-dumbbell-bench-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 974419,
+      "uploadedAt": "2026-06-05T00:35:42.090Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/close-grip-dumbbell-bench-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/close-grip-dumbbell-bench-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1636176,
+          "uploadedAt": "2026-06-04T12:16:08.922Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Close Grip Lat Pulldown",
+      "normalizedKey": "close-grip-lat-pulldown",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/close-grip-lat-pulldown.mp4",
+      "fileName": "balance-social/app-exercise-videos/close-grip-lat-pulldown.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1141165,
+      "uploadedAt": "2026-06-05T00:23:16.885Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/close-grip-lat-pulldown.mp4",
+          "fileName": "balance-social/reels-ready/videos/close-grip-lat-pulldown.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2384856,
+          "uploadedAt": "2026-06-04T12:59:24.019Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Close Grip Pull Up",
+      "normalizedKey": "close-grip-pull-up",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/close-grip-pull-up.mp4",
+      "fileName": "balance-social/app-exercise-videos/close-grip-pull-up.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1695870,
+      "uploadedAt": "2026-06-05T00:28:04.806Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/close-grip-pull-up.mp4",
+          "fileName": "balance-social/reels-ready/videos/close-grip-pull-up.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2831974,
+          "uploadedAt": "2026-06-04T13:05:30.337Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Close Grip Push Ups",
+      "normalizedKey": "close-grip-push-ups",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/close-grip-push-ups.mp4",
+      "fileName": "balance-social/app-exercise-videos/close-grip-push-ups.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 555451,
+      "uploadedAt": "2026-06-05T00:35:46.893Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/close-grip-push-ups.mp4",
+          "fileName": "balance-social/reels-ready/videos/close-grip-push-ups.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1040181,
+          "uploadedAt": "2026-06-04T12:16:14.694Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Close Grip Pushups",
+      "normalizedKey": "close-grip-pushups",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/close-grip-pushups.mp4",
+      "fileName": "balance-social/app-exercise-videos/close-grip-pushups.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 4826984,
+      "uploadedAt": "2026-06-25T10:09:22.601Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Close Grip Row 2",
+      "normalizedKey": "close-grip-row-2",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/close-grip-row-2.mp4",
+      "fileName": "balance-social/app-exercise-videos/close-grip-row-2.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1019719,
+      "uploadedAt": "2026-06-05T00:23:22.521Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/close-grip-row-2.mp4",
+          "fileName": "balance-social/reels-ready/videos/close-grip-row-2.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1867785,
+          "uploadedAt": "2026-06-04T11:57:18.398Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Crunch",
+      "normalizedKey": "crunch",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/crunch.mp4",
+      "fileName": "balance-social/app-exercise-videos/crunch.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 6303486,
+      "uploadedAt": "2026-06-25T10:09:40.086Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Dead Lift",
+      "normalizedKey": "dead-lift",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dead-lift.mp4",
+      "fileName": "balance-social/app-exercise-videos/dead-lift.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1038245,
+      "uploadedAt": "2026-06-05T00:33:21.521Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dead-lift.mp4",
+          "fileName": "balance-social/reels-ready/videos/dead-lift.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1898081,
+          "uploadedAt": "2026-06-04T12:13:11.743Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Deadlift",
+      "normalizedKey": "deadlift",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/deadlift.mp4",
+      "fileName": "balance-social/app-exercise-videos/deadlift.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 318517,
+      "uploadedAt": "2026-06-05T00:27:27.711Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/deadlift.mp4",
+          "fileName": "balance-social/reels-ready/videos/deadlift.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1128578,
+          "uploadedAt": "2026-06-04T12:06:28.612Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Decline Barbell Bench Press",
+      "normalizedKey": "decline-barbell-bench-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/decline-barbell-bench-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/decline-barbell-bench-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1043895,
+      "uploadedAt": "2026-06-05T00:30:42.269Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/decline-barbell-bench-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/decline-barbell-bench-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1533421,
+          "uploadedAt": "2026-06-04T12:10:18.287Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Decline Dumbbell Bench Press",
+      "normalizedKey": "decline-dumbbell-bench-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/decline-dumbbell-bench-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/decline-dumbbell-bench-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 732294,
+      "uploadedAt": "2026-06-05T00:30:47.102Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/decline-dumbbell-bench-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/decline-dumbbell-bench-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1200586,
+          "uploadedAt": "2026-06-04T13:07:57.813Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Decline Dumbbell Chest Flyes",
+      "normalizedKey": "decline-dumbbell-chest-flyes",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/decline-dumbbell-chest-flyes.mp4",
+      "fileName": "balance-social/app-exercise-videos/decline-dumbbell-chest-flyes.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1009202,
+      "uploadedAt": "2026-06-05T00:30:52.193Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/decline-dumbbell-chest-flyes.mp4",
+          "fileName": "balance-social/reels-ready/videos/decline-dumbbell-chest-flyes.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1672094,
+          "uploadedAt": "2026-06-04T12:10:31.704Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Alternating Bicep Curls",
+      "normalizedKey": "dumbbell-alternating-bicep-curls",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-alternating-bicep-curls.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-alternating-bicep-curls.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 691723,
+      "uploadedAt": "2026-06-05T00:29:29.575Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-alternating-bicep-curls.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-alternating-bicep-curls.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1208862,
+          "uploadedAt": "2026-06-04T12:08:47.632Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Arnold Press",
+      "normalizedKey": "dumbbell-arnold-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-arnold-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-arnold-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1018412,
+      "uploadedAt": "2026-06-05T00:34:35.774Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-arnold-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-arnold-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2054546,
+          "uploadedAt": "2026-06-04T13:11:16.079Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Around The Wordls",
+      "normalizedKey": "dumbbell-around-the-wordls",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-around-the-wordls.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-around-the-wordls.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1427415,
+      "uploadedAt": "2026-06-05T00:37:18.268Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-around-the-wordls.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-around-the-wordls.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 3060888,
+          "uploadedAt": "2026-06-04T12:18:10.639Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Bench Press",
+      "normalizedKey": "dumbbell-bench-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-bench-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-bench-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 561465,
+      "uploadedAt": "2026-06-05T00:31:02.601Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-bench-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-bench-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 948935,
+          "uploadedAt": "2026-06-04T13:08:13.190Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Bent Over Rows",
+      "normalizedKey": "dumbbell-bent-over-rows",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-bent-over-rows.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-bent-over-rows.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 823491,
+      "uploadedAt": "2026-06-05T00:23:27.733Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-bent-over-rows.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-bent-over-rows.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1503141,
+          "uploadedAt": "2026-06-04T12:59:37.303Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Bicep Curls",
+      "normalizedKey": "dumbbell-bicep-curls",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-bicep-curls.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-bicep-curls.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 847664,
+      "uploadedAt": "2026-06-05T00:40:33.454Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-bicep-curls.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-bicep-curls.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1399631,
+          "uploadedAt": "2026-06-04T12:22:07.323Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Chest Fly",
+      "normalizedKey": "dumbbell-chest-fly",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-chest-fly.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-chest-fly.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1149646,
+      "uploadedAt": "2026-06-05T00:30:57.509Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-chest-fly.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-chest-fly.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1856069,
+          "uploadedAt": "2026-06-04T12:10:38.887Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Inward Tricep Press",
+      "normalizedKey": "dumbbell-inward-tricep-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-inward-tricep-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-inward-tricep-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1113075,
+      "uploadedAt": "2026-06-05T00:23:33.767Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-inward-tricep-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-inward-tricep-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2045937,
+          "uploadedAt": "2026-06-04T11:57:31.791Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Knee Up",
+      "normalizedKey": "dumbbell-knee-up",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-knee-up.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-knee-up.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1205416,
+      "uploadedAt": "2026-06-05T00:23:39.581Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-knee-up.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-knee-up.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2407828,
+          "uploadedAt": "2026-06-04T12:59:49.434Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Lateral Shoulder Raise",
+      "normalizedKey": "dumbbell-lateral-shoulder-raise",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-lateral-shoulder-raise.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-lateral-shoulder-raise.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 799251,
+      "uploadedAt": "2026-06-05T00:34:41.000Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-lateral-shoulder-raise.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-lateral-shoulder-raise.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1477848,
+          "uploadedAt": "2026-06-04T12:14:49.764Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Lunges",
+      "normalizedKey": "dumbbell-lunges",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-lunges.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-lunges.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 605394,
+      "uploadedAt": "2026-06-05T00:23:44.781Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-lunges.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-lunges.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1159283,
+          "uploadedAt": "2026-06-04T11:57:43.494Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Pull Over",
+      "normalizedKey": "dumbbell-pull-over",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-pull-over.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-pull-over.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 943763,
+      "uploadedAt": "2026-06-05T00:40:38.625Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-pull-over.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-pull-over.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1456025,
+          "uploadedAt": "2026-06-04T12:22:11.836Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Rdls",
+      "normalizedKey": "dumbbell-rdls",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-rdls.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-rdls.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1315082,
+      "uploadedAt": "2026-06-05T00:37:27.056Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-rdls.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-rdls.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 3151358,
+          "uploadedAt": "2026-06-04T13:18:34.936Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Rear Delt Lateral Raise",
+      "normalizedKey": "dumbbell-rear-delt-lateral-raise",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-rear-delt-lateral-raise.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-rear-delt-lateral-raise.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 972597,
+      "uploadedAt": "2026-06-05T00:34:46.804Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-rear-delt-lateral-raise.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-rear-delt-lateral-raise.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1865358,
+          "uploadedAt": "2026-06-04T13:11:28.794Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Rear Delt Row",
+      "normalizedKey": "dumbbell-rear-delt-row",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-rear-delt-row.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-rear-delt-row.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 823491,
+      "uploadedAt": "2026-06-05T00:34:53.512Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-rear-delt-row.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-rear-delt-row.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1503141,
+          "uploadedAt": "2026-06-04T12:15:05.407Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Row",
+      "normalizedKey": "dumbbell-row",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-row.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-row.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 961507,
+      "uploadedAt": "2026-06-05T00:40:43.534Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-row.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-row.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1982060,
+          "uploadedAt": "2026-06-04T12:22:17.247Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Shoulder Press",
+      "normalizedKey": "dumbbell-shoulder-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-shoulder-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-shoulder-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 807076,
+      "uploadedAt": "2026-06-05T00:34:58.478Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-shoulder-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-shoulder-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1501099,
+          "uploadedAt": "2026-06-04T12:15:11.752Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Shoulder Shrugs",
+      "normalizedKey": "dumbbell-shoulder-shrugs",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-shoulder-shrugs.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-shoulder-shrugs.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 434352,
+      "uploadedAt": "2026-06-05T00:23:49.658Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-shoulder-shrugs.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-shoulder-shrugs.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 815801,
+          "uploadedAt": "2026-06-04T11:57:48.488Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Shrugs",
+      "normalizedKey": "dumbbell-shrugs",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-shrugs.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-shrugs.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 434352,
+      "uploadedAt": "2026-06-05T00:35:30.958Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-shrugs.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-shrugs.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 815801,
+          "uploadedAt": "2026-06-04T12:15:56.821Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Step Ups",
+      "normalizedKey": "dumbbell-step-ups",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-step-ups.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-step-ups.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1205416,
+      "uploadedAt": "2026-06-05T00:33:28.900Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-step-ups.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-step-ups.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2407828,
+          "uploadedAt": "2026-06-04T13:10:00.947Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Swings",
+      "normalizedKey": "dumbbell-swings",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-swings.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-swings.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 755438,
+      "uploadedAt": "2026-06-05T00:23:56.847Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-swings.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-swings.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1845916,
+          "uploadedAt": "2026-06-04T11:57:53.321Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbbell Walking Lunges",
+      "normalizedKey": "dumbbell-walking-lunges",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbbell-walking-lunges.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbbell-walking-lunges.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 605394,
+      "uploadedAt": "2026-06-05T00:33:33.752Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/dumbbell-walking-lunges.mp4",
+          "fileName": "balance-social/reels-ready/videos/dumbbell-walking-lunges.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1159283,
+          "uploadedAt": "2026-06-04T12:13:27.022Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Dumbell Bulgarian Lunge",
+      "normalizedKey": "dumbell-bulgarian-lunge",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/dumbell-bulgarian-lunge.mp4",
+      "fileName": "balance-social/app-exercise-videos/dumbell-bulgarian-lunge.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 5747255,
+      "uploadedAt": "2026-06-25T10:09:55.150Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Elbow To Knee Sit Ups",
+      "normalizedKey": "elbow-to-knee-sit-ups",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/elbow-to-knee-sit-ups.mp4",
+      "fileName": "balance-social/app-exercise-videos/elbow-to-knee-sit-ups.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 748875,
+      "uploadedAt": "2026-06-05T00:24:02.180Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/elbow-to-knee-sit-ups.mp4",
+          "fileName": "balance-social/reels-ready/videos/elbow-to-knee-sit-ups.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1335001,
+          "uploadedAt": "2026-06-04T11:57:58.860Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Exercise Ball Incline Bench",
+      "normalizedKey": "exercise-ball-incline-bench",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/exercise-ball-incline-bench.mp4",
+      "fileName": "balance-social/app-exercise-videos/exercise-ball-incline-bench.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 464575,
+      "uploadedAt": "2026-06-05T00:24:06.725Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/exercise-ball-incline-bench.mp4",
+          "fileName": "balance-social/reels-ready/videos/exercise-ball-incline-bench.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1011214,
+          "uploadedAt": "2026-06-04T11:58:04.898Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Exercise Ball Rear Delt Fly S",
+      "normalizedKey": "exercise-ball-rear-delt-fly-s",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/exercise-ball-rear-delt-fly-s.mp4",
+      "fileName": "balance-social/app-exercise-videos/exercise-ball-rear-delt-fly-s.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 359237,
+      "uploadedAt": "2026-06-05T00:24:10.704Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/exercise-ball-rear-delt-fly-s.mp4",
+          "fileName": "balance-social/reels-ready/videos/exercise-ball-rear-delt-fly-s.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1116890,
+          "uploadedAt": "2026-06-04T11:58:08.296Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Face Pulls",
+      "normalizedKey": "face-pulls",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/face-pulls.mp4",
+      "fileName": "balance-social/app-exercise-videos/face-pulls.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 2040000,
+      "uploadedAt": "2026-06-05T00:35:06.478Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/face-pulls.mp4",
+          "fileName": "balance-social/reels-ready/videos/face-pulls.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 3036526,
+          "uploadedAt": "2026-06-04T13:11:42.603Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Floor Db Chest Flyes",
+      "normalizedKey": "floor-db-chest-flyes",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/floor-db-chest-flyes.mp4",
+      "fileName": "balance-social/app-exercise-videos/floor-db-chest-flyes.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 840688,
+      "uploadedAt": "2026-06-05T00:37:32.501Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/floor-db-chest-flyes.mp4",
+          "fileName": "balance-social/reels-ready/videos/floor-db-chest-flyes.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1730771,
+          "uploadedAt": "2026-06-04T12:18:28.300Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Floor Db Tricep Press",
+      "normalizedKey": "floor-db-tricep-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/floor-db-tricep-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/floor-db-tricep-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 598662,
+      "uploadedAt": "2026-06-05T00:37:37.186Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/floor-db-tricep-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/floor-db-tricep-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1351696,
+          "uploadedAt": "2026-06-04T13:18:51.493Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Floor Dumbbell Bench Press",
+      "normalizedKey": "floor-dumbbell-bench-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/floor-dumbbell-bench-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/floor-dumbbell-bench-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 673521,
+      "uploadedAt": "2026-06-05T00:37:41.736Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/floor-dumbbell-bench-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/floor-dumbbell-bench-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1560007,
+          "uploadedAt": "2026-06-04T12:18:44.176Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Floor Tricep Skull Crushers",
+      "normalizedKey": "floor-tricep-skull-crushers",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/floor-tricep-skull-crushers.mp4",
+      "fileName": "balance-social/app-exercise-videos/floor-tricep-skull-crushers.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 964478,
+      "uploadedAt": "2026-06-05T00:37:47.533Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/floor-tricep-skull-crushers.mp4",
+          "fileName": "balance-social/reels-ready/videos/floor-tricep-skull-crushers.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2196549,
+          "uploadedAt": "2026-06-04T13:18:58.225Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Fuck Offs Hammer Curl To Eccentrically Loaded Lower",
+      "normalizedKey": "fuck-offs-hammer-curl-to-eccentrically-loaded-lower",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/fuck-offs-hammer-curl-to-eccentrically-loaded-lower.mp4",
+      "fileName": "balance-social/app-exercise-videos/fuck-offs-hammer-curl-to-eccentrically-loaded-lower.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 11775136,
+      "uploadedAt": "2026-06-25T10:10:13.848Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Goblet Squats",
+      "normalizedKey": "goblet-squats",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/goblet-squats.mp4",
+      "fileName": "balance-social/app-exercise-videos/goblet-squats.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 613463,
+      "uploadedAt": "2026-06-05T00:33:38.175Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/goblet-squats.mp4",
+          "fileName": "balance-social/reels-ready/videos/goblet-squats.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1151676,
+          "uploadedAt": "2026-06-04T12:13:30.744Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Gym Bodyweight Movement",
+      "normalizedKey": "gym-bodyweight-movement",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/gym-bodyweight-movement.mp4",
+      "fileName": "balance-social/app-exercise-videos/gym-bodyweight-movement.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 4500035,
+      "uploadedAt": "2026-06-05T00:27:21.463Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/gym-bodyweight-movement.mp4",
+          "fileName": "balance-social/reels-ready/videos/gym-bodyweight-movement.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 10525097,
+          "uploadedAt": "2026-06-04T12:06:16.214Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Gym Movement Exact Exercise Unclear",
+      "normalizedKey": "gym-movement-exact-exercise-unclear",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/gym-movement-exact-exercise-unclear.mp4",
+      "fileName": "balance-social/app-exercise-videos/gym-movement-exact-exercise-unclear.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 2874237,
+      "uploadedAt": "2026-06-05T00:24:49.978Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/gym-movement-exact-exercise-unclear.mp4",
+          "fileName": "balance-social/reels-ready/videos/gym-movement-exact-exercise-unclear.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 5853974,
+          "uploadedAt": "2026-06-04T13:00:18.865Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Hammer Curls",
+      "normalizedKey": "hammer-curls",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/hammer-curls.mp4",
+      "fileName": "balance-social/app-exercise-videos/hammer-curls.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 883890,
+      "uploadedAt": "2026-06-05T00:29:34.545Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/hammer-curls.mp4",
+          "fileName": "balance-social/reels-ready/videos/hammer-curls.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1380579,
+          "uploadedAt": "2026-06-04T13:07:00.109Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Hanging Knee Tucks",
+      "normalizedKey": "hanging-knee-tucks",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/hanging-knee-tucks.mp4",
+      "fileName": "balance-social/app-exercise-videos/hanging-knee-tucks.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1069472,
+      "uploadedAt": "2026-06-05T00:32:14.574Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/hanging-knee-tucks.mp4",
+          "fileName": "balance-social/reels-ready/videos/hanging-knee-tucks.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1365866,
+          "uploadedAt": "2026-06-04T12:12:06.518Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Hanging Leg Raises",
+      "normalizedKey": "hanging-leg-raises",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/hanging-leg-raises.mp4",
+      "fileName": "balance-social/app-exercise-videos/hanging-leg-raises.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1069472,
+      "uploadedAt": "2026-06-05T00:40:48.463Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/hanging-leg-raises.mp4",
+          "fileName": "balance-social/reels-ready/videos/hanging-leg-raises.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1365866,
+          "uploadedAt": "2026-06-04T13:21:08.776Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Hanging Oblique Knee Raises",
+      "normalizedKey": "hanging-oblique-knee-raises",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/hanging-oblique-knee-raises.mp4",
+      "fileName": "balance-social/app-exercise-videos/hanging-oblique-knee-raises.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1166730,
+      "uploadedAt": "2026-06-05T00:40:53.956Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/hanging-oblique-knee-raises.mp4",
+          "fileName": "balance-social/reels-ready/videos/hanging-oblique-knee-raises.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1557703,
+          "uploadedAt": "2026-06-04T12:22:31.416Z"
+        }
+      ]
+    },
+    {
+      "exercise": "High To Low Close Grip Cable Pull",
+      "normalizedKey": "high-to-low-close-grip-cable-pull",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/high-to-low-close-grip-cable-pull.mp4",
+      "fileName": "balance-social/app-exercise-videos/high-to-low-close-grip-cable-pull.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1590103,
+      "uploadedAt": "2026-06-05T00:40:59.896Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/high-to-low-close-grip-cable-pull.mp4",
+          "fileName": "balance-social/reels-ready/videos/high-to-low-close-grip-cable-pull.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2451612,
+          "uploadedAt": "2026-06-04T13:21:19.059Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Hip Flexor Reps",
+      "normalizedKey": "hip-flexor-reps",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/hip-flexor-reps.mp4",
+      "fileName": "balance-social/app-exercise-videos/hip-flexor-reps.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 7899100,
+      "uploadedAt": "2026-06-25T10:10:32.626Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Hollow Body Hold Dumbell Pullover",
+      "normalizedKey": "hollow-body-hold-dumbell-pullover",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/hollow-body-hold-dumbell-pullover.mp4",
+      "fileName": "balance-social/app-exercise-videos/hollow-body-hold-dumbell-pullover.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 5715322,
+      "uploadedAt": "2026-06-25T10:10:48.799Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Hollow Body Rocks",
+      "normalizedKey": "hollow-body-rocks",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/hollow-body-rocks.mp4",
+      "fileName": "balance-social/app-exercise-videos/hollow-body-rocks.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 888574,
+      "uploadedAt": "2026-06-05T00:32:20.302Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/hollow-body-rocks.mp4",
+          "fileName": "balance-social/reels-ready/videos/hollow-body-rocks.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1315036,
+          "uploadedAt": "2026-06-04T12:12:11.703Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Hyper Extension",
+      "normalizedKey": "hyper-extension",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/hyper-extension.mp4",
+      "fileName": "balance-social/app-exercise-videos/hyper-extension.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 511728,
+      "uploadedAt": "2026-06-05T00:41:04.662Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/hyper-extension.mp4",
+          "fileName": "balance-social/reels-ready/videos/hyper-extension.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 768157,
+          "uploadedAt": "2026-06-04T12:22:40.792Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Hyper Extension Glute Focuses",
+      "normalizedKey": "hyper-extension-glute-focuses",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/hyper-extension-glute-focuses.mp4",
+      "fileName": "balance-social/app-exercise-videos/hyper-extension-glute-focuses.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 4392947,
+      "uploadedAt": "2026-06-25T10:11:03.188Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Hyper Extension Hamstring Focused",
+      "normalizedKey": "hyper-extension-hamstring-focused",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/hyper-extension-hamstring-focused.mp4",
+      "fileName": "balance-social/app-exercise-videos/hyper-extension-hamstring-focused.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 6501758,
+      "uploadedAt": "2026-06-25T10:11:15.028Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Hyper Extension Standard",
+      "normalizedKey": "hyper-extension-standard",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/hyper-extension-standard.mp4",
+      "fileName": "balance-social/app-exercise-videos/hyper-extension-standard.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 6392331,
+      "uploadedAt": "2026-06-25T10:11:31.013Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Incline Barbell Bench Press",
+      "normalizedKey": "incline-barbell-bench-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/incline-barbell-bench-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/incline-barbell-bench-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1487550,
+      "uploadedAt": "2026-06-05T00:31:07.687Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/incline-barbell-bench-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/incline-barbell-bench-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2244048,
+          "uploadedAt": "2026-06-04T12:10:57.328Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Incline Bench Press",
+      "normalizedKey": "incline-bench-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/incline-bench-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/incline-bench-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 4923944,
+      "uploadedAt": "2026-06-25T10:11:55.090Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Incline Bench Single Arm Lateral Raise",
+      "normalizedKey": "incline-bench-single-arm-lateral-raise",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/incline-bench-single-arm-lateral-raise.mp4",
+      "fileName": "balance-social/app-exercise-videos/incline-bench-single-arm-lateral-raise.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 8061038,
+      "uploadedAt": "2026-06-25T10:12:13.957Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Incline Bench Skull Crushers",
+      "normalizedKey": "incline-bench-skull-crushers",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/incline-bench-skull-crushers.mp4",
+      "fileName": "balance-social/app-exercise-videos/incline-bench-skull-crushers.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 6901193,
+      "uploadedAt": "2026-06-25T10:12:38.242Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Incline Chest Fly",
+      "normalizedKey": "incline-chest-fly",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/incline-chest-fly.mp4",
+      "fileName": "balance-social/app-exercise-videos/incline-chest-fly.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1121003,
+      "uploadedAt": "2026-06-05T00:31:13.981Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/incline-chest-fly.mp4",
+          "fileName": "balance-social/reels-ready/videos/incline-chest-fly.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1715853,
+          "uploadedAt": "2026-06-04T13:08:31.645Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Incline Dumbbell Bench Press",
+      "normalizedKey": "incline-dumbbell-bench-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/incline-dumbbell-bench-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/incline-dumbbell-bench-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 884488,
+      "uploadedAt": "2026-06-05T00:31:19.254Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/incline-dumbbell-bench-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/incline-dumbbell-bench-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1382905,
+          "uploadedAt": "2026-06-04T12:11:10.679Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Incline Dumbbell Chest Fly",
+      "normalizedKey": "incline-dumbbell-chest-fly",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/incline-dumbbell-chest-fly.mp4",
+      "fileName": "balance-social/app-exercise-videos/incline-dumbbell-chest-fly.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1121003,
+      "uploadedAt": "2026-06-05T00:41:09.623Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/incline-dumbbell-chest-fly.mp4",
+          "fileName": "balance-social/reels-ready/videos/incline-dumbbell-chest-fly.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1715853,
+          "uploadedAt": "2026-06-04T12:22:46.637Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Incline Dumbell Chest Flys",
+      "normalizedKey": "incline-dumbell-chest-flys",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/incline-dumbell-chest-flys.mp4",
+      "fileName": "balance-social/app-exercise-videos/incline-dumbell-chest-flys.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 5767120,
+      "uploadedAt": "2026-06-25T10:12:55.765Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Incline Seated Dumbbell Bicep Curls",
+      "normalizedKey": "incline-seated-dumbbell-bicep-curls",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/incline-seated-dumbbell-bicep-curls.mp4",
+      "fileName": "balance-social/app-exercise-videos/incline-seated-dumbbell-bicep-curls.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 731214,
+      "uploadedAt": "2026-06-05T00:29:39.375Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/incline-seated-dumbbell-bicep-curls.mp4",
+          "fileName": "balance-social/reels-ready/videos/incline-seated-dumbbell-bicep-curls.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1387946,
+          "uploadedAt": "2026-06-04T12:09:01.059Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Incline Skull Crushers",
+      "normalizedKey": "incline-skull-crushers",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/incline-skull-crushers.mp4",
+      "fileName": "balance-social/app-exercise-videos/incline-skull-crushers.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 651247,
+      "uploadedAt": "2026-06-05T00:35:51.332Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/incline-skull-crushers.mp4",
+          "fileName": "balance-social/reels-ready/videos/incline-skull-crushers.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1100882,
+          "uploadedAt": "2026-06-04T13:11:57.822Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Incline Smith Bench Press",
+      "normalizedKey": "incline-smith-bench-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/incline-smith-bench-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/incline-smith-bench-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1060069,
+      "uploadedAt": "2026-06-05T00:31:25.603Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/incline-smith-bench-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/incline-smith-bench-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1529090,
+          "uploadedAt": "2026-06-04T12:11:17.453Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Incline Smith Bench Press 1",
+      "normalizedKey": "incline-smith-bench-press-1",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/incline-smith-bench-press-1.mp4",
+      "fileName": "balance-social/app-exercise-videos/incline-smith-bench-press-1.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1560552,
+      "uploadedAt": "2026-06-05T00:31:33.944Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/incline-smith-bench-press-1.mp4",
+          "fileName": "balance-social/reels-ready/videos/incline-smith-bench-press-1.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2184210,
+          "uploadedAt": "2026-06-04T13:08:45.381Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Inverted Bench Core Movement",
+      "normalizedKey": "inverted-bench-core-movement",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/inverted-bench-core-movement.mp4",
+      "fileName": "balance-social/app-exercise-videos/inverted-bench-core-movement.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 3070745,
+      "uploadedAt": "2026-06-05T00:26:29.453Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/inverted-bench-core-movement.mp4",
+          "fileName": "balance-social/reels-ready/videos/inverted-bench-core-movement.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 7070422,
+          "uploadedAt": "2026-06-04T13:03:45.179Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Jacknife",
+      "normalizedKey": "jacknife",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/jacknife.mp4",
+      "fileName": "balance-social/app-exercise-videos/jacknife.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1427444,
+      "uploadedAt": "2026-06-05T00:37:56.418Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/jacknife.mp4",
+          "fileName": "balance-social/reels-ready/videos/jacknife.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 3105971,
+          "uploadedAt": "2026-06-04T12:19:02.476Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Jefferson Curl Spinal Movement Focused",
+      "normalizedKey": "jefferson-curl-spinal-movement-focused",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/jefferson-curl-spinal-movement-focused.mp4",
+      "fileName": "balance-social/app-exercise-videos/jefferson-curl-spinal-movement-focused.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 8305429,
+      "uploadedAt": "2026-06-25T10:13:10.134Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Kai Green Glute Focused Deadlift",
+      "normalizedKey": "kai-green-glute-focused-deadlift",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/kai-green-glute-focused-deadlift.mp4",
+      "fileName": "balance-social/app-exercise-videos/kai-green-glute-focused-deadlift.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 11600693,
+      "uploadedAt": "2026-06-25T10:13:42.578Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Kamameha",
+      "normalizedKey": "kamameha",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/kamameha.mp4",
+      "fileName": "balance-social/app-exercise-videos/kamameha.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 11736979,
+      "uploadedAt": "2026-06-25T10:14:04.611Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Kettle Bell Swings",
+      "normalizedKey": "kettle-bell-swings",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/kettle-bell-swings.mp4",
+      "fileName": "balance-social/app-exercise-videos/kettle-bell-swings.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 755438,
+      "uploadedAt": "2026-06-05T00:30:11.893Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/kettle-bell-swings.mp4",
+          "fileName": "balance-social/reels-ready/videos/kettle-bell-swings.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1845916,
+          "uploadedAt": "2026-06-04T12:09:42.129Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Knee Pushups",
+      "normalizedKey": "knee-pushups",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/knee-pushups.mp4",
+      "fileName": "balance-social/app-exercise-videos/knee-pushups.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 958655,
+      "uploadedAt": "2026-06-05T00:38:04.806Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/knee-pushups.mp4",
+          "fileName": "balance-social/reels-ready/videos/knee-pushups.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1986980,
+          "uploadedAt": "2026-06-04T12:19:11.017Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Knee Tuck Crunch",
+      "normalizedKey": "knee-tuck-crunch",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/knee-tuck-crunch.mp4",
+      "fileName": "balance-social/app-exercise-videos/knee-tuck-crunch.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 481213,
+      "uploadedAt": "2026-06-05T00:24:15.152Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/knee-tuck-crunch.mp4",
+          "fileName": "balance-social/reels-ready/videos/knee-tuck-crunch.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 861301,
+          "uploadedAt": "2026-06-04T11:58:13.702Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Kneeling Cable Rows",
+      "normalizedKey": "kneeling-cable-rows",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/kneeling-cable-rows.mp4",
+      "fileName": "balance-social/app-exercise-videos/kneeling-cable-rows.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1317140,
+      "uploadedAt": "2026-06-05T00:38:10.438Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/kneeling-cable-rows.mp4",
+          "fileName": "balance-social/reels-ready/videos/kneeling-cable-rows.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2509367,
+          "uploadedAt": "2026-06-04T12:19:16.981Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Kneeling Cable Single Arm Press",
+      "normalizedKey": "kneeling-cable-single-arm-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/kneeling-cable-single-arm-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/kneeling-cable-single-arm-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1325348,
+      "uploadedAt": "2026-06-05T00:38:19.547Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/kneeling-cable-single-arm-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/kneeling-cable-single-arm-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2435915,
+          "uploadedAt": "2026-06-04T13:19:12.461Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Kneeling Floor Core Movement",
+      "normalizedKey": "kneeling-floor-core-movement",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/kneeling-floor-core-movement.mp4",
+      "fileName": "balance-social/app-exercise-videos/kneeling-floor-core-movement.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 7029211,
+      "uploadedAt": "2026-06-05T00:25:12.348Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/kneeling-floor-core-movement.mp4",
+          "fileName": "balance-social/reels-ready/videos/kneeling-floor-core-movement.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 17889443,
+          "uploadedAt": "2026-06-04T13:01:07.487Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Kneeling Single Arm Row",
+      "normalizedKey": "kneeling-single-arm-row",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/kneeling-single-arm-row.mp4",
+      "fileName": "balance-social/app-exercise-videos/kneeling-single-arm-row.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1041484,
+      "uploadedAt": "2026-06-05T00:38:30.700Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/kneeling-single-arm-row.mp4",
+          "fileName": "balance-social/reels-ready/videos/kneeling-single-arm-row.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2089902,
+          "uploadedAt": "2026-06-04T12:19:33.536Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Lat Pulldown",
+      "normalizedKey": "lat-pulldown",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/lat-pulldown.mp4",
+      "fileName": "balance-social/app-exercise-videos/lat-pulldown.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1294995,
+      "uploadedAt": "2026-06-05T00:28:13.327Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/lat-pulldown.mp4",
+          "fileName": "balance-social/reels-ready/videos/lat-pulldown.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2327328,
+          "uploadedAt": "2026-06-04T12:07:19.738Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Leg Extension",
+      "normalizedKey": "leg-extension",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/leg-extension.mp4",
+      "fileName": "balance-social/app-exercise-videos/leg-extension.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1166723,
+      "uploadedAt": "2026-06-05T00:34:09.213Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/leg-extension.mp4",
+          "fileName": "balance-social/reels-ready/videos/leg-extension.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2411175,
+          "uploadedAt": "2026-06-04T13:10:46.329Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Low Cable Chest Fly",
+      "normalizedKey": "low-cable-chest-fly",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/low-cable-chest-fly.mp4",
+      "fileName": "balance-social/app-exercise-videos/low-cable-chest-fly.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1506721,
+      "uploadedAt": "2026-06-05T00:24:20.036Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/low-cable-chest-fly.mp4",
+          "fileName": "balance-social/reels-ready/videos/low-cable-chest-fly.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2233098,
+          "uploadedAt": "2026-06-04T11:58:18.396Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Low To Hi Cable Chest Fly",
+      "normalizedKey": "low-to-hi-cable-chest-fly",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/low-to-hi-cable-chest-fly.mp4",
+      "fileName": "balance-social/app-exercise-videos/low-to-hi-cable-chest-fly.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1506721,
+      "uploadedAt": "2026-06-05T00:31:41.300Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/low-to-hi-cable-chest-fly.mp4",
+          "fileName": "balance-social/reels-ready/videos/low-to-hi-cable-chest-fly.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2233098,
+          "uploadedAt": "2026-06-04T12:11:35.366Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Lying Core Or Glute Movement",
+      "normalizedKey": "lying-core-or-glute-movement",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/lying-core-or-glute-movement.mp4",
+      "fileName": "balance-social/app-exercise-videos/lying-core-or-glute-movement.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 2991371,
+      "uploadedAt": "2026-06-05T00:26:48.435Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/lying-core-or-glute-movement.mp4",
+          "fileName": "balance-social/reels-ready/videos/lying-core-or-glute-movement.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 6401040,
+          "uploadedAt": "2026-06-04T13:04:13.507Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Lying Incline Bench Dumbbell Rows",
+      "normalizedKey": "lying-incline-bench-dumbbell-rows",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/lying-incline-bench-dumbbell-rows.mp4",
+      "fileName": "balance-social/app-exercise-videos/lying-incline-bench-dumbbell-rows.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 864445,
+      "uploadedAt": "2026-06-05T00:38:38.161Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/lying-incline-bench-dumbbell-rows.mp4",
+          "fileName": "balance-social/reels-ready/videos/lying-incline-bench-dumbbell-rows.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1752165,
+          "uploadedAt": "2026-06-04T12:19:39.335Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Lying Leg Curl",
+      "normalizedKey": "lying-leg-curl",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/lying-leg-curl.mp4",
+      "fileName": "balance-social/app-exercise-videos/lying-leg-curl.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1397978,
+      "uploadedAt": "2026-06-05T00:38:45.503Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/lying-leg-curl.mp4",
+          "fileName": "balance-social/reels-ready/videos/lying-leg-curl.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 3387796,
+          "uploadedAt": "2026-06-04T13:19:33.429Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Lying Leg Lift Movement",
+      "normalizedKey": "lying-leg-lift-movement",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/lying-leg-lift-movement.mp4",
+      "fileName": "balance-social/app-exercise-videos/lying-leg-lift-movement.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 2876570,
+      "uploadedAt": "2026-06-05T00:26:57.128Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/lying-leg-lift-movement.mp4",
+          "fileName": "balance-social/reels-ready/videos/lying-leg-lift-movement.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 6816512,
+          "uploadedAt": "2026-06-04T12:05:14.478Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Lying Leg Raise",
+      "normalizedKey": "lying-leg-raise",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/lying-leg-raise.mp4",
+      "fileName": "balance-social/app-exercise-videos/lying-leg-raise.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1320118,
+      "uploadedAt": "2026-06-05T00:38:53.389Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/lying-leg-raise.mp4",
+          "fileName": "balance-social/reels-ready/videos/lying-leg-raise.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2919316,
+          "uploadedAt": "2026-06-04T12:19:59.298Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Lying Prone Bodyweight Movement",
+      "normalizedKey": "lying-prone-bodyweight-movement",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/lying-prone-bodyweight-movement.mp4",
+      "fileName": "balance-social/app-exercise-videos/lying-prone-bodyweight-movement.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 2902991,
+      "uploadedAt": "2026-06-05T00:26:39.106Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/lying-prone-bodyweight-movement.mp4",
+          "fileName": "balance-social/reels-ready/videos/lying-prone-bodyweight-movement.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 6159209,
+          "uploadedAt": "2026-06-04T12:04:33.456Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Lying Scissor Leg Raise",
+      "normalizedKey": "lying-scissor-leg-raise",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/lying-scissor-leg-raise.mp4",
+      "fileName": "balance-social/app-exercise-videos/lying-scissor-leg-raise.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 935200,
+      "uploadedAt": "2026-06-05T00:39:01.050Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/lying-scissor-leg-raise.mp4",
+          "fileName": "balance-social/reels-ready/videos/lying-scissor-leg-raise.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2089228,
+          "uploadedAt": "2026-06-04T12:20:09.526Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Medicine Ball Plank",
+      "normalizedKey": "medicine-ball-plank",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/medicine-ball-plank.mp4",
+      "fileName": "balance-social/app-exercise-videos/medicine-ball-plank.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 488433,
+      "uploadedAt": "2026-06-05T00:32:25.829Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/medicine-ball-plank.mp4",
+          "fileName": "balance-social/reels-ready/videos/medicine-ball-plank.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 825942,
+          "uploadedAt": "2026-06-04T12:12:15.673Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Military Press",
+      "normalizedKey": "military-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/military-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/military-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1186835,
+      "uploadedAt": "2026-06-05T00:35:17.126Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/military-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/military-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2018610,
+          "uploadedAt": "2026-06-04T12:15:37.265Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Oblique Hanging Knee Tucks",
+      "normalizedKey": "oblique-hanging-knee-tucks",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/oblique-hanging-knee-tucks.mp4",
+      "fileName": "balance-social/app-exercise-videos/oblique-hanging-knee-tucks.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1166730,
+      "uploadedAt": "2026-06-05T00:32:31.682Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/oblique-hanging-knee-tucks.mp4",
+          "fileName": "balance-social/reels-ready/videos/oblique-hanging-knee-tucks.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1557703,
+          "uploadedAt": "2026-06-04T12:12:18.849Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Overhead Cable Tricep Push",
+      "normalizedKey": "overhead-cable-tricep-push",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/overhead-cable-tricep-push.mp4",
+      "fileName": "balance-social/app-exercise-videos/overhead-cable-tricep-push.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1025634,
+      "uploadedAt": "2026-06-05T00:35:57.414Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/overhead-cable-tricep-push.mp4",
+          "fileName": "balance-social/reels-ready/videos/overhead-cable-tricep-push.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1662435,
+          "uploadedAt": "2026-06-04T12:16:30.325Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Pistol Squat",
+      "normalizedKey": "pistol-squat",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/pistol-squat.mp4",
+      "fileName": "balance-social/app-exercise-videos/pistol-squat.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 917117,
+      "uploadedAt": "2026-06-05T00:33:43.664Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/pistol-squat.mp4",
+          "fileName": "balance-social/reels-ready/videos/pistol-squat.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1651293,
+          "uploadedAt": "2026-06-04T13:10:14.173Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Plank",
+      "normalizedKey": "plank",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/plank.mp4",
+      "fileName": "balance-social/app-exercise-videos/plank.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 2692572,
+      "uploadedAt": "2026-06-25T10:14:22.207Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Plank Rows",
+      "normalizedKey": "plank-rows",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/plank-rows.mp4",
+      "fileName": "balance-social/app-exercise-videos/plank-rows.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 901108,
+      "uploadedAt": "2026-06-05T00:39:06.507Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/plank-rows.mp4",
+          "fileName": "balance-social/reels-ready/videos/plank-rows.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1968271,
+          "uploadedAt": "2026-06-04T13:19:49.142Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Plate Front Raises",
+      "normalizedKey": "plate-front-raises",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/plate-front-raises.mp4",
+      "fileName": "balance-social/app-exercise-videos/plate-front-raises.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 6766947,
+      "uploadedAt": "2026-06-25T10:14:34.747Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Plate Movement",
+      "normalizedKey": "plate-movement",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/plate-movement.mp4",
+      "fileName": "balance-social/app-exercise-videos/plate-movement.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 5541424,
+      "uploadedAt": "2026-06-05T00:25:50.640Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/plate-movement.mp4",
+          "fileName": "balance-social/reels-ready/videos/plate-movement.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 15114702,
+          "uploadedAt": "2026-06-04T12:01:59.755Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Pull Pull Up Lower Lat Dominant",
+      "normalizedKey": "pull-pull-up-lower-lat-dominant",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/pull-pull-up-lower-lat-dominant.mp4",
+      "fileName": "balance-social/app-exercise-videos/pull-pull-up-lower-lat-dominant.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 4516643,
+      "uploadedAt": "2026-06-25T10:14:49.233Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Pull Up",
+      "normalizedKey": "pull-up",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/pull-up.mp4",
+      "fileName": "balance-social/app-exercise-videos/pull-up.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1449643,
+      "uploadedAt": "2026-06-05T00:24:29.047Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/pull-up.mp4",
+          "fileName": "balance-social/reels-ready/videos/pull-up.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2042533,
+          "uploadedAt": "2026-06-04T13:00:00.080Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Pushups",
+      "normalizedKey": "pushups",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/pushups.mp4",
+      "fileName": "balance-social/app-exercise-videos/pushups.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 4888944,
+      "uploadedAt": "2026-06-25T10:15:05.052Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/pushups.mp4",
+          "fileName": "balance-social/reels-ready/videos/pushups.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1914876,
+          "uploadedAt": "2026-06-04T13:09:02.106Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Reverse Dumbbell Lunge",
+      "normalizedKey": "reverse-dumbbell-lunge",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/reverse-dumbbell-lunge.mp4",
+      "fileName": "balance-social/app-exercise-videos/reverse-dumbbell-lunge.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 852866,
+      "uploadedAt": "2026-06-05T00:33:49.696Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/reverse-dumbbell-lunge.mp4",
+          "fileName": "balance-social/reels-ready/videos/reverse-dumbbell-lunge.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1920293,
+          "uploadedAt": "2026-06-04T12:13:41.692Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Scap Set Hangs",
+      "normalizedKey": "scap-set-hangs",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/scap-set-hangs.mp4",
+      "fileName": "balance-social/app-exercise-videos/scap-set-hangs.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 4017034,
+      "uploadedAt": "2026-06-25T10:15:20.468Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Seated Band Row",
+      "normalizedKey": "seated-band-row",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/seated-band-row.mp4",
+      "fileName": "balance-social/app-exercise-videos/seated-band-row.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 885803,
+      "uploadedAt": "2026-06-05T00:39:21.492Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/seated-band-row.mp4",
+          "fileName": "balance-social/reels-ready/videos/seated-band-row.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1769191,
+          "uploadedAt": "2026-06-04T13:19:59.486Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Seated Bench Movement",
+      "normalizedKey": "seated-bench-movement",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/seated-bench-movement.mp4",
+      "fileName": "balance-social/app-exercise-videos/seated-bench-movement.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 4237583,
+      "uploadedAt": "2026-06-05T00:25:35.002Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/seated-bench-movement.mp4",
+          "fileName": "balance-social/reels-ready/videos/seated-bench-movement.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 9316807,
+          "uploadedAt": "2026-06-04T13:02:07.307Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Seated Bicep Curl",
+      "normalizedKey": "seated-bicep-curl",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/seated-bicep-curl.mp4",
+      "fileName": "balance-social/app-exercise-videos/seated-bicep-curl.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 656329,
+      "uploadedAt": "2026-06-05T00:39:26.454Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/seated-bicep-curl.mp4",
+          "fileName": "balance-social/reels-ready/videos/seated-bicep-curl.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1305757,
+          "uploadedAt": "2026-06-04T12:20:39.129Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Seated Cable Row Wide Grip",
+      "normalizedKey": "seated-cable-row-wide-grip",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/seated-cable-row-wide-grip.mp4",
+      "fileName": "balance-social/app-exercise-videos/seated-cable-row-wide-grip.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 948850,
+      "uploadedAt": "2026-06-05T00:28:54.359Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/seated-cable-row-wide-grip.mp4",
+          "fileName": "balance-social/reels-ready/videos/seated-cable-row-wide-grip.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1727219,
+          "uploadedAt": "2026-06-04T12:08:09.567Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Seated Smith Barbell Calf Raises",
+      "normalizedKey": "seated-smith-barbell-calf-raises",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/seated-smith-barbell-calf-raises.mp4",
+      "fileName": "balance-social/app-exercise-videos/seated-smith-barbell-calf-raises.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1185516,
+      "uploadedAt": "2026-06-05T00:30:00.207Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/seated-smith-barbell-calf-raises.mp4",
+          "fileName": "balance-social/reels-ready/videos/seated-smith-barbell-calf-raises.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1880653,
+          "uploadedAt": "2026-06-04T13:07:16.987Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Side Crunch",
+      "normalizedKey": "side-crunch",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/side-crunch.mp4",
+      "fileName": "balance-social/app-exercise-videos/side-crunch.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 632434,
+      "uploadedAt": "2026-06-05T00:32:37.757Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/side-crunch.mp4",
+          "fileName": "balance-social/reels-ready/videos/side-crunch.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1147920,
+          "uploadedAt": "2026-06-04T13:09:14.216Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Single Arm Banded Press",
+      "normalizedKey": "single-arm-banded-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/single-arm-banded-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/single-arm-banded-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 907821,
+      "uploadedAt": "2026-06-05T00:39:11.115Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/single-arm-banded-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/single-arm-banded-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1916654,
+          "uploadedAt": "2026-06-04T12:20:21.071Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Single Arm Cable Rear Delt Fly",
+      "normalizedKey": "single-arm-cable-rear-delt-fly",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/single-arm-cable-rear-delt-fly.mp4",
+      "fileName": "balance-social/app-exercise-videos/single-arm-cable-rear-delt-fly.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1411509,
+      "uploadedAt": "2026-06-05T00:35:24.082Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/single-arm-cable-rear-delt-fly.mp4",
+          "fileName": "balance-social/reels-ready/videos/single-arm-cable-rear-delt-fly.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1929754,
+          "uploadedAt": "2026-06-04T12:15:43.419Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Single Arm Cable Tricep Kick Back",
+      "normalizedKey": "single-arm-cable-tricep-kick-back",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/single-arm-cable-tricep-kick-back.mp4",
+      "fileName": "balance-social/app-exercise-videos/single-arm-cable-tricep-kick-back.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 570184,
+      "uploadedAt": "2026-06-05T00:36:02.805Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/single-arm-cable-tricep-kick-back.mp4",
+          "fileName": "balance-social/reels-ready/videos/single-arm-cable-tricep-kick-back.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 990610,
+          "uploadedAt": "2026-06-04T13:12:05.941Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Single Arm Lat Dumbbell Row",
+      "normalizedKey": "single-arm-lat-dumbbell-row",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/single-arm-lat-dumbbell-row.mp4",
+      "fileName": "balance-social/app-exercise-videos/single-arm-lat-dumbbell-row.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 961507,
+      "uploadedAt": "2026-06-05T00:29:00.710Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/single-arm-lat-dumbbell-row.mp4",
+          "fileName": "balance-social/reels-ready/videos/single-arm-lat-dumbbell-row.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1982060,
+          "uploadedAt": "2026-06-04T12:08:16.688Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Single Arm Lat Pulldown",
+      "normalizedKey": "single-arm-lat-pulldown",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/single-arm-lat-pulldown.mp4",
+      "fileName": "balance-social/app-exercise-videos/single-arm-lat-pulldown.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 865536,
+      "uploadedAt": "2026-06-05T00:39:16.543Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/single-arm-lat-pulldown.mp4",
+          "fileName": "balance-social/reels-ready/videos/single-arm-lat-pulldown.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1799878,
+          "uploadedAt": "2026-06-04T12:20:28.099Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Single Arm Pull Down",
+      "normalizedKey": "single-arm-pull-down",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/single-arm-pull-down.mp4",
+      "fileName": "balance-social/app-exercise-videos/single-arm-pull-down.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1411509,
+      "uploadedAt": "2026-06-05T00:41:15.679Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/single-arm-pull-down.mp4",
+          "fileName": "balance-social/reels-ready/videos/single-arm-pull-down.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1929754,
+          "uploadedAt": "2026-06-04T13:21:30.542Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Single Arm Tricep Kick Back",
+      "normalizedKey": "single-arm-tricep-kick-back",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/single-arm-tricep-kick-back.mp4",
+      "fileName": "balance-social/app-exercise-videos/single-arm-tricep-kick-back.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 570184,
+      "uploadedAt": "2026-06-05T00:27:31.849Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/single-arm-tricep-kick-back.mp4",
+          "fileName": "balance-social/reels-ready/videos/single-arm-tricep-kick-back.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 990610,
+          "uploadedAt": "2026-06-04T13:05:07.081Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Single Leg Glute Thrusters",
+      "normalizedKey": "single-leg-glute-thrusters",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/single-leg-glute-thrusters.mp4",
+      "fileName": "balance-social/app-exercise-videos/single-leg-glute-thrusters.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 711682,
+      "uploadedAt": "2026-06-05T00:33:01.697Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/single-leg-glute-thrusters.mp4",
+          "fileName": "balance-social/reels-ready/videos/single-leg-glute-thrusters.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1394620,
+          "uploadedAt": "2026-06-04T12:12:48.316Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Single Leg Glute Thrusters On Bench",
+      "normalizedKey": "single-leg-glute-thrusters-on-bench",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/single-leg-glute-thrusters-on-bench.mp4",
+      "fileName": "balance-social/app-exercise-videos/single-leg-glute-thrusters-on-bench.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 791504,
+      "uploadedAt": "2026-06-05T00:32:56.507Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/single-leg-glute-thrusters-on-bench.mp4",
+          "fileName": "balance-social/reels-ready/videos/single-leg-glute-thrusters-on-bench.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1441973,
+          "uploadedAt": "2026-06-04T13:09:30.566Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Single Leg Hip Hinge Balance Drill",
+      "normalizedKey": "single-leg-hip-hinge-balance-drill",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/single-leg-hip-hinge-balance-drill.mp4",
+      "fileName": "balance-social/app-exercise-videos/single-leg-hip-hinge-balance-drill.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 3602067,
+      "uploadedAt": "2026-06-05T00:24:37.681Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/single-leg-hip-hinge-balance-drill.mp4",
+          "fileName": "balance-social/reels-ready/videos/single-leg-hip-hinge-balance-drill.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 9547434,
+          "uploadedAt": "2026-06-04T11:59:07.894Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Single Leg Quad Extension",
+      "normalizedKey": "single-leg-quad-extension",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/single-leg-quad-extension.mp4",
+      "fileName": "balance-social/app-exercise-videos/single-leg-quad-extension.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 745256,
+      "uploadedAt": "2026-06-05T00:34:15.829Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/single-leg-quad-extension.mp4",
+          "fileName": "balance-social/reels-ready/videos/single-leg-quad-extension.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1698768,
+          "uploadedAt": "2026-06-04T12:14:16.574Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Sissy Squats Quad Movement",
+      "normalizedKey": "sissy-squats-quad-movement",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/sissy-squats-quad-movement.mp4",
+      "fileName": "balance-social/app-exercise-videos/sissy-squats-quad-movement.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 7097098,
+      "uploadedAt": "2026-06-25T10:15:35.869Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Smith Bench Press",
+      "normalizedKey": "smith-bench-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/smith-bench-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/smith-bench-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 987330,
+      "uploadedAt": "2026-06-05T00:31:56.923Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/smith-bench-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/smith-bench-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1549801,
+          "uploadedAt": "2026-06-04T12:11:50.319Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Smith Machine Back Squats",
+      "normalizedKey": "smith-machine-back-squats",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/smith-machine-back-squats.mp4",
+      "fileName": "balance-social/app-exercise-videos/smith-machine-back-squats.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 6266660,
+      "uploadedAt": "2026-06-25T10:15:57.831Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Smith Machine Barbell Curl",
+      "normalizedKey": "smith-machine-barbell-curl",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/smith-machine-barbell-curl.mp4",
+      "fileName": "balance-social/app-exercise-videos/smith-machine-barbell-curl.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1191166,
+      "uploadedAt": "2026-06-05T00:29:44.767Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/smith-machine-barbell-curl.mp4",
+          "fileName": "balance-social/reels-ready/videos/smith-machine-barbell-curl.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1944348,
+          "uploadedAt": "2026-06-04T12:09:08.320Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Smith Machine Body Rows",
+      "normalizedKey": "smith-machine-body-rows",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/smith-machine-body-rows.mp4",
+      "fileName": "balance-social/app-exercise-videos/smith-machine-body-rows.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 3261074,
+      "uploadedAt": "2026-06-25T10:16:10.652Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Smith Machine Body Tricep Skull Crushers",
+      "normalizedKey": "smith-machine-body-tricep-skull-crushers",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/smith-machine-body-tricep-skull-crushers.mp4",
+      "fileName": "balance-social/app-exercise-videos/smith-machine-body-tricep-skull-crushers.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 5307428,
+      "uploadedAt": "2026-06-25T10:16:22.783Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Smith Machine Bulgarian Lunge",
+      "normalizedKey": "smith-machine-bulgarian-lunge",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/smith-machine-bulgarian-lunge.mp4",
+      "fileName": "balance-social/app-exercise-videos/smith-machine-bulgarian-lunge.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 3498882,
+      "uploadedAt": "2026-06-25T10:16:33.477Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/smith-machine-bulgarian-lunge.mp4",
+          "fileName": "balance-social/reels-ready/videos/smith-machine-bulgarian-lunge.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2465031,
+          "uploadedAt": "2026-06-04T13:10:32.646Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Smith Machine Good Mornings",
+      "normalizedKey": "smith-machine-good-mornings",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/smith-machine-good-mornings.mp4",
+      "fileName": "balance-social/app-exercise-videos/smith-machine-good-mornings.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 7987070,
+      "uploadedAt": "2026-06-25T10:16:50.141Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Smith Machine Leg Press Alternative",
+      "normalizedKey": "smith-machine-leg-press-alternative",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/smith-machine-leg-press-alternative.mp4",
+      "fileName": "balance-social/app-exercise-videos/smith-machine-leg-press-alternative.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 9271550,
+      "uploadedAt": "2026-06-25T10:17:17.839Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Smith Machine Lunge",
+      "normalizedKey": "smith-machine-lunge",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/smith-machine-lunge.mp4",
+      "fileName": "balance-social/app-exercise-videos/smith-machine-lunge.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1327367,
+      "uploadedAt": "2026-06-05T00:27:36.931Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/smith-machine-lunge.mp4",
+          "fileName": "balance-social/reels-ready/videos/smith-machine-lunge.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2465031,
+          "uploadedAt": "2026-06-04T12:06:40.907Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Smith Machine Pivot Bicep Curl",
+      "normalizedKey": "smith-machine-pivot-bicep-curl",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/smith-machine-pivot-bicep-curl.mp4",
+      "fileName": "balance-social/app-exercise-videos/smith-machine-pivot-bicep-curl.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 8933910,
+      "uploadedAt": "2026-06-25T10:17:39.466Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Smith Machine Squats",
+      "normalizedKey": "smith-machine-squats",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/smith-machine-squats.mp4",
+      "fileName": "balance-social/app-exercise-videos/smith-machine-squats.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1058520,
+      "uploadedAt": "2026-06-05T00:39:31.390Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/smith-machine-squats.mp4",
+          "fileName": "balance-social/reels-ready/videos/smith-machine-squats.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2577229,
+          "uploadedAt": "2026-06-04T13:20:15.244Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Stand Still Lunge",
+      "normalizedKey": "stand-still-lunge",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/stand-still-lunge.mp4",
+      "fileName": "balance-social/app-exercise-videos/stand-still-lunge.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 694189,
+      "uploadedAt": "2026-06-05T00:27:41.738Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/stand-still-lunge.mp4",
+          "fileName": "balance-social/reels-ready/videos/stand-still-lunge.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1513276,
+          "uploadedAt": "2026-06-04T12:06:47.967Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Standing Dumbbell Bicep Curls",
+      "normalizedKey": "standing-dumbbell-bicep-curls",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/standing-dumbbell-bicep-curls.mp4",
+      "fileName": "balance-social/app-exercise-videos/standing-dumbbell-bicep-curls.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 847664,
+      "uploadedAt": "2026-06-05T00:29:50.476Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/standing-dumbbell-bicep-curls.mp4",
+          "fileName": "balance-social/reels-ready/videos/standing-dumbbell-bicep-curls.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1399631,
+          "uploadedAt": "2026-06-04T12:09:13.324Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Standing Dumbbell Press",
+      "normalizedKey": "standing-dumbbell-press",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/standing-dumbbell-press.mp4",
+      "fileName": "balance-social/app-exercise-videos/standing-dumbbell-press.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 807076,
+      "uploadedAt": "2026-06-05T00:41:20.748Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/standing-dumbbell-press.mp4",
+          "fileName": "balance-social/reels-ready/videos/standing-dumbbell-press.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1501099,
+          "uploadedAt": "2026-06-04T12:23:04.463Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Standing Smith Barbell Calf Raises",
+      "normalizedKey": "standing-smith-barbell-calf-raises",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/standing-smith-barbell-calf-raises.mp4",
+      "fileName": "balance-social/app-exercise-videos/standing-smith-barbell-calf-raises.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1605732,
+      "uploadedAt": "2026-06-05T00:30:06.621Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/standing-smith-barbell-calf-raises.mp4",
+          "fileName": "balance-social/reels-ready/videos/standing-smith-barbell-calf-raises.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2359203,
+          "uploadedAt": "2026-06-04T12:09:33.389Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Starfish Crunches",
+      "normalizedKey": "starfish-crunches",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/starfish-crunches.mp4",
+      "fileName": "balance-social/app-exercise-videos/starfish-crunches.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 748875,
+      "uploadedAt": "2026-06-05T00:32:42.340Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/starfish-crunches.mp4",
+          "fileName": "balance-social/reels-ready/videos/starfish-crunches.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1335001,
+          "uploadedAt": "2026-06-04T12:12:30.713Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Static Lunge",
+      "normalizedKey": "static-lunge",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/static-lunge.mp4",
+      "fileName": "balance-social/app-exercise-videos/static-lunge.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 694189,
+      "uploadedAt": "2026-06-05T00:34:02.079Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/static-lunge.mp4",
+          "fileName": "balance-social/reels-ready/videos/static-lunge.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1513276,
+          "uploadedAt": "2026-06-04T12:13:58.456Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Straight Arm Lat Pulldown",
+      "normalizedKey": "straight-arm-lat-pulldown",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/straight-arm-lat-pulldown.mp4",
+      "fileName": "balance-social/app-exercise-videos/straight-arm-lat-pulldown.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1314636,
+      "uploadedAt": "2026-06-05T00:28:21.261Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/straight-arm-lat-pulldown.mp4",
+          "fileName": "balance-social/reels-ready/videos/straight-arm-lat-pulldown.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2115362,
+          "uploadedAt": "2026-06-04T13:05:44.950Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Sword Mans",
+      "normalizedKey": "sword-mans",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/sword-mans.mp4",
+      "fileName": "balance-social/app-exercise-videos/sword-mans.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 11135458,
+      "uploadedAt": "2026-06-25T10:18:02.855Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Toe Reaches",
+      "normalizedKey": "toe-reaches",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/toe-reaches.mp4",
+      "fileName": "balance-social/app-exercise-videos/toe-reaches.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 821426,
+      "uploadedAt": "2026-06-05T00:39:36.023Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/toe-reaches.mp4",
+          "fileName": "balance-social/reels-ready/videos/toe-reaches.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1763661,
+          "uploadedAt": "2026-06-04T12:20:57.360Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Triangle Close Grip Attachment Seated Row",
+      "normalizedKey": "triangle-close-grip-attachment-seated-row",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/triangle-close-grip-attachment-seated-row.mp4",
+      "fileName": "balance-social/app-exercise-videos/triangle-close-grip-attachment-seated-row.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1019719,
+      "uploadedAt": "2026-06-05T00:29:05.893Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/triangle-close-grip-attachment-seated-row.mp4",
+          "fileName": "balance-social/reels-ready/videos/triangle-close-grip-attachment-seated-row.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1867785,
+          "uploadedAt": "2026-06-04T13:06:31.441Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Triangle Close Grip Lat Pull Down",
+      "normalizedKey": "triangle-close-grip-lat-pull-down",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/triangle-close-grip-lat-pull-down.mp4",
+      "fileName": "balance-social/app-exercise-videos/triangle-close-grip-lat-pull-down.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1141165,
+      "uploadedAt": "2026-06-05T00:28:29.844Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/triangle-close-grip-lat-pull-down.mp4",
+          "fileName": "balance-social/reels-ready/videos/triangle-close-grip-lat-pull-down.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2384856,
+          "uploadedAt": "2026-06-04T12:07:37.434Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Triangle Grip High To Low Kneeling Row",
+      "normalizedKey": "triangle-grip-high-to-low-kneeling-row",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/triangle-grip-high-to-low-kneeling-row.mp4",
+      "fileName": "balance-social/app-exercise-videos/triangle-grip-high-to-low-kneeling-row.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1590103,
+      "uploadedAt": "2026-06-05T00:28:36.104Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/triangle-grip-high-to-low-kneeling-row.mp4",
+          "fileName": "balance-social/reels-ready/videos/triangle-grip-high-to-low-kneeling-row.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2451612,
+          "uploadedAt": "2026-06-04T13:06:02.854Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Tricep Pulldowns",
+      "normalizedKey": "tricep-pulldowns",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/tricep-pulldowns.mp4",
+      "fileName": "balance-social/app-exercise-videos/tricep-pulldowns.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1187022,
+      "uploadedAt": "2026-06-05T00:39:57.553Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/tricep-pulldowns.mp4",
+          "fileName": "balance-social/reels-ready/videos/tricep-pulldowns.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1715149,
+          "uploadedAt": "2026-06-04T13:20:41.578Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Trx Face Pulls",
+      "normalizedKey": "trx-face-pulls",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/trx-face-pulls.mp4",
+      "fileName": "balance-social/app-exercise-videos/trx-face-pulls.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1262033,
+      "uploadedAt": "2026-06-05T00:39:42.566Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/trx-face-pulls.mp4",
+          "fileName": "balance-social/reels-ready/videos/trx-face-pulls.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 2190194,
+          "uploadedAt": "2026-06-04T13:20:28.932Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Trx Rows",
+      "normalizedKey": "trx-rows",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/trx-rows.mp4",
+      "fileName": "balance-social/app-exercise-videos/trx-rows.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1045800,
+      "uploadedAt": "2026-06-05T00:39:47.826Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/trx-rows.mp4",
+          "fileName": "balance-social/reels-ready/videos/trx-rows.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1726120,
+          "uploadedAt": "2026-06-04T12:21:10.346Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Underhand Barbell Row",
+      "normalizedKey": "underhand-barbell-row",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/underhand-barbell-row.mp4",
+      "fileName": "balance-social/app-exercise-videos/underhand-barbell-row.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 754645,
+      "uploadedAt": "2026-06-05T00:29:11.164Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/underhand-barbell-row.mp4",
+          "fileName": "balance-social/reels-ready/videos/underhand-barbell-row.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1490182,
+          "uploadedAt": "2026-06-04T12:08:30.014Z"
+        }
+      ]
+    },
+    {
+      "exercise": "V Sits",
+      "normalizedKey": "v-sits",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/v-sits.mp4",
+      "fileName": "balance-social/app-exercise-videos/v-sits.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 481213,
+      "uploadedAt": "2026-06-05T00:32:48.009Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/v-sits.mp4",
+          "fileName": "balance-social/reels-ready/videos/v-sits.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 861301,
+          "uploadedAt": "2026-06-04T12:12:35.880Z"
+        }
+      ]
+    },
+    {
+      "exercise": "V Swings",
+      "normalizedKey": "v-swings",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/v-swings.mp4",
+      "fileName": "balance-social/app-exercise-videos/v-swings.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 888574,
+      "uploadedAt": "2026-06-05T00:40:03.690Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/v-swings.mp4",
+          "fileName": "balance-social/reels-ready/videos/v-swings.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1315036,
+          "uploadedAt": "2026-06-04T12:21:30.182Z"
+        }
+      ]
+    },
+    {
+      "exercise": "V Up",
+      "normalizedKey": "v-up",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/v-up.mp4",
+      "fileName": "balance-social/app-exercise-videos/v-up.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 311711,
+      "uploadedAt": "2026-06-05T00:40:07.845Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/v-up.mp4",
+          "fileName": "balance-social/reels-ready/videos/v-up.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 577498,
+          "uploadedAt": "2026-06-04T12:21:37.173Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Waiter Bicep Curl",
+      "normalizedKey": "waiter-bicep-curl",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/waiter-bicep-curl.mp4",
+      "fileName": "balance-social/app-exercise-videos/waiter-bicep-curl.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 571907,
+      "uploadedAt": "2026-06-05T00:29:54.824Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/waiter-bicep-curl.mp4",
+          "fileName": "balance-social/reels-ready/videos/waiter-bicep-curl.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1158946,
+          "uploadedAt": "2026-06-04T12:09:18.520Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Walkout Inchworm Style Movement",
+      "normalizedKey": "walkout-inchworm-style-movement",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/walkout-inchworm-style-movement.mp4",
+      "fileName": "balance-social/app-exercise-videos/walkout-inchworm-style-movement.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 2086928,
+      "uploadedAt": "2026-06-05T00:24:57.341Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/walkout-inchworm-style-movement.mp4",
+          "fileName": "balance-social/reels-ready/videos/walkout-inchworm-style-movement.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 5457952,
+          "uploadedAt": "2026-06-04T11:59:44.928Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Wide Grip Seated Row",
+      "normalizedKey": "wide-grip-seated-row",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/wide-grip-seated-row.mp4",
+      "fileName": "balance-social/app-exercise-videos/wide-grip-seated-row.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 1022642,
+      "uploadedAt": "2026-06-05T00:41:25.689Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/wide-grip-seated-row.mp4",
+          "fileName": "balance-social/reels-ready/videos/wide-grip-seated-row.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1933801,
+          "uploadedAt": "2026-06-04T12:23:11.938Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Woodchop",
+      "normalizedKey": "woodchop",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/woodchop.mp4",
+      "fileName": "balance-social/app-exercise-videos/woodchop.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 883132,
+      "uploadedAt": "2026-06-05T00:39:52.477Z",
+      "alternates": [
+        {
+          "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/reels-ready/videos/woodchop.mp4",
+          "fileName": "balance-social/reels-ready/videos/woodchop.mp4",
+          "collection": "reels_ready_videos",
+          "bytes": 1618787,
+          "uploadedAt": "2026-06-04T12:21:17.498Z"
+        }
+      ]
+    },
+    {
+      "exercise": "Zercher Rdls",
+      "normalizedKey": "zercher-rdls",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/zercher-rdls.mp4",
+      "fileName": "balance-social/app-exercise-videos/zercher-rdls.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 8950976,
+      "uploadedAt": "2026-06-25T10:18:22.380Z",
+      "alternates": []
+    },
+    {
+      "exercise": "Zercher Squats",
+      "normalizedKey": "zercher-squats",
+      "url": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/zercher-squats.mp4",
+      "fileName": "balance-social/app-exercise-videos/zercher-squats.mp4",
+      "collection": "app_exercise_videos",
+      "performer": "shannon",
+      "identityBasis": "shannon_confirmed_collection",
+      "safeForShanFeed": true,
+      "bytes": 5793082,
+      "uploadedAt": "2026-06-25T10:18:36.497Z",
+      "alternates": []
+    }
+  ]
+}

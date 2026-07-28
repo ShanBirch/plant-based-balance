@@ -21,7 +21,7 @@ Cadence: nine feed posts across seven days, supported by daily Stories. Feed pub
 | Wed 5 Aug, 6:15pm | COACH | Carousel | Reward the start, not only the finish. | Save | Brief ready |
 | Thu 6 Aug, 6:15pm | PROOF | Live proof Reel or post | One logged start is a vote for the person you are becoming. | Reply | Fresh proof selected on the day |
 | Fri 7 Aug, 8:15am | BELIEF | Science Reel | Motivation often arrives after you start. | Try five minutes | Primary source selection required |
-| Sat 8 Aug, 9:00am | COACH | Exercise Reel | Make the first rep obvious. | Save | Requires one fresh exercise clip |
+| Sat 8 Aug, 9:00am | COACH | Exercise Reel | Make the first rep obvious. | Save | Select from the 219-clip confirmed Shannon archive |
 | Sun 9 Aug, 6:00pm | PROOF | Comeback proof Reel | The win was getting back in before Monday. | DM `BALANCE` | Fresh proof selected on the day |
 
 ## Stories During Week 1
@@ -181,13 +181,13 @@ The separate 3:00pm Daily Proof Story remains live-feed-driven and is not replac
 ## Shannon's Weekly Responsibilities
 
 1. Approve or edit the weekly scripts, covers and CTAs in one batch. Target: 15 minutes on Sunday.
-2. Upload two or three fresh exercise clips each week. Clean full reps, no setup or pack-up, and enough framing to see the useful joints and equipment.
+2. No routine exercise filming is required. Codex searches the 219-clip confirmed Shannon Backblaze archive first and excludes the generic-demonstrator library. Shannon is only asked when that archive and approved Google Photos imports genuinely have no usable movement.
 3. Record four raw Stories each week. Fifteen to thirty seconds is enough: training, a meal, a walk, a coaching thought or a direct answer to a common question.
 4. Respond personally to replies and qualified DMs. The content can open the conversation; Shannon closes the trust gap.
 5. Flag client proof that has explicit public-use permission. Everything else stays anonymised or object-only.
 6. Spend one short weekly check-in telling Codex what felt off, what clients are saying and what Shannon is currently excited about.
 
-Shannon does not need to invent daily topics, write captions, edit Reels, operate HeyGen manually or design every Story.
+Shannon does not need to invent daily topics, film routine exercise demonstrations, write captions, edit Reels, operate HeyGen manually or design every Story.
 
 ## Approval And Publishing Gate
 
