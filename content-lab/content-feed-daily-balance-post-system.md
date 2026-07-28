@@ -210,6 +210,13 @@ Reject or rewrite the idea if:
 - No medical promises.
 - No manipulation or shame.
 
+### Avatar production
+
+- Create and approve the Shannon voice track in ElevenLabs first.
+- Use HeyGen only to lip-sync an existing approved Shannon avatar look to that audio.
+- Do not use prompt-based HeyGen video generation to create the complete Reel.
+- Build the final Reel separately using the lip-synced presenter, real footage, graphics, captions and music.
+
 ## 14-Day Three-Post Experiment
 
 Hypothesis:
