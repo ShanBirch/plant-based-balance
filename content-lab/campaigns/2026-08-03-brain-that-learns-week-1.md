@@ -2,7 +2,7 @@
 
 Campaign dates: 2026-08-03 to 2026-08-09, Australia/Brisbane.
 
-Status: Batch 1 visual revision ready; conversational science-Reel script awaiting Shannon approval; remaining six scheduled as production briefs.
+Status: Batch 1 visual revision ready; raw Shannon-voice science-Reel script awaiting approval; remaining six scheduled as production briefs.
 
 Commercial belief:
 
@@ -14,7 +14,7 @@ Cadence: nine feed posts across seven days, supported by daily Stories. Feed pub
 
 | Date and time | Job | Format | Hook | CTA | Production status |
 | --- | --- | --- | --- | --- | --- |
-| Mon 3 Aug, 8:15am | BELIEF | Science Reel | Hunger isn't a simple fuel gauge. Your brain helps construct it. | Comment `HUNGER` | Revised spoken script awaiting approval |
+| Mon 3 Aug, 8:15am | BELIEF | Science Reel | Hunger isn't a simple fuel gauge. Your brain helps construct it. | Comment `HUNGER` | Raw Shannon-voice script awaiting approval |
 | Mon 3 Aug, 6:15pm | COACH | 8-slide real-photo video carousel | Build a meal that gives your brain better fullness evidence. | Save | Real-Shannon shimmer revision ready for review |
 | Tue 4 Aug, 6:15pm | PROOF | Photo-backed proof post | Structure beats white-knuckling hunger. | Soft coaching invitation | Source and copy locked |
 | Wed 5 Aug, 8:15am | BELIEF | Science Reel | Dopamine isn't just pleasure. It helps teach the brain what is worth repeating. | Follow | Primary source selection required |
@@ -52,29 +52,29 @@ Sales arc:
 - Rationalize: the brain combines real body signals with context, expectation and learning.
 - Project: respond with useful food structure rather than shame.
 
-Final spoken script:
+Revised spoken script awaiting approval:
 
-> Okay, so... hunger isn't this little fuel gauge that just clicks on when your stomach's empty.
+> Okay, so... your stomach isn't a little fuel gauge going, yep, empty now.
 >
-> It's, um... something your brain helps construct.
+> It's way messier than that.
 >
-> Your body's sending real signals from your gut, hormones, available energy. But they don't turn up going, "hey, you're hungry now."
+> Your body's sending real stuff, um... gut signals, hormones, available energy. Your brain chucks that together with the time of day, food, smells, what happened last time... and, ah, out pops hunger.
 >
-> Your brain kind of mashes all that together with the time of day, what you can see and smell, and what it's learned before. And then, ah... yeah, it gives you the feeling you call hunger.
+> This paper gets fucking weird.
 >
-> And, um... this paper gets fucking weird.
+> Crum and colleagues gave 46 people the same 380-calorie shake twice. Same fucking shake. One label said 620-calorie indulgent. The other said 140-calorie sensible.
 >
-> Crum and colleagues gave 46 people the same 380-calorie milkshake twice. One time they called it a 620-calorie indulgent shake. The other time, a 140-calorie sensible shake.
+> And, um... when they thought they'd had the indulgent one, their ghrelin dropped more steeply.
 >
-> Same drink. Different label.
+> Same drink. Different story around it. Different short-term hormone response.
 >
-> When people thought it was indulgent, their ghrelin dropped more steeply even though, ah... it was exactly the same shake.
+> Now, ah... don't run off and try to manifest a calorie deficit. That's not what this shows. Small study. Short-term hormone response. It wasn't a fat-loss trial.
 >
-> Now, um... before someone tries to manifest themselves into a calorie deficit... no. Your thoughts don't override energy balance. This was a small study looking at a short-term hormone response. It wasn't a fat-loss trial.
+> But, yeah... hunger isn't just you being weak or shit at dieting. It's real body stuff, plus what's going on around you, plus what your brain's learned.
 >
-> But, yeah... hunger's biological and contextual. You're not weak. Your brain's just trying to make sense of messy information.
+> So stop trying to win a fistfight with it. Build meals that fill you up, make the next bit easier, and adjust the plan when it's clearly not fucking working.
 >
-> Comment HUNGER below and I'll send you the paper.
+> Comment HUNGER and I'll send you the paper.
 
 Production brief:
 
