@@ -2,7 +2,7 @@
 
 Campaign dates: 2026-08-03 to 2026-08-09, Australia/Brisbane.
 
-Status: first three posts locked for Shannon review; remaining six scheduled as production briefs.
+Status: Batch 1 visual revision ready; conversational science-Reel script awaiting Shannon approval; remaining six scheduled as production briefs.
 
 Commercial belief:
 
@@ -14,10 +14,10 @@ Cadence: nine feed posts across seven days, supported by daily Stories. Feed pub
 
 | Date and time | Job | Format | Hook | CTA | Production status |
 | --- | --- | --- | --- | --- | --- |
-| Mon 3 Aug, 8:15am | BELIEF | Science Reel | Hunger is not a simple fuel gauge. Your brain helps construct it. | Comment `HUNGER` | Script and edit brief locked |
+| Mon 3 Aug, 8:15am | BELIEF | Science Reel | Hunger isn't a simple fuel gauge. Your brain helps construct it. | Comment `HUNGER` | Revised spoken script awaiting approval |
 | Mon 3 Aug, 6:15pm | COACH | 8-slide carousel | Build a meal that gives your brain better fullness evidence. | Save | Copy and layout locked |
 | Tue 4 Aug, 6:15pm | PROOF | Photo-backed proof post | Structure beats white-knuckling hunger. | Soft coaching invitation | Source and copy locked |
-| Wed 5 Aug, 8:15am | BELIEF | Science Reel | Dopamine is not just pleasure. It helps teach the brain what is worth repeating. | Follow | Primary source selection required |
+| Wed 5 Aug, 8:15am | BELIEF | Science Reel | Dopamine isn't just pleasure. It helps teach the brain what is worth repeating. | Follow | Primary source selection required |
 | Wed 5 Aug, 6:15pm | COACH | Carousel | Reward the start, not only the finish. | Save | Brief ready |
 | Thu 6 Aug, 6:15pm | PROOF | Live proof Reel or post | One logged start is a vote for the person you are becoming. | Reply | Fresh proof selected on the day |
 | Fri 7 Aug, 8:15am | BELIEF | Science Reel | Motivation often arrives after you start. | Try five minutes | Primary source selection required |
@@ -34,9 +34,9 @@ Cadence: nine feed posts across seven days, supported by daily Stories. Feed pub
 
 ## Locked Post 1: BELIEF Science Reel
 
-Working title: `Hunger Is Not A Fuel Gauge`
+Working title: `Hunger Isn't A Fuel Gauge`
 
-Target runtime: 65 to 75 seconds.
+Target runtime: 75 to 90 seconds. Natural pauses and Shannon's conversational cadence take priority over compressing the delivery.
 
 FATE:
 
@@ -54,27 +54,27 @@ Sales arc:
 
 Final spoken script:
 
-> Your hunger is not a little fuel gauge that simply clicks on when your stomach is empty.
+> Okay, so hunger isn't this little fuel gauge that just clicks on when your stomach's empty.
 >
-> It is something your brain helps construct.
+> It's, um... something your brain helps construct.
 >
-> Your body sends real signals from your gut, hormones and available energy. But they do not arrive with a neat label saying, "you are hungry."
+> Your body's sending real signals — from your gut, hormones, available energy. But they don't turn up saying, "hey, you're hungry."
 >
-> Your brain combines them with the time of day, what you can see and smell, and what it has learned before. Then it creates the feeling you recognise as hunger.
+> Your brain mashes that together with the time of day, what you can see and smell, and what it's learned. And then, ah... it gives you the feeling you call hunger.
 >
 > And this paper gets fucking weird.
 >
-> Crum and colleagues gave 46 people the same 380-calorie milkshake twice. One label called it a 620-calorie indulgent shake. The other called it a 140-calorie sensible shake.
+> Crum and colleagues gave 46 people the same 380-calorie milkshake twice. One time they called it a 620-calorie indulgent shake. The other time, a 140-calorie sensible shake.
 >
-> Same drink. Different expectation.
+> Same drink. Different label.
 >
-> When people believed it was indulgent, their ghrelin fell much more steeply, even though the nutrition was identical.
+> When people thought it was indulgent, their ghrelin dropped more steeply — even though it was exactly the same shake.
 >
-> Before someone tries to manifest themselves into a calorie deficit, no. Thoughts do not override energy balance. This was a small study measuring a short-term hormone response, not fat loss.
+> Now, before someone tries to manifest themselves into a calorie deficit... no. Your thoughts don't override energy balance. This was a small study looking at a short-term hormone response. It wasn't a fat-loss trial.
 >
-> But it does show that hunger is biological and contextual. You are not weak. Your brain is trying to interpret messy data.
+> But it does show hunger's biological and contextual. You're not weak. Your brain's trying to make sense of messy information.
 >
-> Comment HUNGER below and I will send you the paper.
+> Comment HUNGER below and I'll send you the paper.
 
 Production brief:
 
@@ -82,23 +82,24 @@ Production brief:
 - Use HeyGen Video Translation to lip-sync `Coach Shan 2` or another approved reusable source clip. Do not generate the whole Reel in HeyGen.
 - Cold open: a fake stomach fuel gauge fills, glitches and snaps to Shannon on the first line.
 - Show the real paper early. Split the identical shake into `620 indulgent` and `140 sensible` labels.
+- Never cover Shannon's face, mouth, eyes, jawline, hairline or head silhouette. Graphic-led scenes use the approved Part Two upper-right circular presenter bubble with the blue ring, orbit cue and name pill.
 - Keep Shannon visible as the human anchor during longer graphics.
 - Caveat line goes full-screen on Shannon with minimal competing graphics.
 - Final spoken line and final visible line: `Comment HUNGER below`.
-- Cover: `HUNGER IS NOT A FUEL GAUGE` with Shannon plus a milkshake/fuel-gauge visual.
+- Cover: `HUNGER ISN'T A FUEL GAUGE` with Shannon plus a milkshake/fuel-gauge visual.
 - Music role: restrained science drama; voice stays dominant.
 
 Caption:
 
-> Hunger is real. It is also not a simple character test.
+> Hunger's real. And it isn't some simple character test.
 >
 > In a small human experiment, 46 people drank the same 380-calorie shake twice under two very different labels. Their short-term ghrelin response changed with what they believed they were drinking.
 >
-> That does not mean thoughts delete calories or that hunger should be ignored. It means the brain reads genuine body signals in context.
+> That doesn't mean thoughts delete calories or that hunger should be ignored. It means the brain reads genuine body signals in context.
 >
-> If your plan leaves you white-knuckling hunger, the answer is not automatically more discipline. Sometimes the meal, environment or plan needs adjusting.
+> If your plan leaves you white-knuckling hunger, the answer isn't automatically more discipline. Sometimes the meal, environment or plan needs adjusting.
 >
-> Comment HUNGER below and I will send you the paper.
+> Comment HUNGER below and I'll send you the paper.
 
 Source trail:
 
@@ -117,9 +118,9 @@ Slides:
 2. `1. START WITH A PROTEIN ANCHOR.` Supporting line: `Tofu, tempeh, seitan, lentils, beans or edamame.`
 3. `2. ADD FIBRE AND VOLUME.` Supporting line: `Vegetables, fruit, legumes and whole grains help the meal feel like a meal.`
 4. `3. ADD USEFUL CARBS.` Supporting line: `Rice, oats, bread, potatoes or pasta can support training and make the plan easier to live with.`
-5. `4. MAKE IT SATISFYING.` Supporting line: `Flavour, texture and enough food matter. Sad diet food is not a personality test.`
+5. `4. MAKE IT SATISFYING.` Supporting line: `Flavour, texture and enough food matter. Sad diet food isn't a personality test.`
 6. `5. KNOW WHAT COMES NEXT.` Supporting line: `A planned snack or next meal beats negotiating with yourself when you are starving.`
-7. `THIS IS NOT ABOUT TRICKING YOUR BRAIN.` Supporting line: `It is about giving your body and brain clearer, more useful evidence.`
+7. `THIS ISN'T ABOUT TRICKING YOUR BRAIN.` Supporting line: `It's about giving your body and brain clearer, more useful evidence.`
 8. `BUILD THE NEXT MEAL. NOT THE PERFECT DIET.` Supporting line: `Save this for the next time hunger feels like a personal failure.`
 
 Caption:
@@ -128,7 +129,7 @@ Caption:
 >
 > Start with a protein anchor. Add fibre and volume. Include useful carbs. Make the meal satisfying. Know what comes next.
 >
-> You do not need to win a moral argument with hunger. You need a meal and plan that fit your training, appetite and actual life.
+> You don't need to win a moral argument with hunger. You need a meal and plan that fit your training, appetite and actual life.
 >
 > Save this and use it on your next meal.
 
@@ -148,7 +149,7 @@ Caption:
 >
 > Francesca logged a simple lunch with sweet potato, lentils, vegetables and 27 grams of plant protein.
 >
-> What I notice as a coach is not whether the meal looks perfect. It gives the day structure, supports the next decision and gives us something real to adjust if hunger or training changes.
+> What I notice as a coach isn't whether the meal looks perfect. It gives the day structure, supports the next decision and gives us something real to adjust if hunger or training changes.
 >
 > That is the point of having support around the plan. We work with the evidence instead of blaming you for having a body.
 >
