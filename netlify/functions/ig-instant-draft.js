@@ -735,7 +735,7 @@ Return ONLY valid JSON in this format:
 Repair rules:
 - Fix every issue below, then keep the reply natural enough that Shannon would be happy sending it untouched.
 - Answer the latest inbound message first. If the latest message is simple, a short simple reply is better than a coaching paragraph.
-- Keep Shannon's casual lower-case texting style. No corporate tone, no AI talk, and no mention of auto-send, review, rules, or the business as a system.
+- Keep Shannon's casual phone-typed style. Use normal autocorrect casing unless the person-specific native examples show a stable different habit. No corporate tone, no AI talk, and no mention of auto-send, review, rules, or the business as a system.
 - Never invent a first-person health, injury, pain, body, medical, family, pet, location, experience, or preference fact about Shannon. If it is not explicitly verified in the supplied context, leave it out.
 ${questionRule}
 ${followUpRule}
