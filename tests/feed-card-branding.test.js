@@ -30,8 +30,8 @@ assert.strictEqual(
     'activity, PB, workout, nutrition, and level-up cards should all use Balance branding'
 );
 assert.ok(
-    dashboardSource.includes("'lib/stories.js?v=72'") &&
-    dashboardSource.includes('lib/stories.js?v=72'),
+    dashboardSource.includes("'lib/stories.js?v=73'") &&
+    dashboardSource.includes('lib/stories.js?v=73'),
     'dashboard should fetch the updated feed-card renderer'
 );
 

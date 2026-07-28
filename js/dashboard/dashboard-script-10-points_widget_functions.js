@@ -3089,6 +3089,17 @@ async function sharePostWorkoutPBToFeed(index) {
         return;
     }
 
+    if (!cachedWorkoutShareBase64) {
+        setPostWorkoutShareMenuOpen(false);
+        showToast('Take a selfie or gym photo for your PB share first.', 'info');
+        openWorkoutCamera(async function(file) {
+            if (!file) return;
+            await onWorkoutSharePhotoReady(file);
+            await sharePostWorkoutPBToFeed(index);
+        }, 'Take a selfie or gym photo for your PB share');
+        return;
+    }
+
     setPostWorkoutShareMenuOpen(false);
     const key = String(index);
     postWorkoutShareBusy = 'pb:' + key;
@@ -3096,7 +3107,7 @@ async function sharePostWorkoutPBToFeed(index) {
     renderPostWorkoutShareMenu();
 
     try {
-        const story = await sharePBCardToFeed(pbData);
+        const story = await sharePBCardToFeed(pbData, cachedWorkoutShareBase64);
         if (story) {
             postWorkoutShareCompleted.pbs[key] = true;
             setPostWorkoutShareStatus('PB shared to Feed.', 'success');
@@ -4676,6 +4687,7 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
         if (typeof options.onSharePrepared === 'function') options.onSharePrepared();
     };
     const motionEligible = options.animate !== false
+        && !!renderOptions.photoDataUrl
         && ['workout', 'pb', 'activity'].includes(String(cardPayload.card_type || ''));
 
     if (motionEligible) {
@@ -4975,6 +4987,16 @@ function markPBFeedShareDone() {
 }
 
 async function sharePBToBalanceFeedOnly(pbData, index) {
+    if (!cachedWorkoutShareBase64) {
+        showToast('Take a selfie or gym photo for your PB share first.', 'info');
+        openWorkoutCamera(async function(file) {
+            if (!file) return;
+            await onWorkoutSharePhotoReady(file);
+            await sharePBToBalanceFeedOnly(pbData, index);
+        }, 'Take a selfie or gym photo for your PB share');
+        return;
+    }
+
     const btn = typeof index === 'number' ? document.getElementById(`share-pb-btn-${index}`) : null;
     const originalText = btn ? btn.textContent : '';
     if (btn) {
@@ -4984,7 +5006,7 @@ async function sharePBToBalanceFeedOnly(pbData, index) {
     }
 
     try {
-        const story = await sharePBCardToFeed(pbData);
+        const story = await sharePBCardToFeed(pbData, cachedWorkoutShareBase64);
         if (story) markPBFeedShareDone();
     } catch (error) {
         console.error('PB feed share failed:', error);
@@ -5006,6 +5028,16 @@ async function sharePendingPBToDestination(destination) {
         return;
     }
 
+    if (!cachedWorkoutShareBase64) {
+        showToast('Take a selfie or gym photo for your PB share first.', 'info');
+        openWorkoutCamera(async file => {
+            if (!file) return;
+            await onWorkoutSharePhotoReady(file);
+            await sharePendingPBToDestination(destination);
+        }, 'Take a selfie or gym photo for your PB share');
+        return;
+    }
+
     const modal = ensurePBShareOptionsModal();
     const buttons = Array.from(modal.querySelectorAll('[data-pb-share-action]'));
     const activeButton = modal.querySelector(`[data-pb-share-action="${destination}"]`);
@@ -5018,12 +5050,14 @@ async function sharePendingPBToDestination(destination) {
 
     try {
         if (destination === 'balance-feed') {
-            const story = await sharePBCardToFeed(pendingPBShareData);
+            const story = await sharePBCardToFeed(pendingPBShareData, cachedWorkoutShareBase64);
             if (story) markPBFeedShareDone();
         } else {
             const cardPayload = buildPBShareCardPayload(pendingPBShareData);
             const instagramTarget = destination === 'instagram-feed' ? 'feed' : 'story';
-            const opened = await shareBalanceCardToInstagram(cardPayload, instagramTarget);
+            const opened = await shareBalanceCardToInstagram(cardPayload, instagramTarget, {
+                photoDataUrl: cachedWorkoutShareBase64
+            });
             if (opened && instagramTarget === 'feed') {
                 const xpResult = await awardBalanceSocialShareXP(
                     'workout',
@@ -5200,7 +5234,7 @@ async function handleWorkoutCardPhotoCaptureFromFile(file) {
 }
 
 // Share a PB achievement card to feed
-async function sharePBCardToFeed(pbData) {
+async function sharePBCardToFeed(pbData, photoDataUrl) {
     if (!pbData) throw new Error('No personal best was selected.');
 
     try {
@@ -5213,10 +5247,32 @@ async function sharePBCardToFeed(pbData) {
             throw new Error('Feed sharing is still loading. Please try again.');
         }
 
+        let mediaUrl = '';
+        if (photoDataUrl) {
+            const compositeDataUrl = await renderBalanceShareCardImage(cardPayload, {
+                target: 'feed',
+                photoDataUrl
+            });
+            const compositeFile = postWorkoutShareFileFromDataUrl(compositeDataUrl, 'balance-pb-overlay.jpg');
+            if (typeof uploadStoryMediaToBackblaze !== 'function') {
+                throw new Error('Feed uploader is still loading. Please try again.');
+            }
+            const uploadData = await uploadStoryMediaToBackblaze(compositeFile, {
+                userId: window.currentUser.id,
+                storyId: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
+                source: 'feed_pb_photo_overlay',
+                preferDirectUpload: true
+            });
+            if (!uploadData?.url) throw new Error('The PB photo upload was not confirmed.');
+            mediaUrl = uploadData.url;
+            cardPayload.share_style = 'photo_overlay';
+            cardPayload.share_caption = 'Personal best, captured in the moment.';
+        }
+
         const story = await helpers.stories.create(window.currentUser.id, {
             media_type: 'workout_card',
-            media_url: '',
-            thumbnail_url: null,
+            media_url: mediaUrl,
+            thumbnail_url: mediaUrl || null,
             caption: JSON.stringify(cardPayload),
             duration: 5
         });
@@ -6357,6 +6413,11 @@ async function shareActivityCardToFeed() {
         showToast('No activity data to share', 'error');
         return;
     }
+    if (!savedActivityData.photoBase64) {
+        showToast('Add a selfie or activity photo before sharing.', 'info');
+        toggleActivitySharePhotoSourceMenu();
+        return;
+    }
 
     const shareBtn = document.getElementById('activity-share-btn');
     shareBtn.disabled = true;
@@ -6450,6 +6511,11 @@ window.shareActivityCardToFeed = shareActivityCardToFeed;
 async function shareActivityCardToInstagram() {
     if (!savedActivityData) {
         showToast('No activity data to share', 'error');
+        return false;
+    }
+    if (!savedActivityData.photoBase64) {
+        showToast('Add a selfie or activity photo before sharing.', 'info');
+        toggleActivitySharePhotoSourceMenu();
         return false;
     }
     const btn = document.getElementById('activity-share-instagram-btn');

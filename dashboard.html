@@ -509,7 +509,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=39',
             'lib/native-iap.js',
-            'lib/stories.js?v=72',
+            'lib/stories.js?v=73',
             'lib/ai-opponents.js',
             'lib/games.js?v=3',
             'lib/nutrition-calculator.js',
@@ -530,7 +530,7 @@ if (window._pbbIsIOSSafari) {
 } else {
     document.write('<script src="lib/vegan-meal-safety.js?v=2"><\/script>');
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=72"><\/script>');
+    document.write('<script src="lib/stories.js?v=73"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=3"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -596,6 +596,8 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
   .balance-share-celebration-host { isolation:isolate; }
   .balance-share-celebration-host > :not(.balance-earned-celebration) { position:relative; z-index:1; }
   .balance-earned-celebration { position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  .balance-share-photo-celebration > img { z-index:0; }
+  .balance-share-photo-celebration > .balance-earned-celebration { z-index:2; }
   .balance-earned-ring { position:absolute; width:46%; aspect-ratio:1; right:-8%; top:-7%; border:2px solid rgba(253,230,138,0.52); border-radius:50%; opacity:0; animation:balance-earned-ring 1.05s cubic-bezier(.16,.84,.32,1) 80ms both; }
   .balance-earned-celebration.is-major .balance-earned-ring { width:62%; right:-14%; top:-13%; border-width:3px; }
   .balance-earned-glimmer { position:absolute; inset:-25% auto -25% -45%; width:24%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.38),transparent); transform:skewX(-18deg); animation:balance-earned-glimmer 1.15s cubic-bezier(.2,.75,.25,1) 180ms both; }
@@ -14556,7 +14558,7 @@ if(!window._pbbIsIOSSafari) {
     tab: 'movement-tab',
     sel: '#today-workout-card,#move-your-way-pilot-card',
     title: 'Your Instagram shares move',
-    body: 'Share a workout, activity or PB to Instagram and Balance now makes a short motion card with your photo, results, gold glimmer and celebration. If your phone cannot make the video, the still card opens automatically.'
+    body: 'Take a selfie or gym photo, then share a workout, activity or PB. Your photo stays full screen while the results, gold glimmer and celebration move over it. If your phone cannot make the video, the photo card opens automatically.'
   });
   allFeatures.push({
     id: 'earned-share-celebrations-v1',
@@ -17629,13 +17631,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=38';
+s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=39';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=38"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=39"><\/script>');
 }
 </script>
 
