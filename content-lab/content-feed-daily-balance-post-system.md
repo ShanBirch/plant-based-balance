@@ -213,8 +213,8 @@ Reject or rewrite the idea if:
 ### Avatar production
 
 - Create and approve the Shannon voice track in ElevenLabs first.
-- Use HeyGen only to lip-sync an existing approved Shannon avatar look to that audio.
-- Do not use prompt-based HeyGen video generation to create the complete Reel.
+- Use HeyGen Video Translation to lip-sync an approved reusable Shannon source clip to that audio.
+- Do not use prompt-based HeyGen video generation to create the complete Reel. Use normal HeyGen Video/avatar generation only when Video Translation cannot produce a usable result, no suitable source clip exists, quality fails, or Shannon explicitly requests fresh avatar generation.
 - Build the final Reel separately using the lip-synced presenter, real footage, graphics, captions and music.
 
 ## 14-Day Three-Post Experiment
