@@ -93,6 +93,12 @@ const {
 } = require('./_lib/client-context');
 const { buildExerciseLibrarySupportBlock } = require('./_lib/exercise-library-search');
 const { resolveCoachDmManagerScheduledFor } = require('./_lib/coach-dm-working-hours');
+const {
+    ACQUISITION_MODES,
+    resolveIgAcquisitionMode,
+    isPaidMetaAcquisitionMode,
+    buildAcquisitionModePromptBlock,
+} = require('./_lib/ig-acquisition-mode');
 
 const {
     isQualifierEligible,
@@ -158,7 +164,7 @@ const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const STORY_OPENER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|your\s+question|this|that|it)|(?:what|wat)\s+(?:do|did)\s+(?:you|u)\s+mean|what\s+you\s+mean|wdym|i'?m\s+confused|not\s+sure\s+what\s+you\s+mean)\b/i;
 const SHORT_STORY_OPENER_CONFUSION_RE = /^(?:sorry|sorry\?|huh\??|pardon\??|what\??|what sorry\??|sorry what\??)$/i;
 
-async function recordHealthProgressionAnswer({ thread, currentMessage, manychatMessageId, botAccount }) {
+async function recordHealthProgressionAnswer({ thread, currentMessage, manychatMessageId, botAccount, acquisitionMode, offerFlowVariant }) {
     if (!thread?.id || thread.linked_user_id) return null;
     const recent = await supabaseQuery(
         `growth_outcome_events?select=id,event_key,event_type,occurred_at,attribution&ig_thread_id=eq.${encodeURIComponent(thread.id)}&event_type=in.(${HEALTH_PROGRESSION_EVENT_TYPES.attempted},${HEALTH_PROGRESSION_EVENT_TYPES.answered})&order=occurred_at.desc&limit=8`
@@ -190,6 +196,8 @@ async function recordHealthProgressionAnswer({ thread, currentMessage, manychatM
             attempt_topics: latestAttempt.attribution?.topics || [],
             answer_topics: classification.topics,
             answer_type: classification.answer_type,
+            acquisition_mode: acquisitionMode || resolveIgAcquisitionMode({ customData: thread.custom_data }),
+            offer_flow_variant: offerFlowVariant || null,
         },
         rawPayload: {
             inbound_message_id: manychatMessageId || null,
@@ -198,7 +206,7 @@ async function recordHealthProgressionAnswer({ thread, currentMessage, manychatM
     }, supabaseQuery);
 }
 
-async function recordQualifierProgressionMilestones({ thread, priorQualifier, nextQualifier, botAccount }) {
+async function recordQualifierProgressionMilestones({ thread, priorQualifier, nextQualifier, botAccount, acquisitionMode, offerFlowVariant }) {
     if (!thread?.id || thread.linked_user_id) return [];
     const milestones = progressionMilestones(priorQualifier || {}, nextQualifier || {});
     if (!milestones.length) return [];
@@ -216,6 +224,8 @@ async function recordQualifierProgressionMilestones({ thread, priorQualifier, ne
         attribution: {
             qualifier_stage: nextQualifier?.stage || null,
             commercial_stage: nextQualifier?.commercial_stage || null,
+            acquisition_mode: acquisitionMode || resolveIgAcquisitionMode({ customData: thread.custom_data }),
+            offer_flow_variant: offerFlowVariant || null,
         },
         rawPayload: { evidence: milestone.evidence },
     }, supabaseQuery)));
@@ -1002,7 +1012,9 @@ const FOUNDERS_PASS_APP_PREVIEW_URL = 'https://future-balance.netlify.app/assets
 const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/plant-based-fitness.html?utm_source=instagram&utm_medium=dm&utm_campaign=founders_pass_plant_based&utm_content=dm_handoff';
 const FOUNDERS_PASS_BROAD_CHECKOUT_URL = 'https://future-balance.netlify.app/fitness-coaching.html?utm_source=instagram&utm_medium=dm&utm_campaign=founders_pass_broad_pain&utm_content=dm_handoff';
 
-function resolveMetaAdFlowVariant({ customData = {}, currentMessage = '' } = {}) {
+function resolveMetaAdFlowVariant({ customData = {}, currentMessage = '', acquisitionMode = '' } = {}) {
+    const resolvedAcquisitionMode = acquisitionMode || resolveIgAcquisitionMode({ customData });
+    if (!isPaidMetaAcquisitionMode(resolvedAcquisitionMode)) return 'plant_based_control';
     const broadAdIds = new Set(String(process.env.META_BROAD_AD_IDS || '')
         .split(',')
         .map(value => value.trim())
@@ -1021,8 +1033,11 @@ function resolveMetaAdFlowVariant({ customData = {}, currentMessage = '' } = {})
     return broadPainSignal && !plantBasedSignal ? 'broad_pain' : 'plant_based_control';
 }
 
-function buildMetaAdCheckoutUrl({ customData = {}, flowVariant = '', currentMessage = '' } = {}) {
-    const resolvedVariant = flowVariant || resolveMetaAdFlowVariant({ customData, currentMessage });
+function buildMetaAdCheckoutUrl({ customData = {}, flowVariant = '', currentMessage = '', acquisitionMode = '' } = {}) {
+    const resolvedAcquisitionMode = acquisitionMode || resolveIgAcquisitionMode({ customData });
+    const resolvedVariant = isPaidMetaAcquisitionMode(resolvedAcquisitionMode)
+        ? (flowVariant || resolveMetaAdFlowVariant({ customData, currentMessage, acquisitionMode: resolvedAcquisitionMode }))
+        : 'plant_based_control';
     const baseUrl = resolvedVariant === 'broad_pain'
         ? FOUNDERS_PASS_BROAD_CHECKOUT_URL
         : FOUNDERS_PASS_CHECKOUT_URL;
@@ -1045,8 +1060,8 @@ function buildMetaAdCheckoutUrl({ customData = {}, flowVariant = '', currentMess
     return url.toString();
 }
 
-function foundersPassCheckoutUrlForMessage(message = '', customData = {}, flowVariant = '') {
-    return buildMetaAdCheckoutUrl({ customData, flowVariant, currentMessage: message });
+function foundersPassCheckoutUrlForMessage(message = '', customData = {}, flowVariant = '', acquisitionMode = '') {
+    return buildMetaAdCheckoutUrl({ customData, flowVariant, currentMessage: message, acquisitionMode });
 }
 
 function resolveMetaAdFirstReplyIntent(currentMessage = '') {
@@ -1064,11 +1079,11 @@ function resolveMetaAdFirstReplyIntent(currentMessage = '') {
     return 'overview';
 }
 
-function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {}, flowVariant = '' } = {}) {
-    const resolvedVariant = flowVariant || resolveMetaAdFlowVariant({ customData, currentMessage });
+function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {}, flowVariant = '', acquisitionMode = ACQUISITION_MODES.PAID_META } = {}) {
+    const resolvedVariant = flowVariant || resolveMetaAdFlowVariant({ customData, currentMessage, acquisitionMode });
     const broadFlow = resolvedVariant === 'broad_pain';
     const intent = resolveMetaAdFirstReplyIntent(currentMessage);
-    const checkoutUrl = foundersPassCheckoutUrlForMessage(currentMessage, customData, resolvedVariant);
+    const checkoutUrl = foundersPassCheckoutUrlForMessage(currentMessage, customData, resolvedVariant, acquisitionMode);
     const productLine = broadFlow
         ? 'Balance brings your weekly plan, training, progress, learning and community into one place.'
         : 'Balance brings your weekly plan, plant-based nutrition, progress, learning and community into one place.';
@@ -1140,7 +1155,7 @@ function buildMetaAdFirstReplyApproval({ metaAdFirstInbound = false, draft = nul
 
 const META_AD_FUNNEL_CONTEXT = `
 LEAD ACQUISITION CONTEXT:
-Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, then DMs them first. He initiates the conversation. Some leads also come from Shannon's Meta ads or fitness angles. The primary DM offer is the Balance Plant-Based Fitness Founders Pass: AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included. Starter Coaching at AUD $29.99/week is the optional ongoing higher-touch upgrade. The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The words below trigger offer-inquiry mode:
+The primary DM offer is the Balance Plant-Based Fitness Founders Pass: AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included. Starter Coaching at AUD $29.99/week is the optional ongoing higher-touch upgrade. The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The acquisition-mode block above is authoritative about whether Shannon initiated the relationship or the lead knowingly entered from a Meta ad. The words below trigger offer-inquiry mode:
   1. "What's actually included?"
   2. "Do I need to already be Plant Based?"
   3. "I'm In - save me a spot!"
@@ -1710,11 +1725,11 @@ function challengeUrlForRoute(route, checkoutUrl = '') {
 const ONE_ON_ONE_COACHING_URL = FOUNDERS_PASS_CHECKOUT_URL;
 const BALANCE_CALL_BOOKING_URL = 'https://plantbased-balance.org/book';
 
-function buildOneOnOneCoachingBlock(flowVariant = 'plant_based_control', checkoutUrl = '') {
+function buildOneOnOneCoachingBlock(flowVariant = 'plant_based_control', checkoutUrl = '', acquisitionMode = ACQUISITION_MODES.ORGANIC_INBOUND) {
     const approvedCheckoutUrl = checkoutUrl || (flowVariant === 'broad_pain'
         ? FOUNDERS_PASS_BROAD_CHECKOUT_URL
         : ONE_ON_ONE_COACHING_URL);
-    if (flowVariant === 'broad_pain') {
+    if (flowVariant === 'broad_pain' && isPaidMetaAcquisitionMode(acquisitionMode)) {
         return `
 
 BALANCE FOUNDERS PASS LINK:
@@ -1727,13 +1742,15 @@ BALANCE FOUNDERS PASS LINK:
 - If they only ask a general help question and have not asked for offer details/link, answer the question first and use a low-pressure statement-led bridge only when the offer genuinely fits.
 - If they ask whether it is local/in-person or mention they already have a trainer, answer that the Founders Pass is an online guided app and community, not in-person training, and check whether that would still suit them.`;
     }
+    const attributionRule = isPaidMetaAcquisitionMode(acquisitionMode)
+        ? '- This exact URL carries the stored Meta attribution. Do not shorten it, rebuild it or remove its parameters.'
+        : '- This is the canonical organic Founders Pass route. Do not switch it to the broad paid-experiment landing page based on later conversation wording.';
     return `
 
 BALANCE PLANT-BASED FITNESS FOUNDERS PASS LINK:
 - The primary DM offer is the Balance Plant-Based Fitness Founders Pass: AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. It does not promise instant daily replies, unlimited access or fully customised weekly plan reviews. Starter Coaching is the optional ongoing higher-touch upgrade. The normal path is explanation, acceptance, and checkout inside DMs.
 - Approved Founders Pass link: ${approvedCheckoutUrl}
-- This exact URL carries the stored Meta attribution. Do not shorten it, rebuild it or remove its parameters.
-- Broad pain alternative: ${FOUNDERS_PASS_BROAD_CHECKOUT_URL}. Use this when their thread is about restarting, consistency, follow-through, work, kids, shifts or fitting training around real life and there is no plant-based signal. Never remove the UTM parameters.
+${attributionRule}
 - When the latest message asks for the offer link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct Founders Pass/details invite, send the approved link in the draft.
 - If the latest message asks to reconnect with Balance, the app/helper, login, password, account access, or any app bug, treat it as support first and do not send the coaching link.
 - Keep the link handoff light, not a brochure: stoked they are keen, here's the link, it has the quick info on the six-week setup, app and community, check it out, then come back to Shannon here if they want to chat through it.
@@ -3118,7 +3135,7 @@ This exact draft will be spoken in Shannon's approved voice-note voice, not sent
 - Prefer one fuller message bubble so the audio reads as one connected note. Return to concise text for links, prices, or detailed instructions.`;
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount, coachId = null, audioTranscriptOverrides = [], personalVoiceNoteMode = false, adFlowVariant = 'plant_based_control', checkoutUrl = '' }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount, coachId = null, audioTranscriptOverrides = [], personalVoiceNoteMode = false, acquisitionMode = ACQUISITION_MODES.ORGANIC_INBOUND, adFlowVariant = 'plant_based_control', checkoutUrl = '' }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -3143,6 +3160,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const acquisitionMomentumBlock = buildAcquisitionMomentumBlock({ botAccount, leadStage, linkedUserId });
     const acquisitionStyleBlock = buildAcquisitionStyleBlock({ leadStage, linkedUserId });
     const conversationLanePolicyBlock = buildConversationLanePolicyBlock({ linkedUserId });
+    const acquisitionModePolicyBlock = isSalesLeadThread ? buildAcquisitionModePromptBlock(acquisitionMode) : '';
     const cocosRewardLearningBlock = isSalesLeadThread ? await loadCocosRewardLearningBlock(botAccount) : '';
 
     const promptNow = new Date();
@@ -3310,7 +3328,9 @@ ${unansweredBatch.map((m, i) => `${i + 1}. ${m.text}${m.isCurrent ? ' (latest)' 
 Use this batch as context, not a checklist. First decide what is still live: direct questions, requests, emotional disclosures, health/body-image risk, or new practical blockers. Answer those. The newest substantive inbound takes control when it opens a fresh topic, especially a Story reply about food, training, health, consistency or accountability. Do not keep answering an older unrelated topic just because it has more history. Drop earlier details that Shannon already acknowledged, repeated logistics, or banter that would feel stale. If several items are live, pick the 1-3 that matter most and let the rest sit. If the newest item is a photo or voice note, treat it as extra context for the strongest unresolved words unless it clearly starts a new topic.`;
 
     const historyText = promptHistory.length === 0
-        ? "(no prior tracked messages. This is probably the first captured lead reply after Shannon's native story/post opener, so there may be no visible context.)"
+        ? (isPaidMetaAcquisitionMode(acquisitionMode)
+            ? '(no prior tracked messages. Verified Meta ad attribution is the opening context, so answer the commercial intent directly.)'
+            : "(no prior tracked messages. This is probably the first captured lead reply after Shannon's native story/post opener, so there may be no visible context.)")
         : promptHistory.map((m, i) => {
             const speaker = m.direction === 'in' ? leadName : 'Shannon';
             const cleaned = replaceIgMediaMarkers(sanitizeIgStoryReplyContextText(m.text), { photo: '[photo]', audio: '[voice note]', video: '[video]' });
@@ -3337,7 +3357,7 @@ Use this batch as context, not a checklist. First decide what is still live: dir
     const isOnboardedOrPostFunnel = !isSalesLeadThread;
     const funnelContext = isOnboardedOrPostFunnel ? '' : META_AD_FUNNEL_CONTEXT;
     const challengeNextStepBlock = isOnboardedOrPostFunnel ? '' : buildChallengeNextStepBlock(qualifier, currentMessageText, checkoutUrl);
-    const oneOnOneCoachingBlock = isOnboardedOrPostFunnel ? '' : buildOneOnOneCoachingBlock(adFlowVariant, checkoutUrl);
+    const oneOnOneCoachingBlock = isOnboardedOrPostFunnel ? '' : buildOneOnOneCoachingBlock(adFlowVariant, checkoutUrl, acquisitionMode);
     const balanceCallBookingBlock = isOnboardedOrPostFunnel ? '' : buildBalanceCallBookingBlock();
     const qualifierRelationshipBlock = buildQualifierRelationshipBlock(qualifier);
 
@@ -3465,6 +3485,7 @@ ${priorScheduled.map((t, i) => `[draft ${i + 1}] ${t}`).join('\n')}
 Treat the canceled draft as Shannon's recent intent. If ${leadName}'s new message continues the same topic, fold the key point into your reply. If they've moved on, drop it. Either way the new chunks must work as fresh messages — never reference "I was about to say" or apologise for the delay.`;
 
     const isFirstCapturedLeadReply = !isOnboardedOrPostFunnel
+        && !isPaidMetaAcquisitionMode(acquisitionMode)
         && history.length === 0
         && linkedHistory.length === 0
         && priorScheduled.length === 0;
@@ -3513,6 +3534,7 @@ ${identityElicitation}
 ${openAiShannonVoice}
 ${personalVoiceNoteDraftingBlock}
 ${conversationLanePolicyBlock}
+${acquisitionModePolicyBlock}
 ${accountExperimentBlock}
 ${acquisitionMomentumBlock}
 ${cocosRewardLearningBlock}
@@ -4171,6 +4193,10 @@ exports.handler = async (event) => {
     const clientManagerBrowserDispatchEnabled = clientManagerAutoReplyEnabled
         && isClientManagerBrowserDispatchEnabled(thread);
     const linkedClientNeedsYou = !!thread.linked_user_id && !clientManagerAutoReplyEnabled;
+    const acquisitionMode = resolveIgAcquisitionMode({
+        customData: thread.custom_data,
+        linkedUserId: thread.linked_user_id,
+    });
     const metaAdFirstInbound = isMetaAdFastLaneEligible({
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
@@ -4184,11 +4210,13 @@ exports.handler = async (event) => {
     const metaAdFlowVariant = resolveMetaAdFlowVariant({
         customData: thread.custom_data,
         currentMessage: messageText,
+        acquisitionMode,
     });
     const metaAdCheckoutUrl = foundersPassCheckoutUrlForMessage(
         messageText,
         thread.custom_data,
-        metaAdFlowVariant
+        metaAdFlowVariant,
+        acquisitionMode
     );
     const exerciseConversationFastLane = isExerciseConversationFastLaneEligible({
         linkedUserId: thread.linked_user_id,
@@ -4443,6 +4471,23 @@ exports.handler = async (event) => {
             console.warn('[ig-draft] mature-thread stage promotion failed:', e.message);
         }
     }
+    if (thread.custom_data?.acquisition_mode !== acquisitionMode) {
+        const resolvedCustomData = {
+            ...(thread.custom_data || {}),
+            acquisition_mode: acquisitionMode,
+            acquisition_mode_resolved_at: new Date().toISOString(),
+        };
+        try {
+            await supabaseQuery(`ig_threads?id=eq.${thread.id}`, {
+                method: 'PATCH',
+                body: { custom_data: resolvedCustomData },
+                prefer: 'return=minimal',
+            });
+            thread.custom_data = resolvedCustomData;
+        } catch (e) {
+            console.warn('[ig-draft] acquisition mode persist failed:', e.message);
+        }
+    }
 
     const leadBlock = buildLeadBlock({
         profileName: thread.profile_name,
@@ -4628,6 +4673,8 @@ exports.handler = async (event) => {
                 currentMessage: qualifierCurrentMessage,
                 manychatMessageId,
                 botAccount: botAccount || 'shan_n_sunny',
+                acquisitionMode,
+                offerFlowVariant: metaAdFlowVariant,
             })];
             if (qualifierEvaluated) {
                 progressionWrites.push(recordQualifierProgressionMilestones({
@@ -4635,6 +4682,8 @@ exports.handler = async (event) => {
                     priorQualifier,
                     nextQualifier: qualifier,
                     botAccount: botAccount || 'shan_n_sunny',
+                    acquisitionMode,
+                    offerFlowVariant: metaAdFlowVariant,
                 }));
             }
             await Promise.all(progressionWrites);
@@ -4671,7 +4720,11 @@ exports.handler = async (event) => {
 
     let draft;
     try {
-        draft = metaAdFirstInbound ? buildMetaAdFoundersPassFirstReply(messageText, { customData: thread.custom_data, flowVariant: metaAdFlowVariant }) : await generateDraft({
+        draft = metaAdFirstInbound ? buildMetaAdFoundersPassFirstReply(messageText, {
+            customData: thread.custom_data,
+            flowVariant: metaAdFlowVariant,
+            acquisitionMode,
+        }) : await generateDraft({
             leadName,
             leadBlock,
             profileBlock,
@@ -4699,6 +4752,7 @@ exports.handler = async (event) => {
             coachId: thread.coach_id || null,
             audioTranscriptOverrides,
             personalVoiceNoteMode: outboundVoiceMessage,
+            acquisitionMode,
             adFlowVariant: metaAdFlowVariant,
             checkoutUrl: metaAdCheckoutUrl,
         });
@@ -4929,6 +4983,8 @@ exports.handler = async (event) => {
             linked_client_name: linkedClientName || null,
             display_name_source: linkedClientName ? 'linked_user' : 'ig_thread',
             lead_stage: effectiveLeadStage || thread.lead_stage || 'new',
+            acquisition_mode: acquisitionMode,
+            offer_flow_variant: metaAdFlowVariant,
             conversation_episode_started_at: draft.conversationEpisode?.startedAt || null,
             conversation_episode_reason: draft.conversationEpisode?.reason || 'continuous_thread',
             conversation_episode_new: draft.conversationEpisode?.isNewEpisode === true,
@@ -5143,6 +5199,8 @@ exports.handler = async (event) => {
             proposed_actions: mergeProposedActions(existingPending.data?.proposed_actions, proposedActions),
             manychat_message_id: manychatMessageId || (existingPending.data && existingPending.data.manychat_message_id) || null,
             lead_stage: effectiveLeadStage || thread.lead_stage || existingPending.data?.lead_stage || 'new',
+            acquisition_mode: acquisitionMode,
+            offer_flow_variant: metaAdFlowVariant,
             channel,
             delivery_channel: deliveryChannel,
             manual_ig_required: isDirectGraphManual || undefined,

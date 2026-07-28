@@ -62,7 +62,10 @@ Do not send a raw, temporary Stripe Checkout Session URL in DMs. The stable bran
 
 Current paid-acquisition positioning test:
 
+- Keep `acquisition_mode` separate from offer positioning. `paid_meta` means the thread has verified Meta attribution and may use the direct paid conversation contract. `organic_follower`, `organic_outreach`, and `organic_inbound` use the slower statement-led relationship contract. `existing_client` remains a separate client lane.
 - Keep two distinct end-to-end acquisition flows. `plant_based_control` uses plant-based positioning from ad through landing page and DM handoff. `broad_pain` uses general fitness, restarting, follow-through and real-life scheduling language with no plant-based positioning in the ad, landing page or route-specific DM handoff.
+- Only verified `paid_meta` threads may enter the `broad_pain` experiment. Never infer the broad route for an organic follower or outreach lead merely because they mention work, kids, busyness, consistency, follow-through or starting again. Organic leads use the canonical plant-based Founders Pass route.
+- Paid Meta leads knowingly entered a commercial conversation, so answer offer, price, inclusions, fit and starting questions directly from the first reply and preserve that contract throughout the thread. Organic conversations begin from the exact human context, use statement-led elicitation, and bridge only from the lead's own goal, blocker, help signal or explicit request.
 - The broad route uses `https://future-balance.netlify.app/fitness-coaching.html` so the visible destination does not inject the plant-based domain into that test. The plant-based route continues to use `https://plantbased-balance.org/plant-based-fitness.html`.
 - Do not blend the two routes based only on a later generic message. Preserve the Meta ad referral variant and attribution through checkout and purchase. Configure broad creative IDs in `META_BROAD_AD_IDS` when the reviewed broad ads are created.
 - This is a positioning experiment, not a permanent company rebrand. Keep the current plant-based site and domain live while the data is collected.

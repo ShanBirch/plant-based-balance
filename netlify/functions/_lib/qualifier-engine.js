@@ -39,6 +39,10 @@ const {
     formatCoachLocalTimestamp,
     formatTimedConversationLine,
 } = require('./client-context');
+const {
+    resolveIgAcquisitionMode,
+    buildAcquisitionModePromptBlock,
+} = require('./ig-acquisition-mode');
 
 // ============================================================
 // Playbook
@@ -1130,6 +1134,7 @@ function formatQualifierCustomDataText(customData = {}) {
         'entry_point',
         'lead_origin',
         'acquisition_source',
+        'acquisition_mode',
         'offer_path',
         'bot_account',
     ];
@@ -1183,6 +1188,8 @@ function buildEvaluationPrompt({ leadName, channel, currentQualifier, history, c
         .map(([k, v]) => `  ${k}: ${v ? JSON.stringify(v) : '(unknown)'}`)
         .join('\n');
 
+    const acquisitionMode = resolveIgAcquisitionMode({ customData });
+    const acquisitionModeBlock = buildAcquisitionModePromptBlock(acquisitionMode);
     const historyText = (history && history.length > 0)
         ? history.map((m, i) => {
             const speaker = m.direction === 'in' ? leadName : 'Shannon';
@@ -1194,15 +1201,18 @@ function buildEvaluationPrompt({ leadName, channel, currentQualifier, history, c
                 now: promptNow,
             });
         }).join('\n')
-        : "(no prior tracked messages. This is probably the first captured lead reply after Shannon's native story/post opener, so there may be no visible context.)";
+        : (acquisitionMode === 'paid_meta'
+            ? '(no prior tracked messages. Verified Meta ad attribution is the opening context.)'
+            : "(no prior tracked messages. This is probably the first captured lead reply after Shannon's native story/post opener, so there may be no visible context.)");
 
     const customDataText = formatQualifierCustomDataText(customData);
 
     return `You are scoring a lead's progress through a 4-stage qualifier funnel for Shannon, who is currently offering the Balance Plant-Based Fitness Founders Pass. It is AUD $99 once, does not need a phone call, and includes six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not a self-serve app-only product. It does not promise instant daily replies, unlimited access or fully customised weekly plan reviews. Starter Coaching at AUD $29.99/week is the optional ongoing higher-touch upgrade. Close the Founders Pass through DMs by default. Balance no longer uses a free challenge as its acquisition or conversion path.
 
-IMPORTANT CONTEXT: Shannon initiates these conversations. He finds people by browsing stories, reels, and posts on Instagram/Facebook, then DMs them first (replying to their story, commenting on a post, or cold-messaging). The leads are NOT coming to him. Shannon is the one reaching out and starting the chat. The hook_context field records what Shannon said to open the conversation.
+ACQUISITION MODE: ${acquisitionMode}
+${acquisitionModeBlock}
 
-FIRST CAPTURED REPLY CONTEXT: if the conversation history is empty, do NOT assume the lead initiated or that this is the true first DM. Usually Shannon's native story/post opener was not captured by ManyChat. The lead may send a tiny or ambiguous reply because they are answering that unseen opener. Score the turn gently and prefer rapport-building over qualifier progress unless they clearly ask about coaching, what is included, plant-based stuff, a signup link, or they plainly ask Shannon for help because they feel stuck. Joking "send help", "starting from scratch", or "need a kickstart" language is a bridge signal, not an invite signal.
+FIRST CAPTURED REPLY CONTEXT: if the conversation history is empty and acquisition mode is organic, do NOT assume the lead initiated or that this is the true first DM. Shannon's native story/post opener may not have been captured. Score an ambiguous organic reply gently. If acquisition mode is paid_meta, treat the verified ad referral as the opening context and answer its commercial intent directly. Joking "send help", "starting from scratch", or "need a kickstart" language is a bridge signal, not an invite signal unless the paid ad context or their exact words make the offer request explicit.
 
 YOUR JOB: read the conversation, update the qualifier state, and decide whether THIS turn should keep chatting, gently bridge toward health/fitness, or move toward the paid Plant-Based Fitness Founders Pass because they have admitted they need help or asked how to start.
 
@@ -1298,7 +1308,7 @@ ${customDataText}
 
 NOW DECIDE:
 
-1. **facts**: extract facts the lead has revealed in the newest message and any missing facts that are obvious from the recent history. Keep existing facts unchanged unless the new message contradicts or refines them. hook_context records how Shannon started this conversation (he initiates by replying to their stories or cold-DMing them, not the other way around). relationship_context is a compact summary of their normal-life anchors. relationship_checklist stores the specific tick-off facts above: location, work_study, household_family, pets, daily_rhythm, food_setup, training_background, loves, stressors_frustrations. Include names of family members, partners, kids, dogs, or pets only when the lead says them. Capture what they love and what gets under their skin only when they say it or clearly confirm it. Leave fields as-is unless there's a clear update.
+1. **facts**: extract facts the lead has revealed in the newest message and any missing facts that are obvious from the recent history. Keep existing facts unchanged unless the new message contradicts or refines them. hook_context records the real opening context: Shannon's story/outreach opener for organic conversations, or the verified Meta ad/referral for paid_meta. relationship_context is a compact summary of their normal-life anchors. relationship_checklist stores the specific tick-off facts above: location, work_study, household_family, pets, daily_rhythm, food_setup, training_background, loves, stressors_frustrations. Include names of family members, partners, kids, dogs, or pets only when the lead says them. Capture what they love and what gets under their skin only when they say it or clearly confirm it. Leave fields as-is unless there's a clear update.
 
 2. **stage**: which stage they're at NOW. The stage advances when its corresponding fact gets a meaningful answer, but do not rush beyond current_state while relationship_context is blank unless they clearly asked to start or already volunteered strong goal context. If the lead jumped ahead and answered a later stage's question, capture that fact and move stage to the next still-unanswered one. If Shannon has a relationship anchor, at least two useful core facts (current_state, motivation, history_blockers, commitment), and at least 3 meaningful lead replies, the next move can be a soft invite bridge instead of another getting-to-know-you question. If all 4 facts are filled, the next move is usually to offer the Founders Pass, not to write a standalone meal plan or workout program in DMs. Missing loves or stressors_frustrations should not block the next step if the person is otherwise warm or asking to move forward. Use "pitched" once Shannon has offered the Founders Pass or asked whether they want the details. If they explicitly accept that offer ("im in", "save me a spot", "lets do it", "keen") or reply positively right after the pitch ("yes pls", "yeah sounds good", "sounds so good"), advance to "won". If they explicitly decline or have been silent 30+ days, "lost".
 

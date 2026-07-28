@@ -33,6 +33,7 @@ const {
     buildGraphSubscriberId,
     legacyGraphSubscriberIds,
 } = require('./_lib/meta-ig-accounts');
+const { resolveIgAcquisitionMode } = require('./_lib/ig-acquisition-mode');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
@@ -1774,6 +1775,11 @@ function mergeGraphCustomData(priorCustomData, {
                 placement: effectiveReferral?.placement || null,
             };
         }
+    }
+    const resolvedAcquisitionMode = resolveIgAcquisitionMode({ customData: result });
+    if (result.acquisition_mode !== resolvedAcquisitionMode) {
+        result.acquisition_mode = resolvedAcquisitionMode;
+        result.acquisition_mode_resolved_at = nowIso;
     }
     return result;
 }
