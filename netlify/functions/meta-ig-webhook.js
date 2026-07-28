@@ -38,13 +38,15 @@ const {
 const {
     maybeFulfillCommentAutomation,
 } = require('./_lib/meta-ig-comment-automation');
+const {
+    routeInboundStoryReplyToBrowser,
+} = require('./_lib/ig-story-reply-browser-routing');
 
 const VERIFY_TOKEN = process.env.META_IG_WEBHOOK_VERIFY_TOKEN || process.env.META_WEBHOOK_VERIFY_TOKEN || '';
 const APP_SECRET = process.env.META_IG_APP_SECRET || process.env.META_APP_SECRET || '';
 const GRAPH_BASE = (process.env.META_IG_GRAPH_BASE || 'https://graph.instagram.com').replace(/\/+$/, '');
 const API_VERSION = process.env.META_IG_API_VERSION || 'v24.0';
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
-const AUTO_DRAFT_STORY_REPLIES = /^true$/i.test(process.env.META_IG_AUTO_DRAFT_STORY_REPLIES || '');
 
 function json(statusCode, body) {
     return {
@@ -442,9 +444,7 @@ async function upsertGraphThread(event, contentItem) {
 }
 
 function shouldAutoDraftEvent(event, accountConfig = {}) {
-    if (event.type === 'story_reply') {
-        return !!(accountConfig.autoDraftStoryReplies || AUTO_DRAFT_STORY_REPLIES);
-    }
+    if (event.type === 'story_reply') return false;
     if (event.type === 'message') return !!accountConfig.autoDraftMessages;
     return false;
 }
@@ -508,6 +508,7 @@ exports.handler = async (event = {}) => {
             const interaction = isContentInteraction ? await upsertInteraction(igEvent, contentItem) : null;
             let threadResult = { thread: null, message: null };
             let draft = { dispatched: false };
+            let browserDispatch = { routed: false, outcome: null };
             let commentFulfillment = { attempted: false };
             if (igEvent.type === 'comment') {
                 commentFulfillment = await maybeFulfillCommentAutomation({
@@ -529,7 +530,17 @@ exports.handler = async (event = {}) => {
                             prefer: 'return=minimal',
                         });
                     }
-                    if (!threadResult.message.deduped && shouldAutoDraftEvent(igEvent, threadResult.accountConfig)) {
+                    if (igEvent.type === 'story_reply' && igEvent.direction === 'in') {
+                        browserDispatch = await routeInboundStoryReplyToBrowser({
+                            thread: threadResult.thread,
+                            messageText: threadResult.message.text,
+                            sourceMessageId: threadResult.message.id,
+                            graphMessageId: graphMessageIds(igEvent)[0] || igEvent.messageId,
+                            storyId: igEvent.storyId,
+                            storyUrl: igEvent.storyUrl,
+                            storyContext: buildVerifiedStoryContext(contentItem || {}),
+                        });
+                    } else if (!threadResult.message.deduped && shouldAutoDraftEvent(igEvent, threadResult.accountConfig)) {
                         draft = await dispatchDraft(threadResult.thread, igEvent);
                     }
                 }
@@ -546,6 +557,8 @@ exports.handler = async (event = {}) => {
                 message_id: threadResult.message?.id || null,
                 message_deduped: !!threadResult.message?.deduped,
                 draft_dispatched: !!draft.dispatched,
+                browser_dispatch_routed: !!browserDispatch.routed,
+                browser_dispatch_outcome: browserDispatch.outcome || null,
                 comment_fulfillment: commentFulfillment,
             });
         } catch (err) {

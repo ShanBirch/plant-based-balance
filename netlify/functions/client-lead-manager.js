@@ -665,6 +665,9 @@ function shouldAutoScheduleCleanLeadCloudFallback(alert = {}, classification = {
     if (hasApprovedCoachingLinkHandoff(alert)) return false;
 
     const data = alert.data || {};
+    if (data.browser_story_reply_required === true
+        || data.native_story_context_required === true
+        || data.operator_queue === 'browser_dispatcher') return false;
     const review = normalizeDraftReview(data);
     const reviewIssues = Array.isArray(review.issues) ? review.issues.filter(Boolean) : [];
     const contextReview = buildContextReviewInfo(alert);

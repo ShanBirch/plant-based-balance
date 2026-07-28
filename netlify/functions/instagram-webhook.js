@@ -28,6 +28,11 @@ const {
     insertCoachAlert,
 } = require('./_lib/client-context');
 const {
+    isInboundStoryReplyMessage,
+    routeInboundStoryReplyToBrowser,
+    storyReplyReference,
+} = require('./_lib/ig-story-reply-browser-routing');
+const {
     resolveMetaIgAccountConfig,
     resolveMetaIgAccessToken,
     buildGraphSubscriberId,
@@ -2710,10 +2715,10 @@ async function markPendingGraphAlertsSent({ thread, threadId, messageText, nowIs
 
 async function processGraphMessages(payload, contentContextByMessageId = new Map(), options = {}) {
     const events = messagingEventsFromPayload(payload);
-    if (!events.length) return { processed: 0, inserted: 0, drafted: 0, skipped: 0, recoveredDrafts: 0, foodPhotoQueued: 0, foodPhotoAcked: 0, foodPhotoOffers: 0, foodPhotoEnabled: 0 };
+    if (!events.length) return { processed: 0, inserted: 0, drafted: 0, skipped: 0, recoveredDrafts: 0, storyRepliesRouted: 0, storyReplyRouteFailed: 0, foodPhotoQueued: 0, foodPhotoAcked: 0, foodPhotoOffers: 0, foodPhotoEnabled: 0 };
 
     const defaultCoachId = await findDefaultCoachId();
-    const summary = { processed: 0, inserted: 0, drafted: 0, skipped: 0, adAttributed: 0, recoveredDrafts: 0, outboundCleared: 0, foodPhotoQueued: 0, foodPhotoAcked: 0, foodPhotoSkipped: 0, foodPhotoOffers: 0, foodPhotoEnabled: 0 };
+    const summary = { processed: 0, inserted: 0, drafted: 0, skipped: 0, adAttributed: 0, recoveredDrafts: 0, storyRepliesRouted: 0, storyReplyRouteFailed: 0, outboundCleared: 0, foodPhotoQueued: 0, foodPhotoAcked: 0, foodPhotoSkipped: 0, foodPhotoOffers: 0, foodPhotoEnabled: 0 };
 
     for (const item of events) {
         const metaAdReferral = normalizeMetaAdReferral(item);
@@ -2735,6 +2740,15 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
             ? `${contentContext}\n\nRaw IG message: ${rawMessageText}`
             : rawMessageText;
         const direction = directionForMessaging(item);
+        const graphMessage = messageFromMessaging(item);
+        const inboundStoryReply = isInboundStoryReplyMessage({
+            direction,
+            message: graphMessage,
+            contextText: contentContext,
+        });
+        const storyReference = inboundStoryReply
+            ? storyReplyReference({ message: graphMessage, contextText: contentContext })
+            : null;
         const participantId = normalizeId(participantIdForMessaging(item, direction));
         if (!participantId) {
             summary.skipped++;
@@ -2824,6 +2838,21 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
                         messageCreatedAt: nowIso,
                     })
                 ) {
+                    if (inboundStoryReply) {
+                        const routed = await routeInboundStoryReplyToBrowser({
+                            thread,
+                            messageText,
+                            sourceMessageId: inserted.messageId,
+                            graphMessageId: inserted.dedupeId,
+                            storyId: storyReference.storyId,
+                            storyUrl: storyReference.storyUrl,
+                            storyContext: storyReference.contextText,
+                            query: supabase,
+                        });
+                        if (routed.routed) summary.storyRepliesRouted++;
+                        else summary.storyReplyRouteFailed++;
+                        continue;
+                    }
                     const hasMedia = extractMediaReferences(messageText).length > 0;
                     if (hasMedia) {
                         await registerInboundMedia({
@@ -2846,6 +2875,21 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
             summary.inserted++;
 
             if (direction === 'in') {
+                if (inboundStoryReply) {
+                    const routed = await routeInboundStoryReplyToBrowser({
+                        thread,
+                        messageText,
+                        sourceMessageId: inserted.messageId,
+                        graphMessageId: inserted.dedupeId,
+                        storyId: storyReference.storyId,
+                        storyUrl: storyReference.storyUrl,
+                        storyContext: storyReference.contextText,
+                        query: supabase,
+                    });
+                    if (routed.routed) summary.storyRepliesRouted++;
+                    else summary.storyReplyRouteFailed++;
+                    continue;
+                }
                 if (await maybeEnableFoodPhotoTrackingFromConsent({
                     thread,
                     messageText,
@@ -3011,6 +3055,8 @@ exports._test = {
     hasPendingFoodPhotoTrackingOffer,
     timestampIsoFromMessaging,
     shouldProcessContentContextEvent,
+    isInboundStoryReplyMessage,
+    storyReplyReference,
     participantUsernameFromMessaging,
     normalizeMetaAdReferral,
     mergeGraphCustomData,
