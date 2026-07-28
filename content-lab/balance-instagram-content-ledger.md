@@ -28,6 +28,16 @@ Last reconciled: 2026-07-28 from Instagram-owned media records, local publish re
 
 Next major campaign: `Muscle Is Your Retirement Plan`.
 
+## Review Ready Campaigns
+
+| Status | Job | Campaign | Hook | Format | Source or proof | CTA | Asset |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| REVIEWED | BELIEF | The Comeback | Missing one workout isn't the problem. | 53-second Reel | Shannon coaching belief reframe | Save | `.codex-artifacts/comeback-day/2026-07-28/belief/comeback-belief-reel.mp4` |
+| REVIEWED | COACH | The Comeback | You missed your workout. Do this next. | 8-slide carousel | Shannon's 24-hour comeback rule | Save | `.codex-artifacts/comeback-day/2026-07-28/coach-carousel/instagram-carousel/` |
+| REVIEWED | PROOF | The Comeback | This is what “keep moving” looks like. | 45-second Reel | Verified Shannon walk: 51 minutes, 403 kcal, light intensity, 2026-07-27 | DM BALANCE | `.codex-artifacts/comeback-day/2026-07-28/proof/comeback-proof-reel.mp4` |
+
+Campaign status: made and QA-checked on 2026-07-28; not published. The first two posts teach the comeback belief and method. The proof post then shows an ordinary logged action and earns the coaching invitation.
+
 ## Scheduled
 
 | Date | Status | Job | Campaign | Hook | Format | Source | CTA | Receipt |
