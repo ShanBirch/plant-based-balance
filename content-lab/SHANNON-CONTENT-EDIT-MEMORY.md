@@ -54,10 +54,17 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - The durable paid-production order is approved script, approved ElevenLabs voice, verified real duration, approved reusable presenter source, HeyGen `precision` lip-sync, then local Reel composition. Check the installed HeyGen connector first and use the authenticated CLI fallback when necessary. Authentication approval remains a visible Shannon action; do not automate it.
 - Conversion-focused Balance Reels inherit the science-Reel evidence, face-protection, voice, edit and QA standards, then add a clearer problem, coaching reframe, useful solution, future identity and one small CTA.
 
+### Tahlia Feed engagement
+
+- Tahlia does not publish her own Balance Feed posts, including workout, PB, weigh-in or fitness-diary cards.
+- Tahlia may automatically comment once per eligible Feed post. Each comment must be one to three words and use only a simple supportive reaction: `love this`, `amazing work` or `good job`.
+- Never generate or learn longer Tahlia comments, add advice, ask a question or post a second comment on the same Feed post.
+
 ## Edit log
 
 | Date | Shannon's direction | Scalable rule | Affected formats |
 | --- | --- | --- | --- |
+| 2026-07-29 | Remove Tahlia's posts from the Feed and automate only very short comments, never more than once per post. | Disable all Tahlia-authored Feed posts, remove existing and pending ones, and auto-publish only allowlisted 1-3 word comments behind a database one-comment-per-post guard. | Balance Feed, Tahlia social worker, Feed comments |
 | 2026-07-29 | You blacked out his face with a little square. Never do this. Fix it, remember it, repost. | Ban square, rectangular, black, opaque, hard-edged and pixelated face treatments. Privacy blurs must be tightly fitted, oval/circular and feathered; otherwise use a safe crop, soft background treatment or branded proof card. Inspect the exact native frames before publishing. | Daily Proof Stories, client proof, real-media Stories and Reels |
 | 2026-07-29 | Never cover my face; put me in a little circle instead. | Treat the entire head as protected space and use the approved Part Two presenter bubble in graphic-led scenes. | Reels, video, covers |
 | 2026-07-29 | Never say “is not”; make the voice less professional with umms, ahhs and pauses. | Use contractions and the voice-note cadence recipe in every spoken Reel draft. | Reels, voiceovers, conversational captions |

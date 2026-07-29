@@ -189,30 +189,29 @@ function buildTahliaPostCardPayload(activityType, caption, seed) {
 
 const COMMENT_TEMPLATES = {
     workout: [
-        'this is solid',
-        'love this!',
-        'amazing work!',
+        'love this',
+        'amazing work',
+        'good job',
     ],
     meal: [
-        'love this!',
-        'yum, amazing meal',
-        'great job!',
+        'love this',
+        'amazing work',
+        'good job',
     ],
     weigh_in: [
-        'good job checking in',
-        'this is solid',
-        'nice work!',
+        'love this',
+        'amazing work',
+        'good job',
     ],
     progress: [
-        'amazing work!',
-        'love seeing this',
-        'this is so good!',
+        'love this',
+        'amazing work',
+        'good job',
     ],
     default: [
-        'amazing work!',
-        'good job!',
-        'this is solid',
-        'love this!',
+        'love this',
+        'amazing work',
+        'good job',
     ],
 };
 

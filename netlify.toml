@@ -335,7 +335,8 @@
 [functions."auto-feed-comment"]
   schedule = "37 * * * *"
 
-# Tahlia seeded social drafts - queues approval-only Feed posts/comments into Needs You.
+# Tahlia seeded Feed engagement - automatically posts one simple 1-3 word
+# comment per eligible post, with no Tahlia-authored Feed posts.
 [functions."tahlia-social-worker"]
   schedule = "*/20 * * * *"
 

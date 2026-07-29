@@ -9,6 +9,11 @@ const coachAction = require('../netlify/functions/perform-coach-action')._test;
 const adminSource = fs.readFileSync(path.join(__dirname, '../admin-dashboard.html'), 'utf8');
 const performSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/perform-coach-action.js'), 'utf8');
 const netlifySource = fs.readFileSync(path.join(__dirname, '../netlify.toml'), 'utf8');
+const workerSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/tahlia-social-worker.js'), 'utf8');
+const commentsOnlyMigration = fs.readFileSync(
+    path.join(__dirname, '../supabase/migrations/20260729010000_tahlia_comments_only.sql'),
+    'utf8'
+);
 
 assert.strictEqual(profile.TAHLIA_PROFILE.displayName, 'Tahlia Brooks');
 assert.strictEqual(profile.TAHLIA_PROFILE.age, 25);
@@ -22,6 +27,7 @@ assert.strictEqual(worker.DEFAULT_MAX_COMMENT_ALERTS_PER_RUN, 1);
 assert.strictEqual(worker.DEFAULT_DAILY_POST_ALERT_CAP, 3);
 assert.strictEqual(worker.DEFAULT_DAILY_COMMENT_ALERT_CAP, 6);
 assert.strictEqual(worker.DEFAULT_RESUME_DATE_KEY, '2026-07-05');
+assert.deepStrictEqual([...worker.TAHLIA_SIMPLE_COMMENTS], ['love this', 'amazing work', 'good job']);
 assert.strictEqual(worker.isBeforeBrisbaneDateKey(new Date('2026-07-04T13:59:00.000Z'), '2026-07-05'), true);
 assert.strictEqual(worker.isBeforeBrisbaneDateKey(new Date('2026-07-04T14:00:00.000Z'), '2026-07-05'), false);
 assert.deepStrictEqual(worker.brisbaneDayBounds(new Date('2026-07-04T13:59:00.000Z')), {
@@ -173,7 +179,7 @@ assert.strictEqual(commentAlert.data.target_story_author_name, 'Abbey');
 assert.strictEqual(commentAlert.data.evidence.story_media_url, 'https://cdn.example.com/story-1.jpg');
 assert.strictEqual(commentAlert.data.evidence.story_thumbnail_url, 'https://cdn.example.com/story-1-thumb.jpg');
 assert.strictEqual(commentAlert.data.evidence.story_background_color, '#fff7ed');
-assert.match(commentAlert.data.draft_text, /meal|win|solid|yum|good|love/i);
+assert.ok(worker.TAHLIA_SIMPLE_COMMENTS.has(commentAlert.data.draft_text));
 assert.doesNotMatch(commentAlert.data.draft_text, /looks/i);
 
 const workoutCommentAlert = worker.buildCommentAlert({
@@ -295,6 +301,7 @@ assert.strictEqual(learnedCommentAlert.data.draft_text, 'proper meal win this');
 assert.strictEqual(learnedCommentAlert.data.proposed_actions[0].payload.comment_text, 'proper meal win this');
 assert.strictEqual(learnedCommentAlert.data.tahlia_social_learning.example_count, 1);
 assert.strictEqual(worker.isSafeLearnedTahliaDraft('Amazing work!'), true);
+assert.strictEqual(worker.isSafeLearnedTahliaDraft('This is really amazing work'), false);
 assert.strictEqual(worker.isSafeLearnedTahliaDraft('That is such a good little win'), false);
 assert.strictEqual(worker.isSafeLearnedTahliaDraft('you should try a calorie deficit'), false);
 assert.strictEqual(worker.parseTahliaDraftReply('{"text":"little win"}'), 'little win');
@@ -332,9 +339,18 @@ const simpleCommentContexts = [
 ];
 for (const story of simpleCommentContexts) {
     for (let seed = 0; seed < 20; seed += 1) {
-        assert.doesNotMatch(profile.buildTahliaCommentDraft({ story, seed: String(seed) }).comment, /\bwin(?:s)?\b/i);
+        const comment = profile.buildTahliaCommentDraft({ story, seed: String(seed) }).comment;
+        assert.ok(worker.TAHLIA_SIMPLE_COMMENTS.has(comment));
+        assert.ok(comment.split(/\s+/).length <= 3);
     }
 }
+
+assert.ok(workerSource.includes("mode: 'automatic_simple_comments_only'"));
+assert.ok(workerSource.includes("feed_posts: { disabled: true, reason: 'comments_only' }"));
+assert.ok(workerSource.includes("error?.sqlstate === '23505'"));
+assert.match(commentsOnlyMigration, /DELETE FROM public\.stories[\s\S]*WHERE user_id = v_tahlia_id/);
+assert.match(commentsOnlyMigration, /CREATE UNIQUE INDEX IF NOT EXISTS uq_feed_comments_tahlia_one_per_story/);
+assert.match(commentsOnlyMigration, /status = 'dismissed'/);
 
 assert.ok(adminSource.includes('function isTahliaSocialApprovalAlert'));
 assert.ok(adminSource.includes('function isSupportedTahliaSocialApprovalAlert'));
