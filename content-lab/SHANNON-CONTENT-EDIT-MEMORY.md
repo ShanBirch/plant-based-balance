@@ -49,6 +49,12 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - When anonymising real Story media, use a tightly fitted feathered oval/circular blur that blends naturally into the frame, or choose a safe crop, soft background treatment, still frame or branded proof card.
 - Inspect native-resolution frames across the full clip. If the treatment looks pasted on, has a box edge or obscures unrelated body/equipment detail, reject it and re-render.
 
+### Client proof should show the receipts
+
+- Build feed proof as a visual sequence from the strongest real media available: the result, the earlier decision or check-in, the logged workout/meal details, and the relevant photo or footage.
+- Don't turn a media-backed client story into a run of black branded cards. Use an editorial text card only for a genuine beat that has no attached media, and never invent a missing photo.
+- When a client's face appears in Balance feed media, keep the creative approval-only until public Instagram consent is confirmed.
+
 ### Shannon's spoken delivery
 
 - Natural contractions are mandatory in Shannon's spoken and public-facing copy wherever one exists. Write forms such as `I'll`, `you're`, `we're`, `it's`, `that's`, `there's`, `don't`, `doesn't`, `isn't`, `can't`, `won't`, `haven't`, and `hasn't`; never expand them into presenter-style wording. Preserve an expanded form only inside an exact quotation that cannot be changed.
@@ -102,3 +108,4 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 | 2026-07-29 | Before “same body,” say: “So yeah, it's strange to totally comprehend, but...” | When a personal contrast is surprising, add a brief Shannon-style acknowledgment that it is strange to comprehend before compressing it into the mechanism takeaway. | Reel scripts, personal proof, transitions, voiceovers, canonical cravings reference |
 | 2026-07-30 | Replace “sometimes you've simply not eaten enough” with something more abstract, such as changing the room you're in at that specific time of day. | In sensory-input teaching, lead with a concrete environmental or context adjustment rather than narrowing the mechanism to food intake unless nutrition is specifically the point. | Coaching carousels, cravings content, sensory-feedback scripts and automation prompts |
 | 2026-07-30 | Replace “at that specific time of day” with the exact line: “changing any input will change the output.” | After a concrete sensory-input example, use Shannon's short input-to-output mechanism instead of adding another context qualifier. | Coaching carousels, cravings content, sensory-feedback scripts and automation prompts |
+| 2026-07-30 | Shane's proof should show his PB, night-off check-in, workout list, actual workout footage and real photos instead of black screens. | Build client proof as a chronological, evidence-media-first story. Keep only evidence beats without attached media as editorial cards; don't fabricate the missing moment. | Feed proof carousels, client stories, campaign previews and proof automations |
