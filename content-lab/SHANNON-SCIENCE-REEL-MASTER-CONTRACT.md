@@ -29,8 +29,8 @@ The production can look intentional and evidence-led. Shannon's speech should no
 - Use the recovery-meal Reel as the main voice anchor: blunt consequence, direct audience talk, short uneven lines, a useful mechanism, mock frustration or profanity, a cheeky aside, and a useful CTA.
 - Start as though Shannon is already talking to someone. Avoid presenter openings such as `Today we're going to`, `In this video`, or `Let's explore`.
 - Natural contractions are mandatory wherever one exists. Use `I'll`, `you're`, `we're`, `it's`, `that's`, `there's`, `don't`, `doesn't`, `isn't`, `can't`, `won't`, and similar forms. Preserve expanded wording only inside an exact quotation that cannot be changed.
-- For a normal 45–90 second Reel, use four to six imperfect thinking beats. Include at least three genuine `um` or `ah` sounds, then mix in pauses, fragments, a restart, `okay`, `yeah`, `honestly`, `like`, `anyway`, or `I reckon` where they genuinely fit.
-- Do not make fillers a neat repeated template. The messiness should sound thought-led, not inserted by a checklist.
+- For a normal 45–90 second Reel, use four to six natural thinking beats drawn from Shannon's real phrasing: `so yeah`, `okay`, `honestly`, `like`, `anyway`, `I reckon`, pauses, fragments or a restart. Do not insert `um` or `ah` fillers.
+- Do not make imperfect beats a neat repeated template. The looseness should sound thought-led, not inserted by a checklist.
 - Use direct second-person language. Let Shannon react to the finding rather than calmly presenting it.
 - Keep one topic-specific profanity, mock-frustrated reaction, playful overstatement, or odd little aside when it fits. Return to helping immediately.
 - Keep formal language only where accuracy needs it: paper title, author, study design, result, and limitation. Translate each formal line into ordinary language straight away.
