@@ -38,23 +38,23 @@ BEGIN
           WHERE position > 1
      );
 
-    -- Bring already-published long comments into the same tiny reaction
+    -- Bring every already-published comment into the same exact tiny reaction
     -- contract so the live Feed is consistent immediately.
-    WITH long_comments AS (
+    WITH comments_to_normalize AS (
         SELECT id,
                row_number() OVER (ORDER BY created_at ASC NULLS LAST, id ASC) AS position
           FROM public.feed_comments
          WHERE user_id = v_tahlia_id
-           AND cardinality(regexp_split_to_array(trim(comment_text), E'\\s+')) > 3
+           AND lower(trim(comment_text)) NOT IN ('love this', 'amazing work', 'good job')
     )
     UPDATE public.feed_comments comments
-       SET comment_text = CASE mod(long_comments.position - 1, 3)
+       SET comment_text = CASE mod(comments_to_normalize.position - 1, 3)
            WHEN 0 THEN 'love this'
            WHEN 1 THEN 'amazing work'
            ELSE 'good job'
        END
-      FROM long_comments
-     WHERE comments.id = long_comments.id;
+      FROM comments_to_normalize
+     WHERE comments.id = comments_to_normalize.id;
 
     EXECUTE format(
         'CREATE UNIQUE INDEX IF NOT EXISTS uq_feed_comments_tahlia_one_per_story ON public.feed_comments (story_id) WHERE user_id = %L',
