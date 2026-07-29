@@ -43,6 +43,8 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - Use the recovery-meal Reel as the main raw-voice anchor: abrupt lines, direct audience talk, useful mechanism, mock frustration or profanity, an odd little aside, and a CTA that still sounds like Shannon. The science can be exact and the edit can be polished; the speech should not sound like a documentary, journal abstract, lesson, or tidy presenter script.
 - Avoid formal transitions such as `This demonstrates`, `But it does show`, `The practical takeaway is`, and `It is important to understand`. Put formal wording only around the evidence, then translate it immediately into ordinary speech.
 - HeyGen is used for precision lip-sync of an approved reusable Shannon clip, not complete Reel generation.
+- The durable paid-production order is approved script, approved ElevenLabs voice, verified real duration, approved reusable presenter source, HeyGen `precision` lip-sync, then local Reel composition. Check the installed HeyGen connector first and use the authenticated CLI fallback when necessary. Authentication approval remains a visible Shannon action; do not automate it.
+- Conversion-focused Balance Reels inherit the science-Reel evidence, face-protection, voice, edit and QA standards, then add a clearer problem, coaching reframe, useful solution, future identity and one small CTA.
 
 ## Edit log
 
@@ -56,3 +58,4 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 | 2026-07-29 | The fibre-and-volume slide looks strange because of the random big circles. | Ban unexplained decorative shapes; every visual must communicate a recognisable idea or be removed. | Carousels, Stories, Reel graphics |
 | 2026-07-29 | Take notes whenever I give edit feedback so the system learns. | Append explicit feedback here and update the relevant skill or automation contract before closing the edit. | All content production |
 | 2026-07-29 | Our carousel posts use the shimmering Balance logo; check the carousel skill. | Deliver Balance carousels as playable five-second MP4 slides using the exact published two-pass watermark shimmer, with stills only as posters/review fallbacks. | Feed carousels, carousel previews |
+| 2026-07-29 | Create a skill that remembers how to use HeyGen; the new convincing style is based on the science-Reel system. | Add one Balance persuasive-Reel entry skill, centralise the exact ElevenLabs-to-HeyGen precision lip-sync workflow, and make the existing science-Reel skill route to it instead of rediscovering or using complete-video generation. | Science Reels, persuasive feed Reels, HeyGen presenter production, Reel automations |

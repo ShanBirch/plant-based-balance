@@ -106,8 +106,8 @@ Default runtime is 45–90 seconds. If the approved voice is too long, remove lo
 2. Generate ElevenLabs using Shannon's approved voice and decode the file completely to verify the ending and CTA.
 3. Confirm voice quality and real duration. Regenerate a muffled or unstable take before lip-sync.
 4. Rebuild timings after any voice change.
-5. Use HeyGen Video Translation to lip-sync an approved reusable Shannon source clip to the approved audio.
-6. Use normal HeyGen avatar/video generation only when translation cannot produce a usable result, no suitable source exists, quality fails, or Shannon explicitly asks for a fresh generation.
+5. Use HeyGen `precision` lip-sync with an approved reusable Shannon source clip and the approved audio. HeyGen creates only the presenter layer; follow `C:/Users/shann/.codex/skills/balance-persuasive-reels/references/heygen-precision-lipsync.md` for the complete operational workflow.
+6. Use normal HeyGen avatar/video generation only when precision lip-sync cannot produce a usable result, no suitable source exists, quality fails, or Shannon explicitly asks for a fresh generation. Never route an ordinary reusable-presenter Reel through Video Agent or complete-video generation.
 7. Generate the paid HeyGen result once at final quality. Use local proxies for edit iteration.
 8. Build the final Reel separately from the presenter, real source proof, graphics, captions, music, SFX, and Balance outro.
 
@@ -132,4 +132,4 @@ Default runtime is 45–90 seconds. If the approved voice is too long, remove lo
 
 ## Automation rule
 
-Every science-Reel automation must read this contract and `content-lab/SHANNON-CONTENT-EDIT-MEMORY.md`. New direct feedback from Shannon updates both the reusable contract and the relevant skill/automation before the edit is closed.
+Every science-Reel automation must read this contract and `content-lab/SHANNON-CONTENT-EDIT-MEMORY.md`. Conversion-focused Reels must also read `C:/Users/shann/.codex/skills/balance-persuasive-reels/SKILL.md`. New direct feedback from Shannon updates both the reusable contract and the relevant skill/automation before the edit is closed.
