@@ -37,6 +37,12 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - In graphic-led Reels, use the approved Part Two circular presenter bubble when Shannon needs to remain visible.
 - In photo carousels, place copy in genuine negative space using a local translucent field; do not hide most of the photo behind an opaque panel.
 
+### Face privacy must never look censored
+
+- Never place a visible square, rectangle, black patch, opaque block, hard-edged blur or pixel tile over a client's face.
+- When anonymising real Story media, use a tightly fitted feathered oval/circular blur that blends naturally into the frame, or choose a safe crop, soft background treatment, still frame or branded proof card.
+- Inspect native-resolution frames across the full clip. If the treatment looks pasted on, has a box edge or obscures unrelated body/equipment detail, reject it and re-render.
+
 ### Shannon's spoken delivery
 
 - Natural contractions are mandatory in Shannon's spoken and public-facing copy wherever one exists. Write forms such as `I'll`, `you're`, `we're`, `it's`, `that's`, `there's`, `don't`, `doesn't`, `isn't`, `can't`, `won't`, `haven't`, and `hasn't`; never expand them into presenter-style wording. Preserve an expanded form only inside an exact quotation that cannot be changed.
@@ -52,6 +58,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 | Date | Shannon's direction | Scalable rule | Affected formats |
 | --- | --- | --- | --- |
+| 2026-07-29 | You blacked out his face with a little square. Never do this. Fix it, remember it, repost. | Ban square, rectangular, black, opaque, hard-edged and pixelated face treatments. Privacy blurs must be tightly fitted, oval/circular and feathered; otherwise use a safe crop, soft background treatment or branded proof card. Inspect the exact native frames before publishing. | Daily Proof Stories, client proof, real-media Stories and Reels |
 | 2026-07-29 | Never cover my face; put me in a little circle instead. | Treat the entire head as protected space and use the approved Part Two presenter bubble in graphic-led scenes. | Reels, video, covers |
 | 2026-07-29 | Never say “is not”; make the voice less professional with umms, ahhs and pauses. | Use contractions and the voice-note cadence recipe in every spoken Reel draft. | Reels, voiceovers, conversational captions |
 | 2026-07-29 | Always abbreviate natural speech, for example never “I will” and always “I'll”; use more umms and ahhs so it feels less professional. | Make natural contractions mandatory in spoken and public-facing Shannon copy, and use four to six imperfect beats with at least three explicit `um`/`ah` sounds in a normal science Reel. | Reels, voiceovers, conversational captions, hooks and CTAs |
