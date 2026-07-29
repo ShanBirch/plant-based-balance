@@ -38,7 +38,7 @@ The reusable element is the voice and construction, not the cravings topic. Futu
 >
 > If I go to a mate's place instead, I get no cravings at all. In fact, I probably spend a large chunk of the night lecturing my mates about how bad McDonald's is for them.
 >
-> Same body. Different environment. Different signals. Different output.
+> So yeah, it's strange to totally comprehend, but... same body. Different environment. Different signals. Different output.
 >
 > That’s the coaching bit inside Balance. We work out what’s driving the craving, change the setup and help you keep moving without blaming you.
 >
@@ -57,7 +57,7 @@ The reusable element is the voice and construction, not the cravings topic. Futu
 - It removes blame explicitly, without soft or clinical language.
 - It turns the explanation into concrete actions with verbs the viewer can picture.
 - It includes a real, ordinary Shannon example rather than a polished case study, and makes the contrast explicit before adding a specific cheeky detail.
-- It lands the example with clipped repetition: `Same body. Different environment. Different signals. Different output.`
+- It acknowledges that the contrast is strange to comprehend, then lands it with clipped repetition: `Same body. Different environment. Different signals. Different output.`
 - It explains what coaching actually does before presenting the offer.
 - It ends with one direct CTA and no extra sign-off.
 
