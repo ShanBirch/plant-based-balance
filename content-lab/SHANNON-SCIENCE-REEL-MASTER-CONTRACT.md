@@ -37,6 +37,7 @@ The production can look intentional and evidence-led. Shannon's speech should no
 - Keep one topic-specific profanity, mock-frustrated reaction, playful overstatement, or odd little aside when it fits. Return to helping immediately.
 - Keep formal language only where accuracy needs it: paper title, author, study design, result, and limitation. Translate each formal line into ordinary language straight away.
 - Prefer `same fucking shake` over `the conditions were nutritionally identical`; prefer `real body stuff plus what's going on around you` over `biological and contextual`.
+- Personal proof must state the contrast clearly before the punchline. Use truthful, specific Shannon detail rather than a vague one-word payoff, then return to the mechanism with a clipped takeaway.
 - Avoid tidy presenter transitions such as `This demonstrates`, `But it does show`, `The practical takeaway is`, or `It is important to understand`.
 - Do not use text-message shorthand such as `ppl`. Shannon's request to abbreviate means natural contractions, not sloppy spelling.
 - Pronounce authors, years, abbreviations, units, and paper titles naturally in the voice input. Never make ElevenLabs read a DOI, raw citation, or bracketed stage direction.

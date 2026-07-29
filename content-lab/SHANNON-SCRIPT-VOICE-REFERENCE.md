@@ -36,7 +36,7 @@ The reusable element is the voice and construction, not the cravings topic. Futu
 >
 > Every Saturday night, if I’m home, I get crazy cravings for chocolate and pizza.
 >
-> If I go to a mate’s place... nothing.
+> If I go to a mate's place instead, I get no cravings at all. In fact, I probably spend a large chunk of the night lecturing my mates about how bad McDonald's is for them.
 >
 > Same body. Different environment. Different signals. Different output.
 >
@@ -56,7 +56,7 @@ The reusable element is the voice and construction, not the cravings topic. Futu
 - It repeats the central idea in slightly different words so the viewer can follow it; it does not jump across missing logic.
 - It removes blame explicitly, without soft or clinical language.
 - It turns the explanation into concrete actions with verbs the viewer can picture.
-- It includes a real, ordinary Shannon example rather than a polished case study.
+- It includes a real, ordinary Shannon example rather than a polished case study, and makes the contrast explicit before adding a specific cheeky detail.
 - It lands the example with clipped repetition: `Same body. Different environment. Different signals. Different output.`
 - It explains what coaching actually does before presenting the offer.
 - It ends with one direct CTA and no extra sign-off.
