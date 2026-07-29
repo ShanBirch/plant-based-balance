@@ -2,7 +2,7 @@
 
 Campaign dates: 2026-08-03 to 2026-08-09, Australia/Brisbane.
 
-Status: Batch 1 approved and produced; Batch 2 copy and static visual direction ready for review; Batch 3 remains in production-brief status.
+Status: Batch 1 Post 1 script relocked in Shannon's canonical voice and returned to production; existing Batch 1 carousel, proof and Story creative require copy alignment before final approval. Batch 2 copy and static visual direction remain ready for review; Batch 3 remains in production-brief status.
 
 Commercial belief:
 
@@ -14,7 +14,7 @@ Cadence: nine feed posts across seven days, supported by daily Stories. Feed pub
 
 | Date and time | Job | Format | Hook | CTA | Production status |
 | --- | --- | --- | --- | --- | --- |
-| Mon 3 Aug, 8:15am | BELIEF | Science Reel | Hunger isn't a simple fuel gauge. Your brain helps construct it. | Comment `HUNGER` | Approved final Reel v4 produced; final creative approval required before publishing |
+| Mon 3 Aug, 8:15am | BELIEF | Coaching Reel | Cravings are a real output shaped by signals from your body and environment. | DM `BALANCE` | Exact Shannon script relocked; revised voice, lip-sync and local edit in production |
 | Mon 3 Aug, 6:15pm | COACH | 8-slide real-photo video carousel | Build a meal that gives your brain better fullness evidence. | Save | Playable shimmer slides produced; final creative approval required |
 | Tue 4 Aug, 6:15pm | PROOF | Photo-backed proof post | Structure beats white-knuckling hunger. | Soft coaching invitation | Produced; final creative approval required |
 | Wed 5 Aug, 8:15am | BELIEF | Science Reel | Dopamine isn't just pleasure. It helps teach the brain what is worth repeating. | Follow | Batch 2 script and cover ready for approval |
@@ -32,81 +32,100 @@ Cadence: nine feed posts across seven days, supported by daily Stories. Feed pub
 - 6:30pm: Shannon posts a raw human Story on four days: training clip, meal, walk, coaching observation or direct-to-camera thought.
 - Do not manufacture extra frames merely to hit a number. A normal daily range is three to five useful frames.
 
-## Locked Post 1: BELIEF Science Reel
+## Locked Post 1: BELIEF Coaching Reel
 
-Working title: `Hunger Isn't A Fuel Gauge`
+Working title: `Change The Signals, Change The Output`
 
-Target runtime: 75 to 90 seconds. Natural pauses and Shannon's conversational cadence take priority over compressing the delivery.
+Voice authority: this exact script is also the canonical example in `content-lab/SHANNON-SCRIPT-VOICE-REFERENCE.md`. Future scripts imitate how it is written and spoken, not its cravings topic or numbered format.
+
+Runtime rule: preserve Shannon's exact approved wording for production. The generated voice duration is the source of truth; never force the delivery to match the spoken `90 seconds` line with time-stretching. Flag any mismatch before paid lip-sync.
 
 FATE:
 
-- Focus: explain why hunger can feel confusing without blaming the viewer.
-- Authority: Crum and colleagues' 2011 within-participant human milkshake experiment, supported by Subramanian and Thaiss' 2024 interoceptive-inference outlook.
-- Tribe: plant-based people training for fat loss or muscle who think hunger means they lack willpower.
-- Emotion: relief from blame, followed by control.
+- Focus: explain what shapes cravings and give the viewer three things they can do next time.
+- Authority: a correct body-plus-environment signal model, Shannon's real Saturday-night example, and Shannon's concrete coaching process. Research stays in the private source trail because a paper review does not improve this Reel.
+- Tribe: people who are sick of hunger and cravings and think struggling means they lack control.
+- Emotion: relief from blame, followed by practical control and confidence in coaching.
 
 Sales arc:
 
-- Socialize: name the experience of feeling hungry even when a plan says the person should not be.
-- Minimize: understand the signal differently; do not try to defeat or ignore it.
-- Rationalize: the brain combines real body signals with context, expectation and learning.
-- Project: respond with useful food structure rather than shame.
+- Socialize: name the frustration directly: feeling hungry and dealing with cravings.
+- Minimize: ask only for 90 seconds and three small actions.
+- Rationalize: explain that cravings are real outputs shaped by signals from the body and environment, not evidence of weakness.
+- Project: become someone who can notice the pattern, change the setup and keep moving with Shannon in their corner.
 
-Approved spoken script used for final Reel v4:
+Exact approved spoken script:
 
-> Okay, so... your stomach isn't a little fuel gauge going, yep, empty now.
+> Sick and tired of feeling hungry and dealing with food cravings?
 >
-> It's way messier than that.
+> Alright, give me 90 seconds. I’m gonna teach you what cravings are, then give you three quick things you can do to handle them better.
 >
-> Your body's sending real stuff, um... gut signals, hormones, available energy. Your brain chucks that together with the time of day, food, smells, what happened last time... and, ah, out pops hunger.
+> Okay, ready?
 >
-> This paper gets fucking weird.
+> Hunger feels like it comes from your stomach, but it doesn’t. It’s a feeling constructed in your brain.
 >
-> Crum and colleagues gave 46 people the same 380-calorie shake twice. Same fucking shake. One label said 620-calorie indulgent. The other said 140-calorie sensible.
+> Your brain’s constantly interpreting signals from your gut, hormones and energy needs alongside everything happening around you.
 >
-> And, um... when they thought they'd had the indulgent one, their ghrelin dropped more steeply.
+> The sight and smell of food. Your usual mealtimes. What you expect. What you’ve done in that environment before.
 >
-> Same drink. Different story around it. Different short-term hormone response.
+> All of those signals get combined, and that shapes how hungry or satisfied you feel.
 >
-> Now, ah... don't run off and try to manifest a calorie deficit. That's not what this shows. Small study. Short-term hormone response. It wasn't a fat-loss trial.
+> So yeah, cravings are an output your brain creates using information from both your body and your environment.
 >
-> But, yeah... hunger isn't just you being weak or shit at dieting. It's real body stuff, plus what's going on around you, plus what your brain's learned.
+> That doesn’t mean the craving isn’t real. And it doesn’t mean you’re weak or shit at controlling yourself.
 >
-> So stop trying to win a fistfight with it. Build meals that fill you up, make the next bit easier, and adjust the plan when it's clearly not fucking working.
+> It means you’ve got signals you can actually work with.
 >
-> Comment HUNGER below and I'll send you the paper.
+> So here are the three things.
+>
+> First, notice the craving. Don’t immediately fight it or act on it. Just notice it.
+>
+> Second, check the signals. Where are you? What time is it? What’s around you? Have you slept? Have you eaten enough?
+>
+> Third, change one of those signals. Leave the room. Go outside. Put the food away. Change what you’re doing. Or eat a proper meal or snack if your body genuinely needs food.
+>
+> Every Saturday night, if I’m home, I get crazy cravings for chocolate and pizza.
+>
+> If I go to a mate’s place... nothing.
+>
+> Same body. Different environment. Different signals. Different output.
+>
+> That’s the coaching bit inside Balance. We work out what’s driving the craving, change the setup and help you keep moving without blaming you.
+>
+> If you want me in your corner, message me BALANCE.
 
 Production brief:
 
-- Generate Shannon's ElevenLabs voice first. Do not time-stretch it.
-- Use HeyGen Video Translation to lip-sync `Coach Shan 2` or another approved reusable source clip. Do not generate the whole Reel in HeyGen.
-- Cold open: a fake stomach fuel gauge fills, glitches and snaps to Shannon on the first line.
-- Show the real paper early. Split the identical shake into `620 indulgent` and `140 sensible` labels.
-- Never cover Shannon's face, mouth, eyes, jawline, hairline or head silhouette. Graphic-led scenes use the approved Part Two upper-right circular presenter bubble with the blue ring, orbit cue and name pill.
-- Keep Shannon visible as the human anchor during longer graphics.
-- Caveat line goes full-screen on Shannon with minimal competing graphics.
-- Final spoken line and final visible line: `Comment HUNGER below`.
-- Cover: `HUNGER ISN'T A FUEL GAUGE` with Shannon plus a milkshake/fuel-gauge visual.
-- Music role: restrained science drama; voice stays dominant.
+- Generate Shannon's ElevenLabs voice first from the exact approved script. Do not time-stretch it.
+- Use HeyGen Precision Lip Sync with the approved reusable Shannon source clip. Do not generate the whole Reel in HeyGen.
+- Open full-frame on Shannon for the problem and promise.
+- Use the approved upper-right circular presenter bubble while body signals and environment signals combine into the craving output. Every visual must explain a real relationship; do not add decorative shapes.
+- Give each of the three actions its own clear visual beat: `NOTICE IT`, `CHECK THE SIGNALS`, `CHANGE ONE SIGNAL`.
+- Show the Saturday-night example as a simple contrast between `HOME` and `MATE'S PLACE`; keep Shannon visible and do not invent extra story detail.
+- Land `SAME BODY / DIFFERENT ENVIRONMENT / DIFFERENT SIGNALS / DIFFERENT OUTPUT` one line at a time.
+- Return to Shannon full-frame for the coaching explanation and CTA.
+- Final spoken and visible CTA: `MESSAGE ME BALANCE`.
+- Cover: `CHANGE THE SIGNALS` with Shannon as the recognisable coach.
+- Music role: subtle momentum; voice stays dominant.
 
 Caption:
 
-> Hunger's real. And it isn't some simple character test.
+> A craving can feel like proof that you've got no control. It isn't.
 >
-> In a small human experiment, 46 people drank the same 380-calorie shake twice under two very different labels. Their short-term ghrelin response changed with what they believed they were drinking.
+> Your brain is combining information from your body with the time, place, food cues, expectations and patterns around you. The craving is real, but it gives us signals we can actually work with.
 >
-> That doesn't mean thoughts delete calories or that hunger should be ignored. It means the brain reads genuine body signals in context.
+> Notice it. Check the signals. Change one.
 >
-> If your plan leaves you white-knuckling hunger, the answer isn't automatically more discipline. Sometimes the meal, environment or plan needs adjusting.
+> That's what we do inside Balance: work out what's driving the problem, change the setup and help you keep moving without blaming you.
 >
-> Comment HUNGER below and I'll send you the paper.
+> Want me in your corner? Message me BALANCE.
 
-Source trail:
+Private evidence trail:
 
-- Crum AJ, Corbin WR, Brownell KD, Salovey P. *Mind over milkshakes: Mindsets, not just nutrients, determine ghrelin response*. Health Psychology. 2011;30(4):424-429. DOI `10.1037/a0023467`.
 - Subramanian M, Thaiss CA. *Interoceptive inference and prediction in food-related disorders*. Genes & Development. 2024;38:808-813. DOI `10.1101/gad.352301.124`.
+- The Reel does not claim every craving has one cause, that environmental change always removes a craving, or that body needs should be ignored. The third action explicitly includes eating when the body genuinely needs food.
 
-Publishing dependency: create and test the `HUNGER` comment-delivery flow before this post goes live.
+Publishing dependency: no new `HUNGER` paper-delivery automation is required. Route `BALANCE` DMs into the existing qualified coaching conversation path and keep final publishing approval separate.
 
 ## Locked Post 2: COACH Carousel
 

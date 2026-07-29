@@ -2,6 +2,8 @@
 
 Read this before creating or revising Balance feed posts, Stories, Reels, carousels, covers or their automations.
 
+For any Shannon-led spoken script, also read `content-lab/SHANNON-SCRIPT-VOICE-REFERENCE.md`. Its cravings script is the canonical voice and sentence-construction example. Match how it sounds; do not assume every future Reel should reuse its topic or three-step structure.
+
 When Shannon gives explicit edit feedback, treat it as a reusable production rule unless he clearly says it applies only once. Record the original direction, translate it into a scalable rule, and update the relevant skill or automation contract. Do not leave important visual or voice preferences trapped inside one preview folder or chat.
 
 ## Active production rules
@@ -62,3 +64,4 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 | 2026-07-29 | Ums and ahhs are for realness, not to skip a correct explanation. | Write the complete causal explanation first, then place fillers only at natural thought changes; never use a filler to bridge a missing definition, mechanism, result, or limitation. | Reels, voiceovers, science scripts |
 | 2026-07-29 | A science review should not be used when it is not adding anything; the craving Reel needs to teach something useful instead of reviewing a paper for its own sake. | Evidence must underpin the claim, but the paper only appears in the spoken or visual story when it materially improves trust or understanding. Practical teaching Reels may keep the source in the private trail or caption and spend the runtime on recognition, coaching and action. | Science Reels, persuasive Reels, campaign scripts, automation briefs |
 | 2026-07-29 | I don't actually like `um` and `ah` fillers, but I do like natural phrases such as `so yeah`. | Do not add `um` or `ah` to scripts. Create a loose voice-note cadence with Shannon's genuine connective phrases, pauses, fragments and occasional restarts instead. This latest direction supersedes the earlier filler requirement. | Reels, voiceovers, conversational scripts, skill and automation prompts |
+| 2026-07-29 | Keep the approved cravings script as the example of how I actually talk so I don't spend half the day rewriting content. | Treat `SHANNON-SCRIPT-VOICE-REFERENCE.md` as the gold-standard voice reference. Match its direct hook, plain explanation, contractions, fragment rhythm, explicit blame removal, concrete actions, real-life proof, clipped summary and coaching bridge before showing Shannon a first draft. The reusable asset is the voice construction, not the cravings topic. | All Shannon-led Reel scripts, voiceovers and script-generating automations |

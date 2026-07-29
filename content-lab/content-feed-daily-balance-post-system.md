@@ -177,6 +177,15 @@ Reject or rewrite the idea if:
 
 ## Production Standards
 
+### Shannon spoken-script gate
+
+- Read `content-lab/SHANNON-SCRIPT-VOICE-REFERENCE.md` immediately before drafting any Shannon-led voiceover.
+- Treat its cravings script as the canonical example of how Shannon actually writes and talks. Imitate the construction and cadence, not the topic, hook wording, numbered format or CTA.
+- Match the direct problem, plain promise, complete explanation, full-sentence-and-fragment rhythm, natural connectors, explicit blame removal, concrete actions, ordinary real-life proof, clipped summary and specific coaching bridge.
+- Do not show Shannon a first draft until it has been compared line by line against that reference and generic presenter language has been rewritten.
+- Do not add `um` or `ah` sounds. Do not invent an anecdote, coaching observation, client result or profanity to manufacture personality.
+- Measure Shannon's editing time per script. Repeated corrections to voice are a system failure and must update the reference, prompt or skill before the next batch.
+
 ### Science and brain
 
 - Use primary sources.

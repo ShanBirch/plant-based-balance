@@ -10,7 +10,7 @@ Current approval mode: build review packs only. Do not publish from an unattende
 
 ## Prompt
 
-Read AGENTS.md, CODEX.md, CLAUDE.md, `content-lab\content-feed-daily-balance-post-system.md`, and `C:\Users\shann\.codex\automations\balance-daily-content-feed\posted-ledger.md` first.
+Read AGENTS.md, CODEX.md, CLAUDE.md, `content-lab\content-feed-daily-balance-post-system.md`, `content-lab\SHANNON-CONTENT-EDIT-MEMORY.md`, `content-lab\SHANNON-SCRIPT-VOICE-REFERENCE.md`, and `C:\Users\shann\.codex\automations\balance-daily-content-feed\posted-ledger.md` first.
 
 You are running the Balance daily content automation for Shannon.
 
@@ -47,6 +47,8 @@ Each time this automation wakes up:
    - Exercise and science Reels must have the hook in three places: first frame or cover, first spoken line when there is voiceover, and first caption line.
    - Reel covers should carry the hook as the tap reason and must be readable in the square Instagram grid crop.
    - Science hooks must stay faithful to the paper. Keep the science review format Shannon likes; do not make it clickbait or dilute it into generic tips.
+   - Before showing Shannon any spoken script, compare it line by line with `content-lab\SHANNON-SCRIPT-VOICE-REFERENCE.md`. Match its directness, plain explanation, sentence-and-fragment rhythm, natural connectors, blame removal, concrete actions, real example and coaching bridge. Copy the voice construction, not the cravings topic or three-step format.
+   - Reject and rewrite documentary narration, generic coach language, scripted `um`/`ah` fillers, expanded contractions, vague advice and a Balance CTA with no concrete coaching explanation.
    - If using Netlify env vars locally, never print secrets. Only print status, lane, title, asset paths, and review blockers.
 9. Reply in this thread with:
    - created review pack path

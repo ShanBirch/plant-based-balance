@@ -2,12 +2,13 @@
 
 ## Queue
 
-- Status: Script draft for Shannon approval
-- Publish order: First science review after the predictive brain series
-- Format: Shan n Sunny paper-review reel
-- Target runtime: 60 to 75 seconds
-- Planned comment keyword: `HUNGER`
-- Funnel dependency: Create the `HUNGER` paper-delivery automation before publishing
+- Status: Superseded on 2026-07-29 by the canonical cravings coaching Reel in `content-lab/SHANNON-SCRIPT-VOICE-REFERENCE.md`
+- Selection rule: Keep this file only as historical/source context. Do not select its paper-review script, `HUNGER` CTA or paper-delivery funnel for Week 1 production.
+- Publish order: None; not active
+- Format: Historical paper-review draft only
+- Target runtime: Not applicable
+- Planned comment keyword: None
+- Funnel dependency: None
 
 ## FATE
 

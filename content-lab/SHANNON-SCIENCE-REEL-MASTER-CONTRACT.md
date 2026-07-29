@@ -6,6 +6,7 @@ This contract consolidates the working rules from the Shan science Reel skill, t
 
 Primary source references:
 
+- Canonical current Shannon script voice: `content-lab/SHANNON-SCRIPT-VOICE-REFERENCE.md`. This takes priority for sentence construction and spoken cadence.
 - Raw voice anchor: `C:/Users/shann/Documents/Codex/2026-06-20/can-you-find-this-carosel-of/recovery-window-reel/script.txt`.
 - Main workflow: `C:/Users/shann/.codex/skills/shan-science-reels/SKILL.md`.
 - Script/research rules: `C:/Users/shann/.codex/skills/shan-science-reels/references/research-and-scripting.md`.
@@ -26,6 +27,7 @@ The production can look intentional and evidence-led. Shannon's speech should no
 
 ## Voice: deliberately less proper
 
+- Read `content-lab/SHANNON-SCRIPT-VOICE-REFERENCE.md` immediately before drafting. Its approved cravings script is the gold-standard example of Shannon's writing: direct problem, plain promise, correct explanation, mixed sentences and fragments, natural connectors, explicit blame removal, concrete action, ordinary personal proof, clipped summary, and a specific coaching bridge. Imitate that construction without copying the cravings topic or forcing every Reel into three tips.
 - Use the recovery-meal Reel as the main voice anchor: blunt consequence, direct audience talk, short uneven lines, a useful mechanism, mock frustration or profanity, a cheeky aside, and a useful CTA.
 - Start as though Shannon is already talking to someone. Avoid presenter openings such as `Today we're going to`, `In this video`, or `Let's explore`.
 - Natural contractions are mandatory wherever one exists. Use `I'll`, `you're`, `we're`, `it's`, `that's`, `there's`, `don't`, `doesn't`, `isn't`, `can't`, `won't`, and similar forms. Preserve expanded wording only inside an exact quotation that cannot be changed.
@@ -132,4 +134,4 @@ Default runtime is 45–90 seconds. If the approved voice is too long, remove lo
 
 ## Automation rule
 
-Every science-Reel automation must read this contract and `content-lab/SHANNON-CONTENT-EDIT-MEMORY.md`. Conversion-focused Reels must also read `C:/Users/shann/.codex/skills/balance-persuasive-reels/SKILL.md`. New direct feedback from Shannon updates both the reusable contract and the relevant skill/automation before the edit is closed.
+Every science-Reel automation must read this contract, `content-lab/SHANNON-CONTENT-EDIT-MEMORY.md`, and `content-lab/SHANNON-SCRIPT-VOICE-REFERENCE.md`. Conversion-focused Reels must also read `C:/Users/shann/.codex/skills/balance-persuasive-reels/SKILL.md`. No first draft is ready for Shannon until it has passed the canonical voice comparison. New direct feedback from Shannon updates both the reusable contract and the relevant skill/automation before the edit is closed.

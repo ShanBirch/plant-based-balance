@@ -16,7 +16,7 @@ Last reconciled: 2026-07-29 from Instagram-owned media records, local publish re
 
 | Order | Status | Job | Campaign | Working hook | Format | Source or proof | CTA |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | NEXT | BELIEF | The Brain That Learns To Train | Hunger is not a simple fuel gauge. Your brain constructs it. | Science Reel | `content-lab/science-review-queue/hunger-is-constructed.md` | Save or reply with the cue that makes hunger louder |
+| 1 | NEXT | BELIEF | The Brain That Learns To Train | Sick and tired of feeling hungry and dealing with food cravings? | Coaching Reel | Exact canonical Shannon script plus private body-and-environment signal evidence trail | DM `BALANCE` |
 | 2 | NEXT | COACH | The Brain That Learns To Train | Build a meal that gives your brain better fullness evidence. | Carousel | Protein anchor, fibre-rich plants, useful carbs, texture and context | Save |
 | 3 | NEXT | PROOF | The Brain That Learns To Train | The consistent people are not less hungry or more motivated. They adjust sooner. | Anonymous proof | Safe meal/check-in evidence from Balance | DM BALANCE |
 | 4 | NEXT | BELIEF | The Brain That Learns To Train | Dopamine is not just pleasure. It teaches the brain what is worth repeating. | Science Reel | Primary human neuroscience source to be selected | Follow |
