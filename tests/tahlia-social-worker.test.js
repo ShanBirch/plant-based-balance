@@ -350,6 +350,7 @@ assert.ok(workerSource.includes("feed_posts: { disabled: true, reason: 'comments
 assert.ok(workerSource.includes("error?.sqlstate === '23505'"));
 assert.match(commentsOnlyMigration, /DELETE FROM public\.stories[\s\S]*WHERE user_id = v_tahlia_id/);
 assert.match(commentsOnlyMigration, /CREATE UNIQUE INDEX IF NOT EXISTS uq_feed_comments_tahlia_one_per_story/);
+assert.match(commentsOnlyMigration, /cardinality\(regexp_split_to_array[\s\S]*THEN 'love this'[\s\S]*THEN 'amazing work'[\s\S]*ELSE 'good job'/);
 assert.match(commentsOnlyMigration, /status = 'dismissed'/);
 
 assert.ok(adminSource.includes('function isTahliaSocialApprovalAlert'));
