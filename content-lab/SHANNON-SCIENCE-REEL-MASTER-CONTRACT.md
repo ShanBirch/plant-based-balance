@@ -122,6 +122,7 @@ Default runtime is 45–90 seconds. If the approved voice is too long, remove lo
 - Music is standard unless Shannon says otherwise. Keep the voice dominant and make the music perceptible on a phone.
 - Measure the narration around every scene boundary in both the source voice and final MP4. Level uneven takes before mixing, keep dialogue consistently dominant over music, and reject a cut when the perceived voice level drops with the visual transition.
 - Treat an opening viewer question as a performed question: complete interrogative wording, more energy than the explanation, and a clear rising contour. For subjective hook delivery, approve a short hook take before generating paid lip-sync.
+- Create an emotional performance map for the complete narration: hook energy, engaged teaching, conviction or relief where blame is removed, brisk action cadence, personality in real-life proof, and a warm confident CTA. For longer takes, generate coherent sections with surrounding text for continuity, assemble and level them, then approve the full voice before HeyGen. A technically clean but monotone take fails QA.
 - Use restrained SFX for hooks, real source reveals, graph/highlight beats, layout swaps, and CTA hits.
 - Produce a deliberate 1080×1920 cover after the low-resolution edit is approved. Keep it legible in the central square grid crop and use the real Balance logo.
 
