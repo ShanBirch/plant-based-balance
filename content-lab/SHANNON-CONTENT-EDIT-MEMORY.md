@@ -22,6 +22,12 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - For food and coaching education, prefer relevant real photography, recognisable food imagery or concise typography over abstract stand-ins.
 - If a visual makes the idea stranger or less clear, remove it.
 
+### Keep sensory-input coaching examples broad
+
+- When a post is teaching that behaviour changes with sensory or environmental inputs, don't prematurely reduce the explanation to food intake, hunger or a nutrition fix.
+- Prefer a simple context change the viewer can picture, such as changing rooms at the specific time the pattern normally occurs.
+- The example should reinforce the reusable mechanism: change one relevant input and observe whether the output changes.
+
 ### Balance carousel logo shimmer
 
 - Balance carousel posts default to five-second MP4 slides rather than still-only delivery, including photo-first coaching carousels, unless Shannon explicitly requests still images.
@@ -94,3 +100,4 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 | 2026-07-29 | Only the part about going to my mate's house has background noise; redo that one. | Inspect every TTS segment separately for noise and artifacts. Regenerate only the affected beat with previous/next context, then rebuild and re-audit the complete voice instead of discarding approved sections. | Reel voiceovers, segmented ElevenLabs generation, audio QA |
 | 2026-07-29 | “Nothing” doesn't make sense; say there are no cravings at my mate's place and that I spend a large chunk of the night lecturing them about how bad McDonald's is. | Make personal contrasts explicit, then use a truthful, specific and cheeky Shannon detail before the clipped takeaway. Do not rely on a vague one-word punchline when the audience needs the causal contrast explained. | Reel scripts, personal proof, voiceovers, captions, canonical cravings reference |
 | 2026-07-29 | Before “same body,” say: “So yeah, it's strange to totally comprehend, but...” | When a personal contrast is surprising, add a brief Shannon-style acknowledgment that it is strange to comprehend before compressing it into the mechanism takeaway. | Reel scripts, personal proof, transitions, voiceovers, canonical cravings reference |
+| 2026-07-30 | Replace “sometimes you've simply not eaten enough” with something more abstract, such as changing the room you're in at that specific time of day. | In sensory-input teaching, lead with a concrete environmental or context adjustment rather than narrowing the mechanism to food intake unless nutrition is specifically the point. | Coaching carousels, cravings content, sensory-feedback scripts and automation prompts |
