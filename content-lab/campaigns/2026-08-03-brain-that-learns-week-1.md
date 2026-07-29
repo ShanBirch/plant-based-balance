@@ -2,7 +2,7 @@
 
 Campaign dates: 2026-08-03 to 2026-08-09, Australia/Brisbane.
 
-Status: Batch 1 visual revision ready; raw Shannon-voice science-Reel script awaiting approval; remaining six scheduled as production briefs.
+Status: Batch 1 approved and produced; Batch 2 copy and static visual direction ready for review; Batch 3 remains in production-brief status.
 
 Commercial belief:
 
@@ -14,12 +14,12 @@ Cadence: nine feed posts across seven days, supported by daily Stories. Feed pub
 
 | Date and time | Job | Format | Hook | CTA | Production status |
 | --- | --- | --- | --- | --- | --- |
-| Mon 3 Aug, 8:15am | BELIEF | Science Reel | Hunger isn't a simple fuel gauge. Your brain helps construct it. | Comment `HUNGER` | Raw Shannon-voice script awaiting approval |
-| Mon 3 Aug, 6:15pm | COACH | 8-slide real-photo video carousel | Build a meal that gives your brain better fullness evidence. | Save | Real-Shannon shimmer revision ready for review |
-| Tue 4 Aug, 6:15pm | PROOF | Photo-backed proof post | Structure beats white-knuckling hunger. | Soft coaching invitation | Source and copy locked |
-| Wed 5 Aug, 8:15am | BELIEF | Science Reel | Dopamine isn't just pleasure. It helps teach the brain what is worth repeating. | Follow | Primary source selection required |
-| Wed 5 Aug, 6:15pm | COACH | Carousel | Reward the start, not only the finish. | Save | Brief ready |
-| Thu 6 Aug, 6:15pm | PROOF | Live proof Reel or post | One logged start is a vote for the person you're becoming. | Reply | Fresh proof selected on the day |
+| Mon 3 Aug, 8:15am | BELIEF | Science Reel | Hunger isn't a simple fuel gauge. Your brain helps construct it. | Comment `HUNGER` | Approved final Reel v4 produced; final creative approval required before publishing |
+| Mon 3 Aug, 6:15pm | COACH | 8-slide real-photo video carousel | Build a meal that gives your brain better fullness evidence. | Save | Playable shimmer slides produced; final creative approval required |
+| Tue 4 Aug, 6:15pm | PROOF | Photo-backed proof post | Structure beats white-knuckling hunger. | Soft coaching invitation | Produced; final creative approval required |
+| Wed 5 Aug, 8:15am | BELIEF | Science Reel | Dopamine isn't just pleasure. It helps teach the brain what is worth repeating. | Follow | Batch 2 script and cover ready for approval |
+| Wed 5 Aug, 6:15pm | COACH | Carousel | Reward the start, not only the finish. | Save | Batch 2 copy and real-photo review slides ready |
+| Thu 6 Aug, 6:15pm | PROOF | Balance app proof post | Shannon's 3,814 kg session began with set one. | Story reply | Batch 2 copy and metric-accurate review mockup ready; original app capture required |
 | Fri 7 Aug, 8:15am | BELIEF | Science Reel | Motivation often arrives after you start. | Try five minutes | Primary source selection required |
 | Sat 8 Aug, 9:00am | COACH | Exercise Reel | Make the first rep obvious. | Save | Select from the 219-clip confirmed Shannon archive |
 | Sun 9 Aug, 6:00pm | PROOF | Comeback proof Reel | The win was getting back in before Monday. | DM `BALANCE` | Fresh proof selected on the day |
@@ -52,7 +52,7 @@ Sales arc:
 - Rationalize: the brain combines real body signals with context, expectation and learning.
 - Project: respond with useful food structure rather than shame.
 
-Revised spoken script awaiting approval:
+Approved spoken script used for final Reel v4:
 
 > Okay, so... your stomach isn't a little fuel gauge going, yep, empty now.
 >
@@ -187,6 +187,145 @@ Frame 4, feed Reel CTA:
 `Comment HUNGER and I'll send you the paper.`
 
 The separate 3:00pm Daily Proof Story remains live-feed-driven and is not replaced by this stack.
+
+## Batch 2: Reward The Start
+
+Review package: `.codex-artifacts/campaign-production/2026-08-03/batch-2/index.html`
+
+No paid voice or HeyGen work begins until Shannon approves the dopamine script. Approval of this batch authorises production, not publishing.
+
+### Post 4: BELIEF Science Reel
+
+Title: `Dopamine Isn't Your Pleasure Button`
+
+FATE:
+
+- Focus: dopamine is involved in learning from better-or-worse-than-expected outcomes, not merely feeling pleasure.
+- Authority: Pessiglione and colleagues' 2006 placebo-controlled human pharmacology and fMRI experiment.
+- Tribe: people who keep waiting to feel motivated before training.
+- Emotion: relief, curiosity and a small action they can use today.
+
+Spoken script awaiting approval:
+
+> Okay, so... dopamine isn't your little pleasure button.
+>
+> It's closer to your brain going, ah... shit, that went better than expected. Remember that.
+>
+> In this human study, Pessiglione and colleagues had people learn which symbols were more likely to win money.
+>
+> Um... one group got L-DOPA, which boosts dopamine signalling. Another got a dopamine-blocking drug. Another got placebo.
+>
+> The dopamine change shifted both the reward-prediction signal in the striatum and how often people learned to pick the more rewarding option.
+>
+> Now, don't turn that into "dopamine equals pleasure" or some fucking dopamine hack. It was a small lab gambling task with drugs. It wasn't a workout habit trial.
+>
+> But the useful bit is this: your brain updates future choices from what happens after an action.
+>
+> So if the only thing you count is a PB, a transformation, or finishing the perfect week... starting gets fuck-all useful feedback.
+>
+> Make the first action obvious. Open the workout. Log the first set. Tick off the walk. Let the start create evidence straight away.
+>
+> You don't need a gold star and a party every time, ah... you just need the start to register.
+>
+> Follow, because next I'll show you how to reward the start without turning your life into a toddler sticker chart.
+
+Runtime target: 78 to 90 seconds with natural pauses.
+
+Claim boundary: this supports dopamine-dependent prediction error in human reward learning. It does not show that dopamine equals pleasure, that a particular reward builds a workout habit or that people should manipulate dopamine pharmacologically.
+
+Visual direction:
+
+1. Shannon full-frame for the pleasure-button correction.
+2. Real paper title and authors within the first 12 seconds.
+3. Three-column study graphic: `L-DOPA`, `BLOCKER`, `PLACEBO`.
+4. Symbol-choice animation showing expected versus better-than-expected outcome.
+5. Full-frame caveat on Shannon.
+6. Balance app workout opening, first set logged and walk ticked.
+7. Finish on Shannon and the exact follow CTA.
+
+Caption:
+
+> Dopamine isn't a tiny happiness tap in your brain.
+>
+> In a placebo-controlled human learning experiment, changing dopamine signalling changed both a reward-prediction signal in the striatum and how often people learned to choose the more rewarding option.
+>
+> That doesn't prove a workout habit hack. It was a small lab gambling task using drug manipulation. But it does give us a useful coaching principle: what happens after an action helps teach the brain what is worth choosing again.
+>
+> If you only count the finish, the start gets no useful evidence. Open the workout. Log set one. Tick off the walk.
+>
+> Follow for the next part: how to reward the start without turning it into a toddler sticker chart.
+
+Source:
+
+- Pessiglione M, Seymour B, Flandin G, Dolan RJ, Frith CD. *Dopamine-dependent prediction errors underpin reward-seeking behaviour in humans*. Nature. 2006;442:1042-1045. DOI `10.1038/nature05051`.
+
+### Post 5: COACH Video Carousel
+
+Title: `Reward the start`
+
+Slides:
+
+1. `YOU KEEP REWARDING THE FINISH.` Supporting line: `The start is the bit you need to make easier.`
+2. `MAKE THE FIRST ACTION OBVIOUS.` Supporting line: `Shoes on. Workout open. Food out. Door unlocked.`
+3. `SHRINK IT UNTIL YOU CAN START.` Supporting line: `Five minutes still counts as evidence.`
+4. `MARK IT STRAIGHT AWAY.` Supporting line: `Log set one. Tick the walk. Record the meal.`
+5. `DON'T WAIT FOR A PB.` Supporting line: `A normal session is still a vote for consistency.`
+6. `KEEP THE REWARD SMALL.` Supporting line: `Recognition and a clear next step beat a massive bribe.`
+7. `LET THE APP HOLD THE RECEIPT.` Supporting line: `Your starts become visible evidence, not a vague memory.`
+8. `REWARD THE START.` Supporting line: `Let the repetitions build the identity. Save this.`
+
+Use eight distinct real Shannon photos. The photo stays above the dedicated copy panel so no text covers Shannon's face or head. Final slides are playable five-second MP4s using the approved Balance watermark shimmer; static JPGs are review posters only.
+
+Caption:
+
+> You keep waiting to reward the finish: the PB, the perfect week, the transformation.
+>
+> But if starting is the bit you keep avoiding, make that action easier to see and count.
+>
+> Open the workout. Log set one. Tick off the walk. Put the meal in front of you. A normal start is still evidence that you're becoming someone who comes back.
+>
+> This isn't about bribing yourself with some massive reward. It's about making the useful action obvious enough to repeat.
+>
+> Save this for the day you don't feel like starting.
+
+### Post 6: PROOF Post
+
+Source: Shannon's own recent Balance back-session log: 37:54, 13 sets and 3,814 kg. Use the original app capture in the final creative. The static review poster reconstructs the observed metrics and is not a substitute for that capture.
+
+Cover line: `3,814 KG DIDN'T START AT 3,814 KG.`
+
+Coach line: `It started when I opened the workout and logged set one.`
+
+Caption:
+
+> This back session ended at 37 minutes, 13 sets and 3,814 kilos of volume.
+>
+> But none of that existed when I started. There was just the first exercise and set one.
+>
+> That's the bit I want clients to see. You don't need to feel like the finished version of yourself before you begin. You need a first action that's clear enough to do, then useful feedback while you keep going.
+>
+> Balance holds the evidence so a normal session doesn't disappear from memory the second life gets messy.
+>
+> What's your set one today? Reply on the Story share and tell me. I'll help you make it smaller if it still feels too big.
+
+CTA path: share the post to Stories with the native question sticker `WHAT'S YOUR SET ONE TODAY?`; Shannon replies personally to useful answers.
+
+### Batch 2 Story Bridges
+
+Wednesday 10:30am:
+
+1. Poll: `What do you wait for before you train?` Answers: `MOTIVATION` / `A START TIME`.
+2. Reframe: `Dopamine isn't just pleasure. It helps update what your brain chooses again.`
+3. Practical: `Open the workout. Log set one. Give the start some evidence.`
+4. Feed bridge: `The human dopamine study is in today's Reel. The caveat matters.`
+
+Thursday 6:30pm, attached to the proof share:
+
+1. Proof: `37:54. 13 sets. 3,814 kg.`
+2. Coach line: `None of it existed before set one.`
+3. Question sticker: `WHAT'S YOUR SET ONE TODAY?`
+
+The existing 5:00am challenge Story and 3:00pm Daily Proof Story remain unchanged.
 
 ## Shannon's Weekly Responsibilities
 
