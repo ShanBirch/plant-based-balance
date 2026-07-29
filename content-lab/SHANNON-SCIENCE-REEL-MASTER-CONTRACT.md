@@ -120,6 +120,8 @@ Default runtime is 45–90 seconds. If the approved voice is too long, remove lo
 - Use full spoken captions timed to the actual voice. Default to bold white text with stroke/shadow and no black caption box.
 - Never cover Shannon's mouth or important source text with captions.
 - Music is standard unless Shannon says otherwise. Keep the voice dominant and make the music perceptible on a phone.
+- Measure the narration around every scene boundary in both the source voice and final MP4. Level uneven takes before mixing, keep dialogue consistently dominant over music, and reject a cut when the perceived voice level drops with the visual transition.
+- Treat an opening viewer question as a performed question: complete interrogative wording, more energy than the explanation, and a clear rising contour. For subjective hook delivery, approve a short hook take before generating paid lip-sync.
 - Use restrained SFX for hooks, real source reveals, graph/highlight beats, layout swaps, and CTA hits.
 - Produce a deliberate 1080×1920 cover after the low-resolution edit is approved. Keep it legible in the central square grid crop and use the real Balance logo.
 
