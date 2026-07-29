@@ -105,8 +105,8 @@ Default runtime is 45–90 seconds. If the approved voice is too long, remove lo
 ## Voice, lip-sync, and paid-production order
 
 1. Approve the full script.
-2. Generate ElevenLabs using Shannon's approved voice and decode the file completely to verify the ending and CTA.
-3. Confirm voice quality and real duration. Regenerate a muffled or unstable take before lip-sync.
+2. Generate ElevenLabs using Shannon's approved voice. Use an ASCII-safe voice script or explicit UTF-8 decoding; never let Windows PowerShell infer the encoding of a BOM-less UTF-8 script.
+3. Decode and transcribe the complete file before lip-sync. Confirm the ending, CTA, contractions, and real duration; reject mojibake, invented `TM`/`TMs`/`TMM` sounds, dropped words, or unstable delivery.
 4. Rebuild timings after any voice change.
 5. Use HeyGen `precision` lip-sync with an approved reusable Shannon source clip and the approved audio. HeyGen creates only the presenter layer; follow `C:/Users/shann/.codex/skills/balance-persuasive-reels/references/heygen-precision-lipsync.md` for the complete operational workflow.
 6. Use normal HeyGen avatar/video generation only when precision lip-sync cannot produce a usable result, no suitable source exists, quality fails, or Shannon explicitly asks for a fresh generation. Never route an ordinary reusable-presenter Reel through Video Agent or complete-video generation.
