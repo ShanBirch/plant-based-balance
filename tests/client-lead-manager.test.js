@@ -52,6 +52,23 @@ const nativeOpenerReviewContext = manager.buildDraftReviewContextBlocks(makeAler
 assert.match(nativeOpenerReviewContext, /Native story\/post opener context/);
 assert.match(nativeOpenerReviewContext, /NATIVE STORY\/POST OPENER CONTEXT/);
 
+const staleNativeOpenerReviewContext = manager.buildDraftReviewContextBlocks(makeAlert({
+    created_at: '2026-07-29T08:40:00.000Z',
+    data: {
+        source_inbound_created_at: '2026-07-29T08:39:00.000Z',
+        draft_evidence: {
+            current_message: 'Thank you 😊',
+            recent_timeline: 'Shannon: these two are so cute haha\nLead: Thank you 😊',
+            native_story_context: 'NATIVE STORY/POST OPENER CONTEXT:\nCaptured at: 2026-06-15T02:00:00.000Z.\nStory context: A person doing push-ups on parallel bars.',
+        },
+    },
+}));
+assert.doesNotMatch(staleNativeOpenerReviewContext, /push-ups on parallel bars/);
+assert.strictEqual(manager.isNativeStoryContextCurrentForAlert(
+    'Captured at: 2026-07-29T08:35:00.000Z.',
+    makeAlert({ created_at: '2026-07-29T08:40:00.000Z' })
+), true);
+
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Shane' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ profile_name: 'Fra' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'francesca_balance' }), true);

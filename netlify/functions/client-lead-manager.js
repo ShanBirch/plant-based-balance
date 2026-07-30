@@ -837,7 +837,9 @@ function buildDraftReviewContextBlocks(alert = {}) {
     const priorText = formatReviewList(evidence.prior_unanswered || data.recent_inbound_messages, m => `- "${truncate(m.text || m.message || '', 220)}"`);
     const timelineText = evidence.recent_timeline || '';
     const storyContextText = evidence.story_context || '';
-    const nativeStoryContextText = evidence.native_story_context || '';
+    const nativeStoryContextText = isNativeStoryContextCurrentForAlert(evidence.native_story_context, alert)
+        ? evidence.native_story_context
+        : '';
     const activityText = evidence.recent_activity || '';
     const workoutText = evidence.recent_workouts || '';
     const memoryText = evidence.memory_context || '';
@@ -864,6 +866,19 @@ function buildDraftReviewContextBlocks(alert = {}) {
         checkinText ? `Active check-in thread:\n${truncate(checkinText, 1200)}` : '',
         crossChannelText ? `Cross-channel context:\n${truncate(crossChannelText, 1200)}` : '',
     ].filter(Boolean).join('\n\n');
+}
+
+function isNativeStoryContextCurrentForAlert(value, alert = {}) {
+    const text = String(value || '').trim();
+    if (!text) return false;
+    const capturedMatch = text.match(/Captured at:\s*([^\n]+)/i);
+    if (!capturedMatch) return true;
+    const capturedValue = capturedMatch[1].trim().replace(/\.$/, '');
+    const storyAt = Date.parse(capturedValue);
+    const evidenceAt = Date.parse(latestAlertEvidenceAt(alert) || '');
+    if (!Number.isFinite(storyAt) || !Number.isFinite(evidenceAt)) return false;
+    return storyAt <= evidenceAt + (5 * 60 * 1000)
+        && evidenceAt - storyAt <= (7 * 24 * 60 * 60 * 1000);
 }
 
 function shouldRunDraftReview(alert = {}) {
@@ -1458,6 +1473,7 @@ exports._test = {
     leadHasCredibleCurrentDanger,
     latestInboundIsMediaOnly,
     buildDraftReviewContextBlocks,
+    isNativeStoryContextCurrentForAlert,
     shouldRunDraftReview,
     resolveAiDraftReviewLimit,
     resolveCleanLeadCloudFallbackLimit,

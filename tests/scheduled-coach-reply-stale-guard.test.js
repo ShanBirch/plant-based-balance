@@ -38,10 +38,12 @@ async function run() {
     global.fetch = async (url) => {
         assert.match(String(url), /thread_id=eq\.thread-andy/);
         assert.match(String(url), /created_at=gt\.2026-07-13T02%3A25%3A29\.604Z/);
+        assert.doesNotMatch(String(url), /direction=eq\.in/);
         return {
             ok: true,
             text: async () => JSON.stringify([{
                 id: 'newer-inbound',
+                direction: 'in',
                 text: 'How is the goldie?',
                 created_at: '2026-07-13T02:25:31.799Z',
                 alert_id: 'goldie-alert',
@@ -51,6 +53,22 @@ async function run() {
     const newer = await worker.getNewerInstagramInbound(alert);
     assert.strictEqual(newer.id, 'newer-inbound');
 
+    global.fetch = async () => ({
+        ok: true,
+        text: async () => JSON.stringify([{
+            id: 'newer-outbound',
+            direction: 'out',
+            text: 'Already replied manually',
+            created_at: '2026-07-13T02:26:00.000Z',
+        }]),
+    });
+    assert.strictEqual(
+        (await worker.getNewerInstagramConversationMessage(alert)).id,
+        'newer-outbound',
+        'a newer outbound must also invalidate the scheduled reply'
+    );
+    assert.strictEqual(await worker.getNewerInstagramInbound(alert), null);
+
     const messengerAlert = {
         ...alert,
         data: { channel: 'messenger', ig_thread_id: 'thread-messenger' },
@@ -59,7 +77,7 @@ async function run() {
         assert.match(String(url), /thread_id=eq\.thread-messenger/);
         return {
             ok: true,
-            text: async () => JSON.stringify([{ id: 'newer-messenger-inbound' }]),
+            text: async () => JSON.stringify([{ id: 'newer-messenger-inbound', direction: 'in' }]),
         };
     };
     assert.strictEqual((await worker.getNewerInstagramInbound(messengerAlert)).id, 'newer-messenger-inbound');

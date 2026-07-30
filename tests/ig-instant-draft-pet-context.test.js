@@ -76,6 +76,20 @@ const nativeContext = buildNativeStoryOutreachContextBlock({
 assert.ok(nativeContext.block.includes('black and white cat'));
 assert.strictEqual(nativeContext.summary.story_description.includes('cat'), true);
 
+const staleNativeContext = buildNativeStoryOutreachContextBlock({
+    ig_username: 'strongwithgizem',
+    last_inbound_at: '2026-07-29T08:39:00.000Z',
+    custom_data: {
+        last_story_outreach: {
+            story_description: 'A person doing push-ups on parallel bars.',
+            sent_comment: 'these two are so cute haha',
+            captured_at: '2026-06-15T02:00:00.000Z',
+        },
+    },
+}, 'Gizem');
+assert.strictEqual(staleNativeContext.block, '');
+assert.strictEqual(staleNativeContext.summary.context_stale, true);
+
 const salesNativeContext = buildNativeStoryOutreachContextBlock({
     ig_username: 'story_lead',
     linked_user_id: null,

@@ -216,7 +216,22 @@ function resolveLatestInboundTextForSend({ alertData = {}, alert = {} } = {}) {
     ]);
 }
 
-function validateSendTimeOutboundSafety({ messagesToSend = [], latestInboundText = '' } = {}) {
+function isSafeGratitudeAcknowledgement(value) {
+    const words = String(value || '')
+        .toLowerCase()
+        .replace(/[\u2018\u2019']/g, '')
+        .match(/[a-z]+/g) || [];
+    if (!words.length) return true;
+    const allowed = new Set([
+        'all', 'always', 'anytime', 'course', 'glad', 'good', 'haha', 'happy',
+        'helped', 'it', 'legend', 'love', 'mate', 'my', 'no', 'not', 'of',
+        'pleasure', 'problem', 'that', 'thanks', 'thank', 'very', 'welcome',
+        'worries', 'you', 'youre',
+    ]);
+    return words.every(word => allowed.has(word));
+}
+
+function validateSendTimeOutboundSafety({ messagesToSend = [], latestInboundText = '', automated = false } = {}) {
     const combined = (Array.isArray(messagesToSend) ? messagesToSend : [messagesToSend])
         .map(value => normalizeGeneratedCoachDraftText(value || '').trim())
         .filter(Boolean)
@@ -234,6 +249,13 @@ function validateSendTimeOutboundSafety({ messagesToSend = [], latestInboundText
             ok: false,
             code: 'gratitude_closer_fresh_question',
             reason: 'Latest inbound is a gratitude or clean closer, but the reply adds a fresh question.',
+        };
+    }
+    if (automated && isGratitudeCloserText(latestInboundText) && !isSafeGratitudeAcknowledgement(combined)) {
+        return {
+            ok: false,
+            code: 'gratitude_closer_unsupported_detail',
+            reason: 'Latest inbound is a gratitude or clean closer, but the automated reply introduces unsupported detail.',
         };
     }
     return { ok: true };
@@ -1487,6 +1509,56 @@ async function loadThreadLastInboundAt(threadId) {
     }
 }
 
+function resolveAutomatedConversationAnchorAt(alert = {}) {
+    const data = alert.data || {};
+    const inboundCandidates = [
+        data.source_inbound_created_at,
+        data.last_inbound_at,
+        data.ig_last_inbound_at,
+        ...(Array.isArray(data.inbound_message_batch)
+            ? data.inbound_message_batch.map(item => item?.created_at)
+            : []),
+    ];
+    const inboundTimestamps = inboundCandidates
+        .map(value => Date.parse(String(value || '')))
+        .filter(Number.isFinite);
+    if (inboundTimestamps.length) return new Date(Math.max(...inboundTimestamps)).toISOString();
+    const fallbackAt = Date.parse(String(alert.created_at || data.drafted_at || ''));
+    return Number.isFinite(fallbackAt) ? new Date(fallbackAt).toISOString() : '';
+}
+
+async function getAutomatedInstagramConversationDelta({ alert = {}, alertData = {}, source = '' } = {}) {
+    if (!isAutomatedPermanentNeedsYouSendSource(source, alertData)) return null;
+    const threadId = String(alertData.ig_thread_id || '').trim();
+    const anchorAt = resolveAutomatedConversationAnchorAt({ ...alert, data: alertData });
+    if (!threadId || !anchorAt) return null;
+    const rows = await supabase(
+        `ig_messages?select=id,direction,text,created_at,alert_id&thread_id=eq.${encodeURIComponent(threadId)}&created_at=gt.${encodeURIComponent(anchorAt)}&order=created_at.desc&limit=1`
+    );
+    return rows?.[0] || null;
+}
+
+async function cancelAutomatedConversationDeltaSend({ alertId, alertData = {}, delta = {} } = {}) {
+    const canceledAt = new Date().toISOString();
+    const data = {
+        ...alertData,
+        cancel_reason: 'automated_send_conversation_changed',
+        automated_send_conversation_changed_at: canceledAt,
+        automated_send_newer_message_id: delta.id || null,
+        automated_send_newer_message_direction: delta.direction || null,
+        automated_send_newer_message_at: delta.created_at || null,
+        automated_send_newer_message_alert_id: delta.alert_id || null,
+        last_send_error: 'Conversation changed after this draft was created, so the automated send was canceled.',
+        last_send_error_code: 'automated_send_conversation_changed',
+        last_send_error_at: canceledAt,
+    };
+    await supabase(`coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending`, {
+        method: 'PATCH',
+        body: { status: 'canceled', actioned_at: canceledAt, data },
+        prefer: 'return=minimal',
+    });
+}
+
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
@@ -1532,7 +1604,7 @@ exports.handler = async (event) => {
     let rows;
     try {
         rows = await supabase(
-            `coach_alerts?select=id,status,data,client_id,client_name,coach_id,alert_type&id=eq.${alertId}&limit=1`
+            `coach_alerts?select=id,status,created_at,data,client_id,client_name,coach_id,alert_type&id=eq.${alertId}&limit=1`
         );
     } catch (e) {
         console.error('[send-ig-reply] alert lookup failed:', e.message);
@@ -1999,6 +2071,7 @@ exports.handler = async (event) => {
     const sendTimeSafety = validateSendTimeOutboundSafety({
         messagesToSend,
         latestInboundText: resolveLatestInboundTextForSend({ alertData, alert }),
+        automated: isAutomatedPermanentNeedsYouSendSource(source, alertData),
     });
     if (!sendTimeSafety.ok) {
         await stampSendTimeSafetyBlock({
@@ -2041,6 +2114,30 @@ exports.handler = async (event) => {
 
     let claimedAlert;
     let sendClaimId = '';
+    try {
+        const conversationDelta = await getAutomatedInstagramConversationDelta({ alert, alertData, source });
+        if (conversationDelta) {
+            await cancelAutomatedConversationDeltaSend({ alertId, alertData, delta: conversationDelta });
+            return {
+                statusCode: 409,
+                body: JSON.stringify({
+                    error: 'Conversation changed after this draft was created, so the automated send was canceled.',
+                    code: 'automated_send_conversation_changed',
+                    newer_message_id: conversationDelta.id || null,
+                    newer_message_direction: conversationDelta.direction || null,
+                }),
+            };
+        }
+    } catch (err) {
+        console.error('[send-ig-reply] final automated conversation-delta check failed:', err.message);
+        return {
+            statusCode: 503,
+            body: JSON.stringify({
+                error: 'Could not verify that the conversation is unchanged, so nothing was sent.',
+                code: 'automated_conversation_delta_check_failed',
+            }),
+        };
+    }
     try {
         claimedAlert = await claimPendingAlertForSend({ ...alert, data: alertData }, source);
     } catch (err) {
@@ -2499,7 +2596,10 @@ exports._test = {
     hasClientFacingAiSelfReference,
     isGratitudeCloserText,
     resolveLatestInboundTextForSend,
+    isSafeGratitudeAcknowledgement,
     validateSendTimeOutboundSafety,
+    resolveAutomatedConversationAnchorAt,
+    getAutomatedInstagramConversationDelta,
     joinSentChunkTexts,
     validateOutboundTextIntegrity,
 };

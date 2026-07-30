@@ -1,7 +1,11 @@
 const STANDALONE_QUESTION_MARK_REPLACEMENT_RE = /(?:^|[\s([{'"`.,;:!?])\?\?(?=$|[\s)\]}'"`.,;:!?])/;
+const EMBEDDED_APOSTROPHE_REPLACEMENT_RE = /\b(?:that|it|what|who|where|when|why|how|there|here|he|she|you|we|they|i|isn|aren|wasn|weren|don|doesn|didn|can|couldn|shouldn|wouldn|won|hasn|haven|hadn)\?[a-z]+\b/i;
+const LITERAL_POWERSHELL_NEWLINE_RE = /`[nr]/i;
+const IMPOSSIBLE_CONTRACTION_PERIOD_RE = /\b(?:thats|its|whats|heres|theres)\s+\.(?=\s|$)/i;
+const UNICODE_REPLACEMENT_RE = /\uFFFD/;
 
 const OUTBOUND_TEXT_ENCODING_CORRUPTION_CODE = 'outbound_text_encoding_corruption';
-const OUTBOUND_TEXT_ENCODING_CORRUPTION_MESSAGE = 'Reply text contains a standalone "??" token, which indicates Windows emoji encoding corruption. Re-submit using UTF-8-safe text; nothing was sent.';
+const OUTBOUND_TEXT_ENCODING_CORRUPTION_MESSAGE = 'Reply text contains a likely encoding or shell-transport artifact. Re-submit using UTF-8 Base64 text; nothing was sent.';
 
 function createTransportTextError(code, message) {
     const error = new Error(message);
@@ -41,14 +45,22 @@ function resolveUtf8TransportText({ text, textUtf8Base64, fieldName = 'text' } =
 
 function validateOutboundTextIntegrity(value) {
     const text = String(value || '');
-    const match = text.match(STANDALONE_QUESTION_MARK_REPLACEMENT_RE);
-    if (!match) return { ok: true };
+    const checks = [
+        { re: STANDALONE_QUESTION_MARK_REPLACEMENT_RE, token: '??' },
+        { re: EMBEDDED_APOSTROPHE_REPLACEMENT_RE, token: 'embedded_question_mark' },
+        { re: LITERAL_POWERSHELL_NEWLINE_RE, token: 'literal_powershell_newline' },
+        { re: IMPOSSIBLE_CONTRACTION_PERIOD_RE, token: 'malformed_contraction_period' },
+        { re: UNICODE_REPLACEMENT_RE, token: 'unicode_replacement_character' },
+    ];
+    const failed = checks.find(check => check.re.test(text));
+    if (!failed) return { ok: true };
+    const match = text.match(failed.re);
     return {
         ok: false,
         code: OUTBOUND_TEXT_ENCODING_CORRUPTION_CODE,
         message: OUTBOUND_TEXT_ENCODING_CORRUPTION_MESSAGE,
-        token: '??',
-        index: match.index + match[0].indexOf('??'),
+        token: failed.token,
+        index: match?.index || 0,
     };
 }
 

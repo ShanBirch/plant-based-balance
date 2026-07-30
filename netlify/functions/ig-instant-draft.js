@@ -2575,6 +2575,20 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
         lead_origin: compactStoryMemoryText(latest.lead_origin || customData.lead_origin || leadAcquisition?.source || '', 120) || null,
         offer_path: primaryOffer || null,
     };
+    const storyAtMs = Date.parse(summary.sent_at || summary.captured_at || '');
+    const inboundAtMs = Date.parse(thread?.last_inbound_at || '');
+    if (Number.isFinite(storyAtMs)
+        && Number.isFinite(inboundAtMs)
+        && (inboundAtMs - storyAtMs > STORY_EPISODE_MAX_AGE_MS || storyAtMs > inboundAtMs + (5 * 60 * 1000))) {
+        return {
+            block: '',
+            summary: {
+                ...summary,
+                context_reliable: false,
+                context_stale: true,
+            },
+        };
+    }
     if (!description && !visibleText && !sentComment) return { block: '', summary };
 
     const lines = [

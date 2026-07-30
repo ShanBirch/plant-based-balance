@@ -6,7 +6,9 @@ const {
     hasClientFacingAiSelfReference,
     isGratitudeCloserText,
     resolveLatestInboundTextForSend,
+    isSafeGratitudeAcknowledgement,
     validateSendTimeOutboundSafety,
+    resolveAutomatedConversationAnchorAt,
     joinSentChunkTexts,
     validateOutboundTextIntegrity,
     shouldForceTextDelivery,
@@ -68,6 +70,27 @@ assert.strictEqual(validateSendTimeOutboundSafety({
     messagesToSend: ['No worries at all'],
     latestInboundText: 'Thanks!!!',
 }).ok, true);
+assert.strictEqual(isSafeGratitudeAcknowledgement('No worries! 😊'), true);
+assert.deepStrictEqual(
+    validateSendTimeOutboundSafety({
+        messagesToSend: ['No worries! Those push-up bar setups are so cute haha.'],
+        latestInboundText: 'Thank you 😊',
+        automated: true,
+    }).code,
+    'gratitude_closer_unsupported_detail'
+);
+assert.strictEqual(validateSendTimeOutboundSafety({
+    messagesToSend: ['No worries! 😊'],
+    latestInboundText: 'Thank you 😊',
+    automated: true,
+}).ok, true);
+assert.strictEqual(resolveAutomatedConversationAnchorAt({
+    created_at: '2026-07-29T08:40:00.000Z',
+    data: {
+        source_inbound_created_at: '2026-07-29T08:39:00.000Z',
+        inbound_message_batch: [{ created_at: '2026-07-29T08:39:30.000Z' }],
+    },
+}), '2026-07-29T08:39:30.000Z');
 
 assert.strictEqual(
     joinSentChunkTexts([

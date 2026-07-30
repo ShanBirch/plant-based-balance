@@ -91,22 +91,37 @@ async function claimAlert(alertId) {
  * human-like delay expires. Sending the saved text in that case answers an
  * older bubble and can also clear the newer alert as an outbound sibling.
  */
-async function getNewerInstagramInbound(alert = {}) {
+async function getNewerInstagramConversationMessage(alert = {}) {
     const data = alert.data || {};
     const threadId = String(data.ig_thread_id || '').trim();
-    const draftedAt = String(alert.created_at || data.drafted_at || '').trim();
+    const inboundCandidates = [
+        data.source_inbound_created_at,
+        data.last_inbound_at,
+        data.ig_last_inbound_at,
+        ...(Array.isArray(data.inbound_message_batch)
+            ? data.inbound_message_batch.map(item => item?.created_at)
+            : []),
+    ].map(value => Date.parse(String(value || ''))).filter(Number.isFinite);
+    const draftedAt = inboundCandidates.length
+        ? new Date(Math.max(...inboundCandidates)).toISOString()
+        : String(alert.created_at || data.drafted_at || '').trim();
     const isInstagram = data.channel === 'instagram'
         || data.delivery_channel === 'instagram_graph'
         || !!threadId;
     if (!isInstagram || !threadId || !draftedAt) return null;
 
     const rows = await supabase(
-        `ig_messages?select=id,text,created_at,alert_id&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.in&created_at=gt.${encodeURIComponent(draftedAt)}&order=created_at.desc&limit=1`
+        `ig_messages?select=id,direction,text,created_at,alert_id&thread_id=eq.${encodeURIComponent(threadId)}&created_at=gt.${encodeURIComponent(draftedAt)}&order=created_at.desc&limit=1`
     );
     return rows[0] || null;
 }
 
-async function cancelStaleScheduledInstagramReply(alert, newerInbound) {
+async function getNewerInstagramInbound(alert = {}) {
+    const message = await getNewerInstagramConversationMessage(alert);
+    return String(message?.direction || '').toLowerCase() === 'in' ? message : null;
+}
+
+async function cancelStaleScheduledInstagramReply(alert, newerMessage) {
     const canceledAt = new Date().toISOString();
     const data = alert.data || {};
     await supabase(`coach_alerts?id=eq.${alert.id}&status=eq.pending`, {
@@ -116,11 +131,12 @@ async function cancelStaleScheduledInstagramReply(alert, newerInbound) {
             actioned_at: canceledAt,
             data: {
                 ...data,
-                cancel_reason: 'stale_scheduled_reply_newer_inbound',
+                cancel_reason: 'stale_scheduled_reply_conversation_changed',
                 stale_scheduled_reply_canceled_at: canceledAt,
-                stale_scheduled_reply_newer_inbound_id: newerInbound.id,
-                stale_scheduled_reply_newer_inbound_at: newerInbound.created_at,
-                stale_scheduled_reply_newer_inbound_alert_id: newerInbound.alert_id || null,
+                stale_scheduled_reply_newer_message_id: newerMessage.id,
+                stale_scheduled_reply_newer_message_direction: newerMessage.direction || null,
+                stale_scheduled_reply_newer_message_at: newerMessage.created_at,
+                stale_scheduled_reply_newer_message_alert_id: newerMessage.alert_id || null,
             },
         },
         prefer: 'return=minimal',
@@ -425,11 +441,11 @@ async function sendAutoSendHoldNotification(alert, autoHold) {
  */
 async function fireAlert(alert) {
     try {
-        const newerInbound = await getNewerInstagramInbound(alert);
-        if (newerInbound) {
-            await cancelStaleScheduledInstagramReply(alert, newerInbound);
-            console.info(`[scheduled-worker] canceled stale scheduled IG reply ${alert.id}; newer inbound ${newerInbound.id} arrived before send`);
-            return { ok: false, error: 'stale_scheduled_reply_newer_inbound' };
+        const newerMessage = await getNewerInstagramConversationMessage(alert);
+        if (newerMessage) {
+            await cancelStaleScheduledInstagramReply(alert, newerMessage);
+            console.info(`[scheduled-worker] canceled stale scheduled IG reply ${alert.id}; newer ${newerMessage.direction || 'conversation'} message ${newerMessage.id} arrived before send`);
+            return { ok: false, error: 'stale_scheduled_reply_conversation_changed' };
         }
     } catch (e) {
         // Do not send when the final conversation-delta check cannot be read.
@@ -539,8 +555,8 @@ async function fireAlert(alert) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             alertId: alert.id,
-            replyText,
-            draftText,
+            replyTextUtf8Base64: Buffer.from(replyText, 'utf8').toString('base64'),
+            draftTextUtf8Base64: Buffer.from(draftText, 'utf8').toString('base64'),
             source: 'scheduled_worker',
         }),
     });
@@ -625,5 +641,6 @@ exports._test = {
     hasBalanceSafeOpenerContextBypass,
     hasAutoContextBypass,
     repairMissingScheduledLinkHandoff,
+    getNewerInstagramConversationMessage,
     getNewerInstagramInbound,
 };

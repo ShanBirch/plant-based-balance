@@ -47,13 +47,13 @@ function hasPersonalCallRequest(value) {
 function hasFlirtationSignal(value) {
     const text = cleanText(value);
     if (!text) return false;
-    return /\b(?:flirt(?:ing|y)?|thought you were cute|think (?:i'm|im|i am|you(?:'re| are)) cute|you(?:'re| are) (?:cute|gorgeous|hot|sexy|handsome)|i(?:'m| am) (?:cute|pretty|gorgeous|hot|sexy)|cute awkward|awkward cute|ador(?:e|ing) you|date me|go on a date|kiss(?:ing)? you|attracted to you|seeing you at the beach|send me (?:some )?(?:beach )?photos?|see (?:your|the) cute .*face)\b/i.test(text);
+    return /\b(?:flirt(?:ing|y)?|thought you were cute|think (?:i'm|im|i am|you(?:'re| are)) cute|you(?:'re| are) (?:cute|gorgeous|hot|sexy|handsome)|i(?:'m| am) (?:cute|pretty|gorgeous|hot|sexy)|sexy(?:\s+x+)?|cute awkward|awkward cute|ador(?:e|ing) you|date me|go on a date|kiss(?:ing)? you|attracted to you|seeing you at the beach|send me (?:some )?(?:beach )?photos?|see (?:your|the) cute .*face)\b/i.test(text);
 }
 
 function hasSexualPersonalEscalation(value) {
     const text = cleanText(value);
     if (!text) return false;
-    return /\b(?:horny|turned on|sext(?:ing)?|send (?:me )?nudes?|naked (?:pic|photo)|sexual(?:ly)?|hook up|sleep with you|come over|come to bed)\b/i.test(text);
+    return /\b(?:horny|turned on|sext(?:ing)?|send (?:me )?nudes?|naked (?:pic|photo)|sexual(?:ly)?|are you hung|how hung are you|hook up|sleep with you|come over|come to bed)\b/i.test(text);
 }
 
 function hasAutomatedPersonalReciprocation(value) {
@@ -63,7 +63,6 @@ function hasAutomatedPersonalReciprocation(value) {
 }
 
 function classifyPersonalDmBoundary({ inboundText = '', outboundText = '', linkedUserId = null } = {}) {
-    if (linkedUserId) return { requires_manual: false, reason: null };
     const inbound = cleanText(inboundText);
     const outbound = cleanText(outboundText);
     const businessCall = hasBusinessCallRequest(inbound);
@@ -79,7 +78,7 @@ function classifyPersonalDmBoundary({ inboundText = '', outboundText = '', linke
             label: 'Personal or social call request is not a Balance sales call',
         };
     }
-    if (sexualEscalation && !businessCall) {
+    if (sexualEscalation) {
         return {
             requires_manual: true,
             reason: 'sexual_or_personal_escalation_manual_only',

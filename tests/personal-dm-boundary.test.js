@@ -56,6 +56,24 @@ test('stops automated replies when a lead sexually escalates before attempting a
     assert.equal(result.reason, 'sexual_or_personal_escalation_manual_only');
 });
 
+test('routes terse flirtation to Shannon, including for linked clients', () => {
+    const result = boundary.classifyPersonalDmBoundary({
+        inboundText: 'Sexy X',
+        outboundText: 'Say less',
+        linkedUserId: 'client-harold',
+    });
+    assert.equal(result.requires_manual, true);
+    assert.equal(result.reason, 'flirtation_or_personal_relationship_manual_only');
+});
+
+test('routes explicit personal sexual questions to Shannon', () => {
+    const result = boundary.classifyPersonalDmBoundary({
+        inboundText: 'I saw the Balance workout. Are you hung?',
+    });
+    assert.equal(result.requires_manual, true);
+    assert.equal(result.reason, 'sexual_or_personal_escalation_manual_only');
+});
+
 test('does not confuse ordinary coaching language about libido with sexual escalation', () => {
     const result = boundary.classifyPersonalDmBoundary({
         inboundText: 'my libido has been low since changing my diet',

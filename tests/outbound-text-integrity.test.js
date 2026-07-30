@@ -17,7 +17,12 @@ assert.strictEqual(resolveUtf8TransportText({
 }), emojiText);
 assert.strictEqual(validateOutboundTextIntegrity(emojiText).ok, true);
 assert.strictEqual(validateOutboundTextIntegrity('Hahaha, same energy ?? What did you train?').ok, false);
+assert.strictEqual(validateOutboundTextIntegrity('I didn?t mean that').ok, false);
+assert.strictEqual(validateOutboundTextIntegrity('first line`nsecond line').ok, false);
+assert.strictEqual(validateOutboundTextIntegrity('thats .').ok, false);
+assert.strictEqual(validateOutboundTextIntegrity('bad replacement \uFFFD').ok, false);
 assert.strictEqual(validateOutboundTextIntegrity('wait what??').ok, true);
+assert.strictEqual(validateOutboundTextIntegrity('what? that is wild').ok, true);
 assert.throws(() => decodeUtf8Base64('not base64!'), /valid UTF-8 Base64/);
 
 console.log('outbound text-integrity tests passed');
