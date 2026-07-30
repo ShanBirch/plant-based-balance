@@ -67,12 +67,13 @@ The reusable element is the voice and construction, not the cravings topic. Futu
 2. Read this reference immediately before drafting, then match its cadence at sentence level.
 3. Use Shannon’s actual vocabulary. Prefer plain verbs such as `notice`, `check`, `change`, `work out`, `help`, `move`, and `handle` over presenter language.
 4. Mix medium explanatory lines with short fragments. Avoid a script made entirely of punchy one-liners or entirely of polished paragraphs.
-5. Use direct audience questions where Shannon would naturally ask them.
-6. Include a specific Shannon observation, coaching moment, client-safe proof point or real-life example when one exists. Do not invent one.
-7. Make the coaching bridge concrete: what Shannon notices, works out, changes or helps the person do.
-8. Use natural profanity only when it strengthens a real line. Never sprinkle it in as a voice effect.
-9. Do not force every script into `three tips`. Choose the structure the idea actually needs.
-10. Before approval, compare the draft against the gold-standard script and rewrite any line that sounds like a documentary, journal abstract, corporate coach or generic content writer.
+5. Give major thoughts a natural landing: pause, then repeat or compress the point in Shannon's ordinary language. Use this to wrap the mechanism or section, not as empty emphasis.
+6. Use direct audience questions and simple setup phrases where Shannon would naturally use them: `Alright`, `Okay, ready?`, or `Let's do this.` Do not mechanically repeat the same setup in every Reel.
+7. Include a specific Shannon observation, coaching moment, client-safe proof point or real-life example when one exists. Do not invent one.
+8. Make the coaching bridge concrete: what Shannon notices, works out, changes or helps the person do.
+9. Use natural profanity only when it strengthens a real line. Never sprinkle it in as a voice effect.
+10. Do not force every script into `three tips`. Choose the structure the idea actually needs.
+11. Before approval, compare the draft against the gold-standard script and rewrite any line that sounds like a documentary, journal abstract, corporate coach or generic content writer.
 
 ## Automatic rejection signs
 
