@@ -158,11 +158,29 @@ const IG_AUTO_SEND_MIN_DELAY_MS = 15 * 60 * 1000;
 const IG_AUTO_SEND_MAX_DELAY_MS = 8 * 60 * 60 * 1000;
 const IG_FAST_LANE_DELAY_MS = 4 * 60 * 1000;
 const IG_FAST_LANE_MIN_DELAY_MS = 2 * 60 * 1000;
+// Paid Meta conversations are already commercial, active threads. Queue them
+// as soon as generation and the safety/context review have passed; the
+// per-minute scheduled worker then delivers on its next tick instead of adding
+// an artificial four-minute wait.
+const IG_META_AD_FAST_LANE_DELAY_MS = 0;
 const IG_DIRECT_CHALLENGE_MIN_DELAY_MS = 0;
 const IG_DRAFT_REVIEW_TIMEOUT_MS = 7000;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const STORY_OPENER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|your\s+question|this|that|it)|(?:what|wat)\s+(?:do|did)\s+(?:you|u)\s+mean|what\s+you\s+mean|wdym|i'?m\s+confused|not\s+sure\s+what\s+you\s+mean)\b/i;
 const SHORT_STORY_OPENER_CONFUSION_RE = /^(?:sorry|sorry\?|huh\??|pardon\??|what\??|what sorry\??|sorry what\??)$/i;
+
+function resolveIgFastLaneDelayMs({
+    metaAdFastLane = false,
+    voiceReplyTestLane = false,
+    approvedCoachingLinkHandoff = false,
+    exerciseConversationFastLane = false,
+} = {}) {
+    if (metaAdFastLane) return IG_META_AD_FAST_LANE_DELAY_MS;
+    if (voiceReplyTestLane || approvedCoachingLinkHandoff || exerciseConversationFastLane) {
+        return IG_FAST_LANE_DELAY_MS;
+    }
+    return undefined;
+}
 
 async function recordHealthProgressionAnswer({ thread, currentMessage, manychatMessageId, botAccount, acquisitionMode, offerFlowVariant }) {
     if (!thread?.id || thread.linked_user_id) return null;
@@ -456,7 +474,12 @@ function normalizeIgAutoTimingSuggestion({ timingSuggestion, delayMs, timingLabe
     const liveFitnessHelpDelayMs = timingSuggestion?.signals?.live_fitness_help_intent === true
         ? Number(timingSuggestion?.delay_ms)
         : NaN;
-    const useExplicitFastLane = Number.isFinite(requestedFastLaneDelayMs) && requestedFastLaneDelayMs > 0;
+    const hasExplicitFastLaneDelay = fastLaneDelayMs !== null
+        && fastLaneDelayMs !== undefined
+        && fastLaneDelayMs !== '';
+    const useExplicitFastLane = hasExplicitFastLaneDelay
+        && Number.isFinite(requestedFastLaneDelayMs)
+        && requestedFastLaneDelayMs >= 0;
     const useActiveExchangeFastLane = Number.isFinite(activeExchangeDelayMs) && activeExchangeDelayMs > 0;
     const useLiveFitnessHelpFastLane = Number.isFinite(liveFitnessHelpDelayMs) && liveFitnessHelpDelayMs > 0;
     const useDirectChallengeLane = timingSuggestion?.signals?.direct_challenge_question === true
@@ -470,7 +493,7 @@ function normalizeIgAutoTimingSuggestion({ timingSuggestion, delayMs, timingLabe
             ? requestedFastLaneDelayMs
             : (useActiveExchangeFastLane ? activeExchangeDelayMs : liveFitnessHelpDelayMs))
         : Number(timingSuggestion?.delay_ms ?? delayMs ?? IG_AUTO_SEND_DEFAULT_DELAY_MS);
-    const minDelayMs = useDirectChallengeLane
+    const minDelayMs = useDirectChallengeLane || (useExplicitFastLane && requestedFastLaneDelayMs === 0)
         ? IG_DIRECT_CHALLENGE_MIN_DELAY_MS
         : (useFastLaneDelay ? IG_FAST_LANE_MIN_DELAY_MS : IG_AUTO_SEND_MIN_DELAY_MS);
     const normalizedDelayMs = Number.isFinite(rawDelay)
@@ -5009,9 +5032,12 @@ exports.handler = async (event) => {
                     ? 'balance_exercise_fast_lane'
                     : (cocosAutoSendLane ? 'cocos_auto_lane' : undefined)),
             auto_send_allow_immediate: false,
-            auto_send_fast_lane_delay_ms: (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane || exerciseConversationFastLane)
-                ? IG_FAST_LANE_DELAY_MS
-                : undefined,
+            auto_send_fast_lane_delay_ms: resolveIgFastLaneDelayMs({
+                metaAdFastLane,
+                voiceReplyTestLane,
+                approvedCoachingLinkHandoff,
+                exerciseConversationFastLane,
+            }),
             meta_ad_fast_lane: metaAdFastLane || undefined,
             meta_ad_first_inbound: metaAdFirstInbound || undefined,
             meta_ad_conversation_fast_lane: metaAdConversationFastLane || undefined,
@@ -5246,9 +5272,12 @@ exports.handler = async (event) => {
                     ? 'balance_exercise_fast_lane'
                     : (cocosAutoSendLane ? 'cocos_auto_lane' : undefined)),
             auto_send_allow_immediate: false,
-            auto_send_fast_lane_delay_ms: (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane || exerciseConversationFastLane)
-                ? IG_FAST_LANE_DELAY_MS
-                : existingPending.data?.auto_send_fast_lane_delay_ms || undefined,
+            auto_send_fast_lane_delay_ms: resolveIgFastLaneDelayMs({
+                metaAdFastLane,
+                voiceReplyTestLane,
+                approvedCoachingLinkHandoff,
+                exerciseConversationFastLane,
+            }) ?? existingPending.data?.auto_send_fast_lane_delay_ms ?? undefined,
             meta_ad_fast_lane: metaAdFastLane || existingPending.data?.meta_ad_fast_lane || undefined,
             meta_ad_first_inbound: metaAdFirstInbound || existingPending.data?.meta_ad_first_inbound || undefined,
             meta_ad_conversation_fast_lane: metaAdConversationFastLane || existingPending.data?.meta_ad_conversation_fast_lane || existingPending.data?.meta_ad_active_conversation_fast_lane || undefined,
@@ -6017,6 +6046,7 @@ exports._test = {
     isStoryOpenerConfusionMessage,
     buildNativeStoryConfusionRepairBlock,
     normalizeIgAutoTimingSuggestion,
+    resolveIgFastLaneDelayMs,
     isCocosToShanSunnyVoiceTest,
     buildPersonalVoiceNoteDraftingBlock,
     hasInboundVoiceNoteInUnansweredBatch,

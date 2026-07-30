@@ -176,6 +176,15 @@ const fastTiming = instantDraft.normalizeIgAutoTimingSuggestion({
 assert.equal(fastTiming.action, 'schedule');
 assert.equal(fastTiming.delay_ms, 4 * 60 * 1000);
 
+const paidMetaTiming = instantDraft.normalizeIgAutoTimingSuggestion({
+    timingSuggestion: { delay_ms: 15 * 60 * 1000, reason: 'learned historic pacing' },
+    fastLaneDelayMs: 0,
+});
+assert.equal(paidMetaTiming.action, 'send_now');
+assert.equal(paidMetaTiming.delay_ms, 0, 'verified Meta ad replies queue on the next worker tick without an artificial delay');
+assert.equal(instantDraft.resolveIgFastLaneDelayMs({ metaAdFastLane: true }), 0);
+assert.equal(instantDraft.resolveIgFastLaneDelayMs({ exerciseConversationFastLane: true }), 4 * 60 * 1000);
+
 const legacyImmediateTiming = instantDraft.normalizeIgAutoTimingSuggestion({
     timingSuggestion: { delay_ms: 0, reason: 'legacy immediate request' },
 });
