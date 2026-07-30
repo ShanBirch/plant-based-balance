@@ -25,7 +25,11 @@ assert.ok(profile.TAHLIA_PROFILE.voice.avoids.includes('mentions of AI, bots, au
 assert.strictEqual(worker.DEFAULT_MAX_POST_ALERTS_PER_RUN, 1);
 assert.strictEqual(worker.DEFAULT_MAX_COMMENT_ALERTS_PER_RUN, 1);
 assert.strictEqual(worker.DEFAULT_DAILY_POST_ALERT_CAP, 3);
-assert.strictEqual(worker.DEFAULT_DAILY_COMMENT_ALERT_CAP, 6);
+assert.strictEqual(worker.DEFAULT_DAILY_COMMENT_ALERT_CAP, 7);
+assert.strictEqual(worker.DEFAULT_DAILY_COMMENT_TARGET_MIN, 3);
+assert.strictEqual(worker.DEFAULT_DAILY_COMMENT_TARGET_MAX, 7);
+assert.strictEqual(worker.DEFAULT_MIN_COMMENT_INTERVAL_MINUTES, 120);
+assert.strictEqual(worker.DEFAULT_COMMENT_ELIGIBILITY_PERCENT, 50);
 assert.strictEqual(worker.DEFAULT_RESUME_DATE_KEY, '2026-07-05');
 assert.deepStrictEqual([...worker.TAHLIA_SIMPLE_COMMENTS], ['love this', 'amazing work', 'good job']);
 assert.strictEqual(worker.isBeforeBrisbaneDateKey(new Date('2026-07-04T13:59:00.000Z'), '2026-07-05'), true);
@@ -35,6 +39,18 @@ assert.deepStrictEqual(worker.brisbaneDayBounds(new Date('2026-07-04T13:59:00.00
     startIso: '2026-07-03T14:00:00.000Z',
     endIso: '2026-07-04T14:00:00.000Z',
 });
+const targetDate = new Date('2026-07-30T01:00:00.000Z');
+assert.ok(worker.dailyCommentTarget(targetDate) >= 3);
+assert.ok(worker.dailyCommentTarget(targetDate) <= 7);
+assert.strictEqual(worker.dailyCommentTarget(targetDate), worker.dailyCommentTarget(targetDate));
+assert.strictEqual(worker.minutesSince('2026-07-30T00:00:00.000Z', targetDate), 60);
+assert.strictEqual(worker.minutesSince(null, targetDate), Infinity);
+assert.strictEqual(worker.isSelectedTahliaCommentStory({ id: 'story-always' }, 100), true);
+assert.strictEqual(worker.isSelectedTahliaCommentStory({ id: 'story-never' }, 0), false);
+assert.strictEqual(
+    worker.isSelectedTahliaCommentStory({ id: 'story-stable' }, 50),
+    worker.isSelectedTahliaCommentStory({ id: 'story-stable' }, 50)
+);
 
 function parseCardVolumeKg(value) {
     return Number(String(value || '').replace(/[^0-9.]/g, ''));
@@ -348,6 +364,8 @@ for (const story of simpleCommentContexts) {
 assert.ok(workerSource.includes("mode: 'automatic_simple_comments_only'"));
 assert.ok(workerSource.includes("feed_posts: { disabled: true, reason: 'comments_only' }"));
 assert.ok(workerSource.includes("error?.sqlstate === '23505'"));
+assert.ok(workerSource.includes('minimum_interval_minutes'));
+assert.ok(workerSource.includes('post_eligibility_percent'));
 assert.match(commentsOnlyMigration, /DELETE FROM public\.stories[\s\S]*WHERE user_id = v_tahlia_id/);
 assert.match(commentsOnlyMigration, /CREATE UNIQUE INDEX IF NOT EXISTS uq_feed_comments_tahlia_one_per_story/);
 assert.match(commentsOnlyMigration, /lower\(trim\(comment_text\)\) NOT IN \('love this', 'amazing work', 'good job'\)[\s\S]*THEN 'love this'[\s\S]*THEN 'amazing work'[\s\S]*ELSE 'good job'/);

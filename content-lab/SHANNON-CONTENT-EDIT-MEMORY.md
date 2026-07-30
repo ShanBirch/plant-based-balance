@@ -103,12 +103,14 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 - Tahlia does not publish her own Balance Feed posts, including workout, PB, weigh-in or fitness-diary cards.
 - Tahlia may automatically comment once per eligible Feed post. Each comment must be one to three words and use only a simple supportive reaction: `love this`, `amazing work` or `good job`.
+- Keep Tahlia's Feed presence natural: choose a stable daily target of 3-7 comments, leave at least two hours between comments, and permanently select only about half of otherwise eligible posts. Do not work through every post or revisit skipped posts on a later day.
 - Never generate or learn longer Tahlia comments, add advice, ask a question or post a second comment on the same Feed post.
 
 ## Edit log
 
 | Date | Shannon's direction | Scalable rule | Affected formats |
 | --- | --- | --- | --- |
+| 2026-07-30 | Check Tahlia's Feed comment frequency and make sure she does not comment on every post, roughly 3-7 per day. | Use a deterministic 3-7 Brisbane-day target, a two-hour minimum interval, and a stable 50% post-selection gate so skipped posts remain skipped. | Balance Feed, Tahlia social worker, Feed comments |
 | 2026-07-29 | Remove Tahlia's posts from the Feed and automate only very short comments, never more than once per post. | Disable all Tahlia-authored Feed posts, remove existing and pending ones, and auto-publish only allowlisted 1-3 word comments behind a database one-comment-per-post guard. | Balance Feed, Tahlia social worker, Feed comments |
 | 2026-07-29 | You blacked out his face with a little square. Never do this. Fix it, remember it, repost. | Ban square, rectangular, black, opaque, hard-edged and pixelated face treatments. Privacy blurs must be tightly fitted, oval/circular and feathered; otherwise use a safe crop, soft background treatment or branded proof card. Inspect the exact native frames before publishing. | Daily Proof Stories, client proof, real-media Stories and Reels |
 | 2026-07-29 | Never cover my face; put me in a little circle instead. | Treat the entire head as protected space and use the approved Part Two presenter bubble in graphic-led scenes. | Reels, video, covers |

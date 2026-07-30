@@ -32,7 +32,11 @@ const DEFAULT_MIN_STORY_AGE_MINUTES = 30;
 const DEFAULT_MAX_POST_ALERTS_PER_RUN = 1;
 const DEFAULT_MAX_COMMENT_ALERTS_PER_RUN = 1;
 const DEFAULT_DAILY_POST_ALERT_CAP = 3;
-const DEFAULT_DAILY_COMMENT_ALERT_CAP = 6;
+const DEFAULT_DAILY_COMMENT_ALERT_CAP = 7;
+const DEFAULT_DAILY_COMMENT_TARGET_MIN = 3;
+const DEFAULT_DAILY_COMMENT_TARGET_MAX = 7;
+const DEFAULT_MIN_COMMENT_INTERVAL_MINUTES = 120;
+const DEFAULT_COMMENT_ELIGIBILITY_PERCENT = 50;
 const DEFAULT_RESUME_DATE_KEY = '2026-07-05';
 const TAHLIA_LEARNING_EXAMPLE_LIMIT = 8;
 const ALLOWED_TAHLIA_POST_ACTIVITY_TYPES = new Set(['workout', 'personal_best', 'weigh_in', 'fitness_diary']);
@@ -558,12 +562,44 @@ async function loadDailyTahliaAlertCounts(now = new Date()) {
     };
 }
 
+function dailyCommentTarget(
+    now = new Date(),
+    min = DEFAULT_DAILY_COMMENT_TARGET_MIN,
+    max = DEFAULT_DAILY_COMMENT_TARGET_MAX
+) {
+    const safeMin = Math.max(0, Math.floor(Number(min) || 0));
+    const safeMax = Math.max(safeMin, Math.floor(Number(max) || safeMin));
+    return safeMin + (hashString(`tahlia-daily-target:${brisbaneDateKey(now)}`) % (safeMax - safeMin + 1));
+}
+
+function isSelectedTahliaCommentStory(story = {}, eligibilityPercent = DEFAULT_COMMENT_ELIGIBILITY_PERCENT) {
+    const percent = Math.max(0, Math.min(100, Number(eligibilityPercent) || 0));
+    if (!story.id || percent === 0) return false;
+    if (percent === 100) return true;
+    return (hashString(`tahlia-comment-story:${story.id}`) % 100) < percent;
+}
+
 async function loadDailyTahliaCommentCount(tahliaId, now = new Date()) {
     const bounds = brisbaneDayBounds(now);
-    const rows = await supabaseQuery(
-        `feed_comments?select=id&user_id=eq.${encodeURIComponent(tahliaId)}&created_at=gte.${encodeURIComponent(bounds.startIso)}&created_at=lt.${encodeURIComponent(bounds.endIso)}&limit=500`
-    ).catch(() => []);
-    return { date_key: bounds.dateKey, count: rows.length };
+    const [rows, latestRows] = await Promise.all([
+        supabaseQuery(
+            `feed_comments?select=id,created_at&user_id=eq.${encodeURIComponent(tahliaId)}&created_at=gte.${encodeURIComponent(bounds.startIso)}&created_at=lt.${encodeURIComponent(bounds.endIso)}&order=created_at.desc&limit=500`
+        ).catch(() => []),
+        supabaseQuery(
+            `feed_comments?select=id,created_at&user_id=eq.${encodeURIComponent(tahliaId)}&order=created_at.desc&limit=1`
+        ).catch(() => []),
+    ]);
+    return {
+        date_key: bounds.dateKey,
+        count: rows.length,
+        latest_created_at: latestRows[0]?.created_at || null,
+    };
+}
+
+function minutesSince(value, now = new Date()) {
+    const timestamp = Date.parse(value || '');
+    if (!Number.isFinite(timestamp)) return Infinity;
+    return Math.max(0, (now.getTime() - timestamp) / 60000);
 }
 
 function dailyCappedResult({ dailyCount, dailyCap }) {
@@ -662,7 +698,15 @@ async function publishTahliaComment({ tahliaUser, story, now = new Date() }) {
     }
 }
 
-async function publishAutomaticComments({ tahliaUser, shannonId, now, maxComments, storyLookbackHours, minStoryAgeMinutes }) {
+async function publishAutomaticComments({
+    tahliaUser,
+    shannonId,
+    now,
+    maxComments,
+    storyLookbackHours,
+    minStoryAgeMinutes,
+    eligibilityPercent = DEFAULT_COMMENT_ELIGIBILITY_PERCENT,
+}) {
     const stories = await loadRecentStories(now, {
         lookbackHours: storyLookbackHours,
         minAgeMinutes: minStoryAgeMinutes,
@@ -676,6 +720,7 @@ async function publishAutomaticComments({ tahliaUser, shannonId, now, maxComment
         test_account: 0,
         sensitive_post: 0,
         existing_comment: 0,
+        not_selected: 0,
         cap: 0,
         missing_story_fields: 0,
     };
@@ -689,6 +734,10 @@ async function publishAutomaticComments({ tahliaUser, shannonId, now, maxComment
         const gate = shouldConsiderStory({ story, author, tahliaId: tahliaUser.id, shannonId });
         if (!gate.ok) {
             skipped[gate.reason] = (skipped[gate.reason] || 0) + 1;
+            continue;
+        }
+        if (!isSelectedTahliaCommentStory(story, eligibilityPercent)) {
+            skipped.not_selected += 1;
             continue;
         }
         if (await hasTahliaComment(story.id, tahliaUser.id)) {
@@ -707,6 +756,10 @@ async function runTahliaSocialWorker({
     now = new Date(),
     maxCommentAlerts = DEFAULT_MAX_COMMENT_ALERTS_PER_RUN,
     dailyCommentCap = DEFAULT_DAILY_COMMENT_ALERT_CAP,
+    dailyCommentTargetMin = DEFAULT_DAILY_COMMENT_TARGET_MIN,
+    dailyCommentTargetMax = DEFAULT_DAILY_COMMENT_TARGET_MAX,
+    minCommentIntervalMinutes = DEFAULT_MIN_COMMENT_INTERVAL_MINUTES,
+    commentEligibilityPercent = DEFAULT_COMMENT_ELIGIBILITY_PERCENT,
     resumeDateKey = DEFAULT_RESUME_DATE_KEY,
     storyLookbackHours = DEFAULT_STORY_LOOKBACK_HOURS,
     minStoryAgeMinutes = DEFAULT_MIN_STORY_AGE_MINUTES,
@@ -740,8 +793,16 @@ async function runTahliaSocialWorker({
     }
 
     const dailyComments = await loadDailyTahliaCommentCount(tahliaUser.id, now);
-    const commentSlots = Math.min(maxCommentAlerts, Math.max(0, dailyCommentCap - dailyComments.count));
-    const comments = commentSlots > 0
+    const target = Math.min(
+        dailyCommentCap,
+        dailyCommentTarget(now, dailyCommentTargetMin, dailyCommentTargetMax)
+    );
+    const intervalRemainingMinutes = Math.max(
+        0,
+        minCommentIntervalMinutes - minutesSince(dailyComments.latest_created_at, now)
+    );
+    const commentSlots = Math.min(maxCommentAlerts, Math.max(0, target - dailyComments.count));
+    const comments = commentSlots > 0 && intervalRemainingMinutes <= 0
         ? await publishAutomaticComments({
             tahliaUser,
             shannonId: shannonUser.id,
@@ -749,11 +810,20 @@ async function runTahliaSocialWorker({
             maxComments: commentSlots,
             storyLookbackHours,
             minStoryAgeMinutes,
+            eligibilityPercent: commentEligibilityPercent,
         })
-        : dailyCappedResult({
-            dailyCount: dailyComments.count,
-            dailyCap: dailyCommentCap,
-        });
+        : (commentSlots <= 0
+            ? dailyCappedResult({
+                dailyCount: dailyComments.count,
+                dailyCap: target,
+            })
+            : {
+                scanned: 0,
+                published: [],
+                skipped: { minimum_interval: 1 },
+                minimum_interval_minutes: minCommentIntervalMinutes,
+                interval_remaining_minutes: Math.ceil(intervalRemainingMinutes),
+            });
 
     return {
         ok: true,
@@ -766,8 +836,12 @@ async function runTahliaSocialWorker({
             date_key: dailyComments.date_key,
             comments: {
                 count: dailyComments.count,
-                cap: dailyCommentCap,
-                remaining_before_run: Math.max(0, dailyCommentCap - dailyComments.count),
+                target,
+                hard_cap: dailyCommentCap,
+                target_range: [dailyCommentTargetMin, dailyCommentTargetMax],
+                remaining_before_run: Math.max(0, target - dailyComments.count),
+                minimum_interval_minutes: minCommentIntervalMinutes,
+                post_eligibility_percent: commentEligibilityPercent,
             },
             feed_posts: {
                 enabled: false,
@@ -787,6 +861,10 @@ exports.handler = async (event = {}) => {
         const result = await runTahliaSocialWorker({
             maxCommentAlerts: asNumber(qs.max_comments || process.env.TAHLIA_SOCIAL_MAX_COMMENT_ALERTS, DEFAULT_MAX_COMMENT_ALERTS_PER_RUN),
             dailyCommentCap: asNumber(qs.daily_comment_cap || process.env.TAHLIA_SOCIAL_DAILY_COMMENT_CAP, DEFAULT_DAILY_COMMENT_ALERT_CAP),
+            dailyCommentTargetMin: asNumber(qs.daily_target_min || process.env.TAHLIA_SOCIAL_DAILY_TARGET_MIN, DEFAULT_DAILY_COMMENT_TARGET_MIN),
+            dailyCommentTargetMax: asNumber(qs.daily_target_max || process.env.TAHLIA_SOCIAL_DAILY_TARGET_MAX, DEFAULT_DAILY_COMMENT_TARGET_MAX),
+            minCommentIntervalMinutes: asNumber(qs.min_comment_interval_minutes || process.env.TAHLIA_SOCIAL_MIN_COMMENT_INTERVAL_MINUTES, DEFAULT_MIN_COMMENT_INTERVAL_MINUTES),
+            commentEligibilityPercent: asNumber(qs.comment_eligibility_percent || process.env.TAHLIA_SOCIAL_COMMENT_ELIGIBILITY_PERCENT, DEFAULT_COMMENT_ELIGIBILITY_PERCENT),
             resumeDateKey: qs.resume_date_key || process.env.TAHLIA_SOCIAL_RESUME_DATE_KEY || DEFAULT_RESUME_DATE_KEY,
             storyLookbackHours: asNumber(qs.story_lookback_hours || process.env.TAHLIA_SOCIAL_STORY_LOOKBACK_HOURS, DEFAULT_STORY_LOOKBACK_HOURS),
             minStoryAgeMinutes: asNumber(qs.min_story_age_minutes || process.env.TAHLIA_SOCIAL_MIN_STORY_AGE_MINUTES, DEFAULT_MIN_STORY_AGE_MINUTES),
@@ -803,6 +881,9 @@ exports._test = {
     buildFeedPostAlert,
     brisbaneDayBounds,
     brisbaneDateKey,
+    dailyCommentTarget,
+    isSelectedTahliaCommentStory,
+    minutesSince,
     isBeforeBrisbaneDateKey,
     isSensitiveFeedText,
     pointTransactionActivityType,
@@ -820,6 +901,10 @@ exports._test = {
     summarizeDailyTahliaAlertCounts,
     tahliaNeedsYouReviewData,
     DEFAULT_DAILY_COMMENT_ALERT_CAP,
+    DEFAULT_DAILY_COMMENT_TARGET_MIN,
+    DEFAULT_DAILY_COMMENT_TARGET_MAX,
+    DEFAULT_MIN_COMMENT_INTERVAL_MINUTES,
+    DEFAULT_COMMENT_ELIGIBILITY_PERCENT,
     DEFAULT_DAILY_POST_ALERT_CAP,
     DEFAULT_MAX_COMMENT_ALERTS_PER_RUN,
     DEFAULT_MAX_POST_ALERTS_PER_RUN,

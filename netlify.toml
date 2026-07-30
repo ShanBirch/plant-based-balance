@@ -335,8 +335,8 @@
 [functions."auto-feed-comment"]
   schedule = "37 * * * *"
 
-# Tahlia seeded Feed engagement - automatically posts one simple 1-3 word
-# comment per eligible post, with no Tahlia-authored Feed posts.
+# Tahlia seeded Feed engagement - posts 3-7 spaced simple comments per
+# Brisbane day on a stable subset of posts, with no Tahlia-authored Feed posts.
 [functions."tahlia-social-worker"]
   schedule = "*/20 * * * *"
 
