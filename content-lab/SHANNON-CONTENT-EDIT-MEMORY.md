@@ -37,6 +37,13 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - Composite copy above the watermark and keep the mark and sheen clear of Shannon's face and head.
 - Carousel preview pages must play the final MP4 slides inline; poster JPGs alone cannot prove the shimmer.
 
+### Balance carousel slide rhythm
+
+- Default Balance feed carousels use exactly five slides in this order: full-bleed photo, cream Canva-style editorial card, full-bleed photo, cream Canva-style editorial card, full-bleed photo.
+- Photo slides carry one large visual beat with short overlay copy. The two cream cards carry the explanation, reframe or practical action using centred charcoal type, one Balance-gold phrase, a short gold rule, generous whitespace and the large low-opacity Balance watermark.
+- Do not build a normal Balance teaching or proof carousel as a long run of photos with separate caption-like overlays. The alternating rhythm is what makes the story feel intentional and readable.
+- For media-backed client proof, an actual client video may occupy the final photo slot while preserving the same visual rhythm and five-slide limit.
+
 ### Shannon's face is protected
 
 - Never place text, captions, cards, diagrams, badges, logos, CTAs or decorative motion over Shannon's face, mouth, eyes, jawline, hairline or head silhouette.
@@ -118,5 +125,6 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 | 2026-07-30 | Shane's proof should show his PB, night-off check-in, workout list, actual workout footage and real photos instead of black screens. | Build client proof as a chronological, evidence-media-first story. Keep only evidence beats without attached media as editorial cards; don't fabricate the missing moment. | Feed proof carousels, client stories, campaign previews and proof automations |
 | 2026-07-30 | The carousel receipts don't make sense to a random reader unless the photos clearly explain what is happening. | Require a cold-viewer story test: name the subject and before/after hook on slide one, label every timeline/evidence beat, explain each visual's role, and state the coaching interpretation without relying on the caption. | Feed proof carousels, client stories, campaign previews and proof automations |
 | 2026-07-30 | Make the proof-carousel text match the larger, easier-to-read cravings-carousel treatment. | Use a large phone-first hierarchy, keep supporting copy substantial rather than caption-sized, and split or shorten ideas instead of shrinking type to fit. | Feed proof carousels, client stories, campaign previews and proof automations |
+| 2026-07-30 | The deleted carousels should use the established format shown in the screenshots: photo, Canva, photo, Canva, photo. | Make five alternating media/editorial slides the default Balance carousel structure; use photos for emotional/visual beats and cream Canva cards for explanation and action. | Feed coaching carousels, client proof carousels, campaign previews and carousel automations |
 | 2026-07-30 | Keep the ElevenLabs voice emotive like the approved final cravings Reel for future Reels. | Use the approved cravings delivery as the performance benchmark: energetic question hook, engaged teaching, firm relief, brisk action, personality in proof and a warm confident CTA. Reject correct but neutral or monotone takes before HeyGen. | All Shannon-led Reels, ElevenLabs narration, voice QA and Reel automations |
 | 2026-07-30 | Music is important for driving the readers' emotions; remember that, add music and effects, and go hard at it. | Give every Reel a deliberate emotional score arc plus purposeful effects on the major turns. Keep speech dominant through ducking, but reject mixes where the music and effects disappear on phone speakers. | All Reels, soundtrack selection, SFX design, final audio mix and phone QA |
