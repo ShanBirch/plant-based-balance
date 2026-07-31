@@ -558,7 +558,8 @@ function shouldDispatchMetaAdReplyImmediately({ alertData, normalizedTiming, sch
 
 function hasImmediateMetaDispatchFailure(scheduleResult = {}) {
     return !!scheduleResult?.immediateDispatch
-        && scheduleResult.immediateDispatch.ok !== true;
+        && scheduleResult.immediateDispatch.ok !== true
+        && scheduleResult.immediateDispatch.reason !== 'claim_lost';
 }
 
 async function dispatchScheduledMetaAdReplyNow({ alertId, scheduledFor, replyText }) {
@@ -654,7 +655,7 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
         return {
             scheduledFor: scheduledFor.toISOString(),
             data: mergedData,
-            alreadyActioned: immediateDispatch?.ok === true,
+            alreadyActioned: immediateDispatch?.ok === true || immediateDispatch?.reason === 'claim_lost',
             timing: normalizedTiming,
             immediateDispatch,
         };

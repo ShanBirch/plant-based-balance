@@ -129,7 +129,7 @@ test('an attempted immediate Meta dispatch that does not succeed is treated as a
     assert.equal(hasImmediateMetaDispatchFailure({ immediateDispatch: null }), false);
     assert.equal(hasImmediateMetaDispatchFailure({ immediateDispatch: { attempted: true, ok: true } }), false);
     assert.equal(hasImmediateMetaDispatchFailure({ immediateDispatch: { attempted: true, ok: false, status: 502 } }), true);
-    assert.equal(hasImmediateMetaDispatchFailure({ immediateDispatch: { attempted: false, ok: false, reason: 'claim_lost' } }), true);
+    assert.equal(hasImmediateMetaDispatchFailure({ immediateDispatch: { attempted: false, ok: false, reason: 'claim_lost' } }), false);
 });
 
 test('deterministic Meta review bypass remains closed for real review risks', () => {
