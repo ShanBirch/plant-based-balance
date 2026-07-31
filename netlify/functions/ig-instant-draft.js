@@ -1258,6 +1258,78 @@ function buildMetaAdFirstReplyApproval({ metaAdFirstInbound = false, draft = nul
     };
 }
 
+function buildApprovedMetaAdFirstReplyHandoffData({ approval, draft, leadStage, linkedUserId, threadId, manychatMessageId } = {}) {
+    if (!approval
+        || approval.required === true
+        || !/^approved_meta_ad_/.test(String(approval.code || ''))
+        || draft?.replyMode !== 'campaign_first_reply'
+        || !isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId })) {
+        return null;
+    }
+
+    return {
+        lead_onboarding_handoff: false,
+        needs_you_required: false,
+        operator_queue: null,
+        client_manager_review_required: false,
+        style_note: 'Verified deterministic Meta ad first reply is approved for automatic sending.',
+        signup_link_manual_only: false,
+        signup_link_handoff_url: draft.checkoutUrl || undefined,
+        approved_link_auto_sendable: true,
+        meta_ad_first_reply_preapproved: true,
+        codex_review: {
+            source: 'ig-instant-draft',
+            decision: approval.code,
+            queue: null,
+            needs_shannon_approval: false,
+            reason: approval.reason,
+            evidence_ids: [threadId ? `ig_threads:${threadId}` : '', manychatMessageId ? `manychat_message_id:${manychatMessageId}` : ''].filter(Boolean),
+            reviewed_at: new Date().toISOString(),
+        },
+    };
+}
+
+const META_AD_EXPLICIT_FIRST_REPLY_RE = /\b(founders?\s+pass|balance|what(?:'s| is) (?:actually )?included|what do i get|inclusions?|details|tell me more|show me what(?:'s| is) included|plant[ -]?based|right for me|good fit|ready to start|sign me up|save me a spot|send (?:me )?(?:the )?link|how do i start|where do i start|start now|price|cost|support|accountability)\b/i;
+const META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE = /\b(are you (?:an? )?(?:ai|bot|robot|real|human)|is this (?:an? )?(?:ai|bot)|am i talking to|who is this|suicid|self[- ]?harm|eating disorder|pregnan|injur|medical emergency|hospital)\b/i;
+
+function buildApprovedDeterministicMetaAdFirstReplyReview({
+    metaAdFirstInbound = false,
+    draft = null,
+    approval = null,
+    linkedUserId = null,
+    mediaReview = null,
+    contextReview = null,
+    currentMessage = '',
+} = {}) {
+    const message = String(currentMessage || '').trim();
+    if (!metaAdFirstInbound
+        || linkedUserId
+        || mediaReview?.required === true
+        || contextReview?.required === true
+        || draft?.replyMode !== 'campaign_first_reply'
+        || !/^deterministic_meta_ad_founders_pass_v\d+$/.test(String(draft?.model || ''))
+        || !approval
+        || approval.required === true
+        || !/^approved_meta_ad_/.test(String(approval.code || ''))
+        || !META_AD_EXPLICIT_FIRST_REPLY_RE.test(message)
+        || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)) {
+        return null;
+    }
+
+    return {
+        verdict: 'pass',
+        confidence: 1,
+        summary: 'Approved deterministic Meta ad first reply.',
+        issues: [],
+        suggested_fix: '',
+        context_loss_suspected: false,
+        notification_required: false,
+        notification_reason: null,
+        reviewed_at: new Date().toISOString(),
+        reviewer_model: 'deterministic-meta-ad-first-reply-approval',
+    };
+}
+
 const META_AD_FUNNEL_CONTEXT = `
 LEAD ACQUISITION CONTEXT:
 The primary DM offer is the Balance Plant-Based Fitness Founders Pass: AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included. Starter Coaching at AUD $29.99/week is the optional ongoing higher-touch upgrade. The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The acquisition-mode block above is authoritative about whether Shannon initiated the relationship or the lead knowingly entered from a Meta ad. Meta may supply one of the example phrases below as the lead's prefilled opening. Treat it as their ordinary first sentence, not as a questionnaire step. Never restate a menu of options or ask them to choose from buttons. The words below trigger offer-inquiry mode:
@@ -5017,10 +5089,17 @@ exports.handler = async (event) => {
         userId: thread.linked_user_id,
         leadStage: effectiveLeadStage,
     });
-    let challengeOfferWarning = buildChallengeOfferWarning({ draftText: draft.joined, qualifier, currentMessage: displayMessage });
-    challengeOfferWarning = buildMetaAdFirstReplyApproval({ metaAdFirstInbound, draft })
-        || challengeOfferWarning;
-    const leadOnboardingHandoffData = buildLeadOnboardingHandoffData({
+    const metaAdFirstReplyApproval = buildMetaAdFirstReplyApproval({ metaAdFirstInbound, draft });
+    let challengeOfferWarning = metaAdFirstReplyApproval
+        || buildChallengeOfferWarning({ draftText: draft.joined, qualifier, currentMessage: displayMessage });
+    const leadOnboardingHandoffData = buildApprovedMetaAdFirstReplyHandoffData({
+        approval: metaAdFirstReplyApproval,
+        draft,
+        leadStage: effectiveLeadStage,
+        linkedUserId: thread.linked_user_id,
+        threadId: thread.id,
+        manychatMessageId,
+    }) || buildLeadOnboardingHandoffData({
         draftText: draft.joined,
         qualifier,
         leadStage: effectiveLeadStage,
@@ -5580,7 +5659,20 @@ exports.handler = async (event) => {
             : '';
         const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${mediaSummaryReviewContext}${audioTranscriptReviewContext}${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReviewContext}`;
         const reviewTimeoutMs = cocosAutoSendLane ? COCOS_DRAFT_REVIEW_TIMEOUT_MS : IG_DRAFT_REVIEW_TIMEOUT_MS;
-        try {
+        const approvedDeterministicReview = buildApprovedDeterministicMetaAdFirstReplyReview({
+            metaAdFirstInbound,
+            draft,
+            approval: metaAdFirstReplyApproval,
+            linkedUserId: thread.linked_user_id,
+            mediaReview,
+            contextReview,
+            currentMessage: displayMessage,
+        });
+        if (approvedDeterministicReview) {
+            draftReview = approvedDeterministicReview;
+            effectiveContextReview = contextReview;
+            console.log(`[ig-draft] skipped model review for approved deterministic Meta ad first reply ${alertId}`);
+        } else try {
             const reviewResult = await withTimeout(reviewDraftAndUpdateAlert({
                 alertId,
                 draftText: draft.joined,
@@ -6133,6 +6225,8 @@ exports._test = {
     buildMetaAdCheckoutUrl,
     buildMetaAdFoundersPassFirstReply,
     buildMetaAdFirstReplyApproval,
+    buildApprovedMetaAdFirstReplyHandoffData,
+    buildApprovedDeterministicMetaAdFirstReplyReview,
     collectCocosAutoRepairIssues,
     shouldAttemptCocosDraftRepair,
     repairRequiresQuestionFreeReply,

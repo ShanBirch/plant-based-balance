@@ -7,10 +7,76 @@ const {
     buildMetaAdCheckoutUrl,
     buildMetaAdFoundersPassFirstReply,
     buildMetaAdFirstReplyApproval,
+    buildApprovedMetaAdFirstReplyHandoffData,
+    buildApprovedDeterministicMetaAdFirstReplyReview,
     buildLeadOnboardingHandoffData,
     resolveMetaAdFirstReplyIntent,
     resolveMetaAdFlowVariant,
 } = require('../netlify/functions/ig-instant-draft')._test;
+
+test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and model review', () => {
+    const currentMessage = 'What is the Founders Pass?';
+    const draft = buildMetaAdFoundersPassFirstReply(currentMessage);
+    const approval = buildMetaAdFirstReplyApproval({
+        metaAdFirstInbound: true,
+        draft,
+    });
+    const handoff = buildApprovedMetaAdFirstReplyHandoffData({
+        approval,
+        draft,
+        leadStage: 'new',
+        linkedUserId: null,
+        threadId: 'cocos-test-thread',
+        manychatMessageId: 'cocos-test-message',
+    });
+    const review = buildApprovedDeterministicMetaAdFirstReplyReview({
+        metaAdFirstInbound: true,
+        draft,
+        approval,
+        linkedUserId: null,
+        mediaReview: { required: false },
+        contextReview: { required: false },
+        currentMessage,
+    });
+
+    assert.equal(draft.firstReplyIntent, 'overview');
+    assert.match(draft.joined, /balance-founders-pass-dm-preview\.mp4/);
+    assert.equal(approval.code, 'approved_meta_ad_first_reply');
+    assert.equal(handoff.client_manager_review_required, false);
+    assert.equal(handoff.signup_link_manual_only, false);
+    assert.equal(handoff.approved_link_auto_sendable, true);
+    assert.equal(handoff.meta_ad_first_reply_preapproved, true);
+    assert.equal(review.verdict, 'pass');
+    assert.equal(review.notification_required, false);
+    assert.equal(review.reviewer_model, 'deterministic-meta-ad-first-reply-approval');
+    assert.equal(buildApprovedMetaAdFirstReplyHandoffData({
+        approval,
+        draft,
+        leadStage: 'paying',
+        linkedUserId: 'linked-client',
+    }), null);
+});
+
+test('deterministic Meta review bypass remains closed for real review risks', () => {
+    const currentMessage = 'What is the Founders Pass?';
+    const draft = buildMetaAdFoundersPassFirstReply(currentMessage);
+    const approval = buildMetaAdFirstReplyApproval({ metaAdFirstInbound: true, draft });
+    const baseline = {
+        metaAdFirstInbound: true,
+        draft,
+        approval,
+        linkedUserId: null,
+        mediaReview: { required: false },
+        contextReview: { required: false },
+        currentMessage,
+    };
+
+    assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({ ...baseline, linkedUserId: 'linked-client' }), null);
+    assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({ ...baseline, mediaReview: { required: true } }), null);
+    assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({ ...baseline, contextReview: { required: true } }), null);
+    assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({ ...baseline, currentMessage: 'Are you an AI bot?' }), null);
+    assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({ ...baseline, currentMessage: 'I need urgent help at hospital' }), null);
+});
 
 test('inclusions quick reply sends the app preview and attributed checkout handoff', () => {
     const reply = buildMetaAdFoundersPassFirstReply("What's included?");
