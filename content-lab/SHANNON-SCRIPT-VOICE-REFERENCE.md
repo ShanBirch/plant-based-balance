@@ -2,6 +2,8 @@
 
 This is the canonical example of how Shannon naturally writes and wants Reel scripts to run. Read it before drafting or revising any Shannon-led spoken content.
 
+Also read `content-lab/SHANNON-SCRIPT-LIBRARY.md`. It is the growing database of Shannon-approved scripts and meaning-matched visual notes. Use this file for the general voice principles, then use the closest library entries as current sentence-level evidence.
+
 The reusable element is the voice and construction, not the cravings topic. Future scripts should sound as though Shannon wrote them himself. Do not mechanically copy the same hook, numbered-list format, science angle, phrases or CTA into every Reel.
 
 ## Gold-standard script
