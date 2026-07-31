@@ -218,6 +218,48 @@ const personalVoicePlan = voice.resolvePersonalVoiceReplyPlan({
 assert.strictEqual(personalVoicePlan.useSyntheticVoice, true);
 assert.strictEqual(personalVoicePlan.reason, 'lead_shared_meaningful_goal_or_blocker');
 
+const accountabilityVoicePlan = voice.resolvePersonalVoiceReplyPlan({
+    channel: 'instagram',
+    hasInstagramGraphRoute: true,
+    currentMessage: 'How does accountability work?',
+    qualifier: {
+        facts: {
+            current_state: 'needs help with diet and accountability',
+            history_blockers: 'keeps falling off when work gets busy',
+        },
+    },
+    meaningfulLeadReplyCount: 3,
+    hasRecentVoiceMessage: false,
+});
+assert.strictEqual(accountabilityVoicePlan.useSyntheticVoice, true);
+assert.strictEqual(accountabilityVoicePlan.reason, 'lead_accountability_connection_moment');
+assert.strictEqual(voice._test.hasAccountabilityConnectionSignal('How would you keep me on track?'), true);
+
+assert.strictEqual(
+    voice.resolvePersonalVoiceReplyPlan({
+        channel: 'instagram',
+        hasInstagramGraphRoute: true,
+        currentMessage: 'How does accountability work?',
+        qualifier: { facts: { current_state: 'needs diet and accountability support' } },
+        meaningfulLeadReplyCount: 3,
+        hasRecentVoiceMessage: true,
+    }).useSyntheticVoice,
+    false
+);
+
+assert.strictEqual(
+    voice.resolvePersonalVoiceReplyPlan({
+        channel: 'instagram',
+        hasInstagramGraphRoute: true,
+        currentMessage: 'How does accountability work?',
+        qualifier: { facts: { current_state: 'needs diet and accountability support' } },
+        meaningfulLeadReplyCount: 3,
+        hasRecentVoiceMessage: true,
+        bypassRecentVoiceCooldownForInternalTest: true,
+    }).useSyntheticVoice,
+    true
+);
+
 const informationalFirstReplyPlan = voice.resolvePersonalVoiceReplyPlan({
     channel: 'instagram',
     hasInstagramGraphRoute: true,

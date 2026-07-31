@@ -72,6 +72,7 @@ Current paid-acquisition positioning test:
 - Keep two distinct end-to-end acquisition flows. `plant_based_control` uses plant-based positioning from ad through landing page and DM handoff. `broad_pain` uses general fitness, restarting, follow-through and real-life scheduling language with no plant-based positioning in the ad, landing page or route-specific DM handoff.
 - Only verified `paid_meta` threads may enter the `broad_pain` experiment. Never infer the broad route for an organic follower or outreach lead merely because they mention work, kids, busyness, consistency, follow-through or starting again. Organic leads use the canonical plant-based Founders Pass route.
 - Paid Meta leads knowingly entered a commercial conversation, so answer offer, price, inclusions, fit and starting questions directly from the first reply and preserve that contract throughout the thread. Organic conversations begin from the exact human context, use statement-led elicitation, and bridge only from the lead's own goal, blocker, help signal or explicit request.
+- Paid Meta uses zero artificial queue delay after a clean review. Keep only the short Graph typing indicator needed for a natural handoff; the target is comfortably under one minute, normally inside 30 seconds. Prefer one concise answer over a paced dump of several text bubbles.
 - The broad route uses `https://future-balance.netlify.app/fitness-coaching.html` so the visible destination does not inject the plant-based domain into that test. The plant-based route continues to use `https://plantbased-balance.org/plant-based-fitness.html`.
 - Do not blend the two routes based only on a later generic message. Preserve the Meta ad referral variant and attribution through checkout and purchase. Configure broad creative IDs in `META_BROAD_AD_IDS` when the reviewed broad ads are created.
 - This is a positioning experiment, not a permanent company rebrand. Keep the current plant-based site and domain live while the data is collected.
@@ -208,6 +209,7 @@ Approved ElevenLabs Instagram voice-note recipe:
 - Shape: recognise one exact thing they said, reflect or normalise it, give one useful thought or next step, then stop. Use contractions, commas, short pauses, and occasional fragments. Do not use stage directions, polished presenter phrasing, a list read aloud, or filler in every sentence.
 - The approved examples sounded spontaneous because they were specific and slightly imperfect, not because they were packed with verbal filler. Preserve that balance whenever generating a new note.
 - For unlinked Instagram leads with a working Graph route, a generated voice note may replace the drafted text after the lead has shared a meaningful personal goal, current situation, or blocker. Require at least two meaningful lead replies and qualifier evidence, and cap this personal touch at one generated voice note per thread every 30 days.
+- An explicit accountability question or request is a preferred one-off connection moment once those same evidence and cooldown gates are met. Answer how Shannon will keep them on track in one connected voice note, without duplicating the explanation in text. Keep prices, links, codes and exact instructions as text.
 - Never use a generated or cloned voice note to answer an AI, bot, automation, or "is this really Shannon?" authenticity question. Keep the existing Needs You hold, forbid the synthetic send, and recommend that Shannon record a fresh native note. Suggested honest wording: "hey, yep it's Shannon. I do use a bit of help organising my inbox because it gets busy, but the coaching and support inside Balance is me."
 - Linked clients remain draft-only Needs You when a voice note would be useful. The explicit client exceptions authorize manager-reviewed text delivery only, through API or native browser dispatch according to the live window; Shannon still decides whether to record and send any voice note.
 
@@ -354,6 +356,7 @@ Admin AI coach:
   - "What's actually included?"
   - "Do I need to already be Plant Based?"
   - "I'm In - save me a spot!"
+- These are Meta messaging-template buttons, not AI-created reply bubbles. For the next plant-based ad run, remove the visible menu so the lead can type naturally. Until the live ad template is updated, treat a tapped prompt as the lead's ordinary first sentence and never answer with another option menu.
 - If ad quick replies change, update `META_AD_FUNNEL_CONTEXT` in `ig-instant-draft.js`.
 - "I'm In" qualifier asks: name/age, main goal, what has tripped them up before, then "ill get back to you asap" in deliberately casual lowercase.
 

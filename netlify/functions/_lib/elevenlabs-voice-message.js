@@ -46,6 +46,12 @@ function hasPersonalGoalOrBlockerSignal(text = '') {
     return /\b(my goal|i(?:'m| am) trying|i want to|i need to|hoping to|would love to|struggl|stuck|keep falling|fall off|can(?:'t| not) stay|consisten|motivat|overwhelm|no time|busy|energy|confidence|lose weight|build muscle|get stronger|feel better|healthier|food|training)\b/i.test(value);
 }
 
+function hasAccountabilityConnectionSignal(text = '') {
+    const value = String(text || '').trim();
+    if (value.length < 12) return false;
+    return /\b(accountab\w*|check[ -]?ins?|keep me on track|keep(?:ing)? me accountable|stay on track|follow[ -]?through)\b/i.test(value);
+}
+
 function hasQualifierPersonalEvidence(qualifier = {}) {
     const facts = safeObject(qualifier.facts);
     return [facts.current_state, facts.motivation, facts.history_blockers]
@@ -61,6 +67,7 @@ function resolvePersonalVoiceReplyPlan({
     meaningfulLeadReplyCount = 0,
     hasRecentVoiceMessage = false,
     inboundVoiceMessage = false,
+    bypassRecentVoiceCooldownForInternalTest = false,
 } = {}) {
     if (isAiAuthenticityQuestion(currentMessage)) {
         return {
@@ -85,16 +92,19 @@ function resolvePersonalVoiceReplyPlan({
         };
     }
 
+    const accountabilityConnection = hasAccountabilityConnectionSignal(currentMessage);
     const eligible = isUnlinkedInstagramLead
         && hasInstagramGraphRoute
-        && !hasRecentVoiceMessage
+        && (!hasRecentVoiceMessage || bypassRecentVoiceCooldownForInternalTest)
         && Number(meaningfulLeadReplyCount || 0) >= 2
-        && hasPersonalGoalOrBlockerSignal(currentMessage)
+        && (accountabilityConnection || hasPersonalGoalOrBlockerSignal(currentMessage))
         && hasQualifierPersonalEvidence(qualifier);
 
     return {
         useSyntheticVoice: eligible,
-        reason: eligible ? 'lead_shared_meaningful_goal_or_blocker' : '',
+        reason: eligible
+            ? (accountabilityConnection ? 'lead_accountability_connection_moment' : 'lead_shared_meaningful_goal_or_blocker')
+            : '',
         syntheticVoiceForbidden: false,
         manualNativeVoiceRecommended: false,
         manualNativeVoiceReason: '',
@@ -561,6 +571,7 @@ module.exports = {
     resolveOutboundVoiceMessageConfig,
     _test: {
         isVoiceMessageRequested,
+        hasAccountabilityConnectionSignal,
         hasPersonalGoalOrBlockerSignal,
         hasQualifierPersonalEvidence,
         hasWrittenLaughter,

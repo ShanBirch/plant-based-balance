@@ -1260,7 +1260,7 @@ function buildMetaAdFirstReplyApproval({ metaAdFirstInbound = false, draft = nul
 
 const META_AD_FUNNEL_CONTEXT = `
 LEAD ACQUISITION CONTEXT:
-The primary DM offer is the Balance Plant-Based Fitness Founders Pass: AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included. Starter Coaching at AUD $29.99/week is the optional ongoing higher-touch upgrade. The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The acquisition-mode block above is authoritative about whether Shannon initiated the relationship or the lead knowingly entered from a Meta ad. The words below trigger offer-inquiry mode:
+The primary DM offer is the Balance Plant-Based Fitness Founders Pass: AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included. Starter Coaching at AUD $29.99/week is the optional ongoing higher-touch upgrade. The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The acquisition-mode block above is authoritative about whether Shannon initiated the relationship or the lead knowingly entered from a Meta ad. Meta may supply one of the example phrases below as the lead's prefilled opening. Treat it as their ordinary first sentence, not as a questionnaire step. Never restate a menu of options or ask them to choose from buttons. The words below trigger offer-inquiry mode:
   1. "What's actually included?"
   2. "Do I need to already be Plant Based?"
   3. "I'm In - save me a spot!"
@@ -1294,6 +1294,7 @@ THE OFFERING (for context — never list as a brochure; speak like a friend):
 RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
 - "What's actually included?" -> for an ad-attributed first enquiry, send the short app preview first, then explain the Founders Pass casually: six weeks with Shannon plus lifetime core app and plant-based community access for $99 once. Be clear ongoing individual coaching is separate. Don't dump a brochure.
 - "What's Balance?" / "what's your app?" -> answer plainly: it is Shannon's fitness app/coaching setup. If their latest training detail gives a natural opening, one casual line is enough: "honestly one weekly check-in would probably help keep that simple if you wanted the coaching details". Do not hardcode that wording, but keep that size and feel. No app feature list or signup link unless they ask what is included or ask for details.
+- "How does accountability work?" / "how would you keep me on track?" -> this is a connection moment, not a brochure request. Explain it plainly from Shannon's point of view: they check in and log what is happening, Shannon sees the real week and guides the next move, with a nudge when things start slipping. In PERSONAL VOICE NOTE MODE, make this one connected voice note and do not duplicate the explanation in text. Otherwise use one concise text bubble. Do not tack on another qualifier unless their answer would genuinely change the next step.
 - "Is it in person?" / "I'm looking for a local trainer" / "I already have a PT" -> treat this as a preference or compatibility objection. Answer plainly first: the Founders Pass is an online guided app and plant-based community, not in-person personal training. Do not push the link yet. Ask whether that would still be useful, or how it would need to fit around their current trainer.
 - "Do I need to already be Plant Based?" -> warm reassurance ("not at all, lots of my crew start curious"), then ask their current eating situation, ever cooked plant-based before.
 - "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, send https://plantbased-balance.org/plant-based-fitness.html with the quick Founders Pass handoff. Do NOT ask a Name + Age + Main goal intake bundle.
@@ -4845,6 +4846,7 @@ exports.handler = async (event) => {
         meaningfulLeadReplyCount,
         hasRecentVoiceMessage: recentOutboundVoiceMessage,
         inboundVoiceMessage,
+        bypassRecentVoiceCooldownForInternalTest: internalMetaAdConversationTestLane,
     });
     // Internal accounts exercise the same voice eligibility as real leads.
     // The Cocos -> Shan n Sunny flag opens the auto-reply test lane, but it
@@ -5151,8 +5153,13 @@ exports.handler = async (event) => {
             elevenlabs_voice_id: outboundVoiceMessage ? 'UHnJrglEof8vTMenwnVm' : undefined,
             elevenlabs_voice_name: outboundVoiceMessage ? 'Shannon Balance Professional 20260606' : undefined,
             personal_voice_note_policy: personalVoicePlan.useSyntheticVoice ? {
-                trigger: inboundVoiceMessage ? 'lead_voice_note_lane' : 'lead_goal_or_blocker',
+                trigger: inboundVoiceMessage
+                    ? 'lead_voice_note_lane'
+                    : (personalVoicePlan.reason === 'lead_accountability_connection_moment'
+                        ? 'lead_accountability_connection_moment'
+                        : 'lead_goal_or_blocker'),
                 cooldown_days: inboundVoiceMessage ? 0 : 30,
+                cooldown_bypassed_for_internal_test: internalMetaAdConversationTestLane || undefined,
                 synthetic: true,
                 never_for_ai_authenticity: true,
             } : undefined,
@@ -5398,8 +5405,13 @@ exports.handler = async (event) => {
                 ? (existingPending.data?.elevenlabs_voice_name || 'Shannon Balance Professional 20260606')
                 : undefined,
             personal_voice_note_policy: personalVoicePlan.useSyntheticVoice ? {
-                trigger: inboundVoiceMessage ? 'lead_voice_note_lane' : 'lead_goal_or_blocker',
+                trigger: inboundVoiceMessage
+                    ? 'lead_voice_note_lane'
+                    : (personalVoicePlan.reason === 'lead_accountability_connection_moment'
+                        ? 'lead_accountability_connection_moment'
+                        : 'lead_goal_or_blocker'),
                 cooldown_days: inboundVoiceMessage ? 0 : 30,
+                cooldown_bypassed_for_internal_test: internalMetaAdConversationTestLane || undefined,
                 synthetic: true,
                 never_for_ai_authenticity: true,
             } : existingPending.data?.personal_voice_note_policy,

@@ -399,10 +399,10 @@ const campaignPlan = {
     greeting: "Hey, glad you messaged. Here is a quick look inside Balance so you can actually see what I mean.",
     appPreview: "https://plantbased-balance.org/assets/balance-founders-pass-dm-preview.mp4",
     offerMessage: "Balance brings your weekly plan, plant-based nutrition, progress, learning and community into one place. The Founders Pass is AU$99 once. You get six weeks of one-to-one in-app support with me, then lifetime access to the core app and plant-based community.",
-    quickReplies: ["What’s included?", "Is this right for me?", "I’m ready to start"],
+    quickReplies: [],
     checkoutUrl: "https://plantbased-balance.org/plant-based-fitness.html",
     followUpExpectation: "Shannon will reply here and help you work out the best next step.",
-    rule: "Use the app preview on the first ad-attributed enquiry. Send the checkout URL immediately when the person asks for the link or says they are ready. Otherwise respond to the selected quick reply and use one statement-led follow-up based on their words.",
+    rule: "Do not configure visible quick-reply buttons in the Meta messaging template. Let the lead type naturally, answer their actual sentence directly, and use one statement-led follow-up only when it changes the next move. Use the app preview on the first ad-attributed enquiry and send the checkout URL immediately when the person asks for the link or says they are ready.",
   },
   rollout: {
     phase1: ['A1 | You have not failed. The plan was wrong.', 'A4 | Plant-based fitness, made clearer', 'A5 | Plant-based fitness is better together', 'V1 | You have not failed. The plan was wrong.'],
@@ -420,7 +420,10 @@ const campaignPlan = {
 await fs.writeFile(path.join(OUT, 'campaign-plan.json'), `${JSON.stringify(campaignPlan, null, 2)}\n`);
 
 const cards = exportsList.map((x, i) => `<article><img src="${path.basename(x.feedPath)}" alt="${esc(x.headline)}"><div><span>AD ${i + 1}</span><h2>${esc(x.headline)}</h2><p>${esc(x.primaryText)}</p><p><strong>Headline:</strong> ${esc(x.headline)}</p><p><strong>Description:</strong> ${esc(x.description)}</p></div></article>`).join('');
-const dmReview = `<article><video controls playsinline src="../../assets/balance-founders-pass-dm-preview.mp4"></video><div><span>DM FOLLOW-UP</span><h2>Show the app, then make the offer clear.</h2><p><strong>FOUNDERS PASS<br>AU$99 ONCE<br>6 WEEKS WITH SHANNON<br>LIFETIME CORE ACCESS</strong></p><p>${esc(campaignPlan.dmWelcome.greeting)}</p><p>${esc(campaignPlan.dmWelcome.offerMessage)}</p><p><strong>Quick replies:</strong> ${campaignPlan.dmWelcome.quickReplies.map(esc).join(' · ')}</p><p><strong>Checkout:</strong> ${esc(campaignPlan.dmWelcome.checkoutUrl)}</p></div></article>`;
+const dmReplyMode = campaignPlan.dmWelcome.quickReplies.length
+  ? campaignPlan.dmWelcome.quickReplies.map(esc).join(' · ')
+  : 'Free text only - no visible reply buttons';
+const dmReview = `<article><video controls playsinline src="../../assets/balance-founders-pass-dm-preview.mp4"></video><div><span>DM FOLLOW-UP</span><h2>Show the app, then make the offer clear.</h2><p><strong>FOUNDERS PASS<br>AU$99 ONCE<br>6 WEEKS WITH SHANNON<br>LIFETIME CORE ACCESS</strong></p><p>${esc(campaignPlan.dmWelcome.greeting)}</p><p>${esc(campaignPlan.dmWelcome.offerMessage)}</p><p><strong>Reply mode:</strong> ${dmReplyMode}</p><p><strong>Checkout:</strong> ${esc(campaignPlan.dmWelcome.checkoutUrl)}</p></div></article>`;
 const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Balance Founders Pass Meta Campaign</title><style>body{margin:0;background:#f7f2e8;color:#241a12;font:16px/1.55 Arial,sans-serif}header{padding:48px max(24px,5vw);background:linear-gradient(135deg,#fff9ed,#eadcc2);border-bottom:8px solid #d8a43a}h1{font-size:clamp(36px,6vw,76px);line-height:.95;margin:12px 0}header p{max-width:760px;color:#5b4a3a}main{padding:36px max(20px,4vw);display:grid;gap:36px}article{display:grid;grid-template-columns:minmax(280px,520px) 1fr;gap:36px;align-items:start;background:#fff9ed;border:1px solid #d8a43a;border-radius:24px;padding:20px;box-shadow:0 18px 44px #6b4d241c}img,video{width:100%;border-radius:14px;background:#160d20}span{color:#a96f00;font-weight:900;letter-spacing:2px}h2{font-size:34px;line-height:1.05}p{color:#5b4a3a}@media(max-width:800px){article{grid-template-columns:1fr}header{padding-top:30px}}</style></head><body><header><span>READY FOR REVIEW</span><h1>Balance: Plant-Based Fitness<br>Founders Pass</h1><p>Brain-aware change, small clear steps, and plant-based community support. Campaign defaults to PAUSED, AU$20 per day, Australia broad 24–54, Instagram Direct conversations.</p></header><main>${cards}${dmReview}</main></body></html>`;
 await fs.writeFile(path.join(OUT, 'review.html'), html);
 
