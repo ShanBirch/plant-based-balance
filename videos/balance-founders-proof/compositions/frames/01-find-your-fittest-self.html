@@ -1,0 +1,398 @@
+<template>
+  <div id="root" data-composition-id="01-find-your-fittest-self" data-duration="5.5" data-width="1080" data-height="1920">
+    <div class="clip f01-find-your-fittest-self-ground" data-start="0" data-duration="5.5" data-track-index="0" aria-hidden="true">
+      <div class="f01-find-your-fittest-self-diagonal"></div>
+      <div class="f01-find-your-fittest-self-ring f01-find-your-fittest-self-ring-a"></div>
+      <div class="f01-find-your-fittest-self-ring f01-find-your-fittest-self-ring-b"></div>
+      <div class="f01-find-your-fittest-self-dots"></div>
+      <div class="f01-find-your-fittest-self-fine-rule"></div>
+    </div>
+
+    <main class="clip f01-find-your-fittest-self-cover" data-start="0" data-duration="5.5" data-track-index="1">
+      <section class="f01-find-your-fittest-self-lockup" id="f01-find-your-fittest-self-lockup" aria-label="Balance">
+        <div class="f01-find-your-fittest-self-mark-shell">
+          <img
+            class="f01-find-your-fittest-self-mark"
+            id="f01-find-your-fittest-self-mark"
+            src="assets/balance-logo.png"
+            alt="Balance mark"
+          />
+          <svg class="f01-find-your-fittest-self-mark-draw" viewBox="0 0 220 220" aria-hidden="true">
+            <circle class="f01-find-your-fittest-self-logo-stroke" cx="110" cy="110" r="101"></circle>
+            <path class="f01-find-your-fittest-self-logo-stroke" d="M51 52 C82 22 137 17 171 43"></path>
+          </svg>
+        </div>
+        <div class="f01-find-your-fittest-self-eyebrow" id="f01-find-your-fittest-self-eyebrow">
+          <span class="f01-find-your-fittest-self-eyebrow-line"></span>
+          <span>BALANCE</span>
+          <span class="f01-find-your-fittest-self-eyebrow-line"></span>
+        </div>
+      </section>
+
+      <section class="f01-find-your-fittest-self-title" aria-label="Find your fittest self">
+        <div class="f01-find-your-fittest-self-kicker" id="f01-find-your-fittest-self-kicker">FIND YOUR</div>
+        <div class="f01-find-your-fittest-self-display" id="f01-find-your-fittest-self-display">
+          <div class="f01-find-your-fittest-self-fittest-stack">
+            <span class="f01-find-your-fittest-self-fittest-solid">FITTEST</span>
+            <span
+              class="f01-find-your-fittest-self-fittest-sweep"
+              id="f01-find-your-fittest-self-fittest-sweep"
+              data-layout-allow-occlusion
+            >FITTEST</span>
+          </div>
+          <span class="f01-find-your-fittest-self-self" id="f01-find-your-fittest-self-self">SELF</span>
+        </div>
+      </section>
+
+      <section class="f01-find-your-fittest-self-subline" id="f01-find-your-fittest-self-subline">
+        <span class="f01-find-your-fittest-self-subline-rule"></span>
+        <p>A plan that fits real life.</p>
+        <span class="f01-find-your-fittest-self-subline-rule"></span>
+      </section>
+    </main>
+  </div>
+
+  <style>
+    #root {
+      position: relative;
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      container-type: size;
+      color: #160d20;
+      font-family: Montserrat, Arial, sans-serif;
+      isolation: isolate;
+    }
+
+    [class~="f01-find-your-fittest-self-ground"] {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    [class~="f01-find-your-fittest-self-diagonal"] {
+      position: absolute;
+      top: -120px;
+      right: -265px;
+      width: 820px;
+      height: 1450px;
+      clip-path: polygon(43% 0, 100% 0, 100% 100%, 0 76%);
+      background:
+        linear-gradient(153deg, rgba(169, 111, 0, 0.02) 0%, rgba(169, 111, 0, 0.14) 58%, rgba(169, 111, 0, 0.05) 100%);
+    }
+
+    [class~="f01-find-your-fittest-self-ring"] {
+      position: absolute;
+      border: 2px solid rgba(169, 111, 0, 0.11);
+      border-radius: 50%;
+    }
+
+    [class~="f01-find-your-fittest-self-ring-a"] {
+      width: 620px;
+      height: 620px;
+      top: 90px;
+      left: -430px;
+    }
+
+    [class~="f01-find-your-fittest-self-ring-b"] {
+      width: 760px;
+      height: 760px;
+      top: 805px;
+      right: -590px;
+    }
+
+    [class~="f01-find-your-fittest-self-dots"] {
+      position: absolute;
+      top: 106px;
+      right: 78px;
+      width: 94px;
+      height: 94px;
+      opacity: 0.32;
+      background-image: radial-gradient(circle, #a96f00 0 3px, transparent 3.5px);
+      background-size: 31px 31px;
+    }
+
+    [class~="f01-find-your-fittest-self-fine-rule"] {
+      position: absolute;
+      top: 1548px;
+      left: 124px;
+      width: 832px;
+      height: 2px;
+      border-radius: 6px;
+      background: rgba(169, 111, 0, 0.14);
+    }
+
+    [class~="f01-find-your-fittest-self-cover"] {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      text-align: center;
+    }
+
+    [class~="f01-find-your-fittest-self-lockup"] {
+      position: absolute;
+      top: 164px;
+      left: 50%;
+      width: 330px;
+      margin-left: -165px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    [class~="f01-find-your-fittest-self-mark-shell"] {
+      position: relative;
+      width: 206px;
+      height: 206px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1.5px solid rgba(169, 111, 0, 0.2);
+      overflow: hidden;
+    }
+
+    [class~="f01-find-your-fittest-self-mark"] {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    [class~="f01-find-your-fittest-self-mark-draw"] {
+      position: absolute;
+      inset: -7px;
+      width: 220px;
+      height: 220px;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    [class~="f01-find-your-fittest-self-logo-stroke"] {
+      fill: none;
+      stroke: #a96f00;
+      stroke-width: 3.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    [class~="f01-find-your-fittest-self-eyebrow"] {
+      margin-top: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      color: #a96f00;
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: 0.18em;
+    }
+
+    [class~="f01-find-your-fittest-self-eyebrow-line"] {
+      display: block;
+      width: 38px;
+      height: 2px;
+      border-radius: 6px;
+      background: #a96f00;
+      opacity: 0.55;
+    }
+
+    [class~="f01-find-your-fittest-self-title"] {
+      position: absolute;
+      top: 535px;
+      left: 72px;
+      width: 936px;
+    }
+
+    [class~="f01-find-your-fittest-self-kicker"] {
+      min-height: 58px;
+      color: #a96f00;
+      font-size: 47px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: 0.12em;
+    }
+
+    [class~="f01-find-your-fittest-self-display"] {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #160d20;
+      font-size: 151px;
+      font-weight: 700;
+      line-height: 0.91;
+      letter-spacing: -0.055em;
+    }
+
+    [class~="f01-find-your-fittest-self-fittest-stack"] {
+      display: grid;
+      width: 100%;
+    }
+
+    [class~="f01-find-your-fittest-self-fittest-solid"],
+    [class~="f01-find-your-fittest-self-fittest-sweep"] {
+      grid-area: 1 / 1;
+      display: block;
+      width: 100%;
+    }
+
+    [class~="f01-find-your-fittest-self-fittest-solid"] {
+      color: #160d20;
+    }
+
+    [class~="f01-find-your-fittest-self-fittest-sweep"] {
+      background-image: linear-gradient(
+        90deg,
+        #160d20 0%,
+        #160d20 35%,
+        #a96f00 45%,
+        #d8a43a 50%,
+        #a96f00 55%,
+        #160d20 65%,
+        #160d20 100%
+      );
+      background-size: 300% 100%;
+      background-position: 100% 50%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    [class~="f01-find-your-fittest-self-self"] {
+      display: block;
+      margin-top: 18px;
+      font-size: 1.12em;
+      letter-spacing: -0.06em;
+    }
+
+    [class~="f01-find-your-fittest-self-subline"] {
+      position: absolute;
+      top: 1270px;
+      left: 150px;
+      width: 780px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 25px;
+      color: #a96f00;
+    }
+
+    [class~="f01-find-your-fittest-self-subline"] p {
+      margin: 0;
+      white-space: nowrap;
+      font-size: 29px;
+      font-weight: 500;
+      line-height: 1.45;
+      letter-spacing: 0.025em;
+    }
+
+    [class~="f01-find-your-fittest-self-subline-rule"] {
+      display: block;
+      flex: 1;
+      height: 1.5px;
+      border-radius: 6px;
+      background: rgba(169, 111, 0, 0.35);
+    }
+  </style>
+
+  <script>
+    (() => {
+      const frameId = "01-find-your-fittest-self";
+      const root = document.querySelector('[data-composition-id="01-find-your-fittest-self"]');
+      const tl = gsap.timeline({ paused: true });
+
+      root.querySelectorAll('[class~="f01-find-your-fittest-self-logo-stroke"]').forEach((stroke) => {
+        const length = stroke.getTotalLength();
+        stroke.style.strokeDasharray = `${length}`;
+        stroke.style.strokeDashoffset = `${length}`;
+      });
+
+      const kicker = root.querySelector("#f01-find-your-fittest-self-kicker");
+      const kickerStates = [
+        { t: 0, text: "" },
+        { t: 0.09, text: "FIND" },
+        { t: 0.28, text: "FIND YOUR" }
+      ];
+      const kickerDriver = { t: 0 };
+      const kickerTextAt = (time) => {
+        for (let i = kickerStates.length - 1; i >= 0; i -= 1) {
+          if (time >= kickerStates[i].t) return kickerStates[i].text;
+        }
+        return "";
+      };
+
+      tl.fromTo(
+        "#f01-find-your-fittest-self-mark",
+        { opacity: 0.16, clipPath: "inset(48% 48% 48% 48% round 50%)", scale: 0.96 },
+        { opacity: 1, clipPath: "inset(0% 0% 0% 0% round 50%)", scale: 1, duration: 0.72, ease: "power2.out" },
+        0.08
+      );
+      tl.to(
+        '[class~="f01-find-your-fittest-self-logo-stroke"]',
+        { strokeDashoffset: 0, duration: 0.64, ease: "power2.out", stagger: 0.46 },
+        0.12
+      );
+      tl.fromTo(
+        "#f01-find-your-fittest-self-eyebrow",
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.34, ease: "power2.out" },
+        0.7
+      );
+
+      tl.fromTo(
+        "#f01-find-your-fittest-self-kicker",
+        { opacity: 0, y: 18 },
+        { opacity: 1, y: 0, duration: 0.42, ease: "power2.out" },
+        1.1
+      );
+      tl.to(
+        kickerDriver,
+        {
+          t: 0.55,
+          duration: 0.55,
+          ease: "none",
+          onUpdate: () => {
+            kicker.textContent = kickerTextAt(kickerDriver.t);
+          }
+        },
+        1.1
+      );
+      tl.fromTo(
+        "#f01-find-your-fittest-self-display",
+        { opacity: 0, y: 38, scale: 0.975 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.62, ease: "power2.out" },
+        1.48
+      );
+      tl.fromTo(
+        "#f01-find-your-fittest-self-self",
+        { opacity: 0, y: 34 },
+        { opacity: 1, y: 0, duration: 0.54, ease: "power2.out" },
+        1.76
+      );
+      tl.fromTo(
+        "#f01-find-your-fittest-self-fittest-sweep",
+        { backgroundPosition: "100% 50%", opacity: 1 },
+        { backgroundPosition: "0% 50%", opacity: 1, duration: 1.05, ease: "none" },
+        1.78
+      );
+      tl.to(
+        "#f01-find-your-fittest-self-fittest-sweep",
+        { opacity: 0, duration: 0.15, ease: "power2.in" },
+        2.83
+      );
+
+      tl.fromTo(
+        "#f01-find-your-fittest-self-subline",
+        { opacity: 0, y: 24 },
+        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
+        3.0
+      );
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines[frameId] = tl;
+    })();
+  </script>
+</template>
+

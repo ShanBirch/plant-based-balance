@@ -1,0 +1,582 @@
+<template>
+  <div id="root" data-composition-id="04-shannon-check-in" data-duration="6.6" data-width="1080" data-height="1920">
+    <div class="clip f04-shannon-check-in-ground" data-start="0" data-duration="6.6" data-track-index="0" aria-hidden="true">
+      <div class="f04-shannon-check-in-field-line f04-shannon-check-in-field-line-a"></div>
+      <div class="f04-shannon-check-in-field-line f04-shannon-check-in-field-line-b"></div>
+      <div class="f04-shannon-check-in-corner-dots"></div>
+    </div>
+
+    <main class="clip f04-shannon-check-in-scene" data-start="0" data-duration="6.6" data-track-index="1">
+      <header class="f04-shannon-check-in-heading" id="f04-shannon-check-in-heading">
+        <div class="f04-shannon-check-in-heading-line" id="f04-shannon-check-in-heading-line-a">REAL CHECK-INS</div>
+        <div class="f04-shannon-check-in-heading-line f04-shannon-check-in-heading-accent" id="f04-shannon-check-in-heading-line-b">WITH SHANNON</div>
+      </header>
+
+      <section class="f04-shannon-check-in-inbox" id="f04-shannon-check-in-inbox" aria-label="Balance inbox">
+        <div class="f04-shannon-check-in-inbox-chrome">
+          <div class="f04-shannon-check-in-brand-lockup">
+            <img src="assets/balance-logo.png" alt="Balance" class="f04-shannon-check-in-brand-mark" />
+            <div>
+              <div class="f04-shannon-check-in-inbox-name">Balance inbox</div>
+              <div class="f04-shannon-check-in-inbox-state">PERSONAL SUPPORT</div>
+            </div>
+          </div>
+          <div class="f04-shannon-check-in-status-pill">CHECK-IN</div>
+        </div>
+
+        <article class="f04-shannon-check-in-notification" id="f04-shannon-check-in-notification">
+          <div class="f04-shannon-check-in-avatar">S</div>
+          <div class="f04-shannon-check-in-notification-copy">
+            <div class="f04-shannon-check-in-notification-topline">
+              <strong>Shannon</strong>
+              <span class="f04-shannon-check-in-now">NOW</span>
+            </div>
+            <div class="f04-shannon-check-in-notification-title">Weekly check-in</div>
+          </div>
+          <div class="f04-shannon-check-in-unread" aria-label="Unread"></div>
+        </article>
+
+        <article class="f04-shannon-check-in-voice-card" id="f04-shannon-check-in-voice-card">
+          <div class="f04-shannon-check-in-voice-meta">
+            <div class="f04-shannon-check-in-mini-avatar">S</div>
+            <div>
+              <div class="f04-shannon-check-in-voice-name">Shannon</div>
+              <div class="f04-shannon-check-in-voice-label">VOICE NOTE</div>
+            </div>
+          </div>
+
+          <div class="f04-shannon-check-in-player">
+            <div class="f04-shannon-check-in-play-stage">
+              <div class="f04-shannon-check-in-play-burst" id="f04-shannon-check-in-play-burst"></div>
+              <button class="f04-shannon-check-in-play" id="f04-shannon-check-in-play" aria-label="Play voice note">
+                <span class="f04-shannon-check-in-play-triangle"></span>
+              </button>
+            </div>
+            <div class="f04-shannon-check-in-wave-wrap">
+              <svg class="f04-shannon-check-in-wave" viewBox="0 0 520 110" aria-label="Voice note waveform">
+                <path class="f04-shannon-check-in-wave-base" d="M4 55 H516"></path>
+                <path
+                  class="f04-shannon-check-in-wave-path"
+                  id="f04-shannon-check-in-wave-path"
+                  d="M4 55 L18 49 L32 62 L46 39 L60 72 L74 26 L88 84 L102 43 L116 66 L130 33 L144 77 L158 48 L172 58 L186 20 L200 91 L214 38 L228 69 L242 29 L256 80 L270 46 L284 60 L298 34 L312 75 L326 42 L340 65 L354 25 L368 86 L382 40 L396 70 L410 31 L424 79 L438 45 L452 63 L466 37 L480 73 L494 47 L508 58 L516 55"
+                ></path>
+              </svg>
+              <div class="f04-shannon-check-in-wave-caption">A NOTE FOR YOU</div>
+            </div>
+          </div>
+        </article>
+
+        <div class="f04-shannon-check-in-delivered" id="f04-shannon-check-in-delivered">
+          <span class="f04-shannon-check-in-delivered-dot"></span>
+          Delivered in your Balance inbox
+        </div>
+      </section>
+
+      <div class="f04-shannon-check-in-pulse-wrap" aria-label="Questions. Direction. Accountability.">
+        <div class="f04-shannon-check-in-pulse-words" id="f04-shannon-check-in-pulse-words"></div>
+      </div>
+    </main>
+  </div>
+
+  <style>
+    #root {
+      position: relative;
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      container-type: size;
+      color: #160d20;
+      font-family: Montserrat, Arial, sans-serif;
+      isolation: isolate;
+    }
+
+    [class~="f04-shannon-check-in-ground"] {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    [class~="f04-shannon-check-in-field-line"] {
+      position: absolute;
+      height: 1.5px;
+      border-radius: 6px;
+      background: rgba(169, 111, 0, 0.13);
+    }
+
+    [class~="f04-shannon-check-in-field-line-a"] {
+      top: 102px;
+      left: 92px;
+      width: 238px;
+    }
+
+    [class~="f04-shannon-check-in-field-line-b"] {
+      top: 1548px;
+      right: 92px;
+      width: 238px;
+    }
+
+    [class~="f04-shannon-check-in-corner-dots"] {
+      position: absolute;
+      top: 82px;
+      right: 76px;
+      width: 84px;
+      height: 84px;
+      opacity: 0.24;
+      background-image: radial-gradient(circle, #a96f00 0 2.6px, transparent 3px);
+      background-size: 28px 28px;
+    }
+
+    [class~="f04-shannon-check-in-scene"] {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    [class~="f04-shannon-check-in-heading"] {
+      position: absolute;
+      top: 278px;
+      left: 90px;
+      width: 900px;
+      text-align: center;
+      font-size: 72px;
+      font-weight: 700;
+      line-height: 1.03;
+      letter-spacing: -0.04em;
+      transform-origin: 50% 50%;
+    }
+
+    [class~="f04-shannon-check-in-heading-line"] {
+      min-height: 75px;
+    }
+
+    [class~="f04-shannon-check-in-heading-accent"] {
+      margin-top: 10px;
+      color: #a96f00;
+    }
+
+    [class~="f04-shannon-check-in-inbox"] {
+      position: absolute;
+      top: 515px;
+      left: 100px;
+      width: 880px;
+      height: 790px;
+      overflow: hidden;
+      border: 1.5px solid rgba(169, 111, 0, 0.2);
+      border-radius: 14px;
+      background: rgba(169, 111, 0, 0.04);
+      transform-origin: 50% 34%;
+    }
+
+    [class~="f04-shannon-check-in-inbox-chrome"] {
+      height: 118px;
+      padding: 0 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1.5px solid rgba(169, 111, 0, 0.16);
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    [class~="f04-shannon-check-in-brand-lockup"] {
+      display: flex;
+      align-items: center;
+      gap: 17px;
+    }
+
+    [class~="f04-shannon-check-in-brand-mark"] {
+      width: 56px;
+      height: 56px;
+      display: block;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 1.5px solid rgba(169, 111, 0, 0.2);
+    }
+
+    [class~="f04-shannon-check-in-inbox-name"] {
+      font-size: 25px;
+      font-weight: 600;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    [class~="f04-shannon-check-in-inbox-state"] {
+      margin-top: 7px;
+      color: #a96f00;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.13em;
+    }
+
+    [class~="f04-shannon-check-in-status-pill"] {
+      padding: 11px 18px 10px;
+      border-radius: 100px;
+      background: rgba(169, 111, 0, 0.08);
+      color: #a96f00;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+    }
+
+    [class~="f04-shannon-check-in-notification"] {
+      position: absolute;
+      top: 162px;
+      left: 42px;
+      width: 796px;
+      height: 150px;
+      padding: 0 34px;
+      display: grid;
+      grid-template-columns: 76px 1fr 22px;
+      align-items: center;
+      gap: 22px;
+      box-sizing: border-box;
+      border: 1.5px solid rgba(169, 111, 0, 0.2);
+      border-radius: 14px;
+      background: #ffffff;
+      transform-origin: 88% 10%;
+    }
+
+    [class~="f04-shannon-check-in-avatar"] {
+      width: 76px;
+      height: 76px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #a96f00;
+      color: #ffffff;
+      font-size: 31px;
+      font-weight: 700;
+    }
+
+    [class~="f04-shannon-check-in-notification-copy"] {
+      min-width: 0;
+    }
+
+    [class~="f04-shannon-check-in-notification-topline"] {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      font-size: 27px;
+      line-height: 1.1;
+    }
+
+    [class~="f04-shannon-check-in-now"] {
+      color: #9a9a9a;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+    }
+
+    [class~="f04-shannon-check-in-notification-title"] {
+      margin-top: 12px;
+      color: #d8a43a;
+      font-size: 22px;
+      font-weight: 500;
+    }
+
+    [class~="f04-shannon-check-in-unread"] {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #a96f00;
+    }
+
+    [class~="f04-shannon-check-in-voice-card"] {
+      position: absolute;
+      top: 350px;
+      left: 42px;
+      width: 796px;
+      height: 340px;
+      padding: 30px 34px;
+      box-sizing: border-box;
+      border: 1.5px solid rgba(169, 111, 0, 0.2);
+      border-radius: 14px;
+      background: #ffffff;
+      transform-origin: 50% 0%;
+    }
+
+    [class~="f04-shannon-check-in-voice-meta"] {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    [class~="f04-shannon-check-in-mini-avatar"] {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(169, 111, 0, 0.15);
+      color: #a96f00;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    [class~="f04-shannon-check-in-voice-name"] {
+      font-size: 21px;
+      font-weight: 600;
+      line-height: 1.1;
+    }
+
+    [class~="f04-shannon-check-in-voice-label"] {
+      margin-top: 6px;
+      color: #a96f00;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+    }
+
+    [class~="f04-shannon-check-in-player"] {
+      margin-top: 35px;
+      display: grid;
+      grid-template-columns: 104px 1fr;
+      align-items: center;
+      gap: 23px;
+    }
+
+    [class~="f04-shannon-check-in-play-stage"] {
+      position: relative;
+      width: 92px;
+      height: 92px;
+      display: grid;
+      place-items: center;
+    }
+
+    [class~="f04-shannon-check-in-play-burst"] {
+      position: absolute;
+      inset: 15px;
+      z-index: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(169, 111, 0, 0.42) 0%, rgba(169, 111, 0, 0) 72%);
+      filter: blur(7px);
+      opacity: 0;
+    }
+
+    [class~="f04-shannon-check-in-play"] {
+      position: relative;
+      z-index: 2;
+      width: 76px;
+      height: 76px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      background: #a96f00;
+      transform-origin: 50% 50%;
+    }
+
+    [class~="f04-shannon-check-in-play-triangle"] {
+      display: block;
+      width: 0;
+      height: 0;
+      margin-left: 6px;
+      border-top: 11px solid transparent;
+      border-bottom: 11px solid transparent;
+      border-left: 18px solid #ffffff;
+    }
+
+    [class~="f04-shannon-check-in-wave-wrap"] {
+      min-width: 0;
+    }
+
+    [class~="f04-shannon-check-in-wave"] {
+      display: block;
+      width: 100%;
+      height: 112px;
+      overflow: visible;
+    }
+
+    [class~="f04-shannon-check-in-wave-base"] {
+      fill: none;
+      stroke: rgba(169, 111, 0, 0.14);
+      stroke-width: 4;
+      stroke-linecap: round;
+    }
+
+    [class~="f04-shannon-check-in-wave-path"] {
+      fill: none;
+      stroke: #a96f00;
+      stroke-width: 6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    [class~="f04-shannon-check-in-wave-caption"] {
+      margin-top: 4px;
+      color: #9a9a9a;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+    }
+
+    [class~="f04-shannon-check-in-delivered"] {
+      position: absolute;
+      top: 716px;
+      left: 42px;
+      width: 796px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: #a96f00;
+      font-size: 19px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    [class~="f04-shannon-check-in-delivered-dot"] {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #a96f00;
+    }
+
+    [class~="f04-shannon-check-in-pulse-wrap"] {
+      position: absolute;
+      top: 1405px;
+      left: 80px;
+      width: 920px;
+      min-height: 74px;
+      text-align: center;
+    }
+
+    [class~="f04-shannon-check-in-pulse-words"] {
+      min-width: 920px;
+      min-height: 44px;
+      white-space: nowrap;
+      color: #160d20;
+      font-size: 28px;
+      font-weight: 600;
+      line-height: 1.45;
+      letter-spacing: 0.015em;
+    }
+  </style>
+
+  <script>
+    (() => {
+      const frameId = "04-shannon-check-in";
+      const root = document.querySelector('[data-composition-id="04-shannon-check-in"]');
+      const tl = gsap.timeline({ paused: true });
+
+      const wavePath = root.querySelector("#f04-shannon-check-in-wave-path");
+      const waveLength = wavePath.getTotalLength();
+      wavePath.style.strokeDasharray = `${waveLength}`;
+      wavePath.style.strokeDashoffset = `${waveLength}`;
+
+      const pulseWords = root.querySelector("#f04-shannon-check-in-pulse-words");
+      const pulseStates = [
+        { t: 0, text: "" },
+        { t: 0.06, text: "Questions." },
+        { t: 0.27, text: "Questions.  Direction." },
+        { t: 0.48, text: "Questions.  Direction.  Accountability." }
+      ];
+      const pulseDriver = { t: 0 };
+      const pulseTextAt = (time) => {
+        for (let i = pulseStates.length - 1; i >= 0; i -= 1) {
+          if (time >= pulseStates[i].t) return pulseStates[i].text;
+        }
+        return "";
+      };
+
+      tl.fromTo(
+        "#f04-shannon-check-in-heading-line-a",
+        { opacity: 0, y: 22 },
+        { opacity: 1, y: 0, duration: 0.46, ease: "power3.out" },
+        0.06
+      );
+      tl.fromTo(
+        "#f04-shannon-check-in-heading-line-b",
+        { opacity: 0, y: 22 },
+        { opacity: 1, y: 0, duration: 0.46, ease: "power3.out" },
+        0.22
+      );
+      tl.to(
+        "#f04-shannon-check-in-heading",
+        { y: -116, scale: 0.78, duration: 0.5, ease: "power2.inOut" },
+        0.72
+      );
+      tl.fromTo(
+        "#f04-shannon-check-in-inbox",
+        { opacity: 0, y: 120, scale: 0.985 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.58, ease: "power3.out" },
+        0.7
+      );
+
+      tl.fromTo(
+        "#f04-shannon-check-in-notification",
+        { opacity: 0, scale: 0, y: 16 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.58, ease: "power3.out" },
+        1.3
+      );
+      tl.to(
+        "#f04-shannon-check-in-inbox",
+        { scale: 1.05, y: -30, duration: 3.12, ease: "power1.inOut" },
+        1.68
+      );
+
+      tl.fromTo(
+        "#f04-shannon-check-in-voice-card",
+        { opacity: 0, scaleY: 0.06, y: -18 },
+        { opacity: 1, scaleY: 1, y: 0, duration: 0.56, ease: "power3.out" },
+        3.4
+      );
+      tl.to(
+        "#f04-shannon-check-in-wave-path",
+        { strokeDashoffset: 0, duration: 0.82, ease: "power2.out" },
+        3.62
+      );
+
+      tl.to(
+        "#f04-shannon-check-in-play",
+        { scale: 0.92, duration: 0.12, ease: "power1.in" },
+        4.35
+      );
+      tl.to(
+        "#f04-shannon-check-in-play",
+        { scale: 1, duration: 0.48, ease: "back.out(1.4)" },
+        4.47
+      );
+      tl.fromTo(
+        "#f04-shannon-check-in-play-burst",
+        { scale: 1, opacity: 0 },
+        { scale: 4, opacity: 0.42, duration: 0.38, ease: "power2.out" },
+        4.47
+      );
+      tl.to(
+        "#f04-shannon-check-in-play-burst",
+        { opacity: 0, duration: 0.34, ease: "power2.in" },
+        4.79
+      );
+      tl.fromTo(
+        "#f04-shannon-check-in-delivered",
+        { opacity: 0, y: 16 },
+        { opacity: 1, y: 0, duration: 0.42, ease: "power2.out" },
+        4.65
+      );
+
+      tl.fromTo(
+        "#f04-shannon-check-in-pulse-words",
+        { opacity: 0, y: 14 },
+        { opacity: 1, y: 0, duration: 0.22, ease: "power2.out" },
+        5.1
+      );
+      tl.to(
+        pulseDriver,
+        {
+          t: 0.62,
+          duration: 0.62,
+          ease: "none",
+          onUpdate: () => {
+            pulseWords.textContent = pulseTextAt(pulseDriver.t);
+          }
+        },
+        5.1
+      );
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines[frameId] = tl;
+    })();
+  </script>
+</template>

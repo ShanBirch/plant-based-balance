@@ -1379,6 +1379,44 @@ async function postInstagramGraphAudio({ recipientId, accountId, audioUrl, tag }
     return parsed;
 }
 
+function buildInstagramGraphVideoMessagePayload({ recipientId, videoUrl, tag }) {
+    return {
+        recipient: { id: recipientId },
+        message: {
+            attachment: {
+                type: 'video',
+                payload: { url: videoUrl },
+            },
+        },
+        ...(tag ? { tag } : {}),
+    };
+}
+
+async function postInstagramGraphVideo({ recipientId, accountId, videoUrl, tag }) {
+    const accessToken = await getInstagramGraphAccessToken(accountId);
+    if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
+    if (!recipientId) throw new Error('Instagram Graph recipient id missing');
+    if (!videoUrl) throw new Error('Instagram Graph video URL missing');
+
+    const targetAccount = accountId || 'me';
+    const res = await fetch(`https://graph.instagram.com/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(targetAccount)}/messages`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(buildInstagramGraphVideoMessagePayload({ recipientId, videoUrl, tag })),
+    });
+    const responseText = await res.text();
+    let parsed;
+    try { parsed = responseText ? JSON.parse(responseText) : {}; } catch { parsed = { raw: responseText }; }
+    if (!res.ok) {
+        const detail = parsed?.error?.message || responseText;
+        throw new Error(`Instagram Graph video ${res.status}: ${String(detail || '').slice(0, 400)}`);
+    }
+    return parsed;
+}
+
 function isInstagramAudioUnsupportedError(errorMessage = '') {
     const text = String(errorMessage || '').toLowerCase();
     return text.includes('attachment format is not supported')
@@ -2142,13 +2180,37 @@ exports.handler = async (event) => {
             }),
         };
     }
-    const outboundItems = voiceMessageConfig.enabled
+    const draftVideoAttachmentUrl = useDraftMessageChunks
+        ? String(alertData.draft_video_attachment_url || '').trim()
+        : '';
+    const hasDraftVideoAttachment = /^https:\/\/[^\s]+\.mp4(?:[?#][^\s]*)?$/i.test(draftVideoAttachmentUrl);
+    if (hasDraftVideoAttachment && !shouldUseGraph) {
+        return {
+            statusCode: 409,
+            body: JSON.stringify({
+                error: 'Native video delivery requires Instagram Graph',
+                code: 'video_attachment_unavailable',
+            }),
+        };
+    }
+    let outboundItems = voiceMessageConfig.enabled
         ? [{
             kind: 'audio',
             text: messagesToSend.join('\n\n'),
             voiceConfig: voiceMessageConfig,
         }]
         : messagesToSend.map(text => ({ kind: 'text', text }));
+    if (hasDraftVideoAttachment && !voiceMessageConfig.enabled) {
+        outboundItems = [
+            outboundItems[0],
+            {
+                kind: 'video',
+                text: `[VIDEO:${draftVideoAttachmentUrl}]`,
+                videoUrl: draftVideoAttachmentUrl,
+            },
+            ...outboundItems.slice(1),
+        ].filter(Boolean);
+    }
 
     let claimedAlert;
     let sendClaimId = '';
@@ -2265,6 +2327,21 @@ exports.handler = async (event) => {
                     transport: deliveryTransport,
                     kind: 'audio',
                     audio,
+                });
+            } else if (item.kind === 'video') {
+                const r = await postInstagramGraphVideo({
+                    recipientId: graphRecipientId,
+                    accountId: graphAccountId,
+                    videoUrl: item.videoUrl,
+                    tag: graphMessageTag,
+                });
+                sendResults.push({
+                    ok: true,
+                    response: r,
+                    text: chunkText,
+                    transport: deliveryTransport,
+                    kind: 'video',
+                    videoUrl: item.videoUrl,
                 });
             } else {
                 const r = shouldUseGraph
@@ -2616,6 +2693,7 @@ exports._test = {
     resolveChunkGaps,
     resolveFirstItemTypingDelayMs,
     resolveOutboundVoiceMessageConfig,
+    buildInstagramGraphVideoMessagePayload,
     isInstagramAudioUnsupportedError,
     isCocosAlertData,
     isChallengeOfferSend,

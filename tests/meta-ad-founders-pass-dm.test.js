@@ -6,6 +6,8 @@ const path = require('node:path');
 const {
     buildMetaAdCheckoutUrl,
     buildMetaAdFoundersPassFirstReply,
+    buildMetaAdGoalProofReply,
+    isMetaAdGoalReplyTurn,
     buildMetaAdFirstReplyApproval,
     buildApprovedMetaAdFirstReplyHandoffData,
     buildApprovedDeterministicMetaAdFirstReplyReview,
@@ -17,6 +19,7 @@ const {
     getMetaAdSensitiveHoldReason,
     hasImmediateMetaDispatchFailure,
 } = require('../netlify/functions/ig-instant-draft')._test;
+const { buildInstagramGraphVideoMessagePayload } = require('../netlify/functions/send-ig-reply')._test;
 
 test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and model review', () => {
     const currentMessage = 'What is the Founders Pass?';
@@ -44,7 +47,8 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
     });
 
     assert.equal(draft.firstReplyIntent, 'overview');
-    assert.match(draft.joined, /balance-founders-pass-dm-preview\.mp4/);
+    assert.match(draft.joined, /what's the main thing you're trying to change with your fitness right now/i);
+    assert.doesNotMatch(draft.joined, /https?:\/\//);
     assert.equal(approval.code, 'approved_meta_ad_first_reply');
     assert.equal(handoff.client_manager_review_required, false);
     assert.equal(handoff.signup_link_manual_only, false);
@@ -185,17 +189,17 @@ test('Meta ad card transport attachment does not poison the first reply or follo
     assert.deepEqual(followUpHistory, [offerQuestion, realPhoto]);
 });
 
-test('inclusions quick reply sends the app preview and attributed checkout handoff', () => {
+test('inclusions quick reply answers the direct ask without a raw preview URL', () => {
     const reply = buildMetaAdFoundersPassFirstReply("What's included?");
-    assert.equal(reply.model, 'deterministic_meta_ad_founders_pass_v2');
+    assert.equal(reply.model, 'deterministic_meta_ad_founders_pass_v3');
     assert.equal(reply.firstReplyIntent, 'inclusions');
-    assert.equal(reply.chunks.length, 2);
-    assert.match(reply.chunks[0], /balance-founders-pass-dm-preview\.mp4/);
-    assert.match(reply.chunks[1], /AU\$99 once/);
-    assert.match(reply.chunks[1], /six weeks of one-to-one in-app support with me for questions, direction and accountability/i);
-    assert.match(reply.chunks[1], /lifetime access to the core app and plant-based community/i);
-    assert.match(reply.chunks[1], /weekly plan reviews and adjustments are separate/i);
-    assert.match(reply.chunks[1], /plant-based-fitness\.html/);
+    assert.equal(reply.chunks.length, 1);
+    assert.doesNotMatch(reply.joined, /balance-founders-pass-dm-preview\.mp4/);
+    assert.match(reply.joined, /AU\$99 once/);
+    assert.match(reply.joined, /six weeks of one-to-one in-app support with me for questions, direction and accountability/i);
+    assert.match(reply.joined, /lifetime access to the core app and plant-based community/i);
+    assert.match(reply.joined, /weekly plan reviews and adjustments are separate/i);
+    assert.match(reply.joined, /plant-based-fitness\.html/);
 });
 
 test('generic keyword and fit quick reply answer without a premature checkout link', () => {
@@ -210,15 +214,57 @@ test('generic keyword and fit quick reply answer without a premature checkout li
 
     const reply = buildMetaAdFoundersPassFirstReply('Is this right for me?');
     assert.equal(reply.firstReplyIntent, 'fit');
-    assert.match(reply.joined, /good fit if you want plant-based training/i);
+    assert.match(reply.joined, /main thing you're trying to change/i);
     assert.doesNotMatch(reply.joined, /plant-based-fitness\.html/);
     assert.doesNotMatch(reply.joined, /vegan fitness community/i);
+});
+
+test('the reply after the goal is tailored and carries a native video attachment', () => {
+    const history = [{
+        direction: 'out',
+        text: "Hey, yeah of course. Before I send you a heap of generic info, what's the main thing you're trying to change with your fitness right now?",
+    }];
+    assert.equal(isMetaAdGoalReplyTurn(history), true);
+    assert.equal(isMetaAdGoalReplyTurn([{ direction: 'out', text: 'How was your week?' }]), false);
+
+    const consistency = buildMetaAdGoalProofReply('I need accountability because I always fall off');
+    assert.match(consistency.joined, /keeping the week on track once life gets busy/i);
+    assert.match(consistency.videoAttachmentUrl, /balance-founders-pass-dm-preview\.mp4/);
+    assert.doesNotMatch(consistency.joined, /https?:\/\//);
+
+    const nutrition = buildMetaAdGoalProofReply('I need help with vegan meals');
+    assert.match(nutrition.joined, /plant-based food structure/i);
+    assert.equal(nutrition.replyMode, 'campaign_goal_proof');
+    const proofReview = buildApprovedDeterministicMetaAdFirstReplyReview({
+        metaAdGoalReplyTurn: true,
+        draft: nutrition,
+        linkedUserId: null,
+        mediaReview: { required: false },
+        contextReview: { required: false },
+        currentMessage: 'I need help with vegan meals',
+    });
+    assert.equal(proofReview.verdict, 'pass');
+    assert.equal(proofReview.notification_required, false);
+    assert.equal(proofReview.reviewer_model, 'deterministic-meta-ad-goal-proof-approval');
+
+    assert.deepEqual(buildInstagramGraphVideoMessagePayload({
+        recipientId: 'ig-user-1',
+        videoUrl: consistency.videoAttachmentUrl,
+    }), {
+        recipient: { id: 'ig-user-1' },
+        message: {
+            attachment: {
+                type: 'video',
+                payload: { url: consistency.videoAttachmentUrl },
+            },
+        },
+    });
 });
 
 test('plant-based requirement and ready prompts receive different next steps', () => {
     const requirement = buildMetaAdFoundersPassFirstReply('Do I need to already be Plant Based?');
     assert.equal(requirement.firstReplyIntent, 'plant_based_requirement');
-    assert.match(requirement.joined, /do not need to already be fully plant-based/i);
+    assert.match(requirement.joined, /don't need to already be fully plant-based/i);
     assert.doesNotMatch(requirement.joined, /plant-based-fitness\.html/);
 
     const ready = buildMetaAdFoundersPassFirstReply("I'm ready to start");

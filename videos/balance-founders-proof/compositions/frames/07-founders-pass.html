@@ -1,0 +1,378 @@
+<template>
+  <style>
+    #root {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      container-type: size;
+      color: #160d20;
+      font-family: Montserrat, Arial, sans-serif;
+    }
+
+    .clip {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    .f07-background {
+      background: #ffffff;
+    }
+
+    .f07-atmosphere {
+      position: absolute;
+      left: 50%;
+      top: 42%;
+      width: 96cqw;
+      height: 96cqw;
+      margin-left: -48cqw;
+      margin-top: -48cqw;
+      border: 1.5px solid rgba(169, 111, 0, 0.08);
+      border-radius: 50%;
+    }
+
+    .f07-atmosphere::before,
+    .f07-atmosphere::after {
+      content: "";
+      position: absolute;
+      border: 1.5px solid rgba(169, 111, 0, 0.08);
+      border-radius: 50%;
+    }
+
+    .f07-atmosphere::before {
+      inset: 10cqw;
+    }
+
+    .f07-atmosphere::after {
+      inset: 22cqw;
+    }
+
+    .f07-accent-block {
+      position: absolute;
+      right: -15cqw;
+      top: 3cqh;
+      width: 46cqw;
+      height: 30cqh;
+      border-radius: 50%;
+      background: rgba(169, 111, 0, 0.04);
+    }
+
+    .f07-swap-stage {
+      position: absolute;
+      left: 6.7cqw;
+      top: 17.2cqh;
+      width: 86.6cqw;
+      height: 52.2cqh;
+    }
+
+    .f07-card,
+    .f07-final-card {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      overflow: hidden;
+      border: 1.5px solid rgba(169, 111, 0, 0.2);
+      border-radius: 14px;
+      background: rgba(169, 111, 0, 0.04);
+      transform-origin: 50% 50%;
+      text-align: center;
+    }
+
+    .f07-card {
+      padding: 8cqw;
+    }
+
+    .f07-card-rule {
+      width: 5.6cqw;
+      height: 4px;
+      margin-bottom: 3cqh;
+      border-radius: 2px;
+      background: #a96f00;
+    }
+
+    .f07-card-title {
+      max-width: 76cqw;
+      margin: 0;
+      font-size: 7.2cqw;
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: #160d20;
+    }
+
+    .f07-card-subline {
+      max-width: 70cqw;
+      margin: 2.5cqh 0 0;
+      font-size: 3.1cqw;
+      font-weight: 500;
+      line-height: 1.45;
+      color: #d8a43a;
+    }
+
+    .f07-final-card {
+      z-index: 4;
+      justify-content: flex-start;
+      padding: 4.1cqh 5cqw 3.3cqh;
+    }
+
+    .f07-logo-wrap {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 19cqw;
+      height: 19cqw;
+      flex: 0 0 auto;
+    }
+
+    .f07-logo-ring {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .f07-logo-ring circle {
+      fill: none;
+      stroke: #a96f00;
+      stroke-width: 5;
+      stroke-linecap: round;
+      transform: rotate(-90deg);
+      transform-origin: 100px 100px;
+    }
+
+    .f07-logo-image {
+      width: 14.5cqw;
+      height: 14.5cqw;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    .f07-lockup-title {
+      max-width: 72cqw;
+      margin: 2.6cqh 0 0;
+      font-size: 5.45cqw;
+      font-weight: 700;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      color: #160d20;
+    }
+
+    .f07-offer-pill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 72cqw;
+      min-height: 5.7cqh;
+      margin-top: 3.2cqh;
+      padding: 0 3cqw;
+      box-sizing: border-box;
+      border-radius: 100px;
+      background: #a96f00;
+      color: #ffffff;
+      font-size: 2.65cqw;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .f07-prompt {
+      max-width: 72cqw;
+      margin: 2.7cqh 0 0;
+      font-size: 2.65cqw;
+      font-weight: 500;
+      line-height: 1.45;
+      color: #d8a43a;
+    }
+
+    .f07-progress {
+      position: absolute;
+      left: 6.7cqw;
+      top: 81.1cqh;
+      width: 86.6cqw;
+      height: 3px;
+      background: rgba(169, 111, 0, 0.15);
+    }
+
+    .f07-progress-fill {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: #a96f00;
+      transform-origin: left center;
+    }
+  </style>
+
+  <div id="root" data-composition-id="07-founders-pass" data-duration="6" data-width="1080" data-height="1920">
+    <div class="clip f07-background" data-start="0" data-duration="6" data-track-index="0">
+      <div class="f07-accent-block"></div>
+      <div class="f07-atmosphere"></div>
+
+      <div class="f07-swap-stage">
+        <section class="f07-card f07-card-one" aria-label="A clear plan">
+          <div class="f07-card-rule"></div>
+          <h1 class="f07-card-title">A CLEAR PLAN.</h1>
+        </section>
+
+        <section class="f07-card f07-card-two" aria-label="Six weeks with Shannon">
+          <div class="f07-card-rule"></div>
+          <h1 class="f07-card-title">6 WEEKS<br>WITH SHANNON.</h1>
+          <p class="f07-card-subline">Questions · direction · accountability</p>
+        </section>
+
+        <section class="f07-card f07-card-three" aria-label="Lifetime core access">
+          <div class="f07-card-rule"></div>
+          <h1 class="f07-card-title">LIFETIME<br>CORE ACCESS.</h1>
+          <p class="f07-card-subline">Balance app + vegan community</p>
+        </section>
+
+        <section class="f07-final-card" aria-label="Founders Pass offer">
+          <div class="f07-logo-wrap">
+            <svg class="f07-logo-ring" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle id="f07-logo-ring-path" cx="100" cy="100" r="91"></circle>
+            </svg>
+            <img class="f07-logo-image" src="assets/balance-logo.png" alt="Balance">
+          </div>
+          <h1 class="f07-lockup-title">FIND YOUR<br>FITTEST SELF</h1>
+          <div class="f07-offer-pill">FOUNDERS PASS · AU$99 ONCE</div>
+          <p class="f07-prompt">Tell me your goal and I’ll show you how it fits.</p>
+        </section>
+      </div>
+
+      <div class="f07-progress"><span class="f07-progress-fill"></span></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script>
+    (() => {
+      const composition = document.querySelector('[data-composition-id="07-founders-pass"]');
+      const select = (selector) => composition.querySelector(selector);
+      const cards = [
+        select(".f07-card-one"),
+        select(".f07-card-two"),
+        select(".f07-card-three")
+      ];
+      const finalCard = select(".f07-final-card");
+      const timeline = gsap.timeline({ paused: true });
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["07-founders-pass"] = timeline;
+
+      const logoRing = select("#f07-logo-ring-path");
+      const logoRingLength = logoRing.getTotalLength();
+      logoRing.style.strokeDasharray = String(logoRingLength);
+      logoRing.style.strokeDashoffset = String(logoRingLength);
+
+      timeline.set([cards[1], cards[2], finalCard], { opacity: 0 }, 0);
+      timeline.fromTo(cards[0], {
+        opacity: 0,
+        y: 20,
+        scale: 0.97
+      }, {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        duration: 0.44,
+        ease: "power2.out"
+      }, 0.05);
+
+      const stateSequence = [
+        { t: 0.50, index: 0 },
+        { t: 1.50, index: 1 },
+        { t: 3.00, index: 2 }
+      ];
+      const stateAt = (time) => {
+        for (let index = stateSequence.length - 1; index >= 0; index -= 1) {
+          if (time >= stateSequence[index].t) return stateSequence[index].index;
+        }
+        return 0;
+      };
+      const stateDriver = { t: 0.50 };
+      timeline.to(stateDriver, {
+        t: 4.29,
+        duration: 3.79,
+        ease: "none",
+        onUpdate: () => {
+          const active = stateAt(stateDriver.t);
+          cards.forEach((card, index) => {
+            card.style.opacity = index === active ? "1" : "0";
+          });
+        }
+      }, 0.50);
+
+      timeline.to(cards[2], {
+        opacity: 0,
+        scale: 0.96,
+        duration: 0.16,
+        ease: "power2.in"
+      }, 4.76);
+      timeline.fromTo(finalCard, {
+        opacity: 0,
+        scale: 0.84
+      }, {
+        opacity: 1,
+        scale: 1,
+        duration: 0.52,
+        ease: "back.out(1.4)"
+      }, 4.16);
+
+      timeline.to(logoRing, {
+        strokeDashoffset: 0,
+        duration: 0.54,
+        ease: "power2.out"
+      }, 4.60);
+      timeline.fromTo(".f07-logo-image", {
+        opacity: 0,
+        scale: 0.9
+      }, {
+        opacity: 1,
+        scale: 1,
+        duration: 0.42,
+        ease: "power2.out"
+      }, 4.66);
+      timeline.fromTo(".f07-lockup-title", {
+        opacity: 0,
+        y: 18
+      }, {
+        opacity: 1,
+        y: 0,
+        duration: 0.40,
+        ease: "power2.out"
+      }, 4.84);
+      timeline.fromTo(".f07-offer-pill", {
+        opacity: 0,
+        y: 16,
+        scale: 0.96
+      }, {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        duration: 0.42,
+        ease: "power2.out"
+      }, 5.00);
+      timeline.fromTo(".f07-prompt", {
+        opacity: 0,
+        y: 12
+      }, {
+        opacity: 1,
+        y: 0,
+        duration: 0.46,
+        ease: "power2.out"
+      }, 5.24);
+      timeline.fromTo(".f07-progress-fill", {
+        scaleX: 0
+      }, {
+        scaleX: 1,
+        duration: 0.66,
+        ease: "power2.out"
+      }, 5.24);
+    })();
+  </script>
+</template>

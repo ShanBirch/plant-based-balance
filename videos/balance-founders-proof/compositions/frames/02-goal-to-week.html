@@ -1,0 +1,520 @@
+<template>
+  <style>
+    #root {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      container-type: size;
+      color: #160d20;
+      font-family: Montserrat, Arial, sans-serif;
+    }
+
+    .clip {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    .ff02-goal-to-week-background {
+      background: #ffffff;
+    }
+
+    .ff02-goal-to-week-capture {
+      position: absolute;
+      inset: -3cqh -2cqw;
+      width: 104cqw;
+      height: 106cqh;
+      object-fit: cover;
+      opacity: 0.42;
+      filter: saturate(0.58) contrast(0.92);
+    }
+
+    .ff02-goal-to-week-wash {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.56) 32%, rgba(255,255,255,0.88) 83%, #ffffff 100%);
+    }
+
+    .ff02-goal-to-week-stage {
+      position: absolute;
+      inset: 0;
+      transform-origin: 50% 38%;
+    }
+
+    .ff02-goal-to-week-week-surface {
+      position: absolute;
+      left: 6.7cqw;
+      top: 25cqh;
+      width: 86.6cqw;
+      height: 46cqh;
+      padding: 5.2cqw 3cqw 3.4cqw;
+      box-sizing: border-box;
+      border: 1.5px solid rgba(169, 111, 0, 0.2);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .ff02-goal-to-week-week-surface::before {
+      content: "";
+      position: absolute;
+      inset: 1.5cqw;
+      border-radius: 10px;
+      border: 1px solid rgba(169, 111, 0, 0.08);
+      pointer-events: none;
+    }
+
+    .ff02-goal-to-week-heading {
+      position: absolute;
+      left: 7.4cqw;
+      top: 12.9cqh;
+      width: 85.2cqw;
+      margin: 0;
+      font-size: 6.55cqw;
+      font-weight: 700;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      color: #160d20;
+    }
+
+    .ff02-goal-to-week-heading-rule {
+      display: block;
+      width: 5.6cqw;
+      height: 4px;
+      margin-bottom: 1.7cqh;
+      border-radius: 2px;
+      background: #a96f00;
+    }
+
+    .ff02-goal-to-week-morph-card {
+      position: absolute;
+      left: 10.2cqw;
+      top: 15.6cqh;
+      width: 79.6cqw;
+      height: 10.9cqh;
+      overflow: hidden;
+      border: 1.5px solid rgba(169, 111, 0, 0.2);
+      border-radius: 14px;
+      background: rgba(169, 111, 0, 0.08);
+      transform-origin: center center;
+      will-change: transform;
+    }
+
+    .ff02-goal-to-week-goal-old,
+    .ff02-goal-to-week-goal-new {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .ff02-goal-to-week-goal-old {
+      flex-direction: column;
+      gap: 0.45cqh;
+      padding: 2.2cqw 4cqw;
+      box-sizing: border-box;
+    }
+
+    .ff02-goal-to-week-goal-prefix {
+      font-size: 3.8cqw;
+      font-weight: 600;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+      color: #160d20;
+    }
+
+    .ff02-goal-to-week-type-row {
+      display: inline-flex;
+      align-items: baseline;
+      min-width: 59cqw;
+      justify-content: center;
+      white-space: nowrap;
+      font-size: 3.8cqw;
+      font-weight: 600;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+      color: #160d20;
+    }
+
+    .ff02-goal-to-week-caret {
+      display: inline-block;
+      width: 0.34em;
+      margin-left: 0.12em;
+      color: #a96f00;
+      font-weight: 700;
+    }
+
+    .ff02-goal-to-week-goal-new {
+      opacity: 0;
+      color: #ffffff;
+      font-size: 7.2cqw;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    .ff02-goal-to-week-plan-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1.75fr 1fr;
+      gap: 2.1cqw;
+      height: 100%;
+    }
+
+    .ff02-goal-to-week-plan-major,
+    .ff02-goal-to-week-plan-minor {
+      display: grid;
+      gap: 1.5cqh;
+    }
+
+    .ff02-goal-to-week-plan-major {
+      grid-template-rows: 1fr 1fr;
+    }
+
+    .ff02-goal-to-week-plan-minor {
+      grid-template-rows: 1fr 1fr;
+    }
+
+    .ff02-goal-to-week-tile {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-width: 0;
+      padding: 3cqw;
+      box-sizing: border-box;
+      border: 1.5px solid rgba(169, 111, 0, 0.2);
+      border-radius: 14px;
+      background: rgba(169, 111, 0, 0.04);
+    }
+
+    .ff02-goal-to-week-plan-minor .ff02-goal-to-week-tile {
+      padding: 2.5cqw;
+    }
+
+    .ff02-goal-to-week-tile-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1.8cqw;
+    }
+
+    .ff02-goal-to-week-tile-title {
+      max-width: 82%;
+      font-size: 3.35cqw;
+      font-weight: 600;
+      line-height: 1.18;
+      letter-spacing: -0.02em;
+      color: #160d20;
+    }
+
+    .ff02-goal-to-week-plan-minor .ff02-goal-to-week-tile-title {
+      max-width: 100%;
+      font-size: 2.8cqw;
+    }
+
+    .ff02-goal-to-week-check {
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      width: 4.6cqw;
+      height: 4.6cqw;
+      border: 1.5px solid rgba(169, 111, 0, 0.35);
+      border-radius: 50%;
+      color: #a96f00;
+      font-size: 2.5cqw;
+      font-weight: 700;
+    }
+
+    .ff02-goal-to-week-plan-minor .ff02-goal-to-week-check {
+      width: 4.1cqw;
+      height: 4.1cqw;
+      font-size: 2.15cqw;
+    }
+
+    .ff02-goal-to-week-track {
+      width: 100%;
+      height: 12px;
+      overflow: hidden;
+      border-radius: 6px;
+      background: rgba(169, 111, 0, 0.08);
+    }
+
+    .ff02-goal-to-week-fill {
+      width: 100%;
+      height: 100%;
+      border-radius: 6px;
+      background: #a96f00;
+      transform-origin: left center;
+    }
+
+    .ff02-goal-to-week-final-line {
+      position: absolute;
+      left: 8.5cqw;
+      top: 74.1cqh;
+      width: 83cqw;
+      margin: 0;
+      padding-left: 2.6cqw;
+      border-left: 4px solid #a96f00;
+      font-size: 2.95cqw;
+      font-weight: 500;
+      line-height: 1.45;
+      letter-spacing: -0.01em;
+      color: #160d20;
+    }
+
+    .ff02-goal-to-week-progress {
+      position: absolute;
+      left: 7.4cqw;
+      top: 81.05cqh;
+      width: 85.2cqw;
+      height: 3px;
+      border-radius: 0;
+      background: rgba(169, 111, 0, 0.15);
+    }
+
+    .ff02-goal-to-week-progress-fill {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: #a96f00;
+      transform-origin: left center;
+    }
+  </style>
+
+  <div id="root" data-composition-id="02-goal-to-week" data-duration="6.6" data-width="1080" data-height="1920">
+    <div class="clip ff02-goal-to-week-background" data-start="0" data-duration="6.6" data-track-index="0">
+      <img class="ff02-goal-to-week-capture" src="assets/ui/weekly-goals.jpg" alt="Balance weekly goals screen">
+      <div class="ff02-goal-to-week-wash"></div>
+
+      <div class="ff02-goal-to-week-stage">
+        <h1 class="ff02-goal-to-week-heading">
+          <span class="ff02-goal-to-week-heading-rule"></span>
+          YOUR WEEK,<br>MADE CLEAR
+        </h1>
+
+        <section class="ff02-goal-to-week-week-surface" aria-label="Weekly Balance plan">
+          <div class="ff02-goal-to-week-plan-grid">
+            <div class="ff02-goal-to-week-plan-major">
+              <article class="ff02-goal-to-week-tile" data-plan-order="1">
+                <div class="ff02-goal-to-week-tile-top">
+                  <div class="ff02-goal-to-week-tile-title">Plant-based meals</div>
+                  <div class="ff02-goal-to-week-check">✓</div>
+                </div>
+                <div class="ff02-goal-to-week-track"><div class="ff02-goal-to-week-fill"></div></div>
+              </article>
+              <article class="ff02-goal-to-week-tile" data-plan-order="2">
+                <div class="ff02-goal-to-week-tile-top">
+                  <div class="ff02-goal-to-week-tile-title">Strength sessions</div>
+                  <div class="ff02-goal-to-week-check">✓</div>
+                </div>
+                <div class="ff02-goal-to-week-track"><div class="ff02-goal-to-week-fill"></div></div>
+              </article>
+            </div>
+            <div class="ff02-goal-to-week-plan-minor">
+              <article class="ff02-goal-to-week-tile" data-plan-order="3">
+                <div class="ff02-goal-to-week-tile-top">
+                  <div class="ff02-goal-to-week-tile-title">Daily target</div>
+                  <div class="ff02-goal-to-week-check">✓</div>
+                </div>
+                <div class="ff02-goal-to-week-track"><div class="ff02-goal-to-week-fill"></div></div>
+              </article>
+              <article class="ff02-goal-to-week-tile" data-plan-order="4">
+                <div class="ff02-goal-to-week-tile-top">
+                  <div class="ff02-goal-to-week-tile-title">Recovery</div>
+                  <div class="ff02-goal-to-week-check">✓</div>
+                </div>
+                <div class="ff02-goal-to-week-track"><div class="ff02-goal-to-week-fill"></div></div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <div class="ff02-goal-to-week-morph-card">
+          <div class="ff02-goal-to-week-goal-old">
+            <div class="ff02-goal-to-week-goal-prefix">I want to feel stronger</div>
+            <div class="ff02-goal-to-week-type-row">
+              <span id="ff02-goal-to-week-typed"></span><span id="ff02-goal-to-week-caret" class="ff02-goal-to-week-caret">|</span>
+            </div>
+          </div>
+          <div class="ff02-goal-to-week-goal-new">YOUR GOAL</div>
+        </div>
+
+        <p class="ff02-goal-to-week-final-line">Built around what you’re working toward.</p>
+        <div class="ff02-goal-to-week-progress"><span class="ff02-goal-to-week-progress-fill"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script>
+    (() => {
+      const composition = document.querySelector('[data-composition-id="02-goal-to-week"]');
+      const select = (selector) => composition.querySelector(selector);
+      const selectAll = (selector) => Array.from(composition.querySelectorAll(selector));
+      const timeline = gsap.timeline({ paused: true });
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["02-goal-to-week"] = timeline;
+
+      const typed = select("#ff02-goal-to-week-typed");
+      const caret = select("#ff02-goal-to-week-caret");
+      const textStates = [
+        { t: 0.00, text: "" },
+        { t: 0.28, text: "and" },
+        { t: 0.48, text: "and stay" },
+        { t: 0.72, text: "and stay con" },
+        { t: 0.91, text: "and stay consist" },
+        { t: 1.16, text: "and stay consistent." }
+      ];
+      const textAt = (time) => {
+        for (let index = textStates.length - 1; index >= 0; index -= 1) {
+          if (time >= textStates[index].t) return textStates[index].text;
+        }
+        return "";
+      };
+
+      const typeDriver = { t: 0 };
+      timeline.to(typeDriver, {
+        t: 1.48,
+        duration: 1.48,
+        ease: "none",
+        onUpdate: () => { typed.textContent = textAt(typeDriver.t); }
+      }, 0);
+
+      const blinkDriver = { p: 0 };
+      timeline.to(blinkDriver, {
+        p: Math.PI * 5,
+        duration: 1.82,
+        ease: "none",
+        onUpdate: () => { caret.style.opacity = Math.sin(blinkDriver.p) >= 0 ? "1" : "0"; }
+      }, 0);
+
+      timeline.fromTo(".ff02-goal-to-week-morph-card", {
+        opacity: 0,
+        y: 28,
+        scale: 0.97
+      }, {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        duration: 0.46,
+        ease: "power2.out"
+      }, 0.04);
+
+      timeline.fromTo(".ff02-goal-to-week-stage", {
+        scale: 1.055
+      }, {
+        scale: 1,
+        duration: 1.05,
+        ease: "power2.inOut"
+      }, 1.50);
+
+      timeline.fromTo(".ff02-goal-to-week-week-surface", {
+        opacity: 0,
+        y: 55
+      }, {
+        opacity: 1,
+        y: 0,
+        duration: 0.76,
+        ease: "power2.out"
+      }, 1.55);
+
+      timeline.to(".ff02-goal-to-week-morph-card", {
+        x: -310,
+        y: 110,
+        scale: 0.29,
+        borderRadius: 107,
+        backgroundColor: "#a96f00",
+        boxShadow: "0 0 0 rgba(169,111,0,0)",
+        duration: 0.90,
+        ease: "power2.inOut"
+      }, 1.52);
+      timeline.to(".ff02-goal-to-week-goal-old", {
+        opacity: 0,
+        duration: 0.36,
+        ease: "power1.in"
+      }, 1.52);
+      timeline.to(".ff02-goal-to-week-goal-new", {
+        opacity: 1,
+        duration: 0.36,
+        ease: "power1.out"
+      }, 2.06);
+
+      timeline.fromTo(".ff02-goal-to-week-heading", {
+        opacity: 0,
+        y: 24
+      }, {
+        opacity: 1,
+        y: 0,
+        duration: 0.62,
+        ease: "power2.out"
+      }, 1.92);
+      timeline.fromTo(".ff02-goal-to-week-heading-rule", {
+        scaleX: 0,
+        transformOrigin: "left center"
+      }, {
+        scaleX: 1,
+        duration: 0.58,
+        ease: "power2.out"
+      }, 2.12);
+
+      const tiles = selectAll(".ff02-goal-to-week-tile");
+      const tileStarts = [3.10, 3.58, 4.06, 4.54];
+      tiles.forEach((tile, index) => {
+        const start = tileStarts[index];
+        const check = tile.querySelector(".ff02-goal-to-week-check");
+        const fill = tile.querySelector(".ff02-goal-to-week-fill");
+        timeline.fromTo(tile, {
+          opacity: 0,
+          y: 28,
+          scale: 0.97
+        }, {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.48,
+          ease: "power2.out"
+        }, start);
+        timeline.fromTo(fill, {
+          scaleX: 0
+        }, {
+          scaleX: 1,
+          duration: 0.62,
+          ease: "power2.out"
+        }, start + 0.12);
+        timeline.fromTo(check, {
+          opacity: 0,
+          scale: 0.62
+        }, {
+          opacity: 1,
+          scale: 1,
+          duration: 0.34,
+          ease: "power2.out"
+        }, start + 0.30);
+      });
+
+      timeline.fromTo(".ff02-goal-to-week-final-line", {
+        opacity: 0,
+        x: -24
+      }, {
+        opacity: 1,
+        x: 0,
+        duration: 0.62,
+        ease: "power2.out"
+      }, 5.20);
+      timeline.fromTo(".ff02-goal-to-week-progress-fill", {
+        scaleX: 0
+      }, {
+        scaleX: 1,
+        duration: 0.72,
+        ease: "power2.out"
+      }, 5.20);
+    })();
+  </script>
+</template>
+

@@ -1,0 +1,764 @@
+<template>
+  <style>
+    #root {
+      position: relative;
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      container-type: size;
+      color: #160d20;
+      font-family: Montserrat, Arial, sans-serif;
+    }
+
+    [class~="f03-meal-plan-delivered-background"],
+    [class~="f03-meal-plan-delivered-scene"] {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    [class~="f03-meal-plan-delivered-reference"] {
+      position: absolute;
+      inset: -90px -120px;
+      width: calc(100% + 240px);
+      height: calc(100% + 180px);
+      object-fit: cover;
+      object-position: 50% 16%;
+      opacity: 0.42;
+      filter: blur(2px) saturate(0.28) contrast(0.88);
+      transform: scale(1.08) rotate(-2.5deg);
+    }
+
+    [class~="f03-meal-plan-delivered-wash"] {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.70) 0%, rgba(255, 255, 255, 0.91) 44%, #ffffff 82%),
+        linear-gradient(105deg, rgba(169, 111, 0, 0.12), rgba(255, 255, 255, 0.88) 54%);
+    }
+
+    [class~="f03-meal-plan-delivered-accent-plane"] {
+      position: absolute;
+      width: 760px;
+      height: 1180px;
+      top: 180px;
+      right: -390px;
+      border-radius: 50%;
+      background: rgba(169, 111, 0, 0.08);
+      border: 1.5px solid rgba(169, 111, 0, 0.15);
+    }
+
+    [class~="f03-meal-plan-delivered-title"] {
+      position: absolute;
+      left: 64px;
+      top: 112px;
+      width: 920px;
+      margin: 0;
+      font-size: 64px;
+      line-height: 1.06;
+      letter-spacing: -0.02em;
+      font-weight: 700;
+      color: #160d20;
+    }
+
+    [class~="f03-meal-plan-delivered-title-accent"] {
+      display: block;
+      color: #a96f00;
+    }
+
+    [class~="f03-meal-plan-delivered-day-rail"] {
+      position: absolute;
+      left: 58px;
+      top: 286px;
+      width: 964px;
+      height: 92px;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      padding: 10px;
+      box-sizing: border-box;
+      border-radius: 100px;
+      background: rgba(169, 111, 0, 0.04);
+      border: 1.5px solid rgba(169, 111, 0, 0.2);
+    }
+
+    [class~="f03-meal-plan-delivered-day"] {
+      display: grid;
+      place-items: center;
+      min-width: 0;
+      border-radius: 100px;
+      color: #9a9a9a;
+      font-size: 23px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      background: rgba(255, 255, 255, 0.64);
+    }
+
+    [class~="f03-meal-plan-delivered-day-active"] {
+      color: #ffffff;
+      background: #a96f00;
+    }
+
+    [class~="f03-meal-plan-delivered-phone"] {
+      position: absolute;
+      left: 58px;
+      top: 418px;
+      width: 964px;
+      height: 938px;
+      overflow: hidden;
+      box-sizing: border-box;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.84);
+      border: 1.5px solid rgba(169, 111, 0, 0.2);
+    }
+
+    [class~="f03-meal-plan-delivered-phone-bar"] {
+      position: absolute;
+      left: 30px;
+      right: 30px;
+      top: 26px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1.5px solid rgba(169, 111, 0, 0.15);
+    }
+
+    [class~="f03-meal-plan-delivered-phone-label"] {
+      color: #a96f00;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.11em;
+    }
+
+    [class~="f03-meal-plan-delivered-phone-chip"] {
+      padding: 10px 18px;
+      border-radius: 100px;
+      color: #a96f00;
+      background: rgba(169, 111, 0, 0.08);
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    [class~="f03-meal-plan-delivered-week-grid"] {
+      position: absolute;
+      left: 30px;
+      top: 116px;
+      width: 904px;
+      height: 520px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      transform-origin: 0 0;
+    }
+
+    [class~="f03-meal-plan-delivered-meal-card"],
+    [class~="f03-meal-plan-delivered-morph-card"] {
+      position: relative;
+      min-width: 0;
+      height: 520px;
+      overflow: hidden;
+      box-sizing: border-box;
+      border-radius: 14px;
+      background: rgba(169, 111, 0, 0.04);
+      border: 1.5px solid rgba(169, 111, 0, 0.2);
+      transform-origin: 50% 50%;
+      will-change: transform;
+    }
+
+    [class~="f03-meal-plan-delivered-card-focus"] {
+      border-color: rgba(169, 111, 0, 0.72);
+      background: rgba(169, 111, 0, 0.08);
+    }
+
+    [class~="f03-meal-plan-delivered-food-art"] {
+      position: relative;
+      height: 212px;
+      overflow: hidden;
+      margin: 10px;
+      border-radius: 10px;
+      background:
+        radial-gradient(circle at 28% 28%, #ffffff 0 8%, transparent 8.5%),
+        radial-gradient(circle at 66% 42%, rgba(22, 13, 32, 0.80) 0 7%, transparent 7.5%),
+        radial-gradient(circle at 42% 72%, #d8a43a 0 13%, transparent 13.5%),
+        radial-gradient(circle at 78% 78%, rgba(169, 111, 0, 0.62) 0 11%, transparent 11.5%),
+        linear-gradient(145deg, rgba(169, 111, 0, 0.14), rgba(216, 164, 58, 0.50));
+    }
+
+    [class~="f03-meal-plan-delivered-art-two"] {
+      background:
+        radial-gradient(ellipse at 32% 31%, #ffffff 0 10%, transparent 10.5%),
+        radial-gradient(ellipse at 70% 29%, #160d20 0 6%, transparent 6.5%),
+        radial-gradient(circle at 60% 72%, rgba(169, 111, 0, 0.78) 0 15%, transparent 15.5%),
+        linear-gradient(150deg, rgba(216, 164, 58, 0.56), rgba(169, 111, 0, 0.12));
+    }
+
+    [class~="f03-meal-plan-delivered-art-three"] {
+      background:
+        radial-gradient(circle at 32% 35%, #160d20 0 7%, transparent 7.5%),
+        radial-gradient(circle at 65% 26%, #ffffff 0 9%, transparent 9.5%),
+        radial-gradient(ellipse at 50% 70%, #d8a43a 0 19%, transparent 19.5%),
+        linear-gradient(135deg, rgba(169, 111, 0, 0.42), rgba(255, 255, 255, 0.9));
+    }
+
+    [class~="f03-meal-plan-delivered-art-four"] {
+      background:
+        radial-gradient(circle at 26% 33%, rgba(169, 111, 0, 0.82) 0 9%, transparent 9.5%),
+        radial-gradient(circle at 70% 42%, #ffffff 0 13%, transparent 13.5%),
+        radial-gradient(circle at 48% 76%, #160d20 0 5%, transparent 5.5%),
+        linear-gradient(150deg, rgba(169, 111, 0, 0.10), rgba(216, 164, 58, 0.62));
+    }
+
+    [class~="f03-meal-plan-delivered-card-copy"] {
+      padding: 18px 18px 16px;
+    }
+
+    [class~="f03-meal-plan-delivered-kicker"] {
+      color: #a96f00;
+      font-size: 14px;
+      line-height: 1.2;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+    }
+
+    [class~="f03-meal-plan-delivered-dish"] {
+      margin-top: 12px;
+      min-height: 74px;
+      color: #160d20;
+      font-size: 26px;
+      line-height: 1.15;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    [class~="f03-meal-plan-delivered-macro"] {
+      margin-top: 12px;
+      color: #d8a43a;
+      font-size: 15px;
+      line-height: 1.35;
+      font-weight: 600;
+    }
+
+    [class~="f03-meal-plan-delivered-prep"] {
+      display: inline-flex;
+      margin-top: 16px;
+      padding: 9px 12px;
+      border-radius: 100px;
+      color: #a96f00;
+      background: rgba(169, 111, 0, 0.08);
+      font-size: 13px;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+    }
+
+    [class~="f03-meal-plan-delivered-surface-rule"] {
+      position: absolute;
+      left: 30px;
+      right: 30px;
+      bottom: 78px;
+      height: 4px;
+      border-radius: 6px;
+      background: rgba(169, 111, 0, 0.08);
+      overflow: hidden;
+    }
+
+    [class~="f03-meal-plan-delivered-surface-rule"]::after {
+      content: "";
+      display: block;
+      width: 64%;
+      height: 100%;
+      border-radius: 6px;
+      background: #a96f00;
+    }
+
+    [class~="f03-meal-plan-delivered-week-caption"] {
+      position: absolute;
+      left: 30px;
+      bottom: 30px;
+      color: #9a9a9a;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+    }
+
+    [class~="f03-meal-plan-delivered-target-anchor"] {
+      position: absolute;
+      left: 630px;
+      top: 500px;
+      width: 341px;
+      height: 832px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    [class~="f03-meal-plan-delivered-morph-card"] {
+      position: absolute;
+      left: 549px;
+      top: 534px;
+      width: 213px;
+      z-index: 5;
+    }
+
+    [class~="f03-meal-plan-delivered-old-content"],
+    [class~="f03-meal-plan-delivered-new-content"] {
+      position: absolute;
+      inset: 0;
+    }
+
+    [class~="f03-meal-plan-delivered-new-content"] {
+      opacity: 0;
+      padding: 22px 18px;
+      box-sizing: border-box;
+    }
+
+    [class~="f03-meal-plan-delivered-list-kicker"] {
+      color: #a96f00;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+    }
+
+    [class~="f03-meal-plan-delivered-list-title"] {
+      margin-top: 8px;
+      color: #160d20;
+      font-size: 26px;
+      line-height: 1.08;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    [class~="f03-meal-plan-delivered-list-group"] {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(169, 111, 0, 0.2);
+    }
+
+    [class~="f03-meal-plan-delivered-list-group-name"] {
+      color: #a96f00;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+    }
+
+    [class~="f03-meal-plan-delivered-list-row"] {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-top: 10px;
+      color: #160d20;
+      font-size: 15px;
+      line-height: 1.25;
+      font-weight: 600;
+    }
+
+    [class~="f03-meal-plan-delivered-check"] {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #ffffff;
+      background: #a96f00;
+      font-size: 10px;
+    }
+
+    [class~="f03-meal-plan-delivered-press-stage"] {
+      position: absolute;
+      left: 270px;
+      top: 1170px;
+      width: 540px;
+      height: 124px;
+      z-index: 8;
+    }
+
+    [class~="f03-meal-plan-delivered-bg-glow"] {
+      position: absolute;
+      inset: -150px -180px;
+      opacity: 0;
+      background: radial-gradient(circle, rgba(169, 111, 0, 0.24), rgba(169, 111, 0, 0) 67%);
+    }
+
+    [class~="f03-meal-plan-delivered-burst"] {
+      position: absolute;
+      z-index: 1;
+      left: 50%;
+      top: 50%;
+      width: 500px;
+      height: 92px;
+      margin-left: -250px;
+      margin-top: -46px;
+      border-radius: 100px;
+      opacity: 0;
+      filter: blur(54px);
+      background: radial-gradient(ellipse, rgba(22, 13, 32, 0.66), rgba(169, 111, 0, 0) 70%);
+    }
+
+    [class~="f03-meal-plan-delivered-action"] {
+      position: absolute;
+      z-index: 2;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      border-radius: 100px;
+      color: #ffffff;
+      background: #a96f00;
+      box-shadow: 0 20px 44px rgba(169, 111, 0, 0.24);
+      font-size: 25px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      transform-origin: 50% 50%;
+    }
+
+    [class~="f03-meal-plan-delivered-payoff-wrap"] {
+      position: absolute;
+      left: 58px;
+      top: 1440px;
+      width: 964px;
+      min-height: 92px;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    [class~="f03-meal-plan-delivered-payoff"] {
+      display: inline-block;
+      min-width: 890px;
+      color: #160d20;
+      font-size: 51px;
+      line-height: 1.08;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    [class~="f03-meal-plan-delivered-cursor"] {
+      display: inline-block;
+      width: 18px;
+      margin-left: 6px;
+      color: #a96f00;
+      font-size: 50px;
+      line-height: 1;
+      font-weight: 600;
+    }
+
+    [class~="f03-meal-plan-delivered-progress"] {
+      position: absolute;
+      left: 0;
+      top: 1580px;
+      width: 1080px;
+      height: 4px;
+      background: rgba(169, 111, 0, 0.08);
+    }
+
+    [class~="f03-meal-plan-delivered-progress-fill"] {
+      width: 620px;
+      height: 100%;
+      background: #a96f00;
+    }
+  </style>
+
+  <div id="root" data-composition-id="03-meal-plan-delivered" data-duration="7.5" data-width="1080" data-height="1920">
+    <div class="clip f03-meal-plan-delivered-background" data-start="0" data-duration="7.5" data-track-index="0">
+      <img class="f03-meal-plan-delivered-reference" src="assets/ui/nutrition-tracker.jpg" alt="" />
+      <div class="f03-meal-plan-delivered-wash"></div>
+      <div class="f03-meal-plan-delivered-accent-plane"></div>
+    </div>
+
+    <div class="clip f03-meal-plan-delivered-scene" data-start="0" data-duration="7.5" data-track-index="1">
+      <h1 class="f03-meal-plan-delivered-title">
+        YOUR PLANT-BASED
+        <span class="f03-meal-plan-delivered-title-accent">MEAL PLAN</span>
+      </h1>
+
+      <div class="f03-meal-plan-delivered-day-rail" aria-label="Seven day plan">
+        <div class="f03-meal-plan-delivered-day f03-meal-plan-delivered-day-active">M</div>
+        <div class="f03-meal-plan-delivered-day">T</div>
+        <div class="f03-meal-plan-delivered-day">W</div>
+        <div class="f03-meal-plan-delivered-day">T</div>
+        <div class="f03-meal-plan-delivered-day">F</div>
+        <div class="f03-meal-plan-delivered-day">S</div>
+        <div class="f03-meal-plan-delivered-day">S</div>
+      </div>
+
+      <div class="f03-meal-plan-delivered-phone">
+        <div class="f03-meal-plan-delivered-phone-bar">
+          <div class="f03-meal-plan-delivered-phone-label">BALANCE / WEEK</div>
+          <div class="f03-meal-plan-delivered-phone-chip">READY</div>
+        </div>
+
+        <div class="f03-meal-plan-delivered-week-grid">
+          <article class="f03-meal-plan-delivered-meal-card" data-card-index="0">
+            <div class="f03-meal-plan-delivered-food-art"></div>
+            <div class="f03-meal-plan-delivered-card-copy">
+              <div class="f03-meal-plan-delivered-kicker">BREAKFAST</div>
+              <div class="f03-meal-plan-delivered-dish">Berry Oats</div>
+              <div class="f03-meal-plan-delivered-macro">PROTEIN · FIBRE</div>
+              <div class="f03-meal-plan-delivered-prep">NO COOK</div>
+            </div>
+          </article>
+
+          <article class="f03-meal-plan-delivered-meal-card" data-card-index="1">
+            <div class="f03-meal-plan-delivered-food-art f03-meal-plan-delivered-art-two"></div>
+            <div class="f03-meal-plan-delivered-card-copy">
+              <div class="f03-meal-plan-delivered-kicker">LUNCH</div>
+              <div class="f03-meal-plan-delivered-dish">Green Bowl</div>
+              <div class="f03-meal-plan-delivered-macro">GREENS · GRAINS</div>
+              <div class="f03-meal-plan-delivered-prep">QUICK PREP</div>
+            </div>
+          </article>
+
+          <article class="f03-meal-plan-delivered-meal-card f03-meal-plan-delivered-card-focus" data-card-index="2">
+            <div class="f03-meal-plan-delivered-food-art f03-meal-plan-delivered-art-three"></div>
+            <div class="f03-meal-plan-delivered-card-copy">
+              <div class="f03-meal-plan-delivered-kicker">DINNER</div>
+              <div class="f03-meal-plan-delivered-dish">Lentil Pasta</div>
+              <div class="f03-meal-plan-delivered-macro">PROTEIN · CARBS</div>
+              <div class="f03-meal-plan-delivered-prep">ONE PAN</div>
+            </div>
+          </article>
+
+          <article class="f03-meal-plan-delivered-meal-card" data-card-index="3">
+            <div class="f03-meal-plan-delivered-food-art f03-meal-plan-delivered-art-four"></div>
+            <div class="f03-meal-plan-delivered-card-copy">
+              <div class="f03-meal-plan-delivered-kicker">SNACK</div>
+              <div class="f03-meal-plan-delivered-dish">Chia Cup</div>
+              <div class="f03-meal-plan-delivered-macro">OMEGA · FIBRE</div>
+              <div class="f03-meal-plan-delivered-prep">BATCH READY</div>
+            </div>
+          </article>
+        </div>
+
+        <div class="f03-meal-plan-delivered-surface-rule"></div>
+        <div class="f03-meal-plan-delivered-week-caption">MEALS FLOW INTO YOUR WEEK</div>
+      </div>
+
+      <div class="f03-meal-plan-delivered-target-anchor" id="f03-meal-plan-delivered-target-anchor"></div>
+
+      <div class="f03-meal-plan-delivered-morph-card" id="f03-meal-plan-delivered-morph-card" data-layout-allow-overlap>
+        <div class="f03-meal-plan-delivered-old-content" id="f03-meal-plan-delivered-old-content">
+          <div class="f03-meal-plan-delivered-food-art f03-meal-plan-delivered-art-three"></div>
+          <div class="f03-meal-plan-delivered-card-copy">
+            <div class="f03-meal-plan-delivered-kicker">DINNER</div>
+            <div class="f03-meal-plan-delivered-dish">Lentil Pasta</div>
+            <div class="f03-meal-plan-delivered-macro">PROTEIN · CARBS</div>
+            <div class="f03-meal-plan-delivered-prep">ONE PAN</div>
+          </div>
+        </div>
+
+        <div class="f03-meal-plan-delivered-new-content" id="f03-meal-plan-delivered-new-content">
+          <div class="f03-meal-plan-delivered-list-kicker">GROCERY LIST</div>
+          <div class="f03-meal-plan-delivered-list-title">Sorted and ready.</div>
+
+          <div class="f03-meal-plan-delivered-list-group">
+            <div class="f03-meal-plan-delivered-list-group-name">PRODUCE</div>
+            <div class="f03-meal-plan-delivered-list-row"><span class="f03-meal-plan-delivered-check">✓</span>Baby spinach</div>
+            <div class="f03-meal-plan-delivered-list-row"><span class="f03-meal-plan-delivered-check">✓</span>Tomatoes</div>
+            <div class="f03-meal-plan-delivered-list-row"><span class="f03-meal-plan-delivered-check">✓</span>Fresh basil</div>
+          </div>
+
+          <div class="f03-meal-plan-delivered-list-group">
+            <div class="f03-meal-plan-delivered-list-group-name">PANTRY</div>
+            <div class="f03-meal-plan-delivered-list-row"><span class="f03-meal-plan-delivered-check">✓</span>Red lentil pasta</div>
+            <div class="f03-meal-plan-delivered-list-row"><span class="f03-meal-plan-delivered-check">✓</span>Crushed tomatoes</div>
+          </div>
+
+          <div class="f03-meal-plan-delivered-list-group">
+            <div class="f03-meal-plan-delivered-list-group-name">CHILLED</div>
+            <div class="f03-meal-plan-delivered-list-row"><span class="f03-meal-plan-delivered-check">✓</span>Plant parmesan</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="f03-meal-plan-delivered-press-stage" id="f03-meal-plan-delivered-press-stage">
+        <div class="f03-meal-plan-delivered-bg-glow" id="f03-meal-plan-delivered-bg-glow"></div>
+        <div class="f03-meal-plan-delivered-burst" id="f03-meal-plan-delivered-burst"></div>
+        <button class="f03-meal-plan-delivered-action" id="f03-meal-plan-delivered-action" type="button">ADD TO GROCERY LIST</button>
+      </div>
+
+      <div class="f03-meal-plan-delivered-payoff-wrap" id="f03-meal-plan-delivered-payoff-wrap">
+        <span class="f03-meal-plan-delivered-payoff" id="f03-meal-plan-delivered-payoff"></span><span class="f03-meal-plan-delivered-cursor" id="f03-meal-plan-delivered-cursor">_</span>
+      </div>
+
+      <div class="f03-meal-plan-delivered-progress"><div class="f03-meal-plan-delivered-progress-fill"></div></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script>
+    (() => {
+      const compositionId = "03-meal-plan-delivered";
+      const root = document.querySelector('[data-composition-id="' + compositionId + '"]');
+      const title = root.querySelector('[class~="f03-meal-plan-delivered-title"]');
+      const dayRail = root.querySelector('[class~="f03-meal-plan-delivered-day-rail"]');
+      const phone = root.querySelector('[class~="f03-meal-plan-delivered-phone"]');
+      const weekGrid = root.querySelector('[class~="f03-meal-plan-delivered-week-grid"]');
+      const cards = Array.from(root.querySelectorAll('[class~="f03-meal-plan-delivered-meal-card"]'));
+      const focusCard = cards[2];
+      const morphCard = document.getElementById("f03-meal-plan-delivered-morph-card");
+      const targetAnchor = document.getElementById("f03-meal-plan-delivered-target-anchor");
+      const oldContent = document.getElementById("f03-meal-plan-delivered-old-content");
+      const newContent = document.getElementById("f03-meal-plan-delivered-new-content");
+      const pressStage = document.getElementById("f03-meal-plan-delivered-press-stage");
+      const action = document.getElementById("f03-meal-plan-delivered-action");
+      const burst = document.getElementById("f03-meal-plan-delivered-burst");
+      const bgGlow = document.getElementById("f03-meal-plan-delivered-bg-glow");
+      const payoffWrap = document.getElementById("f03-meal-plan-delivered-payoff-wrap");
+      const payoff = document.getElementById("f03-meal-plan-delivered-payoff");
+      const cursor = document.getElementById("f03-meal-plan-delivered-cursor");
+
+      const rootRect = root.getBoundingClientRect();
+      const sourceRect = morphCard.getBoundingClientRect();
+      const targetRect = targetAnchor.getBoundingClientRect();
+      const renderScale = rootRect.width ? rootRect.width / 1080 : 1;
+      const endScale = sourceRect.width ? targetRect.width / sourceRect.width : 1.6;
+      const deltaX = sourceRect.width
+        ? ((targetRect.left + targetRect.width / 2) - (sourceRect.left + sourceRect.width / 2)) / renderScale
+        : 145;
+      const deltaY = sourceRect.height
+        ? ((targetRect.top + targetRect.height / 2) - (sourceRect.top + sourceRect.height / 2)) / renderScale
+        : 119;
+
+      const tl = gsap.timeline({ paused: true });
+      window.__timelines = window.__timelines || {};
+      window.__timelines[compositionId] = tl;
+
+      tl.fromTo(title,
+        { y: 34, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.58, ease: "power3.out" },
+        0.04
+      );
+      tl.fromTo(dayRail,
+        { y: 24, scale: 0.97, opacity: 0 },
+        { y: 0, scale: 1, opacity: 1, duration: 0.62, ease: "power3.out" },
+        0.30
+      );
+      tl.fromTo(phone,
+        { y: 34, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.72, ease: "power3.out" },
+        0.54
+      );
+
+      const cardEntrances = [
+        { at: 1.30, x: 72, y: 34 },
+        { at: 1.88, x: 42, y: 56 },
+        { at: 2.46, x: -42, y: 56 },
+        { at: 3.04, x: -72, y: 34 }
+      ];
+
+      cards.forEach((card, index) => {
+        const copy = card.querySelector('[class~="f03-meal-plan-delivered-card-copy"]');
+        const entry = cardEntrances[index];
+        tl.fromTo(card,
+          { x: entry.x, y: entry.y, scale: 0.78, opacity: 0 },
+          { x: 0, y: 0, scale: 1, opacity: 1, duration: 0.72, ease: "power3.out" },
+          entry.at
+        );
+        tl.fromTo(copy,
+          { clipPath: "inset(0 100% 0 0)", opacity: 0 },
+          { clipPath: "inset(0 0% 0 0)", opacity: 1, duration: 0.48, ease: "power2.out" },
+          entry.at + 0.27
+        );
+        tl.to(card,
+          { scale: 1.035, borderColor: "rgba(169, 111, 0, 0.72)", duration: 0.20, ease: "power2.out" },
+          entry.at + 0.38
+        );
+        tl.to(card,
+          { scale: 1, borderColor: index === 2 ? "rgba(169, 111, 0, 0.72)" : "rgba(169, 111, 0, 0.2)", duration: 0.24, ease: "power2.inOut" },
+          entry.at + 0.58
+        );
+      });
+
+      tl.fromTo(morphCard,
+        { opacity: 0, scale: 1 },
+        { opacity: 1, scale: 1.04, duration: 0.18, ease: "power2.out" },
+        4.42
+      );
+      tl.to(focusCard, { opacity: 0, duration: 0.16, ease: "none" }, 4.42);
+      tl.to(weekGrid,
+        { scale: 0.52, x: 8, y: 76, duration: 0.62, ease: "power4.inOut" },
+        4.48
+      );
+      tl.fromTo(pressStage,
+        { y: 36, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.34, ease: "power3.out" },
+        4.42
+      );
+
+      tl.to(action,
+        { scale: 0.92, boxShadow: "0 6px 16px rgba(169, 111, 0, 0.18)", duration: 0.18, ease: "power1.in" },
+        4.72
+      );
+      tl.to(action,
+        { scale: 1, boxShadow: "0 20px 44px rgba(169, 111, 0, 0.24)", duration: 0.58, ease: "back.out(2)" },
+        4.90
+      );
+      tl.fromTo(burst,
+        { scale: 1, opacity: 0 },
+        { scale: 4.5, opacity: 0.66, duration: 0.42, ease: "power2.out" },
+        4.90
+      );
+      tl.to(burst, { opacity: 0, duration: 0.42, ease: "power2.in" }, 5.16);
+      tl.to(bgGlow, { opacity: 0.20, duration: 0.72, ease: "power2.out" }, 4.90);
+
+      tl.to(morphCard,
+        {
+          x: deltaX,
+          y: deltaY,
+          scale: endScale,
+          borderRadius: 14 / endScale,
+          backgroundColor: "rgba(169, 111, 0, 0.04)",
+          boxShadow: "0 0 0 rgba(169, 111, 0, 0)",
+          duration: 0.84,
+          ease: "power2.inOut"
+        },
+        5.16
+      );
+      tl.to(oldContent, { opacity: 0, duration: 0.34, ease: "power1.in" }, 5.16);
+      tl.to(newContent, { opacity: 1, duration: 0.34, ease: "power1.out" }, 5.66);
+      tl.to(pressStage, { opacity: 0, y: 22, duration: 0.24, ease: "power2.in" }, 5.18);
+
+      tl.fromTo(payoffWrap,
+        { y: 28, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.34, ease: "power3.out" },
+        6.08
+      );
+
+      const payoffStates = [
+        { t: 6.10, text: "Plan." },
+        { t: 6.26, text: "Plan. Shop." },
+        { t: 6.42, text: "Plan. Shop. Cook." },
+        { t: 6.58, text: "Plan. Shop. Cook. Done." }
+      ];
+      const payoffDriver = { t: 0 };
+      tl.to(payoffDriver, {
+        t: 7,
+        duration: 7,
+        ease: "none",
+        onUpdate: () => {
+          let text = "";
+          for (let i = payoffStates.length - 1; i >= 0; i -= 1) {
+            if (payoffDriver.t >= payoffStates[i].t) {
+              text = payoffStates[i].text;
+              break;
+            }
+          }
+          payoff.textContent = text;
+        }
+      }, 0);
+
+      const blinkDriver = { phase: 0 };
+      tl.to(blinkDriver, {
+        phase: Math.PI * 20,
+        duration: 7,
+        ease: "none",
+        onUpdate: () => {
+          cursor.style.opacity = Math.sin(blinkDriver.phase) > 0 ? "1" : "0";
+        }
+      }, 0);
+    })();
+  </script>
+</template>
+

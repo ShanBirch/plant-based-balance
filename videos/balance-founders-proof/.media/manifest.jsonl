@@ -1,0 +1,7 @@
+{"id":"image_001","type":"image","path":"assets/balance-logo.png","source":"existing","description":"balance logo","width":1024,"height":1024,"provenance":{"provider":"local","adopted":true}}
+{"id":"image_002","type":"image","path":"assets/ui/community-food.jpg","source":"existing","description":"community food","width":591,"height":1280,"provenance":{"provider":"local","adopted":true}}
+{"id":"image_003","type":"image","path":"assets/ui/community-walk.jpg","source":"existing","description":"community walk","width":591,"height":1280,"provenance":{"provider":"local","adopted":true}}
+{"id":"image_004","type":"image","path":"assets/ui/community-workout.jpg","source":"existing","description":"community workout","width":591,"height":1280,"provenance":{"provider":"local","adopted":true}}
+{"id":"image_005","type":"image","path":"assets/ui/movement-coach.jpg","source":"existing","description":"movement coach","width":591,"height":1280,"provenance":{"provider":"local","adopted":true}}
+{"id":"image_006","type":"image","path":"assets/ui/nutrition-tracker.jpg","source":"existing","description":"nutrition tracker","width":591,"height":1280,"provenance":{"provider":"local","adopted":true}}
+{"id":"image_007","type":"image","path":"assets/ui/weekly-goals.jpg","source":"existing","description":"weekly goals","width":591,"height":1280,"provenance":{"provider":"local","adopted":true}}

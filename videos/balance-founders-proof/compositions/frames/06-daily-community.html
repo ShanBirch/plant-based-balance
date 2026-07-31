@@ -1,0 +1,507 @@
+<template>
+  <style>
+    #root {
+      position: relative;
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      container-type: size;
+      color: #160d20;
+      font-family: Montserrat, Arial, sans-serif;
+    }
+
+    .f06-background,
+    .f06-scene {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    .f06-background {
+      background: #ffffff;
+    }
+
+    .f06-background-band {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 338px;
+      height: 982px;
+      background: linear-gradient(180deg, rgba(169, 111, 0, 0.025), rgba(169, 111, 0, 0.07), rgba(169, 111, 0, 0.025));
+      border-top: 1px solid rgba(169, 111, 0, 0.08);
+      border-bottom: 1px solid rgba(169, 111, 0, 0.08);
+    }
+
+    .f06-header {
+      position: absolute;
+      left: 62px;
+      top: 110px;
+      width: 956px;
+      z-index: 8;
+    }
+
+    .f06-eyebrow {
+      color: #a96f00;
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: 0.11em;
+    }
+
+    .f06-title {
+      width: 900px;
+      margin: 18px 0 0;
+      color: #160d20;
+      font-size: 66px;
+      line-height: 1.04;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    .f06-camera {
+      position: absolute;
+      inset: 0;
+      transform-origin: 50% 42%;
+      will-change: transform;
+    }
+
+    .f06-burst-wrap {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1080px;
+      height: 1400px;
+    }
+
+    .f06-node {
+      position: absolute;
+      left: 50%;
+      top: 700px;
+      width: 690px;
+      height: 270px;
+      overflow: hidden;
+      box-sizing: border-box;
+      border-radius: 14px;
+      background: rgba(169, 111, 0, 0.04);
+      border: 1.5px solid rgba(169, 111, 0, 0.2);
+      transform-origin: 50% 50%;
+      will-change: transform;
+    }
+
+    .f06-card-media {
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      width: 392px;
+      height: 248px;
+      overflow: hidden;
+      border-radius: 10px;
+      background: rgba(169, 111, 0, 0.08);
+    }
+
+    .f06-card-media img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      filter: saturate(0.72) contrast(0.97);
+    }
+
+    .f06-food-image {
+      object-position: 50% 52%;
+    }
+
+    .f06-walk-image {
+      object-position: 50% 48%;
+    }
+
+    .f06-workout-image {
+      object-position: 50% 49%;
+    }
+
+    .f06-card-copy {
+      position: absolute;
+      left: 430px;
+      right: 24px;
+      top: 30px;
+      bottom: 26px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .f06-card-kicker {
+      color: #a96f00;
+      font-size: 14px;
+      line-height: 1.2;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+    }
+
+    .f06-card-title {
+      margin-top: 14px;
+      color: #160d20;
+      font-size: 30px;
+      line-height: 1.1;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .f06-card-meta {
+      margin-top: 14px;
+      color: #d8a43a;
+      font-size: 18px;
+      line-height: 1.35;
+      font-weight: 500;
+    }
+
+    .f06-card-rule {
+      width: 54px;
+      height: 4px;
+      margin-top: auto;
+      border-radius: 6px;
+      background: #a96f00;
+    }
+
+    .f06-reaction {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 58px;
+      height: 42px;
+      padding: 0 16px;
+      box-sizing: border-box;
+      border-radius: 100px;
+      color: #a96f00;
+      background: #ffffff;
+      border: 1.5px solid rgba(169, 111, 0, 0.2);
+      font-size: 14px;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      transform-origin: 50% 50%;
+    }
+
+    .f06-hub {
+      position: absolute;
+      left: 444px;
+      top: 638px;
+      width: 192px;
+      height: 124px;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      border-radius: 100px;
+      background: #ffffff;
+      border: 1.5px solid rgba(169, 111, 0, 0.2);
+      transform-origin: 50% 50%;
+      will-change: transform;
+    }
+
+    .f06-hub-ring {
+      position: absolute;
+      inset: 12px;
+      border-radius: 100px;
+      background: rgba(169, 111, 0, 0.08);
+    }
+
+    .f06-hub-dot {
+      position: absolute;
+      left: 25px;
+      top: 50%;
+      width: 15px;
+      height: 15px;
+      margin-top: -7.5px;
+      border-radius: 50%;
+      background: #a96f00;
+    }
+
+    .f06-hub-copy {
+      position: relative;
+      padding-left: 24px;
+      color: #a96f00;
+      font-size: 16px;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+    }
+
+    .f06-feed-label {
+      position: absolute;
+      left: 58px;
+      top: 1302px;
+      width: 964px;
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      color: #d8a43a;
+      font-size: 29px;
+      line-height: 1.2;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
+
+    .f06-feed-label-text {
+      display: inline-block;
+      min-width: 720px;
+    }
+
+    .f06-payoff {
+      position: absolute;
+      left: 58px;
+      top: 1388px;
+      width: 964px;
+      margin: 0;
+      color: #160d20;
+      font-size: 55px;
+      line-height: 1.04;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      transform-origin: 50% 50%;
+      will-change: transform, filter;
+    }
+
+    .f06-payoff-daily {
+      display: block;
+      margin-top: 5px;
+      color: #a96f00;
+      font-size: 74px;
+    }
+
+    .f06-progress {
+      position: absolute;
+      left: 0;
+      top: 1580px;
+      width: 1080px;
+      height: 4px;
+      background: rgba(169, 111, 0, 0.08);
+    }
+
+    .f06-progress-fill {
+      width: 790px;
+      height: 100%;
+      background: #a96f00;
+    }
+  </style>
+
+  <div id="root" data-composition-id="06-daily-community" data-duration="6.5" data-width="1080" data-height="1920">
+    <div class="clip f06-background" data-start="0" data-duration="6.5" data-track-index="0">
+      <div class="f06-background-band"></div>
+    </div>
+
+    <div class="clip f06-scene" data-start="0" data-duration="6.5" data-track-index="1">
+      <header class="f06-header" id="f06-header">
+        <div class="f06-eyebrow">COMMUNITY / EVERY DAY</div>
+        <h1 class="f06-title">YOUR VEGAN COMMUNITY</h1>
+      </header>
+
+      <div class="f06-camera" id="f06-camera">
+        <div class="f06-burst-wrap" id="f06-burst-wrap">
+          <article class="f06-node f06-food-node" id="f06-food-node" data-target-x="0" data-target-y="-200">
+            <div class="f06-card-media"><img class="f06-food-image" src="assets/ui/community-food.jpg" alt="" /></div>
+            <div class="f06-card-copy">
+              <div class="f06-card-kicker">COMMUNITY MEAL</div>
+              <div class="f06-card-title">Shared fuel</div>
+              <div class="f06-card-meta">Food worth posting.</div>
+              <div class="f06-card-rule"></div>
+            </div>
+            <div class="f06-reaction" id="f06-food-reaction">♥</div>
+          </article>
+
+          <article class="f06-node f06-walk-node" id="f06-walk-node" data-target-x="-250" data-target-y="180">
+            <div class="f06-card-media"><img class="f06-walk-image" src="assets/ui/community-walk.jpg" alt="" /></div>
+            <div class="f06-card-copy">
+              <div class="f06-card-kicker">MORNING WALK</div>
+              <div class="f06-card-title">Out there</div>
+              <div class="f06-card-meta">The daily check-in.</div>
+              <div class="f06-card-rule"></div>
+            </div>
+            <div class="f06-reaction" id="f06-walk-reaction">COMMENT</div>
+          </article>
+
+          <article class="f06-node f06-workout-node" id="f06-workout-node" data-target-x="250" data-target-y="220">
+            <div class="f06-card-media"><img class="f06-workout-image" src="assets/ui/community-workout.jpg" alt="" /></div>
+            <div class="f06-card-copy">
+              <div class="f06-card-kicker">WORKOUT WIN</div>
+              <div class="f06-card-title">Showed up</div>
+              <div class="f06-card-meta">Progress, together.</div>
+              <div class="f06-card-rule"></div>
+            </div>
+            <div class="f06-reaction" id="f06-workout-reaction">KEEP GOING</div>
+          </article>
+        </div>
+
+        <div class="f06-hub" id="f06-hub">
+          <div class="f06-hub-ring"></div>
+          <div class="f06-hub-dot"></div>
+          <div class="f06-hub-copy">ACTIVE TODAY</div>
+        </div>
+      </div>
+
+      <div class="f06-feed-label" id="f06-feed-label"><span class="f06-feed-label-text" id="f06-feed-label-text"></span></div>
+
+      <h2 class="f06-payoff" id="f06-payoff">
+        A COMMUNITY THAT SHOWS UP
+        <span class="f06-payoff-daily">DAILY</span>
+      </h2>
+
+      <div class="f06-progress"><div class="f06-progress-fill"></div></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script>
+    (() => {
+      const compositionId = "06-daily-community";
+      const root = document.querySelector('[data-composition-id="' + compositionId + '"]');
+      const header = document.getElementById("f06-header");
+      const hub = document.getElementById("f06-hub");
+      const camera = document.getElementById("f06-camera");
+      const nodes = [
+        document.getElementById("f06-food-node"),
+        document.getElementById("f06-walk-node"),
+        document.getElementById("f06-workout-node")
+      ];
+      const reactions = [
+        document.getElementById("f06-food-reaction"),
+        document.getElementById("f06-walk-reaction"),
+        document.getElementById("f06-workout-reaction")
+      ];
+      const feedLabel = document.getElementById("f06-feed-label");
+      const feedLabelText = document.getElementById("f06-feed-label-text");
+      const payoff = document.getElementById("f06-payoff");
+
+      const tl = gsap.timeline({ paused: true });
+      window.__timelines = window.__timelines || {};
+      window.__timelines[compositionId] = tl;
+
+      tl.fromTo(header,
+        { y: 34, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.58, ease: "power3.out" },
+        0.04
+      );
+      tl.fromTo(hub,
+        { scale: 0, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.62, ease: "power3.out" },
+        0.34
+      );
+
+      const arrivals = [1.20, 2.02, 2.84];
+      const orbitScales = [1.04, 0.82, 0.82];
+
+      nodes.forEach((node, index) => {
+        const targetX = Number(node.dataset.targetX);
+        const targetY = Number(node.dataset.targetY);
+        tl.fromTo(node,
+          { xPercent: -50, yPercent: -50, x: 0, y: 0, scale: 0.60, opacity: 0 },
+          {
+            xPercent: -50,
+            yPercent: -50,
+            x: targetX,
+            y: targetY,
+            scale: orbitScales[index],
+            opacity: 1,
+            duration: 0.76,
+            ease: "power3.out"
+          },
+          arrivals[index]
+        );
+        tl.fromTo(reactions[index],
+          { scale: 0, y: 10, opacity: 0 },
+          { scale: 1, y: 0, opacity: 1, duration: 0.48, ease: "power3.out" },
+          arrivals[index] + 0.34
+        );
+      });
+
+      tl.to(nodes[0],
+        { borderColor: "rgba(169, 111, 0, 0.72)", duration: 0.22, ease: "power2.out" },
+        1.54
+      );
+      tl.to(nodes[0],
+        { opacity: 0.80, borderColor: "rgba(169, 111, 0, 0.2)", duration: 0.28, ease: "power2.inOut" },
+        2.10
+      );
+      tl.to(nodes[1],
+        { scale: 0.88, borderColor: "rgba(169, 111, 0, 0.72)", duration: 0.22, ease: "power2.out" },
+        2.36
+      );
+      tl.to(nodes[1],
+        { scale: 0.82, opacity: 0.80, borderColor: "rgba(169, 111, 0, 0.2)", duration: 0.28, ease: "power2.inOut" },
+        2.92
+      );
+      tl.to(nodes[2],
+        { scale: 0.88, borderColor: "rgba(169, 111, 0, 0.72)", duration: 0.22, ease: "power2.out" },
+        3.18
+      );
+
+      tl.to(camera,
+        { scale: 1.04, y: -18, duration: 0.96, ease: "power3.inOut" },
+        4.00
+      );
+
+      const feedTargets = [
+        { x: 0, y: -250 },
+        { x: 0, y: 72 },
+        { x: 0, y: 394 }
+      ];
+      nodes.forEach((node, index) => {
+        tl.to(node,
+          {
+            x: feedTargets[index].x,
+            y: feedTargets[index].y,
+            scale: 0.88,
+            opacity: 1,
+            borderColor: "rgba(169, 111, 0, 0.2)",
+            duration: 0.88,
+            ease: "power4.inOut"
+          },
+          4.02 + index * 0.06
+        );
+      });
+      tl.to(hub,
+        { scale: 0.72, y: 16, opacity: 0.34, duration: 0.48, ease: "power3.inOut" },
+        4.02
+      );
+
+      tl.fromTo(feedLabel,
+        { y: 24, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.42, ease: "power3.out" },
+        4.22
+      );
+
+      const feedStates = [
+        { t: 4.30, text: "Meals" },
+        { t: 4.50, text: "Meals · walks" },
+        { t: 4.70, text: "Meals · walks · workouts" },
+        { t: 4.90, text: "Meals · walks · workouts · wins" }
+      ];
+      const feedDriver = { t: 0 };
+      tl.to(feedDriver, {
+        t: 6,
+        duration: 6,
+        ease: "none",
+        onUpdate: () => {
+          let current = "";
+          for (let i = feedStates.length - 1; i >= 0; i -= 1) {
+            if (feedDriver.t >= feedStates[i].t) {
+              current = feedStates[i].text;
+              break;
+            }
+          }
+          feedLabelText.textContent = current;
+        }
+      }, 0);
+
+      tl.fromTo(payoff,
+        { scale: 0.95, filter: "blur(10px)", opacity: 0 },
+        { scale: 1, filter: "blur(0px)", opacity: 1, duration: 0.56, ease: "expo.out" },
+        5.20
+      );
+    })();
+  </script>
+</template>

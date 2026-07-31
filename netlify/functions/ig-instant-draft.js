@@ -871,6 +871,7 @@ async function persistCocosDraftRepair({ alertId, currentAlertData, draft, repai
             ...(currentAlertData || {}),
             draft_messages: draft.chunks,
             draft_text: draft.joined,
+            draft_video_attachment_url: draft.videoAttachmentUrl || undefined,
             draft_model: draft.model,
             draft_reply_mode: draft.replyMode || latest.draft_reply_mode || 'standard',
             draft_max_chunks: draft.maxChunks || latest.draft_max_chunks || MAX_CHUNKS,
@@ -1179,6 +1180,8 @@ function foundersPassCheckoutUrlForMessage(message = '', customData = {}, flowVa
 
 function resolveMetaAdFirstReplyIntent(currentMessage = '') {
     const text = String(currentMessage || '').toLowerCase().replace(/[’]/g, "'");
+    if (/^(?:what(?:'s| is) (?:the )?)?(?:price|cost)(?: of (?:it|this|the (?:pass|program)))?[!?.\s]*$/.test(text)) return 'price';
+    if (/\b(?:how does|how would|what(?:'s| is)).{0,35}\b(?:support|accountability)\b|\b(?:support|accountability)\b.{0,35}\b(?:work|included)\b/.test(text)) return 'accountability';
     if (/right for me|would this suit|is this for me|good fit|would it work for me/.test(text)) return 'fit';
     if (/do i need to (?:already )?be plant[ -]?based|already plant[ -]?based|not plant[ -]?based|vegan already|already vegan/.test(text)) {
         return 'plant_based_requirement';
@@ -1250,32 +1253,26 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
         : 'lifetime access to the core app and plant-based community.';
     const supportScope = `The Founders Pass is AU$99 once. You get six weeks of one-to-one in-app support with me for questions, direction and accountability, then ${accessLine} Ongoing individual weekly plan reviews and adjustments are separate.`;
     let answer;
-    if (intent === 'fit') {
-        const fitAudience = broadFlow
-            ? 'It is a good fit if you want clear training, food structure and support that still works when life gets messy.'
-            : 'It is a good fit if you want plant-based training, food structure and support that still works when life gets messy.';
-        answer = `${fitAudience}\n\n${supportScope}\n\nTell me what has been tripping you up and I will be straight with you about the fit.`;
+    if (intent === 'fit' || intent === 'overview') {
+        answer = `Hey, yeah of course. Before I send you a heap of generic info, what's the main thing you're trying to change with your fitness right now?`;
     } else if (intent === 'plant_based_requirement') {
-        answer = `No, you do not need to already be fully plant-based. Balance can meet you where you are and help you build the training and food structure step by step.\n\n${supportScope}`;
+        answer = `Not at all, you don't need to already be fully plant-based. What does your eating look like at the moment?`;
+    } else if (intent === 'accountability') {
+        answer = `You check in inside Balance and I can see what the week actually looked like, then I reply with the next bit of direction and a nudge if things are slipping. It's personal support from me, not just app reminders.`;
+    } else if (intent === 'price') {
+        answer = `${supportScope}\n\nIf you tell me what you're trying to change, I can show you the part that would matter most for you.`;
     } else if (intent === 'ready') {
         answer = `Love it. ${supportScope}\n\nYou can see the quick setup and start here: ${checkoutUrl}`;
     } else if (intent === 'inclusions') {
         answer = `${productLine}\n\n${supportScope}\n\nYou can see the full inclusions and start here: ${checkoutUrl}`;
-    } else {
-        answer = `${productLine}\n\n${supportScope}\n\nIf you want, I can help you work out whether it suits what you are trying to change.`;
     }
-    const chunks = [
-        broadFlow
-            ? 'Hey, yeah of course. Here is the quick version.'
-            : `Hey, glad you messaged. Here is a quick look inside Balance so you can actually see what I mean.\n${FOUNDERS_PASS_APP_PREVIEW_URL}`,
-        answer,
-    ];
+    const chunks = [answer].filter(Boolean);
     return {
         chunks,
         joined: chunks.join('\n\n'),
-        model: 'deterministic_meta_ad_founders_pass_v2',
+        model: 'deterministic_meta_ad_founders_pass_v3',
         replyMode: 'campaign_first_reply',
-        maxChunks: 2,
+        maxChunks: chunks.length,
         error: null,
         imageCount: 0,
         audioCount: 0,
@@ -1286,6 +1283,59 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
         flowVariant: resolvedVariant,
         firstReplyIntent: intent,
         checkoutUrl: ['ready', 'inclusions'].includes(intent) ? checkoutUrl : null,
+        timeline: '',
+        conversationEpisode: null,
+        currentTurnAnchorBlock: '',
+        storyReplyPromptContextBlock: '',
+        mediaContextPromptBlock: '',
+        learningReelContextBlock: '',
+        learningReelReplyAnchorBlock: '',
+        learningReelEvidenceBlock: '',
+    };
+}
+
+const META_AD_GOAL_QUESTION_RE = /what(?:'s| is) the main thing you(?:'re| are) trying to change with your fitness right now/i;
+
+function isMetaAdGoalReplyTurn(history = []) {
+    const recent = (Array.isArray(history) ? history : [])
+        .filter(item => String(item?.text || '').trim())
+        .slice(-6);
+    const latest = recent[recent.length - 1];
+    return latest?.direction === 'out' && META_AD_GOAL_QUESTION_RE.test(String(latest.text || ''));
+}
+
+function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_based_control' } = {}) {
+    const text = String(currentMessage || '').toLowerCase();
+    const broadFlow = flowVariant === 'broad_pain';
+    let bridge;
+    if (/accountab|consisten|motivat|routine|habit|stick|on track|fall off|keep going/.test(text)) {
+        bridge = `yeah okay, it sounds like the hard part isn't knowing you should do it, it's keeping the week on track once life gets busy. This is the quickest way to see how I'd structure that inside Balance.`;
+    } else if (/strong|strength|muscle|lift|gym|fitter|fitness|run|cardio/.test(text)) {
+        bridge = `nice, so the goal is to actually feel stronger and fitter, not just collect another plan. This shows how the training, food and check-ins sit together inside Balance.`;
+    } else if (/weight|fat|lose|lean|tone|confiden|body/.test(text)) {
+        bridge = `yeah okay, so you want a setup you can actually follow long enough to feel the difference, without guessing every day. This shows what that week looks like inside Balance.`;
+    } else if (/food|meal|eat|nutrition|plant|vegan|vegetarian|protein/.test(text)) {
+        bridge = broadFlow
+            ? `yeah okay, so food structure is the main thing. This shows how the plan, training and check-ins sit together inside Balance.`
+            : `yeah okay, so plant-based food structure is the main thing. This shows how the meal plan, training and check-ins sit together inside Balance.`;
+    } else {
+        bridge = `yeah okay, that's helpful. This is the quickest way to see how I'd turn that into a clear week inside Balance.`;
+    }
+    return {
+        chunks: [bridge],
+        joined: bridge,
+        model: 'deterministic_meta_ad_goal_proof_v1',
+        replyMode: 'campaign_goal_proof',
+        maxChunks: 1,
+        error: null,
+        imageCount: 0,
+        audioCount: 0,
+        videoCount: 0,
+        videoAttachmentUrl: broadFlow ? null : FOUNDERS_PASS_APP_PREVIEW_URL,
+        reelContextCount: 0,
+        reelThumbnailCount: 0,
+        mediaDecode: {},
+        flowVariant,
         timeline: '',
         conversationEpisode: null,
         currentTurnAnchorBlock: '',
@@ -1377,6 +1427,7 @@ function filterMetaAdCardAttachmentHistory({
 
 function buildApprovedDeterministicMetaAdFirstReplyReview({
     metaAdFirstInbound = false,
+    metaAdGoalReplyTurn = false,
     draft = null,
     approval = null,
     linkedUserId = null,
@@ -1385,16 +1436,22 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
     currentMessage = '',
 } = {}) {
     const message = String(currentMessage || '').trim();
-    if (!metaAdFirstInbound
+    const approvedFirstReply = metaAdFirstInbound
+        && draft?.replyMode === 'campaign_first_reply'
+        && /^deterministic_meta_ad_founders_pass_v\d+$/.test(String(draft?.model || ''))
+        && approval
+        && approval.required !== true
+        && /^approved_meta_ad_/.test(String(approval.code || ''))
+        && shouldUseDeterministicMetaAdFirstReply(message);
+    const approvedGoalProof = metaAdGoalReplyTurn
+        && draft?.replyMode === 'campaign_goal_proof'
+        && /^deterministic_meta_ad_goal_proof_v\d+$/.test(String(draft?.model || ''))
+        && !!draft.videoAttachmentUrl;
+    if ((!approvedFirstReply && !approvedGoalProof)
         || linkedUserId
         || mediaReview?.required === true
         || contextReview?.required === true
-        || draft?.replyMode !== 'campaign_first_reply'
-        || !/^deterministic_meta_ad_founders_pass_v\d+$/.test(String(draft?.model || ''))
-        || !approval
-        || approval.required === true
-        || !/^approved_meta_ad_/.test(String(approval.code || ''))
-        || !shouldUseDeterministicMetaAdFirstReply(message)
+        || META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)) {
         return null;
     }
@@ -1402,14 +1459,18 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
     return {
         verdict: 'pass',
         confidence: 1,
-        summary: 'Approved deterministic Meta ad first reply.',
+        summary: approvedGoalProof
+            ? 'Approved deterministic Meta ad goal reflection and native proof video.'
+            : 'Approved deterministic Meta ad first reply.',
         issues: [],
         suggested_fix: '',
         context_loss_suspected: false,
         notification_required: false,
         notification_reason: null,
         reviewed_at: new Date().toISOString(),
-        reviewer_model: 'deterministic-meta-ad-first-reply-approval',
+        reviewer_model: approvedGoalProof
+            ? 'deterministic-meta-ad-goal-proof-approval'
+            : 'deterministic-meta-ad-first-reply-approval',
     };
 }
 
@@ -1439,7 +1500,7 @@ THE OFFERING (for context — never list as a brochure; speak like a friend):
 - If they are plant-based / vegan / vegetarian-curious, tailor the coaching explanation around plant-based food support.
 - If they just want fitness, muscle, weight loss, energy, or consistency with no plant-based signal, tailor the coaching explanation around training, food structure, and accountability.
 - Link attribution matters. For the plant-based ad route use ${FOUNDERS_PASS_CHECKOUT_URL}. For the broad ad route use ${FOUNDERS_PASS_BROAD_CHECKOUT_URL}. The broad route must not introduce plant-based, vegan or vegetarian positioning in its ad reply, landing handoff or follow-up unless the lead independently asks about it. Preserve the route selected by the ad referral and never remove the UTM parameters.
-- When the offer is opened by a direct details/link/"what's included" ask, explain the setup before sending the next step: $99 once, six weeks of in-app coaching support from Shannon, lifetime core Balance app access, and the plant-based community. For ad-attributed first enquiries, lead with this app preview so they can see the product: https://plantbased-balance.org/assets/balance-founders-pass-dm-preview.mp4. Be clear that ongoing weekly plan reviews after the six weeks are separate. Move toward the Founders Pass link in DMs. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
+- For a general ad-attributed "what is it?" or Founders Pass opener, do not dump the offer or send a raw media URL. Ask one plain question about the main thing they are trying to change. After they answer, reflect that exact goal in one short sentence and send the native Balance proof video. For direct price, inclusions, link or ready-to-start asks, answer the question immediately: $99 once, six weeks of in-app coaching support from Shannon, lifetime core Balance app access, and the plant-based community. Be clear that ongoing weekly plan reviews after the six weeks are separate. Move toward the Founders Pass link in DMs. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
 - If they only ask "what's Balance?" or "what's your app?" while also saying they are already training hard or feeling good, answer in one plain beat and make any coaching mention casual. No feature list or link unless they ask for details.
 - Once they start, the Balance app gives them the guided kickstart, training and food structure, progress tools and community.
 - Package fit matters. App + Community is $19.99/month for self-directed ongoing structure without weekly one-to-one review. Starter Coaching is $29.99/week for one weekly check-in plus workout/food review and adjustments. Coaching + Calls is $99.99/week for Starter Coaching plus one weekly live call and deeper review. If someone explicitly asks for personalised coaching, individual plan adjustments or weekly review, route toward Starter Coaching. If they want regular calls or deeper live support, route toward Coaching + Calls. Do not force them back into Founders Pass.
@@ -1447,7 +1508,7 @@ THE OFFERING (for context — never list as a brochure; speak like a friend):
 - Voice notes: when the system supplies a decoded voice-note transcript or media summary, treat it as heard. Reply to the content. Never ask them to resend, repeat, or type the gist of a voice note. If audio is genuinely inaccessible or unintelligible after retries, leave no public voice-note fallback and let the media-review hold/retry path handle it.
 
 RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
-- "What's actually included?" -> for an ad-attributed first enquiry, send the short app preview first, then explain the Founders Pass casually: six weeks with Shannon plus lifetime core app and plant-based community access for $99 once. Be clear ongoing individual coaching is separate. Don't dump a brochure.
+- "What's actually included?" -> answer the direct ask casually: six weeks with Shannon plus lifetime core app and plant-based community access for $99 once. Be clear ongoing individual coaching is separate. Don't dump a brochure or expose a raw video URL.
 - "What's Balance?" / "what's your app?" -> answer plainly: it is Shannon's fitness app/coaching setup. If their latest training detail gives a natural opening, one casual line is enough: "honestly one weekly check-in would probably help keep that simple if you wanted the coaching details". Do not hardcode that wording, but keep that size and feel. No app feature list or signup link unless they ask what is included or ask for details.
 - "How does accountability work?" / "how would you keep me on track?" -> this is a connection moment, not a brochure request. Explain it plainly from Shannon's point of view: they check in and log what is happening, Shannon sees the real week and guides the next move, with a nudge when things start slipping. In PERSONAL VOICE NOTE MODE, make this one connected voice note and do not duplicate the explanation in text. Otherwise use one concise text bubble. Do not tack on another qualifier unless their answer would genuinely change the next step.
 - "Is it in person?" / "I'm looking for a local trainer" / "I already have a PT" -> treat this as a preference or compatibility objection. Answer plainly first: the Founders Pass is an online guided app and plant-based community, not in-person personal training. Do not push the link yet. Ask whether that would still be useful, or how it would need to fit around their current trainer.
@@ -5017,6 +5078,8 @@ exports.handler = async (event) => {
     const outboundVoiceMessage = !personalVoicePlan.syntheticVoiceForbidden
         && personalVoicePlan.useSyntheticVoice;
     const outboundVoiceMessageReason = personalVoicePlan.reason;
+    const metaAdGoalReplyTurn = metaAdConversationFastLane
+        && isMetaAdGoalReplyTurn(history);
 
     let draft;
     try {
@@ -5024,6 +5087,8 @@ exports.handler = async (event) => {
             customData: thread.custom_data,
             flowVariant: metaAdFlowVariant,
             acquisitionMode,
+        }) : metaAdGoalReplyTurn ? buildMetaAdGoalProofReply(messageText, {
+            flowVariant: metaAdFlowVariant,
         }) : await generateDraft({
             leadName,
             leadBlock,
@@ -5355,6 +5420,7 @@ exports.handler = async (event) => {
             // chunk boundaries.
             draft_messages: draft.chunks,
             draft_text: draft.joined,
+            draft_video_attachment_url: draft.videoAttachmentUrl || undefined,
             draft_model: draft.model,
             draft_reply_mode: draft.replyMode || 'standard',
             draft_max_chunks: draft.maxChunks || MAX_CHUNKS,
@@ -5756,6 +5822,7 @@ exports.handler = async (event) => {
         const reviewTimeoutMs = cocosAutoSendLane ? COCOS_DRAFT_REVIEW_TIMEOUT_MS : IG_DRAFT_REVIEW_TIMEOUT_MS;
         const approvedDeterministicReview = buildApprovedDeterministicMetaAdFirstReplyReview({
             metaAdFirstInbound,
+            metaAdGoalReplyTurn,
             draft,
             approval: metaAdFirstReplyApproval,
             linkedUserId: thread.linked_user_id,
@@ -6332,6 +6399,8 @@ exports._test = {
     isExerciseConversationFastLaneEligible,
     resolveMetaAdFlowVariant,
     resolveMetaAdFirstReplyIntent,
+    isMetaAdGoalReplyTurn,
+    buildMetaAdGoalProofReply,
     shouldUseDeterministicMetaAdFirstReply,
     getMetaAdSensitiveHoldReason,
     buildMetaAdCheckoutUrl,
