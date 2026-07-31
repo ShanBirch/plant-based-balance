@@ -948,6 +948,19 @@ function getBalanceAutoContextBypass({ balanceAutoSendLane, contextReview, draft
     };
 }
 
+function isPaidMetaBuyerIntentOfferReplyAllowed({ alertData, challengeOfferWarning, currentMessage, draft, draftReview, linkedUserId } = {}) {
+    const replyText = draftTextFromDraft(draft);
+    return !linkedUserId
+        && alertData?.meta_ad_fast_lane === true
+        && challengeOfferWarning?.required === true
+        && hasDirectBuyerIntent(currentMessage)
+        && !!replyText
+        && !isSignupLinkHandoffText(replyText)
+        && String(draftReview?.verdict || '').toLowerCase() === 'pass'
+        && draftReview?.notification_required !== true
+        && draftReview?.context_loss_suspected !== true;
+}
+
 function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData, allowTestLaneDraftReviewWarning = false, allowBalanceLeadDraftReviewWarning = false }) {
     const effectiveContextBypass = contextBypass || cocosContextBypass;
     const appProblemHold = getAppProblemAutoSendHoldReason({
@@ -980,7 +993,14 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
             label: 'AI draft was unavailable',
         };
     }
-    if (challengeOfferWarning?.required) {
+    if (challengeOfferWarning?.required && !isPaidMetaBuyerIntentOfferReplyAllowed({
+        alertData,
+        challengeOfferWarning,
+        currentMessage,
+        draft,
+        draftReview,
+        linkedUserId,
+    })) {
         return {
             code: 'challenge_offer',
             label: `${challengeOfferWarning.label || 'coaching invite'} needs timing review`,
@@ -4232,6 +4252,7 @@ exports._test = {
     getCocosAutoContextBypass,
     getBalanceAutoContextBypass,
     getAutoDmHoldReason,
+    isPaidMetaBuyerIntentOfferReplyAllowed,
     getCocosCodexReviewHold,
     isNonBlockingDraftStyleWarning,
     isSignupLinkHandoffText,
@@ -6086,6 +6107,7 @@ exports._test = {
     getCocosAutoContextBypass,
     getBalanceAutoContextBypass,
     getAutoDmHoldReason,
+    isPaidMetaBuyerIntentOfferReplyAllowed,
     getCocosCodexReviewHold,
     isBalanceLeadAutoSendEnabled,
     isCanceledLatestRecoveryCandidate,

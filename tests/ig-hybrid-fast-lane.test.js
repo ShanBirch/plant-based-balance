@@ -156,6 +156,37 @@ assert.equal(instantDraft.getAutoDmHoldReason({
     allowBalanceLeadDraftReviewWarning: true,
 })?.code, 'draft_review', 'context and notification warnings still hold an unlinked Balance lead');
 
+const paidMetaPriceDraft = {
+    joined: 'Six weeks of coaching is $99 once for the Founders Pass. Want me to send the details?',
+};
+const cleanPaidMetaReview = {
+    verdict: 'pass',
+    issues: [],
+    notification_required: false,
+    context_loss_suspected: false,
+};
+assert.equal(instantDraft.isPaidMetaBuyerIntentOfferReplyAllowed({
+    alertData: { meta_ad_fast_lane: true },
+    challengeOfferWarning: { required: true },
+    currentMessage: "What's the six-week coaching cost?",
+    draft: paidMetaPriceDraft,
+    draftReview: cleanPaidMetaReview,
+}), true, 'a clean paid-Meta answer to explicit price intent can continue without manager latency');
+assert.equal(instantDraft.isPaidMetaBuyerIntentOfferReplyAllowed({
+    alertData: { meta_ad_fast_lane: true },
+    challengeOfferWarning: { required: true },
+    currentMessage: 'That sounds interesting',
+    draft: paidMetaPriceDraft,
+    draftReview: cleanPaidMetaReview,
+}), false, 'generic interest does not bypass coaching-offer review');
+assert.equal(instantDraft.isPaidMetaBuyerIntentOfferReplyAllowed({
+    alertData: { meta_ad_fast_lane: true },
+    challengeOfferWarning: { required: true },
+    currentMessage: 'Can you send the link?',
+    draft: { joined: 'Jump in here: https://example.com/signup' },
+    draftReview: cleanPaidMetaReview,
+}), false, 'an unapproved URL never uses the buyer-intent offer bypass');
+
 assert.equal(instantDraft.getCocosCodexReviewHold({
     cocosAutoSendLane: true,
     voiceReplyTestLane: false,
