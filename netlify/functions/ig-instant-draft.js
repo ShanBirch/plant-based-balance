@@ -1291,6 +1291,36 @@ function buildApprovedMetaAdFirstReplyHandoffData({ approval, draft, leadStage, 
 
 const META_AD_EXPLICIT_FIRST_REPLY_RE = /\b(founders?\s+pass|balance|what(?:'s| is) (?:actually )?included|what do i get|inclusions?|details|tell me more|show me what(?:'s| is) included|plant[ -]?based|right for me|good fit|ready to start|sign me up|save me a spot|send (?:me )?(?:the )?link|how do i start|where do i start|start now|price|cost|support|accountability)\b/i;
 const META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE = /\b(are you (?:an? )?(?:ai|bot|robot|real|human)|is this (?:an? )?(?:ai|bot)|am i talking to|who is this|suicid|self[- ]?harm|eating disorder|pregnan|injur|medical emergency|hospital)\b/i;
+const META_AD_CARD_ATTACHMENT_RE = /^\[attachment:https:\/\/lookaside\.fbsbx\.com\/ig_messaging_cdn\/?[^\]]*\]$/i;
+
+function filterMetaAdCardAttachmentHistory({
+    history = [],
+    currentMessage = '',
+    metaAdFirstInbound = false,
+    metaAdConversationFastLane = false,
+} = {}) {
+    const messages = Array.isArray(history) ? history : [];
+    if (!metaAdFirstInbound && !metaAdConversationFastLane) return messages;
+    const currentIsExplicitOffer = META_AD_EXPLICIT_FIRST_REPLY_RE.test(String(currentMessage || ''));
+
+    return messages.filter((message, index) => {
+        if (String(message?.direction || '') !== 'in'
+            || !META_AD_CARD_ATTACHMENT_RE.test(String(message?.text || '').trim())) {
+            return true;
+        }
+
+        if (metaAdFirstInbound && currentIsExplicitOffer) return false;
+
+        const nextInbound = messages.slice(index + 1).find(candidate => candidate?.direction === 'in');
+        if (!nextInbound || !META_AD_EXPLICIT_FIRST_REPLY_RE.test(String(nextInbound.text || ''))) return true;
+        const attachmentAt = Date.parse(message.created_at || '');
+        const nextInboundAt = Date.parse(nextInbound.created_at || '');
+        return !Number.isFinite(attachmentAt)
+            || !Number.isFinite(nextInboundAt)
+            || nextInboundAt < attachmentAt
+            || (nextInboundAt - attachmentAt) > 5000;
+    });
+}
 
 function buildApprovedDeterministicMetaAdFirstReplyReview({
     metaAdFirstInbound = false,
@@ -4376,7 +4406,7 @@ exports.handler = async (event) => {
             }),
         };
     }
-    const history = await loadIgHistory(threadId, messageText);
+    let history = await loadIgHistory(threadId, messageText);
     const botAccount = thread.custom_data?.bot_account || thread.custom_data?.instagram_graph?.bot_account || '';
     const algorithmFork = algorithmForkForBotAccount(botAccount);
     const cocosAutoSendLane = isCocosBotAccount(botAccount);
@@ -4415,6 +4445,14 @@ exports.handler = async (event) => {
         customData: thread.custom_data,
     });
     const metaAdFastLane = metaAdFirstInbound || metaAdConversationFastLane;
+    const unfilteredHistoryCount = history.length;
+    history = filterMetaAdCardAttachmentHistory({
+        history,
+        currentMessage: messageText,
+        metaAdFirstInbound,
+        metaAdConversationFastLane,
+    });
+    const metaAdCardAttachmentsSuppressed = unfilteredHistoryCount - history.length;
     const metaAdFlowVariant = resolveMetaAdFlowVariant({
         customData: thread.custom_data,
         currentMessage: messageText,
@@ -5218,6 +5256,7 @@ exports.handler = async (event) => {
                 exerciseConversationFastLane,
             }),
             meta_ad_fast_lane: metaAdFastLane || undefined,
+            meta_ad_card_attachments_suppressed: metaAdCardAttachmentsSuppressed || undefined,
             meta_ad_first_inbound: metaAdFirstInbound || undefined,
             meta_ad_conversation_fast_lane: metaAdConversationFastLane || undefined,
             meta_ad_internal_test_lane: internalMetaAdConversationTestLane || undefined,
@@ -5464,6 +5503,9 @@ exports.handler = async (event) => {
                 exerciseConversationFastLane,
             }) ?? existingPending.data?.auto_send_fast_lane_delay_ms ?? undefined,
             meta_ad_fast_lane: metaAdFastLane || existingPending.data?.meta_ad_fast_lane || undefined,
+            meta_ad_card_attachments_suppressed: metaAdCardAttachmentsSuppressed
+                || existingPending.data?.meta_ad_card_attachments_suppressed
+                || undefined,
             meta_ad_first_inbound: metaAdFirstInbound || existingPending.data?.meta_ad_first_inbound || undefined,
             meta_ad_conversation_fast_lane: metaAdConversationFastLane || existingPending.data?.meta_ad_conversation_fast_lane || existingPending.data?.meta_ad_active_conversation_fast_lane || undefined,
             meta_ad_internal_test_lane: internalMetaAdConversationTestLane || existingPending.data?.meta_ad_internal_test_lane || undefined,
@@ -6227,6 +6269,7 @@ exports._test = {
     buildMetaAdFirstReplyApproval,
     buildApprovedMetaAdFirstReplyHandoffData,
     buildApprovedDeterministicMetaAdFirstReplyReview,
+    filterMetaAdCardAttachmentHistory,
     collectCocosAutoRepairIssues,
     shouldAttemptCocosDraftRepair,
     repairRequiresQuestionFreeReply,

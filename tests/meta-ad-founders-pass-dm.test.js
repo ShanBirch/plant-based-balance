@@ -9,6 +9,7 @@ const {
     buildMetaAdFirstReplyApproval,
     buildApprovedMetaAdFirstReplyHandoffData,
     buildApprovedDeterministicMetaAdFirstReplyReview,
+    filterMetaAdCardAttachmentHistory,
     buildLeadOnboardingHandoffData,
     resolveMetaAdFirstReplyIntent,
     resolveMetaAdFlowVariant,
@@ -76,6 +77,38 @@ test('deterministic Meta review bypass remains closed for real review risks', ()
     assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({ ...baseline, contextReview: { required: true } }), null);
     assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({ ...baseline, currentMessage: 'Are you an AI bot?' }), null);
     assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({ ...baseline, currentMessage: 'I need urgent help at hospital' }), null);
+});
+
+test('Meta ad card transport attachment does not poison the first reply or follow-up media review', () => {
+    const adCard = {
+        direction: 'in',
+        text: '[attachment:https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=18106842581104525&signature=test]',
+        created_at: '2026-07-31T03:12:30.042Z',
+    };
+    const offerQuestion = {
+        direction: 'in',
+        text: 'What is the Founders Pass?',
+        created_at: '2026-07-31T03:12:30.595Z',
+    };
+    const realPhoto = {
+        direction: 'in',
+        text: '[PHOTO:https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=real-user-photo]',
+        created_at: '2026-07-31T03:13:00.000Z',
+    };
+
+    const firstReplyHistory = filterMetaAdCardAttachmentHistory({
+        history: [adCard],
+        currentMessage: offerQuestion.text,
+        metaAdFirstInbound: true,
+    });
+    assert.deepEqual(firstReplyHistory, []);
+
+    const followUpHistory = filterMetaAdCardAttachmentHistory({
+        history: [adCard, offerQuestion, realPhoto],
+        currentMessage: 'Yeah send us the details',
+        metaAdConversationFastLane: true,
+    });
+    assert.deepEqual(followUpHistory, [offerQuestion, realPhoto]);
 });
 
 test('inclusions quick reply sends the app preview and attributed checkout handoff', () => {
