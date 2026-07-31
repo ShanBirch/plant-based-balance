@@ -270,17 +270,10 @@ export default async (request, context) => {
         // 5. Construct public URL
         const publicUrl = `${downloadUrl}/file/${B2_BUCKET_NAME}/${fileName}`;
 
-        // 6. Add a Needs You card for Shannon. This is intentionally non-blocking:
-        // the client's upload should still succeed if the alert insert fails.
-        await insertProgressPhotoNeedsYouAlert({
-            userId,
-            publicUrl,
-            fileName,
-            contentType: file.type,
-            sizeBytes: fileBuffer.byteLength
-        });
-
-        // Return success with public URL
+        // Progress photos remain available in the app without creating a
+        // coaching/check-in task. Shannon retired upload-triggered Needs You
+        // cards because the photos are reviewed only when coaching context
+        // makes that useful.
         return jsonResponse({
             success: true,
             url: publicUrl,

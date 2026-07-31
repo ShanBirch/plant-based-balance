@@ -81,32 +81,6 @@ const tooFresh = radar.classifyLowMoodSupport({
 });
 assert.strictEqual(tooFresh, null, 'support radar waits until next-day style follow-up timing');
 
-const inactive = radar.classifyInactiveSupport({
-    assignment: assignment({
-        client: {
-            name: 'Shane',
-            email: 'shane@example.com',
-            last_login: '2026-05-30T00:00:00.000Z',
-        },
-    }),
-    nowMs: NOW,
-});
-assert.ok(inactive, '7+ day inactivity should create a support signal');
-assert.strictEqual(inactive.signal, 'app_inactive_7d');
-assert.match(inactive.message, /haven't been in the app/);
-
-const recent = radar.classifyInactiveSupport({
-    assignment: assignment({
-        client: {
-            name: 'Shane',
-            email: 'shane@example.com',
-            last_login: '2026-06-03T00:00:00.000Z',
-        },
-    }),
-    nowMs: NOW,
-});
-assert.strictEqual(recent, null, 'recent app users should not get inactivity cards');
-
 const graphThread = {
     id: 'thread-1',
     subscriber_id: 'ig_graph:recipient-1',

@@ -3,7 +3,6 @@
  *
  * Daily customer-support pass for high-signal human follow-ups:
  * - client said they felt down / overwhelmed recently, follow up the next day
- * - active client has not logged into the app for a week
  *
  * Inserts visible Needs You cards as weekly_checkin rows so they land in the
  * same approval lane as manual check-ins, without flooding Shannon with every
@@ -23,7 +22,6 @@ const MAX_ALERTS_PER_RUN = Number(process.env.SUPPORT_RADAR_MAX_ALERTS || 6);
 const LOW_MOOD_LOOKBACK_HOURS = 96;
 const LOW_MOOD_MIN_FOLLOWUP_HOURS = 18;
 const LOW_MOOD_MAX_FOLLOWUP_HOURS = 96;
-const INACTIVE_DAYS = 7;
 const SUPPORT_COOLDOWN_DAYS = 5;
 
 function safeObject(value) {
@@ -47,11 +45,6 @@ function hoursBetween(laterMs, earlierIso) {
     const earlierMs = Date.parse(earlierIso || '');
     if (!Number.isFinite(earlierMs)) return null;
     return (laterMs - earlierMs) / (60 * 60 * 1000);
-}
-
-function daysBetween(laterMs, earlierIso) {
-    const hours = hoursBetween(laterMs, earlierIso);
-    return hours === null ? null : Math.floor(hours / 24);
 }
 
 const LOW_MOOD_RE = /\b(?:feeling\s+(?:a\s+)?(?:(?:little\s+)?bit\s+)?(?:down|low|flat|sad|rough|off)|feel\s+(?:a\s+)?(?:(?:little\s+)?bit\s+)?(?:down|low|flat|sad|rough|off)|not\s+(?:feeling\s+)?(?:good|great|the\s+greatest|okay|ok)|overwhelmed|consumed|struggling|really\s+hard|rough\s+day|bad\s+day|personal\s+stuff|depressed|anxious|upset|crying|cried|spiral(?:ling|ing)?|burnt\s*out|burned\s*out)\b/i;
@@ -103,24 +96,6 @@ function classifyLowMoodSupport({ assignment, messages, nowMs = Date.now() }) {
             text: truncate(latest.text || '', 240),
             created_at: latest.created_at,
             age_hours: Math.round(latest.ageHours * 10) / 10,
-        },
-    };
-}
-
-function classifyInactiveSupport({ assignment, nowMs = Date.now() }) {
-    const lastLogin = assignment.client?.last_login || assignment.last_login || null;
-    const daysSinceLogin = lastLogin ? daysBetween(nowMs, lastLogin) : null;
-    if (daysSinceLogin === null || daysSinceLogin < INACTIVE_DAYS || daysSinceLogin > 21) return null;
-    const name = cleanName(displayName(assignment));
-    return {
-        signal: 'app_inactive_7d',
-        priority: daysSinceLogin >= 10 ? 'high' : 'medium',
-        title: `${displayName(assignment)} has not logged in for ${daysSinceLogin} days`,
-        description: `Last app login was ${daysSinceLogin} days ago. Keep it human and simple, not guilt-trippy.`,
-        message: `hey ${name}, noticed you haven't been in the app for a bit. everything alright on your end? if life has been hectic, we can make this week stupidly simple`,
-        evidence: {
-            last_login: lastLogin,
-            days_since_login: daysSinceLogin,
         },
     };
 }
@@ -299,21 +274,6 @@ async function hasRecentSupportRadar({ coachId, clientId, signal, now = new Date
     return rows.length > 0;
 }
 
-async function hasRecentOutbound({ assignment, thread, now = new Date(), hours = 72 }) {
-    const cutoff = new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString();
-    const checks = [];
-    checks.push(supabaseQuery(
-        `nudges?select=id&sender_id=eq.${assignment.coach_id}&receiver_id=eq.${assignment.client_id}&created_at=gte.${cutoff}&limit=1`
-    ).catch(() => []));
-    if (thread?.id) {
-        checks.push(supabaseQuery(
-            `ig_messages?select=id&thread_id=eq.${thread.id}&direction=eq.out&created_at=gte.${cutoff}&limit=1`
-        ).catch(() => []));
-    }
-    const results = await Promise.all(checks);
-    return results.some(rows => rows.length > 0);
-}
-
 async function runSupportRadar({ maxAlerts = MAX_ALERTS_PER_RUN, now = new Date() } = {}) {
     const coachId = await loadShannonCoachId();
     if (!coachId) return { scanned: 0, inserted: 0, skipped: { no_coach: 1 } };
@@ -326,7 +286,6 @@ async function runSupportRadar({ maxAlerts = MAX_ALERTS_PER_RUN, now = new Date(
     const skipped = {
         pending_exists: 0,
         cooldown: 0,
-        recent_outbound: 0,
         no_signal: 0,
         cap: 0,
     };
@@ -346,20 +305,6 @@ async function runSupportRadar({ maxAlerts = MAX_ALERTS_PER_RUN, now = new Date(
                 continue;
             }
             candidates.push({ assignment, thread, signal: lowMood });
-            continue;
-        }
-
-        const inactive = classifyInactiveSupport({ assignment, nowMs: now.getTime() });
-        if (inactive) {
-            if (await hasRecentSupportRadar({ coachId: assignment.coach_id, clientId: assignment.client_id, signal: inactive.signal, now })) {
-                skipped.cooldown++;
-                continue;
-            }
-            if (await hasRecentOutbound({ assignment, thread, now, hours: 72 })) {
-                skipped.recent_outbound++;
-                continue;
-            }
-            candidates.push({ assignment, thread, signal: inactive });
             continue;
         }
 
@@ -417,7 +362,6 @@ exports._test = {
     latestLowMoodInbound,
     hasLaterSupportFollowup,
     classifyLowMoodSupport,
-    classifyInactiveSupport,
     buildNeedsYouAlert,
     supportIdempotencyKey,
     threadDeliveryData,
