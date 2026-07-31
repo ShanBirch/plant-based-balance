@@ -31,14 +31,14 @@
   "adSet": "Broad Australia | 24-54 | IG Direct",
   "ads": [
     {
-      "name": "A1 | You have not failed. The plan was wrong.",
+      "name": "A1 | You haven't failed. The plan was wrong.",
       "rollout": "phase_1_launch",
       "creative": {
         "feed": "01-coach-in-your-corner-feed-1080x1350.png",
         "story": "01-coach-in-your-corner-story-1080x1920.png"
       },
-      "primaryText": "You have not failed. The plan was wrong. It was not built around your brain, what you have been through, or what you are dealing with now. Inside Balance, I coach plant-based people with small, clear steps that fit their current starting point. The Founders Pass is AU$99 once. Message “BALANCE” and I will show you what is included.",
-      "headline": "You have not failed. The plan was wrong.",
+      "primaryText": "You haven't failed. The plan was wrong. It wasn't built around your brain, what you've been through, or what you're dealing with now. Inside Balance, I coach plant-based people with small, clear steps that fit their current starting point. The Founders Pass is AU$99 once. Message “BALANCE” and I'll show you what's included.",
+      "headline": "You haven't failed. The plan was wrong.",
       "description": "Plant-based coaching built around real life",
       "callToAction": "Send message"
     },
@@ -103,12 +103,12 @@
       "callToAction": "Send message"
     },
     {
-      "name": "V1 | You have not failed. The plan was wrong.",
+      "name": "V1 | You haven't failed. The plan was wrong.",
       "rollout": "phase_1_launch",
       "creative": {
         "reels": "balance-founders-pass-brain-ad-cream-gold-final.mp4"
       },
-      "primaryText": "You have not failed. The plan was wrong. It was not built around your brain, what you have been through, or what you are dealing with now. Your brain learns through repetition, and your environment shapes what gets repeated. Inside Balance, I coach plant-based people with small, clear steps built around their current starting point. The Founders Pass is a one-off payment of AU$99. Message “BALANCE” and I will show you what is included.",
+      "primaryText": "You haven't failed. The plan was wrong. It wasn't built around your brain, what you've been through, or what you're dealing with now. Your brain learns through repetition, and your environment shapes what gets repeated. Inside Balance, I coach plant-based people with small, clear steps built around their current starting point. The Founders Pass is a one-off payment of AU$99. Message “BALANCE” and I'll show you what's included.",
       "headline": "Change built around your real life",
       "description": "Balance: Plant-Based Fitness Founders Pass",
       "callToAction": "Send message"
@@ -125,10 +125,10 @@
   },
   "rollout": {
     "phase1": [
-      "A1 | You have not failed. The plan was wrong.",
+      "A1 | You haven't failed. The plan was wrong.",
       "A4 | Plant-based fitness, made clearer",
       "A5 | Plant-based fitness is better together",
-      "V1 | You have not failed. The plan was wrong."
+      "V1 | You haven't failed. The plan was wrong."
     ],
     "phase1Days": 7,
     "phase2": "Introduce one reserve ad at a time to replace the weakest launch route. Do not run every creative at once on an AU$20 daily budget."

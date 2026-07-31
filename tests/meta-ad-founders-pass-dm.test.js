@@ -142,5 +142,8 @@ test('campaign package remains paused and points to the deployed funnel assets',
     assert.equal(plan.dmWelcome.checkoutUrl, 'https://plantbased-balance.org/plant-based-fitness.html');
     assert.deepEqual(plan.dmWelcome.quickReplies, []);
     assert.match(plan.dmWelcome.rule, /Do not configure visible quick-reply buttons/i);
+    assert.match(plan.ads[0].primaryText, /You haven't failed/);
+    assert.doesNotMatch(plan.ads[0].primaryText, /\byou have not\b/i);
+    assert.match(fs.readFileSync(path.join(root, 'fitness-coaching.html'), 'utf8'), /you haven't failed/i);
     assert.ok(fs.statSync(path.join(root, 'assets', 'balance-founders-pass-dm-preview.mp4')).size > 1_000_000);
 });
