@@ -12,8 +12,9 @@
  *   - Coach_alert row is alert_type='ig_incoming_dm' and stamped with
  *     data.channel='instagram' so send-coach-reply routes the outbound
  *     through ManyChat instead of the in-app nudges path.
- *   - IG/FB auto-send is opt-in per thread and schedules through the same
- *     delayed worker path Shannon uses from the admin dashboard.
+ *   - IG/FB auto-send is opt-in per thread. Normal replies schedule through
+ *     the delayed worker; clean paid-Meta replies dispatch immediately after
+ *     the alert is atomically claimed so ad conversations stay responsive.
  *
  * Trigger: POST from manychat-inbound after it has persisted the inbound
  * message and upserted the thread.
@@ -159,9 +160,8 @@ const IG_AUTO_SEND_MAX_DELAY_MS = 8 * 60 * 60 * 1000;
 const IG_FAST_LANE_DELAY_MS = 4 * 60 * 1000;
 const IG_FAST_LANE_MIN_DELAY_MS = 2 * 60 * 1000;
 // Paid Meta conversations are already commercial, active threads. Queue them
-// as soon as generation and the safety/context review have passed; the
-// per-minute scheduled worker then delivers on its next tick instead of adding
-// an artificial four-minute wait.
+// as soon as generation and the safety/context review have passed, then claim
+// and dispatch that exact alert without waiting for the per-minute cron tick.
 const IG_META_AD_FAST_LANE_DELAY_MS = 0;
 const IG_DIRECT_CHALLENGE_MIN_DELAY_MS = 0;
 const IG_DRAFT_REVIEW_TIMEOUT_MS = 7000;
@@ -543,6 +543,50 @@ function withTimeout(promise, timeoutMs, label) {
     });
 }
 
+function shouldDispatchMetaAdReplyImmediately({ alertData, normalizedTiming, scheduleResolution } = {}) {
+    const review = alertData?.draft_review || {};
+    return alertData?.meta_ad_fast_lane === true
+        && normalizedTiming?.action === 'send_now'
+        && scheduleResolution?.deferredForWorkingHours !== true
+        && String(review.verdict || '').toLowerCase() === 'pass'
+        && review.notification_required !== true
+        && review.context_loss_suspected !== true
+        && !alertData?.auto_send_review_hold
+        && alertData?.needs_you_required !== true
+        && alertData?.needs_shannon_approval !== true;
+}
+
+async function dispatchScheduledMetaAdReplyNow({ alertId, scheduledFor, replyText }) {
+    const claimedRows = await supabaseQuery(
+        `coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.scheduled&scheduled_for=eq.${encodeURIComponent(scheduledFor)}`,
+        {
+            method: 'PATCH',
+            body: { status: 'pending' },
+            prefer: 'return=representation',
+        }
+    );
+    if (!claimedRows?.[0]) {
+        return { attempted: false, ok: false, reason: 'claim_lost' };
+    }
+
+    const response = await fetch(`${SITE_URL}/.netlify/functions/send-coach-reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            alertId,
+            replyTextUtf8Base64: Buffer.from(replyText, 'utf8').toString('base64'),
+            draftTextUtf8Base64: Buffer.from(replyText, 'utf8').toString('base64'),
+            source: 'scheduled_worker',
+        }),
+    });
+    const responseText = await response.text();
+    if (!response.ok) {
+        console.error(`[ig-draft] immediate Meta ad dispatch ${response.status} for ${alertId}: ${responseText.slice(0, 240)}`);
+        return { attempted: true, ok: false, status: response.status };
+    }
+    return { attempted: true, ok: true, status: response.status };
+}
+
 async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayMs, timingLabel, timingSuggestion }) {
     if (!alertId || !replyText) throw new Error('missing alertId or replyText');
     const normalizedTiming = normalizeIgAutoTimingSuggestion({
@@ -590,7 +634,25 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
         prefer: 'return=representation',
     });
     if (rows?.[0]) {
-        return { scheduledFor: scheduledFor.toISOString(), data: mergedData, alreadyActioned: false, timing: normalizedTiming };
+        let immediateDispatch = null;
+        if (shouldDispatchMetaAdReplyImmediately({
+            alertData: mergedData,
+            normalizedTiming,
+            scheduleResolution,
+        })) {
+            immediateDispatch = await dispatchScheduledMetaAdReplyNow({
+                alertId,
+                scheduledFor: scheduledFor.toISOString(),
+                replyText: normalizeCoachDraftText(replyText || '').trim(),
+            });
+        }
+        return {
+            scheduledFor: scheduledFor.toISOString(),
+            data: mergedData,
+            alreadyActioned: immediateDispatch?.ok === true,
+            timing: normalizedTiming,
+            immediateDispatch,
+        };
     }
     const currentRows = await supabaseQuery(
         `coach_alerts?select=status,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
@@ -5844,7 +5906,9 @@ exports.handler = async (event) => {
             });
             currentAlertData = scheduleResult.data || currentAlertData;
             autoHandled = true;
-            if (scheduleResult.alreadyActioned) {
+            if (scheduleResult.immediateDispatch?.ok) {
+                console.log(`[ig-draft] immediately dispatched clean Meta ad alert ${alertId} for ${leadName}`);
+            } else if (scheduleResult.alreadyActioned) {
                 console.log(`[ig-draft] auto alert ${alertId} already actioned before direct schedule`);
             } else {
                 console.log(`[ig-draft] auto-scheduled alert ${alertId} for ${leadName} in ${scheduleResult.timing?.label || timingSuggestion.label}`);
@@ -6064,6 +6128,7 @@ exports._test = {
     isStoryOpenerConfusionMessage,
     buildNativeStoryConfusionRepairBlock,
     normalizeIgAutoTimingSuggestion,
+    shouldDispatchMetaAdReplyImmediately,
     resolveIgFastLaneDelayMs,
     isCocosToShanSunnyVoiceTest,
     buildPersonalVoiceNoteDraftingBlock,

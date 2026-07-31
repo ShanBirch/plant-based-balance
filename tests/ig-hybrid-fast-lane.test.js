@@ -181,9 +181,38 @@ const paidMetaTiming = instantDraft.normalizeIgAutoTimingSuggestion({
     fastLaneDelayMs: 0,
 });
 assert.equal(paidMetaTiming.action, 'send_now');
-assert.equal(paidMetaTiming.delay_ms, 0, 'verified Meta ad replies queue on the next worker tick without an artificial delay');
+assert.equal(paidMetaTiming.delay_ms, 0, 'verified Meta ad replies have no artificial delay');
 assert.equal(instantDraft.resolveIgFastLaneDelayMs({ metaAdFastLane: true }), 0);
 assert.equal(instantDraft.resolveIgFastLaneDelayMs({ exerciseConversationFastLane: true }), 4 * 60 * 1000);
+assert.equal(instantDraft.shouldDispatchMetaAdReplyImmediately({
+    alertData: {
+        meta_ad_fast_lane: true,
+        draft_review: {
+            verdict: 'pass',
+            notification_required: false,
+            context_loss_suspected: false,
+        },
+    },
+    normalizedTiming: paidMetaTiming,
+    scheduleResolution: { deferredForWorkingHours: false },
+}), true, 'a clean reviewed paid-Meta reply dispatches immediately instead of waiting for cron');
+assert.equal(instantDraft.shouldDispatchMetaAdReplyImmediately({
+    alertData: {
+        meta_ad_fast_lane: true,
+        draft_review: { verdict: 'warn' },
+    },
+    normalizedTiming: paidMetaTiming,
+    scheduleResolution: { deferredForWorkingHours: false },
+}), false, 'a review warning never enters direct paid-Meta dispatch');
+assert.equal(instantDraft.shouldDispatchMetaAdReplyImmediately({
+    alertData: {
+        meta_ad_fast_lane: true,
+        draft_review: { verdict: 'pass' },
+        needs_you_required: true,
+    },
+    normalizedTiming: paidMetaTiming,
+    scheduleResolution: { deferredForWorkingHours: false },
+}), false, 'a Needs You alert never enters direct paid-Meta dispatch');
 
 const legacyImmediateTiming = instantDraft.normalizeIgAutoTimingSuggestion({
     timingSuggestion: { delay_ms: 0, reason: 'legacy immediate request' },
