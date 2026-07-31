@@ -194,6 +194,13 @@ function isGratitudeCloserText(text = '') {
         .trim()
         .toLowerCase();
     if (!normalized) return false;
+    // A warm opener is not a closer when the rest of the message contains a
+    // live need, offer question, or next-step signal. For example, "Awesome I
+    // think I just need help with my diet and some accountability" must stay
+    // in the coaching conversation rather than being reduced to "Awesome".
+    if (/\b(?:i\s+(?:think|need|want)|need|help|diet|food|accountability|coach(?:ing)?|plan|program|details?|link|price|cost|start|join|sign\s*up|send)\b/.test(normalized)) {
+        return false;
+    }
     return /^(?:thanks|thank you|thankyou|ta|cheers|appreciate it|legend|perfect|sounds good|all good|no worries|awesome|amazing|nice|sweet|okay|ok|cool|got it|love it|haha thanks|lol thanks)\b/.test(normalized)
         || /\b(?:thanks|thank you|thankyou|appreciate it|legend)\b$/.test(normalized);
 }

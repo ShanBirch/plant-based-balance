@@ -316,6 +316,22 @@ assert.equal(instantDraft.isMetaAdConversationFastLaneEligible({
     customData: adThreadData,
 }), false, 'linked clients never enter the Meta auto-send fast lane');
 
+const internalPlantBasedTestData = {
+    bot_account: 'shan_n_sunny',
+    internal_test_auto_reply_enabled: true,
+    internal_test_meta_ad_flow: 'plant_based_control',
+};
+assert.equal(instantDraft.isInternalMetaAdConversationTestLane({
+    customData: internalPlantBasedTestData,
+}), true, 'the explicitly armed Coco test thread can exercise paid-flow pacing when Meta preview strips attribution');
+assert.equal(instantDraft.isMetaAdConversationFastLaneEligible({
+    customData: internalPlantBasedTestData,
+}), true);
+assert.equal(instantDraft.isInternalMetaAdConversationTestLane({
+    linkedUserId: 'client-user-1',
+    customData: internalPlantBasedTestData,
+}), false, 'the internal test override never applies to a linked client');
+
 const linkedClientAlert = {
     client_id: 'client-user-1',
     data: {

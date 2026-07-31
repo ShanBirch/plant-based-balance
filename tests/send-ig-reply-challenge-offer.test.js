@@ -48,6 +48,8 @@ assert.strictEqual(hasClientFacingAiSelfReference('that weighted pull-up setup i
 
 assert.strictEqual(isGratitudeCloserText('Thanks!!!'), true);
 assert.strictEqual(isGratitudeCloserText('thanks, can you send the link?'), false);
+assert.strictEqual(isGratitudeCloserText('Awesome I think I just need help with my diet and some accountability'), false);
+assert.strictEqual(isGratitudeCloserText('Awesome, send me the details'), false);
 assert.strictEqual(resolveLatestInboundTextForSend({
     alertData: { draft_evidence: { current_message: 'Thanks!!!' } },
 }), 'Thanks!!!');

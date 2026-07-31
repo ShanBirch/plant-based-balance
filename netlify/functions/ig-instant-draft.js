@@ -2101,7 +2101,18 @@ function isMetaAdConversationFastLaneEligible({ linkedUserId = null, customData 
         : {};
     return String(attribution.source || '').toLowerCase() === 'meta_ads'
         || String(customData?.latest_paid_acquisition || '').toLowerCase() === 'meta_ads'
-        || String(customData?.acquisition_source || '').toLowerCase() === 'meta_ads';
+        || String(customData?.acquisition_source || '').toLowerCase() === 'meta_ads'
+        || isInternalMetaAdConversationTestLane({ customData });
+}
+
+function isInternalMetaAdConversationTestLane({ linkedUserId = null, customData = {} } = {}) {
+    if (linkedUserId) return false;
+    const botAccount = normalizeBotAccount(
+        customData?.bot_account || customData?.instagram_graph?.bot_account
+    );
+    return botAccount === 'shan_n_sunny'
+        && customData?.internal_test_auto_reply_enabled === true
+        && String(customData?.internal_test_meta_ad_flow || '').toLowerCase() === 'plant_based_control';
 }
 
 function isExerciseConversationFastLaneEligible({ linkedUserId = null, currentMessage = '', recentMessages = [], nowMs = Date.now() } = {}) {
@@ -4243,6 +4254,10 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
     });
+    const internalMetaAdConversationTestLane = isInternalMetaAdConversationTestLane({
+        linkedUserId: thread.linked_user_id,
+        customData: thread.custom_data,
+    });
     const metaAdFastLane = metaAdFirstInbound || metaAdConversationFastLane;
     const metaAdFlowVariant = resolveMetaAdFlowVariant({
         customData: thread.custom_data,
@@ -5041,6 +5056,7 @@ exports.handler = async (event) => {
             meta_ad_fast_lane: metaAdFastLane || undefined,
             meta_ad_first_inbound: metaAdFirstInbound || undefined,
             meta_ad_conversation_fast_lane: metaAdConversationFastLane || undefined,
+            meta_ad_internal_test_lane: internalMetaAdConversationTestLane || undefined,
             exercise_conversation_fast_lane: exerciseConversationFastLane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : metaAdFlowVariant,
             meta_ad_first_reply_intent: metaAdFirstInbound ? draft.firstReplyIntent : undefined,
@@ -5281,6 +5297,7 @@ exports.handler = async (event) => {
             meta_ad_fast_lane: metaAdFastLane || existingPending.data?.meta_ad_fast_lane || undefined,
             meta_ad_first_inbound: metaAdFirstInbound || existingPending.data?.meta_ad_first_inbound || undefined,
             meta_ad_conversation_fast_lane: metaAdConversationFastLane || existingPending.data?.meta_ad_conversation_fast_lane || existingPending.data?.meta_ad_active_conversation_fast_lane || undefined,
+            meta_ad_internal_test_lane: internalMetaAdConversationTestLane || existingPending.data?.meta_ad_internal_test_lane || undefined,
             exercise_conversation_fast_lane: exerciseConversationFastLane || existingPending.data?.exercise_conversation_fast_lane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : (metaAdFlowVariant || existingPending.data?.meta_ad_flow_variant || undefined),
             meta_ad_first_reply_intent: metaAdFirstInbound ? draft.firstReplyIntent : existingPending.data?.meta_ad_first_reply_intent,
@@ -6011,6 +6028,7 @@ exports._test = {
     isCurrentMetaAdInbound,
     isMetaAdFastLaneEligible,
     isMetaAdConversationFastLaneEligible,
+    isInternalMetaAdConversationTestLane,
     isExerciseConversationFastLaneEligible,
     resolveMetaAdFlowVariant,
     resolveMetaAdFirstReplyIntent,
