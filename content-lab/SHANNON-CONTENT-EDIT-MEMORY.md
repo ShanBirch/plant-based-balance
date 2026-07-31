@@ -101,6 +101,14 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - Personal examples must explain the contrast in a complete thought before the punchline. Prefer a specific, recognisably Shannon detail over a vague one-word payoff. When the contrast is counterintuitive, acknowledge that it is strange to comprehend before landing the clipped mechanism summary; for the cravings reference, use the mate's-place/McDonald's example, then `So yeah...`, then `Same body. Different environment. Different signals. Different output.`
 - Conversion-focused Balance Reels inherit the science-Reel evidence, face-protection, voice, edit and QA standards, then add a clearer problem, coaching reframe, useful solution, future identity and one small CTA.
 
+### Three-mistake exercise Reel format
+
+- When Shannon chooses the three-mistake format, use the lateral-raise V7 card system rather than a generic list: briefly black out only the avatar/top panel, keep the exercise moving below, animate the yellow burst/rays and rumbling numeral, preserve the left `1/2/3` progress rail, and use the saved local Fahh clip with a supporting whoosh, impact and phone-audible click.
+- A clean full-screen Shannon/avatar opener is approved; the Reel does not need the `Let's fix this shitty` hook. Move quickly into split-screen and alternate with full-screen live exercise whenever the movement is the evidence.
+- Keep anatomy inserts short and tied to the exact mechanism being spoken. Do not pause for a long static anatomy image, add an inaccurate hip/pelvis circle, or replace relevant movement proof with generated decoration.
+- The closing bridge must explain the real service before the keyword: `This is what I do with my clients inside Balance`, followed by how Shannon watches the person's movement, finds where it breaks down, chooses a suitable version and gives a clear progression. Then end with the direct spoken and visible action `Comment BALANCE below`.
+- Treat `abs` pronunciation as a transcript gate. Reject any generated voice that spells it out as `A B` or otherwise damages the word.
+
 ### Tahlia Feed engagement
 
 - Tahlia does not publish her own Balance Feed posts, including workout, PB, weigh-in or fitness-diary cards.
@@ -112,6 +120,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 | Date | Shannon's direction | Scalable rule | Affected formats |
 | --- | --- | --- | --- |
+| 2026-07-31 | Use the lateral-raise three-mistake flow, start full-screen, keep the exercise moving, use the saved Fahh sound, avoid inaccurate circles, and finish by saying what I do with my clients. | Port the real V7 animated mistake cards and Fahh stack; alternate full-screen presenter, split and live exercise; keep anatomy brief and exact; end with a concrete Balance coaching bridge and `Comment BALANCE below`. | Exercise Reels, avatar Reels, coaching CTAs, audio and motion design |
 | 2026-07-30 | Check Tahlia's Feed comment frequency and make sure she does not comment on every post, roughly 3-7 per day. | Use a deterministic 3-7 Brisbane-day target, a two-hour minimum interval, and a stable 50% post-selection gate so skipped posts remain skipped. | Balance Feed, Tahlia social worker, Feed comments |
 | 2026-07-29 | Remove Tahlia's posts from the Feed and automate only very short comments, never more than once per post. | Disable all Tahlia-authored Feed posts, remove existing and pending ones, and auto-publish only allowlisted 1-3 word comments behind a database one-comment-per-post guard. | Balance Feed, Tahlia social worker, Feed comments |
 | 2026-07-29 | You blacked out his face with a little square. Never do this. Fix it, remember it, repost. | Ban square, rectangular, black, opaque, hard-edged and pixelated face treatments. Privacy blurs must be tightly fitted, oval/circular and feathered; otherwise use a safe crop, soft background treatment or branded proof card. Inspect the exact native frames before publishing. | Daily Proof Stories, client proof, real-media Stories and Reels |
