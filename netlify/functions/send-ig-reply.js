@@ -167,6 +167,7 @@ const SEND_TIME_SAFETY_BLOCK_MESSAGE = 'Send-time safety blocked this IG reply. 
 const AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES = new Set([
     'auto_send',
     'balance_lead_client_manager_cron',
+    'balance_app_repair_worker',
 ]);
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -591,6 +592,35 @@ function isAppSupportFastFixException(data = {}) {
     return supportException && reason === 'app_support_fast_fix';
 }
 
+function isVerifiedAppSupportAutomatedReply(data = {}, source = '') {
+    if (!isAppSupportFastFixException(data)) return false;
+    const normalizedSource = String(source || '').trim().toLowerCase();
+    const replyKind = String(data.support_reply_kind || '').trim();
+    const issueKey = String(data.support_issue_key || '').trim();
+    const state = String(data.support_state || '').trim();
+    if (!issueKey || data.support_automation_authorized !== true || data.outbound_attempted === true) return false;
+
+    if (replyKind === 'verified_fix_complete') {
+        return normalizedSource === 'balance_app_repair_worker'
+            && state === 'verified_fix_reply_ready'
+            && !!String(data.repair_verified_at || '').trim()
+            && !!String(data.repair_verification_summary || '').trim()
+            && data.completion_reply_used !== true
+            && data.support_loop_guard !== true;
+    }
+
+    if (replyKind === 'failed_fix_ack') {
+        return normalizedSource === 'balance_lead_client_manager_cron'
+            && state === 'failed_fix_ack_ready'
+            && !!String(data.completion_reply_sent_at || '').trim()
+            && !!String(data.client_reported_still_broken_at || '').trim()
+            && data.failed_fix_ack_used !== true
+            && data.support_loop_guard !== true;
+    }
+
+    return false;
+}
+
 function isPermanentNeedsYouIgAlert({ alert = {}, alertData = {}, thread = null } = {}) {
     const data = alertData || alert.data || {};
     const graph = safeObject(data.instagram_graph);
@@ -621,7 +651,7 @@ function isPermanentNeedsYouIgAlert({ alert = {}, alertData = {}, thread = null 
 function shouldBlockPermanentNeedsYouAutomatedIgSend({ alert = {}, alertData = {}, thread = null, source = '' } = {}) {
     const data = alertData || alert.data || {};
     return isAutomatedPermanentNeedsYouSendSource(source, data)
-        && !isAppSupportFastFixException(data)
+        && !isVerifiedAppSupportAutomatedReply(data, source)
         && !shouldBypassKayNeedsYouForAlert({ alert, alertData, thread })
         && isPermanentNeedsYouIgAlert({ alert, alertData, thread });
 }
@@ -942,6 +972,7 @@ function shouldBlockLinkedClientAutomatedIgSend({ alert = {}, alertData = {}, th
     const data = alertData || alert.data || {};
     return isLinkedClientIgAlert({ alert, alertData: data, thread })
         && isAutomatedPermanentNeedsYouSendSource(source, data)
+        && !isVerifiedAppSupportAutomatedReply(data, source)
         && !isManagerOwnedLinkedClientIgSend({ alertData: data, thread, source });
 }
 
@@ -2592,6 +2623,7 @@ exports._test = {
     isHumanApprovedPermanentNeedsYouSendSource,
     isAutomatedPermanentNeedsYouSendSource,
     isAppSupportFastFixException,
+    isVerifiedAppSupportAutomatedReply,
     isPermanentNeedsYouIgAlert,
     shouldBlockPermanentNeedsYouAutomatedIgSend,
     isLinkedClientIgAlert,

@@ -49,9 +49,32 @@ const fraAppSupportFixAlert = {
     ...fraAlert,
     data: {
         ...fraAlert.data,
-        scheduled_via: 'balance_lead_client_manager_cron',
         support_exception: true,
         support_exception_reason: 'app_support_fast_fix',
+        support_automation_authorized: true,
+        support_issue_key: 'fra:program:exercise-swap:2026-07-31',
+        support_reply_kind: 'verified_fix_complete',
+        support_state: 'verified_fix_reply_ready',
+        repair_verified_at: '2026-07-31T01:00:00.000Z',
+        repair_verification_summary: 'Canonical program readback shows the requested exercise.',
+        completion_reply_used: false,
+        outbound_attempted: false,
+    },
+};
+const fraFailedFixAckAlert = {
+    ...fraAlert,
+    data: {
+        ...fraAlert.data,
+        support_exception: true,
+        support_exception_reason: 'app_support_fast_fix',
+        support_automation_authorized: true,
+        support_issue_key: 'fra:program:exercise-swap:2026-07-31',
+        support_reply_kind: 'failed_fix_ack',
+        support_state: 'failed_fix_ack_ready',
+        completion_reply_sent_at: '2026-07-31T01:00:00.000Z',
+        client_reported_still_broken_at: '2026-07-31T02:00:00.000Z',
+        failed_fix_ack_used: false,
+        outbound_attempted: false,
     },
 };
 
@@ -144,6 +167,60 @@ assert.strictEqual(
     ),
     true,
     'the linked-client exception must not open the scheduled worker lane'
+);
+assert.strictEqual(
+    sendCoach.shouldBlockCurrentClientAutomatedSend(
+        fraAppSupportFixAlert,
+        'balance_app_repair_worker',
+        { id: 'thread-fra', linked_user_id: 'client-fra' }
+    ),
+    false,
+    'a repair worker may send one completion reply only after a verified support fix'
+);
+assert.strictEqual(
+    sendCoach.shouldBlockCurrentClientAutomatedSend(
+        fraFailedFixAckAlert,
+        'balance_lead_client_manager_cron',
+        { id: 'thread-fra', linked_user_id: 'client-fra' }
+    ),
+    false,
+    'the DM manager may send the one failed-fix ownership acknowledgement'
+);
+assert.strictEqual(
+    sendCoach.shouldBlockCurrentClientAutomatedSend(
+        {
+            ...fraAppSupportFixAlert,
+            data: { ...fraAppSupportFixAlert.data, repair_verification_summary: '' },
+        },
+        'balance_app_repair_worker',
+        { id: 'thread-fra', linked_user_id: 'client-fra' }
+    ),
+    true,
+    'support completion must stay blocked when proof of repair is missing'
+);
+assert.strictEqual(
+    sendCoach.shouldBlockCurrentClientAutomatedSend(
+        {
+            ...fraAppSupportFixAlert,
+            data: { ...fraAppSupportFixAlert.data, support_automation_authorized: false },
+        },
+        'balance_app_repair_worker',
+        { id: 'thread-fra', linked_user_id: 'client-fra' }
+    ),
+    true,
+    'an explicit live support authorization is required for every automated completion'
+);
+assert.strictEqual(
+    sendCoach.shouldBlockCurrentClientAutomatedSend(
+        {
+            ...fraFailedFixAckAlert,
+            data: { ...fraFailedFixAckAlert.data, failed_fix_ack_used: true },
+        },
+        'balance_lead_client_manager_cron',
+        { id: 'thread-fra', linked_user_id: 'client-fra' }
+    ),
+    true,
+    'the failed-fix acknowledgement cannot be reused'
 );
 assert.strictEqual(
     sendIg.shouldBlockLinkedClientAutomatedIgSend({
@@ -266,9 +343,20 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
-    sendCoach.shouldBlockPermanentNeedsYouAutomatedSend(fraAppSupportFixAlert, 'balance_lead_client_manager_cron'),
+    sendCoach.shouldBlockPermanentNeedsYouAutomatedSend(fraAppSupportFixAlert, 'balance_app_repair_worker'),
     false,
     'general send endpoint should allow verified app-support fixes for permanent Needs You clients'
+);
+assert.strictEqual(
+    sendCoach.shouldBlockPermanentNeedsYouAutomatedSend({
+        ...fraAppSupportFixAlert,
+        data: {
+            ...fraAppSupportFixAlert.data,
+            support_state: 'fix_attempted_client_confirmation_pending',
+        },
+    }, 'balance_app_repair_worker'),
+    true,
+    'a generic app-support flag must not bypass Needs You without the exact send-ready state'
 );
 
 assert.strictEqual(
@@ -367,10 +455,40 @@ assert.strictEqual(
     sendIg.shouldBlockPermanentNeedsYouAutomatedIgSend({
         alert: fraAppSupportFixAlert,
         alertData: fraAppSupportFixAlert.data,
-        source: 'balance_lead_client_manager_cron',
+        source: 'balance_app_repair_worker',
     }),
     false,
     'IG sender should allow verified app-support fixes for permanent Needs You clients'
+);
+assert.strictEqual(
+    sendIg.shouldBlockLinkedClientAutomatedIgSend({
+        alert: { ...fraAppSupportFixAlert, client_id: 'client-fra' },
+        alertData: fraAppSupportFixAlert.data,
+        thread: { id: 'thread-fra', linked_user_id: 'client-fra' },
+        source: 'balance_app_repair_worker',
+    }),
+    false,
+    'final Instagram transport should allow a strictly verified support completion'
+);
+assert.strictEqual(
+    sendIg.shouldBlockLinkedClientAutomatedIgSend({
+        alert: { ...fraFailedFixAckAlert, client_id: 'client-fra' },
+        alertData: fraFailedFixAckAlert.data,
+        thread: { id: 'thread-fra', linked_user_id: 'client-fra' },
+        source: 'balance_lead_client_manager_cron',
+    }),
+    false,
+    'final Instagram transport should allow one failed-fix acknowledgement'
+);
+assert.strictEqual(
+    sendIg.shouldBlockLinkedClientAutomatedIgSend({
+        alert: { ...fraFailedFixAckAlert, client_id: 'client-fra' },
+        alertData: { ...fraFailedFixAckAlert.data, support_loop_guard: true },
+        thread: { id: 'thread-fra', linked_user_id: 'client-fra' },
+        source: 'balance_lead_client_manager_cron',
+    }),
+    true,
+    'the support loop guard must close the final Instagram transport'
 );
 
 assert.deepStrictEqual(
@@ -409,7 +527,7 @@ assert.strictEqual(
 assert.strictEqual(
     scheduledWorker.buildPermanentNeedsYouHold(fraAppSupportFixAlert),
     null,
-    'scheduled worker should allow verified app-support fixes for permanent Needs You clients'
+    'legacy scheduled-worker support handling should not invent a permanent-person hold'
 );
 
 assert.strictEqual(
@@ -446,7 +564,7 @@ assert.strictEqual(
 assert.strictEqual(
     scheduleReply.shouldBlockPermanentNeedsYouSchedule(fraAppSupportFixAlert, 'balance_lead_client_manager_cron'),
     false,
-    'Send Later should allow verified app-support fixes for permanent Needs You clients'
+    'existing support exceptions may still be manually scheduled, while direct automated delivery has stricter proof gates'
 );
 
 assert.strictEqual(

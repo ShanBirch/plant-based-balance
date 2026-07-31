@@ -186,6 +186,7 @@ const CURRENT_CLIENT_AUTOMATED_SEND_MESSAGE = 'Current clients require Shannon a
 const AUTOMATED_PERMANENT_NEEDS_YOU_SEND_SOURCES = new Set([
     'auto_send',
     'balance_lead_client_manager_cron',
+    'balance_app_repair_worker',
 ]);
 
 function isHumanApprovedPermanentNeedsYouSendSource(source) {
@@ -219,6 +220,35 @@ function isAppSupportFastFixException(data = {}) {
     return supportException && reason === 'app_support_fast_fix';
 }
 
+function isVerifiedAppSupportAutomatedReply(data = {}, source = '') {
+    if (!isAppSupportFastFixException(data)) return false;
+    const normalizedSource = String(source || '').trim().toLowerCase();
+    const replyKind = String(data.support_reply_kind || '').trim();
+    const issueKey = String(data.support_issue_key || '').trim();
+    const state = String(data.support_state || '').trim();
+    if (!issueKey || data.support_automation_authorized !== true || data.outbound_attempted === true) return false;
+
+    if (replyKind === 'verified_fix_complete') {
+        return normalizedSource === 'balance_app_repair_worker'
+            && state === 'verified_fix_reply_ready'
+            && !!String(data.repair_verified_at || '').trim()
+            && !!String(data.repair_verification_summary || '').trim()
+            && data.completion_reply_used !== true
+            && data.support_loop_guard !== true;
+    }
+
+    if (replyKind === 'failed_fix_ack') {
+        return normalizedSource === 'balance_lead_client_manager_cron'
+            && state === 'failed_fix_ack_ready'
+            && !!String(data.completion_reply_sent_at || '').trim()
+            && !!String(data.client_reported_still_broken_at || '').trim()
+            && data.failed_fix_ack_used !== true
+            && data.support_loop_guard !== true;
+    }
+
+    return false;
+}
+
 function isPermanentNeedsYouAlert(alert = {}) {
     const data = alert.data || {};
     const needsYouReasons = Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : [];
@@ -239,7 +269,7 @@ function isPermanentNeedsYouAlert(alert = {}) {
 function shouldBlockPermanentNeedsYouAutomatedSend(alert = {}, source = '') {
     const data = alert.data || {};
     return isAutomatedPermanentNeedsYouSendSource(source, data)
-        && !isAppSupportFastFixException(data)
+        && !isVerifiedAppSupportAutomatedReply(data, source)
         && !shouldBypassKayNeedsYouForAlert({ alert })
         && isPermanentNeedsYouAlert(alert);
 }
@@ -265,6 +295,7 @@ function isManagerOwnedClientAutoReply(alert = {}, source = '', liveThread = nul
 function shouldBlockCurrentClientAutomatedSend(alert = {}, source = '', liveThread = null) {
     return isAutomatedPermanentNeedsYouSendSource(source, alert.data || {})
         && isCurrentClientAlert(alert, liveThread)
+        && !isVerifiedAppSupportAutomatedReply(alert.data || {}, source)
         && !isManagerOwnedClientAutoReply(alert, source, liveThread);
 }
 
@@ -677,6 +708,7 @@ exports._test = {
     isHumanApprovedPermanentNeedsYouSendSource,
     isAutomatedPermanentNeedsYouSendSource,
     isAppSupportFastFixException,
+    isVerifiedAppSupportAutomatedReply,
     isPermanentNeedsYouAlert,
     shouldBlockPermanentNeedsYouAutomatedSend,
     isCurrentClientAlert,
