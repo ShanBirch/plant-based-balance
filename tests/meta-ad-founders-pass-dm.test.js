@@ -13,6 +13,9 @@ const {
     buildLeadOnboardingHandoffData,
     resolveMetaAdFirstReplyIntent,
     resolveMetaAdFlowVariant,
+    shouldUseDeterministicMetaAdFirstReply,
+    getMetaAdSensitiveHoldReason,
+    hasImmediateMetaDispatchFailure,
 } = require('../netlify/functions/ig-instant-draft')._test;
 
 test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and model review', () => {
@@ -45,7 +48,7 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
     assert.equal(approval.code, 'approved_meta_ad_first_reply');
     assert.equal(handoff.client_manager_review_required, false);
     assert.equal(handoff.signup_link_manual_only, false);
-    assert.equal(handoff.approved_link_auto_sendable, true);
+    assert.equal(handoff.approved_link_auto_sendable, false);
     assert.equal(handoff.meta_ad_first_reply_preapproved, true);
     assert.equal(review.verdict, 'pass');
     assert.equal(review.notification_required, false);
@@ -56,6 +59,77 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
         leadStage: 'paying',
         linkedUserId: 'linked-client',
     }), null);
+});
+
+test('deterministic first reply is narrow and leaves sensitive, opt-out, and unrelated ad messages to normal review', () => {
+    for (const message of [
+        'What is the Founders Pass?',
+        "What's actually included?",
+        'Do I need to already be Plant Based?',
+        "I'm In - save me a spot!",
+        'BALANCE',
+        'How does the accountability work?',
+        'What is the cost?',
+    ]) {
+        assert.equal(shouldUseDeterministicMetaAdFirstReply(message), true, message);
+    }
+
+    for (const message of [
+        'STOP',
+        "Don't message me again",
+        'Are you an AI bot?',
+        'I need urgent help at hospital',
+        'I need emotional support right now',
+        'Balance is rubbish',
+        'The cost of living is killing me',
+        'Hey, Shannon sent me here about my knee',
+    ]) {
+        assert.equal(shouldUseDeterministicMetaAdFirstReply(message), false, message);
+    }
+});
+
+test('preview-only Meta approval cannot make the worker invent a checkout link', () => {
+    const draft = buildMetaAdFoundersPassFirstReply('What is the Founders Pass?');
+    const approval = buildMetaAdFirstReplyApproval({ metaAdFirstInbound: true, draft });
+    const handoff = buildApprovedMetaAdFirstReplyHandoffData({
+        approval,
+        draft,
+        leadStage: 'new',
+        linkedUserId: null,
+    });
+
+    assert.equal(draft.checkoutUrl, null);
+    assert.equal(handoff.meta_ad_first_reply_preapproved, true);
+    assert.equal(handoff.signup_link_handoff_url, undefined);
+    assert.equal(handoff.approved_link_auto_sendable, false);
+
+    const readyDraft = buildMetaAdFoundersPassFirstReply("I'm ready to start");
+    const readyHandoff = buildApprovedMetaAdFirstReplyHandoffData({
+        approval: buildMetaAdFirstReplyApproval({ metaAdFirstInbound: true, draft: readyDraft }),
+        draft: readyDraft,
+        leadStage: 'new',
+        linkedUserId: null,
+    });
+    assert.equal(readyHandoff.approved_link_auto_sendable, true);
+    assert.match(readyHandoff.signup_link_handoff_url, /plant-based-fitness\.html/);
+});
+
+test('paid Meta opt-out, identity, and safety messages always hold while ordinary flows are untouched', () => {
+    const metaAlert = { meta_ad_fast_lane: true };
+    assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'STOP' }).code, 'dm_opt_out');
+    assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: "Don't message me again" }).code, 'dm_opt_out');
+    assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'Are you an AI bot?' }).code, 'identity_question');
+    assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I am pregnant and injured' }).code, 'safety_or_medical');
+    assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I need to stop snacking' }), null);
+    assert.equal(getMetaAdSensitiveHoldReason({ alertData: {}, currentMessage: 'Are you an AI bot?' }), null);
+});
+
+test('an attempted immediate Meta dispatch that does not succeed is treated as a failed handoff', () => {
+    assert.equal(hasImmediateMetaDispatchFailure({}), false);
+    assert.equal(hasImmediateMetaDispatchFailure({ immediateDispatch: null }), false);
+    assert.equal(hasImmediateMetaDispatchFailure({ immediateDispatch: { attempted: true, ok: true } }), false);
+    assert.equal(hasImmediateMetaDispatchFailure({ immediateDispatch: { attempted: true, ok: false, status: 502 } }), true);
+    assert.equal(hasImmediateMetaDispatchFailure({ immediateDispatch: { attempted: false, ok: false, reason: 'claim_lost' } }), true);
 });
 
 test('deterministic Meta review bypass remains closed for real review risks', () => {

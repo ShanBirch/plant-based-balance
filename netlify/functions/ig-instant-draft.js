@@ -556,6 +556,11 @@ function shouldDispatchMetaAdReplyImmediately({ alertData, normalizedTiming, sch
         && alertData?.needs_shannon_approval !== true;
 }
 
+function hasImmediateMetaDispatchFailure(scheduleResult = {}) {
+    return !!scheduleResult?.immediateDispatch
+        && scheduleResult.immediateDispatch.ok !== true;
+}
+
 async function dispatchScheduledMetaAdReplyNow({ alertId, scheduledFor, replyText }) {
     const claimedRows = await supabaseQuery(
         `coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.scheduled&scheduled_for=eq.${encodeURIComponent(scheduledFor)}`,
@@ -963,6 +968,8 @@ function isPaidMetaBuyerIntentOfferReplyAllowed({ alertData, challengeOfferWarni
 
 function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData, allowTestLaneDraftReviewWarning = false, allowBalanceLeadDraftReviewWarning = false }) {
     const effectiveContextBypass = contextBypass || cocosContextBypass;
+    const metaAdSensitiveHold = getMetaAdSensitiveHoldReason({ alertData, currentMessage });
+    if (metaAdSensitiveHold) return metaAdSensitiveHold;
     const appProblemHold = getAppProblemAutoSendHoldReason({
         currentMessage,
         draftText: draft?.joined || '',
@@ -1184,6 +1191,51 @@ function resolveMetaAdFirstReplyIntent(currentMessage = '') {
     return 'overview';
 }
 
+const META_AD_IDENTITY_QUESTION_RE = /\b(are you (?:an? )?(?:ai|bot|robot|real|human)|is this (?:an? )?(?:ai|bot)|am i talking to|who is this)\b/i;
+const META_AD_SAFETY_OR_MEDICAL_RE = /\b(suicid\w*|self[- ]?harm\w*|eating disorder|pregnan\w*|injur\w*|medical emergency|hospital)\b/i;
+const META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE = new RegExp(
+    `${META_AD_IDENTITY_QUESTION_RE.source}|${META_AD_SAFETY_OR_MEDICAL_RE.source}`,
+    'i'
+);
+const META_AD_FIRST_REPLY_OPT_OUT_RE = /\b(?:stop|unsubscribe|do not message|don['\u2019]?t message|leave me alone|remove me)\b/i;
+
+function shouldUseDeterministicMetaAdFirstReply(currentMessage = '') {
+    const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    if (!message
+        || META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
+        || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)) {
+        return false;
+    }
+
+    const normalized = message.toLowerCase().replace(/[\u2018\u2019]/g, "'");
+    if (/^balance[!?.\s]*$/i.test(message)) return true;
+    if (/\bfounders?\s+pass\b/i.test(message)) return true;
+    if (/\b(what(?:'s| is) (?:actually )?included|what do i get|inclusions?|details|tell me more|show me what(?:'s| is) included)\b/i.test(normalized)) return true;
+    if (/\b(do i need to (?:already )?be plant[ -]?based|already plant[ -]?based|not plant[ -]?based|vegan already|already vegan)\b/i.test(normalized)) return true;
+    if (/\b(right for me|would this suit|is this for me|good fit|would it work for me)\b/i.test(normalized)) return true;
+    if (/\b(i'?m in|im in|ready to start|let'?s do it|sign me up|save me a spot|send (?:me )?(?:the )?link|how do i start|where do i start|start now)\b/i.test(normalized)) return true;
+    if (/^(?:what(?:'s| is) (?:the )?)?(?:price|cost)(?: of (?:it|this|the (?:pass|program)))?[!?.\s]*$/i.test(normalized)) return true;
+    return /\b(?:what|which|how much|is there|do (?:i|you)|does it|will i|can i|get|include|offer|provide)\b.{0,55}\b(?:support|accountability)\b/i.test(normalized)
+        || /\b(?:support|accountability)\b.{0,55}\b(?:included|work|offer|provide|get)\b/i.test(normalized);
+}
+
+function getMetaAdSensitiveHoldReason({ alertData = {}, currentMessage = '' } = {}) {
+    if (alertData?.meta_ad_fast_lane !== true) return null;
+    const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    if (/^(?:stop|unsubscribe|remove me)[!?.\s]*$/i.test(message)
+        || /\b(?:stop|do not|don['\u2019]?t)\s+(?:message|messaging|contact|contacting|dm|dming)\s+me\b/i.test(message)
+        || /\b(?:leave me alone|remove me from (?:this|your) list)\b/i.test(message)) {
+        return { code: 'dm_opt_out', label: 'lead asked not to be messaged' };
+    }
+    if (META_AD_IDENTITY_QUESTION_RE.test(message)) {
+        return { code: 'identity_question', label: 'lead asked who is replying' };
+    }
+    if (META_AD_SAFETY_OR_MEDICAL_RE.test(message)) {
+        return { code: 'safety_or_medical', label: 'safety or medical context needs Shannon' };
+    }
+    return null;
+}
+
 function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {}, flowVariant = '', acquisitionMode = ACQUISITION_MODES.PAID_META } = {}) {
     const resolvedVariant = flowVariant || resolveMetaAdFlowVariant({ customData, currentMessage, acquisitionMode });
     const broadFlow = resolvedVariant === 'broad_pain';
@@ -1245,7 +1297,9 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
 }
 
 function buildMetaAdFirstReplyApproval({ metaAdFirstInbound = false, draft = null } = {}) {
-    if (!metaAdFirstInbound || draft?.replyMode !== 'campaign_first_reply') return null;
+    if (!metaAdFirstInbound
+        || draft?.replyMode !== 'campaign_first_reply'
+        || !/^deterministic_meta_ad_founders_pass_v\d+$/.test(String(draft?.model || ''))) return null;
     return {
         required: false,
         code: draft.checkoutUrl ? 'approved_meta_ad_buyer_handoff' : 'approved_meta_ad_first_reply',
@@ -1275,7 +1329,7 @@ function buildApprovedMetaAdFirstReplyHandoffData({ approval, draft, leadStage, 
         style_note: 'Verified deterministic Meta ad first reply is approved for automatic sending.',
         signup_link_manual_only: false,
         signup_link_handoff_url: draft.checkoutUrl || undefined,
-        approved_link_auto_sendable: true,
+        approved_link_auto_sendable: !!draft.checkoutUrl,
         meta_ad_first_reply_preapproved: true,
         codex_review: {
             source: 'ig-instant-draft',
@@ -1289,8 +1343,6 @@ function buildApprovedMetaAdFirstReplyHandoffData({ approval, draft, leadStage, 
     };
 }
 
-const META_AD_EXPLICIT_FIRST_REPLY_RE = /\b(founders?\s+pass|balance|what(?:'s| is) (?:actually )?included|what do i get|inclusions?|details|tell me more|show me what(?:'s| is) included|plant[ -]?based|right for me|good fit|ready to start|sign me up|save me a spot|send (?:me )?(?:the )?link|how do i start|where do i start|start now|price|cost|support|accountability)\b/i;
-const META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE = /\b(are you (?:an? )?(?:ai|bot|robot|real|human)|is this (?:an? )?(?:ai|bot)|am i talking to|who is this|suicid|self[- ]?harm|eating disorder|pregnan|injur|medical emergency|hospital)\b/i;
 const META_AD_CARD_ATTACHMENT_RE = /^\[attachment:https:\/\/lookaside\.fbsbx\.com\/ig_messaging_cdn\/?[^\]]*\]$/i;
 
 function filterMetaAdCardAttachmentHistory({
@@ -1301,7 +1353,7 @@ function filterMetaAdCardAttachmentHistory({
 } = {}) {
     const messages = Array.isArray(history) ? history : [];
     if (!metaAdFirstInbound && !metaAdConversationFastLane) return messages;
-    const currentIsExplicitOffer = META_AD_EXPLICIT_FIRST_REPLY_RE.test(String(currentMessage || ''));
+    const currentIsExplicitOffer = shouldUseDeterministicMetaAdFirstReply(currentMessage);
 
     return messages.filter((message, index) => {
         if (String(message?.direction || '') !== 'in'
@@ -1312,7 +1364,7 @@ function filterMetaAdCardAttachmentHistory({
         if (metaAdFirstInbound && currentIsExplicitOffer) return false;
 
         const nextInbound = messages.slice(index + 1).find(candidate => candidate?.direction === 'in');
-        if (!nextInbound || !META_AD_EXPLICIT_FIRST_REPLY_RE.test(String(nextInbound.text || ''))) return true;
+        if (!nextInbound || !shouldUseDeterministicMetaAdFirstReply(nextInbound.text)) return true;
         const attachmentAt = Date.parse(message.created_at || '');
         const nextInboundAt = Date.parse(nextInbound.created_at || '');
         return !Number.isFinite(attachmentAt)
@@ -1341,7 +1393,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         || !approval
         || approval.required === true
         || !/^approved_meta_ad_/.test(String(approval.code || ''))
-        || !META_AD_EXPLICIT_FIRST_REPLY_RE.test(message)
+        || !shouldUseDeterministicMetaAdFirstReply(message)
         || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)) {
         return null;
     }
@@ -4967,7 +5019,7 @@ exports.handler = async (event) => {
 
     let draft;
     try {
-        draft = metaAdFirstInbound ? buildMetaAdFoundersPassFirstReply(messageText, {
+        draft = metaAdFirstInbound && shouldUseDeterministicMetaAdFirstReply(messageText) ? buildMetaAdFoundersPassFirstReply(messageText, {
             customData: thread.custom_data,
             flowVariant: metaAdFlowVariant,
             acquisitionMode,
@@ -6072,12 +6124,27 @@ exports.handler = async (event) => {
                 timingSuggestion,
             });
             currentAlertData = scheduleResult.data || currentAlertData;
-            autoHandled = true;
+            const immediateDispatchFailed = hasImmediateMetaDispatchFailure(scheduleResult);
+            if (immediateDispatchFailed) {
+                autoHoldReason = {
+                    code: 'immediate_dispatch_failed',
+                    label: 'immediate Meta reply failed to send',
+                };
+                currentAlertData = await stampIgAutoSendHoldForReview({
+                    thread,
+                    alertId,
+                    alertData: currentAlertData,
+                    reason: autoHoldReason,
+                }) || currentAlertData;
+                console.warn(`[ig-draft] immediate Meta ad dispatch failed for ${alertId}; falling back to approve-gate`);
+            } else {
+                autoHandled = true;
+            }
             if (scheduleResult.immediateDispatch?.ok) {
                 console.log(`[ig-draft] immediately dispatched clean Meta ad alert ${alertId} for ${leadName}`);
             } else if (scheduleResult.alreadyActioned) {
                 console.log(`[ig-draft] auto alert ${alertId} already actioned before direct schedule`);
-            } else {
+            } else if (!immediateDispatchFailed) {
                 console.log(`[ig-draft] auto-scheduled alert ${alertId} for ${leadName} in ${scheduleResult.timing?.label || timingSuggestion.label}`);
             }
         } catch (e) {
@@ -6264,6 +6331,8 @@ exports._test = {
     isExerciseConversationFastLaneEligible,
     resolveMetaAdFlowVariant,
     resolveMetaAdFirstReplyIntent,
+    shouldUseDeterministicMetaAdFirstReply,
+    getMetaAdSensitiveHoldReason,
     buildMetaAdCheckoutUrl,
     buildMetaAdFoundersPassFirstReply,
     buildMetaAdFirstReplyApproval,
@@ -6300,6 +6369,7 @@ exports._test = {
     buildNativeStoryConfusionRepairBlock,
     normalizeIgAutoTimingSuggestion,
     shouldDispatchMetaAdReplyImmediately,
+    hasImmediateMetaDispatchFailure,
     resolveIgFastLaneDelayMs,
     isCocosToShanSunnyVoiceTest,
     buildPersonalVoiceNoteDraftingBlock,
