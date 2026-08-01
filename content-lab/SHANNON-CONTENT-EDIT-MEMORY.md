@@ -103,6 +103,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 ### Three-mistake exercise Reel format
 
+- When Shannon asks for his backwards-hat character, use the approved `Coach Shan Hat On` digital twin (`8ca3cd3f07cb448ebeb0b6f4547db1ce`) and verify the full backwards cap remains inside both portrait and split-screen crops.
 - Keep approved scripts in `content-lab/SHANNON-SCRIPT-LIBRARY.md` with their meaning-matched visual map. Read the closest entries before drafting, then add new entries only after Shannon approves the spoken wording.
 - Match anatomy to the exact sentence: when the script explains pulling the legs up, show the hip flexors; when it explains bringing the hips closer to the rib cage, show the abs and the ribs-to-pelvis relationship.
 - Keep the spoken logic sharper than the visual edit: one sentence should create one new viewer state. Default to `here's the problem -> here's why -> here's the correction -> here's the proof`, then move on. If understanding a mistake requires three or four explanatory sentences in a row, compress it before voice generation.
@@ -124,6 +125,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 | Date | Shannon's direction | Scalable rule | Affected formats |
 | --- | --- | --- | --- |
+| 2026-08-01 | Use my character/avatar with my hat on backwards; I think that’s better. | Resolve `Coach Shan Hat On` for backwards-cap requests and make the hat/full head a framing QA gate in full-screen and split-screen layouts. | Exercise Reels, HeyGen presenter selection, avatar framing |
 | 2026-08-01 | Build a database of the scripts we write so you can read them and learn how I talk; start with this hanging-leg-raise script. Match hip-flexor and ab visuals to the exact explanation. | Maintain one canonical approved-script library with exact spoken copy, voice lessons and meaning-matched visual maps. Read the closest entries before every future draft. | All Shannon-led scripts, Exercise Reels, visual beat maps |
 | 2026-07-31 | The ad caption says `you have not failed`; always abbreviate it. | Use the natural contraction `you haven't` everywhere in Shannon's public-facing copy. Audit the surrounding sentence for the same issue, such as `it wasn't`, `you've`, `you're`, `I'll`, and `what's`, before approving or publishing. | Ad captions, headlines, creative artwork, landing pages, public-facing Shannon copy |
 | 2026-07-31 | I get lost when explaining one problem takes several sentences; make it sharp: here's the problem, here's why, one sentence, next state. | Enforce one new viewer state per sentence and compress each exercise mistake to problem, cause, cue and visible proof before moving on. | Exercise Reels, spoken scripts, captions, semantic beat maps |

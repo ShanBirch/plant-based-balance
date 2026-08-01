@@ -17,7 +17,10 @@ This is the canonical database of Shannon-approved spoken scripts. Read the clos
 - Approved: 2026-08-01
 - Format: Exercise Reel / three mistakes / COACH
 - Exercise: Hanging leg raise
-- Status: Approved spoken script; production revision pending
+- Status: Phone preview generated; awaiting Shannon approval
+- Presenter: `Coach Shan Hat On` backwards-cap digital twin (`8ca3cd3f07cb448ebeb0b6f4547db1ce`)
+- HeyGen video: `069654a9ec2848d68fa6e92a153e9864`
+- Phone preview: https://f005.backblazeb2.com/file/plantbasedbalancestories/codex-reel-previews/2026-07-31/1785544633174-eb8e7d73-03a6-4d5f-8c28-544e3cfffc25-hanging-leg-raise-reel-preview-v6-backwards-hat.mp4
 - CTA keyword: `BALANCE`
 - Primary voice lesson: Explain the mechanism in ordinary gym language, then give a physical picture the viewer can recognise.
 
@@ -81,6 +84,8 @@ This is the canonical database of Shannon-approved spoken scripts. Read the clos
 | `That’s why I’ve got the dumbbell there.` | Show the live foot tap on the dumbbell: tap, stop, then start the next rep. |
 | `You’re not controlling the eccentric—the way down.` | Show the real lowering phase moving continuously. Do not replace it with a static anatomy hold. |
 | `Comment BALANCE below...` | Full-screen Shannon/avatar with the visible `COMMENT BALANCE` card. |
+
+The presenter for this entry is the backwards-cap `Coach Shan Hat On` character. Keep the hat and full head inside the portrait crop in both full-screen and split-screen layouts.
 
 ### What this entry teaches future drafts
 
