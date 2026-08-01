@@ -1,6 +1,6 @@
 ---
 format: 1080x1920
-duration: 42s
+duration: 48s
 message: "Balance turns your goal into a clear, supported week"
 arc: Future self → Personal goal → Plan delivered → Human support → Visible progress → Belonging → CTA
 audience: Plant-based adults who want to become fitter but need structure and accountability that works in real life
@@ -93,7 +93,33 @@ Scene 2 (1.3–4.5s): breakfast, lunch, dinner and snack cards assemble one at a
 Scene 3 (4.5–6.1s): the highlighted meal card pushes forward; a gold “ADD TO GROCERY LIST” action presses, and the card morphs into a neatly grouped grocery list delivered beside the week.
 Scene 4 (6.1–7.0s): “Plan. Shop. Cook. Done.” reveals word by word, then the finished meal-plan-and-list composition holds.
 
-## Frame 4 — Real check-ins with Shannon
+## Frame 4 — Your exercise, coached
+
+- status: animated
+- src: compositions/frames/03b-coached-exercise.html
+- duration: 6s
+- poster: 5.2s
+- transition_in: crossfade
+- scene: A real Shannon exercise demonstration becomes a complete coached workout card
+- type: feature_showcase
+- persuasion: Product concreteness and perceived guidance
+- beat: training proof
+- asset_candidates: .media/video/video_001.mp4
+- blueprint: media-to-detail-reveal
+- posture: Adapt
+- rules: coordinate-target-zoom, discrete-text-sequence, stat-bars-and-fills
+- focal: .media/video/video_001.mp4
+- roles: Shannon exercise video = hero
+- sfx: pop, click-soft
+
+Adapt: begin with Shannon’s real movement footage at full-screen scale, then pull back once to reveal exactly how the exercise arrives inside Balance: clear coaching cues, sets, reps and rest time.
+
+Scene 1 (0.0–1.8s): Shannon’s single-leg RDL demonstration fills the entire vertical frame with no competing product copy. A restrained “BALANCE WORKOUT” chip identifies the source without interrupting the movement.
+Scene 2 (1.8–2.8s): the live exercise video makes one deliberate camera pull-back, becoming a premium training panel in the upper two-thirds while the warm Balance surface appears underneath.
+Scene 3 (2.8–5.2s): “Single-leg RDL” resolves below the video, followed by three practical prescription cards—3 sets, 8–10 each side and 60 seconds rest. Coach cues appear last: soft knee, hips square, reach long.
+Scene 4 (5.2–6.0s): “Watch it. Learn it. Follow your plan.” lands and the complete exercise-detail screen holds.
+
+## Frame 5 — Real check-ins with Shannon
 
 - status: animated
 - src: compositions/frames/04-shannon-check-in.html
@@ -119,7 +145,7 @@ Scene 2 (1.3–3.4s): a notification from “Shannon” arrives: “Weekly check
 Scene 3 (3.4–5.1s): the message opens into a voice-note card; a real-looking waveform draws left to right and the play control depresses once. “Delivered in your Balance inbox” lands below. The exact Shannon recording is intentionally represented by the waveform for now.
 Scene 4 (5.1–6.0s): three words arrive on the music pulse—“Questions. Direction. Accountability.”—then hold in stillness with the voice note as hero.
 
-## Frame 5 — See your progress build
+## Frame 6 — See your progress build
 
 - status: animated
 - src: compositions/frames/05-progress-build.html
@@ -145,7 +171,7 @@ Scene 2 (1.5–3.8s): three reconstructed Balance rows arrive sequentially—Str
 Scene 3 (3.8–5.2s): the camera pushes through the completed ring into a Movement card; “Form check” and “Coach workout” chips settle beside a simple training preview.
 Scene 4 (5.2–6.0s): “Your training. Your habits. One clear view.” resolves and holds.
 
-## Frame 6 — A community that shows up
+## Frame 7 — A community that shows up
 
 - status: animated
 - src: compositions/frames/06-daily-community.html
@@ -171,7 +197,7 @@ Scene 2 (1.2–4.0s): real food, walk and workout moments crop cleanly out of th
 Scene 3 (4.0–5.2s): the camera eases inward; the three cards align into a generous vertical feed while “Meals · walks · workouts · wins” reveals beneath them.
 Scene 4 (5.2–6.0s): “A COMMUNITY THAT SHOWS UP DAILY” lands, with “DAILY” in gold; all cards hold still.
 
-## Frame 7 — Founders Pass
+## Frame 8 — Founders Pass
 
 - status: animated
 - src: compositions/frames/07-founders-pass.html

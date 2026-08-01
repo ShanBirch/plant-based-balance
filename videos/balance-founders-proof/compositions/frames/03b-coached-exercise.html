@@ -1,0 +1,370 @@
+<template>
+  <style>
+    #root {
+      position: relative;
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      container-type: size;
+      font-family: "Montserrat", Arial, sans-serif;
+      color: #160d20;
+    }
+
+    .f03b-coached-exercise-ground {
+      position: absolute;
+      inset: 0;
+      background: #ffffff;
+    }
+
+    .f03b-coached-exercise-ground::after {
+      content: "";
+      position: absolute;
+      right: -24cqw;
+      top: 52cqh;
+      width: 68cqw;
+      height: 68cqw;
+      border: 1.5px solid rgba(169, 111, 0, 0.12);
+      border-radius: 50%;
+      background: rgba(169, 111, 0, 0.035);
+    }
+
+    .f03b-coached-exercise-video-shell {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      overflow: hidden;
+      background: #160d20;
+      transform-origin: 50% 0%;
+      will-change: transform, clip-path;
+    }
+
+    .f03b-coached-exercise-video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+    }
+
+    .f03b-coached-exercise-video-vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(22, 13, 32, 0.06), transparent 28%, transparent 76%, rgba(22, 13, 32, 0.18));
+    }
+
+    .f03b-coached-exercise-video-chip {
+      position: absolute;
+      left: 7cqw;
+      top: 4.3cqh;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      gap: 1.5cqw;
+      padding: 1.05cqh 2.8cqw;
+      border: 1.5px solid rgba(255, 255, 255, 0.34);
+      border-radius: 100px;
+      background: rgba(22, 13, 32, 0.50);
+      color: #ffffff;
+      font-size: 1.9cqw;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      backdrop-filter: blur(8px);
+    }
+
+    .f03b-coached-exercise-live-dot {
+      width: 1.65cqw;
+      height: 1.65cqw;
+      border-radius: 50%;
+      background: #d8a43a;
+    }
+
+    .f03b-coached-exercise-details {
+      position: absolute;
+      left: 6.5cqw;
+      top: 63.6cqh;
+      z-index: 3;
+      width: 87cqw;
+      min-height: 25.4cqh;
+      padding: 3.4cqw;
+      box-sizing: border-box;
+      border: 1.5px solid rgba(169, 111, 0, 0.20);
+      border-radius: 14px;
+      background: rgba(169, 111, 0, 0.04);
+    }
+
+    .f03b-coached-exercise-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 3cqw;
+    }
+
+    .f03b-coached-exercise-eyebrow {
+      margin-bottom: 0.65cqh;
+      color: #956100;
+      font-size: 1.75cqw;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+    }
+
+    .f03b-coached-exercise-title {
+      color: #160d20;
+      font-size: 4.8cqw;
+      font-weight: 750;
+      line-height: 1.05;
+      letter-spacing: -0.035em;
+    }
+
+    .f03b-coached-exercise-plan-chip {
+      flex: 0 0 auto;
+      margin-top: 0.4cqh;
+      padding: 0.95cqh 2.4cqw;
+      border-radius: 100px;
+      background: rgba(169, 111, 0, 0.08);
+      color: #8f5e00;
+      font-size: 1.55cqw;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    .f03b-coached-exercise-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.6cqw;
+      margin-top: 2.15cqh;
+    }
+
+    .f03b-coached-exercise-stat {
+      min-width: 0;
+      padding: 1.25cqh 2cqw;
+      border: 1.5px solid rgba(169, 111, 0, 0.16);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .f03b-coached-exercise-stat-value {
+      color: #956100;
+      font-size: 3.55cqw;
+      font-weight: 750;
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+
+    .f03b-coached-exercise-stat-label {
+      margin-top: 0.5cqh;
+      color: #6c6871;
+      font-size: 1.4cqw;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+
+    .f03b-coached-exercise-cues-title {
+      margin-top: 1.75cqh;
+      color: #625d67;
+      font-size: 1.55cqw;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+
+    .f03b-coached-exercise-cues {
+      display: grid;
+      grid-template-columns: 1.12fr 1fr 1fr;
+      gap: 1.3cqw;
+      margin-top: 0.8cqh;
+    }
+
+    .f03b-coached-exercise-cue {
+      display: flex;
+      align-items: center;
+      gap: 1.1cqw;
+      min-width: 0;
+      padding: 1.05cqh 1.5cqw;
+      border-radius: 10px;
+      background: rgba(169, 111, 0, 0.07);
+      color: #160d20;
+      font-size: 1.62cqw;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .f03b-coached-exercise-cue-mark {
+      display: grid;
+      flex: 0 0 auto;
+      place-items: center;
+      width: 2.65cqw;
+      height: 2.65cqw;
+      border-radius: 50%;
+      background: #956100;
+      color: #ffffff;
+      font-size: 1.45cqw;
+      font-weight: 800;
+    }
+
+    .f03b-coached-exercise-caption {
+      position: absolute;
+      left: 8.3cqw;
+      top: 91.1cqh;
+      z-index: 3;
+      padding-left: 2.5cqw;
+      border-left: 4px solid #a96f00;
+      color: #160d20;
+      font-size: 2.55cqw;
+      font-weight: 550;
+      letter-spacing: -0.01em;
+    }
+
+    .f03b-coached-exercise-progress {
+      position: absolute;
+      left: 7.3cqw;
+      top: 95.2cqh;
+      z-index: 3;
+      width: 85.4cqw;
+      height: 3px;
+      overflow: hidden;
+      background: rgba(169, 111, 0, 0.15);
+    }
+
+    .f03b-coached-exercise-progress-fill {
+      display: block;
+      width: 72%;
+      height: 100%;
+      background: #a96f00;
+      transform-origin: left center;
+    }
+  </style>
+
+  <div id="root" data-composition-id="03b-coached-exercise" data-start="0" data-duration="6.6" data-width="1080" data-height="1920">
+    <div id="f03b-coached-exercise-ground" class="clip f03b-coached-exercise-ground" data-start="0" data-duration="6.6" data-track-index="0"></div>
+
+    <div id="f03b-coached-exercise-video-shell" class="f03b-coached-exercise-video-shell" data-layout-allow-overflow>
+      <video
+        id="f03b-coached-exercise-video"
+        class="clip f03b-coached-exercise-video"
+        src=".media/video/video_001.mp4"
+        data-start="0"
+        data-duration="6.6"
+        data-media-start="0.2"
+        data-track-index="1"
+        muted
+        playsinline
+      ></video>
+      <div class="f03b-coached-exercise-video-vignette"></div>
+      <div id="f03b-coached-exercise-video-chip" class="f03b-coached-exercise-video-chip">
+        <span class="f03b-coached-exercise-live-dot"></span>
+        BALANCE WORKOUT
+      </div>
+    </div>
+
+    <section id="f03b-coached-exercise-details" class="f03b-coached-exercise-details" aria-label="Single-leg RDL workout details">
+      <div class="f03b-coached-exercise-header">
+        <div>
+          <div class="f03b-coached-exercise-eyebrow">COACHED EXERCISE</div>
+          <h1 class="f03b-coached-exercise-title">Single-leg RDL</h1>
+        </div>
+        <div class="f03b-coached-exercise-plan-chip">LOWER BODY</div>
+      </div>
+
+      <div class="f03b-coached-exercise-stats">
+        <div class="f03b-coached-exercise-stat">
+          <div class="f03b-coached-exercise-stat-value">3</div>
+          <div class="f03b-coached-exercise-stat-label">SETS</div>
+        </div>
+        <div class="f03b-coached-exercise-stat">
+          <div class="f03b-coached-exercise-stat-value">8–10</div>
+          <div class="f03b-coached-exercise-stat-label">EACH SIDE</div>
+        </div>
+        <div class="f03b-coached-exercise-stat">
+          <div class="f03b-coached-exercise-stat-value">60s</div>
+          <div class="f03b-coached-exercise-stat-label">REST</div>
+        </div>
+      </div>
+
+      <div class="f03b-coached-exercise-cues-title">COACH CUES</div>
+      <div class="f03b-coached-exercise-cues">
+        <div class="f03b-coached-exercise-cue"><span class="f03b-coached-exercise-cue-mark">✓</span>Soft knee</div>
+        <div class="f03b-coached-exercise-cue"><span class="f03b-coached-exercise-cue-mark">✓</span>Hips square</div>
+        <div class="f03b-coached-exercise-cue"><span class="f03b-coached-exercise-cue-mark">✓</span>Reach long</div>
+      </div>
+    </section>
+
+    <p id="f03b-coached-exercise-caption" class="f03b-coached-exercise-caption">Watch it. Learn it. Follow your plan.</p>
+    <div class="f03b-coached-exercise-progress"><span class="f03b-coached-exercise-progress-fill"></span></div>
+  </div>
+
+  <script>
+    (() => {
+      const compositionId = "03b-coached-exercise";
+      const root = document.querySelector("#root");
+      const shell = root.querySelector("#f03b-coached-exercise-video-shell");
+      const chip = root.querySelector("#f03b-coached-exercise-video-chip");
+      const details = root.querySelector("#f03b-coached-exercise-details");
+      const title = root.querySelector(".f03b-coached-exercise-title");
+      const eyebrow = root.querySelector(".f03b-coached-exercise-eyebrow");
+      const planChip = root.querySelector(".f03b-coached-exercise-plan-chip");
+      const stats = Array.from(root.querySelectorAll(".f03b-coached-exercise-stat"));
+      const cuesTitle = root.querySelector(".f03b-coached-exercise-cues-title");
+      const cues = Array.from(root.querySelectorAll(".f03b-coached-exercise-cue"));
+      const caption = root.querySelector("#f03b-coached-exercise-caption");
+      const progress = root.querySelector(".f03b-coached-exercise-progress-fill");
+
+      const timeline = gsap.timeline({ paused: true });
+      window.__timelines = window.__timelines || {};
+      window.__timelines[compositionId] = timeline;
+
+      timeline.fromTo(shell,
+        { scale: 1.055, y: 0, clipPath: "inset(0% 0% 0% 0% round 0px)" },
+        { scale: 1, y: 0, clipPath: "inset(0% 0% 0% 0% round 0px)", duration: 1.75, ease: "power1.out" },
+        0
+      );
+      timeline.fromTo(chip,
+        { y: -18, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.42, ease: "power2.out" },
+        0.35
+      );
+      timeline.to(chip, { opacity: 0, duration: 0.22, ease: "power1.in" }, 1.78);
+      timeline.to(shell,
+        { scale: 0.84, y: 140, clipPath: "inset(0% 0% 38% 0% round 18px)", duration: 0.92, ease: "power4.inOut" },
+        1.82
+      );
+      timeline.fromTo(details,
+        { y: 58, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.62, ease: "power3.out" },
+        2.30
+      );
+      timeline.fromTo([eyebrow, title, planChip],
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.46, stagger: 0.10, ease: "power2.out" },
+        2.62
+      );
+      timeline.fromTo(stats,
+        { y: 24, scale: 0.96, opacity: 0 },
+        { y: 0, scale: 1, opacity: 1, duration: 0.48, stagger: 0.14, ease: "power3.out" },
+        3.18
+      );
+      timeline.fromTo(cuesTitle,
+        { x: -16, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.34, ease: "power2.out" },
+        4.02
+      );
+      timeline.fromTo(cues,
+        { y: 18, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.38, stagger: 0.14, ease: "power2.out" },
+        4.20
+      );
+      timeline.fromTo(caption,
+        { y: 22, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.42, ease: "power3.out" },
+        5.02
+      );
+      timeline.fromTo(progress,
+        { scaleX: 0 },
+        { scaleX: 1, duration: 1.0, ease: "power2.out" },
+        5.18
+      );
+      timeline.to({}, { duration: 6.6 }, 0);
+    })();
+  </script>
+</template>

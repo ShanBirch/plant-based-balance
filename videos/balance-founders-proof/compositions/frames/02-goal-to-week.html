@@ -236,6 +236,152 @@
       font-size: 2.15cqw;
     }
 
+    .ff02-goal-to-week-tile-body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 1.25cqh;
+      min-height: 0;
+      margin: 1.35cqh 0;
+    }
+
+    .ff02-goal-to-week-status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2cqw;
+      color: rgba(22, 13, 32, 0.58);
+      font-size: 2.15cqw;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .ff02-goal-to-week-status-strong {
+      color: #a96f00;
+      font-weight: 700;
+    }
+
+    .ff02-goal-to-week-day-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1.2cqw;
+    }
+
+    .ff02-goal-to-week-day {
+      display: grid;
+      place-items: center;
+      height: 5.5cqw;
+      border: 1.5px solid rgba(169, 111, 0, 0.22);
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.72);
+      color: rgba(22, 13, 32, 0.48);
+      font-size: 1.9cqw;
+      font-weight: 700;
+    }
+
+    .ff02-goal-to-week-day.is-done {
+      border-color: #a96f00;
+      background: #a96f00;
+      color: #ffffff;
+    }
+
+    .ff02-goal-to-week-session-list,
+    .ff02-goal-to-week-habit-list {
+      display: grid;
+      gap: 0.75cqh;
+    }
+
+    .ff02-goal-to-week-session,
+    .ff02-goal-to-week-habit {
+      display: flex;
+      align-items: center;
+      gap: 1.4cqw;
+      min-height: 3.8cqh;
+      padding: 0 1.7cqw;
+      border: 1.5px solid rgba(169, 111, 0, 0.16);
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.68);
+      color: rgba(22, 13, 32, 0.66);
+      font-size: 1.95cqw;
+      font-weight: 650;
+    }
+
+    .ff02-goal-to-week-session-mark,
+    .ff02-goal-to-week-habit-mark {
+      display: grid;
+      flex: 0 0 auto;
+      place-items: center;
+      width: 3cqw;
+      height: 3cqw;
+      border: 1.5px solid rgba(169, 111, 0, 0.28);
+      border-radius: 50%;
+      color: #a96f00;
+      font-size: 1.65cqw;
+      font-weight: 800;
+    }
+
+    .ff02-goal-to-week-session.is-next {
+      border-color: rgba(169, 111, 0, 0.34);
+      color: #160d20;
+    }
+
+    .ff02-goal-to-week-session.is-next .ff02-goal-to-week-session-mark {
+      background: rgba(169, 111, 0, 0.1);
+    }
+
+    .ff02-goal-to-week-plan-minor .ff02-goal-to-week-tile-body {
+      gap: 0.9cqh;
+      margin: 1cqh 0;
+    }
+
+    .ff02-goal-to-week-metric {
+      color: #160d20;
+      font-size: 5.5cqw;
+      font-weight: 750;
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+
+    .ff02-goal-to-week-metric-label {
+      margin-top: 0.35cqh;
+      color: rgba(22, 13, 32, 0.52);
+      font-size: 1.65cqw;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+
+    .ff02-goal-to-week-segments {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.7cqw;
+    }
+
+    .ff02-goal-to-week-segment {
+      height: 1.1cqh;
+      border-radius: 100px;
+      background: rgba(169, 111, 0, 0.12);
+    }
+
+    .ff02-goal-to-week-segment.is-done {
+      background: #a96f00;
+    }
+
+    .ff02-goal-to-week-habit {
+      min-height: 3.15cqh;
+      padding: 0 1.15cqw;
+      gap: 1cqw;
+      font-size: 1.62cqw;
+    }
+
+    .ff02-goal-to-week-habit-mark {
+      width: 2.5cqw;
+      height: 2.5cqw;
+      border-color: #a96f00;
+      background: #a96f00;
+      color: #ffffff;
+      font-size: 1.3cqw;
+    }
+
     .ff02-goal-to-week-track {
       width: 100%;
       height: 12px;
@@ -305,14 +451,31 @@
                   <div class="ff02-goal-to-week-tile-title">Plant-based meals</div>
                   <div class="ff02-goal-to-week-check">✓</div>
                 </div>
-                <div class="ff02-goal-to-week-track"><div class="ff02-goal-to-week-fill"></div></div>
+                <div class="ff02-goal-to-week-tile-body">
+                  <div class="ff02-goal-to-week-status-row"><span>Week planned</span><span class="ff02-goal-to-week-status-strong">4 / 5</span></div>
+                  <div class="ff02-goal-to-week-day-row" aria-label="Meals planned Monday to Friday">
+                    <div class="ff02-goal-to-week-day is-done">M</div>
+                    <div class="ff02-goal-to-week-day is-done">T</div>
+                    <div class="ff02-goal-to-week-day is-done">W</div>
+                    <div class="ff02-goal-to-week-day is-done">T</div>
+                    <div class="ff02-goal-to-week-day">F</div>
+                  </div>
+                </div>
+                <div class="ff02-goal-to-week-track"><div class="ff02-goal-to-week-fill" style="width: 80%"></div></div>
               </article>
               <article class="ff02-goal-to-week-tile" data-plan-order="2">
                 <div class="ff02-goal-to-week-tile-top">
                   <div class="ff02-goal-to-week-tile-title">Strength sessions</div>
                   <div class="ff02-goal-to-week-check">✓</div>
                 </div>
-                <div class="ff02-goal-to-week-track"><div class="ff02-goal-to-week-fill"></div></div>
+                <div class="ff02-goal-to-week-tile-body">
+                  <div class="ff02-goal-to-week-session-list">
+                    <div class="ff02-goal-to-week-session"><span class="ff02-goal-to-week-session-mark">✓</span>Lower body</div>
+                    <div class="ff02-goal-to-week-session"><span class="ff02-goal-to-week-session-mark">✓</span>Upper body</div>
+                    <div class="ff02-goal-to-week-session is-next"><span class="ff02-goal-to-week-session-mark">3</span>Full body next</div>
+                  </div>
+                </div>
+                <div class="ff02-goal-to-week-track"><div class="ff02-goal-to-week-fill" style="width: 67%"></div></div>
               </article>
             </div>
             <div class="ff02-goal-to-week-plan-minor">
@@ -321,14 +484,34 @@
                   <div class="ff02-goal-to-week-tile-title">Daily target</div>
                   <div class="ff02-goal-to-week-check">✓</div>
                 </div>
-                <div class="ff02-goal-to-week-track"><div class="ff02-goal-to-week-fill"></div></div>
+                <div class="ff02-goal-to-week-tile-body">
+                  <div>
+                    <div class="ff02-goal-to-week-metric">8.4K</div>
+                    <div class="ff02-goal-to-week-metric-label">OF 10K STEPS</div>
+                  </div>
+                  <div class="ff02-goal-to-week-segments" aria-hidden="true">
+                    <span class="ff02-goal-to-week-segment is-done"></span>
+                    <span class="ff02-goal-to-week-segment is-done"></span>
+                    <span class="ff02-goal-to-week-segment is-done"></span>
+                    <span class="ff02-goal-to-week-segment is-done"></span>
+                    <span class="ff02-goal-to-week-segment"></span>
+                  </div>
+                </div>
+                <div class="ff02-goal-to-week-track"><div class="ff02-goal-to-week-fill" style="width: 84%"></div></div>
               </article>
               <article class="ff02-goal-to-week-tile" data-plan-order="4">
                 <div class="ff02-goal-to-week-tile-top">
                   <div class="ff02-goal-to-week-tile-title">Recovery</div>
                   <div class="ff02-goal-to-week-check">✓</div>
                 </div>
-                <div class="ff02-goal-to-week-track"><div class="ff02-goal-to-week-fill"></div></div>
+                <div class="ff02-goal-to-week-tile-body">
+                  <div class="ff02-goal-to-week-habit-list">
+                    <div class="ff02-goal-to-week-habit"><span class="ff02-goal-to-week-habit-mark">✓</span>Sleep 7h+</div>
+                    <div class="ff02-goal-to-week-habit"><span class="ff02-goal-to-week-habit-mark">✓</span>Mobility</div>
+                    <div class="ff02-goal-to-week-habit"><span class="ff02-goal-to-week-habit-mark">✓</span>Rest day</div>
+                  </div>
+                </div>
+                <div class="ff02-goal-to-week-track"><div class="ff02-goal-to-week-fill" style="width: 75%"></div></div>
               </article>
             </div>
           </div>

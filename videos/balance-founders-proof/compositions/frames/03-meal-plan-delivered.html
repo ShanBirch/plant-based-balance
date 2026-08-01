@@ -173,41 +173,14 @@
     }
 
     [class~="f03-meal-plan-delivered-food-art"] {
-      position: relative;
+      display: block;
+      width: calc(100% - 20px);
       height: 212px;
+      object-fit: cover;
       overflow: hidden;
       margin: 10px;
       border-radius: 10px;
-      background:
-        radial-gradient(circle at 28% 28%, #ffffff 0 8%, transparent 8.5%),
-        radial-gradient(circle at 66% 42%, rgba(22, 13, 32, 0.80) 0 7%, transparent 7.5%),
-        radial-gradient(circle at 42% 72%, #d8a43a 0 13%, transparent 13.5%),
-        radial-gradient(circle at 78% 78%, rgba(169, 111, 0, 0.62) 0 11%, transparent 11.5%),
-        linear-gradient(145deg, rgba(169, 111, 0, 0.14), rgba(216, 164, 58, 0.50));
-    }
-
-    [class~="f03-meal-plan-delivered-art-two"] {
-      background:
-        radial-gradient(ellipse at 32% 31%, #ffffff 0 10%, transparent 10.5%),
-        radial-gradient(ellipse at 70% 29%, #160d20 0 6%, transparent 6.5%),
-        radial-gradient(circle at 60% 72%, rgba(169, 111, 0, 0.78) 0 15%, transparent 15.5%),
-        linear-gradient(150deg, rgba(216, 164, 58, 0.56), rgba(169, 111, 0, 0.12));
-    }
-
-    [class~="f03-meal-plan-delivered-art-three"] {
-      background:
-        radial-gradient(circle at 32% 35%, #160d20 0 7%, transparent 7.5%),
-        radial-gradient(circle at 65% 26%, #ffffff 0 9%, transparent 9.5%),
-        radial-gradient(ellipse at 50% 70%, #d8a43a 0 19%, transparent 19.5%),
-        linear-gradient(135deg, rgba(169, 111, 0, 0.42), rgba(255, 255, 255, 0.9));
-    }
-
-    [class~="f03-meal-plan-delivered-art-four"] {
-      background:
-        radial-gradient(circle at 26% 33%, rgba(169, 111, 0, 0.82) 0 9%, transparent 9.5%),
-        radial-gradient(circle at 70% 42%, #ffffff 0 13%, transparent 13.5%),
-        radial-gradient(circle at 48% 76%, #160d20 0 5%, transparent 5.5%),
-        linear-gradient(150deg, rgba(169, 111, 0, 0.10), rgba(216, 164, 58, 0.62));
+      background: rgba(169, 111, 0, 0.08);
     }
 
     [class~="f03-meal-plan-delivered-card-copy"] {
@@ -491,42 +464,42 @@
 
         <div class="f03-meal-plan-delivered-week-grid">
           <article class="f03-meal-plan-delivered-meal-card" data-card-index="0">
-            <div class="f03-meal-plan-delivered-food-art"></div>
+            <img class="f03-meal-plan-delivered-food-art" src=".media/images/image_010.png" alt="Baked raspberry almond oats">
             <div class="f03-meal-plan-delivered-card-copy">
               <div class="f03-meal-plan-delivered-kicker">BREAKFAST</div>
-              <div class="f03-meal-plan-delivered-dish">Berry Oats</div>
+              <div class="f03-meal-plan-delivered-dish">Raspberry Oats</div>
               <div class="f03-meal-plan-delivered-macro">PROTEIN · FIBRE</div>
-              <div class="f03-meal-plan-delivered-prep">NO COOK</div>
+              <div class="f03-meal-plan-delivered-prep">BATCH READY</div>
             </div>
           </article>
 
           <article class="f03-meal-plan-delivered-meal-card" data-card-index="1">
-            <div class="f03-meal-plan-delivered-food-art f03-meal-plan-delivered-art-two"></div>
+            <img class="f03-meal-plan-delivered-food-art" src=".media/images/image_009.png" alt="Plant-based glow bowl">
             <div class="f03-meal-plan-delivered-card-copy">
               <div class="f03-meal-plan-delivered-kicker">LUNCH</div>
-              <div class="f03-meal-plan-delivered-dish">Green Bowl</div>
+              <div class="f03-meal-plan-delivered-dish">Glow Bowl</div>
               <div class="f03-meal-plan-delivered-macro">GREENS · GRAINS</div>
               <div class="f03-meal-plan-delivered-prep">QUICK PREP</div>
             </div>
           </article>
 
           <article class="f03-meal-plan-delivered-meal-card f03-meal-plan-delivered-card-focus" data-card-index="2">
-            <div class="f03-meal-plan-delivered-food-art f03-meal-plan-delivered-art-three"></div>
+            <img class="f03-meal-plan-delivered-food-art" src=".media/images/image_011.png" alt="Lentil bolognese with zucchini noodles">
             <div class="f03-meal-plan-delivered-card-copy">
               <div class="f03-meal-plan-delivered-kicker">DINNER</div>
-              <div class="f03-meal-plan-delivered-dish">Lentil Pasta</div>
+              <div class="f03-meal-plan-delivered-dish">Lentil Bolognese</div>
               <div class="f03-meal-plan-delivered-macro">PROTEIN · CARBS</div>
               <div class="f03-meal-plan-delivered-prep">ONE PAN</div>
             </div>
           </article>
 
           <article class="f03-meal-plan-delivered-meal-card" data-card-index="3">
-            <div class="f03-meal-plan-delivered-food-art f03-meal-plan-delivered-art-four"></div>
+            <img class="f03-meal-plan-delivered-food-art" src=".media/images/image_008.png" alt="Berry protein yogurt">
             <div class="f03-meal-plan-delivered-card-copy">
               <div class="f03-meal-plan-delivered-kicker">SNACK</div>
-              <div class="f03-meal-plan-delivered-dish">Chia Cup</div>
-              <div class="f03-meal-plan-delivered-macro">OMEGA · FIBRE</div>
-              <div class="f03-meal-plan-delivered-prep">BATCH READY</div>
+              <div class="f03-meal-plan-delivered-dish">Berry Pot</div>
+              <div class="f03-meal-plan-delivered-macro">PROTEIN · FRUIT</div>
+              <div class="f03-meal-plan-delivered-prep">NO COOK</div>
             </div>
           </article>
         </div>
@@ -539,10 +512,10 @@
 
       <div class="f03-meal-plan-delivered-morph-card" id="f03-meal-plan-delivered-morph-card" data-layout-allow-overlap>
         <div class="f03-meal-plan-delivered-old-content" id="f03-meal-plan-delivered-old-content">
-          <div class="f03-meal-plan-delivered-food-art f03-meal-plan-delivered-art-three"></div>
+          <img class="f03-meal-plan-delivered-food-art" src=".media/images/image_011.png" alt="Lentil bolognese with zucchini noodles">
           <div class="f03-meal-plan-delivered-card-copy">
             <div class="f03-meal-plan-delivered-kicker">DINNER</div>
-            <div class="f03-meal-plan-delivered-dish">Lentil Pasta</div>
+            <div class="f03-meal-plan-delivered-dish">Lentil Bolognese</div>
             <div class="f03-meal-plan-delivered-macro">PROTEIN · CARBS</div>
             <div class="f03-meal-plan-delivered-prep">ONE PAN</div>
           </div>

@@ -7,7 +7,7 @@ destination: instagram-dm
 aspect: 1080x1920
 language: en
 audience: "Plant-based adults who want to become fitter but need structure and accountability that works in real life"
-length: 40s
+length: 48s
 angle: "cinematic product proof: show exactly how support arrives and what daily life inside Balance feels like"
 narration: no
 style_preset: blue-professional
@@ -37,6 +37,7 @@ community is active every day.
 - Use real Balance product truth, but present it as cinematic phone and UI choreography rather than flat screenshots.
 - Build a designed opening frame that also works as the Instagram thumbnail: “FIND YOUR FITTEST SELF” with “A plan that fits real life.”
 - Animate meal cards assembling into a delivered weekly meal plan with a grocery-list handoff.
+- Show a real Shannon exercise demonstration full-screen, then pull back into the Balance exercise view with coaching cues, sets, reps and rest time.
 - Animate a Shannon voice-note check-in arriving in the Balance inbox. The exact recorded voice note may be added later.
 - Bring the community to life with layered real posts and a daily activity pulse.
 - Use tactile interface sound marks and a confident, warm electronic music bed. No narration; all meaning must work muted.
