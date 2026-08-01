@@ -8,11 +8,14 @@ const source = fs.readFileSync(
     'utf8'
 );
 
-assert.match(source, /let workoutInstagramShareCompleted = \{ story: false, feed: false \}/);
+assert.match(source, /let workoutInstagramShareCompleted = \{ story: false \}/);
 assert.match(source, /pbb_workout_instagram_share:\$\{window\.currentUser\.id\}:\$\{getCompletedWorkoutSocialShareReferenceId\(\)\}/);
-assert.match(source, /if \(opened\) markWorkoutInstagramShareCompleted\(safeTarget\)/);
-assert.match(source, /if \(btn && !workoutInstagramShareCompleted\[safeTarget\]\)/);
-assert.match(source, /loadWorkoutInstagramShareCompleted\(\)[\s\S]*renderWorkoutInstagramShareButton\('story'\)[\s\S]*renderWorkoutInstagramShareButton\('feed'\)/);
-assert.match(source, /Instagram shared/);
+assert.match(source, /onSharePrepared:\s*\(\) => markWorkoutInstagramShareCompleted\(\)/);
+assert.match(source, /if \(btn && !workoutInstagramShareCompleted\.story\)/);
+assert.match(source, /loadWorkoutInstagramShareCompleted\(\)[\s\S]*renderWorkoutInstagramShareButton\(\)/);
+assert.match(source, /shareBalanceCardToInstagram\(cardPayload, 'story'/);
+assert.match(source, /Workout shared to Instagram Story! \+15 XP/);
+assert.match(source, /IG Story shared/);
+assert.doesNotMatch(source, /share-workout-ig-feed-btn/);
 
 console.log('Workout Instagram share completion state contract ok');

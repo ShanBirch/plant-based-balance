@@ -27,7 +27,7 @@ assert.match(shareUi, /transaction\?\.transaction_type === 'earn_workout_feed_sh
 assert.doesNotMatch(shareUi, /Photo \+ PB to Feed \(\+1 XP\)/);
 
 assert.match(dashboard, /The first activity share each day earns \+15 XP in Balance Feed/);
-assert.match(dashboard, /id: 'daily-workout-pb-share-xp-v1'/);
-assert.match(dashboard, /One daily workout share reward/);
+assert.match(dashboard, /id: 'daily-workout-story-share-xp-v2'/);
+assert.match(dashboard, /Workout Story \+15 XP/);
 
 console.log('Daily social-share XP contracts passed');

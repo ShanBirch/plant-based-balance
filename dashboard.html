@@ -8308,14 +8308,10 @@ if(!window._pbbIsIOSSafari) {
                         <span style="font-size: 1.3rem;">📢</span>
                         <span style="font-size: 0.95rem;">Balance Feed (+15 XP)</span>
                     </button>
-                    <div id="share-workout-ig-options" style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px;">
-                        <button id="share-workout-ig-story-btn" onclick="shareWorkoutCardToInstagram('story')" style="width: 100%; background: linear-gradient(135deg, #ffffff, #fdf2f8); color: #be185d; padding: 13px 10px; border-radius: 12px; font-weight: 800; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 48px;">
-                            <span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span>
-                            <span style="font-size: 0.9rem;">Story</span>
-                        </button>
-                        <button id="share-workout-ig-feed-btn" onclick="shareWorkoutCardToInstagram('feed')" style="width: 100%; background: linear-gradient(135deg, #ffffff, #eef2ff); color: #4338ca; padding: 13px 10px; border-radius: 12px; font-weight: 800; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 48px;">
-                            <span style="font-size: 0.82rem; font-weight: 950; letter-spacing: 0;">IG</span>
-                            <span style="font-size: 0.9rem;">Feed (+15 XP)</span>
+                    <div id="share-workout-ig-options" style="display: block;">
+                        <button id="share-workout-ig-story-btn" onclick="shareWorkoutCardToInstagram()" style="width: 100%; background: linear-gradient(135deg, #ffffff, #fdf2f8); color: #be185d; -webkit-text-fill-color: #be185d; padding: 16px 14px; border-radius: 12px; font-weight: 800; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 9px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 56px;">
+                            <span style="font-size: 0.9rem; font-weight: 950; letter-spacing: 0;">IG</span>
+                            <span style="font-size: 1rem;">Story (+15 XP)</span>
                         </button>
                     </div>
                 </div>
@@ -13437,7 +13433,7 @@ if(!window._pbbIsIOSSafari) {
       { tab:'movement-tab', sel:'#workout-share-set-btn', fallbackSel:'#today-workout-card', title:'Share a Set', fallbackTitle:'Open a workout to Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", fallbackBody:"Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn') || !!document.getElementById('today-workout-card'); } },
     { tab:'movement-tab', sel:'#movement-add-exercise-btn', title:'Add an Exercise', body:"Tap here to create an exercise, add its demo video, or finish a saved exercise video later. Upload progress stays on screen while you keep using Balance.", quick: true, condition: function(){ return !!document.getElementById('movement-add-exercise-btn'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Post-workout Share', body:"Finish a workout, then tap the single Share button to post the workout, a PB, or a photo to Feed." },
-    { tab:'movement-tab', sel:'#today-workout-card', title:'One daily workout share reward', body:"Share one workout or PB to Balance Feed for +15 XP, and one to Instagram Feed for another +15 XP each day. More posts can still be shared without extra XP." },
+    { tab:'movement-tab', sel:'#share-workout-ig-story-btn', fallbackSel:'#today-workout-card', title:'Workout Story +15 XP', fallbackTitle:'Share your workout to Story', body:'After a workout, add a photo and tap the full-width IG Story button. The first workout Story share each day earns +15 XP.', fallbackBody:'Finish a workout, add a photo, then share it to IG Story for +15 XP once a day.', condition: function(){ return !!document.getElementById('share-workout-ig-story-btn') || !!document.getElementById('today-workout-card'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Photo + workout overlays', body:"Choose Photo + workout or Photo + PB after a session. Balance places the result over your gym photo in a clean transparent overlay, then shows you a preview before posting." },
     { tab:'friends', sel:'.feed-post-card', fallbackSel:'#feed-composer-card', title:'Your wins now move', fallbackTitle:'Your wins now move', body:'Workout, activity and PB posts play a quick gold celebration in Balance Feed. Instagram shares now open as a short motion card with your photo and results.', fallbackBody:'Share a workout, activity or PB to see the gold celebration. Instagram shares now move too, with an automatic still fallback on older phones.' },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Milestone celebrations', body:"When you hit bigger workout count or streak milestones, Balance pops up a celebration card you can share to Feed for +10 XP.", quick: true },
@@ -14699,11 +14695,15 @@ if(!window._pbbIsIOSSafari) {
     condition: function(){ return !!document.querySelector('#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn,#share-nutrition-btn'); }
   });
   allFeatures.push({
-    id: 'daily-workout-pb-share-xp-v1',
+    id: 'daily-workout-story-share-xp-v2',
     tab: 'movement-tab',
-    sel: '#today-workout-card',
-    title: 'One daily workout share reward',
-    body: "Share one workout or PB to Balance Feed for +15 XP, and one to Instagram Feed for another +15 XP each day. More posts can still be shared without extra XP."
+    sel: '#share-workout-ig-story-btn',
+    fallbackSel: '#today-workout-card',
+    title: 'Workout Story +15 XP',
+    fallbackTitle: 'Share your workout to Story',
+    body: 'After a workout, add a photo and tap the full-width IG Story button. The first workout Story share each day earns +15 XP.',
+    fallbackBody: 'Finish a workout, add a photo, then share it to IG Story for +15 XP once a day.',
+    condition: function(){ return !!document.getElementById('share-workout-ig-story-btn') || !!document.getElementById('today-workout-card'); }
   });
   allFeatures.push({
     id: 'feed-post-actions-menu-v1',
@@ -17633,13 +17633,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=39';
+s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=40';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=39"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=40"><\/script>');
 }
 </script>
 

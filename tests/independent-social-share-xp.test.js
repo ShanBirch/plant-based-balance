@@ -50,15 +50,17 @@ assert.match(dashboard, /id="activity-share-btn"[\s\S]*Balance Feed \(\+15 XP\)/
 assert.match(dashboard, /id="activity-share-instagram-btn"[\s\S]*IG Story \(\+15 XP\)/);
 assert.match(shareUi, /shareActivityCardToInstagram[\s\S]*buildActivityShareCardPayload\(\),[\s\S]*'story'/);
 assert.match(dashboard, /id="share-workout-card-btn"[\s\S]*Balance Feed \(\+15 XP\)/);
-assert.match(dashboard, /id="share-workout-ig-feed-btn"[\s\S]*Feed \(\+15 XP\)/);
+assert.match(dashboard, /id="share-workout-ig-story-btn"[\s\S]*Story \(\+15 XP\)/);
+assert.doesNotMatch(dashboard, /id="share-workout-ig-feed-btn"/);
+assert.match(shareUi, /shareWorkoutCardToInstagram[\s\S]*shareBalanceCardToInstagram\(cardPayload, 'story'/);
 assert.match(dashboard, /id:\s*'independent-balance-instagram-share-xp-v1'/);
-assert.match(dashboard, /title:'Two shares, two rewards'/);
-assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=34/);
-assert.match(shareUi, /onSharePrepared:\s*\(\)\s*=>\s*markWorkoutInstagramShareCompleted\(safeTarget\)/);
-assert.match(shareUi, /if \(!opened\) clearWorkoutInstagramShareCompleted\(safeTarget\)/);
-assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=28/);
-assert.match(coachContext, /food and workout shares earn \+15 XP[\s\S]*another independent \+15 XP in Instagram Feed/);
-assert.match(dashboard, /id:\s*'daily-workout-pb-share-xp-v1'/);
-assert.match(dashboard, /title:'One daily workout share reward'/);
+assert.match(dashboard, /title:\s*'Two shares, two XP rewards'/);
+assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=40/);
+assert.match(shareUi, /onSharePrepared:\s*\(\)\s*=>\s*markWorkoutInstagramShareCompleted\(\)/);
+assert.match(shareUi, /if \(!opened\) clearWorkoutInstagramShareCompleted\(\)/);
+assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=30/);
+assert.match(coachContext, /Workout and activity shares earn \+15 XP once in Balance Feed and another independent \+15 XP in Instagram Story/);
+assert.match(dashboard, /id:\s*'daily-workout-story-share-xp-v2'/);
+assert.match(dashboard, /title:\s*'Workout Story \+15 XP'/);
 
 console.log('Independent Balance and Instagram share XP contract ok');
