@@ -90,6 +90,8 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 ### Meta ad FAQ handoffs
 
 - Treat the three prefilled ad questions as informational intent, not checkout intent. Answer the exact question briefly, then ask one useful context question.
+- Once a paid-ad conversation is active, safe text follow-ups should normally reach Instagram in roughly 15-30 seconds. Never leave a style-only reviewer warning stranded between the immediate-send and scheduled-worker rules: remove the unsafe wording deterministically when possible, preserve every safety/context/offer hold, and dispatch the cleaned reply without an artificial delay.
+- For a broad goal such as weight loss or difficulty sticking to a program, use one plain follow-up from the exact detail. Do not ask an answer-menu question, and never repair a draft by copying the person's sentence back to them.
 - Do not send a checkout link from an FAQ click alone. Send it only after the person explicitly asks for the link or how to join, says they are ready, or clearly accepts after the offer.
 - `Do you offer personalized coaching plans?` routes to Starter Coaching, not the Founders Pass. Use Australian spelling in the reply: `Yeah, I do. Starter Coaching is the personalised option, where I review and adjust your training and food each week. What are you mainly trying to change at the moment?`
 - Do not send the Founders Pass proof video on the personalised coaching branch because its final frame promotes the $99 Founders Pass.
@@ -156,6 +158,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 | Date | Shannon's direction | Scalable rule | Affected formats |
 | --- | --- | --- | --- |
+| 2026-08-01 | Replies after the first ad response still feel too slow; after a minute the conversation loses momentum. | Target roughly 15-30 seconds for safe active paid-ad follow-ups. A non-blocking style warning may be deterministically cleaned and sent immediately, but safety, context, media, identity and offer warnings still hold. Reject any repair that parrots the latest inbound. | Meta ad DMs, draft review, repair, immediate dispatch and scheduled-worker handoff |
 | 2026-08-01 | The personalised coaching ad question sent a link straight away with no question. | Treat every ad FAQ as informational: answer first, ask one useful context question, and withhold the checkout link until explicit join/start intent. Route personalised coaching to Starter Coaching and keep the Founders Pass video off that branch. | Meta ad DMs, FAQ prompts, checkout gates, Starter Coaching routing and proof-video handoffs |
 | 2026-08-01 | `This is a 54-second look at...` sounds AI. `Here's a quick video` is better. | Introduce proof videos with one casual `here's a quick video` line. Never announce the exact runtime or inventory every scene in a DM handoff. | Paid-ad DMs, native video attachments, sales handoffs and DM automation prompts |
 | 2026-08-01 | The only thing is I want it to say plant based, not vegan. | Default every Balance audience, offer and community reference to `plant-based`, including final-frame inclusions and community headings; reserve `vegan` for explicit requests or exact quotations. | Balance promo videos, ads, landing pages, Reels, offer copy and community positioning |

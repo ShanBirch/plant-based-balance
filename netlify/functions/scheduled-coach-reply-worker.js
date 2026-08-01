@@ -185,7 +185,12 @@ function buildAutoSendReviewHold(alert) {
             label: review.summary || 'AI draft needs Shannon review',
         };
     }
-    if (!softContextBypass && (review.verdict !== 'pass' || review.notification_required || review.context_loss_suspected)) {
+    const safeSanitizedStyleWarning = data.meta_ad_style_warning_safe_after_sanitize === true
+        && String(review.verdict || '').toLowerCase() === 'warn'
+        && review.notification_required !== true
+        && review.context_loss_suspected !== true;
+    if (!softContextBypass && !safeSanitizedStyleWarning
+        && (review.verdict !== 'pass' || review.notification_required || review.context_loss_suspected)) {
         return {
             code: 'draft_review',
             label: review.summary || 'AI draft needs Shannon review',

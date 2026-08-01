@@ -545,10 +545,12 @@ function withTimeout(promise, timeoutMs, label) {
 
 function shouldDispatchMetaAdReplyImmediately({ alertData, normalizedTiming, scheduleResolution } = {}) {
     const review = alertData?.draft_review || {};
+    const safeSanitizedStyleWarning = alertData?.meta_ad_style_warning_safe_after_sanitize === true
+        && isNonBlockingDraftStyleWarning(review);
     return alertData?.meta_ad_fast_lane === true
         && normalizedTiming?.action === 'send_now'
         && scheduleResolution?.deferredForWorkingHours !== true
-        && String(review.verdict || '').toLowerCase() === 'pass'
+        && (String(review.verdict || '').toLowerCase() === 'pass' || safeSanitizedStyleWarning)
         && review.notification_required !== true
         && review.context_loss_suspected !== true
         && !alertData?.auto_send_review_hold
@@ -769,6 +771,52 @@ function isNonBlockingDraftStyleWarning(draftReview) {
     return String(draftReview?.verdict || '').toLowerCase() === 'warn'
         && draftReview?.notification_required !== true
         && draftReview?.context_loss_suspected !== true;
+}
+
+const META_AD_OPTION_MENU_WARNING_RE = /\b(?:choice menu|multiple[- ]choice|multi[- ]option|multiple options?|option list|stack(?:ed|ing)? questions?|too many questions?|second question|extra question|answer options?)\b/i;
+const META_AD_WEIGHT_LOSS_GOAL_RE = /\b(?:lose|losing|drop|dropping|reduce|reducing)\s+(?:some\s+)?(?:weight|fat)\b|\b(?:weight|fat)\s*loss\b/i;
+const META_AD_CONSISTENCY_PROBLEM_RE = /\b(?:can(?:'|\u2019)?t|cannot|never|struggl\w*|hard to|keep)\b[^.!?\n]{0,80}\b(?:stick|consistent|consistency|routine|program|plan|fall(?:ing)? off|drop(?:s|ping)? off)\b|\bfall(?:ing)? off\b/i;
+
+function draftParrotsLatestInbound(replyText, currentMessage) {
+    const normalize = value => String(value || '')
+        .toLowerCase()
+        .replace(/[’‘]/g, "'")
+        .replace(/[^a-z0-9']+/g, ' ')
+        .trim();
+    const inbound = normalize(currentMessage);
+    const reply = normalize(replyText);
+    return inbound.length >= 18 && inbound.split(/\s+/).length >= 5 && reply.includes(inbound);
+}
+
+function buildSafeMetaAdStyleFallback({ draft, draftReview, currentMessage } = {}) {
+    if (!isNonBlockingDraftStyleWarning(draftReview)) return null;
+    const reviewText = [
+        draftReview?.summary,
+        draftReview?.suggested_fix,
+        ...(Array.isArray(draftReview?.issues) ? draftReview.issues : []),
+    ].filter(Boolean).join(' ');
+    if (!META_AD_OPTION_MENU_WARNING_RE.test(reviewText)) return null;
+
+    const originalText = draftTextFromDraft(draft);
+    if (!originalText) return null;
+    let replacement = '';
+    if (META_AD_WEIGHT_LOSS_GOAL_RE.test(String(currentMessage || ''))) {
+        replacement = 'Yeah okay. How long have you been trying to lose it for?';
+    } else if (META_AD_CONSISTENCY_PROBLEM_RE.test(String(currentMessage || ''))) {
+        replacement = 'Yeah that makes sense. How long do you normally stick to it before it drops off?';
+    } else {
+        const firstQuestionEnd = originalText.indexOf('?');
+        const hasAnotherQuestion = firstQuestionEnd >= 0 && originalText.indexOf('?', firstQuestionEnd + 1) >= 0;
+        if (hasAnotherQuestion) replacement = originalText.slice(0, firstQuestionEnd + 1).trim();
+    }
+    if (!replacement || replacement === originalText || (replacement.match(/\?/g) || []).length > 1) return null;
+    if (draftParrotsLatestInbound(replacement, currentMessage)) return null;
+    if (/https?:\/\/|www\.|\b(?:sign\s*up|checkout|buy now)\b/i.test(replacement)) return null;
+    return {
+        ...draft,
+        chunks: [replacement],
+        joined: replacement,
+    };
 }
 
 function repairRequiresQuestionFreeReply(repairIssues) {
@@ -1027,7 +1075,9 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
             label: 'coaching invite needs human readiness first',
         };
     }
-    const nonBlockingStyleWarning = (allowTestLaneDraftReviewWarning || allowBalanceLeadDraftReviewWarning)
+    const nonBlockingStyleWarning = (allowTestLaneDraftReviewWarning
+        || allowBalanceLeadDraftReviewWarning
+        || alertData?.meta_ad_style_warning_safe_after_sanitize === true)
         && isNonBlockingDraftStyleWarning(draftReview);
     if (draftReview && !isDraftReviewAutoSendSafe(draftReview) && !effectiveContextBypass?.allowed && !nonBlockingStyleWarning) {
         return {
@@ -5994,7 +6044,36 @@ exports.handler = async (event) => {
         });
         const autoDraftRepairField = cocosAutoSendLane ? 'cocos_auto_repair' : 'balance_auto_repair';
         const autoDraftRepairBusinessName = cocosAutoSendLane ? "Coco's PT Studio" : 'Balance';
-        if (shouldAttemptCocosDraftRepair({
+        const originalStyleWarningDraft = draft.joined;
+        const safeMetaAdStyleFallback = metaAdFastLane
+            ? buildSafeMetaAdStyleFallback({
+                draft,
+                draftReview,
+                currentMessage: displayMessage,
+            })
+            : null;
+        if (safeMetaAdStyleFallback?.joined) {
+            draft = safeMetaAdStyleFallback;
+            currentAlertData = await persistCocosDraftRepair({
+                alertId,
+                currentAlertData: {
+                    ...(currentAlertData || {}),
+                    meta_ad_style_warning_safe_after_sanitize: true,
+                },
+                draft,
+                repairMeta: {
+                    status: 'accepted',
+                    repaired_at: new Date().toISOString(),
+                    strategy: 'deterministic_option_menu_cleanup',
+                    original_draft_text: truncate(originalStyleWarningDraft, 1200),
+                    reviewer_verdict: draftReview?.verdict || null,
+                },
+                challengeOfferWarning,
+                repairField: 'meta_ad_style_sanitizer',
+            });
+            console.log(`[ig-draft] Meta ad style warning sanitized without another model round for alert ${alertId}`);
+        }
+        if (!safeMetaAdStyleFallback && shouldAttemptCocosDraftRepair({
             cocosAutoSendLane,
             balanceAutoSendLane: balanceLeadAutoSendLane,
             mediaReview,
@@ -6039,6 +6118,7 @@ exports.handler = async (event) => {
                         && isDraftReviewAutoSendSafe(repairedReview)
                         && (!effectiveOutboundVoiceMessage || inspectVoiceScriptQuality(repaired.joined).valid)
                         && !hasFirstPersonHealthClaim(repaired.joined)
+                        && !draftParrotsLatestInbound(repaired.joined, displayMessage)
                         && (!repairRequiresQuestionFreeReply(repairIssues)
                             || repaired.chunks.every(chunk => !isQuestionLikeText(chunk)))
                         && !isUnrequestedOfferInjection({
@@ -6168,7 +6248,8 @@ exports.handler = async (event) => {
     }
 
     // Verified current Meta ad openings and clear exercise conversations use the AI coach fast lane.
-    // They still require a clean reviewer pass. Other leads stay pending for manager review;
+    // They still require a clean reviewer pass or a narrow deterministic cleanup of a
+    // non-blocking style warning. Other leads stay pending for manager review;
     // linked clients stay approval-only.
     let autoHandled = false;
     const blockedStage = ['churned'].includes(effectiveLeadStage);
@@ -6516,6 +6597,8 @@ exports._test = {
     hasFirstPersonHealthClaim,
     normalizeCocosRepairedDraft,
     normalizeQuestionFreeRepairedDraft,
+    buildSafeMetaAdStyleFallback,
+    draftParrotsLatestInbound,
     reviewLooksLikePureContextGap,
     isSignupLinkHandoffText,
     isBalanceCallBookingLinkText,

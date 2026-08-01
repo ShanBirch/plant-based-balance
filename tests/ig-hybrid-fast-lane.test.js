@@ -146,6 +146,17 @@ assert.equal(instantDraft.getAutoDmHoldReason({
 })?.code, 'draft_review', 'a Balance fast-lane reply must receive a clean reviewer pass');
 
 assert.equal(instantDraft.getAutoDmHoldReason({
+    draft: { joined: 'Yeah okay. How long have you been trying to lose it for?' },
+    draftReview: {
+        verdict: 'warn',
+        summary: 'The original option-menu wording was removed.',
+        notification_required: false,
+        context_loss_suspected: false,
+    },
+    alertData: { meta_ad_style_warning_safe_after_sanitize: true },
+}), null, 'a marked deterministic cleanup does not get re-held before scheduling');
+
+assert.equal(instantDraft.getAutoDmHoldReason({
     draft: { joined: 'A reply with uncertain context.' },
     draftReview: {
         verdict: 'warn',
@@ -235,6 +246,61 @@ assert.equal(instantDraft.shouldDispatchMetaAdReplyImmediately({
     normalizedTiming: paidMetaTiming,
     scheduleResolution: { deferredForWorkingHours: false },
 }), false, 'a review warning never enters direct paid-Meta dispatch');
+const safeWeightLossFallback = instantDraft.buildSafeMetaAdStyleFallback({
+    draft: {
+        chunks: [
+            'Yeah, I get it. What usually makes weight loss hardest for you right now?',
+            'Like is it cravings, weekends, stress, or just not having a simple routine?',
+        ],
+        joined: 'Yeah, I get it. What usually makes weight loss hardest for you right now?\nLike is it cravings, weekends, stress, or just not having a simple routine?',
+    },
+    draftReview: {
+        verdict: 'warn',
+        notification_required: false,
+        context_loss_suspected: false,
+        issues: ['Generic multi-option intake question.'],
+    },
+    currentMessage: 'I need to lose weight',
+});
+assert.equal(safeWeightLossFallback.joined, 'Yeah okay. How long have you been trying to lose it for?');
+const safeConsistencyFallback = instantDraft.buildSafeMetaAdStyleFallback({
+    draft: {
+        chunks: [
+            'Yeah that one’s brutal, because you already know what to do, it just drops off.',
+            'Is it the weekend itself, or what happens after a long day?',
+        ],
+        joined: 'Yeah that one’s brutal, because you already know what to do, it just drops off.\nIs it the weekend itself, or what happens after a long day?',
+    },
+    draftReview: {
+        verdict: 'warn',
+        notification_required: false,
+        context_loss_suspected: false,
+        issues: ['Asks a two-part question and a second question without a clear tie-back.'],
+    },
+    currentMessage: 'Mhmm I can just never stick to the program',
+});
+assert.equal(safeConsistencyFallback.joined, 'Yeah that makes sense. How long do you normally stick to it before it drops off?');
+assert.equal(instantDraft.draftParrotsLatestInbound(
+    'Yeah that one’s brutal, because you already know what to do, it just drops off. Mhmm I can just never stick to the program.',
+    'Mhmm I can just never stick to the program'
+), true, 'repair safety rejects a verbatim echo of the latest inbound');
+assert.equal(instantDraft.draftParrotsLatestInbound(
+    'Yeah that makes sense. How long do you normally stick to it before it drops off?',
+    'Mhmm I can just never stick to the program'
+), false);
+assert.equal(instantDraft.shouldDispatchMetaAdReplyImmediately({
+    alertData: {
+        meta_ad_fast_lane: true,
+        meta_ad_style_warning_safe_after_sanitize: true,
+        draft_review: {
+            verdict: 'warn',
+            notification_required: false,
+            context_loss_suspected: false,
+        },
+    },
+    normalizedTiming: paidMetaTiming,
+    scheduleResolution: { deferredForWorkingHours: false },
+}), true, 'a deterministically sanitized style-only warning dispatches immediately');
 assert.equal(instantDraft.shouldDispatchMetaAdReplyImmediately({
     alertData: {
         meta_ad_fast_lane: true,
@@ -504,6 +570,21 @@ assert.equal(scheduledWorker.buildAutoSendReviewHold({
         },
     },
 })?.code, 'draft_review', 'worker holds every reviewer warning in the explicit Cocos test lane');
+
+assert.equal(scheduledWorker.buildAutoSendReviewHold({
+    alert_type: 'ig_incoming_dm',
+    data: {
+        channel: 'instagram',
+        scheduled_via: 'auto_send',
+        meta_ad_fast_lane: true,
+        meta_ad_style_warning_safe_after_sanitize: true,
+        draft_review: {
+            verdict: 'warn',
+            notification_required: false,
+            context_loss_suspected: false,
+        },
+    },
+}), null, 'worker preserves the fast-lane decision for a sanitized style-only warning');
 
 assert.equal(scheduledWorker.buildAutoSendReviewHold({
     alert_type: 'ig_incoming_dm',
