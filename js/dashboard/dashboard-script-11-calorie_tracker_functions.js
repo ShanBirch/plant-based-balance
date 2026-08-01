@@ -1863,7 +1863,7 @@ function refreshMealInstagramShareButtons() {
             button.disabled = alreadyOpened;
             button.style.opacity = alreadyOpened ? '0.65' : '1';
             button.style.cursor = alreadyOpened ? 'default' : 'pointer';
-            button.textContent = alreadyOpened ? 'IG Story opened' : 'IG Story';
+            button.textContent = alreadyOpened ? 'IG Feed shared' : getMealInstagramShareButtonText();
             return;
         }
         button.disabled = false;
@@ -2646,9 +2646,9 @@ function completeMealFeedSharePromptDestination(destination) {
         button.style.cursor = completed ? 'default' : 'pointer';
         button.style.opacity = completed ? '0.65' : '1';
         if (completed) {
-            button.textContent = buttonDestination === 'feed' ? 'Feed shared' : 'IG Story opened';
+            button.textContent = buttonDestination === 'feed' ? 'Balance Feed shared' : 'IG Feed shared';
         } else {
-            button.textContent = button.dataset.defaultLabel || (buttonDestination === 'feed' ? 'Feed' : 'IG Story');
+            button.textContent = button.dataset.defaultLabel || (buttonDestination === 'feed' ? 'Balance Feed' : 'IG Feed');
         }
     });
     const dismissButton = prompt.querySelector('[aria-label="Dismiss meal share prompt"]');
@@ -2665,8 +2665,8 @@ function completeMealFeedSharePromptDestination(destination) {
         hint.textContent = feedShared && instagramShared
             ? 'Shared to both'
             : feedShared
-                ? 'Feed shared. Instagram Story is still ready.'
-                : 'Instagram Story opened. Feed is still ready.';
+                ? 'Balance Feed shared. IG Feed is still ready.'
+                : 'IG Feed shared. Balance Feed is still ready.';
     }
 
     return feedShared && instagramShared;
@@ -2695,9 +2695,9 @@ window.sharePendingMealToFeed = async function(btn) {
 window.sharePendingMealToInstagram = async function(btn) {
     const meal = window._pbbPendingMealFeedShare;
     let sharedSuccessfully = false;
-    setMealFeedSharePromptBusy(true, 'Uploading photo and preparing Instagram Story...');
+    setMealFeedSharePromptBusy(true, 'Uploading photo and preparing your IG Feed post...');
     try {
-        const shared = await shareMealRecordToInstagram(meal, btn, 'story');
+        const shared = await shareMealRecordToInstagram(meal, btn, 'feed');
         if (shared) {
             sharedSuccessfully = true;
             const sharedToBoth = completeMealFeedSharePromptDestination('instagram');
@@ -2717,6 +2717,7 @@ function showMealFeedSharePrompt(meal) {
     if (String(meal.meal_type || '').toLowerCase() === 'water') return;
     if (isMealSharedToFeed(meal.id)) return;
     const feedEarnsXp = !isMealFeedShareUsedToday();
+    const instagramEarnsXp = !isMealInstagramShareUsedToday();
 
     window._pbbPendingMealFeedShare = meal;
     closeMealFeedSharePrompt();
@@ -2731,7 +2732,8 @@ function showMealFeedSharePrompt(meal) {
     prompt.setAttribute('role', 'status');
     prompt.setAttribute('aria-live', 'polite');
     prompt.style.cssText = 'position:fixed;left:14px;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:10030;background:#ffffff;border:1px solid #dbeafe;border-radius:16px;box-shadow:0 18px 42px rgba(15,23,42,0.22);padding:14px;font-family:inherit;';
-    const feedButtonLabel = feedEarnsXp ? `Feed +${MEAL_FEED_SHARE_XP} XP` : 'Feed';
+    const feedButtonLabel = feedEarnsXp ? `Balance Feed +${MEAL_FEED_SHARE_XP} XP` : 'Balance Feed';
+    const instagramButtonLabel = instagramEarnsXp ? `IG Feed +${MEAL_FEED_SHARE_XP} XP` : 'IG Feed';
     const feedButtonHtml = `<button type="button" data-meal-share-destination="feed" data-default-label="${feedButtonLabel}" onclick="sharePendingMealToFeed(this)" style="border:none;background:#046a38;color:white;border-radius:999px;padding:11px 12px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">${feedButtonLabel}</button>`;
     prompt.innerHTML = `
         <div style="display:flex;align-items:center;gap:12px;">
@@ -2746,7 +2748,7 @@ function showMealFeedSharePrompt(meal) {
         </div>
         <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:12px;">
             ${feedButtonHtml}
-            <button type="button" data-meal-share-destination="instagram" data-default-label="IG Story" onclick="sharePendingMealToInstagram(this)" style="border:none;background:#be185d;color:white;border-radius:999px;padding:11px 12px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">IG Story</button>
+            <button type="button" data-meal-share-destination="instagram" data-default-label="${instagramButtonLabel}" onclick="sharePendingMealToInstagram(this)" style="border:none;background:#be185d;color:white;border-radius:999px;padding:11px 12px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">${instagramButtonLabel}</button>
         </div>
         <div data-meal-share-hint style="font-size:0.72rem;font-weight:800;color:#475569;margin-top:8px;text-align:center;">Share to one, then the other.</div>
         <div data-meal-share-progress style="display:none;margin-top:11px;">
