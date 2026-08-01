@@ -20,7 +20,7 @@ This is the canonical database of Shannon-approved spoken scripts. Read the clos
 - Status: Phone preview generated; awaiting Shannon approval
 - Presenter: `Coach Shan Hat On` backwards-cap digital twin (`8ca3cd3f07cb448ebeb0b6f4547db1ce`)
 - HeyGen video: `069654a9ec2848d68fa6e92a153e9864`
-- Phone preview: https://f005.backblazeb2.com/file/plantbasedbalancestories/codex-reel-previews/2026-07-31/1785544633174-eb8e7d73-03a6-4d5f-8c28-544e3cfffc25-hanging-leg-raise-reel-preview-v6-backwards-hat.mp4
+- Phone preview: https://f005.backblazeb2.com/file/plantbasedbalancestories/codex-reel-previews/2026-07-31/1785545511284-21bb54c2-f9e5-46d7-9abc-429be60795b5-hanging-leg-raise-reel-preview-v7-framing-fixed.mp4
 - CTA keyword: `BALANCE`
 - Primary voice lesson: Explain the mechanism in ordinary gym language, then give a physical picture the viewer can recognise.
 
@@ -78,14 +78,14 @@ This is the canonical database of Shannon-approved spoken scripts. Read the clos
 
 | Spoken beat | Required visual |
 | --- | --- |
-| `Pulling your legs up works your hip flexors.` | Keep the real rep moving and show the hip flexors. The anatomy must clarify that lifting the thighs is hip flexion. |
-| `It’s about getting your hips closer to your rib cage.` | Switch to the abs/rectus abdominis visual and show the ribs-to-pelvis relationship. Do not reuse the hip-flexor visual for this line. |
+| `Pulling your legs up works your hip flexors.` | Keep the real rep moving and show the complete hip-flexor chain, with the rib/spine origin, pelvis and femur visible together. The anatomy must clarify that lifting the thighs is hip flexion. |
+| `It’s about getting your hips closer to your rib cage.` | Switch to the abs/rectus abdominis visual with the full rib cage, abdominal wall and pelvis/hips visible together. Do not crop off either endpoint or reuse the hip-flexor visual for this line. |
 | `They should be able to see your bum.` | Show or briefly hold the real top position where the pelvis has tucked underneath. The body cue is the proof. |
 | `That’s why I’ve got the dumbbell there.` | Show the live foot tap on the dumbbell: tap, stop, then start the next rep. |
 | `You’re not controlling the eccentric—the way down.` | Show the real lowering phase moving continuously. Do not replace it with a static anatomy hold. |
 | `Comment BALANCE below...` | Full-screen Shannon/avatar with the visible `COMMENT BALANCE` card. |
 
-The presenter for this entry is the backwards-cap `Coach Shan Hat On` character. Keep the hat and full head inside the portrait crop in both full-screen and split-screen layouts.
+The presenter for this entry is the backwards-cap `Coach Shan Hat On` character. Keep the hat, full head and complete face inside the portrait crop in both full-screen and every split-screen interval.
 
 ### What this entry teaches future drafts
 
