@@ -17,7 +17,7 @@ This is the canonical database of Shannon-approved spoken scripts. Read the clos
 - Approved: 2026-08-01
 - Format: Exercise Reel / three mistakes / COACH
 - Exercise: Hanging leg raise
-- Status: High-resolution phone review generated; awaiting Shannon approval
+- Status: Published to Instagram on 2026-08-01
 - Presenter: `Coach Shan Hat On` backwards-cap digital twin (`8ca3cd3f07cb448ebeb0b6f4547db1ce`)
 - HeyGen video: `069654a9ec2848d68fa6e92a153e9864`
 - Phone preview: https://f005.backblazeb2.com/file/plantbasedbalancestories/codex-reel-previews/2026-07-31/1785553432282-67ccb5de-9b61-435e-9fe0-6b4a21b11aad-hanging-leg-raise-reel-final-v10-1080x1920.mp4
