@@ -14671,12 +14671,12 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
             <div style="padding:15px; background:#f8fafc; border-bottom:1px solid #e2e8f0;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                            <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:var(--text-main); line-height:1.2;">${ex.name}</h3>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; min-width: 0; flex-wrap: wrap;">
+                            <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:var(--text-main); line-height:1.2; flex:1; min-width:0;">${ex.name}</h3>
                             ${isUserAdded ? '<span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ADDED</span>' : ''}
+                            ${previousSummaryHtml}
                         </div>
                         <p style="margin:0; font-size:0.85rem; color:var(--text-muted); line-height:1.3;">${ex.desc || ''}</p>
-                        ${previousSummaryHtml}
                     </div>
                     <button onclick="deleteExerciseFromWorkout('${escapedName}', ${isUserAdded})" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
                         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
@@ -15181,33 +15181,13 @@ function dismissVolumePopup() {
     }
 }
 
-// Format previous workout summary as HTML - Personal Best banner only
+// Format the exercise personal best as a compact header pill.
 function formatPreviousWorkoutSummary(exerciseName) {
     const maxWeight = getExerciseMaxWeight(exerciseName);
 
     if (!maxWeight) return '';
 
-    const prDateStr = maxWeight.date ? new Date(maxWeight.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
-
-    let html = '<div class="exercise-history-panel" style="margin-top: 10px;">';
-    // Full-width Personal Best banner
-    html += '<div style="width: 100%; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 10px 14px; border: 1px solid #fbbf24; display: flex; align-items: center; gap: 10px;">';
-    // Crown icon
-    html += '<svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #d97706; flex-shrink: 0;"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>';
-    // PR text
-    html += '<div style="flex: 1; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">';
-    html += '<span style="font-size: 0.7rem; font-weight: 800; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;">Personal Best</span>';
-    html += '<span style="font-size: 1rem; font-weight: 900; color: #78350f;">' + maxWeight.weight + ' kg x ' + maxWeight.reps + ' reps</span>';
-    if (maxWeight.bestReps && maxWeight.bestReps > maxWeight.reps) {
-        html += '<span style="font-size: 0.7rem; color: #a16207; font-weight: 600;">(Most reps: ' + maxWeight.bestReps + ' @ ' + maxWeight.bestRepsWeight + 'kg)</span>';
-    }
-    html += '</div>';
-    if (prDateStr) {
-        html += '<span style="font-size: 0.65rem; color: #b45309; font-weight: 600; flex-shrink: 0;">' + prDateStr + '</span>';
-    }
-    html += '</div>';
-    html += '</div>';
-    return html;
+    return '<span class="exercise-history-panel exercise-pb-pill" style="display:inline-flex; align-items:center; margin-left:auto; padding:2px 6px; border:1px solid #fbbf24; border-radius:999px; background:#fef3c7; color:#78350f; font-size:0.64rem; line-height:1.2; font-weight:800; white-space:nowrap; flex-shrink:0;">PB: ' + maxWeight.weight + 'kg &times; ' + maxWeight.reps + ' reps</span>';
 }
 
 // Generate volume display HTML with progress bar for an exercise
@@ -16691,9 +16671,11 @@ async function continueRecoveredWorkout() {
 
         card.innerHTML = `
             <div style="padding:15px; background:#f8fafc; border-bottom:1px solid #e2e8f0;">
-                <h3 style="margin:0 0 5px 0; font-size:1.05rem; font-weight:700; color:var(--text-main);">${safeName}</h3>
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px; min-width:0; flex-wrap:wrap;">
+                    <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:var(--text-main); flex:1; min-width:0;">${safeName}</h3>
+                    ${previousSummaryHtml}
+                </div>
                 <div style="font-size:0.8rem; color:var(--text-muted);">Recovered session</div>
-                ${previousSummaryHtml}
             </div>
             ${getExerciseNotesHtml(exerciseName)}
             ${getVolumeDisplayHtml(exerciseName)}
@@ -20496,14 +20478,14 @@ function renderWorkoutExercises(exercises) {
             <div style="padding: 15px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
-                            <span style="font-weight: 700; font-size: 1.05rem;">${ex.name}</span>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px; min-width: 0; flex-wrap: wrap;">
+                            <span style="font-weight: 700; font-size: 1.05rem; flex: 1; min-width: 0;">${ex.name}</span>
                             ${isUserAdded ? '<span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ADDED</span>' : ''}
+                            ${previousSummaryHtml}
                         </div>
                         <div class="workout-exercise-tip" style="color: var(--text-muted); font-size: 0.85rem;">${ex.desc || ''}</div>
                         ${getExerciseWeeklyPlanHtml(ex)}
                         ${getCoachCueHtml(ex)}
-                        ${previousSummaryHtml}
                     </div>
                     <button onclick="deleteExerciseFromWorkout('${escapedName}', ${isUserAdded})" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
                         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
@@ -20984,12 +20966,12 @@ function addExerciseWithSets(exerciseName, sets) {
             <div style="padding: 15px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
-                            <span style="font-weight: 700; font-size: 1.05rem;">${exerciseName}</span>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px; min-width: 0; flex-wrap: wrap;">
+                            <span style="font-weight: 700; font-size: 1.05rem; flex: 1; min-width: 0;">${exerciseName}</span>
                             <span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">QUICK</span>
+                            ${previousSummaryHtml}
                         </div>
                         <div class="workout-exercise-tip" style="color: var(--text-muted); font-size: 0.85rem;">Added via quick entry</div>
-                        ${previousSummaryHtml}
                     </div>
                     <button onclick="deleteExerciseFromWorkout('${escapedName}', true)" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
                         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
@@ -21688,12 +21670,12 @@ function addExerciseToUI(exercise) {
             <div style="padding: 15px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
-                            <span style="font-weight: 700; font-size: 1.05rem;">${exercise.name}</span>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px; min-width: 0; flex-wrap: wrap;">
+                            <span style="font-weight: 700; font-size: 1.05rem; flex: 1; min-width: 0;">${exercise.name}</span>
                             <span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ADDED</span>
+                            ${previousSummaryHtml}
                         </div>
                         <div class="workout-exercise-tip" style="color: var(--text-muted); font-size: 0.85rem;">${exercise.desc || ''}</div>
-                        ${previousSummaryHtml}
                     </div>
                     <button onclick="deleteExerciseFromWorkout('${escapedName}', true)" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
                         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
