@@ -128,13 +128,13 @@
                 -webkit-text-fill-color: var(--workout-swipe-surface);
                 box-shadow: 0 3px 10px rgba(15,23,42,.18);
             }
-            #view-active-workout.workout-swipe-mode #workout-form-check-top-btn,
-            #view-active-workout.workout-swipe-mode #workout-share-set-btn,
-            #view-active-workout.workout-swipe-mode #workout-add-exercise-video-btn,
-            #view-active-workout.workout-swipe-mode #workout-add-existing-wrap {
+            #view-active-workout.workout-player-tester #workout-form-check-top-btn,
+            #view-active-workout.workout-player-tester #workout-share-set-btn,
+            #view-active-workout.workout-player-tester #workout-add-exercise-video-btn,
+            #view-active-workout.workout-player-tester #workout-add-existing-wrap {
                 display: none !important;
             }
-            #view-active-workout.workout-swipe-mode #workout-swipe-actions {
+            #view-active-workout.workout-player-tester #workout-swipe-actions {
                 display: grid;
                 grid-template-columns: repeat(4, minmax(0, 1fr));
                 gap: 7px;
@@ -277,7 +277,7 @@
             }
             @media (max-width: 360px) {
                 #workout-content-wrapper { padding-left: 11px !important; padding-right: 11px !important; }
-                #view-active-workout.workout-swipe-mode #workout-swipe-actions { gap: 5px; }
+                #view-active-workout.workout-player-tester #workout-swipe-actions { gap: 5px; }
                 .workout-swipe-action { padding-left: 2px; padding-right: 2px; font-size: .59rem; }
                 .workout-player-mode-switch { min-width: 136px; }
             }

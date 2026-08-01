@@ -15289,6 +15289,9 @@ function exerciseNameMatches(normalizedName, terms) {
 }
 
 function getExerciseTechniqueData(exerciseName) {
+    if (window.PBBExerciseTechnique?.getExerciseTechniqueData) {
+        return window.PBBExerciseTechnique.getExerciseTechniqueData(exerciseName);
+    }
     const name = normalizeExerciseTechniqueName(exerciseName);
     const has = terms => exerciseNameMatches(name, terms);
     const baseForce = 'Your body is one connected unit: push into the floor, bench, handle, or bar, let the equal opposing force come back, then keep the core stiff enough to transfer it between hips, spine, and shoulders.';
@@ -15621,6 +15624,7 @@ function getExerciseTechniqueData(exerciseName) {
 
 function getExerciseTechniqueHtml(exerciseName) {
     const technique = getExerciseTechniqueData(exerciseName);
+    if (technique.hidePanel) return '';
     const listHtml = items => items.map(item => '<li>' + escapeHtml(item) + '</li>').join('');
     return `
         <details class="exercise-technique-panel">

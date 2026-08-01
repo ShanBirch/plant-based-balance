@@ -31,10 +31,17 @@ test('exercise page index stays inside available cards', () => {
 
 test('dashboard loads the player once and cache-busts both main loader paths', () => {
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
-    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=1/g) || []).length, 1);
-    assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=152/g) || []).length, 2);
+    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=2/g) || []).length, 1);
+    assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=153/g) || []).length, 2);
     assert.match(html, /id="workout-add-existing-wrap"/);
     assert.match(html, /id="workout-add-existing-exercise-btn"/);
+});
+
+test('Shannon list and swipe modes share the compact workout action row', () => {
+    const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-workout-swipe-player.js'), 'utf8');
+    assert.match(source, /workout-player-tester #workout-swipe-actions/);
+    assert.match(source, /workout-player-tester #workout-form-check-top-btn/);
+    assert.doesNotMatch(source, /workout-swipe-mode #workout-swipe-actions\s*\{/);
 });
 
 test('workout renderers synchronize the alternate player', () => {
