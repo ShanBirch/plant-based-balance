@@ -75,6 +75,12 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - The Balance bridge should make the offer concrete: Shannon helps identify what's driving the problem, changes the setup with the person, and keeps them moving without blame.
 - When `input -> output` feels abstract, use a familiar bodily analogy before the coaching steps. Shannon's approved cravings example is hearing running water and suddenly feeling the urge to wee: running water is the input; the urge is the output. Keep the mapping explicit and do not imply every craving has one simple cause.
 
+### DM media handoffs
+
+- Introduce a DM proof video casually with `Here's a quick video showing you how it works` or a similarly short natural line.
+- Do not announce the video's exact runtime or list every section it contains. Phrases such as `This is a 54-second look at...` sound generated and over-explained.
+- Let the preceding sentence carry the person's specific goal or blocker, then keep the video introduction simple.
+
 ### Plant-based positioning language
 
 - Use `plant-based` rather than `vegan` in Balance offer, community, ad, landing-page and promo-video copy.
@@ -137,6 +143,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 | Date | Shannon's direction | Scalable rule | Affected formats |
 | --- | --- | --- | --- |
+| 2026-08-01 | `This is a 54-second look at...` sounds AI. `Here's a quick video` is better. | Introduce proof videos with one casual `here's a quick video` line. Never announce the exact runtime or inventory every scene in a DM handoff. | Paid-ad DMs, native video attachments, sales handoffs and DM automation prompts |
 | 2026-08-01 | The only thing is I want it to say plant based, not vegan. | Default every Balance audience, offer and community reference to `plant-based`, including final-frame inclusions and community headings; reserve `vegan` for explicit requests or exact quotations. | Balance promo videos, ads, landing pages, Reels, offer copy and community positioning |
 | 2026-08-01 | Use the supplied high-resolution exercise original and get rid of the filter over my avatar bubble. Finish the high-res version and show it on my phone before posting. | Prefer the supplied 4K source through the final crop, compress only the completed 1080x1920 master, keep bubble footage naturally lit with border-only styling, and require phone approval before publishing. | Exercise Reels, source replacement, avatar bubbles, high-resolution export and approval gates |
 | 2026-08-01 | I don't like the black Comment BALANCE pill. Make it cream/gold and animated, add the Balance logo shimmer, and always keep the avatar head bubble when the exercise is full screen. | Use the animated cream/gold Balance CTA and logo-shimmer close; ban flat black CTA pills for this series. Carry the live circular avatar bubble through every full-screen exercise interval without obscuring proof. | Exercise Reels, CTA motion, brand outros, full-screen proof layouts |

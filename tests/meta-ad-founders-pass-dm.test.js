@@ -229,6 +229,8 @@ test('the reply after the goal is tailored and carries a native video attachment
 
     const consistency = buildMetaAdGoalProofReply('I need accountability because I always fall off');
     assert.match(consistency.joined, /keeping the week on track once life gets busy/i);
+    assert.match(consistency.joined, /here's a quick video showing you how it works inside Balance/i);
+    assert.doesNotMatch(consistency.joined, /\b\d+[- ]second\b/i);
     assert.match(consistency.videoAttachmentUrl, /balance-founders-pass-dm-preview\.mp4/);
     assert.doesNotMatch(consistency.joined, /https?:\/\//);
 

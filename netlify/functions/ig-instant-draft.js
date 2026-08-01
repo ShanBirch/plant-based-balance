@@ -1309,17 +1309,17 @@ function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_b
     const broadFlow = flowVariant === 'broad_pain';
     let bridge;
     if (/accountab|consisten|motivat|routine|habit|stick|on track|fall off|keep going/.test(text)) {
-        bridge = `yeah okay, it sounds like the hard part isn't knowing you should do it, it's keeping the week on track once life gets busy. This is the quickest way to see how I'd structure that inside Balance.`;
+        bridge = `yeah okay, it sounds like the hard part isn't knowing you should do it, it's keeping the week on track once life gets busy. Here's a quick video showing you how it works inside Balance.`;
     } else if (/strong|strength|muscle|lift|gym|fitter|fitness|run|cardio/.test(text)) {
-        bridge = `nice, so the goal is to actually feel stronger and fitter, not just collect another plan. This shows how the training, food and check-ins sit together inside Balance.`;
+        bridge = `nice, so the goal is to actually feel stronger and fitter, not just collect another plan. Here's a quick video showing you how it works inside Balance.`;
     } else if (/weight|fat|lose|lean|tone|confiden|body/.test(text)) {
-        bridge = `yeah okay, so you want a setup you can actually follow long enough to feel the difference, without guessing every day. This shows what that week looks like inside Balance.`;
+        bridge = `yeah okay, so you want a setup you can actually follow long enough to feel the difference, without guessing every day. Here's a quick video showing you how it works inside Balance.`;
     } else if (/food|meal|eat|nutrition|plant|vegan|vegetarian|protein/.test(text)) {
         bridge = broadFlow
-            ? `yeah okay, so food structure is the main thing. This shows how the plan, training and check-ins sit together inside Balance.`
-            : `yeah okay, so plant-based food structure is the main thing. This shows how the meal plan, training and check-ins sit together inside Balance.`;
+            ? `yeah okay, so food structure is the main thing. Here's a quick video showing you how it works inside Balance.`
+            : `yeah okay, so plant-based food structure is the main thing. Here's a quick video showing you how it works inside Balance.`;
     } else {
-        bridge = `yeah okay, that's helpful. This is the quickest way to see how I'd turn that into a clear week inside Balance.`;
+        bridge = `yeah okay, that's helpful. Here's a quick video showing you how it works inside Balance.`;
     }
     return {
         chunks: [bridge],
