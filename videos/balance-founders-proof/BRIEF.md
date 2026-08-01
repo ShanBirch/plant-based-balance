@@ -38,9 +38,9 @@ community is active every day.
 - Build a designed opening frame that also works as the Instagram thumbnail: “FIND YOUR FITTEST SELF” with “A plan that fits real life.”
 - Animate meal cards assembling into a delivered weekly meal plan with a grocery-list handoff.
 - Show a real Shannon exercise demonstration full-screen, then pull back into the Balance exercise view with coaching cues, sets, reps and rest time.
-- Animate a Shannon voice-note check-in arriving in the Balance inbox. The exact recorded voice note may be added later.
+- Animate a Shannon voice-note check-in arriving in the Balance inbox, then play a real example check-in in Shannon's professional ElevenLabs voice.
 - Bring the community to life with layered real posts and a daily activity pulse.
-- Use tactile interface sound marks and a confident, warm electronic music bed. No narration; all meaning must work muted.
+- Use tactile interface sound marks and a confident, warm electronic music bed. The check-in example uses Shannon's voice, while all core meaning must still work muted.
 
 ## Notes
 

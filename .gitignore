@@ -41,7 +41,9 @@ tmp/
 # Generated media previews and native sync output
 videos/**/renders/
 videos/**/snapshots/
-videos/**/.hyperframes/frame-packets/
+videos/**/.hyperframes/
+videos/**/.thumbnails/
+videos/**/.waveform-cache/
 android/capacitor-cordova-android-plugins/
 ios/capacitor-cordova-ios-plugins/
 ios/App/App/public/

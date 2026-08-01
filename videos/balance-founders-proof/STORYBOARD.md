@@ -1,6 +1,6 @@
 ---
 format: 1080x1920
-duration: 48s
+duration: 54.2s
 message: "Balance turns your goal into a clear, supported week"
 arc: Future self → Personal goal → Plan delivered → Human support → Visible progress → Belonging → CTA
 audience: Plant-based adults who want to become fitter but need structure and accountability that works in real life
@@ -100,37 +100,37 @@ Scene 4 (6.1–7.0s): “Plan. Shop. Cook. Done.” reveals word by word, then t
 - duration: 6s
 - poster: 5.2s
 - transition_in: crossfade
-- scene: A real Shannon exercise demonstration becomes a complete coached workout card
+- scene: A professional Shannon V-sit demonstration becomes a complete coached workout card
 - type: feature_showcase
 - persuasion: Product concreteness and perceived guidance
 - beat: training proof
-- asset_candidates: .media/video/video_001.mp4
+- asset_candidates: .media/video/video_002.mp4
 - blueprint: media-to-detail-reveal
 - posture: Adapt
 - rules: coordinate-target-zoom, discrete-text-sequence, stat-bars-and-fills
-- focal: .media/video/video_001.mp4
+- focal: .media/video/video_002.mp4
 - roles: Shannon exercise video = hero
 - sfx: pop, click-soft
 
 Adapt: begin with Shannon’s real movement footage at full-screen scale, then pull back once to reveal exactly how the exercise arrives inside Balance: clear coaching cues, sets, reps and rest time.
 
-Scene 1 (0.0–1.8s): Shannon’s single-leg RDL demonstration fills the entire vertical frame with no competing product copy. A restrained “BALANCE WORKOUT” chip identifies the source without interrupting the movement.
+Scene 1 (0.0–1.8s): Shannon’s professional 4K V-sit demonstration fills the vertical frame in a purpose-built portrait reframe with no competing product copy. A restrained “BALANCE WORKOUT” chip identifies the source without interrupting the movement.
 Scene 2 (1.8–2.8s): the live exercise video makes one deliberate camera pull-back, becoming a premium training panel in the upper two-thirds while the warm Balance surface appears underneath.
-Scene 3 (2.8–5.2s): “Single-leg RDL” resolves below the video, followed by three practical prescription cards—3 sets, 8–10 each side and 60 seconds rest. Coach cues appear last: soft knee, hips square, reach long.
+Scene 3 (2.8–5.2s): “V-sits” resolves below the video, followed by three practical prescription cards—3 sets, 10–12 reps and 45 seconds rest. Coach cues appear last: chest proud, core braced, control the reach.
 Scene 4 (5.2–6.0s): “Watch it. Learn it. Follow your plan.” lands and the complete exercise-detail screen holds.
 
 ## Frame 5 — Real check-ins with Shannon
 
 - status: animated
 - src: compositions/frames/04-shannon-check-in.html
-- duration: 6s
-- poster: 4.9s
+- duration: 12.8s
+- poster: 8s
 - transition_in: crossfade
 - scene: A personal voice-note check-in from Shannon arrives in the Balance inbox
 - type: feature_showcase
 - persuasion: Human connection and accountability
 - beat: support proof
-- asset_candidates: assets/balance-logo.png
+- asset_candidates: assets/balance-logo.png, .media/audio/voice/voice_002.mp3
 - blueprint: agent-progress-theater
 - posture: Adapt
 - rules: spring-pop-entrance, svg-path-draw, press-release-spring, discrete-text-sequence
@@ -140,10 +140,10 @@ Scene 4 (5.2–6.0s): “Watch it. Learn it. Follow your plan.” lands and the 
 
 Adapt: keep the message-thread-building signature and camera landing on the confirmation; remove machine-working theatre and make the actor unmistakably human.
 
-Scene 1 (0.0–1.3s): quiet cream field; “REAL CHECK-INS WITH SHANNON” enters in two measured lines, then moves to the upper third as a Balance inbox surface rises beneath it.
-Scene 2 (1.3–3.4s): a notification from “Shannon” arrives: “Weekly check-in”, with a warm profile monogram, timestamp and unread gold dot. The camera makes one gentle push toward the message.
-Scene 3 (3.4–5.1s): the message opens into a voice-note card; a real-looking waveform draws left to right and the play control depresses once. “Delivered in your Balance inbox” lands below. The exact Shannon recording is intentionally represented by the waveform for now.
-Scene 4 (5.1–6.0s): three words arrive on the music pulse—“Questions. Direction. Accountability.”—then hold in stillness with the voice note as hero.
+Scene 1 (0.0–0.7s): quiet cream field; “REAL CHECK-INS WITH SHANNON” enters in two measured lines, then moves to the upper third as a Balance inbox surface rises beneath it.
+Scene 2 (0.7–0.9s): a notification from “Shannon” arrives: “Weekly check-in”, with a warm profile monogram, timestamp and unread gold dot. The camera makes one gentle push toward the message.
+Scene 3 (0.9–1.5s): the message opens into a voice-note card and the play control depresses once. “Delivered in your Balance inbox” lands below.
+Scene 4 (1.5–12.8s): a genuine example check-in plays in Shannon's professional ElevenLabs voice while the gold waveform advances for the actual recording duration. The master audio track is anchored at global 25.5s so the delivered MP4 begins speaking only after the voice-note card appears. The example finishes naturally on “unbelievable”; the artificial trailing phrase is removed. “Questions. Direction. Accountability.” holds beneath the inbox so the support promise still works muted.
 
 ## Frame 6 — See your progress build
 
