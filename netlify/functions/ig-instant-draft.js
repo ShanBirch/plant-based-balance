@@ -1181,12 +1181,15 @@ function foundersPassCheckoutUrlForMessage(message = '', customData = {}, flowVa
 function resolveMetaAdFirstReplyIntent(currentMessage = '') {
     const text = String(currentMessage || '').toLowerCase().replace(/[’]/g, "'");
     if (/^(?:what(?:'s| is) (?:the )?)?(?:price|cost)(?: of (?:it|this|the (?:pass|program)))?[!?.\s]*$/.test(text)) return 'price';
+    if (/\b(?:do you (?:offer|have)|is there|can i get)\b.{0,35}\bpersonali[sz]ed\b.{0,35}\b(?:coaching|plans?)\b|\bpersonali[sz]ed\b.{0,35}\b(?:coaching|plans?)\b/.test(text)) {
+        return 'personalised_coaching';
+    }
     if (/\b(?:how does|how would|what(?:'s| is)).{0,35}\b(?:support|accountability)\b|\b(?:support|accountability)\b.{0,35}\b(?:work|included)\b/.test(text)) return 'accountability';
     if (/right for me|would this suit|is this for me|good fit|would it work for me/.test(text)) return 'fit';
     if (/do i need to (?:already )?be plant[ -]?based|already plant[ -]?based|not plant[ -]?based|vegan already|already vegan/.test(text)) {
         return 'plant_based_requirement';
     }
-    if (/\b(i'?m in|im in|ready to start|ready|let'?s do it|lets do it|sign me up|save me a spot|send (?:me )?(?:the )?link|how do i start|where do i start|start now)\b/.test(text)) {
+    if (/\b(i'?m in|im in|i(?:'m| am) ready(?: to (?:start|join|sign up))?|ready to (?:start|join|sign up)|let'?s do it|lets do it|sign me up|save me a spot|send (?:me )?(?:the )?link|how do i join|where do i join|how can i join|can i join|start now|join now)\b/.test(text)) {
         return 'ready';
     }
     if (/\b(what(?:'s| is) (?:actually )?included|what do i get|inclusions?|details|tell me more|show me what(?:'s| is) included)\b/.test(text)) {
@@ -1215,9 +1218,10 @@ function shouldUseDeterministicMetaAdFirstReply(currentMessage = '') {
     if (/^balance[!?.\s]*$/i.test(message)) return true;
     if (/\bfounders?\s+pass\b/i.test(message)) return true;
     if (/\b(what(?:'s| is) (?:actually )?included|what do i get|inclusions?|details|tell me more|show me what(?:'s| is) included)\b/i.test(normalized)) return true;
+    if (/\b(?:do you (?:offer|have)|is there|can i get)\b.{0,35}\bpersonali[sz]ed\b.{0,35}\b(?:coaching|plans?)\b|\bpersonali[sz]ed\b.{0,35}\b(?:coaching|plans?)\b/i.test(normalized)) return true;
     if (/\b(do i need to (?:already )?be plant[ -]?based|already plant[ -]?based|not plant[ -]?based|vegan already|already vegan)\b/i.test(normalized)) return true;
     if (/\b(right for me|would this suit|is this for me|good fit|would it work for me)\b/i.test(normalized)) return true;
-    if (/\b(i'?m in|im in|ready to start|let'?s do it|sign me up|save me a spot|send (?:me )?(?:the )?link|how do i start|where do i start|start now)\b/i.test(normalized)) return true;
+    if (/\b(i'?m in|im in|i(?:'m| am) ready(?: to (?:start|join|sign up))?|ready to (?:start|join|sign up)|let'?s do it|sign me up|save me a spot|send (?:me )?(?:the )?link|how do i join|where do i join|how can i join|can i join|start now|join now)\b/i.test(normalized)) return true;
     if (/^(?:what(?:'s| is) (?:the )?)?(?:price|cost)(?: of (?:it|this|the (?:pass|program)))?[!?.\s]*$/i.test(normalized)) return true;
     return /\b(?:what|which|how much|is there|do (?:i|you)|does it|will i|can i|get|include|offer|provide)\b.{0,55}\b(?:support|accountability)\b/i.test(normalized)
         || /\b(?:support|accountability)\b.{0,55}\b(?:included|work|offer|provide|get)\b/i.test(normalized);
@@ -1245,9 +1249,6 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     const broadFlow = resolvedVariant === 'broad_pain';
     const intent = resolveMetaAdFirstReplyIntent(currentMessage);
     const checkoutUrl = foundersPassCheckoutUrlForMessage(currentMessage, customData, resolvedVariant, acquisitionMode);
-    const productLine = broadFlow
-        ? 'Balance brings your weekly plan, training, progress, learning and community into one place.'
-        : 'Balance brings your weekly plan, plant-based nutrition, progress, learning and community into one place.';
     const accessLine = broadFlow
         ? 'lifetime access to the core app and community.'
         : 'lifetime access to the core app and plant-based community.';
@@ -1256,7 +1257,9 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     if (intent === 'fit' || intent === 'overview') {
         answer = `Hey, yeah of course. Before I send you a heap of generic info, what's the main thing you're trying to change with your fitness right now?`;
     } else if (intent === 'plant_based_requirement') {
-        answer = `Not at all, you don't need to already be fully plant-based. What does your eating look like at the moment?`;
+        answer = `Not at all. Plenty of people start while they're just trying to eat more plant-based. What does your food look like at the moment?`;
+    } else if (intent === 'personalised_coaching') {
+        answer = `Yeah, I do. Starter Coaching is the personalised option, where I review and adjust your training and food each week. What are you mainly trying to change at the moment?`;
     } else if (intent === 'accountability') {
         answer = `You check in inside Balance and I can see what the week actually looked like, then I reply with the next bit of direction and a nudge if things are slipping. It's personal support from me, not just app reminders.`;
     } else if (intent === 'price') {
@@ -1264,13 +1267,15 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     } else if (intent === 'ready') {
         answer = `Love it. ${supportScope}\n\nYou can see the quick setup and start here: ${checkoutUrl}`;
     } else if (intent === 'inclusions') {
-        answer = `${productLine}\n\n${supportScope}\n\nYou can see the full inclusions and start here: ${checkoutUrl}`;
+        answer = broadFlow
+            ? `Yeah, it's a six-week guided start with me supporting you inside Balance, plus training, food support and the community all together. What's the main thing you're trying to change with your fitness right now?`
+            : `Yeah, it's a six-week guided start with me supporting you inside Balance, plus training, plant-based food support and the community all together. What's the main thing you're trying to change with your fitness right now?`;
     }
     const chunks = [answer].filter(Boolean);
     return {
         chunks,
         joined: chunks.join('\n\n'),
-        model: 'deterministic_meta_ad_founders_pass_v3',
+        model: 'deterministic_meta_ad_founders_pass_v4',
         replyMode: 'campaign_first_reply',
         maxChunks: chunks.length,
         error: null,
@@ -1282,7 +1287,7 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
         mediaDecode: {},
         flowVariant: resolvedVariant,
         firstReplyIntent: intent,
-        checkoutUrl: ['ready', 'inclusions'].includes(intent) ? checkoutUrl : null,
+        checkoutUrl: intent === 'ready' ? checkoutUrl : null,
         timeline: '',
         conversationEpisode: null,
         currentTurnAnchorBlock: '',
@@ -1357,7 +1362,7 @@ function buildMetaAdFirstReplyApproval({ metaAdFirstInbound = false, draft = nul
         dot: '🟢',
         label: draft.checkoutUrl ? 'approved Meta ad checkout handoff' : 'approved Meta ad first reply',
         reason: draft.checkoutUrl
-            ? 'The verified Meta ad lead directly asked for details or to start, so the attributed checkout handoff is allowed.'
+            ? 'The verified Meta ad lead explicitly asked to join, start, or receive the link, so the attributed checkout handoff is allowed.'
             : 'The verified Meta ad first reply answers the selected prompt without sending a checkout link.',
         detected_at: new Date().toISOString(),
     };
@@ -1479,7 +1484,7 @@ LEAD ACQUISITION CONTEXT:
 The primary DM offer is the Balance Plant-Based Fitness Founders Pass: AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included. Starter Coaching at AUD $29.99/week is the optional ongoing higher-touch upgrade. The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The acquisition-mode block above is authoritative about whether Shannon initiated the relationship or the lead knowingly entered from a Meta ad. Meta may supply one of the example phrases below as the lead's prefilled opening. Treat it as their ordinary first sentence, not as a questionnaire step. Never restate a menu of options or ask them to choose from buttons. The words below trigger offer-inquiry mode:
   1. "What's actually included?"
   2. "Do I need to already be Plant Based?"
-  3. "I'm In - save me a spot!"
+  3. "Do you offer personalized coaching plans?"
 Also treat as offer inquiry: "founders pass", "founding membership", "plant-based fitness app", "vegan fitness app", "community", "1:1 coaching", "one-on-one coaching", "starter coaching", "online coaching", "what's included", "your program" when they clearly mean the offer, "saw your ad", "wanna join", "work with you", "send me the link", "I'm in", or "I need help / I don't know what I'm doing". Do NOT treat vague "keen", "interested", "yeah sounds good", or friendly banter as offer intent unless the same message clearly points at the offer/program/link.
 
 Important: when there is no prior tracked conversation, do NOT assume the lead started the DM. Most first captured lead messages happen because Shannon commented on or replied to their story/post natively, and that opener is not visible in ManyChat. Their reply may be tiny or ambiguous because they are answering that unseen opener. Treat it as an open door and build rapport from whatever signal exists. Use one light human move, which can be a short statement. Ask a question only when that is clearly the best next text, or when there is no better hook and Shannon has not asked a basic day/week opener yet.
@@ -1500,7 +1505,7 @@ THE OFFERING (for context — never list as a brochure; speak like a friend):
 - If they are plant-based / vegan / vegetarian-curious, tailor the coaching explanation around plant-based food support.
 - If they just want fitness, muscle, weight loss, energy, or consistency with no plant-based signal, tailor the coaching explanation around training, food structure, and accountability.
 - Link attribution matters. For the plant-based ad route use ${FOUNDERS_PASS_CHECKOUT_URL}. For the broad ad route use ${FOUNDERS_PASS_BROAD_CHECKOUT_URL}. The broad route must not introduce plant-based, vegan or vegetarian positioning in its ad reply, landing handoff or follow-up unless the lead independently asks about it. Preserve the route selected by the ad referral and never remove the UTM parameters.
-- For a general ad-attributed "what is it?" or Founders Pass opener, do not dump the offer or send a raw media URL. Ask one plain question about the main thing they are trying to change. After they answer, reflect that exact goal in one short sentence and send the native Balance proof video. For direct price, inclusions, link or ready-to-start asks, answer the question immediately: $99 once, six weeks of in-app coaching support from Shannon, lifetime core Balance app access, and the plant-based community. Be clear that ongoing weekly plan reviews after the six weeks are separate. Move toward the Founders Pass link in DMs. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
+- For a general ad-attributed "what is it?" or Founders Pass opener, do not dump the offer or send a raw media URL. Ask one plain question about the main thing they are trying to change. After they answer, reflect that exact goal in one short sentence and send the native Balance proof video. Treat the three ad FAQ prompts as informational, not transactional: answer the selected question in one concise beat, ask one useful context question, and do not send a signup link. Only send the Founders Pass link after an explicit transactional message such as "send me the link", "I'm ready", "how do I join?", or clear acceptance after the offer. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
 - If they only ask "what's Balance?" or "what's your app?" while also saying they are already training hard or feeling good, answer in one plain beat and make any coaching mention casual. No feature list or link unless they ask for details.
 - Once they start, the Balance app gives them the guided kickstart, training and food structure, progress tools and community.
 - Package fit matters. App + Community is $19.99/month for self-directed ongoing structure without weekly one-to-one review. Starter Coaching is $29.99/week for one weekly check-in plus workout/food review and adjustments. Coaching + Calls is $99.99/week for Starter Coaching plus one weekly live call and deeper review. If someone explicitly asks for personalised coaching, individual plan adjustments or weekly review, route toward Starter Coaching. If they want regular calls or deeper live support, route toward Coaching + Calls. Do not force them back into Founders Pass.
@@ -1508,7 +1513,8 @@ THE OFFERING (for context — never list as a brochure; speak like a friend):
 - Voice notes: when the system supplies a decoded voice-note transcript or media summary, treat it as heard. Reply to the content. Never ask them to resend, repeat, or type the gist of a voice note. If audio is genuinely inaccessible or unintelligible after retries, leave no public voice-note fallback and let the media-review hold/retry path handle it.
 
 RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
-- "What's actually included?" -> answer the direct ask casually: six weeks with Shannon plus lifetime core app and plant-based community access for $99 once. Be clear ongoing individual coaching is separate. Don't dump a brochure or expose a raw video URL.
+- "What's actually included?" -> answer the direct ask casually in one short sentence, then ask what they are mainly trying to change. Do not send a signup link from this FAQ click.
+- "Do you offer personalized coaching plans?" -> answer yes and route to Starter Coaching: one weekly check-in plus training and food review/adjustments for $29.99/week. Ask what they are mainly trying to change. Do not send the Founders Pass video or a signup link from this branch.
 - "What's Balance?" / "what's your app?" -> answer plainly: it is Shannon's fitness app/coaching setup. If their latest training detail gives a natural opening, one casual line is enough: "honestly one weekly check-in would probably help keep that simple if you wanted the coaching details". Do not hardcode that wording, but keep that size and feel. No app feature list or signup link unless they ask what is included or ask for details.
 - "How does accountability work?" / "how would you keep me on track?" -> this is a connection moment, not a brochure request. Explain it plainly from Shannon's point of view: they check in and log what is happening, Shannon sees the real week and guides the next move, with a nudge when things start slipping. In PERSONAL VOICE NOTE MODE, make this one connected voice note and do not duplicate the explanation in text. Otherwise use one concise text bubble. Do not tack on another qualifier unless their answer would genuinely change the next step.
 - "Is it in person?" / "I'm looking for a local trainer" / "I already have a PT" -> treat this as a preference or compatibility objection. Answer plainly first: the Founders Pass is an online guided app and plant-based community, not in-person personal training. Do not push the link yet. Ask whether that would still be useful, or how it would need to fit around their current trainer.

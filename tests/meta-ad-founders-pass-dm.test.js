@@ -70,7 +70,10 @@ test('deterministic first reply is narrow and leaves sensitive, opt-out, and unr
         'What is the Founders Pass?',
         "What's actually included?",
         'Do I need to already be Plant Based?',
+        'Do you offer personalized coaching plans?',
+        'Do you offer personalised coaching plans?',
         "I'm In - save me a spot!",
+        'How do I join?',
         'BALANCE',
         'How does the accountability work?',
         'What is the cost?',
@@ -87,6 +90,7 @@ test('deterministic first reply is narrow and leaves sensitive, opt-out, and unr
         'Balance is rubbish',
         'The cost of living is killing me',
         'Hey, Shannon sent me here about my knee',
+        'Where do I start?',
     ]) {
         assert.equal(shouldUseDeterministicMetaAdFirstReply(message), false, message);
     }
@@ -191,15 +195,40 @@ test('Meta ad card transport attachment does not poison the first reply or follo
 
 test('inclusions quick reply answers the direct ask without a raw preview URL', () => {
     const reply = buildMetaAdFoundersPassFirstReply("What's included?");
-    assert.equal(reply.model, 'deterministic_meta_ad_founders_pass_v3');
+    assert.equal(reply.model, 'deterministic_meta_ad_founders_pass_v4');
     assert.equal(reply.firstReplyIntent, 'inclusions');
     assert.equal(reply.chunks.length, 1);
+    assert.equal(reply.checkoutUrl, null);
     assert.doesNotMatch(reply.joined, /balance-founders-pass-dm-preview\.mp4/);
-    assert.match(reply.joined, /AU\$99 once/);
-    assert.match(reply.joined, /six weeks of one-to-one in-app support with me for questions, direction and accountability/i);
-    assert.match(reply.joined, /lifetime access to the core app and plant-based community/i);
-    assert.match(reply.joined, /weekly plan reviews and adjustments are separate/i);
-    assert.match(reply.joined, /plant-based-fitness\.html/);
+    assert.match(reply.joined, /six-week guided start/i);
+    assert.match(reply.joined, /training, plant-based food support and the community/i);
+    assert.match(reply.joined, /main thing you're trying to change/i);
+    assert.doesNotMatch(reply.joined, /https?:\/\//);
+});
+
+test('personalised coaching FAQ routes to Starter Coaching without a Founders Pass handoff', () => {
+    for (const spelling of [
+        'Do you offer personalized coaching plans?',
+        'Do you offer personalised coaching plans?',
+    ]) {
+        assert.equal(resolveMetaAdFirstReplyIntent(spelling), 'personalised_coaching');
+        const reply = buildMetaAdFoundersPassFirstReply(spelling);
+        const approval = buildMetaAdFirstReplyApproval({ metaAdFirstInbound: true, draft: reply });
+        const handoff = buildApprovedMetaAdFirstReplyHandoffData({
+            approval,
+            draft: reply,
+            leadStage: 'new',
+            linkedUserId: null,
+        });
+
+        assert.equal(reply.joined, 'Yeah, I do. Starter Coaching is the personalised option, where I review and adjust your training and food each week. What are you mainly trying to change at the moment?');
+        assert.equal(reply.checkoutUrl, null);
+        assert.equal(reply.videoAttachmentUrl, undefined);
+        assert.equal(approval.code, 'approved_meta_ad_first_reply');
+        assert.equal(handoff.approved_link_auto_sendable, false);
+        assert.equal(handoff.signup_link_handoff_url, undefined);
+        assert.equal(isMetaAdGoalReplyTurn([{ direction: 'out', text: reply.joined }]), false);
+    }
 });
 
 test('generic keyword and fit quick reply answer without a premature checkout link', () => {
@@ -266,7 +295,8 @@ test('the reply after the goal is tailored and carries a native video attachment
 test('plant-based requirement and ready prompts receive different next steps', () => {
     const requirement = buildMetaAdFoundersPassFirstReply('Do I need to already be Plant Based?');
     assert.equal(requirement.firstReplyIntent, 'plant_based_requirement');
-    assert.match(requirement.joined, /don't need to already be fully plant-based/i);
+    assert.match(requirement.joined, /plenty of people start while they're just trying to eat more plant-based/i);
+    assert.match(requirement.joined, /what does your food look like at the moment/i);
     assert.doesNotMatch(requirement.joined, /plant-based-fitness\.html/);
 
     const ready = buildMetaAdFoundersPassFirstReply("I'm ready to start");
@@ -279,12 +309,13 @@ test('plant-based requirement and ready prompts receive different next steps', (
     }).code, 'approved_meta_ad_buyer_handoff');
 });
 
-test('broad ad route stays broad through the first DM and link handoff', () => {
+test('broad ad route stays broad through the informational first reply', () => {
     const reply = buildMetaAdFoundersPassFirstReply("What's included?", { flowVariant: 'broad_pain' });
     assert.equal(reply.flowVariant, 'broad_pain');
+    assert.equal(reply.checkoutUrl, null);
     assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian/i);
     assert.doesNotMatch(reply.joined, /balance-founders-pass-dm-preview\.mp4/);
-    assert.match(reply.joined, /future-balance\.netlify\.app\/fitness-coaching\.html/);
+    assert.doesNotMatch(reply.joined, /https?:\/\//);
 });
 
 test('stored Meta identifiers survive the DM link and approved handoff gate', () => {
@@ -328,18 +359,21 @@ test('stored Meta identifiers survive the DM link and approved handoff gate', ()
     assert.match(handoff.signup_link_handoff_url, /ad_id=120210003/);
 });
 
-test('details count as buyer intent for the approved attributed link', () => {
+test('inclusions are informational and do not create an approved checkout handoff', () => {
     assert.equal(resolveMetaAdFirstReplyIntent("What's actually included?"), 'inclusions');
     const reply = buildMetaAdFoundersPassFirstReply("What's actually included?");
-    const handoff = buildLeadOnboardingHandoffData({
-        draftText: reply.joined,
-        qualifier: {},
+    const approval = buildMetaAdFirstReplyApproval({ metaAdFirstInbound: true, draft: reply });
+    const handoff = buildApprovedMetaAdFirstReplyHandoffData({
+        approval,
+        draft: reply,
         leadStage: 'new',
         linkedUserId: null,
-        currentMessage: "What's actually included?",
     });
-    assert.equal(handoff.approved_link_auto_sendable, true);
-    assert.equal(handoff.client_manager_review_required, undefined);
+    assert.equal(reply.checkoutUrl, null);
+    assert.equal(approval.code, 'approved_meta_ad_first_reply');
+    assert.equal(handoff.approved_link_auto_sendable, false);
+    assert.equal(handoff.signup_link_handoff_url, undefined);
+    assert.doesNotMatch(reply.joined, /https?:\/\//);
 });
 
 test('Meta referral hint preserves the broad route independently of message wording', () => {
