@@ -20478,6 +20478,8 @@ function renderWorkoutExercises(exercises) {
         const escapedName = ex.name.replace(/'/g, "\\'");
 
         const prescribedSets = getExercisePrescribedSets(ex);
+        card.dataset.prescribedSets = String(prescribedSets || '');
+        card.dataset.prescribedReps = String(ex.reps || ex.time || '');
         const hasWeekSpecificPlan = !!getCurrentWeeklyPlanItem(ex);
         const numSets = hasWeekSpecificPlan ? prescribedSets : (previousSummary && previousSummary.setCount > 0 ? previousSummary.setCount : prescribedSets);
         const isTimeBased = isTimeBasedExercise(ex);
@@ -20494,7 +20496,7 @@ function renderWorkoutExercises(exercises) {
                             <span style="font-weight: 700; font-size: 1.05rem;">${ex.name}</span>
                             ${isUserAdded ? '<span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ADDED</span>' : ''}
                         </div>
-                        <div style="color: var(--text-muted); font-size: 0.85rem;">${ex.desc || ''}</div>
+                        <div class="workout-exercise-tip" style="color: var(--text-muted); font-size: 0.85rem;">${ex.desc || ''}</div>
                         ${getExerciseWeeklyPlanHtml(ex)}
                         ${getCoachCueHtml(ex)}
                         ${previousSummaryHtml}
@@ -20531,6 +20533,7 @@ function renderWorkoutExercises(exercises) {
         setupVolumeTracking(card);
     });
     queueWorkoutExerciseVideosForOffline(exercises);
+    window.PBBWorkoutSwipePlayer?.sync();
 }
 
 // Render yoga exercises with individual timers
@@ -20568,7 +20571,7 @@ function renderYogaExercises(exercises) {
                                 <span style="font-weight: 700; font-size: 1.05rem;">${ex.name.replace('Yoga - ', '')}</span>
                                 ${isUserAdded ? '<span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ADDED</span>' : ''}
                             </div>
-                            <div style="color: var(--text-muted); font-size: 0.85rem;">${ex.desc || ''}</div>
+                            <div class="workout-exercise-tip" style="color: var(--text-muted); font-size: 0.85rem;">${ex.desc || ''}</div>
                             ${isEachSide ? '<div style="color: var(--primary); font-size: 0.75rem; margin-top: 4px; font-weight: 600;">⟳ Repeat on each side</div>' : ''}
                         </div>
                         <button onclick="deleteExerciseFromWorkout('${escapedName}', ${isUserAdded})" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
@@ -20625,8 +20628,14 @@ function renderYogaExercises(exercises) {
                 </div>
             </div>
         `;
+        const yogaCard = container.lastElementChild;
+        if (yogaCard) {
+            yogaCard.dataset.prescribedSets = String(ex.sets || 1);
+            yogaCard.dataset.prescribedReps = String(ex.reps || '');
+        }
     });
     queueWorkoutExerciseVideosForOffline(exercises);
+    window.PBBWorkoutSwipePlayer?.sync();
 }
 
 // Delete exercise from workout
@@ -20639,6 +20648,7 @@ async function deleteExerciseFromWorkout(exerciseName, isUserAdded) {
         const card = document.querySelector(`.exercise-logger-card[data-exercise-name="${exerciseName}"]`);
         if (card && confirm('Remove this exercise from today\'s workout?')) {
             card.remove();
+            window.PBBWorkoutSwipePlayer?.sync();
         }
         return;
     }
@@ -20668,6 +20678,7 @@ async function deleteExerciseFromWorkout(exerciseName, isUserAdded) {
         }
 
         console.log(`Exercise "${exerciseName}" removed from workout`);
+        window.PBBWorkoutSwipePlayer?.sync();
     } catch (e) {
         console.error('Failed to remove exercise:', e);
         alert('Failed to remove exercise. Please try again.');
@@ -20973,7 +20984,7 @@ function addExerciseWithSets(exerciseName, sets) {
                             <span style="font-weight: 700; font-size: 1.05rem;">${exerciseName}</span>
                             <span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">QUICK</span>
                         </div>
-                        <div style="color: var(--text-muted); font-size: 0.85rem;">Added via quick entry</div>
+                        <div class="workout-exercise-tip" style="color: var(--text-muted); font-size: 0.85rem;">Added via quick entry</div>
                         ${previousSummaryHtml}
                     </div>
                     <button onclick="deleteExerciseFromWorkout('${escapedName}', true)" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
@@ -21036,7 +21047,10 @@ function addExerciseWithSets(exerciseName, sets) {
     // Scroll to the new exercise and setup volume tracking
     const newCard = container.lastElementChild;
     if (newCard) {
-        newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        newCard.dataset.prescribedSets = String(sets.length || 1);
+        newCard.dataset.prescribedReps = String((sets[0] && sets[0].reps) || 'Log each set');
+        const playerMode = window.PBBWorkoutSwipePlayer?.sync({ focusName: exerciseName, scroll: true });
+        if (playerMode !== 'swipe') newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
         setupVolumeTracking(newCard);
         // Update volume with any pre-filled values
         updateVolumeDisplay(newCard);
@@ -21674,7 +21688,7 @@ function addExerciseToUI(exercise) {
                             <span style="font-weight: 700; font-size: 1.05rem;">${exercise.name}</span>
                             <span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ADDED</span>
                         </div>
-                        <div style="color: var(--text-muted); font-size: 0.85rem;">${exercise.desc || ''}</div>
+                        <div class="workout-exercise-tip" style="color: var(--text-muted); font-size: 0.85rem;">${exercise.desc || ''}</div>
                         ${previousSummaryHtml}
                     </div>
                     <button onclick="deleteExerciseFromWorkout('${escapedName}', true)" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
@@ -21766,7 +21780,10 @@ function addExerciseToUI(exercise) {
     // Scroll to the new exercise and setup volume tracking
     const newCard = container.lastElementChild;
     if (newCard) {
-        newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        newCard.dataset.prescribedSets = String(exercise.sets || newCard.querySelectorAll('.set-wrapper').length || 1);
+        newCard.dataset.prescribedReps = String(exercise.reps || 'Log each set');
+        const playerMode = window.PBBWorkoutSwipePlayer?.sync({ focusName: exercise.name, scroll: true });
+        if (playerMode !== 'swipe') newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
         setupVolumeTracking(newCard);
     }
 }
