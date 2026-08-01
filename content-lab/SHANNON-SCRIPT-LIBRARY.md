@@ -17,10 +17,10 @@ This is the canonical database of Shannon-approved spoken scripts. Read the clos
 - Approved: 2026-08-01
 - Format: Exercise Reel / three mistakes / COACH
 - Exercise: Hanging leg raise
-- Status: Phone preview generated; awaiting Shannon approval
+- Status: High-resolution phone review generated; awaiting Shannon approval
 - Presenter: `Coach Shan Hat On` backwards-cap digital twin (`8ca3cd3f07cb448ebeb0b6f4547db1ce`)
 - HeyGen video: `069654a9ec2848d68fa6e92a153e9864`
-- Phone preview: https://f005.backblazeb2.com/file/plantbasedbalancestories/codex-reel-previews/2026-07-31/1785547305292-94173c80-b5ac-4e3b-a283-aea280a44b79-hanging-leg-raise-reel-preview-v9-branded-cta-bubble.mp4
+- Phone preview: https://f005.backblazeb2.com/file/plantbasedbalancestories/codex-reel-previews/2026-07-31/1785553432282-67ccb5de-9b61-435e-9fe0-6b4a21b11aad-hanging-leg-raise-reel-final-v10-1080x1920.mp4
 - CTA keyword: `BALANCE`
 - Primary voice lesson: Explain the mechanism in ordinary gym language, then give a physical picture the viewer can recognise.
 
@@ -87,7 +87,7 @@ This is the canonical database of Shannon-approved spoken scripts. Read the clos
 
 The presenter for this entry is the backwards-cap `Coach Shan Hat On` character. Keep the hat, full head and complete face inside the portrait crop in both full-screen and every split-screen interval.
 
-Every full-screen exercise interval keeps the live presenter in a circular cream/gold head bubble. The confirmed exercise archive source is 1280x720; no higher-resolution alternate was indexed when this preview was produced.
+Every full-screen exercise interval keeps the live presenter in a circular cream/gold head bubble with natural avatar brightness and no dark tint over the face. The final exercise source is Shannon's supplied 3840x2160 original, compressed only at the completed 1080x1920 master export.
 
 ### What this entry teaches future drafts
 
