@@ -1,6 +1,6 @@
 const DEFAULT_GRAPH_BASE = 'https://graph.instagram.com';
 const DEFAULT_IG_USER_ID = '17841415641641750';
-const CONTENT_ID = '2026-07-28-single-leg-rdl';
+const CONTENT_ID = '2026-08-01-hanging-leg-raise';
 const REQUIRED_IDEMPOTENCY_KEY = `${CONTENT_ID}-instagram-reel`;
 const RECEIPT_KEY = `social_publish_receipt_${CONTENT_ID.replace(/-/g, '_')}`;
 
@@ -38,14 +38,14 @@ function postPlan() {
         contentId: CONTENT_ID,
         kind: 'reel',
         account: 'shan_n_sunny',
-        caption: `Three common errors with single-leg RDLs:\n\n1. Turning the hinge into a squat.\n2. Chasing depth by opening the pelvis.\n3. Letting the dumbbell drift away.\n\nSteady knee. Hips controlled. Weight close.\n\nIf the movement causes sharp or persistent pain, don’t force the range; get it assessed.\n\nSave this for your next lower-body session.\n\n#SingleLegRDL #RDL #StrengthTraining #ExerciseTechnique #PlantBasedFitness`,
+        caption: `Hanging leg raises aren’t automatically a six-pack exercise.\n\nIf you’re only trying to lift your legs higher, your hip flexors can do most of the work.\n\nThe rep changes when you bring your hips toward your ribs, stop the swing, then control the way back down.\n\nI use the dumbbell as a tap point: touch it, stop, then go again.\n\nIf straight legs make your lower back arch, bend your knees. That’s fine.\n\nThis is what I do with clients inside Balance. I watch how you’re moving, find where it’s going wrong, then change the exercise to suit you.\n\nComment BALANCE below if you want me in your corner.\n\n#HangingLegRaise #AbTraining #ExerciseTechnique #OnlineCoach #Balance`,
         media: {
             type: 'video',
             mime: 'video/mp4',
             width: 1080,
             height: 1920,
-            durationSeconds: 59.14,
-            url: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/codex-social-publish/2026-07-28/1785194529452-70660893-3d72-453e-a5e4-f8c549515aff-single-leg-rdl-reel-final.mp4',
+            durationSeconds: 87.08,
+            url: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/codex-reel-previews/2026-07-31/1785553432282-67ccb5de-9b61-435e-9fe0-6b4a21b11aad-hanging-leg-raise-reel-final-v10-1080x1920.mp4',
         },
         cover: {
             mime: 'image/jpeg',
@@ -53,7 +53,7 @@ function postPlan() {
             height: 1920,
             fullCoverChecked: true,
             profileGridChecked: true,
-            url: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/codex-social-publish/2026-07-28/1785195028203-33f28d9d-9d6f-433b-9ba7-2ef8449803e2-single-leg-rdl-cover-phone.jpg',
+            url: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/codex-social-publish/2026-08-01/1785556961578-c375dcb2-b8cc-4678-b579-4ffadd6cd006-hanging-leg-raise-cover-phone.jpg',
         },
     };
 }
