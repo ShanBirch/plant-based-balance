@@ -96,3 +96,81 @@ Every full-screen exercise interval keeps the live presenter in a circular cream
 - Technical language is acceptable when it is immediately translated: `the eccentric—the way down`.
 - Use contractions everywhere they occur naturally: `aren’t`, `you’re`, `doesn’t`, `it’s`, `that’s`, `I’ve`, `don’t`, and `can’t`.
 - Visual anatomy must change with the mechanism being explained. Hip flexors illustrate lifting the legs; abs illustrate bringing the hips and ribs closer.
+
+---
+
+## EXERCISE-002 — Back extensions: three mistakes and three versions
+
+- Approved: 2026-08-01
+- Format: Exercise Reel / three mistakes / COACH
+- Exercise: 45-degree back extension / hyperextension
+- Status: Approved for production
+- CTA keyword: `BALANCE`
+- Primary voice lesson: Treat bracing as the foundation, then show that small setup and execution changes can make the same machine feel like a different exercise.
+
+### Approved script
+
+> Back extensions can train your glutes, your hamstrings, or your lower back.
+>
+> It all depends on how you do them.
+>
+> Okay, here’s three mistakes.
+>
+> Mistake one: you’re not bracing before you move.
+>
+> Before you lower, take a breath and brace your stomach like someone’s about to punch you.
+>
+> Keep that pressure through the whole rep.
+>
+> If your middle goes loose, you’ll just start bending wherever you can.
+>
+> Mistake two: you’re trying to come up as high as possible.
+>
+> Higher doesn’t mean better.
+>
+> Once your hips are straight and your body’s back in one line, the rep’s finished.
+>
+> Anything past that and you’re just leaning backwards.
+>
+> Mistake three: you think there’s one perfect version.
+>
+> There isn’t.
+>
+> Look at these three reps.
+>
+> You’ll notice my knees are more bent in the hamstring version.
+>
+> In the glute version, I let my upper back round more and finish by squeezing my bum.
+>
+> And in the standard version, I keep the movement more neutral.
+>
+> But none of those little changes work on their own.
+>
+> The brace, the way you hinge, your range and where you keep the tension all change what gets tired.
+>
+> It’s an interesting exercise, because you can do it a hundred different ways and feel it in completely different places.
+>
+> This is what I do with my clients inside Balance.
+>
+> I watch how you’re moving, ask where you’re actually feeling it, then change the setup until the exercise is doing the job we chose.
+>
+> Comment BALANCE below if you want me in your corner.
+
+### Meaning-matched visual map
+
+| Spoken beat | Required visual |
+| --- | --- |
+| `You’re not bracing before you move.` | Start with the standard live rep, then use a short torso-pressure visual while keeping the real exercise visible. Do not use a vague target circle. |
+| `Brace your stomach like someone’s about to punch you.` | Show Shannon taking the breath and beginning the descent; use a brief 360-degree waist-pressure treatment rather than anatomy decoration. |
+| `You’re trying to come up as high as possible.` | Compare the clean finish with a brief freeze at the point where the body returns to one line. Do not fabricate an exaggerated bad rep. |
+| `Look at these three reps.` | Show standard, glute and hamstring footage side by side with clear labels and all relevant hip, knee and torso landmarks visible. |
+| `My knees are more bent in the hamstring version.` | Use the real hamstring clip and a clean side-by-side knee-angle comparison. Treat this as an observation from the demonstrated version, not a claim that knee bend alone causes hamstring emphasis. |
+| `In the glute version...` | Switch to the live glute-focused clip and show the rounded upper-back finish and bum squeeze without covering the hip. |
+| `The brace, the way you hinge...` | Rapidly revisit the three live clips as proof; each visual change must match the named variable. |
+| `Comment BALANCE below...` | Full-screen presenter with animated cream/gold `COMMENT BALANCE BELOW`, followed by the Balance logo shimmer. |
+
+### What this entry teaches future drafts
+
+- Shannon prefers the brace to come first when it controls the rest of the movement.
+- A movement variation should be explained as a combination of brace, hinge, range, setup and attention rather than attributing the result to one magic cue.
+- A real three-version comparison is stronger proof than generic anatomy for this exercise.

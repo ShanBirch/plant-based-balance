@@ -8,6 +8,12 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 ## Active production rules
 
+### Back-extension comparison reels
+
+- When the exercise can be performed several ways to bias different areas, make bracing the foundation before discussing the variants.
+- Use the real standard, glute-focused and hamstring-focused reps as the comparison proof. A visible knee bend may be described as part of the demonstrated version, but never present one joint angle as a magic isolation switch; explain that brace, hinge, range, setup and maintained tension work together.
+- Keep the edit sharp: one visible problem, one reason, one cue and one proof state before moving on.
+
 ### Real Shannon media first
 
 - Shannon-led coaching and food carousels use approved real Shannon photos when suitable images exist.
