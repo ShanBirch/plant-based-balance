@@ -178,7 +178,7 @@ Scene 4 (5.2–6.0s): “Your training. Your habits. One clear view.” resolves
 - duration: 6s
 - poster: 4.9s
 - transition_in: crossfade
-- scene: Real vegan community moments assemble around a daily activity pulse
+- scene: Real plant-based community moments assemble around a daily activity pulse
 - type: social_proof
 - persuasion: Belonging and social norms
 - beat: community proof
@@ -192,7 +192,7 @@ Scene 4 (5.2–6.0s): “Your training. Your habits. One clear view.” resolves
 
 Adapt: keep the orbiting-node-to-centre signature; make the nodes real community moments in premium post cards and resolve on “DAILY”, not an abstract logo hub.
 
-Scene 1 (0.0–1.2s): “YOUR VEGAN COMMUNITY” enters upper-third as a small gold “ACTIVE TODAY” pulse appears at centre. Empty space establishes anticipation.
+Scene 1 (0.0–1.2s): “YOUR PLANT-BASED COMMUNITY” enters upper-third as a small gold “ACTIVE TODAY” pulse appears at centre. Empty space establishes anticipation.
 Scene 2 (1.2–4.0s): real food, walk and workout moments crop cleanly out of their source posts and assemble into three layered Balance cards around the pulse; each receives a restrained heart, comment or encouragement badge as it arrives. No full screenshot is ever stationary on screen.
 Scene 3 (4.0–5.2s): the camera eases inward; the three cards align into a generous vertical feed while “Meals · walks · workouts · wins” reveals beneath them.
 Scene 4 (5.2–6.0s): “A COMMUNITY THAT SHOWS UP DAILY” lands, with “DAILY” in gold; all cards hold still.
@@ -220,5 +220,5 @@ Adapt: keep the restrained end-card chain; use three calm proof cards that simpl
 
 Scene 1 (0.0–1.5s): calm card one: “A CLEAR PLAN.” lands centred and holds for one beat.
 Scene 2 (1.5–3.0s): hard cut at full opacity to card two: “6 WEEKS WITH SHANNON.” A small line clarifies “Questions · direction · accountability”.
-Scene 3 (3.0–4.3s): hard cut to card three: “LIFETIME CORE ACCESS.” A smaller line adds “Balance app + vegan community”.
+Scene 3 (3.0–4.3s): hard cut to card three: “LIFETIME CORE ACCESS.” A smaller line adds “Balance app + plant-based community”.
 Scene 4 (4.3–6.0s): the Balance mark and “FIND YOUR FITTEST SELF” resolve above one solid gold pill: “FOUNDERS PASS · AU$99 ONCE”. A quiet prompt beneath says “Tell me your goal and I’ll show you how it fits.” The full lockup holds to the final frame.

@@ -2,7 +2,7 @@
 workflow: product-launch-video
 flow: automation
 storyboard: no
-message: "Balance turns a person's goal into a clear supported week, with plant-based meals, training, Shannon's check-ins, progress and an active vegan community in one place"
+message: "Balance turns a person's goal into a clear supported week, with plant-based meals, training, Shannon's check-ins, progress and an active plant-based community in one place"
 destination: instagram-dm
 aspect: 1080x1920
 language: en
@@ -19,7 +19,7 @@ Create a polished vertical Balance ad that can be sent after a Meta-ad lead tell
 Shannon their goal. Lead with “Find your fittest self”, then prove the promise by
 showing the person's week taking shape inside Balance. The viewer should understand
 what their meal plan looks like, how it is delivered, how Shannon's check-in arrives
-as a voice note in their inbox, how progress is made visible, and that the vegan
+as a voice note in their inbox, how progress is made visible, and that the plant-based
 community is active every day.
 
 ## Assets
@@ -28,9 +28,9 @@ community is active every day.
 - `../balance-app-motion/.media/images/image_006.jpg` — factual reference for weekly goals and progress.
 - `../balance-app-motion/.media/images/nutrition-tracker.jpg` — factual reference for nutrition delivery.
 - `../balance-app-motion/.media/images/movement-coach.jpg` — factual reference for coached training.
-- `../balance-app-motion/.media/images/feed-food.jpg` — real vegan community food post.
-- `../balance-app-motion/.media/images/feed-walk.jpg` — real vegan community activity post.
-- `../balance-app-motion/.media/images/feed-workout.jpg` — real vegan community workout post.
+- `../balance-app-motion/.media/images/feed-food.jpg` — real plant-based community food post.
+- `../balance-app-motion/.media/images/feed-walk.jpg` — real plant-based community activity post.
+- `../balance-app-motion/.media/images/feed-workout.jpg` — real plant-based community workout post.
 
 ## Customizations
 
@@ -47,5 +47,5 @@ community is active every day.
 - Do not show a raw video URL in the Instagram conversation.
 - Do not present static screenshots one after another.
 - Do not claim instant daily replies, unlimited support, or ongoing personalised weekly plan reviews after the six-week support period.
-- The offer is AU$99 once, six weeks of one-to-one in-app support with Shannon for questions, direction and accountability, then lifetime access to the core app and vegan community.
+- The offer is AU$99 once, six weeks of one-to-one in-app support with Shannon for questions, direction and accountability, then lifetime access to the core app and plant-based community.
 - Keep critical text clear of the Instagram top header, bottom composer and right-side controls.

@@ -75,6 +75,12 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - The Balance bridge should make the offer concrete: Shannon helps identify what's driving the problem, changes the setup with the person, and keeps them moving without blame.
 - When `input -> output` feels abstract, use a familiar bodily analogy before the coaching steps. Shannon's approved cravings example is hearing running water and suddenly feeling the urge to wee: running water is the input; the urge is the output. Keep the mapping explicit and do not imply every craving has one simple cause.
 
+### Plant-based positioning language
+
+- Use `plant-based` rather than `vegan` in Balance offer, community, ad, landing-page and promo-video copy.
+- Keep the hyphen in `plant-based` when it is used as an adjective.
+- Use `vegan` only when Shannon explicitly requests it, it is necessary inside an exact quotation, or the distinction itself is the topic.
+
 ### Shannon's spoken delivery
 
 - For multi-scene videos, approve narration timing from the delivered MP4, not only the editor preview. Verify the first audible voice sample lands inside its intended visual scene and that no narration leaks into the opening or the following scene. If a renderer fails to rebase audio nested inside a sub-composition, move that audio to the master composition and author its global start time explicitly.
@@ -131,6 +137,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 | Date | Shannon's direction | Scalable rule | Affected formats |
 | --- | --- | --- | --- |
+| 2026-08-01 | The only thing is I want it to say plant based, not vegan. | Default every Balance audience, offer and community reference to `plant-based`, including final-frame inclusions and community headings; reserve `vegan` for explicit requests or exact quotations. | Balance promo videos, ads, landing pages, Reels, offer copy and community positioning |
 | 2026-08-01 | Use the supplied high-resolution exercise original and get rid of the filter over my avatar bubble. Finish the high-res version and show it on my phone before posting. | Prefer the supplied 4K source through the final crop, compress only the completed 1080x1920 master, keep bubble footage naturally lit with border-only styling, and require phone approval before publishing. | Exercise Reels, source replacement, avatar bubbles, high-resolution export and approval gates |
 | 2026-08-01 | I don't like the black Comment BALANCE pill. Make it cream/gold and animated, add the Balance logo shimmer, and always keep the avatar head bubble when the exercise is full screen. | Use the animated cream/gold Balance CTA and logo-shimmer close; ban flat black CTA pills for this series. Carry the live circular avatar bubble through every full-screen exercise interval without obscuring proof. | Exercise Reels, CTA motion, brand outros, full-screen proof layouts |
 | 2026-08-01 | The check-in voice is playing at the start of the rendered video; it should play when the voice-note check-in page is visible. | Treat final-artifact audio sync as a delivery gate: inspect the rendered MP4's audible onset against the intended scene. Anchor scene narration globally on the master timeline whenever nested composition audio does not preserve its offset. | Balance promo videos, Reels, multi-scene narration, final MP4 phone QA |

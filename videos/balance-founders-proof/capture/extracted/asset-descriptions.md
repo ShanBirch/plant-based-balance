@@ -4,7 +4,7 @@
 - `assets/ui/weekly-goals.jpg` — real vertical Balance weekly-goals screen showing goals, progress bars and a four-week trend.
 - `assets/ui/nutrition-tracker.jpg` — real vertical Balance nutrition screen showing daily calories and macro targets.
 - `assets/ui/movement-coach.jpg` — real vertical Balance Movement screen showing form review, coach workouts and today's workout.
-- `assets/ui/community-food.jpg` — real vertical vegan-community food post with reactions and coach comment.
+- `assets/ui/community-food.jpg` — real vertical plant-based-community food post with reactions and coach comment.
 - `assets/ui/community-walk.jpg` — real vertical community activity post.
 - `assets/ui/community-workout.jpg` — real vertical workout-completion community post with reactions and coach comment.
 
