@@ -2470,6 +2470,24 @@ function isInternalMetaAdConversationTestLane({ linkedUserId = null, customData 
         && String(customData?.internal_test_meta_ad_flow || '').toLowerCase() === 'plant_based_control';
 }
 
+function filterInternalTestHistoryAfterReset({
+    history = [],
+    linkedUserId = null,
+    customData = {},
+} = {}) {
+    if (!isInternalMetaAdConversationTestLane({ linkedUserId, customData })) {
+        return Array.isArray(history) ? history : [];
+    }
+    const resetAtMs = Date.parse(customData?.internal_test_conversation_reset_at || '');
+    if (!Number.isFinite(resetAtMs)) {
+        return Array.isArray(history) ? history : [];
+    }
+    return (Array.isArray(history) ? history : []).filter(message => {
+        const createdAtMs = Date.parse(message?.created_at || '');
+        return Number.isFinite(createdAtMs) && createdAtMs >= resetAtMs;
+    });
+}
+
 function isExerciseConversationFastLaneEligible({ linkedUserId = null, currentMessage = '', recentMessages = [], nowMs = Date.now() } = {}) {
     if (linkedUserId) return false;
     const text = String(currentMessage || '').replace(/\s+/g, ' ').trim();
@@ -4711,6 +4729,11 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
     });
+    history = filterInternalTestHistoryAfterReset({
+        history,
+        linkedUserId: thread.linked_user_id,
+        customData: thread.custom_data,
+    });
     const metaAdFastLane = metaAdFirstInbound || metaAdConversationFastLane;
     const unfilteredHistoryCount = history.length;
     history = filterMetaAdCardAttachmentHistory({
@@ -6578,6 +6601,7 @@ exports._test = {
     isMetaAdFastLaneEligible,
     isMetaAdConversationFastLaneEligible,
     isInternalMetaAdConversationTestLane,
+    filterInternalTestHistoryAfterReset,
     isExerciseConversationFastLaneEligible,
     resolveMetaAdFlowVariant,
     resolveMetaAdFirstReplyIntent,

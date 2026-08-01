@@ -457,6 +457,30 @@ assert.equal(instantDraft.isInternalMetaAdConversationTestLane({
     linkedUserId: 'client-user-1',
     customData: internalPlantBasedTestData,
 }), false, 'the internal test override never applies to a linked client');
+const resetTestHistory = [
+    { direction: 'in', text: 'old opener', created_at: '2026-08-01T09:00:00.000Z' },
+    { direction: 'out', text: 'old reply', created_at: '2026-08-01T09:01:00.000Z' },
+    { direction: 'in', text: 'fresh opener', created_at: '2026-08-01T10:01:00.000Z' },
+];
+assert.deepEqual(instantDraft.filterInternalTestHistoryAfterReset({
+    history: resetTestHistory,
+    customData: {
+        ...internalPlantBasedTestData,
+        internal_test_conversation_reset_at: '2026-08-01T10:00:00.000Z',
+    },
+}), [resetTestHistory[2]], 'a reset test thread ignores any Meta-backfilled messages from before the reset');
+assert.deepEqual(instantDraft.filterInternalTestHistoryAfterReset({
+    history: resetTestHistory,
+    linkedUserId: 'client-user-1',
+    customData: {
+        ...internalPlantBasedTestData,
+        internal_test_conversation_reset_at: '2026-08-01T10:00:00.000Z',
+    },
+}), resetTestHistory, 'the reset cutoff cannot affect a linked client conversation');
+assert.deepEqual(instantDraft.filterInternalTestHistoryAfterReset({
+    history: resetTestHistory,
+    customData: internalPlantBasedTestData,
+}), resetTestHistory, 'an unreset test thread keeps its complete history');
 
 const linkedClientAlert = {
     client_id: 'client-user-1',
