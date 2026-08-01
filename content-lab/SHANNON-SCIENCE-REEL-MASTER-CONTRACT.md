@@ -91,6 +91,9 @@ Default runtime is 45–90 seconds. If the approved voice is too long, remove lo
 - Create a meaningful narration-linked visual change every few seconds. Ambient drifting does not count.
 - Reveal papers in phases: establish title/source, focus method/setup, highlight result, show limit/interpretation.
 - Reveal diagrams in stages: nodes, connectors, moving signals, resulting state. Connectors must visibly touch; arriving signals disappear inside the receiving node.
+- When the topic is abstract, choose one causal visual grammar and repeat it instead of inventing a new metaphor for every sentence. For predictive-brain/allostasis teaching, use `INPUTS -> BRAIN PREDICTS -> FEELING / URGE / ACTION`, then change one input or learned history at a time so the viewer can see why the output changes.
+- A paper screenshot establishes evidence; it does not explain the mechanism alone. Pair it with a plain-English translation and a diagram, timeline, or concrete contrast that remains understandable with the sound off.
+- When discussing limited conscious control, show the agency boundary explicitly: direct command of the automatic regulation is unavailable, while environment, cues, repetition and sensory evidence are adjustable inputs. Never turn blame removal into helplessness.
 - Generated inserts should usually last about 0.4–1.4 seconds and return quickly to Shannon or the real source.
 - Every visual must earn its place. Reject arbitrary circles, blobs, pills, particles, and decorative motion that explain nothing.
 

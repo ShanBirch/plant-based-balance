@@ -28,6 +28,14 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - For food and coaching education, prefer relevant real photography, recognisable food imagery or concise typography over abstract stand-ins.
 - If a visual makes the idea stranger or less clear, remove it.
 
+### Abstract science needs a repeated visual model
+
+- When an explanation can go over the viewer's head even though the words are technically clear, stop adding definitions and build one repeated cause-and-effect model.
+- For predictive-brain and allostasis teaching, default to `INPUTS -> BRAIN PREDICTS -> FEELING / URGE / ACTION`. Reveal one state at a time and reuse the same mapping when the example changes.
+- Use the paper as proof, then translate it with a concrete diagram, timeline or contrast. A paper screenshot does not carry the explanation by itself.
+- Distinguish direct conscious control from indirect agency. Do not imply that people are powerless: they may not directly command allostasis, but they can change environmental cues and repeated sensory evidence, which changes what the system learns and eventually changes the output.
+- Treat grey or black canvas edges during presenter zooms and stale bottom text as automatic failures. Keep avatar crops overscanned and centred, and reject every zero-duration caption or overlay before rendering.
+
 ### Keep sensory-input coaching examples broad
 
 - When a post is teaching that behaviour changes with sensory or environmental inputs, don't prematurely reduce the explanation to food intake, hunger or a nutrition fix.
@@ -160,6 +168,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 | --- | --- | --- | --- |
 | 2026-08-01 | Replies after the first ad response still feel too slow; after a minute the conversation loses momentum. | Target roughly 15-30 seconds for safe active paid-ad follow-ups. A non-blocking style warning may be deterministically cleaned and sent immediately, but safety, context, media, identity and offer warnings still hold. Reject any repair that parrots the latest inbound. | Meta ad DMs, draft review, repair, immediate dispatch and scheduled-worker handoff |
 | 2026-08-01 | The personalised coaching ad question sent a link straight away with no question. | Treat every ad FAQ as informational: answer first, ask one useful context question, and withhold the checkout link until explicit join/start intent. Route personalised coaching to Starter Coaching and keep the Founders Pass video off that branch. | Meta ad DMs, FAQ prompts, checkout gates, Starter Coaching routing and proof-video handoffs |
+| 2026-08-01 | Part Six still goes over my head even though I understand the topic; it needs good visuals. Also fix the grey bar during avatar zooms, stale bottom text, monotone delivery, and make the allostasis/control point solid without making people powerless. | Build abstract science around one repeated causal diagram, stage every diagram in narration order, use the paper as evidence rather than the whole explanation, separate direct control from agency through inputs, and fail QA on exposed canvas edges or zero-duration overlays. | Science Reels, predictive-brain series, avatar crops, caption generation, diagrams and voice performance |
 | 2026-08-01 | `This is a 54-second look at...` sounds AI. `Here's a quick video` is better. | Introduce proof videos with one casual `here's a quick video` line. Never announce the exact runtime or inventory every scene in a DM handoff. | Paid-ad DMs, native video attachments, sales handoffs and DM automation prompts |
 | 2026-08-01 | The only thing is I want it to say plant based, not vegan. | Default every Balance audience, offer and community reference to `plant-based`, including final-frame inclusions and community headings; reserve `vegan` for explicit requests or exact quotations. | Balance promo videos, ads, landing pages, Reels, offer copy and community positioning |
 | 2026-08-01 | Use the supplied high-resolution exercise original and get rid of the filter over my avatar bubble. Finish the high-res version and show it on my phone before posting. | Prefer the supplied 4K source through the final crop, compress only the completed 1080x1920 master, keep bubble footage naturally lit with border-only styling, and require phone approval before publishing. | Exercise Reels, source replacement, avatar bubbles, high-resolution export and approval gates |
