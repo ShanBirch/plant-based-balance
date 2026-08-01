@@ -20,7 +20,7 @@ This is the canonical database of Shannon-approved spoken scripts. Read the clos
 - Status: Phone preview generated; awaiting Shannon approval
 - Presenter: `Coach Shan Hat On` backwards-cap digital twin (`8ca3cd3f07cb448ebeb0b6f4547db1ce`)
 - HeyGen video: `069654a9ec2848d68fa6e92a153e9864`
-- Phone preview: https://f005.backblazeb2.com/file/plantbasedbalancestories/codex-reel-previews/2026-07-31/1785545511284-21bb54c2-f9e5-46d7-9abc-429be60795b5-hanging-leg-raise-reel-preview-v7-framing-fixed.mp4
+- Phone preview: https://f005.backblazeb2.com/file/plantbasedbalancestories/codex-reel-previews/2026-07-31/1785547305292-94173c80-b5ac-4e3b-a283-aea280a44b79-hanging-leg-raise-reel-preview-v9-branded-cta-bubble.mp4
 - CTA keyword: `BALANCE`
 - Primary voice lesson: Explain the mechanism in ordinary gym language, then give a physical picture the viewer can recognise.
 
@@ -83,9 +83,11 @@ This is the canonical database of Shannon-approved spoken scripts. Read the clos
 | `They should be able to see your bum.` | Show or briefly hold the real top position where the pelvis has tucked underneath. The body cue is the proof. |
 | `That’s why I’ve got the dumbbell there.` | Show the live foot tap on the dumbbell: tap, stop, then start the next rep. |
 | `You’re not controlling the eccentric—the way down.` | Show the real lowering phase moving continuously. Do not replace it with a static anatomy hold. |
-| `Comment BALANCE below...` | Full-screen Shannon/avatar with the visible `COMMENT BALANCE` card. |
+| `Comment BALANCE below...` | Full-screen Shannon/avatar with an animated cream/gold `COMMENT BALANCE` card above the protected face, resolving into the Balance logo shimmer outro. |
 
 The presenter for this entry is the backwards-cap `Coach Shan Hat On` character. Keep the hat, full head and complete face inside the portrait crop in both full-screen and every split-screen interval.
+
+Every full-screen exercise interval keeps the live presenter in a circular cream/gold head bubble. The confirmed exercise archive source is 1280x720; no higher-resolution alternate was indexed when this preview was produced.
 
 ### What this entry teaches future drafts
 
