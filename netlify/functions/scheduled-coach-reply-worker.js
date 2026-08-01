@@ -157,18 +157,10 @@ function buildAutoSendReviewHold(alert) {
     const softContextBypass = hasAutoContextBypass(data);
     if (data.auto_send_review_approved_at) return null;
     const review = data.draft_review;
-    const botAccount = String(data.bot_account || data.instagram_graph?.bot_account || '').replace(/^@+/, '').toLowerCase();
-    const igUsername = String(data.ig_username || data.instagram_graph?.ig_username || data.instagram_graph?.username || '').replace(/^@+/, '').toLowerCase();
-    const isCocosToShanSunnyTest = data.outbound_voice_message_reason === 'cocos_pt_studio_to_shan_n_sunny_test'
-        || (botAccount === 'shan_n_sunny' && igUsername === 'cocos_pt_studio');
-    const safeAutoLaneStyleWarning = isCocosToShanSunnyTest
-        && String(review?.verdict || '').toLowerCase() === 'warn'
-        && review?.notification_required !== true
-        && review?.context_loss_suspected !== true;
     const existingHold = data.auto_send_review_hold;
     const mediaReview = buildMediaReviewInfo(alert);
     const contextReview = buildContextReviewInfo(alert);
-    if (existingHold?.code && !['media_review', 'context_review'].includes(existingHold.code) && !safeAutoLaneStyleWarning) return existingHold;
+    if (existingHold?.code && !['media_review', 'context_review'].includes(existingHold.code)) return existingHold;
     if (mediaReview.required) {
         return {
             code: 'media_review',
@@ -193,7 +185,7 @@ function buildAutoSendReviewHold(alert) {
             label: review.summary || 'AI draft needs Shannon review',
         };
     }
-    if (!softContextBypass && !safeAutoLaneStyleWarning && (review.verdict !== 'pass' || review.notification_required || review.context_loss_suspected)) {
+    if (!softContextBypass && (review.verdict !== 'pass' || review.notification_required || review.context_loss_suspected)) {
         return {
             code: 'draft_review',
             label: review.summary || 'AI draft needs Shannon review',

@@ -127,8 +127,36 @@ assert.strictEqual(
 );
 assert.strictEqual(
     isUnsafeStockDiscoveryQuestion('food or training?'),
-    false
+    true
 );
+assert.strictEqual(
+    isUnsafeStockDiscoveryQuestion('What usually derails it for you, food, training, or consistency?'),
+    true
+);
+
+const offerClarification = applyRapportGate({
+    qualifier: {
+        ...base,
+        commercial_stage: 'buyer_intent',
+        meaningful_lead_reply_count: 7,
+        is_question_moment: true,
+        next_question: 'What usually derails it for you, food, training, or consistency?',
+        conversation_psychology: {
+            ...base.conversation_psychology,
+            need_right_now: 'clarity',
+            allowed_move: 'clarify',
+        },
+        facts: {
+            ...base.facts,
+            current_state: 'Wants to lose weight',
+        },
+    },
+    currentMessage: "What's the app structure?",
+    leadReplyCount: 7,
+});
+assert.strictEqual(offerClarification.is_question_moment, false);
+assert.strictEqual(offerClarification.next_question, '');
+assert.match(offerClarification.why_now, /offer clarity|leave space/i);
 
 const foodBanter = applyRapportGate({
     qualifier: {

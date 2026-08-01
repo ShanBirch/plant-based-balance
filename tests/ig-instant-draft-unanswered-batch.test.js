@@ -4,7 +4,30 @@ const {
     buildCurrentTurnAnchorBlock,
     buildNativeStoryConfusionRepairBlock,
     isStoryOpenerConfusionMessage,
+    classifySourceMessageFreshness,
 } = require('../netlify/functions/ig-instant-draft')._test;
+
+assert.deepStrictEqual(
+    classifySourceMessageFreshness({
+        sourceMessage: { id: 'old-inbound', direction: 'in' },
+        latestMessage: { id: 'new-outbound', direction: 'out' },
+    }),
+    { state: 'stale', reason: 'newer_canonical_outbound_exists' }
+);
+assert.deepStrictEqual(
+    classifySourceMessageFreshness({
+        sourceMessage: { id: 'old-inbound', direction: 'in' },
+        latestMessage: { id: 'new-inbound', direction: 'in' },
+    }),
+    { state: 'stale', reason: 'newer_canonical_inbound_exists' }
+);
+assert.deepStrictEqual(
+    classifySourceMessageFreshness({
+        sourceMessage: { id: 'current-inbound', direction: 'in' },
+        latestMessage: { id: 'current-inbound', direction: 'in' },
+    }),
+    { state: 'current', reason: 'source_is_latest_canonical_message' }
+);
 
 const singleMessageAnchor = buildCurrentTurnAnchorBlock({
     currentMessageText: 'yeah',

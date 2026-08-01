@@ -503,7 +503,7 @@ assert.equal(scheduledWorker.buildAutoSendReviewHold({
             context_loss_suspected: false,
         },
     },
-}), null, 'worker does not re-hold a safe style warning in the explicit Cocos test lane');
+})?.code, 'draft_review', 'worker holds every reviewer warning in the explicit Cocos test lane');
 
 assert.equal(scheduledWorker.buildAutoSendReviewHold({
     alert_type: 'ig_incoming_dm',

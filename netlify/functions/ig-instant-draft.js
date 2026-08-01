@@ -2453,6 +2453,78 @@ async function isLatestInboundMessageForThread({ threadId, manychatMessageId }) 
     return String(rows?.[0]?.manychat_message_id || '') === String(manychatMessageId);
 }
 
+function classifySourceMessageFreshness({ sourceMessage, latestMessage } = {}) {
+    if (!sourceMessage?.id || String(sourceMessage.direction || '').toLowerCase() !== 'in') {
+        return { state: 'unknown', reason: 'canonical_source_inbound_not_found' };
+    }
+    if (!latestMessage?.id) {
+        return { state: 'unknown', reason: 'canonical_latest_message_not_found' };
+    }
+    if (String(latestMessage.id) === String(sourceMessage.id)) {
+        return { state: 'current', reason: 'source_is_latest_canonical_message' };
+    }
+    return {
+        state: 'stale',
+        reason: String(latestMessage.direction || '').toLowerCase() === 'out'
+            ? 'newer_canonical_outbound_exists'
+            : 'newer_canonical_inbound_exists',
+    };
+}
+
+async function inspectSourceMessageFreshness({ threadId, manychatMessageId } = {}) {
+    if (!threadId || !manychatMessageId) {
+        return { state: 'unknown', reason: 'source_identity_missing' };
+    }
+    const sourceRows = await supabaseQuery(
+        `ig_messages?select=id,direction,created_at,manychat_message_id&thread_id=eq.${encodeURIComponent(threadId)}`
+        + `&manychat_message_id=eq.${encodeURIComponent(manychatMessageId)}&limit=1`
+    );
+    const latestRows = await supabaseQuery(
+        `ig_messages?select=id,direction,created_at,manychat_message_id&thread_id=eq.${encodeURIComponent(threadId)}`
+        + '&order=created_at.desc,id.desc&limit=1'
+    );
+    const sourceMessage = sourceRows?.[0] || null;
+    const latestMessage = latestRows?.[0] || null;
+    return {
+        ...classifySourceMessageFreshness({ sourceMessage, latestMessage }),
+        sourceMessage,
+        latestMessage,
+    };
+}
+
+async function cancelStaleReplayAlert({ idempotencyKey, freshness } = {}) {
+    if (!idempotencyKey || freshness?.state !== 'stale') return null;
+    const rows = await supabaseQuery(
+        `coach_alerts?select=id,status,data&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
+    );
+    const alert = rows?.[0] || null;
+    if (!alert?.id || !['pending', 'scheduled'].includes(alert.status)) return alert;
+    const canceledAt = new Date().toISOString();
+    const updated = await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alert.id)}&status=in.(pending,scheduled)`, {
+        method: 'PATCH',
+        body: {
+            status: 'canceled',
+            actioned_at: canceledAt,
+            scheduled_for: null,
+            scheduled_reply_text: null,
+            data: {
+                ...(alert.data || {}),
+                cancel_reason: 'stale_replayed_inbound',
+                stale_replay_canceled_at: canceledAt,
+                stale_replay_reason: freshness.reason,
+                stale_replay_source_message_id: freshness.sourceMessage?.id || null,
+                stale_replay_source_message_at: freshness.sourceMessage?.created_at || null,
+                stale_replay_newer_message_id: freshness.latestMessage?.id || null,
+                stale_replay_newer_message_direction: freshness.latestMessage?.direction || null,
+                stale_replay_newer_message_at: freshness.latestMessage?.created_at || null,
+                outbound_attempted: false,
+            },
+        },
+        prefer: 'return=representation',
+    });
+    return updated?.[0] || alert;
+}
+
 function getCocosCodexReviewHold({ cocosAutoSendLane, voiceReplyTestLane, approvedCoachingLinkHandoff, metaAdFastLane } = {}) {
     if (!cocosAutoSendLane) return null;
     if (voiceReplyTestLane || approvedCoachingLinkHandoff || metaAdFastLane) return null;
@@ -4501,6 +4573,31 @@ exports.handler = async (event) => {
     if (!thread) {
         return { statusCode: 404, body: JSON.stringify({ error: 'Thread not found' }) };
     }
+    const idempotencyKey = manychatMessageId
+        ? `ig_incoming_dm:${manychatMessageId}`
+        : `ig_incoming_dm:${threadId}:${Date.now()}`;
+    if (manychatMessageId) {
+        try {
+            const freshness = await inspectSourceMessageFreshness({ threadId, manychatMessageId });
+            if (freshness.state === 'stale') {
+                const alert = await cancelStaleReplayAlert({ idempotencyKey, freshness });
+                console.warn(`[ig-draft] skipped stale replay ${manychatMessageId} for thread ${threadId}: ${freshness.reason}`);
+                return {
+                    statusCode: 200,
+                    body: JSON.stringify({
+                        skipped: 'stale_replayed_inbound',
+                        reason: freshness.reason,
+                        thread_id: threadId,
+                        source_message_id: freshness.sourceMessage?.id || null,
+                        newer_message_id: freshness.latestMessage?.id || null,
+                        alert_id: alert?.id || null,
+                    }),
+                };
+            }
+        } catch (error) {
+            console.warn(`[ig-draft] source freshness check failed for ${threadId}:`, error.message);
+        }
+    }
     const threadOptedOut = isAiAutomationOptedOut(thread);
     const linkedUserExcluded = thread.linked_user_id ? await isTestAccount(thread.linked_user_id) : false;
     if (threadOptedOut || linkedUserExcluded) {
@@ -4595,9 +4692,6 @@ exports.handler = async (event) => {
     // Idempotency — when ManyChat supplied a message_id, reuse it. Otherwise
     // fall back to thread+timestamp (less robust but better than nothing
     // for ManyChat configs that don't pass message_id through).
-    const idempotencyKey = manychatMessageId
-        ? `ig_incoming_dm:${manychatMessageId}`
-        : `ig_incoming_dm:${threadId}:${Date.now()}`;
     let regenerateExistingBlankAlert = null;
 
     try {
@@ -6392,6 +6486,7 @@ exports._test = {
     getCocosCodexReviewHold,
     isBalanceLeadAutoSendEnabled,
     isCanceledLatestRecoveryCandidate,
+    classifySourceMessageFreshness,
     isCurrentMetaAdInbound,
     isMetaAdFastLaneEligible,
     isMetaAdConversationFastLaneEligible,
