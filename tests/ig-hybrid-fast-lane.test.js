@@ -457,6 +457,37 @@ assert.equal(instantDraft.isInternalMetaAdConversationTestLane({
     linkedUserId: 'client-user-1',
     customData: internalPlantBasedTestData,
 }), false, 'the internal test override never applies to a linked client');
+assert.equal(instantDraft.isContextualMetaAdOfferLinkRequest({
+    currentMessage: 'Can I see it?',
+    qualifier: { commercial_stage: 'buyer_intent' },
+    history: [
+        { direction: 'out', text: 'Founders Pass is a guided six-week kickstart in the Balance app.' },
+        { direction: 'out', text: 'It includes one-to-one in-app support from me.' },
+    ],
+}), true, 'a contextual request to see the just-explained offer is a link request');
+assert.equal(instantDraft.isContextualMetaAdOfferLinkRequest({
+    currentMessage: 'Can I see it?',
+    qualifier: { commercial_stage: 'engaged' },
+    history: [{ direction: 'out', text: 'That sunset looks unreal.' }],
+}), false, 'the same phrase outside an offer context cannot trigger a checkout link');
+const contextualLinkReply = instantDraft.buildContextualMetaAdOfferLinkReply({
+    checkoutUrl: 'https://plantbased-balance.org/plant-based-fitness.html?utm_source=instagram',
+    flowVariant: 'plant_based_control',
+});
+assert.match(contextualLinkReply.joined, /have a look here/i);
+assert.match(contextualLinkReply.joined, /plant-based-fitness\.html\?utm_source=instagram/);
+assert.equal(contextualLinkReply.model, 'deterministic_meta_ad_contextual_link_v1');
+const contextualLinkHandoff = instantDraft.buildLeadOnboardingHandoffData({
+    draftText: contextualLinkReply.joined,
+    qualifier: { commercial_stage: 'buyer_intent', stage: 'current_state' },
+    leadStage: 'qualifying',
+    linkedUserId: null,
+    threadId: 'thread-1',
+    manychatMessageId: 'message-1',
+    currentMessage: 'Can I see it?',
+});
+assert.equal(contextualLinkHandoff.approved_link_auto_sendable, true,
+    'the contextual offer request receives an approved branded-link handoff');
 const resetTestHistory = [
     { direction: 'in', text: 'old opener', created_at: '2026-08-01T09:00:00.000Z' },
     { direction: 'out', text: 'old reply', created_at: '2026-08-01T09:01:00.000Z' },

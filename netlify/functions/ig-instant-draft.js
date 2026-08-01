@@ -1016,6 +1016,33 @@ function isPaidMetaBuyerIntentOfferReplyAllowed({ alertData, challengeOfferWarni
         && draftReview?.context_loss_suspected !== true;
 }
 
+function isContextualMetaAdOfferLinkRequest({ currentMessage = '', qualifier = {}, history = [] } = {}) {
+    const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    if (!/^(?:can|could) i (?:see|look at|check out) (?:it|this|that|the (?:pass|details|program))(?: please)?[.!?\s]*$/i.test(message)) {
+        return false;
+    }
+    if (String(qualifier?.commercial_stage || '').toLowerCase() !== 'buyer_intent') return false;
+    return (Array.isArray(history) ? history : [])
+        .filter(item => String(item?.direction || '').toLowerCase() === 'out')
+        .slice(-4)
+        .some(item => /\b(?:founders? pass|six-week|balance app|plant-based community|one-to-one in-app support)\b/i.test(String(item?.text || '')));
+}
+
+function buildContextualMetaAdOfferLinkReply({ checkoutUrl = '', flowVariant = 'plant_based_control' } = {}) {
+    const url = String(checkoutUrl || '').trim();
+    if (!isApprovedChallengeBioLinkText(url)) return null;
+    const joined = `Yeah for sure, have a look here: ${url}`;
+    return {
+        chunks: [joined],
+        joined,
+        checkoutUrl: url,
+        flowVariant,
+        model: 'deterministic_meta_ad_contextual_link_v1',
+        replyMode: 'standard',
+        maxChunks: MAX_CHUNKS,
+    };
+}
+
 function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData, allowTestLaneDraftReviewWarning = false, allowBalanceLeadDraftReviewWarning = false }) {
     const effectiveContextBypass = contextBypass || cocosContextBypass;
     const metaAdSensitiveHold = getMetaAdSensitiveHoldReason({ alertData, currentMessage });
@@ -2263,6 +2290,10 @@ function isCurrentChallengeHandoffMoment({ qualifier, currentMessage } = {}) {
     if (isAppReconnectOrAccountSupportRequest(currentMessage)) return false;
     if (hasDirectBuyerIntent(currentMessage)) return true;
     if (hasChallengeInviteReadinessSignal(currentMessage)) return true;
+    if (String(qualifier?.commercial_stage || '').toLowerCase() === 'buyer_intent'
+        && /^(?:can|could) i (?:see|look at|check out) (?:it|this|that|the (?:pass|details|program))(?: please)?[.!?\s]*$/i.test(String(currentMessage || '').trim())) {
+        return true;
+    }
     const stage = String(qualifier?.stage || '').toLowerCase();
     return ['pitched', 'won'].includes(stage) && isPositiveChallengeLinkConfirmationText(currentMessage);
 }
@@ -5314,6 +5345,21 @@ exports.handler = async (event) => {
         };
     }
 
+    if (metaAdConversationFastLane && isContextualMetaAdOfferLinkRequest({
+        currentMessage: messageText,
+        qualifier,
+        history,
+    })) {
+        const contextualLinkReply = buildContextualMetaAdOfferLinkReply({
+            checkoutUrl: metaAdCheckoutUrl,
+            flowVariant: metaAdFlowVariant,
+        });
+        if (contextualLinkReply) draft = {
+            ...draft,
+            ...contextualLinkReply,
+        };
+    }
+
     if (Array.isArray(durableMediaIds) && durableMediaIds.length) {
         try {
             const verifiedDecode = draft.chunks?.length
@@ -6593,6 +6639,8 @@ exports._test = {
     getBalanceAutoContextBypass,
     getAutoDmHoldReason,
     isPaidMetaBuyerIntentOfferReplyAllowed,
+    isContextualMetaAdOfferLinkRequest,
+    buildContextualMetaAdOfferLinkReply,
     getCocosCodexReviewHold,
     isBalanceLeadAutoSendEnabled,
     isCanceledLatestRecoveryCandidate,
