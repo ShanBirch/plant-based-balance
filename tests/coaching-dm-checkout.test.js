@@ -63,6 +63,9 @@ test('Zoom PT availability choice reaches the booking record and calendar event'
     assert.match(bookingFunction, /normalizePtSessionsPerWeek/);
     assert.match(bookingFunction, /pt_sessions_per_week: ptSessionsPerWeek/);
     assert.match(bookingFunction, /Requested Zoom PT sessions each week/);
+    assert.match(bookingPage, /id="booking-unavailable-action"/);
+    assert.match(booking, /Email my availability/);
+    assert.match(booking, /const subject = encodeURIComponent\(`\$\{packageName\} availability`\)/);
 });
 
 test('all active DM handoffs use the permanent branded Founders Pass URL', () => {

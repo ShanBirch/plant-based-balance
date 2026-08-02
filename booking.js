@@ -136,6 +136,22 @@
         }
     }
 
+    function prepareZoomPtFallback() {
+        if (!isZoomPtEnquiry) return;
+        const packageName = `Zoom PT ${requestedPtSessions}`;
+        const title = byId('booking-unavailable-title');
+        const copy = byId('booking-unavailable-copy');
+        const action = byId('booking-unavailable-action');
+        const subject = encodeURIComponent(`${packageName} availability`);
+        const body = encodeURIComponent(`Hey Shannon, I am interested in ${packageName}.\n\nMy main goal:\n\nCurrent injuries or limitations:\n\nDays and times that usually work:`);
+        if (title) title.textContent = 'Send me your preferred times.';
+        if (copy) copy.textContent = 'The live calendar is unavailable right now. Email your goal, injury notes and preferred weekly times, and I will check the schedule personally.';
+        if (action) {
+            action.textContent = 'Email my availability';
+            action.href = `mailto:shannon@plantbased-balance.org?subject=${subject}&body=${body}`;
+        }
+    }
+
     function groupSlotsInLocalTime(serverDates) {
         const grouped = new Map();
         (serverDates || []).flatMap((date) => Array.isArray(date.slots) ? date.slots : [])
@@ -355,6 +371,7 @@
     updateCallTypeFields(outsideForm, 'booking-outside-phone-label', 'booking-outside-call-type-note');
     prepareZoomPtForm(form);
     prepareZoomPtForm(outsideForm);
+    prepareZoomPtFallback();
     setOutsideDateMinimum();
     loadAvailability();
 }());
