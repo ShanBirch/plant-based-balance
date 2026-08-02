@@ -1045,16 +1045,17 @@ function buildContextualMetaAdOfferLinkReply({ checkoutUrl = '', flowVariant = '
 }
 
 function metaAdDraftHasQuestion(draft = {}) {
-    return /\?/.test(draftTextFromDraft(draft));
+    return /\?/.test(draftTextFromDraft(draft).replace(/https?:\/\/\S+/gi, ''));
 }
 
 function shouldKeepMetaAdReplyQuestionFree({ currentMessage = '', leadStage = '', qualifierStage = '', linkedUserId = null } = {}) {
     const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     const stage = String(leadStage || '').trim().toLowerCase();
     const funnelStage = String(qualifierStage || '').trim().toLowerCase();
-    if (linkedUserId || funnelStage === 'won' || ['won', 'in_app', 'paying', 'churned'].includes(stage)) return true;
+    if (linkedUserId || ['won', 'buyer_intent'].includes(funnelStage) || ['won', 'in_app', 'paying', 'churned'].includes(stage)) return true;
     if (META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)
+        || /\b(?:send (?:me )?(?:the )?link|can you send (?:me )?(?:the )?link|how do i (?:join|sign up|start)|where do i (?:join|sign up|start)|i(?:'m| am) ready to (?:join|sign up|start))\b/i.test(message)
         || /\b(?:are you trying to sell|is this a sales pitch|stop pitching|don['\u2019]?t sell)\b/i.test(message)) {
         return true;
     }
@@ -1095,7 +1096,7 @@ function ensureMetaAdSalesProgressionQuestion({
     if (!draft || metaAdDraftHasQuestion(draft) || shouldKeepMetaAdReplyQuestionFree({
         currentMessage,
         leadStage,
-        qualifierStage: qualifier?.stage,
+        qualifierStage: qualifier?.commercial_stage || qualifier?.stage,
         linkedUserId,
     })) return draft;
 
@@ -1125,6 +1126,132 @@ function resolveMetaAdEarlyTypingDelayMs({ lastInboundAt = '', seed = '', nowMs 
     if (!Number.isFinite(inboundAtMs)) return targetDelayMs;
     const elapsedMs = Math.max(0, Number(nowMs) - inboundAtMs);
     return Math.max(0, targetDelayMs - elapsedMs);
+}
+
+const PAID_META_GOAL_SIGNAL_RE = /\b(?:lose|drop|reduce|gain|build|improve|get|feel|become|want|need|goal|stronger|fitter|leaner|healthier|weight|fat|muscle|strength|fitness|energy|confidence)\b/i;
+const PAID_META_BLOCKER_SIGNAL_RE = /\b(?:stop(?:ping)? and start(?:ing)?|stop[- ]start|keep stopping|keep restarting|always restart|fall(?:ing)? off|drop(?:ping)? off|never stick|can(?:'t| not) stick|inconsisten|lose motivation|no motivation|no time|too busy|overwhelm|cravings?|weekends?|chocolate|accountab|stay on track|follow through)\b/i;
+const PAID_META_NEXT_STEP_RE = /^(?:okay[, ]*)?(?:so[, ]*)?(?:what (?:do i do|should i do|now)|what(?:'s| is) next|where (?:do i|should i) start|how (?:do i|should i) start)(?: now)?[.!?\s]*$/i;
+const PAID_META_POSITIVE_FIT_RE = /^(?:yes|yeah|yep|definitely|absolutely|probably|i think so|that would help|that sounds good|sounds good|i(?:'m| am) keen|keen)[!?.\s]*$/i;
+
+function hasRecentPaidMetaSupportQuestion(history = []) {
+    return (Array.isArray(history) ? history : [])
+        .filter(item => String(item?.direction || '').toLowerCase() === 'out')
+        .slice(-4)
+        .some(item => /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier)\b/i.test(String(item?.text || '')));
+}
+
+function hasRecentPaidMetaProofVideo(history = []) {
+    return (Array.isArray(history) ? history : [])
+        .filter(item => String(item?.direction || '').toLowerCase() === 'out')
+        .slice(-8)
+        .some(item => /\b(?:quick video|showing you how it works inside Balance)\b/i.test(String(item?.text || '')));
+}
+
+function buildDeterministicPaidMetaConversationReply({
+    currentMessage = '',
+    qualifier = {},
+    history = [],
+    flowVariant = 'plant_based_control',
+    checkoutUrl = '',
+    personalVoiceNoteMode = false,
+    allowVideoAttachment = false,
+} = {}) {
+    const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    if (!message
+        || META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
+        || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)) return null;
+
+    const facts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
+    const commercialStage = String(qualifier?.commercial_stage || '').toLowerCase();
+    const hasGoal = !!String(facts.current_state || facts.motivation || '').trim();
+    const hasBlocker = !!String(facts.history_blockers || '').trim();
+    const broadFlow = flowVariant === 'broad_pain';
+    const recentProofVideo = hasRecentPaidMetaProofVideo(history);
+    const approvedCheckoutUrl = isApprovedChallengeBioLinkText(checkoutUrl) ? String(checkoutUrl).trim() : '';
+
+    if (hasDirectBuyerIntent(message) && approvedCheckoutUrl) {
+        const joined = `Yep, you can get started here: ${approvedCheckoutUrl}\n\nOnce you're in, tell me and I'll help you make the first week simple.`;
+        return {
+            chunks: [joined],
+            joined,
+            checkoutUrl: approvedCheckoutUrl,
+            model: 'deterministic_paid_meta_conversation_v1',
+            replyMode: 'campaign_buyer_handoff',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    }
+
+    if (PAID_META_NEXT_STEP_RE.test(message) && hasGoal && hasBlocker) {
+        const offerName = broadFlow ? 'the six-week Balance kickstart' : 'the Founders Pass';
+        const nextAsk = recentProofVideo
+            ? 'Want me to send you the full breakdown?'
+            : 'Want me to send you the quick video so you can see how it works?';
+        const joined = `Based on what you've told me, ${offerName} is probably the best starting point. It gives you a clear week to follow and support from me when that stop-start pattern kicks in.\n\n${nextAsk}`;
+        return {
+            chunks: [joined],
+            joined,
+            model: 'deterministic_paid_meta_conversation_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    }
+
+    if (PAID_META_POSITIVE_FIT_RE.test(message) && hasRecentPaidMetaSupportQuestion(history)) {
+        const offerName = broadFlow ? 'the six-week Balance kickstart' : 'the Founders Pass';
+        const nextAsk = recentProofVideo
+            ? 'Want me to send you the full breakdown?'
+            : 'Want me to send you the quick video so you can see how it works?';
+        const joined = `Yeah, that's exactly what ${offerName} is for. You get the structure for the week, plus support from me when things start slipping.\n\n${nextAsk}`;
+        return {
+            chunks: [joined],
+            joined,
+            model: 'deterministic_paid_meta_conversation_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    }
+
+    if (PAID_META_BLOCKER_SIGNAL_RE.test(message) && hasGoal) {
+        const joined = personalVoiceNoteMode
+            ? `Yeah, I get you. Um, that stop-start loop is the bit that wears you down, because every restart feels harder than the last one. Honestly, having a clear week laid out and someone checking in is usually what breaks that cycle. Would that kind of accountability help you stay on track?`
+            : `Yeah, I get you. That stop-start loop is exactly where accountability helps.\n\nWould having a clear plan and me checking in help you stay on track?`;
+        return {
+            chunks: [joined],
+            joined,
+            model: 'deterministic_paid_meta_conversation_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    }
+
+    if (PAID_META_GOAL_SIGNAL_RE.test(message) && hasGoal && !hasBlocker) {
+        const proofReply = buildMetaAdGoalProofReply(message, { flowVariant });
+        if (!allowVideoAttachment || broadFlow) proofReply.videoAttachmentUrl = null;
+        return proofReply;
+    }
+
+    if (['problem_qualified', 'offer_ready'].includes(commercialStage) && PAID_META_NEXT_STEP_RE.test(message)) {
+        const joined = `The next step is getting the right level of support around the problem you've just described.\n\nWould you prefer a guided six-week kickstart, or hands-on plan changes every week?`;
+        return {
+            chunks: [joined],
+            joined,
+            model: 'deterministic_paid_meta_conversation_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    }
+
+    return null;
 }
 
 function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData, allowTestLaneDraftReviewWarning = false, allowBalanceLeadDraftReviewWarning = false }) {
@@ -1365,7 +1492,7 @@ const META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE = new RegExp(
     `${META_AD_IDENTITY_QUESTION_RE.source}|${META_AD_SAFETY_OR_MEDICAL_RE.source}`,
     'i'
 );
-const META_AD_FIRST_REPLY_OPT_OUT_RE = /\b(?:stop|unsubscribe|do not message|don['\u2019]?t message|leave me alone|remove me)\b/i;
+const META_AD_FIRST_REPLY_OPT_OUT_RE = /^(?:stop|unsubscribe|leave me alone|remove me)[.!?\s]*$|\b(?:stop|do not|don['\u2019]?t)\s+(?:messaging|contacting|sending|replying|dm(?:ing)?)(?:\s+me)?\b/i;
 
 function shouldUseDeterministicMetaAdFirstReply(currentMessage = '') {
     const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
@@ -1533,6 +1660,33 @@ function buildMetaAdFirstReplyApproval({ metaAdFirstInbound = false, draft = nul
     };
 }
 
+function buildPaidMetaConversationApproval({
+    metaAdConversationFastLane = false,
+    draft = null,
+    currentMessage = '',
+    linkedUserId = null,
+} = {}) {
+    const message = String(currentMessage || '').trim();
+    const deterministicProgression = metaAdConversationFastLane
+        && !linkedUserId
+        && ['campaign_sales_progression', 'campaign_buyer_handoff'].includes(String(draft?.replyMode || ''))
+        && /^deterministic_paid_meta_conversation_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
+        && !META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
+        && !META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)
+        && (draft?.replyMode !== 'campaign_buyer_handoff' || hasDirectBuyerIntent(message));
+    if (!deterministicProgression) return null;
+    return {
+        required: false,
+        code: draft.replyMode === 'campaign_buyer_handoff'
+            ? 'approved_meta_ad_conversation_buyer_handoff'
+            : 'approved_meta_ad_sales_progression',
+        dot: '🟢',
+        label: 'approved paid Meta conversation progression',
+        reason: 'The verified paid Meta lead is on a deterministic, safety-gated sales-progression step.',
+        detected_at: new Date().toISOString(),
+    };
+}
+
 function buildApprovedMetaAdFirstReplyHandoffData({ approval, draft, leadStage, linkedUserId, threadId, manychatMessageId } = {}) {
     if (!approval
         || approval.required === true
@@ -1607,6 +1761,7 @@ function filterMetaAdCardAttachmentHistory({
 function buildApprovedDeterministicMetaAdFirstReplyReview({
     metaAdFirstInbound = false,
     metaAdGoalReplyTurn = false,
+    metaAdConversationFastLane = false,
     draft = null,
     approval = null,
     linkedUserId = null,
@@ -1622,11 +1777,15 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         && approval.required !== true
         && /^approved_meta_ad_/.test(String(approval.code || ''))
         && shouldUseDeterministicMetaAdFirstReply(message);
-    const approvedGoalProof = metaAdGoalReplyTurn
+    const approvedGoalProof = (metaAdGoalReplyTurn || metaAdConversationFastLane)
         && draft?.replyMode === 'campaign_goal_proof'
         && /^deterministic_meta_ad_goal_proof_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
         && !!draft.videoAttachmentUrl;
-    if ((!approvedFirstReply && !approvedGoalProof)
+    const approvedConversationProgression = metaAdConversationFastLane
+        && ['campaign_sales_progression', 'campaign_buyer_handoff'].includes(String(draft?.replyMode || ''))
+        && /^deterministic_paid_meta_conversation_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
+        && (draft?.replyMode !== 'campaign_buyer_handoff' || hasDirectBuyerIntent(message));
+    if ((!approvedFirstReply && !approvedGoalProof && !approvedConversationProgression)
         || linkedUserId
         || mediaReview?.required === true
         || contextReview?.required === true
@@ -1640,7 +1799,9 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         confidence: 1,
         summary: approvedGoalProof
             ? 'Approved deterministic Meta ad goal reflection and native proof video.'
-            : 'Approved deterministic Meta ad first reply.',
+            : (approvedConversationProgression
+                ? 'Approved deterministic paid Meta sales-progression reply.'
+                : 'Approved deterministic Meta ad first reply.'),
         issues: [],
         suggested_fix: '',
         context_loss_suspected: false,
@@ -1649,7 +1810,9 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         reviewed_at: new Date().toISOString(),
         reviewer_model: approvedGoalProof
             ? 'deterministic-meta-ad-goal-proof-approval'
-            : 'deterministic-meta-ad-first-reply-approval',
+            : (approvedConversationProgression
+                ? 'deterministic-paid-meta-conversation-approval'
+                : 'deterministic-meta-ad-first-reply-approval'),
     };
 }
 
@@ -5393,7 +5556,7 @@ exports.handler = async (event) => {
     const qualifierQuestion = (!terminalQualifierStage && qualifierEligible && qualifierEvaluated && qualifier?.is_question_moment && qualifier?.next_question)
         ? qualifier.next_question.trim()
         : null;
-    const recentOutboundVoiceMessage = await hasRecentOutboundVoiceMessage(thread.id, 30);
+    const recentOutboundVoiceMessage = await hasRecentOutboundVoiceMessage(thread.id, 1);
     const inboundVoiceMessage = hasInboundVoiceNoteInUnansweredBatch({
         currentMessage: messageText,
         recentInboundMessages,
@@ -5417,6 +5580,17 @@ exports.handler = async (event) => {
     const outboundVoiceMessageReason = personalVoicePlan.reason;
     const metaAdGoalReplyTurn = metaAdConversationFastLane
         && isMetaAdGoalReplyTurn(history);
+    const deterministicPaidMetaConversationDraft = metaAdConversationFastLane
+        ? buildDeterministicPaidMetaConversationReply({
+            currentMessage: messageText,
+            qualifier,
+            history,
+            flowVariant: metaAdFlowVariant,
+            checkoutUrl: metaAdCheckoutUrl,
+            personalVoiceNoteMode: outboundVoiceMessage,
+            allowVideoAttachment: channel === 'instagram' && hasInstagramGraphRoute,
+        })
+        : null;
 
     let draft;
     try {
@@ -5424,7 +5598,7 @@ exports.handler = async (event) => {
             customData: thread.custom_data,
             flowVariant: metaAdFlowVariant,
             acquisitionMode,
-        }) : metaAdGoalReplyTurn ? buildMetaAdGoalProofReply(messageText, {
+        }) : deterministicPaidMetaConversationDraft || (metaAdGoalReplyTurn ? buildMetaAdGoalProofReply(messageText, {
             flowVariant: metaAdFlowVariant,
         }) : await generateDraft({
             leadName,
@@ -5457,7 +5631,7 @@ exports.handler = async (event) => {
             acquisitionMode,
             adFlowVariant: metaAdFlowVariant,
             checkoutUrl: metaAdCheckoutUrl,
-        });
+        }));
     } catch (err) {
         console.error('[ig-draft] draft generation threw after stale-send cleanup:', err.message);
         draft = {
@@ -5607,7 +5781,14 @@ exports.handler = async (event) => {
         leadStage: effectiveLeadStage,
     });
     const metaAdFirstReplyApproval = buildMetaAdFirstReplyApproval({ metaAdFirstInbound, draft });
+    const paidMetaConversationApproval = buildPaidMetaConversationApproval({
+        metaAdConversationFastLane,
+        draft,
+        currentMessage: displayMessage,
+        linkedUserId: thread.linked_user_id,
+    });
     let challengeOfferWarning = metaAdFirstReplyApproval
+        || paidMetaConversationApproval
         || buildChallengeOfferWarning({ draftText: draft.joined, qualifier, currentMessage: displayMessage });
     const leadOnboardingHandoffData = buildApprovedMetaAdFirstReplyHandoffData({
         approval: metaAdFirstReplyApproval,
@@ -5745,6 +5926,10 @@ exports.handler = async (event) => {
             exercise_conversation_fast_lane: exerciseConversationFastLane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : metaAdFlowVariant,
             meta_ad_first_reply_intent: metaAdFirstInbound ? draft.firstReplyIntent : undefined,
+            paid_meta_conversation_step: /^deterministic_paid_meta_conversation_v\d+/i.test(String(draft.model || ''))
+                ? draft.replyMode
+                : undefined,
+            paid_meta_conversation_approval: paidMetaConversationApproval || undefined,
             meta_ad_checkout_url: draft.checkoutUrl || undefined,
             meta_ad_attribution: metaAdFastLane ? (thread.custom_data?.meta_ad_attribution || undefined) : undefined,
             outbound_voice_message: outboundVoiceMessage || undefined,
@@ -5758,7 +5943,7 @@ exports.handler = async (event) => {
                     : (personalVoicePlan.reason === 'lead_accountability_connection_moment'
                         ? 'lead_accountability_connection_moment'
                         : 'lead_goal_or_blocker'),
-                cooldown_days: inboundVoiceMessage ? 0 : 30,
+                cooldown_days: inboundVoiceMessage ? 0 : 1,
                 cooldown_bypassed_for_internal_test: internalMetaAdConversationTestLane || undefined,
                 synthetic: true,
                 never_for_ai_authenticity: true,
@@ -6190,6 +6375,7 @@ exports.handler = async (event) => {
         const approvedDeterministicReview = buildApprovedDeterministicMetaAdFirstReplyReview({
             metaAdFirstInbound,
             metaAdGoalReplyTurn,
+            metaAdConversationFastLane,
             draft,
             approval: metaAdFirstReplyApproval,
             linkedUserId: thread.linked_user_id,
@@ -6843,6 +7029,8 @@ exports._test = {
     isPaidMetaBuyerIntentOfferReplyAllowed,
     isContextualMetaAdOfferLinkRequest,
     buildContextualMetaAdOfferLinkReply,
+    buildDeterministicPaidMetaConversationReply,
+    buildPaidMetaConversationApproval,
     ensureMetaAdSalesProgressionQuestion,
     resolveMetaAdEarlyTypingDelayMs,
     getCocosCodexReviewHold,

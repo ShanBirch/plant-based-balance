@@ -12,6 +12,8 @@ const {
     buildApprovedMetaAdFirstReplyHandoffData,
     buildApprovedDeterministicMetaAdFirstReplyReview,
     ensureMetaAdSalesProgressionQuestion,
+    buildDeterministicPaidMetaConversationReply,
+    buildPaidMetaConversationApproval,
     filterMetaAdCardAttachmentHistory,
     buildLeadOnboardingHandoffData,
     resolveMetaAdFirstReplyIntent,
@@ -21,6 +23,7 @@ const {
     hasImmediateMetaDispatchFailure,
 } = require('../netlify/functions/ig-instant-draft')._test;
 const { buildInstagramGraphVideoMessagePayload } = require('../netlify/functions/send-ig-reply')._test;
+const { inspectVoiceScriptQuality } = require('../netlify/functions/_lib/elevenlabs-voice-message');
 
 test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and model review', () => {
     const currentMessage = 'What is the Founders Pass?';
@@ -311,6 +314,119 @@ test('the reply after the goal is tailored and carries a native video attachment
             },
         },
     });
+});
+
+test('paid Meta conversation stages stay deterministic, purposeful, and immediately reviewable', () => {
+    const checkoutUrl = 'https://plantbased-balance.org/plant-based-fitness.html?utm_source=instagram';
+    const goalQualifier = {
+        commercial_stage: 'engaged',
+        facts: { current_state: 'Wants to lose 15kg.', history_blockers: null },
+    };
+    const goal = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'I need to lose weight, probably 15kgs',
+        qualifier: goalQualifier,
+        flowVariant: 'plant_based_control',
+        checkoutUrl,
+        allowVideoAttachment: true,
+    });
+    assert.match(goal.joined, /15kg is a solid goal/i);
+    assert.match(goal.videoAttachmentUrl, /balance-founders-pass-dm-preview\.mp4/);
+    const guardedGoal = ensureMetaAdSalesProgressionQuestion({
+        draft: goal,
+        currentMessage: 'I need to lose weight, probably 15kgs',
+        qualifier: goalQualifier,
+        leadStage: 'qualifying',
+    });
+    assert.equal((guardedGoal.joined.match(/\?/g) || []).length, 1);
+    assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({
+        metaAdConversationFastLane: true,
+        draft: guardedGoal,
+        currentMessage: 'I need to lose weight, probably 15kgs',
+        linkedUserId: null,
+        mediaReview: { required: false },
+        contextReview: { required: false },
+    }).reviewer_model, 'deterministic-meta-ad-goal-proof-approval');
+
+    const blockerQualifier = {
+        commercial_stage: 'problem_qualified',
+        facts: { current_state: 'Wants to lose 15kg.', history_blockers: 'Keeps stopping and starting.' },
+    };
+    const blocker = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'I feel like I just stop and start again. So many times',
+        qualifier: blockerQualifier,
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(blocker.joined, /clear plan and me checking in/i);
+    assert.equal((blocker.joined.match(/\?/g) || []).length, 1);
+    assert.equal(buildPaidMetaConversationApproval({
+        metaAdConversationFastLane: true,
+        draft: blocker,
+        currentMessage: 'I feel like I just stop and start again. So many times',
+    }).code, 'approved_meta_ad_sales_progression');
+    assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({
+        metaAdConversationFastLane: true,
+        draft: blocker,
+        currentMessage: 'I feel like I just stop and start again. So many times',
+        mediaReview: { required: false },
+        contextReview: { required: false },
+    }).reviewer_model, 'deterministic-paid-meta-conversation-approval');
+
+    const voiceBlocker = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'I feel like I just stop and start again. So many times',
+        qualifier: blockerQualifier,
+        personalVoiceNoteMode: true,
+    });
+    assert.ok(voiceBlocker.joined.trim().split(/\s+/).length >= 34);
+    assert.equal((voiceBlocker.joined.match(/\?/g) || []).length, 1);
+    assert.equal(inspectVoiceScriptQuality(voiceBlocker.joined).valid, true,
+        'the deterministic accountability reply is ready for ElevenLabs without another repair round');
+
+    const nextStep = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'So what do I do',
+        qualifier: blockerQualifier,
+        history: [],
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(nextStep.joined, /Founders Pass is probably the best starting point/i);
+    assert.match(nextStep.joined, /quick video/i);
+    assert.equal((nextStep.joined.match(/\?/g) || []).length, 1);
+    assert.doesNotMatch(nextStep.joined, /https?:\/\//);
+
+    const acceptedSupport = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Yeah',
+        qualifier: blockerQualifier,
+        history: [{ direction: 'out', text: 'Would having a clear plan and me checking in help you stay on track?' }],
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(acceptedSupport.joined, /exactly what the Founders Pass is for/i);
+    assert.equal((acceptedSupport.joined.match(/\?/g) || []).length, 1);
+
+    const buyer = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Send me the link',
+        qualifier: { ...blockerQualifier, commercial_stage: 'buyer_intent' },
+        flowVariant: 'plant_based_control',
+        checkoutUrl,
+    });
+    assert.match(buyer.joined, /get started here/i);
+    assert.match(buyer.joined, /plant-based-fitness\.html/);
+    assert.equal((buyer.joined.replace(/https?:\/\/\S+/g, '').match(/\?/g) || []).length, 0,
+        'the checkout handoff uses a clear action instead of a redundant question');
+    assert.equal(buildPaidMetaConversationApproval({
+        metaAdConversationFastLane: true,
+        draft: buyer,
+        currentMessage: 'Send me the link',
+    }).code, 'approved_meta_ad_conversation_buyer_handoff');
+
+    assert.equal(buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Stop messaging me',
+        qualifier: blockerQualifier,
+    }), null);
+    const broad = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'So what do I do?',
+        qualifier: blockerQualifier,
+        flowVariant: 'broad_pain',
+    });
+    assert.doesNotMatch(broad.joined, /plant[ -]?based|vegan|vegetarian/i);
 });
 
 test('plant-based requirement and ready prompts receive different next steps', () => {
