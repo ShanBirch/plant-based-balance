@@ -2,7 +2,7 @@
 
 Canonical content memory for `@shan_n_sunny`.
 
-Last reconciled: 2026-07-29 from Instagram-owned media records, local publish receipts and the previous Balance daily-content ledger.
+Last reconciled: 2026-08-02 from Instagram-owned media records, local publish receipts and the previous Balance daily-content ledger.
 
 ## Status Key
 
@@ -47,6 +47,25 @@ Campaign status: made and QA-checked on 2026-07-28; not published. The first two
 ## Posted Archive
 
 Times are Australia/Brisbane. Job and campaign labels are retrospective where the original asset did not record them.
+
+### August 2026
+
+| Date | Job | Campaign or lane | Hook | Format | CTA or role | Instagram |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-08-02 19:57 | BELIEF | Predictive brain | Ever told yourself, "I just need to try harder," then watched yourself do the exact same thing again? | Reel | Follow for Part 7 | [Reel](https://www.instagram.com/reel/DbiJJKRjIM7/) |
+
+Source ID: `sterling-2012-allostasis-model-of-predictive-regulation`
+Primary source: Peter Sterling, *Allostasis: A Model of Predictive Regulation*.
+Asset path: external production package `predictive-brain-part-6/revision-v2`.
+24-hour metrics:
+72-hour metrics:
+7-day metrics:
+Qualified DMs:
+Buyer-intent DMs:
+Checkout starts:
+Purchases:
+Best derivative:
+Notes: Published with the approved Part 6 series cover, presenter bubble through graphic-led scenes, and Balance logo outro.
 
 ### July 2026
 
