@@ -1,0 +1,13 @@
+.hyperframes/
+.media/
+.thumbnails/
+.waveform-cache/
+snapshots/
+
+# Unused source copies retained locally, excluded from the post-ready composition.
+assets/audio/week5-music.mp3
+assets/sfx/ping.mp3
+assets/ui/
+assets/week5/meal-morph-bowl.jpg
+assets/week5/progress-shane.jpg
+assets/week5/training-shane.jpg

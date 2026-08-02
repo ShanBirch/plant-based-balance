@@ -1,0 +1,27 @@
+{
+  "status": "rendered-ready-to-post",
+  "challenge_week": 5,
+  "week_range": "2026-07-27/2026-08-02",
+  "destination": "Facebook Messenger ad flow",
+  "sales_offer_included": false,
+  "founders_pass_included": false,
+  "music": {
+    "track": "Techno Fest Vibes",
+    "artist": "Alejandro Magana (A. M.)",
+    "source": "Mixkit Stock Music Free License",
+    "duration_seconds": 34.55
+  },
+  "member_media": {
+    "first_names_only": true,
+    "visible_people": ["Shane", "Kay", "Shannon"],
+    "progress_photo_used": false
+  },
+  "meal_media": [
+    { "source_number": 8, "verified_vegan": true },
+    { "source_number": 12, "verified_vegan": true },
+    { "source_number": 15, "verified_vegan": true },
+    { "source_number": 27, "verified_vegan": true }
+  ],
+  "rendered_file": ".codex-artifacts/balance-weekly-recap/2026-08-02/Balance-Week-5-Recap.mp4",
+  "published": false
+}
