@@ -1,15 +1,14 @@
 (function (root) {
     'use strict';
 
-    const SHANNON_PRIMARY_USER_ID = '00a6605e-8edb-4917-85ba-24a23f179059';
     const STORAGE_KEY = 'pbb_workout_player_view_v1';
 
     function normalizeMode(value) {
         return value === 'list' ? 'list' : 'swipe';
     }
 
-    function isTester(user) {
-        return !!user && String(user.id || '').toLowerCase() === SHANNON_PRIMARY_USER_ID;
+    function isEligibleUser(user) {
+        return !!(user && user.id);
     }
 
     function clampIndex(index, count) {
@@ -18,9 +17,8 @@
     }
 
     const exported = {
-        SHANNON_PRIMARY_USER_ID,
         normalizeMode,
-        isTester,
+        isEligibleUser,
         clampIndex
     };
 
@@ -81,7 +79,7 @@
             #workout-player-experiment-controls,
             #workout-swipe-actions,
             #workout-swipe-pager { display: none; }
-            #view-active-workout.workout-player-tester #workout-player-experiment-controls {
+            #view-active-workout.workout-player-enabled #workout-player-experiment-controls {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -128,13 +126,13 @@
                 -webkit-text-fill-color: var(--workout-swipe-surface);
                 box-shadow: 0 3px 10px rgba(15,23,42,.18);
             }
-            #view-active-workout.workout-player-tester #workout-form-check-top-btn,
-            #view-active-workout.workout-player-tester #workout-share-set-btn,
-            #view-active-workout.workout-player-tester #workout-add-exercise-video-btn,
-            #view-active-workout.workout-player-tester #workout-add-existing-wrap {
+            #view-active-workout.workout-player-enabled #workout-form-check-top-btn,
+            #view-active-workout.workout-player-enabled #workout-share-set-btn,
+            #view-active-workout.workout-player-enabled #workout-add-exercise-video-btn,
+            #view-active-workout.workout-player-enabled #workout-add-existing-wrap {
                 display: none !important;
             }
-            #view-active-workout.workout-player-tester #workout-swipe-actions {
+            #view-active-workout.workout-player-enabled #workout-swipe-actions {
                 display: grid;
                 grid-template-columns: repeat(4, minmax(0, 1fr));
                 gap: 7px;
@@ -277,7 +275,7 @@
             }
             @media (max-width: 360px) {
                 #workout-content-wrapper { padding-left: 11px !important; padding-right: 11px !important; }
-                #view-active-workout.workout-player-tester #workout-swipe-actions { gap: 5px; }
+                #view-active-workout.workout-player-enabled #workout-swipe-actions { gap: 5px; }
                 .workout-swipe-action { padding-left: 2px; padding-right: 2px; font-size: .59rem; }
                 .workout-player-mode-switch { min-width: 136px; }
             }
@@ -409,9 +407,9 @@
     function applyMode(options) {
         const view = getView();
         if (!view) return 'list';
-        const tester = isTester(root.currentUser);
-        view.classList.toggle('workout-player-tester', tester);
-        if (!tester) {
+        const enabled = isEligibleUser(root.currentUser);
+        view.classList.toggle('workout-player-enabled', enabled);
+        if (!enabled) {
             view.classList.remove('workout-swipe-mode');
             getCards().forEach((card) => {
                 card.classList.remove('workout-swipe-active');

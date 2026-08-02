@@ -12884,7 +12884,7 @@ if (window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=154"><\/script>');
 }
 </script>
-<script src="js/dashboard/pbb-workout-swipe-player.js?v=2"></script>
+<script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
 
 <!-- Image Modal HTML -->
 <div class="image-modal-overlay" id="imageModal" onclick="closeImageModal()">
@@ -13429,6 +13429,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
+    { tab:'movement-tab', sel:'#workout-player-experiment-controls', fallbackSel:'#today-workout-card', title:'Swipe through your workout', fallbackTitle:'Swipe through your workout', body:'Use Swipe to focus on one exercise at a time, then swipe left or right to move between exercises. Switch back to List any time.', fallbackBody:"Start today's workout, then choose Swipe to focus on one exercise at a time. Swipe left or right to move through the session, or switch back to List any time.", quick:true, condition:function(){ return !!document.getElementById('workout-player-experiment-controls') || !!document.getElementById('today-workout-card'); } },
     { tab:'movement-tab', sel:'#move-your-way-pilot-card', title:'Move your way', body:'Classes, runs, walks and rides all count. Log the movement, then add a photo or caption if you want to share it.', quick:true, condition:function(){ return !!(window.isMoveYourWayPilotUser && window.isMoveYourWayPilotUser()); } },
       { tab:'movement-tab', sel:'#workout-share-set-btn', fallbackSel:'#today-workout-card', title:'Share a Set', fallbackTitle:'Open a workout to Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", fallbackBody:"Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn') || !!document.getElementById('today-workout-card'); } },
     { tab:'movement-tab', sel:'#movement-add-exercise-btn', title:'Add an Exercise', body:"Tap here to create an exercise, add its demo video, or finish a saved exercise video later. Upload progress stays on screen while you keep using Balance.", quick: true, condition: function(){ return !!document.getElementById('movement-add-exercise-btn'); } },
@@ -14704,6 +14705,17 @@ if(!window._pbbIsIOSSafari) {
     body: 'After a workout, add a photo and tap the full-width IG Story button. The first workout Story share each day earns +15 XP.',
     fallbackBody: 'Finish a workout, add a photo, then share it to IG Story for +15 XP once a day.',
     condition: function(){ return !!document.getElementById('share-workout-ig-story-btn') || !!document.getElementById('today-workout-card'); }
+  });
+  allFeatures.push({
+    id: 'workout-swipe-view-all-users-v1',
+    tab: 'movement-tab',
+    sel: '#workout-player-experiment-controls',
+    fallbackSel: '#today-workout-card',
+    title: 'Swipe through your workout',
+    fallbackTitle: 'Swipe through your workout',
+    body: 'Use Swipe to focus on one exercise at a time, then swipe left or right to move between exercises. Switch back to List any time.',
+    fallbackBody: "Start today's workout, then choose Swipe to focus on one exercise at a time. Swipe left or right to move through the session, or switch back to List any time.",
+    condition: function(){ return !!document.getElementById('workout-player-experiment-controls') || !!document.getElementById('today-workout-card'); }
   });
   allFeatures.push({
     id: 'feed-post-actions-menu-v1',
