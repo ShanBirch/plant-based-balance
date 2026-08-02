@@ -77,6 +77,15 @@ function normalizeBookingMode(value: unknown): BookingMode {
     return trimText(value, 30).toLowerCase() === "outside_hours" ? "outside_hours" : "standard";
 }
 
+function normalizeBookingSource(value: unknown): "public_booking_page" | "zoom_pt" {
+    return trimText(value, 40).toLowerCase() === "zoom_pt" ? "zoom_pt" : "public_booking_page";
+}
+
+function normalizePtSessionsPerWeek(value: unknown): number | null {
+    const sessions = Number(value);
+    return sessions === 1 || sessions === 3 || sessions === 5 ? sessions : null;
+}
+
 function normalizeTimeZone(value: unknown): string {
     const candidate = trimText(value, 120);
     if (!candidate) return BRISBANE_TIMEZONE;
@@ -582,6 +591,14 @@ async function createCalendarEvent(settings: BookingSettings, booking: Record<st
     const email = trimText(booking.email, 320);
     const goal = trimText(booking.goal, 1000);
     const callType = normalizeCallType(booking.call_type);
+    const metadata = booking.metadata && typeof booking.metadata === "object"
+        ? booking.metadata as Record<string, unknown>
+        : {};
+    const bookingSource = normalizeBookingSource(metadata.source);
+    const ptSessionsPerWeek = normalizePtSessionsPerWeek(metadata.pt_sessions_per_week);
+    const eventPrefix = bookingSource === "zoom_pt" && ptSessionsPerWeek
+        ? `Zoom PT ${ptSessionsPerWeek} fit call`
+        : settings.event_name;
     const createMeet = callType === "video";
     const query = new URLSearchParams({ sendUpdates: "all" });
     if (createMeet) query.set("conferenceDataVersion", "1");
@@ -589,10 +606,11 @@ async function createCalendarEvent(settings: BookingSettings, booking: Record<st
         method: "POST",
         headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-            summary: `${settings.event_name} (${callTypeLabel(callType)}) with ${name}`,
+            summary: `${eventPrefix} (${callTypeLabel(callType)}) with ${name}`,
             description: [
                 `Booked through Balance`,
                 `Call type: ${callTypeLabel(callType)}`,
+                bookingSource === "zoom_pt" && ptSessionsPerWeek ? `Requested Zoom PT sessions each week: ${ptSessionsPerWeek}` : "",
                 goal ? `What they want to cover: ${goal}` : "",
                 `Booking: ${bookingUrl()}`,
             ].filter(Boolean).join("\n\n"),
@@ -667,6 +685,10 @@ async function createBooking(req: Request): Promise<Response> {
     const startsAt = trimText(body.startsAt, 80);
     const callType = normalizeCallType(body.callType);
     const bookingMode = normalizeBookingMode(body.bookingMode);
+    const bookingSource = normalizeBookingSource(body.source);
+    const ptSessionsPerWeek = bookingSource === "zoom_pt"
+        ? normalizePtSessionsPerWeek(body.ptSessionsPerWeek)
+        : null;
     const visitorTimeZone = normalizeTimeZone(body.visitorTimeZone);
     if (!name || !EMAIL_RE.test(email) || !startsAt || Number.isNaN(Date.parse(startsAt))) {
         return json(400, { ok: false, error: "check_your_details" });
@@ -697,9 +719,10 @@ async function createBooking(req: Request): Promise<Response> {
                 call_type: callType,
                 timezone: visitorTimeZone,
                 metadata: {
-                    source: "public_booking_page",
+                    source: bookingSource,
                     booking_mode: bookingMode,
                     call_type: callType,
+                    pt_sessions_per_week: ptSessionsPerWeek,
                     user_agent: trimText(req.headers.get("user-agent"), 300) || null,
                 },
             }]),

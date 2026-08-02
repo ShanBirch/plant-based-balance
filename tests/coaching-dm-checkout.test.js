@@ -12,6 +12,7 @@ const success = read('success.html');
 const bookingPage = read('book.html');
 const booking = read('booking.js');
 const bookingStyles = read('booking.css');
+const bookingFunction = read('netlify/functions/balance-booking.mts');
 const netlifyConfig = read('netlify.toml');
 const adminAi = read('netlify/edge-functions/admin-ai-coach.ts');
 const migration = read('supabase/migrations/20260716100000_standardise_ig_coaching_checkout_url.sql');
@@ -41,6 +42,27 @@ test('What I Offer presents the Founders Pass as the primary offer', () => {
     assert.match(coaching, /href="plant-based-fitness\.html#join">Get the Founders Pass<\/a>/);
     assert.match(coaching, /Starter Coaching is there if you later want Shannon personally reviewing and adjusting your plan each week/);
     assert.doesNotMatch(coaching, /The main offer is AUD \$29\.99\/week/);
+});
+
+test('What I Offer presents capacity-gated 1:1 Zoom PT pricing', () => {
+    assert.match(coaching, /id="zoom-pt"/);
+    assert.match(coaching, /Zoom PT 1[\s\S]*?\$125<span>\/week<\/span>/);
+    assert.match(coaching, /Zoom PT 3[\s\S]*?\$275<span>\/week<\/span>/);
+    assert.match(coaching, /Zoom PT 5[\s\S]*?\$425<span>\/week<\/span>/);
+    assert.match(coaching, /book\.html\?source=zoom_pt&amp;pt_sessions=1/);
+    assert.match(coaching, /book\.html\?source=zoom_pt&amp;pt_sessions=3/);
+    assert.match(coaching, /book\.html\?source=zoom_pt&amp;pt_sessions=5/);
+    assert.match(coaching, /confirm health fit and recurring times before payment/i);
+    assert.doesNotMatch(coaching, /data-plan="zoom-pt/);
+});
+
+test('Zoom PT availability choice reaches the booking record and calendar event', () => {
+    assert.match(booking, /bookingSource === 'zoom_pt'/);
+    assert.match(booking, /ptSessionsPerWeek/);
+    assert.match(booking, /Check your Zoom PT/);
+    assert.match(bookingFunction, /normalizePtSessionsPerWeek/);
+    assert.match(bookingFunction, /pt_sessions_per_week: ptSessionsPerWeek/);
+    assert.match(bookingFunction, /Requested Zoom PT sessions each week/);
 });
 
 test('all active DM handoffs use the permanent branded Founders Pass URL', () => {
