@@ -22,8 +22,21 @@
     const outsideToggle = byId('booking-outside-toggle');
     const outsidePanel = byId('booking-outside-panel');
     const urlParams = new URLSearchParams(window.location.search);
+    const bookingSource = urlParams.get('source') || '';
+    const requestedPtSessions = ['1', '3', '5'].includes(urlParams.get('pt_sessions'))
+        ? urlParams.get('pt_sessions')
+        : '1';
+    const isZoomPtEnquiry = bookingSource === 'zoom_pt';
     const isFirstCoachingCall = urlParams.get('first_call') === '1'
-        && urlParams.get('source') === 'coaching_calls_purchase';
+        && bookingSource === 'coaching_calls_purchase';
+
+    if (isZoomPtEnquiry) {
+        document.title = 'Check 1:1 Zoom PT Availability | Balance';
+        byId('booking-intro-kicker').textContent = `${requestedPtSessions} live session${requestedPtSessions === '1' ? '' : 's'} each week`;
+        byId('booking-intro-title').innerHTML = 'Check your Zoom PT<br><span>availability.</span>';
+        byId('booking-intro-copy').textContent = 'Choose a short fit call so we can check your goals, injury history and recurring session times before you pay anything.';
+        byId('booking-card-title').textContent = 'Choose your fit call.';
+    }
 
     if (isFirstCoachingCall) {
         document.title = 'Book Your First Coaching Call | Balance';
@@ -110,6 +123,32 @@
                 : callType === 'whatsapp'
                     ? 'Shannon will give you a WhatsApp call on this number. We will also text your confirmation and reminder.'
                     : 'Shannon will call you on this number. We will also text your confirmation and reminder.';
+        }
+    }
+
+    function prepareZoomPtForm(targetForm) {
+        if (!isZoomPtEnquiry || !targetForm) return;
+        const callType = targetForm.querySelector('[name="callType"]');
+        const goal = targetForm.querySelector('[name="goal"]');
+        if (callType) callType.value = 'video';
+        if (goal) {
+            goal.placeholder = `I am interested in Zoom PT ${requestedPtSessions}. Add your main goal, current injuries or limitations, and the days or times that usually work.`;
+        }
+    }
+
+    function prepareZoomPtFallback() {
+        if (!isZoomPtEnquiry) return;
+        const packageName = `Zoom PT ${requestedPtSessions}`;
+        const title = byId('booking-unavailable-title');
+        const copy = byId('booking-unavailable-copy');
+        const action = byId('booking-unavailable-action');
+        const subject = encodeURIComponent(`${packageName} availability`);
+        const body = encodeURIComponent(`Hey Shannon, I am interested in ${packageName}.\n\nMy main goal:\n\nCurrent injuries or limitations:\n\nDays and times that usually work:`);
+        if (title) title.textContent = 'Send me your preferred times.';
+        if (copy) copy.textContent = 'The live calendar is unavailable right now. Email your goal, injury notes and preferred weekly times, and I will check the schedule personally.';
+        if (action) {
+            action.textContent = 'Email my availability';
+            action.href = `mailto:shannon@plantbased-balance.org?subject=${subject}&body=${body}`;
         }
     }
 
@@ -253,6 +292,8 @@
                     company: String(details.data.get('company') || '').trim(),
                     visitorTimeZone: localTimeZone,
                     bookingMode,
+                    source: isZoomPtEnquiry ? 'zoom_pt' : 'public_booking_page',
+                    ptSessionsPerWeek: isZoomPtEnquiry ? Number(requestedPtSessions) : null,
                 }),
             });
             const result = await response.json().catch(() => ({}));
@@ -267,6 +308,10 @@
             show(flow, false);
             show(success, true);
             if (isFirstCoachingCall) byId('booking-success-title').textContent = 'First call booked.';
+            if (isZoomPtEnquiry) {
+                byId('booking-success-title').textContent = 'Zoom PT fit call booked.';
+                byId('booking-success-copy').textContent = 'Your call is confirmed. We will check health fit, recurring times and the right starting structure before payment.';
+            }
             byId('booking-success-time').textContent = `${dateTimeLabel(result.booking.startsAt)} (${friendlyTimeZone()})`;
             const bookingCallType = result.booking?.callType || details.callType;
             const meetingUrl = result.booking?.meetingUrl || '';
@@ -324,6 +369,9 @@
     outsideForm?.querySelector('[name="callType"]')?.addEventListener('change', () => updateCallTypeFields(outsideForm, 'booking-outside-phone-label', 'booking-outside-call-type-note'));
     updateCallTypeFields(form, 'booking-phone-label', 'booking-call-type-note');
     updateCallTypeFields(outsideForm, 'booking-outside-phone-label', 'booking-outside-call-type-note');
+    prepareZoomPtForm(form);
+    prepareZoomPtForm(outsideForm);
+    prepareZoomPtFallback();
     setOutsideDateMinimum();
     loadAvailability();
 }());

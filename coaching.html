@@ -211,9 +211,43 @@
             font-size: 0.84rem;
         }
 
+        .zoom-pt-section {
+            scroll-margin-top: 24px;
+        }
+
+        .zoom-pt-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 22px;
+        }
+
+        .zoom-pt-card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .zoom-pt-card.featured {
+            border: 2px solid #d8ab47;
+            background: linear-gradient(135deg, #fffaf0, #f7f8f4);
+        }
+
+        .zoom-pt-card .offer-cta {
+            margin-top: auto;
+        }
+
+        .zoom-pt-note {
+            margin: 18px 0 0;
+            color: #667066;
+            -webkit-text-fill-color: #667066;
+            font-size: 0.9rem;
+            line-height: 1.55;
+        }
+
         @media (max-width: 640px) {
             .checkout-inclusions,
-            .checkout-plan-grid {
+            .checkout-plan-grid,
+            .zoom-pt-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -247,6 +281,7 @@
                     </p>
                     <div class="button-row">
                         <a class="btn primary" href="plant-based-fitness.html#join">Get the Founders Pass</a>
+                        <a class="btn secondary" href="#zoom-pt">See 1:1 Zoom PT</a>
                         <a class="btn secondary" href="book.html">Book a call with Shannon</a>
                         <a class="btn secondary" href="dashboard.html">Open the app</a>
                         <a class="btn secondary" href="clients.html">See results</a>
@@ -330,6 +365,61 @@
                         <a class="btn primary offer-cta" href="#plan-checkout">Start coaching + calls</a>
                     </article>
                 </div>
+            </section>
+
+            <section class="section zoom-pt-section" id="zoom-pt">
+                <div class="section-header">
+                    <div>
+                        <span class="section-kicker">limited 1:1 availability</span>
+                        <h2 class="section-title">Train live with me over Zoom.</h2>
+                    </div>
+                    <p class="section-text">Dedicated 30-minute personal training sessions for people who want hands-on coaching, real-time form feedback and stronger accountability. We confirm health fit and recurring times before payment.</p>
+                </div>
+
+                <div class="zoom-pt-grid">
+                    <article class="surface offer-card zoom-pt-card reveal">
+                        <span class="label">once weekly</span>
+                        <h3>Zoom PT 1</h3>
+                        <div class="offer-price">$125<span>/week</span></div>
+                        <p class="offer-copy">One live 30-minute 1:1 Zoom PT session each week.</p>
+                        <ul class="offer-list">
+                            <li>Personalised training structure</li>
+                            <li>General vegetarian or plant-based food guidance</li>
+                            <li>Balance app access and accountability</li>
+                            <li>Weekly programming and progress adjustments</li>
+                        </ul>
+                        <a class="btn secondary offer-cta" href="book.html?source=zoom_pt&amp;pt_sessions=1">Check availability</a>
+                    </article>
+
+                    <article class="surface offer-card zoom-pt-card reveal">
+                        <span class="label">three times weekly</span>
+                        <h3>Zoom PT 3</h3>
+                        <div class="offer-price">$275<span>/week</span></div>
+                        <p class="offer-copy">Three live 30-minute 1:1 Zoom PT sessions each week.</p>
+                        <ul class="offer-list">
+                            <li>Everything in Zoom PT 1</li>
+                            <li>More live coaching and form feedback</li>
+                            <li>Training progression managed across the week</li>
+                            <li>Higher-touch accountability inside Balance</li>
+                        </ul>
+                        <a class="btn secondary offer-cta" href="book.html?source=zoom_pt&amp;pt_sessions=3">Check availability</a>
+                    </article>
+
+                    <article class="surface offer-card zoom-pt-card featured reveal">
+                        <span class="label">highest support</span>
+                        <h3>Zoom PT 5</h3>
+                        <div class="offer-price">$425<span>/week</span></div>
+                        <p class="offer-copy">Five live 30-minute 1:1 Zoom PT sessions each week.</p>
+                        <ul class="offer-list">
+                            <li>Everything in Zoom PT 3</li>
+                            <li>Maximum live accountability across the week</li>
+                            <li>Careful progression around current capacity</li>
+                            <li>Limited places due to calendar demand</li>
+                        </ul>
+                        <a class="btn primary offer-cta" href="book.html?source=zoom_pt&amp;pt_sessions=5">Check availability</a>
+                    </article>
+                </div>
+                <p class="zoom-pt-note">Zoom PT begins with a six-week coaching block. Sessions are billed weekly in advance after Shannon confirms fit and recurring availability. Health screening may be required before training begins.</p>
             </section>
 
             <section class="section story-grid" style="margin-top: 14px;">

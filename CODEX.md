@@ -34,8 +34,9 @@ This file is the durable handoff context for Codex sessions. Read it at the star
   - Balance Plant-Based Fitness Founders Pass: AUD $99 once. Six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included.
   - Balance App + Community: AUD $19.99/month for self-directed ongoing app/community access, tailored workout structure and Weekly Goals, without weekly one-to-one review.
   - Balance Starter Coaching: AUD $29.99/week for one weekly check-in plus workout and food review/adjustments from Shannon.
-  - Balance Coaching + Calls: AUD $99.99/week for Starter Coaching plus one weekly live call and deeper review.
-  - Route by fit instead of forcing the Founders Pass: guided kickstart/reset -> Founders Pass; self-directed app/community -> App + Community; personalised weekly review/adjustments -> Starter Coaching; regular live calls/deeper support -> Coaching + Calls. Use `https://plantbased-balance.org/coaching.html` for recurring-plan comparison and checkout.
+- Balance Coaching + Calls: AUD $99.99/week for Starter Coaching plus one weekly live call and deeper review.
+- Balance 1:1 Zoom PT is a capacity-limited premium service with live 30-minute sessions, personalised programming, general vegetarian or plant-based food guidance, Balance access, and in-app accountability. Zoom PT 1 is AUD $125/week for one session, Zoom PT 3 is AUD $275/week for three sessions, and Zoom PT 5 is AUD $425/week for five sessions. It begins with a six-week coaching block. Confirm health fit and recurring availability before taking payment; public website CTAs book a fit call rather than opening checkout.
+- Route by fit instead of forcing the Founders Pass: guided kickstart/reset -> Founders Pass; self-directed app/community -> App + Community; personalised weekly review/adjustments -> Starter Coaching; a weekly conversation/deeper review -> Coaching + Calls; live supervised workouts -> 1:1 Zoom PT. Use `https://plantbased-balance.org/coaching.html` for package comparison. Zoom PT requires an availability and health-fit check before payment.
 
 ## Strategy
 
