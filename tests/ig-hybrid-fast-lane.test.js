@@ -487,12 +487,37 @@ const progressedMetaReply = instantDraft.ensureMetaAdSalesProgressionQuestion({
 assert.match(progressedMetaReply.joined, /what's the main thing you'd want to change first\?/i,
     'an active paid-ad reply always leaves one useful sales-progression question');
 assert.equal((progressedMetaReply.joined.match(/\?/g) || []).length, 1);
+const repairedBlockerReply = instantDraft.ensureMetaAdSalesProgressionQuestion({
+    draft: { chunks: ['Yeah chocolate every weekend is brutal haha.'], joined: 'Yeah chocolate every weekend is brutal haha.', model: 'test+cocos-repair' },
+    currentMessage: 'Chocolate! Every weekend!',
+    qualifier: { commercial_stage: 'problem_qualified', facts: { history_blockers: 'Chocolate every weekend' } },
+    leadStage: 'qualifying',
+});
+assert.match(repairedBlockerReply.joined, /would having me check in and help you stay on track make that easier\?/i,
+    'the paid-ad sales guard restores a natural next question after a style repair removes it');
+assert.equal((repairedBlockerReply.joined.match(/\?/g) || []).length, 1);
 assert.equal(instantDraft.ensureMetaAdSalesProgressionQuestion({
     draft: { chunks: ['No worries.'], joined: 'No worries.', model: 'test' },
     currentMessage: 'Stop messaging me',
     qualifier: { commercial_stage: 'engaged' },
     leadStage: 'qualifying',
 }).joined, 'No worries.', 'opt-outs never receive a continuation question');
+const metaAdCardMarker = '[attachment:https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=123]';
+assert.equal(instantDraft.isMetaAdCardAttachmentTransportArtifact({
+    currentMessage: metaAdCardMarker,
+    metaAdFirstInbound: true,
+}), true, 'a first paid-ad card marker is ignored as a transport artifact');
+assert.equal(instantDraft.isMetaAdCardAttachmentTransportArtifact({
+    currentMessage: metaAdCardMarker,
+    internalMetaAdConversationTestLane: true,
+}), true, 'the armed Coco test lane ignores the same hidden ad-card marker');
+assert.equal(instantDraft.isMetaAdCardAttachmentTransportArtifact({
+    currentMessage: metaAdCardMarker,
+}), false, 'an ordinary organic attachment is preserved for real media review');
+assert.equal(instantDraft.isMetaAdCardAttachmentTransportArtifact({
+    currentMessage: 'Do you offer personalized coaching plans?',
+    internalMetaAdConversationTestLane: true,
+}), false, 'normal test-lane text is never suppressed');
 assert.equal(instantDraft.resolveMetaAdEarlyTypingDelayMs({
     lastInboundAt: '2026-08-01T10:00:00.000Z',
     seed: 'message-1',

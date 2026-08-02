@@ -1074,6 +1074,9 @@ function buildMetaAdSalesProgressionQuestion({ draft = {}, qualifier = {} } = {}
     if (/\b(?:accountab|check[ -]?in|stay on track|follow[ -]?through)\b/i.test(draftText)
         || hasKnownBlocker
         || ['problem_qualified', 'offer_ready'].includes(commercialStage)) {
+        if (!/\b(?:support|accountab|check[ -]?in|stay on track|follow[ -]?through)\b/i.test(draftText)) {
+            return 'Would having me check in and help you stay on track make that easier?';
+        }
         return 'Would that kind of support make it easier for you to stay on track?';
     }
     if (hasKnownGoal) {
@@ -1558,6 +1561,15 @@ function buildApprovedMetaAdFirstReplyHandoffData({ approval, draft, leadStage, 
 }
 
 const META_AD_CARD_ATTACHMENT_RE = /^\[attachment:https:\/\/lookaside\.fbsbx\.com\/ig_messaging_cdn\/?[^\]]*\]$/i;
+
+function isMetaAdCardAttachmentTransportArtifact({
+    currentMessage = '',
+    metaAdFirstInbound = false,
+    internalMetaAdConversationTestLane = false,
+} = {}) {
+    return META_AD_CARD_ATTACHMENT_RE.test(String(currentMessage || '').trim())
+        && (metaAdFirstInbound || internalMetaAdConversationTestLane);
+}
 
 function filterMetaAdCardAttachmentHistory({
     history = [],
@@ -4841,6 +4853,21 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
     });
+    if (isMetaAdCardAttachmentTransportArtifact({
+        currentMessage: messageText,
+        metaAdFirstInbound,
+        internalMetaAdConversationTestLane,
+    })) {
+        console.log(`[ig-draft] skipping Meta ad-card transport attachment for thread ${thread.id}`);
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                ok: true,
+                skipped: 'meta_ad_card_attachment_transport_artifact',
+                thread_id: thread.id,
+            }),
+        };
+    }
     history = filterInternalTestHistoryAfterReset({
         history,
         linkedUserId: thread.linked_user_id,
@@ -6414,6 +6441,60 @@ exports.handler = async (event) => {
                 });
             }
         }
+        const shouldRestoreMetaAdSalesQuestion = (metaAdConversationFastLane || internalMetaAdConversationTestLane)
+            && isDraftReviewAutoSendSafe(draftReview)
+            && !mediaReview?.required
+            && !effectiveContextReview?.required
+            && !metaAdDraftHasQuestion(draft)
+            && !shouldKeepMetaAdReplyQuestionFree({
+                currentMessage: displayMessage,
+                leadStage: effectiveLeadStage,
+                qualifierStage: qualifier?.commercial_stage || qualifier?.stage,
+                linkedUserId: thread.linked_user_id,
+            });
+        if (shouldRestoreMetaAdSalesQuestion) {
+            const guardedDraft = ensureMetaAdSalesProgressionQuestion({
+                draft,
+                currentMessage: displayMessage,
+                qualifier,
+                leadStage: effectiveLeadStage,
+                linkedUserId: thread.linked_user_id,
+            });
+            if (guardedDraft?.joined && guardedDraft.joined !== draft.joined) {
+                const originalDraftText = draft.joined;
+                draft = guardedDraft;
+                draftReview = {
+                    ...(draftReview || {}),
+                    verdict: 'pass',
+                    issues: [],
+                    summary: 'Required paid Meta sales-progression question restored after style repair.',
+                    suggested_fix: '',
+                    notification_required: false,
+                    context_loss_suspected: false,
+                    reviewer_model: 'deterministic_meta_ad_sales_question_guard',
+                    reviewed_at: new Date().toISOString(),
+                };
+                challengeOfferWarning = buildChallengeOfferWarning({
+                    draftText: draft.joined,
+                    qualifier,
+                    currentMessage: displayMessage,
+                });
+                currentAlertData = await persistCocosDraftRepair({
+                    alertId,
+                    currentAlertData: currentAlertData || {},
+                    draft,
+                    repairMeta: {
+                        status: 'accepted',
+                        repaired_at: new Date().toISOString(),
+                        strategy: 'restored_after_style_repair',
+                        original_draft_text: truncate(originalDraftText, 1200),
+                    },
+                    challengeOfferWarning,
+                    repairField: 'meta_ad_sales_question_guard',
+                });
+                console.log(`[ig-draft] restored paid Meta sales question after style repair for alert ${alertId}`);
+            }
+        }
         currentAlertData = {
             ...(currentAlertData || {}),
             draft_review: draftReview || undefined,
@@ -6782,6 +6863,7 @@ exports._test = {
     buildApprovedMetaAdFirstReplyHandoffData,
     buildApprovedDeterministicMetaAdFirstReplyReview,
     filterMetaAdCardAttachmentHistory,
+    isMetaAdCardAttachmentTransportArtifact,
     collectCocosAutoRepairIssues,
     shouldAttemptCocosDraftRepair,
     repairRequiresQuestionFreeReply,
