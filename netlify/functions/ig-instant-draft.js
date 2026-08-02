@@ -138,6 +138,7 @@ const {
 const { hasBusinessCallRequest } = require('./_lib/personal-dm-boundary');
 const { markDraftAnalysis } = require('./_lib/ig-message-media');
 const { buildRelationshipMemoryBlock } = require('./extract-ig-thread-memory');
+const { sendInstagramGraphTypingAction } = require('./send-ig-reply');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const HISTORY_LIMIT = 40;
@@ -1031,7 +1032,7 @@ function isContextualMetaAdOfferLinkRequest({ currentMessage = '', qualifier = {
 function buildContextualMetaAdOfferLinkReply({ checkoutUrl = '', flowVariant = 'plant_based_control' } = {}) {
     const url = String(checkoutUrl || '').trim();
     if (!isApprovedChallengeBioLinkText(url)) return null;
-    const joined = `Yeah for sure, have a look here: ${url}`;
+    const joined = `Yeah for sure, have a look here: ${url}\n\nHave a quick look and tell me, does that feel like the kind of support you need?`;
     return {
         chunks: [joined],
         joined,
@@ -1041,6 +1042,86 @@ function buildContextualMetaAdOfferLinkReply({ checkoutUrl = '', flowVariant = '
         replyMode: 'standard',
         maxChunks: MAX_CHUNKS,
     };
+}
+
+function metaAdDraftHasQuestion(draft = {}) {
+    return /\?/.test(draftTextFromDraft(draft));
+}
+
+function shouldKeepMetaAdReplyQuestionFree({ currentMessage = '', leadStage = '', qualifierStage = '', linkedUserId = null } = {}) {
+    const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    const stage = String(leadStage || '').trim().toLowerCase();
+    const funnelStage = String(qualifierStage || '').trim().toLowerCase();
+    if (linkedUserId || funnelStage === 'won' || ['won', 'in_app', 'paying', 'churned'].includes(stage)) return true;
+    if (META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
+        || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)
+        || /\b(?:are you trying to sell|is this a sales pitch|stop pitching|don['\u2019]?t sell)\b/i.test(message)) {
+        return true;
+    }
+    return false;
+}
+
+function buildMetaAdSalesProgressionQuestion({ draft = {}, qualifier = {} } = {}) {
+    const draftText = draftTextFromDraft(draft);
+    const commercialStage = String(qualifier?.commercial_stage || '').trim().toLowerCase();
+    const facts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
+    const hasKnownGoal = !!String(facts.current_state || facts.motivation || '').trim();
+    const hasKnownBlocker = !!String(facts.history_blockers || '').trim();
+
+    if (isSignupLinkHandoffText(draftText) || commercialStage === 'buyer_intent') {
+        return 'Have a quick look and tell me, does that feel like the kind of support you need?';
+    }
+    if (/\b(?:accountab|check[ -]?in|stay on track|follow[ -]?through)\b/i.test(draftText)
+        || hasKnownBlocker
+        || ['problem_qualified', 'offer_ready'].includes(commercialStage)) {
+        return 'Would that kind of support make it easier for you to stay on track?';
+    }
+    if (hasKnownGoal) {
+        return 'What usually gets in the way when you try to stay consistent?';
+    }
+    return "What's the main thing you'd want to change first?";
+}
+
+function ensureMetaAdSalesProgressionQuestion({
+    draft = {},
+    currentMessage = '',
+    qualifier = {},
+    leadStage = '',
+    linkedUserId = null,
+} = {}) {
+    if (!draft || metaAdDraftHasQuestion(draft) || shouldKeepMetaAdReplyQuestionFree({
+        currentMessage,
+        leadStage,
+        qualifierStage: qualifier?.stage,
+        linkedUserId,
+    })) return draft;
+
+    const question = buildMetaAdSalesProgressionQuestion({ draft, qualifier });
+    const existingChunks = Array.isArray(draft.chunks) && draft.chunks.length
+        ? draft.chunks.map(chunk => String(chunk || '').trim()).filter(Boolean)
+        : [draftTextFromDraft(draft)].filter(Boolean);
+    if (!existingChunks.length || !question) return draft;
+    const chunks = [...existingChunks];
+    chunks[chunks.length - 1] = `${chunks[chunks.length - 1]}\n\n${question}`;
+    return {
+        ...draft,
+        chunks,
+        joined: chunks.join('\n\n'),
+        model: `${draft.model || 'unknown'}+meta_ad_sales_question_v1`,
+    };
+}
+
+function resolveMetaAdEarlyTypingDelayMs({ lastInboundAt = '', seed = '', nowMs = Date.now() } = {}) {
+    const key = String(seed || 'balance');
+    let hash = 0;
+    for (let index = 0; index < key.length; index += 1) {
+        hash = ((hash * 31) + key.charCodeAt(index)) >>> 0;
+    }
+    const targetDelayMs = 2000 + (hash % 8001);
+    const inboundAtMs = Date.parse(lastInboundAt || '');
+    if (!Number.isFinite(inboundAtMs)) return targetDelayMs;
+    const elapsedMs = Math.max(0, Number(nowMs) - inboundAtMs);
+    return Math.max(0, targetDelayMs - elapsedMs);
 }
 
 function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData, allowTestLaneDraftReviewWarning = false, allowBalanceLeadDraftReviewWarning = false }) {
@@ -1964,7 +2045,7 @@ JSON only:
 
 async function loadThread(threadId) {
     const rows = await supabaseQuery(
-        `ig_threads?select=id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,custom_data,goals,communication_style,running_notes,injuries_limits,personal_context,coach_instructions,qualifier,auto_send_enabled&id=eq.${threadId}&limit=1`
+        `ig_threads?select=id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,last_inbound_at,last_outbound_at,custom_data,goals,communication_style,running_notes,injuries_limits,personal_context,coach_instructions,qualifier,auto_send_enabled&id=eq.${threadId}&limit=1`
     );
     return rows[0] || null;
 }
@@ -5166,6 +5247,27 @@ exports.handler = async (event) => {
             || thread.custom_data?.instagram_graph?.source === 'meta_ig_webhook'
             || humanAgentRequired
         );
+    let earlyInstagramTypingAction = null;
+    if (metaAdFastLane && hasInstagramGraphRoute && !getMetaAdSensitiveHoldReason({
+        alertData: { meta_ad_fast_lane: true },
+        currentMessage: messageText,
+    })) {
+        const earlyTypingDelayMs = resolveMetaAdEarlyTypingDelayMs({
+            lastInboundAt: thread.last_inbound_at,
+            seed: manychatMessageId || messageText,
+        });
+        if (earlyTypingDelayMs > 0) {
+            await new Promise(resolve => setTimeout(resolve, earlyTypingDelayMs));
+        }
+        earlyInstagramTypingAction = await sendInstagramGraphTypingAction({
+            channel,
+            recipientId: graphRecipientId,
+            accountId: graphAccountId,
+            action: 'typing_on',
+            beforeChunkIndex: 0,
+            gapMs: earlyTypingDelayMs,
+        });
+    }
     const deliveryChannel = hasInstagramGraphRoute ? 'instagram_graph' : (isDirectGraphManual ? 'manual_ig' : channel);
     const manualReason = humanAgentRequired && !humanAgentReady
         ? HUMAN_AGENT_NOT_APPROVED_MESSAGE
@@ -5358,6 +5460,15 @@ exports.handler = async (event) => {
             ...draft,
             ...contextualLinkReply,
         };
+    }
+    if (metaAdConversationFastLane) {
+        draft = ensureMetaAdSalesProgressionQuestion({
+            draft,
+            currentMessage: messageText,
+            qualifier,
+            leadStage: effectiveLeadStage,
+            linkedUserId: thread.linked_user_id,
+        });
     }
 
     if (Array.isArray(durableMediaIds) && durableMediaIds.length) {
@@ -5597,6 +5708,9 @@ exports.handler = async (event) => {
             meta_ad_first_inbound: metaAdFirstInbound || undefined,
             meta_ad_conversation_fast_lane: metaAdConversationFastLane || undefined,
             meta_ad_internal_test_lane: internalMetaAdConversationTestLane || undefined,
+            instagram_early_typing_action: earlyInstagramTypingAction?.attempted
+                ? earlyInstagramTypingAction
+                : undefined,
             exercise_conversation_fast_lane: exerciseConversationFastLane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : metaAdFlowVariant,
             meta_ad_first_reply_intent: metaAdFirstInbound ? draft.firstReplyIntent : undefined,
@@ -5847,6 +5961,9 @@ exports.handler = async (event) => {
             meta_ad_first_inbound: metaAdFirstInbound || existingPending.data?.meta_ad_first_inbound || undefined,
             meta_ad_conversation_fast_lane: metaAdConversationFastLane || existingPending.data?.meta_ad_conversation_fast_lane || existingPending.data?.meta_ad_active_conversation_fast_lane || undefined,
             meta_ad_internal_test_lane: internalMetaAdConversationTestLane || existingPending.data?.meta_ad_internal_test_lane || undefined,
+            instagram_early_typing_action: earlyInstagramTypingAction?.attempted
+                ? earlyInstagramTypingAction
+                : existingPending.data?.instagram_early_typing_action || undefined,
             exercise_conversation_fast_lane: exerciseConversationFastLane || existingPending.data?.exercise_conversation_fast_lane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : (metaAdFlowVariant || existingPending.data?.meta_ad_flow_variant || undefined),
             meta_ad_first_reply_intent: metaAdFirstInbound ? draft.firstReplyIntent : existingPending.data?.meta_ad_first_reply_intent,
@@ -6641,6 +6758,8 @@ exports._test = {
     isPaidMetaBuyerIntentOfferReplyAllowed,
     isContextualMetaAdOfferLinkRequest,
     buildContextualMetaAdOfferLinkReply,
+    ensureMetaAdSalesProgressionQuestion,
+    resolveMetaAdEarlyTypingDelayMs,
     getCocosCodexReviewHold,
     isBalanceLeadAutoSendEnabled,
     isCanceledLatestRecoveryCandidate,

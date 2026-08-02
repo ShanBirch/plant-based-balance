@@ -2720,3 +2720,5 @@ exports._test = {
     joinSentChunkTexts,
     validateOutboundTextIntegrity,
 };
+
+exports.sendInstagramGraphTypingAction = sendInstagramGraphTypingAction;

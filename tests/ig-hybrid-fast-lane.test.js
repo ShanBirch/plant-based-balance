@@ -476,7 +476,33 @@ const contextualLinkReply = instantDraft.buildContextualMetaAdOfferLinkReply({
 });
 assert.match(contextualLinkReply.joined, /have a look here/i);
 assert.match(contextualLinkReply.joined, /plant-based-fitness\.html\?utm_source=instagram/);
+assert.match(contextualLinkReply.joined, /does that feel like the kind of support you need\?/i);
 assert.equal(contextualLinkReply.model, 'deterministic_meta_ad_contextual_link_v1');
+const progressedMetaReply = instantDraft.ensureMetaAdSalesProgressionQuestion({
+    draft: { chunks: ['It includes one-to-one support from me.'], joined: 'It includes one-to-one support from me.', model: 'test' },
+    currentMessage: "What's included in Founders Pass?",
+    qualifier: { commercial_stage: 'engaged', facts: {} },
+    leadStage: 'qualifying',
+});
+assert.match(progressedMetaReply.joined, /what's the main thing you'd want to change first\?/i,
+    'an active paid-ad reply always leaves one useful sales-progression question');
+assert.equal((progressedMetaReply.joined.match(/\?/g) || []).length, 1);
+assert.equal(instantDraft.ensureMetaAdSalesProgressionQuestion({
+    draft: { chunks: ['No worries.'], joined: 'No worries.', model: 'test' },
+    currentMessage: 'Stop messaging me',
+    qualifier: { commercial_stage: 'engaged' },
+    leadStage: 'qualifying',
+}).joined, 'No worries.', 'opt-outs never receive a continuation question');
+assert.equal(instantDraft.resolveMetaAdEarlyTypingDelayMs({
+    lastInboundAt: '2026-08-01T10:00:00.000Z',
+    seed: 'message-1',
+    nowMs: Date.parse('2026-08-01T10:00:01.000Z'),
+}) >= 1000, true);
+assert.equal(instantDraft.resolveMetaAdEarlyTypingDelayMs({
+    lastInboundAt: '2026-08-01T10:00:00.000Z',
+    seed: 'message-1',
+    nowMs: Date.parse('2026-08-01T10:00:20.000Z'),
+}), 0, 'late webhook processing shows typing immediately instead of waiting longer');
 const contextualLinkHandoff = instantDraft.buildLeadOnboardingHandoffData({
     draftText: contextualLinkReply.joined,
     qualifier: { commercial_stage: 'buyer_intent', stage: 'current_state' },

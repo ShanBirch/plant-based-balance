@@ -216,7 +216,20 @@ const personalVoicePlan = voice.resolvePersonalVoiceReplyPlan({
     hasRecentVoiceMessage: false,
 });
 assert.strictEqual(personalVoicePlan.useSyntheticVoice, true);
-assert.strictEqual(personalVoicePlan.reason, 'lead_shared_meaningful_goal_or_blocker');
+assert.strictEqual(personalVoicePlan.reason, 'lead_shared_consistency_blocker');
+
+assert.strictEqual(
+    voice.resolvePersonalVoiceReplyPlan({
+        channel: 'instagram',
+        hasInstagramGraphRoute: true,
+        currentMessage: 'I want to lose weight',
+        qualifier: { facts: { current_state: 'wants to lose weight' } },
+        meaningfulLeadReplyCount: 3,
+        hasRecentVoiceMessage: false,
+    }).useSyntheticVoice,
+    false,
+    'a plain goal is too early for an intimate synthetic voice note'
+);
 
 const accountabilityVoicePlan = voice.resolvePersonalVoiceReplyPlan({
     channel: 'instagram',

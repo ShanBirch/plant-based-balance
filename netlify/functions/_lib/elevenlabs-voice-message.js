@@ -52,6 +52,12 @@ function hasAccountabilityConnectionSignal(text = '') {
     return /\b(accountab\w*|check[ -]?ins?|keep me on track|keep(?:ing)? me accountable|stay on track|follow[ -]?through)\b/i.test(value);
 }
 
+function hasHighSignalConsistencyBlocker(text = '') {
+    const value = String(text || '').trim();
+    if (value.length < 16) return false;
+    return /\b(?:can(?:'t| not) stick|never stick|keep falling|fall off|keep stopping|always restart|can(?:'t| not) stay consistent|struggl\w* to stay consistent|routine\w* (?:go|fall|drop)\w* (?:off|sideways)|lose motivation|no accountability)\b/i.test(value);
+}
+
 function hasQualifierPersonalEvidence(qualifier = {}) {
     const facts = safeObject(qualifier.facts);
     return [facts.current_state, facts.motivation, facts.history_blockers]
@@ -93,17 +99,18 @@ function resolvePersonalVoiceReplyPlan({
     }
 
     const accountabilityConnection = hasAccountabilityConnectionSignal(currentMessage);
+    const consistencyBlocker = hasHighSignalConsistencyBlocker(currentMessage);
     const eligible = isUnlinkedInstagramLead
         && hasInstagramGraphRoute
         && (!hasRecentVoiceMessage || bypassRecentVoiceCooldownForInternalTest)
         && Number(meaningfulLeadReplyCount || 0) >= 2
-        && (accountabilityConnection || hasPersonalGoalOrBlockerSignal(currentMessage))
+        && (accountabilityConnection || consistencyBlocker)
         && hasQualifierPersonalEvidence(qualifier);
 
     return {
         useSyntheticVoice: eligible,
         reason: eligible
-            ? (accountabilityConnection ? 'lead_accountability_connection_moment' : 'lead_shared_meaningful_goal_or_blocker')
+            ? (accountabilityConnection ? 'lead_accountability_connection_moment' : 'lead_shared_consistency_blocker')
             : '',
         syntheticVoiceForbidden: false,
         manualNativeVoiceRecommended: false,
@@ -571,7 +578,8 @@ module.exports = {
     resolveOutboundVoiceMessageConfig,
     _test: {
         isVoiceMessageRequested,
-        hasAccountabilityConnectionSignal,
+    hasAccountabilityConnectionSignal,
+    hasHighSignalConsistencyBlocker,
         hasPersonalGoalOrBlockerSignal,
         hasQualifierPersonalEvidence,
         hasWrittenLaughter,
