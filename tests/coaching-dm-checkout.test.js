@@ -63,6 +63,8 @@ test('Zoom PT availability choice reaches the booking record and calendar event'
     assert.match(bookingFunction, /normalizePtSessionsPerWeek/);
     assert.match(bookingFunction, /pt_sessions_per_week: ptSessionsPerWeek/);
     assert.match(bookingFunction, /Requested Zoom PT sessions each week/);
+    assert.match(booking, /if \(isZoomPtEnquiry\) \{[\s\S]*Zoom PT fit call booked\.[\s\S]*\} else \{/);
+    assert.match(booking, /prepareZoomPtForm\(form\);\s*prepareZoomPtForm\(outsideForm\);\s*updateCallTypeFields\(form, 'booking-phone-label', 'booking-call-type-note'\);\s*updateCallTypeFields\(outsideForm, 'booking-outside-phone-label', 'booking-outside-call-type-note'\);/);
     assert.match(bookingPage, /id="booking-unavailable-action"/);
     assert.match(booking, /Email my availability/);
     assert.match(booking, /const subject = encodeURIComponent\(`\$\{packageName\} availability`\)/);

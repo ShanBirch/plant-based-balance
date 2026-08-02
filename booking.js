@@ -308,21 +308,22 @@
             show(flow, false);
             show(success, true);
             if (isFirstCoachingCall) byId('booking-success-title').textContent = 'First call booked.';
-            if (isZoomPtEnquiry) {
-                byId('booking-success-title').textContent = 'Zoom PT fit call booked.';
-                byId('booking-success-copy').textContent = 'Your call is confirmed. We will check health fit, recurring times and the right starting structure before payment.';
-            }
             byId('booking-success-time').textContent = `${dateTimeLabel(result.booking.startsAt)} (${friendlyTimeZone()})`;
             const bookingCallType = result.booking?.callType || details.callType;
             const meetingUrl = result.booking?.meetingUrl || '';
             const smsNote = result.smsConfirmationSent ? ' A text confirmation is on its way too.' : '';
-            byId('booking-success-copy').textContent = bookingCallType === 'video'
-                ? (meetingUrl
-                    ? `Your video call is confirmed. Your Google Meet link is in the Balance email and calendar invitation.${smsNote}`
-                    : `Your video call is confirmed. Shannon will send the video link shortly.${smsNote}`)
-                : bookingCallType === 'whatsapp'
-                    ? `Your WhatsApp call is confirmed. Shannon will call the number you entered.${smsNote}`
-                    : `Your phone call is confirmed. Shannon will call the number you entered.${smsNote}`;
+            if (isZoomPtEnquiry) {
+                byId('booking-success-title').textContent = 'Zoom PT fit call booked.';
+                byId('booking-success-copy').textContent = 'Your Zoom PT fit call is confirmed. We will check health fit, recurring times and the right starting structure before payment.';
+            } else {
+                byId('booking-success-copy').textContent = bookingCallType === 'video'
+                    ? (meetingUrl
+                        ? `Your video call is confirmed. Your Google Meet link is in the Balance email and calendar invitation.${smsNote}`
+                        : `Your video call is confirmed. Shannon will send the video link shortly.${smsNote}`)
+                    : bookingCallType === 'whatsapp'
+                        ? `Your WhatsApp call is confirmed. Shannon will call the number you entered.${smsNote}`
+                        : `Your phone call is confirmed. Shannon will call the number you entered.${smsNote}`;
+            }
         } catch (_) {
             showError('Could not confirm that call just now. Please try again in a moment.', targetError);
         } finally {
@@ -371,6 +372,8 @@
     updateCallTypeFields(outsideForm, 'booking-outside-phone-label', 'booking-outside-call-type-note');
     prepareZoomPtForm(form);
     prepareZoomPtForm(outsideForm);
+    updateCallTypeFields(form, 'booking-phone-label', 'booking-call-type-note');
+    updateCallTypeFields(outsideForm, 'booking-outside-phone-label', 'booking-outside-call-type-note');
     prepareZoomPtFallback();
     setOutsideDateMinimum();
     loadAvailability();
