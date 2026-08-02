@@ -11,6 +11,7 @@ const {
     buildMetaAdFirstReplyApproval,
     buildApprovedMetaAdFirstReplyHandoffData,
     buildApprovedDeterministicMetaAdFirstReplyReview,
+    ensureMetaAdSalesProgressionQuestion,
     filterMetaAdCardAttachmentHistory,
     buildLeadOnboardingHandoffData,
     resolveMetaAdFirstReplyIntent,
@@ -277,6 +278,26 @@ test('the reply after the goal is tailored and carries a native video attachment
     assert.equal(proofReview.verdict, 'pass');
     assert.equal(proofReview.notification_required, false);
     assert.equal(proofReview.reviewer_model, 'deterministic-meta-ad-goal-proof-approval');
+
+    const weightGoal = buildMetaAdGoalProofReply('I need to lose weight, probably 15kgs');
+    assert.match(weightGoal.joined, /15kg is a solid goal/i,
+        'the deterministic proof reply directly acknowledges the lead goal');
+    const guardedWeightGoal = ensureMetaAdSalesProgressionQuestion({
+        draft: weightGoal,
+        currentMessage: 'I need to lose weight, probably 15kgs',
+        qualifier: { commercial_stage: 'engaged', facts: { current_state: 'Wants to lose 15kg.' } },
+        leadStage: 'qualifying',
+    });
+    assert.match(guardedWeightGoal.model, /\+meta_ad_sales_question_v1$/);
+    assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({
+        metaAdGoalReplyTurn: true,
+        draft: guardedWeightGoal,
+        linkedUserId: null,
+        mediaReview: { required: false },
+        contextReview: { required: false },
+        currentMessage: 'I need to lose weight, probably 15kgs',
+    }).reviewer_model, 'deterministic-meta-ad-goal-proof-approval',
+    'adding the required sales question must not knock a deterministic goal proof out of the fast path');
 
     assert.deepEqual(buildInstagramGraphVideoMessagePayload({
         recipientId: 'ig-user-1',

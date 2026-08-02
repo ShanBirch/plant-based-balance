@@ -1471,7 +1471,8 @@ function isMetaAdGoalReplyTurn(history = []) {
 }
 
 function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_based_control' } = {}) {
-    const text = String(currentMessage || '').toLowerCase();
+    const rawMessage = String(currentMessage || '').trim();
+    const text = rawMessage.toLowerCase();
     const broadFlow = flowVariant === 'broad_pain';
     let bridge;
     if (/accountab|consisten|motivat|routine|habit|stick|on track|fall off|keep going/.test(text)) {
@@ -1479,7 +1480,10 @@ function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_b
     } else if (/strong|strength|muscle|lift|gym|fitter|fitness|run|cardio/.test(text)) {
         bridge = `nice, so the goal is to actually feel stronger and fitter, not just collect another plan. Here's a quick video showing you how it works inside Balance.`;
     } else if (/weight|fat|lose|lean|tone|confiden|body/.test(text)) {
-        bridge = `yeah okay, so you want a setup you can actually follow long enough to feel the difference, without guessing every day. Here's a quick video showing you how it works inside Balance.`;
+        const kgGoal = rawMessage.match(/\b(\d{1,2}(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i)?.[1] || '';
+        bridge = kgGoal
+            ? `yeah okay, ${kgGoal}kg is a solid goal. You want a setup you can actually follow long enough to get there, without guessing every day. Here's a quick video showing you how it works inside Balance.`
+            : `yeah okay, losing weight is the goal. You want a setup you can actually follow long enough to feel the difference, without guessing every day. Here's a quick video showing you how it works inside Balance.`;
     } else if (/food|meal|eat|nutrition|plant|vegan|vegetarian|protein/.test(text)) {
         bridge = broadFlow
             ? `yeah okay, so food structure is the main thing. Here's a quick video showing you how it works inside Balance.`
@@ -1620,7 +1624,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         && shouldUseDeterministicMetaAdFirstReply(message);
     const approvedGoalProof = metaAdGoalReplyTurn
         && draft?.replyMode === 'campaign_goal_proof'
-        && /^deterministic_meta_ad_goal_proof_v\d+$/.test(String(draft?.model || ''))
+        && /^deterministic_meta_ad_goal_proof_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
         && !!draft.videoAttachmentUrl;
     if ((!approvedFirstReply && !approvedGoalProof)
         || linkedUserId
@@ -6444,7 +6448,7 @@ exports.handler = async (event) => {
         const shouldRestoreMetaAdSalesQuestion = (metaAdConversationFastLane || internalMetaAdConversationTestLane)
             && isDraftReviewAutoSendSafe(draftReview)
             && !mediaReview?.required
-            && !effectiveContextReview?.required
+            && !contextReview?.required
             && !metaAdDraftHasQuestion(draft)
             && !shouldKeepMetaAdReplyQuestionFree({
                 currentMessage: displayMessage,
