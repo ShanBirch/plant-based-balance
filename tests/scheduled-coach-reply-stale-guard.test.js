@@ -104,6 +104,20 @@ async function run() {
     );
     assert.strictEqual(
         worker.buildPaidMetaPrematureOfferHold(
+            {
+                data: {
+                    acquisition_mode: 'paid_meta',
+                    message_preview: 'I need to lose weight, probably 15kgs',
+                    qualifier: { commercial_stage: 'engaged' },
+                },
+            },
+            'The Founders Pass is probably the best starting point. It is $99 once.'
+        ).code,
+        'paid_meta_premature_offer',
+        'goal replies with a number attached still need the offer-rewrite hold'
+    );
+    assert.strictEqual(
+        worker.buildPaidMetaPrematureOfferHold(
             paidMetaGoalAlert,
             'Yeah, I get you. What usually makes weight loss hard to stick with for you?'
         ),

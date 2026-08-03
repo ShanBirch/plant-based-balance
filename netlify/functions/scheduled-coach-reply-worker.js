@@ -216,7 +216,7 @@ function buildPaidMetaPrematureOfferHold(alert = {}, replyText = '') {
         || data.client_message
         || ''
     ).replace(/\s+/g, ' ').trim();
-    const simpleGoalAnswer = /^(?:i (?:need|want|would like|wanna) to |my goal is to )?(?:lose (?:some )?weight|drop (?:some )?weight|build (?:some )?muscle|grow (?:some )?muscle|get (?:fitter|fit|stronger)|tone up)[!?.\s]*$/i.test(currentMessage);
+    const simpleGoalAnswer = /^(?:i (?:need|want|would like|wanna) to |my goal is to )?(?:lose(?: (?:some )?)?(?:weight|\d+(?:\.\d+)?\s*(?:kg|kgs|kilograms?|lb|lbs|pounds?))|drop(?: (?:some )?)?(?:weight|\d+(?:\.\d+)?\s*(?:kg|kgs|kilograms?|lb|lbs|pounds?))|build(?: (?:some )?)?muscle|grow(?: (?:some )?)?muscle|get (?:fitter|fit|stronger)|tone up)(?:[,.!?].*)?$/i.test(currentMessage);
     const containsOfferPitch = /\b(?:starter coaching|founders? pass|coaching \+ calls|zoom pt|best fit for (?:you|that)|\$\s*\d|\d+(?:\.\d{1,2})?\s*(?:a|per)\s*week)\b/i.test(String(replyText || ''));
     if (!simpleGoalAnswer || !containsOfferPitch) return null;
 
