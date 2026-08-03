@@ -2682,7 +2682,7 @@ function findOutboundDmBreak(text, maxChars, minChars, options = {}) {
 function splitOutboundDmParagraph(paragraph, options = {}) {
     const targetChars = Number(options.targetChars) || DEFAULT_DM_BUBBLE_TARGET_CHARS;
     const hardMaxChars = Number(options.hardMaxChars) || DEFAULT_DM_BUBBLE_HARD_MAX_CHARS;
-    const minHardBreak = Math.max(180, Math.floor(hardMaxChars * 0.45));
+    const minHardBreak = Math.max(80, Math.min(180, Math.floor(hardMaxChars * 0.45)));
     const chunks = [];
     let rest = cleanOutboundDmBubbleText(paragraph);
 

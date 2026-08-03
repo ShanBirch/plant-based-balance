@@ -154,6 +154,19 @@ const INSTAGRAM_GRAPH_TYPING_ACTION_TIMEOUT_MS = 1200;
 const FIRST_ITEM_TYPING_MIN_MS = 1800;
 const FIRST_ITEM_TYPING_MAX_MS = 4200;
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
+const INSTAGRAM_GRAPH_DM_BUBBLE_TARGET_CHARS = 210;
+const INSTAGRAM_GRAPH_DM_BUBBLE_HARD_MAX_CHARS = 240;
+
+function resolveOutboundDmBubbleOptions({ shouldUseGraph = false, channel = '' } = {}) {
+    if (shouldUseGraph && String(channel || '').toLowerCase() === 'instagram') {
+        return {
+            targetChars: INSTAGRAM_GRAPH_DM_BUBBLE_TARGET_CHARS,
+            hardMaxChars: INSTAGRAM_GRAPH_DM_BUBBLE_HARD_MAX_CHARS,
+            preferredMaxBubbles: 4,
+        };
+    }
+    return {};
+}
 
 function shouldForceTextDelivery(body = {}) {
     return body.forceText === true
@@ -2180,7 +2193,8 @@ exports.handler = async (event) => {
             }),
         };
     }
-    messagesToSend = splitCoachDraftIntoDmBubbles(messagesToSend);
+    const dmBubbleOptions = resolveOutboundDmBubbleOptions({ shouldUseGraph, channel });
+    messagesToSend = splitCoachDraftIntoDmBubbles(messagesToSend, dmBubbleOptions);
     if (messagesToSend.length === 0) messagesToSend = [replyText];
     const sendTimeSafety = validateSendTimeOutboundSafety({
         messagesToSend,
@@ -2761,6 +2775,7 @@ exports._test = {
     resolveChunkPacing,
     resolveChunkGaps,
     resolveFirstItemTypingDelayMs,
+    resolveOutboundDmBubbleOptions,
     resolveOutboundVoiceMessageConfig,
     buildInstagramGraphVideoMessagePayload,
     buildInstagramGraphImageMessagePayload,

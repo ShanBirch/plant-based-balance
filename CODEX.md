@@ -351,6 +351,7 @@ Admin AI coach:
 
 - Primary IG capture is direct Meta Graph via `instagram-webhook.js`.
 - Primary IG outbound is direct Meta Graph via `send-ig-reply.js` and `send-direct-ig-message.js` when `ig_threads.custom_data.instagram_graph.ig_graph_user_id` or an `ig_graph:` subscriber id exists.
+- Keep each direct Instagram Graph text bubble at 240 characters or fewer. The native app has visibly shortened an automated 370-character bubble at 250 characters while the API still returned success, so `send-ig-reply.js` must split longer replies at sentence boundaries before transport and record each delivered bubble separately.
 - ManyChat is now a legacy/backstop path. It is still useful for Facebook Messenger and old IG threads that have not yet exposed a Graph recipient id.
 - Required Graph env/secrets include `INSTAGRAM_GRAPH_ACCESS_TOKEN` or `app_private_secrets.key='instagram_graph_access_token'`, plus the IG account id env fallback when it is not stored on a thread.
 - ManyChat env vars, while the backstop remains active, include `MANYCHAT_API_TOKEN`, optional `MANYCHAT_WEBHOOK_SECRET`, `MANYCHAT_SEND_URL`, and `MANYCHAT_MESSAGE_TAG`.
