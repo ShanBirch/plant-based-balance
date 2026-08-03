@@ -86,6 +86,42 @@ async function run() {
     assert.strictEqual(await worker.getNewerInstagramInbound(alert), null);
     assert.strictEqual(await worker.getNewerInstagramInbound({ data: { channel: 'instagram' } }), null);
 
+    const paidMetaGoalAlert = {
+        data: {
+            acquisition_mode: 'paid_meta',
+            message_preview: 'I need to lose weight!',
+            qualifier: { commercial_stage: 'engaged' },
+            auto_send_review_approved_at: '2026-08-03T01:03:30.000Z',
+        },
+    };
+    assert.strictEqual(
+        worker.buildPaidMetaPrematureOfferHold(
+            paidMetaGoalAlert,
+            "Starter Coaching is probably the best fit. It's $29.99 a week."
+        ).code,
+        'paid_meta_premature_offer',
+        'manager approval must not bypass the paid Meta goal-to-blocker progression'
+    );
+    assert.strictEqual(
+        worker.buildPaidMetaPrematureOfferHold(
+            paidMetaGoalAlert,
+            'Yeah, I get you. What usually makes weight loss hard to stick with for you?'
+        ),
+        null,
+        'a normal blocker question after the goal remains sendable'
+    );
+    assert.strictEqual(
+        worker.buildPaidMetaPrematureOfferHold({
+            data: {
+                ...paidMetaGoalAlert.data,
+                message_preview: 'Send me the link',
+                qualifier: { commercial_stage: 'buyer_intent' },
+            },
+        }, 'Yep, here is the Founders Pass link.'),
+        null,
+        'explicit buyer intent can still receive the offer handoff'
+    );
+
     global.fetch = originalFetch;
     console.log('scheduled coach reply stale guard tests passed');
 }

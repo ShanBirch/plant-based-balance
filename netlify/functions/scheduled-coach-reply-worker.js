@@ -199,6 +199,33 @@ function buildAutoSendReviewHold(alert) {
     return null;
 }
 
+function buildPaidMetaPrematureOfferHold(alert = {}, replyText = '') {
+    const data = alert.data || {};
+    const paidMeta = String(data.acquisition_mode || '').toLowerCase() === 'paid_meta'
+        || data.meta_ad_fast_lane === true
+        || data.meta_ad_conversation_fast_lane === true
+        || String(data.meta_ad_attribution?.source || '').toLowerCase() === 'meta_ads';
+    if (!paidMeta) return null;
+
+    const commercialStage = String(data.qualifier?.commercial_stage || '').toLowerCase();
+    if (['offer_ready', 'buyer_intent'].includes(commercialStage)) return null;
+
+    const currentMessage = String(
+        data.draft_evidence?.current_message
+        || data.message_preview
+        || data.client_message
+        || ''
+    ).replace(/\s+/g, ' ').trim();
+    const simpleGoalAnswer = /^(?:i (?:need|want|would like|wanna) to |my goal is to )?(?:lose (?:some )?weight|drop (?:some )?weight|build (?:some )?muscle|grow (?:some )?muscle|get (?:fitter|fit|stronger)|tone up)[!?.\s]*$/i.test(currentMessage);
+    const containsOfferPitch = /\b(?:starter coaching|founders? pass|coaching \+ calls|zoom pt|best fit for (?:you|that)|\$\s*\d|\d+(?:\.\d{1,2})?\s*(?:a|per)\s*week)\b/i.test(String(replyText || ''));
+    if (!simpleGoalAnswer || !containsOfferPitch) return null;
+
+    return {
+        code: 'paid_meta_premature_offer',
+        label: 'Paid Meta goal answer was rewritten into an offer before the blocker/support question',
+    };
+}
+
 function isAutomatedPermanentNeedsYouScheduledAlert(alert = {}) {
     const data = alert?.data || {};
     const scheduledVia = String(data.scheduled_via || '').trim().toLowerCase();
@@ -472,7 +499,10 @@ async function fireAlert(alert) {
     }
 
     const currentClientHold = await buildCurrentClientNeedsYouHold(alert);
-    const autoHold = currentClientHold || buildPermanentNeedsYouHold(alert) || buildAutoSendReviewHold(alert);
+    const autoHold = currentClientHold
+        || buildPermanentNeedsYouHold(alert)
+        || buildPaidMetaPrematureOfferHold(alert, replyText)
+        || buildAutoSendReviewHold(alert);
     if (autoHold) {
         const heldAt = new Date().toISOString();
         const isPermanentNeedsYouHold = autoHold.code === 'always_needs_you_person';
@@ -630,6 +660,7 @@ exports.handler = async () => {
 
 exports._test = {
     buildAutoSendReviewHold,
+    buildPaidMetaPrematureOfferHold,
     isAutomatedPermanentNeedsYouScheduledAlert,
     isAppSupportFastFixException,
     buildPermanentNeedsYouHold,
