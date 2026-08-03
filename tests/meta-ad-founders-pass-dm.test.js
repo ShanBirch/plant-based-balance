@@ -268,9 +268,9 @@ test('the reply after the goal is tailored and carries the right native proof me
 
     const consistency = buildMetaAdGoalProofReply('I need accountability because I always fall off');
     assert.match(consistency.joined, /keeping the week on track once life gets busy/i);
-    assert.match(consistency.joined, /here's a quick video showing you how it works inside Balance/i);
+    assert.match(consistency.joined, /six-week course turns that into a clear week/i);
     assert.doesNotMatch(consistency.joined, /\b\d+[- ]second\b/i);
-    assert.match(consistency.videoAttachmentUrl, /balance-founders-pass-dm-preview\.mp4/);
+    assert.equal(consistency.videoAttachmentUrl, '');
     assert.doesNotMatch(consistency.joined, /https?:\/\//);
 
     const nutrition = buildMetaAdGoalProofReply('I need help with vegan meals');
@@ -293,7 +293,7 @@ test('the reply after the goal is tailored and carries the right native proof me
     };
     assert.equal(
         coalescedAlertData.draft_video_attachment_url,
-        nutrition.videoAttachmentUrl,
+        undefined,
         'the webhook alert-shell merge must persist the approved native video for the sender'
     );
     const producerSource = fs.readFileSync(
@@ -466,7 +466,7 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         flowVariant: 'plant_based_control',
     });
     assert.match(nextStep.joined, /Founders Pass is probably the best starting point/i);
-    assert.match(nextStep.joined, /quick video/i);
+    assert.match(nextStep.joined, /full breakdown/i);
     assert.equal((nextStep.joined.match(/\?/g) || []).length, 1);
     assert.doesNotMatch(nextStep.joined, /https?:\/\//);
 
@@ -486,11 +486,10 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         flowVariant: 'plant_based_control',
         allowVideoAttachment: true,
     });
-    assert.match(acceptedSupportWithVideo.joined, /here's a quick video showing you how it works inside Balance/i);
-    assert.match(acceptedSupportWithVideo.videoAttachmentUrl, /balance-founders-pass-dm-preview\.mp4/);
-    assert.equal(acceptedSupportWithVideo.chunks.length, 2,
-        'the video must sit before the next sales question');
-    assert.match(acceptedSupportWithVideo.chunks[1], /does that feel like the kind of support you need/i);
+    assert.doesNotMatch(acceptedSupportWithVideo.joined, /quick video/i);
+    assert.equal(acceptedSupportWithVideo.videoAttachmentUrl, null);
+    assert.equal(acceptedSupportWithVideo.chunks.length, 1);
+    assert.match(acceptedSupportWithVideo.joined, /what the first week would look like/i);
 
     const buyer = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Send me the link',
@@ -532,7 +531,7 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         checkoutUrl,
     });
     assert.equal(priceAndInclusions.replyMode, 'campaign_sales_progression');
-    assert.match(priceAndInclusions.joined, /\$99 once/i);
+    assert.match(priceAndInclusions.joined, /\$89\.99 once/i);
     assert.doesNotMatch(priceAndInclusions.joined, /https?:\/\//);
     assert.equal(hasDirectPaidMetaCheckoutIntent("What's included in Balance app?"), false);
     assert.equal(hasDirectPaidMetaCheckoutIntent('I want to know your prices and what I get'), false);

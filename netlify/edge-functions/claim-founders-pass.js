@@ -1,6 +1,8 @@
 const STRIPE_API_VERSION = "2026-02-25.clover";
 const FOUNDERS_PRODUCT = "balance_vegan_founders_pass";
-const FOUNDERS_PLAN = "founders_pass_lifetime";
+const FOUNDERS_PLAN = "balance_foundations_six_week";
+const LEGACY_FOUNDERS_PLAN = "founders_pass_lifetime";
+const FOUNDATIONS_ACCESS_DAYS = 42;
 
 function json(payload, status = 200) {
     return new Response(JSON.stringify(payload), {
@@ -61,19 +63,27 @@ function purchaseFromSession(session) {
         || !email) {
         return null;
     }
+    const purchasedAt = new Date(Number(session.created || Math.floor(Date.now() / 1000)) * 1000);
+    const sessionPlan = String(session?.metadata?.balance_plan || "");
+    const balancePlan = sessionPlan === LEGACY_FOUNDERS_PLAN ? LEGACY_FOUNDERS_PLAN : FOUNDERS_PLAN;
+    const accessExpiresAt = balancePlan === FOUNDERS_PLAN
+        ? new Date(purchasedAt.getTime() + FOUNDATIONS_ACCESS_DAYS * 24 * 60 * 60 * 1000).toISOString()
+        : null;
     return {
         stripe_checkout_session_id: session.id,
         stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id || null,
         stripe_customer_id: typeof session.customer === "string" ? session.customer : session.customer?.id || null,
         email,
-        amount_minor: Number(session.amount_total || 9900),
+        amount_minor: Number(session.amount_total || 8999),
         currency: String(session.currency || "aud").toLowerCase(),
         status: "paid",
-        purchased_at: new Date(Number(session.created || Math.floor(Date.now() / 1000)) * 1000).toISOString(),
+        purchased_at: purchasedAt.toISOString(),
         metadata: {
-            balance_plan: FOUNDERS_PLAN,
+            balance_plan: balancePlan,
             product_type: FOUNDERS_PRODUCT,
-            access_type: "lifetime_core_app_community",
+            access_type: balancePlan === LEGACY_FOUNDERS_PLAN ? "lifetime_core_app_community" : "fixed_six_week_foundations",
+            access_days: balancePlan === FOUNDERS_PLAN ? FOUNDATIONS_ACCESS_DAYS : null,
+            access_expires_at: accessExpiresAt,
         },
     };
 }
@@ -110,7 +120,7 @@ export default async (request) => {
         const purchases = await supabaseRequest(
             supabaseUrl,
             serviceKey,
-            `founders_pass_purchases?select=id,stripe_checkout_session_id,status,user_id&email=eq.${encodeURIComponent(userEmail)}&status=eq.paid&order=purchased_at.desc&limit=1`
+            `founders_pass_purchases?select=id,stripe_checkout_session_id,status,user_id,purchased_at,metadata&email=eq.${encodeURIComponent(userEmail)}&status=eq.paid&order=purchased_at.desc&limit=1`
         );
         const purchase = Array.isArray(purchases) ? purchases[0] : null;
         if (!purchase) return json({ claimed: false, reason: "no_paid_founders_pass" });
@@ -120,12 +130,17 @@ export default async (request) => {
             method: "PATCH",
             body: { user_id: user.id, claimed_at: now },
         });
+        const purchasePlan = purchase?.metadata?.balance_plan === FOUNDERS_PLAN ? FOUNDERS_PLAN : LEGACY_FOUNDERS_PLAN;
+        const accessExpiresAt = purchasePlan === FOUNDERS_PLAN
+            ? purchase?.metadata?.access_expires_at || new Date(new Date(purchase.purchased_at).getTime() + FOUNDATIONS_ACCESS_DAYS * 24 * 60 * 60 * 1000).toISOString()
+            : null;
+        const expired = Boolean(accessExpiresAt && new Date(accessExpiresAt).getTime() <= Date.now());
         await supabaseRequest(supabaseUrl, serviceKey, `users?id=eq.${encodeURIComponent(user.id)}`, {
             method: "PATCH",
-            body: { subscription_status: "active", subscription_plan: FOUNDERS_PLAN },
+            body: { subscription_status: expired ? "expired" : "active", subscription_plan: purchasePlan },
         });
 
-        return json({ claimed: true, plan: FOUNDERS_PLAN });
+        return json({ claimed: true, plan: purchasePlan, accessExpiresAt, expired });
     } catch (error) {
         console.error("Founders Pass claim error:", error.message);
         return json({ error: "We could not activate the Founders Pass yet. Please try again shortly." }, 400);

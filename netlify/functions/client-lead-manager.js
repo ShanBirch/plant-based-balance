@@ -656,7 +656,7 @@ function buildApprovedCoachingAutoSchedulePatch(alert = {}, now = new Date()) {
 
 function containsCommercialDecisionText(...values) {
     const text = values.map(value => String(value || '')).join(' ').toLowerCase();
-    return /founders? pass|plant-based fitness|inside balance|join balance|sign\s*up|checkout|\$\s*99|99\s*(?:once|one[- ]?time)|one[- ]?time (?:price|payment)|lifetime access|six weeks? (?:with me|of coaching|support)|work with me|coaching (?:offer|package|program)|send you (?:the )?(?:details|link)|want me to send|book (?:a )?call|booking link|how (?:do|can) i (?:join|start)|ready to (?:join|start)/i.test(text);
+    return /founders? pass|balance foundations|plant-based fitness|inside balance|join balance|sign\s*up|checkout|\$\s*(?:89\.99|99)|(?:89\.99|99)\s*(?:once|one[- ]?time)|one[- ]?time (?:price|payment)|lifetime access|six weeks? (?:with me|of coaching|support)|work with me|coaching (?:offer|package|program)|send you (?:the )?(?:details|link)|want me to send|book (?:a )?call|booking link|how (?:do|can) i (?:join|start)|ready to (?:join|start)/i.test(text);
 }
 
 function shouldAutoScheduleCleanLeadCloudFallback(alert = {}, classification = {}) {

@@ -9460,9 +9460,9 @@ if(!window._pbbIsIOSSafari) {
             <svg viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22 14.86 20.57 16.29 22 18.43 19.86 19.86 21.29 21.29 19.86l-1.43-1.43L21.29 17l-1.43-1.43L18.43 17l-3.57-3.57z"/></svg>
             <span>Movement</span>
         </button>
-        <button class="nav-item" onclick="switchAppTab('learning', this)" aria-label="Learn">
+                <button class="nav-item" onclick="switchAppTab('learning', this)" aria-label="Course">
             <svg viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>
-            <span>Learn</span>
+                    <span>Course</span>
         </button>
         <button class="nav-item" id="nav-cycle-btn" onclick="switchAppTab('cycle', this)" aria-label="Cycle">
            <svg id="nav-cycle-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.22-7.52-3.22 3.22 7.52 3.22-7.52z"/></svg>
@@ -11874,7 +11874,7 @@ if(!window._pbbIsIOSSafari) {
         <!-- Header -->
         <div style="padding: 20px 25px; padding-top: calc(20px + env(safe-area-inset-top, 0px)); background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
             <div>
-                <h2 style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.5rem;">Learn</h2>
+                    <h2 style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.5rem;">Course</h2>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
                 <div class="coin-header-widget" onclick="openCoinShop()">
@@ -13443,7 +13443,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#form-check-quick-card', title:'Form Checks', body:"Film a quick exercise clip and send it to Shannon when you want him to check your technique. During a workout, use the form-check button at the top of workout mode." },
 
-    { tab:'learning', sel:'#learning-content [style*="background: white"],#learning-content [style*="background:white"],#learning-content', title:'Learn & earn XP', body:"Duolingo-style bite-sized fitness lessons. Score 100% on the quiz to earn XP." },
+    { tab:'learning', sel:'#balance-foundations-course-card', fallbackSel:'#learning-content', title:'Your six-week course', fallbackTitle:'Your course lives here', body:"Follow Balance Foundations week by week, then keep going with specialist courses. Every lesson you already completed still counts.", fallbackBody:"Open Course to follow Balance Foundations and browse the full specialist course library." },
 
     { tab:'cycle', sel:'#cycle-hero-card,#view-cycle', title:'Cycle Syncing', body:"Log your period and get workouts synced to your hormonal phases.", condition: function(){ try { return (window.currentUser && (window.currentUser.gender === 'female' || window.currentUser.gender === 'Female')); } catch(e){ return false; } } },
     { tab:'cycle', sel:'#weekly-calendar', title:'Plan your week', body:"Use the weekly calendar to drag workout days around, tap a day, and add walks, classes, Pilates, yoga, or another activity.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
@@ -13496,7 +13496,7 @@ if(!window._pbbIsIOSSafari) {
     'Calorie tracker widget': 'tour-08',
     'Quick log calories & macros': 'tour-09',
     'Your workout for the day': 'tour-10',
-    'Learn & earn XP': 'tour-11',
+    'Your six-week course': 'tour-11',
     'Say hi to Coach Shan': 'tour-12',
     'Edit your post': 'tour-13',
     'Post actions': 'tour-13'
@@ -14129,6 +14129,16 @@ if(!window._pbbIsIOSSafari) {
   // -------------------------------------------------------
 
   var allFeatures = [
+    {
+      id: 'balance-foundations-course-v1',
+      tab: 'learning',
+      sel: '#balance-foundations-course-card',
+      fallbackSel: '#learning-content',
+      title: 'Your six-week course',
+      fallbackTitle: 'Your course lives here',
+      body: 'Follow Balance Foundations week by week, then keep going with specialist courses. Every lesson you already completed still counts.',
+      fallbackBody: 'Open Course to follow Balance Foundations and browse the full specialist course library.'
+    },
     {
       id: 'unlimited-level-progression-v1',
       tab: 'dashboard',
@@ -15579,7 +15589,7 @@ if(!window._pbbIsIOSSafari) {
 
                 <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
                     <label style="display:block; font-weight:600; margin-bottom:6px; font-size:0.9rem;">What are you interested in learning about?</label>
-                    <p style="margin:0 0 12px; font-size:0.78rem; color:#64748b; line-height:1.4;">Pick a few topics. We’ll use these to tailor the Learning tab and future coaching tips.</p>
+        <p style="margin:0 0 12px; font-size:0.78rem; color:#64748b; line-height:1.4;">Pick a few topics. We’ll use these to recommend specialist courses and future coaching tips.</p>
                     <div class="pref-checkbox-list wizard-learning-chips" style="justify-content:flex-start; gap:6px;">
                         <div class="pref-checkbox" data-value="plant_based_cooking" onclick="toggleWizardChip(this, 'learning_interests')">🌱 Plant-based cooking</div>
                         <div class="pref-checkbox" data-value="macronutrient_science" onclick="toggleWizardChip(this, 'learning_interests')">📊 Macros</div>
@@ -15679,7 +15689,7 @@ if(!window._pbbIsIOSSafari) {
                 <!-- Learning interests -->
                 <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-top:15px;">
                     <label style="display:block; font-weight:600; margin-bottom:6px; font-size:0.9rem;">What are you interested in learning about?</label>
-                    <p style="margin:0 0 12px; font-size:0.78rem; color:#64748b; line-height:1.4;">Pick a few topics. We’ll use these to tailor the Learning tab and future coaching tips.</p>
+        <p style="margin:0 0 12px; font-size:0.78rem; color:#64748b; line-height:1.4;">Pick a few topics. We’ll use these to recommend specialist courses and future coaching tips.</p>
                     <div class="pref-checkbox-list wizard-learning-chips" style="justify-content:flex-start; gap:6px;">
                         <div class="pref-checkbox" data-value="plant_based_cooking" onclick="toggleWizardChip(this, 'learning_interests')">🌱 Plant-based cooking</div>
                         <div class="pref-checkbox" data-value="macronutrient_science" onclick="toggleWizardChip(this, 'learning_interests')">📊 Macros</div>
@@ -18336,11 +18346,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-            s.src = 'lib/learning-inline.js?v=12';
+      s.src = 'lib/learning-inline.js?v=13';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-        document.write('<script src="lib/learning-inline.js?v=12"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=13"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->

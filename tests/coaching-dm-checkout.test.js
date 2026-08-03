@@ -36,11 +36,11 @@ test('DM coaching page goes directly to hosted Stripe Checkout', () => {
 });
 
 test('What I Offer presents the Founders Pass as the primary offer', () => {
-    assert.match(coaching, /The Founders Pass is the main offer at AUD \$99 once/);
-    assert.match(coaching, /six weeks of one-to-one in-app coaching support from Shannon/i);
-    assert.match(coaching, /lifetime access to the core Balance app and plant-based community/i);
+    assert.match(coaching, /AU\$89\.99 Founders Pass is a fixed six-week course/);
+    assert.match(coaching, /one weekly check-in, workout and food review/i);
+    assert.match(coaching, /No auto-renewal/i);
     assert.match(coaching, /href="plant-based-fitness\.html#join">Get the Founders Pass<\/a>/);
-    assert.match(coaching, /Starter Coaching is there if you later want Shannon personally reviewing and adjusting your plan each week/);
+    assert.match(coaching, /Starter Coaching is AU\$29\.99 per week for ongoing individual progression/i);
     assert.doesNotMatch(coaching, /The main offer is AUD \$29\.99\/week/);
 });
 
@@ -97,11 +97,11 @@ test('all active DM handoffs use the permanent branded Founders Pass URL', () =>
 });
 
 test('Founders Pass page sells the one-time membership through guarded hosted checkout', () => {
-    assert.match(founders, /Balance Plant-Based Fitness Founders Pass/);
-    assert.match(founders, /AU\$99/);
-    assert.match(founders, /six weeks of one-to-one in-app coaching support/i);
-    assert.match(founders, /Lifetime core app \+ community access/i);
-    assert.match(founders, /Ongoing individual plan reviews and adjustments are available separately through Starter Coaching/i);
+    assert.match(founders, /Balance Foundations Founders Pass/);
+    assert.match(founders, /AU\$89\.99/);
+    assert.match(founders, /complete six-week Balance Foundations course/i);
+    assert.match(founders, /One payment\. Six weeks\. No auto-renewal/i);
+    assert.match(founders, /weekly workout and food review with adjustments/i);
     assert.match(founders, /id="terms-checkbox"/);
     assert.match(founders, /data-plan="founders-pass"/);
     assert.match(founders, /data-hosted-checkout-only="true"/);

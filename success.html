@@ -29,7 +29,8 @@
     // Dynamic Purchase Tracking
     const urlParams = new URLSearchParams(window.location.search);
     const checkoutPlan = urlParams.get('plan') || 'starter_weekly';
-    const purchaseValue = parseFloat(urlParams.get('amount')) || (checkoutPlan === 'founders_pass_lifetime' ? 99 : checkoutPlan === 'app_community_monthly' ? 19.99 : checkoutPlan === 'coaching_calls_weekly' ? 99.99 : 29.99);
+    const isFoundationsPlan = checkoutPlan === 'balance_foundations_six_week' || checkoutPlan === 'founders_pass_lifetime';
+    const purchaseValue = parseFloat(urlParams.get('amount')) || (isFoundationsPlan ? (checkoutPlan === 'founders_pass_lifetime' ? 99 : 89.99) : checkoutPlan === 'app_community_monthly' ? 19.99 : checkoutPlan === 'coaching_calls_weekly' ? 99.99 : 29.99);
 
     fbq('init', '1928402271406692'); 
     fbq('track', 'PageView');
@@ -153,9 +154,16 @@
             const planKey = urlParams.get('plan') || 'starter_weekly';
             const isAppCommunityPlan = planKey === 'app_community_monthly';
             const isCoachingCallsPlan = planKey === 'coaching_calls_weekly';
-            const isFoundersPass = planKey === 'founders_pass_lifetime';
-            const purchaseValue = parseFloat(urlParams.get('amount')) || (isFoundersPass ? 99 : isAppCommunityPlan ? 19.99 : isCoachingCallsPlan ? 99.99 : 29.99);
+            const isFoundersPass = planKey === 'balance_foundations_six_week' || planKey === 'founders_pass_lifetime';
+            const purchaseValue = parseFloat(urlParams.get('amount')) || (isFoundersPass ? (planKey === 'founders_pass_lifetime' ? 99 : 89.99) : isAppCommunityPlan ? 19.99 : isCoachingCallsPlan ? 99.99 : 29.99);
             const isBump = urlParams.get('bump') === 'true';
+
+            if (planKey === 'balance_foundations_six_week') {
+                const planName = document.getElementById('success-plan-name');
+                const readyCopy = document.getElementById('success-ready-copy');
+                if (planName) planName.textContent = 'Balance Foundations Founders Pass';
+                if (readyCopy) readyCopy.textContent = 'Once your setup is complete, your six-week course, app access and weekly coaching review are ready in Balance.';
+            }
 
             if (isAppCommunityPlan) {
                 const planName = document.getElementById('success-plan-name');

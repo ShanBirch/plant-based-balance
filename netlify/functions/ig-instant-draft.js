@@ -1215,7 +1215,7 @@ function buildDeterministicPaidMetaConversationReply({
     if (PAID_META_OFFER_INFO_RE.test(message)) {
         const communityCopy = broadFlow ? 'the Balance app and community' : 'the Balance app and plant-based community';
         const offerName = broadFlow ? 'The six-week Balance kickstart' : 'The Founders Pass';
-        const joined = `${offerName} is $99 once. You get six weeks of one-to-one in-app support from me for questions, direction and accountability, plus lifetime access to ${communityCopy}.\n\nWant me to show you how the first week would work around your goal?`;
+        const joined = `${offerName} is $89.99 once. You get the six-week Foundations course, six weeks of ${communityCopy}, and one weekly check-in and plan review with me. It doesn't renew automatically.\n\nWant me to show you how the first week would work around your goal?`;
         return {
             chunks: [joined],
             joined,
@@ -1243,7 +1243,7 @@ function buildDeterministicPaidMetaConversationReply({
 
     if (PAID_META_NEXT_STEP_RE.test(message) && hasGoal && hasBlocker) {
         const offerName = broadFlow ? 'the six-week Balance kickstart' : 'the Founders Pass';
-        const nextAsk = recentProofVideo
+        const nextAsk = recentProofVideo || !FOUNDERS_PASS_APP_PREVIEW_URL
             ? 'Want me to send you the full breakdown?'
             : 'Want me to send you the quick video so you can see how it works?';
         const joined = `Based on what you've told me, ${offerName} is probably the best starting point. It gives you a clear week to follow and support from me when that stop-start pattern kicks in.\n\n${nextAsk}`;
@@ -1260,7 +1260,7 @@ function buildDeterministicPaidMetaConversationReply({
 
     if (PAID_META_POSITIVE_FIT_RE.test(message) && hasRecentPaidMetaSupportQuestion(history)) {
         const offerName = broadFlow ? 'the six-week Balance kickstart' : 'the Founders Pass';
-        const canSendProofVideo = allowVideoAttachment && !broadFlow && !recentProofVideo;
+        const canSendProofVideo = Boolean(FOUNDERS_PASS_APP_PREVIEW_URL) && allowVideoAttachment && !broadFlow && !recentProofVideo;
         const nextAsk = recentProofVideo
             ? 'Want me to send you the full breakdown?'
             : (canSendProofVideo
@@ -1480,7 +1480,9 @@ async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason =
  *
  * Update this block when the ad's quick-replies or offering structure changes.
  */
-const FOUNDERS_PASS_APP_PREVIEW_URL = 'https://future-balance.netlify.app/assets/balance-founders-pass-dm-preview.mp4';
+// The previous preview displayed the retired $99 lifetime offer. Keep the
+// attachment disabled until a Foundations-specific preview is published.
+const FOUNDERS_PASS_APP_PREVIEW_URL = '';
 const ALLY_WEIGHT_LOSS_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/ally-cocos.png';
 const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/plant-based-fitness.html?utm_source=instagram&utm_medium=dm&utm_campaign=founders_pass_plant_based&utm_content=dm_handoff';
 const FOUNDERS_PASS_BROAD_CHECKOUT_URL = 'https://future-balance.netlify.app/fitness-coaching.html?utm_source=instagram&utm_medium=dm&utm_campaign=founders_pass_broad_pain&utm_content=dm_handoff';
@@ -1627,9 +1629,9 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     const intent = resolveMetaAdFirstReplyIntent(currentMessage);
     const checkoutUrl = foundersPassCheckoutUrlForMessage(currentMessage, customData, resolvedVariant, acquisitionMode);
     const accessLine = broadFlow
-        ? 'lifetime access to the core app and community.'
-        : 'lifetime access to the core app and plant-based community.';
-    const supportScope = `The Founders Pass is AU$99 once. You get six weeks of one-to-one in-app support with me for questions, direction and accountability, then ${accessLine} Ongoing individual weekly plan reviews and adjustments are separate.`;
+        ? 'six weeks of the Balance app and community.'
+        : 'six weeks of the Balance app and plant-based community.';
+    const supportScope = `The Founders Pass is AU$89.99 once. You get the six-week Foundations course, ${accessLine} It includes one weekly check-in plus workout and food review and adjustments with me, and it doesn't renew automatically.`;
     let answer;
     if (intent === 'fit' || intent === 'overview') {
         answer = `Hey, yeah of course. Before I send you a heap of generic info, what's the main thing you're trying to change with your fitness right now?`;
@@ -1691,11 +1693,12 @@ function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_b
     const text = rawMessage.toLowerCase();
     const broadFlow = flowVariant === 'broad_pain';
     const weightLossGoal = /weight|fat|lose|lean|tone|confiden|body/.test(text);
+    const courseProof = `Inside Balance, the six-week course turns that into a clear week to follow, with your learning, weekly goals and coaching review in one place.`;
     let bridge;
     if (/accountab|consisten|motivat|routine|habit|stick|on track|fall off|keep going/.test(text)) {
-        bridge = `yeah okay, it sounds like the hard part isn't knowing you should do it, it's keeping the week on track once life gets busy. Here's a quick video showing you how it works inside Balance.`;
+        bridge = `yeah okay, it sounds like the hard part isn't knowing you should do it, it's keeping the week on track once life gets busy. ${courseProof}`;
     } else if (/strong|strength|muscle|lift|gym|fitter|fitness|run|cardio/.test(text)) {
-        bridge = `nice, so the goal is to actually feel stronger and fitter, not just collect another plan. Here's a quick video showing you how it works inside Balance.`;
+        bridge = `nice, so the goal is to actually feel stronger and fitter, not just collect another plan. ${courseProof}`;
     } else if (weightLossGoal) {
         const kgGoal = rawMessage.match(/\b(\d{1,2}(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i)?.[1] || '';
         bridge = kgGoal
@@ -1703,10 +1706,10 @@ function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_b
             : `yeah absolutely, that's a big part of what I help people with. This is Ally. She lost 12kg in 16 weeks while working full time and being a busy mum. The biggest thing was building the plan around her life so she could actually stick to it.`;
     } else if (/food|meal|eat|nutrition|plant|vegan|vegetarian|protein/.test(text)) {
         bridge = broadFlow
-            ? `yeah okay, so food structure is the main thing. Here's a quick video showing you how it works inside Balance.`
-            : `yeah okay, so plant-based food structure is the main thing. Here's a quick video showing you how it works inside Balance.`;
+            ? `yeah okay, so food structure is the main thing. ${courseProof}`
+            : `yeah okay, so plant-based food structure is the main thing. ${courseProof}`;
     } else {
-        bridge = `yeah okay, that's helpful. Here's a quick video showing you how it works inside Balance.`;
+        bridge = `yeah okay, that's helpful. ${courseProof}`;
     }
     return {
         chunks: [bridge],
@@ -1870,8 +1873,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         && shouldUseDeterministicMetaAdFirstReply(message);
     const approvedGoalProof = (metaAdGoalReplyTurn || metaAdConversationFastLane)
         && draft?.replyMode === 'campaign_goal_proof'
-        && /^deterministic_meta_ad_goal_proof_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
-        && (!!draft.videoAttachmentUrl || !!draft.imageAttachmentUrl);
+        && /^deterministic_meta_ad_goal_proof_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''));
     const approvedConversationProgression = metaAdConversationFastLane
         && ['campaign_sales_progression', 'campaign_buyer_handoff'].includes(String(draft?.replyMode || ''))
         && /^deterministic_paid_meta_conversation_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
@@ -1889,7 +1891,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         verdict: 'pass',
         confidence: 1,
         summary: approvedGoalProof
-            ? 'Approved deterministic Meta ad goal reflection and native proof media.'
+            ? 'Approved deterministic Meta ad goal reflection and proof.'
             : (approvedConversationProgression
                 ? 'Approved deterministic paid Meta sales-progression reply.'
                 : 'Approved deterministic Meta ad first reply.'),
@@ -1909,7 +1911,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
 
 const META_AD_FUNNEL_CONTEXT = `
 LEAD ACQUISITION CONTEXT:
-The primary DM offer is the Balance Plant-Based Fitness Founders Pass: AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included. Starter Coaching at AUD $29.99/week is the optional ongoing higher-touch upgrade. The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The acquisition-mode block above is authoritative about whether Shannon initiated the relationship or the lead knowingly entered from a Meta ad. Meta may supply one of the example phrases below as the lead's prefilled opening. Treat it as their ordinary first sentence, not as a questionnaire step. Never restate a menu of options or ask them to choose from buttons. The words below trigger offer-inquiry mode:
+The primary DM offer is the Balance Foundations Founders Pass: AUD $89.99 once for a fixed six-week course, six weeks of app/community access, and one weekly check-in plus workout/food review and adjustments from Shannon. It does not auto-renew. Starter Coaching at AUD $29.99/week is the ongoing individual progression option after Foundations or from day one. The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The acquisition-mode block above is authoritative about whether Shannon initiated the relationship or the lead knowingly entered from a Meta ad. Meta may supply one of the example phrases below as the lead's prefilled opening. Treat it as their ordinary first sentence, not as a questionnaire step. Never restate a menu of options or ask them to choose from buttons. The words below trigger offer-inquiry mode:
   1. "What's actually included?"
   2. "Do I need to already be Plant Based?"
   3. "Do you offer personalized coaching plans?"
@@ -2490,7 +2492,7 @@ function buildOneOnOneCoachingBlock(flowVariant = 'plant_based_control', checkou
 
 BALANCE FOUNDERS PASS LINK:
 - This thread belongs to the broad Balance acquisition route. Keep the offer focused on fitness structure, follow-through, realistic routines, food guidance, coaching support and community. Do not introduce plant-based, vegan or vegetarian positioning unless the lead independently asks about it.
-- The Founders Pass is AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and community. It does not promise instant daily replies, unlimited access or fully customised weekly plan reviews.
+- The Founders Pass is AUD $89.99 once for the fixed six-week Balance Foundations course, six weeks of app/community access and one weekly check-in plus workout/food review and adjustments. It does not auto-renew.
 - Approved broad-route link: ${approvedCheckoutUrl}
 - This exact URL carries the stored Meta attribution. Do not shorten it, rebuild it, remove its parameters or switch to the plant-based landing page from a later generic message.
 - When the latest message asks for the offer link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct Founders Pass/details invite, send the approved broad-route link in the draft.
@@ -2504,13 +2506,13 @@ BALANCE FOUNDERS PASS LINK:
     return `
 
 BALANCE PLANT-BASED FITNESS FOUNDERS PASS LINK:
-- The primary DM offer is the Balance Plant-Based Fitness Founders Pass: AUD $99 once for six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. It does not promise instant daily replies, unlimited access or fully customised weekly plan reviews. Starter Coaching is the optional ongoing higher-touch upgrade. The normal path is explanation, acceptance, and checkout inside DMs.
+- The primary DM offer is the Balance Foundations Founders Pass: AUD $89.99 once for a fixed six-week course, six weeks of app/community access and one weekly check-in plus workout/food review and adjustments. It does not auto-renew. Starter Coaching is the ongoing individual progression option after Foundations or from day one. The normal path is explanation, acceptance, and checkout inside DMs.
 - Approved Founders Pass link: ${approvedCheckoutUrl}
 ${attributionRule}
 - When the latest message asks for the offer link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct Founders Pass/details invite, send the approved link in the draft.
 - If the latest message asks to reconnect with Balance, the app/helper, login, password, account access, or any app bug, treat it as support first and do not send the coaching link.
 - Keep the link handoff light, not a brochure: stoked they are keen, here's the link, it has the quick info on the six-week setup, app and community, check it out, then come back to Shannon here if they want to chat through it.
-- Frame it as a $99 once plant-based fitness founding membership with six weeks of one-to-one in-app coaching support. Never say it has no 1:1 coaching. Mention the full app feature rundown only when they ask what is included.
+- Frame it as an $89.99 once six-week Foundations course with one weekly coaching review and no auto-renewal. Mention the full app feature rundown only when they ask what is included.
 - If they only ask a general help question and have not asked for offer details/link, do not send the link yet. Reply to the question and use a low-pressure statement-led bridge if the Founders Pass might fit.
 - If they ask whether it is local/in-person or mention they already have a PT/trainer, do not send the link yet. Answer that the Founders Pass is an online guided app and plant-based community, not in-person training, and check whether that would still suit them.`;
 }
@@ -3466,7 +3468,7 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
     if (sentComment) lines.push(`Shannon's native story reply/comment: "${sentComment}"`);
     if (storyUrl) lines.push(`Story URL: ${storyUrl}`);
     if (!thread?.linked_user_id && primaryOffer === 'balance_starter_coaching') {
-        lines.push('Sales context: story outreach lead. Voice priority: no sales script, brochure, or urgency. If real help/food/training/consistency signal appears, bridge to the paid Balance Plant-Based Fitness Founders Pass ($99 once, six weeks of in-app coaching support from Shannon plus lifetime core app and plant-based community access). Do not offer a free challenge.');
+        lines.push('Sales context: story outreach lead. Voice priority: no sales script, brochure, or urgency. If real help/food/training/consistency signal appears, bridge to the paid Balance Foundations Founders Pass ($89.99 once, fixed six-week course, weekly check-in and plan review, no auto-renewal). Do not offer a free challenge.');
     }
 
     return {

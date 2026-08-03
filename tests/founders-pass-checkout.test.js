@@ -20,18 +20,20 @@ test('one-time Founders Pass has a complete purchase and activation path', () =>
 
     assert.match(page, /data-plan="founders-pass"/);
     assert.match(page, /Six weeks with Shannon in your corner/);
-    assert.match(page, /questions, direction and accountability/i);
-    assert.match(page, /not instant or unlimited daily access and not a fully customised weekly plan-review service/i);
-    assert.match(guard, /balance_vegan_founders_pass[\s\S]*?unitAmount: 9900[\s\S]*?mode: "payment"/);
+    assert.match(page, /one weekly check-in/i);
+    assert.match(page, /does not renew automatically/i);
+    assert.match(guard, /balance_vegan_founders_pass[\s\S]*?unitAmount: 8999[\s\S]*?mode: "payment"/);
     assert.match(checkout, /checkout\.plan\.mode === "subscription"/);
     assert.match(checkout, /payment_intent_data\[metadata\]/);
-    assert.match(checkout, /founders_pass_lifetime/);
+    assert.match(checkout, /balance_foundations_six_week/);
     assert.match(checkout, /safeReturnPath/);
     assert.match(checkout, /"\/plant-based-fitness\.html", "\/fitness-coaching\.html"/);
     assert.match(checkout, /`\$\{cancelPath\}#join`/);
     assert.match(claim, /payment_status !== "paid"/);
     assert.match(claim, /This purchase does not match the signed-in account/);
-    assert.match(claim, /subscription_plan: FOUNDERS_PLAN/);
+    assert.match(claim, /subscription_status: expired \? "expired" : "active"/);
+    assert.match(claim, /access_expires_at: accessExpiresAt/);
+    assert.match(read('lib/auth-guard.js'), /fetch\('\/\.netlify\/functions\/claim-founders-pass'/);
     assert.match(webhook, /recordFoundersPassSale/);
     assert.match(webhook, /event_type: "purchase_completed"/);
     assert.match(webhook, /utm_content: cleanString\(session\?\.metadata\?\.utm_content/);
@@ -69,6 +71,24 @@ test('Founders Pass experiment has two honest measured landing experiences', () 
     assert.match(analytics, /checkout_click/);
     assert.match(eventLogger, /checkout_started/);
     assert.match(eventLogger, /onboarding_completed/);
+});
+
+test('Balance Foundations is a six-week course that preserves the existing lesson library', () => {
+    const learning = read('lib/learning-inline.js');
+    const dashboard = read('dashboard.html');
+
+    assert.match(learning, /const BALANCE_FOUNDATIONS = Object\.freeze\(\{/);
+    assert.equal((learning.match(/Object\.freeze\(\{ number:\s*[1-6],/g) || []).length, 6);
+    assert.match(learning, /getFoundationsProgress/);
+    assert.match(learning, /new Set\(progress\?\.lessons_completed \|\| \[\]\)/);
+    assert.match(learning, /completedSet\.has\(id\)/);
+    assert.match(learning, /id="balance-foundations-course-card"/);
+    assert.match(learning, /Course Library/);
+    assert.match(learning, /foundations_course_completed/);
+    assert.match(learning, /Continue with weekly coaching/);
+    assert.match(dashboard, /id: 'balance-foundations-course-v1'/);
+    assert.match(dashboard, /sel: '#balance-foundations-course-card'/);
+    assert.match(dashboard, /fallbackSel: '#learning-content'/);
 });
 
 test('Founders Pass onboarding captures the real-world blocker behind consistency', () => {

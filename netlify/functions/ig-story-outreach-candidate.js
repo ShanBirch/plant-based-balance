@@ -33,8 +33,8 @@ const STORY_COMMENT_FAST_PIPELINE_VERSION = 'story-single-pass-evidence-first-v2
 const STORY_OUTREACH_SALES_CONTEXT = {
     acquisition_source: 'native_story_outreach',
     primary_offer: 'balance_vegan_founders_pass',
-    offer_price: 'AUD $99 once',
-    offer_access: 'six weeks of in-app coaching support from Shannon plus lifetime core app and plant-based community access',
+    offer_price: 'AUD $89.99 once',
+    offer_access: 'fixed six-week Balance Foundations course, six weeks of app/community access and one weekly coaching review, with no auto-renewal',
     first_touch_rule: 'story reply is rapport only; no coaching, checkout, or link pitch',
     dm_rule: 'when they reply and show help, food, training, consistency, or enough relationship context, bridge to the Plant-Based Fitness Founders Pass and close through DMs; Starter Coaching is an optional upgrade, calls are escalation only, and there is no free-challenge funnel',
 };

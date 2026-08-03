@@ -293,7 +293,7 @@
 # Meal reminders - schedule is defined inline in send-meal-reminders.mjs via export config
 # Runs every 10 minutes to check if any users need meal reminders
 
-# Onboarding sequence scheduled scan - days 3/7/14/30 check-ins
+# Onboarding sequence scheduled scan - days 3/7/14/30 plus Foundations days 35/42
 # Runs every 4 hours at :17 to stagger from the pulse scans and sync jobs.
 [functions."onboarding-scheduled-scan"]
   schedule = "17 */4 * * *"

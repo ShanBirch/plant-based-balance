@@ -54,7 +54,7 @@ Decide which ad message, landing experience, DM path, and onboarding flow produc
 | `/plant-based-fitness.html` | `plant_based_control` | Control message for people already identifying with plant-based fitness |
 | `/fitness-coaching.html` | `broad_pain` | Fully broad challenger for restarting, follow-through and busy-life pain, with no plant-based positioning in the ad, landing page or DM handoff |
 
-Run both routes against the same AU$99 Founders Pass and broad Australia ad set. Keep the offer, budget and DM objective stable so the message route is the main experimental difference. The control keeps the plant-based identity end to end. The challenger stays broad end to end. Do not blend the copy after the click or inside DMs.
+Run both routes against the same AU$89.99 six-week Balance Foundations Founders Pass and broad Australia ad set. Keep the offer, budget and DM objective stable so the message route is the main experimental difference. The control keeps the plant-based identity end to end. The challenger stays broad end to end. Do not blend the copy after the click or inside DMs. Measure checkout completion as the primary conversion, week-one course starts as the activation guardrail, and week-six continuation into App + Community or Starter Coaching as the downstream value measure. Review the new offer after the first 20 paid checkouts or four weeks, whichever comes later.
 
 ## Launch checklist
 

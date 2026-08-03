@@ -31,12 +31,12 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 - All Shannon/Balance science-Reel work must also read `content-lab/SHANNON-SCIENCE-REEL-MASTER-CONTRACT.md`. Keep the research, evidence, production, face-protection and QA standards high while making the spoken voice deliberately raw, direct, uneven and less presenter-like.
 - Facebook Pixel: `1928402271406692`.
 - Pricing:
-  - Balance Plant-Based Fitness Founders Pass: AUD $99 once. Six weeks of one-to-one in-app coaching support from Shannon for questions, direction and accountability, plus lifetime access to the core Balance app and plant-based community. This is real personal coaching support, not an app-only product. Instant daily replies, unlimited access and fully customised weekly plan reviews are not included.
+  - Balance Foundations Founders Pass: AUD $89.99 once. A fixed six-week Balance Foundations course with six weeks of app/community access, one weekly check-in, and workout and food review/adjustments from Shannon. It does not auto-renew. The founding price is about 50% of six weeks of Starter Coaching at AUD $179.94. Instant daily replies, unlimited access and live calls are not included. Existing members who purchased the earlier lifetime Founders Pass keep the lifetime entitlement they were promised.
   - Balance App + Community: AUD $19.99/month for self-directed ongoing app/community access, tailored workout structure and Weekly Goals, without weekly one-to-one review.
   - Balance Starter Coaching: AUD $29.99/week for one weekly check-in plus workout and food review/adjustments from Shannon.
 - Balance Coaching + Calls: AUD $99.99/week for Starter Coaching plus one weekly live call and deeper review.
 - Balance 1:1 Zoom PT is a capacity-limited premium service with live 30-minute sessions, personalised programming, general vegetarian or plant-based food guidance, Balance access, and in-app accountability. Zoom PT 1 is AUD $125/week for one session, Zoom PT 3 is AUD $275/week for three sessions, and Zoom PT 5 is AUD $425/week for five sessions. It begins with a six-week coaching block. Confirm health fit and recurring availability before taking payment; public website CTAs book a fit call rather than opening checkout.
-- Route by fit instead of forcing the Founders Pass: guided kickstart/reset -> Founders Pass; self-directed app/community -> App + Community; personalised weekly review/adjustments -> Starter Coaching; a weekly conversation/deeper review -> Coaching + Calls; live supervised workouts -> 1:1 Zoom PT. Use `https://plantbased-balance.org/coaching.html` for package comparison. Zoom PT requires an availability and health-fit check before payment.
+- Route by fit instead of forcing the Founders Pass: structured six-week starting course -> Founders Pass; self-directed ongoing app/community -> App + Community; ongoing personalised weekly progression and review -> Starter Coaching; a weekly conversation/deeper review -> Coaching + Calls; live supervised workouts -> 1:1 Zoom PT. The Founders Pass and Starter both include one weekly review during the first six weeks, but Founders follows the fixed Foundations curriculum and ends after six weeks while Starter continues weekly until cancelled. Use `https://plantbased-balance.org/coaching.html` for package comparison. Zoom PT requires an availability and health-fit check before payment.
 
 ## Strategy
 
@@ -49,18 +49,18 @@ The real funnel:
 1. Instagram/Facebook outreach, content, referrals, or ads create a conversation.
 2. Lead lands in IG/FB DMs with Shannon.
 3. The DM flow builds rapport, identifies the live goal/blocker, and qualifies fit without interrogating.
-4. When earned, offer the Balance Plant-Based Fitness Founders Pass at AUD $99 once and complete the sale through DMs.
+4. When earned, offer the Balance Foundations Founders Pass at AUD $89.99 once and complete the sale through DMs.
 5. Send the Founders Pass details/checkout link in the DM when they ask or accept. Do not require a call.
 6. Offer a short call only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. The call is an escalation lane, not the default close.
-7. If they explicitly want Shannon personally reviewing and adjusting their plan each week, offer Starter Coaching at $29.99/week as the optional upgrade.
+7. At the end of Foundations, route by fit: App + Community at $19.99/month for self-directed continuation, or Starter Coaching at $29.99/week for ongoing individual progression and weekly review. Starter may also be chosen directly from day one.
 
-Critical: Balance no longer uses a free 30-day challenge as its acquisition or conversion path. DMs are the primary sales surface, and the Plant-Based Fitness Founders Pass is the primary offer. Starter Coaching is the optional higher-touch upgrade.
+Critical: Balance no longer uses a free 30-day challenge as its acquisition or conversion path. DMs are the primary sales surface, and the Balance Foundations Founders Pass is the primary six-week entry offer. App + Community and Starter Coaching are the natural continuation options, not automatic renewals.
 
 Shannon is currently running a live six-week Balance challenge. Keep its participant experience, daily proof, recap, and challenge Story automations active. It is current client/community delivery and social proof, not the default lead-acquisition offer. Do not confuse it with the retired free 30-day funnel or invite unlinked leads into it as the normal DM close.
 
-Canonical Plant-Based Fitness Founders Pass signup path:
+Canonical Balance Foundations Founders Pass signup path:
 
-1. Explain the fit and AUD $99 one-time offer inside the DM. Be clear that six weeks of in-app coaching support from Shannon are included, while ongoing individual weekly plan reviews and adjustments after the kickstart are separate.
+1. Explain the fit and AUD $89.99 one-time offer inside the DM. Be clear that it is a six-week course with one weekly check-in and plan review, six weeks of app/community access, and no automatic renewal. Ongoing access after week six is separate.
 2. When the lead asks for details, accepts, or says they are ready, send `https://plantbased-balance.org/plant-based-fitness.html`.
 3. The branded Founders Pass page gives a clear offer summary and starts a Stripe-hosted one-time Checkout Session after legal acceptance.
 4. Stripe webhook-backed payment is the sale; then onboarding continues through Balance.

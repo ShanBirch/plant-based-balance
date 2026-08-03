@@ -41,7 +41,7 @@ const {
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 
-const BUCKET_MINUTES = 90; // how wide the "just crossed the threshold" window is
+const BUCKET_MINUTES = 300; // covers the four-hour production cadence with a safe overlap
 
 // ============================================================
 // Milestones — days elapsed + prompt builder
@@ -119,6 +119,30 @@ const MILESTONES = [
         windowMs: 30 * 24 * 60 * 60 * 1000,
         requiresNeedsYou: true,
         instructions: `First-month celebration. Summarise the wins specifically (workout count, PBs hit, weight change if logged). Name ONE thing to focus on next month. Do not force a question; ask one only if a missing detail genuinely helps Shannon steer the next month. Genuine pride, not corporate "congrats on your journey". Aussie hype.`,
+    },
+    {
+        days: 35,
+        alertType: 'foundations_day_35_review',
+        priority: 'high',
+        title: (name) => `${name} — Foundations week 5 review`,
+        lengthBrief: '2-4 sentences',
+        windowLabel: 'FIVE WEEKS',
+        windowMs: 35 * 24 * 60 * 60 * 1000,
+        requiredPlan: 'balance_foundations_six_week',
+        requiresNeedsYou: true,
+        instructions: `This is the personal week-five review for a Balance Foundations member. Recognise specific progress, name the strongest useful pattern Shannon has seen, and set one clear focus for the final week. Do not sell yet. Ask one short question that helps Shannon decide whether self-directed app access or ongoing Starter Coaching will suit them after week six.`,
+    },
+    {
+        days: 42,
+        alertType: 'foundations_day_42_next_step',
+        priority: 'urgent',
+        title: (name) => `${name} — Foundations completion and next step`,
+        lengthBrief: '3-5 sentences',
+        windowLabel: 'SIX WEEKS',
+        windowMs: 42 * 24 * 60 * 60 * 1000,
+        requiredPlan: 'balance_foundations_six_week',
+        requiresNeedsYou: true,
+        instructions: `This is the end of their included six-week Balance Foundations block. Celebrate specific progress and briefly explain that the included course access and weekly support are ending. Recommend ONE next step based on their behaviour: App + Community at AUD $19.99/month if they are ready to continue self-directed, or Starter Coaching at AUD $29.99/week if they want Shannon to keep reviewing and adjusting their plan weekly. Keep it personal and low pressure. Do not imply automatic renewal.`,
     },
 ];
 
@@ -398,7 +422,7 @@ exports.handler = async (event) => {
         let candidates = [];
         try {
             candidates = await supabaseQuery(
-                `coach_clients?select=coach_id,client_id,assigned_at,client:users!coach_clients_client_id_fkey(id,name,email,is_test_account)&status=eq.active&assigned_at=gte.${bucketStart}&assigned_at=lt.${bucketEnd}`
+                `coach_clients?select=coach_id,client_id,assigned_at,client:users!coach_clients_client_id_fkey(id,name,email,is_test_account,subscription_plan)&status=eq.active&assigned_at=gte.${bucketStart}&assigned_at=lt.${bucketEnd}`
             );
         } catch (err) {
             console.error(`[onboarding-scan] day_${milestone.days} query failed: ${err.message}`);
@@ -408,6 +432,9 @@ exports.handler = async (event) => {
 
         const beforeFilter = candidates.length;
         candidates = candidates.filter(c => !c.client?.is_test_account);
+        if (milestone.requiredPlan) {
+            candidates = candidates.filter(c => c.client?.subscription_plan === milestone.requiredPlan);
+        }
         if (candidates.length !== beforeFilter) {
             console.log(`[onboarding-scan] day_${milestone.days} filtered ${beforeFilter - candidates.length} test account(s)`);
         }

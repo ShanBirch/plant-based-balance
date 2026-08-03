@@ -8,9 +8,11 @@ const SITE_URL = Deno.env.get("URL") || "https://plantbased-balance.org";
 const STARTER_COACHING_PRODUCT = "Balance Starter Coaching";
 const APP_COMMUNITY_PRODUCT = "Balance App + Community";
 const COACHING_CALLS_PRODUCT = "Balance Coaching + Calls";
-const FOUNDERS_PASS_PRODUCT = "Balance Plant-Based Fitness Founders Pass";
+const FOUNDERS_PASS_PRODUCT = "Balance Foundations Founders Pass";
 const FOUNDERS_PASS_PRODUCT_TYPE = "balance_vegan_founders_pass";
-const FOUNDERS_PASS_PLAN = "founders_pass_lifetime";
+const FOUNDERS_PASS_PLAN = "balance_foundations_six_week";
+const LEGACY_FOUNDERS_PASS_PLAN = "founders_pass_lifetime";
+const FOUNDATIONS_ACCESS_DAYS = 42;
 
 function subscriptionOfferDetails(plan) {
     if (plan === "app_community_monthly") {
@@ -592,9 +594,14 @@ async function recordFoundersPassSale(context, stripeEvent, session) {
     ).toLowerCase();
     if (!email) return { skipped: "missing_checkout_email" };
 
-    const amountMinor = Math.max(0, Number(session.amount_total || 9900));
+    const amountMinor = Math.max(0, Number(session.amount_total || 8999));
     const currency = cleanCurrency(session.currency || "aud");
     const purchasedAt = isoFromStripeTimestamp(session.created) || new Date().toISOString();
+    const sessionPlan = String(session?.metadata?.balance_plan || "");
+    const purchasePlan = sessionPlan === LEGACY_FOUNDERS_PASS_PLAN ? LEGACY_FOUNDERS_PASS_PLAN : FOUNDERS_PASS_PLAN;
+    const accessExpiresAt = purchasePlan === FOUNDERS_PASS_PLAN
+        ? new Date(new Date(purchasedAt).getTime() + FOUNDATIONS_ACCESS_DAYS * 24 * 60 * 60 * 1000).toISOString()
+        : null;
     const attribution = {
         utm_source: cleanString(session?.metadata?.utm_source, 128) || null,
         utm_medium: cleanString(session?.metadata?.utm_medium, 128) || null,
@@ -636,9 +643,11 @@ async function recordFoundersPassSale(context, stripeEvent, session) {
                 purchased_at: purchasedAt,
                 claimed_at: user?.id ? new Date().toISOString() : null,
                 metadata: {
-                    balance_plan: FOUNDERS_PASS_PLAN,
+                    balance_plan: purchasePlan,
                     product_type: FOUNDERS_PASS_PRODUCT_TYPE,
-                    access_type: "lifetime_core_app_community",
+                    access_type: purchasePlan === LEGACY_FOUNDERS_PASS_PLAN ? "lifetime_core_app_community" : "fixed_six_week_foundations",
+                    access_days: purchasePlan === FOUNDERS_PASS_PLAN ? FOUNDATIONS_ACCESS_DAYS : null,
+                    access_expires_at: accessExpiresAt,
                     stripe_event_id: stripeEvent.id,
                     attribution,
                 },
@@ -685,7 +694,10 @@ async function recordFoundersPassSale(context, stripeEvent, session) {
         await supabaseRequest(`users?id=eq.${encodeURIComponent(user.id)}`, {
             method: "PATCH",
             prefer: "return=minimal",
-            body: { subscription_status: "active", subscription_plan: FOUNDERS_PASS_PLAN },
+            body: {
+                subscription_status: "active",
+                subscription_plan: purchasePlan,
+            },
         });
         await syncLinkedLeadStages([user.id], "active");
     }
@@ -715,13 +727,14 @@ async function recordFoundersPassSale(context, stripeEvent, session) {
             amount_display: amountDisplay,
             currency,
             recurring_interval: "none",
-            checkins_per_week: "0",
+            checkins_per_week: purchasePlan === FOUNDERS_PASS_PLAN ? "1" : "0",
             calls_per_week: "0",
             email,
             user_id: user?.id || null,
             lifecycle: { stage: "paying" },
             subscription_status: "active",
-            subscription_plan: FOUNDERS_PASS_PLAN,
+            subscription_plan: purchasePlan,
+            access_expires_at: accessExpiresAt,
             stripe_customer_id: normalizeStripeId(session.customer) || null,
             checkout_session_id: session.id,
             payment_intent_id: normalizeStripeId(session.payment_intent) || null,

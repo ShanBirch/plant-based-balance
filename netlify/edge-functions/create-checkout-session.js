@@ -106,7 +106,8 @@ export default async (request, context) => {
         const purchaseMetadata = {
             ...subscriptionData.metadata,
             product_type: plan.balanceProduct,
-            access_type: "lifetime_core_app_community",
+            access_type: "fixed_six_week_foundations",
+            access_days: String(plan.accessDays || ""),
         };
 
         // No trial: the first subscription payment is due today.
@@ -118,7 +119,7 @@ export default async (request, context) => {
             subscriptionMetadata: subscriptionData.metadata,
             paymentMetadata: purchaseMetadata,
             successUrl: checkoutOrigin + `/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan.balancePlan)}&amount=${(plan.unitAmount / 100).toFixed(2)}&bump=${bump && plan.allowBump ? "true" : "false"}`,
-            cancelUrl: checkoutOrigin + (plan.balancePlan === "founders_pass_lifetime" ? `${cancelPath}#join` : "/plantbasedswitch.html"),
+            cancelUrl: checkoutOrigin + (plan.balancePlan === "balance_foundations_six_week" ? `${cancelPath}#join` : "/plantbasedswitch.html"),
             metadata: {
                 checkout_email: checkoutEmail,
                 balance_product: plan.balanceProduct,
@@ -127,7 +128,8 @@ export default async (request, context) => {
                 calls_per_week: plan.callsPerWeek,
                 price_token: priceId || "",
                 product_type: plan.balanceProduct,
-                access_type: plan.mode === "payment" ? "lifetime_core_app_community" : "recurring_membership",
+                access_type: plan.mode === "payment" ? "fixed_six_week_foundations" : "recurring_membership",
+                access_days: String(plan.accessDays || ""),
                 landing_page_variant: pageVariant || "general",
                 landing_return_path: cancelPath,
                 fbc: fbc || "",

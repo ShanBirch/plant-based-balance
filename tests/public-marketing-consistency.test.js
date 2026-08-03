@@ -42,16 +42,17 @@ test('offer facts agree across marketing and legal pages', () => {
     const refunds = visibleText('refund-policy.html');
 
     for (const content of [founders, coaching]) {
-        assert.match(content, /(?:AU|AUD)?\$99 once/i);
-        assert.match(content, /six weeks of one-to-one in-app coaching support/i);
-        assert.match(content, /lifetime access to the core Balance app and plant-based community/i);
+        assert.match(content, /(?:AU|AUD)?\$89\.99 once/i);
+        assert.match(content, /six-week/i);
+        assert.match(content, /one weekly check-in/i);
+        assert.match(content, /no auto-renewal|does not renew|does not auto-renew/i);
     }
 
-    assert.match(agreement, /does not include instant replies, unlimited daily one-to-one access or fully customised weekly plan reviews/i);
+    assert.match(agreement, /does not include instant replies, unlimited daily one-to-one access or live calls/i);
     assert.match(coaching, /Starter Coaching.*\$29\.99 \/week/s);
-    assert.match(terms, /Balance Plant-Based Fitness Founders Pass/);
+    assert.match(terms, /Balance Foundations Founders Pass/);
     assert.match(refunds, /Founders Pass is a one-time purchase/);
-    assert.match(founders, /FOUNDERS PASS AU\$99 ONCE 6 WEEKS WITH SHANNON LIFETIME CORE ACCESS/);
+    assert.match(founders, /BALANCE FOUNDATIONS FOUNDERS PASS AU\$89\.99 ONCE 6-WEEK COURSE WEEKLY COACHING REVIEW/);
 });
 
 test('Shannon story agrees wherever it appears', () => {
