@@ -244,6 +244,73 @@
             line-height: 1.55;
         }
 
+        .coaching-photo-break {
+            display: grid;
+            grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+            gap: 18px;
+            margin-top: 8px;
+        }
+
+        .coaching-photo {
+            position: relative;
+            min-height: 420px;
+            overflow: hidden;
+            border-radius: 28px;
+            background: #243124;
+            box-shadow: 0 20px 46px rgba(36, 49, 36, 0.16);
+        }
+
+        .coaching-photo img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+        }
+
+        .coaching-photo.group-photo img {
+            object-position: center 32%;
+        }
+
+        .coaching-photo.training-photo img {
+            object-position: center 38%;
+        }
+
+        .coaching-photo::after {
+            content: '';
+            position: absolute;
+            inset: 42% 0 0;
+            background: linear-gradient(180deg, transparent, rgba(12, 18, 12, 0.82));
+            pointer-events: none;
+        }
+
+        .coaching-photo figcaption {
+            position: absolute;
+            z-index: 1;
+            right: 24px;
+            bottom: 22px;
+            left: 24px;
+            color: #ffffff;
+            -webkit-text-fill-color: #ffffff;
+        }
+
+        .coaching-photo figcaption span {
+            display: block;
+            margin-bottom: 5px;
+            color: #f1cc71;
+            -webkit-text-fill-color: #f1cc71;
+            font-size: 0.72rem;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .coaching-photo figcaption strong {
+            display: block;
+            font-family: "Outfit", sans-serif;
+            font-size: clamp(1.35rem, 2.4vw, 2rem);
+            line-height: 1.08;
+        }
+
         @media (max-width: 640px) {
             .checkout-inclusions,
             .checkout-plan-grid,
@@ -254,6 +321,26 @@
             .checkout-plan-option.founders-option {
                 grid-template-columns: 1fr;
                 gap: 18px;
+            }
+
+            .coaching-photo-break {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+
+            .coaching-photo {
+                min-height: 340px;
+                border-radius: 22px;
+            }
+
+            .coaching-photo.training-photo {
+                min-height: 390px;
+            }
+
+            .coaching-photo figcaption {
+                right: 18px;
+                bottom: 18px;
+                left: 18px;
             }
         }
     </style>
@@ -365,6 +452,24 @@
                         <a class="btn primary offer-cta" href="#plan-checkout">Start coaching + calls</a>
                     </article>
                 </div>
+            </section>
+
+            <section class="section coaching-photo-break" aria-label="Shannon's coaching experience">
+                <figure class="coaching-photo group-photo reveal">
+                    <img src="photos/journey/melbourne-gym-group.png" alt="Shannon with members of his Melbourne personal training studio" width="1043" height="1391" loading="lazy" decoding="async">
+                    <figcaption>
+                        <span>real-world coaching</span>
+                        <strong>Built around people, not perfect weeks.</strong>
+                    </figcaption>
+                </figure>
+
+                <figure class="coaching-photo training-photo reveal">
+                    <img src="photos/shannon-portrait.jpg" alt="Shannon holding training ropes outdoors" width="900" height="1347" loading="lazy" decoding="async">
+                    <figcaption>
+                        <span>train with Shannon</span>
+                        <strong>Progress at your pace.</strong>
+                    </figcaption>
+                </figure>
             </section>
 
             <section class="section zoom-pt-section" id="zoom-pt">

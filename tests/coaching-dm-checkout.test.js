@@ -56,6 +56,14 @@ test('What I Offer presents capacity-gated 1:1 Zoom PT pricing', () => {
     assert.doesNotMatch(coaching, /data-plan="zoom-pt/);
 });
 
+test('What I Offer uses real coaching photography between offer sections', () => {
+    assert.match(coaching, /photos\/journey\/melbourne-gym-group\.png/);
+    assert.match(coaching, /photos\/shannon-portrait\.jpg/);
+    assert.match(coaching, /alt="Shannon with members of his Melbourne personal training studio"/);
+    assert.match(coaching, /alt="Shannon holding training ropes outdoors"/);
+    assert.match(coaching, /loading="lazy" decoding="async"/);
+});
+
 test('Zoom PT availability choice reaches the booking record and calendar event', () => {
     assert.match(booking, /bookingSource === 'zoom_pt'/);
     assert.match(booking, /ptSessionsPerWeek/);
