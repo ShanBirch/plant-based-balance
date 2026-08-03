@@ -14,6 +14,7 @@ const {
     ensureMetaAdSalesProgressionQuestion,
     buildDeterministicPaidMetaConversationReply,
     buildPaidMetaConversationApproval,
+    buildDraftVideoAttachmentData,
     filterMetaAdCardAttachmentHistory,
     buildLeadOnboardingHandoffData,
     resolveMetaAdFirstReplyIntent,
@@ -281,6 +282,23 @@ test('the reply after the goal is tailored and carries a native video attachment
     assert.equal(proofReview.verdict, 'pass');
     assert.equal(proofReview.notification_required, false);
     assert.equal(proofReview.reviewer_model, 'deterministic-meta-ad-goal-proof-approval');
+    const coalescedAlertData = {
+        existing_shell_field: true,
+        ...buildDraftVideoAttachmentData(nutrition),
+    };
+    assert.equal(
+        coalescedAlertData.draft_video_attachment_url,
+        nutrition.videoAttachmentUrl,
+        'the webhook alert-shell merge must persist the approved native video for the sender'
+    );
+    const producerSource = fs.readFileSync(
+        path.join(__dirname, '..', 'netlify', 'functions', 'ig-instant-draft.js'),
+        'utf8'
+    );
+    assert.ok(
+        (producerSource.match(/\.\.\.buildDraftVideoAttachmentData\(draft\)/g) || []).length >= 3,
+        'new alerts, coalesced webhook shells, and repaired drafts must all preserve the video attachment'
+    );
 
     const weightGoal = buildMetaAdGoalProofReply('I need to lose weight, probably 15kgs');
     assert.match(weightGoal.joined, /15kg is a solid goal/i,

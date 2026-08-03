@@ -920,7 +920,7 @@ async function persistCocosDraftRepair({ alertId, currentAlertData, draft, repai
             ...(currentAlertData || {}),
             draft_messages: draft.chunks,
             draft_text: draft.joined,
-            draft_video_attachment_url: draft.videoAttachmentUrl || undefined,
+            ...buildDraftVideoAttachmentData(draft),
             draft_model: draft.model,
             draft_reply_mode: draft.replyMode || latest.draft_reply_mode || 'standard',
             draft_max_chunks: draft.maxChunks || latest.draft_max_chunks || MAX_CHUNKS,
@@ -1413,6 +1413,15 @@ async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason =
 const FOUNDERS_PASS_APP_PREVIEW_URL = 'https://future-balance.netlify.app/assets/balance-founders-pass-dm-preview.mp4';
 const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/plant-based-fitness.html?utm_source=instagram&utm_medium=dm&utm_campaign=founders_pass_plant_based&utm_content=dm_handoff';
 const FOUNDERS_PASS_BROAD_CHECKOUT_URL = 'https://future-balance.netlify.app/fitness-coaching.html?utm_source=instagram&utm_medium=dm&utm_campaign=founders_pass_broad_pain&utm_content=dm_handoff';
+
+function buildDraftVideoAttachmentData(draft = {}) {
+    const url = String(draft?.videoAttachmentUrl || '').trim();
+    return {
+        draft_video_attachment_url: /^https:\/\/[^\s]+\.mp4(?:[?#][^\s]*)?$/i.test(url)
+            ? url
+            : undefined,
+    };
+}
 
 function resolveMetaAdFlowVariant({ customData = {}, currentMessage = '', acquisitionMode = '' } = {}) {
     const resolvedAcquisitionMode = acquisitionMode || resolveIgAcquisitionMode({ customData });
@@ -5969,7 +5978,7 @@ exports.handler = async (event) => {
             // chunk boundaries.
             draft_messages: draft.chunks,
             draft_text: draft.joined,
-            draft_video_attachment_url: draft.videoAttachmentUrl || undefined,
+            ...buildDraftVideoAttachmentData(draft),
             draft_model: draft.model,
             draft_reply_mode: draft.replyMode || 'standard',
             draft_max_chunks: draft.maxChunks || MAX_CHUNKS,
@@ -6202,7 +6211,7 @@ exports.handler = async (event) => {
                     : (personalVoicePlan.reason === 'lead_accountability_connection_moment'
                         ? 'lead_accountability_connection_moment'
                         : 'lead_goal_or_blocker'),
-                cooldown_days: inboundVoiceMessage ? 0 : 30,
+                cooldown_days: inboundVoiceMessage ? 0 : 1,
                 cooldown_bypassed_for_internal_test: internalMetaAdConversationTestLane || undefined,
                 synthetic: true,
                 never_for_ai_authenticity: true,
@@ -6213,6 +6222,7 @@ exports.handler = async (event) => {
             manual_native_voice_note_script: personalVoicePlan.manualNativeVoiceScript || undefined,
             draft_messages: draft.chunks,
             draft_text: draft.joined,
+            ...buildDraftVideoAttachmentData(draft),
             draft_model: draft.model,
             draft_reply_mode: draft.replyMode || 'standard',
             draft_max_chunks: draft.maxChunks || MAX_CHUNKS,
@@ -7031,6 +7041,7 @@ exports._test = {
     buildContextualMetaAdOfferLinkReply,
     buildDeterministicPaidMetaConversationReply,
     buildPaidMetaConversationApproval,
+    buildDraftVideoAttachmentData,
     ensureMetaAdSalesProgressionQuestion,
     resolveMetaAdEarlyTypingDelayMs,
     getCocosCodexReviewHold,
