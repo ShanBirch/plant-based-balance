@@ -1147,6 +1147,13 @@ function hasRecentPaidMetaSupportQuestion(history = []) {
         .some(item => /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier)\b/i.test(String(item?.text || '')));
 }
 
+function hasRecentPaidMetaGoalQuestion(history = []) {
+    return (Array.isArray(history) ? history : [])
+        .filter(item => String(item?.direction || '').toLowerCase() === 'out')
+        .slice(-3)
+        .some(item => /\bwhat are you mainly trying to change(?: at the moment)?\b/i.test(String(item?.text || '')));
+}
+
 function hasRecentPaidMetaProofVideo(history = []) {
     return (Array.isArray(history) ? history : [])
         .filter(item => String(item?.direction || '').toLowerCase() === 'out')
@@ -1275,7 +1282,9 @@ function buildDeterministicPaidMetaConversationReply({
         };
     }
 
-    if (PAID_META_GOAL_SIGNAL_RE.test(message) && hasGoal && !hasBlocker) {
+    if (PAID_META_GOAL_SIGNAL_RE.test(message)
+        && hasGoal
+        && (!hasBlocker || hasRecentPaidMetaGoalQuestion(history))) {
         const proofReply = buildMetaAdGoalProofReply(message, { flowVariant });
         if (!allowVideoAttachment || broadFlow) proofReply.videoAttachmentUrl = null;
         return proofReply;

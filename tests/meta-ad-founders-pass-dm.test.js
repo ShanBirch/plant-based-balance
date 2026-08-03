@@ -366,6 +366,37 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         contextReview: { required: false },
     }).reviewer_model, 'deterministic-meta-ad-goal-proof-approval');
 
+    const restartedPersonalisedGoal = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'I need to lose weight!',
+        qualifier: {
+            commercial_stage: 'engaged',
+            facts: {
+                current_state: 'Wants to lose weight.',
+                history_blockers: 'Old saved memory says they previously dropped off.',
+            },
+        },
+        history: [{
+            direction: 'out',
+            text: 'Yeah, I do. Starter Coaching is the personalised option, where I review and adjust your training and food each week. What are you mainly trying to change at the moment?',
+        }],
+        flowVariant: 'plant_based_control',
+        allowVideoAttachment: true,
+    });
+    const guardedRestartedPersonalisedGoal = ensureMetaAdSalesProgressionQuestion({
+        draft: restartedPersonalisedGoal,
+        currentMessage: 'I need to lose weight!',
+        qualifier: {
+            commercial_stage: 'engaged',
+            facts: { current_state: 'Wants to lose weight.', history_blockers: null },
+        },
+        leadStage: 'qualifying',
+    });
+    assert.equal(restartedPersonalisedGoal.replyMode, 'campaign_goal_proof');
+    assert.match(guardedRestartedPersonalisedGoal.joined, /quick video showing you how it works inside Balance/i);
+    assert.match(guardedRestartedPersonalisedGoal.joined, /what usually gets in the way/i);
+    assert.doesNotMatch(guardedRestartedPersonalisedGoal.joined, /\$29\.99|Starter Coaching is probably/i);
+    assert.match(guardedRestartedPersonalisedGoal.videoAttachmentUrl, /balance-founders-pass-dm-preview\.mp4/);
+
     const blockerQualifier = {
         commercial_stage: 'problem_qualified',
         facts: { current_state: 'Wants to lose 15kg.', history_blockers: 'Keeps stopping and starting.' },
