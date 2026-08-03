@@ -64,6 +64,23 @@ function hasQualifierPersonalEvidence(qualifier = {}) {
         .some(value => cleanString(value, 500).length >= 12);
 }
 
+function hasGoalAndBlockerEvidence(qualifier = {}) {
+    const facts = safeObject(qualifier.facts);
+    const goal = cleanString(facts.current_state || facts.motivation || '', 500);
+    const blocker = cleanString(facts.history_blockers || '', 500);
+    return goal.length >= 8 && blocker.length >= 8;
+}
+
+function hasProgramExplanationSignal(text = '') {
+    const value = String(text || '').trim();
+    return /\b(?:personali[sz]ed (?:coaching|plans?)|how (?:does|would) (?:the )?(?:program|coaching) work|what(?:'s| is) included in (?:the )?(?:program|coaching)|tell me (?:more )?about (?:the )?(?:program|coaching))\b/i.test(value);
+}
+
+function hasVoiceTextFallbackSignal(text = '') {
+    const value = String(text || '').trim();
+    return /\b(?:can(?:'t| not) listen|unable to listen|don't send (?:a )?voice|do not send (?:a )?voice|text (?:me|it|instead)|write it (?:out|instead)|prefer (?:a )?text|no voice notes?)\b/i.test(value);
+}
+
 function resolvePersonalVoiceReplyPlan({
     channel = '',
     hasInstagramGraphRoute = false,
@@ -86,6 +103,17 @@ function resolvePersonalVoiceReplyPlan({
         };
     }
 
+    if (hasVoiceTextFallbackSignal(currentMessage)) {
+        return {
+            useSyntheticVoice: false,
+            reason: 'lead_requested_text_fallback',
+            syntheticVoiceForbidden: false,
+            manualNativeVoiceRecommended: false,
+            manualNativeVoiceReason: '',
+            manualNativeVoiceScript: '',
+        };
+    }
+
     const isUnlinkedInstagramLead = channel === 'instagram' && !linkedUserId;
     if (isUnlinkedInstagramLead && inboundVoiceMessage) {
         return {
@@ -100,17 +128,21 @@ function resolvePersonalVoiceReplyPlan({
 
     const accountabilityConnection = hasAccountabilityConnectionSignal(currentMessage);
     const consistencyBlocker = hasHighSignalConsistencyBlocker(currentMessage);
+    const programExplanation = hasProgramExplanationSignal(currentMessage)
+        && hasGoalAndBlockerEvidence(qualifier);
     const eligible = isUnlinkedInstagramLead
         && hasInstagramGraphRoute
         && (!hasRecentVoiceMessage || bypassRecentVoiceCooldownForInternalTest)
         && Number(meaningfulLeadReplyCount || 0) >= 2
-        && (accountabilityConnection || consistencyBlocker)
+        && (accountabilityConnection || consistencyBlocker || programExplanation)
         && hasQualifierPersonalEvidence(qualifier);
 
     return {
         useSyntheticVoice: eligible,
         reason: eligible
-            ? (accountabilityConnection ? 'lead_accountability_connection_moment' : 'lead_shared_consistency_blocker')
+            ? (accountabilityConnection
+                ? 'lead_accountability_connection_moment'
+                : (programExplanation ? 'lead_program_explanation_moment' : 'lead_shared_consistency_blocker'))
             : '',
         syntheticVoiceForbidden: false,
         manualNativeVoiceRecommended: false,
@@ -578,8 +610,10 @@ module.exports = {
     resolveOutboundVoiceMessageConfig,
     _test: {
         isVoiceMessageRequested,
-    hasAccountabilityConnectionSignal,
-    hasHighSignalConsistencyBlocker,
+        hasAccountabilityConnectionSignal,
+        hasProgramExplanationSignal,
+        hasVoiceTextFallbackSignal,
+        hasHighSignalConsistencyBlocker,
         hasPersonalGoalOrBlockerSignal,
         hasQualifierPersonalEvidence,
         hasWrittenLaughter,

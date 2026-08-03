@@ -248,6 +248,51 @@ assert.strictEqual(accountabilityVoicePlan.useSyntheticVoice, true);
 assert.strictEqual(accountabilityVoicePlan.reason, 'lead_accountability_connection_moment');
 assert.strictEqual(voice._test.hasAccountabilityConnectionSignal('How would you keep me on track?'), true);
 
+const personalisedProgramVoicePlan = voice.resolvePersonalVoiceReplyPlan({
+    channel: 'instagram',
+    hasInstagramGraphRoute: true,
+    currentMessage: 'Do you offer personalized coaching plans?',
+    qualifier: {
+        facts: {
+            current_state: 'wants to lose weight',
+            history_blockers: 'gets excited for a few weeks and then drops off',
+        },
+    },
+    meaningfulLeadReplyCount: 3,
+    hasRecentVoiceMessage: false,
+});
+assert.strictEqual(personalisedProgramVoicePlan.useSyntheticVoice, true);
+assert.strictEqual(personalisedProgramVoicePlan.reason, 'lead_program_explanation_moment');
+
+assert.strictEqual(
+    voice.resolvePersonalVoiceReplyPlan({
+        channel: 'instagram',
+        hasInstagramGraphRoute: true,
+        currentMessage: 'Do you offer personalized coaching plans?',
+        qualifier: { facts: { current_state: 'wants to lose weight' } },
+        meaningfulLeadReplyCount: 3,
+        hasRecentVoiceMessage: false,
+    }).useSyntheticVoice,
+    false,
+    'a program question still needs both the goal and blocker before voice feels earned'
+);
+
+const textFallbackPlan = voice.resolvePersonalVoiceReplyPlan({
+    channel: 'instagram',
+    hasInstagramGraphRoute: true,
+    currentMessage: "I can't listen to voice notes right now, can you text it instead?",
+    qualifier: {
+        facts: {
+            current_state: 'wants to lose weight',
+            history_blockers: 'keeps falling off',
+        },
+    },
+    meaningfulLeadReplyCount: 4,
+    hasRecentVoiceMessage: false,
+});
+assert.strictEqual(textFallbackPlan.useSyntheticVoice, false);
+assert.strictEqual(textFallbackPlan.reason, 'lead_requested_text_fallback');
+
 assert.strictEqual(
     voice.resolvePersonalVoiceReplyPlan({
         channel: 'instagram',

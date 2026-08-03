@@ -367,6 +367,23 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         commercial_stage: 'engaged',
         facts: { current_state: 'Wants to lose 15kg.', history_blockers: null },
     };
+    const personalisedVoiceReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Do you offer personalized coaching plans?',
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: {
+                current_state: 'Wants to lose weight.',
+                history_blockers: 'Gets excited for a few weeks then drops off.',
+            },
+        },
+        flowVariant: 'plant_based_control',
+        personalVoiceNoteMode: true,
+    });
+    assert.match(personalisedVoiceReply.joined, /Starter Coaching would probably suit you better/i);
+    assert.match(personalisedVoiceReply.joined, /review your training and food each week/i);
+    assert.equal((personalisedVoiceReply.joined.match(/\?/g) || []).length, 1);
+    assert.equal(inspectVoiceScriptQuality(personalisedVoiceReply.joined).valid, true);
+
     const goal = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I need to lose weight, probably 15kgs',
         qualifier: goalQualifier,

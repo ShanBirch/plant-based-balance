@@ -518,11 +518,38 @@ assert.equal(instantDraft.isMetaAdCardAttachmentTransportArtifact({
     currentMessage: 'Do you offer personalized coaching plans?',
     internalMetaAdConversationTestLane: true,
 }), false, 'normal test-lane text is never suppressed');
+const unresolvedCardSuppression = instantDraft.suppressUnresolvedMetaAdCardPhoto({
+    inboundMessageBatch: [
+        { text: '📷 photo', media: [], created_at: '2026-08-01T10:00:00.000Z', is_current: false },
+        { text: 'Do you offer personalized coaching plans?', media: [], created_at: '2026-08-01T10:02:00.000Z', is_current: true },
+    ],
+    currentMessage: 'Do you offer personalized coaching plans?',
+    metaAdFastLane: true,
+});
+assert.equal(unresolvedCardSuppression.suppressedCount, 1,
+    'an unresolved ad card cannot put a known paid-ad question into media review');
+assert.deepEqual(unresolvedCardSuppression.batch.map(item => item.text), ['Do you offer personalized coaching plans?']);
+assert.equal(instantDraft.suppressUnresolvedMetaAdCardPhoto({
+    inboundMessageBatch: [
+        { text: '📷 photo', media: [{ type: 'image', url: 'https://example.com/progress.jpg' }], created_at: '2026-08-01T10:00:00.000Z', is_current: false },
+        { text: 'Do you offer personalized coaching plans?', media: [], created_at: '2026-08-01T10:02:00.000Z', is_current: true },
+    ],
+    currentMessage: 'Do you offer personalized coaching plans?',
+    metaAdFastLane: true,
+}).suppressedCount, 0, 'a genuine resolved client photo still requires normal media handling');
 assert.equal(instantDraft.resolveMetaAdEarlyTypingDelayMs({
     lastInboundAt: '2026-08-01T10:00:00.000Z',
     seed: 'message-1',
     nowMs: Date.parse('2026-08-01T10:00:01.000Z'),
-}) >= 1000, true);
+}) <= 2000, true, 'a continuing ad conversation starts typing within a couple of seconds');
+const firstReplyTypingDelay = instantDraft.resolveMetaAdEarlyTypingDelayMs({
+    lastInboundAt: '2026-08-01T10:00:00.000Z',
+    seed: 'message-1',
+    nowMs: Date.parse('2026-08-01T10:00:01.000Z'),
+    firstReply: true,
+});
+assert.equal(firstReplyTypingDelay >= 11000 && firstReplyTypingDelay <= 29000, true,
+    'the opening ad reply waits long enough to feel considered but stays comfortably under a minute');
 assert.equal(instantDraft.resolveMetaAdEarlyTypingDelayMs({
     lastInboundAt: '2026-08-01T10:00:00.000Z',
     seed: 'message-1',

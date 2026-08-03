@@ -1123,13 +1123,15 @@ function ensureMetaAdSalesProgressionQuestion({
     };
 }
 
-function resolveMetaAdEarlyTypingDelayMs({ lastInboundAt = '', seed = '', nowMs = Date.now() } = {}) {
+function resolveMetaAdEarlyTypingDelayMs({ lastInboundAt = '', seed = '', nowMs = Date.now(), firstReply = false } = {}) {
     const key = String(seed || 'balance');
     let hash = 0;
     for (let index = 0; index < key.length; index += 1) {
         hash = ((hash * 31) + key.charCodeAt(index)) >>> 0;
     }
-    const targetDelayMs = 2000 + (hash % 8001);
+    const targetDelayMs = firstReply
+        ? 12000 + (hash % 18001)
+        : 800 + (hash % 2201);
     const inboundAtMs = Date.parse(lastInboundAt || '');
     if (!Number.isFinite(inboundAtMs)) return targetDelayMs;
     const elapsedMs = Math.max(0, Number(nowMs) - inboundAtMs);
@@ -1190,6 +1192,28 @@ function buildDeterministicPaidMetaConversationReply({
     const broadFlow = flowVariant === 'broad_pain';
     const recentProofVideo = hasRecentPaidMetaProofVideo(history);
     const approvedCheckoutUrl = isApprovedChallengeBioLinkText(checkoutUrl) ? String(checkoutUrl).trim() : '';
+
+    if (resolveMetaAdFirstReplyIntent(message) === 'personalised_coaching') {
+        const knownProblem = hasGoal && hasBlocker;
+        const body = personalVoiceNoteMode && knownProblem
+            ? `Yeah, I do. Um, because you said you get excited for a few weeks and then drop off, Starter Coaching would probably suit you better. Honestly, I review your training and food each week and adjust it around what's actually happening, so you aren't trying to force the same plan when the week changes.`
+            : (knownProblem
+                ? `Yeah, I do. Starter Coaching is the personalised option, where I review and adjust your training and food each week. It's $29.99 a week, and it makes sense for the stop-start pattern you mentioned.`
+                : `Yeah, I do. Starter Coaching is the personalised option, where I review and adjust your training and food each week. It's $29.99 a week.`);
+        const nextAsk = knownProblem
+            ? 'Is that the kind of support you mean?'
+            : 'What are you mainly trying to change at the moment?';
+        const joined = `${body}\n\n${nextAsk}`;
+        return {
+            chunks: [joined],
+            joined,
+            model: 'deterministic_paid_meta_conversation_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    }
 
     if (PAID_META_APP_INCLUSIONS_RE.test(message)) {
         const muscleGoal = /\b(?:muscle|strength|stronger)\b/i.test(String(facts.current_state || facts.motivation || ''));
@@ -1850,6 +1874,40 @@ function filterMetaAdCardAttachmentHistory({
             || nextInboundAt < attachmentAt
             || (nextInboundAt - attachmentAt) > 5000;
     });
+}
+
+const META_AD_UNRESOLVED_PHOTO_MARKER_RE = /^(?:📷\s*)?(?:photo|\[photo\])$/i;
+
+function suppressUnresolvedMetaAdCardPhoto({
+    inboundMessageBatch = [],
+    currentMessage = '',
+    metaAdFastLane = false,
+    maxGapMs = 5 * 60 * 1000,
+} = {}) {
+    const batch = Array.isArray(inboundMessageBatch) ? inboundMessageBatch : [];
+    if (!metaAdFastLane || !shouldUseDeterministicMetaAdFirstReply(currentMessage)) {
+        return { batch, suppressedCount: 0 };
+    }
+    const current = [...batch].reverse().find(item => item?.is_current === true)
+        || batch[batch.length - 1]
+        || null;
+    const currentAt = Date.parse(current?.created_at || '');
+    let suppressedCount = 0;
+    const filtered = batch.filter(item => {
+        if (!item || item === current || item.is_current === true) return true;
+        const text = String(item.text || item.message || '').trim();
+        const media = Array.isArray(item.media) ? item.media : [];
+        if (!META_AD_UNRESOLVED_PHOTO_MARKER_RE.test(text) || media.length > 0) return true;
+        const itemAt = Date.parse(item.created_at || '');
+        const withinGap = Number.isFinite(currentAt)
+            && Number.isFinite(itemAt)
+            && currentAt >= itemAt
+            && (currentAt - itemAt) <= maxGapMs;
+        if (!withinGap) return true;
+        suppressedCount += 1;
+        return false;
+    });
+    return { batch: filtered, suppressedCount };
 }
 
 function buildApprovedDeterministicMetaAdFirstReplyReview({
@@ -5141,7 +5199,7 @@ exports.handler = async (event) => {
         metaAdFirstInbound,
         metaAdConversationFastLane,
     });
-    const metaAdCardAttachmentsSuppressed = unfilteredHistoryCount - history.length;
+    let metaAdCardAttachmentsSuppressed = unfilteredHistoryCount - history.length;
     const metaAdFlowVariant = resolveMetaAdFlowVariant({
         customData: thread.custom_data,
         currentMessage: messageText,
@@ -5542,6 +5600,7 @@ exports.handler = async (event) => {
         const earlyTypingDelayMs = resolveMetaAdEarlyTypingDelayMs({
             lastInboundAt: thread.last_inbound_at,
             seed: manychatMessageId || messageText,
+            firstReply: metaAdFirstInbound,
         });
         if (earlyTypingDelayMs > 0) {
             await new Promise(resolve => setTimeout(resolve, earlyTypingDelayMs));
@@ -5812,11 +5871,36 @@ exports.handler = async (event) => {
         if (!isIgStoryReplyContextText(rawText)) return true;
         return normalizedIgLeadMessageKey(sanitizeIgStoryReplyContextText(rawText)) !== displaySourceMessageKey;
     });
-    const inboundMessageBatch = formatInboundBatchForDisplay({
+    const rawInboundMessageBatch = formatInboundBatchForDisplay({
         recentInboundMessages: displayRecentInboundMessages,
         currentMessage: displaySourceMessage,
         currentCreatedAt: new Date().toISOString(),
     });
+    const metaAdCardPhotoSuppression = suppressUnresolvedMetaAdCardPhoto({
+        inboundMessageBatch: rawInboundMessageBatch,
+        currentMessage: displayMessage,
+        metaAdFastLane,
+    });
+    const inboundMessageBatch = metaAdCardPhotoSuppression.batch;
+    metaAdCardAttachmentsSuppressed += metaAdCardPhotoSuppression.suppressedCount;
+    const effectiveDisplayRecentInboundMessages = metaAdCardPhotoSuppression.suppressedCount > 0
+        ? displayRecentInboundMessages.filter(item => {
+            const text = String(item?.text || item?.message || '').trim();
+            const media = Array.isArray(item?.media) ? item.media : [];
+            return !META_AD_UNRESOLVED_PHOTO_MARKER_RE.test(text) || media.length > 0;
+        })
+        : displayRecentInboundMessages;
+    const effectiveMediaDecode = metaAdCardPhotoSuppression.suppressedCount > 0
+        ? {
+            ...(draft.mediaDecode || {}),
+            photo_failed: false,
+            photo_url_count: Math.max(0, Number(draft.mediaDecode?.photo_url_count || 0) - metaAdCardPhotoSuppression.suppressedCount),
+            image_url_count: Math.max(0, Number(draft.mediaDecode?.image_url_count || 0) - metaAdCardPhotoSuppression.suppressedCount),
+        }
+        : (draft.mediaDecode || null);
+    const effectiveTimeline = metaAdCardPhotoSuppression.suppressedCount > 0
+        ? String(draft.timeline || '').split('\n').filter(line => !/:\s*(?:📷\s*)?(?:photo|\[photo\])\s*$/i.test(line)).join('\n')
+        : (draft.timeline || '');
     const lastOutboundMessage = formatLastOutboundForDisplay({
         history,
         linkedNudges,
@@ -5832,10 +5916,10 @@ exports.handler = async (event) => {
     const mediaReview = buildMediaReviewInfo({
         message_preview: displaySourceMessage,
         inbound_message_batch: inboundMessageBatch,
-        image_url_count: draft.urlCount || 0,
+        image_url_count: Math.max(0, Number(draft.urlCount || 0) - metaAdCardPhotoSuppression.suppressedCount),
         audio_url_count: draft.audioUrlCount || 0,
         video_url_count: draft.videoUrlCount || 0,
-        media_decode: draft.mediaDecode || null,
+        media_decode: effectiveMediaDecode,
     });
     const contextReview = buildContextReviewInfo({
         channel,
@@ -5844,17 +5928,19 @@ exports.handler = async (event) => {
         lead_stage: effectiveLeadStage,
         message_preview: displaySourceMessage,
         inbound_message_batch: inboundMessageBatch,
-        recent_inbound_messages: displayRecentInboundMessages,
+        recent_inbound_messages: effectiveDisplayRecentInboundMessages,
         last_outbound_message: lastOutboundMessage,
         learning_reels: learningReelHistory,
-        media_decode: draft.mediaDecode || null,
+        media_decode: effectiveMediaDecode,
         audio_transcript_count: draft.audioTranscriptCount || 0,
         first_captured_lead_reply: firstCapturedLeadReply,
         draft_evidence: {
             current_message: displayMessage,
-            recent_timeline: draft.timeline || '',
+            recent_timeline: effectiveTimeline,
             story_context: draft.storyReplyPromptContextBlock || '',
-            media_context: draft.mediaSummary || draft.mediaContextPromptBlock || '',
+            media_context: metaAdCardPhotoSuppression.suppressedCount > 0
+                ? ''
+                : (draft.mediaSummary || draft.mediaContextPromptBlock || ''),
             learning_reel_context: draft.learningReelEvidenceBlock || draft.learningReelContextBlock || '',
         },
     });
@@ -6072,17 +6158,17 @@ exports.handler = async (event) => {
             // without needing Netlify function logs.
             draft_error: draft.error || null,
             empty_draft_recovery: draft.emptyDraftRecovery || null,
-            image_url_count: draft.urlCount || 0,
+            image_url_count: Math.max(0, Number(draft.urlCount || 0) - metaAdCardPhotoSuppression.suppressedCount),
             image_inline_count: draft.imageCount || 0,
             audio_url_count: draft.audioUrlCount || 0,
             audio_inline_count: draft.audioCount || 0,
             audio_transcript_count: draft.audioTranscriptCount || 0,
             video_url_count: draft.videoUrlCount || 0,
             video_inline_count: draft.videoCount || 0,
-            media_decode: draft.mediaDecode || null,
+            media_decode: effectiveMediaDecode,
             durable_media_ids: Array.isArray(durableMediaIds) ? durableMediaIds : [],
             durable_media_preserved: Array.isArray(durableMediaIds) && durableMediaIds.length > 0,
-            media_summary: draft.mediaSummary || null,
+            media_summary: metaAdCardPhotoSuppression.suppressedCount > 0 ? null : (draft.mediaSummary || null),
             media_review: mediaReview.required ? mediaReview : null,
             context_review: contextReview.required ? contextReview : null,
             challenge_offer_warning: challengeOfferWarning,
@@ -6090,7 +6176,7 @@ exports.handler = async (event) => {
             first_captured_lead_reply: firstCapturedLeadReply,
             // Trailing inbound streak, same shape as instant-coach-draft.
             // Media in those prior messages gets rendered as clean labels.
-            recent_inbound_messages: displayRecentInboundMessages.map(m => ({
+            recent_inbound_messages: effectiveDisplayRecentInboundMessages.map(m => ({
                 text: truncate(replaceIgMediaMarkers(m.text || ''), 280),
                 created_at: m.created_at,
             })),
@@ -6101,17 +6187,17 @@ exports.handler = async (event) => {
             draft_evidence: {
                 source_mode: 'saved_at_draft',
                 current_message: truncate(displayMessage, 400),
-                prior_unanswered: displayRecentInboundMessages.map(m => ({
+                prior_unanswered: effectiveDisplayRecentInboundMessages.map(m => ({
                     text: truncate(replaceIgMediaMarkers(m.text || ''), 280),
                     created_at: m.created_at,
                 })),
                 recent_workouts: truncate(recentWorkoutEvidence || '', 2000),
                 recent_activity: truncate(weeklyAppContext || '', 3000),
-                recent_timeline: truncateTail(draft.timeline || '', 4000),
+                recent_timeline: truncateTail(effectiveTimeline, 4000),
                 story_context: truncate(String(draft.storyReplyPromptContextBlock || '').trim(), 1400),
                 native_story_context: truncate(String(draft.nativeStoryOutreachContextBlock || '').trim(), 1400),
                 native_story_confusion_repair: truncate(String(draft.nativeStoryConfusionRepairBlock || '').trim(), 1400),
-                media_context: truncate([
+                media_context: metaAdCardPhotoSuppression.suppressedCount > 0 ? '' : truncate([
                     draft.mediaSummary ? `Decoded media summary: ${draft.mediaSummary}` : '',
                     String(draft.mediaContextPromptBlock || '').trim(),
                 ].filter(Boolean).join('\n\n'), 1800),
@@ -6316,14 +6402,14 @@ exports.handler = async (event) => {
             coalesced_count: newCount,
             draft_error: draft.error || null,
             empty_draft_recovery: draft.emptyDraftRecovery || null,
-            image_url_count: draft.urlCount || 0,
+            image_url_count: Math.max(0, Number(draft.urlCount || 0) - metaAdCardPhotoSuppression.suppressedCount),
             image_inline_count: draft.imageCount || 0,
             audio_url_count: draft.audioUrlCount || 0,
             audio_inline_count: draft.audioCount || 0,
             audio_transcript_count: draft.audioTranscriptCount || existingPending.data?.audio_transcript_count || 0,
             video_url_count: draft.videoUrlCount || 0,
             video_inline_count: draft.videoCount || 0,
-            media_decode: draft.mediaDecode || existingPending.data?.media_decode || null,
+            media_decode: effectiveMediaDecode || existingPending.data?.media_decode || null,
             media_review: mediaReview.required ? mediaReview : null,
             context_review: contextReview.required ? contextReview : null,
             challenge_offer_warning: challengeOfferWarning,
@@ -6332,7 +6418,7 @@ exports.handler = async (event) => {
             // Refresh on every coalesce — `history` already includes every
             // unanswered inbound up to (but excluding) the current one, so
             // the saved streak grows naturally as messages roll in.
-            recent_inbound_messages: displayRecentInboundMessages.map(m => ({
+            recent_inbound_messages: effectiveDisplayRecentInboundMessages.map(m => ({
                 text: truncate(replaceIgMediaMarkers(m.text || ''), 280),
                 created_at: m.created_at,
             })),
@@ -6343,17 +6429,19 @@ exports.handler = async (event) => {
             draft_evidence: {
                 source_mode: 'saved_at_draft',
                 current_message: truncate(displayMessage, 400),
-                prior_unanswered: displayRecentInboundMessages.map(m => ({
+                prior_unanswered: effectiveDisplayRecentInboundMessages.map(m => ({
                     text: truncate(replaceIgMediaMarkers(m.text || ''), 280),
                     created_at: m.created_at,
                 })),
                 recent_workouts: truncate(recentWorkoutEvidence || '', 2000),
                 recent_activity: truncate(weeklyAppContext || '', 3000),
-                recent_timeline: truncateTail(draft.timeline || '', 4000),
+                recent_timeline: truncateTail(effectiveTimeline, 4000),
                 story_context: truncate(String(draft.storyReplyPromptContextBlock || '').trim(), 1400),
                 native_story_context: truncate(String(draft.nativeStoryOutreachContextBlock || '').trim(), 1400),
                 native_story_confusion_repair: truncate(String(draft.nativeStoryConfusionRepairBlock || '').trim(), 1400),
-                media_context: truncate(String(draft.mediaContextPromptBlock || '').trim(), 1800),
+                media_context: metaAdCardPhotoSuppression.suppressedCount > 0
+                    ? ''
+                    : truncate(String(draft.mediaContextPromptBlock || '').trim(), 1800),
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
                 learning_reel_context: truncate(String(draft.learningReelEvidenceBlock || draft.learningReelContextBlock || '').trim(), 1800),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
@@ -7155,6 +7243,7 @@ exports._test = {
     buildApprovedDeterministicMetaAdFirstReplyReview,
     filterMetaAdCardAttachmentHistory,
     isMetaAdCardAttachmentTransportArtifact,
+    suppressUnresolvedMetaAdCardPhoto,
     collectCocosAutoRepairIssues,
     shouldAttemptCocosDraftRepair,
     repairRequiresQuestionFreeReply,
