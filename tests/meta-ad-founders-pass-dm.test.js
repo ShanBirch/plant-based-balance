@@ -124,6 +124,33 @@ test('paid Meta work-and-kids blocker advances to accountability instead of repe
     assert.equal(inspectVoiceScriptQuality(voiceReply.joined).valid, true);
 });
 
+test('paid Meta question-fatigue reply apologises and leaves space without another question', () => {
+    const qualifier = {
+        commercial_stage: 'engaged',
+        facts: {
+            current_state: 'Wants to lose weight',
+            relationship_context: 'Work and kids disrupt consistency.',
+        },
+    };
+    const repairReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'I already answered that',
+        qualifier,
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(repairReply.joined, /you already answered that/i);
+    assert.match(repairReply.joined, /shouldn't have asked/i);
+    assert.doesNotMatch(repairReply.joined, /\?/);
+
+    const guardedReply = ensureMetaAdSalesProgressionQuestion({
+        draft: repairReply,
+        currentMessage: 'I already answered that',
+        qualifier,
+        leadStage: 'qualifying',
+    });
+    assert.equal(guardedReply.joined, repairReply.joined);
+    assert.doesNotMatch(guardedReply.joined, /\?/);
+});
+
 test('deterministic first reply is narrow and leaves sensitive, opt-out, and unrelated ad messages to normal review', () => {
     for (const message of [
         'What is the Founders Pass?',

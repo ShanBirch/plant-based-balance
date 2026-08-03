@@ -1056,6 +1056,7 @@ function shouldKeepMetaAdReplyQuestionFree({ currentMessage = '', leadStage = ''
     if (linkedUserId || ['won', 'buyer_intent'].includes(funnelStage) || ['won', 'in_app', 'paying', 'churned'].includes(stage)) return true;
     if (META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)
+        || META_AD_QUESTION_FATIGUE_RE.test(message)
         || /\b(?:send (?:me )?(?:the )?link|can you send (?:me )?(?:the )?link|how do i (?:join|sign up|start)|where do i (?:join|sign up|start)|i(?:'m| am) ready to (?:join|sign up|start))\b/i.test(message)
         || /\b(?:are you trying to sell|is this a sales pitch|stop pitching|don['\u2019]?t sell)\b/i.test(message)) {
         return true;
@@ -1204,6 +1205,19 @@ function buildDeterministicPaidMetaConversationReply({
     const broadFlow = flowVariant === 'broad_pain';
     const recentProofVideo = hasRecentPaidMetaProofVideo(history);
     const approvedCheckoutUrl = isApprovedChallengeBioLinkText(checkoutUrl) ? String(checkoutUrl).trim() : '';
+
+    if (META_AD_QUESTION_FATIGUE_RE.test(message)) {
+        const joined = `Yep, you're right. You already answered that. I shouldn't have asked you again.`;
+        return {
+            chunks: [joined],
+            joined,
+            model: 'deterministic_paid_meta_conversation_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    }
 
     if (resolveMetaAdFirstReplyIntent(message) === 'personalised_coaching') {
         const knownProblem = hasGoal && hasBlocker;
@@ -1625,6 +1639,7 @@ const META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE = new RegExp(
     'i'
 );
 const META_AD_FIRST_REPLY_OPT_OUT_RE = /^(?:stop|unsubscribe|leave me alone|remove me)[.!?\s]*$|\b(?:stop|do not|don['\u2019]?t)\s+(?:messaging|contacting|sending|replying|dm(?:ing)?)(?:\s+me)?\b/i;
+const META_AD_QUESTION_FATIGUE_RE = /\b(?:i (?:already|just) answered (?:that|this)|already answered (?:that|this)|you(?:'ve| have) already asked (?:that|this)|you asked me (?:that|this) already|asked me (?:that|this) already|i (?:already )?told you (?:that|this) already)\b/i;
 
 function shouldUseDeterministicMetaAdFirstReply(currentMessage = '') {
     const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
