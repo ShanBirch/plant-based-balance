@@ -371,7 +371,13 @@ public class MainActivity extends BridgeActivity {
         String mimeType = mimeTypeFromDataUrl(dataUrl);
         String extension = "image/png".equals(mimeType) ? ".png" : ".jpg";
         String safeTarget = "story".equals(target) ? "story" : "feed";
-        File tempFile = new File(getCacheDir(), "balance_instagram_" + safeTarget + extension);
+        // Instagram caches content URIs between composer launches. Reusing one
+        // filename can therefore reopen the previous overlay even after its
+        // bytes have been replaced. Give every handoff a fresh URI so the
+        // composer always imports the image currently shown in Balance.
+        File tempFile = new File(
+                getCacheDir(),
+                "balance_instagram_" + safeTarget + "_" + UUID.randomUUID() + extension);
         byte[] bytes = Base64.decode(dataUrl.substring(comma + 1), Base64.DEFAULT);
         try (FileOutputStream out = new FileOutputStream(tempFile, false)) {
             out.write(bytes);
@@ -391,7 +397,11 @@ public class MainActivity extends BridgeActivity {
         String mimeType = mimeTypeFromDataUrl(dataUrl);
         String extension = mimeType.contains("webm") ? ".webm" : ".mp4";
         String safeTarget = "story".equals(target) ? "story" : "feed";
-        File tempFile = new File(getCacheDir(), "balance_instagram_motion_" + safeTarget + extension);
+        // Motion shares need a new content URI for the same reason as stills:
+        // Instagram may otherwise retain the last video attached to this URI.
+        File tempFile = new File(
+                getCacheDir(),
+                "balance_instagram_motion_" + safeTarget + "_" + UUID.randomUUID() + extension);
         byte[] bytes = Base64.decode(dataUrl.substring(comma + 1), Base64.DEFAULT);
         try (FileOutputStream out = new FileOutputStream(tempFile, false)) {
             out.write(bytes);
@@ -1137,6 +1147,16 @@ public class MainActivity extends BridgeActivity {
             } catch (Exception e) {
                 return false;
             }
+        }
+
+        /**
+         * Version 2 guarantees a unique content URI for every Instagram media
+         * handoff. The remote web app uses this to avoid the legacy bridge,
+         * which can cause Instagram to reopen a previously cached overlay.
+         */
+        @JavascriptInterface
+        public int getInstagramShareBridgeVersion() {
+            return 2;
         }
 
         /** Share a generated Balance motion card into Instagram. */

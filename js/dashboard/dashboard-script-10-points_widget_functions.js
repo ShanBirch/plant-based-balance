@@ -4612,10 +4612,23 @@ async function shareBalanceCardVideoExternally(blob, target) {
     }
 }
 
+function canUseFreshAndroidInstagramShareBridge() {
+    const nativePermissions = window.NativePermissions;
+    if (!nativePermissions) return false;
+    const getVersion = nativePermissions.getInstagramShareBridgeVersion;
+    if (typeof getVersion !== 'function') return false;
+    try {
+        return Number(getVersion.call(nativePermissions)) >= 2;
+    } catch (error) {
+        console.warn('Could not verify Android Instagram share bridge version:', error);
+        return false;
+    }
+}
+
 async function shareBalanceCardVideoWithNativeBridge(blob, safeTarget) {
     const dataUrl = await pbbShareBlobToDataUrl(blob);
     const androidShare = window.NativePermissions && window.NativePermissions.shareVideoToInstagram;
-    if (typeof androidShare === 'function') {
+    if (typeof androidShare === 'function' && canUseFreshAndroidInstagramShareBridge()) {
         try {
             const opened = androidShare.call(window.NativePermissions, dataUrl, safeTarget);
             if (opened === true || opened === 'true') return true;
@@ -4638,7 +4651,7 @@ async function shareBalanceCardVideoWithNativeBridge(blob, safeTarget) {
 
 async function shareBalanceCardWithNativeBridge(dataUrl, safeTarget) {
     const androidShare = window.NativePermissions && window.NativePermissions.shareImageToInstagram;
-    if (typeof androidShare === 'function') {
+    if (typeof androidShare === 'function' && canUseFreshAndroidInstagramShareBridge()) {
         try {
             const opened = androidShare.call(window.NativePermissions, dataUrl, safeTarget);
             window._balanceInstagramShareLastResult = { platform: 'android', opened };
