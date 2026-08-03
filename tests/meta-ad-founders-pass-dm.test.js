@@ -14,6 +14,7 @@ const {
     ensureMetaAdSalesProgressionQuestion,
     buildDeterministicPaidMetaConversationReply,
     buildPaidMetaConversationApproval,
+    hasDirectPaidMetaCheckoutIntent,
     buildDraftVideoAttachmentData,
     filterMetaAdCardAttachmentHistory,
     buildLeadOnboardingHandoffData,
@@ -434,6 +435,36 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         draft: buyer,
         currentMessage: 'Send me the link',
     }).code, 'approved_meta_ad_conversation_buyer_handoff');
+
+    const appInclusions = buildDeterministicPaidMetaConversationReply({
+        currentMessage: "What's included in Balance app?",
+        qualifier: {
+            ...blockerQualifier,
+            commercial_stage: 'buyer_intent',
+            facts: { ...blockerQualifier.facts, current_state: 'Wants to grow muscle.' },
+        },
+        flowVariant: 'plant_based_control',
+        checkoutUrl,
+    });
+    assert.equal(appInclusions.replyMode, 'campaign_sales_progression');
+    assert.match(appInclusions.joined, /workouts with video demos/i);
+    assert.match(appInclusions.joined, /plant-based meal plans/i);
+    assert.match(appInclusions.joined, /muscle-building side/i);
+    assert.doesNotMatch(appInclusions.joined, /https?:\/\//);
+    assert.equal((appInclusions.joined.match(/\?/g) || []).length, 1);
+
+    const priceAndInclusions = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'I want to know your prices and what I get',
+        qualifier: blockerQualifier,
+        flowVariant: 'plant_based_control',
+        checkoutUrl,
+    });
+    assert.equal(priceAndInclusions.replyMode, 'campaign_sales_progression');
+    assert.match(priceAndInclusions.joined, /\$99 once/i);
+    assert.doesNotMatch(priceAndInclusions.joined, /https?:\/\//);
+    assert.equal(hasDirectPaidMetaCheckoutIntent("What's included in Balance app?"), false);
+    assert.equal(hasDirectPaidMetaCheckoutIntent('I want to know your prices and what I get'), false);
+    assert.equal(hasDirectPaidMetaCheckoutIntent('Send me the link'), true);
 
     assert.equal(buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Stop messaging me',

@@ -1132,6 +1132,13 @@ const PAID_META_GOAL_SIGNAL_RE = /\b(?:lose|drop|reduce|gain|build|improve|get|f
 const PAID_META_BLOCKER_SIGNAL_RE = /\b(?:stop(?:ping)? and start(?:ing)?|stop[- ]start|keep stopping|keep restarting|always restart|fall(?:ing)? off|drop(?:ping)? off|never stick|can(?:'t| not) stick|inconsisten|lose motivation|no motivation|no time|too busy|overwhelm|cravings?|weekends?|chocolate|accountab|stay on track|follow through)\b/i;
 const PAID_META_NEXT_STEP_RE = /^(?:okay[, ]*)?(?:so[, ]*)?(?:what (?:do i do|should i do|now)|what(?:'s| is) next|where (?:do i|should i) start|how (?:do i|should i) start)(?: now)?[.!?\s]*$/i;
 const PAID_META_POSITIVE_FIT_RE = /^(?:yes|yeah|yep|definitely|absolutely|probably|i think so|that would help|that sounds good|sounds good|i(?:'m| am) keen|keen)[!?.\s]*$/i;
+const PAID_META_APP_INCLUSIONS_RE = /\b(?:what(?:'s| is| was) (?:actually )?(?:included in|in|inside)|what do (?:i|you) get (?:in|inside)) (?:the )?(?:balance(?: app)?|app)\b/i;
+const PAID_META_OFFER_INFO_RE = /^(?:i (?:want|need|wanted) to know )?(?:how much|(?:your )?prices?(?: and what i get)?|pricing|cost|what(?:'s| is) (?:actually )?included|what do i get|what are the (?:details|prices)|tell me (?:the|about the) (?:price|pricing|details|inclusions))(?:\b|[?!.])/i;
+
+function hasDirectPaidMetaCheckoutIntent(value = '') {
+    const message = String(value || '').replace(/\s+/g, ' ').trim();
+    return /^(?:please )?(?:send (?:me )?(?:the )?link|can you send (?:me )?(?:the )?link|how do i (?:join|sign up|start|get started)|where do i (?:join|sign up|start|get started)|where can i (?:join|sign up|start|get started)|i(?:'m| am) ready to (?:join|sign up|start|get started)|i want to (?:join|sign up|start|get started)|i(?:'m| am) in,? send (?:me )?(?:the )?link)[.!?\s]*$/i.test(message);
+}
 
 function hasRecentPaidMetaSupportQuestion(history = []) {
     return (Array.isArray(history) ? history : [])
@@ -1169,7 +1176,43 @@ function buildDeterministicPaidMetaConversationReply({
     const recentProofVideo = hasRecentPaidMetaProofVideo(history);
     const approvedCheckoutUrl = isApprovedChallengeBioLinkText(checkoutUrl) ? String(checkoutUrl).trim() : '';
 
-    if (hasDirectBuyerIntent(message) && approvedCheckoutUrl) {
+    if (PAID_META_APP_INCLUSIONS_RE.test(message)) {
+        const muscleGoal = /\b(?:muscle|strength|stronger)\b/i.test(String(facts.current_state || facts.motivation || ''));
+        const appContents = broadFlow
+            ? 'workouts with video demos, meal planning and daily targets, weekly goals, progress tracking, and the community'
+            : 'workouts with video demos, plant-based meal plans and daily targets, weekly goals, progress tracking, and the plant-based community';
+        const supportOffer = broadFlow ? 'The six-week Balance kickstart' : 'The Founders Pass';
+        const nextAsk = muscleGoal
+            ? 'Want me to show you what the muscle-building side would look like for you?'
+            : 'Want me to show you what a first week could look like for your goal?';
+        const joined = `Yeah, inside Balance you get ${appContents}. ${supportOffer} adds six weeks of support from me on top.\n\n${nextAsk}`;
+        return {
+            chunks: [joined],
+            joined,
+            model: 'deterministic_paid_meta_conversation_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    }
+
+    if (PAID_META_OFFER_INFO_RE.test(message)) {
+        const communityCopy = broadFlow ? 'the Balance app and community' : 'the Balance app and plant-based community';
+        const offerName = broadFlow ? 'The six-week Balance kickstart' : 'The Founders Pass';
+        const joined = `${offerName} is $99 once. You get six weeks of one-to-one in-app support from me for questions, direction and accountability, plus lifetime access to ${communityCopy}.\n\nWant me to show you how the first week would work around your goal?`;
+        return {
+            chunks: [joined],
+            joined,
+            model: 'deterministic_paid_meta_conversation_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    }
+
+    if (hasDirectPaidMetaCheckoutIntent(message) && approvedCheckoutUrl) {
         const joined = `Yep, you can get started here: ${approvedCheckoutUrl}\n\nOnce you're in, tell me and I'll help you make the first week simple.`;
         return {
             chunks: [joined],
@@ -1682,7 +1725,7 @@ function buildPaidMetaConversationApproval({
         && /^deterministic_paid_meta_conversation_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
         && !META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         && !META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)
-        && (draft?.replyMode !== 'campaign_buyer_handoff' || hasDirectBuyerIntent(message));
+        && (draft?.replyMode !== 'campaign_buyer_handoff' || hasDirectPaidMetaCheckoutIntent(message));
     if (!deterministicProgression) return null;
     return {
         required: false,
@@ -1793,7 +1836,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
     const approvedConversationProgression = metaAdConversationFastLane
         && ['campaign_sales_progression', 'campaign_buyer_handoff'].includes(String(draft?.replyMode || ''))
         && /^deterministic_paid_meta_conversation_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
-        && (draft?.replyMode !== 'campaign_buyer_handoff' || hasDirectBuyerIntent(message));
+        && (draft?.replyMode !== 'campaign_buyer_handoff' || hasDirectPaidMetaCheckoutIntent(message));
     if ((!approvedFirstReply && !approvedGoalProof && !approvedConversationProgression)
         || linkedUserId
         || mediaReview?.required === true
@@ -2557,7 +2600,7 @@ function isPositiveChallengeLinkConfirmationText(text) {
 
 function isCurrentChallengeHandoffMoment({ qualifier, currentMessage } = {}) {
     if (isAppReconnectOrAccountSupportRequest(currentMessage)) return false;
-    if (hasDirectBuyerIntent(currentMessage)) return true;
+    if (hasDirectPaidMetaCheckoutIntent(currentMessage)) return true;
     if (hasChallengeInviteReadinessSignal(currentMessage)) return true;
     if (String(qualifier?.commercial_stage || '').toLowerCase() === 'buyer_intent'
         && /^(?:can|could) i (?:see|look at|check out) (?:it|this|that|the (?:pass|details|program))(?: please)?[.!?\s]*$/i.test(String(currentMessage || '').trim())) {
@@ -7041,6 +7084,7 @@ exports._test = {
     buildContextualMetaAdOfferLinkReply,
     buildDeterministicPaidMetaConversationReply,
     buildPaidMetaConversationApproval,
+    hasDirectPaidMetaCheckoutIntent,
     buildDraftVideoAttachmentData,
     ensureMetaAdSalesProgressionQuestion,
     resolveMetaAdEarlyTypingDelayMs,
