@@ -5,6 +5,11 @@
   "destination": "Facebook Messenger ad flow",
   "sales_offer_included": false,
   "founders_pass_included": false,
+  "metric_framing": {
+    "featured_aggregate": "25 feed moments",
+    "suppressed_counts": ["training beats", "members featured"],
+    "qualitative_proof": ["training", "meals", "support"]
+  },
   "music": {
     "track": "Techno Fest Vibes",
     "artist": "Alejandro Magana (A. M.)",

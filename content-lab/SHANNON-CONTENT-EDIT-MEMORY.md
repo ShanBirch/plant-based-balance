@@ -8,6 +8,13 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 ## Active production rules
 
+### Social-proof metrics must strengthen perceived scale
+
+- Do not headline small participation counts such as a low number of featured members or training contributors in public challenge recaps, proof videos or ad-flow media. Even when accurate, those numbers can make active community proof feel smaller than it is.
+- Prefer truthful aggregate activity metrics such as total feed moments, sessions, posts or verified app activity when they are materially stronger and have a clean definition.
+- When no stronger verified metric is available, use qualitative proof categories such as training, meals and support rather than inventing, estimating or ambiguously labelling app logins.
+- Keep the underlying media honest. This rule changes framing, not the number of people visible in the recap.
+
 ### Back-extension comparison reels
 
 - When the exercise can be performed several ways to bias different areas, make bracing the foundation before discussing the variants.

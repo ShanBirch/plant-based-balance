@@ -16,7 +16,7 @@ arc: Kinetic hook -> Proof count -> Training depth deck -> Meal shutters -> Comm
 - status: animated
 - src: compositions/frames/02-blue-stats.html
 - duration: 5.4s
-- beat: the feed count grows into three tangible Week 5 proof signals
+- beat: 25 feed moments grow into training, meals and support as qualitative proof without exposing small participation counts
 - rules: stat-bars-and-fills, counting-dynamic-scale
 - transition_in: chromatic-blue-flash
 

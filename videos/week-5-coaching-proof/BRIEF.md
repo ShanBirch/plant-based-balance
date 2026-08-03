@@ -13,3 +13,5 @@ review_status: private-review-only
 A proof-led Week 5 recap using real challenge training, verified vegan meals and public-safe community comments. The design is intentionally separate from the Founders Pass coaching-preview video: dark royal blue, electric aqua, stronger crops, kinetic typography and spatial motion. No Founders Pass offer or sales section appears.
 
 Member media uses first names only. Progress/body media is excluded. All visible food is positively verified vegan. The final music bed is Mixkit's `Techno Fest Vibes`, a powerful propulsive EDM/house sports track with a clean opening and a 1.5-second mastered fade-out. Restrained SFX remain part of the experience.
+
+Public metric framing uses the strong aggregate count of 25 feed moments. Small participation counts are suppressed; training, meals and support are shown as proof categories instead.
