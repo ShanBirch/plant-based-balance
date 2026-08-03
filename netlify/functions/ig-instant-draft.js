@@ -921,6 +921,7 @@ async function persistCocosDraftRepair({ alertId, currentAlertData, draft, repai
             draft_messages: draft.chunks,
             draft_text: draft.joined,
             ...buildDraftVideoAttachmentData(draft),
+            ...buildDraftImageAttachmentData(draft),
             draft_model: draft.model,
             draft_reply_mode: draft.replyMode || latest.draft_reply_mode || 'standard',
             draft_max_chunks: draft.maxChunks || latest.draft_max_chunks || MAX_CHUNKS,
@@ -1106,11 +1107,18 @@ function ensureMetaAdSalesProgressionQuestion({
         : [draftTextFromDraft(draft)].filter(Boolean);
     if (!existingChunks.length || !question) return draft;
     const chunks = [...existingChunks];
-    chunks[chunks.length - 1] = `${chunks[chunks.length - 1]}\n\n${question}`;
+    if (draft.imageAttachmentUrl || draft.videoAttachmentUrl) {
+        chunks.push(question);
+    } else {
+        chunks[chunks.length - 1] = `${chunks[chunks.length - 1]}\n\n${question}`;
+    }
     return {
         ...draft,
         chunks,
         joined: chunks.join('\n\n'),
+        maxChunks: (draft.imageAttachmentUrl || draft.videoAttachmentUrl)
+            ? Math.max(2, Number(draft.maxChunks) || 0)
+            : draft.maxChunks,
         model: `${draft.model || 'unknown'}+meta_ad_sales_question_v1`,
     };
 }
@@ -1252,16 +1260,25 @@ function buildDeterministicPaidMetaConversationReply({
 
     if (PAID_META_POSITIVE_FIT_RE.test(message) && hasRecentPaidMetaSupportQuestion(history)) {
         const offerName = broadFlow ? 'the six-week Balance kickstart' : 'the Founders Pass';
+        const canSendProofVideo = allowVideoAttachment && !broadFlow && !recentProofVideo;
         const nextAsk = recentProofVideo
             ? 'Want me to send you the full breakdown?'
-            : 'Want me to send you the quick video so you can see how it works?';
-        const joined = `Yeah, that's exactly what ${offerName} is for. You get the structure for the week, plus support from me when things start slipping.\n\n${nextAsk}`;
+            : (canSendProofVideo
+                ? 'Does that feel like the kind of support you need?'
+                : 'Want me to show you what the first week would look like?');
+        const proofBridge = canSendProofVideo
+            ? ` Here's a quick video showing you how it works inside Balance.`
+            : '';
+        const body = `Yeah, that's exactly what ${offerName} is for. You get the structure for the week, plus support from me when things start slipping.${proofBridge}`;
+        const chunks = canSendProofVideo ? [body, nextAsk] : [`${body}\n\n${nextAsk}`];
+        const joined = chunks.join('\n\n');
         return {
-            chunks: [joined],
+            chunks,
             joined,
+            videoAttachmentUrl: canSendProofVideo ? FOUNDERS_PASS_APP_PREVIEW_URL : null,
             model: 'deterministic_paid_meta_conversation_v1',
             replyMode: 'campaign_sales_progression',
-            maxChunks: 1,
+            maxChunks: chunks.length,
             error: null,
             flowVariant,
         };
@@ -1287,6 +1304,7 @@ function buildDeterministicPaidMetaConversationReply({
         && (!hasBlocker || hasRecentPaidMetaGoalQuestion(history))) {
         const proofReply = buildMetaAdGoalProofReply(message, { flowVariant });
         if (!allowVideoAttachment || broadFlow) proofReply.videoAttachmentUrl = null;
+        if (!allowVideoAttachment) proofReply.imageAttachmentUrl = null;
         return proofReply;
     }
 
@@ -1463,6 +1481,7 @@ async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason =
  * Update this block when the ad's quick-replies or offering structure changes.
  */
 const FOUNDERS_PASS_APP_PREVIEW_URL = 'https://future-balance.netlify.app/assets/balance-founders-pass-dm-preview.mp4';
+const ALLY_WEIGHT_LOSS_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/ally-cocos.png';
 const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/plant-based-fitness.html?utm_source=instagram&utm_medium=dm&utm_campaign=founders_pass_plant_based&utm_content=dm_handoff';
 const FOUNDERS_PASS_BROAD_CHECKOUT_URL = 'https://future-balance.netlify.app/fitness-coaching.html?utm_source=instagram&utm_medium=dm&utm_campaign=founders_pass_broad_pain&utm_content=dm_handoff';
 
@@ -1470,6 +1489,15 @@ function buildDraftVideoAttachmentData(draft = {}) {
     const url = String(draft?.videoAttachmentUrl || '').trim();
     return {
         draft_video_attachment_url: /^https:\/\/[^\s]+\.mp4(?:[?#][^\s]*)?$/i.test(url)
+            ? url
+            : undefined,
+    };
+}
+
+function buildDraftImageAttachmentData(draft = {}) {
+    const url = String(draft?.imageAttachmentUrl || '').trim();
+    return {
+        draft_image_attachment_url: /^https:\/\/[^\s]+\.(?:png|jpe?g|webp)(?:[?#][^\s]*)?$/i.test(url)
             ? url
             : undefined,
     };
@@ -1662,16 +1690,17 @@ function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_b
     const rawMessage = String(currentMessage || '').trim();
     const text = rawMessage.toLowerCase();
     const broadFlow = flowVariant === 'broad_pain';
+    const weightLossGoal = /weight|fat|lose|lean|tone|confiden|body/.test(text);
     let bridge;
     if (/accountab|consisten|motivat|routine|habit|stick|on track|fall off|keep going/.test(text)) {
         bridge = `yeah okay, it sounds like the hard part isn't knowing you should do it, it's keeping the week on track once life gets busy. Here's a quick video showing you how it works inside Balance.`;
     } else if (/strong|strength|muscle|lift|gym|fitter|fitness|run|cardio/.test(text)) {
         bridge = `nice, so the goal is to actually feel stronger and fitter, not just collect another plan. Here's a quick video showing you how it works inside Balance.`;
-    } else if (/weight|fat|lose|lean|tone|confiden|body/.test(text)) {
+    } else if (weightLossGoal) {
         const kgGoal = rawMessage.match(/\b(\d{1,2}(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i)?.[1] || '';
         bridge = kgGoal
-            ? `yeah okay, ${kgGoal}kg is a solid goal. You want a setup you can actually follow long enough to get there, without guessing every day. Here's a quick video showing you how it works inside Balance.`
-            : `yeah okay, losing weight is the goal. You want a setup you can actually follow long enough to feel the difference, without guessing every day. Here's a quick video showing you how it works inside Balance.`;
+            ? `yeah absolutely, ${kgGoal}kg is a solid goal and that's a big part of what I help people with. This is Ally. She lost 12kg in 16 weeks while working full time and being a busy mum. The biggest thing was building the plan around her life so she could actually stick to it.`
+            : `yeah absolutely, that's a big part of what I help people with. This is Ally. She lost 12kg in 16 weeks while working full time and being a busy mum. The biggest thing was building the plan around her life so she could actually stick to it.`;
     } else if (/food|meal|eat|nutrition|plant|vegan|vegetarian|protein/.test(text)) {
         bridge = broadFlow
             ? `yeah okay, so food structure is the main thing. Here's a quick video showing you how it works inside Balance.`
@@ -1689,7 +1718,8 @@ function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_b
         imageCount: 0,
         audioCount: 0,
         videoCount: 0,
-        videoAttachmentUrl: broadFlow ? null : FOUNDERS_PASS_APP_PREVIEW_URL,
+        videoAttachmentUrl: broadFlow || weightLossGoal ? null : FOUNDERS_PASS_APP_PREVIEW_URL,
+        imageAttachmentUrl: weightLossGoal ? ALLY_WEIGHT_LOSS_PROOF_URL : null,
         reelContextCount: 0,
         reelThumbnailCount: 0,
         mediaDecode: {},
@@ -1841,7 +1871,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
     const approvedGoalProof = (metaAdGoalReplyTurn || metaAdConversationFastLane)
         && draft?.replyMode === 'campaign_goal_proof'
         && /^deterministic_meta_ad_goal_proof_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
-        && !!draft.videoAttachmentUrl;
+        && (!!draft.videoAttachmentUrl || !!draft.imageAttachmentUrl);
     const approvedConversationProgression = metaAdConversationFastLane
         && ['campaign_sales_progression', 'campaign_buyer_handoff'].includes(String(draft?.replyMode || ''))
         && /^deterministic_paid_meta_conversation_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
@@ -1859,7 +1889,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         verdict: 'pass',
         confidence: 1,
         summary: approvedGoalProof
-            ? 'Approved deterministic Meta ad goal reflection and native proof video.'
+            ? 'Approved deterministic Meta ad goal reflection and native proof media.'
             : (approvedConversationProgression
                 ? 'Approved deterministic paid Meta sales-progression reply.'
                 : 'Approved deterministic Meta ad first reply.'),
@@ -6031,6 +6061,7 @@ exports.handler = async (event) => {
             draft_messages: draft.chunks,
             draft_text: draft.joined,
             ...buildDraftVideoAttachmentData(draft),
+            ...buildDraftImageAttachmentData(draft),
             draft_model: draft.model,
             draft_reply_mode: draft.replyMode || 'standard',
             draft_max_chunks: draft.maxChunks || MAX_CHUNKS,
@@ -6275,6 +6306,7 @@ exports.handler = async (event) => {
             draft_messages: draft.chunks,
             draft_text: draft.joined,
             ...buildDraftVideoAttachmentData(draft),
+            ...buildDraftImageAttachmentData(draft),
             draft_model: draft.model,
             draft_reply_mode: draft.replyMode || 'standard',
             draft_max_chunks: draft.maxChunks || MAX_CHUNKS,
@@ -7095,6 +7127,7 @@ exports._test = {
     buildPaidMetaConversationApproval,
     hasDirectPaidMetaCheckoutIntent,
     buildDraftVideoAttachmentData,
+    buildDraftImageAttachmentData,
     ensureMetaAdSalesProgressionQuestion,
     resolveMetaAdEarlyTypingDelayMs,
     getCocosCodexReviewHold,

@@ -16,6 +16,7 @@ const {
     buildPaidMetaConversationApproval,
     hasDirectPaidMetaCheckoutIntent,
     buildDraftVideoAttachmentData,
+    buildDraftImageAttachmentData,
     filterMetaAdCardAttachmentHistory,
     buildLeadOnboardingHandoffData,
     resolveMetaAdFirstReplyIntent,
@@ -24,7 +25,10 @@ const {
     getMetaAdSensitiveHoldReason,
     hasImmediateMetaDispatchFailure,
 } = require('../netlify/functions/ig-instant-draft')._test;
-const { buildInstagramGraphVideoMessagePayload } = require('../netlify/functions/send-ig-reply')._test;
+const {
+    buildInstagramGraphVideoMessagePayload,
+    buildInstagramGraphImageMessagePayload,
+} = require('../netlify/functions/send-ig-reply')._test;
 const { inspectVoiceScriptQuality } = require('../netlify/functions/_lib/elevenlabs-voice-message');
 
 test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and model review', () => {
@@ -254,7 +258,7 @@ test('generic keyword and fit quick reply answer without a premature checkout li
     assert.doesNotMatch(reply.joined, /vegan fitness community/i);
 });
 
-test('the reply after the goal is tailored and carries a native video attachment', () => {
+test('the reply after the goal is tailored and carries the right native proof media', () => {
     const history = [{
         direction: 'out',
         text: "Hey, yeah of course. Before I send you a heap of generic info, what's the main thing you're trying to change with your fitness right now?",
@@ -304,6 +308,13 @@ test('the reply after the goal is tailored and carries a native video attachment
     const weightGoal = buildMetaAdGoalProofReply('I need to lose weight, probably 15kgs');
     assert.match(weightGoal.joined, /15kg is a solid goal/i,
         'the deterministic proof reply directly acknowledges the lead goal');
+    assert.match(weightGoal.joined, /Ally.*lost 12kg in 16 weeks/i);
+    assert.match(weightGoal.imageAttachmentUrl, /ally-cocos\.png/);
+    assert.equal(weightGoal.videoAttachmentUrl, null);
+    assert.equal(
+        buildDraftImageAttachmentData(weightGoal).draft_image_attachment_url,
+        weightGoal.imageAttachmentUrl
+    );
     const guardedWeightGoal = ensureMetaAdSalesProgressionQuestion({
         draft: weightGoal,
         currentMessage: 'I need to lose weight, probably 15kgs',
@@ -311,6 +322,9 @@ test('the reply after the goal is tailored and carries a native video attachment
         leadStage: 'qualifying',
     });
     assert.match(guardedWeightGoal.model, /\+meta_ad_sales_question_v1$/);
+    assert.equal(guardedWeightGoal.chunks.length, 2,
+        'the proof image must sit between the client result and the next question');
+    assert.match(guardedWeightGoal.chunks[1], /what usually gets in the way/i);
     assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({
         metaAdGoalReplyTurn: true,
         draft: guardedWeightGoal,
@@ -333,6 +347,18 @@ test('the reply after the goal is tailored and carries a native video attachment
             },
         },
     });
+    assert.deepEqual(buildInstagramGraphImageMessagePayload({
+        recipientId: 'ig-user-1',
+        imageUrl: weightGoal.imageAttachmentUrl,
+    }), {
+        recipient: { id: 'ig-user-1' },
+        message: {
+            attachment: {
+                type: 'image',
+                payload: { url: weightGoal.imageAttachmentUrl },
+            },
+        },
+    });
 });
 
 test('paid Meta conversation stages stay deterministic, purposeful, and immediately reviewable', () => {
@@ -349,7 +375,8 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         allowVideoAttachment: true,
     });
     assert.match(goal.joined, /15kg is a solid goal/i);
-    assert.match(goal.videoAttachmentUrl, /balance-founders-pass-dm-preview\.mp4/);
+    assert.match(goal.imageAttachmentUrl, /ally-cocos\.png/);
+    assert.equal(goal.videoAttachmentUrl, null);
     const guardedGoal = ensureMetaAdSalesProgressionQuestion({
         draft: goal,
         currentMessage: 'I need to lose weight, probably 15kgs',
@@ -392,10 +419,11 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         leadStage: 'qualifying',
     });
     assert.equal(restartedPersonalisedGoal.replyMode, 'campaign_goal_proof');
-    assert.match(guardedRestartedPersonalisedGoal.joined, /quick video showing you how it works inside Balance/i);
+    assert.match(guardedRestartedPersonalisedGoal.joined, /Ally.*lost 12kg in 16 weeks/i);
     assert.match(guardedRestartedPersonalisedGoal.joined, /what usually gets in the way/i);
     assert.doesNotMatch(guardedRestartedPersonalisedGoal.joined, /\$29\.99|Starter Coaching is probably/i);
-    assert.match(guardedRestartedPersonalisedGoal.videoAttachmentUrl, /balance-founders-pass-dm-preview\.mp4/);
+    assert.match(guardedRestartedPersonalisedGoal.imageAttachmentUrl, /ally-cocos\.png/);
+    assert.equal(guardedRestartedPersonalisedGoal.videoAttachmentUrl, null);
 
     const blockerQualifier = {
         commercial_stage: 'problem_qualified',
@@ -450,6 +478,19 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
     });
     assert.match(acceptedSupport.joined, /exactly what the Founders Pass is for/i);
     assert.equal((acceptedSupport.joined.match(/\?/g) || []).length, 1);
+
+    const acceptedSupportWithVideo = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Yeah',
+        qualifier: blockerQualifier,
+        history: [{ direction: 'out', text: 'Would having a clear plan and me checking in help you stay on track?' }],
+        flowVariant: 'plant_based_control',
+        allowVideoAttachment: true,
+    });
+    assert.match(acceptedSupportWithVideo.joined, /here's a quick video showing you how it works inside Balance/i);
+    assert.match(acceptedSupportWithVideo.videoAttachmentUrl, /balance-founders-pass-dm-preview\.mp4/);
+    assert.equal(acceptedSupportWithVideo.chunks.length, 2,
+        'the video must sit before the next sales question');
+    assert.match(acceptedSupportWithVideo.chunks[1], /does that feel like the kind of support you need/i);
 
     const buyer = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Send me the link',

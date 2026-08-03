@@ -1417,6 +1417,44 @@ async function postInstagramGraphVideo({ recipientId, accountId, videoUrl, tag }
     return parsed;
 }
 
+function buildInstagramGraphImageMessagePayload({ recipientId, imageUrl, tag }) {
+    return {
+        recipient: { id: recipientId },
+        message: {
+            attachment: {
+                type: 'image',
+                payload: { url: imageUrl },
+            },
+        },
+        ...(tag ? { tag } : {}),
+    };
+}
+
+async function postInstagramGraphImage({ recipientId, accountId, imageUrl, tag }) {
+    const accessToken = await getInstagramGraphAccessToken(accountId);
+    if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
+    if (!recipientId) throw new Error('Instagram Graph recipient id missing');
+    if (!imageUrl) throw new Error('Instagram Graph image URL missing');
+
+    const targetAccount = accountId || 'me';
+    const res = await fetch(`https://graph.instagram.com/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(targetAccount)}/messages`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(buildInstagramGraphImageMessagePayload({ recipientId, imageUrl, tag })),
+    });
+    const responseText = await res.text();
+    let parsed;
+    try { parsed = responseText ? JSON.parse(responseText) : {}; } catch { parsed = { raw: responseText }; }
+    if (!res.ok) {
+        const detail = parsed?.error?.message || responseText;
+        throw new Error(`Instagram Graph image ${res.status}: ${String(detail || '').slice(0, 400)}`);
+    }
+    return parsed;
+}
+
 function isInstagramAudioUnsupportedError(errorMessage = '') {
     const text = String(errorMessage || '').toLowerCase();
     return text.includes('attachment format is not supported')
@@ -2184,12 +2222,16 @@ exports.handler = async (event) => {
         ? String(alertData.draft_video_attachment_url || '').trim()
         : '';
     const hasDraftVideoAttachment = /^https:\/\/[^\s]+\.mp4(?:[?#][^\s]*)?$/i.test(draftVideoAttachmentUrl);
-    if (hasDraftVideoAttachment && !shouldUseGraph) {
+    const draftImageAttachmentUrl = useDraftMessageChunks
+        ? String(alertData.draft_image_attachment_url || '').trim()
+        : '';
+    const hasDraftImageAttachment = /^https:\/\/[^\s]+\.(?:png|jpe?g|webp)(?:[?#][^\s]*)?$/i.test(draftImageAttachmentUrl);
+    if ((hasDraftVideoAttachment || hasDraftImageAttachment) && !shouldUseGraph) {
         return {
             statusCode: 409,
             body: JSON.stringify({
-                error: 'Native video delivery requires Instagram Graph',
-                code: 'video_attachment_unavailable',
+                error: 'Native media delivery requires Instagram Graph',
+                code: hasDraftImageAttachment ? 'image_attachment_unavailable' : 'video_attachment_unavailable',
             }),
         };
     }
@@ -2207,6 +2249,16 @@ exports.handler = async (event) => {
                 kind: 'video',
                 text: `[VIDEO:${draftVideoAttachmentUrl}]`,
                 videoUrl: draftVideoAttachmentUrl,
+            },
+            ...outboundItems.slice(1),
+        ].filter(Boolean);
+    } else if (hasDraftImageAttachment && !voiceMessageConfig.enabled) {
+        outboundItems = [
+            outboundItems[0],
+            {
+                kind: 'image',
+                text: `[IMAGE:${draftImageAttachmentUrl}]`,
+                imageUrl: draftImageAttachmentUrl,
             },
             ...outboundItems.slice(1),
         ].filter(Boolean);
@@ -2342,6 +2394,21 @@ exports.handler = async (event) => {
                     transport: deliveryTransport,
                     kind: 'video',
                     videoUrl: item.videoUrl,
+                });
+            } else if (item.kind === 'image') {
+                const r = await postInstagramGraphImage({
+                    recipientId: graphRecipientId,
+                    accountId: graphAccountId,
+                    imageUrl: item.imageUrl,
+                    tag: graphMessageTag,
+                });
+                sendResults.push({
+                    ok: true,
+                    response: r,
+                    text: chunkText,
+                    transport: deliveryTransport,
+                    kind: 'image',
+                    imageUrl: item.imageUrl,
                 });
             } else {
                 const r = shouldUseGraph
@@ -2674,7 +2741,9 @@ exports.handler = async (event) => {
             alternate_ig_delivery: alternateDelivery?.used ? buildAlternateIgDeliveryData(alternateDelivery).alternate_ig_delivery : null,
             chunks_sent: sentChunks.length,
             chunks_total: outboundItems.length,
-            delivery_payload_kind: voiceMessageConfig.enabled ? 'audio' : 'text',
+            delivery_payload_kind: voiceMessageConfig.enabled
+                ? 'audio'
+                : (hasDraftImageAttachment ? 'image' : (hasDraftVideoAttachment ? 'video' : 'text')),
             ...cleanup,
         }),
     };
@@ -2694,6 +2763,7 @@ exports._test = {
     resolveFirstItemTypingDelayMs,
     resolveOutboundVoiceMessageConfig,
     buildInstagramGraphVideoMessagePayload,
+    buildInstagramGraphImageMessagePayload,
     isInstagramAudioUnsupportedError,
     isCocosAlertData,
     isChallengeOfferSend,
