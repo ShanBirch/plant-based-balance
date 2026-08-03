@@ -75,6 +75,55 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
     }), null);
 });
 
+test('paid Meta work-and-kids blocker advances to accountability instead of repeating the blocker question', () => {
+    const qualifier = {
+        commercial_stage: 'engaged',
+        facts: {
+            current_state: 'Wants to lose weight',
+            history_blockers: null,
+            relationship_context: 'Has kids; work and kids disrupt consistency.',
+            relationship_checklist: {
+                household_family: 'Has kids',
+                stressors_frustrations: 'Work and kids get in the way',
+            },
+        },
+    };
+    const blockerReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Other things just get in the way. Work kids',
+        qualifier,
+        flowVariant: 'plant_based_control',
+        personalVoiceNoteMode: false,
+    });
+
+    assert.match(blockerReply.joined, /work and the kids take over/i);
+    assert.match(blockerReply.joined, /clear week to follow and me checking in/i);
+    assert.doesNotMatch(blockerReply.joined, /what usually gets in the way/i);
+    assert.equal((blockerReply.joined.match(/\?/g) || []).length, 1);
+
+    const restoredQuestion = ensureMetaAdSalesProgressionQuestion({
+        draft: {
+            chunks: ['Yeah okay, that makes sense.'],
+            joined: 'Yeah okay, that makes sense.',
+            model: 'review_repair',
+            replyMode: 'standard',
+            maxChunks: 1,
+        },
+        currentMessage: 'Other things just get in the way. Work kids',
+        qualifier,
+        leadStage: 'qualifying',
+    });
+    assert.match(restoredQuestion.joined, /kind of support|check in/i);
+    assert.doesNotMatch(restoredQuestion.joined, /what usually gets in the way/i);
+
+    const voiceReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Other things just get in the way. Work kids',
+        qualifier,
+        flowVariant: 'plant_based_control',
+        personalVoiceNoteMode: true,
+    });
+    assert.equal(inspectVoiceScriptQuality(voiceReply.joined).valid, true);
+});
+
 test('deterministic first reply is narrow and leaves sensitive, opt-out, and unrelated ad messages to normal review', () => {
     for (const message of [
         'What is the Founders Pass?',

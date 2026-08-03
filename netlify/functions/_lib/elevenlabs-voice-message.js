@@ -54,20 +54,34 @@ function hasAccountabilityConnectionSignal(text = '') {
 
 function hasHighSignalConsistencyBlocker(text = '') {
     const value = String(text || '').trim();
-    if (value.length < 16) return false;
-    return /\b(?:can(?:'t| not) stick|never stick|keep falling|fall off|keep stopping|always restart|can(?:'t| not) stay consistent|struggl\w* to stay consistent|routine\w* (?:go|fall|drop)\w* (?:off|sideways)|lose motivation|no accountability)\b/i.test(value);
+    if (value.length < 10) return false;
+    return /\b(?:can(?:'t| not) stick|never stick|keep falling|fall off|keep stopping|always restart|can(?:'t| not) stay consistent|struggl\w* to stay consistent|routine\w* (?:go|fall|drop)\w* (?:off|sideways)|lose motivation|no accountability|things? (?:just )?get(?:s)? in the way|work (?:and|&) (?:the )?kids|kids (?:and|&) work|busy with (?:work|kids|family))\b/i.test(value);
 }
 
 function hasQualifierPersonalEvidence(qualifier = {}) {
     const facts = safeObject(qualifier.facts);
-    return [facts.current_state, facts.motivation, facts.history_blockers]
+    const relationshipChecklist = safeObject(facts.relationship_checklist);
+    return [
+        facts.current_state,
+        facts.motivation,
+        facts.history_blockers,
+        facts.relationship_context,
+        relationshipChecklist.stressors_frustrations,
+    ]
         .some(value => cleanString(value, 500).length >= 12);
 }
 
 function hasGoalAndBlockerEvidence(qualifier = {}) {
     const facts = safeObject(qualifier.facts);
+    const relationshipChecklist = safeObject(facts.relationship_checklist);
     const goal = cleanString(facts.current_state || facts.motivation || '', 500);
-    const blocker = cleanString(facts.history_blockers || '', 500);
+    const blocker = cleanString(
+        facts.history_blockers
+        || facts.relationship_context
+        || relationshipChecklist.stressors_frustrations
+        || '',
+        500
+    );
     return goal.length >= 8 && blocker.length >= 8;
 }
 

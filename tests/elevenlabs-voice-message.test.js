@@ -218,6 +218,26 @@ const personalVoicePlan = voice.resolvePersonalVoiceReplyPlan({
 assert.strictEqual(personalVoicePlan.useSyntheticVoice, true);
 assert.strictEqual(personalVoicePlan.reason, 'lead_shared_consistency_blocker');
 
+const workAndKidsVoicePlan = voice.resolvePersonalVoiceReplyPlan({
+    channel: 'instagram',
+    hasInstagramGraphRoute: true,
+    currentMessage: 'Other things just get in the way. Work kids',
+    qualifier: {
+        facts: {
+            current_state: 'Wants to lose weight',
+            history_blockers: null,
+            relationship_context: 'Has kids; work and kids disrupt consistency.',
+            relationship_checklist: {
+                stressors_frustrations: 'Work and kids get in the way',
+            },
+        },
+    },
+    meaningfulLeadReplyCount: 2,
+    hasRecentVoiceMessage: false,
+});
+assert.strictEqual(workAndKidsVoicePlan.useSyntheticVoice, true);
+assert.strictEqual(workAndKidsVoicePlan.reason, 'lead_shared_consistency_blocker');
+
 assert.strictEqual(
     voice.resolvePersonalVoiceReplyPlan({
         channel: 'instagram',

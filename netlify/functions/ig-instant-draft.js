@@ -1063,12 +1063,24 @@ function shouldKeepMetaAdReplyQuestionFree({ currentMessage = '', leadStage = ''
     return false;
 }
 
+function qualifierHasKnownMetaAdBlocker(qualifier = {}) {
+    const facts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
+    const relationshipChecklist = facts.relationship_checklist && typeof facts.relationship_checklist === 'object'
+        ? facts.relationship_checklist
+        : {};
+    return [
+        facts.history_blockers,
+        facts.relationship_context,
+        relationshipChecklist.stressors_frustrations,
+    ].some(value => String(value || '').trim().length >= 4);
+}
+
 function buildMetaAdSalesProgressionQuestion({ draft = {}, qualifier = {} } = {}) {
     const draftText = draftTextFromDraft(draft);
     const commercialStage = String(qualifier?.commercial_stage || '').trim().toLowerCase();
     const facts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
     const hasKnownGoal = !!String(facts.current_state || facts.motivation || '').trim();
-    const hasKnownBlocker = !!String(facts.history_blockers || '').trim();
+    const hasKnownBlocker = qualifierHasKnownMetaAdBlocker(qualifier);
 
     if (isSignupLinkHandoffText(draftText) || commercialStage === 'buyer_intent') {
         return 'Have a quick look and tell me, does that feel like the kind of support you need?';
@@ -1139,7 +1151,7 @@ function resolveMetaAdEarlyTypingDelayMs({ lastInboundAt = '', seed = '', nowMs 
 }
 
 const PAID_META_GOAL_SIGNAL_RE = /\b(?:lose|drop|reduce|gain|build|improve|get|feel|become|want|need|goal|stronger|fitter|leaner|healthier|weight|fat|muscle|strength|fitness|energy|confidence)\b/i;
-const PAID_META_BLOCKER_SIGNAL_RE = /\b(?:stop(?:ping)? and start(?:ing)?|stop[- ]start|keep stopping|keep restarting|always restart|fall(?:ing)? off|drop(?:ping)? off|never stick|can(?:'t| not) stick|inconsisten|lose motivation|no motivation|no time|too busy|overwhelm|cravings?|weekends?|chocolate|accountab|stay on track|follow through)\b/i;
+const PAID_META_BLOCKER_SIGNAL_RE = /\b(?:stop(?:ping)? and start(?:ing)?|stop[- ]start|keep stopping|keep restarting|always restart|fall(?:ing)? off|drop(?:ping)? off|never stick|can(?:'t| not) stick|inconsisten|lose motivation|no motivation|no time|too busy|overwhelm|cravings?|weekends?|chocolate|accountab|stay on track|follow through|things? (?:just )?get(?:s)? in the way|work (?:and|&) (?:the )?kids|kids (?:and|&) work|busy with (?:work|kids|family))\b/i;
 const PAID_META_NEXT_STEP_RE = /^(?:okay[, ]*)?(?:so[, ]*)?(?:what (?:do i do|should i do|now)|what(?:'s| is) next|where (?:do i|should i) start|how (?:do i|should i) start)(?: now)?[.!?\s]*$/i;
 const PAID_META_POSITIVE_FIT_RE = /^(?:yes|yeah|yep|definitely|absolutely|probably|i think so|that would help|that sounds good|sounds good|i(?:'m| am) keen|keen)[!?.\s]*$/i;
 const PAID_META_APP_INCLUSIONS_RE = /\b(?:what(?:'s| is| was) (?:actually )?(?:included in|in|inside)|what do (?:i|you) get (?:in|inside)) (?:the )?(?:balance(?: app)?|app)\b/i;
@@ -1188,7 +1200,7 @@ function buildDeterministicPaidMetaConversationReply({
     const facts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
     const commercialStage = String(qualifier?.commercial_stage || '').toLowerCase();
     const hasGoal = !!String(facts.current_state || facts.motivation || '').trim();
-    const hasBlocker = !!String(facts.history_blockers || '').trim();
+    const hasBlocker = qualifierHasKnownMetaAdBlocker(qualifier);
     const broadFlow = flowVariant === 'broad_pain';
     const recentProofVideo = hasRecentPaidMetaProofVideo(history);
     const approvedCheckoutUrl = isApprovedChallengeBioLinkText(checkoutUrl) ? String(checkoutUrl).trim() : '';
@@ -1309,9 +1321,14 @@ function buildDeterministicPaidMetaConversationReply({
     }
 
     if (PAID_META_BLOCKER_SIGNAL_RE.test(message) && hasGoal) {
-        const joined = personalVoiceNoteMode
-            ? `Yeah, I get you. Um, that stop-start loop is the bit that wears you down, because every restart feels harder than the last one. Honestly, having a clear week laid out and someone checking in is usually what breaks that cycle. Would that kind of accountability help you stay on track?`
-            : `Yeah, I get you. That stop-start loop is exactly where accountability helps.\n\nWould having a clear plan and me checking in help you stay on track?`;
+        const lifeLoadBlocker = /\b(?:things? (?:just )?get(?:s)? in the way|work (?:and|&) (?:the )?kids|kids (?:and|&) work|busy with (?:work|kids|family))\b/i.test(message);
+        const joined = lifeLoadBlocker
+            ? (personalVoiceNoteMode
+                ? `Yeah, that makes sense. Um, when work and the kids take over, even a good plan can disappear pretty quickly. Honestly, the idea is to give you a clear week to follow, then I check in and help adjust it when life gets messy. Would that make staying consistent feel more doable?`
+                : `Yeah, that makes sense. It sounds like the plan disappears when work and the kids take over.\n\nWould having a clear week to follow and me checking in make that easier?`)
+            : (personalVoiceNoteMode
+                ? `Yeah, I get you. Um, that stop-start loop is the bit that wears you down, because every restart feels harder than the last one. Honestly, having a clear week laid out and someone checking in is usually what breaks that cycle. Would that kind of accountability help you stay on track?`
+                : `Yeah, I get you. That stop-start loop is exactly where accountability helps.\n\nWould having a clear plan and me checking in help you stay on track?`);
         return {
             chunks: [joined],
             joined,
