@@ -867,6 +867,17 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         'price after selecting Founders Pass must advance to checkout permission, not repeat week-one discovery');
     assert.equal((selectedFoundersPrice.joined.match(/\?/g) || []).length, 1);
 
+    const naturalFoundationsPrice = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Thanks. How much is Balance Foundations?',
+        qualifier: blockerQualifier,
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(naturalFoundationsPrice.joined, /one \$89\.99 payment for the full six weeks/i);
+    assert.match(naturalFoundationsPrice.joined, /complete six-week curriculum/i);
+    assert.match(naturalFoundationsPrice.joined, /send you the checkout link/i);
+    assert.doesNotMatch(naturalFoundationsPrice.joined, /would that kind of support|stay on track/i);
+    assert.equal((naturalFoundationsPrice.joined.match(/\?/g) || []).length, 1);
+
     const priceAndInclusions = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I want to know your prices and what I get',
         qualifier: blockerQualifier,

@@ -1204,7 +1204,7 @@ const PAID_META_NEXT_STEP_RE = /^(?:okay[, ]*)?(?:so[, ]*)?(?:what (?:do i do|sh
 const PAID_META_POSITIVE_FIT_RE = /^(?:(?:yes|yeah|yep|definitely|absolutely)\b(?!.*\b(?:but\s+(?:not|no)|don['’]?t|do not)\b)|probably\b|i think so\b|that would (?:really )?help\b|that sounds good\b|sounds good\b|i(?:'m| am) keen\b|keen\b)[\s\S]{0,160}$/i;
 const PAID_META_APP_INCLUSIONS_RE = /\b(?:what(?:'s| is| was) (?:actually )?(?:included in|in|inside)|what do (?:i|you) get (?:in|inside)) (?:the )?(?:balance(?: app)?|app)\b/i;
 const PAID_META_PROGRAM_WORKS_RE = /\bhow does (?:the |your )?(?:program|founders pass|course|coaching) work\b|\bwhat (?:is|comes) included\b/i;
-const PAID_META_OFFER_INFO_RE = /^(?:i (?:want|need|wanted) to know )?(?:how much|(?:your )?prices?(?: and what i get)?|pricing|cost|what(?:'s| is) (?:actually )?included|what do i get|what are the (?:details|prices)|tell me (?:the|about the) (?:price|pricing|details|inclusions))(?:\b|[?!.])/i;
+const PAID_META_OFFER_INFO_RE = /^(?:(?:thanks?|thank you)[\s,.!]*)?(?:i (?:want|need|wanted) to know )?(?:how much|(?:your )?prices?(?: and what i get)?|pricing|cost|what(?:'s| is) (?:actually )?included|what do i get|what are the (?:details|prices)|tell me (?:the|about the) (?:price|pricing|details|inclusions))(?:\b|[?!.])/i;
 
 function buildPaidMetaBlockerReflection(message = '') {
     const text = String(message || '');
