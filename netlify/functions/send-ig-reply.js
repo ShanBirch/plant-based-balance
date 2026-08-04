@@ -153,6 +153,7 @@ const EDIT_ANALYSIS_BACKGROUND_BUDGET_MS = 7000;
 const INSTAGRAM_GRAPH_TYPING_ACTION_TIMEOUT_MS = 1200;
 const FIRST_ITEM_TYPING_MIN_MS = 1800;
 const FIRST_ITEM_TYPING_MAX_MS = 4200;
+const VOICE_COMPANION_GAP_MS = 1800;
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
 const INSTAGRAM_GRAPH_DM_BUBBLE_TARGET_CHARS = 210;
 const INSTAGRAM_GRAPH_DM_BUBBLE_HARD_MAX_CHARS = 240;
@@ -1041,6 +1042,13 @@ function resolveFirstItemTypingDelayMs({ kind = 'text', text = '', random = Math
     const perCharMs = kind === 'audio' ? 6 : 9;
     const jitter = Math.floor(Math.max(0, Math.min(1, Number(random()) || 0)) * 700);
     return clampNumber(base + (length * perCharMs) + jitter, FIRST_ITEM_TYPING_MIN_MS, FIRST_ITEM_TYPING_MAX_MS);
+}
+
+function resolveOutboundItemGapMs({ index, outboundItems = [], plannedChunkGapsMs = [], chunkPacing = {} } = {}) {
+    if (index === 1 && outboundItems[0]?.kind === 'audio' && outboundItems[1]?.kind === 'text') {
+        return VOICE_COMPANION_GAP_MS;
+    }
+    return plannedChunkGapsMs[index - 1] || chunkPacing.minMs || CHUNK_GAP_MIN_MS;
 }
 
 function editAnalysisBudgetForSend({ source, deliveryPacing } = {}) {
@@ -2372,9 +2380,17 @@ exports.handler = async (event) => {
             });
             if (typingAction.attempted) instagramTypingActions.push(typingAction);
             typingStartedForChunk = !!typingAction.ok;
-            await sleep(firstTypingDelayMs);
+            // Voice synthesis already creates a natural wait after typing starts.
+            // Adding the text-style delay here can push an audio + companion send
+            // beyond the serverless response window after both items have delivered.
+            if (firstItem.kind !== 'audio') await sleep(firstTypingDelayMs);
         } else if (i > 0) {
-            const gapMs = plannedChunkGapsMs[i - 1] || chunkPacing.minMs || CHUNK_GAP_MIN_MS;
+            const gapMs = resolveOutboundItemGapMs({
+                index: i,
+                outboundItems,
+                plannedChunkGapsMs,
+                chunkPacing,
+            });
             sentChunkGapsMs.push(gapMs);
             if (shouldUseGraph) {
                 const typingAction = await sendInstagramGraphTypingAction({
@@ -2811,6 +2827,7 @@ exports._test = {
     resolveChunkPacing,
     resolveChunkGaps,
     resolveFirstItemTypingDelayMs,
+    resolveOutboundItemGapMs,
     resolveOutboundDmBubbleOptions,
     resolveOutboundVoiceMessageConfig,
     resolveApprovedVoiceCompanionText,

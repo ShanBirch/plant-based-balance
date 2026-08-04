@@ -43,6 +43,21 @@ test('voice companion text is restricted to the approved paid Meta app preview',
     }, true), '');
 });
 
+test('voice companion follows promptly enough for the sender to retain its production receipt', () => {
+    assert.equal(sendIg.resolveOutboundItemGapMs({
+        index: 1,
+        outboundItems: [{ kind: 'audio' }, { kind: 'text' }],
+        plannedChunkGapsMs: [9500],
+        chunkPacing: { minMs: 4200 },
+    }), 1800);
+    assert.equal(sendIg.resolveOutboundItemGapMs({
+        index: 1,
+        outboundItems: [{ kind: 'text' }, { kind: 'text' }],
+        plannedChunkGapsMs: [6500],
+        chunkPacing: { minMs: 4200 },
+    }), 6500);
+});
+
 test('final automated send gate sees a newer manual outbound', async () => {
     const originalFetch = global.fetch;
     try {
