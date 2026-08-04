@@ -2183,10 +2183,21 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
             || (draft?.appPreviewHandoff === true
                 && isMetaAppPreviewUrl(draft?.appPreviewUrl)
                 && isApprovedPaidMetaAppPreviewMoment({ currentMessage: message, qualifier })));
+    const contextReasons = Array.isArray(contextReview?.reasons)
+        ? contextReview.reasons.map(reason => String(reason || '').trim()).filter(Boolean)
+        : [];
+    const safeFirstReplyContextWarning = approvedFirstReply
+        && contextReview?.required === true
+        && contextReview?.first_captured_lead_reply === true
+        && contextReasons.length > 0
+        && contextReasons.every(reason => [
+            'first_captured_reply_with_hidden_context',
+            'reference_heavy_reply_without_tracked_context',
+        ].includes(reason));
     if ((!approvedFirstReply && !approvedGoalProof && !approvedConversationProgression)
         || linkedUserId
         || mediaReview?.required === true
-        || contextReview?.required === true
+        || (contextReview?.required === true && !safeFirstReplyContextWarning)
         || META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)) {
         return null;
@@ -2211,6 +2222,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
             : (approvedConversationProgression
                 ? 'deterministic-paid-meta-conversation-approval'
                 : 'deterministic-meta-ad-first-reply-approval'),
+        context_warning_overridden: safeFirstReplyContextWarning || undefined,
     };
 }
 
@@ -6967,7 +6979,16 @@ exports.handler = async (event) => {
         });
         if (approvedDeterministicReview) {
             draftReview = approvedDeterministicReview;
-            effectiveContextReview = contextReview;
+            effectiveContextReview = approvedDeterministicReview.context_warning_overridden
+                ? {
+                    ...(contextReview || {}),
+                    required: false,
+                    original_reasons: contextReview?.reasons || [],
+                    reasons: [],
+                    resolved_by: 'deterministic_meta_ad_first_reply_approval',
+                    resolved_at: new Date().toISOString(),
+                }
+                : contextReview;
             console.log(`[ig-draft] skipped model review for approved deterministic Meta ad first reply ${alertId}`);
         } else try {
             const reviewResult = await withTimeout(reviewDraftAndUpdateAlert({

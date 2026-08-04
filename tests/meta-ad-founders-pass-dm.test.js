@@ -448,6 +448,27 @@ test('deterministic Meta review bypass remains closed for real review risks', ()
     assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({ ...baseline, linkedUserId: 'linked-client' }), null);
     assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({ ...baseline, mediaReview: { required: true } }), null);
     assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({ ...baseline, contextReview: { required: true } }), null);
+    const safeOpeningContextReview = buildApprovedDeterministicMetaAdFirstReplyReview({
+        ...baseline,
+        contextReview: {
+            required: true,
+            first_captured_lead_reply: true,
+            reasons: [
+                'first_captured_reply_with_hidden_context',
+                'reference_heavy_reply_without_tracked_context',
+            ],
+        },
+    });
+    assert.equal(safeOpeningContextReview.verdict, 'pass');
+    assert.equal(safeOpeningContextReview.context_warning_overridden, true);
+    assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({
+        ...baseline,
+        contextReview: {
+            required: true,
+            first_captured_lead_reply: true,
+            reasons: ['first_captured_reply_with_hidden_context', 'incomplete_media_context'],
+        },
+    }), null, 'a real context/media warning must still hold');
     assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({ ...baseline, currentMessage: 'Are you an AI bot?' }), null);
     assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({ ...baseline, currentMessage: 'I need urgent help at hospital' }), null);
 });
