@@ -1202,6 +1202,7 @@ const PAID_META_BLOCKER_SIGNAL_RE = /\b(?:stop(?:ping)? and start(?:ing)?|stop[-
 const PAID_META_NEXT_STEP_RE = /^(?:okay[, ]*)?(?:so[, ]*)?(?:what (?:do i do|should i do|now)|what(?:'s| is) next|where (?:do i|should i) start|how (?:do i|should i) start)(?: now)?[.!?\s]*$/i;
 const PAID_META_POSITIVE_FIT_RE = /^(?:(?:yes|yeah|yep|definitely|absolutely)\b(?!.*\b(?:but\s+(?:not|no)|don['’]?t|do not)\b)|probably\b|i think so\b|that would (?:really )?help\b|that sounds good\b|sounds good\b|i(?:'m| am) keen\b|keen\b)[\s\S]{0,160}$/i;
 const PAID_META_APP_INCLUSIONS_RE = /\b(?:what(?:'s| is| was) (?:actually )?(?:included in|in|inside)|what do (?:i|you) get (?:in|inside)) (?:the )?(?:balance(?: app)?|app)\b/i;
+const PAID_META_PROGRAM_WORKS_RE = /\bhow does (?:the |your )?(?:program|founders pass|course|coaching) work\b|\bwhat (?:is|comes) included\b/i;
 const PAID_META_OFFER_INFO_RE = /^(?:i (?:want|need|wanted) to know )?(?:how much|(?:your )?prices?(?: and what i get)?|pricing|cost|what(?:'s| is) (?:actually )?included|what do i get|what are the (?:details|prices)|tell me (?:the|about the) (?:price|pricing|details|inclusions))(?:\b|[?!.])/i;
 
 function hasDirectPaidMetaCheckoutIntent(value = '') {
@@ -1311,6 +1312,22 @@ function buildDeterministicPaidMetaConversationReply({
             ? 'Want me to show you what the muscle-building side would look like for you?'
             : 'Want me to show you what a first week could look like for your goal?';
         const joined = `Yeah, inside Balance you get ${appContents}. ${supportOffer} adds six weeks of support from me on top.\n\n${nextAsk}`;
+        return {
+            chunks: [joined],
+            joined,
+            model: 'deterministic_paid_meta_conversation_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    }
+
+    if (PAID_META_PROGRAM_WORKS_RE.test(message)) {
+        const goalText = voiceGoalPhrase ? ` around ${voiceGoalPhrase}` : '';
+        const communityCopy = broadFlow ? 'the Balance app and community' : 'the Balance app and plant-based community';
+        const offerName = broadFlow ? 'The six-week Balance kickstart' : 'The Founders Pass';
+        const joined = `${offerName} gives you a clear week-by-week Foundations course${goalText}, six weeks of ${communityCopy}, workouts with video demos, meal planning and progress tracking. You also get one weekly check-in where I review and adjust your training and food. It finishes after six weeks and doesn't renew automatically.\n\nWould you prefer that fixed six-week start, or ongoing weekly coaching?`;
         return {
             chunks: [joined],
             joined,

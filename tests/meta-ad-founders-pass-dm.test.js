@@ -671,6 +671,23 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
     assert.doesNotMatch(appInclusions.joined, /https?:\/\//);
     assert.equal((appInclusions.joined.match(/\?/g) || []).length, 1);
 
+    const programInclusionsAfterAcceptedSupport = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Yes please. How does the program work, and what is included?',
+        qualifier: blockerQualifier,
+        history: [
+            { direction: 'out', text: 'Want me to show you what the first week would look like?' },
+        ],
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(programInclusionsAfterAcceptedSupport.joined, /week-by-week Foundations course/i);
+    assert.match(programInclusionsAfterAcceptedSupport.joined, /Balance app and plant-based community/i);
+    assert.match(programInclusionsAfterAcceptedSupport.joined, /weekly check-in/i);
+    assert.match(programInclusionsAfterAcceptedSupport.joined, /doesn't renew automatically/i);
+    assert.match(programInclusionsAfterAcceptedSupport.joined, /fixed six-week start, or ongoing weekly coaching/i);
+    assert.doesNotMatch(programInclusionsAfterAcceptedSupport.joined, /show you what the first week/i,
+        'an inclusions question after accepting the first-week offer must not repeat that question');
+    assert.equal((programInclusionsAfterAcceptedSupport.joined.match(/\?/g) || []).length, 1);
+
     const priceAndInclusions = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I want to know your prices and what I get',
         qualifier: blockerQualifier,
