@@ -3085,6 +3085,36 @@ function isInternalMetaAdConversationOpeningTurn({
         && shouldUseDeterministicMetaAdFirstReply(currentMessage);
 }
 
+function resolveInternalTestConversationResetAt(customData = {}) {
+    const explicitResetAt = String(customData?.internal_test_conversation_reset_at || '').trim();
+    const referralAt = String(customData?.meta_ad_attribution?.last_referral_at || '').trim();
+    const candidates = [explicitResetAt, referralAt]
+        .map(value => ({ value, timestamp: Date.parse(value) }))
+        .filter(candidate => Number.isFinite(candidate.timestamp));
+    if (!candidates.length) return '';
+    return candidates.reduce((latest, candidate) => (
+        candidate.timestamp > latest.timestamp ? candidate : latest
+    )).value;
+}
+
+function buildInternalTestQualifierThread(thread = {}) {
+    if (!isInternalMetaAdConversationTestLane({
+        linkedUserId: thread?.linked_user_id,
+        customData: thread?.custom_data,
+    })) return thread;
+    const resetAtMs = Date.parse(resolveInternalTestConversationResetAt(thread.custom_data));
+    const qualifierAtMs = Date.parse(thread?.qualifier?.evaluated_at || '');
+    const qualifier = Number.isFinite(resetAtMs)
+        && (!Number.isFinite(qualifierAtMs) || qualifierAtMs < resetAtMs)
+        ? null
+        : (thread.qualifier || null);
+    const customData = { ...(thread.custom_data || {}) };
+    // Relationship memory remains available to the reply writer for recognition,
+    // but an older Coco sales episode must not restore won/buyer-intent state.
+    delete customData.relationship_memory_compaction;
+    return { ...thread, qualifier, custom_data: customData };
+}
+
 function filterInternalTestHistoryAfterReset({
     history = [],
     linkedUserId = null,
@@ -3093,7 +3123,7 @@ function filterInternalTestHistoryAfterReset({
     if (!isInternalMetaAdConversationTestLane({ linkedUserId, customData })) {
         return Array.isArray(history) ? history : [];
     }
-    const resetAtMs = Date.parse(customData?.internal_test_conversation_reset_at || '');
+    const resetAtMs = Date.parse(resolveInternalTestConversationResetAt(customData));
     if (!Number.isFinite(resetAtMs)) {
         return Array.isArray(history) ? history : [];
     }
@@ -5841,7 +5871,8 @@ exports.handler = async (event) => {
         leadStage: effectiveLeadStage,
         linkedUserId: thread.linked_user_id,
     });
-    let qualifier = thread.qualifier || null;
+    const qualifierEvaluationThread = buildInternalTestQualifierThread(thread);
+    let qualifier = qualifierEvaluationThread.qualifier || null;
     let qualifierEvaluated = false;
     let qualifierError = null;
     let qualifierModel = null;
@@ -5851,7 +5882,7 @@ exports.handler = async (event) => {
     if (qualifierEligible) {
         try {
             const result = await evaluateQualifier({
-                thread,
+                thread: qualifierEvaluationThread,
                 history,
                 currentMessage: qualifierCurrentMessage,
                 draftText: '',
@@ -5921,7 +5952,7 @@ exports.handler = async (event) => {
         thread.id,
         1,
         internalMetaAdConversationTestLane
-            ? thread.custom_data?.internal_test_conversation_reset_at
+            ? resolveInternalTestConversationResetAt(thread.custom_data)
             : ''
     );
     const inboundVoiceMessage = hasInboundVoiceNoteInUnansweredBatch({
@@ -7399,6 +7430,8 @@ exports._test = {
     isMetaAdConversationFastLaneEligible,
     isInternalMetaAdConversationTestLane,
     isInternalMetaAdConversationOpeningTurn,
+    resolveInternalTestConversationResetAt,
+    buildInternalTestQualifierThread,
     filterInternalTestHistoryAfterReset,
     isExerciseConversationFastLaneEligible,
     resolveMetaAdFlowVariant,

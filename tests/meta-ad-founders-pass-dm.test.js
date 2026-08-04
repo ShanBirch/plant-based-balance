@@ -27,6 +27,8 @@ const {
     shouldUseDeterministicMetaAdFirstReply,
     getMetaAdSensitiveHoldReason,
     hasImmediateMetaDispatchFailure,
+    resolveInternalTestConversationResetAt,
+    buildInternalTestQualifierThread,
 } = require('../netlify/functions/ig-instant-draft')._test;
 const {
     buildInstagramGraphVideoMessagePayload,
@@ -136,6 +138,46 @@ test('paid Meta work-and-kids blocker advances to accountability instead of repe
     assert.match(voiceReply.joined, /losing 10kg and feeling fitter/i);
     assert.equal((voiceReply.joined.match(/\?/g) || []).length, 1);
     assert.equal(inspectVoiceScriptQuality(voiceReply.joined).valid, true);
+});
+
+test('Coco paid-ad referral is the episode boundary when a stale writer restores an older reset timestamp', () => {
+    assert.equal(resolveInternalTestConversationResetAt({
+        internal_test_conversation_reset_at: '2026-08-04T04:09:28.317Z',
+        meta_ad_attribution: {
+            last_referral_at: '2026-08-04T04:36:39.208Z',
+        },
+    }), '2026-08-04T04:36:39.208Z');
+    assert.equal(resolveInternalTestConversationResetAt({
+        internal_test_conversation_reset_at: '2026-08-04T04:40:00.000Z',
+        meta_ad_attribution: {
+            last_referral_at: '2026-08-04T04:36:39.208Z',
+        },
+    }), '2026-08-04T04:40:00.000Z');
+});
+
+test('Coco qualifier evaluation cannot inherit terminal sales state from an older test episode', () => {
+    const thread = {
+        linked_user_id: null,
+        qualifier: {
+            stage: 'won',
+            commercial_stage: 'buyer_intent',
+            evaluated_at: '2026-08-04T04:20:00.000Z',
+        },
+        custom_data: {
+            bot_account: 'shan_n_sunny',
+            internal_test_auto_reply_enabled: true,
+            internal_test_meta_ad_flow: 'plant_based_control',
+            internal_test_conversation_reset_at: '2026-08-04T04:30:00.000Z',
+            relationship_memory_compaction: {
+                summary: 'Lead bought in an older test episode.',
+            },
+        },
+    };
+    const isolated = buildInternalTestQualifierThread(thread);
+    assert.equal(isolated.qualifier, null);
+    assert.equal(isolated.custom_data.relationship_memory_compaction, undefined);
+    assert.equal(thread.qualifier.stage, 'won');
+    assert.match(thread.custom_data.relationship_memory_compaction.summary, /older test episode/i);
 });
 
 test('paid Meta voice progression reflects different real blocker categories', () => {
