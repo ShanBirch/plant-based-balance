@@ -201,7 +201,12 @@ function estimateOpenAICostUsd({ model, inputTokens, cachedInputTokens, outputTo
     };
 }
 
+function isOpenAIUsageLoggingDisabled(env = process.env) {
+    return ['1', 'true', 'yes', 'on'].includes(String(env.AI_USAGE_LOG_DISABLED || '').trim().toLowerCase());
+}
+
 async function logOpenAIUsageEvent({ model, profile, label, input, data, source = 'netlify-function' }) {
+    if (isOpenAIUsageLoggingDisabled()) return;
     const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
     if (!supabaseUrl || !serviceKey) return;
@@ -343,6 +348,7 @@ module.exports = {
     callOpenAIModelChain,
     convertGeminiContentsToOpenAIInput,
     estimateOpenAICostUsd,
+    isOpenAIUsageLoggingDisabled,
     resolveGeminiModelChain,
     resolveOpenAIModelChain,
     resolveModelChain: resolveGeminiModelChain,

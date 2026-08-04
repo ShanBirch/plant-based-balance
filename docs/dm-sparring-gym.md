@@ -23,7 +23,7 @@ node scripts/run-dm-sparring-gym.js --no-story-bots
 node scripts/run-dm-sparring-gym.js --from-db --count=5 --turns=4
 ```
 
-Live mode needs `GEMINI_API_KEY`. The Shannon reply model tries the fine-tuned Vertex voice first when its Firebase credentials are present, then falls back to Gemini.
+Live mode needs either `OPENAI_API_KEY` or `GEMINI_API_KEY`. It follows the configured AI provider, so an OpenAI-routed production environment does not need a dummy Gemini key. The Shannon reply model otherwise tries the fine-tuned Vertex voice first when its Firebase credentials are present, then uses the configured fallback.
 
 By default each run uses a few bots:
 
@@ -38,7 +38,7 @@ Use `--no-story-bots` when you want the cheaper fixed persona cards instead.
 
 ## Real-Data Personas
 
-Use `--from-db` to build anonymized persona cards from live `ig_threads` and `ig_messages`.
+Use `--from-db` to build anonymized persona cards from live, unlinked-lead `ig_threads` and `ig_messages`. Linked clients are excluded before sampling.
 
 ```bash
 node scripts/run-dm-sparring-gym.js --from-db --count=5 --turns=4 --db-window-days=180
@@ -51,7 +51,12 @@ Options:
 --db-window-days=180
 --db-min-inbound=2
 --db-min-messages=4
+--db-focus=all
+--db-focus=lead-relevant
+--db-focus=paid-meta
 ```
+
+`lead-relevant` keeps historical fitness, food, consistency, coaching and offer conversations while removing unrelated Story banter. `paid-meta` is stricter: it requires verified Meta attribution or a recognized historical ad opener. Internal Coco/Shan test threads and linked clients are always excluded.
 
 The script sends sanitized transcript samples to the persona builder and writes only anonymized composite personas to `artifacts/dm-sparring/*.personas.json`. It strips URLs, emails, phone numbers, handles, UUIDs, and raw media URLs before prompting. The reports are ignored by git.
 

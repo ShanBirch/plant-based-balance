@@ -1,9 +1,14 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+const { isOpenAIUsageLoggingDisabled } = require('../netlify/functions/_lib/ai-router');
 
 const {
     DEFAULT_PERSONAS,
+    hasConfiguredSparringAi,
+    normalizeRealDataFocus,
+    isInternalSparringTestThread,
+    threadMatchesRealDataFocus,
     choosePersonas,
     parseJsonObject,
     normalizeScorecard,
@@ -18,7 +23,24 @@ const {
     runSparringBatch,
 } = require('../netlify/functions/_lib/dm-sparring-gym');
 
+assert.strictEqual(hasConfiguredSparringAi({}), false);
+assert.strictEqual(hasConfiguredSparringAi({ GEMINI_API_KEY: 'gemini-test' }), true);
+assert.strictEqual(hasConfiguredSparringAi({ OPENAI_API_KEY: 'openai-test' }), true);
+assert.strictEqual(isOpenAIUsageLoggingDisabled({}), false);
+assert.strictEqual(isOpenAIUsageLoggingDisabled({ AI_USAGE_LOG_DISABLED: 'true' }), true);
+assert.strictEqual(normalizeRealDataFocus('lead-relevant'), 'lead_relevant');
+assert.strictEqual(normalizeRealDataFocus('unknown'), 'all');
+assert.strictEqual(isInternalSparringTestThread({ ig_username: 'cocos_pt_studio' }), true);
+assert.strictEqual(isInternalSparringTestThread({ ig_username: 'real_lead' }), false);
+assert.strictEqual(threadMatchesRealDataFocus({}, [{ text: 'I keep losing momentum with my workouts' }], 'lead_relevant'), true);
+assert.strictEqual(threadMatchesRealDataFocus({}, [{ text: 'my dog stole the camera again' }], 'lead_relevant'), false);
+assert.strictEqual(threadMatchesRealDataFocus({}, [{ text: 'Do you offer personalized coaching plans?' }], 'paid_meta'), true);
+assert.strictEqual(threadMatchesRealDataFocus({ custom_data: { meta_ad_attribution: { source: 'meta_ads' } } }, [], 'paid_meta'), true);
+
 const sparringSource = fs.readFileSync(path.join(__dirname, '../netlify/functions/_lib/dm-sparring-gym.js'), 'utf8');
+const sparringRunnerSource = fs.readFileSync(path.join(__dirname, '../scripts/run-dm-sparring-gym.js'), 'utf8');
+assert.ok(sparringSource.includes("'linked_user_id=is.null'"), 'real-data sparring must exclude linked clients');
+assert.ok(sparringRunnerSource.includes("process.env.AI_USAGE_LOG_DISABLED = 'true'"), 'sparring must not write AI usage rows');
 assert.ok(sparringSource.includes('Earn the next response without interrogating'), 'sparring coach prompt should avoid question pressure');
 assert.ok(sparringSource.includes('Recent Shannon edits often cut optional curiosity questions'), 'sparring coach prompt should learn reaction-only edits');
 assert.ok(sparringSource.includes('do not mine the same small topic'), 'sparring coach prompt should avoid same-topic rapport question ladders');

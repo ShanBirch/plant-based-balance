@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+process.env.AI_USAGE_LOG_DISABLED = 'true';
+
 /**
  * Run the Balance DM Sparring Gym.
  *
@@ -20,6 +22,7 @@ const path = require('path');
 
 const {
     DEFAULT_PERSONAS,
+    hasConfiguredSparringAi,
     derivePersonasFromDatabase,
     runSparringBatch,
     renderMarkdownReport,
@@ -49,6 +52,7 @@ function parseArgs(argv = process.argv.slice(2)) {
         dbWindowDays: 180,
         dbMinInbound: 2,
         dbMinMessages: 4,
+        dbFocus: 'all',
         offline: false,
         listPersonas: false,
     };
@@ -68,6 +72,10 @@ function parseArgs(argv = process.argv.slice(2)) {
         else if (arg.startsWith('--db-window-days=')) args.dbWindowDays = Math.max(1, Number(arg.slice('--db-window-days='.length)) || args.dbWindowDays);
         else if (arg.startsWith('--db-min-inbound=')) args.dbMinInbound = Math.max(1, Number(arg.slice('--db-min-inbound='.length)) || args.dbMinInbound);
         else if (arg.startsWith('--db-min-messages=')) args.dbMinMessages = Math.max(1, Number(arg.slice('--db-min-messages='.length)) || args.dbMinMessages);
+        else if (arg.startsWith('--db-focus=')) {
+            const value = arg.slice('--db-focus='.length).trim().toLowerCase().replace(/[\s-]+/g, '_');
+            if (['all', 'lead_relevant', 'paid_meta'].includes(value)) args.dbFocus = value;
+        }
         else if (arg.startsWith('--coach-model=')) {
             const value = arg.slice('--coach-model='.length);
             if (['auto', 'vertex', 'gemini'].includes(value)) args.coachModel = value;
@@ -79,8 +87,8 @@ function parseArgs(argv = process.argv.slice(2)) {
 
 function ensureLiveAiReady(args) {
     if (args.offline) return;
-    if (!process.env.GEMINI_API_KEY) {
-        throw new Error('GEMINI_API_KEY is required for live sparring. Re-run with --offline for a no-network smoke test.');
+    if (!hasConfiguredSparringAi()) {
+        throw new Error('GEMINI_API_KEY or OPENAI_API_KEY is required for live sparring. Re-run with --offline for a no-network smoke test.');
     }
 }
 
@@ -161,6 +169,7 @@ async function main() {
             windowDays: args.dbWindowDays,
             minInbound: args.dbMinInbound,
             minMessages: args.dbMinMessages,
+            focus: args.dbFocus,
             seed: args.seed,
             offline: args.offline,
         });
@@ -171,7 +180,7 @@ async function main() {
         console.log(`${COLORS.green}built${COLORS.reset}: ${generatedPersonas.length} anonymized real-pattern personas from ${personaGeneration.scanned_threads} usable threads`);
     }
 
-    console.log(`${COLORS.cyan}Running DM sparring:${COLORS.reset} count=${args.count}, turns=${args.turns}, seed=${args.seed}, coach=${args.coachModel}, qualifier=${args.qualifierEnabled ? 'on' : 'off'}, storyBots=${args.storyBots ? 'on' : 'off'}, fromDb=${args.fromDb ? 'yes' : 'no'}, offline=${args.offline ? 'yes' : 'no'}`);
+    console.log(`${COLORS.cyan}Running DM sparring:${COLORS.reset} count=${args.count}, turns=${args.turns}, seed=${args.seed}, coach=${args.coachModel}, qualifier=${args.qualifierEnabled ? 'on' : 'off'}, storyBots=${args.storyBots ? 'on' : 'off'}, fromDb=${args.fromDb ? 'yes' : 'no'}, dbFocus=${args.dbFocus}, offline=${args.offline ? 'yes' : 'no'}`);
     const batch = await runSparringBatch(args);
     if (generatedPersonas) {
         batch.generated_personas = generatedPersonas;

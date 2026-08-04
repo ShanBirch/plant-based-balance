@@ -33,6 +33,7 @@ const {
     isInPersonOrExistingCoachPreference,
     handlesInPersonOrExistingCoachPreference,
 } = require('./qualifier-engine');
+const { hasVerifiedMetaAttribution } = require('./ig-acquisition-mode');
 
 const DEFAULT_PERSONAS = [
     {
@@ -143,6 +144,10 @@ function mulberry32(seed) {
 
 function seededRandom(seed) {
     return mulberry32(hashSeed(seed));
+}
+
+function hasConfiguredSparringAi(env = process.env) {
+    return Boolean(String(env.GEMINI_API_KEY || '').trim() || String(env.OPENAI_API_KEY || '').trim());
 }
 
 function choosePersonas({ personas = DEFAULT_PERSONAS, count = 3, seed = 'balance' } = {}) {
@@ -1788,6 +1793,33 @@ function routeHintFromThread(thread = {}, messages = []) {
     return 'undecided';
 }
 
+const REAL_DATA_FOCUSES = new Set(['all', 'lead_relevant', 'paid_meta']);
+const LEAD_RELEVANT_EVIDENCE_RE = /\b(?:fitness|gym|train(?:ing)?|workout|exercise|weight|fat loss|lose|losing|muscle|strong|strength|calorie|protein|meal|diet|nutrition|plant.?based|vegan|vegetarian|consistent|consistency|accountab(?:le|ility)|coach(?:ing)?|program|balance foundations|six.?week|check.?in)\b/i;
+const HISTORIC_META_OPENER_RE = /do you offer personali[sz]ed coaching plans?|what.?s included in the six.?week balance foundations program|how does the weekly check.?in work|do i need to already be plant.?based|\b(?:saw|seen|found|came|coming|here)\b.{0,40}\b(?:your|the|this|an?)\s+ad\b|\bfrom (?:your|the|this|an?) ad\b/i;
+
+function normalizeRealDataFocus(value = 'all') {
+    const focus = String(value || 'all').trim().toLowerCase().replace(/[\s-]+/g, '_');
+    return REAL_DATA_FOCUSES.has(focus) ? focus : 'all';
+}
+
+function isInternalSparringTestThread(thread = {}) {
+    const handle = String(thread.ig_username || '').trim().replace(/^@+/, '').toLowerCase();
+    return ['cocos_pt_studio', 'shan_n_sunny'].includes(handle)
+        || thread?.custom_data?.internal_test_auto_reply_enabled === true;
+}
+
+function threadMatchesRealDataFocus(thread = {}, messages = [], focus = 'all') {
+    const normalizedFocus = normalizeRealDataFocus(focus);
+    if (normalizedFocus === 'all') return true;
+    const text = [thread.goals, thread.running_notes, thread.personal_context, ...messages.map(message => message.text)]
+        .filter(Boolean)
+        .join(' ');
+    if (normalizedFocus === 'paid_meta') {
+        return hasVerifiedMetaAttribution(thread.custom_data || {}) || HISTORIC_META_OPENER_RE.test(text);
+    }
+    return LEAD_RELEVANT_EVIDENCE_RE.test(text);
+}
+
 function shuffleWithSeed(items, seed) {
     const random = seededRandom(seed);
     const copy = [...items];
@@ -1804,10 +1836,12 @@ async function loadRealIgThreadSamples({
     minInbound = 2,
     minMessages = 4,
     seed = 'real-db',
+    focus = 'all',
 } = {}) {
     const params = [
-        'select=id,channel,ig_username,profile_name,lead_stage,linked_user_id,last_inbound_at,last_outbound_at,qualifier,goals,communication_style,running_notes,personal_context',
+        'select=id,channel,ig_username,profile_name,lead_stage,linked_user_id,last_inbound_at,last_outbound_at,qualifier,goals,communication_style,running_notes,personal_context,custom_data',
         'last_inbound_at=not.is.null',
+        'linked_user_id=is.null',
         'order=last_inbound_at.desc.nullslast',
         `limit=${Math.max(1, Math.min(500, Number(threadLimit) || 60))}`,
     ];
@@ -1818,6 +1852,7 @@ async function loadRealIgThreadSamples({
     const threads = await supabaseQuery(`ig_threads?${params.join('&')}`);
     const samples = [];
     for (const thread of threads || []) {
+        if (isInternalSparringTestThread(thread)) continue;
         const messages = await supabaseQuery(
             `ig_messages?select=direction,text,created_at&thread_id=eq.${encodeURIComponent(thread.id)}&order=created_at.asc&limit=80`
         ).catch(() => []);
@@ -1825,6 +1860,7 @@ async function loadRealIgThreadSamples({
         const inboundCount = useful.filter(m => m.direction === 'in').length;
         const outboundCount = useful.filter(m => m.direction === 'out').length;
         if (useful.length < minMessages || inboundCount < minInbound) continue;
+        if (!threadMatchesRealDataFocus(thread, useful, focus)) continue;
         samples.push({
             thread,
             messages: useful,
@@ -1844,6 +1880,7 @@ async function derivePersonasFromDatabase({
     minInbound = 2,
     minMessages = 4,
     seed = 'real-db',
+    focus = 'all',
     offline = false,
 } = {}) {
     const samples = await loadRealIgThreadSamples({
@@ -1852,6 +1889,7 @@ async function derivePersonasFromDatabase({
         minInbound,
         minMessages,
         seed,
+        focus,
     });
     if (!samples.length) {
         throw new Error('No usable IG thread samples found for persona generation');
@@ -1877,6 +1915,7 @@ async function derivePersonasFromDatabase({
             window_days: windowDays,
             min_inbound: minInbound,
             min_messages: minMessages,
+            focus: normalizeRealDataFocus(focus),
         },
     };
 }
@@ -3299,6 +3338,10 @@ function renderMarkdownReport(batch) {
 module.exports = {
     DEFAULT_PERSONAS,
     SCORE_FIELDS,
+    hasConfiguredSparringAi,
+    normalizeRealDataFocus,
+    isInternalSparringTestThread,
+    threadMatchesRealDataFocus,
     choosePersonas,
     parseJsonObject,
     clampScore,
