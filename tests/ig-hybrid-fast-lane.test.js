@@ -496,6 +496,23 @@ const repairedBlockerReply = instantDraft.ensureMetaAdSalesProgressionQuestion({
 assert.match(repairedBlockerReply.joined, /would having me check in and help you stay on track make that easier\?/i,
     'the paid-ad sales guard restores a natural next question after a style repair removes it');
 assert.equal((repairedBlockerReply.joined.match(/\?/g) || []).length, 1);
+
+const paidMetaWriterPolicy = instantDraft.buildPaidMetaConversationWriterBlock({
+    linkedUserId: null,
+    acquisitionMode: 'paid_meta',
+});
+assert.match(paidMetaWriterPolicy, /You own the conversational reply/i);
+assert.match(paidMetaWriterPolicy, /must not invent or force a follow-up question/i);
+assert.match(paidMetaWriterPolicy, /Never repeat or lightly reword a question Shannon already asked/i);
+assert.match(paidMetaWriterPolicy, /One question is the maximum, not a quota/i);
+assert.equal(instantDraft.buildPaidMetaConversationWriterBlock({
+    linkedUserId: 'client-user-1',
+    acquisitionMode: 'paid_meta',
+}), '', 'the paid-ad writer playbook never leaks into linked client conversations');
+assert.equal(instantDraft.buildPaidMetaConversationWriterBlock({
+    linkedUserId: null,
+    acquisitionMode: 'organic_inbound',
+}), '', 'organic lead conversations keep their existing writer and policy layers');
 assert.equal(instantDraft.ensureMetaAdSalesProgressionQuestion({
     draft: { chunks: ['No worries.'], joined: 'No worries.', model: 'test' },
     currentMessage: 'Stop messaging me',
@@ -590,6 +607,23 @@ assert.deepEqual(instantDraft.filterInternalTestHistoryAfterReset({
     history: resetTestHistory,
     customData: internalPlantBasedTestData,
 }), resetTestHistory, 'an unreset test thread keeps its complete history');
+
+assert.deepEqual(instantDraft.classifySourceMessageFreshness({
+    sourceMessage: { id: 'old-inbound', direction: 'in', created_at: '2026-08-01T09:59:59.000Z' },
+    latestMessage: { id: 'old-inbound', direction: 'in', created_at: '2026-08-01T09:59:59.000Z' },
+    resetAt: '2026-08-01T10:00:00.000Z',
+}), {
+    state: 'stale',
+    reason: 'source_predates_conversation_reset',
+}, 'a replayed native message is stale even when it is currently the only canonical row');
+assert.deepEqual(instantDraft.classifySourceMessageFreshness({
+    sourceMessage: { id: 'fresh-inbound', direction: 'in', created_at: '2026-08-01T10:00:01.000Z' },
+    latestMessage: { id: 'fresh-inbound', direction: 'in', created_at: '2026-08-01T10:00:01.000Z' },
+    resetAt: '2026-08-01T10:00:00.000Z',
+}), {
+    state: 'current',
+    reason: 'source_is_latest_canonical_message',
+}, 'the first genuinely new message after reset remains eligible');
 
 const linkedClientAlert = {
     client_id: 'client-user-1',

@@ -3001,9 +3001,16 @@ async function isLatestInboundMessageForThread({ threadId, manychatMessageId }) 
     return String(rows?.[0]?.manychat_message_id || '') === String(manychatMessageId);
 }
 
-function classifySourceMessageFreshness({ sourceMessage, latestMessage } = {}) {
+function classifySourceMessageFreshness({ sourceMessage, latestMessage, resetAt = '' } = {}) {
     if (!sourceMessage?.id || String(sourceMessage.direction || '').toLowerCase() !== 'in') {
         return { state: 'unknown', reason: 'canonical_source_inbound_not_found' };
+    }
+    const resetAtMs = Date.parse(resetAt || '');
+    const sourceCreatedAtMs = Date.parse(sourceMessage.created_at || '');
+    if (Number.isFinite(resetAtMs)
+        && Number.isFinite(sourceCreatedAtMs)
+        && sourceCreatedAtMs < resetAtMs) {
+        return { state: 'stale', reason: 'source_predates_conversation_reset' };
     }
     if (!latestMessage?.id) {
         return { state: 'unknown', reason: 'canonical_latest_message_not_found' };
@@ -3019,7 +3026,7 @@ function classifySourceMessageFreshness({ sourceMessage, latestMessage } = {}) {
     };
 }
 
-async function inspectSourceMessageFreshness({ threadId, manychatMessageId } = {}) {
+async function inspectSourceMessageFreshness({ threadId, manychatMessageId, resetAt = '' } = {}) {
     if (!threadId || !manychatMessageId) {
         return { state: 'unknown', reason: 'source_identity_missing' };
     }
@@ -3034,7 +3041,7 @@ async function inspectSourceMessageFreshness({ threadId, manychatMessageId } = {
     const sourceMessage = sourceRows?.[0] || null;
     const latestMessage = latestRows?.[0] || null;
     return {
-        ...classifySourceMessageFreshness({ sourceMessage, latestMessage }),
+        ...classifySourceMessageFreshness({ sourceMessage, latestMessage, resetAt }),
         sourceMessage,
         latestMessage,
     };
@@ -3229,6 +3236,20 @@ CLIENT RELATIONSHIP MODE (HARD LANE SEPARATION):
 - The relationship is already established. Default to being chill: answer, coach, reassure, celebrate, banter, give one useful direction, react, or leave a clean pause.
 - Do not append a question just to keep the conversation open. Ask one only when the missing answer materially changes Shannon's coaching/support decision, or the client has naturally opened a topic worth exploring.
 - A client's answer can simply be enough. Do not turn it into the next question in a ladder. This is not a ban on questions; it is a ban on lead-style progression pressure in client chats.`;
+}
+
+function buildPaidMetaConversationWriterBlock({ linkedUserId = null, acquisitionMode = '' } = {}) {
+    if (linkedUserId || !isPaidMetaAcquisitionMode(acquisitionMode)) return '';
+    return `
+
+PAID META SINGLE-WRITER PLAYBOOK:
+- You own the conversational reply. Other code may attach approved proof media, voice or an exact checkout link, but it must not invent or force a follow-up question after you write.
+- Read the complete visible timeline. Answer the newest message first and treat an obvious answer as an answer to Shannon's last question.
+- Privately track the next useful stage: goal -> real blocker -> support fit -> offer explanation -> explicit next step. Move no more than one stage in a reply and skip any stage the lead has already answered.
+- While fit is still unclear, usually finish with one short NEW question whose answer changes the next sales or support decision. One question is the maximum, not a quota. A complete answer, acknowledgement, proof point, voice note, objection response or clean pause may stand alone.
+- Never repeat or lightly reword a question Shannon already asked. Never echo the lead's sentence back as Shannon's reply. Use their answer, add a relevant coaching or proof point, then make the next adjacent move.
+- When they ask about the program, price, inclusions or personalised coaching, answer that direct question before qualifying further. Do not send a signup link until they explicitly ask for it or clearly accept the offer.
+- Keep it like a real active DM: concise, specific, warm and low-pressure. No intake bundles, option menus, canned therapy language or brochure dump.`;
 }
 
 function replaceIgMediaMarkers(text, { photo = '📷 photo', audio = '🎙️ voice note', video = '🎥 video' } = {}) {
@@ -4123,12 +4144,14 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const openAiShannonVoice = buildOpenAIShannonVoiceBlock();
     const personalVoiceNoteDraftingBlock = buildPersonalVoiceNoteDraftingBlock(personalVoiceNoteMode);
     const isSalesLeadThread = isSalesAcquisitionThread({ leadStage, linkedUserId });
-    const accountExperimentBlock = isSalesLeadThread ? buildAccountExperimentBlock(botAccount) : '';
-    const acquisitionMomentumBlock = buildAcquisitionMomentumBlock({ botAccount, leadStage, linkedUserId });
-    const acquisitionStyleBlock = buildAcquisitionStyleBlock({ leadStage, linkedUserId });
-    const conversationLanePolicyBlock = buildConversationLanePolicyBlock({ linkedUserId });
+    const paidMetaSingleWriter = isSalesLeadThread && isPaidMetaAcquisitionMode(acquisitionMode);
+    const accountExperimentBlock = isSalesLeadThread && !paidMetaSingleWriter ? buildAccountExperimentBlock(botAccount) : '';
+    const acquisitionMomentumBlock = paidMetaSingleWriter ? '' : buildAcquisitionMomentumBlock({ botAccount, leadStage, linkedUserId });
+    const acquisitionStyleBlock = paidMetaSingleWriter ? '' : buildAcquisitionStyleBlock({ leadStage, linkedUserId });
+    const conversationLanePolicyBlock = paidMetaSingleWriter ? '' : buildConversationLanePolicyBlock({ linkedUserId });
+    const paidMetaConversationWriterBlock = buildPaidMetaConversationWriterBlock({ linkedUserId, acquisitionMode });
     const acquisitionModePolicyBlock = isSalesLeadThread ? buildAcquisitionModePromptBlock(acquisitionMode) : '';
-    const cocosRewardLearningBlock = isSalesLeadThread ? await loadCocosRewardLearningBlock(botAccount) : '';
+    const cocosRewardLearningBlock = isSalesLeadThread && !paidMetaSingleWriter ? await loadCocosRewardLearningBlock(botAccount) : '';
 
     const promptNow = new Date();
     const promptNowText = formatCoachLocalTimestamp(promptNow);
@@ -4502,6 +4525,7 @@ ${openAiShannonVoice}
 ${personalVoiceNoteDraftingBlock}
 ${conversationLanePolicyBlock}
 ${acquisitionModePolicyBlock}
+${paidMetaConversationWriterBlock}
 ${accountExperimentBlock}
 ${acquisitionMomentumBlock}
 ${cocosRewardLearningBlock}
@@ -5126,7 +5150,11 @@ exports.handler = async (event) => {
         : `ig_incoming_dm:${threadId}:${Date.now()}`;
     if (manychatMessageId) {
         try {
-            const freshness = await inspectSourceMessageFreshness({ threadId, manychatMessageId });
+            const freshness = await inspectSourceMessageFreshness({
+                threadId,
+                manychatMessageId,
+                resetAt: thread.custom_data?.internal_test_conversation_reset_at || '',
+            });
             if (freshness.state === 'stale') {
                 const alert = await cancelStaleReplayAlert({ idempotencyKey, freshness });
                 console.warn(`[ig-draft] skipped stale replay ${manychatMessageId} for thread ${threadId}: ${freshness.reason}`);
@@ -5764,26 +5792,12 @@ exports.handler = async (event) => {
     const outboundVoiceMessageReason = personalVoicePlan.reason;
     const metaAdGoalReplyTurn = metaAdConversationFastLane
         && isMetaAdGoalReplyTurn(history);
-    const deterministicPaidMetaConversationDraft = metaAdConversationFastLane
-        ? buildDeterministicPaidMetaConversationReply({
-            currentMessage: messageText,
-            qualifier,
-            history,
-            flowVariant: metaAdFlowVariant,
-            checkoutUrl: metaAdCheckoutUrl,
-            personalVoiceNoteMode: outboundVoiceMessage,
-            allowVideoAttachment: channel === 'instagram' && hasInstagramGraphRoute,
-        })
-        : null;
-
     let draft;
     try {
         draft = metaAdFirstInbound && shouldUseDeterministicMetaAdFirstReply(messageText) ? buildMetaAdFoundersPassFirstReply(messageText, {
             customData: thread.custom_data,
             flowVariant: metaAdFlowVariant,
             acquisitionMode,
-        }) : deterministicPaidMetaConversationDraft || (metaAdGoalReplyTurn ? buildMetaAdGoalProofReply(messageText, {
-            flowVariant: metaAdFlowVariant,
         }) : await generateDraft({
             leadName,
             leadBlock,
@@ -5815,7 +5829,7 @@ exports.handler = async (event) => {
             acquisitionMode,
             adFlowVariant: metaAdFlowVariant,
             checkoutUrl: metaAdCheckoutUrl,
-        }));
+        });
     } catch (err) {
         console.error('[ig-draft] draft generation threw after stale-send cleanup:', err.message);
         draft = {
@@ -5850,14 +5864,14 @@ exports.handler = async (event) => {
             ...contextualLinkReply,
         };
     }
-    if (metaAdConversationFastLane) {
-        draft = ensureMetaAdSalesProgressionQuestion({
-            draft,
-            currentMessage: messageText,
-            qualifier,
-            leadStage: effectiveLeadStage,
-            linkedUserId: thread.linked_user_id,
-        });
+    if (metaAdGoalReplyTurn && !draft.imageAttachmentUrl && !draft.videoAttachmentUrl) {
+        const proofMedia = buildMetaAdGoalProofReply(messageText, { flowVariant: metaAdFlowVariant });
+        draft = {
+            ...draft,
+            imageAttachmentUrl: proofMedia.imageAttachmentUrl || null,
+            videoAttachmentUrl: proofMedia.videoAttachmentUrl || null,
+            model: `${draft.model || 'unknown'}+meta_ad_goal_proof_media_v1`,
+        };
     }
 
     if (Array.isArray(durableMediaIds) && durableMediaIds.length) {
@@ -6847,60 +6861,6 @@ exports.handler = async (event) => {
                 });
             }
         }
-        const shouldRestoreMetaAdSalesQuestion = (metaAdConversationFastLane || internalMetaAdConversationTestLane)
-            && isDraftReviewAutoSendSafe(draftReview)
-            && !mediaReview?.required
-            && !contextReview?.required
-            && !metaAdDraftHasQuestion(draft)
-            && !shouldKeepMetaAdReplyQuestionFree({
-                currentMessage: displayMessage,
-                leadStage: effectiveLeadStage,
-                qualifierStage: qualifier?.commercial_stage || qualifier?.stage,
-                linkedUserId: thread.linked_user_id,
-            });
-        if (shouldRestoreMetaAdSalesQuestion) {
-            const guardedDraft = ensureMetaAdSalesProgressionQuestion({
-                draft,
-                currentMessage: displayMessage,
-                qualifier,
-                leadStage: effectiveLeadStage,
-                linkedUserId: thread.linked_user_id,
-            });
-            if (guardedDraft?.joined && guardedDraft.joined !== draft.joined) {
-                const originalDraftText = draft.joined;
-                draft = guardedDraft;
-                draftReview = {
-                    ...(draftReview || {}),
-                    verdict: 'pass',
-                    issues: [],
-                    summary: 'Required paid Meta sales-progression question restored after style repair.',
-                    suggested_fix: '',
-                    notification_required: false,
-                    context_loss_suspected: false,
-                    reviewer_model: 'deterministic_meta_ad_sales_question_guard',
-                    reviewed_at: new Date().toISOString(),
-                };
-                challengeOfferWarning = buildChallengeOfferWarning({
-                    draftText: draft.joined,
-                    qualifier,
-                    currentMessage: displayMessage,
-                });
-                currentAlertData = await persistCocosDraftRepair({
-                    alertId,
-                    currentAlertData: currentAlertData || {},
-                    draft,
-                    repairMeta: {
-                        status: 'accepted',
-                        repaired_at: new Date().toISOString(),
-                        strategy: 'restored_after_style_repair',
-                        original_draft_text: truncate(originalDraftText, 1200),
-                    },
-                    challengeOfferWarning,
-                    repairField: 'meta_ad_sales_question_guard',
-                });
-                console.log(`[ig-draft] restored paid Meta sales question after style repair for alert ${alertId}`);
-            }
-        }
         currentAlertData = {
             ...(currentAlertData || {}),
             draft_review: draftReview || undefined,
@@ -7229,6 +7189,7 @@ exports._test = {
     buildAcquisitionStyleBlock,
     buildAcquisitionMomentumBlock,
     buildConversationLanePolicyBlock,
+    buildPaidMetaConversationWriterBlock,
     buildLowContentStoryAcknowledgement,
     buildLowContentStoryReplyPolicyBlock,
     suppressAlreadyKnownContextQuestionsInDraftChunks,
