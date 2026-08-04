@@ -773,6 +773,25 @@ test('Meta referral hint preserves the broad route independently of message word
     assert.equal(variant, 'broad_pain');
 });
 
+test('Coco internal Meta test lane keeps its configured route when ordinary wording contains broad-pain keywords', () => {
+    assert.equal(resolveMetaAdFlowVariant({
+        customData: {
+            acquisition_mode: 'paid_meta',
+            internal_test_auto_reply_enabled: true,
+            internal_test_meta_ad_flow: 'plant_based_control',
+        },
+        currentMessage: "What's included in the Balance app, and how does the program work?",
+    }), 'plant_based_control');
+    assert.equal(resolveMetaAdFlowVariant({
+        customData: {
+            acquisition_mode: 'paid_meta',
+            internal_test_auto_reply_enabled: true,
+            internal_test_meta_ad_flow: 'broad_pain',
+        },
+        currentMessage: 'I eat plant-based food already',
+    }), 'broad_pain');
+});
+
 test('campaign package remains paused and points to the deployed funnel assets', () => {
     const root = path.join(__dirname, '..');
     const plan = JSON.parse(fs.readFileSync(path.join(root, 'output/meta-founders-pass-campaign-2026-07-22/campaign-plan.json'), 'utf8'));

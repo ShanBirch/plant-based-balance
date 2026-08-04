@@ -1609,6 +1609,11 @@ function buildDraftImageAttachmentData(draft = {}) {
 function resolveMetaAdFlowVariant({ customData = {}, currentMessage = '', acquisitionMode = '' } = {}) {
     const resolvedAcquisitionMode = acquisitionMode || resolveIgAcquisitionMode({ customData });
     if (!isPaidMetaAcquisitionMode(resolvedAcquisitionMode)) return 'plant_based_control';
+    const internalTestVariant = String(customData?.internal_test_meta_ad_flow || '').trim().toLowerCase();
+    if (customData?.internal_test_auto_reply_enabled === true
+        && ['plant_based_control', 'broad_pain'].includes(internalTestVariant)) {
+        return internalTestVariant;
+    }
     const broadAdIds = new Set(String(process.env.META_BROAD_AD_IDS || '')
         .split(',')
         .map(value => value.trim())
