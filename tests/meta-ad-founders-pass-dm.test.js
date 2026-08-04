@@ -625,6 +625,23 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
     assert.match(blockerVoiceReply.joined, /losing 8kg/i);
     assert.equal(inspectVoiceScriptQuality(blockerVoiceReply.joined).valid, true);
 
+    const changingShiftBlocker = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'My shifts change every week, family stuff piles up, and after one missed workout I get discouraged and stop following the plan.',
+        qualifier: {
+            commercial_stage: 'engaged',
+            facts: {
+                current_state: 'Wants to lose 7kg and feel comfortable.',
+                history_blockers: 'Changing shifts and a missed workout lead to discouragement.',
+            },
+        },
+        flowVariant: 'plant_based_control',
+        personalVoiceNoteMode: true,
+    });
+    assert.equal(changingShiftBlocker.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(changingShiftBlocker.voiceThoughtPauseMs, 700);
+    assert.match(changingShiftBlocker.joined, /life keeps crowding the week/i);
+    assert.match(changingShiftBlocker.joined, /losing 7kg/i);
+
     const goal = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I need to lose weight, probably 15kgs',
         qualifier: goalQualifier,

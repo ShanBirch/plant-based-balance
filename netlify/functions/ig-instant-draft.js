@@ -1199,7 +1199,7 @@ function resolveMetaAdEarlyTypingDelayMs({ lastInboundAt = '', seed = '', nowMs 
 }
 
 const PAID_META_GOAL_SIGNAL_RE = /\b(?:lose|drop|reduce|gain|build|improve|get|feel|become|want|need|goal|stronger|fitter|leaner|healthier|weight|fat|muscle|strength|fitness|energy|confidence)\b/i;
-const PAID_META_BLOCKER_SIGNAL_RE = /\b(?:stop(?:ping)? and start(?:ing)?|stop[- ]start|keep stopping|keep restarting|always restart|fall(?:ing)? off|drop(?:ping)? off|never stick|can(?:'t| not) stick|inconsisten|lose motivation|no motivation|no time|too busy|overwhelm|cravings?|weekends?|chocolate|accountab|stay on track|follow through|things? (?:just )?get(?:s)? in the way|work (?:and|&) (?:the )?kids|kids (?:and|&) work|busy with (?:work|kids|family))\b/i;
+const PAID_META_BLOCKER_SIGNAL_RE = /\b(?:stop(?:ping)? and start(?:ing)?|stop[- ]start|keep stopping|keep restarting|always restart|fall(?:ing)? off|drop(?:ping)? off|never stick|can(?:'t| not) stick|inconsisten|discourag\w*|lose motivation|no motivation|no time|too busy|overwhelm|cravings?|weekends?|chocolate|accountab|stay on track|follow through|miss(?:ed|ing) (?:a )?(?:workout|session)|shifts? change|changing shifts?|family stuff|things? (?:just )?get(?:s)? in the way|work (?:and|&) (?:the )?kids|kids (?:and|&) work|busy with (?:work|kids|family))\b/i;
 const PAID_META_NEXT_STEP_RE = /^(?:okay[, ]*)?(?:so[, ]*)?(?:what (?:do i do|should i do|now)|what(?:'s| is) next|where (?:do i|should i) start|how (?:do i|should i) start)(?: now)?[.!?\s]*$/i;
 const PAID_META_POSITIVE_FIT_RE = /^(?:(?:yes|yeah|yep|definitely|absolutely)\b(?!.*\b(?:but\s+(?:not|no)|don['’]?t|do not)\b)|probably\b|i think so\b|that would (?:really )?help\b|that sounds good\b|sounds good\b|i(?:'m| am) keen\b|keen\b)[\s\S]{0,160}$/i;
 const PAID_META_APP_INCLUSIONS_RE = /\b(?:what(?:'s| is| was) (?:actually )?(?:included in|in|inside)|what do (?:i|you) get (?:in|inside)) (?:the )?(?:balance(?: app)?|app)\b/i;
@@ -1220,7 +1220,7 @@ function buildPaidMetaBlockerReflection(message = '') {
     if (/\b(?:energy|fatigue\w*|exhaust\w*|sleep|stress\w*|motivat\w*|overwhelm\w*)\b/i.test(text)) {
         return 'When your energy or headspace keeps changing, expecting every week to look the same just sets you up to feel behind.';
     }
-    if (/\b(?:shift work|rotating shifts?|schedule|no time|too busy|caregiv\w*|kids?|children|family commitments?|travel)\b/i.test(text)) {
+    if (/\b(?:shift work|rotating shifts?|shifts? change|changing shifts?|schedule|no time|too busy|caregiv\w*|kids?|children|family commitments?|family stuff|travel)\b/i.test(text)) {
         return 'When life keeps crowding the week, training and food are usually the first things to get pushed around.';
     }
     if (/\b(?:don['’]?t know (?:what|how|where)|not sure (?:what|how|where)|stuck)\b/i.test(text)) {
