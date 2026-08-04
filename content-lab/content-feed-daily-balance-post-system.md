@@ -183,7 +183,7 @@ Reject or rewrite the idea if:
 - Treat its cravings script as the canonical example of how Shannon actually writes and talks. Imitate the construction and cadence, not the topic, hook wording, numbered format or CTA.
 - Match the direct problem, plain promise, complete explanation, full-sentence-and-fragment rhythm, natural connectors, explicit blame removal, concrete actions, ordinary real-life proof, clipped summary and specific coaching bridge.
 - Do not show Shannon a first draft until it has been compared line by line against that reference and generic presenter language has been rewritten.
-- Do not add `um` or `ah` sounds. Do not invent an anecdote, coaching observation, client result or profanity to manufacture personality.
+- Add naturally placed `umm` or `ahh` thinking beats when the output is a Shannon-led spoken script, following `SHANNON-SPOKEN-VOICE-BIBLE.md`. Do not stack them or use them to manufacture personality. Do not invent an anecdote, coaching observation, client result or profanity.
 - Measure Shannon's editing time per script. Repeated corrections to voice are a system failure and must update the reference, prompt or skill before the next batch.
 
 ### Science and brain

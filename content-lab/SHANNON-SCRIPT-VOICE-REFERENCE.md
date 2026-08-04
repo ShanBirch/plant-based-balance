@@ -1,6 +1,6 @@
 # Shannon Script Voice Reference
 
-This is the canonical example of how Shannon naturally writes and wants Reel scripts to run. Read it before drafting or revising any Shannon-led spoken content.
+This is the canonical example of how Shannon naturally writes and wants Reel scripts to run. Read it before drafting or revising any Shannon-led spoken content. Also read `content-lab/SHANNON-SPOKEN-VOICE-BIBLE.md` for measured surface phrasing, reductions, hesitation placement and context-specific speech rules.
 
 Also read `content-lab/SHANNON-SCRIPT-LIBRARY.md`. It is the growing database of Shannon-approved scripts and meaning-matched visual notes. Use this file for the general voice principles, then use the closest library entries as current sentence-level evidence.
 
@@ -54,7 +54,7 @@ The reusable element is the voice and construction, not the cravings topic. Futu
 - It explains the mechanism correctly in ordinary language before trying to be clever.
 - It alternates complete explanatory sentences with short fragments: `The sight and smell of food. Your usual mealtimes.`
 - It uses contractions everywhere and natural connectors such as `Alright`, `So yeah`, and `So here are...`.
-- It does not use scripted `um` or `ah` sounds.
+- Its sentence construction remains canonical, while Shannon's newer 2026-08-04 direction adds naturally placed `umm` and `ahh` thinking beats to future spoken scripts.
 - It repeats the central idea in slightly different words so the viewer can follow it; it does not jump across missing logic.
 - It removes blame explicitly, without soft or clinical language.
 - It turns the explanation into concrete actions with verbs the viewer can picture.
@@ -81,7 +81,7 @@ The reusable element is the voice and construction, not the cravings topic. Futu
 
 Reject and rewrite the draft before Shannon sees it if it contains:
 
-- scripted `um` or `ah` fillers;
+- stacked, decorative or mechanically placed `umm`/`ahh` sounds rather than genuine thinking beats;
 - formal transitions such as `This demonstrates`, `It is important to understand`, or `The practical takeaway is`;
 - expanded speech such as `I will`, `you are`, or `it is` where Shannon would use a contraction;
 - a paper review that does not make the explanation more useful;

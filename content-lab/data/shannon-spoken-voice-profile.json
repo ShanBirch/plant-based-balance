@@ -1,0 +1,205 @@
+{
+  "version": "2026-08-04",
+  "authority_order": [
+    "Shannon's latest direct correction",
+    "recent Shannon-approved scripts",
+    "recent outbound Instagram voice notes",
+    "older outbound Instagram voice notes",
+    "generic style guidance"
+  ],
+  "evidence": {
+    "archive_original_notes": 537,
+    "surface_transcripts": 526,
+    "verified_single_speaker_notes": 512,
+    "excluded_multiple_speaker_notes": 14,
+    "archive_duration_minutes": 158.4,
+    "sender_labels": [
+      "Shan_n_Sunny",
+      "Shannon Birch"
+    ],
+    "timing_subset_notes": 29,
+    "timing_subset_minutes": 34.68,
+    "timing_subset_words": 4225,
+    "privacy": "Only aggregate counts and de-identified constructions are stored. Raw DM transcripts are not committed."
+  },
+  "current_canonical_rules": {
+    "casual_greeting": {
+      "preferred": "How ya going?",
+      "reject": "How are you going?",
+      "source": "Direct Shannon correction, 2026-08-04"
+    },
+    "core_hesitations": {
+      "preferred_spellings": [
+        "umm",
+        "ahh"
+      ],
+      "instruction": "Use real thinking beats at thought changes. Never use them to hide missing logic or stack them as decoration.",
+      "source": "Direct Shannon correction, 2026-08-04"
+    },
+    "contractions": "Use the natural contraction whenever one exists, except inside an exact quotation."
+  },
+  "surface_form_counts": {
+    "words": 18677,
+    "yeah": 133,
+    "so": 330,
+    "ya": 31,
+    "goin": 35,
+    "gonna": 32,
+    "wanna": 12,
+    "gotta": 4,
+    "kinda": 9,
+    "cos": 11,
+    "dunno": 11,
+    "reckon": 11,
+    "bro": 123,
+    "man": 31,
+    "you_know": 107,
+    "i_mean": 18,
+    "i_think": 49,
+    "and_then": 82,
+    "just": 297
+  },
+  "surface_phrase_counts": {
+    "how_ya_goin": 2,
+    "how_are_you_going_normalized_asr": 2,
+    "so_yeah": 10,
+    "yeah_so": 13,
+    "you_know": 107,
+    "i_mean": 18,
+    "i_think": 49,
+    "i_feel_like": 12,
+    "and_then": 82,
+    "i_dunno": 11,
+    "i_dont_know": 12
+  },
+  "recency_weighting": {
+    "policy": "Current direct corrections override every corpus count. Otherwise prefer 2025-2026 evidence, then 2023-2024, then 2020-2022.",
+    "recent_2025_2026_per_1000_words": {
+      "goin": 4.16,
+      "bro": 13.77,
+      "right": 4.81,
+      "reckon": 0.91,
+      "cos": 0.0,
+      "wanna": 0.13,
+      "just": 10.26
+    },
+    "old_2020_2022_per_1000_words": {
+      "goin": 0.43,
+      "bro": 0.22,
+      "right": 1.94,
+      "reckon": 0.0,
+      "cos": 1.72,
+      "wanna": 1.29,
+      "just": 27.32
+    },
+    "interpretation": [
+      "Recent speech supports goin' as delivery, plus more relationship-specific bro and more right as a check/landing.",
+      "Cos, wanna and heavy just usage are older-weighted and must not be promoted into universal current rules."
+    ]
+  },
+  "opening_counts": {
+    "content_first_or_other": 269,
+    "hey_or_heya": 99,
+    "yo": 51,
+    "yeah": 46,
+    "morning_or_good_morning": 20,
+    "so": 19,
+    "okay": 7,
+    "alright": 1
+  },
+  "sentence_start_counts": {
+    "so": 174,
+    "and": 133,
+    "i": 119,
+    "hey": 117,
+    "yeah": 98,
+    "but": 78,
+    "its": 60,
+    "yo": 52,
+    "like": 37
+  },
+  "contraction_counts": {
+    "im": { "contracted": 109, "expanded": 6 },
+    "ive": { "contracted": 38, "expanded": 12 },
+    "ill": { "contracted": 38, "expanded": 0 },
+    "youre": { "contracted": 84, "expanded": 7 },
+    "its": { "contracted": 165, "expanded": 13 },
+    "thats": { "contracted": 99, "expanded": 12 },
+    "dont": { "contracted": 61, "expanded": 0 },
+    "doesnt": { "contracted": 17, "expanded": 1 },
+    "cant": { "contracted": 14, "expanded": 2 }
+  },
+  "cadence": {
+    "overall_words_per_minute": 121.9,
+    "note_words_per_minute": {
+      "p25": 111.1,
+      "median": 126.7,
+      "p75": 138.6
+    },
+    "sentence_words": {
+      "median": 13,
+      "short_sentence_4_words_or_less_percent": 21.9,
+      "question_percent": 24.9
+    },
+    "breath_group_words": {
+      "p25": 5,
+      "median": 9,
+      "p75": 15,
+      "p90": 23
+    },
+    "pause_seconds": {
+      "clause_to_clause": { "p25": 0.18, "median": 0.34, "p75": 0.78, "p90": 1.4 },
+      "sentence_to_next_thought": { "p25": 0.66, "median": 1.18, "p75": 1.8, "p90": 2.52 },
+      "before_core_hesitation": { "p25": 0.77, "median": 1.4, "p75": 1.93, "p90": 2.73 },
+      "after_core_hesitation": { "p25": 0.28, "median": 1.05, "p75": 1.48, "p90": 3.18 },
+      "before_discourse_marker": { "p25": 0.24, "median": 0.74, "p75": 1.62, "p90": 2.28 },
+      "after_discourse_marker": { "p25": 0.2, "median": 0.35, "p75": 0.52, "p90": 1.02 },
+      "restart": { "p25": 0.18, "median": 0.45, "p75": 0.77, "p90": 1.13 }
+    },
+    "hesitation_duration_seconds": {
+      "umm_or_um_median": 0.58,
+      "uh_median": 0.54,
+      "ordinary_word_median": 0.26
+    }
+  },
+  "context_rules": {
+    "new_or_warm_dm": [
+      "Use the exact live thread before choosing an address word.",
+      "How ya going? is canonical when that greeting is genuinely useful.",
+      "Do not force bro, mate, a name, or a question into every opener.",
+      "A content-first answer is more common than a reusable greeting template."
+    ],
+    "friend_or_familiar_person": [
+      "Bro and yo are supported, but only when the relationship already carries them.",
+      "Allow more fragments, playful repetition, and abrupt openings."
+    ],
+    "coaching_or_science": [
+      "Keep the mechanism complete, then translate it into ordinary words.",
+      "Use contractions and short landing fragments without replacing the useful explanation with slang.",
+      "Use umm or ahh at a real thought change, not in the middle of the causal step."
+    ]
+  },
+  "rewrite_map": [
+    { "reject": "How are you going?", "prefer": "How ya going?", "scope": "casual spoken greeting", "strength": "canonical" },
+    { "reject": "I will", "prefer": "I'll", "scope": "normal speech", "strength": "canonical" },
+    { "reject": "you are", "prefer": "you're", "scope": "normal speech", "strength": "canonical" },
+    { "reject": "it is", "prefer": "it's", "scope": "normal speech", "strength": "canonical" },
+    { "reject": "that is", "prefer": "that's", "scope": "normal speech", "strength": "canonical" },
+    { "reject": "do not", "prefer": "don't", "scope": "normal speech", "strength": "canonical" },
+    { "reject": "does not", "prefer": "doesn't", "scope": "normal speech", "strength": "canonical" },
+    { "reject": "cannot", "prefer": "can't", "scope": "normal speech", "strength": "canonical" },
+    { "reject": "I do not know", "prefer": "I dunno", "scope": "relaxed conversation only", "strength": "supported, not mandatory" },
+    { "reject": "going to", "prefer": "gonna", "scope": "relaxed spoken line when pronunciation remains clear", "strength": "supported, not mandatory" },
+    { "reject": "want to", "prefer": "wanna", "scope": "relaxed spoken line when pronunciation remains clear", "strength": "supported, not mandatory" }
+  ],
+  "automatic_rejections": [
+    "How are you going?",
+    "This demonstrates",
+    "It is important to understand",
+    "The practical takeaway is",
+    "I would be happy to help",
+    "expanded contractions in ordinary speech",
+    "several stacked hesitation sounds",
+    "relationship words such as bro or mate without thread evidence"
+  ]
+}

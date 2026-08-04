@@ -48,7 +48,7 @@ Each time this automation wakes up:
    - Reel covers should carry the hook as the tap reason and must be readable in the square Instagram grid crop.
    - Science hooks must stay faithful to the paper. Keep the science review format Shannon likes; do not make it clickbait or dilute it into generic tips.
    - Before showing Shannon any spoken script, compare it line by line with `content-lab\SHANNON-SCRIPT-VOICE-REFERENCE.md`. Match its directness, plain explanation, sentence-and-fragment rhythm, natural connectors, blame removal, concrete actions, real example and coaching bridge. Copy the voice construction, not the cravings topic or three-step format.
-   - Reject and rewrite documentary narration, generic coach language, scripted `um`/`ah` fillers, expanded contractions, vague advice and a Balance CTA with no concrete coaching explanation.
+   - Reject and rewrite documentary narration, generic coach language, stacked or decorative `umm`/`ahh` sounds, expanded contractions, vague advice and a Balance CTA with no concrete coaching explanation. Require naturally placed `umm`/`ahh` thinking beats using `SHANNON-SPOKEN-VOICE-BIBLE.md`.
    - If using Netlify env vars locally, never print secrets. Only print status, lane, title, asset paths, and review blockers.
 9. Reply in this thread with:
    - created review pack path
