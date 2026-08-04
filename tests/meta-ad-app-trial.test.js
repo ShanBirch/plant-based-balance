@@ -146,6 +146,7 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(onboarding, /BalanceMetaAdTrial\.hasPendingClaim\(\)/);
     assert.match(login, /applyMetaAdTrialHandoffCopy/);
     assert.match(landing, /id="open-installed"[^>]+hidden/);
+    assert.match(landing, /\.button\[hidden\]\s*\{\s*display:none !important;/);
     assert.match(landing, /native_handoff/);
     assert.match(logger, /'trial_gate_shown'/);
     assert.match(android, /getPendingMetaTrialQuery/);
