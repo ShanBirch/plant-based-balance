@@ -500,7 +500,7 @@ const progressedMetaReply = instantDraft.ensureMetaAdSalesProgressionQuestion({
     qualifier: { commercial_stage: 'engaged', facts: {} },
     leadStage: 'qualifying',
 });
-assert.match(progressedMetaReply.joined, /what's the main thing you'd want to change first\?/i,
+assert.match(progressedMetaReply.joined, /what are you mainly trying to change at the moment\?/i,
     'an active paid-ad reply always leaves one useful sales-progression question');
 assert.equal((progressedMetaReply.joined.match(/\?/g) || []).length, 1);
 const repairedBlockerReply = instantDraft.ensureMetaAdSalesProgressionQuestion({

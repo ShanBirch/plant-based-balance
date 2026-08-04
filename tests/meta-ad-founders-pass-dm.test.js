@@ -411,7 +411,7 @@ test('the reply after the goal is tailored and carries the right native proof me
     assert.match(guardedWeightGoal.model, /\+meta_ad_sales_question_v1$/);
     assert.equal(guardedWeightGoal.chunks.length, 2,
         'the proof image must sit between the client result and the next question');
-    assert.match(guardedWeightGoal.chunks[1], /what usually gets in the way/i);
+    assert.match(guardedWeightGoal.chunks[1], /what tends to fall apart first/i);
     assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({
         metaAdGoalReplyTurn: true,
         draft: guardedWeightGoal,
@@ -524,7 +524,7 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
     });
     assert.equal(restartedPersonalisedGoal.replyMode, 'campaign_goal_proof');
     assert.match(guardedRestartedPersonalisedGoal.joined, /Ally.*lost 12kg in 16 weeks/i);
-    assert.match(guardedRestartedPersonalisedGoal.joined, /what usually gets in the way/i);
+    assert.match(guardedRestartedPersonalisedGoal.joined, /what tends to fall apart first/i);
     assert.doesNotMatch(guardedRestartedPersonalisedGoal.joined, /\$29\.99|Starter Coaching is probably/i);
     assert.match(guardedRestartedPersonalisedGoal.imageAttachmentUrl, /ally-cocos\.png/);
     assert.equal(guardedRestartedPersonalisedGoal.videoAttachmentUrl, null);

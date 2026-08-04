@@ -1102,9 +1102,9 @@ function buildMetaAdSalesProgressionQuestion({ draft = {}, qualifier = {} } = {}
         return 'Would that kind of support make it easier for you to stay on track?';
     }
     if (hasKnownGoal) {
-        return 'What usually gets in the way when you try to stay consistent?';
+        return `When you've tried before, what tends to fall apart first?`;
     }
-    return "What's the main thing you'd want to change first?";
+    return 'What are you mainly trying to change at the moment?';
 }
 
 function ensureMetaAdSalesProgressionQuestion({
@@ -3259,6 +3259,7 @@ PAID META SINGLE-WRITER PLAYBOOK:
 - Privately track the next useful stage: goal -> real blocker -> support fit -> offer explanation -> explicit next step. Move no more than one stage in a reply and skip any stage the lead has already answered.
 - While fit is still unclear, usually finish with one short NEW question whose answer changes the next sales or support decision. One question is the maximum, not a quota. A complete answer, acknowledgement, proof point, voice note, objection response or clean pause may stand alone.
 - Never repeat or lightly reword a question Shannon already asked. Never echo the lead's sentence back as Shannon's reply. Use their answer, add a relevant coaching or proof point, then make the next adjacent move.
+- Treat a stated target as a target, not completed progress. For example, "I want to lose 10kg" must never become "10kg down".
 - When they ask about the program, price, inclusions or personalised coaching, answer that direct question before qualifying further. Do not send a signup link until they explicitly ask for it or clearly accept the offer.
 - Keep it like a real active DM: concise, specific, warm and low-pressure. No intake bundles, option menus, canned therapy language or brochure dump.`;
 }
@@ -5884,15 +5885,13 @@ exports.handler = async (event) => {
             model: `${draft.model || 'unknown'}+meta_ad_goal_proof_media_v1`,
         };
     }
-    if (metaAdGoalReplyTurn && !draft.chunks.some(chunk => isQuestionLikeText(chunk))) {
-        const goalProgressionQuestion = `When you've tried before, what tends to fall apart first?`;
-        draft = {
-            ...draft,
-            chunks: [...draft.chunks, goalProgressionQuestion].slice(0, Math.max(2, draft.maxChunks || MAX_CHUNKS)),
-            joined: [...draft.chunks, goalProgressionQuestion].slice(0, Math.max(2, draft.maxChunks || MAX_CHUNKS)).join('\n'),
-            model: `${draft.model || 'unknown'}+meta_ad_goal_question_guard_v1`,
-        };
-    }
+    if (metaAdConversationFastLane) draft = ensureMetaAdSalesProgressionQuestion({
+        draft,
+        currentMessage: messageText,
+        qualifier,
+        leadStage: effectiveLeadStage,
+        linkedUserId: thread.linked_user_id,
+    });
 
     if (Array.isArray(durableMediaIds) && durableMediaIds.length) {
         try {
