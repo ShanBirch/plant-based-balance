@@ -1230,6 +1230,19 @@ function hasRecentPaidMetaProofVideo(history = []) {
         .some(item => /\b(?:quick video|showing you how it works inside Balance)\b/i.test(String(item?.text || '')));
 }
 
+function buildPaidMetaVoiceGoalPhrase(facts = {}) {
+    const rawGoal = String(facts.current_state || facts.motivation || '').replace(/\s+/g, ' ').trim();
+    const kgGoal = rawGoal.match(/\b(\d{1,2}(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i)?.[1] || '';
+    const weightGoal = /\b(?:lose|losing|weight|fat|leaner|tone)\b/i.test(rawGoal);
+    const fitnessGoal = /\b(?:fit|fitter|fitness|energy)\b/i.test(rawGoal);
+    if (kgGoal && weightGoal && fitnessGoal) return `losing ${kgGoal}kg and feeling fitter`;
+    if (kgGoal && weightGoal) return `losing ${kgGoal}kg`;
+    if (weightGoal) return 'your weight-loss goal';
+    if (/\b(?:strong|stronger|strength|muscle)\b/i.test(rawGoal)) return 'getting stronger';
+    if (fitnessGoal) return 'feeling fitter';
+    return 'your goal';
+}
+
 function buildDeterministicPaidMetaConversationReply({
     currentMessage = '',
     qualifier = {},
@@ -1248,6 +1261,7 @@ function buildDeterministicPaidMetaConversationReply({
     const commercialStage = String(qualifier?.commercial_stage || '').toLowerCase();
     const hasGoal = !!String(facts.current_state || facts.motivation || '').trim();
     const hasBlocker = qualifierHasKnownMetaAdBlocker(qualifier);
+    const voiceGoalPhrase = buildPaidMetaVoiceGoalPhrase(facts);
     const broadFlow = flowVariant === 'broad_pain';
     const recentProofVideo = hasRecentPaidMetaProofVideo(history);
     const approvedCheckoutUrl = isApprovedChallengeBioLinkText(checkoutUrl) ? String(checkoutUrl).trim() : '';
@@ -1384,10 +1398,10 @@ function buildDeterministicPaidMetaConversationReply({
         const lifeLoadBlocker = /\b(?:things? (?:just )?get(?:s)? in the way|work (?:and|&) (?:the )?kids|kids (?:and|&) work|busy with (?:work|kids|family))\b/i.test(message);
         const joined = lifeLoadBlocker
             ? (personalVoiceNoteMode
-                ? `Yeah, that makes sense. Um, when work and the kids take over, even a good plan can disappear pretty quickly. Honestly, the idea is to give you a clear week to follow, then I check in and help adjust it when life gets messy. Would that make staying consistent feel more doable?`
+                ? `Hey, hope you're going well. Yeah, so that makes total sense. Work and the kids can wreck the best intentions, hey. Um, honestly, that's what this program is designed for. It's about having me check in on you, keeping you accountable, and adjusting the week when things get crazy so we can keep the ball rolling. It's not about perfection. It's about getting back on the horse when you fall off, and having the right person in your corner. Would that kind of support help you keep moving toward ${voiceGoalPhrase}?`
                 : `Yeah, that makes sense. It sounds like the plan disappears when work and the kids take over.\n\nWould having a clear week to follow and me checking in make that easier?`)
             : (personalVoiceNoteMode
-                ? `Yeah, I get you. Um, that stop-start loop is the bit that wears you down, because every restart feels harder than the last one. Honestly, having a clear week laid out and someone checking in is usually what breaks that cycle. Would that kind of accountability help you stay on track?`
+                ? `Hey, hope you're going well. Yeah, I get you. That stop-start loop can wear you down because every restart feels harder than the last one. Um, honestly, that's what this program is designed for. It's about having me check in, keep you accountable, and adjust the week with you so we can keep the ball rolling. It's not about perfection. It's about getting back on the horse when you fall off, and having the right person in your corner. Would that kind of support help you keep moving toward ${voiceGoalPhrase}?`
                 : `Yeah, I get you. That stop-start loop is exactly where accountability helps.\n\nWould having a clear plan and me checking in help you stay on track?`);
         return {
             chunks: [joined],
@@ -1807,13 +1821,13 @@ function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_b
     let bridge;
     if (/accountab|consisten|motivat|routine|habit|stick|on track|fall off|keep going/.test(text)) {
         bridge = `yeah okay, it sounds like the hard part isn't knowing you should do it, it's keeping the week on track once life gets busy. ${courseProof}`;
-    } else if (/strong|strength|muscle|lift|gym|fitter|fitness|run|cardio/.test(text)) {
-        bridge = `nice, so the goal is to actually feel stronger and fitter, not just collect another plan. ${courseProof}`;
     } else if (weightLossGoal) {
         const kgGoal = rawMessage.match(/\b(\d{1,2}(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i)?.[1] || '';
         bridge = kgGoal
             ? `yeah absolutely, ${kgGoal}kg is a solid goal and that's a big part of what I help people with. This is Ally. She lost 12kg in 16 weeks while working full time and being a busy mum. The biggest thing was building the plan around her life so she could actually stick to it.`
             : `yeah absolutely, that's a big part of what I help people with. This is Ally. She lost 12kg in 16 weeks while working full time and being a busy mum. The biggest thing was building the plan around her life so she could actually stick to it.`;
+    } else if (/strong|strength|muscle|lift|gym|fitter|fitness|run|cardio/.test(text)) {
+        bridge = `nice, so the goal is to actually feel stronger and fitter, not just collect another plan. ${courseProof}`;
     } else if (/food|meal|eat|nutrition|plant|vegan|vegetarian|protein/.test(text)) {
         bridge = broadFlow
             ? `yeah okay, so food structure is the main thing. ${courseProof}`

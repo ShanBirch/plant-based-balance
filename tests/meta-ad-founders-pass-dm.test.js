@@ -120,10 +120,21 @@ test('paid Meta work-and-kids blocker advances to accountability instead of repe
 
     const voiceReply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Other things just get in the way. Work kids',
-        qualifier,
+        qualifier: {
+            ...qualifier,
+            facts: {
+                ...qualifier.facts,
+                current_state: 'Wants to lose 10kg and feel fitter.',
+            },
+        },
         flowVariant: 'plant_based_control',
         personalVoiceNoteMode: true,
     });
+    assert.match(voiceReply.joined, /hope you're going well/i);
+    assert.match(voiceReply.joined, /work and the kids can wreck the best intentions/i);
+    assert.match(voiceReply.joined, /getting back on the horse/i);
+    assert.match(voiceReply.joined, /losing 10kg and feeling fitter/i);
+    assert.equal((voiceReply.joined.match(/\?/g) || []).length, 1);
     assert.equal(inspectVoiceScriptQuality(voiceReply.joined).valid, true);
 });
 
@@ -401,6 +412,11 @@ test('the reply after the goal is tailored and carries the right native proof me
     assert.match(weightGoal.joined, /Ally.*lost 12kg in 16 weeks/i);
     assert.match(weightGoal.imageAttachmentUrl, /ally-cocos\.png/);
     assert.equal(weightGoal.videoAttachmentUrl, null);
+    const weightAndFitnessGoal = buildMetaAdGoalProofReply('I want to lose 10kg and feel fitter');
+    assert.match(weightAndFitnessGoal.joined, /This is Ally/i,
+        'the text immediately before the native proof image must introduce the person shown');
+    assert.match(weightAndFitnessGoal.joined, /lost 12kg in 16 weeks/i);
+    assert.match(weightAndFitnessGoal.imageAttachmentUrl, /ally-cocos\.png/);
     assert.equal(
         buildDraftImageAttachmentData(weightGoal).draft_image_attachment_url,
         weightGoal.imageAttachmentUrl
