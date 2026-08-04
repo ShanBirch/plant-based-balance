@@ -24,7 +24,7 @@ Automatic speech recognition regularly normalises Australian speech. A transcrip
 
 ## Current non-negotiable surface rules
 
-- In public spoken content, write `How ya going?`, not `How are you going?`, when that casual greeting genuinely fits. In generated one-to-one DM voice notes, use Shannon's newer confirmed `Hey, how are ya.` as its own opening breath group, followed by a large pause before the next thought.
+- In public spoken content, write `How ya going?`, not `How are you going?`, when that casual greeting genuinely fits. Generated one-to-one DM voice notes start content-first from the person's newest detail; do not add `Hey, how are ya.` or another generic check-in opener.
 - Use a drawn-out `ummm` for Shannon's wondering or thought-searching sound. This is Shannon's direct correction from 2026-08-04 and supersedes the older generic `umm/ahh` rule.
 - Do not substitute a relieved `ahh` for that thinking sound. Use `ahh` only when the line genuinely expresses relief or realisation; never auto-insert it as generic filler.
 - Put `ummm` at a real thought change. Never use it to cover a missing explanation.
@@ -77,7 +77,7 @@ Use the live relationship and message context:
 ### New or warm Instagram lead
 
 - Answer the newest detail first when it already provides an opening.
-- In a generated one-to-one DM note, use `Hey, how are ya.` when a greeting is useful, then leave a full topic pause. Do not make it a prefix on every reply. Public spoken content may retain `How ya going?`.
+- In a generated one-to-one DM note, omit generic greetings and answer the newest detail first. A relationship-specific greeting is only useful when the live thread genuinely supplies it. Public spoken content may retain `How ya going?`.
 - Do not use `bro`, `broski`, `mate` or a person's name without evidence that Shannon already speaks to them that way.
 - Keep the first useful question plain. Do not turn it into a survey or a polished coaching prompt.
 
@@ -189,7 +189,7 @@ Therefore: preserve `How ya going?`, natural `goin'` delivery, thread-earned `br
 
 | Reject or question | Preferred direction |
 | --- | --- |
-| `How are you going?` | `Hey, how are ya.` for generated one-to-one DM notes; `How ya going?` for public spoken content. |
+| Generic `Hey, how are ya?` in a one-to-one draft | Start with their newest detail or the direct answer. Public spoken content may still use `How ya going?` when it genuinely fits. |
 | `I will` | `I'll` |
 | `you are` | `you're` |
 | `it is` | `it's` |

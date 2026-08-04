@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v275'; // v275: comeback onboarding and Foundations preview handoff
+const CACHE_NAME = 'pbb-app-v277'; // v277: tailored Meta walkthrough, meal photos, and delayed five-minute preview
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -9,7 +9,7 @@ const ASSETS = [
   './welcome.html',
   './lib/supabase.js?v=14',
   './lib/auth-guard.js?v=10',
-  './lib/meta-ad-trial.js?v=3',
+  './lib/meta-ad-trial.js?v=4',
   './lib/native-push.js?v=38',
   './login.html',
   './exercise_videos.js?v=20260801-android-video-compat',
@@ -17,9 +17,9 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=12',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=57',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=156',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=158',
   './js/dashboard/pbb-deferred-weeklygoals.js?v=27',
-  './css/dashboard/pbb-onboarding-comeback.css?v=1',
+  './css/dashboard/pbb-onboarding-comeback.css?v=2',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream',
   './js/dashboard/dashboard-script-10-points_widget_functions.js?v=42',
   './js/dashboard/pbb-deferred-formcheck.js?v=56',

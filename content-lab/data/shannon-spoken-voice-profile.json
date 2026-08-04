@@ -25,10 +25,10 @@
   "current_canonical_rules": {
     "casual_greeting": {
       "preferred": "How ya going?",
-      "dm_voice_preferred": "Hey, how are ya.",
-      "dm_voice_pause_rule": "Keep the greeting in its own breath group and insert a large pause before the next thought.",
+      "dm_voice_preferred": "Start content-first from the person's newest detail.",
+      "dm_voice_pause_rule": "Do not add a generic check-in greeting. Use a relationship-specific greeting only when the live thread genuinely supplies it.",
       "reject": "How are you going?",
-      "source": "Direct Shannon corrections, 2026-08-04 and 2026-08-05"
+      "source": "Latest direct Shannon correction, 2026-08-05"
     },
     "core_hesitations": {
       "preferred_default": "ummm",
@@ -174,7 +174,7 @@
   "context_rules": {
     "new_or_warm_dm": [
       "Use the exact live thread before choosing an address word.",
-      "Hey, how are ya. is canonical for a generated one-to-one voice note when that greeting is genuinely useful; keep it in its own breath group with a large pause after it.",
+      "Generated one-to-one voice notes start with the newest detail or direct answer; do not add Hey, how are ya. as a canned opener.",
       "Do not force bro, mate, a name, or a question into every opener.",
       "A content-first answer is more common than a reusable greeting template."
     ],
@@ -190,7 +190,7 @@
     ]
   },
   "rewrite_map": [
-    { "reject": "How are you going?", "prefer": "Hey, how are ya.", "scope": "generated one-to-one DM voice greeting", "strength": "canonical" },
+    { "reject": "Hey, how are ya?", "prefer": "Start with the newest detail or direct answer.", "scope": "generated one-to-one DM voice opening", "strength": "canonical" },
     { "reject": "How are you going?", "prefer": "How ya going?", "scope": "public spoken greeting", "strength": "canonical" },
     { "reject": "I will", "prefer": "I'll", "scope": "normal speech", "strength": "canonical" },
     { "reject": "you are", "prefer": "you're", "scope": "normal speech", "strength": "canonical" },

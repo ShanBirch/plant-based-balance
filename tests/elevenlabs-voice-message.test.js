@@ -36,9 +36,8 @@ assert.match(personalVoicePrompt, /3 to 4 imperfect thinking beats/i);
 assert.match(personalVoicePrompt, /At least one must be a drawn-out "ummm"/i);
 assert.match(personalVoicePrompt, /Do not substitute "ahh"/i);
 assert.match(personalVoicePrompt, /you don't have to prove anything, ya know/i);
-assert.match(personalVoicePrompt, /Hey, how are ya\./i);
-assert.match(personalVoicePrompt, /never "How are you going\?"/i);
-assert.match(personalVoicePrompt, /full paragraph break after the greeting/i);
+assert.match(personalVoicePrompt, /Start with the newest detail or the answer itself/i);
+assert.match(personalVoicePrompt, /Do not open generated one-to-one voice notes with "Hey, how are ya"/i);
 assert.match(personalVoicePrompt, /punctuation-led breathing pauses/i);
 assert.match(personalVoicePrompt, /Vary the hesitation placement/i);
 assert.match(personalVoicePrompt, /do not pad or cut a natural reply/i);
@@ -154,7 +153,7 @@ assert.strictEqual(
 
 assert.strictEqual(
     voice.buildTtsText(['Hey, how are you going. Yeah, that makes sense. Ummmm... let me think about that.']),
-    'Hey, how are ya.\n\nYeah, that makes sense. Ummmm... let me think about that.'
+    'Yeah, that makes sense. Ummmm... let me think about that.'
 );
 
 assert.strictEqual(

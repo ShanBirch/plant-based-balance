@@ -3,6 +3,15 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <script>
+        (function () {
+            var incoming = new URLSearchParams(window.location.search);
+            if (!incoming.get('utm_source')) incoming.set('utm_source', 'facebook');
+            if (!incoming.get('utm_medium')) incoming.set('utm_medium', 'paid_social');
+            incoming.set('meta_preview', '1');
+            window.location.replace('/founders?' + incoming.toString());
+        })();
+    </script>
     <title>Try Balance Free</title>
   <meta name="description" content="Set up your goals, explore Balance free for five minutes, then choose whether the six-week Balance Foundations curriculum feels right.">
     <link rel="icon" type="image/png" href="balance_logo.png">

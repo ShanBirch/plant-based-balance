@@ -89,6 +89,23 @@
         .top-link { padding: 10px 22px; border-radius: 999px; color: #111111; background: var(--lime); font-size: .9rem; font-weight: 800; text-decoration: none; box-shadow: 0 14px 30px rgba(184,137,43,.16); }
         .top-link:hover { opacity: .86; }
 
+        .paid-preview-route {
+            display: none;
+            max-width: 620px;
+            margin: 18px 0 0;
+            padding: 13px 16px;
+            border: 1px solid rgba(184,137,43,.24);
+            border-radius: 16px;
+            background: rgba(255,255,255,.7);
+            color: #4f5968;
+            font-size: .84rem;
+            font-weight: 700;
+            box-shadow: 0 14px 34px rgba(26,32,44,.06);
+        }
+        body.paid-meta-preview .paid-preview-route { display: flex; align-items: center; gap: 10px; }
+        .paid-preview-route span { display: inline-flex; align-items: center; gap: 8px; }
+        .paid-preview-route span + span::before { content: "\2192"; color: #9a6919; }
+
         .hero {
             position: relative;
             overflow: hidden;
@@ -355,7 +372,7 @@
 <body data-landing-page="plant-based-founders-pass" data-landing-variant="plant_based_control">
     <header class="topbar">
         <a class="brand" href="balance.html"><span class="brand-icon"><img src="balance_logo.png" alt="Balance"></span><span>Balance</span></a>
-            <div class="nav-actions"><a class="nav-link" href="balance.html">Explore Balance</a><a class="top-link" href="/founders#join">Start Balance Foundations</a></div>
+            <div class="nav-actions"><a class="nav-link" href="balance.html">Explore Balance</a><a class="top-link" id="foundations-top-action" href="/founders#join">Start Balance Foundations</a></div>
     </header>
 
     <main>
@@ -366,8 +383,9 @@
                     <h1>Your training plan. <span>Your people.</span> One payment.</h1>
                 <p class="hero-copy">Follow a clear six-week plant-based fitness course, with one weekly check-in, workout and food review, and plan adjustment from Shannon.</p>
                 <div class="price-line"><div class="price">AU$89.99</div><div class="price-note">one payment for the complete six weeks</div></div>
-                <a class="cta" href="/founders#join" data-track="cta_click">Start Balance Foundations</a>
-                <p class="micro">Six weeks with Shannon in your corner. One payment, no auto-renewal.</p>
+                <a class="cta" id="foundations-hero-action" href="/founders#join" data-track="cta_click">Start Balance Foundations</a>
+                <p class="micro" id="foundations-hero-microcopy">Six weeks with Shannon in your corner. One payment, no auto-renewal.</p>
+                <div class="paid-preview-route" id="paid-preview-route" aria-label="Balance preview steps"><span>Set up your plan</span><span>Explore for five minutes</span><span>Unlock Foundations</span></div>
                 </div>
                 <div class="phone-stage reveal" aria-label="Preview of the Balance app">
                     <div class="phone">
@@ -488,6 +506,35 @@
     <script src="analytics.js"></script>
     <script src="checkout.js"></script>
     <script>
+        (function () {
+            var params = new URLSearchParams(window.location.search);
+            var source = (params.get('utm_source') || '').trim().toLowerCase();
+            var medium = (params.get('utm_medium') || '').trim().toLowerCase();
+            var paidFacebookSources = ['facebook', 'fb', 'meta'];
+            var paidFacebookMedia = ['paid_social', 'paid', 'cpc'];
+            if (paidFacebookSources.indexOf(source) === -1 || paidFacebookMedia.indexOf(medium) === -1) return;
+
+            params.set('guest', 'true');
+            params.set('meta_trial', 'facebook_5m_foundations_v3');
+            params.delete('meta_preview');
+            var appUrl = '/dashboard.html?' + params.toString();
+            var heroAction = document.getElementById('foundations-hero-action');
+            var topAction = document.getElementById('foundations-top-action');
+            var microcopy = document.getElementById('foundations-hero-microcopy');
+
+            document.body.classList.add('paid-meta-preview');
+            document.body.dataset.landingVariant = 'facebook_5m_foundations_v3';
+            [heroAction, topAction].forEach(function (action) {
+                if (!action) return;
+                action.href = appUrl;
+                action.textContent = action === heroAction ? 'Look inside Balance' : 'Open Balance';
+                action.dataset.previewHandoff = 'true';
+            });
+            if (microcopy) {
+                microcopy.textContent = 'Open Balance, complete your setup, then take a five-minute look around. Your answers stay saved if you unlock.';
+            }
+        })();
+
         (function () {
             var items = document.querySelectorAll('.reveal');
             var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;

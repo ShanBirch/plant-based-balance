@@ -163,11 +163,12 @@ test('paid Meta blocker quotes the six-week payment and app access follows posit
         flowVariant: 'plant_based_control',
         personalVoiceNoteMode: true,
     });
-    assert.match(voiceReply.joined, /^Hey, how are ya\.\n\nYeah, so that makes total sense/i);
+    assert.match(voiceReply.joined, /^Yeah, so that makes total sense/i);
+    assert.doesNotMatch(voiceReply.joined, /hey, how are ya/i);
     assert.doesNotMatch(voiceReply.joined, /how are you going/i);
     assert.match(voiceReply.joined, /work and the kids can wreck the best intentions/i);
     assert.match(voiceReply.joined, /losing 10 kilos and feeling fitter/i);
-    assert.match(voiceReply.joined, /one eighty-nine ninety-nine payment for the full six weeks/i);
+    assert.match(voiceReply.joined, /eighty-nine ninety-nine payment for the full six weeks/i);
     assert.match(voiceReply.joined, /set yourself up in the app.*your program, your meal plan, and the community/is);
     assert.match(voiceReply.joined, /once you've seen it, we can take payment\. How does that sound\?/i);
     assert.match(voiceReply.joined, /Ummmm\.\.\./i);
@@ -267,7 +268,7 @@ test('paid Meta voice progression reflects different real blocker categories', (
         });
         assert.match(reply.joined, expectedReflection);
         assert.match(reply.joined, /losing 10 kilos and feeling fitter/i);
-        assert.match(reply.joined, /one eighty-nine ninety-nine payment for the full six weeks/i);
+        assert.match(reply.joined, /eighty-nine ninety-nine payment for the full six weeks/i);
         assert.equal(reply.voiceCompanionText, '');
         assert.equal((reply.joined.match(/\?/g) || []).length, 1);
     }
@@ -729,8 +730,8 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         personalVoiceNoteMode: true,
     });
     assert.deepEqual(blockerVoiceReply.voiceThoughtPausesMs, [1900, 1500, 1450, 1350, 1550, 1600, 1500]);
-    assert.equal(blockerVoiceReply.joined.split(/\n\s*\n/).length, 8);
-    assert.match(blockerVoiceReply.joined, /^Hey, how are ya\.\n\n/);
+    assert.equal(blockerVoiceReply.joined.split(/\n\s*\n/).length, 7);
+    assert.doesNotMatch(blockerVoiceReply.joined, /hey, how are ya/i);
     assert.doesNotMatch(blockerVoiceReply.joined, /how are you going/i);
     assert.match(blockerVoiceReply.joined, /Ummmm\.\.\./);
     assert.match(blockerVoiceReply.joined, /losing 8 kilos/i);

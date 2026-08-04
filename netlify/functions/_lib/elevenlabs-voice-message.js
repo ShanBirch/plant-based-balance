@@ -63,9 +63,12 @@ function normalizeTtsPronunciation(text = '') {
 }
 
 function normalizeShannonVoiceGreeting(text = '') {
-    return String(text || '')
-        .replace(/^\s*(?:hey,?\s*)?(?:how are you going|how ya going|how are ya)[?.!,]*/i, 'Hey, how are ya.')
-        .replace(/^(Hey, how are ya\.)(?:[ \t]+)(?=\S)/i, '$1\n\n');
+    const original = String(text || '');
+    const contentFirst = original
+        .replace(/^\s*(?:hey,?\s*)?(?:how are you going|how ya going|how are ya)[?.!,]*(?:\s|\n)*/i, '')
+        .trimStart();
+    if (contentFirst === original) return original;
+    return contentFirst.replace(/^([a-z])/, (_, first) => first.toUpperCase());
 }
 
 function parseBoolean(value, fallback = false) {

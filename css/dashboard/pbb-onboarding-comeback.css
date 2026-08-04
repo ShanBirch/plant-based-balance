@@ -538,6 +538,248 @@ html[data-pbb-theme="light"] #onboarding-wizard select {
     line-height: 1.42;
 }
 
+.wizard-comeback-hero-copy {
+    display: none;
+}
+
+/* Editorial opening card: cream, gold and the Balance harmony mark. */
+#onboarding-wizard.wizard-chat-intro.onboarding-overlay {
+    background:
+        radial-gradient(circle at -8% 22%, transparent 0 112px, rgba(184,137,43,.15) 113px 114px, transparent 115px),
+        radial-gradient(circle at 108% 82%, transparent 0 148px, rgba(184,137,43,.12) 149px 150px, transparent 151px),
+        linear-gradient(154deg, #fbfaf7 0 58%, #f1e9da 58% 78%, #f8f5ee 78% 100%) !important;
+    color: #1a202c !important;
+}
+
+#onboarding-wizard.wizard-chat-intro::before {
+    inset: 0;
+    opacity: 1;
+    background:
+        radial-gradient(circle at 86% 16%, rgba(154,105,25,.38) 0 1px, transparent 1.5px) 0 0 / 18px 18px,
+        linear-gradient(112deg, transparent 0 67%, rgba(255,255,255,.56) 67% 100%);
+    mix-blend-mode: normal;
+}
+
+#onboarding-wizard.wizard-chat-intro::after {
+    width: 240px;
+    height: 240px;
+    right: -132px;
+    top: auto;
+    bottom: 4%;
+    border-color: rgba(154,105,25,.13);
+    box-shadow: 0 0 0 42px rgba(184,137,43,.025), 0 0 0 84px rgba(184,137,43,.018);
+    animation: comebackIntroRing 9s ease-in-out infinite alternate;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-particles {
+    opacity: .3;
+    background:
+        radial-gradient(circle at 13% 72%, rgba(154,105,25,.7) 0 1px, transparent 2px),
+        radial-gradient(circle at 88% 23%, rgba(154,105,25,.58) 0 1px, transparent 2px),
+        radial-gradient(circle at 74% 88%, rgba(154,105,25,.45) 0 1px, transparent 2px);
+}
+
+#onboarding-wizard.wizard-chat-intro .onboarding-modal.wizard-container,
+html[data-pbb-theme="light"] #onboarding-wizard.wizard-chat-intro .onboarding-modal.wizard-container {
+    border-color: rgba(154,105,25,.2) !important;
+    background:
+        radial-gradient(circle at -18% 38%, transparent 0 122px, rgba(154,105,25,.1) 123px 124px, transparent 125px),
+        linear-gradient(152deg, rgba(255,255,255,.98) 0 61%, rgba(242,234,218,.98) 61% 79%, rgba(250,248,243,.99) 79% 100%) !important;
+    color: #1a202c !important;
+    box-shadow: 0 32px 88px rgba(47,38,22,.2), inset 0 1px 0 #fff !important;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-header,
+#onboarding-wizard.wizard-chat-intro.wizard-chat-mode .wizard-header {
+    padding: clamp(34px, 7dvh, 58px) 24px 8px !important;
+    text-align: center !important;
+    background: transparent !important;
+    border-bottom: 0 !important;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-header > div[onclick] {
+    border-color: rgba(26,32,44,.13) !important;
+    background: rgba(255,255,255,.7) !important;
+    color: #596273 !important;
+    -webkit-text-fill-color: #596273 !important;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-brand-lockup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    margin: 0 auto !important;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-brand-mark {
+    width: 112px;
+    height: 112px;
+    overflow: visible;
+    border: 1px solid rgba(154,105,25,.78);
+    background: #fff;
+    box-shadow: 0 0 0 4px #fff, 0 0 0 6px rgba(154,105,25,.45), 0 18px 42px rgba(67,50,21,.15);
+    animation: comebackMarkBreathe 5.4s ease-in-out infinite;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-brand-mark::before {
+    content: '';
+    position: absolute;
+    inset: -13px;
+    border: 1px solid rgba(154,105,25,.3);
+    border-radius: 50%;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-brand-mark::after {
+    inset: -13px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent 0 73%, rgba(184,137,43,.94) 82%, transparent 91% 100%);
+    animation: comebackMarkOrbit 6.8s linear infinite;
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-brand-mark img {
+    width: 94px;
+    height: 94px;
+    border-radius: 50%;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-brand-copy {
+    position: relative;
+    align-items: center;
+    min-width: 164px;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-brand-copy::before,
+#onboarding-wizard.wizard-chat-intro .wizard-brand-copy::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    width: 34px;
+    height: 1px;
+    background: rgba(154,105,25,.62);
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-brand-copy::before { left: -4px; }
+#onboarding-wizard.wizard-chat-intro .wizard-brand-copy::after { right: -4px; }
+
+#onboarding-wizard.wizard-chat-intro .wizard-brand-copy strong {
+    color: #8b5e17 !important;
+    -webkit-text-fill-color: #8b5e17 !important;
+    font-size: .7rem;
+    letter-spacing: .25em;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-brand-copy small {
+    margin-top: 7px;
+    color: #596273 !important;
+    -webkit-text-fill-color: #596273 !important;
+    font-size: .52rem;
+    letter-spacing: .3em;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-progress,
+#onboarding-wizard.wizard-chat-intro #wizard-title,
+#onboarding-wizard.wizard-chat-intro .wizard-chat-progress-row {
+    display: none !important;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-content,
+#onboarding-wizard.wizard-chat-intro.wizard-chat-mode .wizard-content {
+    display: flex;
+    align-items: center;
+    padding: 8px 34px 34px !important;
+    color: #1a202c !important;
+    overflow-y: auto !important;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-slide,
+#onboarding-wizard.wizard-chat-intro .wizard-chat-intake {
+    width: 100%;
+    color: #1a202c !important;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-chat-intake {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(14px, 2.8dvh, 24px) !important;
+    text-align: center;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-chat-messages {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 8px 0 0 !important;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-chat-bubble.coach {
+    width: 100%;
+    max-width: 100% !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-align: center;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-chat-bubble.coach:first-child {
+    color: #8b5e17 !important;
+    -webkit-text-fill-color: #8b5e17 !important;
+    font: 800 .82rem/1.2 'Montserrat', sans-serif !important;
+    letter-spacing: .14em;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-chat-bubble.coach:last-child {
+    max-width: 390px !important;
+    color: #191224 !important;
+    -webkit-text-fill-color: #191224 !important;
+    font: 900 clamp(2.8rem, 11vw, 4.15rem)/.9 'Montserrat', sans-serif !important;
+    letter-spacing: -.065em;
+    text-transform: uppercase;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-comeback-hero-copy {
+    display: block;
+    max-width: 340px;
+    margin: -2px auto 0;
+    color: #596273 !important;
+    -webkit-text-fill-color: #596273 !important;
+    font-size: .92rem;
+    line-height: 1.55;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-chat-choices {
+    width: min(100%, 330px);
+    margin: 0 auto;
+    padding: 0 !important;
+    overflow: visible !important;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-chat-choice,
+#onboarding-wizard.wizard-chat-intro .wizard-chat-choice.selected {
+    min-height: 54px;
+    border: 1px solid #1a202c !important;
+    border-radius: 4px !important;
+    background: #1a202c !important;
+    color: #fffaf0 !important;
+    -webkit-text-fill-color: #fffaf0 !important;
+    box-shadow: 0 14px 30px rgba(26,32,44,.18), inset 0 0 0 1px rgba(216,178,94,.28);
+    font: 900 .8rem/1 'Montserrat', sans-serif;
+    letter-spacing: .12em;
+}
+
+#onboarding-wizard.wizard-chat-intro .wizard-chat-helper {
+    color: #596273 !important;
+    -webkit-text-fill-color: #596273 !important;
+}
+
 @keyframes comebackOverlayIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -567,6 +809,20 @@ html[data-pbb-theme="light"] #onboarding-wizard select {
     0%, 58% { transform: translateX(-55%); opacity: 0; }
     66% { opacity: 1; }
     82%, 100% { transform: translateX(55%); opacity: 0; }
+}
+
+@keyframes comebackMarkBreathe {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-3px) scale(1.018); }
+}
+
+@keyframes comebackMarkOrbit {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes comebackIntroRing {
+    from { transform: translate3d(0, 5px, 0) scale(.98); opacity: .65; }
+    to { transform: translate3d(-9px, -7px, 0) scale(1.04); opacity: 1; }
 }
 
 @keyframes comebackResultPulse {
@@ -647,6 +903,25 @@ html[data-pbb-theme="light"] #onboarding-wizard select {
     #onboarding-wizard .wizard-progress { margin: 10px 0 7px !important; }
     #onboarding-wizard .wizard-content { padding-top: 8px !important; }
     .wizard-chat-bubble { padding: 12px 14px !important; }
+
+    #onboarding-wizard.wizard-chat-intro .wizard-header,
+    #onboarding-wizard.wizard-chat-intro.wizard-chat-mode .wizard-header {
+        padding-top: calc(20px + env(safe-area-inset-top, 0px)) !important;
+    }
+
+    #onboarding-wizard.wizard-chat-intro .wizard-brand-mark {
+        width: 82px;
+        height: 82px;
+    }
+
+    #onboarding-wizard.wizard-chat-intro .wizard-brand-mark img {
+        width: 70px;
+        height: 70px;
+    }
+
+    #onboarding-wizard.wizard-chat-intro .wizard-brand-lockup { gap: 12px; }
+    #onboarding-wizard.wizard-chat-intro .wizard-content { padding-bottom: 18px !important; }
+    #onboarding-wizard.wizard-chat-intro .wizard-chat-bubble.coach:last-child { font-size: clamp(2.25rem, 9.5vw, 3.2rem) !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -31,6 +31,16 @@ If you add a new popup/modal/overlay, verify on a small phone viewport that the 
 
 Always verify that fonts are readable in light mode before shipping mobile UI. Any card, popup, or generated style block that changes backgrounds must set explicit readable text colors for headings, body text, labels, buttons, and nested cards. For Capacitor/iOS views, include `-webkit-text-fill-color` when overriding contrast-sensitive text so WebKit does not keep stale or inherited white text on light surfaces.
 
+### Balance Cream-and-Gold Opening Treatment
+
+For branded opening, reveal, and onboarding hero screens, use the established Balance editorial treatment:
+
+1. Start with a warm cream or soft-white field, dark ink typography, and restrained antique-gold accents. Use the current website palette instead of introducing a separate gold or beige.
+2. Treat the round Balance harmony mark as the hero, not as a tiny generic app badge. Keep the black character artwork intact, frame it with fine double gold rings, and place the `BALANCE` wordmark between short gold rules underneath.
+3. Motion should feel calm and continuous: a slow orbit or breathing halo plus an occasional soft gold glimmer. Never spin or distort the character artwork, and avoid sparkly or high-energy effects.
+4. Carry subtle editorial geometry behind the content: large cream panels, fine circular outlines, and a very small amount of gold dot texture. These elements must stay behind the message and action.
+5. Always honor `prefers-reduced-motion`, fit small phone viewports, and verify explicit dark-on-cream contrast including `-webkit-text-fill-color` overrides.
+
 ### Navigation: Swipe-Back Instead of Back Buttons
 
 Do NOT add back buttons to view headers. The app uses swipe-back gesture navigation consistently. When creating a new full-screen view:

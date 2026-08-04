@@ -1329,7 +1329,7 @@ function buildDeterministicPaidMetaConversationReply({
     if (resolveMetaAdFirstReplyIntent(message) === 'personalised_coaching') {
         const knownProblem = hasGoal && hasBlocker;
         const body = personalVoiceNoteMode && knownProblem
-            ? `Hey, how are ya.\n\nYeah, I do. Ummmm... Balance Foundations gives you a clear six-week curriculum inside the app, ya know.\n\nAnd you've got me there once a week to review and adjust your training and food around what's actually happening.\n\nIt's one eighty-nine ninety-nine payment for the full six weeks.\n\nHonestly, what I can do is let you set yourself up in the app, so you can get a feel for it. Your program, your meal plan, and the community.\n\nThen once you've seen it, we can take payment.`
+            ? `Yeah, I do. Ummmm... Balance Foundations gives you a clear six-week curriculum inside the app, ya know.\n\nAnd you've got me there once a week to review and adjust your training and food around what's actually happening.\n\nIt's eighty-nine ninety-nine payment for the full six weeks.\n\nHonestly, what I can do is let you set yourself up in the app, so you can get a feel for it. Your program, your meal plan, and the community.\n\nThen once you've seen it, we can take payment.`
             : knownProblem
             ? `Yeah, I do. Balance Foundations gives you a six-week curriculum inside the app, plus one weekly check-in where I review and adjust your training and food around what's actually happening.`
             : `Yeah, I do. Balance Foundations gives you a six-week curriculum inside the app, plus one weekly check-in where I review and adjust your training and food.`;
@@ -1509,12 +1509,11 @@ function buildDeterministicPaidMetaConversationReply({
         }
         const joined = personalVoiceNoteMode
             ? [
-                `Hey, how are ya.`,
                 `Yeah, so that makes total sense. ${reflection}`,
                 `Ummmm... so, that's honestly what Balance is designed for. It's, it's about giving you a clear plan for the week, ya know.`,
                 `And having me there to check in, keep you accountable, and move things around when life gets crazy.`,
                 `So if you fall off, ya know, you've got something simple to come back to. And we can keep you moving toward ${voiceGoalPhrase}, without every week needing to be perfect.`,
-                `It's one eighty-nine ninety-nine payment for the full six weeks.`,
+                `It's eighty-nine ninety-nine payment for the full six weeks.`,
                 `What I can do is let you set yourself up in the app, so you can get a feel for it. Your program, your meal plan, and the community.`,
                 `Then once you've seen it, we can take payment. How does that sound?`,
             ].join('\n\n')
@@ -4416,7 +4415,7 @@ PERSONAL VOICE NOTE MODE:
 This exact draft will be spoken in Shannon's approved voice-note voice, not sent as ordinary text.
 - Match the five Cocos voice clips Shannon approved on 2026-07-24. Write at least 34 words so the voice has room to settle. There is no strict maximum: stay proportional to what they shared and do not pad or cut a natural reply to hit a duration.
 - Sound like Shannon thinking with them in the moment: relaxed Australian phrasing, contractions, and small punctuation-led breathing pauses.
-- Use Shannon's confirmed surface wording. If this moment genuinely needs the greeting, write "Hey, how are ya." as its own first paragraph, never "How are you going?" Leave a full paragraph break after the greeting so it gets a proper thinking pause. Do not force a greeting when answering their newest detail directly is more natural.
+- Start with the newest detail or the answer itself. Do not open generated one-to-one voice notes with "Hey, how are ya", "How ya going?", or another generic check-in greeting. A relationship-specific greeting is only appropriate when the live conversation gives you a real reason for it.
 - Include 3 to 4 imperfect thinking beats across the whole note, as the approved scripts did. At least one must be a drawn-out "ummm" for genuine wondering or thought-searching. Do not substitute "ahh": that sounds like relief and belongs only when the meaning is genuinely relief or realisation. The other beats may be "okay", "yeah", "honestly", "anyway", "alright", "like", "you know", or a slight self-correction.
 - Use spoken "ya know" after a complete relatable or reassuring point as a soft landing that invites shared understanding, for example "you don't have to prove anything, ya know." Never add it randomly, use it to interrupt unfinished logic, or globally replace every "you" with "ya".
 - Vary the hesitation placement. Never use the same filler pattern every time, stack fillers, or make the note sound scripted.

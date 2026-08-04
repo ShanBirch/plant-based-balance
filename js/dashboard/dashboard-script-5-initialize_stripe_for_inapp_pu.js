@@ -5262,6 +5262,11 @@ function renderAiPlanDay(dayNum) {
         const slotLabel = mealSlotLabels[meal.meal_slot] || meal.meal_slot;
         const slotIcon = mealSlotIcons[meal.meal_slot] || '🍽️';
         const time = meal.meal_time || '';
+        const rawImageUrl = String(meal.image_url || meal.image || '').trim();
+        const imageUrl = /^(?:https:\/\/|images\/meals\/)[^"'<>]+$/i.test(rawImageUrl) ? rawImageUrl : '';
+        const imageAlt = String(meal.name || slotLabel).replace(/[&<>"']/g, character => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[character]);
 
         // Build ingredients list
         const ingredientsList = (meal.ingredients || []).map(ing => {
@@ -5276,6 +5281,7 @@ function renderAiPlanDay(dayNum) {
 
         return `
         <div class="card" style="margin-bottom: 10px;">
+            ${imageUrl ? `<img src="${imageUrl}" alt="${imageAlt}" loading="lazy" data-meal-plan-photo="true" style="display:block;width:100%;height:172px;object-fit:cover;background:#f5efe4;border-radius:12px 12px 0 0;" onerror="this.style.display='none'">` : ''}
             <div class="card-header" onclick="toggleCard(this)">
                 <div style="display: flex; align-items: center;">
                     <div class="meal-icon">${slotIcon}</div>
@@ -5547,7 +5553,59 @@ function mealPlanNeedsPreferenceReview(preferences = {}) {
         || dislikes.length > 0;
 }
 
+async function ensureMetaPreviewMealPlan() {
+    if (window.metaAdTrialMode !== true) return null;
+    if (_aiMealPlanCache && Array.isArray(_aiMealPlanCache.weeks)) {
+        showAiPlanLoaded(_aiMealPlanCache);
+        return _aiMealPlanCache;
+    }
+
+    let savedPlan = null;
+    try { savedPlan = JSON.parse(localStorage.getItem('ai_meal_plan') || 'null'); } catch (e) {}
+    if (savedPlan && Array.isArray(savedPlan.weeks)) {
+        _aiMealPlanCache = savedPlan;
+        _aiMealPlanCurrentWeek = 1;
+        _aiMealPlanCurrentDay = 0;
+        showAiPlanLoaded(savedPlan);
+        return savedPlan;
+    }
+
+    if (typeof window.buildScaledMealPlan !== 'function') {
+        await waitForMealPlanDependencies(5000);
+    }
+    if (typeof window.buildScaledMealPlan !== 'function') return null;
+
+    let profile = {};
+    try {
+        profile = Object.assign(
+            {},
+            JSON.parse(localStorage.getItem('userProfile') || '{}'),
+            JSON.parse(sessionStorage.getItem('userProfile') || '{}'),
+            JSON.parse(sessionStorage.getItem('userResult') || '{}')
+        );
+    } catch (e) {}
+
+    const calorieGoal = Number(profile.calorie_goal || profile.calorieGoal || profile.daily_calorie_target || 2000);
+    const plan = window.buildScaledMealPlan({
+        calorie_goal: Number.isFinite(calorieGoal) && calorieGoal >= 1200 ? calorieGoal : 2000,
+        protein_goal_g: Number(profile.protein_goal_g || profile.proteinGoal || 0) || null,
+        carbs_goal_g: Number(profile.carbs_goal_g || profile.carbsGoal || 0) || null,
+        fat_goal_g: Number(profile.fat_goal_g || profile.fatGoal || 0) || null
+    });
+    _aiMealPlanCache = plan;
+    _aiMealPlanCurrentWeek = 1;
+    _aiMealPlanCurrentDay = 0;
+    try { localStorage.setItem('ai_meal_plan', JSON.stringify(plan)); } catch (e) {}
+    showAiPlanLoaded(plan);
+    return plan;
+}
+window.ensureMetaPreviewMealPlan = ensureMetaPreviewMealPlan;
+
 async function ensureInitialOnboardingMealPlan() {
+    if (window.metaAdTrialMode === true) {
+        const previewPlan = await ensureMetaPreviewMealPlan();
+        return { status: previewPlan ? 'preview_ready' : 'preview_unavailable' };
+    }
     const user = window.currentUser || await waitForCurrentUser();
     if (!user || !window.supabaseClient) return { status: 'no_user' };
 
@@ -7280,8 +7338,8 @@ const WIZARD_CHAT_STEPS = [
     {
         key: 'goal_setup_ready',
         type: 'start',
-        question: 'Time for a comeback. Tell us where you are starting from and Balance will set the first six weeks for you.',
-        prelude: 'No giant questionnaire. No picking goals from a wall of options. Just the details that change your plan.',
+        question: 'Time for a comeback.',
+        prelude: 'YOUR PLAN. YOUR PACE.',
         options: [
             { value: 'lets_go', label: 'BUILD MY START' }
         ]
@@ -12200,14 +12258,16 @@ async function finishOnboarding() {
     // user taps "Let's Go!" — not to whenever slow network calls finish.
     // Uses force=true because localStorage persists across accounts on the same
     // device — a previous account may have already set featureTourComplete='1'.
-    setTimeout(() => {
-        try {
-            if (typeof startFeatureTour === 'function') {
-                try { localStorage.removeItem('featureTourComplete'); } catch(e){}
-                startFeatureTour();
-            }
-        } catch (e) { console.warn('startFeatureTour failed:', e); }
-    }, 5000);
+    if (!window.metaAdTrialMode) {
+        setTimeout(() => {
+            try {
+                if (typeof startFeatureTour === 'function') {
+                    try { localStorage.removeItem('featureTourComplete'); } catch(e){}
+                    startFeatureTour();
+                }
+            } catch (e) { console.warn('startFeatureTour failed:', e); }
+        }, 5000);
+    }
 
     // --- Release all story/wizard WebGL contexts before restoring tamagotchi ---
     // On iOS, use the MV manager to deactivate all story/wizard viewers (converts
@@ -12430,6 +12490,20 @@ async function finishOnboarding() {
     const initialMealPlan = await ensureInitialOnboardingMealPlan();
     console.log('[onboarding] initial meal plan state:', initialMealPlan.status);
 
+    // The paid Meta preview gets a deliberately short, tailored walkthrough.
+    // Its five-minute clock begins only after this tour closes, so setup and
+    // orientation never consume the person's actual look-around time.
+    if (window.metaAdTrialMode === true) {
+        setTimeout(() => {
+            try {
+                if (typeof startFeatureTour === 'function') {
+                    try { localStorage.removeItem('featureTourComplete'); } catch(e){}
+                    startFeatureTour(false, { metaPreview: true });
+                }
+            } catch (e) { console.warn('Meta preview walkthrough failed:', e); }
+        }, 450);
+    }
+
     // Mark onboarding complete in the database so it persists across browsers/sessions
     if (window.currentUser) {
         try {
@@ -12484,10 +12558,10 @@ async function finishOnboarding() {
     // Show native permissions request modal after onboarding completes.
     // Delay ~3s so the header coin-widget count-up (~2s) finishes before
     // the permissions overlay covers the screen.
-    setTimeout(showNativePermissionsModal, 3000);
+    if (!window.metaAdTrialMode) setTimeout(showNativePermissionsModal, 3000);
 
     // Web (non-native): request notification permission after onboarding finishes
-    if (!(typeof isNativeApp === 'function' && isNativeApp())) {
+    if (!window.metaAdTrialMode && !(typeof isNativeApp === 'function' && isNativeApp())) {
         setTimeout(() => {
             if (typeof requestNotificationPermission === 'function') {
                 requestNotificationPermission();

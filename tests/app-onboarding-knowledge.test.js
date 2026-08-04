@@ -11,7 +11,8 @@ test('DM drafting knowledge covers the paid handoff and real onboarding stages',
     assert.match(guide, /plantbased-balance\.org\/founders/);
     assert.match(guide, /login\.html\?action=signup/);
     assert.match(guide, /meta-app-preview\.html/);
-    assert.match(guide, /five minutes to explore/i);
+    assert.match(guide, /five-minute look-around begins only after the walkthrough ends/i);
+    assert.match(guide, /photo-based vegan meal plan/i);
     assert.match(guide, /AU\$19\.99\/month/);
     assert.match(guide, /Stripe Checkout/);
     assert.match(guide, /AU\$89\.99 once/);
