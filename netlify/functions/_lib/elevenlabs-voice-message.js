@@ -733,8 +733,9 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
         outputFormat: config.outputFormat,
         sourceEncoding: speech.sourceEncoding || null,
         sampleRate: speech.sampleRate || null,
-        thoughtGroupCount: thoughtPauseMs > 0 ? thoughtGroups.length : 1,
-        thoughtPauseMs,
+        thoughtGroupCount: thoughtPausesMs.length > 0 ? thoughtGroups.length : 1,
+        thoughtPauseMs: thoughtPausesMs[0] || 0,
+        thoughtPausesMs,
     };
 }
 

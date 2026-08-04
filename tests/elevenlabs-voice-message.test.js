@@ -20,6 +20,13 @@ assert.doesNotMatch(
     /synthesizeThoughtGroups\(thoughtGroups,[\s\S]{0,300}, 2\)/,
     'paced voice notes must not re-seed the cloned voice at each pause'
 );
+assert.match(
+    voiceSource,
+    /thoughtGroupCount:\s*thoughtPausesMs\.length > 0 \? thoughtGroups\.length : 1/,
+    'voice metadata must use the defined multi-pause array'
+);
+assert.match(voiceSource, /thoughtPauseMs:\s*thoughtPausesMs\[0\] \|\| 0/);
+assert.match(voiceSource, /thoughtPausesMs,/);
 
 const personalVoicePrompt = igDraft.buildPersonalVoiceNoteDraftingBlock(true);
 assert.match(personalVoicePrompt, /five Cocos voice clips Shannon approved/i);
