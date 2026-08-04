@@ -688,6 +688,20 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         'an inclusions question after accepting the first-week offer must not repeat that question');
     assert.equal((programInclusionsAfterAcceptedSupport.joined.match(/\?/g) || []).length, 1);
 
+    const selectedFoundersPrice = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'How much is the fixed six-week Founders Pass?',
+        qualifier: blockerQualifier,
+        history: [
+            { direction: 'out', text: 'Would you prefer that fixed six-week start, or ongoing weekly coaching?' },
+        ],
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(selectedFoundersPrice.joined, /\$89\.99 once/i);
+    assert.match(selectedFoundersPrice.joined, /send you the checkout link/i);
+    assert.doesNotMatch(selectedFoundersPrice.joined, /show you how the first week/i,
+        'price after selecting Founders Pass must advance to checkout permission, not repeat week-one discovery');
+    assert.equal((selectedFoundersPrice.joined.match(/\?/g) || []).length, 1);
+
     const priceAndInclusions = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I want to know your prices and what I get',
         qualifier: blockerQualifier,

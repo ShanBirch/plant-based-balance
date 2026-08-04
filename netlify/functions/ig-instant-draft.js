@@ -1342,7 +1342,11 @@ function buildDeterministicPaidMetaConversationReply({
     if (PAID_META_OFFER_INFO_RE.test(message)) {
         const communityCopy = broadFlow ? 'the Balance app and community' : 'the Balance app and plant-based community';
         const offerName = broadFlow ? 'The six-week Balance kickstart' : 'The Founders Pass';
-        const joined = `${offerName} is $89.99 once. You get the six-week Foundations course, six weeks of ${communityCopy}, and one weekly check-in and plan review with me. It doesn't renew automatically.\n\nWant me to show you how the first week would work around your goal?`;
+        const selectedFixedStart = /\b(?:founders pass|fixed (?:six|6)[ -]?week)\b/i.test(message);
+        const nextAsk = selectedFixedStart
+            ? 'Would you like me to send you the checkout link?'
+            : 'Want me to show you how the first week would work around your goal?';
+        const joined = `${offerName} is $89.99 once. You get the six-week Foundations course, six weeks of ${communityCopy}, and one weekly check-in and plan review with me. It doesn't renew automatically.\n\n${nextAsk}`;
         return {
             chunks: [joined],
             joined,
